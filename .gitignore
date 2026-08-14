@@ -1,0 +1,6 @@
+/.build/
+/dist/
+/.swiftpm/
+*.dmg
+*.log
+.DS_Store
