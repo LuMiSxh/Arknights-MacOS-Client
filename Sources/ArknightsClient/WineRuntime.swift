@@ -16,22 +16,24 @@ struct WineRuntime: Sendable {
     }
 
     candidates += [
-      ("/opt/homebrew/bin/wine64", "Homebrew Wine"),
-      ("/opt/homebrew/bin/wine", "Homebrew Wine"),
-      ("/usr/local/bin/wine64", "Homebrew Wine"),
-      ("/usr/local/bin/wine", "Homebrew Wine"),
-      ("/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64", "Wine Stable"),
-      ("/Applications/Wine Staging.app/Contents/Resources/wine/bin/wine64", "Wine Staging"),
-      ("/Applications/Wine Devel.app/Contents/Resources/wine/bin/wine64", "Wine Devel"),
-      ("/Applications/Wine Crossover.app/Contents/Resources/wine/bin/wine64", "Wine Crossover"),
+      (
+        "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted Application/wine",
+        "CrossOver"
+      ),
       (
         "/Applications/Game Porting Toolkit.app/Contents/Resources/wine/bin/wine64",
         "Game Porting Toolkit"
       ),
       (
-        "/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/CrossOver-Hosted Application/wine",
-        "CrossOver"
+        "/Applications/Wine Crossover.app/Contents/Resources/wine/bin/wine64", "Wine Crossover"
       ),
+      ("/Applications/Wine Stable.app/Contents/Resources/wine/bin/wine64", "Wine Stable"),
+      ("/Applications/Wine Staging.app/Contents/Resources/wine/bin/wine64", "Wine Staging"),
+      ("/Applications/Wine Devel.app/Contents/Resources/wine/bin/wine64", "Wine Devel"),
+      ("/opt/homebrew/bin/wine64", "Homebrew Wine"),
+      ("/opt/homebrew/bin/wine", "Homebrew Wine"),
+      ("/usr/local/bin/wine64", "Homebrew Wine"),
+      ("/usr/local/bin/wine", "Homebrew Wine"),
     ]
 
     if let path = environment["PATH"] {
@@ -49,9 +51,17 @@ struct WineRuntime: Sendable {
     return nil
   }
 
-  func launch(gameExecutable: URL, prefixDirectory: URL) throws -> Int32 {
+  func launch(gameExecutable: URL, prefixDirectory: URL) async throws -> Int32 {
     let fileManager = FileManager.default
     try fileManager.createDirectory(at: prefixDirectory, withIntermediateDirectories: true)
+    let logURL = prefixDirectory.deletingLastPathComponent().appending(path: "wine.log")
+    if !fileManager.fileExists(atPath: logURL.path) {
+      guard fileManager.createFile(atPath: logURL.path, contents: nil) else {
+        throw LauncherError.cannotCreateFile(logURL)
+      }
+    }
+    let logHandle = try FileHandle(forWritingTo: logURL)
+    try logHandle.seekToEnd()
 
     var environment = ProcessInfo.processInfo.environment
     environment["WINEPREFIX"] = prefixDirectory.path
@@ -69,9 +79,18 @@ struct WineRuntime: Sendable {
     process.arguments = [gameExecutable.path]
     process.currentDirectoryURL = gameExecutable.deletingLastPathComponent()
     process.environment = environment
-    process.standardOutput = FileHandle.nullDevice
-    process.standardError = FileHandle.nullDevice
+    process.standardOutput = logHandle
+    process.standardError = logHandle
     try process.run()
+    do {
+      try logHandle.close()
+    } catch {
+      // The child process owns its duplicated descriptor after launch.
+    }
+    try await Task.sleep(for: .seconds(4))
+    if !process.isRunning, process.terminationStatus != 0 {
+      throw LauncherError.runtimeExited(status: process.terminationStatus, log: logURL)
+    }
     return process.processIdentifier
   }
 }

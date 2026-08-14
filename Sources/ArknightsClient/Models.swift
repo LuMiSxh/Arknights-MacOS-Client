@@ -103,6 +103,7 @@ enum LauncherError: LocalizedError {
   case missingConfiguration
   case gameNotInstalled(URL)
   case wineRuntimeMissing
+  case runtimeExited(status: Int32, log: URL)
 
   var errorDescription: String? {
     switch self {
@@ -126,6 +127,8 @@ enum LauncherError: LocalizedError {
       "Arknights.exe was not found: \(url.path)"
     case .wineRuntimeMissing:
       "No compatible Wine or CrossOver runtime found."
+    case .runtimeExited(let status, let log):
+      "The Windows runtime exited with status \(status). See \(log.path)."
     }
   }
 }

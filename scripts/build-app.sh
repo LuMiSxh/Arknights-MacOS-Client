@@ -21,9 +21,22 @@ if [[ ! -x "${binary_path}" ]]; then
 fi
 
 rm -rf "${app_bundle}"
-mkdir -p "${app_bundle}/Contents/MacOS"
+mkdir -p "${app_bundle}/Contents/MacOS" "${app_bundle}/Contents/Resources"
 cp "${binary_path}" "${app_bundle}/Contents/MacOS/${executable_name}"
 cp "${project_dir}/Resources/Info.plist" "${app_bundle}/Contents/Info.plist"
+cp "${project_dir}/Resources/AppIcon.icns" "${app_bundle}/Contents/Resources/AppIcon.icns"
+
+runtime_dir="${ARKNIGHTS_RUNTIME_DIR:-}"
+if [[ -n "${runtime_dir}" ]]; then
+    if [[ ! -d "${runtime_dir}" ]]; then
+        echo "ARKNIGHTS_RUNTIME_DIR must point to an existing directory: ${runtime_dir}" >&2
+        exit 1
+    fi
+
+    runtime_destination="${app_bundle}/Contents/Resources/Runtime"
+    mkdir -p "${runtime_destination}"
+    cp -R "${runtime_dir}/." "${runtime_destination}"
+fi
 
 codesign --force --sign - --timestamp=none "${app_bundle}"
 codesign --verify --deep --strict --verbose=2 "${app_bundle}"

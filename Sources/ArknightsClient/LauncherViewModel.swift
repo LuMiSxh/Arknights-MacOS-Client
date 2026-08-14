@@ -16,7 +16,10 @@ final class LauncherViewModel: ObservableObject {
   private let installer: GameInstaller
   private var activeTask: Task<Void, Never>?
 
-  init(api: LauncherAPI = LauncherAPI()) {
+  init(
+    api: LauncherAPI = LauncherAPI(),
+    arguments: [String] = ProcessInfo.processInfo.arguments
+  ) {
     self.api = api
     installer = GameInstaller(api: api)
 
@@ -31,8 +34,15 @@ final class LauncherViewModel: ObservableObject {
       .appending(path: "Arknights_EN", directoryHint: .isDirectory)
 
     refreshRuntime()
+    let installOnLaunch =
+      arguments.contains("--install")
+      || arguments.contains("--install-and-launch")
+    let launchAfterInstall = arguments.contains("--install-and-launch")
     activeTask = Task { [weak self] in
       await self?.refresh()
+      if installOnLaunch {
+        self?.startInstallation(launchAfterCompletion: launchAfterInstall)
+      }
     }
   }
 
@@ -93,6 +103,10 @@ final class LauncherViewModel: ObservableObject {
   }
 
   func installOrUpdate() {
+    startInstallation(launchAfterCompletion: false)
+  }
+
+  private func startInstallation(launchAfterCompletion: Bool) {
     guard let configuration else {
       show(LauncherError.missingConfiguration)
       return
@@ -120,6 +134,9 @@ final class LauncherViewModel: ObservableObject {
           result.downloadedFiles == 0
           ? "All game files already match the latest release."
           : "Downloaded and verified \(result.downloadedFiles) files."
+        if launchAfterCompletion {
+          launch()
+        }
       } catch is CancellationError {
         phase = .ready
         activityMessage = "Download paused. Partial files will resume next time."
@@ -151,19 +168,22 @@ final class LauncherViewModel: ObservableObject {
 
     phase = .launching
     activityMessage = "Starting Arknights with \(runtime.displayName)…"
-    do {
-      let prefix =
-        installDirectory
-        .deletingLastPathComponent()
-        .appending(path: "WinePrefix", directoryHint: .isDirectory)
-      let processIdentifier = try runtime.launch(
-        gameExecutable: executable,
-        prefixDirectory: prefix
-      )
-      phase = .running(processIdentifier: processIdentifier)
-      activityMessage = "Arknights started as process \(processIdentifier)."
-    } catch {
-      show(error)
+    activeTask = Task { [weak self] in
+      guard let self else { return }
+      do {
+        let prefix =
+          installDirectory
+          .deletingLastPathComponent()
+          .appending(path: "WinePrefix", directoryHint: .isDirectory)
+        let processIdentifier = try await runtime.launch(
+          gameExecutable: executable,
+          prefixDirectory: prefix
+        )
+        phase = .running(processIdentifier: processIdentifier)
+        activityMessage = "Arknights started as process \(processIdentifier)."
+      } catch {
+        show(error)
+      }
     }
   }
 
