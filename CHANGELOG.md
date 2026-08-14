@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Conservative 1280 × 720 windowed defaults for the first game start.
 - Independent automatic update checks for the launcher and game.
 - Liquid Glass launcher interface and custom artwork support.
+- Exclusive download coordination that prevents stale refreshes or repeated actions from starting overlapping installs.
+- Full-bleed titlebar artwork, pill-shaped launcher actions, compact installation settings, and in-app legal document rendering.
+- A system-masked app icon without a second embedded squircle.
 
 [Unreleased]: https://github.com/LuMiSxh/ArknightsClient/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/LuMiSxh/ArknightsClient/releases/tag/v0.1.0

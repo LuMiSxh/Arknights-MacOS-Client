@@ -7,11 +7,11 @@ struct ArknightsClientApp: App {
 	@StateObject private var model = LauncherViewModel()
 
 	var body: some Scene {
-		WindowGroup {
+		WindowGroup("Arknights Client") {
 			ContentView(model: model)
 				.frame(minWidth: 880, minHeight: 560)
 		}
-		.windowToolbarStyle(.unifiedCompact)
+		.windowStyle(.hiddenTitleBar)
 		.defaultSize(width: 1040, height: 680)
 	}
 }

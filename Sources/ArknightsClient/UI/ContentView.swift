@@ -11,19 +11,10 @@ struct ContentView: View {
 	var body: some View {
 		ZStack {
 			artwork
+				.ignoresSafeArea(.container, edges: .top)
 
 			VStack(spacing: 0) {
-				HStack {
-					Text("ARKNIGHTS")
-						.font(.custom("Avenir Next Condensed", size: 20).weight(.bold))
-						.tracking(1.8)
-						.padding(.horizontal, 14)
-						.padding(.vertical, 8)
-						.glassEffect(.regular, in: .capsule)
-					Spacer()
-				}
-				.padding(20)
-
+				topBar
 				Spacer()
 				controlBar
 					.padding(20)
@@ -31,21 +22,29 @@ struct ContentView: View {
 		}
 		.background(Color.black)
 		.preferredColorScheme(.dark)
-		.toolbarBackground(.hidden, for: .windowToolbar)
-		.toolbar {
-			ToolbarItem(placement: .primaryAction) {
-				Button {
-					settingsPresented = true
-				} label: {
-					Label("Settings", systemImage: "gearshape")
-				}
-				.buttonStyle(.glass)
-				.help("Open launcher settings")
-			}
-		}
 		.sheet(isPresented: $settingsPresented) {
 			LauncherSettingsView(model: model)
 		}
+	}
+
+	private var topBar: some View {
+		HStack(alignment: .top) {
+			ArknightsWordmark(cyan: cyan)
+			Spacer()
+			Button {
+				settingsPresented = true
+			} label: {
+				Image(systemName: "gearshape")
+					.frame(width: 18, height: 18)
+			}
+			.buttonStyle(.glass)
+			.buttonBorderShape(.circle)
+			.keyboardShortcut(",", modifiers: .command)
+			.help("Open launcher settings")
+		}
+		.padding(.top, 14)
+		.padding(.leading, 92)
+		.padding(.trailing, 18)
 	}
 
 	private var artwork: some View {
@@ -80,7 +79,7 @@ struct ContentView: View {
 
 	private var controlBar: some View {
 		VStack(spacing: 10) {
-			if model.phase == .downloading {
+			if model.isDownloading {
 				ProgressView(value: model.progress?.fraction ?? 0)
 					.progressViewStyle(.linear)
 					.tint(cyan)
@@ -112,6 +111,7 @@ struct ContentView: View {
 						action: model.openLauncherUpdate
 					)
 					.buttonStyle(.glass)
+					.buttonBorderShape(.capsule)
 					.help("Open the latest launcher release in your browser")
 				}
 
@@ -121,19 +121,23 @@ struct ContentView: View {
 		.padding(16)
 		.glassEffect(
 			.regular.tint(Color.black.opacity(0.52)),
-			in: .rect(cornerRadius: 18)
+			in: .rect(cornerRadius: 14)
 		)
 	}
 
 	@ViewBuilder
 	private var primaryAction: some View {
-		if model.phase == .downloading {
+		if model.isDownloading {
 			Button("Pause", systemImage: "pause.fill", action: model.cancelDownload)
 				.buttonStyle(.glass)
+				.buttonBorderShape(.capsule)
+				.controlSize(.large)
 				.help("Pause the download; it resumes from partial files later")
 		} else if !model.isInstalled {
 			Button("Install", systemImage: "arrow.down", action: model.installOrUpdate)
 				.buttonStyle(.glassProminent)
+				.buttonBorderShape(.capsule)
+				.controlSize(.large)
 				.tint(cyan)
 				.disabled(!model.canInstall)
 				.keyboardShortcut(.defaultAction)
@@ -141,6 +145,8 @@ struct ContentView: View {
 		} else if model.isGameUpdateAvailable {
 			Button("Update", systemImage: "arrow.down", action: model.installOrUpdate)
 				.buttonStyle(.glassProminent)
+				.buttonBorderShape(.capsule)
+				.controlSize(.large)
 				.tint(cyan)
 				.disabled(!model.canInstall)
 				.keyboardShortcut(.defaultAction)
@@ -148,6 +154,8 @@ struct ContentView: View {
 		} else {
 			Button("Play", systemImage: "play.fill", action: model.launch)
 				.buttonStyle(.glassProminent)
+				.buttonBorderShape(.capsule)
+				.controlSize(.large)
 				.tint(cyan)
 				.disabled(!model.canLaunch)
 				.keyboardShortcut(.defaultAction)
@@ -156,7 +164,10 @@ struct ContentView: View {
 	}
 
 	private var statusTitle: String {
-		if model.phase == .downloading, let progress = model.progress {
+		if model.activityMessage == "Pausing…" {
+			return model.activityMessage
+		}
+		if model.isDownloading, let progress = model.progress {
 			return "\(Int(progress.fraction * 100))%"
 		}
 		if case .failed = model.phase { return "Needs attention" }
@@ -164,7 +175,7 @@ struct ContentView: View {
 	}
 
 	private var statusDetail: String? {
-		if model.phase == .downloading, let progress = model.progress {
+		if model.isDownloading, let progress = model.progress {
 			let downloaded = ByteCountFormatter.string(
 				fromByteCount: progress.downloadedBytes,
 				countStyle: .file
@@ -178,11 +189,44 @@ struct ContentView: View {
 	}
 }
 
+private struct ArknightsWordmark: View {
+	let cyan: Color
+
+	var body: some View {
+		HStack(spacing: 9) {
+			Rectangle()
+				.fill(cyan)
+				.frame(width: 3, height: 32)
+
+			VStack(alignment: .leading, spacing: 0) {
+				Text("ARKNIGHTS")
+					.font(.custom("Avenir Next Condensed", size: 17).weight(.heavy))
+					.tracking(1.8)
+				Text("GLOBAL // RHODES ISLAND")
+					.font(.system(size: 8, weight: .medium, design: .monospaced))
+					.tracking(0.8)
+					.foregroundStyle(.white.opacity(0.66))
+			}
+		}
+		.padding(.horizontal, 11)
+		.padding(.vertical, 7)
+		.background(Color.black.opacity(0.66))
+		.overlay(alignment: .bottom) {
+			Rectangle()
+				.fill(.white.opacity(0.16))
+				.frame(height: 1)
+		}
+		.accessibilityElement(children: .ignore)
+		.accessibilityLabel("Arknights Global macOS client")
+	}
+}
+
 private struct LauncherSettingsView: View {
 	@ObservedObject var model: LauncherViewModel
 	@Environment(\.dismiss) private var dismiss
 	@State private var selectedSection = SettingsSection.general
 	@State private var confirmsGameUninstall = false
+	@State private var presentedDocument: BundledDocument?
 
 	var body: some View {
 		NavigationSplitView {
@@ -202,7 +246,7 @@ private struct LauncherSettingsView: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 			.padding(26)
 		}
-		.frame(width: 740, height: 500)
+		.frame(width: 760, height: 520)
 		.toolbar {
 			ToolbarItem(placement: .confirmationAction) {
 				Button("Done") { dismiss() }
@@ -217,6 +261,9 @@ private struct LauncherSettingsView: View {
 			Button("Cancel", role: .cancel) {}
 		} message: {
 			Text("The launcher stays installed.")
+		}
+		.sheet(item: $presentedDocument) { document in
+			BundledDocumentView(document: document)
 		}
 	}
 
@@ -259,7 +306,7 @@ private struct LauncherSettingsView: View {
 						Text(model.isGameUpdateAvailable ? "Update available" : model.versionText)
 							.foregroundStyle(.secondary)
 						Button("Check Now", action: model.checkGameUpdates)
-							.disabled(model.phase == .downloading)
+							.disabled(model.isDownloading)
 					}
 				}
 			}
@@ -280,37 +327,50 @@ private struct LauncherSettingsView: View {
 	private var installationSettings: some View {
 		Form {
 			Section("Game") {
-				LabeledContent("Status", value: model.isInstalled ? "Installed" : "Not installed")
+				LabeledContent("Status") {
+					Text(gameStatus)
+						.foregroundStyle(model.isDownloading ? Color.accentColor : .secondary)
+				}
+
 				LabeledContent("Location") {
-					Text(model.installDirectory.path)
-						.lineLimit(2)
-						.truncationMode(.middle)
-						.textSelection(.enabled)
-				}
-
-				HStack {
-					Button("Choose Location…", action: model.chooseInstallDirectory)
-						.help("Choose the parent folder for a new installation")
-					Button("Locate Existing…", action: model.locateExistingInstallation)
-						.help("Use an existing folder containing Arknights.exe")
-					Button("Show in Finder", action: model.revealInstallDirectory)
-						.disabled(!model.isInstalled)
-				}
-
-				HStack {
-					Button("Repair", action: model.repairGame)
-						.disabled(!model.isInstalled || !model.canInstall)
-						.help("Verify every game file and redownload damaged files")
-					Button("Uninstall Game…", role: .destructive) {
-						confirmsGameUninstall = true
+					HStack(spacing: 10) {
+						Text(model.installDirectory.lastPathComponent)
+							.lineLimit(1)
+							.truncationMode(.middle)
+							.help(model.installDirectory.path)
+						Button("Show", systemImage: "folder", action: model.revealInstallDirectory)
+							.labelStyle(.iconOnly)
+							.disabled(!model.isInstalled)
+							.help("Show game files in Finder")
 					}
-					.disabled(!model.isInstalled)
 				}
+
+				Menu("Installation Location", systemImage: "externaldrive") {
+					Button("Choose New Location…", action: model.chooseInstallDirectory)
+					Button(
+						"Locate Existing Installation…", action: model.locateExistingInstallation)
+				}
+				.disabled(model.isDownloading)
+			}
+
+			Section("Maintenance") {
+				Button("Repair Game Files…", systemImage: "wrench.and.screwdriver") {
+					model.repairGame()
+				}
+				.disabled(!model.isInstalled || !model.canInstall)
+				.help("Verify every game file and redownload damaged files")
+
+				Button("Uninstall Game…", systemImage: "trash", role: .destructive) {
+					confirmsGameUninstall = true
+				}
+				.disabled(!model.isInstalled || model.isDownloading)
 			}
 
 			Section("Launcher") {
-				Button("Show App in Finder", action: model.revealApplication)
-					.help("Move the app to the Trash to uninstall the launcher")
+				Button("Show Arknights Client in Finder", systemImage: "app.dashed") {
+					model.revealApplication()
+				}
+				.help("Move the app to the Trash to uninstall the launcher")
 			}
 		}
 		.formStyle(.grouped)
@@ -333,16 +393,19 @@ private struct LauncherSettingsView: View {
 				}
 			}
 
-			Section("Legal") {
-				Button("Changelog", action: model.openChangelog)
+			Section("Project") {
+				Button("Changelog") { presentedDocument = .changelog }
 				Button("Source Code", action: model.openSourceCode)
-				Button("MPL-2.0 License", action: model.openProjectLicense)
-				Button("Third-Party Notices", action: model.openThirdPartyNotices)
+				Button("MPL-2.0 License") { presentedDocument = .projectLicense }
+				Button("Third-Party Notices") { presentedDocument = .thirdPartyNotices }
+			}
+
+			Section("Arknights") {
 				if let agreement = model.branding?.userAgreement {
-					Link("Arknights User Agreement", destination: agreement)
+					Link("User Agreement", destination: agreement)
 				}
 				if let privacy = model.branding?.privacyPolicy {
-					Link("Arknights Privacy Policy", destination: privacy)
+					Link("Privacy Policy", destination: privacy)
 				}
 				Text("Not affiliated with Hypergryph or Yostar.")
 					.font(.caption)
@@ -351,6 +414,14 @@ private struct LauncherSettingsView: View {
 		}
 		.formStyle(.grouped)
 		.navigationTitle("About")
+	}
+
+	private var gameStatus: String {
+		if model.isDownloading, let progress = model.progress {
+			return "Downloading \(Int(progress.fraction * 100))%"
+		}
+		if model.isDownloading { return "Preparing download" }
+		return model.isInstalled ? "Installed" : "Not installed"
 	}
 
 	private var appVersion: String {

@@ -38,13 +38,13 @@ private actor ProgressCounter {
 struct GameInstaller: Sendable {
 	typealias ProgressHandler = @Sendable (DownloadProgress) async -> Void
 
-	private let api: LauncherAPI
+	private let api: any LauncherAPIProviding
 	private let session: URLSession
 	private let concurrentDownloads = 6
 
 	private var fileManager: FileManager { .default }
 
-	init(api: LauncherAPI, session: URLSession = .shared) {
+	init(api: any LauncherAPIProviding, session: URLSession = .shared) {
 		self.api = api
 		self.session = session
 	}
@@ -76,6 +76,7 @@ struct GameInstaller: Sendable {
 		let counter = ProgressCounter(totalBytes: totalBytes, totalFiles: pendingFiles.count)
 
 		if pendingFiles.isEmpty {
+			try Task.checkCancellation()
 			try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
 			return InstallResult(
 				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
@@ -98,23 +99,29 @@ struct GameInstaller: Sendable {
 				)
 			}
 
-			while try await group.next() != nil {
-				if nextIndex < pendingFiles.count {
-					let item = pendingFiles[nextIndex]
-					nextIndex += 1
-					addDownload(
-						item,
-						manifest: manifest,
-						cdn: cdn,
-						installDirectory: installDirectory,
-						counter: counter,
-						progress: progress,
-						to: &group
-					)
+			do {
+				while try await group.next() != nil {
+					if nextIndex < pendingFiles.count {
+						let item = pendingFiles[nextIndex]
+						nextIndex += 1
+						addDownload(
+							item,
+							manifest: manifest,
+							cdn: cdn,
+							installDirectory: installDirectory,
+							counter: counter,
+							progress: progress,
+							to: &group
+						)
+					}
 				}
+			} catch {
+				group.cancelAll()
+				throw error
 			}
 		}
 
+		try Task.checkCancellation()
 		try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,
@@ -183,6 +190,8 @@ struct GameInstaller: Sendable {
 					counter: counter,
 					progress: progress
 				)
+			} catch is CancellationError {
+				throw CancellationError()
 			} catch {
 				if attempt == 3 { throw error }
 				try await Task.sleep(for: .milliseconds(400 * attempt))
@@ -214,6 +223,7 @@ struct GameInstaller: Sendable {
 		}
 
 		if existingBytes == item.byteCount, existingBytes > 0 {
+			try Task.checkCancellation()
 			try finishDownload(item, partial: partial, destination: destination)
 			if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 				await progress(update)
@@ -287,6 +297,7 @@ struct GameInstaller: Sendable {
 		try handle.synchronize()
 		try handle.close()
 
+		try Task.checkCancellation()
 		try finishDownload(item, partial: partial, destination: destination)
 		if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 			await progress(update)
