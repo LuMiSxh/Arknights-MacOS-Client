@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MPL-2.0
+
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +17,14 @@ trap cleanup EXIT
 
 command -v hdiutil >/dev/null
 
-"${script_dir}/build-app.sh"
+runtime_dir="${ARKNIGHTS_RUNTIME_DIR:-}"
+if [[ -z "${runtime_dir}" || ! -d "${runtime_dir}" ]]; then
+    echo "A Wine + DXMT runtime is required for the distributable DMG." >&2
+    echo "Set ARKNIGHTS_RUNTIME_DIR to its directory." >&2
+    exit 1
+fi
+
+ARKNIGHTS_RUNTIME_DIR="${runtime_dir}" "${script_dir}/build-app.sh"
 
 mkdir -p "${project_dir}/dist"
 cp -R "${app_bundle}" "${staging_dir}/${app_name}.app"

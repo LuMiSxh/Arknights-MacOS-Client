@@ -1,16 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#111b20"/>
-      <stop offset="1" stop-color="#070b0e"/>
-    </linearGradient>
+    <clipPath id="tile">
+      <rect x="32" y="32" width="960" height="960" rx="218"/>
+    </clipPath>
   </defs>
-  <rect x="32" y="32" width="960" height="960" rx="218" fill="url(#background)"/>
-  <path d="M210 770 441 238h142L814 770H657L512 408 367 770Z" fill="#f3f5f4"/>
-  <path d="M512 520 573 675H451Z" fill="#0b1114"/>
-  <path d="m250 730 465-465 40 40-465 465Z" fill="#4bd8e7"/>
-  <rect x="746" y="694" width="78" height="78" fill="#f47532"/>
-  <path d="M180 834h664" fill="none" stroke="#f3f5f4" stroke-opacity=".28" stroke-width="10"/>
-  <rect x="32" y="32" width="960" height="960" rx="218" fill="none" stroke="#f3f5f4" stroke-opacity=".12" stroke-width="8"/>
+
+  <rect x="32" y="32" width="960" height="960" rx="218" fill="#09090b"/>
+
+  <g clip-path="url(#tile)">
+    <path d="M32 32h312L176 200H32Z" fill="#18d1ff"/>
+    <path d="M992 158v150L842 158Z" fill="#1d1f20"/>
+    <path d="M88 842h848" fill="none" stroke="#35373c" stroke-width="8"/>
+    <path d="M88 874h562" fill="none" stroke="#18d1ff" stroke-width="8"/>
+    <path d="M680 874h256" fill="none" stroke="#585858" stroke-width="8"/>
+
+    <path
+      d="M166 790 428 244h168L858 790H680l-58-134H402l-58 134Zm292-270-40 92h188l-94-218Z"
+      fill="#f7f7f7"
+      fill-rule="evenodd"
+    />
+
+    <path d="M387 590h250l28 66H359Z" fill="#18d1ff"/>
+
+    <path d="M500 122h24v158h-24Z" fill="#f7f7f7"/>
+    <path d="m512 90 28 48h-56Z" fill="#18d1ff"/>
+    <path d="M456 170h24v106h-24ZM544 170h24v106h-24Z" fill="#c6c9ce"/>
+    <path d="M430 212h164" fill="none" stroke="#f7f7f7" stroke-width="12"/>
+  </g>
+
+  <rect
+    x="32"
+    y="32"
+    width="960"
+    height="960"
+    rx="218"
+    fill="none"
+    stroke="#35373c"
+    stroke-width="8"
+  />
 </svg>

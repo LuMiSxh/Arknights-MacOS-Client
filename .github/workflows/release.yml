@@ -1,0 +1,89 @@
+name: Draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version (X.Y.Z)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: macos-26
+    environment: release
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      RUNTIME_URL: ${{ vars.RUNTIME_URL }}
+      RUNTIME_SHA256: ${{ vars.RUNTIME_SHA256 }}
+      RUNTIME_SOURCE_URL: ${{ vars.RUNTIME_SOURCE_URL }}
+      RUNTIME_SOURCE_SHA256: ${{ vars.RUNTIME_SOURCE_SHA256 }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Validate release inputs
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must use X.Y.Z with numeric components." >&2
+            exit 1
+          fi
+          if ! grep -Fq "## [$RELEASE_VERSION]" CHANGELOG.md; then
+            echo "CHANGELOG.md must contain a section for $RELEASE_VERSION." >&2
+            exit 1
+          fi
+          test -n "$RUNTIME_URL"
+          test -n "$RUNTIME_SHA256"
+          test -n "$RUNTIME_SOURCE_URL"
+          test -n "$RUNTIME_SOURCE_SHA256"
+          release_tag="v$RELEASE_VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null 2>&1; then
+            echo "Tag $release_tag already exists." >&2
+            exit 1
+          fi
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            echo "Release $release_tag already exists." >&2
+            exit 1
+          fi
+
+      - name: Test source
+        run: |
+          swift format lint --configuration .swift-format --recursive --strict Sources Tests
+          swift test --arch arm64
+
+      - name: Download and verify runtime
+        run: |
+          mkdir -p "$RUNNER_TEMP/runtime" dist
+          curl --fail --location --proto '=https' --tlsv1.2 "$RUNTIME_URL" --output "$RUNNER_TEMP/runtime.tar.gz"
+          echo "$RUNTIME_SHA256  $RUNNER_TEMP/runtime.tar.gz" | shasum -a 256 --check
+          tar -xzf "$RUNNER_TEMP/runtime.tar.gz" -C "$RUNNER_TEMP/runtime"
+          test "$(find "$RUNNER_TEMP/runtime" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" = "1"
+          curl --fail --location --proto '=https' --tlsv1.2 "$RUNTIME_SOURCE_URL" --output "dist/Runtime-Sources.tar.gz"
+          echo "$RUNTIME_SOURCE_SHA256  dist/Runtime-Sources.tar.gz" | shasum -a 256 --check
+
+      - name: Set release version
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $RELEASE_VERSION" Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" Resources/Info.plist
+
+      - name: Build DMG
+        run: |
+          runtime_dir="$(find "$RUNNER_TEMP/runtime" -mindepth 1 -maxdepth 1 -type d)"
+          ARKNIGHTS_RUNTIME_DIR="$runtime_dir" ./scripts/build-dmg.sh
+          shasum -a 256 "dist/Arknights Client.dmg" dist/Runtime-Sources.tar.gz > dist/SHA256SUMS
+
+      - name: Create draft release
+        run: |
+          release_tag="v$RELEASE_VERSION"
+          gh release create "$release_tag" \
+            "dist/Arknights Client.dmg" \
+            dist/Runtime-Sources.tar.gz \
+            dist/SHA256SUMS \
+            --draft \
+            --generate-notes \
+            --target "$GITHUB_SHA" \
+            --title "Arknights Client $release_tag"
