@@ -1,6 +1,7 @@
 * text=auto eol=lf
 
 *.dmg binary
+*.car binary
 *.icns binary
 *.jpg binary
 *.jpeg binary

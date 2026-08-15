@@ -1,32 +1,91 @@
 # Architecture
 
-The app has one native SwiftUI process. It downloads and verifies the Global PC files, then starts `Arknights.exe` through the bundled Wine + DXMT runtime. Wine is not involved in the launcher UI or download flow.
+Arknights Client has a native SwiftUI launcher and a bundled Windows compatibility runtime. The launcher owns downloads, updates, settings, and process state. Wine is used only after **Play** is selected.
 
 ## Source layout
 
-| Folder        | Contents                                                   |
-| ------------- | ---------------------------------------------------------- |
-| `Application` | App entry point and scene setup                            |
-| `UI`          | Launcher and Settings views                                |
-| `ViewModels`  | UI state and user actions                                  |
-| `Models`      | API payloads, install state, launch options, and errors    |
-| `Services`    | Yostar API, artwork, installer, and launcher update checks |
-| `Storage`     | Standard macOS paths and preferences                       |
-| `Runtime`     | Wine discovery, prefix setup, DXMT, and process launch     |
-| `Utilities`   | CRC64 implementation                                       |
+| Folder | Responsibility |
+| --- | --- |
+| `Application` | App entry point and macOS lifecycle |
+| `UI` | Launcher, Settings, and document views |
+| `ViewModels` | UI state and user actions |
+| `Models` | API payloads, install state, launch options, and errors |
+| `Services` | Yostar API, artwork, installer, and launcher updates |
+| `Storage` | Standard macOS paths and preferences |
+| `Runtime` | Wine environment, prefix configuration, DXMT, Vuplex, and process lifecycle |
+| `Utilities` | CRC64 and diagnostic logging |
 
-## Main flows
+## Installation
 
-Game installation starts with `LauncherAPI`, which returns the current version, manifest location, and CDN. `GameInstaller` validates every manifest path, resumes partial files, checks sizes and CRC64, then records the installed manifest.
+`LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, resumes `.part` files, verifies size and CRC64, and records the installed manifest.
 
-An update compares the previous and current manifests, so unchanged files are reused even in a large release. Repair mode ignores that shortcut and checks every existing file.
+A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
 
-`LauncherViewModel` keeps the UI state but delegates network, storage, and runtime work to the components above. Preferences contain only small user choices; downloaded files and state are stored on disk.
+```mermaid
+flowchart LR
+	API[Yostar launcher API] --> Manifest[Version and manifest]
+	CDN[Yostar CDN] --> Installer[GameInstaller]
+	Manifest --> Installer
+	State[Installed manifest] --> Installer
+	Installer --> Files[Game directory]
+	Installer --> State
+```
+
+## Launch process
+
+The packaged runtime is x86_64 and runs through Rosetta 2. The launcher gives Wine an isolated prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT libraries, and starts `G:\Arknights.exe`. The main game uses DXMT for Direct3D-to-Metal translation.
+
+Arknights starts its Chromium-based Vuplex helper for account and in-game web pages. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with software rendering and the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build. Neither compatibility component affects the game renderer or reads browser content.
+
+```mermaid
+flowchart LR
+	subgraph macOS
+		Launcher[SwiftUI launcher]
+		Rosetta[Rosetta 2]
+		Metal[Metal]
+		Prefix[Isolated Wine prefix]
+	end
+
+	subgraph Windows client through Wine
+		Wine[Wine runtime]
+		Game[Arknights.exe]
+		DXMT[DXMT]
+		Shim[Vuplex wrapper]
+		CEF[Official Vuplex / CEF]
+		Userenv[userenv compatibility DLL]
+	end
+
+	Launcher -->|allowlisted environment| Rosetta
+	Rosetta --> Wine
+	Wine --> Prefix
+	Wine --> Game
+	Game -->|Direct3D 11| DXMT
+	DXMT --> Metal
+	Game -->|starts web helper| Shim
+	Shim --> CEF
+	Userenv -. process-local override .-> CEF
+	CEF -->|HTTPS login and game pages| Web[Official web services]
+```
+
+Vuplex uses software painting because its accelerated shared-texture path fails through the tested Wine and DXMT combination. CEF's asynchronous DNS path also calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement; the wrapper disables that path so CEF uses Wine's normal system resolver. Social login still starts a separate Chromium process and may take several seconds on first use.
+
+Install, update, and repair restore the official Vuplex executable before modifying game files. The wrapper is then installed again at the next launch only when the helper still advertises the expected software-paint option. Unknown helpers and unrelated `userenv.dll` files are left untouched.
+
+## Process lifecycle
+
+The launcher remains in **Starting** until Wine exposes a visible game window. It monitors both the direct Wine process and the prefix-wide `wineserver`. Closing the game triggers prefix-scoped cleanup so browser and Yostar helpers do not keep the launcher in **Running**. **Stop** and launcher termination use the same prefix-scoped shutdown.
+
+The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` give the main macOS process a readable name. Packaging applies one reviewed patch to the staged Wine macOS driver so the standard `Command-Q` shortcut is available.
+
+Prefix markers combine the runtime archive checksum from `runtime.json` with its `prefixRevision`. A new runtime archive or an explicit prefix revision therefore reapplies Wine initialization, DXMT files, and registry overrides once without carrying migrations for pre-release layouts.
 
 ## Boundaries
 
-- Only the Global distribution is supported.
-- Game downloads use first-party HTTPS endpoints.
-- Manifest paths cannot escape the selected game folder.
-- The game and Wine prefix are excluded from backup because they can be recreated.
-- The app never embeds official game artwork in a release.
+- Only the official Global PC distribution is supported.
+- Game files come from first-party HTTPS endpoints and are never included in a release.
+- Manifest paths cannot escape the selected game directory.
+- Wine receives private home, cache, configuration, runtime, and temporary directories.
+- Wine exposes only its private `C:` drive and the selected game directory as `G:`; the default `Z:` mapping to the macOS root is removed.
+- The prefix limits accidental file access but is not a macOS security sandbox.
+- The launcher never handles credentials or intercepts Vuplex pages.
+- Runtime versions and source revisions are pinned in [`runtime.json`](../runtime.json).

@@ -1,0 +1,228 @@
+// SPDX-License-Identifier: MPL-2.0
+
+#include <windows.h>
+#include <shellapi.h>
+#include <wchar.h>
+
+/*
+ * Arknights starts this file as Vuplex WebView.vuplex. During launch, the
+ * native macOS client moves the official helper beside it under
+ * original_name and installs this small wrapper at the original path.
+ *
+ * The official helper uses Chromium Embedded Framework. Its accelerated
+ * off-screen rendering path shares a D3D11 texture between Chromium
+ * processes, which is not reliable through the tested Wine + DXMT runtime:
+ * login pages can remain blank or the helper can terminate with an invalid
+ * device-handle error. Vuplex exposes an argument for its software-paint
+ * fallback, and Chromium's GPU switches keep child compositors from creating
+ * another incompatible shared surface. Arknights itself does not inherit
+ * these arguments and remains GPU accelerated through DXMT.
+ *
+ * CEF's asynchronous DNS resolver asks Windows to sort IPv6 destinations
+ * through SIO_ADDRESS_LIST_SORT. Wine currently returns WSAEOPNOTSUPP for
+ * that ioctl, and CEF retries it while an OAuth page appears blank. Disabling
+ * only AsyncDns makes CEF use Wine's regular system resolver instead; it does
+ * not disable networking or change DNS behavior for the game process.
+ *
+ * Chromium also imports DeriveAppContainerSidFromAppContainerName() for its
+ * OAuth sandbox. That API is absent from the tested Wine runtime. The wrapper
+ * therefore adds a process-local userenv native override before creating the
+ * official helper. The matching compatibility DLL implements only that one
+ * derivation API and is never loaded by the game process.
+ *
+ * The wrapper preserves every argument supplied by the game, appends only
+ * missing compatibility arguments, starts the untouched official helper, and
+ * returns its exit code. Installation is reversible, and unknown helper
+ * versions are never replaced by the launcher.
+ */
+static const wchar_t original_name[] = L"Vuplex WebView.original.helper.vuplex";
+static const wchar_t userenv_override[] = L"userenv=n,b";
+static const wchar_t *compatibility_arguments[] = {
+	L"--vx-accelerated-paint-disabled",
+	L"--disable-gpu",
+	L"--disable-gpu-compositing",
+	L"--disable-features=AsyncDns",
+};
+
+static wchar_t *module_path(void) {
+	DWORD capacity = 1024;
+
+	for (;;) {
+		wchar_t *path = GlobalAlloc(GMEM_FIXED, (SIZE_T)capacity * sizeof(*path));
+		DWORD length;
+
+		if (path == NULL) return NULL;
+		length = GetModuleFileNameW(NULL, path, capacity);
+		if (length == 0) {
+			GlobalFree(path);
+			return NULL;
+		}
+		if (length < capacity - 1) return path;
+		GlobalFree(path);
+		if (capacity > (MAXDWORD / 2)) {
+			SetLastError(ERROR_FILENAME_EXCED_RANGE);
+			return NULL;
+		}
+		capacity *= 2;
+	}
+}
+
+static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected) {
+	int index;
+
+	for (index = 1; index < count; index++) {
+		if (wcscmp(arguments[index], expected) == 0) return TRUE;
+	}
+	return FALSE;
+}
+
+static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
+	const wchar_t *cursor = argument;
+	size_t backslashes = 0;
+
+	*destination++ = L'"';
+	while (*cursor != L'\0') {
+		if (*cursor == L'\\') {
+			backslashes++;
+			cursor++;
+			continue;
+		}
+		if (*cursor == L'"') {
+			while (backslashes > 0) {
+				backslashes--;
+				*destination++ = L'\\';
+				*destination++ = L'\\';
+			}
+			*destination++ = L'\\';
+			*destination++ = L'"';
+			cursor++;
+			continue;
+		}
+		while (backslashes > 0) {
+			backslashes--;
+			*destination++ = L'\\';
+		}
+		*destination++ = *cursor++;
+	}
+	while (backslashes > 0) {
+		backslashes--;
+		*destination++ = L'\\';
+		*destination++ = L'\\';
+	}
+	*destination++ = L'"';
+	return destination;
+}
+
+static BOOL enable_userenv_override(void) {
+	static const wchar_t variable_name[] = L"WINEDLLOVERRIDES";
+	DWORD existing_length = GetEnvironmentVariableW(variable_name, NULL, 0);
+	wchar_t *value;
+	SIZE_T value_length;
+	BOOL result;
+
+	if (existing_length == 0) {
+		return SetEnvironmentVariableW(variable_name, userenv_override);
+	}
+	value_length = (SIZE_T)existing_length + wcslen(userenv_override) + 1;
+	value = GlobalAlloc(GMEM_FIXED, value_length * sizeof(*value));
+	if (value == NULL) return FALSE;
+	if (GetEnvironmentVariableW(variable_name, value, existing_length) == 0) {
+		GlobalFree(value);
+		return FALSE;
+	}
+	wcscat(value, L";");
+	wcscat(value, userenv_override);
+	result = SetEnvironmentVariableW(variable_name, value);
+	GlobalFree(value);
+	return result;
+}
+
+int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_command) {
+	wchar_t *shim_path = NULL;
+	wchar_t *original_path = NULL;
+	wchar_t *child_command_line = NULL;
+	wchar_t **arguments = NULL;
+	wchar_t *cursor;
+	wchar_t *separator;
+	int argument_count;
+	int index;
+	int compatibility_index;
+	SIZE_T command_length = 1;
+	STARTUPINFOW startup_info = { .cb = sizeof(startup_info) };
+	PROCESS_INFORMATION process_info = { 0 };
+	DWORD exit_code;
+	DWORD error;
+
+	(void)instance;
+	(void)previous_instance;
+	(void)command_line;
+	(void)show_command;
+	shim_path = module_path();
+	if (shim_path == NULL) return (int)GetLastError();
+	separator = wcsrchr(shim_path, L'\\');
+	if (separator == NULL) separator = wcsrchr(shim_path, L'/');
+	if (separator == NULL) {
+		GlobalFree(shim_path);
+		return ERROR_PATH_NOT_FOUND;
+	}
+	separator[1] = L'\0';
+	original_path = GlobalAlloc(GMEM_FIXED, (wcslen(shim_path) + wcslen(original_name) + 1) * sizeof(*original_path));
+	if (original_path == NULL) {
+		GlobalFree(shim_path);
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
+	wcscpy(original_path, shim_path);
+	wcscat(original_path, original_name);
+	GlobalFree(shim_path);
+	arguments = CommandLineToArgvW(GetCommandLineW(), &argument_count);
+	if (arguments == NULL) {
+		error = GetLastError();
+		GlobalFree(original_path);
+		return (int)error;
+	}
+	command_length += 2 * wcslen(original_path) + 3;
+	for (index = 1; index < argument_count; index++) command_length += 2 * wcslen(arguments[index]) + 3;
+	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments); compatibility_index++) {
+		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
+			command_length += 2 * wcslen(compatibility_arguments[compatibility_index]) + 3;
+		}
+	}
+	child_command_line = GlobalAlloc(GMEM_FIXED, command_length * sizeof(*child_command_line));
+	if (child_command_line == NULL) {
+		LocalFree(arguments);
+		GlobalFree(original_path);
+		return ERROR_NOT_ENOUGH_MEMORY;
+	}
+	cursor = append_quoted(child_command_line, original_path);
+	for (index = 1; index < argument_count; index++) {
+		*cursor++ = L' ';
+		cursor = append_quoted(cursor, arguments[index]);
+	}
+	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments); compatibility_index++) {
+		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
+			*cursor++ = L' ';
+			cursor = append_quoted(cursor, compatibility_arguments[compatibility_index]);
+		}
+	}
+	*cursor = L'\0';
+	LocalFree(arguments);
+	if (!enable_userenv_override()) {
+		error = GetLastError();
+		GlobalFree(child_command_line);
+		GlobalFree(original_path);
+		return (int)error;
+	}
+	if (!CreateProcessW(original_path, child_command_line, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info)) {
+		error = GetLastError();
+		GlobalFree(child_command_line);
+		GlobalFree(original_path);
+		return (int)error;
+	}
+	WaitForSingleObject(process_info.hProcess, INFINITE);
+	if (!GetExitCodeProcess(process_info.hProcess, &exit_code)) exit_code = GetLastError();
+	CloseHandle(process_info.hThread);
+	CloseHandle(process_info.hProcess);
+	GlobalFree(child_command_line);
+	GlobalFree(original_path);
+	return (int)exit_code;
+}

@@ -2,39 +2,6 @@
 
 import Foundation
 
-private actor ProgressCounter {
-	private let totalBytes: Int64
-	private let totalFiles: Int
-	private var downloadedBytes: Int64 = 0
-	private var completedFiles = 0
-	private var lastEmission = ContinuousClock.now
-
-	init(totalBytes: Int64, totalFiles: Int) {
-		self.totalBytes = totalBytes
-		self.totalFiles = totalFiles
-	}
-
-	func add(bytes: Int64, file: String, force: Bool = false) -> DownloadProgress? {
-		downloadedBytes += bytes
-		if force {
-			completedFiles += 1
-		}
-
-		let now = ContinuousClock.now
-		guard force || lastEmission.duration(to: now) >= .milliseconds(100) else {
-			return nil
-		}
-		lastEmission = now
-		return DownloadProgress(
-			downloadedBytes: downloadedBytes,
-			totalBytes: totalBytes,
-			completedFiles: completedFiles,
-			totalFiles: totalFiles,
-			currentFile: file
-		)
-	}
-}
-
 struct GameInstaller: Sendable {
 	typealias ProgressHandler = @Sendable (DownloadProgress) async -> Void
 
@@ -58,6 +25,7 @@ struct GameInstaller: Sendable {
 		let (manifest, cdn) = try await (api.manifest(for: configuration), api.cdnConfiguration())
 		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
 		excludeFromBackup(installDirectory)
+		try VuplexCompatibility().restoreIfInstalled(in: installDirectory)
 
 		let previousFiles = loadState(from: installDirectory)?.files.map {
 			Dictionary(uniqueKeysWithValues: $0.map { ($0.path, $0) })
@@ -128,27 +96,6 @@ struct GameInstaller: Sendable {
 			downloadedBytes: totalBytes,
 			installDirectory: installDirectory
 		)
-	}
-
-	/// Decides whether an existing destination can be reused for the supplied manifest entry.
-	///
-	/// Normal updates trust the checksum stored in the previous manifest after confirming the
-	/// file size. Repair mode, and installations created before file metadata was recorded,
-	/// verify the destination checksum instead.
-	static func needsDownload(
-		_ item: ManifestFile,
-		destinationSize: Int64?,
-		previousFile: ManifestFile?,
-		verifyAllExistingFiles: Bool,
-		checksum: () throws -> String
-	) rethrows -> Bool {
-		guard destinationSize == item.byteCount else { return true }
-
-		if verifyAllExistingFiles || previousFile == nil {
-			return try checksum() != item.hash
-		}
-
-		return previousFile?.hash != item.hash
 	}
 
 	private func addDownload(

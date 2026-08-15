@@ -25,10 +25,6 @@ enum BundledDocument: String, Identifiable {
 		}
 	}
 
-	var usesMarkdown: Bool {
-		self != .projectLicense
-	}
-
 	func contents(bundle: Bundle = .main) -> String {
 		let resource = resource
 		guard let url = bundle.url(forResource: resource.name, withExtension: resource.extension),
@@ -47,31 +43,30 @@ struct BundledDocumentView: View {
 	var body: some View {
 		NavigationStack {
 			ScrollView {
-				documentText
-					.frame(maxWidth: .infinity, alignment: .leading)
-					.textSelection(.enabled)
-					.padding(28)
+				VStack(alignment: .leading, spacing: 16) {
+					HStack(spacing: 8) {
+						Rectangle().fill(SettingsVisuals.cyan).frame(width: 72, height: 3)
+						Rectangle().fill(.secondary.opacity(0.28))
+							.frame(height: 1)
+							.frame(maxWidth: .infinity)
+					}
+					MarkdownDocument(source: document.contents())
+				}
+				.frame(maxWidth: .infinity, alignment: .leading)
+				.textSelection(.enabled)
+				.padding(28)
 			}
+			.background(.ultraThinMaterial)
 			.navigationTitle(document.title)
 			.toolbar {
 				ToolbarItem(placement: .confirmationAction) {
 					Button("Done") { dismiss() }
+						.buttonStyle(.glassProminent)
 				}
 			}
 		}
-		.frame(width: 720, height: 560)
-	}
-
-	@ViewBuilder
-	private var documentText: some View {
-		let contents = document.contents()
-		if document.usesMarkdown {
-			MarkdownDocument(source: contents)
-		} else {
-			Text(contents)
-				.font(.system(size: 12, design: .monospaced))
-				.lineSpacing(3)
-		}
+		.tint(SettingsVisuals.cyan)
+		.frame(width: 760, height: 600)
 	}
 }
 
@@ -79,46 +74,59 @@ private struct MarkdownDocument: View {
 	let source: String
 
 	var body: some View {
-		LazyVStack(alignment: .leading, spacing: 5) {
-			ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-				block(for: line)
+		LazyVStack(alignment: .leading, spacing: 10) {
+			ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+				MarkdownBlockView(block: block)
 			}
 		}
 	}
 
-	private var lines: [String] {
-		source.components(separatedBy: .newlines)
+	private var blocks: [MarkdownBlock] {
+		MarkdownParser(source: source).blocks
 	}
+}
+
+private struct MarkdownBlockView: View {
+	let block: MarkdownBlock
 
 	@ViewBuilder
-	private func block(for line: String) -> some View {
-		if line.isEmpty {
-			Color.clear.frame(height: 5)
-		} else if line == "---" {
-			Divider().padding(.vertical, 5)
-		} else if line.hasPrefix("### ") {
-			Text(inline(String(line.dropFirst(4))))
-				.font(.headline)
-				.padding(.top, 8)
-		} else if line.hasPrefix("## ") {
-			Text(inline(String(line.dropFirst(3))))
-				.font(.title2.bold())
-				.padding(.top, 12)
-		} else if line.hasPrefix("# ") {
-			Text(inline(String(line.dropFirst(2))))
-				.font(.title.bold())
-		} else if line.hasPrefix("- ") {
-			HStack(alignment: .firstTextBaseline, spacing: 9) {
-				Text("•")
-				Text(inline(String(line.dropFirst(2))))
-			}
-			.padding(.leading, 6)
-		} else if isLinkDefinition(line) {
-			EmptyView()
-		} else {
-			Text(inline(line))
+	var body: some View {
+		switch block {
+		case .heading(let level, let source):
+			Text(inline(source))
+				.font(headingFont(level: level))
+				.padding(.top, level == 1 ? 0 : 10)
+		case .paragraph(let source):
+			Text(inline(source))
 				.font(.body)
 				.lineSpacing(3)
+		case .bullet(let source):
+			HStack(alignment: .firstTextBaseline, spacing: 9) {
+				Circle()
+					.fill(SettingsVisuals.cyan)
+					.frame(width: 5, height: 5)
+				Text(inline(source))
+			}
+			.padding(.leading, 6)
+		case .table(let rows):
+			MarkdownTable(rows: rows)
+				.padding(.vertical, 4)
+		case .code(let source):
+			Text(source)
+				.font(.system(.callout, design: .monospaced))
+				.padding(12)
+				.frame(maxWidth: .infinity, alignment: .leading)
+				.background(.black.opacity(0.18), in: .rect(cornerRadius: 8))
+		case .divider:
+			Divider().padding(.vertical, 5)
+		}
+	}
+
+	private func headingFont(level: Int) -> Font {
+		switch level {
+		case 1: .title.bold()
+		case 2: .title2.bold()
+		default: .headline
 		}
 	}
 
@@ -129,11 +137,54 @@ private struct MarkdownDocument: View {
 		return (try? AttributedString(markdown: source, options: options))
 			?? AttributedString(source)
 	}
+}
 
-	private func isLinkDefinition(_ line: String) -> Bool {
-		guard line.first == "[", let closingBracket = line.firstIndex(of: "]") else {
-			return false
+private struct MarkdownTable: View {
+	let rows: [[String]]
+
+	var body: some View {
+		ScrollView(.horizontal) {
+			VStack(alignment: .leading, spacing: 0) {
+				ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
+					HStack(alignment: .top, spacing: 0) {
+						ForEach(Array(row.enumerated()), id: \.offset) { columnIndex, cell in
+							Text(inline(cell))
+								.font(rowIndex == 0 ? .callout.bold() : .callout)
+								.frame(
+									width: columnWidth(columnIndex: columnIndex, count: row.count),
+									alignment: .leading
+								)
+								.padding(10)
+								.background(
+									rowIndex == 0 ? SettingsVisuals.cyan.opacity(0.14) : .clear
+								)
+								.overlay(alignment: .trailing) { Divider() }
+						}
+					}
+					.overlay(alignment: .bottom) { Divider() }
+				}
+			}
+			.overlay {
+				RoundedRectangle(cornerRadius: 9)
+					.stroke(.secondary.opacity(0.28), lineWidth: 1)
+			}
+			.clipShape(.rect(cornerRadius: 9))
 		}
-		return line[line.index(after: closingBracket)...].hasPrefix(": ")
+		.scrollIndicators(.visible)
+	}
+
+	private func columnWidth(columnIndex: Int, count: Int) -> CGFloat {
+		if count == 4 {
+			return [150, 250, 290, 230][columnIndex]
+		}
+		return max(160, 680 / CGFloat(max(count, 1)))
+	}
+
+	private func inline(_ source: String) -> AttributedString {
+		let options = AttributedString.MarkdownParsingOptions(
+			interpretedSyntax: .inlineOnlyPreservingWhitespace
+		)
+		return (try? AttributedString(markdown: source, options: options))
+			?? AttributedString(source)
 	}
 }

@@ -10,27 +10,31 @@
 
 ## Commands
 
-| Task          | Command                                                                              |
-| ------------- | ------------------------------------------------------------------------------------ |
-| Format check  | `swift format lint --configuration .swift-format --recursive --strict Sources Tests` |
-| Tests         | `swift test --arch arm64`                                                            |
-| Release build | `swift build --configuration release --arch arm64`                                   |
-| App bundle    | `./scripts/build-app.sh`                                                             |
-| DMG           | `ARKNIGHTS_RUNTIME_DIR="/path/to/Wine-DXMT" ./scripts/build-dmg.sh`                  |
+| Task          | Command        |
+| ------------- | -------------- |
+| Source checks | `just check`   |
+| Full CI       | `just ci`      |
+| Run launcher  | `just run`     |
+| App bundle    | `just app`     |
+| Dev runtime   | `just runtime` |
+| App + runtime | `just dev`     |
+| DMG + runtime | `just dev-dmg` |
+| App icon      | `just icon`    |
 
 ## Key Conventions
 
 - Use tabs with a width of four in Swift files; follow `.swift-format`.
 - Keep SwiftUI views in `UI`, state and user actions in `ViewModels`, external work in `Services` or `Runtime`, and persisted paths in `Storage`.
+- Keep handwritten Swift files below 350 lines; split cohesive behavior into focused types or extensions.
 - Keep UI state changes on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
 - Treat game installation as an exclusive operation. A refresh, Settings action, or repeated click must never start another installer or overwrite active progress.
 - Preserve resumable `.part` downloads and validate every manifest path before writing it.
 - Use standard macOS storage locations through `AppPaths`; do not introduce repository-local or legacy migration paths without an explicit requirement.
 - Keep the interface native to macOS while following `docs/design.md`; branding may be angular, but primary actions use native controls.
 - Add focused tests for changed installer, updater, storage, parsing, or concurrency behavior.
-- Record user-visible changes under `Unreleased` in `CHANGELOG.md`.
+- Record user-visible changes in the next release section in `CHANGELOG.md`; use `0.1.0` until the first release ships.
 - Preserve MPL-2.0 SPDX headers in Swift and shell source files.
-- Regenerate `Resources/AppIcon.icns` with `scripts/generate-icon.sh`; do not edit it directly.
+- Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` with `just icon`; do not edit them directly.
 - Unless explicitly requested, do not install, launch, download, uninstall, or alter a user's local game while verifying changes.
 
 ## External References
@@ -48,5 +52,5 @@
 
 - Releases are manual draft releases triggered with an `X.Y.Z` version.
 - Never replace a published tag or release asset; issue a higher version for fixes.
-- Keep runtime URLs and SHA-256 values external to the repository and verify them during packaging.
+- Keep the prefix revision, tested runtime versions, provenance, URLs, and SHA-256 values in `runtime.json`. Increase `prefixRevision` when existing prefixes must reapply runtime configuration. Release automation must not replace these values with hidden repository configuration.
 - Do not claim Developer ID signing, notarization, or silent self-updates without an Apple Developer account.

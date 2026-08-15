@@ -1,0 +1,173 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import CoreGraphics
+import Foundation
+import Testing
+
+@testable import ArknightsClient
+
+@Test
+func gameExecutableUsesTheIsolatedWindowsDrive() {
+	let executable = URL(filePath: "/Applications/Support/Arknights-Global/Arknights.exe")
+
+	#expect(WineRuntime.windowsGamePath(for: executable) == "G:\\Arknights.exe")
+}
+
+@Test
+func runtimeForcesDXMTWithoutDisablingVuplexGraphics() {
+	#expect(
+		WineRuntime.dllOverrides
+			== "d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
+	)
+	#expect(WineRuntime.globalRegistryOverrides["d3d11"] == "native,builtin")
+	#expect(WineRuntime.globalRegistryOverrides["dxgi"] == "native,builtin")
+}
+
+@Test
+func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
+	let prefix = URL(filePath: "/isolated/prefix", directoryHint: .isDirectory)
+	let environment = WineRuntime.isolatedEnvironment(
+		prefixDirectory: prefix,
+		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
+		baseEnvironment: [
+			"LANG": "en_US.UTF-8",
+			"SSH_AUTH_SOCK": "/host/private/agent.sock",
+			"AWS_SECRET_ACCESS_KEY": "secret",
+		],
+		userName: "tester"
+	)
+
+	#expect(environment["HOME"] == "/isolated/prefix/home")
+	#expect(environment["TMPDIR"] == "/isolated/prefix/home/tmp")
+	#expect(environment["XDG_CONFIG_HOME"] == "/isolated/prefix/home/.config")
+	#expect(environment["WINEPREFIX"] == "/isolated/prefix")
+	#expect(environment["WINEPRELOADERAPPNAME"] == "Arknights")
+	#expect(environment["CFFIXED_USER_HOME"] == "/isolated/prefix/home")
+	#expect(environment["DYLD_FALLBACK_LIBRARY_PATH"] == "/runtime/lib")
+	#expect(environment["USER"] == "tester")
+	#expect(environment["LANG"] == "en_US.UTF-8")
+	#expect(environment["SSH_AUTH_SOCK"] == nil)
+	#expect(environment["AWS_SECRET_ACCESS_KEY"] == nil)
+}
+
+@Test
+func runtimeProvidesOnlyPrivateUnixUserDirectoriesToWineboot() throws {
+	let fileManager = FileManager.default
+	let root = fileManager.temporaryDirectory.appending(
+		path: "wine-environment-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: root) }
+
+	for directory in WineRuntime.isolatedEnvironmentDirectories(prefixDirectory: root) {
+		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+	}
+	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+
+	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
+	let configuration = try String(contentsOf: configurationURL, encoding: .utf8)
+	#expect(configuration == WineRuntime.isolatedUserDirectoryConfiguration)
+	#expect(configuration.contains("XDG_DOCUMENTS_DIR=\"$HOME/Documents\""))
+	#expect(configuration.contains("XDG_DOWNLOAD_DIR=\"$HOME/Downloads\""))
+	for name in WineRuntime.isolatedUserDirectoryNames {
+		#expect(fileManager.fileExists(atPath: root.appending(path: "home/\(name)").path))
+	}
+}
+
+@Test
+func runtimeUsesFastSynchronizationAndErrorOnlyDiagnostics() {
+	#expect(WineRuntime.synchronizationEnvironment["WINEESYNC"] == "1")
+	#expect(WineRuntime.synchronizationEnvironment["WINEMSYNC"] == nil)
+	#expect(WineRuntime.debugChannels == "-all,err+all")
+	let configuration = RuntimeConfiguration(
+		prefixRevision: 3,
+		runtime: .init(sha256: "abc")
+	)
+	#expect(configuration.revision == "abc-prefix-3")
+}
+
+@Test
+func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
+	let fileManager = FileManager.default
+	let root = fileManager.temporaryDirectory.appending(
+		path: "dxmt-install-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: root) }
+	let payload = root.appending(path: "DXMT", directoryHint: .isDirectory)
+	let prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
+
+	for architecture in ["x64", "x32"] {
+		for library in WineRuntime.dxmtLibraryNames {
+			let source = payload.appending(path: architecture).appending(path: library)
+			try fileManager.createDirectory(
+				at: source.deletingLastPathComponent(),
+				withIntermediateDirectories: true
+			)
+			try Data("\(architecture)-\(library)".utf8).write(to: source)
+		}
+	}
+
+	try WineRuntime.installDXMT(from: payload, in: prefix)
+
+	for (architecture, windowsDirectory) in [("x64", "system32"), ("x32", "syswow64")] {
+		for library in WineRuntime.dxmtLibraryNames {
+			let installed =
+				prefix.appending(path: "drive_c/windows/\(windowsDirectory)/\(library)")
+			#expect(try Data(contentsOf: installed) == Data("\(architecture)-\(library)".utf8))
+		}
+	}
+}
+
+@Test
+func prefixRefreshesOnlyWhenMissingOrBuiltForAnotherRuntime() {
+	let revision = "runtime-prefix-1"
+	#expect(
+		WineRuntime.requiresPrefixUpdate(
+			hasSystemRegistry: false,
+			installedRevision: revision,
+			expectedRevision: revision
+		))
+	#expect(
+		WineRuntime.requiresPrefixUpdate(
+			hasSystemRegistry: true,
+			installedRevision: nil,
+			expectedRevision: revision
+		))
+	#expect(
+		!WineRuntime.requiresPrefixUpdate(
+			hasSystemRegistry: true,
+			installedRevision: revision,
+			expectedRevision: revision
+		))
+}
+
+@Test
+func gameWindowReadinessRequiresALargeVisibleWindowForTheRuntimeProcess() {
+	let processIdentifier: Int32 = 42
+	let helperWindow: [String: Any] = [
+		kCGWindowOwnerPID as String: processIdentifier,
+		kCGWindowLayer as String: 0,
+		kCGWindowIsOnscreen as String: true,
+		kCGWindowAlpha as String: 1,
+		kCGWindowBounds as String: ["Width": 1, "Height": 1],
+	]
+	let gameWindow: [String: Any] = [
+		kCGWindowOwnerPID as String: processIdentifier,
+		kCGWindowLayer as String: 0,
+		kCGWindowIsOnscreen as String: true,
+		kCGWindowAlpha as String: 1,
+		kCGWindowBounds as String: ["Width": 1280, "Height": 720],
+	]
+
+	#expect(
+		!WineWindowReadiness.isVisible(
+			processIdentifier: processIdentifier,
+			windows: [helperWindow]
+		))
+	#expect(
+		WineWindowReadiness.isVisible(
+			processIdentifier: processIdentifier,
+			windows: [helperWindow, gameWindow]
+		))
+}

@@ -48,6 +48,10 @@ func appPathsUseStandardInjectedDirectories() {
 	)
 	#expect(paths.logFile == library.appending(path: "Logs/\(AppPaths.bundleIdentifier)/wine.log"))
 	#expect(
+		paths.launcherLogFile
+			== library.appending(path: "Logs/\(AppPaths.bundleIdentifier)/launcher.log")
+	)
+	#expect(
 		paths.artworkCache
 			== caches.appending(
 				path: "\(AppPaths.bundleIdentifier)/Artwork/Downloaded",
@@ -57,12 +61,5 @@ func appPathsUseStandardInjectedDirectories() {
 	#expect(
 		paths.customArtwork
 			== support.appending(path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/artwork")
-	)
-	#expect(
-		paths.launcherUpdateCache
-			== caches.appending(
-				path: "\(AppPaths.bundleIdentifier)/Updater",
-				directoryHint: .isDirectory
-			)
 	)
 }

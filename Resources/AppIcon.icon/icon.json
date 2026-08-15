@@ -1,0 +1,92 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "srgb:0.04314,0.05490,0.06667,1.00000",
+      "srgb:0.03922,0.14510,0.23529,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "blend-mode" : "normal",
+      "blur-material" : 0.04,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "glass" : true,
+          "image-name" : "30-signal.svg",
+          "name" : "Signal",
+          "opacity" : 1
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Signal",
+      "opacity" : 1,
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.2
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.04
+      }
+    },
+    {
+      "blend-mode" : "normal",
+      "blur-material" : 0.1,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill" : "automatic",
+          "glass" : true,
+          "image-name" : "20-glyph.svg",
+          "name" : "Glyph",
+          "opacity" : 1
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Glass Glyph",
+      "opacity" : 1,
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.24
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.16
+      }
+    },
+    {
+      "blend-mode" : "normal",
+      "blur-material" : 0.03,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill" : "automatic",
+          "glass" : true,
+          "image-name" : "10-structure.svg",
+          "name" : "Structure",
+          "opacity" : 1
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Structure",
+      "opacity" : 1,
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.08
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.03
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "macOS"
+    ]
+  }
+}

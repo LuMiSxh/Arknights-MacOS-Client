@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import Foundation
+
+extension LauncherViewModel {
+	func installOrUpdate() {
+		startInstallation(launchAfterCompletion: false)
+	}
+
+	func repairGame() {
+		startInstallation(launchAfterCompletion: false, verifyAllExistingFiles: true)
+	}
+
+	func startInstallation(
+		launchAfterCompletion: Bool,
+		verifyAllExistingFiles: Bool = false
+	) {
+		guard let installationID = installationGate.begin() else { return }
+		guard let configuration else {
+			installationGate.finish(installationID)
+			show(LauncherError.missingConfiguration)
+			return
+		}
+		activeRefreshID = nil
+		refreshTask?.cancel()
+		let targetDirectory = installDirectory
+		progress = nil
+		isDownloading = true
+		phase = .downloading
+		activityMessage = verifyAllExistingFiles ? "Verifying…" : "Preparing…"
+		Task { [log] in
+			await log.info(
+				"Installation started; repair=\(verifyAllExistingFiles); target=\(targetDirectory.path)"
+			)
+		}
+
+		installationTask = Task { [weak self] in
+			guard let self else { return }
+			do {
+				let result = try await installer.install(
+					configuration: configuration,
+					into: targetDirectory,
+					verifyAllExistingFiles: verifyAllExistingFiles
+				) { [weak self] update in
+					await MainActor.run {
+						guard let self, self.installationGate.owns(installationID) else {
+							return
+						}
+						self.progress = update
+						self.activityMessage = "Downloading…"
+					}
+				}
+				guard finishInstallation(installationID) else { return }
+				isInstalled = true
+				installedVersion = configuration.gameLatestVersion
+				isGameUpdateAvailable = false
+				phase = .ready
+				activityMessage = result.downloadedFiles == 0 ? "Ready" : "Updated"
+				await log.info(
+					"Installation completed; files=\(result.downloadedFiles); bytes=\(result.downloadedBytes)"
+				)
+				if launchAfterCompletion { launch() }
+			} catch is CancellationError {
+				guard finishInstallation(installationID) else { return }
+				phase = .ready
+				activityMessage = "Paused"
+				await log.info("Installation paused")
+			} catch {
+				guard finishInstallation(installationID) else { return }
+				show(error)
+			}
+		}
+	}
+
+	func cancelDownload() {
+		guard isDownloading else { return }
+		activityMessage = "Pausing…"
+		Task { [log] in await log.info("Installation pause requested") }
+		installationTask?.cancel()
+	}
+
+	func finishInstallation(_ installationID: UUID) -> Bool {
+		guard installationGate.owns(installationID) else { return false }
+		installationGate.finish(installationID)
+		installationTask = nil
+		isDownloading = false
+		return true
+	}
+}

@@ -49,11 +49,17 @@ enum GameResolution: String, CaseIterable, Codable, Sendable {
 struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var displayMode: GameDisplayMode
 	var resolution: GameResolution
+	var usesGameSettings: Bool = true
 
-	static let `default` = GameLaunchOptions(displayMode: .windowed, resolution: .hd)
+	static let `default` = GameLaunchOptions(
+		displayMode: .windowed,
+		resolution: .hd,
+		usesGameSettings: true
+	)
 
 	/// Unity standalone-player arguments supported by the Windows client.
 	var playerArguments: [String] {
+		guard !usesGameSettings else { return [] }
 		var arguments = [
 			"-screen-fullscreen", displayMode == .fullscreen ? "1" : "0",
 			"-screen-width", String(resolution.width),

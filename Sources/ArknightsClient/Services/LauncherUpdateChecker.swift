@@ -27,14 +27,16 @@ struct LauncherUpdateChecker: Sendable {
 		self.session = session
 	}
 
-	func latestRelease(from endpoint: URL) async throws -> LauncherRelease {
+	func latestRelease(from endpoint: URL) async throws -> LauncherRelease? {
 		var request = URLRequest(url: endpoint)
 		request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 		request.setValue("ArknightsClient", forHTTPHeaderField: "User-Agent")
 		let (data, response) = try await session.data(for: request)
-		guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+		guard let http = response as? HTTPURLResponse else {
 			throw LauncherError.invalidResponse
 		}
+		if http.statusCode == 404 { return nil }
+		guard http.statusCode == 200 else { throw LauncherError.invalidResponse }
 		return try JSONDecoder().decode(LauncherRelease.self, from: data)
 	}
 

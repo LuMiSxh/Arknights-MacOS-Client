@@ -1,19 +1,26 @@
 # Third-party notices
 
-The distributable app may include the following unmodified or dynamically linked compatibility components.
+Arknights Client packages a prebuilt compatibility runtime. Exact versions, archive hashes, and build provenance are pinned in [`runtime.json`](../../runtime.json). The app also embeds a small MPL-2.0 wrapper built from `RuntimeSupport/VuplexShim`; it does not distribute the Vuplex SDK.
 
-## Wine
+## Runtime components
 
-- Project: Wine
-- Source: https://gitlab.winehq.org/wine/wine
-- Runtime build source: https://github.com/3Shain/wine
-- License: GNU Lesser General Public License, version 2.1 or later
+| Component     | Version or revision                                    | License                                                                                             | Source                                                                                                  |
+| ------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| WineCX / Wine | Wine 11.15, `c2cce0e61e01dd6e03ee854af526cc17d4412b52` | LGPL-2.1-or-later and bundled third-party terms                                                     | [dappermint/winecx](https://github.com/dappermint/winecx/tree/c2cce0e61e01dd6e03ee854af526cc17d4412b52) |
+| DXMT          | 0.80                                                   | MIT and bundled third-party terms                                                                   | [3Shain/dxmt](https://github.com/3Shain/dxmt/tree/v0.80)                                                |
+| MoltenVK      | 1.4.2                                                  | Apache-2.0 and bundled third-party terms                                                            | [KhronosGroup/MoltenVK](https://github.com/KhronosGroup/MoltenVK/tree/v1.4.2)                           |
+| Wine Gecko    | 2.47.4                                                 | MPL/GPL/LGPL terms and Mozilla notices                                                              | [Wine Gecko](https://gitlab.winehq.org/wine/wine-gecko)                                                 |
+| GStreamer     | 1.26.3, including base, good, bad, and libav plugins   | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer](https://github.com/GStreamer/gstreamer/tree/1.26.3)                                         |
+| FFmpeg        | 7.1.1                                                  | GPL-3.0-or-later for the bundled configuration                                                      | [FFmpeg 7.1.1](https://github.com/FFmpeg/FFmpeg/tree/n7.1.1)                                            |
 
-## DXMT
+The runtime also contains dynamically linked libraries for media, text, networking, compression, and X11 compatibility. Notable media dependencies include x264, x265, FDK-AAC, FAAD2, libdvdcss, libdvdnav, libdvdread, OpenH264, libde265, libaom, dav1d, SVT-AV1, libvpx, LAME, OpenMPT, FLAC, Vorbis, Opus, Theora, Speex, and libsndfile. Their own licenses and patent terms continue to apply.
 
-- Project: DXMT
-- Source: https://github.com/3Shain/dxmt
-- Pinned development revision: `d31278d4e7b760feb14ba8d3aaf754b13adedc28`
-- License: GNU Lesser General Public License, version 2.1 or later
+Canonical texts currently included with development builds are:
 
-The full LGPL-2.1 text is included in `docs/legal/licenses/lgpl-2.1.txt`. A release must provide the corresponding source or a durable written source offer for the exact bundled binaries. Arknights game files are downloaded from their official providers and are not part of this software distribution.
+- Apache License 2.0
+- GNU General Public License 2.0 and 3.0
+- GNU Lesser General Public License 2.1 and 3.0
+- DXMT 0.80 MIT license
+- Fraunhofer FDK-AAC notice
+
+Wine Mono, DXVK, and Apple's Game Porting Toolkit are not copied into the app bundle.

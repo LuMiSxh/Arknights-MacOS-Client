@@ -1,17 +1,17 @@
 <div align="center">
 
-<img src="Resources/AppIcon.svg" width="128" height="128" alt="Arknights Client app icon" />
+<img src="Resources/AppIcon.png" width="112" height="112" alt="Arknights Client app icon" />
 
 # Arknights Client
 
-**A native macOS launcher for Arknights**
+**An unofficial macOS launcher for the Global PC version of Arknights**
 
-Install, update, repair, and launch the official Global PC client on Apple Silicon.
+Install, update, and run the official Windows client on Apple Silicon Macs.
 
 [![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/github/v/release/LuMiSxh/ArknightsClient)](https://github.com/LuMiSxh/ArknightsClient/releases)
+[![Version](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
 
-[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Development](#development) • [Documentation](#documentation)
+[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Development](#development)
 
 </div>
 
@@ -19,54 +19,66 @@ Install, update, repair, and launch the official Global PC client on Apple Silic
 
 ## Overview
 
-Arknights Client is an unofficial macOS launcher for the official Global PC release of Arknights. The DMG includes the native SwiftUI launcher and a Wine + DXMT compatibility runtime; the game itself is downloaded directly from Yostar on first launch.
+Arknights Client is a native SwiftUI launcher for the official Global PC client. It downloads game files from Yostar and runs the Windows game through a bundled Wine and DXMT runtime.
 
-The interface follows modern macOS conventions while drawing on the industrial visual language of Arknights. The project supports Apple Silicon and macOS 26 or newer.
+The project is in alpha and supports only Apple Silicon Macs running macOS 26 or newer.
 
 ## Features
 
-- Install, resume, update, repair, and uninstall the Global PC client
-- Self-contained Wine + DXMT runtime with no paid compatibility software
-- Fullscreen, windowed, borderless, and display resolution options
-- Independent automatic update checks for the launcher and game
-- Native macOS 26 interface with Liquid Glass and custom artwork
-- Manual, reproducible DMG releases with verified runtime archives
+- **Game management:** Install, resume, update, repair, and remove the Global PC client.
+- **Display modes:** Launch windowed, borderless, or fullscreen at a selected resolution.
+- **Web login:** Run the game's Vuplex login pages through a Wine compatibility shim.
+- **Update checks:** Check launcher and game versions independently; both checks can be disabled.
+- **Isolated runtime:** Keep the Wine prefix and Windows user folders inside Application Support.
+- **Diagnostics:** Write separate launcher and Wine logs and reveal them from Settings.
 
 ## Installation
 
-Download `Arknights Client.dmg` from [GitHub Releases](https://github.com/LuMiSxh/ArknightsClient/releases), open it, and drag **Arknights Client** to **Applications**.
+The app requires:
 
-Releases are ad-hoc signed but not notarized because the project has no Apple Developer account. On first launch, right-click the app in Finder and select **Open**, then confirm the macOS prompt.
+- Apple Silicon
+- macOS 26 or newer
+- Rosetta 2
 
-Rosetta 2 is required by the Windows compatibility runtime. The launcher requests its installation through macOS when necessary.
+Download `Arknights Client.dmg` from [GitHub Releases](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), open it, and drag the app to **Applications**.
+
+> [!WARNING]
+> Builds are ad-hoc signed and not notarized. On first launch, right-click the app in Finder and select **Open**.
+
+Game files are stored separately from the app. Removing the launcher does not remove the game; use **Uninstall Game** in Settings.
+
+## Quick Start
+
+1. Open Arknights Client.
+2. Select **Install** and wait for the game download to finish.
+3. Choose a display mode in Settings if needed.
+4. Select **Play**.
+
+The default game location is `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global`.
+
+> [!NOTE]
+> The first Google, Apple, or Facebook sign-in can take 5–15 seconds to open while the embedded Windows browser starts through Wine. A blank login view during that interval does not usually indicate a failed click.
 
 ## Development
 
-Arknights Client uses Swift 6.2 and SwiftUI. Development requires Apple Silicon and macOS 26 with the matching Xcode command-line tools.
+Development requires Swift 6.2, the matching Xcode command-line tools, [`just`](https://github.com/casey/just), and [`uv`](https://docs.astral.sh/uv/).
 
 ```sh
-git clone https://github.com/LuMiSxh/ArknightsClient.git
-cd ArknightsClient
-swift test --arch arm64
-swift run ArknightsClient
+git clone https://github.com/LuMiSxh/Arknights-MacOS-Client.git
+cd Arknights-MacOS-Client
+just check
 ```
 
-Build an app bundle or a complete DMG with:
+| Command        | Purpose                                              |
+| -------------- | ---------------------------------------------------- |
+| `just run`     | Run the native launcher from SwiftPM                 |
+| `just runtime` | Download and verify the tested Wine and DXMT runtime |
+| `just dev`     | Build the app with the runtime                       |
+| `just dev-dmg` | Build an installable development DMG                 |
+| `just ci`      | Run all checks and build the release configuration   |
 
-```sh
-./scripts/build-app.sh
-ARKNIGHTS_RUNTIME_DIR="/path/to/Wine-DXMT" ./scripts/build-dmg.sh
-```
-
-Swift files use tabs with a width of four. Verify a change before opening a pull request:
-
-```sh
-swift format lint --configuration .swift-format --recursive --strict Sources Tests
-swift test --arch arm64
-swift build --configuration release --arch arm64
-```
-
-Keep changes focused, write code and user-facing text in English, add tests for changed behavior, and record user-visible changes under `Unreleased` in `CHANGELOG.md`. Do not commit proprietary Arknights binaries or artwork. Contributions are licensed under MPL-2.0.
+Run `just --groups` for the complete command list.
+Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json).
 
 ## Documentation
 
@@ -79,6 +91,6 @@ Keep changes focused, write code and user-facing text in English, add tests for 
 
 ## License
 
-Copyright © 2026 LuMiSxh. The launcher is licensed under the [Mozilla Public License 2.0](LICENSE); corresponding release source is described in the [source-code notice](docs/legal/source-code.md).
+Arknights Client is licensed under the [Mozilla Public License 2.0](LICENSE).
 
-This project is not affiliated with Hypergryph or Yostar. Arknights and its artwork belong to their respective owners. Wine and DXMT use LGPL licenses.
+Copyright © 2026 LuMiSxh. This project is not affiliated with Hypergryph or Yostar. Arknights and its artwork belong to their respective owners.

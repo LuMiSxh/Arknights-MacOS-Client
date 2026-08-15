@@ -8,6 +8,68 @@ import Testing
 @MainActor
 struct LauncherViewModelConcurrencyTests {
 	@Test
+	func stopIsEnabledOnlyForRunningGamePhase() {
+		#expect(
+			!LauncherViewModel.canStopGame(
+				for: .launching,
+				hasActiveSession: true,
+				isStoppingGame: false
+			))
+		#expect(
+			LauncherViewModel.canStopGame(
+				for: .running(processIdentifier: 42),
+				hasActiveSession: true,
+				isStoppingGame: false
+			))
+		#expect(
+			!LauncherViewModel.canStopGame(
+				for: .running(processIdentifier: 42),
+				hasActiveSession: true,
+				isStoppingGame: true
+			))
+		#expect(
+			!LauncherViewModel.canStopGame(
+				for: .running(processIdentifier: 42),
+				hasActiveSession: false,
+				isStoppingGame: false
+			))
+	}
+
+	@Test
+	func directWineProcessExitTracksStartupAndRunningSessions() {
+		#expect(
+			LauncherViewModel.directWineProcessExitAction(
+				for: 1,
+				phase: .launching,
+				hasActiveSession: true
+			) == .startupFailure)
+		#expect(
+			LauncherViewModel.directWineProcessExitAction(
+				for: 0,
+				phase: .launching,
+				hasActiveSession: true
+			) == .startupFailure)
+		#expect(
+			LauncherViewModel.directWineProcessExitAction(
+				for: 1,
+				phase: .running(processIdentifier: 42),
+				hasActiveSession: true
+			) == .gameExited)
+		#expect(
+			LauncherViewModel.directWineProcessExitAction(
+				for: 0,
+				phase: .running(processIdentifier: 42),
+				hasActiveSession: true
+			) == .gameExited)
+		#expect(
+			LauncherViewModel.directWineProcessExitAction(
+				for: 1,
+				phase: .launching,
+				hasActiveSession: false
+			) == .ignore)
+	}
+
+	@Test
 	func staleRefreshThatIgnoresCancellationDoesNotHideInstallationProgress() async throws {
 		let api = BlockingBrandingAPI()
 		let installer = ControllableInstaller()
@@ -136,7 +198,9 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 			launcherBackgroundImageCRC64: nil,
 			copyrightInformation: nil,
 			privacyPolicy: nil,
-			userAgreement: nil
+			userAgreement: nil,
+			noticePopOpen: nil,
+			noticeContent: nil
 		)
 		brandingResponse?.resume(returning: branding)
 		brandingResponse = nil

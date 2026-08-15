@@ -6,20 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-08-14
+## [0.1.0]
 
 ### Added
 
-- Native Apple Silicon launcher for macOS 26 and newer.
-- Global PC client installation, resumable downloads, updates, repair, and removal.
-- Bundled Wine and DXMT runtime packaged in a self-contained DMG.
-- Fullscreen, windowed, and display resolution options.
-- Conservative 1280 × 720 windowed defaults for the first game start.
-- Independent automatic update checks for the launcher and game.
-- Liquid Glass launcher interface and custom artwork support.
-- Exclusive download coordination that prevents stale refreshes or repeated actions from starting overlapping installs.
-- Full-bleed titlebar artwork, pill-shaped launcher actions, compact installation settings, and in-app legal document rendering.
-- A system-masked app icon without a second embedded squircle.
+- Native Apple Silicon launcher for the official Global PC client on macOS 26 and newer.
+- Resumable game installation, updates, repair, removal, and independent update checks.
+- Self-contained DMG with a verified Wine 11.15 and DXMT 0.80 runtime.
+- Windowed, borderless, and fullscreen launch options with resolution controls.
+- Working in-game web login through a bundled Vuplex compatibility shim.
+- Isolated Wine data, native game controls, `Command-Q` support, and launcher/Wine logs.
+- Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
+- Reproducible local packaging and manually triggered GitHub draft releases.
 
-[Unreleased]: https://github.com/LuMiSxh/ArknightsClient/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/LuMiSxh/ArknightsClient/releases/tag/v0.1.0
+[Unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.1.0

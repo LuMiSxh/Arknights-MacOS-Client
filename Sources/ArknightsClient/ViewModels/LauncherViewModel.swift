@@ -4,22 +4,30 @@ import AppKit
 import Combine
 import Foundation
 
+enum DirectWineProcessExitAction: Equatable {
+	case ignore
+	case startupFailure
+	case gameExited
+}
+
 @MainActor
 final class LauncherViewModel: ObservableObject {
-	@Published private(set) var phase: LauncherPhase = .checking
-	@Published private(set) var configuration: GameConfiguration?
-	@Published private(set) var progress: DownloadProgress?
-	@Published private(set) var runtimeName: String?
-	@Published private(set) var branding: LauncherBranding?
-	@Published private(set) var heroArtwork: NSImage?
-	@Published private(set) var isInstalled = false
-	@Published private(set) var installedVersion: String?
-	@Published private(set) var isGameUpdateAvailable = false
-	@Published private(set) var launcherUpdate: LauncherRelease?
-	@Published private(set) var launcherUpdateStatus: String?
-	@Published private(set) var isCheckingLauncherUpdates = false
-	@Published private(set) var isDownloading = false
-	@Published private(set) var activityMessage = "Checking…"
+	@Published var phase: LauncherPhase = .checking
+	@Published var configuration: GameConfiguration?
+	@Published var progress: DownloadProgress?
+	@Published var runtimeName: String?
+	@Published var branding: LauncherBranding?
+	@Published var heroArtwork: NSImage?
+	@Published var officialLogo: NSImage?
+	@Published var notice: LauncherNotice?
+	@Published var isInstalled = false
+	@Published var installedVersion: String?
+	@Published var isGameUpdateAvailable = false
+	@Published var launcherUpdate: LauncherRelease?
+	@Published var launcherUpdateStatus: String?
+	@Published var isCheckingLauncherUpdates = false
+	@Published var isDownloading = false
+	@Published var activityMessage = "Checking…"
 
 	@Published var installDirectory: URL
 	@Published var launchOptions: GameLaunchOptions {
@@ -38,18 +46,24 @@ final class LauncherViewModel: ObservableObject {
 		}
 	}
 
-	private let api: any LauncherAPIProviding
-	private let installer: any GameInstalling
-	private let artworkCache: ArtworkCache
-	private let updateChecker: LauncherUpdateChecker
-	private let paths: AppPaths
-	private let preferences: LauncherPreferencesStore
-	private var refreshTask: Task<Void, Never>?
-	private var installationTask: Task<Void, Never>?
-	private var launchTask: Task<Void, Never>?
-	private var launcherUpdateTask: Task<Void, Never>?
-	private var activeRefreshID: UUID?
-	private var installationGate = ExclusiveOperationGate()
+	let api: any LauncherAPIProviding
+	let installer: any GameInstalling
+	let artworkCache: ArtworkCache
+	let updateChecker: LauncherUpdateChecker
+	let paths: AppPaths
+	let preferences: LauncherPreferencesStore
+	let log: LauncherLog
+	var refreshTask: Task<Void, Never>?
+	var installationTask: Task<Void, Never>?
+	var launchTask: Task<Void, Never>?
+	var gameMonitorTask: Task<Void, Never>?
+	var gameProcessMonitorTask: Task<Void, Never>?
+	var launcherUpdateTask: Task<Void, Never>?
+	var activeRefreshID: UUID?
+	var activeGameSessionID: UUID?
+	var presentedNoticeContent: String?
+	var isStoppingGame = false
+	var installationGate = ExclusiveOperationGate()
 
 	init(
 		api: any LauncherAPIProviding = LauncherAPI(),
@@ -64,6 +78,7 @@ final class LauncherViewModel: ObservableObject {
 		self.preferences = preferences
 		self.updateChecker = updateChecker
 		self.installer = installer ?? GameInstaller(api: api)
+		log = LauncherLog(fileURL: paths.launcherLogFile)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
 		installDirectory = preferences.installDirectory(default: paths.globalGameInstall)
 		launchOptions = preferences.launchOptions()
@@ -88,12 +103,21 @@ final class LauncherViewModel: ObservableObject {
 		if automaticallyChecksLauncherUpdates {
 			checkLauncherUpdates()
 		}
+
+		let appVersion =
+			Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+			?? "Development"
+		Task { [log] in
+			await log.info("Launcher \(appVersion) started")
+		}
 	}
 
 	deinit {
 		refreshTask?.cancel()
 		installationTask?.cancel()
 		launchTask?.cancel()
+		gameMonitorTask?.cancel()
+		gameProcessMonitorTask?.cancel()
 		launcherUpdateTask?.cancel()
 	}
 
@@ -110,11 +134,49 @@ final class LauncherViewModel: ObservableObject {
 	}
 
 	var canLaunch: Bool {
-		isInstalled && runtimeName != nil && !isDownloading && phase != .launching
+		isInstalled && runtimeName != nil && !isDownloading && !isGameActive
+	}
+
+	var isGameRunning: Bool {
+		isGameActive
+	}
+
+	var canStopGame: Bool {
+		Self.canStopGame(
+			for: phase,
+			hasActiveSession: isGameActive,
+			isStoppingGame: isStoppingGame
+		)
+	}
+
+	static func canStopGame(
+		for phase: LauncherPhase,
+		hasActiveSession: Bool,
+		isStoppingGame: Bool
+	) -> Bool {
+		guard hasActiveSession, !isStoppingGame else { return false }
+		if case .running = phase { return true }
+		return false
+	}
+
+	static func directWineProcessExitAction(
+		for status: Int32,
+		phase: LauncherPhase,
+		hasActiveSession: Bool
+	) -> DirectWineProcessExitAction {
+		guard hasActiveSession else { return .ignore }
+		if case .launching = phase { return .startupFailure }
+		if case .running = phase { return .gameExited }
+		return .ignore
+	}
+
+	var isGameActive: Bool {
+		activeGameSessionID != nil
 	}
 
 	func refresh(forceGameUpdateCheck: Bool = false) async {
 		guard !isDownloading else { return }
+		await log.info("Refreshing game and branding state")
 		let refreshID = UUID()
 		activeRefreshID = refreshID
 		updateInstalledState()
@@ -128,9 +190,13 @@ final class LauncherViewModel: ObservableObject {
 				guard isCurrentRefresh(refreshID) else { return }
 				configuration = fetchedConfiguration
 				updateGameAvailability()
+				await log.info(
+					"Game configuration loaded; latest=\(fetchedConfiguration.gameLatestVersion)"
+				)
 			} catch is CancellationError {
 				return
 			} catch {
+				await log.error("Game configuration failed: \(error.localizedDescription)")
 				guard isCurrentRefresh(refreshID) else { return }
 				if !isInstalled {
 					activeRefreshID = nil
@@ -144,6 +210,16 @@ final class LauncherViewModel: ObservableObject {
 		guard isCurrentRefresh(refreshID) else { return }
 		if let currentBranding = fetchedBranding {
 			branding = currentBranding
+			presentNoticeIfNeeded(currentBranding)
+			await log.info(
+				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
+			)
+			if currentBranding.launcherBackgroundImage != nil,
+				let data = try? await artworkCache.officialLogoData()
+			{
+				guard isCurrentRefresh(refreshID) else { return }
+				officialLogo = NSImage(data: data)
+			}
 			if !hasCustomArtwork,
 				let data = try? await artworkCache.imageData(for: currentBranding)
 			{
@@ -157,6 +233,7 @@ final class LauncherViewModel: ObservableObject {
 		phase = .ready
 		activityMessage =
 			isGameUpdateAvailable ? "Update available" : (isInstalled ? "Ready" : "Install")
+		await log.info("Refresh completed; state=\(activityMessage)")
 	}
 
 	func checkGameUpdates() {
@@ -186,7 +263,12 @@ final class LauncherViewModel: ObservableObject {
 			guard let self else { return }
 			defer { isCheckingLauncherUpdates = false }
 			do {
-				let release = try await updateChecker.latestRelease(from: endpoint)
+				guard let release = try await updateChecker.latestRelease(from: endpoint) else {
+					launcherUpdate = nil
+					launcherUpdateStatus = "No releases available"
+					await log.info("Launcher update check completed; no releases available")
+					return
+				}
 				let currentVersion =
 					Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
 					as? String ?? "0"
@@ -199,10 +281,14 @@ final class LauncherViewModel: ObservableObject {
 					launcherUpdate = nil
 					launcherUpdateStatus = "Up to date"
 				}
+				await log.info(
+					"Launcher update check completed; status=\(launcherUpdateStatus ?? "Unknown")"
+				)
 			} catch is CancellationError {
 				launcherUpdateStatus = nil
 			} catch {
 				launcherUpdateStatus = "Couldn’t check for updates"
+				await log.error("Launcher update check failed: \(error.localizedDescription)")
 			}
 		}
 	}
@@ -212,263 +298,4 @@ final class LauncherViewModel: ObservableObject {
 		NSWorkspace.shared.open(url)
 	}
 
-	func chooseInstallDirectory() {
-		let panel = NSOpenPanel()
-		panel.title = "Choose where to install Arknights"
-		panel.prompt = "Choose"
-		panel.canChooseDirectories = true
-		panel.canChooseFiles = false
-		panel.canCreateDirectories = true
-		panel.allowsMultipleSelection = false
-		panel.directoryURL = installDirectory.deletingLastPathComponent()
-		if panel.runModal() == .OK, let selected = panel.url {
-			installDirectory =
-				selected.lastPathComponent == "Arknights_EN"
-				? selected : selected.appending(path: "Arknights_EN", directoryHint: .isDirectory)
-			preferences.setInstallDirectory(installDirectory)
-			updateInstalledState()
-		}
-	}
-
-	func locateExistingInstallation() {
-		let panel = NSOpenPanel()
-		panel.title = "Choose the folder containing Arknights.exe"
-		panel.prompt = "Use Folder"
-		panel.canChooseDirectories = true
-		panel.canChooseFiles = false
-		panel.allowsMultipleSelection = false
-		panel.directoryURL = installDirectory
-		if panel.runModal() == .OK, let selected = panel.url {
-			installDirectory = selected
-			preferences.setInstallDirectory(selected)
-			updateInstalledState()
-			activityMessage = isInstalled ? "Ready" : "Arknights.exe not found"
-		}
-	}
-
-	func chooseCustomArtwork() {
-		let panel = NSOpenPanel()
-		panel.title = "Choose launcher artwork"
-		panel.prompt = "Choose"
-		panel.allowedContentTypes = [.image]
-		panel.canChooseDirectories = false
-		panel.canChooseFiles = true
-		panel.allowsMultipleSelection = false
-		guard panel.runModal() == .OK, let selected = panel.url else { return }
-
-		do {
-			try FileManager.default.createDirectory(
-				at: paths.customArtwork.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			if FileManager.default.fileExists(atPath: paths.customArtwork.path) {
-				try FileManager.default.removeItem(at: paths.customArtwork)
-			}
-			try FileManager.default.copyItem(at: selected, to: paths.customArtwork)
-			heroArtwork = NSImage(contentsOf: paths.customArtwork)
-		} catch {
-			show(error)
-		}
-	}
-
-	func resetArtwork() {
-		try? FileManager.default.removeItem(at: paths.customArtwork)
-		guard !isDownloading else { return }
-		activeRefreshID = nil
-		refreshTask?.cancel()
-		refreshTask = Task { [weak self] in
-			await self?.refresh()
-		}
-	}
-
-	func openSourceCode() {
-		guard let url = URL(string: "https://github.com/LuMiSxh/ArknightsClient") else { return }
-		NSWorkspace.shared.open(url)
-	}
-
-	func revealApplication() {
-		NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
-	}
-
-	func installOrUpdate() {
-		startInstallation(launchAfterCompletion: false)
-	}
-
-	func repairGame() {
-		startInstallation(launchAfterCompletion: false, verifyAllExistingFiles: true)
-	}
-
-	private func startInstallation(
-		launchAfterCompletion: Bool,
-		verifyAllExistingFiles: Bool = false
-	) {
-		guard let installationID = installationGate.begin() else { return }
-		guard let configuration else {
-			installationGate.finish(installationID)
-			show(LauncherError.missingConfiguration)
-			return
-		}
-		activeRefreshID = nil
-		refreshTask?.cancel()
-		let targetDirectory = installDirectory
-		progress = nil
-		isDownloading = true
-		phase = .downloading
-		activityMessage = verifyAllExistingFiles ? "Verifying…" : "Preparing…"
-
-		installationTask = Task { [weak self] in
-			guard let self else { return }
-			do {
-				let result = try await installer.install(
-					configuration: configuration,
-					into: targetDirectory,
-					verifyAllExistingFiles: verifyAllExistingFiles
-				) { [weak self] update in
-					await MainActor.run {
-						guard let self, self.installationGate.owns(installationID) else {
-							return
-						}
-						self.progress = update
-						self.activityMessage = "Downloading…"
-					}
-				}
-				guard finishInstallation(installationID) else { return }
-				isInstalled = true
-				installedVersion = configuration.gameLatestVersion
-				isGameUpdateAvailable = false
-				phase = .ready
-				activityMessage = result.downloadedFiles == 0 ? "Ready" : "Updated"
-				if launchAfterCompletion { launch() }
-			} catch is CancellationError {
-				guard finishInstallation(installationID) else { return }
-				phase = .ready
-				activityMessage = "Paused"
-			} catch {
-				guard finishInstallation(installationID) else { return }
-				show(error)
-			}
-		}
-	}
-
-	func cancelDownload() {
-		guard isDownloading else { return }
-		activityMessage = "Pausing…"
-		installationTask?.cancel()
-	}
-
-	func launch() {
-		guard !isDownloading else { return }
-		let executable = installDirectory.appending(
-			path: configuration?.executableName ?? "Arknights.exe")
-		guard FileManager.default.fileExists(atPath: executable.path) else {
-			show(LauncherError.gameNotInstalled(executable))
-			return
-		}
-		guard let runtime = WineRuntime.discover() else {
-			refreshRuntime()
-			show(LauncherError.wineRuntimeMissing)
-			return
-		}
-
-		phase = .launching
-		activityMessage = "Starting…"
-		launchTask?.cancel()
-		launchTask = Task { [weak self] in
-			guard let self else { return }
-			do {
-				let processIdentifier = try await runtime.launch(
-					gameExecutable: executable,
-					prefixDirectory: paths.winePrefix,
-					gameArguments: (configuration?.gameStartParams ?? [])
-						+ launchOptions.playerArguments,
-					logURL: paths.logFile
-				)
-				phase = .running(processIdentifier: processIdentifier)
-				activityMessage = "Running"
-			} catch {
-				show(error)
-			}
-		}
-	}
-
-	func refreshRuntime() {
-		runtimeName = WineRuntime.discover()?.displayName
-	}
-
-	func revealInstallDirectory() {
-		NSWorkspace.shared.activateFileViewerSelecting([installDirectory])
-	}
-
-	func uninstallGame() {
-		guard !isDownloading else { return }
-		guard FileManager.default.fileExists(atPath: installDirectory.path) else {
-			updateInstalledState()
-			return
-		}
-		let target = installDirectory
-		activityMessage = "Moving to Trash…"
-		NSWorkspace.shared.recycle([target]) { [weak self] _, error in
-			Task { @MainActor in
-				guard let self else { return }
-				if let error {
-					self.show(error)
-				} else {
-					self.isInstalled = false
-					self.installedVersion = nil
-					self.isGameUpdateAvailable = false
-					self.phase = .ready
-					self.activityMessage = "Uninstalled"
-				}
-			}
-		}
-	}
-
-	private func updateInstalledState() {
-		let hasExecutable = FileManager.default.fileExists(
-			atPath: installDirectory.appending(path: "Arknights.exe").path
-		)
-		let state = loadInstalledState()
-		isInstalled = hasExecutable && state != nil
-		installedVersion = state?.version
-	}
-
-	private func updateGameAvailability() {
-		guard isInstalled, let latest = configuration?.gameLatestVersion else {
-			isGameUpdateAvailable = false
-			return
-		}
-		isGameUpdateAvailable = installedVersion.map { $0 != latest } ?? true
-	}
-
-	private func loadInstalledState() -> InstalledState? {
-		let url = installDirectory.appending(path: ".arknights-client-state.json")
-		guard let data = try? Data(contentsOf: url) else { return nil }
-		let decoder = JSONDecoder()
-		decoder.dateDecodingStrategy = .iso8601
-		return try? decoder.decode(InstalledState.self, from: data)
-	}
-
-	private func loadCustomArtwork() -> Bool {
-		guard let image = NSImage(contentsOf: paths.customArtwork) else { return false }
-		heroArtwork = image
-		return true
-	}
-
-	private func isCurrentRefresh(_ refreshID: UUID) -> Bool {
-		activeRefreshID == refreshID && !Task.isCancelled && !isDownloading
-	}
-
-	private func finishInstallation(_ installationID: UUID) -> Bool {
-		guard installationGate.owns(installationID) else { return false }
-		installationGate.finish(installationID)
-		installationTask = nil
-		isDownloading = false
-		return true
-	}
-
-	private func show(_ error: Error) {
-		let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-		phase = .failed(message)
-		activityMessage = message
-	}
 }

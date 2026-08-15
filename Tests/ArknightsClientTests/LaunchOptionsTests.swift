@@ -8,11 +8,17 @@ import Testing
 func defaultLaunchOptionsFavorCompatibleWindow() {
 	#expect(GameLaunchOptions.default.displayMode == .windowed)
 	#expect(GameLaunchOptions.default.resolution == .hd)
+	#expect(GameLaunchOptions.default.usesGameSettings)
+	#expect(GameLaunchOptions.default.playerArguments.isEmpty)
 }
 
 @Test
 func fullscreenLaunchArgumentsUseSelectedResolution() {
-	let options = GameLaunchOptions(displayMode: .fullscreen, resolution: .quadHD)
+	let options = GameLaunchOptions(
+		displayMode: .fullscreen,
+		resolution: .quadHD,
+		usesGameSettings: false
+	)
 
 	#expect(
 		options.playerArguments
@@ -22,7 +28,11 @@ func fullscreenLaunchArgumentsUseSelectedResolution() {
 
 @Test
 func windowedLaunchArgumentsDisableFullscreen() {
-	let options = GameLaunchOptions(displayMode: .windowed, resolution: .fullHD)
+	let options = GameLaunchOptions(
+		displayMode: .windowed,
+		resolution: .fullHD,
+		usesGameSettings: false
+	)
 
 	#expect(
 		options.playerArguments
@@ -32,7 +42,11 @@ func windowedLaunchArgumentsDisableFullscreen() {
 
 @Test
 func borderlessLaunchArgumentsAddPopupWindowFlag() {
-	let options = GameLaunchOptions(displayMode: .borderlessWindow, resolution: .ultraHD)
+	let options = GameLaunchOptions(
+		displayMode: .borderlessWindow,
+		resolution: .ultraHD,
+		usesGameSettings: false
+	)
 
 	#expect(
 		options.playerArguments

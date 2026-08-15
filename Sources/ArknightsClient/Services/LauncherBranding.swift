@@ -8,6 +8,8 @@ struct LauncherBranding: Decodable, Sendable {
 	let copyrightInformation: String?
 	let privacyPolicy: URL?
 	let userAgreement: URL?
+	let noticePopOpen: Bool?
+	let noticeContent: String?
 
 	enum CodingKeys: String, CodingKey {
 		case launcherBackgroundImage = "launcherBackgroundImg"
@@ -15,10 +17,17 @@ struct LauncherBranding: Decodable, Sendable {
 		case copyrightInformation
 		case privacyPolicy
 		case userAgreement
+		case noticePopOpen
+		case noticeContent
 	}
 }
 
 actor ArtworkCache {
+	private static let officialLogoURL = URL(
+		string:
+			"https://webusstatic.yo-star.com/arknights-us/arknights-us-website/main/h5/assets/logo-4f95ced5.png"
+	)!
+
 	private let session: URLSession
 	private let directory: URL
 
@@ -55,6 +64,29 @@ actor ArtworkCache {
 		}
 
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+		try data.write(to: cachedURL, options: .atomic)
+		return data
+	}
+
+	func officialLogoData() async throws -> Data {
+		let cachedURL = directory.appending(path: "official-arknights-logo.png")
+		if let data = try? Data(contentsOf: cachedURL), !data.isEmpty {
+			return data
+		}
+
+		var request = URLRequest(url: Self.officialLogoURL)
+		request.cachePolicy = .reloadRevalidatingCacheData
+		let (data, response) = try await session.data(for: request)
+		guard
+			let http = response as? HTTPURLResponse,
+			http.statusCode == 200,
+			data.count <= 2 * 1_024 * 1_024,
+			http.mimeType?.hasPrefix("image/") == true
+		else {
+			throw LauncherError.invalidResponse
+		}
+
+		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		try data.write(to: cachedURL, options: .atomic)
 		return data
 	}

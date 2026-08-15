@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <path
+    d="M166 790 428 244h168L858 790H680l-58-134H402l-58 134Zm292-270-40 92h188l-94-218Z"
+    fill="#f7f7f7"
+    fill-rule="evenodd"
+  />
+  <path d="M500 122h24v158h-24Z" fill="#f7f7f7"/>
+  <path d="M456 170h24v106h-24ZM544 170h24v106h-24Z" fill="#c6c9ce"/>
+  <path d="M430 212h164" fill="none" stroke="#f7f7f7" stroke-width="12"/>
+</svg>

@@ -15,11 +15,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Check formatting
-        run: swift format lint --configuration .swift-format --recursive --strict Sources Tests
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9
 
-      - name: Run tests
-        run: swift test --arch arm64
+      - name: Set up just
+        uses: extractions/setup-just@v3
 
-      - name: Build release executable
-        run: swift build --configuration release --arch arm64
+      - name: Check source
+        run: just ci

@@ -1,6 +1,8 @@
 /.build/
 /dist/
 /.swiftpm/
+/.ruff_cache/
+__pycache__/
 *.dmg
 *.log
 .DS_Store

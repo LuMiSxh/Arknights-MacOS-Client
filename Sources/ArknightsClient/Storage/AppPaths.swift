@@ -55,6 +55,10 @@ struct AppPaths: Sendable {
 		logsDirectory.appending(path: "wine.log")
 	}
 
+	var launcherLogFile: URL {
+		logsDirectory.appending(path: "launcher.log")
+	}
+
 	var artworkCache: URL {
 		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
 	}
@@ -63,7 +67,4 @@ struct AppPaths: Sendable {
 		applicationSupportRoot.appending(path: "Artwork/Custom/artwork")
 	}
 
-	var launcherUpdateCache: URL {
-		cacheRoot.appending(path: "Updater", directoryHint: .isDirectory)
-	}
 }
