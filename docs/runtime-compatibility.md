@@ -54,10 +54,12 @@ An active component must identify only files it owns, install idempotently, and 
 
 The current Vuplex component supplies two process-local workarounds:
 
-- A wrapper preserves the official helper and adds CEF flags for software painting and Wine's working DNS path.
+- A wrapper preserves the official helper, selects Vuplex's CPU `OnPaint` transfer, and adds the CEF flag for Wine's working DNS path. Chromium's own GPU compositor remains enabled.
 - `userenv.dll` implements the AppContainer SID function missing from the tested Wine build for the Vuplex process only.
 
 The wrapper does not render pages, inspect credentials, or replace Vuplex. It launches the untouched official helper and waits for its exit code. Both launcher-owned files carry stable markers so they can be upgraded or removed safely.
+
+Vuplex's CPU paint buffer is created at the Wine session's 96 DPI and can look softer than the game on a Retina display. Wine's Retina mode applies to the complete prefix rather than one process, so enabling it would also change game resolutions and input coordinates. The launcher therefore leaves the prefix at its tested DPI.
 
 ## Updating the runtime
 

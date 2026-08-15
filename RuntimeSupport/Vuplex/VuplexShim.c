@@ -10,13 +10,13 @@
  * original_name and installs this small wrapper at the original path.
  *
  * The official helper uses Chromium Embedded Framework. Its accelerated
- * off-screen rendering path shares a D3D11 texture between Chromium
- * processes, which is not reliable through the tested Wine + DXMT runtime:
- * login pages can remain blank or the helper can terminate with an invalid
- * device-handle error. Vuplex exposes an argument for its software-paint
- * fallback, and Chromium's GPU switches keep child compositors from creating
- * another incompatible shared surface. Arknights itself does not inherit
- * these arguments and remains GPU accelerated through DXMT.
+ * off-screen rendering path can share a D3D11 texture with the Unity process.
+ * DXMT can create that shared resource, but Chromium and Vuplex attempt to
+ * write it concurrently through this runtime and the browser remains blank.
+ * The wrapper therefore selects Vuplex's CPU OnPaint transfer while leaving
+ * Chromium's own GPU compositor, WebGL, and rasterization available. These
+ * arguments affect only the helper process; Arknights keeps its own DXMT
+ * device and renderer.
  *
  * CEF's asynchronous DNS resolver asks Windows to sort IPv6 destinations
  * through SIO_ADDRESS_LIST_SORT. Wine currently returns WSAEOPNOTSUPP for
@@ -44,8 +44,6 @@ static const wchar_t original_name[] = L"Vuplex WebView.original.helper.vuplex";
 static const wchar_t userenv_override[] = L"userenv=n,b";
 static const wchar_t *compatibility_arguments[] = {
 	L"--vx-accelerated-paint-disabled",
-	L"--disable-gpu",
-	L"--disable-gpu-compositing",
 	L"--disable-features=AsyncDns",
 };
 

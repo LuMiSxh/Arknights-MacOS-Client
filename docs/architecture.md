@@ -35,7 +35,7 @@ flowchart LR
 
 The packaged runtime is x86_64 and runs through Rosetta 2. The launcher gives Wine an isolated prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT libraries, and starts `G:\Arknights.exe`. The main game uses DXMT for Direct3D-to-Metal translation. The exact runtime contract and compatibility components are documented in [Runtime compatibility](runtime-compatibility.md).
 
-Arknights starts its Chromium-based Vuplex helper for account and in-game web pages. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with software rendering and the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build. Neither compatibility component affects the game renderer or reads browser content.
+Arknights starts its Chromium-based Vuplex helper for account and in-game web pages. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build. Neither compatibility component affects the game renderer or reads browser content.
 
 ```mermaid
 flowchart LR
@@ -67,7 +67,7 @@ flowchart LR
 	CEF -->|HTTPS login and game pages| Web[Official web services]
 ```
 
-Vuplex uses software painting because its accelerated shared-texture path fails through the tested Wine and DXMT combination. CEF's asynchronous DNS path also calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement; the wrapper disables that path so CEF uses Wine's normal system resolver. Social login still starts a separate Chromium process and may take several seconds on first use.
+Vuplex can share its accelerated off-screen surface through D3D11, but Chromium and Vuplex cannot coordinate write access to that surface through the tested DXMT path. The wrapper therefore uses Vuplex's CPU `OnPaint` transfer while leaving Chromium's internal GPU compositor enabled. CEF's asynchronous DNS path calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement; the wrapper disables that path so CEF uses Wine's normal system resolver. Social login starts a separate Chromium process and may take several seconds on first use.
 
 Install, update, and repair restore the official Vuplex executable before modifying game files. The wrapper is then installed again at the next launch only when the helper still advertises the expected software-paint option. Unknown helpers and unrelated `userenv.dll` files are left untouched.
 
