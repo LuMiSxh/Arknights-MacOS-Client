@@ -45,6 +45,8 @@ Download `Arknights Client.dmg` from [GitHub Releases](https://github.com/LuMiSx
 > [!WARNING]
 > Builds are ad-hoc signed and not notarized. On first launch, right-click the app in Finder and select **Open**.
 
+The bundled Wine runtime is an Intel binary and currently runs through Rosetta 2. macOS may show a one-time notice when **Play** is selected for the first time because Apple has announced that Intel-app support will end in a future macOS release.
+
 Game files are stored separately from the app. Removing the launcher does not remove the game; use **Uninstall Game** in Settings.
 
 ## Quick Start

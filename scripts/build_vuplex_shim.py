@@ -62,7 +62,7 @@ def compile_source(source: Path, output: Path, *arguments: str) -> None:
 
 
 def build(output: Path) -> tuple[Path, Path]:
-    source_dir = PROJECT_DIR / "RuntimeSupport/VuplexShim"
+    source_dir = PROJECT_DIR / "RuntimeSupport/Vuplex"
     shim_source = source_dir / "VuplexShim.c"
     userenv_source = source_dir / "UserenvCompat.c"
     for source in (shim_source, userenv_source):

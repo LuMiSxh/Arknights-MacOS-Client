@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Replaced the mixed shell and Python build scripts with uv-managed Python tooling and clearer command output.
 - Made Wine prefix updates and game compatibility components resumable, idempotent, and removable across launcher versions.
+- Kept DXMT shader data in the isolated persistent cache and added launch-phase timings to diagnostics.
 
 ## [0.1.0]
 

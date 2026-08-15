@@ -1,6 +1,6 @@
 # Third-party notices
 
-Arknights Client packages a prebuilt compatibility runtime. Exact versions, archive hashes, and build provenance are pinned in [`runtime.json`](../../runtime.json). The app also embeds a small MPL-2.0 wrapper built from `RuntimeSupport/VuplexShim`; it does not distribute the Vuplex SDK.
+Arknights Client packages a prebuilt compatibility runtime. Exact versions, archive hashes, and build provenance are pinned in [`runtime.json`](../../runtime.json). The app also embeds a small MPL-2.0 wrapper built from `RuntimeSupport/Vuplex`; it does not distribute the Vuplex SDK.
 
 ## Runtime components
 

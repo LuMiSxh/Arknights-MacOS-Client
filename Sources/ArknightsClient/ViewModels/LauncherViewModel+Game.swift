@@ -20,6 +20,7 @@ extension LauncherViewModel {
 		phase = .launching
 		activityMessage = "Starting…"
 		let gameSessionID = UUID()
+		let launchRequestedAt = Date()
 		activeGameSessionID = gameSessionID
 		Task { [log] in await log.info("Game launch requested") }
 		launchTask?.cancel()
@@ -33,7 +34,9 @@ extension LauncherViewModel {
 						+ launchOptions.playerArguments,
 					logURL: paths.logFile
 				)
-				await log.info("Game runtime started; pid=\(launch.processIdentifier)")
+				await log.info(
+					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
+				)
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
 				try await WineWindowReadiness.wait(
 					processIdentifier: launch.processIdentifier
@@ -42,7 +45,9 @@ extension LauncherViewModel {
 				phase = .running(processIdentifier: launch.processIdentifier)
 				activityMessage = "Running"
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
-				await log.info("Game window became visible")
+				await log.info(
+					"Game window became visible; elapsed=\(Self.launchDuration(since: launchRequestedAt))"
+				)
 			} catch is CancellationError {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
@@ -54,6 +59,10 @@ extension LauncherViewModel {
 				show(error)
 			}
 		}
+	}
+
+	private static func launchDuration(since start: Date, now: Date = Date()) -> String {
+		String(format: "%.2fs", max(0, now.timeIntervalSince(start)))
 	}
 
 	func stopGame() {
