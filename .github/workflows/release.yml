@@ -25,16 +25,16 @@ jobs:
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v9
+        uses: astral-sh/setup-uv@v10.0.1
 
       - name: Validate runtime configuration
         run: uv run --no-project --python 3.13 scripts/python/runtime-config.py --validate runtime.json
 
       - name: Set up just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@v4
 
       - name: Validate release inputs
         run: |
