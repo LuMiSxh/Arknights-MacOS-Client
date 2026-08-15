@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import importlib.util
+import sys
 import unittest
 from pathlib import Path
 
-SCRIPT_PATH = Path(__file__).parents[1] / "patch-wine-runtime.py"
-SPEC = importlib.util.spec_from_file_location("patch_wine_runtime", SCRIPT_PATH)
-assert SPEC is not None and SPEC.loader is not None
-patch_wine_runtime = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(patch_wine_runtime)
+sys.path.insert(0, str(Path(__file__).parents[1]))
+
+import patch_wine_runtime
 
 
 class WineRuntimePatchTests(unittest.TestCase):
@@ -44,7 +42,7 @@ class WineRuntimePatchTests(unittest.TestCase):
         self.assertEqual(patched, source)
 
     def test_rejects_an_unknown_driver_layout(self) -> None:
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(RuntimeError):
             patch_wine_runtime.patch_quit_shortcut(b"unknown")
 
 

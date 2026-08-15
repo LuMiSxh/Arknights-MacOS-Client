@@ -31,7 +31,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.0.1
 
       - name: Validate runtime configuration
-        run: uv run --no-project --python 3.13 scripts/python/runtime-config.py --validate runtime.json
+        run: uv run scripts/runtime_config.py --validate runtime.json
 
       - name: Set up just
         uses: extractions/setup-just@v4
@@ -79,9 +79,9 @@ jobs:
         run: |
           mkdir -p dist
           build_recipe="$RUNNER_TEMP/Runtime-Build-Recipe.tar.gz"
-          build_recipe_url="$(uv run --no-project --python 3.13 scripts/python/runtime-config.py runtime.json buildRecipe.url)"
-          build_recipe_sha256="$(uv run --no-project --python 3.13 scripts/python/runtime-config.py runtime.json buildRecipe.sha256)"
-          ./scripts/sh/download-runtime.sh
+          build_recipe_url="$(uv run scripts/runtime_config.py runtime.json buildRecipe.url)"
+          build_recipe_sha256="$(uv run scripts/runtime_config.py runtime.json buildRecipe.sha256)"
+          uv run scripts/download_runtime.py
           curl --fail --location --proto '=https' --tlsv1.2 "$build_recipe_url" --output "$build_recipe"
           echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
           mv "$build_recipe" "dist/Runtime-Build-Recipe.tar.gz"

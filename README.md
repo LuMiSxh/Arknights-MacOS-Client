@@ -79,6 +79,7 @@ just check
 
 Run `just --groups` for the complete command list.
 Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json).
+Repository automation lives in `scripts/` as Python scripts. uv reads their inline metadata and installs tool-specific dependencies automatically.
 
 ## Documentation
 

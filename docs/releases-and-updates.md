@@ -23,7 +23,7 @@ It then:
 5. writes `SHA256SUMS`; and
 6. creates a draft `vX.Y.Z` GitHub Release for review.
 
-[`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/python/runtime-config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
+[`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/runtime_config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
 
 Release automation does not use repository variables for these values. A runtime update is a reviewed `runtime.json` change, so local and GitHub builds cannot silently select different binaries.
 

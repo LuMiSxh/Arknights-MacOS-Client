@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced the mixed shell and Python build scripts with uv-managed Python tooling and clearer command output.
+
 ## [0.1.0]
 
 ### Added

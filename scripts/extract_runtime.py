@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = []
+# ///
 # SPDX-License-Identifier: MPL-2.0
 
 """Safely extract a verified Wine runtime archive for release packaging."""
@@ -8,9 +13,7 @@ import argparse
 import tarfile
 from pathlib import Path, PurePosixPath
 
-
-def fail(message: str) -> None:
-    raise SystemExit(f"error: {message}")
+from common import fail, run_main
 
 
 def stays_within_root(path: PurePosixPath) -> bool:
@@ -42,7 +45,6 @@ def validate_member(member: tarfile.TarInfo) -> PurePosixPath:
         target = PurePosixPath(member.linkname)
         if target.is_absolute() or not stays_within_root(target):
             fail(f"unsafe hard link: {member.name} -> {member.linkname}")
-
     return path
 
 
@@ -81,15 +83,14 @@ def extract(archive: Path, destination: Path) -> Path:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("archive", type=Path)
     parser.add_argument("destination", type=Path)
     arguments = parser.parse_args()
-
     if not arguments.archive.is_file():
         fail(f"archive not found: {arguments.archive}")
     print(extract(arguments.archive.resolve(), arguments.destination.resolve()))
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)
