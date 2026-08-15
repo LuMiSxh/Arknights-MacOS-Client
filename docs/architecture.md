@@ -77,7 +77,9 @@ The launcher remains in **Starting** until Wine exposes a visible game window. I
 
 The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` give the main macOS process a readable name. Packaging applies one reviewed patch to the staged Wine macOS driver so the standard `Command-Q` shortcut is available.
 
-Prefix markers combine the runtime archive checksum from `runtime.json` with its `prefixRevision`. A new runtime archive or an explicit prefix revision therefore reapplies Wine initialization, DXMT files, and registry overrides once without carrying migrations for pre-release layouts.
+Prefix changes run through an ordered migration plan: Wine initialization, DXMT installation, and registry overrides. The prefix stores completed migration IDs with the runtime archive checksum and `prefixRevision` in `.arknights-runtime-migrations.json`. Each successful step is recorded atomically, so an interrupted launch resumes at the first incomplete step. A checksum or prefix-revision change replays the complete plan; adding a migration ID runs only that new step for an otherwise current prefix. Version 0.1 markers are imported once and removed.
+
+The Vuplex files use reconciliation rather than one-time migration state. The official updater can replace its helper at any time, so every launch checks ownership and content before atomically installing or upgrading launcher-owned compatibility files.
 
 ## Boundaries
 

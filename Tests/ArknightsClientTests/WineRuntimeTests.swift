@@ -109,6 +109,7 @@ func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
 	}
 
 	try WineRuntime.installDXMT(from: payload, in: prefix)
+	#expect(WineRuntime.dxmtIsCurrent(from: payload, in: prefix))
 
 	for (architecture, windowsDirectory) in [("x64", "system32"), ("x32", "syswow64")] {
 		for library in WineRuntime.dxmtLibraryNames {
@@ -117,29 +118,11 @@ func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
 			#expect(try Data(contentsOf: installed) == Data("\(architecture)-\(library)".utf8))
 		}
 	}
-}
 
-@Test
-func prefixRefreshesOnlyWhenMissingOrBuiltForAnotherRuntime() {
-	let revision = "runtime-prefix-1"
-	#expect(
-		WineRuntime.requiresPrefixUpdate(
-			hasSystemRegistry: false,
-			installedRevision: revision,
-			expectedRevision: revision
-		))
-	#expect(
-		WineRuntime.requiresPrefixUpdate(
-			hasSystemRegistry: true,
-			installedRevision: nil,
-			expectedRevision: revision
-		))
-	#expect(
-		!WineRuntime.requiresPrefixUpdate(
-			hasSystemRegistry: true,
-			installedRevision: revision,
-			expectedRevision: revision
-		))
+	try fileManager.removeItem(
+		at: prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
+	)
+	#expect(!WineRuntime.dxmtIsCurrent(from: payload, in: prefix))
 }
 
 @Test
