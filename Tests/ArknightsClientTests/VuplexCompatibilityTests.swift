@@ -165,6 +165,60 @@ func vuplexShimUpgradeRejectsAMissingOfficialHelper() throws {
 	}
 }
 
+@Test
+func vuplexRestoreWorksWithoutBundledCompatibilityAssets() throws {
+	let root = FileManager.default.temporaryDirectory.appending(
+		path: UUID().uuidString,
+		directoryHint: .isDirectory
+	)
+	defer { try? FileManager.default.removeItem(at: root) }
+	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
+	try FileManager.default.createDirectory(
+		at: helper.deletingLastPathComponent(),
+		withIntermediateDirectories: true
+	)
+	try VuplexCompatibility.launcherShimMarker.write(to: helper)
+	let original = helper.deletingLastPathComponent().appending(
+		path: VuplexCompatibility.originalHelperName)
+	let officialData = Data("official-vx-accelerated-paint-disabled".utf8)
+	try officialData.write(to: original)
+	let userenv = helper.deletingLastPathComponent().appending(
+		path: VuplexCompatibility.userenvName)
+	try Data("Arknights Client AppContainer compatibility".utf8).write(to: userenv)
+	let compatibility = VuplexCompatibility(shimURL: nil, userenvURL: nil)
+
+	#expect(try compatibility.restoreIfInstalled(in: root))
+	#expect(try Data(contentsOf: helper) == officialData)
+	#expect(!FileManager.default.fileExists(atPath: original.path))
+	#expect(!FileManager.default.fileExists(atPath: userenv.path))
+}
+
+@Test
+func vuplexReconciliationRemovesAbandonedTemporaryFiles() throws {
+	let root = FileManager.default.temporaryDirectory.appending(
+		path: UUID().uuidString,
+		directoryHint: .isDirectory
+	)
+	defer { try? FileManager.default.removeItem(at: root) }
+	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
+	let directory = helper.deletingLastPathComponent()
+	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+	let temporaryFiles = [
+		".arknights-client-vuplex-shim-old",
+		".arknights-client-vuplex-previous-old",
+		".arknights-client-userenv-old",
+	]
+	for name in temporaryFiles {
+		try Data("temporary".utf8).write(to: directory.appending(path: name))
+	}
+
+	_ = try VuplexCompatibility(shimURL: nil, userenvURL: nil).restoreIfInstalled(in: root)
+
+	for name in temporaryFiles {
+		#expect(!FileManager.default.fileExists(atPath: directory.appending(path: name).path))
+	}
+}
+
 private func installedShimData() -> Data {
 	var data = Data()
 	for value in [

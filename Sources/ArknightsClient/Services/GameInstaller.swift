@@ -25,7 +25,7 @@ struct GameInstaller: Sendable {
 		let (manifest, cdn) = try await (api.manifest(for: configuration), api.cdnConfiguration())
 		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
 		excludeFromBackup(installDirectory)
-		try VuplexCompatibility().restoreIfInstalled(in: installDirectory)
+		try GameCompatibilityManager().restoreForUpdate(in: installDirectory)
 
 		let previousFiles = loadState(from: installDirectory)?.files.map {
 			Dictionary(uniqueKeysWithValues: $0.map { ($0.path, $0) })

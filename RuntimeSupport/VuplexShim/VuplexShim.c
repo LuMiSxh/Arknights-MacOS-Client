@@ -34,7 +34,12 @@
  * missing compatibility arguments, starts the untouched official helper, and
  * returns its exit code. Installation is reversible, and unknown helper
  * versions are never replaced by the launcher.
+ *
+ * launcher_marker is a stable ownership signature used by the native client
+ * to recognize this wrapper across upgrades. Keep the marker in future
+ * versions even if the backup filename or compatibility arguments change.
  */
+static const volatile char launcher_marker[] = "Arknights Client Vuplex compatibility";
 static const wchar_t original_name[] = L"Vuplex WebView.original.helper.vuplex";
 static const wchar_t userenv_override[] = L"userenv=n,b";
 static const wchar_t *compatibility_arguments[] = {
@@ -157,6 +162,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	(void)previous_instance;
 	(void)command_line;
 	(void)show_command;
+	if (launcher_marker[0] == '\0') return ERROR_INVALID_DATA;
 	shim_path = module_path();
 	if (shim_path == NULL) return (int)GetLastError();
 	separator = wcsrchr(shim_path, L'\\');

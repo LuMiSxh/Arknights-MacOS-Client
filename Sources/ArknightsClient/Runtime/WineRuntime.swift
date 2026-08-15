@@ -108,7 +108,7 @@ struct WineRuntime: Sendable {
 			at: logURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
-		let installedVuplexShim = try VuplexCompatibility().installIfSupported(
+		let compatibilityChanges = try GameCompatibilityManager().prepareForLaunch(
 			in: gameExecutable.deletingLastPathComponent()
 		)
 		if !fileManager.fileExists(atPath: logURL.path) {
@@ -118,10 +118,18 @@ struct WineRuntime: Sendable {
 		}
 		let logHandle = try FileHandle(forWritingTo: logURL)
 		try logHandle.seekToEnd()
-		if installedVuplexShim {
+		for identifier in compatibilityChanges.installed {
 			try? logHandle.write(
-				contentsOf: Data("Arknights Client: enabled Vuplex browser compatibility.\n".utf8)
-			)
+				contentsOf: Data(
+					"Arknights Client: enabled compatibility component \(identifier).\n".utf8
+				))
+		}
+		for identifier in compatibilityChanges.removed {
+			try? logHandle.write(
+				contentsOf: Data(
+					"Arknights Client: removed retired compatibility component \(identifier).\n"
+						.utf8
+				))
 		}
 
 		var environment = runtimeEnvironment(prefixDirectory: prefixDirectory)

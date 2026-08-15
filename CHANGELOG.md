@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Replaced the mixed shell and Python build scripts with uv-managed Python tooling and clearer command output.
-- Made Wine prefix updates resumable through ordered, idempotent runtime migrations.
+- Made Wine prefix updates and game compatibility components resumable, idempotent, and removable across launcher versions.
 
 ## [0.1.0]
 
