@@ -24,6 +24,12 @@ func runtimeForcesDXMTWithoutDisablingVuplexGraphics() {
 }
 
 @Test
+func runtimeDisablesPreciseTrackpadScrollingToMatchWindowsWheelSpeed() {
+	#expect(WineRuntime.macDriverRegistryKey == "HKCU\\Software\\Wine\\Mac Driver")
+	#expect(WineRuntime.preciseScrollingRegistryValue == "UsePreciseScrolling")
+}
+
+@Test
 func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	let prefix = URL(filePath: "/isolated/prefix", directoryHint: .isDirectory)
 	let environment = WineRuntime.isolatedEnvironment(

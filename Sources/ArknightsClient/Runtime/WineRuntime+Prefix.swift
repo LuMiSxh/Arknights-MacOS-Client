@@ -187,6 +187,21 @@ extension WineRuntime {
 				"Wine could not disable its crash dialog (status \(crashDialogStatus))."
 			)
 		}
+		let scrollingStatus = try await runAndWait(
+			executable: executableURL,
+			arguments: [
+				"reg.exe", "add", Self.macDriverRegistryKey,
+				"/v", Self.preciseScrollingRegistryValue,
+				"/t", "REG_SZ", "/d", "n", "/f",
+			],
+			environment: environment,
+			output: logHandle
+		)
+		guard scrollingStatus == 0 else {
+			throw LauncherError.runtimeConfiguration(
+				"Wine could not adjust trackpad scroll sensitivity (status \(scrollingStatus))."
+			)
+		}
 	}
 
 	static func installDXMT(

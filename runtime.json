@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"prefixRevision": 1,
+	"prefixRevision": 2,
 	"runtime": {
 		"name": "WineCX 11.15 + DXMT 0.80 (frankea build)",
 		"url": "https://github.com/frankea/Whisky/releases/download/v4.5.105-beta.1/Libraries.tar.gz",

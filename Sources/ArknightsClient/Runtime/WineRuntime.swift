@@ -52,6 +52,8 @@ struct WineRuntime: Sendable {
 	static let dxmtLibraryNames = ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
 	static let crashDialogRegistryKey = "HKCU\\Software\\Wine\\WineDbg"
 	static let crashDialogRegistryValue = "ShowCrashDialog"
+	static let macDriverRegistryKey = "HKCU\\Software\\Wine\\Mac Driver"
+	static let preciseScrollingRegistryValue = "UsePreciseScrolling"
 	static let isolatedUserDirectoryNames = [
 		"Desktop", "Documents", "Downloads", "Music", "Pictures", "Movies", "Templates",
 	]
