@@ -7,6 +7,7 @@ struct LauncherSettingsView: View {
 	@Environment(\.dismiss) private var dismiss
 	@State private var selectedSection = SettingsSection.general
 	@State private var confirmsGameUninstall = false
+	@State private var confirmsForceMigration = false
 	@State private var presentedDocument: BundledDocument?
 
 	var body: some View {
@@ -25,7 +26,8 @@ struct LauncherSettingsView: View {
 				case .installation:
 					InstallationSettingsPage(
 						model: model,
-						confirmsGameUninstall: $confirmsGameUninstall
+						confirmsGameUninstall: $confirmsGameUninstall,
+						confirmsForceMigration: $confirmsForceMigration
 					)
 				case .about:
 					AboutSettingsPage(model: model, presentedDocument: $presentedDocument)
@@ -57,6 +59,16 @@ struct LauncherSettingsView: View {
 			Button("Cancel", role: .cancel) {}
 		} message: {
 			Text("The launcher stays installed.")
+		}
+		.confirmationDialog(
+			"Force Wine Setup to Run Again?",
+			isPresented: $confirmsForceMigration,
+			titleVisibility: .visible
+		) {
+			Button("Force Migration", role: .destructive, action: model.forcePrefixMigration)
+			Button("Cancel", role: .cancel) {}
+		} message: {
+			Text("Game files and saves stay untouched; only the next launch takes longer.")
 		}
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(document: document)

@@ -118,6 +118,20 @@ extension LauncherViewModel {
 		runtimeName = WineRuntime.discover()?.displayName
 	}
 
+	/// Discards the prefix's recorded migration state so the next launch fully
+	/// replays Wine initialization, DXMT installation, and registry overrides.
+	/// Leaves game files and Wine's own user directories untouched.
+	func forcePrefixMigration() {
+		guard !isDownloading, !isGameActive else { return }
+		do {
+			try RuntimeMigrationStore().reset(prefixDirectory: paths.winePrefix)
+			activityMessage = "Wine setup will run again on next launch"
+			Task { [log] in await log.info("Wine prefix migration state was reset on request") }
+		} catch {
+			show(error)
+		}
+	}
+
 	func monitorGame(
 		launch: WineLaunch,
 		runtime: WineRuntime,

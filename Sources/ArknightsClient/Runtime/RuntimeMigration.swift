@@ -131,6 +131,18 @@ struct RuntimeMigrationStore {
 		)
 	}
 
+	/// Discards the recorded migration state so the next launch replays Wine
+	/// initialization, DXMT installation, and every registry override from
+	/// scratch. Touches only setup bookkeeping, never game files or Wine's own
+	/// user directories (saves, cookies, Documents).
+	func reset(prefixDirectory: URL) throws {
+		let stateURL = prefixDirectory.appending(path: Self.stateFileName)
+		if fileManager.fileExists(atPath: stateURL.path) {
+			try fileManager.removeItem(at: stateURL)
+		}
+		try removeLegacyMarkers(from: prefixDirectory)
+	}
+
 	func removeLegacyMarkers(from prefixDirectory: URL) throws {
 		for name in [Self.legacyRevisionFileName, Self.legacyConfigurationFileName] {
 			let marker = prefixDirectory.appending(path: name)

@@ -140,6 +140,7 @@ struct UpdatesSettingsPage: View {
 struct InstallationSettingsPage: View {
 	@ObservedObject var model: LauncherViewModel
 	@Binding var confirmsGameUninstall: Bool
+	@Binding var confirmsForceMigration: Bool
 
 	var body: some View {
 		SettingsPage(title: "Installation", subtitle: "Files, repair, and removal") {
@@ -228,6 +229,17 @@ struct InstallationSettingsPage: View {
 						confirmsGameUninstall = true
 					}
 					.disabled(!model.isInstalled || model.isDownloading)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Wine Setup",
+					detail:
+						"Redo Wine initialization, DXMT installation, and registry overrides on the next launch. Game files and saves are untouched; only the next launch takes longer."
+				) {
+					Button("Force Migration…", role: .destructive) {
+						confirmsForceMigration = true
+					}
+					.disabled(model.isDownloading || model.isGameActive)
 				}
 			}
 		}

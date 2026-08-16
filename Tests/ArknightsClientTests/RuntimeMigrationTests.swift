@@ -113,6 +113,29 @@ func migrationStoreRoundTripsState() throws {
 }
 
 @Test
+func migrationStoreResetDiscardsStateSoEverythingReplays() throws {
+	let fileManager = FileManager.default
+	let prefix = fileManager.temporaryDirectory.appending(
+		path: "runtime-migration-reset-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: prefix) }
+	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
+	let store = RuntimeMigrationStore(fileManager: fileManager)
+	try store.save(
+		RuntimeMigrationState(
+			runtimeRevision: "runtime-prefix-2",
+			completed: RuntimeMigration.allCases
+		),
+		to: prefix
+	)
+
+	try store.reset(prefixDirectory: prefix)
+
+	#expect(store.load(from: prefix) == nil)
+}
+
+@Test
 func migrationStoreImportsAndRemovesVersionZeroOneMarkers() throws {
 	let fileManager = FileManager.default
 	let prefix = fileManager.temporaryDirectory.appending(
