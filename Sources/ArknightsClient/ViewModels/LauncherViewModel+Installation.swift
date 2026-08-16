@@ -38,6 +38,7 @@ extension LauncherViewModel {
 		let targetDirectory = installDirectory
 		progress = nil
 		phase = .downloading
+		hasPartialDownload = false
 		activityMessage = verifyAllExistingFiles ? "Verifying…" : "Preparing…"
 		Task { [log] in
 			await log.info(
@@ -63,6 +64,7 @@ extension LauncherViewModel {
 				}
 				guard finishInstallation(installationID) else { return }
 				isInstalled = true
+				hasPartialDownload = false
 				installedVersion = configuration.gameLatestVersion
 				isGameUpdateAvailable = false
 				phase = .ready
@@ -73,6 +75,7 @@ extension LauncherViewModel {
 				if launchAfterCompletion { launch() }
 			} catch is CancellationError {
 				guard finishInstallation(installationID) else { return }
+				updateInstalledState()
 				phase = .ready
 				activityMessage = "Paused"
 				await log.info("Installation paused")

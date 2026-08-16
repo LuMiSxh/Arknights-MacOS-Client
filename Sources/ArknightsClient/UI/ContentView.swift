@@ -190,14 +190,22 @@ struct ContentView: View {
 				.controlSize(.large)
 				.help("Pause the download; it resumes from partial files later")
 		} else if !model.isInstalled {
-			Button("Install", systemImage: "arrow.down", action: model.installOrUpdate)
-				.buttonStyle(.glassProminent)
-				.buttonBorderShape(.capsule)
-				.controlSize(.large)
-				.tint(cyan)
-				.disabled(!model.canInstall)
-				.keyboardShortcut(.defaultAction)
-				.help("Download and verify the official Global PC files")
+			Button(
+				model.hasPartialDownload ? "Resume" : "Install",
+				systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down",
+				action: model.installOrUpdate
+			)
+			.buttonStyle(.glassProminent)
+			.buttonBorderShape(.capsule)
+			.controlSize(.large)
+			.tint(cyan)
+			.disabled(!model.canInstall)
+			.keyboardShortcut(.defaultAction)
+			.help(
+				model.hasPartialDownload
+					? "Continue downloading from the partial files"
+					: "Download and verify the official Global PC files"
+			)
 		} else if model.isGameUpdateAvailable {
 			Button("Update", systemImage: "arrow.down", action: model.installOrUpdate)
 				.buttonStyle(.glassProminent)

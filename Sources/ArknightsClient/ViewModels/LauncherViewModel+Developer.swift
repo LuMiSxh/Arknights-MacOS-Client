@@ -101,6 +101,7 @@
 			case .paused:
 				installedVersion = "041.2.0"
 				isGameUpdateAvailable = true
+				hasPartialDownload = true
 				activityMessage = "Paused"
 			case .launching:
 				activeGameSessionID = UUID()
@@ -116,6 +117,7 @@
 				activityMessage = "The Windows runtime exited unexpectedly."
 			case .notInstalled:
 				isInstalled = false
+				hasPartialDownload = false
 				installedVersion = nil
 				activityMessage = "Install"
 			}

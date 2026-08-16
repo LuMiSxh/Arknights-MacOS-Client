@@ -21,6 +21,7 @@ final class LauncherViewModel: ObservableObject {
 	@Published var officialLogo: NSImage?
 	@Published var popup: LauncherPopup?
 	@Published var isInstalled = false
+	@Published var hasPartialDownload = false
 	@Published var installedVersion: String?
 	@Published var isGameUpdateAvailable = false
 	@Published var launcherUpdate: LauncherRelease?
@@ -279,7 +280,9 @@ final class LauncherViewModel: ObservableObject {
 		activeRefreshID = nil
 		phase = .ready
 		activityMessage =
-			isGameUpdateAvailable ? "Update available" : (isInstalled ? "Ready" : "Install")
+			isGameUpdateAvailable
+			? "Update available"
+			: (isInstalled ? "Ready" : (hasPartialDownload ? "Paused" : "Install"))
 		await log.info("Refresh completed; state=\(activityMessage)")
 	}
 

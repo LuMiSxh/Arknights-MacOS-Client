@@ -22,15 +22,19 @@ struct GameInstallerStreamingTests {
 			)
 		}
 		defer { StreamingURLProtocol.handler = nil }
+		let recorder = ProgressRecorder()
 
 		let result = try await fixture.installer.install(
 			configuration: fixture.configuration,
 			into: fixture.directory,
-			progress: { _ in }
+			progress: { update in await recorder.record(update) }
 		)
 
+		let updates = await recorder.updates()
 		#expect(try Data(contentsOf: fixture.destination) == body)
 		#expect(result.downloadedBytes == Int64(body.count))
+		#expect(updates.first?.downloadedBytes == Int64(partialSize))
+		#expect(updates.last?.downloadedBytes == Int64(body.count))
 	}
 
 	@Test
@@ -44,14 +48,19 @@ struct GameInstallerStreamingTests {
 			return (Self.response(url: request.url!, status: 200), body)
 		}
 		defer { StreamingURLProtocol.handler = nil }
+		let recorder = ProgressRecorder()
 
 		_ = try await fixture.installer.install(
 			configuration: fixture.configuration,
 			into: fixture.directory,
-			progress: { _ in }
+			progress: { update in await recorder.record(update) }
 		)
 
+		let updates = await recorder.updates()
 		#expect(try Data(contentsOf: fixture.destination) == body)
+		#expect(updates.first?.downloadedBytes == Int64(64 * 1_024))
+		#expect(updates.contains(where: { $0.downloadedBytes == 0 }))
+		#expect(updates.last?.downloadedBytes == Int64(body.count))
 	}
 
 	private func makeFixture(body: Data) throws -> InstallerFixture {
@@ -110,6 +119,18 @@ struct GameInstallerStreamingTests {
 			httpVersion: "HTTP/1.1",
 			headerFields: nil
 		)!
+	}
+}
+
+private actor ProgressRecorder {
+	private var recordedUpdates: [DownloadProgress] = []
+
+	func record(_ update: DownloadProgress) {
+		recordedUpdates.append(update)
+	}
+
+	func updates() -> [DownloadProgress] {
+		recordedUpdates
 	}
 }
 

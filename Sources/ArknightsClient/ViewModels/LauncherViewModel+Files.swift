@@ -120,6 +120,7 @@ extension LauncherViewModel {
 					self.show(error)
 				} else {
 					self.isInstalled = false
+					self.hasPartialDownload = false
 					self.installedVersion = nil
 					self.isGameUpdateAvailable = false
 					self.phase = .ready
@@ -135,7 +136,22 @@ extension LauncherViewModel {
 		)
 		let state = loadInstalledState()
 		isInstalled = hasExecutable && state != nil
+		hasPartialDownload = !isInstalled && Self.containsPartialDownload(in: installDirectory)
 		installedVersion = state?.version
+	}
+
+	private static func containsPartialDownload(in directory: URL) -> Bool {
+		guard
+			let enumerator = FileManager.default.enumerator(
+				at: directory,
+				includingPropertiesForKeys: nil,
+				options: [.skipsPackageDescendants]
+			)
+		else { return false }
+		for case let file as URL in enumerator where file.pathExtension == "part" {
+			return true
+		}
+		return false
 	}
 
 	func updateGameAvailability() {

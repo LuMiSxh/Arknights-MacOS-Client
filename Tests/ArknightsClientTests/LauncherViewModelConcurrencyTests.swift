@@ -148,6 +148,27 @@ struct LauncherViewModelConcurrencyTests {
 		#expect(model.preferences.presentedLauncherUpdate() == "0.2.0")
 	}
 
+	@Test
+	func partialFilesRestoreTheResumableDownloadState() throws {
+		let model = makeModel(api: BlockingBrandingAPI(), installer: ControllableInstaller())
+		let partial = model.installDirectory.appending(path: "data/game.dat.part")
+		try FileManager.default.createDirectory(
+			at: partial.deletingLastPathComponent(),
+			withIntermediateDirectories: true
+		)
+		try Data("partial".utf8).write(to: partial)
+		defer { try? FileManager.default.removeItem(at: model.installDirectory) }
+
+		model.updateInstalledState()
+
+		#expect(!model.isInstalled)
+		#expect(model.hasPartialDownload)
+
+		try FileManager.default.removeItem(at: partial)
+		model.updateInstalledState()
+		#expect(!model.hasPartialDownload)
+	}
+
 	private func waitForDownloadToStop(_ model: LauncherViewModel) async {
 		for _ in 0..<100 where model.isDownloading {
 			await Task.yield()
