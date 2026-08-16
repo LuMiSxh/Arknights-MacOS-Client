@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import re
 
-from common import PROJECT_DIR, fail, run_main
+from lib.common import PROJECT_DIR, fail, run_main
 
 
 def extract(text: str, version: str) -> str:

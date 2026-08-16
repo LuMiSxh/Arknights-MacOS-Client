@@ -14,7 +14,7 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
-from common import (
+from lib.common import (
     BUILD_DIR,
     PROJECT_DIR,
     fail,
@@ -24,7 +24,7 @@ from common import (
     run_main,
     success,
 )
-from compatibility_build import compile_windows, validate_macho_x86_64, validate_pe
+from lib.compat_toolchain import compile_windows, validate_macho_x86_64, validate_pe
 
 BuildResult = tuple[Path, ...]
 

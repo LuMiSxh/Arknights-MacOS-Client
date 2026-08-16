@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from common import fail, run_main
+from lib.common import fail, run_main
 
 REQUIRED_STRING_KEYS = (
     "runtime.name",

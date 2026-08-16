@@ -8,7 +8,7 @@ import struct
 import sys
 from pathlib import Path
 
-from common import fail, output, run
+from lib.common import fail, output, run
 
 
 def compile_windows(source: Path, destination: Path, *arguments: str) -> None:

@@ -17,7 +17,7 @@ import struct
 import tempfile
 from pathlib import Path
 
-from common import (
+from lib.common import (
     BUILD_DIR,
     DIST_DIR,
     PROJECT_DIR,
@@ -32,7 +32,7 @@ from common import (
     run_main,
     success,
 )
-from patch_wine_runtime import patch_file
+from lib.patch_wine_runtime import patch_file
 from runtime_config import validate_config
 
 APP_NAME = "Arknights Client"

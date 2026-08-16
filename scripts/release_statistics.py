@@ -13,7 +13,7 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from common import fail, output, require_command, run_main
+from lib.common import fail, output, require_command, run_main
 
 
 @dataclass(frozen=True)

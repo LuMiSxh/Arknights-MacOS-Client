@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import argparse
 
-from common import (
+from lib.common import (
     PROJECT_DIR,
     ScriptError,
     fail,

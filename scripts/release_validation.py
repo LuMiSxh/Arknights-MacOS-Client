@@ -14,8 +14,8 @@ import plistlib
 import re
 from pathlib import Path
 
-from common import PROJECT_DIR, fail, run_main, success
 from extract_changelog import extract
+from lib.common import PROJECT_DIR, fail, run_main, success
 
 VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 
