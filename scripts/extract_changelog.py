@@ -16,7 +16,10 @@ from common import PROJECT_DIR, fail, run_main
 
 
 def extract(text: str, version: str) -> str:
-    heading = re.compile(rf"^## \[{re.escape(version)}\](?:\s+-\s+.*)?$", re.MULTILINE)
+    heading = re.compile(
+        rf"^## \[{re.escape(version)}\](?:[ \t]+-[ \t]+[^\r\n]+)?$",
+        re.MULTILINE,
+    )
     match = heading.search(text)
     if match is None:
         fail(f"CHANGELOG.md does not contain a {version} release section")

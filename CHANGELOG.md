@@ -10,17 +10,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added native release-note popups, repository-hosted one-time announcements, and an isolated UI-state simulator.
+- Native release-note popups
+- Repository hosted one-time announcements
+- Isolated (development) UI-state simulator
 
 ### Changed
 
 - Replaced the mixed shell and Python build scripts with uv-managed Python tooling and clearer command output.
 - Made Wine prefix updates and game compatibility components resumable, idempotent, and removable across launcher versions.
-- Kept DXMT shader data in the isolated persistent cache and added launch-phase timings to diagnostics (Should improve startup times by up to 3 times).
-- Enabled Chromium GPU compositing while retaining Vuplex's stable CPU texture transfer (Should improve login page loading times).
+- Kept DXMT shader data in the isolated persistent cache and added detailed runtime-stage timings to diagnostics.
+- Enabled Chromium GPU compositing while retaining Vuplex's stable CPU texture transfer.
 - Filled draft GitHub Release notes from the matching changelog section.
-- Required releases to be built from merged `main` and aligned local builds with version 0.2.0.
+- Required releases to be built from merged `main` with matching changelog and app-bundle versions.
 - Added high-resolution rendering for sharper game and login-browser output on HiDPI displays.
+- Removed repeated Wine registry processes and no-op prefix writes from normal game launches.
+- Replaced per-byte game downloads with buffered streaming and loaded independent launcher metadata in parallel.
 
 ## [0.1.0]
 

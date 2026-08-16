@@ -14,7 +14,7 @@ Game updates are checked separately against Yostar. The check can also be disabl
 
 ## Creating a release
 
-Merge the release branch first, update the local `main` branch, and run `just release X.Y.Z` from clean, pushed `main`. Alternatively, start **Draft release** from the GitHub Actions page on `main` and enter the version there. The workflow rejects other branches, malformed versions, versions missing from `CHANGELOG.md`, and versions whose tag or release already exists.
+Merge the release branch first, update the local `main` branch, and run `just release X.Y.Z` from clean, pushed `main`. Alternatively, start **Draft release** from the GitHub Actions page on `main` and enter the version there. Both paths require the same non-empty version section in `CHANGELOG.md` and an exact `CFBundleShortVersionString` match in `Resources/Info.plist`. The workflow also rejects other branches, malformed versions, and versions whose tag or release already exists.
 
 It then:
 
@@ -22,7 +22,7 @@ It then:
 2. downloads the pinned runtime through the same script used locally and verifies its SHA-256;
 3. downloads and verifies the pinned runtime build recipe;
 4. builds an arm64 app and DMG;
-5. writes `SHA256SUMS`; and
+5. writes `SHA256SUMS`;
 6. extracts the matching `CHANGELOG.md` section as the release body; and
 7. creates a draft `vX.Y.Z` GitHub Release for review.
 

@@ -29,6 +29,11 @@ class ExtractChangelogTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             extract("# Changelog\n", "0.2.0")
 
+    def test_extracts_undated_section_starting_with_a_list(self) -> None:
+        changelog = "# Changelog\n\n## [0.2.0]\n\n- Release notes.\n"
+
+        self.assertEqual(extract(changelog, "0.2.0"), "- Release notes.")
+
 
 if __name__ == "__main__":
     unittest.main()

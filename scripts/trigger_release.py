@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 
 from common import (
     PROJECT_DIR,
@@ -23,17 +22,16 @@ from common import (
     run_main,
     success,
 )
-
-VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+from release_validation import validate_release
 
 
 def trigger(version: str) -> None:
-    if not VERSION_PATTERN.fullmatch(version):
-        fail("version must use X.Y.Z")
+    validate_release(
+        version,
+        PROJECT_DIR / "CHANGELOG.md",
+        PROJECT_DIR / "Resources/Info.plist",
+    )
     require_commands(("gh", "git"))
-    changelog = PROJECT_DIR / "CHANGELOG.md"
-    if f"## [{version}]" not in changelog.read_text(encoding="utf-8"):
-        fail(f"CHANGELOG.md does not contain a {version} release section")
     if output(["git", "status", "--porcelain"], cwd=PROJECT_DIR):
         fail("the working tree must be clean")
 
