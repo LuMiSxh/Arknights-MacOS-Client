@@ -8,7 +8,6 @@ struct AppPaths: Sendable {
 	let applicationSupportRoot: URL
 	let cacheRoot: URL
 	let logRoot: URL
-	let globalGameInstall: URL
 	let winePrefix: URL
 
 	init(
@@ -39,12 +38,15 @@ struct AppPaths: Sendable {
 			libraryDirectory
 			.appending(path: "Logs", directoryHint: .isDirectory)
 			.appending(path: Self.bundleIdentifier, directoryHint: .isDirectory)
-		globalGameInstall = applicationSupportRoot.appending(
-			path: "Games/Arknights-Global",
-			directoryHint: .isDirectory
-		)
 		winePrefix = applicationSupportRoot.appending(
 			path: "Wine/Prefixes/Arknights-Global",
+			directoryHint: .isDirectory
+		)
+	}
+
+	func gameInstall(for region: GameRegion) -> URL {
+		applicationSupportRoot.appending(
+			path: "Games/\(region.installDirectoryName)",
 			directoryHint: .isDirectory
 		)
 	}

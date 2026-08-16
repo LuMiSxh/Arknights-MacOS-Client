@@ -49,12 +49,12 @@ private actor ConcurrentRefreshAPI: LauncherAPIProviding {
 	private var requestWaiters: [CheckedContinuation<Void, Never>] = []
 	private var configurationContinuation: CheckedContinuation<GameConfiguration, Never>?
 
-	func gameConfiguration() async throws -> GameConfiguration {
+	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		record(.configuration)
 		return await withCheckedContinuation { configurationContinuation = $0 }
 	}
 
-	func branding() async throws -> LauncherBranding {
+	func branding(region: GameRegion) async throws -> LauncherBranding {
 		record(.branding)
 		return LauncherBranding(
 			launcherBackgroundImage: nil,
@@ -67,9 +67,14 @@ private actor ConcurrentRefreshAPI: LauncherAPIProviding {
 		)
 	}
 
-	func cdnConfiguration() async throws -> CDNConfiguration { throw CancellationError() }
+	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
+		throw CancellationError()
+	}
 
-	func manifest(for configuration: GameConfiguration) async throws -> GameManifest {
+	func manifest(
+		for configuration: GameConfiguration,
+		region: GameRegion
+	) async throws -> GameManifest {
 		throw CancellationError()
 	}
 

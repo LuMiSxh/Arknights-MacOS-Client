@@ -19,9 +19,11 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 
 ## Installation
 
-`LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, streams buffered network chunks into resumable `.part` files, verifies size and CRC64, and records the installed manifest.
+`LauncherAPI` obtains the current version, manifest, and CDN URLs for a `GameRegion` (Global, Japan, or Korea — same Yostar API shape and signature algorithm, different base URL and `game_tag`). `GameInstaller` validates every manifest path before writing, streams buffered network chunks into resumable `.part` files, verifies size and CRC64, and records the installed manifest.
 
 A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
+
+Each region has its own install directory and installed-state file, so regions install and update independently. They share one Wine prefix: `WinePrefixConfigurator` re-points the `G:` drive to the active region's directory on every launch, so a second prefix per region isn't needed.
 
 ```mermaid
 flowchart LR
@@ -114,7 +116,7 @@ sequenceDiagram
 
 ## Boundaries
 
-- Only the official Global PC distribution is supported.
+- Only the official Yostar-published PC distributions (Global, Japan, Korea) are supported; CN is excluded because it runs on separate Hypergryph infrastructure and bundles a kernel-mode anti-cheat with no Wine support.
 - Game files come from first-party HTTPS endpoints and are never included in a release.
 - Manifest paths cannot escape the selected game directory.
 - Wine receives private home, cache, configuration, runtime, and temporary directories.

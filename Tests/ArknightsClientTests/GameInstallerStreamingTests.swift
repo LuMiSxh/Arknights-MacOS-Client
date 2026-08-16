@@ -26,6 +26,7 @@ struct GameInstallerStreamingTests {
 
 		let result = try await fixture.installer.install(
 			configuration: fixture.configuration,
+			region: .global,
 			into: fixture.directory,
 			progress: { update in await recorder.record(update) }
 		)
@@ -52,6 +53,7 @@ struct GameInstallerStreamingTests {
 
 		_ = try await fixture.installer.install(
 			configuration: fixture.configuration,
+			region: .global,
 			into: fixture.directory,
 			progress: { update in await recorder.record(update) }
 		)
@@ -151,10 +153,15 @@ private struct InstallerAPI: LauncherAPIProviding {
 	let manifest: GameManifest
 	let cdn: CDNConfiguration
 
-	func gameConfiguration() async throws -> GameConfiguration { throw CancellationError() }
-	func branding() async throws -> LauncherBranding { throw CancellationError() }
-	func cdnConfiguration() async throws -> CDNConfiguration { cdn }
-	func manifest(for configuration: GameConfiguration) async throws -> GameManifest { manifest }
+	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
+		throw CancellationError()
+	}
+	func branding(region: GameRegion) async throws -> LauncherBranding { throw CancellationError() }
+	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration { cdn }
+	func manifest(
+		for configuration: GameConfiguration,
+		region: GameRegion
+	) async throws -> GameManifest { manifest }
 }
 
 private final class StreamingURLProtocol: URLProtocol, @unchecked Sendable {

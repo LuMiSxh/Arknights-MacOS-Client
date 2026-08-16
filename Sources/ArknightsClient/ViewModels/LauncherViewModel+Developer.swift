@@ -141,7 +141,8 @@
 
 		func loadDeveloperArtwork() async {
 			if loadCustomArtwork() { return }
-			guard let currentBranding = try? await api.branding(), isDeveloperMode else { return }
+			guard let currentBranding = try? await api.branding(region: region), isDeveloperMode
+			else { return }
 			branding = currentBranding
 			if let logoData = try? await artworkCache.officialLogoData() {
 				officialLogo = NSImage(data: logoData)

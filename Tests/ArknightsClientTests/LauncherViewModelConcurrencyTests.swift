@@ -210,7 +210,7 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 	private var brandingRequestWaiters: [CheckedContinuation<Void, Never>] = []
 	private var brandingResponse: CheckedContinuation<LauncherBranding, Never>?
 
-	func gameConfiguration() async throws -> GameConfiguration {
+	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		GameConfiguration(
 			gameLowestVersion: "1.0.0",
 			gameLatestVersion: "2.0.0",
@@ -222,7 +222,7 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 		)
 	}
 
-	func branding() async throws -> LauncherBranding {
+	func branding(region: GameRegion) async throws -> LauncherBranding {
 		brandingRequested = true
 		for waiter in brandingRequestWaiters {
 			waiter.resume()
@@ -231,9 +231,14 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 		return await withCheckedContinuation { brandingResponse = $0 }
 	}
 
-	func cdnConfiguration() async throws -> CDNConfiguration { throw CancellationError() }
+	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
+		throw CancellationError()
+	}
 
-	func manifest(for configuration: GameConfiguration) async throws -> GameManifest {
+	func manifest(
+		for configuration: GameConfiguration,
+		region: GameRegion
+	) async throws -> GameManifest {
 		throw CancellationError()
 	}
 
@@ -268,6 +273,7 @@ private actor ControllableInstaller: GameInstalling {
 
 	func install(
 		configuration: GameConfiguration,
+		region: GameRegion,
 		into installDirectory: URL,
 		verifyAllExistingFiles: Bool,
 		progress: @escaping @Sendable (DownloadProgress) async -> Void

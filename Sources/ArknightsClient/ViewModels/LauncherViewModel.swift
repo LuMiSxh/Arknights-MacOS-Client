@@ -32,6 +32,7 @@ final class LauncherViewModel: ObservableObject {
 		@Published var developerScenario: DeveloperScenario?
 	#endif
 
+	@Published private(set) var region: GameRegion
 	@Published var installDirectory: URL
 	@Published var launchOptions: GameLaunchOptions {
 		didSet { preferences.setLaunchOptions(launchOptions) }
@@ -96,7 +97,12 @@ final class LauncherViewModel: ObservableObject {
 		log = LauncherLog(fileURL: paths.launcherLogFile)
 		self.installer = installer ?? GameInstaller(api: api, log: log)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
-		installDirectory = preferences.installDirectory(default: paths.globalGameInstall)
+		let selectedRegion = preferences.selectedRegion()
+		region = selectedRegion
+		installDirectory = preferences.installDirectory(
+			for: selectedRegion,
+			default: paths.gameInstall(for: selectedRegion)
+		)
 		launchOptions = preferences.launchOptions()
 		automaticallyChecksLauncherUpdates = preferences.automaticLauncherUpdates()
 		automaticallyChecksGameUpdates = preferences.automaticGameUpdates()
@@ -220,21 +226,52 @@ final class LauncherViewModel: ObservableObject {
 		#endif
 	}
 
+	var canSwitchRegion: Bool {
+		!isDownloading && !isGameActive
+	}
+
+	func selectRegion(_ newRegion: GameRegion) {
+		guard newRegion != region, canSwitchRegion else { return }
+		region = newRegion
+		preferences.setSelectedRegion(newRegion)
+		activeRefreshID = nil
+		refreshTask?.cancel()
+		configuration = nil
+		branding = nil
+		heroArtwork = nil
+		officialLogo = nil
+		isInstalled = false
+		hasPartialDownload = false
+		installedVersion = nil
+		isGameUpdateAvailable = false
+		progress = nil
+		presentedNoticeContent = nil
+		installDirectory = preferences.installDirectory(
+			for: newRegion,
+			default: paths.gameInstall(for: newRegion)
+		)
+		phase = .checking
+		activityMessage = "Checking…"
+		Task { [log] in await log.info("Region switched to \(newRegion.displayName)") }
+		refreshTask = Task { [weak self] in await self?.refresh() }
+	}
+
 	func refresh(forceGameUpdateCheck: Bool = false) async {
 		guard !isDownloading else { return }
 		await log.info("Refreshing game and branding state")
 		let refreshID = UUID()
+		let region = region
 		activeRefreshID = refreshID
 		updateInstalledState()
 		phase = .checking
 		activityMessage = "Checking…"
 		let hasCustomArtwork = loadCustomArtwork()
-		let brandingTask = Task { [api] in try? await api.branding() }
+		let brandingTask = Task { [api] in try? await api.branding(region: region) }
 		defer { brandingTask.cancel() }
 
 		if !isInstalled || automaticallyChecksGameUpdates || forceGameUpdateCheck {
 			do {
-				let fetchedConfiguration = try await api.gameConfiguration()
+				let fetchedConfiguration = try await api.gameConfiguration(region: region)
 				guard isCurrentRefresh(refreshID) else { return }
 				configuration = fetchedConfiguration
 				updateGameAvailability()

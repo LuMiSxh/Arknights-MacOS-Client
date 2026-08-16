@@ -20,11 +20,14 @@ struct GameInstaller: Sendable {
 
 	func install(
 		configuration: GameConfiguration,
+		region: GameRegion,
 		into installDirectory: URL,
 		verifyAllExistingFiles: Bool = false,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
-		let (manifest, cdn) = try await (api.manifest(for: configuration), api.cdnConfiguration())
+		let (manifest, cdn) = try await (
+			api.manifest(for: configuration, region: region), api.cdnConfiguration(region: region)
+		)
 		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
 		excludeFromBackup(installDirectory)
 		try GameCompatibilityManager().restoreForUpdate(in: installDirectory)

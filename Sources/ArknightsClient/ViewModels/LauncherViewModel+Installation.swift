@@ -51,6 +51,7 @@ extension LauncherViewModel {
 			do {
 				let result = try await installer.install(
 					configuration: configuration,
+					region: region,
 					into: targetDirectory,
 					verifyAllExistingFiles: verifyAllExistingFiles
 				) { [weak self] update in

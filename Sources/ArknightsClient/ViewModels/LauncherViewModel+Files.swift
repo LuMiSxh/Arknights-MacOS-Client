@@ -19,9 +19,9 @@ extension LauncherViewModel {
 		panel.directoryURL = installDirectory.deletingLastPathComponent()
 		if panel.runModal() == .OK, let selected = panel.url {
 			installDirectory =
-				selected.lastPathComponent == "Arknights_EN"
-				? selected : selected.appending(path: "Arknights_EN", directoryHint: .isDirectory)
-			preferences.setInstallDirectory(installDirectory)
+				selected.lastPathComponent == region.gameTag
+				? selected : selected.appending(path: region.gameTag, directoryHint: .isDirectory)
+			preferences.setInstallDirectory(installDirectory, for: region)
 			updateInstalledState()
 		}
 	}
@@ -39,7 +39,7 @@ extension LauncherViewModel {
 		panel.directoryURL = installDirectory
 		if panel.runModal() == .OK, let selected = panel.url {
 			installDirectory = selected
-			preferences.setInstallDirectory(selected)
+			preferences.setInstallDirectory(selected, for: region)
 			updateInstalledState()
 			activityMessage = isInstalled ? "Ready" : "Arknights.exe not found"
 		}
@@ -168,6 +168,26 @@ extension LauncherViewModel {
 		let decoder = JSONDecoder()
 		decoder.dateDecodingStrategy = .iso8601
 		return try? decoder.decode(InstalledState.self, from: data)
+	}
+
+	/// Cheap local existence check for a region that may not be the active one, so the main
+	/// UI can offer a region switcher without triggering a network refresh for every region.
+	func isRegionInstalled(_ candidate: GameRegion) -> Bool {
+		guard candidate != region else { return isInstalled }
+		let directory = preferences.installDirectory(
+			for: candidate,
+			default: paths.gameInstall(for: candidate)
+		)
+		let fileManager = FileManager.default
+		guard fileManager.fileExists(atPath: directory.appending(path: "Arknights.exe").path)
+		else { return false }
+		return fileManager.fileExists(
+			atPath: directory.appending(path: ".arknights-client-state.json").path
+		)
+	}
+
+	var installedRegions: [GameRegion] {
+		GameRegion.allCases.filter(isRegionInstalled)
 	}
 
 	func loadCustomArtwork() -> Bool {

@@ -25,7 +25,7 @@ func crc64SupportsIncrementalUpdates() {
 @Test
 func authorizationHeaderMatchesOfficialLauncherAlgorithm() async throws {
 	let api = LauncherAPI()
-	let header = await api.authorizationHeader(timestamp: 1_700_000_000)
+	let header = await api.authorizationHeader(region: .global, timestamp: 1_700_000_000)
 
 	#expect(
 		header
