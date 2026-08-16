@@ -103,6 +103,10 @@
 				isGameUpdateAvailable = true
 				hasPartialDownload = true
 				activityMessage = "Paused"
+			case .migrating:
+				activeGameSessionID = UUID()
+				phase = .migrating
+				activityMessage = "Preparing Wine setup…"
 			case .launching:
 				activeGameSessionID = UUID()
 				phase = .launching

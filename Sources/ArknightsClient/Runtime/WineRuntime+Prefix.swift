@@ -65,13 +65,13 @@ extension WineRuntime {
 		}
 	}
 
-	func preparePrefixIfNeeded(
-		at prefixDirectory: URL,
-		gameDirectory: URL,
-		environment: [String: String],
-		logHandle: FileHandle,
-		log: LauncherLog? = nil
-	) async throws {
+	/// Whether the next launch would replay any prefix migration, so callers can
+	/// show a "Migrating" state instead of the generic launch status.
+	func hasPendingMigration(prefixDirectory: URL) -> Bool {
+		!migrationPlan(prefixDirectory: prefixDirectory).pending.isEmpty
+	}
+
+	private func migrationPlan(prefixDirectory: URL) -> RuntimeMigrationPlan {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
 		let hasSystemRegistry = fileManager.fileExists(atPath: systemRegistry.path)
@@ -93,16 +93,30 @@ extension WineRuntime {
 				fileManager: fileManager
 			)
 			? [] : [.installDXMT]
-		var plan = RuntimeMigrationPlan(
+		return RuntimeMigrationPlan(
 			expectedRevision: revision,
 			installedState: installedState,
 			hasSystemRegistry: hasSystemRegistry,
 			invalidatedMigrations: invalidatedMigrations
 		)
+	}
+
+	func preparePrefixIfNeeded(
+		at prefixDirectory: URL,
+		gameDirectory: URL,
+		environment: [String: String],
+		logHandle: FileHandle,
+		log: LauncherLog? = nil
+	) async throws {
+		let fileManager = FileManager.default
+		let store = RuntimeMigrationStore(fileManager: fileManager)
+		let persistedState = store.load(from: prefixDirectory)
+		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
+		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
+		var plan = migrationPlan(prefixDirectory: prefixDirectory)
 		if !plan.pending.isEmpty {
 			await log?.debug(
-				"Prefix migration plan: \(plan.pending); persistedState=\(persistedState != nil); "
-					+ "dxmtCurrent=\(invalidatedMigrations.isEmpty)"
+				"Prefix migration plan: \(plan.pending); persistedState=\(persistedState != nil)"
 			)
 		}
 		for migration in plan.pending {

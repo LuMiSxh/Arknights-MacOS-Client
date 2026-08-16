@@ -24,8 +24,13 @@ extension LauncherViewModel {
 			return
 		}
 
-		phase = .launching
-		activityMessage = "Starting…"
+		if runtime.hasPendingMigration(prefixDirectory: paths.winePrefix) {
+			phase = .migrating
+			activityMessage = "Preparing Wine setup…"
+		} else {
+			phase = .launching
+			activityMessage = "Starting…"
+		}
 		let gameSessionID = UUID()
 		let launchRequestedAt = Date()
 		let displayConfiguration = WineDisplayConfiguration.current(
@@ -50,6 +55,9 @@ extension LauncherViewModel {
 				await log.info(
 					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
+				guard activeGameSessionID == gameSessionID else { return }
+				phase = .launching
+				activityMessage = "Starting…"
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
 				try await WineWindowReadiness.wait(
 					processIdentifier: launch.processIdentifier
