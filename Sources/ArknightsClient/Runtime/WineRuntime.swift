@@ -83,6 +83,8 @@ struct WineRuntime: Sendable {
 		gameExecutable: URL,
 		prefixDirectory: URL,
 		gameArguments: [String] = [],
+		displayConfiguration: WineDisplayConfiguration,
+		graphicsDiagnostics: Bool = false,
 		logURL: URL? = nil
 	) async throws -> WineLaunch {
 		let fileManager = FileManager.default
@@ -133,7 +135,10 @@ struct WineRuntime: Sendable {
 				))
 		}
 
-		var environment = runtimeEnvironment(prefixDirectory: prefixDirectory)
+		var environment = runtimeEnvironment(
+			prefixDirectory: prefixDirectory,
+			graphicsDiagnostics: graphicsDiagnostics
+		)
 		environment["WINEDLLOVERRIDES"] = Self.dllOverrides
 		try await preparePrefixIfNeeded(
 			at: prefixDirectory,
@@ -142,6 +147,15 @@ struct WineRuntime: Sendable {
 			logHandle: logHandle
 		)
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
+		try await applyDisplayConfiguration(
+			displayConfiguration,
+			prefixDirectory: prefixDirectory,
+			environment: environment,
+			logHandle: logHandle
+		)
+		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
+			displayConfiguration.browserScaleFactor
+		)
 
 		let process = Process()
 		process.executableURL = executableURL

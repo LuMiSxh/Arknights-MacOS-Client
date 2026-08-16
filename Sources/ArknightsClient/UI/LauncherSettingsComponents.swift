@@ -59,6 +59,7 @@ struct UpdateSettingsRow: View {
 	var body: some View {
 		HStack(spacing: 16) {
 			Toggle(title, isOn: $isEnabled)
+				.toggleStyle(.switch)
 				.frame(width: 180, alignment: .leading)
 			Text(status)
 				.foregroundStyle(.secondary)

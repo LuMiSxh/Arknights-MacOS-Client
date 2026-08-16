@@ -8,7 +8,15 @@ struct GeneralSettingsPage: View {
 	var body: some View {
 		SettingsPage(title: "General", subtitle: "Game display, updates, and artwork") {
 			SettingsPanel(title: "Display", systemImage: "rectangle.on.rectangle") {
+				Toggle(
+					"High-resolution mode",
+					isOn: $model.launchOptions.usesHighResolutionMode
+				)
+				.toggleStyle(.switch)
+				.help("Use the display's full pixel density without enlarging the game window")
+				Divider()
 				Toggle("Use in-game display settings", isOn: $model.launchOptions.usesGameSettings)
+					.toggleStyle(.switch)
 					.help("Lets changes made inside Arknights persist between launches")
 				Divider()
 				Picker("Window Mode", selection: $model.launchOptions.displayMode) {
@@ -50,6 +58,7 @@ struct GeneralSettingsPage: View {
 				) {
 					Toggle("Announcements", isOn: $model.announcementsEnabled)
 						.labelsHidden()
+						.toggleStyle(.switch)
 				}
 			}
 

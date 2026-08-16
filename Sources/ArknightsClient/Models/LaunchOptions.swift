@@ -50,12 +50,49 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var displayMode: GameDisplayMode
 	var resolution: GameResolution
 	var usesGameSettings: Bool = true
+	var usesHighResolutionMode: Bool = true
 
 	static let `default` = GameLaunchOptions(
 		displayMode: .windowed,
 		resolution: .hd,
-		usesGameSettings: true
+		usesGameSettings: true,
+		usesHighResolutionMode: true
 	)
+
+	private enum CodingKeys: String, CodingKey {
+		case displayMode
+		case resolution
+		case usesGameSettings
+		case usesHighResolutionMode
+	}
+
+	init(
+		displayMode: GameDisplayMode,
+		resolution: GameResolution,
+		usesGameSettings: Bool = true,
+		usesHighResolutionMode: Bool = true
+	) {
+		self.displayMode = displayMode
+		self.resolution = resolution
+		self.usesGameSettings = usesGameSettings
+		self.usesHighResolutionMode = usesHighResolutionMode
+	}
+
+	init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		displayMode = try container.decode(GameDisplayMode.self, forKey: .displayMode)
+		resolution = try container.decode(GameResolution.self, forKey: .resolution)
+		usesGameSettings =
+			try container.decodeIfPresent(
+				Bool.self,
+				forKey: .usesGameSettings
+			) ?? true
+		usesHighResolutionMode =
+			try container.decodeIfPresent(
+				Bool.self,
+				forKey: .usesHighResolutionMode
+			) ?? true
+	}
 
 	/// Unity standalone-player arguments supported by the Windows client.
 	var playerArguments: [String] {

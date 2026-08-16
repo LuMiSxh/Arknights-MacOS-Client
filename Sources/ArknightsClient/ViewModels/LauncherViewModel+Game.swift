@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import Foundation
 
 extension LauncherViewModel {
@@ -27,6 +28,9 @@ extension LauncherViewModel {
 		activityMessage = "Starting…"
 		let gameSessionID = UUID()
 		let launchRequestedAt = Date()
+		let displayConfiguration = WineDisplayConfiguration.current(
+			highResolutionEnabled: launchOptions.usesHighResolutionMode
+		)
 		activeGameSessionID = gameSessionID
 		Task { [log] in await log.info("Game launch requested") }
 		launchTask?.cancel()
@@ -38,6 +42,8 @@ extension LauncherViewModel {
 					prefixDirectory: paths.winePrefix,
 					gameArguments: (configuration?.gameStartParams ?? [])
 						+ launchOptions.playerArguments,
+					displayConfiguration: displayConfiguration,
+					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					logURL: paths.logFile
 				)
 				await log.info(

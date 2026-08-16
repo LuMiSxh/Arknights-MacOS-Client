@@ -3,6 +3,68 @@
 import Foundation
 
 extension WineRuntime {
+	func applyDisplayConfiguration(
+		_ configuration: WineDisplayConfiguration,
+		prefixDirectory: URL,
+		environment: [String: String],
+		logHandle: FileHandle
+	) async throws {
+		let current = configuration.registryState(in: prefixDirectory)
+		if current?.retinaMode != configuration.registryValue {
+			try await writeRegistryValue(
+				key: "HKCU\\Software\\Wine\\Mac Driver",
+				name: "RetinaMode",
+				type: "REG_SZ",
+				value: configuration.registryValue,
+				environment: environment,
+				logHandle: logHandle
+			)
+		}
+		if current?.logPixels != configuration.logPixels {
+			try await writeRegistryValue(
+				key: "HKCU\\Control Panel\\Desktop",
+				name: "LogPixels",
+				type: "REG_DWORD",
+				value: String(configuration.logPixels),
+				environment: environment,
+				logHandle: logHandle
+			)
+		}
+		guard
+			current?.retinaMode != configuration.registryValue
+				|| current?.logPixels != configuration.logPixels
+		else { return }
+		try? logHandle.write(
+			contentsOf: Data(
+				"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels).\n"
+					.utf8
+			)
+		)
+	}
+
+	private func writeRegistryValue(
+		key: String,
+		name: String,
+		type: String,
+		value: String,
+		environment: [String: String],
+		logHandle: FileHandle
+	) async throws {
+		let status = try await runAndWait(
+			executable: executableURL,
+			arguments: [
+				"reg.exe", "add", key, "/v", name, "/t", type, "/d", value, "/f",
+			],
+			environment: environment,
+			output: logHandle
+		)
+		guard status == 0 else {
+			throw LauncherError.runtimeConfiguration(
+				"Wine could not configure \(name) (status \(status))."
+			)
+		}
+	}
+
 	func preparePrefixIfNeeded(
 		at prefixDirectory: URL,
 		gameDirectory: URL,

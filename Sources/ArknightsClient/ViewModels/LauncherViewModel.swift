@@ -62,6 +62,7 @@ final class LauncherViewModel: ObservableObject {
 	let paths: AppPaths
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
+	let graphicsDiagnosticsEnabled: Bool
 	var refreshTask: Task<Void, Never>?
 	var installationTask: Task<Void, Never>?
 	var launchTask: Task<Void, Never>?
@@ -88,6 +89,7 @@ final class LauncherViewModel: ObservableObject {
 		self.api = api
 		self.paths = paths
 		self.preferences = preferences
+		graphicsDiagnosticsEnabled = arguments.contains("--graphics-diagnostics")
 		self.updateChecker = updateChecker
 		self.announcementService = announcementService
 		self.installer = installer ?? GameInstaller(api: api)

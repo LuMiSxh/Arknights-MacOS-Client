@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Enabled Chromium GPU compositing while retaining Vuplex's stable CPU texture transfer (Should improve login page loading times).
 - Filled draft GitHub Release notes from the matching changelog section.
 - Required releases to be built from merged `main` and aligned local builds with version 0.2.0.
+- Added high-resolution rendering for sharper game and login-browser output on HiDPI displays.
 
 ## [0.1.0]
 

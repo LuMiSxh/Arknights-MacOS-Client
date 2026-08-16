@@ -90,10 +90,19 @@ extension WineRuntime {
 		return environment
 	}
 
-	func runtimeEnvironment(prefixDirectory: URL) -> [String: String] {
-		Self.isolatedEnvironment(
+	func runtimeEnvironment(
+		prefixDirectory: URL,
+		graphicsDiagnostics: Bool = false
+	) -> [String: String] {
+		var environment = Self.isolatedEnvironment(
 			prefixDirectory: prefixDirectory,
 			executableDirectory: executableURL.deletingLastPathComponent()
 		)
+		if graphicsDiagnostics {
+			environment["WINEDEBUG"] = "-all,err+all,+macdrv,+display"
+			environment["DXMT_LOG_LEVEL"] = "info"
+			environment["DXMT_LOG_PATH"] = "none"
+		}
+		return environment
 	}
 }

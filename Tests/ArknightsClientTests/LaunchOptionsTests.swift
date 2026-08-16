@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Foundation
 import Testing
 
 @testable import ArknightsClient
@@ -9,7 +10,18 @@ func defaultLaunchOptionsFavorCompatibleWindow() {
 	#expect(GameLaunchOptions.default.displayMode == .windowed)
 	#expect(GameLaunchOptions.default.resolution == .hd)
 	#expect(GameLaunchOptions.default.usesGameSettings)
+	#expect(GameLaunchOptions.default.usesHighResolutionMode)
 	#expect(GameLaunchOptions.default.playerArguments.isEmpty)
+}
+
+@Test
+func legacyLaunchOptionsEnableHighResolutionModeWhenDecoded() throws {
+	let data = Data(
+		#"{"displayMode":"windowed","resolution":"1280x720","usesGameSettings":true}"#.utf8
+	)
+	let options = try JSONDecoder().decode(GameLaunchOptions.self, from: data)
+
+	#expect(options.usesHighResolutionMode)
 }
 
 @Test

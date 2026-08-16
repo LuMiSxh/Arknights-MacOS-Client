@@ -19,6 +19,13 @@
  * arguments affect only the helper process; Arknights keeps its own DXMT
  * device and renderer.
  *
+ * Wine's global Windows DPI changes Unity's initial window geometry. The
+ * native launcher therefore keeps the prefix at 96 DPI and exports
+ * ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR instead. When its value is 2, this
+ * wrapper asks Chromium alone for a 2x device scale factor. This gives the
+ * off-screen browser a high-density paint buffer without changing the game
+ * window's coordinate system.
+ *
  * CEF's asynchronous DNS resolver asks Windows to sort IPv6 destinations
  * through SIO_ADDRESS_LIST_SORT. Wine currently returns WSAEOPNOTSUPP for
  * that ioctl, and CEF retries it while an OAuth page appears blank. Disabling
@@ -46,6 +53,10 @@ static const wchar_t userenv_override[] = L"userenv=n,b";
 static const wchar_t *compatibility_arguments[] = {
 	L"--vx-accelerated-paint-disabled",
 	L"--disable-features=AsyncDns",
+};
+static const wchar_t *high_resolution_arguments[] = {
+	L"--high-dpi-support=1",
+	L"--force-device-scale-factor=2",
 };
 
 static wchar_t *module_path(void) {
@@ -78,6 +89,17 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
 		if (wcscmp(arguments[index], expected) == 0) return TRUE;
 	}
 	return FALSE;
+}
+
+static BOOL high_resolution_enabled(void) {
+	wchar_t value[8];
+	DWORD length = GetEnvironmentVariableW(
+		L"ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR",
+		value,
+		ARRAYSIZE(value)
+	);
+
+	return length == 1 && value[0] == L'2';
 }
 
 static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
@@ -159,6 +181,8 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	int argument_count;
 	int index;
 	int compatibility_index;
+	int high_resolution_index;
+	BOOL use_high_resolution;
 	SIZE_T command_length = 1;
 	STARTUPINFOW startup_info = { .cb = sizeof(startup_info) };
 	PROCESS_INFORMATION process_info = { 0 };
@@ -202,11 +226,19 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		GlobalFree(original_path);
 		return (int)error;
 	}
+	use_high_resolution = high_resolution_enabled();
 	command_length += 2 * wcslen(original_path) + 3;
 	for (index = 1; index < argument_count; index++) command_length += 2 * wcslen(arguments[index]) + 3;
 	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments); compatibility_index++) {
 		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			command_length += 2 * wcslen(compatibility_arguments[compatibility_index]) + 3;
+		}
+	}
+	if (use_high_resolution) {
+		for (high_resolution_index = 0; high_resolution_index < ARRAYSIZE(high_resolution_arguments); high_resolution_index++) {
+			if (!has_argument(argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+				command_length += 2 * wcslen(high_resolution_arguments[high_resolution_index]) + 3;
+			}
 		}
 	}
 	child_command_line = GlobalAlloc(GMEM_FIXED, command_length * sizeof(*child_command_line));
@@ -224,6 +256,14 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			*cursor++ = L' ';
 			cursor = append_quoted(cursor, compatibility_arguments[compatibility_index]);
+		}
+	}
+	if (use_high_resolution) {
+		for (high_resolution_index = 0; high_resolution_index < ARRAYSIZE(high_resolution_arguments); high_resolution_index++) {
+			if (!has_argument(argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+				*cursor++ = L' ';
+				cursor = append_quoted(cursor, high_resolution_arguments[high_resolution_index]);
+			}
 		}
 	}
 	*cursor = L'\0';
