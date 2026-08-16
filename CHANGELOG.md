@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Kept DXMT shader data in the isolated persistent cache and added launch-phase timings to diagnostics (Should improve startup times by up to 3 times).
 - Enabled Chromium GPU compositing while retaining Vuplex's stable CPU texture transfer (Should improve login page loading times).
 - Filled draft GitHub Release notes from the matching changelog section.
+- Required releases to be built from merged `main` and aligned local builds with version 0.2.0.
 
 ## [0.1.0]
 

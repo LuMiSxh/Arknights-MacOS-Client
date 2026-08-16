@@ -14,7 +14,7 @@ Game updates are checked separately against Yostar. The check can also be disabl
 
 ## Creating a release
 
-Run `just release X.Y.Z` from a clean, pushed branch, or start **Draft release** from the GitHub Actions page and enter the version there. The workflow rejects malformed versions, versions missing from `CHANGELOG.md`, and versions whose tag or release already exists.
+Merge the release branch first, update the local `main` branch, and run `just release X.Y.Z` from clean, pushed `main`. Alternatively, start **Draft release** from the GitHub Actions page on `main` and enter the version there. The workflow rejects other branches, malformed versions, versions missing from `CHANGELOG.md`, and versions whose tag or release already exists.
 
 It then:
 
@@ -48,7 +48,7 @@ Keep the release as a draft until the runtime notice and corresponding-source wo
 
 ## Versioning and changelog
 
-Versions follow Semantic Versioning. Before 1.0, minor versions may contain deliberate compatibility changes; patch versions contain compatible fixes. Until the first release ships, changes stay in the `0.1.0` section. Later user-visible work goes into `Unreleased` and moves into a dated `X.Y.Z` section before release.
+Versions follow Semantic Versioning. Before 1.0, minor versions may contain deliberate compatibility changes; patch versions contain compatible fixes. User-visible work starts in `Unreleased` and moves into an `X.Y.Z` section before release.
 
 ## Signing limitation
 

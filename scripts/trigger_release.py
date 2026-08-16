@@ -42,6 +42,8 @@ def trigger(version: str) -> None:
     )
     if not branch:
         fail("releases must be triggered from a branch")
+    if branch != "main":
+        fail("releases must be triggered from main after the release branch is merged")
     try:
         upstream = output(
             [
