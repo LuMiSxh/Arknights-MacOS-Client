@@ -75,6 +75,7 @@ final class LauncherViewModel: ObservableObject {
 	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
 	var activeGameSessionID: UUID?
+	var gameRunningSince: Date?
 	var presentedNoticeContent: String?
 	var isStoppingGame = false
 	var installationGate = ExclusiveOperationGate()

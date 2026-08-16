@@ -3,16 +3,21 @@
 import Darwin
 import Foundation
 
+struct WineProcessExit: Sendable {
+	let status: Int32
+	let reason: Process.TerminationReason
+}
+
 struct WineLaunch: Sendable {
 	let processIdentifier: Int32
-	private let terminationTask: Task<Int32, Never>
+	private let terminationTask: Task<WineProcessExit, Never>
 
-	init(processIdentifier: Int32, terminationTask: Task<Int32, Never>) {
+	init(processIdentifier: Int32, terminationTask: Task<WineProcessExit, Never>) {
 		self.processIdentifier = processIdentifier
 		self.terminationTask = terminationTask
 	}
 
-	func waitUntilExit() async -> Int32 {
+	func waitUntilExit() async -> WineProcessExit {
 		await terminationTask.value
 	}
 }
@@ -175,11 +180,15 @@ struct WineRuntime: Sendable {
 		process.environment = environment
 		process.standardOutput = logHandle
 		process.standardError = logHandle
-		let (terminationStatuses, terminationContinuation) = AsyncStream<Int32>.makeStream(
-			bufferingPolicy: .bufferingNewest(1)
-		)
+		let (terminationStatuses, terminationContinuation) = AsyncStream<WineProcessExit>
+			.makeStream(
+				bufferingPolicy: .bufferingNewest(1)
+			)
 		process.terminationHandler = { process in
-			terminationContinuation.yield(process.terminationStatus)
+			terminationContinuation.yield(
+				WineProcessExit(
+					status: process.terminationStatus, reason: process.terminationReason)
+			)
 			terminationContinuation.finish()
 		}
 		try process.run()
@@ -187,8 +196,8 @@ struct WineRuntime: Sendable {
 		try? logHandle.close()
 
 		let terminationTask = Task {
-			for await status in terminationStatuses { return status }
-			return 0
+			for await exit in terminationStatuses { return exit }
+			return WineProcessExit(status: 0, reason: .exit)
 		}
 		return WineLaunch(
 			processIdentifier: process.processIdentifier,
