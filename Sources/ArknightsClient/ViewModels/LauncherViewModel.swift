@@ -19,15 +19,17 @@ final class LauncherViewModel: ObservableObject {
 	@Published var branding: LauncherBranding?
 	@Published var heroArtwork: NSImage?
 	@Published var officialLogo: NSImage?
-	@Published var notice: LauncherNotice?
+	@Published var popup: LauncherPopup?
 	@Published var isInstalled = false
 	@Published var installedVersion: String?
 	@Published var isGameUpdateAvailable = false
 	@Published var launcherUpdate: LauncherRelease?
 	@Published var launcherUpdateStatus: String?
 	@Published var isCheckingLauncherUpdates = false
-	@Published var isDownloading = false
 	@Published var activityMessage = "Checking…"
+	#if DEBUG
+		@Published var developerScenario: DeveloperScenario?
+	#endif
 
 	@Published var installDirectory: URL
 	@Published var launchOptions: GameLaunchOptions {
@@ -45,11 +47,18 @@ final class LauncherViewModel: ObservableObject {
 			if automaticallyChecksGameUpdates { checkGameUpdates() }
 		}
 	}
+	@Published var announcementsEnabled: Bool {
+		didSet {
+			preferences.setAnnouncementsEnabled(announcementsEnabled)
+			if announcementsEnabled { checkAnnouncements() }
+		}
+	}
 
 	let api: any LauncherAPIProviding
 	let installer: any GameInstalling
 	let artworkCache: ArtworkCache
 	let updateChecker: LauncherUpdateChecker
+	let announcementService: LauncherAnnouncementService
 	let paths: AppPaths
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
@@ -59,6 +68,8 @@ final class LauncherViewModel: ObservableObject {
 	var gameMonitorTask: Task<Void, Never>?
 	var gameProcessMonitorTask: Task<Void, Never>?
 	var launcherUpdateTask: Task<Void, Never>?
+	var announcementTask: Task<Void, Never>?
+	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
 	var activeGameSessionID: UUID?
 	var presentedNoticeContent: String?
@@ -71,12 +82,14 @@ final class LauncherViewModel: ObservableObject {
 		paths: AppPaths = AppPaths(),
 		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
 		updateChecker: LauncherUpdateChecker = LauncherUpdateChecker(),
+		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
 		arguments: [String] = ProcessInfo.processInfo.arguments
 	) {
 		self.api = api
 		self.paths = paths
 		self.preferences = preferences
 		self.updateChecker = updateChecker
+		self.announcementService = announcementService
 		self.installer = installer ?? GameInstaller(api: api)
 		log = LauncherLog(fileURL: paths.launcherLogFile)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
@@ -84,6 +97,20 @@ final class LauncherViewModel: ObservableObject {
 		launchOptions = preferences.launchOptions()
 		automaticallyChecksLauncherUpdates = preferences.automaticLauncherUpdates()
 		automaticallyChecksGameUpdates = preferences.automaticGameUpdates()
+		announcementsEnabled = preferences.announcementsEnabled()
+
+		#if DEBUG
+			developerScenario = DeveloperScenario(arguments: arguments)
+			if let developerScenario {
+				applyDeveloperScenario(developerScenario)
+				if developerScenario == .customPopup {
+					applyDeveloperPopup(arguments: arguments)
+				}
+				refreshTask = Task { [weak self] in await self?.loadDeveloperArtwork() }
+				Task { [log] in await log.info("Developer simulation started") }
+				return
+			}
+		#endif
 
 		refreshRuntime()
 		let installOnLaunch =
@@ -103,6 +130,9 @@ final class LauncherViewModel: ObservableObject {
 		if automaticallyChecksLauncherUpdates {
 			checkLauncherUpdates()
 		}
+		if announcementsEnabled {
+			checkAnnouncements()
+		}
 
 		let appVersion =
 			Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
@@ -119,6 +149,7 @@ final class LauncherViewModel: ObservableObject {
 		gameMonitorTask?.cancel()
 		gameProcessMonitorTask?.cancel()
 		launcherUpdateTask?.cancel()
+		announcementTask?.cancel()
 	}
 
 	var versionText: String {
@@ -127,6 +158,10 @@ final class LauncherViewModel: ObservableObject {
 
 	var installSizeText: String {
 		configuration?.decompressionSize ?? "—"
+	}
+
+	var isDownloading: Bool {
+		phase == .downloading
 	}
 
 	var canInstall: Bool {
@@ -172,6 +207,14 @@ final class LauncherViewModel: ObservableObject {
 
 	var isGameActive: Bool {
 		activeGameSessionID != nil
+	}
+
+	var isDeveloperMode: Bool {
+		#if DEBUG
+			developerScenario != nil
+		#else
+			false
+		#endif
 	}
 
 	func refresh(forceGameUpdateCheck: Bool = false) async {
@@ -234,68 +277,6 @@ final class LauncherViewModel: ObservableObject {
 		activityMessage =
 			isGameUpdateAvailable ? "Update available" : (isInstalled ? "Ready" : "Install")
 		await log.info("Refresh completed; state=\(activityMessage)")
-	}
-
-	func checkGameUpdates() {
-		guard !isDownloading else { return }
-		activeRefreshID = nil
-		refreshTask?.cancel()
-		refreshTask = Task { [weak self] in
-			await self?.refresh(forceGameUpdateCheck: true)
-		}
-	}
-
-	func checkLauncherUpdates() {
-		guard !isCheckingLauncherUpdates else { return }
-		guard
-			let endpointString = Bundle.main.object(forInfoDictionaryKey: "LauncherUpdatesURL")
-				as? String,
-			let endpoint = URL(string: endpointString)
-		else {
-			launcherUpdateStatus = "Update source unavailable"
-			return
-		}
-
-		launcherUpdateTask?.cancel()
-		isCheckingLauncherUpdates = true
-		launcherUpdateStatus = "Checking…"
-		launcherUpdateTask = Task { [weak self] in
-			guard let self else { return }
-			defer { isCheckingLauncherUpdates = false }
-			do {
-				guard let release = try await updateChecker.latestRelease(from: endpoint) else {
-					launcherUpdate = nil
-					launcherUpdateStatus = "No releases available"
-					await log.info("Launcher update check completed; no releases available")
-					return
-				}
-				let currentVersion =
-					Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
-					as? String ?? "0"
-				if !release.isDraft && !release.isPrerelease
-					&& updateChecker.isNewer(release.version, than: currentVersion)
-				{
-					launcherUpdate = release
-					launcherUpdateStatus = "Version \(release.version) available"
-				} else {
-					launcherUpdate = nil
-					launcherUpdateStatus = "Up to date"
-				}
-				await log.info(
-					"Launcher update check completed; status=\(launcherUpdateStatus ?? "Unknown")"
-				)
-			} catch is CancellationError {
-				launcherUpdateStatus = nil
-			} catch {
-				launcherUpdateStatus = "Couldn’t check for updates"
-				await log.error("Launcher update check failed: \(error.localizedDescription)")
-			}
-		}
-	}
-
-	func openLauncherUpdate() {
-		guard let url = launcherUpdate?.htmlURL else { return }
-		NSWorkspace.shared.open(url)
 	}
 
 }

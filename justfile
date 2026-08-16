@@ -11,6 +11,21 @@ default:
 run:
     swift run ArknightsClient
 
+# Run an isolated debug preview. Try launcher-update, announcement, game-update, or downloading.
+[group('Development')]
+preview scenario='launcher-update':
+    swift run ArknightsClient --developer-scenario {{ quote(scenario) }}
+
+# Preview a Markdown popup without touching the real installation.
+[group('Development')]
+preview-popup title body_file:
+    swift run ArknightsClient --developer-scenario custom-popup --developer-popup-title {{ quote(title) }} --developer-popup-file {{ quote(body_file) }}
+
+# Build an isolated debug app whose Settings can simulate launcher states.
+[group('Development')]
+preview-app:
+    uv run scripts/build_app.py --configuration debug
+
 # Download the verified runtime and build a local app bundle.
 [group('Development')]
 dev:
@@ -72,7 +87,17 @@ dev-dmg:
 icon:
     uv run scripts/generate_icon.py
 
-# Trigger a draft release for the required X.Y.Z version.
-[group('Release')]
+# Prepare or replace a repository-hosted announcement. Commit it to main to publish it.
+[group('Owner')]
+announcement-set id title body_file action_title='' action_url='':
+    uv run scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }}
+
+# Remove a repository-hosted announcement. Commit the change to withdraw it.
+[group('Owner')]
+announcement-remove id:
+    uv run scripts/manage_announcements.py remove {{ quote(id) }}
+
+# Trigger a draft release for the required X.Y.Z version. Requires repository write access.
+[group('Owner')]
 release version:
     uv run scripts/trigger_release.py {{ quote(version) }}

@@ -4,6 +4,12 @@ import Foundation
 
 extension LauncherViewModel {
 	func launch() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.launching)
+				return
+			}
+		#endif
 		guard !isDownloading, !isGameActive else { return }
 		let executable = installDirectory.appending(
 			path: configuration?.executableName ?? "Arknights.exe")
@@ -53,6 +59,11 @@ extension LauncherViewModel {
 				activeGameSessionID = nil
 				phase = .ready
 				activityMessage = isGameUpdateAvailable ? "Update available" : "Ready"
+			} catch LauncherError.runtimeWindowTimeout {
+				guard activeGameSessionID == gameSessionID else { return }
+				activeGameSessionID = nil
+				try? await runtime.stop(prefixDirectory: paths.winePrefix)
+				show(LauncherError.runtimeWindowTimeout)
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
@@ -66,6 +77,12 @@ extension LauncherViewModel {
 	}
 
 	func stopGame() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.ready)
+				return
+			}
+		#endif
 		guard canStopGame, let runtime = WineRuntime.discover() else { return }
 		isStoppingGame = true
 		activityMessage = "Stopping…"
@@ -83,6 +100,9 @@ extension LauncherViewModel {
 	}
 
 	func stopGameForApplicationTermination() {
+		#if DEBUG
+			if isDeveloperMode { return }
+		#endif
 		guard isGameActive, let runtime = WineRuntime.discover() else { return }
 		runtime.stopSynchronously(prefixDirectory: paths.winePrefix)
 	}

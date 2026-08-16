@@ -43,6 +43,14 @@ struct GeneralSettingsPage: View {
 					isChecking: model.isDownloading,
 					check: model.checkGameUpdates
 				)
+				Divider()
+				SettingsActionRow(
+					title: "Announcements",
+					detail: "Show occasional project messages once per announcement."
+				) {
+					Toggle("Announcements", isOn: $model.announcementsEnabled)
+						.labelsHidden()
+				}
 			}
 
 			SettingsPanel(title: "Artwork", systemImage: "photo") {
@@ -57,6 +65,42 @@ struct GeneralSettingsPage: View {
 		}
 	}
 }
+
+#if DEBUG
+	struct DeveloperSettingsPage: View {
+		@ObservedObject var model: LauncherViewModel
+
+		var body: some View {
+			SettingsPage(title: "Developer", subtitle: "Preview launcher states safely") {
+				SettingsPanel(title: "Scenario", systemImage: "switch.2") {
+					Picker("State", selection: scenarioBinding) {
+						ForEach(DeveloperScenario.allCases) { scenario in
+							Text(scenario.title).tag(scenario)
+						}
+					}
+					.pickerStyle(.menu)
+					Divider()
+					Text(scenarioBinding.wrappedValue.detail)
+						.foregroundStyle(.secondary)
+				}
+
+				SettingsPanel(title: "Isolation", systemImage: "lock.shield") {
+					Text(
+						"Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
+					)
+					.foregroundStyle(.secondary)
+				}
+			}
+		}
+
+		private var scenarioBinding: Binding<DeveloperScenario> {
+			Binding(
+				get: { model.developerScenario ?? .ready },
+				set: { scenario in model.applyDeveloperScenario(scenario) }
+			)
+		}
+	}
+#endif
 
 struct InstallationSettingsPage: View {
 	@ObservedObject var model: LauncherViewModel

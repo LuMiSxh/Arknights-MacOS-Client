@@ -25,6 +25,7 @@ struct LauncherUpdateCheckerTests {
 						{
 						  "tag_name": "v1.4.0-rc.1",
 						  "html_url": "https://github.com/example/arknights/releases/tag/v1.4.0-rc.1",
+						  "body": "## Changes\n\n- Faster startup",
 						  "draft": false,
 						  "prerelease": true
 						}
@@ -41,6 +42,7 @@ struct LauncherUpdateCheckerTests {
 
 		#expect(release.tagName == "v1.4.0-rc.1")
 		#expect(release.version == "1.4.0-rc.1")
+		#expect(release.body == "## Changes\n\n- Faster startup")
 		#expect(release.isPrerelease)
 		#expect(
 			receivedRequest.value?.value(forHTTPHeaderField: "Accept")
@@ -104,6 +106,64 @@ struct LauncherUpdateCheckerTests {
 	])
 	func semanticVersionComparison(candidate: String, current: String, expected: Bool) {
 		#expect(LauncherUpdateChecker().isNewer(candidate, than: current) == expected)
+	}
+
+	@Test
+	func feedDecodesMarkdownAndSendsRawGitHubHeader() async throws {
+		let endpoint = URL(string: "https://api.github.test/repos/example/contents/feed.json")!
+		let session = makeMockSession()
+		let receivedRequest = LockedValue<URLRequest?>(nil)
+		MockURLProtocol.handler = { request in
+			receivedRequest.set(request)
+			return .success(
+				(
+					HTTPURLResponse(
+						url: endpoint, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+					Data(
+						#"{"schemaVersion":1,"announcements":[{"id":"feedback","enabled":true,"title":"Feedback","body":"**Tell us** what you think.","actionTitle":"Open Issues","actionURL":"https://github.com/example/issues","minimumVersion":"0.2.0","maximumVersion":null,"startsAt":null,"endsAt":null}]}"#
+							.utf8
+					)
+				)
+			)
+		}
+		defer { MockURLProtocol.handler = nil }
+
+		let announcements = try await LauncherAnnouncementService(session: session)
+			.announcements(from: endpoint)
+
+		#expect(announcements.first?.body == "**Tell us** what you think.")
+		#expect(
+			receivedRequest.value?.value(forHTTPHeaderField: "Accept")
+				== "application/vnd.github.raw+json"
+		)
+	}
+
+	@Test
+	func eligibilityHonorsVersionWindowDatesAndSeenIDs() throws {
+		let now = Date(timeIntervalSince1970: 1_800_000_000)
+		let announcement = LauncherAnnouncement(
+			id: "feedback",
+			enabled: true,
+			title: "Feedback",
+			body: "Tell us what you think.",
+			actionTitle: nil,
+			actionURL: nil,
+			minimumVersion: "0.2.0",
+			maximumVersion: "0.3.0",
+			startsAt: now.addingTimeInterval(-60),
+			endsAt: now.addingTimeInterval(60)
+		)
+
+		#expect(
+			announcement.isEligible(currentVersion: "0.2.0", now: now, seenIDs: [])
+		)
+		#expect(
+			!announcement.isEligible(currentVersion: "0.1.0", now: now, seenIDs: [])
+		)
+		#expect(
+			!announcement.isEligible(
+				currentVersion: "0.2.0", now: now, seenIDs: ["feedback"])
+		)
 	}
 }
 

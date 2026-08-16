@@ -25,16 +25,20 @@ struct ContentView: View {
 		.sheet(isPresented: $settingsPresented) {
 			LauncherSettingsView(model: model)
 		}
-		.sheet(item: noticeBinding) { notice in
-			LauncherNoticeView(notice: notice, dismiss: model.dismissNotice)
+		.sheet(item: popupBinding) { popup in
+			LauncherPopupView(
+				popup: popup,
+				dismiss: model.dismissPopup,
+				openAction: model.openPopupAction
+			)
 		}
 	}
 
-	private var noticeBinding: Binding<LauncherNotice?> {
+	private var popupBinding: Binding<LauncherPopup?> {
 		Binding(
-			get: { model.notice },
-			set: { notice in
-				if notice == nil { model.dismissNotice() }
+			get: { model.popup },
+			set: { popup in
+				if popup == nil { model.dismissPopup() }
 			}
 		)
 	}

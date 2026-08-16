@@ -15,6 +15,8 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 | `Runtime` | Wine environment, prefix configuration, DXMT, Vuplex, and process lifecycle |
 | `Utilities` | CRC64 and diagnostic logging |
 
+`LauncherViewModel` is the main UI orchestrator. Network access, installation, artwork caching, update discovery, announcements, and Wine execution remain separate service or runtime types; the view model coordinates their results into one user-facing `LauncherPhase`. Facts independent of that phase, such as whether game files are installed or a newer version exists, remain separate state.
+
 ## Installation
 
 `LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, resumes `.part` files, verifies size and CRC64, and records the installed manifest.
@@ -82,6 +84,31 @@ Prefix changes run through an ordered migration plan: Wine initialization, DXMT 
 Game-directory shims implement `GameCompatibilityComponent` and are registered with `GameCompatibilityManager`. Active components are reconciled before every launch; all active and retired components are restored before install, update, or repair. Removing a shim means moving its component from the active list to the retired list for a supported upgrade cycle, allowing launcher-owned files to be cleaned up even when replacement assets are no longer bundled.
 
 Vuplex uses this reconciliation path rather than one-time migration state because the official updater can replace its helper at any time. Its wrapper and `userenv.dll` carry stable ownership markers, so upgrades and retirement never rely only on the current bundled bytes. Unknown files remain untouched.
+
+## Launcher communication
+
+Launcher releases and optional project announcements use GitHub as a read-only endpoint; no separate application server is required. Release discovery reads the latest stable GitHub Release. The release body becomes the Markdown changelog popup and its release page remains available from Settings and the status capsule.
+
+Announcements are read from `announcements.json` on `main`. The launcher validates the feed, version and date bounds, body length, and optional HTTPS action before displaying one eligible entry. Seen identifiers are stored locally, so editing an existing entry does not repeatedly interrupt users. Official Yostar HTML notices use the same popup queue after conversion to native attributed text.
+
+```mermaid
+sequenceDiagram
+	participant App as SwiftUI launcher
+	participant GitHub as GitHub API
+	participant Prefs as Local preferences
+	participant UI as Popup queue
+
+	App->>GitHub: Latest stable release
+	GitHub-->>App: Version, URL, Markdown body
+	App->>Prefs: Was this version presented?
+	alt New launcher version
+		App->>UI: Queue release-note popup
+	end
+	App->>GitHub: announcements.json from main
+	GitHub-->>App: Validated announcement feed
+	App->>Prefs: Filter identifiers already seen
+	App->>UI: Queue first eligible announcement
+```
 
 ## Boundaries
 

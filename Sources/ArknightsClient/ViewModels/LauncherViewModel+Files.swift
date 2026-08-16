@@ -6,6 +6,9 @@ import UniformTypeIdentifiers
 
 extension LauncherViewModel {
 	func chooseInstallDirectory() {
+		#if DEBUG
+			if isDeveloperMode { return }
+		#endif
 		let panel = NSOpenPanel()
 		panel.title = "Choose where to install Arknights"
 		panel.prompt = "Choose"
@@ -24,6 +27,9 @@ extension LauncherViewModel {
 	}
 
 	func locateExistingInstallation() {
+		#if DEBUG
+			if isDeveloperMode { return }
+		#endif
 		let panel = NSOpenPanel()
 		panel.title = "Choose the folder containing Arknights.exe"
 		panel.prompt = "Use Folder"
@@ -65,6 +71,9 @@ extension LauncherViewModel {
 	}
 
 	func resetArtwork() {
+		#if DEBUG
+			if isDeveloperMode { return }
+		#endif
 		try? FileManager.default.removeItem(at: paths.customArtwork)
 		guard !isDownloading else { return }
 		activeRefreshID = nil
@@ -72,10 +81,6 @@ extension LauncherViewModel {
 		refreshTask = Task { [weak self] in
 			await self?.refresh()
 		}
-	}
-
-	func dismissNotice() {
-		notice = nil
 	}
 
 	func revealApplication() {
@@ -97,6 +102,9 @@ extension LauncherViewModel {
 	}
 
 	func uninstallGame() {
+		#if DEBUG
+			if isDeveloperMode { return }
+		#endif
 		guard !isDownloading else { return }
 		guard FileManager.default.fileExists(atPath: installDirectory.path) else {
 			updateInstalledState()
@@ -162,7 +170,16 @@ extension LauncherViewModel {
 			return
 		}
 		presentedNoticeContent = content
-		notice = formattedNotice
+		enqueuePopup(
+			LauncherPopup(
+				id: "yostar-notice-\(formattedNotice.id.uuidString)",
+				title: "Notice",
+				content: .attributed(formattedNotice.content),
+				dismissTitle: "Done",
+				actionTitle: nil,
+				actionURL: nil
+			)
+		)
 	}
 
 	func isCurrentRefresh(_ refreshID: UUID) -> Bool {

@@ -4,10 +4,22 @@ import Foundation
 
 extension LauncherViewModel {
 	func installOrUpdate() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.downloading)
+				return
+			}
+		#endif
 		startInstallation(launchAfterCompletion: false)
 	}
 
 	func repairGame() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.downloading)
+				return
+			}
+		#endif
 		startInstallation(launchAfterCompletion: false, verifyAllExistingFiles: true)
 	}
 
@@ -25,7 +37,6 @@ extension LauncherViewModel {
 		refreshTask?.cancel()
 		let targetDirectory = installDirectory
 		progress = nil
-		isDownloading = true
 		phase = .downloading
 		activityMessage = verifyAllExistingFiles ? "Verifying…" : "Preparing…"
 		Task { [log] in
@@ -73,6 +84,12 @@ extension LauncherViewModel {
 	}
 
 	func cancelDownload() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.paused)
+				return
+			}
+		#endif
 		guard isDownloading else { return }
 		activityMessage = "Pausing…"
 		Task { [log] in await log.info("Installation pause requested") }
@@ -83,7 +100,6 @@ extension LauncherViewModel {
 		guard installationGate.owns(installationID) else { return false }
 		installationGate.finish(installationID)
 		installationTask = nil
-		isDownloading = false
 		return true
 	}
 }

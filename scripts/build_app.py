@@ -143,12 +143,12 @@ def embed_runtime(runtime: Path, resources: Path) -> None:
     launcher.symlink_to("wine64")
 
 
-def build(runtime: Path | None) -> Path:
+def build(runtime: Path | None, configuration: str = "release") -> Path:
     runtime = runtime.resolve() if runtime is not None else None
     validate_inputs(runtime)
-    info("Building the Apple Silicon release executable")
+    info(f"Building the Apple Silicon {configuration} executable")
     run(
-        ["swift", "build", "--configuration", "release", "--arch", "arm64"],
+        ["swift", "build", "--configuration", configuration, "--arch", "arm64"],
         cwd=PROJECT_DIR,
     )
     binary_dir = Path(
@@ -157,7 +157,7 @@ def build(runtime: Path | None) -> Path:
                 "swift",
                 "build",
                 "--configuration",
-                "release",
+                configuration,
                 "--arch",
                 "arm64",
                 "--show-bin-path",
@@ -167,7 +167,7 @@ def build(runtime: Path | None) -> Path:
     )
     binary = binary_dir / EXECUTABLE_NAME
     if not os.access(binary, os.X_OK):
-        fail(f"release executable not found: {binary}")
+        fail(f"{configuration} executable not found: {binary}")
 
     DIST_DIR.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".app-build.", dir=DIST_DIR) as name:
@@ -180,6 +180,17 @@ def build(runtime: Path | None) -> Path:
         copy_file(
             PROJECT_DIR / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )
+        if configuration == "debug":
+            run(
+                [
+                    "plutil",
+                    "-insert",
+                    "DeveloperPreviewEnabled",
+                    "-bool",
+                    "YES",
+                    staged_app / "Contents/Info.plist",
+                ]
+            )
         copy_file(PROJECT_DIR / "Resources/AppIcon.icns", resources / "AppIcon.icns")
         copy_file(PROJECT_DIR / "Resources/Assets.car", resources / "Assets.car")
 
@@ -214,8 +225,11 @@ def build(runtime: Path | None) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", type=Path)
+    parser.add_argument(
+        "--configuration", choices=("debug", "release"), default="release"
+    )
     arguments = parser.parse_args()
-    build(arguments.runtime)
+    build(arguments.runtime, arguments.configuration)
 
 
 if __name__ == "__main__":

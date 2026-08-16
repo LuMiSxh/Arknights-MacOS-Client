@@ -5,12 +5,14 @@ import Foundation
 struct LauncherRelease: Decodable, Sendable, Equatable {
 	let tagName: String
 	let htmlURL: URL
+	let body: String?
 	let isDraft: Bool
 	let isPrerelease: Bool
 
 	enum CodingKeys: String, CodingKey {
 		case tagName = "tag_name"
 		case htmlURL = "html_url"
+		case body
 		case isDraft = "draft"
 		case isPrerelease = "prerelease"
 	}
@@ -51,7 +53,7 @@ struct LauncherUpdateChecker: Sendable {
 	}
 }
 
-private struct SemanticVersion: Comparable {
+struct SemanticVersion: Comparable {
 	private enum PrereleaseIdentifier: Comparable {
 		case numeric(Int)
 		case text(String)
