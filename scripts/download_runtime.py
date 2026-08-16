@@ -72,6 +72,7 @@ def download(url: str, output: Path, expected_sha256: str) -> None:
             total = int(response.headers.get("Content-Length", "0"))
             received = 0
             last_update = 0.0
+            next_noninteractive_report = 0.1
             while chunk := response.read(1024 * 1024):
                 file.write(chunk)
                 received += len(chunk)
@@ -86,6 +87,12 @@ def download(url: str, output: Path, expected_sha256: str) -> None:
                         message = f"\r  {received / 1_048_576:,.0f} MiB"
                     print(message, end="", file=sys.stderr, flush=True)
                     last_update = now
+                elif total and received / total >= next_noninteractive_report:
+                    percentage = min(received / total * 100, 100)
+                    info(
+                        f"Downloaded {percentage:.0f}% ({received / 1_048_576:,.0f} MiB)"
+                    )
+                    next_noninteractive_report += 0.1
         if sys.stderr.isatty():
             print(file=sys.stderr)
     except (OSError, urllib.error.URLError) as error:

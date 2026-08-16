@@ -28,7 +28,18 @@ from common import (
     warning,
 )
 
-ICON_COMPOSER = Path("/Applications/Icon Composer.app/Contents/Executables/ictool")
+DEFAULT_ICON_COMPOSER = Path(
+    "/Applications/Icon Composer.app/Contents/Executables/ictool"
+)
+
+
+def icon_composer() -> Path:
+    discovered = shutil.which("ictool")
+    if discovered:
+        return Path(discovered)
+    if DEFAULT_ICON_COMPOSER.is_file():
+        return DEFAULT_ICON_COMPOSER
+    fail("Icon Composer command not found; install Icon Composer or add ictool to PATH")
 
 
 def compile_arguments(source: Path, destination: Path) -> list[str | Path]:
@@ -62,9 +73,8 @@ def compile_arguments(source: Path, destination: Path) -> list[str | Path]:
 def generate() -> None:
     require_command("actool")
     require_command("sips")
+    composer = icon_composer()
     source = require_directory(PROJECT_DIR / "Resources/AppIcon.icon")
-    if not ICON_COMPOSER.is_file():
-        fail(f"Icon Composer command not found: {ICON_COMPOSER}")
 
     rendered = BUILD_DIR / "AppIcon.png"
     preview = PROJECT_DIR / "Resources/AppIcon.png"
@@ -82,7 +92,7 @@ def generate() -> None:
     info("Rendering the Icon Composer source")
     run(
         [
-            ICON_COMPOSER,
+            composer,
             source,
             "--export-image",
             "--output-file",

@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <shellapi.h>
+#include <strsafe.h>
 #include <wchar.h>
 
 /*
@@ -122,6 +123,7 @@ static BOOL enable_userenv_override(void) {
 	wchar_t *value;
 	SIZE_T value_length;
 	BOOL result;
+	HRESULT string_result;
 
 	if (existing_length == 0) {
 		return SetEnvironmentVariableW(variable_name, userenv_override);
@@ -133,8 +135,15 @@ static BOOL enable_userenv_override(void) {
 		GlobalFree(value);
 		return FALSE;
 	}
-	wcscat(value, L";");
-	wcscat(value, userenv_override);
+	string_result = StringCchCatW(value, value_length, L";");
+	if (SUCCEEDED(string_result)) {
+		string_result = StringCchCatW(value, value_length, userenv_override);
+	}
+	if (FAILED(string_result)) {
+		GlobalFree(value);
+		SetLastError(ERROR_INSUFFICIENT_BUFFER);
+		return FALSE;
+	}
 	result = SetEnvironmentVariableW(variable_name, value);
 	GlobalFree(value);
 	return result;
@@ -155,6 +164,8 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	PROCESS_INFORMATION process_info = { 0 };
 	DWORD exit_code;
 	DWORD error;
+	SIZE_T original_capacity;
+	HRESULT string_result;
 
 	(void)instance;
 	(void)previous_instance;
@@ -170,14 +181,21 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		return ERROR_PATH_NOT_FOUND;
 	}
 	separator[1] = L'\0';
-	original_path = GlobalAlloc(GMEM_FIXED, (wcslen(shim_path) + wcslen(original_name) + 1) * sizeof(*original_path));
+	original_capacity = wcslen(shim_path) + wcslen(original_name) + 1;
+	original_path = GlobalAlloc(GMEM_FIXED, original_capacity * sizeof(*original_path));
 	if (original_path == NULL) {
 		GlobalFree(shim_path);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
-	wcscpy(original_path, shim_path);
-	wcscat(original_path, original_name);
+	string_result = StringCchCopyW(original_path, original_capacity, shim_path);
+	if (SUCCEEDED(string_result)) {
+		string_result = StringCchCatW(original_path, original_capacity, original_name);
+	}
 	GlobalFree(shim_path);
+	if (FAILED(string_result)) {
+		GlobalFree(original_path);
+		return ERROR_INSUFFICIENT_BUFFER;
+	}
 	arguments = CommandLineToArgvW(GetCommandLineW(), &argument_count);
 	if (arguments == NULL) {
 		error = GetLastError();

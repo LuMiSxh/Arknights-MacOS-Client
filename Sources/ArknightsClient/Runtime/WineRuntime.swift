@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 
 struct WineLaunch: Sendable {
@@ -215,8 +216,13 @@ struct WineRuntime: Sendable {
 		process.environment = runtimeEnvironment(prefixDirectory: prefixDirectory)
 		process.standardOutput = FileHandle.nullDevice
 		process.standardError = FileHandle.nullDevice
+		let terminated = DispatchSemaphore(value: 0)
+		process.terminationHandler = { _ in terminated.signal() }
 		guard (try? process.run()) != nil else { return }
-		process.waitUntilExit()
+		guard terminated.wait(timeout: .now() + 3) == .timedOut else { return }
+		process.terminate()
+		guard terminated.wait(timeout: .now() + 1) == .timedOut else { return }
+		Darwin.kill(process.processIdentifier, SIGKILL)
 	}
 
 	var wineserverURL: URL? {

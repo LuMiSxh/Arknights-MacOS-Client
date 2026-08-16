@@ -156,3 +156,14 @@ func gameWindowReadinessRequiresALargeVisibleWindowForTheRuntimeProcess() {
 			windows: [helperWindow, gameWindow]
 		))
 }
+
+@Test
+func gameWindowReadinessTimesOutWhenTheRuntimeNeverCreatesAWindow() async {
+	await #expect(throws: LauncherError.self) {
+		try await WineWindowReadiness.wait(
+			processIdentifier: Int32.max,
+			timeout: .milliseconds(2),
+			pollInterval: .milliseconds(1)
+		)
+	}
+}

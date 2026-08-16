@@ -33,6 +33,7 @@ enum LauncherError: LocalizedError {
 	case missingConfiguration
 	case gameNotInstalled(URL)
 	case wineRuntimeMissing
+	case runtimeWindowTimeout
 	case runtimeConfiguration(String)
 	case runtimeExited(status: Int32, log: URL)
 
@@ -58,6 +59,8 @@ enum LauncherError: LocalizedError {
 			"Arknights.exe was not found: \(url.path)"
 		case .wineRuntimeMissing:
 			"No compatible Windows runtime found. Use a build that bundles Wine + DXMT."
+		case .runtimeWindowTimeout:
+			"Arknights did not open a window within 90 seconds. Check the Wine log and try again."
 		case .runtimeConfiguration(let message):
 			"The Windows runtime could not be configured: \(message)"
 		case .runtimeExited(let status, let log):
