@@ -54,6 +54,8 @@ struct WineRuntime: Sendable {
 	static let crashDialogRegistryValue = "ShowCrashDialog"
 	static let macDriverRegistryKey = "HKCU\\Software\\Wine\\Mac Driver"
 	static let preciseScrollingRegistryValue = "UsePreciseScrolling"
+	static let leftCommandIsCtrlRegistryValue = "LeftCommandIsCtrl"
+	static let rightCommandIsCtrlRegistryValue = "RightCommandIsCtrl"
 	static let isolatedUserDirectoryNames = [
 		"Desktop", "Documents", "Downloads", "Music", "Pictures", "Movies", "Templates",
 	]

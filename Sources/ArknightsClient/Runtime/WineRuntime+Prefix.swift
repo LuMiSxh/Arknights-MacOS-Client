@@ -202,6 +202,24 @@ extension WineRuntime {
 				"Wine could not adjust trackpad scroll sensitivity (status \(scrollingStatus))."
 			)
 		}
+
+		for name in [Self.leftCommandIsCtrlRegistryValue, Self.rightCommandIsCtrlRegistryValue] {
+			let status = try await runAndWait(
+				executable: executableURL,
+				arguments: [
+					"reg.exe", "add", Self.macDriverRegistryKey,
+					"/v", name,
+					"/t", "REG_SZ", "/d", "y", "/f",
+				],
+				environment: environment,
+				output: logHandle
+			)
+			guard status == 0 else {
+				throw LauncherError.runtimeConfiguration(
+					"Wine could not map the Command key to Control (status \(status))."
+				)
+			}
+		}
 	}
 
 	static func installDXMT(

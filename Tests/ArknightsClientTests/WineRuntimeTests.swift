@@ -14,7 +14,7 @@ func gameExecutableUsesTheIsolatedWindowsDrive() {
 }
 
 @Test
-func runtimeForcesDXMTWithoutDisablingVuplexGraphics() {
+func runtimeForcesDXMTForTheGameProcess() {
 	#expect(
 		WineRuntime.dllOverrides
 			== "d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
@@ -27,6 +27,12 @@ func runtimeForcesDXMTWithoutDisablingVuplexGraphics() {
 func runtimeDisablesPreciseTrackpadScrollingToMatchWindowsWheelSpeed() {
 	#expect(WineRuntime.macDriverRegistryKey == "HKCU\\Software\\Wine\\Mac Driver")
 	#expect(WineRuntime.preciseScrollingRegistryValue == "UsePreciseScrolling")
+}
+
+@Test
+func runtimeMapsTheCommandKeyToControlForVuplexClipboardShortcuts() {
+	#expect(WineRuntime.leftCommandIsCtrlRegistryValue == "LeftCommandIsCtrl")
+	#expect(WineRuntime.rightCommandIsCtrlRegistryValue == "RightCommandIsCtrl")
 }
 
 @Test

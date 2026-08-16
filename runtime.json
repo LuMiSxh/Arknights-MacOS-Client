@@ -1,39 +1,39 @@
 {
-	"schemaVersion": 1,
-	"prefixRevision": 2,
-	"runtime": {
-		"name": "WineCX 11.15 + DXMT 0.80 (frankea build)",
-		"url": "https://github.com/frankea/Whisky/releases/download/v4.5.105-beta.1/Libraries.tar.gz",
-		"sha256": "43d78bec577166b5f64b1903f92582e673fbb142ad23921550f77cfeb9ffe0ce"
-	},
-	"buildRecipe": {
-		"url": "https://github.com/frankea/winecx-gptk/archive/aa652a1433f4ac6be84ebc410ecce47118bb03c9.tar.gz",
-		"sha256": "370c0c98f65f9d23e7f4bb79b9f1f5f9066bbc18c0b2740a6291f5e6cd14d9bc"
-	},
-	"components": {
-		"wine": "11.15",
-		"dxmt": "0.80",
-		"gstreamer": "1.26.3",
-		"ffmpeg": "7.1.1",
-		"moltenvk": "1.4.2",
-		"wineGecko": "2.47.4"
-	},
-	"provenance": {
-		"buildRepository": "https://github.com/frankea/winecx-gptk",
-		"buildCommit": "aa652a1433f4ac6be84ebc410ecce47118bb03c9",
-		"wineRepository": "https://github.com/dappermint/winecx",
-		"wineCommit": "c2cce0e61e01dd6e03ee854af526cc17d4412b52",
-		"dxmtRepository": "https://github.com/3Shain/dxmt",
-		"dxmtCommit": "589adb780354b461645b29999cefaf533594ee99",
-		"moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
-		"moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
-		"gstreamerRepository": "https://github.com/GStreamer/gstreamer",
-		"gstreamerCommit": "87bc0c6e949e3dcc440658f78ef52aa8088cb62f",
-		"ffmpegRepository": "https://github.com/FFmpeg/FFmpeg",
-		"ffmpegCommit": "db69d06eeeab4f46da15030a80d539efb4503ca8",
-		"wineGeckoRepository": "https://gitlab.winehq.org/wine/wine-gecko",
-		"wineGeckoCommit": "557ea0c2e9f9ebd621323b3dbfbdd18c2528759c",
-		"nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
-		"nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d"
-	}
+  "schemaVersion": 1,
+  "prefixRevision": 2,
+  "runtime": {
+    "name": "WineCX 11.15 + DXMT 0.80 (frankea build)",
+    "url": "https://github.com/frankea/Whisky/releases/download/v4.5.105-beta.1/Libraries.tar.gz",
+    "sha256": "43d78bec577166b5f64b1903f92582e673fbb142ad23921550f77cfeb9ffe0ce"
+  },
+  "buildRecipe": {
+    "url": "https://github.com/frankea/winecx-gptk/archive/aa652a1433f4ac6be84ebc410ecce47118bb03c9.tar.gz",
+    "sha256": "370c0c98f65f9d23e7f4bb79b9f1f5f9066bbc18c0b2740a6291f5e6cd14d9bc"
+  },
+  "components": {
+    "wine": "11.15",
+    "dxmt": "0.80",
+    "gstreamer": "1.26.3",
+    "ffmpeg": "7.1.1",
+    "moltenvk": "1.4.2",
+    "wineGecko": "2.47.4"
+  },
+  "provenance": {
+    "buildRepository": "https://github.com/frankea/winecx-gptk",
+    "buildCommit": "aa652a1433f4ac6be84ebc410ecce47118bb03c9",
+    "wineRepository": "https://github.com/dappermint/winecx",
+    "wineCommit": "c2cce0e61e01dd6e03ee854af526cc17d4412b52",
+    "dxmtRepository": "https://github.com/3Shain/dxmt",
+    "dxmtCommit": "589adb780354b461645b29999cefaf533594ee99",
+    "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
+    "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
+    "gstreamerRepository": "https://github.com/GStreamer/gstreamer",
+    "gstreamerCommit": "87bc0c6e949e3dcc440658f78ef52aa8088cb62f",
+    "ffmpegRepository": "https://github.com/FFmpeg/FFmpeg",
+    "ffmpegCommit": "db69d06eeeab4f46da15030a80d539efb4503ca8",
+    "wineGeckoRepository": "https://gitlab.winehq.org/wine/wine-gecko",
+    "wineGeckoCommit": "557ea0c2e9f9ebd621323b3dbfbdd18c2528759c",
+    "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
+    "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d"
+  }
 }
