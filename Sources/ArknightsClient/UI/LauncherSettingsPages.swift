@@ -13,10 +13,12 @@ struct GeneralSettingsPage: View {
 					isOn: $model.launchOptions.usesHighResolutionMode
 				)
 				.toggleStyle(.switch)
+				.tint(SettingsVisuals.cyan)
 				.help("Use the display's full pixel density without enlarging the game window")
 				Divider()
 				Toggle("Use in-game display settings", isOn: $model.launchOptions.usesGameSettings)
 					.toggleStyle(.switch)
+					.tint(SettingsVisuals.cyan)
 					.help("Lets changes made inside Arknights persist between launches")
 				Divider()
 				Picker("Window Mode", selection: $model.launchOptions.displayMode) {
@@ -59,6 +61,7 @@ struct GeneralSettingsPage: View {
 					Toggle("Announcements", isOn: $model.announcementsEnabled)
 						.labelsHidden()
 						.toggleStyle(.switch)
+						.tint(SettingsVisuals.cyan)
 				}
 			}
 
@@ -162,7 +165,7 @@ struct InstallationSettingsPage: View {
 			SettingsPanel(title: "Remove", systemImage: "trash") {
 				SettingsActionRow(
 					title: "Game files",
-					detail: "Move the installed game and Wine data to the Trash."
+					detail: "Move the selected game installation to the Trash."
 				) {
 					Button("Uninstall Game…", role: .destructive) {
 						confirmsGameUninstall = true
@@ -194,7 +197,8 @@ struct InstallationSettingsPage: View {
 			return "Downloading \(Int(progress.fraction * 100))%"
 		}
 		if model.isDownloading { return "Preparing download" }
-		return model.isInstalled ? "Installed" : "Not installed"
+		if model.isInstalled { return "Installed" }
+		return model.hasPartialDownload ? "Paused" : "Not installed"
 	}
 }
 
@@ -215,7 +219,7 @@ struct AboutSettingsPage: View {
 						.foregroundStyle(.secondary)
 					Link("LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!)
 						.font(.callout.weight(.medium))
-						.foregroundStyle(.primary)
+						.foregroundStyle(SettingsVisuals.cyan)
 				}
 				Spacer()
 				Link(
@@ -247,11 +251,11 @@ struct AboutSettingsPage: View {
 				HStack(spacing: 18) {
 					if let agreement = model.branding?.userAgreement {
 						Link("User Agreement", destination: agreement)
-							.foregroundStyle(.primary)
+							.foregroundStyle(SettingsVisuals.cyan)
 					}
 					if let privacy = model.branding?.privacyPolicy {
 						Link("Privacy Policy", destination: privacy)
-							.foregroundStyle(.primary)
+							.foregroundStyle(SettingsVisuals.cyan)
 					}
 					Spacer()
 					Text("This launcher is not affiliated with Hypergryph or Yostar.")

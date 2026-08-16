@@ -64,7 +64,7 @@ struct LauncherSettingsView: View {
 enum SettingsVisuals {
 	static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
 	static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
-	static let navigationSelection = Color.white.opacity(0.085)
+	static let navigationSelection = cyan.opacity(0.12)
 	static let hairline = Color.white.opacity(0.12)
 }
 
@@ -137,7 +137,7 @@ private struct SettingsNavigationButton: View {
 					.fontWeight(isSelected ? .semibold : .regular)
 				Spacer(minLength: 0)
 			}
-			.foregroundStyle(isSelected ? .primary : .secondary)
+			.foregroundStyle(isSelected ? SettingsVisuals.cyan : .secondary)
 			.padding(.vertical, 9)
 			.padding(.trailing, 12)
 			.background(
