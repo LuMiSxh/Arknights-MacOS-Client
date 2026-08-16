@@ -20,6 +20,8 @@ struct LauncherSettingsView: View {
 				switch selectedSection {
 				case .general:
 					GeneralSettingsPage(model: model)
+				case .updates:
+					UpdatesSettingsPage(model: model)
 				case .installation:
 					InstallationSettingsPage(
 						model: model,
@@ -36,13 +38,14 @@ struct LauncherSettingsView: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
 			.background(.ultraThinMaterial)
 		}
-		.tint(SettingsVisuals.controlTint)
+		.tint(SettingsVisuals.cyan)
 		.background(.thinMaterial)
 		.frame(width: 820, height: 570)
 		.toolbar {
 			ToolbarItem(placement: .confirmationAction) {
 				Button("Done") { dismiss() }
-					.buttonStyle(.glass)
+					.buttonStyle(.glassProminent)
+					.tint(SettingsVisuals.cyan)
 			}
 		}
 		.confirmationDialog(
@@ -123,6 +126,7 @@ private struct SettingsNavigationButton: View {
 	let section: SettingsSection
 	let isSelected: Bool
 	let action: () -> Void
+	@State private var isHovering = false
 
 	var body: some View {
 		Button(action: action) {
@@ -137,22 +141,27 @@ private struct SettingsNavigationButton: View {
 					.fontWeight(isSelected ? .semibold : .regular)
 				Spacer(minLength: 0)
 			}
-			.foregroundStyle(isSelected ? SettingsVisuals.cyan : .secondary)
+			.foregroundStyle(isSelected || isHovering ? SettingsVisuals.cyan : .secondary)
 			.padding(.vertical, 9)
 			.padding(.trailing, 12)
-			.background(
-				isSelected ? SettingsVisuals.navigationSelection : .clear,
-				in: .rect(cornerRadius: 8)
-			)
+			.background(backgroundFill, in: .rect(cornerRadius: 8))
 			.contentShape(.rect)
 		}
 		.buttonStyle(.plain)
+		.onHover { isHovering = $0 }
 		.accessibilityAddTraits(isSelected ? .isSelected : [])
+	}
+
+	private var backgroundFill: Color {
+		if isSelected { return SettingsVisuals.navigationSelection }
+		if isHovering { return SettingsVisuals.cyan.opacity(0.06) }
+		return .clear
 	}
 }
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
 	case general
+	case updates
 	case installation
 	case about
 	#if DEBUG
@@ -164,6 +173,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	var title: String {
 		switch self {
 		case .general: "General"
+		case .updates: "Updates"
 		case .installation: "Installation"
 		case .about: "About"
 		#if DEBUG
@@ -175,6 +185,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	var systemImage: String {
 		switch self {
 		case .general: "slider.horizontal.3"
+		case .updates: "arrow.trianglehead.2.clockwise"
 		case .installation: "externaldrive"
 		case .about: "info.circle"
 		#if DEBUG

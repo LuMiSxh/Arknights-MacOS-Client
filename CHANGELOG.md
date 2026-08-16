@@ -6,9 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Support for the Japan and Korea Arknights PC clients alongside Global, each installed, updated, and launched independently. Switch regions from Settings → Installation, or from the region switcher in the main window once more than one region is installed.
+
 ### Changed
 
 - Expanded launcher and Wine diagnostic logging with clearer detail for troubleshooting.
+- Redesigned Settings with clearer grouping (a dedicated Updates page, and Installation split into Region, Location, Maintenance, and Remove), consistent glass and cyan-accented controls, and working hover feedback throughout.
 
 ### Fixed
 

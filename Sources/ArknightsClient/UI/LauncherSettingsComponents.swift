@@ -31,6 +31,16 @@ struct SettingsPage<Content: View>: View {
 	}
 }
 
+/// A subtle row separator matching the nav rail's hairline, used instead of the stock
+/// `Divider()` inside glass panels so rows read as one soft surface, not a bordered form.
+struct SettingsHairline: View {
+	var body: some View {
+		Rectangle()
+			.fill(SettingsVisuals.hairline)
+			.frame(height: 1)
+	}
+}
+
 struct SettingsPanel<Content: View>: View {
 	let title: String
 	let systemImage: String
@@ -91,10 +101,70 @@ struct SettingsActionRow<Actions: View>: View {
 	}
 }
 
+/// A cyan glass chip that stands in for `Picker`'s stock menu-button chrome, so option
+/// pickers read as the same interaction language as the landing page's region switcher
+/// rather than a default AppKit control.
+struct GlassMenuPicker<Value: Hashable>: View {
+	let selection: Binding<Value>
+	let options: [(value: Value, title: String)]
+	var isDisabled = false
+
+	var body: some View {
+		Menu {
+			ForEach(options, id: \.value) { option in
+				Button {
+					selection.wrappedValue = option.value
+				} label: {
+					if option.value == selection.wrappedValue {
+						Label(option.title, systemImage: "checkmark")
+					} else {
+						Text(option.title)
+					}
+				}
+			}
+		} label: {
+			HStack(spacing: 5) {
+				Text(currentTitle)
+				Image(systemName: "chevron.up.chevron.down")
+					.font(.system(size: 9, weight: .bold))
+					.accessibilityHidden(true)
+			}
+			.font(.system(size: 12, weight: .semibold))
+			.foregroundStyle(SettingsVisuals.cyan)
+			.padding(.horizontal, 10)
+			.padding(.vertical, 5)
+			.background(SettingsVisuals.cyan.opacity(0.15), in: Capsule())
+		}
+		.menuStyle(.button)
+		.buttonStyle(.plain)
+		.disabled(isDisabled)
+		.opacity(isDisabled ? 0.4 : 1)
+	}
+
+	private var currentTitle: String {
+		options.first(where: { $0.value == selection.wrappedValue })?.title ?? ""
+	}
+}
+
+/// A `Link` that underlines on hover instead of sitting there looking unresponsive.
+struct CyanLink: View {
+	let title: String
+	let destination: URL
+	@State private var isHovering = false
+
+	var body: some View {
+		Link(title, destination: destination)
+			.foregroundStyle(SettingsVisuals.cyan)
+			.underline(isHovering)
+			.onHover { isHovering = $0 }
+	}
+}
+
 struct DocumentLinkRow: View {
 	let title: String
 	let systemImage: String
 	let action: () -> Void
+	@State private var isHovering = false
 
 	var body: some View {
 		Button(action: action) {
@@ -105,8 +175,16 @@ struct DocumentLinkRow: View {
 					.font(.caption.weight(.semibold))
 					.foregroundStyle(.tertiary)
 			}
+			.foregroundStyle(isHovering ? SettingsVisuals.cyan : .primary)
+			.padding(.vertical, 4)
+			.padding(.horizontal, 6)
+			.background(
+				isHovering ? SettingsVisuals.cyan.opacity(0.08) : .clear,
+				in: .rect(cornerRadius: 8)
+			)
 			.contentShape(.rect)
 		}
 		.buttonStyle(.plain)
+		.onHover { isHovering = $0 }
 	}
 }

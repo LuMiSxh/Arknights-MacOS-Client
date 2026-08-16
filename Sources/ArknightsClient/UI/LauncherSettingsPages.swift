@@ -6,63 +6,47 @@ struct GeneralSettingsPage: View {
 	@ObservedObject var model: LauncherViewModel
 
 	var body: some View {
-		SettingsPage(title: "General", subtitle: "Game display, updates, and artwork") {
+		SettingsPage(title: "General", subtitle: "Display and personalization") {
 			SettingsPanel(title: "Display", systemImage: "rectangle.on.rectangle") {
-				Toggle(
-					"High-resolution mode",
-					isOn: $model.launchOptions.usesHighResolutionMode
-				)
-				.toggleStyle(.switch)
-				.tint(SettingsVisuals.cyan)
-				.help("Use the display's full pixel density without enlarging the game window")
-				Divider()
-				Toggle("Use in-game display settings", isOn: $model.launchOptions.usesGameSettings)
+				LabeledContent("High-resolution mode") {
+					Toggle(
+						"High-resolution mode",
+						isOn: $model.launchOptions.usesHighResolutionMode
+					)
+					.labelsHidden()
 					.toggleStyle(.switch)
 					.tint(SettingsVisuals.cyan)
-					.help("Lets changes made inside Arknights persist between launches")
-				Divider()
-				Picker("Window Mode", selection: $model.launchOptions.displayMode) {
-					ForEach(GameDisplayMode.allCases, id: \.self) { mode in
-						Text(mode.displayName).tag(mode)
-					}
 				}
-				.disabled(model.launchOptions.usesGameSettings)
+				.help("Use the display's full pixel density without enlarging the game window")
+				SettingsHairline()
+				LabeledContent("Use in-game display settings") {
+					Toggle(
+						"Use in-game display settings",
+						isOn: $model.launchOptions.usesGameSettings
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(SettingsVisuals.cyan)
+				}
+				.help("Lets changes made inside Arknights persist between launches")
+				SettingsHairline()
+				LabeledContent("Window Mode") {
+					GlassMenuPicker(
+						selection: $model.launchOptions.displayMode,
+						options: GameDisplayMode.allCases.map { ($0, $0.displayName) },
+						isDisabled: model.launchOptions.usesGameSettings
+					)
+				}
 				.help("Overrides the game the next time it starts")
-				Picker("Resolution", selection: $model.launchOptions.resolution) {
-					ForEach(GameResolution.allCases, id: \.self) { resolution in
-						Text(resolution.displayName).tag(resolution)
-					}
+				SettingsHairline()
+				LabeledContent("Resolution") {
+					GlassMenuPicker(
+						selection: $model.launchOptions.resolution,
+						options: GameResolution.allCases.map { ($0, $0.displayName) },
+						isDisabled: model.launchOptions.usesGameSettings
+					)
 				}
-				.disabled(model.launchOptions.usesGameSettings)
 				.help("Overrides the game the next time it starts")
-			}
-
-			SettingsPanel(title: "Updates", systemImage: "arrow.trianglehead.2.clockwise") {
-				UpdateSettingsRow(
-					title: "Launcher",
-					status: model.launcherUpdateStatus ?? "Not checked",
-					isEnabled: $model.automaticallyChecksLauncherUpdates,
-					isChecking: model.isCheckingLauncherUpdates,
-					check: model.checkLauncherUpdates
-				)
-				Divider()
-				UpdateSettingsRow(
-					title: "Arknights",
-					status: model.isGameUpdateAvailable ? "Update available" : model.versionText,
-					isEnabled: $model.automaticallyChecksGameUpdates,
-					isChecking: model.isDownloading,
-					check: model.checkGameUpdates
-				)
-				Divider()
-				SettingsActionRow(
-					title: "Announcements",
-					detail: "Show occasional project messages once per announcement."
-				) {
-					Toggle("Announcements", isOn: $model.announcementsEnabled)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(SettingsVisuals.cyan)
-				}
 			}
 
 			SettingsPanel(title: "Artwork", systemImage: "photo") {
@@ -72,6 +56,45 @@ struct GeneralSettingsPage: View {
 					Spacer()
 					Button("Choose…", action: model.chooseCustomArtwork)
 					Button("Use Default", action: model.resetArtwork)
+				}
+			}
+		}
+	}
+}
+
+struct UpdatesSettingsPage: View {
+	@ObservedObject var model: LauncherViewModel
+
+	var body: some View {
+		SettingsPage(title: "Updates", subtitle: "Keep the launcher and game current") {
+			SettingsPanel(title: "Automatic Checks", systemImage: "arrow.trianglehead.2.clockwise")
+			{
+				UpdateSettingsRow(
+					title: "Launcher",
+					status: model.launcherUpdateStatus ?? "Not checked",
+					isEnabled: $model.automaticallyChecksLauncherUpdates,
+					isChecking: model.isCheckingLauncherUpdates,
+					check: model.checkLauncherUpdates
+				)
+				SettingsHairline()
+				UpdateSettingsRow(
+					title: "Arknights",
+					status: model.isGameUpdateAvailable ? "Update available" : model.versionText,
+					isEnabled: $model.automaticallyChecksGameUpdates,
+					isChecking: model.isDownloading,
+					check: model.checkGameUpdates
+				)
+			}
+
+			SettingsPanel(title: "Announcements", systemImage: "megaphone") {
+				SettingsActionRow(
+					title: "Announcements",
+					detail: "Show occasional project messages once per announcement."
+				) {
+					Toggle("Announcements", isOn: $model.announcementsEnabled)
+						.labelsHidden()
+						.toggleStyle(.switch)
+						.tint(SettingsVisuals.cyan)
 				}
 			}
 		}
@@ -91,7 +114,7 @@ struct GeneralSettingsPage: View {
 						}
 					}
 					.pickerStyle(.menu)
-					Divider()
+					SettingsHairline()
 					Text(scenarioBinding.wrappedValue.detail)
 						.foregroundStyle(.secondary)
 				}
@@ -119,14 +142,25 @@ struct InstallationSettingsPage: View {
 	@Binding var confirmsGameUninstall: Bool
 
 	var body: some View {
-		SettingsPage(title: "Installation", subtitle: "Game files and diagnostics") {
-			SettingsPanel(title: "Arknights", systemImage: "shippingbox") {
+		SettingsPage(title: "Installation", subtitle: "Files, repair, and removal") {
+			SettingsPanel(title: "Region", systemImage: "globe") {
+				LabeledContent("Region") {
+					GlassMenuPicker(
+						selection: regionBinding,
+						options: GameRegion.allCases.map { ($0, $0.displayName) },
+						isDisabled: !model.canSwitchRegion
+					)
+				}
+				.help("Global, Japan, and Korea install, update, and launch independently")
+			}
+
+			SettingsPanel(title: "Location", systemImage: "externaldrive") {
 				LabeledContent("Status") {
 					Text(gameStatus)
 						.foregroundStyle(model.isDownloading ? SettingsVisuals.cyan : .secondary)
 				}
-				Divider()
-				LabeledContent("Location") {
+				SettingsHairline()
+				LabeledContent("Folder") {
 					HStack(spacing: 10) {
 						Text(model.installDirectory.lastPathComponent)
 							.lineLimit(1)
@@ -138,9 +172,9 @@ struct InstallationSettingsPage: View {
 							.help("Show game files in Finder")
 					}
 				}
-				Divider()
+				SettingsHairline()
 				HStack {
-					Menu("Installation Location", systemImage: "externaldrive") {
+					Menu("Installation Location", systemImage: "arrow.triangle.swap") {
 						Button("Choose New Location…", action: model.chooseInstallDirectory)
 						Button(
 							"Locate Existing Installation…",
@@ -150,7 +184,9 @@ struct InstallationSettingsPage: View {
 					.disabled(model.isDownloading)
 					Spacer()
 				}
-				Divider()
+			}
+
+			SettingsPanel(title: "Maintenance", systemImage: "wrench.and.screwdriver") {
 				SettingsActionRow(
 					title: "Repair",
 					detail: "Check every game file and download missing or damaged files again."
@@ -159,6 +195,15 @@ struct InstallationSettingsPage: View {
 						"Repair…", systemImage: "wrench.and.screwdriver", action: model.repairGame
 					)
 					.disabled(!model.isInstalled || !model.canInstall)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Logs",
+					detail: "Use these files when reporting startup or game problems."
+				) {
+					Button(
+						"Show Logs", systemImage: "doc.text.magnifyingglass",
+						action: model.revealLogs)
 				}
 			}
 
@@ -172,22 +217,6 @@ struct InstallationSettingsPage: View {
 					}
 					.disabled(!model.isInstalled || model.isDownloading)
 				}
-				Divider()
-				SettingsActionRow(
-					title: "Launcher",
-					detail: "Reveal the launcher in Finder."
-				) {
-					Button("Show in Finder", action: model.revealApplication)
-				}
-			}
-
-			SettingsPanel(title: "Diagnostics", systemImage: "waveform.path.ecg") {
-				SettingsActionRow(
-					title: "Launcher and Wine logs",
-					detail: "Use these files when reporting startup or game problems."
-				) {
-					Button("Show Logs", systemImage: "folder", action: model.revealLogs)
-				}
 			}
 		}
 	}
@@ -199,6 +228,10 @@ struct InstallationSettingsPage: View {
 		if model.isDownloading { return "Preparing download" }
 		if model.isInstalled { return "Installed" }
 		return model.hasPartialDownload ? "Paused" : "Not installed"
+	}
+
+	private var regionBinding: Binding<GameRegion> {
+		Binding(get: { model.region }, set: { model.selectRegion($0) })
 	}
 }
 
@@ -217,11 +250,16 @@ struct AboutSettingsPage: View {
 						.font(.title2.bold())
 					Text("Unofficial macOS launcher")
 						.foregroundStyle(.secondary)
-					Link("LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!)
-						.font(.callout.weight(.medium))
-						.foregroundStyle(SettingsVisuals.cyan)
+					CyanLink(
+						title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!
+					)
+					.font(.callout.weight(.medium))
 				}
 				Spacer()
+				Button("Show in Finder", systemImage: "folder", action: model.revealApplication)
+					.labelStyle(.iconOnly)
+					.buttonStyle(.glass)
+					.help("Reveal the launcher application in Finder")
 				Link(
 					"GitHub Repository",
 					destination: URL(
@@ -237,11 +275,11 @@ struct AboutSettingsPage: View {
 				DocumentLinkRow(title: "Changelog", systemImage: "clock.arrow.circlepath") {
 					presentedDocument = .changelog
 				}
-				Divider()
+				SettingsHairline()
 				DocumentLinkRow(title: "MPL-2.0 License", systemImage: "checkmark.seal") {
 					presentedDocument = .projectLicense
 				}
-				Divider()
+				SettingsHairline()
 				DocumentLinkRow(title: "Third-Party Notices", systemImage: "shippingbox") {
 					presentedDocument = .thirdPartyNotices
 				}
@@ -250,12 +288,10 @@ struct AboutSettingsPage: View {
 			SettingsPanel(title: "Arknights", systemImage: "link") {
 				HStack(spacing: 18) {
 					if let agreement = model.branding?.userAgreement {
-						Link("User Agreement", destination: agreement)
-							.foregroundStyle(SettingsVisuals.cyan)
+						CyanLink(title: "User Agreement", destination: agreement)
 					}
 					if let privacy = model.branding?.privacyPolicy {
-						Link("Privacy Policy", destination: privacy)
-							.foregroundStyle(SettingsVisuals.cyan)
+						CyanLink(title: "Privacy Policy", destination: privacy)
 					}
 					Spacer()
 					Text("This launcher is not affiliated with Hypergryph or Yostar.")
