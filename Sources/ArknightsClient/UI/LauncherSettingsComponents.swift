@@ -160,6 +160,22 @@ struct CyanLink: View {
 	}
 }
 
+/// Same look as `CyanLink`, but for destinations that cost real work to build
+/// (e.g. read log files) and must run only on click, not on every view update.
+struct CyanActionLink: View {
+	let title: String
+	let action: () -> Void
+	@State private var isHovering = false
+
+	var body: some View {
+		Button(title, action: action)
+			.buttonStyle(.plain)
+			.foregroundStyle(SettingsVisuals.cyan)
+			.underline(isHovering)
+			.onHover { isHovering = $0 }
+	}
+}
+
 struct DocumentLinkRow: View {
 	let title: String
 	let systemImage: String

@@ -24,9 +24,7 @@ extension LauncherViewModel {
 			guard let self else { return }
 			do {
 				let announcements = try await announcementService.announcements(from: endpoint)
-				let currentVersion =
-					Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
-					as? String ?? "0"
+				let currentVersion = Bundle.main.shortVersionString ?? "0"
 				let seenIDs = preferences.seenAnnouncementIDs()
 				guard
 					let announcement = announcements.first(where: {

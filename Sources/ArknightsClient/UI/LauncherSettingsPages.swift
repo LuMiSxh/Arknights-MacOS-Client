@@ -205,6 +205,18 @@ struct InstallationSettingsPage: View {
 						"Show Logs", systemImage: "doc.text.magnifyingglass",
 						action: model.revealLogs)
 				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Report a Problem",
+					detail: "Open a pre-filled bug report on GitHub."
+				) {
+					Button {
+						NSWorkspace.shared.open(IssueReportURL.build())
+					} label: {
+						Label("Report…", systemImage: "ladybug")
+					}
+					.buttonStyle(.glass)
+				}
 			}
 
 			SettingsPanel(title: "Remove", systemImage: "trash") {
@@ -302,8 +314,5 @@ struct AboutSettingsPage: View {
 		}
 	}
 
-	private var appVersion: String {
-		Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-			?? "Development"
-	}
+	private var appVersion: String { IssueReportURL.appVersion }
 }

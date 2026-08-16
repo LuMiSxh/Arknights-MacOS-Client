@@ -143,9 +143,7 @@ final class LauncherViewModel: ObservableObject {
 			checkAnnouncements()
 		}
 
-		let appVersion =
-			Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-			?? "Development"
+		let appVersion = Bundle.main.shortVersionString ?? "Development"
 		Task { [log] in
 			await log.info("Launcher \(appVersion) started")
 		}

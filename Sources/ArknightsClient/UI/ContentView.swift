@@ -6,7 +6,7 @@ struct ContentView: View {
 	@ObservedObject var model: LauncherViewModel
 	@State private var settingsPresented = false
 
-	private let cyan = Color(red: 0.094, green: 0.82, blue: 1)
+	private let cyan = SettingsVisuals.cyan
 
 	var body: some View {
 		ZStack {
@@ -156,6 +156,12 @@ struct ContentView: View {
 							.font(.caption)
 							.foregroundStyle(.secondary)
 							.lineLimit(1)
+						if isFailed {
+							CyanActionLink(title: "Report Problem") {
+								NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
+							}
+							.font(.caption)
+						}
 					}
 				}
 
@@ -298,5 +304,10 @@ struct ContentView: View {
 		}
 		if case .failed(let message) = model.phase { return message }
 		return nil
+	}
+
+	private var isFailed: Bool {
+		if case .failed = model.phase { return true }
+		return false
 	}
 }
