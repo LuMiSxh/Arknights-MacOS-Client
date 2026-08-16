@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Documented in-game payment support for the official Global PC checkout flow, with a note that PayPal availability may vary by region/account.
+
 ## [0.2.0]
 
 ### Added

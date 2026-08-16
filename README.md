@@ -29,6 +29,7 @@ The project is in alpha and supports only Apple Silicon Macs running macOS 26 or
 - Launch the game in windowed, borderless, or fullscreen mode at a selected resolution.
 - Use HiDPI rendering for the game and its login browser.
 - Support the Yostar, Apple, Google, and Facebook login flows through Wine compatibility helpers.
+- Keep the official in-game payment flows available through the Windows client checkout pages (credit card checkout verified; PayPal availability can vary by region/account).
 - Check launcher and game versions independently; automatic checks can be disabled.
 - Display one-time project announcements from this repository; announcement checks can be disabled.
 - Store the Wine prefix and Windows user folders under Application Support.
