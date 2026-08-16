@@ -6,22 +6,12 @@
 #include <wctype.h>
 
 /*
- * Wine 11.15 does not implement
- * DeriveAppContainerSidFromAppContainerName(), but Chromium imports it when
- * preparing the sandbox used by OAuth pop-ups. Wine aborts the Vuplex helper
- * at that import, before Google or Facebook can display a page.
+ * Wine 11.15 does not implement AppContainer APIs in userenv.dll.
+ * Chromium's sandbox (sandbox/win/src/app_container_base.cc) dynamically
+ * loads these functions via GetProcAddress and asserts CHECK(fn).
  *
- * This DLL supplies only that missing API. Windows derives an AppContainer SID
- * by lowercasing the moniker, hashing its UTF-16 bytes with SHA-256, and using
- * the first seven little-endian DWORDs below the S-1-15-2 authority. Wine does
- * not create an AppContainer token for this process; the SID only lets
- * Chromium finish its compatibility checks instead of hitting Wine's
- * unimplemented-function trap.
- *
- * The launcher installs this file beside the official Vuplex helper. Its
- * wrapper adds a process-local WINEDLLOVERRIDES entry before starting that
- * helper, so the replacement cannot affect Arknights, DXMT, or unrelated Wine
- * processes. The marker is intentionally retained for safe upgrade/removal.
+ * This DLL supplies stubs for all required AppContainer APIs to prevent
+ * Chromium from throwing FATAL CHECK assertions.
  */
 __declspec(dllexport) const char arknights_client_userenv_marker[] =
 	"Arknights Client AppContainer compatibility";
@@ -114,4 +104,50 @@ cleanup:
 	if (provider != 0) CryptReleaseContext(provider, 0);
 	HeapFree(GetProcessHeap(), 0, normalized_name);
 	return result;
+}
+
+__declspec(dllexport)
+HRESULT WINAPI CreateAppContainerProfile(
+	PCWSTR app_container_name,
+	PCWSTR display_name,
+	PCWSTR description,
+	PSID_AND_ATTRIBUTES capabilities,
+	DWORD capability_count,
+	PSID *app_container_sid
+) {
+	(void)display_name;
+	(void)description;
+	(void)capabilities;
+	(void)capability_count;
+	return DeriveAppContainerSidFromAppContainerName(app_container_name, app_container_sid);
+}
+
+__declspec(dllexport)
+HRESULT WINAPI DeleteAppContainerProfile(
+	PCWSTR app_container_name
+) {
+	(void)app_container_name;
+	return S_OK;
+}
+
+__declspec(dllexport)
+HRESULT WINAPI GetAppContainerRegistryLocation(
+	REGSAM desired_access,
+	PHKEY app_container_key
+) {
+	(void)desired_access;
+	if (app_container_key == NULL) return E_POINTER;
+	*app_container_key = NULL;
+	return E_NOTIMPL;
+}
+
+__declspec(dllexport)
+HRESULT WINAPI GetAppContainerFolderPath(
+	PCWSTR app_container_sid,
+	PWSTR *folder_path
+) {
+	(void)app_container_sid;
+	if (folder_path == NULL) return E_POINTER;
+	*folder_path = NULL;
+	return E_NOTIMPL;
 }

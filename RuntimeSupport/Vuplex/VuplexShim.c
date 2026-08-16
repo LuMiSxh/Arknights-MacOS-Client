@@ -15,28 +15,19 @@
  * DXMT can create that shared resource, but Chromium and Vuplex attempt to
  * write it concurrently through this runtime and the browser remains blank.
  * The wrapper therefore selects Vuplex's CPU OnPaint transfer while leaving
- * Chromium's own GPU compositor, WebGL, and rasterization available. These
- * arguments affect only the helper process; Arknights keeps its own DXMT
- * device and renderer.
+ * Chromium's GPU compositor active for maximum rendering speed (Issue #3).
  *
- * Wine's global Windows DPI changes Unity's initial window geometry. The
- * native launcher therefore keeps the prefix at 96 DPI and exports
- * ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR instead. When its value is 2, this
- * wrapper asks Chromium alone for a 2x device scale factor. This gives the
- * off-screen browser a high-density paint buffer without changing the game
- * window's coordinate system.
+ * Proven working config for PayPal (Issue #14):
+ * --disable-webgl, --disable-gpu-rasterization, and --disable-accelerated-2d-canvas.
  *
  * CEF's asynchronous DNS resolver asks Windows to sort IPv6 destinations
  * through SIO_ADDRESS_LIST_SORT. Wine currently returns WSAEOPNOTSUPP for
  * that ioctl, and CEF retries it while an OAuth page appears blank. Disabling
- * only AsyncDns makes CEF use Wine's regular system resolver instead; it does
- * not disable networking or change DNS behavior for the game process.
+ * only AsyncDns makes CEF use Wine's regular system resolver instead.
+ * We also disable ClipboardMaximumAge to fix a copy-paste sync timeout under Wine.
  *
- * Chromium also imports DeriveAppContainerSidFromAppContainerName() for its
- * OAuth sandbox. That API is absent from the tested Wine runtime. The wrapper
- * therefore adds a process-local userenv native override before creating the
- * official helper. The matching compatibility DLL implements only that one
- * derivation API and is never loaded by the game process.
+ * Chromium also imports AppContainer APIs for its sandbox. Those APIs are
+ * stubbed in our process-local userenv compatibility DLL.
  *
  * The wrapper preserves every argument supplied by the game, appends only
  * missing compatibility arguments, starts the untouched official helper, and
@@ -50,10 +41,15 @@
 static const volatile char launcher_marker[] = "Arknights Client Vuplex compatibility";
 static const wchar_t original_name[] = L"Vuplex WebView.original.helper.vuplex";
 static const wchar_t userenv_override[] = L"userenv=n,b";
+
 static const wchar_t *compatibility_arguments[] = {
 	L"--vx-accelerated-paint-disabled",
-	L"--disable-features=AsyncDns",
+	L"--disable-webgl",
+	L"--disable-gpu-rasterization",
+	L"--disable-accelerated-2d-canvas",
+	L"--disable-features=AsyncDns,ClipboardMaximumAge"
 };
+
 static const wchar_t *high_resolution_arguments[] = {
 	L"--high-dpi-support=1",
 	L"--force-device-scale-factor=2",

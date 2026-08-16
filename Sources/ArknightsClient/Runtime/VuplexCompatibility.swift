@@ -15,6 +15,8 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 	private static let previousShimTemporaryPrefix = ".arknights-client-vuplex-previous-"
 	private static let userenvTemporaryPrefix = ".arknights-client-userenv-"
 	private static let userenvBackupName = ".arknights-client-userenv.previous.dll"
+	private static let retiredSoftwareFallbackName =
+		".arknights-client-vuplex-software-rendering"
 	private static let userenvMarker = Data(
 		"Arknights Client AppContainer compatibility".utf8)
 
@@ -41,6 +43,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		let helperURL = gameDirectory.appending(path: Self.helperRelativePath)
 		let originalURL = helperURL.deletingLastPathComponent().appending(
 			path: Self.originalHelperName)
+		_ = try removeRetiredSoftwareFallback(beside: helperURL, fileManager: fileManager)
 		try recoverInterruptedUserenvReplacement(beside: helperURL, fileManager: fileManager)
 		try removeStaleTemporaryFiles(beside: helperURL, fileManager: fileManager)
 		guard
@@ -124,6 +127,10 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		let helperURL = gameDirectory.appending(path: Self.helperRelativePath)
 		let originalURL = helperURL.deletingLastPathComponent().appending(
 			path: Self.originalHelperName)
+		let removedSoftwareFallback = try removeRetiredSoftwareFallback(
+			beside: helperURL,
+			fileManager: fileManager
+		)
 		try recoverInterruptedUserenvReplacement(beside: helperURL, fileManager: fileManager)
 		try removeStaleTemporaryFiles(beside: helperURL, fileManager: fileManager)
 		let removedUserenv = try removeInstalledUserenv(
@@ -132,7 +139,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			fileManager: fileManager
 		)
 		guard fileManager.fileExists(atPath: originalURL.path) else {
-			return removedUserenv
+			return removedUserenv || removedSoftwareFallback
 		}
 
 		if fileManager.fileExists(atPath: helperURL.path) {
@@ -146,11 +153,23 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			guard isInstalledShim else {
 				// The official updater has already replaced the shim. Its current helper wins.
 				try fileManager.removeItem(at: originalURL)
-				return removedUserenv
+				return removedUserenv || removedSoftwareFallback
 			}
 			try fileManager.removeItem(at: helperURL)
 		}
 		try fileManager.moveItem(at: originalURL, to: helperURL)
+		return true
+	}
+
+	private func removeRetiredSoftwareFallback(
+		beside helperURL: URL,
+		fileManager: FileManager
+	) throws -> Bool {
+		let markerURL = helperURL.deletingLastPathComponent().appending(
+			path: Self.retiredSoftwareFallbackName)
+		let values = try? markerURL.resourceValues(forKeys: [.isRegularFileKey])
+		guard values?.isRegularFile == true else { return false }
+		try fileManager.removeItem(at: markerURL)
 		return true
 	}
 

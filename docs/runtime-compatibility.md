@@ -54,10 +54,16 @@ An active component must identify only files it owns, install idempotently, and 
 
 The Vuplex component supplies two process-local workarounds:
 
-- A wrapper preserves the official helper, selects Vuplex's CPU `OnPaint` transfer, and adds the CEF flag for Wine's working DNS path. Chromium's own GPU compositor remains enabled.
-- `userenv.dll` implements the AppContainer SID function missing from the tested Wine build for the Vuplex process only.
+- A wrapper preserves the official helper, selects Vuplex's CPU `OnPaint` transfer, disables WebGL, GPU rasterization, and accelerated 2D canvas, disables the CEF flags for Wine's working DNS path and clipboard sync, and adds high-resolution arguments when requested. Chromium's own GPU compositor stays enabled for rendering speed; only Vuplex's inter-process accelerated-paint texture sharing is disabled. These restrictions apply only to the browser helper; the game process keeps its independent DXMT renderer.
+- `userenv.dll` stubs the full set of Windows AppContainer APIs (SID derivation, profile create/delete, registry location, folder path) that Chromium's sandbox resolves via `GetProcAddress` and asserts on if missing. The tested Wine build implements none of them; stubbing only the SID-derivation function left the sandbox's `CHECK(fn)` assertion failing on the others.
 
 The wrapper does not render pages, inspect credentials, or replace Vuplex. It launches the untouched official helper and waits for its exit code. Both launcher-owned files carry stable markers so they can be upgraded or removed safely.
+
+### Payment compatibility
+
+Credit card and PayPal payments have been observed to complete in the game's embedded browser. Disabling WebGL, GPU rasterization, and accelerated 2D canvas is the config observed to let PayPal's browser challenge complete in the tested Vuplex/CEF environment under Wine; the launcher does not bypass or weaken the payment provider's challenge (#14).
+
+The embedded browser previously crashed on Chromium sandbox initialization. Chromium's sandbox (`sandbox/win/src/app_container_base.cc`) dynamically loads several Windows AppContainer APIs and asserts `CHECK(fn)` if any are missing; Wine's `userenv.dll` implements none of them. The compatibility DLL originally stubbed only the one function needed for OAuth popups (`DeriveAppContainerSidFromAppContainerName`), which left the sandbox's other required functions unresolved. Stubbing the full set the sandbox expects avoids the assertion (#16). Still, verify every purchase or charge directly with the payment provider and Yostar, since this runs through an unofficial, community-patched Wine environment.
 
 The PlatformProcess component handles the separate Qt WebEngine window used by Notices:
 
