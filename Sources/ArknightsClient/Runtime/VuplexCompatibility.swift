@@ -23,7 +23,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 
 	init(bundle: Bundle = .main) {
 		let compatibilityDirectory = bundle.resourceURL?
-			.appending(path: "Compatibility", directoryHint: .isDirectory)
+			.appending(path: "Compatibility/Vuplex", directoryHint: .isDirectory)
 		shimURL = compatibilityDirectory?.appending(path: "Vuplex WebView.vuplex")
 		userenvURL = compatibilityDirectory?.appending(path: Self.userenvName)
 	}

@@ -13,7 +13,7 @@ import argparse
 import os
 import shutil
 import stat
-import subprocess
+import struct
 import tempfile
 from pathlib import Path
 
@@ -78,19 +78,43 @@ def copy_runtime(source: Path, destination: Path) -> None:
     shutil.copytree(source, destination, symlinks=True, ignore=ignore)
 
 
+# Mach-O fat header layout (all fields big-endian on disk).
+_FAT_MAGIC = 0xCAFEBABE
+_FAT_MAGIC_64 = 0xCAFEBABF
+_CPU_TYPE_X86_64 = 0x01000007
+_CPU_TYPE_ARM64 = 0x0100000C
+
+
+def _fat_cpu_types(path: Path) -> set[int]:
+    # Reads only the fat header instead of shelling out to `lipo -archs`, since
+    # most runtime files (fonts, configs, thin binaries) aren't fat Mach-O at
+    # all and don't deserve a subprocess spawn just to find that out.
+    with path.open("rb") as handle:
+        header = handle.read(8)
+        if len(header) < 8:
+            return set()
+        magic, count = struct.unpack(">II", header)
+        if magic == _FAT_MAGIC:
+            entry_size, entry_format = 20, ">ii"
+        elif magic == _FAT_MAGIC_64:
+            entry_size, entry_format = 32, ">ii"
+        else:
+            return set()
+        body = handle.read(count * entry_size)
+    return {
+        struct.unpack_from(entry_format, body, index * entry_size)[0]
+        for index in range(count)
+        if len(body) >= (index + 1) * entry_size
+    }
+
+
 def thin_universal_files(runtime: Path) -> int:
     count = 0
     for path in runtime.rglob("*"):
         if not path.is_file() or path.is_symlink():
             continue
-        result = subprocess.run(
-            ["lipo", "-archs", str(path)],
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        architectures = result.stdout.split()
-        if "x86_64" not in architectures or "arm64" not in architectures:
+        cpu_types = _fat_cpu_types(path)
+        if not {_CPU_TYPE_X86_64, _CPU_TYPE_ARM64} <= cpu_types:
             continue
         temporary = path.with_name(f"{path.name}.x86_64")
         mode = stat.S_IMODE(path.stat().st_mode)
@@ -194,12 +218,42 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
         copy_file(PROJECT_DIR / "Resources/AppIcon.icns", resources / "AppIcon.icns")
         copy_file(PROJECT_DIR / "Resources/Assets.car", resources / "Assets.car")
 
-        shim = BUILD_DIR / "helpers/Vuplex WebView.vuplex"
-        info("Building the embedded browser compatibility helpers")
-        run(["uv", "run", PROJECT_DIR / "scripts/build_vuplex_shim.py", shim])
+        helper_root = BUILD_DIR / "helpers"
+        info("Building the game compatibility components")
+        run(
+            [
+                "uv",
+                "run",
+                PROJECT_DIR / "scripts/build_compatibility.py",
+                "--output",
+                helper_root,
+            ]
+        )
         compatibility = resources / "Compatibility"
-        copy_file(shim, compatibility / shim.name)
-        copy_file(shim.parent / "userenv.dll", compatibility / "userenv.dll")
+        compatibility_helpers = (
+            ("Vuplex/Vuplex WebView.vuplex", "Vuplex/Vuplex WebView.vuplex"),
+            ("Vuplex/userenv.dll", "Vuplex/userenv.dll"),
+            (
+                "PlatformProcess/PlatformProcess.exe",
+                "PlatformProcess/PlatformProcess.exe",
+            ),
+            (
+                "PlatformProcess/PlatformProcessWindowBridge.dylib",
+                "PlatformProcess/PlatformProcessWindowBridge.dylib",
+            ),
+        )
+        for source, destination in compatibility_helpers:
+            copy_file(helper_root / source, compatibility / destination)
+        run(
+            [
+                "codesign",
+                "--force",
+                "--sign",
+                "-",
+                "--timestamp=none",
+                compatibility / "PlatformProcess/PlatformProcessWindowBridge.dylib",
+            ]
+        )
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:

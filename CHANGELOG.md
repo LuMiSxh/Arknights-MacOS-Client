@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0]
+
 ### Added
 
 - Support for the Japan and Korea Arknights PC clients alongside Global, each installed, updated, and launched independently. Switch regions from Settings → Installation, or from the region switcher in the main window once more than one region is installed.
@@ -13,11 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Expanded launcher and Wine diagnostic logging with clearer detail for troubleshooting.
-- Redesigned Settings with clearer grouping (a dedicated Updates page, and Installation split into Region, Location, Maintenance, and Remove), consistent glass and cyan-accented controls, and working hover feedback throughout.
+- Redesigned Settings with clearer grouping, consistent glass and cyan-accented controls, and working hover feedback throughout.
 
 ### Fixed
 
-- Slowed touchpad scrolling in-game to match Windows mouse-wheel speed.
+- Slowed touchpad scrolling in-game to match Windows mouse-wheel speed (Thanks to u/herr-tibalt).
+- Integrated the separate Notices helper with macOS windowing so it remains interactive, stays out of the Dock, and follows the game across window moves and Spaces (Thanks to u/No_Entrepreneur_6542).
 
 ## [0.2.0]
 
@@ -57,6 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[Unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.2.0
 [0.1.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.1.0
