@@ -101,3 +101,8 @@ announcement-remove id:
 [group('Owner')]
 release version:
     uv run scripts/trigger_release.py {{ quote(version) }}
+
+# Show DMG download statistics for all published releases. Requires GitHub CLI access.
+[group('Owner')]
+stats:
+    uv run scripts/release_statistics.py
