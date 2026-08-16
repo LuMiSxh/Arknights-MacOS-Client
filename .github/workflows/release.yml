@@ -75,6 +75,9 @@ jobs:
       - name: Test source
         run: just check
 
+      - name: Prepare release notes
+        run: uv run scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
+
       - name: Download runtime and build recipe
         run: |
           mkdir -p dist
@@ -104,6 +107,6 @@ jobs:
             dist/Runtime-Build-Recipe.tar.gz \
             dist/SHA256SUMS \
             --draft \
-            --generate-notes \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
             --target "$GITHUB_SHA" \
             --title "Arknights Client $release_tag"

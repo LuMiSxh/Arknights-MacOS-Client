@@ -8,6 +8,8 @@ Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary 
 
 The launcher checks GitHub for a newer launcher version when it opens. If one exists, it links to the release page. Installation remains manual because the app is not Developer-ID signed or notarized. The check can be disabled in Settings.
 
+The first check that discovers a new version shows a native popup containing the version and that GitHub Release's Markdown body. Dismissing it keeps the release button in the launcher's status capsule and the version in Settings. The same version is not presented as a popup again.
+
 Game updates are checked separately against Yostar. The check can also be disabled. A check never downloads game data by itself; the user starts the update.
 
 ## Creating a release
@@ -21,7 +23,8 @@ It then:
 3. downloads and verifies the pinned runtime build recipe;
 4. builds an arm64 app and DMG;
 5. writes `SHA256SUMS`; and
-6. creates a draft `vX.Y.Z` GitHub Release for review.
+6. extracts the matching `CHANGELOG.md` section as the release body; and
+7. creates a draft `vX.Y.Z` GitHub Release for review.
 
 [`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/runtime_config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
 
