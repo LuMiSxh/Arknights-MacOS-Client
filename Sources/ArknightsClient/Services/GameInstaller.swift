@@ -6,14 +6,14 @@ struct GameInstaller: Sendable {
 	typealias ProgressHandler = @Sendable (DownloadProgress) async -> Void
 
 	private let api: any LauncherAPIProviding
-	private let session: URLSession
+	private let chunkSession: HTTPChunkSession
 	private let concurrentDownloads = 6
 
 	private var fileManager: FileManager { .default }
 
 	init(api: any LauncherAPIProviding, session: URLSession = .shared) {
 		self.api = api
-		self.session = session
+		chunkSession = HTTPChunkSession(configuration: session.configuration)
 	}
 
 	func install(
@@ -25,7 +25,7 @@ struct GameInstaller: Sendable {
 		let (manifest, cdn) = try await (api.manifest(for: configuration), api.cdnConfiguration())
 		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
 		excludeFromBackup(installDirectory)
-		try VuplexCompatibility().restoreIfInstalled(in: installDirectory)
+		try GameCompatibilityManager().restoreForUpdate(in: installDirectory)
 
 		let previousFiles = loadState(from: installDirectory)?.files.map {
 			Dictionary(uniqueKeysWithValues: $0.map { ($0.path, $0) })
@@ -40,8 +40,21 @@ struct GameInstaller: Sendable {
 				checksum: { try CRC64.checksum(of: destination) }
 			)
 		}
-		let totalBytes = pendingFiles.reduce(Int64(0)) { $0 + $1.byteCount }
-		let counter = ProgressCounter(totalBytes: totalBytes, totalFiles: pendingFiles.count)
+		let downloadedBytes = pendingFiles.reduce(Int64(0)) { $0 + $1.byteCount }
+		let progressBaseline = try DownloadProgressBaseline(
+			manifestFiles: manifest.file,
+			pendingFiles: pendingFiles,
+			isIncompleteInstallation: previousFiles == nil
+		) { item in
+			let destination = try destinationURL(for: item, inside: installDirectory)
+			return fileSize(at: destination.appendingPathExtension("part")) ?? 0
+		}
+		let counter = ProgressCounter(
+			totalBytes: progressBaseline.totalBytes,
+			totalFiles: progressBaseline.totalFiles,
+			downloadedBytes: progressBaseline.downloadedBytes,
+			completedFiles: progressBaseline.completedFiles
+		)
 
 		if pendingFiles.isEmpty {
 			try Task.checkCancellation()
@@ -49,6 +62,7 @@ struct GameInstaller: Sendable {
 			return InstallResult(
 				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
 		}
+		await progress(await counter.current(file: pendingFiles[0].path))
 
 		try await withThrowingTaskGroup(of: Int64.self) { group in
 			var nextIndex = 0
@@ -93,7 +107,7 @@ struct GameInstaller: Sendable {
 		try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,
-			downloadedBytes: totalBytes,
+			downloadedBytes: downloadedBytes,
 			installDirectory: installDirectory
 		)
 	}
@@ -189,18 +203,6 @@ struct GameInstaller: Sendable {
 			request.setValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
 		}
 
-		let (bytes, response) = try await session.bytes(for: request)
-		guard let http = response as? HTTPURLResponse else {
-			throw LauncherError.invalidResponse
-		}
-		guard http.statusCode == 200 || http.statusCode == 206 else {
-			throw LauncherError.invalidDownloadResponse(status: http.statusCode, path: item.path)
-		}
-
-		if existingBytes > 0, http.statusCode == 200 {
-			try fileManager.removeItem(at: partial)
-			existingBytes = 0
-		}
 		if !fileManager.fileExists(atPath: partial.path) {
 			guard fileManager.createFile(atPath: partial.path, contents: nil) else {
 				throw LauncherError.cannotCreateFile(partial)
@@ -217,30 +219,46 @@ struct GameInstaller: Sendable {
 		}
 		try handle.seekToEnd()
 
-		var buffer = [UInt8]()
-		buffer.reserveCapacity(128 * 1024)
+		let stream = chunkSession.stream(for: request)
+		defer { stream.cancel() }
 		var newlyDownloaded: Int64 = 0
-		for try await byte in bytes {
-			try Task.checkCancellation()
-			buffer.append(byte)
-			if buffer.count == buffer.capacity {
-				let data = Data(buffer)
-				try handle.write(contentsOf: data)
-				newlyDownloaded += Int64(data.count)
-				buffer.removeAll(keepingCapacity: true)
-				if let update = await counter.add(bytes: Int64(data.count), file: item.path) {
-					await progress(update)
+		var receivedResponse = false
+		try await withTaskCancellationHandler(
+			operation: {
+				for try await event in stream.events {
+					try Task.checkCancellation()
+					switch event {
+					case .response(let response):
+						guard response.statusCode == 200 || response.statusCode == 206 else {
+							throw LauncherError.invalidDownloadResponse(
+								status: response.statusCode,
+								path: item.path
+							)
+						}
+						if existingBytes > 0, response.statusCode == 200 {
+							try handle.truncate(atOffset: 0)
+							try handle.seek(toOffset: 0)
+							await progress(
+								await counter.remove(bytes: existingBytes, file: item.path)
+							)
+							existingBytes = 0
+						}
+						receivedResponse = true
+					case .data(let data):
+						guard receivedResponse else { throw LauncherError.invalidResponse }
+						try handle.write(contentsOf: data)
+						newlyDownloaded += Int64(data.count)
+						if let update = await counter.add(bytes: Int64(data.count), file: item.path)
+						{
+							await progress(update)
+						}
+					}
 				}
-			}
-		}
-		if !buffer.isEmpty {
-			let data = Data(buffer)
-			try handle.write(contentsOf: data)
-			newlyDownloaded += Int64(data.count)
-			if let update = await counter.add(bytes: Int64(data.count), file: item.path) {
-				await progress(update)
-			}
-		}
+			},
+			onCancel: {
+				stream.cancel()
+			})
+		guard receivedResponse else { throw LauncherError.invalidResponse }
 		try handle.synchronize()
 		try handle.close()
 
@@ -297,39 +315,4 @@ struct GameInstaller: Sendable {
 		return number.int64Value
 	}
 
-	private func saveState(
-		configuration: GameConfiguration,
-		manifest: GameManifest,
-		to installDirectory: URL
-	) throws {
-		let state = InstalledState(
-			version: configuration.gameLatestVersion,
-			basis: configuration.gameLatestFilePath,
-			source: manifest.source,
-			installedAt: Date(),
-			files: manifest.file
-		)
-		let encoder = JSONEncoder()
-		encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-		encoder.dateEncodingStrategy = .iso8601
-		try encoder.encode(state).write(
-			to: installDirectory.appending(path: ".arknights-client-state.json"),
-			options: .atomic
-		)
-	}
-
-	private func loadState(from installDirectory: URL) -> InstalledState? {
-		let url = installDirectory.appending(path: ".arknights-client-state.json")
-		guard let data = try? Data(contentsOf: url) else { return nil }
-		let decoder = JSONDecoder()
-		decoder.dateDecodingStrategy = .iso8601
-		return try? decoder.decode(InstalledState.self, from: data)
-	}
-
-	private func excludeFromBackup(_ directory: URL) {
-		var directory = directory
-		var values = URLResourceValues()
-		values.isExcludedFromBackup = true
-		try? directory.setResourceValues(values)
-	}
 }

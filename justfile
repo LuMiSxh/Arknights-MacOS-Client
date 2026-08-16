@@ -11,28 +11,38 @@ default:
 run:
     swift run ArknightsClient
 
+# Run an isolated debug preview. Try launcher-update, announcement, game-update, or downloading.
+[group('Development')]
+preview scenario='launcher-update':
+    swift run ArknightsClient --developer-scenario {{ quote(scenario) }}
+
+# Preview a Markdown popup without touching the real installation.
+[group('Development')]
+preview-popup title body_file:
+    swift run ArknightsClient --developer-scenario custom-popup --developer-popup-title {{ quote(title) }} --developer-popup-file {{ quote(body_file) }}
+
+# Build an isolated debug app whose Settings can simulate launcher states.
+[group('Development')]
+preview-app:
+    uv run scripts/build_app.py --configuration debug
+
 # Download the verified runtime and build a local app bundle.
 [group('Development')]
 dev:
-    runtime_dir="$(./scripts/sh/download-runtime.sh)"; ./scripts/sh/build-app.sh --runtime "$runtime_dir"
+    runtime_dir="$(uv run scripts/download_runtime.py)"; uv run scripts/build_app.py --runtime "$runtime_dir"
 
 # Check Swift formatting using the project's strict configuration.
 [group('Checks')]
 format-check:
     swift format lint --configuration .swift-format --recursive --strict Sources Tests
 
-# Lint the project shell scripts.
+# Lint and format-check the repository automation.
 [group('Checks')]
-shell-check:
-    uv tool run --from 'shellcheck-py==0.11.0.1' shellcheck -x -P scripts/sh scripts/sh/*.sh
-
-# Check and format-verify the Python packaging scripts.
-[group('Checks')]
-python-check:
-    uv tool run --from 'ruff==0.16.3' ruff check scripts/python
-    uv tool run --from 'ruff==0.16.3' ruff format --check scripts/python
-    uv run --no-project --python 3.13 scripts/python/runtime-config.py --validate runtime.json
-    uv run --python 3.13 python -m unittest discover --start-directory scripts/python/tests
+script-check:
+    uv tool run --from 'ruff==0.16.3' ruff check scripts
+    uv tool run --from 'ruff==0.16.3' ruff format --check scripts
+    uv run scripts/runtime_config.py --validate runtime.json
+    uv run --python 3.13 python -m unittest discover --start-directory scripts/tests
 
 # Run the Apple Silicon test suite.
 [group('Checks')]
@@ -41,7 +51,7 @@ test:
 
 # Run all validation checks.
 [group('Checks')]
-check: format-check shell-check python-check test
+check: format-check script-check test
 
 # Build the Apple Silicon release binary.
 [group('Checks')]
@@ -55,29 +65,39 @@ ci: check build
 # Download the runtime pinned in runtime.json to .build/runtime.
 [group('Runtime')]
 runtime:
-    ./scripts/sh/download-runtime.sh
+    uv run scripts/download_runtime.py
 
 # Build the application bundle; optionally embed a Wine runtime directory.
 [group('Packaging')]
 app runtime='':
-    if [[ -n {{ quote(runtime) }} ]]; then ./scripts/sh/build-app.sh --runtime {{ quote(runtime) }}; else ./scripts/sh/build-app.sh; fi
+    if [[ -n {{ quote(runtime) }} ]]; then uv run scripts/build_app.py --runtime {{ quote(runtime) }}; else uv run scripts/build_app.py; fi
 
 # Build a DMG with the required Wine runtime directory.
 [group('Packaging')]
 dmg runtime:
-    ./scripts/sh/build-dmg.sh --runtime {{ quote(runtime) }}
+    uv run scripts/build_dmg.py --runtime {{ quote(runtime) }}
 
 # Download the verified runtime and build a local DMG.
 [group('Packaging')]
 dev-dmg:
-    runtime_dir="$(./scripts/sh/download-runtime.sh)"; ./scripts/sh/build-dmg.sh --runtime "$runtime_dir"
+    runtime_dir="$(uv run scripts/download_runtime.py)"; uv run scripts/build_dmg.py --runtime "$runtime_dir"
 
 # Regenerate the application icon assets.
 [group('Packaging')]
 icon:
-    ./scripts/sh/generate-icon.sh
+    uv run scripts/generate_icon.py
 
-# Trigger a draft release for the required X.Y.Z version.
-[group('Release')]
+# Prepare or replace a repository-hosted announcement. Commit it to main to publish it.
+[group('Owner')]
+announcement-set id title body_file action_title='' action_url='':
+    uv run scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }}
+
+# Remove a repository-hosted announcement. Commit the change to withdraw it.
+[group('Owner')]
+announcement-remove id:
+    uv run scripts/manage_announcements.py remove {{ quote(id) }}
+
+# Trigger a draft release for the required X.Y.Z version. Requires repository write access.
+[group('Owner')]
 release version:
-    ./scripts/sh/trigger-release.sh {{ quote(version) }}
+    uv run scripts/trigger_release.py {{ quote(version) }}

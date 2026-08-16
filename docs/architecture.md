@@ -15,9 +15,11 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 | `Runtime` | Wine environment, prefix configuration, DXMT, Vuplex, and process lifecycle |
 | `Utilities` | CRC64 and diagnostic logging |
 
+`LauncherViewModel` is the main UI orchestrator. Network access, installation, artwork caching, update discovery, announcements, and Wine execution remain separate service or runtime types; the view model coordinates their results into one user-facing `LauncherPhase`. Facts independent of that phase, such as whether game files are installed or a newer version exists, remain separate state.
+
 ## Installation
 
-`LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, resumes `.part` files, verifies size and CRC64, and records the installed manifest.
+`LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, streams buffered network chunks into resumable `.part` files, verifies size and CRC64, and records the installed manifest.
 
 A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
 
@@ -33,9 +35,9 @@ flowchart LR
 
 ## Launch process
 
-The packaged runtime is x86_64 and runs through Rosetta 2. The launcher gives Wine an isolated prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT libraries, and starts `G:\Arknights.exe`. The main game uses DXMT for Direct3D-to-Metal translation.
+The packaged runtime is x86_64 and runs through Rosetta 2. The launcher gives Wine an isolated prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT libraries, and starts `G:\Arknights.exe`. The main game uses DXMT for Direct3D-to-Metal translation. The exact runtime contract and compatibility components are documented in [Runtime compatibility](runtime-compatibility.md).
 
-Arknights starts its Chromium-based Vuplex helper for account and in-game web pages. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with software rendering and the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build. Neither compatibility component affects the game renderer or reads browser content.
+Arknights starts its Chromium-based Vuplex helper for account and in-game web pages. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build. Neither compatibility component affects the game renderer or reads browser content.
 
 ```mermaid
 flowchart LR
@@ -67,7 +69,7 @@ flowchart LR
 	CEF -->|HTTPS login and game pages| Web[Official web services]
 ```
 
-Vuplex uses software painting because its accelerated shared-texture path fails through the tested Wine and DXMT combination. CEF's asynchronous DNS path also calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement; the wrapper disables that path so CEF uses Wine's normal system resolver. Social login still starts a separate Chromium process and may take several seconds on first use.
+Vuplex can share its accelerated off-screen surface through D3D11, but Chromium and Vuplex cannot coordinate write access to that surface through the tested DXMT path. The wrapper therefore uses Vuplex's CPU `OnPaint` transfer while leaving Chromium's internal GPU compositor enabled. CEF's asynchronous DNS path calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement; the wrapper disables that path so CEF uses Wine's normal system resolver. Social login starts a separate Chromium process and may take several seconds on first use.
 
 Install, update, and repair restore the official Vuplex executable before modifying game files. The wrapper is then installed again at the next launch only when the helper still advertises the expected software-paint option. Unknown helpers and unrelated `userenv.dll` files are left untouched.
 
@@ -77,7 +79,38 @@ The launcher remains in **Starting** until Wine exposes a visible game window. I
 
 The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` give the main macOS process a readable name. Packaging applies one reviewed patch to the staged Wine macOS driver so the standard `Command-Q` shortcut is available.
 
-Prefix markers combine the runtime archive checksum from `runtime.json` with its `prefixRevision`. A new runtime archive or an explicit prefix revision therefore reapplies Wine initialization, DXMT files, and registry overrides once without carrying migrations for pre-release layouts.
+Prefix changes run through an ordered migration plan: Wine initialization, DXMT installation, and registry overrides. The prefix stores completed migration IDs with the runtime archive checksum and `prefixRevision` in `.arknights-runtime-migrations.json`. Each successful step is recorded atomically, so an interrupted launch resumes at the first incomplete step. A checksum or prefix-revision change replays the complete plan; adding a migration ID runs only that new step for an otherwise current prefix. Version 0.1 markers are imported once and removed.
+
+Normal launches inspect migration, registry, drive, and private-home state without rewriting unchanged files. Runtime diagnostics record cumulative timings for filesystem setup, compatibility reconciliation, prefix preparation, display configuration, and process creation before the launcher records time to the first visible game window.
+
+Game-directory shims implement `GameCompatibilityComponent` and are registered with `GameCompatibilityManager`. Active components are reconciled before every launch; all active and retired components are restored before install, update, or repair. Removing a shim means moving its component from the active list to the retired list for a supported upgrade cycle, allowing launcher-owned files to be cleaned up even when replacement assets are no longer bundled.
+
+Vuplex uses this reconciliation path rather than one-time migration state because the official updater can replace its helper at any time. Its wrapper and `userenv.dll` carry stable ownership markers, so upgrades and retirement never rely only on the current bundled bytes. Unknown files remain untouched.
+
+## Launcher communication
+
+Launcher releases and optional project announcements use GitHub as a read-only endpoint; no separate application server is required. Release discovery reads the latest stable GitHub Release. The release body becomes the Markdown changelog popup and its release page remains available from Settings and the status capsule.
+
+Announcements are read from `announcements.json` on `main`. The launcher validates the feed, version and date bounds, body length, and optional HTTPS action before displaying one eligible entry. Seen identifiers are stored locally, so editing an existing entry does not repeatedly interrupt users. Official Yostar HTML notices use the same popup queue after conversion to native attributed text.
+
+```mermaid
+sequenceDiagram
+	participant App as SwiftUI launcher
+	participant GitHub as GitHub API
+	participant Prefs as Local preferences
+	participant UI as Popup queue
+
+	App->>GitHub: Latest stable release
+	GitHub-->>App: Version, URL, Markdown body
+	App->>Prefs: Was this version presented?
+	alt New launcher version
+		App->>UI: Queue release-note popup
+	end
+	App->>GitHub: announcements.json from main
+	GitHub-->>App: Validated announcement feed
+	App->>Prefs: Filter identifiers already seen
+	App->>UI: Queue first eligible announcement
+```
 
 ## Boundaries
 

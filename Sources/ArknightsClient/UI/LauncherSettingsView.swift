@@ -11,7 +11,10 @@ struct LauncherSettingsView: View {
 
 	var body: some View {
 		HStack(spacing: 0) {
-			SettingsNavigationRail(selection: $selectedSection)
+			SettingsNavigationRail(
+				selection: $selectedSection,
+				isDeveloperMode: model.isDeveloperMode
+			)
 			Divider()
 			Group {
 				switch selectedSection {
@@ -24,6 +27,10 @@ struct LauncherSettingsView: View {
 					)
 				case .about:
 					AboutSettingsPage(model: model, presentedDocument: $presentedDocument)
+				#if DEBUG
+					case .developer:
+						DeveloperSettingsPage(model: model)
+				#endif
 				}
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -57,12 +64,13 @@ struct LauncherSettingsView: View {
 enum SettingsVisuals {
 	static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
 	static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
-	static let navigationSelection = Color.white.opacity(0.085)
+	static let navigationSelection = cyan.opacity(0.12)
 	static let hairline = Color.white.opacity(0.12)
 }
 
 private struct SettingsNavigationRail: View {
 	@Binding var selection: SettingsSection
+	let isDeveloperMode: Bool
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
@@ -75,7 +83,7 @@ private struct SettingsNavigationRail: View {
 				.padding(.bottom, 14)
 
 			VStack(spacing: 5) {
-				ForEach(SettingsSection.allCases) { section in
+				ForEach(visibleSections) { section in
 					SettingsNavigationButton(
 						section: section,
 						isSelected: selection == section
@@ -101,6 +109,14 @@ private struct SettingsNavigationRail: View {
 		.frame(width: 178)
 		.background(.regularMaterial)
 	}
+
+	private var visibleSections: [SettingsSection] {
+		#if DEBUG
+			SettingsSection.allCases.filter { $0 != .developer || isDeveloperMode }
+		#else
+			SettingsSection.allCases
+		#endif
+	}
 }
 
 private struct SettingsNavigationButton: View {
@@ -121,7 +137,7 @@ private struct SettingsNavigationButton: View {
 					.fontWeight(isSelected ? .semibold : .regular)
 				Spacer(minLength: 0)
 			}
-			.foregroundStyle(isSelected ? .primary : .secondary)
+			.foregroundStyle(isSelected ? SettingsVisuals.cyan : .secondary)
 			.padding(.vertical, 9)
 			.padding(.trailing, 12)
 			.background(
@@ -139,6 +155,9 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	case general
 	case installation
 	case about
+	#if DEBUG
+		case developer
+	#endif
 
 	var id: String { rawValue }
 
@@ -147,6 +166,9 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 		case .general: "General"
 		case .installation: "Installation"
 		case .about: "About"
+		#if DEBUG
+			case .developer: "Developer"
+		#endif
 		}
 	}
 
@@ -155,6 +177,9 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 		case .general: "slider.horizontal.3"
 		case .installation: "externaldrive"
 		case .about: "info.circle"
+		#if DEBUG
+			case .developer: "hammer"
+		#endif
 		}
 	}
 }

@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import importlib.util
+import sys
 import tarfile
 import tempfile
 import unittest
 from io import BytesIO
 from pathlib import Path
 
-SCRIPT_PATH = Path(__file__).parents[1] / "extract-runtime.py"
-SPEC = importlib.util.spec_from_file_location("extract_runtime", SCRIPT_PATH)
-assert SPEC is not None and SPEC.loader is not None
-extract_runtime = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(extract_runtime)
+sys.path.insert(0, str(Path(__file__).parents[1]))
+
+import extract_runtime
 
 
 def add_file(archive: tarfile.TarFile, name: str, contents: bytes = b"") -> None:
@@ -55,7 +53,7 @@ class RuntimeArchiveTests(unittest.TestCase):
             with tarfile.open(archive_path, "w:gz") as archive:
                 add_file(archive, "../escape", b"unsafe")
 
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(RuntimeError):
                 extract_runtime.extract(archive_path, root / "output")
 
     def test_rejects_escaping_symbolic_link(self) -> None:
@@ -69,7 +67,7 @@ class RuntimeArchiveTests(unittest.TestCase):
                 link.linkname = "../../../outside"
                 archive.addfile(link)
 
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(RuntimeError):
                 extract_runtime.extract(archive_path, root / "output")
 
 

@@ -7,6 +7,9 @@ struct LauncherPreferencesStore {
 	private enum Key {
 		static let automaticLauncherUpdates = "automaticLauncherUpdates"
 		static let automaticGameUpdates = "automaticGameUpdates"
+		static let announcementsEnabled = "announcementsEnabled"
+		static let seenAnnouncementIDs = "seenAnnouncementIDs"
+		static let presentedLauncherUpdate = "presentedLauncherUpdate"
 		static let gameLaunchOptions = "gameLaunchOptions"
 		static let installPath = "installPath.global"
 	}
@@ -31,6 +34,32 @@ struct LauncherPreferencesStore {
 
 	func setAutomaticGameUpdates(_ value: Bool) {
 		defaults.set(value, forKey: Key.automaticGameUpdates)
+	}
+
+	func announcementsEnabled() -> Bool {
+		bool(for: Key.announcementsEnabled, defaultValue: true)
+	}
+
+	func setAnnouncementsEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.announcementsEnabled)
+	}
+
+	func seenAnnouncementIDs() -> Set<String> {
+		Set(defaults.stringArray(forKey: Key.seenAnnouncementIDs) ?? [])
+	}
+
+	func markAnnouncementSeen(_ id: String) {
+		var ids = seenAnnouncementIDs()
+		ids.insert(id)
+		defaults.set(Array(ids.sorted().suffix(100)), forKey: Key.seenAnnouncementIDs)
+	}
+
+	func presentedLauncherUpdate() -> String? {
+		defaults.string(forKey: Key.presentedLauncherUpdate)
+	}
+
+	func markLauncherUpdatePresented(_ version: String) {
+		defaults.set(version, forKey: Key.presentedLauncherUpdate)
 	}
 
 	func launchOptions() -> GameLaunchOptions {

@@ -42,27 +42,42 @@ struct ArknightsWordmark: View {
 	}
 }
 
-struct LauncherNoticeView: View {
-	let notice: LauncherNotice
+struct LauncherPopupView: View {
+	let popup: LauncherPopup
 	let dismiss: () -> Void
+	let openAction: () -> Void
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("Notice")
+			Text(popup.title)
 				.font(.title2.bold())
 				.padding(.bottom, 16)
 			Divider()
 			ScrollView {
-				Text(notice.content)
-					.frame(maxWidth: .infinity, alignment: .leading)
-					.textSelection(.enabled)
-					.padding(.vertical, 18)
+				Group {
+					switch popup.content {
+					case .markdown(let source):
+						MarkdownDocument(source: source)
+					case .attributed(let content):
+						Text(content)
+					}
+				}
+				.frame(maxWidth: .infinity, alignment: .leading)
+				.textSelection(.enabled)
+				.padding(.vertical, 18)
 			}
 			Divider()
 			HStack {
 				Spacer()
-				Button("Done", action: dismiss)
-					.keyboardShortcut(.defaultAction)
+				if let actionTitle = popup.actionTitle {
+					Button(popup.dismissTitle, action: dismiss)
+					Button(actionTitle, action: openAction)
+						.buttonStyle(.glassProminent)
+						.keyboardShortcut(.defaultAction)
+				} else {
+					Button(popup.dismissTitle, action: dismiss)
+						.keyboardShortcut(.defaultAction)
+				}
 			}
 			.padding(.top, 14)
 		}

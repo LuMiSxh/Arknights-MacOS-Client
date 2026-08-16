@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import Foundation
 
 extension LauncherViewModel {
 	func launch() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.launching)
+				return
+			}
+		#endif
 		guard !isDownloading, !isGameActive else { return }
 		let executable = installDirectory.appending(
 			path: configuration?.executableName ?? "Arknights.exe")
@@ -20,6 +27,10 @@ extension LauncherViewModel {
 		phase = .launching
 		activityMessage = "Starting…"
 		let gameSessionID = UUID()
+		let launchRequestedAt = Date()
+		let displayConfiguration = WineDisplayConfiguration.current(
+			highResolutionEnabled: launchOptions.usesHighResolutionMode
+		)
 		activeGameSessionID = gameSessionID
 		Task { [log] in await log.info("Game launch requested") }
 		launchTask?.cancel()
@@ -31,9 +42,13 @@ extension LauncherViewModel {
 					prefixDirectory: paths.winePrefix,
 					gameArguments: (configuration?.gameStartParams ?? [])
 						+ launchOptions.playerArguments,
+					displayConfiguration: displayConfiguration,
+					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					logURL: paths.logFile
 				)
-				await log.info("Game runtime started; pid=\(launch.processIdentifier)")
+				await log.info(
+					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
+				)
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
 				try await WineWindowReadiness.wait(
 					processIdentifier: launch.processIdentifier
@@ -42,12 +57,19 @@ extension LauncherViewModel {
 				phase = .running(processIdentifier: launch.processIdentifier)
 				activityMessage = "Running"
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
-				await log.info("Game window became visible")
+				await log.info(
+					"Game window became visible; elapsed=\(Self.launchDuration(since: launchRequestedAt))"
+				)
 			} catch is CancellationError {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
 				phase = .ready
 				activityMessage = isGameUpdateAvailable ? "Update available" : "Ready"
+			} catch LauncherError.runtimeWindowTimeout {
+				guard activeGameSessionID == gameSessionID else { return }
+				activeGameSessionID = nil
+				try? await runtime.stop(prefixDirectory: paths.winePrefix)
+				show(LauncherError.runtimeWindowTimeout)
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
@@ -56,7 +78,17 @@ extension LauncherViewModel {
 		}
 	}
 
+	private static func launchDuration(since start: Date, now: Date = Date()) -> String {
+		String(format: "%.2fs", max(0, now.timeIntervalSince(start)))
+	}
+
 	func stopGame() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.ready)
+				return
+			}
+		#endif
 		guard canStopGame, let runtime = WineRuntime.discover() else { return }
 		isStoppingGame = true
 		activityMessage = "Stopping…"
@@ -74,6 +106,9 @@ extension LauncherViewModel {
 	}
 
 	func stopGameForApplicationTermination() {
+		#if DEBUG
+			if isDeveloperMode { return }
+		#endif
 		guard isGameActive, let runtime = WineRuntime.discover() else { return }
 		runtime.stopSynchronously(prefixDirectory: paths.winePrefix)
 	}

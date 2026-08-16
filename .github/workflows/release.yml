@@ -31,21 +31,18 @@ jobs:
         uses: astral-sh/setup-uv@v10.0.1
 
       - name: Validate runtime configuration
-        run: uv run --no-project --python 3.13 scripts/python/runtime-config.py --validate runtime.json
+        run: uv run scripts/runtime_config.py --validate runtime.json
 
       - name: Set up just
         uses: extractions/setup-just@v4
 
       - name: Validate release inputs
         run: |
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Version must use X.Y.Z with numeric components." >&2
+          if [[ "$GITHUB_REF_NAME" != "main" ]]; then
+            echo "Releases must be triggered from main after the release branch is merged." >&2
             exit 1
           fi
-          if ! grep -Fq "## [$RELEASE_VERSION]" CHANGELOG.md; then
-            echo "CHANGELOG.md must contain a section for $RELEASE_VERSION." >&2
-            exit 1
-          fi
+          uv run scripts/release_validation.py "$RELEASE_VERSION"
           release_tag="v$RELEASE_VERSION"
           set +e
           git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null
@@ -75,20 +72,22 @@ jobs:
       - name: Test source
         run: just check
 
+      - name: Prepare release notes
+        run: uv run scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
+
       - name: Download runtime and build recipe
         run: |
           mkdir -p dist
           build_recipe="$RUNNER_TEMP/Runtime-Build-Recipe.tar.gz"
-          build_recipe_url="$(uv run --no-project --python 3.13 scripts/python/runtime-config.py runtime.json buildRecipe.url)"
-          build_recipe_sha256="$(uv run --no-project --python 3.13 scripts/python/runtime-config.py runtime.json buildRecipe.sha256)"
-          ./scripts/sh/download-runtime.sh
+          build_recipe_url="$(uv run scripts/runtime_config.py runtime.json buildRecipe.url)"
+          build_recipe_sha256="$(uv run scripts/runtime_config.py runtime.json buildRecipe.sha256)"
+          uv run scripts/download_runtime.py
           curl --fail --location --proto '=https' --tlsv1.2 "$build_recipe_url" --output "$build_recipe"
           echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
           mv "$build_recipe" "dist/Runtime-Build-Recipe.tar.gz"
 
       - name: Set release version
         run: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $RELEASE_VERSION" Resources/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" Resources/Info.plist
 
       - name: Build DMG
@@ -104,6 +103,6 @@ jobs:
             dist/Runtime-Build-Recipe.tar.gz \
             dist/SHA256SUMS \
             --draft \
-            --generate-notes \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
             --target "$GITHUB_SHA" \
             --title "Arknights Client $release_tag"

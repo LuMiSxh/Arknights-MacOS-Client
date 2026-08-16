@@ -2,13 +2,19 @@
 
 import Foundation
 
-struct VuplexCompatibility: Sendable {
+struct VuplexCompatibility: GameCompatibilityComponent {
+	let identifier = "vuplex-webview"
 	static let helperRelativePath =
 		"Arknights_Data/Plugins/x86_64/VuplexWebViewChromium/Vuplex WebView.vuplex"
 	static let originalHelperName = "Vuplex WebView.original.helper.vuplex"
 	static let compatibilityArgument = "vx-accelerated-paint-disabled"
 	static let userenvName = "userenv.dll"
+	static let launcherShimMarker = Data("Arknights Client Vuplex compatibility".utf8)
 	private static let maximumShimSize = 1_048_576
+	private static let shimTemporaryPrefix = ".arknights-client-vuplex-shim-"
+	private static let previousShimTemporaryPrefix = ".arknights-client-vuplex-previous-"
+	private static let userenvTemporaryPrefix = ".arknights-client-userenv-"
+	private static let userenvBackupName = ".arknights-client-userenv.previous.dll"
 	private static let userenvMarker = Data(
 		"Arknights Client AppContainer compatibility".utf8)
 
@@ -32,6 +38,11 @@ struct VuplexCompatibility: Sendable {
 		in gameDirectory: URL,
 		fileManager: FileManager = .default
 	) throws -> Bool {
+		let helperURL = gameDirectory.appending(path: Self.helperRelativePath)
+		let originalURL = helperURL.deletingLastPathComponent().appending(
+			path: Self.originalHelperName)
+		try recoverInterruptedUserenvReplacement(beside: helperURL, fileManager: fileManager)
+		try removeStaleTemporaryFiles(beside: helperURL, fileManager: fileManager)
 		guard
 			let shimURL,
 			let userenvURL,
@@ -40,10 +51,6 @@ struct VuplexCompatibility: Sendable {
 		else {
 			return false
 		}
-
-		let helperURL = gameDirectory.appending(path: Self.helperRelativePath)
-		let originalURL = helperURL.deletingLastPathComponent().appending(
-			path: Self.originalHelperName)
 
 		if !fileManager.fileExists(atPath: helperURL.path),
 			fileManager.fileExists(atPath: originalURL.path)
@@ -73,9 +80,9 @@ struct VuplexCompatibility: Sendable {
 		}
 
 		let temporaryURL = helperURL.deletingLastPathComponent().appending(
-			path: ".arknights-client-vuplex-shim-\(UUID().uuidString)")
+			path: "\(Self.shimTemporaryPrefix)\(UUID().uuidString)")
 		let previousShimURL = helperURL.deletingLastPathComponent().appending(
-			path: ".arknights-client-vuplex-previous-\(UUID().uuidString)")
+			path: "\(Self.previousShimTemporaryPrefix)\(UUID().uuidString)")
 		defer {
 			try? fileManager.removeItem(at: temporaryURL)
 			try? fileManager.removeItem(at: previousShimURL)
@@ -114,18 +121,11 @@ struct VuplexCompatibility: Sendable {
 		in gameDirectory: URL,
 		fileManager: FileManager = .default
 	) throws -> Bool {
-		guard
-			let shimURL,
-			let userenvURL,
-			fileManager.fileExists(atPath: shimURL.path),
-			fileManager.fileExists(atPath: userenvURL.path)
-		else {
-			return false
-		}
-
 		let helperURL = gameDirectory.appending(path: Self.helperRelativePath)
 		let originalURL = helperURL.deletingLastPathComponent().appending(
 			path: Self.originalHelperName)
+		try recoverInterruptedUserenvReplacement(beside: helperURL, fileManager: fileManager)
+		try removeStaleTemporaryFiles(beside: helperURL, fileManager: fileManager)
 		let removedUserenv = try removeInstalledUserenv(
 			matching: userenvURL,
 			beside: helperURL,
@@ -136,10 +136,11 @@ struct VuplexCompatibility: Sendable {
 		}
 
 		if fileManager.fileExists(atPath: helperURL.path) {
-			let matchesCurrentShim = fileManager.contentsEqual(
-				atPath: helperURL.path,
-				andPath: shimURL.path
-			)
+			let matchesCurrentShim =
+				shimURL.map {
+					fileManager.fileExists(atPath: $0.path)
+						&& fileManager.contentsEqual(atPath: helperURL.path, andPath: $0.path)
+				} ?? false
 			let matchesPreviousShim = try helperIsLauncherShim(at: helperURL)
 			let isInstalledShim = matchesCurrentShim || matchesPreviousShim
 			guard isInstalledShim else {
@@ -158,8 +159,10 @@ struct VuplexCompatibility: Sendable {
 		beside helperURL: URL,
 		fileManager: FileManager
 	) throws -> Bool {
-		let destinationURL = helperURL.deletingLastPathComponent().appending(
-			path: Self.userenvName)
+		let directory = helperURL.deletingLastPathComponent()
+		let destinationURL = directory.appending(path: Self.userenvName)
+		let backupURL = directory.appending(path: Self.userenvBackupName)
+		try recoverInterruptedUserenvReplacement(beside: helperURL, fileManager: fileManager)
 		if fileManager.fileExists(atPath: destinationURL.path) {
 			if fileManager.contentsEqual(atPath: destinationURL.path, andPath: sourceURL.path) {
 				return false
@@ -169,33 +172,81 @@ struct VuplexCompatibility: Sendable {
 					"The Vuplex folder contains an unknown userenv.dll. Repair the game before launching."
 				)
 			}
-			try fileManager.removeItem(at: destinationURL)
+			try fileManager.moveItem(at: destinationURL, to: backupURL)
 		}
-		let temporaryURL = destinationURL.deletingLastPathComponent().appending(
-			path: ".arknights-client-userenv-\(UUID().uuidString)")
+		let temporaryURL = directory.appending(
+			path: "\(Self.userenvTemporaryPrefix)\(UUID().uuidString)")
 		defer { try? fileManager.removeItem(at: temporaryURL) }
-		try fileManager.copyItem(at: sourceURL, to: temporaryURL)
-		try fileManager.moveItem(at: temporaryURL, to: destinationURL)
+		do {
+			try fileManager.copyItem(at: sourceURL, to: temporaryURL)
+			try fileManager.moveItem(at: temporaryURL, to: destinationURL)
+			try? fileManager.removeItem(at: backupURL)
+		} catch {
+			try? fileManager.removeItem(at: destinationURL)
+			if fileManager.fileExists(atPath: backupURL.path) {
+				try? fileManager.moveItem(at: backupURL, to: destinationURL)
+			}
+			throw error
+		}
 		return true
 	}
 
 	private func removeInstalledUserenv(
-		matching sourceURL: URL,
+		matching sourceURL: URL?,
 		beside helperURL: URL,
 		fileManager: FileManager
 	) throws -> Bool {
 		let destinationURL = helperURL.deletingLastPathComponent().appending(
 			path: Self.userenvName)
 		guard fileManager.fileExists(atPath: destinationURL.path) else { return false }
-		let matchesCurrent = fileManager.contentsEqual(
-			atPath: destinationURL.path,
-			andPath: sourceURL.path
-		)
+		let matchesCurrent =
+			sourceURL.map {
+				fileManager.fileExists(atPath: $0.path)
+					&& fileManager.contentsEqual(atPath: destinationURL.path, andPath: $0.path)
+			} ?? false
 		guard try matchesCurrent || isLauncherUserenv(at: destinationURL) else {
 			return false
 		}
 		try fileManager.removeItem(at: destinationURL)
 		return true
+	}
+
+	private func recoverInterruptedUserenvReplacement(
+		beside helperURL: URL,
+		fileManager: FileManager
+	) throws {
+		let directory = helperURL.deletingLastPathComponent()
+		let destinationURL = directory.appending(path: Self.userenvName)
+		let backupURL = directory.appending(path: Self.userenvBackupName)
+		guard fileManager.fileExists(atPath: backupURL.path) else { return }
+		if !fileManager.fileExists(atPath: destinationURL.path) {
+			try fileManager.moveItem(at: backupURL, to: destinationURL)
+		} else if try isLauncherUserenv(at: backupURL) {
+			try fileManager.removeItem(at: backupURL)
+		} else {
+			throw LauncherError.runtimeConfiguration(
+				"The Vuplex folder contains an unknown compatibility backup. Repair the game before launching."
+			)
+		}
+	}
+
+	private func removeStaleTemporaryFiles(
+		beside helperURL: URL,
+		fileManager: FileManager
+	) throws {
+		let directory = helperURL.deletingLastPathComponent()
+		guard fileManager.fileExists(atPath: directory.path) else { return }
+		let prefixes = [
+			Self.shimTemporaryPrefix,
+			Self.previousShimTemporaryPrefix,
+			Self.userenvTemporaryPrefix,
+		]
+		for url in try fileManager.contentsOfDirectory(
+			at: directory,
+			includingPropertiesForKeys: nil
+		) where prefixes.contains(where: { url.lastPathComponent.hasPrefix($0) }) {
+			try fileManager.removeItem(at: url)
+		}
 	}
 
 	private func isLauncherUserenv(at url: URL) throws -> Bool {
@@ -212,10 +263,11 @@ struct VuplexCompatibility: Sendable {
 	private func helperIsLauncherShim(at url: URL) throws -> Bool {
 		let data = try Data(contentsOf: url, options: .mappedIfSafe)
 		guard data.count <= Self.maximumShimSize else { return false }
-		let signature = Data(
+		if data.range(of: Self.launcherShimMarker) != nil { return true }
+		let legacySignature = Data(
 			Self.originalHelperName.utf16.flatMap { codeUnit in
 				[UInt8(truncatingIfNeeded: codeUnit), UInt8(truncatingIfNeeded: codeUnit >> 8)]
 			})
-		return data.range(of: signature) != nil
+		return data.range(of: legacySignature) != nil
 	}
 }

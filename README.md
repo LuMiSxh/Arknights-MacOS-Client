@@ -25,12 +25,14 @@ The project is in alpha and supports only Apple Silicon Macs running macOS 26 or
 
 ## Features
 
-- **Game management:** Install, resume, update, repair, and remove the Global PC client.
-- **Display modes:** Launch windowed, borderless, or fullscreen at a selected resolution.
-- **Web login:** Run the game's Vuplex login pages through a Wine compatibility shim.
-- **Update checks:** Check launcher and game versions independently; both checks can be disabled.
-- **Isolated runtime:** Keep the Wine prefix and Windows user folders inside Application Support.
-- **Diagnostics:** Write separate launcher and Wine logs and reveal them from Settings.
+- Install, resume, update, repair, and remove the Global PC client.
+- Launch the game in windowed, borderless, or fullscreen mode at a selected resolution.
+- Use HiDPI rendering for the game and its login browser.
+- Support the Yostar, Apple, Google, and Facebook login flows through Wine compatibility helpers.
+- Check launcher and game versions independently; automatic checks can be disabled.
+- Display one-time project announcements from this repository; announcement checks can be disabled.
+- Store the Wine prefix and Windows user folders under Application Support.
+- Write separate launcher and Wine logs that can be opened from Settings.
 
 ## Installation
 
@@ -44,6 +46,8 @@ Download `Arknights Client.dmg` from [GitHub Releases](https://github.com/LuMiSx
 
 > [!WARNING]
 > Builds are ad-hoc signed and not notarized. On first launch, right-click the app in Finder and select **Open**.
+
+The bundled Wine runtime is an Intel binary and currently runs through Rosetta 2. macOS may show a one-time notice when **Play** is selected for the first time because Apple has announced that Intel-app support will end in a future macOS release.
 
 Game files are stored separately from the app. Removing the launcher does not remove the game; use **Uninstall Game** in Settings.
 
@@ -69,16 +73,20 @@ cd Arknights-MacOS-Client
 just check
 ```
 
-| Command        | Purpose                                              |
-| -------------- | ---------------------------------------------------- |
-| `just run`     | Run the native launcher from SwiftPM                 |
-| `just runtime` | Download and verify the tested Wine and DXMT runtime |
-| `just dev`     | Build the app with the runtime                       |
-| `just dev-dmg` | Build an installable development DMG                 |
-| `just ci`      | Run all checks and build the release configuration   |
+| Command                | Purpose                                              |
+| ---------------------- | ---------------------------------------------------- |
+| `just run`             | Run the native launcher from SwiftPM                 |
+| `just preview`         | Run the isolated debug-state simulator               |
+| `just preview-popup …` | Preview a local Markdown popup                       |
+| `just preview-app`     | Build an isolated launcher-state simulator           |
+| `just runtime`         | Download and verify the tested Wine and DXMT runtime |
+| `just dev`             | Build the app with the runtime                       |
+| `just dev-dmg`         | Build an installable development DMG                 |
+| `just ci`              | Run all checks and build the release configuration   |
 
 Run `just --groups` for the complete command list.
 Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json).
+Repository automation lives in `scripts/` as Python scripts. uv reads their inline metadata and installs tool-specific dependencies automatically.
 
 ## Documentation
 
@@ -86,6 +94,7 @@ Tested runtime versions, download locations, checksums, and source provenance ar
 - [Design](docs/design.md)
 - [Storage](docs/storage.md)
 - [Releases and updates](docs/releases-and-updates.md)
+- [Announcements](docs/announcements.md)
 - [Changelog](CHANGELOG.md)
 - [Third-party notices](docs/legal/third-party-notices.md)
 

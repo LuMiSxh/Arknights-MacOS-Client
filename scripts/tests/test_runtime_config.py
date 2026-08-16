@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).parents[1] / "runtime-config.py"
-SPEC = importlib.util.spec_from_file_location("runtime_config", MODULE_PATH)
-assert SPEC is not None and SPEC.loader is not None
-runtime_config = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(runtime_config)
+sys.path.insert(0, str(Path(__file__).parents[1]))
+
+import runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
@@ -73,7 +71,7 @@ class RuntimeConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / "runtime.json"
             config.write_text("{}", encoding="utf-8")
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(RuntimeError):
                 runtime_config.read_value(config, "runtime.url")
 
     def test_validates_complete_configuration(self) -> None:
@@ -89,7 +87,7 @@ class RuntimeConfigTests(unittest.TestCase):
             assert isinstance(value["runtime"], dict)
             value["runtime"]["sha256"] = "latest"
             config.write_text(json.dumps(value), encoding="utf-8")
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(RuntimeError):
                 runtime_config.validate_config(config)
 
 

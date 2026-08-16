@@ -70,7 +70,7 @@ struct BundledDocumentView: View {
 	}
 }
 
-private struct MarkdownDocument: View {
+struct MarkdownDocument: View {
 	let source: String
 
 	var body: some View {

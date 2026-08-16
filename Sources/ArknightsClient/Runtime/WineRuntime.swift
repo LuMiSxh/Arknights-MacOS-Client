@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 
 struct WineLaunch: Sendable {
@@ -82,8 +83,11 @@ struct WineRuntime: Sendable {
 		gameExecutable: URL,
 		prefixDirectory: URL,
 		gameArguments: [String] = [],
+		displayConfiguration: WineDisplayConfiguration,
+		graphicsDiagnostics: Bool = false,
 		logURL: URL? = nil
 	) async throws -> WineLaunch {
+		let launchStarted = ContinuousClock.now
 		let fileManager = FileManager.default
 		try fileManager.createDirectory(at: prefixDirectory, withIntermediateDirectories: true)
 		try fileManager.createDirectory(
@@ -108,9 +112,6 @@ struct WineRuntime: Sendable {
 			at: logURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
-		let installedVuplexShim = try VuplexCompatibility().installIfSupported(
-			in: gameExecutable.deletingLastPathComponent()
-		)
 		if !fileManager.fileExists(atPath: logURL.path) {
 			guard fileManager.createFile(atPath: logURL.path, contents: nil) else {
 				throw LauncherError.cannotCreateFile(logURL)
@@ -118,13 +119,29 @@ struct WineRuntime: Sendable {
 		}
 		let logHandle = try FileHandle(forWritingTo: logURL)
 		try logHandle.seekToEnd()
-		if installedVuplexShim {
+		RuntimePerformanceLog.write(stage: "filesystem", since: launchStarted, to: logHandle)
+		let compatibilityChanges = try GameCompatibilityManager().prepareForLaunch(
+			in: gameExecutable.deletingLastPathComponent()
+		)
+		RuntimePerformanceLog.write(stage: "compatibility", since: launchStarted, to: logHandle)
+		for identifier in compatibilityChanges.installed {
 			try? logHandle.write(
-				contentsOf: Data("Arknights Client: enabled Vuplex browser compatibility.\n".utf8)
-			)
+				contentsOf: Data(
+					"Arknights Client: enabled compatibility component \(identifier).\n".utf8
+				))
+		}
+		for identifier in compatibilityChanges.removed {
+			try? logHandle.write(
+				contentsOf: Data(
+					"Arknights Client: removed retired compatibility component \(identifier).\n"
+						.utf8
+				))
 		}
 
-		var environment = runtimeEnvironment(prefixDirectory: prefixDirectory)
+		var environment = runtimeEnvironment(
+			prefixDirectory: prefixDirectory,
+			graphicsDiagnostics: graphicsDiagnostics
+		)
 		environment["WINEDLLOVERRIDES"] = Self.dllOverrides
 		try await preparePrefixIfNeeded(
 			at: prefixDirectory,
@@ -132,7 +149,18 @@ struct WineRuntime: Sendable {
 			environment: environment,
 			logHandle: logHandle
 		)
+		RuntimePerformanceLog.write(stage: "prefix", since: launchStarted, to: logHandle)
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
+		try await applyDisplayConfiguration(
+			displayConfiguration,
+			prefixDirectory: prefixDirectory,
+			environment: environment,
+			logHandle: logHandle
+		)
+		RuntimePerformanceLog.write(stage: "display", since: launchStarted, to: logHandle)
+		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
+			displayConfiguration.browserScaleFactor
+		)
 
 		let process = Process()
 		process.executableURL = executableURL
@@ -149,6 +177,7 @@ struct WineRuntime: Sendable {
 			terminationContinuation.finish()
 		}
 		try process.run()
+		RuntimePerformanceLog.write(stage: "process", since: launchStarted, to: logHandle)
 		try? logHandle.close()
 
 		let terminationTask = Task {
@@ -207,8 +236,13 @@ struct WineRuntime: Sendable {
 		process.environment = runtimeEnvironment(prefixDirectory: prefixDirectory)
 		process.standardOutput = FileHandle.nullDevice
 		process.standardError = FileHandle.nullDevice
+		let terminated = DispatchSemaphore(value: 0)
+		process.terminationHandler = { _ in terminated.signal() }
 		guard (try? process.run()) != nil else { return }
-		process.waitUntilExit()
+		guard terminated.wait(timeout: .now() + 3) == .timedOut else { return }
+		process.terminate()
+		guard terminated.wait(timeout: .now() + 1) == .timedOut else { return }
+		Darwin.kill(process.processIdentifier, SIGKILL)
 	}
 
 	var wineserverURL: URL? {

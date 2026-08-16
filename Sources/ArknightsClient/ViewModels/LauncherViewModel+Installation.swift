@@ -4,10 +4,22 @@ import Foundation
 
 extension LauncherViewModel {
 	func installOrUpdate() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.downloading)
+				return
+			}
+		#endif
 		startInstallation(launchAfterCompletion: false)
 	}
 
 	func repairGame() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.downloading)
+				return
+			}
+		#endif
 		startInstallation(launchAfterCompletion: false, verifyAllExistingFiles: true)
 	}
 
@@ -25,8 +37,8 @@ extension LauncherViewModel {
 		refreshTask?.cancel()
 		let targetDirectory = installDirectory
 		progress = nil
-		isDownloading = true
 		phase = .downloading
+		hasPartialDownload = false
 		activityMessage = verifyAllExistingFiles ? "Verifying…" : "Preparing…"
 		Task { [log] in
 			await log.info(
@@ -52,6 +64,7 @@ extension LauncherViewModel {
 				}
 				guard finishInstallation(installationID) else { return }
 				isInstalled = true
+				hasPartialDownload = false
 				installedVersion = configuration.gameLatestVersion
 				isGameUpdateAvailable = false
 				phase = .ready
@@ -62,6 +75,7 @@ extension LauncherViewModel {
 				if launchAfterCompletion { launch() }
 			} catch is CancellationError {
 				guard finishInstallation(installationID) else { return }
+				updateInstalledState()
 				phase = .ready
 				activityMessage = "Paused"
 				await log.info("Installation paused")
@@ -73,6 +87,12 @@ extension LauncherViewModel {
 	}
 
 	func cancelDownload() {
+		#if DEBUG
+			if isDeveloperMode {
+				applyDeveloperScenario(.paused)
+				return
+			}
+		#endif
 		guard isDownloading else { return }
 		activityMessage = "Pausing…"
 		Task { [log] in await log.info("Installation pause requested") }
@@ -83,7 +103,6 @@ extension LauncherViewModel {
 		guard installationGate.owns(installationID) else { return false }
 		installationGate.finish(installationID)
 		installationTask = nil
-		isDownloading = false
 		return true
 	}
 }

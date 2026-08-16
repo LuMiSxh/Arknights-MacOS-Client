@@ -18,12 +18,20 @@ struct WinePrefixConfigurator {
 			at: dosDevices,
 			includingPropertiesForKeys: nil
 		) {
-			guard device.lastPathComponent.lowercased() != "c:" else { continue }
+			let name = device.lastPathComponent.lowercased()
+			guard name != "c:" else { continue }
+			if name == "g:",
+				symbolicLink(at: device, pointsTo: gameDirectory, fileManager: fileManager)
+			{
+				continue
+			}
 			try fileManager.removeItem(at: device)
 		}
 
 		let gameDrive = dosDevices.appending(path: "g:")
-		try fileManager.createSymbolicLink(at: gameDrive, withDestinationURL: gameDirectory)
+		if !symbolicLink(at: gameDrive, pointsTo: gameDirectory, fileManager: fileManager) {
+			try fileManager.createSymbolicLink(at: gameDrive, withDestinationURL: gameDirectory)
+		}
 
 		let usersDirectory = prefixDirectory.appending(
 			path: "drive_c/users",
@@ -47,5 +55,20 @@ struct WinePrefixConfigurator {
 				}
 			}
 		}
+	}
+
+	private func symbolicLink(
+		at link: URL,
+		pointsTo destination: URL,
+		fileManager: FileManager
+	) -> Bool {
+		guard let current = try? fileManager.destinationOfSymbolicLink(atPath: link.path) else {
+			return false
+		}
+		let currentURL =
+			current.hasPrefix("/")
+			? URL(filePath: current)
+			: link.deletingLastPathComponent().appending(path: current)
+		return currentURL.standardizedFileURL.path == destination.standardizedFileURL.path
 	}
 }

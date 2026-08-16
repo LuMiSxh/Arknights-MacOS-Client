@@ -19,15 +19,18 @@ final class LauncherViewModel: ObservableObject {
 	@Published var branding: LauncherBranding?
 	@Published var heroArtwork: NSImage?
 	@Published var officialLogo: NSImage?
-	@Published var notice: LauncherNotice?
+	@Published var popup: LauncherPopup?
 	@Published var isInstalled = false
+	@Published var hasPartialDownload = false
 	@Published var installedVersion: String?
 	@Published var isGameUpdateAvailable = false
 	@Published var launcherUpdate: LauncherRelease?
 	@Published var launcherUpdateStatus: String?
 	@Published var isCheckingLauncherUpdates = false
-	@Published var isDownloading = false
 	@Published var activityMessage = "Checking…"
+	#if DEBUG
+		@Published var developerScenario: DeveloperScenario?
+	#endif
 
 	@Published var installDirectory: URL
 	@Published var launchOptions: GameLaunchOptions {
@@ -45,20 +48,30 @@ final class LauncherViewModel: ObservableObject {
 			if automaticallyChecksGameUpdates { checkGameUpdates() }
 		}
 	}
+	@Published var announcementsEnabled: Bool {
+		didSet {
+			preferences.setAnnouncementsEnabled(announcementsEnabled)
+			if announcementsEnabled { checkAnnouncements() }
+		}
+	}
 
 	let api: any LauncherAPIProviding
 	let installer: any GameInstalling
 	let artworkCache: ArtworkCache
 	let updateChecker: LauncherUpdateChecker
+	let announcementService: LauncherAnnouncementService
 	let paths: AppPaths
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
+	let graphicsDiagnosticsEnabled: Bool
 	var refreshTask: Task<Void, Never>?
 	var installationTask: Task<Void, Never>?
 	var launchTask: Task<Void, Never>?
 	var gameMonitorTask: Task<Void, Never>?
 	var gameProcessMonitorTask: Task<Void, Never>?
 	var launcherUpdateTask: Task<Void, Never>?
+	var announcementTask: Task<Void, Never>?
+	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
 	var activeGameSessionID: UUID?
 	var presentedNoticeContent: String?
@@ -71,12 +84,15 @@ final class LauncherViewModel: ObservableObject {
 		paths: AppPaths = AppPaths(),
 		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
 		updateChecker: LauncherUpdateChecker = LauncherUpdateChecker(),
+		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
 		arguments: [String] = ProcessInfo.processInfo.arguments
 	) {
 		self.api = api
 		self.paths = paths
 		self.preferences = preferences
+		graphicsDiagnosticsEnabled = arguments.contains("--graphics-diagnostics")
 		self.updateChecker = updateChecker
+		self.announcementService = announcementService
 		self.installer = installer ?? GameInstaller(api: api)
 		log = LauncherLog(fileURL: paths.launcherLogFile)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
@@ -84,6 +100,20 @@ final class LauncherViewModel: ObservableObject {
 		launchOptions = preferences.launchOptions()
 		automaticallyChecksLauncherUpdates = preferences.automaticLauncherUpdates()
 		automaticallyChecksGameUpdates = preferences.automaticGameUpdates()
+		announcementsEnabled = preferences.announcementsEnabled()
+
+		#if DEBUG
+			developerScenario = DeveloperScenario(arguments: arguments)
+			if let developerScenario {
+				applyDeveloperScenario(developerScenario)
+				if developerScenario == .customPopup {
+					applyDeveloperPopup(arguments: arguments)
+				}
+				refreshTask = Task { [weak self] in await self?.loadDeveloperArtwork() }
+				Task { [log] in await log.info("Developer simulation started") }
+				return
+			}
+		#endif
 
 		refreshRuntime()
 		let installOnLaunch =
@@ -103,6 +133,9 @@ final class LauncherViewModel: ObservableObject {
 		if automaticallyChecksLauncherUpdates {
 			checkLauncherUpdates()
 		}
+		if announcementsEnabled {
+			checkAnnouncements()
+		}
 
 		let appVersion =
 			Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
@@ -119,6 +152,7 @@ final class LauncherViewModel: ObservableObject {
 		gameMonitorTask?.cancel()
 		gameProcessMonitorTask?.cancel()
 		launcherUpdateTask?.cancel()
+		announcementTask?.cancel()
 	}
 
 	var versionText: String {
@@ -127,6 +161,10 @@ final class LauncherViewModel: ObservableObject {
 
 	var installSizeText: String {
 		configuration?.decompressionSize ?? "—"
+	}
+
+	var isDownloading: Bool {
+		phase == .downloading
 	}
 
 	var canInstall: Bool {
@@ -174,6 +212,14 @@ final class LauncherViewModel: ObservableObject {
 		activeGameSessionID != nil
 	}
 
+	var isDeveloperMode: Bool {
+		#if DEBUG
+			developerScenario != nil
+		#else
+			false
+		#endif
+	}
+
 	func refresh(forceGameUpdateCheck: Bool = false) async {
 		guard !isDownloading else { return }
 		await log.info("Refreshing game and branding state")
@@ -183,6 +229,8 @@ final class LauncherViewModel: ObservableObject {
 		phase = .checking
 		activityMessage = "Checking…"
 		let hasCustomArtwork = loadCustomArtwork()
+		let brandingTask = Task { [api] in try? await api.branding() }
+		defer { brandingTask.cancel() }
 
 		if !isInstalled || automaticallyChecksGameUpdates || forceGameUpdateCheck {
 			do {
@@ -206,7 +254,7 @@ final class LauncherViewModel: ObservableObject {
 			}
 		}
 
-		let fetchedBranding = try? await api.branding()
+		let fetchedBranding = await brandingTask.value
 		guard isCurrentRefresh(refreshID) else { return }
 		if let currentBranding = fetchedBranding {
 			branding = currentBranding
@@ -214,88 +262,28 @@ final class LauncherViewModel: ObservableObject {
 			await log.info(
 				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
 			)
-			if currentBranding.launcherBackgroundImage != nil,
-				let data = try? await artworkCache.officialLogoData()
-			{
-				guard isCurrentRefresh(refreshID) else { return }
-				officialLogo = NSImage(data: data)
+			let logoTask = Task { [artworkCache] in
+				guard currentBranding.launcherBackgroundImage != nil else { return nil as Data? }
+				return try? await artworkCache.officialLogoData()
 			}
-			if !hasCustomArtwork,
-				let data = try? await artworkCache.imageData(for: currentBranding)
-			{
-				guard isCurrentRefresh(refreshID) else { return }
-				heroArtwork = NSImage(data: data)
+			let artworkTask = Task { [artworkCache] in
+				guard !hasCustomArtwork else { return nil as Data? }
+				return try? await artworkCache.imageData(for: currentBranding)
 			}
+			let (logoData, artworkData) = await (logoTask.value, artworkTask.value)
+			guard isCurrentRefresh(refreshID) else { return }
+			if let logoData { officialLogo = NSImage(data: logoData) }
+			if let artworkData { heroArtwork = NSImage(data: artworkData) }
 		}
 
 		guard isCurrentRefresh(refreshID) else { return }
 		activeRefreshID = nil
 		phase = .ready
 		activityMessage =
-			isGameUpdateAvailable ? "Update available" : (isInstalled ? "Ready" : "Install")
+			isGameUpdateAvailable
+			? "Update available"
+			: (isInstalled ? "Ready" : (hasPartialDownload ? "Paused" : "Install"))
 		await log.info("Refresh completed; state=\(activityMessage)")
-	}
-
-	func checkGameUpdates() {
-		guard !isDownloading else { return }
-		activeRefreshID = nil
-		refreshTask?.cancel()
-		refreshTask = Task { [weak self] in
-			await self?.refresh(forceGameUpdateCheck: true)
-		}
-	}
-
-	func checkLauncherUpdates() {
-		guard !isCheckingLauncherUpdates else { return }
-		guard
-			let endpointString = Bundle.main.object(forInfoDictionaryKey: "LauncherUpdatesURL")
-				as? String,
-			let endpoint = URL(string: endpointString)
-		else {
-			launcherUpdateStatus = "Update source unavailable"
-			return
-		}
-
-		launcherUpdateTask?.cancel()
-		isCheckingLauncherUpdates = true
-		launcherUpdateStatus = "Checking…"
-		launcherUpdateTask = Task { [weak self] in
-			guard let self else { return }
-			defer { isCheckingLauncherUpdates = false }
-			do {
-				guard let release = try await updateChecker.latestRelease(from: endpoint) else {
-					launcherUpdate = nil
-					launcherUpdateStatus = "No releases available"
-					await log.info("Launcher update check completed; no releases available")
-					return
-				}
-				let currentVersion =
-					Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
-					as? String ?? "0"
-				if !release.isDraft && !release.isPrerelease
-					&& updateChecker.isNewer(release.version, than: currentVersion)
-				{
-					launcherUpdate = release
-					launcherUpdateStatus = "Version \(release.version) available"
-				} else {
-					launcherUpdate = nil
-					launcherUpdateStatus = "Up to date"
-				}
-				await log.info(
-					"Launcher update check completed; status=\(launcherUpdateStatus ?? "Unknown")"
-				)
-			} catch is CancellationError {
-				launcherUpdateStatus = nil
-			} catch {
-				launcherUpdateStatus = "Couldn’t check for updates"
-				await log.error("Launcher update check failed: \(error.localizedDescription)")
-			}
-		}
-	}
-
-	func openLauncherUpdate() {
-		guard let url = launcherUpdate?.htmlURL else { return }
-		NSWorkspace.shared.open(url)
 	}
 
 }

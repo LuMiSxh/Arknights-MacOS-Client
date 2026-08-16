@@ -43,6 +43,8 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(environment["WINEPREFIX"] == "/isolated/prefix")
 	#expect(environment["WINEPRELOADERAPPNAME"] == "Arknights")
 	#expect(environment["CFFIXED_USER_HOME"] == "/isolated/prefix/home")
+	#expect(environment["DXMT_SHADER_CACHE"] == "1")
+	#expect(environment["DXMT_SHADER_CACHE_PATH"] == "/isolated/prefix/home/.cache/dxmt")
 	#expect(environment["DYLD_FALLBACK_LIBRARY_PATH"] == "/runtime/lib")
 	#expect(environment["USER"] == "tester")
 	#expect(environment["LANG"] == "en_US.UTF-8")
@@ -65,7 +67,17 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesToWineboot() throws {
 	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
 
 	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
+	let originalFileNumber =
+		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
+			.systemFileNumber
+		] as? NSNumber
+	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+	let preservedFileNumber =
+		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
+			.systemFileNumber
+		] as? NSNumber
 	let configuration = try String(contentsOf: configurationURL, encoding: .utf8)
+	#expect(preservedFileNumber == originalFileNumber)
 	#expect(configuration == WineRuntime.isolatedUserDirectoryConfiguration)
 	#expect(configuration.contains("XDG_DOCUMENTS_DIR=\"$HOME/Documents\""))
 	#expect(configuration.contains("XDG_DOWNLOAD_DIR=\"$HOME/Downloads\""))
@@ -84,6 +96,100 @@ func runtimeUsesFastSynchronizationAndErrorOnlyDiagnostics() {
 		runtime: .init(sha256: "abc")
 	)
 	#expect(configuration.revision == "abc-prefix-3")
+}
+
+@Test
+func displayConfigurationEnablesRetinaOnlyForScaledDisplays() {
+	#expect(WineDisplayConfiguration(backingScaleFactor: 2).retinaEnabled)
+	#expect(!WineDisplayConfiguration(backingScaleFactor: 1).retinaEnabled)
+	#expect(
+		!WineDisplayConfiguration(
+			backingScaleFactor: 2,
+			highResolutionEnabled: false
+		).retinaEnabled
+	)
+	#expect(
+		!WineDisplayConfiguration(backingScaleFactor: 2, forceDisabled: true).retinaEnabled
+	)
+}
+
+@Test
+func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
+	let fileManager = FileManager.default
+	let prefix = fileManager.temporaryDirectory.appending(
+		path: "retina-registry-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: prefix) }
+	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
+	let registry =
+		"""
+		[Software\\\\Wine\\\\AppDefaults\\\\Arknights.exe\\\\Mac Driver] 1786868781
+		"RetinaMode"="n"
+
+		[Software\\\\Wine\\\\Mac Driver] 1786868782
+		"RetinaMode"="y"
+
+		"""
+	try registry.write(
+		to: prefix.appending(path: "user.reg"),
+		atomically: true,
+		encoding: .utf8
+	)
+
+	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
+	#expect(state?.retinaMode == "y")
+	#expect(state?.logPixels == nil)
+}
+
+@Test
+func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
+	let fileManager = FileManager.default
+	let prefix = fileManager.temporaryDirectory.appending(
+		path: "dpi-registry-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: prefix) }
+	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
+	let registry =
+		"""
+		[Control Panel\\\\Desktop] 1786869739
+		"LogPixels"=dword:000000c0
+
+		[Software\\\\Wine\\\\Mac Driver] 1786868782
+		"RetinaMode"="y"
+
+		"""
+	try registry.write(
+		to: prefix.appending(path: "user.reg"),
+		atomically: true,
+		encoding: .utf8
+	)
+
+	let configuration = WineDisplayConfiguration(backingScaleFactor: 2)
+	#expect(configuration.logPixels == 96)
+	#expect(configuration.browserScaleFactor == 2)
+	#expect(
+		configuration.registryState(in: prefix)
+			== WineDisplayRegistryState(retinaMode: "y", logPixels: 192)
+	)
+}
+
+@Test
+func graphicsDiagnosticsExposeMacDriverAndDXMTInformation() {
+	let runtime = WineRuntime(
+		executableURL: URL(filePath: "/runtime/bin/Arknights"),
+		displayName: "Test",
+		revision: "test"
+	)
+	let environment = runtime.runtimeEnvironment(
+		prefixDirectory: URL(filePath: "/prefix", directoryHint: .isDirectory),
+		graphicsDiagnostics: true
+	)
+
+	#expect(environment["WINEDEBUG"]?.contains("+macdrv") == true)
+	#expect(environment["DXMT_LOG_LEVEL"] == "info")
+	#expect(environment["DXMT_LOG_PATH"] == "none")
 }
 
 @Test
@@ -109,6 +215,7 @@ func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
 	}
 
 	try WineRuntime.installDXMT(from: payload, in: prefix)
+	#expect(WineRuntime.dxmtIsCurrent(from: payload, in: prefix))
 
 	for (architecture, windowsDirectory) in [("x64", "system32"), ("x32", "syswow64")] {
 		for library in WineRuntime.dxmtLibraryNames {
@@ -117,29 +224,11 @@ func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
 			#expect(try Data(contentsOf: installed) == Data("\(architecture)-\(library)".utf8))
 		}
 	}
-}
 
-@Test
-func prefixRefreshesOnlyWhenMissingOrBuiltForAnotherRuntime() {
-	let revision = "runtime-prefix-1"
-	#expect(
-		WineRuntime.requiresPrefixUpdate(
-			hasSystemRegistry: false,
-			installedRevision: revision,
-			expectedRevision: revision
-		))
-	#expect(
-		WineRuntime.requiresPrefixUpdate(
-			hasSystemRegistry: true,
-			installedRevision: nil,
-			expectedRevision: revision
-		))
-	#expect(
-		!WineRuntime.requiresPrefixUpdate(
-			hasSystemRegistry: true,
-			installedRevision: revision,
-			expectedRevision: revision
-		))
+	try fileManager.removeItem(
+		at: prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
+	)
+	#expect(!WineRuntime.dxmtIsCurrent(from: payload, in: prefix))
 }
 
 @Test
@@ -170,4 +259,15 @@ func gameWindowReadinessRequiresALargeVisibleWindowForTheRuntimeProcess() {
 			processIdentifier: processIdentifier,
 			windows: [helperWindow, gameWindow]
 		))
+}
+
+@Test
+func gameWindowReadinessTimesOutWhenTheRuntimeNeverCreatesAWindow() async {
+	await #expect(throws: LauncherError.self) {
+		try await WineWindowReadiness.wait(
+			processIdentifier: Int32.max,
+			timeout: .milliseconds(2),
+			pollInterval: .milliseconds(1)
+		)
+	}
 }

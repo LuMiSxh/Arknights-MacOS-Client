@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = []
+# ///
 # SPDX-License-Identifier: MPL-2.0
 
 """Apply the reviewed macOS integration patch to the pinned Wine runtime."""
@@ -7,12 +12,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from common import fail, run_main
+
 OPTION_COMMAND_Q = b"\xba\x00\x00\x18\x00"
 COMMAND_Q = b"\xba\x00\x00\x10\x00"
-
-
-def fail(message: str) -> None:
-    raise SystemExit(f"error: {message}")
 
 
 def patch_quit_shortcut(data: bytes) -> tuple[bytes, bool]:
@@ -24,7 +27,6 @@ def patch_quit_shortcut(data: bytes) -> tuple[bytes, bool]:
     command_offsets = [
         offset for offset in range(len(data)) if data.startswith(COMMAND_Q, offset)
     ]
-
     if len(option_command_offsets) == 1 and len(command_offsets) == 1:
         return data, False
     if len(option_command_offsets) != 2 or command_offsets:
@@ -46,7 +48,7 @@ def patch_file(path: Path) -> bool:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("driver", type=Path)
     arguments = parser.parse_args()
     changed = patch_file(arguments.driver.resolve())
@@ -54,4 +56,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

@@ -3,12 +3,66 @@
 import Foundation
 
 extension WineRuntime {
-	static func requiresPrefixUpdate(
-		hasSystemRegistry: Bool,
-		installedRevision: String?,
-		expectedRevision: String
-	) -> Bool {
-		!hasSystemRegistry || installedRevision != expectedRevision
+	func applyDisplayConfiguration(
+		_ configuration: WineDisplayConfiguration,
+		prefixDirectory: URL,
+		environment: [String: String],
+		logHandle: FileHandle
+	) async throws {
+		let current = configuration.registryState(in: prefixDirectory)
+		if current?.retinaMode != configuration.registryValue {
+			try await writeRegistryValue(
+				key: "HKCU\\Software\\Wine\\Mac Driver",
+				name: "RetinaMode",
+				type: "REG_SZ",
+				value: configuration.registryValue,
+				environment: environment,
+				logHandle: logHandle
+			)
+		}
+		if current?.logPixels != configuration.logPixels {
+			try await writeRegistryValue(
+				key: "HKCU\\Control Panel\\Desktop",
+				name: "LogPixels",
+				type: "REG_DWORD",
+				value: String(configuration.logPixels),
+				environment: environment,
+				logHandle: logHandle
+			)
+		}
+		guard
+			current?.retinaMode != configuration.registryValue
+				|| current?.logPixels != configuration.logPixels
+		else { return }
+		try? logHandle.write(
+			contentsOf: Data(
+				"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels).\n"
+					.utf8
+			)
+		)
+	}
+
+	private func writeRegistryValue(
+		key: String,
+		name: String,
+		type: String,
+		value: String,
+		environment: [String: String],
+		logHandle: FileHandle
+	) async throws {
+		let status = try await runAndWait(
+			executable: executableURL,
+			arguments: [
+				"reg.exe", "add", key, "/v", name, "/t", type, "/d", value, "/f",
+			],
+			environment: environment,
+			output: logHandle
+		)
+		guard status == 0 else {
+			throw LauncherError.runtimeConfiguration(
+				"Wine could not configure \(name) (status \(status))."
+			)
+		}
 	}
 
 	func preparePrefixIfNeeded(
@@ -19,56 +73,81 @@ extension WineRuntime {
 	) async throws {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
-		let revisionMarker = prefixDirectory.appending(path: ".arknights-runtime-revision")
-		let installedRevision = try? String(contentsOf: revisionMarker, encoding: .utf8)
-		if Self.requiresPrefixUpdate(
-			hasSystemRegistry: fileManager.fileExists(atPath: systemRegistry.path),
-			installedRevision: installedRevision,
-			expectedRevision: revision
-		) {
-			let exitStatus = try await runAndWait(
-				executable: executableURL,
-				arguments: ["wineboot.exe", "-u"],
-				environment: environment,
-				output: logHandle
+		let hasSystemRegistry = fileManager.fileExists(atPath: systemRegistry.path)
+		let store = RuntimeMigrationStore(fileManager: fileManager)
+		let persistedState = store.load(from: prefixDirectory)
+		let installedState =
+			persistedState
+			?? store.loadLegacy(
+				from: prefixDirectory,
+				expectedRevision: revision,
+				hasSystemRegistry: hasSystemRegistry
 			)
-			guard exitStatus == 0 else {
-				throw LauncherError.runtimeConfiguration(
-					"Wine could not initialize its prefix (status \(exitStatus))."
+		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
+		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
+		let invalidatedMigrations: Set<RuntimeMigration> =
+			Self.dxmtIsCurrent(
+				from: dxmtPayload,
+				in: prefixDirectory,
+				fileManager: fileManager
+			)
+			? [] : [.installDXMT]
+		var plan = RuntimeMigrationPlan(
+			expectedRevision: revision,
+			installedState: installedState,
+			hasSystemRegistry: hasSystemRegistry,
+			invalidatedMigrations: invalidatedMigrations
+		)
+		for migration in plan.pending {
+			switch migration {
+			case .initializeWinePrefix:
+				try await initializePrefix(environment: environment, logHandle: logHandle)
+			case .installDXMT:
+				try Self.installDXMT(
+					from: dxmtPayload,
+					in: prefixDirectory,
+					fileManager: fileManager
+				)
+			case .configureRegistry:
+				try await configureCompatibilityOverrides(
+					environment: environment,
+					logHandle: logHandle
 				)
 			}
-			try revision.write(
-				to: revisionMarker,
-				atomically: true,
-				encoding: .utf8
-			)
+			plan.complete(migration)
+			try store.save(plan.state, to: prefixDirectory)
 		}
-
-		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		try Self.installDXMT(
-			from: runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory),
-			in: prefixDirectory,
-			fileManager: fileManager
-		)
-		try await configureCompatibilityOverridesIfNeeded(
-			at: prefixDirectory,
-			environment: environment,
-			logHandle: logHandle
-		)
+		if plan.pending.isEmpty, persistedState != plan.state {
+			try store.save(plan.state, to: prefixDirectory)
+		}
+		try store.removeLegacyMarkers(from: prefixDirectory)
 		try WinePrefixConfigurator().configure(
 			prefixDirectory: prefixDirectory,
 			gameDirectory: gameDirectory
 		)
 	}
 
-	func configureCompatibilityOverridesIfNeeded(
-		at prefixDirectory: URL,
+	private func initializePrefix(
 		environment: [String: String],
 		logHandle: FileHandle
 	) async throws {
-		let marker = prefixDirectory.appending(path: ".arknights-runtime-configuration")
-		let installedRevision = try? String(contentsOf: marker, encoding: .utf8)
-		guard installedRevision != revision else { return }
+		let exitStatus = try await runAndWait(
+			executable: executableURL,
+			arguments: ["wineboot.exe", "-u"],
+			environment: environment,
+			output: logHandle
+		)
+		guard exitStatus == 0 else {
+			throw LauncherError.runtimeConfiguration(
+				"Wine could not initialize its prefix (status \(exitStatus))."
+			)
+		}
+	}
+
+	private func configureCompatibilityOverrides(
+		environment: [String: String],
+		logHandle: FileHandle
+	) async throws {
 		let globalKey = "HKCU\\Software\\Wine\\DllOverrides"
 		for (name, value) in Self.globalRegistryOverrides.sorted(by: { $0.key < $1.key }) {
 			let status = try await runAndWait(
@@ -100,7 +179,6 @@ extension WineRuntime {
 				"Wine could not disable its crash dialog (status \(crashDialogStatus))."
 			)
 		}
-		try revision.write(to: marker, atomically: true, encoding: .utf8)
 	}
 
 	static func installDXMT(
@@ -137,6 +215,27 @@ extension WineRuntime {
 				try fileManager.copyItem(at: source, to: destination)
 			}
 		}
+	}
+
+	static func dxmtIsCurrent(
+		from payloadDirectory: URL,
+		in prefixDirectory: URL,
+		fileManager: FileManager = .default
+	) -> Bool {
+		for (architecture, windowsDirectory) in [("x64", "system32"), ("x32", "syswow64")] {
+			for library in dxmtLibraryNames {
+				let source = payloadDirectory.appending(path: architecture).appending(path: library)
+				let destination =
+					prefixDirectory
+					.appending(path: "drive_c/windows", directoryHint: .isDirectory)
+					.appending(path: windowsDirectory, directoryHint: .isDirectory)
+					.appending(path: library)
+				guard filesMatch(source, destination, fileManager: fileManager) else {
+					return false
+				}
+			}
+		}
+		return true
 	}
 
 	private static func filesMatch(_ lhs: URL, _ rhs: URL, fileManager: FileManager) -> Bool {

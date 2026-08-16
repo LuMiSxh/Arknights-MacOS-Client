@@ -15,6 +15,7 @@ struct LauncherPreferencesStoreTests {
 
 		#expect(store.automaticLauncherUpdates())
 		#expect(store.automaticGameUpdates())
+		#expect(store.announcementsEnabled())
 	}
 
 	@Test
@@ -25,9 +26,26 @@ struct LauncherPreferencesStoreTests {
 
 		store.setAutomaticLauncherUpdates(false)
 		store.setAutomaticGameUpdates(false)
+		store.setAnnouncementsEnabled(false)
 
 		#expect(!store.automaticLauncherUpdates())
 		#expect(!store.automaticGameUpdates())
+		#expect(!store.announcementsEnabled())
+	}
+
+	@Test
+	func popupHistoryPersistsAndCapsAnnouncementIDs() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		for index in 0..<110 {
+			store.markAnnouncementSeen("message-\(index)")
+		}
+		store.markLauncherUpdatePresented("0.2.0")
+
+		#expect(store.seenAnnouncementIDs().count == 100)
+		#expect(store.presentedLauncherUpdate() == "0.2.0")
 	}
 
 	@Test

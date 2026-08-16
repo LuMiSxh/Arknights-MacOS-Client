@@ -8,11 +8,13 @@ Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary 
 
 The launcher checks GitHub for a newer launcher version when it opens. If one exists, it links to the release page. Installation remains manual because the app is not Developer-ID signed or notarized. The check can be disabled in Settings.
 
+The first check that discovers a new version shows a native popup containing the version and that GitHub Release's Markdown body. Dismissing it keeps the release button in the launcher's status capsule and the version in Settings. The same version is not presented as a popup again.
+
 Game updates are checked separately against Yostar. The check can also be disabled. A check never downloads game data by itself; the user starts the update.
 
 ## Creating a release
 
-Run `just release X.Y.Z` from a clean, pushed branch, or start **Draft release** from the GitHub Actions page and enter the version there. The workflow rejects malformed versions, versions missing from `CHANGELOG.md`, and versions whose tag or release already exists.
+Merge the release branch first, update the local `main` branch, and run `just release X.Y.Z` from clean, pushed `main`. Alternatively, start **Draft release** from the GitHub Actions page on `main` and enter the version there. Both paths require the same non-empty version section in `CHANGELOG.md` and an exact `CFBundleShortVersionString` match in `Resources/Info.plist`. The workflow also rejects other branches, malformed versions, and versions whose tag or release already exists.
 
 It then:
 
@@ -20,10 +22,11 @@ It then:
 2. downloads the pinned runtime through the same script used locally and verifies its SHA-256;
 3. downloads and verifies the pinned runtime build recipe;
 4. builds an arm64 app and DMG;
-5. writes `SHA256SUMS`; and
-6. creates a draft `vX.Y.Z` GitHub Release for review.
+5. writes `SHA256SUMS`;
+6. extracts the matching `CHANGELOG.md` section as the release body; and
+7. creates a draft `vX.Y.Z` GitHub Release for review.
 
-[`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/python/runtime-config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
+[`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/runtime_config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
 
 Release automation does not use repository variables for these values. A runtime update is a reviewed `runtime.json` change, so local and GitHub builds cannot silently select different binaries.
 
@@ -45,7 +48,7 @@ Keep the release as a draft until the runtime notice and corresponding-source wo
 
 ## Versioning and changelog
 
-Versions follow Semantic Versioning. Before 1.0, minor versions may contain deliberate compatibility changes; patch versions contain compatible fixes. Until the first release ships, changes stay in the `0.1.0` section. Later user-visible work goes into `Unreleased` and moves into a dated `X.Y.Z` section before release.
+Versions follow Semantic Versioning. Before 1.0, minor versions may contain deliberate compatibility changes; patch versions contain compatible fixes. User-visible work starts in `Unreleased` and moves into an `X.Y.Z` section before release.
 
 ## Signing limitation
 

@@ -1,3 +1,8 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = []
+# ///
 # SPDX-License-Identifier: MPL-2.0
 
 """Read and validate the pinned runtime configuration."""
@@ -9,6 +14,8 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+
+from common import fail, run_main
 
 REQUIRED_STRING_KEYS = (
     "runtime.name",
@@ -43,10 +50,6 @@ SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 
 
-def fail(message: str) -> None:
-    raise SystemExit(f"error: {message}")
-
-
 def read_config(config: Path) -> dict[str, Any]:
     try:
         value: Any = json.loads(config.read_text(encoding="utf-8"))
@@ -59,7 +62,6 @@ def read_config(config: Path) -> dict[str, Any]:
 
 def nested_value(config: dict[str, Any], key: str) -> Any:
     value: Any = config
-
     for component in key.split("."):
         if not isinstance(value, dict) or component not in value:
             fail(f"runtime configuration has no value for {key}")
@@ -69,7 +71,6 @@ def nested_value(config: dict[str, Any], key: str) -> Any:
 
 def read_value(config: Path, key: str) -> str:
     value = nested_value(read_config(config), key)
-
     if not isinstance(value, (str, int, float, bool)):
         fail(f"runtime configuration value is not scalar: {key}")
     return str(value).lower() if isinstance(value, bool) else str(value)
@@ -79,10 +80,8 @@ def validate_config(config_path: Path) -> None:
     config = read_config(config_path)
     if nested_value(config, "schemaVersion") != 1:
         fail("runtime configuration schemaVersion must be 1")
-    if (
-        not isinstance(nested_value(config, "prefixRevision"), int)
-        or nested_value(config, "prefixRevision") < 1
-    ):
+    prefix_revision = nested_value(config, "prefixRevision")
+    if not isinstance(prefix_revision, int) or prefix_revision < 1:
         fail("runtime configuration prefixRevision must be a positive integer")
 
     values: dict[str, str] = {}
@@ -116,7 +115,7 @@ def validate_config(config_path: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("config", type=Path)
     parser.add_argument("key", nargs="?")
@@ -132,4 +131,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_main(main)

@@ -5,12 +5,19 @@ import CoreGraphics
 import Foundation
 
 struct WineWindowReadiness {
-	static func wait(processIdentifier: Int32) async throws {
+	static func wait(
+		processIdentifier: Int32,
+		timeout: Duration = .seconds(90),
+		pollInterval: Duration = .milliseconds(250)
+	) async throws {
+		let clock = ContinuousClock()
+		let deadline = clock.now.advanced(by: timeout)
 		while !isVisible(processIdentifier: processIdentifier, windows: currentWindows())
 			&& NSRunningApplication(processIdentifier: processIdentifier)?.activationPolicy
 				!= .regular
 		{
-			try await Task.sleep(for: .milliseconds(250))
+			guard clock.now < deadline else { throw LauncherError.runtimeWindowTimeout }
+			try await Task.sleep(for: pollInterval)
 		}
 	}
 

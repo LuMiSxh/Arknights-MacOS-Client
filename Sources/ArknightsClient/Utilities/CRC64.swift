@@ -15,9 +15,15 @@ struct CRC64: Sendable {
 	private(set) var value = UInt64.max
 
 	mutating func update(_ data: Data) {
-		for byte in data {
-			let index = Int((value ^ UInt64(byte)) & 0xFF)
-			value = Self.table[index] ^ (value >> 8)
+		data.withUnsafeBytes { rawBuffer in
+			let bytes = rawBuffer.bindMemory(to: UInt8.self)
+			guard var cursor = bytes.baseAddress else { return }
+			let end = cursor.advanced(by: bytes.count)
+			while cursor < end {
+				let index = Int((value ^ UInt64(cursor.pointee)) & 0xFF)
+				value = Self.table[index] ^ (value >> 8)
+				cursor = cursor.advanced(by: 1)
+			}
 		}
 	}
 
@@ -37,7 +43,7 @@ struct CRC64: Sendable {
 
 		var checksum = CRC64()
 		while true {
-			let data = try handle.read(upToCount: 1024 * 1024)
+			let data = try handle.read(upToCount: 4 * 1024 * 1024)
 			guard let data, !data.isEmpty else { break }
 			checksum.update(data)
 		}

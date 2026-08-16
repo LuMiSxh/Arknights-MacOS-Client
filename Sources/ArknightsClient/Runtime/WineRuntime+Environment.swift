@@ -7,6 +7,7 @@ extension WineRuntime {
 		let home = prefixDirectory.appending(path: "home", directoryHint: .isDirectory)
 		var directories = [
 			home.appending(path: ".cache", directoryHint: .isDirectory),
+			home.appending(path: ".cache/dxmt", directoryHint: .isDirectory),
 			home.appending(path: ".config", directoryHint: .isDirectory),
 			home.appending(path: ".local/share", directoryHint: .isDirectory),
 			home.appending(path: ".local/state", directoryHint: .isDirectory),
@@ -44,6 +45,11 @@ extension WineRuntime {
 			at: configurationURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
+		if (try? String(contentsOf: configurationURL, encoding: .utf8))
+			== isolatedUserDirectoryConfiguration
+		{
+			return
+		}
 		try isolatedUserDirectoryConfiguration.write(
 			to: configurationURL,
 			atomically: true,
@@ -78,6 +84,8 @@ extension WineRuntime {
 		environment["TEMP"] = home.appending(path: "tmp").path
 		environment["GST_REGISTRY_1_0"] = home.appending(path: ".cache/gstreamer/registry.bin").path
 		environment["GST_DEBUG"] = "1"
+		environment["DXMT_SHADER_CACHE"] = "1"
+		environment["DXMT_SHADER_CACHE_PATH"] = home.appending(path: ".cache/dxmt").path
 		for (name, value) in Self.synchronizationEnvironment { environment[name] = value }
 		environment["PATH"] = [
 			executableDirectory.path, "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
@@ -87,10 +95,19 @@ extension WineRuntime {
 		return environment
 	}
 
-	func runtimeEnvironment(prefixDirectory: URL) -> [String: String] {
-		Self.isolatedEnvironment(
+	func runtimeEnvironment(
+		prefixDirectory: URL,
+		graphicsDiagnostics: Bool = false
+	) -> [String: String] {
+		var environment = Self.isolatedEnvironment(
 			prefixDirectory: prefixDirectory,
 			executableDirectory: executableURL.deletingLastPathComponent()
 		)
+		if graphicsDiagnostics {
+			environment["WINEDEBUG"] = "-all,err+all,+macdrv,+display"
+			environment["DXMT_LOG_LEVEL"] = "info"
+			environment["DXMT_LOG_PATH"] = "none"
+		}
+		return environment
 	}
 }

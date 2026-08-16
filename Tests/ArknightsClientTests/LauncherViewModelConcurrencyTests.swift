@@ -119,6 +119,56 @@ struct LauncherViewModelConcurrencyTests {
 		#expect(model.activityMessage == "Paused")
 	}
 
+	@Test
+	func queuedPopupsAreRecordedOnlyWhenTheyBecomeVisible() {
+		let model = makeModel(api: BlockingBrandingAPI(), installer: ControllableInstaller())
+		let popup: (String) -> LauncherPopup = { id in
+			LauncherPopup(
+				id: id,
+				title: "Test",
+				content: .markdown("Test"),
+				dismissTitle: "Done",
+				actionTitle: nil,
+				actionURL: nil
+			)
+		}
+
+		model.enqueuePopup(popup("official-notice"))
+		model.enqueuePopup(popup("announcement-feedback"))
+		model.enqueuePopup(popup("launcher-update-0.2.0"))
+
+		#expect(!model.preferences.seenAnnouncementIDs().contains("feedback"))
+		#expect(model.preferences.presentedLauncherUpdate() == nil)
+
+		model.dismissPopup()
+		#expect(model.preferences.seenAnnouncementIDs().contains("feedback"))
+		#expect(model.preferences.presentedLauncherUpdate() == nil)
+
+		model.dismissPopup()
+		#expect(model.preferences.presentedLauncherUpdate() == "0.2.0")
+	}
+
+	@Test
+	func partialFilesRestoreTheResumableDownloadState() throws {
+		let model = makeModel(api: BlockingBrandingAPI(), installer: ControllableInstaller())
+		let partial = model.installDirectory.appending(path: "data/game.dat.part")
+		try FileManager.default.createDirectory(
+			at: partial.deletingLastPathComponent(),
+			withIntermediateDirectories: true
+		)
+		try Data("partial".utf8).write(to: partial)
+		defer { try? FileManager.default.removeItem(at: model.installDirectory) }
+
+		model.updateInstalledState()
+
+		#expect(!model.isInstalled)
+		#expect(model.hasPartialDownload)
+
+		try FileManager.default.removeItem(at: partial)
+		model.updateInstalledState()
+		#expect(!model.hasPartialDownload)
+	}
+
 	private func waitForDownloadToStop(_ model: LauncherViewModel) async {
 		for _ in 0..<100 where model.isDownloading {
 			await Task.yield()
