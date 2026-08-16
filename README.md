@@ -25,12 +25,14 @@ The project is in alpha and supports only Apple Silicon Macs running macOS 26 or
 
 ## Features
 
-- **Game management:** Install, resume, update, repair, and remove the Global PC client.
-- **Display modes:** Launch windowed, borderless, or fullscreen at a selected resolution.
-- **Web login:** Run the game's Vuplex login pages through a Wine compatibility shim.
-- **Update checks:** Check launcher and game versions independently; both checks can be disabled.
-- **Isolated runtime:** Keep the Wine prefix and Windows user folders inside Application Support.
-- **Diagnostics:** Write separate launcher and Wine logs and reveal them from Settings.
+- Install, resume, update, repair, and remove the Global PC client.
+- Launch the game in windowed, borderless, or fullscreen mode at a selected resolution.
+- Use HiDPI rendering for the game and its login browser.
+- Support the Yostar, Apple, Google, and Facebook login flows through Wine compatibility helpers.
+- Check launcher and game versions independently; automatic checks can be disabled.
+- Display one-time project announcements from this repository; announcement checks can be disabled.
+- Store the Wine prefix and Windows user folders under Application Support.
+- Write separate launcher and Wine logs that can be opened from Settings.
 
 ## Installation
 

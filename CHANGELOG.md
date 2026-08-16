@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added high-resolution rendering for sharper game and login-browser output on HiDPI displays.
 - Removed repeated Wine registry processes and no-op prefix writes from normal game launches.
 - Replaced per-byte game downloads with buffered streaming and loaded independent launcher metadata in parallel.
+- Restored paused downloads as a Resume state and counted existing partial files in progress.
+- Used Arknights cyan consistently for active Settings switches and text links.
 
 ## [0.1.0]
 

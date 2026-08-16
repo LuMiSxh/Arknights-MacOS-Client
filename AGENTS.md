@@ -15,6 +15,7 @@
 | Source checks | `just check`   |
 | Full CI       | `just ci`      |
 | Run launcher  | `just run`     |
+| UI preview    | `just preview` |
 | App bundle    | `just app`     |
 | Dev runtime   | `just runtime` |
 | App + runtime | `just dev`     |
@@ -32,8 +33,8 @@
 - Use standard macOS storage locations through `AppPaths`; do not introduce repository-local or legacy migration paths without an explicit requirement.
 - Keep the interface native to macOS while following `docs/design.md`; branding may be angular, but primary actions use native controls.
 - Add focused tests for changed installer, updater, storage, parsing, or concurrency behavior.
-- Record user-visible changes in the next release section in `CHANGELOG.md`; use `0.1.0` until the first release ships.
-- Preserve MPL-2.0 SPDX headers in Swift and shell source files.
+- Record user-visible changes in the next release section in `CHANGELOG.md`.
+- Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python source files.
 - Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` with `just icon`; do not edit them directly.
 - Unless explicitly requested, do not install, launch, download, uninstall, or alter a user's local game while verifying changes.
 
@@ -51,6 +52,7 @@
 ## Release Rules
 
 - Releases are manual draft releases triggered with an `X.Y.Z` version.
+- Trigger releases only from clean, pushed `main`; the version must match `CHANGELOG.md` and `Resources/Info.plist`.
 - Never replace a published tag or release asset; issue a higher version for fixes.
 - Keep the prefix revision, tested runtime versions, provenance, URLs, and SHA-256 values in `runtime.json`. Increase `prefixRevision` when existing prefixes must reapply runtime configuration. Release automation must not replace these values with hidden repository configuration.
 - Do not claim Developer ID signing, notarization, or silent self-updates without an Apple Developer account.
