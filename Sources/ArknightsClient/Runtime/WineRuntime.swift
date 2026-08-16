@@ -87,6 +87,7 @@ struct WineRuntime: Sendable {
 		graphicsDiagnostics: Bool = false,
 		logURL: URL? = nil
 	) async throws -> WineLaunch {
+		let launchStarted = ContinuousClock.now
 		let fileManager = FileManager.default
 		try fileManager.createDirectory(at: prefixDirectory, withIntermediateDirectories: true)
 		try fileManager.createDirectory(
@@ -111,9 +112,6 @@ struct WineRuntime: Sendable {
 			at: logURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
-		let compatibilityChanges = try GameCompatibilityManager().prepareForLaunch(
-			in: gameExecutable.deletingLastPathComponent()
-		)
 		if !fileManager.fileExists(atPath: logURL.path) {
 			guard fileManager.createFile(atPath: logURL.path, contents: nil) else {
 				throw LauncherError.cannotCreateFile(logURL)
@@ -121,6 +119,11 @@ struct WineRuntime: Sendable {
 		}
 		let logHandle = try FileHandle(forWritingTo: logURL)
 		try logHandle.seekToEnd()
+		RuntimePerformanceLog.write(stage: "filesystem", since: launchStarted, to: logHandle)
+		let compatibilityChanges = try GameCompatibilityManager().prepareForLaunch(
+			in: gameExecutable.deletingLastPathComponent()
+		)
+		RuntimePerformanceLog.write(stage: "compatibility", since: launchStarted, to: logHandle)
 		for identifier in compatibilityChanges.installed {
 			try? logHandle.write(
 				contentsOf: Data(
@@ -146,6 +149,7 @@ struct WineRuntime: Sendable {
 			environment: environment,
 			logHandle: logHandle
 		)
+		RuntimePerformanceLog.write(stage: "prefix", since: launchStarted, to: logHandle)
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
 		try await applyDisplayConfiguration(
 			displayConfiguration,
@@ -153,6 +157,7 @@ struct WineRuntime: Sendable {
 			environment: environment,
 			logHandle: logHandle
 		)
+		RuntimePerformanceLog.write(stage: "display", since: launchStarted, to: logHandle)
 		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
 			displayConfiguration.browserScaleFactor
 		)
@@ -172,6 +177,7 @@ struct WineRuntime: Sendable {
 			terminationContinuation.finish()
 		}
 		try process.run()
+		RuntimePerformanceLog.write(stage: "process", since: launchStarted, to: logHandle)
 		try? logHandle.close()
 
 		let terminationTask = Task {

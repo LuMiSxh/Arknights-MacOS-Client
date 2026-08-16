@@ -75,8 +75,9 @@ extension WineRuntime {
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
 		let hasSystemRegistry = fileManager.fileExists(atPath: systemRegistry.path)
 		let store = RuntimeMigrationStore(fileManager: fileManager)
+		let persistedState = store.load(from: prefixDirectory)
 		let installedState =
-			store.load(from: prefixDirectory)
+			persistedState
 			?? store.loadLegacy(
 				from: prefixDirectory,
 				expectedRevision: revision,
@@ -116,7 +117,7 @@ extension WineRuntime {
 			plan.complete(migration)
 			try store.save(plan.state, to: prefixDirectory)
 		}
-		if plan.pending.isEmpty {
+		if plan.pending.isEmpty, persistedState != plan.state {
 			try store.save(plan.state, to: prefixDirectory)
 		}
 		try store.removeLegacyMarkers(from: prefixDirectory)

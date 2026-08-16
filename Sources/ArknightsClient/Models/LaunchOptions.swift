@@ -11,7 +11,7 @@ enum GameDisplayMode: String, CaseIterable, Codable, Sendable {
 		switch self {
 		case .fullscreen: "Fullscreen"
 		case .windowed: "Windowed"
-		case .borderlessWindow: "Borderless Window"
+		case .borderlessWindow: "Borderless Window (Recommended)"
 		}
 	}
 }

@@ -67,7 +67,17 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesToWineboot() throws {
 	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
 
 	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
+	let originalFileNumber =
+		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
+			.systemFileNumber
+		] as? NSNumber
+	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+	let preservedFileNumber =
+		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
+			.systemFileNumber
+		] as? NSNumber
 	let configuration = try String(contentsOf: configurationURL, encoding: .utf8)
+	#expect(preservedFileNumber == originalFileNumber)
 	#expect(configuration == WineRuntime.isolatedUserDirectoryConfiguration)
 	#expect(configuration.contains("XDG_DOCUMENTS_DIR=\"$HOME/Documents\""))
 	#expect(configuration.contains("XDG_DOWNLOAD_DIR=\"$HOME/Downloads\""))
@@ -114,10 +124,10 @@ func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
 	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
 	let registry =
 		"""
-		[Software\\\\Wine\\\\AppDefaults\\\\Arknights.exe\\\\Mac Driver]
+		[Software\\\\Wine\\\\AppDefaults\\\\Arknights.exe\\\\Mac Driver] 1786868781
 		"RetinaMode"="n"
 
-		[Software\\\\Wine\\\\Mac Driver]
+		[Software\\\\Wine\\\\Mac Driver] 1786868782
 		"RetinaMode"="y"
 
 		"""
@@ -143,10 +153,10 @@ func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
 	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
 	let registry =
 		"""
-		[Control Panel\\\\Desktop]
+		[Control Panel\\\\Desktop] 1786869739
 		"LogPixels"=dword:000000c0
 
-		[Software\\\\Wine\\\\Mac Driver]
+		[Software\\\\Wine\\\\Mac Driver] 1786868782
 		"RetinaMode"="y"
 
 		"""

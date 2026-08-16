@@ -57,8 +57,23 @@ func winePrefixUsesOnlyIsolatedFoldersAndGameDrive() throws {
 		gameDirectory: gameDirectory,
 		userName: "tester"
 	)
+	let gameDrive = dosDevices.appending(path: "g:")
+	let originalFileNumber =
+		try fileManager.attributesOfItem(atPath: gameDrive.path)[
+			.systemFileNumber
+		] as? NSNumber
+	try WinePrefixConfigurator().configure(
+		prefixDirectory: prefix,
+		gameDirectory: gameDirectory,
+		userName: "tester"
+	)
+	let preservedFileNumber =
+		try fileManager.attributesOfItem(atPath: gameDrive.path)[
+			.systemFileNumber
+		] as? NSNumber
 
 	#expect(fileManager.fileExists(atPath: dosDevices.appending(path: "c:").path))
+	#expect(preservedFileNumber == originalFileNumber)
 	#expect(!fileManager.fileExists(atPath: dosDevices.appending(path: "z:").path))
 	#expect(!fileManager.fileExists(atPath: dosDevices.appending(path: "h:").path))
 	#expect(

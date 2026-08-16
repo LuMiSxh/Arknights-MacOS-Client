@@ -6,14 +6,14 @@ struct GameInstaller: Sendable {
 	typealias ProgressHandler = @Sendable (DownloadProgress) async -> Void
 
 	private let api: any LauncherAPIProviding
-	private let session: URLSession
+	private let chunkSession: HTTPChunkSession
 	private let concurrentDownloads = 6
 
 	private var fileManager: FileManager { .default }
 
 	init(api: any LauncherAPIProviding, session: URLSession = .shared) {
 		self.api = api
-		self.session = session
+		chunkSession = HTTPChunkSession(configuration: session.configuration)
 	}
 
 	func install(
@@ -189,18 +189,6 @@ struct GameInstaller: Sendable {
 			request.setValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
 		}
 
-		let (bytes, response) = try await session.bytes(for: request)
-		guard let http = response as? HTTPURLResponse else {
-			throw LauncherError.invalidResponse
-		}
-		guard http.statusCode == 200 || http.statusCode == 206 else {
-			throw LauncherError.invalidDownloadResponse(status: http.statusCode, path: item.path)
-		}
-
-		if existingBytes > 0, http.statusCode == 200 {
-			try fileManager.removeItem(at: partial)
-			existingBytes = 0
-		}
 		if !fileManager.fileExists(atPath: partial.path) {
 			guard fileManager.createFile(atPath: partial.path, contents: nil) else {
 				throw LauncherError.cannotCreateFile(partial)
@@ -217,30 +205,43 @@ struct GameInstaller: Sendable {
 		}
 		try handle.seekToEnd()
 
-		var buffer = [UInt8]()
-		buffer.reserveCapacity(128 * 1024)
+		let stream = chunkSession.stream(for: request)
+		defer { stream.cancel() }
 		var newlyDownloaded: Int64 = 0
-		for try await byte in bytes {
-			try Task.checkCancellation()
-			buffer.append(byte)
-			if buffer.count == buffer.capacity {
-				let data = Data(buffer)
-				try handle.write(contentsOf: data)
-				newlyDownloaded += Int64(data.count)
-				buffer.removeAll(keepingCapacity: true)
-				if let update = await counter.add(bytes: Int64(data.count), file: item.path) {
-					await progress(update)
+		var receivedResponse = false
+		try await withTaskCancellationHandler(
+			operation: {
+				for try await event in stream.events {
+					try Task.checkCancellation()
+					switch event {
+					case .response(let response):
+						guard response.statusCode == 200 || response.statusCode == 206 else {
+							throw LauncherError.invalidDownloadResponse(
+								status: response.statusCode,
+								path: item.path
+							)
+						}
+						if existingBytes > 0, response.statusCode == 200 {
+							try handle.truncate(atOffset: 0)
+							try handle.seek(toOffset: 0)
+							existingBytes = 0
+						}
+						receivedResponse = true
+					case .data(let data):
+						guard receivedResponse else { throw LauncherError.invalidResponse }
+						try handle.write(contentsOf: data)
+						newlyDownloaded += Int64(data.count)
+						if let update = await counter.add(bytes: Int64(data.count), file: item.path)
+						{
+							await progress(update)
+						}
+					}
 				}
-			}
-		}
-		if !buffer.isEmpty {
-			let data = Data(buffer)
-			try handle.write(contentsOf: data)
-			newlyDownloaded += Int64(data.count)
-			if let update = await counter.add(bytes: Int64(data.count), file: item.path) {
-				await progress(update)
-			}
-		}
+			},
+			onCancel: {
+				stream.cancel()
+			})
+		guard receivedResponse else { throw LauncherError.invalidResponse }
 		try handle.synchronize()
 		try handle.close()
 

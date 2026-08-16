@@ -52,8 +52,8 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 		var retinaMode: String?
 		var configuredLogPixels: Int?
 		for line in contents.split(separator: "\n", omittingEmptySubsequences: false) {
-			if line.hasPrefix("[") {
-				section = String(line)
+			if line.hasPrefix("["), let closingBracket = line.firstIndex(of: "]") {
+				section = String(line[...closingBracket])
 				continue
 			}
 			if section == macDriverSection && line.hasPrefix("\"RetinaMode\"=\"") {

@@ -19,7 +19,7 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 
 ## Installation
 
-`LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, resumes `.part` files, verifies size and CRC64, and records the installed manifest.
+`LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, streams buffered network chunks into resumable `.part` files, verifies size and CRC64, and records the installed manifest.
 
 A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
 
@@ -80,6 +80,8 @@ The launcher remains in **Starting** until Wine exposes a visible game window. I
 The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` give the main macOS process a readable name. Packaging applies one reviewed patch to the staged Wine macOS driver so the standard `Command-Q` shortcut is available.
 
 Prefix changes run through an ordered migration plan: Wine initialization, DXMT installation, and registry overrides. The prefix stores completed migration IDs with the runtime archive checksum and `prefixRevision` in `.arknights-runtime-migrations.json`. Each successful step is recorded atomically, so an interrupted launch resumes at the first incomplete step. A checksum or prefix-revision change replays the complete plan; adding a migration ID runs only that new step for an otherwise current prefix. Version 0.1 markers are imported once and removed.
+
+Normal launches inspect migration, registry, drive, and private-home state without rewriting unchanged files. Runtime diagnostics record cumulative timings for filesystem setup, compatibility reconciliation, prefix preparation, display configuration, and process creation before the launcher records time to the first visible game window.
 
 Game-directory shims implement `GameCompatibilityComponent` and are registered with `GameCompatibilityManager`. Active components are reconciled before every launch; all active and retired components are restored before install, update, or repair. Removing a shim means moving its component from the active list to the retired list for a supported upgrade cycle, allowing launcher-owned files to be cleaned up even when replacement assets are no longer bundled.
 

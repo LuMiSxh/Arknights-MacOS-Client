@@ -228,6 +228,8 @@ final class LauncherViewModel: ObservableObject {
 		phase = .checking
 		activityMessage = "Checking…"
 		let hasCustomArtwork = loadCustomArtwork()
+		let brandingTask = Task { [api] in try? await api.branding() }
+		defer { brandingTask.cancel() }
 
 		if !isInstalled || automaticallyChecksGameUpdates || forceGameUpdateCheck {
 			do {
@@ -251,7 +253,7 @@ final class LauncherViewModel: ObservableObject {
 			}
 		}
 
-		let fetchedBranding = try? await api.branding()
+		let fetchedBranding = await brandingTask.value
 		guard isCurrentRefresh(refreshID) else { return }
 		if let currentBranding = fetchedBranding {
 			branding = currentBranding
@@ -259,18 +261,18 @@ final class LauncherViewModel: ObservableObject {
 			await log.info(
 				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
 			)
-			if currentBranding.launcherBackgroundImage != nil,
-				let data = try? await artworkCache.officialLogoData()
-			{
-				guard isCurrentRefresh(refreshID) else { return }
-				officialLogo = NSImage(data: data)
+			let logoTask = Task { [artworkCache] in
+				guard currentBranding.launcherBackgroundImage != nil else { return nil as Data? }
+				return try? await artworkCache.officialLogoData()
 			}
-			if !hasCustomArtwork,
-				let data = try? await artworkCache.imageData(for: currentBranding)
-			{
-				guard isCurrentRefresh(refreshID) else { return }
-				heroArtwork = NSImage(data: data)
+			let artworkTask = Task { [artworkCache] in
+				guard !hasCustomArtwork else { return nil as Data? }
+				return try? await artworkCache.imageData(for: currentBranding)
 			}
+			let (logoData, artworkData) = await (logoTask.value, artworkTask.value)
+			guard isCurrentRefresh(refreshID) else { return }
+			if let logoData { officialLogo = NSImage(data: logoData) }
+			if let artworkData { heroArtwork = NSImage(data: artworkData) }
 		}
 
 		guard isCurrentRefresh(refreshID) else { return }

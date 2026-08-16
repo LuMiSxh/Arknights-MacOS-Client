@@ -61,6 +61,8 @@ The wrapper does not render pages, inspect credentials, or replace Vuplex. It la
 
 When high-resolution mode is enabled, the launcher enables Wine's prefix-wide Retina mode when Play is pressed from a window on a HiDPI display. Windows `LogPixels` remains at 96 because a global 192 DPI setting makes Unity restore window dimensions inconsistently. Instead, the game process passes a 2x scale factor to the Vuplex wrapper, which adds Chromium-only HiDPI arguments. This gives the game and browser high-density output without changing Unity's coordinate system. On a 1x display or when the setting is disabled, the launcher disables Retina mode and uses a 1x browser scale. The current registry values are read directly from the prefix, and `reg.exe` runs only when a value must change.
 
+On a scaled macOS desktop, maximizing a normal Retina window can create a backing surface larger than 4K. Borderless or fullscreen rendering at a deliberate 2560×1440 or 3840×2160 resolution avoids that extra pixel cost; DXMT-specific upscaling and frame-limit overrides remain disabled because the game already controls those tradeoffs.
+
 Use `--no-retina` or `defaults write com.lumisxh.arknights-client forceDisableRetina -bool YES` as a troubleshooting fallback. `--graphics-diagnostics` temporarily enables Wine Mac-driver and DXMT info logging so the physical backing and swapchain dimensions can be verified in the Wine log.
 
 ## Updating the runtime
@@ -72,4 +74,4 @@ Use `--no-retina` or `defaults write com.lumisxh.arknights-client forceDisableRe
 5. Increase `prefixRevision` only when existing prefixes must replay configuration. A binary-only refresh uses the new archive checksum to invalidate all runtime migrations automatically.
 6. Update third-party notices and corresponding-source material before publishing a DMG.
 
-Launcher diagnostics record the time from **Play** to the Wine process and visible game window. Use these phases to distinguish prefix or runtime startup from game, Metal, and browser startup before changing the recipe.
+Launcher diagnostics record the time from **Play** to the Wine process and visible game window. The Wine log additionally records filesystem, compatibility, prefix, display, and process stages. Use these phases to distinguish launcher work from game, Metal, and browser startup before changing the recipe.

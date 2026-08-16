@@ -45,6 +45,11 @@ extension WineRuntime {
 			at: configurationURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
+		if (try? String(contentsOf: configurationURL, encoding: .utf8))
+			== isolatedUserDirectoryConfiguration
+		{
+			return
+		}
 		try isolatedUserDirectoryConfiguration.write(
 			to: configurationURL,
 			atomically: true,
