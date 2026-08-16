@@ -44,7 +44,8 @@ extension LauncherViewModel {
 						+ launchOptions.playerArguments,
 					displayConfiguration: displayConfiguration,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
-					logURL: paths.logFile
+					logURL: paths.logFile,
+					log: log
 				)
 				await log.info(
 					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"

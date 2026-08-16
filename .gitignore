@@ -6,3 +6,4 @@ __pycache__/
 *.dmg
 *.log
 .DS_Store
+/issues

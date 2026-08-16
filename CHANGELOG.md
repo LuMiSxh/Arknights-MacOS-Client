@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Expanded launcher and Wine diagnostic logging with clearer detail for troubleshooting.
+
 ## [0.2.0]
 
 ### Added

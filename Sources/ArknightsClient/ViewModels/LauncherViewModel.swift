@@ -93,8 +93,8 @@ final class LauncherViewModel: ObservableObject {
 		graphicsDiagnosticsEnabled = arguments.contains("--graphics-diagnostics")
 		self.updateChecker = updateChecker
 		self.announcementService = announcementService
-		self.installer = installer ?? GameInstaller(api: api)
 		log = LauncherLog(fileURL: paths.launcherLogFile)
+		self.installer = installer ?? GameInstaller(api: api, log: log)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
 		installDirectory = preferences.installDirectory(default: paths.globalGameInstall)
 		launchOptions = preferences.launchOptions()

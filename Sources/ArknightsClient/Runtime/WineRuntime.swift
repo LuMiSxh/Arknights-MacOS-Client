@@ -85,7 +85,8 @@ struct WineRuntime: Sendable {
 		gameArguments: [String] = [],
 		displayConfiguration: WineDisplayConfiguration,
 		graphicsDiagnostics: Bool = false,
-		logURL: URL? = nil
+		logURL: URL? = nil,
+		log: LauncherLog? = nil
 	) async throws -> WineLaunch {
 		let launchStarted = ContinuousClock.now
 		let fileManager = FileManager.default
@@ -147,7 +148,8 @@ struct WineRuntime: Sendable {
 			at: prefixDirectory,
 			gameDirectory: gameExecutable.deletingLastPathComponent(),
 			environment: environment,
-			logHandle: logHandle
+			logHandle: logHandle,
+			log: log
 		)
 		RuntimePerformanceLog.write(stage: "prefix", since: launchStarted, to: logHandle)
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")

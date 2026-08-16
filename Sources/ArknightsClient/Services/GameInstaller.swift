@@ -8,12 +8,14 @@ struct GameInstaller: Sendable {
 	private let api: any LauncherAPIProviding
 	private let chunkSession: HTTPChunkSession
 	private let concurrentDownloads = 6
+	private let log: LauncherLog?
 
 	private var fileManager: FileManager { .default }
 
-	init(api: any LauncherAPIProviding, session: URLSession = .shared) {
+	init(api: any LauncherAPIProviding, session: URLSession = .shared, log: LauncherLog? = nil) {
 		self.api = api
 		chunkSession = HTTPChunkSession(configuration: session.configuration)
+		self.log = log
 	}
 
 	func install(
@@ -41,6 +43,10 @@ struct GameInstaller: Sendable {
 			)
 		}
 		let downloadedBytes = pendingFiles.reduce(Int64(0)) { $0 + $1.byteCount }
+		await log?.debug(
+			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
+				+ "(\(downloadedBytes) bytes); repair=\(verifyAllExistingFiles)"
+		)
 		let progressBaseline = try DownloadProgressBaseline(
 			manifestFiles: manifest.file,
 			pendingFiles: pendingFiles,
@@ -155,6 +161,10 @@ struct GameInstaller: Sendable {
 				throw CancellationError()
 			} catch {
 				if attempt == 3 { throw error }
+				await log?.debug(
+					"Retrying \(item.path) (attempt \(attempt + 1)/3) after: "
+						+ error.localizedDescription
+				)
 				try await Task.sleep(for: .milliseconds(400 * attempt))
 			}
 		}

@@ -69,7 +69,8 @@ extension WineRuntime {
 		at prefixDirectory: URL,
 		gameDirectory: URL,
 		environment: [String: String],
-		logHandle: FileHandle
+		logHandle: FileHandle,
+		log: LauncherLog? = nil
 	) async throws {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
@@ -98,7 +99,14 @@ extension WineRuntime {
 			hasSystemRegistry: hasSystemRegistry,
 			invalidatedMigrations: invalidatedMigrations
 		)
+		if !plan.pending.isEmpty {
+			await log?.debug(
+				"Prefix migration plan: \(plan.pending); persistedState=\(persistedState != nil); "
+					+ "dxmtCurrent=\(invalidatedMigrations.isEmpty)"
+			)
+		}
 		for migration in plan.pending {
+			await log?.debug("Running prefix migration: \(migration)")
 			switch migration {
 			case .initializeWinePrefix:
 				try await initializePrefix(environment: environment, logHandle: logHandle)
