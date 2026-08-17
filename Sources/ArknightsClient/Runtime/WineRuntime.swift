@@ -254,9 +254,18 @@ struct WineRuntime: Sendable {
 		let terminated = DispatchSemaphore(value: 0)
 		process.terminationHandler = { _ in terminated.signal() }
 		guard (try? process.run()) != nil else { return }
-		guard terminated.wait(timeout: .now() + 3) == .timedOut else { return }
+		guard
+			terminated.wait(timeout: .now() + AppConstants.Timeouts.processTerminateGracePeriod)
+				== .timedOut
+		else { return }
 		process.terminate()
-		guard terminated.wait(timeout: .now() + 1) == .timedOut else { return }
+		guard
+			terminated.wait(timeout: .now() + AppConstants.Timeouts.processKillGracePeriod)
+				== .timedOut
+		else { return }
+		// The process may have exited and its PID been recycled in the gap between the
+		// timeout above and here; confirm it still exists before sending SIGKILL.
+		guard Darwin.kill(process.processIdentifier, 0) == 0 else { return }
 		Darwin.kill(process.processIdentifier, SIGKILL)
 	}
 

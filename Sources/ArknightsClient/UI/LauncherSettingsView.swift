@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct LauncherSettingsView: View {
-	@ObservedObject var model: LauncherViewModel
+	var model: LauncherViewModel
 	@Environment(\.dismiss) private var dismiss
 	@State private var selectedSection = SettingsSection.general
 	@State private var confirmsGameUninstall = false

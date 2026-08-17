@@ -93,6 +93,8 @@ extension LauncherViewModel {
 			NSWorkspace.shared.activateFileViewerSelecting([
 				paths.launcherLogFile,
 				paths.logFile,
+				paths.unityLogFile,
+				paths.chromiumLogFile,
 			])
 		}
 	}

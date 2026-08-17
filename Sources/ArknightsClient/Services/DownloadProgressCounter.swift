@@ -7,6 +7,8 @@ actor ProgressCounter {
 	private let totalFiles: Int
 	private var downloadedBytes: Int64
 	private var completedFiles = 0
+	// Chunk callbacks can fire far faster than SwiftUI needs to redraw a progress bar;
+	// throttling emissions to 10/s keeps updates smooth without flooding the UI.
 	private var lastEmission = ContinuousClock.now
 
 	init(

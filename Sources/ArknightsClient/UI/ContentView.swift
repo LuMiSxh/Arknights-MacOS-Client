@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct ContentView: View {
-	@ObservedObject var model: LauncherViewModel
+	var model: LauncherViewModel
 	@State private var settingsPresented = false
 
 	private let cyan = SettingsVisuals.cyan

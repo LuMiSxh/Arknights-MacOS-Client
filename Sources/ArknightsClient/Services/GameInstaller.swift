@@ -7,7 +7,7 @@ struct GameInstaller: Sendable {
 
 	private let api: any LauncherAPIProviding
 	private let chunkSession: HTTPChunkSession
-	private let concurrentDownloads = 6
+	private let concurrentDownloads = AppConstants.Network.concurrentDownloads
 	private let log: LauncherLog?
 
 	private var fileManager: FileManager { .default }
@@ -114,6 +114,9 @@ struct GameInstaller: Sendable {
 
 		try Task.checkCancellation()
 		try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
+		await log?.debug(
+			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes"
+		)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,
 			downloadedBytes: downloadedBytes,
@@ -150,7 +153,8 @@ struct GameInstaller: Sendable {
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler
 	) async throws -> Int64 {
-		for attempt in 1...3 {
+		let maxAttempts = AppConstants.Network.maxDownloadAttempts
+		for attempt in 1...maxAttempts {
 			do {
 				return try await download(
 					item,
@@ -163,12 +167,12 @@ struct GameInstaller: Sendable {
 			} catch is CancellationError {
 				throw CancellationError()
 			} catch {
-				if attempt == 3 { throw error }
+				if attempt == maxAttempts { throw error }
 				await log?.debug(
-					"Retrying \(item.path) (attempt \(attempt + 1)/3) after: "
+					"Retrying \(item.path) (attempt \(attempt + 1)/\(maxAttempts)) after: "
 						+ error.localizedDescription
 				)
-				try await Task.sleep(for: .milliseconds(400 * attempt))
+				try await Task.sleep(for: AppConstants.Network.retryBackoffStep * attempt)
 			}
 		}
 		throw LauncherError.invalidResponse

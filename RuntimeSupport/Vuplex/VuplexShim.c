@@ -47,7 +47,8 @@ static const wchar_t *compatibility_arguments[] = {
 	L"--disable-webgl",
 	L"--disable-gpu-rasterization",
 	L"--disable-accelerated-2d-canvas",
-	L"--disable-features=AsyncDns,ClipboardMaximumAge"
+	L"--disable-features=AsyncDns,ClipboardMaximumAge",
+	L"--log-file=L:\\chromium.log"
 };
 
 static const wchar_t *high_resolution_arguments[] = {
@@ -180,8 +181,13 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	int high_resolution_index;
 	BOOL use_high_resolution;
 	SIZE_T command_length = 1;
-	STARTUPINFOW startup_info = { .cb = sizeof(startup_info) };
+	STARTUPINFOW startup_info = {
+		.cb = sizeof(startup_info),
+		.dwFlags = STARTF_USESHOWWINDOW,
+		.wShowWindow = SW_HIDE
+	};
 	PROCESS_INFORMATION process_info = { 0 };
+	DWORD creation_flags = CREATE_NO_WINDOW | DETACHED_PROCESS;
 	DWORD exit_code;
 	DWORD error;
 	SIZE_T original_capacity;
@@ -270,7 +276,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		GlobalFree(original_path);
 		return (int)error;
 	}
-	if (!CreateProcessW(original_path, child_command_line, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info)) {
+	if (!CreateProcessW(original_path, child_command_line, NULL, NULL, FALSE, creation_flags, NULL, NULL, &startup_info, &process_info)) {
 		error = GetLastError();
 		GlobalFree(child_command_line);
 		GlobalFree(original_path);

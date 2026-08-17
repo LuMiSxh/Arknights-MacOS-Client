@@ -24,7 +24,7 @@ Arknights Client is a native SwiftUI launcher for the official Global PC client.
 The project is in alpha and supports only Apple Silicon Macs running macOS 26 or newer.
 
 > [!WARNING]
-> Credit card and PayPal payments have been observed to work, including completion of PayPal browser challenges. These flows can still be unstable in this unofficial Wine environment, so transactions should be treated as high-risk. Verify every purchase directly with the provider and with Yostar, and monitor statements carefully. The launcher is community-maintained and includes patched compatibility layers; users accept all payment and billing risks themselves.
+> Credit card and PayPal payments have been observed to work. These flows can still be unstable in this unofficial Wine environment, so transactions should be treated as high-risk. Verify every purchase directly with the provider and with Yostar, and monitor statements carefully. The launcher is community-maintained and includes patched compatibility layers; users accept all payment and billing risks themselves.
 
 ## Features
 
@@ -62,7 +62,7 @@ Game files are stored separately from the app. Removing the launcher does not re
 4. Choose a display mode in Settings if needed.
 5. Select **Play**.
 
-Each region has its own install folder (for example `Arknights-Global`, `Arknights-Japan`, or `Arknights-Korea`) under  
+Each region has its own install folder (for example `Arknights-Global`, `Arknights-Japan`, or `Arknights-Korea`) under
 `~/Library/Application Support/com.lumisxh.arknights-client/Games/`.
 
 > [!NOTE]

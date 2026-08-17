@@ -4,6 +4,9 @@ import CryptoKit
 import Foundation
 
 actor LauncherAPI {
+	// The version and salt Yostar's own official launcher sends; this API rejects requests
+	// that don't sign with them, so this is not this app's own version (see
+	// Bundle.shortVersionString for that) and must not be bumped independently.
 	static let launcherVersion = "1.8.1"
 
 	private let salt = "DE7108E9B2842FD460F4777702727869"

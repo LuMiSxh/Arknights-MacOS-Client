@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct GeneralSettingsPage: View {
-	@ObservedObject var model: LauncherViewModel
+	@Bindable var model: LauncherViewModel
 
 	var body: some View {
 		SettingsPage(title: "General", subtitle: "Display and personalization") {
@@ -63,7 +63,7 @@ struct GeneralSettingsPage: View {
 }
 
 struct UpdatesSettingsPage: View {
-	@ObservedObject var model: LauncherViewModel
+	@Bindable var model: LauncherViewModel
 
 	var body: some View {
 		SettingsPage(title: "Updates", subtitle: "Keep the launcher and game current") {
@@ -103,7 +103,7 @@ struct UpdatesSettingsPage: View {
 
 #if DEBUG
 	struct DeveloperSettingsPage: View {
-		@ObservedObject var model: LauncherViewModel
+		var model: LauncherViewModel
 
 		var body: some View {
 			SettingsPage(title: "Developer", subtitle: "Preview launcher states safely") {
@@ -138,7 +138,7 @@ struct UpdatesSettingsPage: View {
 #endif
 
 struct InstallationSettingsPage: View {
-	@ObservedObject var model: LauncherViewModel
+	var model: LauncherViewModel
 	@Binding var confirmsGameUninstall: Bool
 	@Binding var confirmsForceMigration: Bool
 
@@ -260,7 +260,7 @@ struct InstallationSettingsPage: View {
 }
 
 struct AboutSettingsPage: View {
-	@ObservedObject var model: LauncherViewModel
+	var model: LauncherViewModel
 	@Binding var presentedDocument: BundledDocument?
 
 	var body: some View {

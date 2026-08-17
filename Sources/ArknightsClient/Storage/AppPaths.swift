@@ -61,6 +61,38 @@ struct AppPaths: Sendable {
 		logsDirectory.appending(path: "launcher.log")
 	}
 
+	var unityLogFile: URL {
+		logsDirectory.appending(path: "unity.log")
+	}
+
+	var chromiumLogFile: URL {
+		logsDirectory.appending(path: "chromium.log")
+	}
+
+	static let windowsUnityLogPath = "L:\\unity.log"
+
+	/// Unity writes its own log independently of the launcher's `wine.log`, into the
+	/// Windows user profile Wine creates for `NSUserName()` (see `WinePrefixConfigurator`).
+	func unityLogFile(for region: GameRegion, userName: String = NSUserName()) -> URL {
+		winePrefix.appending(
+			path: "drive_c/users/\(userName)/AppData/LocalLow/Yostar/\(region.gameTag)/unity.log"
+		)
+	}
+
+	/// The Vuplex/Chromium helper is region-agnostic since only one region's prefix is
+	/// active at a time, so its log lives directly under the shared Yostar folder.
+	func chromiumLogFile(userName: String = NSUserName()) -> URL {
+		winePrefix.appending(
+			path: "drive_c/users/\(userName)/AppData/LocalLow/Yostar/chromium.log"
+		)
+	}
+
+	static func windowsUnityLogPath(for region: GameRegion, userName: String = NSUserName())
+		-> String
+	{
+		"C:\\users\\\(userName)\\AppData\\LocalLow\\Yostar\\\(region.gameTag)\\unity.log"
+	}
+
 	var artworkCache: URL {
 		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
 	}

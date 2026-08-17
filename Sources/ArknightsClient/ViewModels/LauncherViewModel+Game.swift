@@ -24,12 +24,16 @@ extension LauncherViewModel {
 			return
 		}
 
-		if runtime.hasPendingMigration(prefixDirectory: paths.winePrefix) {
+		let hasPendingMigration = runtime.hasPendingMigration(prefixDirectory: paths.winePrefix)
+		if hasPendingMigration {
 			phase = .migrating
 			activityMessage = "Preparing Wine setup…"
 		} else {
 			phase = .launching
 			activityMessage = "Starting…"
+		}
+		Task { [log] in
+			await log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		}
 		let gameSessionID = UUID()
 		let launchRequestedAt = Date()
@@ -45,7 +49,8 @@ extension LauncherViewModel {
 				let launch = try await runtime.launch(
 					gameExecutable: executable,
 					prefixDirectory: paths.winePrefix,
-					gameArguments: (configuration?.gameStartParams ?? [])
+					gameArguments: ["-logFile", AppPaths.windowsUnityLogPath]
+						+ (configuration?.gameStartParams ?? [])
 						+ launchOptions.playerArguments,
 					displayConfiguration: displayConfiguration,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,

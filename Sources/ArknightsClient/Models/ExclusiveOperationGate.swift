@@ -2,6 +2,9 @@
 
 import Foundation
 
+/// Lets a caller confirm it still owns a long-running operation before finishing it, so a
+/// stale `Task` that lost a race (e.g. a cancelled install superseded by a new one) can't
+/// clear state that already belongs to the operation that replaced it.
 struct ExclusiveOperationGate: Sendable {
 	private var activeToken: UUID?
 

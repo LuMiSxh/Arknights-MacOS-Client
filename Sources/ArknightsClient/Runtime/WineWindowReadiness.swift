@@ -7,8 +7,8 @@ import Foundation
 struct WineWindowReadiness {
 	static func wait(
 		processIdentifier: Int32,
-		timeout: Duration = .seconds(90),
-		pollInterval: Duration = .milliseconds(250)
+		timeout: Duration = AppConstants.Timeouts.windowReadiness,
+		pollInterval: Duration = AppConstants.Timeouts.windowPollInterval
 	) async throws {
 		let clock = ContinuousClock()
 		let deadline = clock.now.advanced(by: timeout)

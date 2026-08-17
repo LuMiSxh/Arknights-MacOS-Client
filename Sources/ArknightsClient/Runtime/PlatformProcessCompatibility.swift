@@ -46,9 +46,10 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 			fileManager.fileExists(atPath: helper.path)
 		else { return false }
 
-		let helperIsShim = try isLauncherAsset(
+		let helperIsShim = try GameShimIO.containsMarker(
 			at: helper,
-			marker: Self.launcherShimMarker
+			marker: Self.launcherShimMarker,
+			maximumSize: Self.maximumAssetSize
 		)
 		let officialHelper = helperIsShim ? original : helper
 		if helperIsShim, !fileManager.fileExists(atPath: original.path) {
@@ -56,11 +57,16 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 				"The official PlatformProcess helper is missing. Repair the game before launching."
 			)
 		}
-		guard try containsMarker(Self.officialHelperMarker, at: officialHelper) else {
+		guard try GameShimIO.containsMarker(at: officialHelper, marker: Self.officialHelperMarker)
+		else {
 			return false
 		}
 		if fileManager.fileExists(atPath: installedBridge.path),
-			try !isLauncherAsset(at: installedBridge, marker: Self.launcherBridgeMarker)
+			try !GameShimIO.containsMarker(
+				at: installedBridge,
+				marker: Self.launcherBridgeMarker,
+				maximumSize: Self.maximumAssetSize
+			)
 		{
 			throw LauncherError.runtimeConfiguration(
 				"The game directory contains an unknown PlatformProcess window bridge."
@@ -73,34 +79,20 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 		)
 		guard !shimMatches || !bridgeMatches else { return false }
 
-		let stagedShim = temporaryURL(in: gameDirectory, suffix: "shim")
 		let stagedBridge = temporaryURL(in: gameDirectory, suffix: "bridge")
-		let previousShim = temporaryURL(in: gameDirectory, suffix: "previous")
-		defer {
-			try? fileManager.removeItem(at: stagedShim)
-			try? fileManager.removeItem(at: stagedBridge)
-			try? fileManager.removeItem(at: previousShim)
-		}
-		try fileManager.copyItem(at: shimURL, to: stagedShim)
+		defer { try? fileManager.removeItem(at: stagedBridge) }
 		try fileManager.copyItem(at: bridgeURL, to: stagedBridge)
-		if helperIsShim {
-			try fileManager.moveItem(at: helper, to: previousShim)
-		} else {
-			try? fileManager.removeItem(at: original)
-			try fileManager.moveItem(at: helper, to: original)
-		}
-		do {
-			try fileManager.moveItem(at: stagedShim, to: helper)
+		try GameShimIO.swapHelper(
+			at: helper,
+			with: shimURL,
+			backupURL: original,
+			isCurrentlyInstalledShim: helperIsShim,
+			temporaryPrefix: "\(Self.temporaryPrefix)shim-",
+			previousPrefix: "\(Self.temporaryPrefix)previous-",
+			fileManager: fileManager
+		) {
 			try? fileManager.removeItem(at: installedBridge)
 			try fileManager.moveItem(at: stagedBridge, to: installedBridge)
-		} catch {
-			try? fileManager.removeItem(at: helper)
-			if fileManager.fileExists(atPath: previousShim.path) {
-				try? fileManager.moveItem(at: previousShim, to: helper)
-			} else {
-				try? fileManager.moveItem(at: original, to: helper)
-			}
-			throw error
 		}
 		return true
 	}
@@ -118,7 +110,11 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 		var changed = false
 		if fileManager.fileExists(atPath: original.path) {
 			if fileManager.fileExists(atPath: helper.path),
-				try isLauncherAsset(at: helper, marker: Self.launcherShimMarker)
+				try GameShimIO.containsMarker(
+					at: helper,
+					marker: Self.launcherShimMarker,
+					maximumSize: Self.maximumAssetSize
+				)
 			{
 				try fileManager.removeItem(at: helper)
 				try fileManager.moveItem(at: original, to: helper)
@@ -128,7 +124,11 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 			}
 		}
 		if fileManager.fileExists(atPath: installedBridge.path),
-			try isLauncherAsset(at: installedBridge, marker: Self.launcherBridgeMarker)
+			try GameShimIO.containsMarker(
+				at: installedBridge,
+				marker: Self.launcherBridgeMarker,
+				maximumSize: Self.maximumAssetSize
+			)
 		{
 			try fileManager.removeItem(at: installedBridge)
 			changed = true
@@ -149,27 +149,14 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 	}
 
 	private func removeTemporaryFiles(in directory: URL, fileManager: FileManager) throws {
-		guard fileManager.fileExists(atPath: directory.path) else { return }
-		for url in try fileManager.contentsOfDirectory(
-			at: directory,
-			includingPropertiesForKeys: nil
-		) where url.lastPathComponent.hasPrefix(Self.temporaryPrefix) {
-			try fileManager.removeItem(at: url)
-		}
+		try GameShimIO.removeStaleTemporaryFiles(
+			in: directory,
+			matchingPrefixes: [Self.temporaryPrefix],
+			fileManager: fileManager
+		)
 	}
 
 	private func temporaryURL(in directory: URL, suffix: String) -> URL {
 		directory.appending(path: "\(Self.temporaryPrefix)\(suffix)-\(UUID().uuidString)")
-	}
-
-	private func containsMarker(_ marker: Data, at url: URL) throws -> Bool {
-		let data = try Data(contentsOf: url, options: .mappedIfSafe)
-		return data.range(of: marker) != nil
-	}
-
-	private func isLauncherAsset(at url: URL, marker: Data) throws -> Bool {
-		let data = try Data(contentsOf: url, options: .mappedIfSafe)
-		guard data.count <= Self.maximumAssetSize else { return false }
-		return data.range(of: marker) != nil
 	}
 }

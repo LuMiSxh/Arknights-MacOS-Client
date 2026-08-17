@@ -43,7 +43,7 @@ struct CRC64: Sendable {
 
 		var checksum = CRC64()
 		while true {
-			let data = try handle.read(upToCount: 4 * 1024 * 1024)
+			let data = try handle.read(upToCount: AppConstants.IO.checksumBufferSize)
 			guard let data, !data.isEmpty else { break }
 			checksum.update(data)
 		}
