@@ -3,7 +3,7 @@
 ## Scope
 
 - Build only for Apple Silicon and macOS 26 or newer.
-- Support only the official Global PC client; do not add CN behavior without a verified API and an explicit decision.
+- Support the official Global, Japan, and Korea PC clients (all published by Yostar on `yo-star.com`, same launcher API shape and signature algorithm, verified 2026-08-16). Do not add CN behavior: it runs on separate Hypergryph infrastructure (its own launcher, its own account system) and its PC client bundles Tencent ACE, a kernel-mode anti-cheat with no Wine/Linux support — a verified technical blocker, not just unverified scope.
 - Keep source code, UI copy, documentation, commits, and tests in English.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
 - Do not commit Arknights binaries, game files, downloaded artwork, Wine runtimes, or files from `dist/`.
@@ -31,6 +31,7 @@
 - Treat game installation as an exclusive operation. A refresh, Settings action, or repeated click must never start another installer or overwrite active progress.
 - Preserve resumable `.part` downloads and validate every manifest path before writing it.
 - Use standard macOS storage locations through `AppPaths`; do not introduce repository-local or legacy migration paths without an explicit requirement.
+- Each `GameRegion` gets its own install directory and installed-state file so regions install and update independently; they share one Wine prefix, since `WinePrefixConfigurator` already re-points the `G:` drive to the active region's directory on every launch.
 - Keep the interface native to macOS while following `docs/design.md`; branding may be angular, but primary actions use native controls.
 - Add focused tests for changed installer, updater, storage, parsing, or concurrency behavior.
 - Record user-visible changes in the next release section in `CHANGELOG.md`.

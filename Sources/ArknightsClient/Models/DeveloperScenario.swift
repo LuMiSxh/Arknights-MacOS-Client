@@ -12,6 +12,7 @@
 		case gameUpdate = "game-update"
 		case downloading
 		case paused
+		case migrating
 		case launching
 		case running
 		case failure
@@ -36,6 +37,7 @@
 			case .gameUpdate: "Game update"
 			case .downloading: "Downloading"
 			case .paused: "Paused download"
+			case .migrating: "Preparing Wine runtime"
 			case .launching: "Starting game"
 			case .running: "Game running"
 			case .failure: "Failure"
@@ -53,6 +55,7 @@
 			case .gameUpdate: "An installed game with newer files available."
 			case .downloading: "An active game update at 43 percent."
 			case .paused: "A resumable update after the user selected Pause."
+			case .migrating: "The Wine prefix is replaying setup after Force Migration."
 			case .launching: "The Windows runtime is starting; Stop is disabled."
 			case .running: "The game is running and can be stopped."
 			case .failure: "A runtime failure displayed in the status capsule."

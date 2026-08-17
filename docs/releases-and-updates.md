@@ -42,7 +42,7 @@ just dev
 
 `just runtime` downloads over HTTPS, verifies the SHA-256, safely extracts the archive, validates Wine and both DXMT architectures, and replaces `.build/runtime`. Repeated runs reuse the verified archive cache.
 
-The Wine and DXMT binaries are prebuilt. Packaging compiles only the native Swift launcher and the two small x86_64 Windows Vuplex compatibility binaries, then changes Wine's staged menu shortcut from Option-Command-Q to the standard Command-Q. `just dev` produces the complete app and `just dev-dmg` produces the installable disk image. Release users receive those finished artifacts and need no compiler or development tools.
+The Wine and DXMT binaries are prebuilt. Packaging compiles only the native Swift launcher and the small x86-64 compatibility components in `RuntimeSupport`, then changes Wine's staged menu shortcut from Option-Command-Q to the standard Command-Q. `just dev` produces the complete app and `just dev-dmg` produces the installable disk image. Release users receive those finished artifacts and need no compiler or development tools.
 
 Release automation always uses `runtime.json`. The attached `Runtime-Build-Recipe.tar.gz` records the runtime build process; it is not a complete corresponding-source bundle for every bundled runtime component.
 

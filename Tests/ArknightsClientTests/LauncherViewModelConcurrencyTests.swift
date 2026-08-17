@@ -70,6 +70,68 @@ struct LauncherViewModelConcurrencyTests {
 	}
 
 	@Test
+	func exitDiagnosticsOmitsCrashDetailsWhenNoLogIsAvailable() {
+		let summary = LauncherViewModel.exitDiagnostics(
+			WineProcessExit(status: 0, reason: .exit),
+			since: nil,
+			logURL: nil
+		)
+
+		#expect(summary == "status=0 reason=exit")
+	}
+
+	@Test
+	func exitDiagnosticsIncludesDurationAndWineLogTailForACrash() throws {
+		let fileManager = FileManager.default
+		let logURL = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		defer { try? fileManager.removeItem(at: logURL) }
+		try "err: something exploded".write(to: logURL, atomically: true, encoding: .utf8)
+
+		let summary = LauncherViewModel.exitDiagnostics(
+			WineProcessExit(status: 134, reason: .uncaughtSignal),
+			since: Date(timeIntervalSinceNow: -90),
+			logURL: logURL
+		)
+
+		#expect(summary.contains("status=134 reason=uncaughtSignal"))
+		#expect(summary.contains("ranFor="))
+		#expect(summary.contains("wine.log tail: err: something exploded"))
+	}
+
+	@Test
+	func recentCrashReportPathFindsOnlyArknightsReportsWithinTheTimeWindow() throws {
+		let fileManager = FileManager.default
+		let directory = fileManager.temporaryDirectory.appending(
+			path: "crash-reports-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+		defer { try? fileManager.removeItem(at: directory) }
+		let matching = directory.appending(path: "Arknights-2026-08-16-1234.ips")
+		let unrelated = directory.appending(path: "Safari-2026-08-16-1234.ips")
+		try Data().write(to: matching)
+		try Data().write(to: unrelated)
+		let crashDate = Date()
+
+		#expect(
+			LauncherViewModel.recentCrashReportPath(
+				near: crashDate,
+				in: directory,
+				window: 120,
+				fileManager: fileManager
+			)?.hasSuffix(matching.lastPathComponent) == true
+		)
+		#expect(
+			LauncherViewModel.recentCrashReportPath(
+				near: crashDate.addingTimeInterval(600),
+				in: directory,
+				window: 120,
+				fileManager: fileManager
+			) == nil
+		)
+	}
+
+	@Test
 	func staleRefreshThatIgnoresCancellationDoesNotHideInstallationProgress() async throws {
 		let api = BlockingBrandingAPI()
 		let installer = ControllableInstaller()
@@ -210,7 +272,7 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 	private var brandingRequestWaiters: [CheckedContinuation<Void, Never>] = []
 	private var brandingResponse: CheckedContinuation<LauncherBranding, Never>?
 
-	func gameConfiguration() async throws -> GameConfiguration {
+	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		GameConfiguration(
 			gameLowestVersion: "1.0.0",
 			gameLatestVersion: "2.0.0",
@@ -222,7 +284,7 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 		)
 	}
 
-	func branding() async throws -> LauncherBranding {
+	func branding(region: GameRegion) async throws -> LauncherBranding {
 		brandingRequested = true
 		for waiter in brandingRequestWaiters {
 			waiter.resume()
@@ -231,9 +293,14 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 		return await withCheckedContinuation { brandingResponse = $0 }
 	}
 
-	func cdnConfiguration() async throws -> CDNConfiguration { throw CancellationError() }
+	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
+		throw CancellationError()
+	}
 
-	func manifest(for configuration: GameConfiguration) async throws -> GameManifest {
+	func manifest(
+		for configuration: GameConfiguration,
+		region: GameRegion
+	) async throws -> GameManifest {
 		throw CancellationError()
 	}
 
@@ -268,6 +335,7 @@ private actor ControllableInstaller: GameInstalling {
 
 	func install(
 		configuration: GameConfiguration,
+		region: GameRegion,
 		into installDirectory: URL,
 		verifyAllExistingFiles: Bool,
 		progress: @escaping @Sendable (DownloadProgress) async -> Void

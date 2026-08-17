@@ -33,9 +33,23 @@ func appPathsUseStandardInjectedDirectories() {
 			)
 	)
 	#expect(
-		paths.globalGameInstall
+		paths.gameInstall(for: .global)
 			== support.appending(
 				path: "\(AppPaths.bundleIdentifier)/Games/Arknights-Global",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
+		paths.gameInstall(for: .japan)
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Games/Arknights-Japan",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
+		paths.gameInstall(for: .korea)
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Games/Arknights-Korea",
 				directoryHint: .isDirectory
 			)
 	)

@@ -68,9 +68,39 @@ struct LauncherPreferencesStoreTests {
 		let expected = URL(filePath: "/tmp/Arknights Client", directoryHint: .isDirectory)
 		let fallback = URL(filePath: "/tmp/Fallback", directoryHint: .isDirectory)
 
-		store.setInstallDirectory(expected)
+		store.setInstallDirectory(expected, for: .global)
 
-		#expect(store.installDirectory(default: fallback) == expected)
+		#expect(store.installDirectory(for: .global, default: fallback) == expected)
+	}
+
+	@Test
+	func installDirectoriesAreIndependentPerRegion() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+		let global = URL(filePath: "/tmp/Global", directoryHint: .isDirectory)
+		let japan = URL(filePath: "/tmp/Japan", directoryHint: .isDirectory)
+		let fallback = URL(filePath: "/tmp/Fallback", directoryHint: .isDirectory)
+
+		store.setInstallDirectory(global, for: .global)
+		store.setInstallDirectory(japan, for: .japan)
+
+		#expect(store.installDirectory(for: .global, default: fallback) == global)
+		#expect(store.installDirectory(for: .japan, default: fallback) == japan)
+		#expect(store.installDirectory(for: .korea, default: fallback) == fallback)
+	}
+
+	@Test
+	func selectedRegionDefaultsToGlobalAndPersists() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.selectedRegion() == .global)
+
+		store.setSelectedRegion(.korea)
+
+		#expect(store.selectedRegion() == .korea)
 	}
 
 	private func makeDefaults() -> (UserDefaults, String) {

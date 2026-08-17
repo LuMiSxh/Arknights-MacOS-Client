@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from common import fail, run_main
+from lib.common import fail, run_main
 
 OPTION_COMMAND_Q = b"\xba\x00\x00\x18\x00"
 COMMAND_Q = b"\xba\x00\x00\x10\x00"

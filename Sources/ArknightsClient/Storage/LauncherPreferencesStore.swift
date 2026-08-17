@@ -11,7 +11,8 @@ struct LauncherPreferencesStore {
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
 		static let presentedLauncherUpdate = "presentedLauncherUpdate"
 		static let gameLaunchOptions = "gameLaunchOptions"
-		static let installPath = "installPath.global"
+		static let installPath = "installPath"
+		static let selectedRegion = "selectedRegion"
 	}
 
 	let defaults: UserDefaults
@@ -75,13 +76,23 @@ struct LauncherPreferencesStore {
 		defaults.set(data, forKey: Key.gameLaunchOptions)
 	}
 
-	func installDirectory(default defaultURL: URL) -> URL {
-		guard let path = defaults.string(forKey: Key.installPath) else { return defaultURL }
+	func installDirectory(for region: GameRegion, default defaultURL: URL) -> URL {
+		guard let path = defaults.string(forKey: "\(Key.installPath).\(region.rawValue)") else {
+			return defaultURL
+		}
 		return URL(filePath: path, directoryHint: .isDirectory)
 	}
 
-	func setInstallDirectory(_ url: URL) {
-		defaults.set(url.path, forKey: Key.installPath)
+	func setInstallDirectory(_ url: URL, for region: GameRegion) {
+		defaults.set(url.path, forKey: "\(Key.installPath).\(region.rawValue)")
+	}
+
+	func selectedRegion() -> GameRegion {
+		defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:)) ?? .global
+	}
+
+	func setSelectedRegion(_ region: GameRegion) {
+		defaults.set(region.rawValue, forKey: Key.selectedRegion)
 	}
 
 	private func bool(for key: String, defaultValue: Bool) -> Bool {

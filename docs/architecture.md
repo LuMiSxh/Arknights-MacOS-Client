@@ -4,24 +4,26 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 
 ## Source layout
 
-| Folder | Responsibility |
-| --- | --- |
-| `Application` | App entry point and macOS lifecycle |
-| `UI` | Launcher, Settings, and document views |
-| `ViewModels` | UI state and user actions |
-| `Models` | API payloads, install state, launch options, and errors |
-| `Services` | Yostar API, artwork, installer, and launcher updates |
-| `Storage` | Standard macOS paths and preferences |
-| `Runtime` | Wine environment, prefix configuration, DXMT, Vuplex, and process lifecycle |
-| `Utilities` | CRC64 and diagnostic logging |
+| Folder        | Responsibility                                                                                |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| `Application` | App entry point and macOS lifecycle                                                           |
+| `UI`          | Launcher, Settings, and document views                                                        |
+| `ViewModels`  | UI state and user actions                                                                     |
+| `Models`      | API payloads, install state, launch options, and errors                                       |
+| `Services`    | Yostar API, artwork, installer, and launcher updates                                          |
+| `Storage`     | Standard macOS paths and preferences                                                          |
+| `Runtime`     | Wine environment, prefix configuration, DXMT, compatibility components, and process lifecycle |
+| `Utilities`   | CRC64 and diagnostic logging                                                                  |
 
 `LauncherViewModel` is the main UI orchestrator. Network access, installation, artwork caching, update discovery, announcements, and Wine execution remain separate service or runtime types; the view model coordinates their results into one user-facing `LauncherPhase`. Facts independent of that phase, such as whether game files are installed or a newer version exists, remain separate state.
 
 ## Installation
 
-`LauncherAPI` obtains the current Global version, manifest, and CDN URLs. `GameInstaller` validates every manifest path before writing, streams buffered network chunks into resumable `.part` files, verifies size and CRC64, and records the installed manifest.
+`LauncherAPI` obtains the current version, manifest, and CDN URLs for a `GameRegion` (Global, Japan, or Korea — same Yostar API shape and signature algorithm, different base URL and `game_tag`). `GameInstaller` validates every manifest path before writing, streams buffered network chunks into resumable `.part` files, verifies size and CRC64, and records the installed manifest.
 
 A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
+
+Each region has its own install directory and installed-state file, so regions install and update independently. They share one Wine prefix: `WinePrefixConfigurator` re-points the `G:` drive to the active region's directory on every launch, so a second prefix per region isn't needed.
 
 ```mermaid
 flowchart LR
@@ -37,7 +39,9 @@ flowchart LR
 
 The packaged runtime is x86_64 and runs through Rosetta 2. The launcher gives Wine an isolated prefix and an allowlisted environment, mounts the game directory as `G:`, installs the pinned DXMT libraries, and starts `G:\Arknights.exe`. The main game uses DXMT for Direct3D-to-Metal translation. The exact runtime contract and compatibility components are documented in [Runtime compatibility](runtime-compatibility.md).
 
-Arknights starts its Chromium-based Vuplex helper for account and in-game web pages. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build. Neither compatibility component affects the game renderer or reads browser content.
+Arknights starts its Chromium-based Vuplex helper for account and in-game web pages. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build.
+
+Notices use a different Qt WebEngine helper named `PlatformProcess.exe`. It runs as a separate Wine and macOS process, so this implementation deliberately keeps it as a top-level companion instead of modifying the game process. A wrapper launches the untouched helper, clears its Win32 frame and non-activating styles, and follows the game in Wine's coordinate system. An AppKit bridge in the helper process tree clears Wine's native activation restrictions, enables input, removes the separate Dock presence, and applies companion-window presentation while Arknights is active. The compatibility components do not inspect page data; the bridge changes only native window presentation.
 
 ```mermaid
 flowchart LR
@@ -46,6 +50,7 @@ flowchart LR
 		Rosetta[Rosetta 2]
 		Metal[Metal]
 		Prefix[Isolated Wine prefix]
+		WindowSystem[Window system]
 	end
 
 	subgraph Windows client through Wine
@@ -55,7 +60,10 @@ flowchart LR
 		Shim[Vuplex wrapper]
 		CEF[Official Vuplex / CEF]
 		Userenv[userenv compatibility DLL]
+		PlatformShim[PlatformProcess wrapper]
+		Platform[Official PlatformProcess / Qt WebEngine]
 	end
+	Bridge[Process-local AppKit bridge]
 
 	Launcher -->|allowlisted environment| Rosetta
 	Rosetta --> Wine
@@ -67,11 +75,19 @@ flowchart LR
 	Shim --> CEF
 	Userenv -. process-local override .-> CEF
 	CEF -->|HTTPS login and game pages| Web[Official web services]
+	Game -->|opens Notices| PlatformShim
+	PlatformShim --> Platform
+	PlatformShim -. injects .-> Bridge
+	PlatformShim -->|Win32 position tracking| WindowSystem
+	Bridge -->|Dock, activation, and Spaces policy| WindowSystem
+	Platform -->|HTTPS notices| Web
 ```
 
 Vuplex can share its accelerated off-screen surface through D3D11, but Chromium and Vuplex cannot coordinate write access to that surface through the tested DXMT path. The wrapper therefore uses Vuplex's CPU `OnPaint` transfer while leaving Chromium's internal GPU compositor enabled. CEF's asynchronous DNS path calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement; the wrapper disables that path so CEF uses Wine's normal system resolver. Social login starts a separate Chromium process and may take several seconds on first use.
 
-Install, update, and repair restore the official Vuplex executable before modifying game files. The wrapper is then installed again at the next launch only when the helper still advertises the expected software-paint option. Unknown helpers and unrelated `userenv.dll` files are left untouched.
+The Notices helper remains a separate application process even though its Dock entry is hidden. Its wrapper tracks the game's absolute position and the bridge keeps it above the game while Arknights is active. Rapid window dragging can show a small visual delay, and clicking between the game and the helper can briefly expose the normal macOS focus transition. The launcher accepts these effects to keep coordination code out of the main game process.
+
+Install, update, and repair restore the official Vuplex and PlatformProcess executables before modifying game files. Their wrappers are installed again at the next launch only when each official helper still carries its expected signature. Unknown helpers, unrelated `userenv.dll` files, and unknown native bridges are left untouched.
 
 ## Process lifecycle
 
@@ -85,7 +101,7 @@ Normal launches inspect migration, registry, drive, and private-home state witho
 
 Game-directory shims implement `GameCompatibilityComponent` and are registered with `GameCompatibilityManager`. Active components are reconciled before every launch; all active and retired components are restored before install, update, or repair. Removing a shim means moving its component from the active list to the retired list for a supported upgrade cycle, allowing launcher-owned files to be cleaned up even when replacement assets are no longer bundled.
 
-Vuplex uses this reconciliation path rather than one-time migration state because the official updater can replace its helper at any time. Its wrapper and `userenv.dll` carry stable ownership markers, so upgrades and retirement never rely only on the current bundled bytes. Unknown files remain untouched.
+Vuplex and PlatformProcess use this reconciliation path rather than one-time migration state because the official updater can replace either helper at any time. Their wrappers, `userenv.dll`, and AppKit bridge carry stable ownership markers, so upgrades and retirement never rely only on the current bundled bytes. Unknown files remain untouched.
 
 ## Launcher communication
 
@@ -114,7 +130,7 @@ sequenceDiagram
 
 ## Boundaries
 
-- Only the official Global PC distribution is supported.
+- Only the official Yostar-published PC distributions (Global, Japan, Korea) are supported; CN is excluded because it runs on separate Hypergryph infrastructure and bundles a kernel-mode anti-cheat with no Wine support.
 - Game files come from first-party HTTPS endpoints and are never included in a release.
 - Manifest paths cannot escape the selected game directory.
 - Wine receives private home, cache, configuration, runtime, and temporary directories.

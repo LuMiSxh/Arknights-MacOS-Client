@@ -49,9 +49,7 @@ extension LauncherViewModel {
 					await log.info("Launcher update check completed; no releases available")
 					return
 				}
-				let currentVersion =
-					Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString")
-					as? String ?? "0"
+				let currentVersion = Bundle.main.shortVersionString ?? "0"
 				if !release.isDraft && !release.isPrerelease
 					&& updateChecker.isNewer(release.version, than: currentVersion)
 				{

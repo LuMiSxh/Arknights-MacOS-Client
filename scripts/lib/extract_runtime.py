@@ -13,7 +13,7 @@ import argparse
 import tarfile
 from pathlib import Path, PurePosixPath
 
-from common import fail, run_main
+from lib.common import fail, run_main
 
 
 def stays_within_root(path: PurePosixPath) -> bool:

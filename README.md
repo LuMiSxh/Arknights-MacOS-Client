@@ -23,9 +23,12 @@ Arknights Client is a native SwiftUI launcher for the official Global PC client.
 
 The project is in alpha and supports only Apple Silicon Macs running macOS 26 or newer.
 
+> [!WARNING]
+> Credit card and PayPal payments have been observed to work. These flows can still be unstable in this unofficial Wine environment, so transactions should be treated as high-risk. Verify every purchase directly with the provider and with Yostar, and monitor statements carefully. The launcher is community-maintained and includes patched compatibility layers; users accept all payment and billing risks themselves.
+
 ## Features
 
-- Install, resume, update, repair, and remove the Global PC client.
+- Install, resume, update, repair, and remove the Global, Japan, or Korea PC client.
 - Launch the game in windowed, borderless, or fullscreen mode at a selected resolution.
 - Use HiDPI rendering for the game and its login browser.
 - Support the Yostar, Apple, Google, and Facebook login flows through Wine compatibility helpers.
@@ -54,11 +57,13 @@ Game files are stored separately from the app. Removing the launcher does not re
 ## Quick Start
 
 1. Open Arknights Client.
-2. Select **Install** and wait for the game download to finish.
-3. Choose a display mode in Settings if needed.
-4. Select **Play**.
+2. Open **Settings** (⚙) → **Installation** and choose your region: **Global**, **Japan**, or **Korea**.
+3. Select **Install** and wait for the download to finish.
+4. Choose a display mode in Settings if needed.
+5. Select **Play**.
 
-The default game location is `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global`.
+Each region has its own install folder (for example `Arknights-Global`, `Arknights-Japan`, or `Arknights-Korea`) under
+`~/Library/Application Support/com.lumisxh.arknights-client/Games/`.
 
 > [!NOTE]
 > The first Google, Apple, or Facebook sign-in can take 5–15 seconds to open while the embedded Windows browser starts through Wine. A blank login view during that interval does not usually indicate a failed click.
@@ -93,6 +98,7 @@ Repository automation lives in `scripts/` as Python scripts. uv reads their inli
 - [Architecture](docs/architecture.md)
 - [Design](docs/design.md)
 - [Storage](docs/storage.md)
+- [Troubleshooting](docs/troubleshooting.md)
 - [Releases and updates](docs/releases-and-updates.md)
 - [Announcements](docs/announcements.md)
 - [Changelog](CHANGELOG.md)

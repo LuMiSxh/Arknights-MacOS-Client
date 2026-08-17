@@ -65,12 +65,13 @@ extension WineRuntime {
 		}
 	}
 
-	func preparePrefixIfNeeded(
-		at prefixDirectory: URL,
-		gameDirectory: URL,
-		environment: [String: String],
-		logHandle: FileHandle
-	) async throws {
+	/// Whether the next launch would replay any prefix migration, so callers can
+	/// show a "Migrating" state instead of the generic launch status.
+	func hasPendingMigration(prefixDirectory: URL) -> Bool {
+		!migrationPlan(prefixDirectory: prefixDirectory).pending.isEmpty
+	}
+
+	private func migrationPlan(prefixDirectory: URL) -> RuntimeMigrationPlan {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
 		let hasSystemRegistry = fileManager.fileExists(atPath: systemRegistry.path)
@@ -92,13 +93,41 @@ extension WineRuntime {
 				fileManager: fileManager
 			)
 			? [] : [.installDXMT]
-		var plan = RuntimeMigrationPlan(
+		return RuntimeMigrationPlan(
 			expectedRevision: revision,
 			installedState: installedState,
 			hasSystemRegistry: hasSystemRegistry,
 			invalidatedMigrations: invalidatedMigrations
 		)
+	}
+
+	func preparePrefixIfNeeded(
+		at prefixDirectory: URL,
+		gameDirectory: URL,
+		environment: [String: String],
+		logHandle: FileHandle,
+		log: LauncherLog? = nil
+	) async throws {
+		let fileManager = FileManager.default
+		let store = RuntimeMigrationStore(fileManager: fileManager)
+		let persistedState = store.load(from: prefixDirectory)
+		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
+		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
+		let dxmtCurrent = Self.dxmtIsCurrent(
+			from: dxmtPayload,
+			in: prefixDirectory,
+			fileManager: fileManager
+		)
+		var plan = migrationPlan(prefixDirectory: prefixDirectory)
+		if !plan.pending.isEmpty {
+			await log?.info(
+				"Prefix migration plan: \(plan.pending); runtimeRevision=\(revision); "
+					+ "persistedState=\(persistedState != nil); dxmtCurrent=\(dxmtCurrent)"
+			)
+		}
 		for migration in plan.pending {
+			let stepStarted = Date()
+			await log?.debug("Running prefix migration: \(migration)")
 			switch migration {
 			case .initializeWinePrefix:
 				try await initializePrefix(environment: environment, logHandle: logHandle)
@@ -116,9 +145,18 @@ extension WineRuntime {
 			}
 			plan.complete(migration)
 			try store.save(plan.state, to: prefixDirectory)
+			await log?.debug(
+				"Completed prefix migration: \(migration); "
+					+ "elapsed=\(String(format: "%.2fs", max(0, Date().timeIntervalSince(stepStarted))))"
+			)
 		}
-		if plan.pending.isEmpty, persistedState != plan.state {
-			try store.save(plan.state, to: prefixDirectory)
+		if plan.pending.isEmpty {
+			if persistedState != plan.state {
+				try store.save(plan.state, to: prefixDirectory)
+			}
+			await log?.debug("Prefix migration: nothing pending; runtimeRevision=\(revision)")
+		} else {
+			await log?.info("Prefix migration completed; ran \(plan.pending.count) step(s)")
 		}
 		try store.removeLegacyMarkers(from: prefixDirectory)
 		try WinePrefixConfigurator().configure(
@@ -178,6 +216,39 @@ extension WineRuntime {
 			throw LauncherError.runtimeConfiguration(
 				"Wine could not disable its crash dialog (status \(crashDialogStatus))."
 			)
+		}
+		let scrollingStatus = try await runAndWait(
+			executable: executableURL,
+			arguments: [
+				"reg.exe", "add", Self.macDriverRegistryKey,
+				"/v", Self.preciseScrollingRegistryValue,
+				"/t", "REG_SZ", "/d", "n", "/f",
+			],
+			environment: environment,
+			output: logHandle
+		)
+		guard scrollingStatus == 0 else {
+			throw LauncherError.runtimeConfiguration(
+				"Wine could not adjust trackpad scroll sensitivity (status \(scrollingStatus))."
+			)
+		}
+
+		for name in [Self.leftCommandIsCtrlRegistryValue, Self.rightCommandIsCtrlRegistryValue] {
+			let status = try await runAndWait(
+				executable: executableURL,
+				arguments: [
+					"reg.exe", "add", Self.macDriverRegistryKey,
+					"/v", name,
+					"/t", "REG_SZ", "/d", "y", "/f",
+				],
+				environment: environment,
+				output: logHandle
+			)
+			guard status == 0 else {
+				throw LauncherError.runtimeConfiguration(
+					"Wine could not map the Command key to Control (status \(status))."
+				)
+			}
 		}
 	}
 

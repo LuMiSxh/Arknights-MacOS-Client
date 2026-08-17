@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-from common import PROJECT_DIR, fail, require_file, run_main, success
+from lib.common import PROJECT_DIR, fail, require_file, run_main, success
 
 FEED_PATH = PROJECT_DIR / "announcements.json"
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")

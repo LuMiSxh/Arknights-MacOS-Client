@@ -27,6 +27,9 @@ struct DownloadProgressBaseline: Sendable {
 			reusedFiles.reduce(Int64(0)) { $0 + $1.byteCount }
 		) { total, item in
 			let size = try partialSize(item)
+			// A ".part" file larger than the manifest expects is stale from a previous
+			// manifest revision; GameInstaller.download discards and restarts it, so it
+			// must not inflate the starting progress baseline.
 			return total + (size <= item.byteCount ? size : 0)
 		}
 	}

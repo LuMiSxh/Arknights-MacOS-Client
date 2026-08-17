@@ -3,10 +3,10 @@
 import SwiftUI
 
 struct ContentView: View {
-	@ObservedObject var model: LauncherViewModel
+	var model: LauncherViewModel
 	@State private var settingsPresented = false
 
-	private let cyan = Color(red: 0.094, green: 0.82, blue: 1)
+	private let cyan = SettingsVisuals.cyan
 
 	var body: some View {
 		ZStack {
@@ -156,6 +156,12 @@ struct ContentView: View {
 							.font(.caption)
 							.foregroundStyle(.secondary)
 							.lineLimit(1)
+						if isFailed {
+							CyanActionLink(title: "Report Problem") {
+								NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
+							}
+							.font(.caption)
+						}
 					}
 				}
 
@@ -167,10 +173,58 @@ struct ContentView: View {
 
 	@ViewBuilder
 	private var versionLabel: some View {
-		if model.versionText != "—" {
-			Text(model.versionText)
-				.font(.system(size: 11, weight: .medium, design: .monospaced))
-				.foregroundStyle(.secondary)
+		HStack(spacing: 6) {
+			regionIndicator
+			if model.versionText != "—" {
+				Text(model.versionText)
+					.font(.system(size: 11, weight: .medium, design: .monospaced))
+					.foregroundStyle(.secondary)
+			}
+		}
+	}
+
+	/// Stays invisible for the common single-region case; only becomes an interactive
+	/// switcher once a second region is actually installed, so the landing page doesn't
+	/// carry region chrome nobody can use yet.
+	@ViewBuilder
+	private var regionIndicator: some View {
+		if model.installedRegions.count > 1 {
+			Menu {
+				ForEach(model.installedRegions) { region in
+					Button {
+						model.selectRegion(region)
+					} label: {
+						if region == model.region {
+							Label(region.displayName, systemImage: "checkmark")
+						} else {
+							Text(region.displayName)
+						}
+					}
+				}
+			} label: {
+				HStack(spacing: 3) {
+					Text(model.region.displayName)
+					Image(systemName: "chevron.up.chevron.down")
+						.font(.system(size: 7, weight: .bold))
+						.accessibilityHidden(true)
+				}
+				.font(.system(size: 10, weight: .semibold))
+				.foregroundStyle(cyan)
+				.padding(.horizontal, 6)
+				.padding(.vertical, 2)
+				.background(cyan.opacity(0.15), in: Capsule())
+			}
+			.menuStyle(.button)
+			.buttonStyle(.plain)
+			.disabled(!model.canSwitchRegion)
+			.help("Switch between installed regions")
+		} else if model.region != .global {
+			Text(model.region.displayName)
+				.font(.system(size: 10, weight: .semibold))
+				.foregroundStyle(cyan)
+				.padding(.horizontal, 6)
+				.padding(.vertical, 2)
+				.background(cyan.opacity(0.15), in: Capsule())
 		}
 	}
 
@@ -250,5 +304,10 @@ struct ContentView: View {
 		}
 		if case .failed(let message) = model.phase { return message }
 		return nil
+	}
+
+	private var isFailed: Bool {
+		if case .failed = model.phase { return true }
+		return false
 	}
 }

@@ -13,7 +13,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from common import (
+from lib.common import (
     BUILD_DIR,
     PROJECT_DIR,
     fail,

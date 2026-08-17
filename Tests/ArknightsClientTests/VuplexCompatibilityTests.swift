@@ -185,12 +185,16 @@ func vuplexRestoreWorksWithoutBundledCompatibilityAssets() throws {
 	let userenv = helper.deletingLastPathComponent().appending(
 		path: VuplexCompatibility.userenvName)
 	try Data("Arknights Client AppContainer compatibility".utf8).write(to: userenv)
+	let fallback = helper.deletingLastPathComponent().appending(
+		path: ".arknights-client-vuplex-software-rendering")
+	try Data().write(to: fallback)
 	let compatibility = VuplexCompatibility(shimURL: nil, userenvURL: nil)
 
 	#expect(try compatibility.restoreIfInstalled(in: root))
 	#expect(try Data(contentsOf: helper) == officialData)
 	#expect(!FileManager.default.fileExists(atPath: original.path))
 	#expect(!FileManager.default.fileExists(atPath: userenv.path))
+	#expect(!FileManager.default.fileExists(atPath: fallback.path))
 }
 
 @Test

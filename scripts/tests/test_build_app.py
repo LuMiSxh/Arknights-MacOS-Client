@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import struct
 import sys
 import tempfile
 import unittest
@@ -35,6 +36,27 @@ class AppBundleTests(unittest.TestCase):
             self.assertFalse((destination / "share/man").exists())
             self.assertFalse((destination / "share/wine/mono").exists())
             self.assertFalse((destination / "bin/backup.wine-original").exists())
+
+
+class FatCpuTypesTests(unittest.TestCase):
+    def test_detects_universal_x86_64_and_arm64(self) -> None:
+        header = struct.pack(">II", build_app._FAT_MAGIC, 2)
+        arches = struct.pack(
+            ">iiIII", build_app._CPU_TYPE_X86_64, 0, 0x1000, 0x100, 12
+        ) + struct.pack(">iiIII", build_app._CPU_TYPE_ARM64, 0, 0x2000, 0x100, 14)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "universal"
+            path.write_bytes(header + arches)
+            self.assertEqual(
+                build_app._fat_cpu_types(path),
+                {build_app._CPU_TYPE_X86_64, build_app._CPU_TYPE_ARM64},
+            )
+
+    def test_ignores_non_mach_o_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plain.txt"
+            path.write_text("not a binary", encoding="utf-8")
+            self.assertEqual(build_app._fat_cpu_types(path), set())
 
 
 if __name__ == "__main__":

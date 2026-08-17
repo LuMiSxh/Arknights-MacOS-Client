@@ -20,8 +20,16 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from common import BUILD_DIR, PROJECT_DIR, fail, info, remove_path, run_main, success
-from extract_runtime import extract
+from lib.common import (
+    BUILD_DIR,
+    PROJECT_DIR,
+    fail,
+    info,
+    remove_path,
+    run_main,
+    success,
+)
+from lib.extract_runtime import extract
 from runtime_config import read_config, validate_config
 
 RUNTIME_COMMANDS = ("bin/wine64", "bin/wineserver")

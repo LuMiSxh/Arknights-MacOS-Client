@@ -6,6 +6,7 @@ enum LauncherPhase: Equatable, Sendable {
 	case checking
 	case ready
 	case downloading
+	case migrating
 	case launching
 	case running(processIdentifier: Int32)
 	case failed(String)
@@ -15,6 +16,7 @@ enum LauncherPhase: Equatable, Sendable {
 		case .checking: "Checking version"
 		case .ready: "Ready"
 		case .downloading: "Downloading game files"
+		case .migrating: "Preparing Wine runtime"
 		case .launching: "Starting Windows runtime"
 		case .running: "Game started"
 		case .failed: "Action failed"

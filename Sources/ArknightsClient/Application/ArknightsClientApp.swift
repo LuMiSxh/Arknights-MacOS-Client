@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct ArknightsClientApp: App {
 	@NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-	@StateObject private var model: LauncherViewModel
+	@State private var model: LauncherViewModel
 
 	init() {
 		var arguments = ProcessInfo.processInfo.arguments
@@ -36,7 +36,7 @@ struct ArknightsClientApp: App {
 					libraryDirectory: root.appending(path: "Library")
 				)
 				let defaults = UserDefaults(suiteName: "com.lumisxh.arknights-client.preview")!
-				_model = StateObject(
+				_model = State(
 					wrappedValue: LauncherViewModel(
 						paths: paths,
 						preferences: LauncherPreferencesStore(defaults: defaults),
@@ -46,7 +46,7 @@ struct ArknightsClientApp: App {
 				return
 			}
 		#endif
-		_model = StateObject(wrappedValue: LauncherViewModel(arguments: arguments))
+		_model = State(wrappedValue: LauncherViewModel(arguments: arguments))
 	}
 
 	var body: some Scene {

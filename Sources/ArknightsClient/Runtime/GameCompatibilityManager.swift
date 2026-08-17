@@ -24,7 +24,10 @@ struct GameCompatibilityManager: Sendable {
 	init(bundle: Bundle = .main) {
 		// Add new components to active. Move removed components to retired for at
 		// least one supported upgrade cycle so their owned files are restored.
-		active = [VuplexCompatibility(bundle: bundle)]
+		active = [
+			VuplexCompatibility(bundle: bundle),
+			PlatformProcessCompatibility(bundle: bundle),
+		]
 		retired = []
 	}
 

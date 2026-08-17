@@ -14,13 +14,25 @@ func gameExecutableUsesTheIsolatedWindowsDrive() {
 }
 
 @Test
-func runtimeForcesDXMTWithoutDisablingVuplexGraphics() {
+func runtimeForcesDXMTForTheGameProcess() {
 	#expect(
 		WineRuntime.dllOverrides
 			== "d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
 	)
 	#expect(WineRuntime.globalRegistryOverrides["d3d11"] == "native,builtin")
 	#expect(WineRuntime.globalRegistryOverrides["dxgi"] == "native,builtin")
+}
+
+@Test
+func runtimeDisablesPreciseTrackpadScrollingToMatchWindowsWheelSpeed() {
+	#expect(WineRuntime.macDriverRegistryKey == "HKCU\\Software\\Wine\\Mac Driver")
+	#expect(WineRuntime.preciseScrollingRegistryValue == "UsePreciseScrolling")
+}
+
+@Test
+func runtimeMapsTheCommandKeyToControlForVuplexClipboardShortcuts() {
+	#expect(WineRuntime.leftCommandIsCtrlRegistryValue == "LeftCommandIsCtrl")
+	#expect(WineRuntime.rightCommandIsCtrlRegistryValue == "RightCommandIsCtrl")
 }
 
 @Test
@@ -229,6 +241,45 @@ func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
 		at: prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
 	)
 	#expect(!WineRuntime.dxmtIsCurrent(from: payload, in: prefix))
+}
+
+@Test
+func hasPendingMigrationReflectsSavedStateForTheCurrentRevision() throws {
+	let fileManager = FileManager.default
+	let root = fileManager.temporaryDirectory.appending(
+		path: "pending-migration-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: root) }
+	let payload = root.appending(path: "DXMT", directoryHint: .isDirectory)
+	let prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
+	for architecture in ["x64", "x32"] {
+		for library in WineRuntime.dxmtLibraryNames {
+			let source = payload.appending(path: architecture).appending(path: library)
+			try fileManager.createDirectory(
+				at: source.deletingLastPathComponent(),
+				withIntermediateDirectories: true
+			)
+			try Data("\(architecture)-\(library)".utf8).write(to: source)
+		}
+	}
+	try WineRuntime.installDXMT(from: payload, in: prefix)
+	try Data().write(to: prefix.appending(path: "system.reg"))
+	let runtime = WineRuntime(
+		executableURL: root.appending(path: "bin/Arknights"),
+		displayName: "Test",
+		revision: "test-revision"
+	)
+
+	#expect(runtime.hasPendingMigration(prefixDirectory: prefix))
+
+	try RuntimeMigrationStore(fileManager: fileManager).save(
+		RuntimeMigrationState(
+			runtimeRevision: "test-revision", completed: RuntimeMigration.allCases),
+		to: prefix
+	)
+
+	#expect(!runtime.hasPendingMigration(prefixDirectory: prefix))
 }
 
 @Test

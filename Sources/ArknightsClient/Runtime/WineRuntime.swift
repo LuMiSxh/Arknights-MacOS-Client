@@ -3,16 +3,21 @@
 import Darwin
 import Foundation
 
+struct WineProcessExit: Sendable {
+	let status: Int32
+	let reason: Process.TerminationReason
+}
+
 struct WineLaunch: Sendable {
 	let processIdentifier: Int32
-	private let terminationTask: Task<Int32, Never>
+	private let terminationTask: Task<WineProcessExit, Never>
 
-	init(processIdentifier: Int32, terminationTask: Task<Int32, Never>) {
+	init(processIdentifier: Int32, terminationTask: Task<WineProcessExit, Never>) {
 		self.processIdentifier = processIdentifier
 		self.terminationTask = terminationTask
 	}
 
-	func waitUntilExit() async -> Int32 {
+	func waitUntilExit() async -> WineProcessExit {
 		await terminationTask.value
 	}
 }
@@ -52,6 +57,10 @@ struct WineRuntime: Sendable {
 	static let dxmtLibraryNames = ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
 	static let crashDialogRegistryKey = "HKCU\\Software\\Wine\\WineDbg"
 	static let crashDialogRegistryValue = "ShowCrashDialog"
+	static let macDriverRegistryKey = "HKCU\\Software\\Wine\\Mac Driver"
+	static let preciseScrollingRegistryValue = "UsePreciseScrolling"
+	static let leftCommandIsCtrlRegistryValue = "LeftCommandIsCtrl"
+	static let rightCommandIsCtrlRegistryValue = "RightCommandIsCtrl"
 	static let isolatedUserDirectoryNames = [
 		"Desktop", "Documents", "Downloads", "Music", "Pictures", "Movies", "Templates",
 	]
@@ -85,7 +94,8 @@ struct WineRuntime: Sendable {
 		gameArguments: [String] = [],
 		displayConfiguration: WineDisplayConfiguration,
 		graphicsDiagnostics: Bool = false,
-		logURL: URL? = nil
+		logURL: URL? = nil,
+		log: LauncherLog? = nil
 	) async throws -> WineLaunch {
 		let launchStarted = ContinuousClock.now
 		let fileManager = FileManager.default
@@ -147,7 +157,8 @@ struct WineRuntime: Sendable {
 			at: prefixDirectory,
 			gameDirectory: gameExecutable.deletingLastPathComponent(),
 			environment: environment,
-			logHandle: logHandle
+			logHandle: logHandle,
+			log: log
 		)
 		RuntimePerformanceLog.write(stage: "prefix", since: launchStarted, to: logHandle)
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
@@ -169,11 +180,15 @@ struct WineRuntime: Sendable {
 		process.environment = environment
 		process.standardOutput = logHandle
 		process.standardError = logHandle
-		let (terminationStatuses, terminationContinuation) = AsyncStream<Int32>.makeStream(
-			bufferingPolicy: .bufferingNewest(1)
-		)
+		let (terminationStatuses, terminationContinuation) = AsyncStream<WineProcessExit>
+			.makeStream(
+				bufferingPolicy: .bufferingNewest(1)
+			)
 		process.terminationHandler = { process in
-			terminationContinuation.yield(process.terminationStatus)
+			terminationContinuation.yield(
+				WineProcessExit(
+					status: process.terminationStatus, reason: process.terminationReason)
+			)
 			terminationContinuation.finish()
 		}
 		try process.run()
@@ -181,8 +196,8 @@ struct WineRuntime: Sendable {
 		try? logHandle.close()
 
 		let terminationTask = Task {
-			for await status in terminationStatuses { return status }
-			return 0
+			for await exit in terminationStatuses { return exit }
+			return WineProcessExit(status: 0, reason: .exit)
 		}
 		return WineLaunch(
 			processIdentifier: process.processIdentifier,
@@ -239,9 +254,18 @@ struct WineRuntime: Sendable {
 		let terminated = DispatchSemaphore(value: 0)
 		process.terminationHandler = { _ in terminated.signal() }
 		guard (try? process.run()) != nil else { return }
-		guard terminated.wait(timeout: .now() + 3) == .timedOut else { return }
+		guard
+			terminated.wait(timeout: .now() + AppConstants.Timeouts.processTerminateGracePeriod)
+				== .timedOut
+		else { return }
 		process.terminate()
-		guard terminated.wait(timeout: .now() + 1) == .timedOut else { return }
+		guard
+			terminated.wait(timeout: .now() + AppConstants.Timeouts.processKillGracePeriod)
+				== .timedOut
+		else { return }
+		// The process may have exited and its PID been recycled in the gap between the
+		// timeout above and here; confirm it still exists before sending SIGKILL.
+		guard Darwin.kill(process.processIdentifier, 0) == 0 else { return }
 		Darwin.kill(process.processIdentifier, SIGKILL)
 	}
 

@@ -7,22 +7,27 @@ struct GameInstaller: Sendable {
 
 	private let api: any LauncherAPIProviding
 	private let chunkSession: HTTPChunkSession
-	private let concurrentDownloads = 6
+	private let concurrentDownloads = AppConstants.Network.concurrentDownloads
+	private let log: LauncherLog?
 
 	private var fileManager: FileManager { .default }
 
-	init(api: any LauncherAPIProviding, session: URLSession = .shared) {
+	init(api: any LauncherAPIProviding, session: URLSession = .shared, log: LauncherLog? = nil) {
 		self.api = api
 		chunkSession = HTTPChunkSession(configuration: session.configuration)
+		self.log = log
 	}
 
 	func install(
 		configuration: GameConfiguration,
+		region: GameRegion,
 		into installDirectory: URL,
 		verifyAllExistingFiles: Bool = false,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
-		let (manifest, cdn) = try await (api.manifest(for: configuration), api.cdnConfiguration())
+		let (manifest, cdn) = try await (
+			api.manifest(for: configuration, region: region), api.cdnConfiguration(region: region)
+		)
 		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
 		excludeFromBackup(installDirectory)
 		try GameCompatibilityManager().restoreForUpdate(in: installDirectory)
@@ -41,6 +46,10 @@ struct GameInstaller: Sendable {
 			)
 		}
 		let downloadedBytes = pendingFiles.reduce(Int64(0)) { $0 + $1.byteCount }
+		await log?.debug(
+			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
+				+ "(\(downloadedBytes) bytes); repair=\(verifyAllExistingFiles)"
+		)
 		let progressBaseline = try DownloadProgressBaseline(
 			manifestFiles: manifest.file,
 			pendingFiles: pendingFiles,
@@ -105,6 +114,9 @@ struct GameInstaller: Sendable {
 
 		try Task.checkCancellation()
 		try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
+		await log?.debug(
+			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes"
+		)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,
 			downloadedBytes: downloadedBytes,
@@ -141,7 +153,8 @@ struct GameInstaller: Sendable {
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler
 	) async throws -> Int64 {
-		for attempt in 1...3 {
+		let maxAttempts = AppConstants.Network.maxDownloadAttempts
+		for attempt in 1...maxAttempts {
 			do {
 				return try await download(
 					item,
@@ -154,8 +167,12 @@ struct GameInstaller: Sendable {
 			} catch is CancellationError {
 				throw CancellationError()
 			} catch {
-				if attempt == 3 { throw error }
-				try await Task.sleep(for: .milliseconds(400 * attempt))
+				if attempt == maxAttempts { throw error }
+				await log?.debug(
+					"Retrying \(item.path) (attempt \(attempt + 1)/\(maxAttempts)) after: "
+						+ error.localizedDescription
+				)
+				try await Task.sleep(for: AppConstants.Network.retryBackoffStep * attempt)
 			}
 		}
 		throw LauncherError.invalidResponse

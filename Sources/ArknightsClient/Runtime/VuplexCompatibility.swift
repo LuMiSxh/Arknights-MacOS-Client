@@ -15,6 +15,8 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 	private static let previousShimTemporaryPrefix = ".arknights-client-vuplex-previous-"
 	private static let userenvTemporaryPrefix = ".arknights-client-userenv-"
 	private static let userenvBackupName = ".arknights-client-userenv.previous.dll"
+	private static let retiredSoftwareFallbackName =
+		".arknights-client-vuplex-software-rendering"
 	private static let userenvMarker = Data(
 		"Arknights Client AppContainer compatibility".utf8)
 
@@ -23,7 +25,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 
 	init(bundle: Bundle = .main) {
 		let compatibilityDirectory = bundle.resourceURL?
-			.appending(path: "Compatibility", directoryHint: .isDirectory)
+			.appending(path: "Compatibility/Vuplex", directoryHint: .isDirectory)
 		shimURL = compatibilityDirectory?.appending(path: "Vuplex WebView.vuplex")
 		userenvURL = compatibilityDirectory?.appending(path: Self.userenvName)
 	}
@@ -41,6 +43,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		let helperURL = gameDirectory.appending(path: Self.helperRelativePath)
 		let originalURL = helperURL.deletingLastPathComponent().appending(
 			path: Self.originalHelperName)
+		_ = try removeRetiredSoftwareFallback(beside: helperURL, fileManager: fileManager)
 		try recoverInterruptedUserenvReplacement(beside: helperURL, fileManager: fileManager)
 		try removeStaleTemporaryFiles(beside: helperURL, fileManager: fileManager)
 		guard
@@ -68,7 +71,12 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 				"The official Vuplex helper is missing. Repair the game before launching."
 			)
 		}
-		guard try helperSupportsCompatibilityArgument(at: officialHelperURL) else {
+		guard
+			try GameShimIO.containsMarker(
+				at: officialHelperURL,
+				marker: Data(Self.compatibilityArgument.utf8)
+			)
+		else {
 			return false
 		}
 		if fileManager.contentsEqual(atPath: helperURL.path, andPath: shimURL.path) {
@@ -79,39 +87,16 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			)
 		}
 
-		let temporaryURL = helperURL.deletingLastPathComponent().appending(
-			path: "\(Self.shimTemporaryPrefix)\(UUID().uuidString)")
-		let previousShimURL = helperURL.deletingLastPathComponent().appending(
-			path: "\(Self.previousShimTemporaryPrefix)\(UUID().uuidString)")
-		defer {
-			try? fileManager.removeItem(at: temporaryURL)
-			try? fileManager.removeItem(at: previousShimURL)
-		}
-		try fileManager.copyItem(at: shimURL, to: temporaryURL)
-		if helperIsInstalledShim {
-			try fileManager.moveItem(at: helperURL, to: previousShimURL)
-		} else {
-			if fileManager.fileExists(atPath: originalURL.path) {
-				try fileManager.removeItem(at: originalURL)
-			}
-			try fileManager.moveItem(at: helperURL, to: originalURL)
-		}
-
-		do {
-			try fileManager.moveItem(at: temporaryURL, to: helperURL)
-			_ = try installUserenv(
-				from: userenvURL,
-				beside: helperURL,
-				fileManager: fileManager
-			)
-		} catch {
-			try? fileManager.removeItem(at: helperURL)
-			if fileManager.fileExists(atPath: previousShimURL.path) {
-				try? fileManager.moveItem(at: previousShimURL, to: helperURL)
-			} else {
-				try? fileManager.moveItem(at: originalURL, to: helperURL)
-			}
-			throw error
+		try GameShimIO.swapHelper(
+			at: helperURL,
+			with: shimURL,
+			backupURL: originalURL,
+			isCurrentlyInstalledShim: helperIsInstalledShim,
+			temporaryPrefix: Self.shimTemporaryPrefix,
+			previousPrefix: Self.previousShimTemporaryPrefix,
+			fileManager: fileManager
+		) {
+			_ = try installUserenv(from: userenvURL, beside: helperURL, fileManager: fileManager)
 		}
 		return true
 	}
@@ -124,6 +109,10 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		let helperURL = gameDirectory.appending(path: Self.helperRelativePath)
 		let originalURL = helperURL.deletingLastPathComponent().appending(
 			path: Self.originalHelperName)
+		let removedSoftwareFallback = try removeRetiredSoftwareFallback(
+			beside: helperURL,
+			fileManager: fileManager
+		)
 		try recoverInterruptedUserenvReplacement(beside: helperURL, fileManager: fileManager)
 		try removeStaleTemporaryFiles(beside: helperURL, fileManager: fileManager)
 		let removedUserenv = try removeInstalledUserenv(
@@ -132,7 +121,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			fileManager: fileManager
 		)
 		guard fileManager.fileExists(atPath: originalURL.path) else {
-			return removedUserenv
+			return removedUserenv || removedSoftwareFallback
 		}
 
 		if fileManager.fileExists(atPath: helperURL.path) {
@@ -146,11 +135,23 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			guard isInstalledShim else {
 				// The official updater has already replaced the shim. Its current helper wins.
 				try fileManager.removeItem(at: originalURL)
-				return removedUserenv
+				return removedUserenv || removedSoftwareFallback
 			}
 			try fileManager.removeItem(at: helperURL)
 		}
 		try fileManager.moveItem(at: originalURL, to: helperURL)
+		return true
+	}
+
+	private func removeRetiredSoftwareFallback(
+		beside helperURL: URL,
+		fileManager: FileManager
+	) throws -> Bool {
+		let markerURL = helperURL.deletingLastPathComponent().appending(
+			path: Self.retiredSoftwareFallbackName)
+		let values = try? markerURL.resourceValues(forKeys: [.isRegularFileKey])
+		guard values?.isRegularFile == true else { return false }
+		try fileManager.removeItem(at: markerURL)
 		return true
 	}
 
@@ -167,27 +168,26 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			if fileManager.contentsEqual(atPath: destinationURL.path, andPath: sourceURL.path) {
 				return false
 			}
-			guard try isLauncherUserenv(at: destinationURL) else {
+			guard
+				try GameShimIO.containsMarker(
+					at: destinationURL,
+					marker: Self.userenvMarker,
+					maximumSize: Self.maximumShimSize
+				)
+			else {
 				throw LauncherError.runtimeConfiguration(
 					"The Vuplex folder contains an unknown userenv.dll. Repair the game before launching."
 				)
 			}
 			try fileManager.moveItem(at: destinationURL, to: backupURL)
 		}
-		let temporaryURL = directory.appending(
-			path: "\(Self.userenvTemporaryPrefix)\(UUID().uuidString)")
-		defer { try? fileManager.removeItem(at: temporaryURL) }
-		do {
-			try fileManager.copyItem(at: sourceURL, to: temporaryURL)
-			try fileManager.moveItem(at: temporaryURL, to: destinationURL)
-			try? fileManager.removeItem(at: backupURL)
-		} catch {
-			try? fileManager.removeItem(at: destinationURL)
-			if fileManager.fileExists(atPath: backupURL.path) {
-				try? fileManager.moveItem(at: backupURL, to: destinationURL)
-			}
-			throw error
-		}
+		try GameShimIO.replaceWithBackup(
+			destinationURL: destinationURL,
+			sourceURL: sourceURL,
+			backupURL: backupURL,
+			temporaryName: "\(Self.userenvTemporaryPrefix)\(UUID().uuidString)",
+			fileManager: fileManager
+		)
 		return true
 	}
 
@@ -204,7 +204,14 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 				fileManager.fileExists(atPath: $0.path)
 					&& fileManager.contentsEqual(atPath: destinationURL.path, andPath: $0.path)
 			} ?? false
-		guard try matchesCurrent || isLauncherUserenv(at: destinationURL) else {
+		guard
+			try matchesCurrent
+				|| GameShimIO.containsMarker(
+					at: destinationURL,
+					marker: Self.userenvMarker,
+					maximumSize: Self.maximumShimSize
+				)
+		else {
 			return false
 		}
 		try fileManager.removeItem(at: destinationURL)
@@ -221,7 +228,11 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		guard fileManager.fileExists(atPath: backupURL.path) else { return }
 		if !fileManager.fileExists(atPath: destinationURL.path) {
 			try fileManager.moveItem(at: backupURL, to: destinationURL)
-		} else if try isLauncherUserenv(at: backupURL) {
+		} else if try GameShimIO.containsMarker(
+			at: backupURL,
+			marker: Self.userenvMarker,
+			maximumSize: Self.maximumShimSize
+		) {
 			try fileManager.removeItem(at: backupURL)
 		} else {
 			throw LauncherError.runtimeConfiguration(
@@ -234,40 +245,33 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		beside helperURL: URL,
 		fileManager: FileManager
 	) throws {
-		let directory = helperURL.deletingLastPathComponent()
-		guard fileManager.fileExists(atPath: directory.path) else { return }
-		let prefixes = [
-			Self.shimTemporaryPrefix,
-			Self.previousShimTemporaryPrefix,
-			Self.userenvTemporaryPrefix,
-		]
-		for url in try fileManager.contentsOfDirectory(
-			at: directory,
-			includingPropertiesForKeys: nil
-		) where prefixes.contains(where: { url.lastPathComponent.hasPrefix($0) }) {
-			try fileManager.removeItem(at: url)
-		}
-	}
-
-	private func isLauncherUserenv(at url: URL) throws -> Bool {
-		let data = try Data(contentsOf: url, options: .mappedIfSafe)
-		guard data.count <= Self.maximumShimSize else { return false }
-		return data.range(of: Self.userenvMarker) != nil
-	}
-
-	private func helperSupportsCompatibilityArgument(at url: URL) throws -> Bool {
-		let data = try Data(contentsOf: url, options: .mappedIfSafe)
-		return data.range(of: Data(Self.compatibilityArgument.utf8)) != nil
+		try GameShimIO.removeStaleTemporaryFiles(
+			in: helperURL.deletingLastPathComponent(),
+			matchingPrefixes: [
+				Self.shimTemporaryPrefix,
+				Self.previousShimTemporaryPrefix,
+				Self.userenvTemporaryPrefix,
+			],
+			fileManager: fileManager
+		)
 	}
 
 	private func helperIsLauncherShim(at url: URL) throws -> Bool {
-		let data = try Data(contentsOf: url, options: .mappedIfSafe)
-		guard data.count <= Self.maximumShimSize else { return false }
-		if data.range(of: Self.launcherShimMarker) != nil { return true }
+		if try GameShimIO.containsMarker(
+			at: url,
+			marker: Self.launcherShimMarker,
+			maximumSize: Self.maximumShimSize
+		) {
+			return true
+		}
 		let legacySignature = Data(
 			Self.originalHelperName.utf16.flatMap { codeUnit in
 				[UInt8(truncatingIfNeeded: codeUnit), UInt8(truncatingIfNeeded: codeUnit >> 8)]
 			})
-		return data.range(of: legacySignature) != nil
+		return try GameShimIO.containsMarker(
+			at: url,
+			marker: legacySignature,
+			maximumSize: Self.maximumShimSize
+		)
 	}
 }

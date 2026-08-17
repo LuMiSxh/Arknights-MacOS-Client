@@ -4,6 +4,7 @@ import Foundation
 
 actor LauncherLog {
 	private enum Level: String {
+		case debug = "DEBUG"
 		case info = "INFO"
 		case error = "ERROR"
 	}
@@ -17,6 +18,10 @@ actor LauncherLog {
 		self.fileURL = fileURL
 		self.fileManager = fileManager
 		formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+	}
+
+	func debug(_ message: String) {
+		write(.debug, message)
 	}
 
 	func info(_ message: String) {

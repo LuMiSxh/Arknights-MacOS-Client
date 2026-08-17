@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import NoReturn, TypeVar
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = PROJECT_DIR / ".build"
 DIST_DIR = PROJECT_DIR / "dist"
 

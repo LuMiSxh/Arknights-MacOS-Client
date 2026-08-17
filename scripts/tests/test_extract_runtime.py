@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-import extract_runtime
+from lib import extract_runtime
 
 
 def add_file(archive: tarfile.TarFile, name: str, contents: bytes = b"") -> None:

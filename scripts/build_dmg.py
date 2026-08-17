@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 
 from build_app import APP_NAME, build
-from common import DIST_DIR, PROJECT_DIR, info, remove_path, run, run_main, success
+from lib.common import DIST_DIR, PROJECT_DIR, info, remove_path, run, run_main, success
 
 
 def build_dmg(runtime: Path) -> Path:
@@ -30,7 +30,7 @@ def build_dmg(runtime: Path) -> Path:
                 "-m",
                 "dmgbuild",
                 "--settings",
-                PROJECT_DIR / "scripts/dmg_settings.py",
+                PROJECT_DIR / "scripts/lib/dmg_settings.py",
                 "-D",
                 f"app_bundle={app}",
                 APP_NAME,

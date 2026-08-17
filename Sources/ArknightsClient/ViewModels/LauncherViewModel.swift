@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
-import Combine
 import Foundation
+import Observation
 
 enum DirectWineProcessExitAction: Equatable {
 	case ignore
@@ -11,44 +11,46 @@ enum DirectWineProcessExitAction: Equatable {
 }
 
 @MainActor
-final class LauncherViewModel: ObservableObject {
-	@Published var phase: LauncherPhase = .checking
-	@Published var configuration: GameConfiguration?
-	@Published var progress: DownloadProgress?
-	@Published var runtimeName: String?
-	@Published var branding: LauncherBranding?
-	@Published var heroArtwork: NSImage?
-	@Published var officialLogo: NSImage?
-	@Published var popup: LauncherPopup?
-	@Published var isInstalled = false
-	@Published var hasPartialDownload = false
-	@Published var installedVersion: String?
-	@Published var isGameUpdateAvailable = false
-	@Published var launcherUpdate: LauncherRelease?
-	@Published var launcherUpdateStatus: String?
-	@Published var isCheckingLauncherUpdates = false
-	@Published var activityMessage = "Checking…"
+@Observable
+final class LauncherViewModel {
+	var phase: LauncherPhase = .checking
+	var configuration: GameConfiguration?
+	var progress: DownloadProgress?
+	var runtimeName: String?
+	var branding: LauncherBranding?
+	var heroArtwork: NSImage?
+	var officialLogo: NSImage?
+	var popup: LauncherPopup?
+	var isInstalled = false
+	var hasPartialDownload = false
+	var installedVersion: String?
+	var isGameUpdateAvailable = false
+	var launcherUpdate: LauncherRelease?
+	var launcherUpdateStatus: String?
+	var isCheckingLauncherUpdates = false
+	var activityMessage = "Checking…"
 	#if DEBUG
-		@Published var developerScenario: DeveloperScenario?
+		var developerScenario: DeveloperScenario?
 	#endif
 
-	@Published var installDirectory: URL
-	@Published var launchOptions: GameLaunchOptions {
+	private(set) var region: GameRegion
+	var installDirectory: URL
+	var launchOptions: GameLaunchOptions {
 		didSet { preferences.setLaunchOptions(launchOptions) }
 	}
-	@Published var automaticallyChecksLauncherUpdates: Bool {
+	var automaticallyChecksLauncherUpdates: Bool {
 		didSet {
 			preferences.setAutomaticLauncherUpdates(automaticallyChecksLauncherUpdates)
 			if automaticallyChecksLauncherUpdates { checkLauncherUpdates() }
 		}
 	}
-	@Published var automaticallyChecksGameUpdates: Bool {
+	var automaticallyChecksGameUpdates: Bool {
 		didSet {
 			preferences.setAutomaticGameUpdates(automaticallyChecksGameUpdates)
 			if automaticallyChecksGameUpdates { checkGameUpdates() }
 		}
 	}
-	@Published var announcementsEnabled: Bool {
+	var announcementsEnabled: Bool {
 		didSet {
 			preferences.setAnnouncementsEnabled(announcementsEnabled)
 			if announcementsEnabled { checkAnnouncements() }
@@ -64,16 +66,21 @@ final class LauncherViewModel: ObservableObject {
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
 	let graphicsDiagnosticsEnabled: Bool
-	var refreshTask: Task<Void, Never>?
-	var installationTask: Task<Void, Never>?
-	var launchTask: Task<Void, Never>?
-	var gameMonitorTask: Task<Void, Never>?
-	var gameProcessMonitorTask: Task<Void, Never>?
-	var launcherUpdateTask: Task<Void, Never>?
-	var announcementTask: Task<Void, Never>?
+	// @Observable's accessor synthesis breaks deinit's access to MainActor-isolated stored
+	// properties, so the task handles cancelled there stay plain storage via
+	// @ObservationIgnored; every other var below is left tracked since computed properties
+	// views read (isGameActive, canStopGame, ...) depend on it.
+	@ObservationIgnored var refreshTask: Task<Void, Never>?
+	@ObservationIgnored var installationTask: Task<Void, Never>?
+	@ObservationIgnored var launchTask: Task<Void, Never>?
+	@ObservationIgnored var gameMonitorTask: Task<Void, Never>?
+	@ObservationIgnored var gameProcessMonitorTask: Task<Void, Never>?
+	@ObservationIgnored var launcherUpdateTask: Task<Void, Never>?
+	@ObservationIgnored var announcementTask: Task<Void, Never>?
 	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
 	var activeGameSessionID: UUID?
+	var gameRunningSince: Date?
 	var presentedNoticeContent: String?
 	var isStoppingGame = false
 	var installationGate = ExclusiveOperationGate()
@@ -93,10 +100,15 @@ final class LauncherViewModel: ObservableObject {
 		graphicsDiagnosticsEnabled = arguments.contains("--graphics-diagnostics")
 		self.updateChecker = updateChecker
 		self.announcementService = announcementService
-		self.installer = installer ?? GameInstaller(api: api)
 		log = LauncherLog(fileURL: paths.launcherLogFile)
+		self.installer = installer ?? GameInstaller(api: api, log: log)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
-		installDirectory = preferences.installDirectory(default: paths.globalGameInstall)
+		let selectedRegion = preferences.selectedRegion()
+		region = selectedRegion
+		installDirectory = preferences.installDirectory(
+			for: selectedRegion,
+			default: paths.gameInstall(for: selectedRegion)
+		)
 		launchOptions = preferences.launchOptions()
 		automaticallyChecksLauncherUpdates = preferences.automaticLauncherUpdates()
 		automaticallyChecksGameUpdates = preferences.automaticGameUpdates()
@@ -137,9 +149,7 @@ final class LauncherViewModel: ObservableObject {
 			checkAnnouncements()
 		}
 
-		let appVersion =
-			Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-			?? "Development"
+		let appVersion = Bundle.main.shortVersionString ?? "Development"
 		Task { [log] in
 			await log.info("Launcher \(appVersion) started")
 		}
@@ -220,21 +230,52 @@ final class LauncherViewModel: ObservableObject {
 		#endif
 	}
 
+	var canSwitchRegion: Bool {
+		!isDownloading && !isGameActive
+	}
+
+	func selectRegion(_ newRegion: GameRegion) {
+		guard newRegion != region, canSwitchRegion else { return }
+		region = newRegion
+		preferences.setSelectedRegion(newRegion)
+		activeRefreshID = nil
+		refreshTask?.cancel()
+		configuration = nil
+		branding = nil
+		heroArtwork = nil
+		officialLogo = nil
+		isInstalled = false
+		hasPartialDownload = false
+		installedVersion = nil
+		isGameUpdateAvailable = false
+		progress = nil
+		presentedNoticeContent = nil
+		installDirectory = preferences.installDirectory(
+			for: newRegion,
+			default: paths.gameInstall(for: newRegion)
+		)
+		phase = .checking
+		activityMessage = "Checking…"
+		Task { [log] in await log.info("Region switched to \(newRegion.displayName)") }
+		refreshTask = Task { [weak self] in await self?.refresh() }
+	}
+
 	func refresh(forceGameUpdateCheck: Bool = false) async {
 		guard !isDownloading else { return }
 		await log.info("Refreshing game and branding state")
 		let refreshID = UUID()
+		let region = region
 		activeRefreshID = refreshID
 		updateInstalledState()
 		phase = .checking
 		activityMessage = "Checking…"
 		let hasCustomArtwork = loadCustomArtwork()
-		let brandingTask = Task { [api] in try? await api.branding() }
+		let brandingTask = Task { [api] in try? await api.branding(region: region) }
 		defer { brandingTask.cancel() }
 
 		if !isInstalled || automaticallyChecksGameUpdates || forceGameUpdateCheck {
 			do {
-				let fetchedConfiguration = try await api.gameConfiguration()
+				let fetchedConfiguration = try await api.gameConfiguration(region: region)
 				guard isCurrentRefresh(refreshID) else { return }
 				configuration = fetchedConfiguration
 				updateGameAvailability()
