@@ -88,6 +88,9 @@ extension WineRuntime {
 		environment["GST_DEBUG"] = "1"
 		environment["DXMT_SHADER_CACHE"] = "1"
 		environment["DXMT_SHADER_CACHE_PATH"] = home.appending(path: ".cache/dxmt").path
+		// Left unset, DXMT defaults to Info-level logging on every launch, not just
+		// under --graphics-diagnostics (which raises this back to "info" itself).
+		environment["DXMT_LOG_LEVEL"] = "error"
 		for (name, value) in Self.synchronizationEnvironment { environment[name] = value }
 		environment["PATH"] = [
 			executableDirectory.path, "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",

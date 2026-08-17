@@ -57,6 +57,7 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(environment["CFFIXED_USER_HOME"] == "/isolated/prefix/home")
 	#expect(environment["DXMT_SHADER_CACHE"] == "1")
 	#expect(environment["DXMT_SHADER_CACHE_PATH"] == "/isolated/prefix/home/.cache/dxmt")
+	#expect(environment["DXMT_LOG_LEVEL"] == "error")
 	#expect(environment["DYLD_FALLBACK_LIBRARY_PATH"] == "/runtime/lib")
 	#expect(environment["USER"] == "tester")
 	#expect(environment["LANG"] == "en_US.UTF-8")

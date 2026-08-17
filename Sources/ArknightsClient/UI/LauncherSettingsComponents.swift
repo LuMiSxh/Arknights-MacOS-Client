@@ -59,6 +59,28 @@ struct SettingsPanel<Content: View>: View {
 	}
 }
 
+/// Same shape as `SettingsPanel`, tinted red for actions that are destructive or
+/// depend on undocumented system behavior (see the panel's own contents for which).
+struct DangerZonePanel<Content: View>: View {
+	@ViewBuilder let content: Content
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 14) {
+			Label("Danger Zone", systemImage: "exclamationmark.triangle.fill")
+				.font(.headline)
+				.foregroundStyle(SettingsVisuals.danger)
+			content
+		}
+		.padding(18)
+		.frame(maxWidth: .infinity, alignment: .leading)
+		.glassEffect(.regular, in: .rect(cornerRadius: 18))
+		.overlay {
+			RoundedRectangle(cornerRadius: 18)
+				.strokeBorder(SettingsVisuals.danger.opacity(0.45), lineWidth: 1)
+		}
+	}
+}
+
 struct UpdateSettingsRow: View {
 	let title: String
 	let status: String

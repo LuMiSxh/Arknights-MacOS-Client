@@ -81,6 +81,7 @@ enum SettingsVisuals {
 	static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
 	static let navigationSelection = cyan.opacity(0.12)
 	static let hairline = Color.white.opacity(0.12)
+	static let danger = Color(red: 0.69, green: 0.141, blue: 0.231)
 }
 
 private struct SettingsNavigationRail: View {

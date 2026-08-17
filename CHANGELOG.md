@@ -13,6 +13,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A free-disk-space check before installing or updating the game, using Yostar's own reported install size so it stays accurate as the game grows; installation now fails fast with a clear message instead of running out of space mid-download.
 - Detection of a missing Rosetta 2 runtime before launching the game, with an informative message instead of a silent 90-second window-readiness timeout.
 - A Metal Performance HUD toggle in Settings → General that shows Apple's native FPS and GPU overlay during gameplay.
+- An experimental Game Mode toggle in a new Danger Zone in Settings → Installation, requesting elevated macOS scheduling priority for the game while it runs; only takes effect if the full Xcode app is installed; disabled by default and off with a clear message otherwise.
+- A Danger Zone panel in Settings → Installation that groups Uninstall Game and Force Migration together with a distinct visual style, since both undo real setup work.
+
+### Changed
+
+- Declared the app as a game (macOS application category) so the system can offer native game-related features.
+- Quieted DXMT's Metal translation logging by default; it previously ran at its noisiest level on every launch instead of only under diagnostics.
 
 ## [0.3.0]
 

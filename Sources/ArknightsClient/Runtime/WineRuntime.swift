@@ -43,6 +43,13 @@ struct WineRuntime: Sendable {
 	static let dllOverrides =
 		"d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
 	static let debugChannels = "-all,err+all"
+	// DO NOT switch this to WINEMSYNC. This fork does implement Mach-based sync
+	// (server/msync.c) and it does initialize cleanly ("msync: up and running" in
+	// wine.log) — but with it active, login broke with SocketException 0x80004005
+	// "interrupted" out of AliyunSLS.TCPServer, and the game never got past
+	// authentication. Reverting this one line to WINEESYNC and nothing else fixed it.
+	// Confirmed by isolated single-variable test; do not re-enable without re-testing
+	// a full login end to end, not just that the runtime launches.
 	static let synchronizationEnvironment = ["WINEESYNC": "1"]
 	static let globalRegistryOverrides = [
 		"d3d10core": "native,builtin",

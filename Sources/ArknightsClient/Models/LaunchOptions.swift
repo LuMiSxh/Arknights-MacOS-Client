@@ -52,13 +52,15 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var usesGameSettings: Bool = true
 	var usesHighResolutionMode: Bool = true
 	var usesMetalPerformanceHUD: Bool = false
+	var usesGameMode: Bool = false
 
 	static let `default` = GameLaunchOptions(
 		displayMode: .windowed,
 		resolution: .hd,
 		usesGameSettings: true,
 		usesHighResolutionMode: true,
-		usesMetalPerformanceHUD: false
+		usesMetalPerformanceHUD: false,
+		usesGameMode: false
 	)
 
 	private enum CodingKeys: String, CodingKey {
@@ -67,6 +69,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		case usesGameSettings
 		case usesHighResolutionMode
 		case usesMetalPerformanceHUD
+		case usesGameMode
 	}
 
 	init(
@@ -74,13 +77,15 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		resolution: GameResolution,
 		usesGameSettings: Bool = true,
 		usesHighResolutionMode: Bool = true,
-		usesMetalPerformanceHUD: Bool = false
+		usesMetalPerformanceHUD: Bool = false,
+		usesGameMode: Bool = false
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
 		self.usesGameSettings = usesGameSettings
 		self.usesHighResolutionMode = usesHighResolutionMode
 		self.usesMetalPerformanceHUD = usesMetalPerformanceHUD
+		self.usesGameMode = usesGameMode
 	}
 
 	init(from decoder: any Decoder) throws {
@@ -101,6 +106,11 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 			try container.decodeIfPresent(
 				Bool.self,
 				forKey: .usesMetalPerformanceHUD
+			) ?? false
+		usesGameMode =
+			try container.decodeIfPresent(
+				Bool.self,
+				forKey: .usesGameMode
 			) ?? false
 	}
 

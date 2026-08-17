@@ -152,6 +152,7 @@ struct InstallationSettingsPage: View {
 	var model: LauncherViewModel
 	@Binding var confirmsGameUninstall: Bool
 	@Binding var confirmsForceMigration: Bool
+	@State private var showsGameModeUnavailableAlert = false
 
 	var body: some View {
 		SettingsPage(title: "Installation", subtitle: "Files, repair, and removal") {
@@ -231,7 +232,7 @@ struct InstallationSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: "Remove", systemImage: "trash") {
+			DangerZonePanel {
 				SettingsActionRow(
 					title: "Game files",
 					detail: "Move the selected game installation to the Trash."
@@ -239,6 +240,7 @@ struct InstallationSettingsPage: View {
 					Button("Uninstall Game…", role: .destructive) {
 						confirmsGameUninstall = true
 					}
+					.tint(SettingsVisuals.danger)
 					.disabled(!model.isInstalled || model.isDownloading)
 				}
 				SettingsHairline()
@@ -250,10 +252,42 @@ struct InstallationSettingsPage: View {
 					Button("Force Migration…", role: .destructive) {
 						confirmsForceMigration = true
 					}
+					.tint(SettingsVisuals.danger)
 					.disabled(model.isDownloading || model.isGameActive)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Game Mode (Experimental)",
+					detail:
+						"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
+				) {
+					Toggle("Game Mode", isOn: gameModeBinding)
+						.labelsHidden()
+						.toggleStyle(.switch)
+						.tint(SettingsVisuals.danger)
 				}
 			}
 		}
+		.alert("Game Mode Needs Xcode", isPresented: $showsGameModeUnavailableAlert) {
+			Button("OK") {}
+		} message: {
+			Text(
+				"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
+			)
+		}
+	}
+
+	private var gameModeBinding: Binding<Bool> {
+		Binding(
+			get: { model.launchOptions.usesGameMode },
+			set: { newValue in
+				if newValue, !GamePolicyControl.isAvailable() {
+					showsGameModeUnavailableAlert = true
+					return
+				}
+				model.launchOptions.usesGameMode = newValue
+			}
+		)
 	}
 
 	private var gameStatus: String {

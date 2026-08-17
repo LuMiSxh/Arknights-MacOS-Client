@@ -66,6 +66,7 @@ extension LauncherViewModel {
 					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 				guard activeGameSessionID == gameSessionID else { return }
+				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: true) }
 				phase = .launching
 				activityMessage = "Starting…"
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
@@ -88,11 +89,13 @@ extension LauncherViewModel {
 			} catch LauncherError.runtimeWindowTimeout {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
+				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
 				try? await runtime.stop(prefixDirectory: paths.winePrefix)
 				show(LauncherError.runtimeWindowTimeout)
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
+				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
 				show(error)
 			}
 		}
@@ -130,6 +133,7 @@ extension LauncherViewModel {
 			if isDeveloperMode { return }
 		#endif
 		guard isGameActive, let runtime = WineRuntime.discover() else { return }
+		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
 		runtime.stopSynchronously(prefixDirectory: paths.winePrefix)
 	}
 
@@ -291,6 +295,7 @@ extension LauncherViewModel {
 		guard activeGameSessionID == sessionID else { return }
 		activeGameSessionID = nil
 		launchTask?.cancel()
+		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
 		phase = .ready
 		activityMessage = isGameUpdateAvailable ? "Update available" : "Ready"
 		await log.info("Game process stopped")
