@@ -44,3 +44,24 @@ func noticeFormatterRendersHTMLAsNativeText() throws {
 	#expect(text.contains("Maintenance"))
 	#expect(text.contains("Servers restart at 10:00."))
 }
+
+@Test
+func brandingDecodesEmptyStringURLsAsNil() throws {
+	let json = #"""
+		{
+		  "launcher_background_img": "https://example.com/launcher.png",
+		  "launcher_background_img_crc64": "4615291511255606402",
+		  "privacy_policy": "",
+		  "user_agreement": ""
+		}
+		"""#
+	let decoder = JSONDecoder()
+	decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+	let branding = try decoder.decode(LauncherBranding.self, from: Data(json.utf8))
+
+	#expect(branding.launcherBackgroundImage?.absoluteString == "https://example.com/launcher.png")
+	#expect(branding.launcherBackgroundImageCRC64 == "4615291511255606402")
+	#expect(branding.privacyPolicy == nil)
+	#expect(branding.userAgreement == nil)
+}

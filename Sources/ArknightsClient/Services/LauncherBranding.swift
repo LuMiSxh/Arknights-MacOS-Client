@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import Foundation
 
 struct LauncherBranding: Decodable, Sendable {
@@ -19,6 +20,47 @@ struct LauncherBranding: Decodable, Sendable {
 		case userAgreement
 		case noticePopOpen
 		case noticeContent
+	}
+
+	init(
+		launcherBackgroundImage: URL?,
+		launcherBackgroundImageCRC64: String?,
+		copyrightInformation: String?,
+		privacyPolicy: URL?,
+		userAgreement: URL?,
+		noticePopOpen: Bool?,
+		noticeContent: String?
+	) {
+		self.launcherBackgroundImage = launcherBackgroundImage
+		self.launcherBackgroundImageCRC64 = launcherBackgroundImageCRC64
+		self.copyrightInformation = copyrightInformation
+		self.privacyPolicy = privacyPolicy
+		self.userAgreement = userAgreement
+		self.noticePopOpen = noticePopOpen
+		self.noticeContent = noticeContent
+	}
+
+	init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+
+		launcherBackgroundImage = try container.decodeIfPresent(
+			String.self, forKey: .launcherBackgroundImage
+		)
+		.flatMap { $0.isEmpty ? nil : URL(string: $0) }
+
+		launcherBackgroundImageCRC64 = try container.decodeIfPresent(
+			String.self, forKey: .launcherBackgroundImageCRC64)
+		copyrightInformation = try container.decodeIfPresent(
+			String.self, forKey: .copyrightInformation)
+
+		privacyPolicy = try container.decodeIfPresent(String.self, forKey: .privacyPolicy)
+			.flatMap { $0.isEmpty ? nil : URL(string: $0) }
+
+		userAgreement = try container.decodeIfPresent(String.self, forKey: .userAgreement)
+			.flatMap { $0.isEmpty ? nil : URL(string: $0) }
+
+		noticePopOpen = try container.decodeIfPresent(Bool.self, forKey: .noticePopOpen)
+		noticeContent = try container.decodeIfPresent(String.self, forKey: .noticeContent)
 	}
 }
 
@@ -57,8 +99,7 @@ actor ArtworkCache {
 		guard
 			let http = response as? HTTPURLResponse,
 			http.statusCode == 200,
-			data.count <= 25 * 1_024 * 1_024,
-			http.mimeType?.hasPrefix("image/") == true
+			data.count <= 25 * 1_024 * 1_024
 		else {
 			throw LauncherError.invalidResponse
 		}
@@ -80,8 +121,7 @@ actor ArtworkCache {
 		guard
 			let http = response as? HTTPURLResponse,
 			http.statusCode == 200,
-			data.count <= 2 * 1_024 * 1_024,
-			http.mimeType?.hasPrefix("image/") == true
+			data.count <= 2 * 1_024 * 1_024
 		else {
 			throw LauncherError.invalidResponse
 		}
