@@ -4,9 +4,9 @@
 
 # Arknights Client
 
-**An unofficial macOS launcher for the Global PC version of Arknights**
+**Unofficial macOS launcher for the PC version of Arknights**
 
-Install, update, and run the official Windows client on Apple Silicon Macs.
+Runs the official Windows client on Apple Silicon Macs via a bundled Wine and DXMT runtime.
 
 [![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
@@ -21,21 +21,21 @@ Install, update, and run the official Windows client on Apple Silicon Macs.
 
 Arknights Client is a native SwiftUI launcher for the official Global PC client. It downloads game files from Yostar and runs the Windows game through a bundled Wine and DXMT runtime.
 
-The project is in alpha and supports only Apple Silicon Macs running macOS 26 or newer.
+The project is in beta and supports only Apple Silicon Macs running macOS 26 or newer.
 
 > [!WARNING]
 > Credit card and PayPal payments have been observed to work. These flows can still be unstable in this unofficial Wine environment, so transactions should be treated as high-risk. Verify every purchase directly with the provider and with Yostar, and monitor statements carefully. The launcher is community-maintained and includes patched compatibility layers; users accept all payment and billing risks themselves.
 
 ## Features
 
-- Install, resume, update, repair, and remove the Global, Japan, or Korea PC client.
-- Launch the game in windowed, borderless, or fullscreen mode at a selected resolution.
-- Use HiDPI rendering for the game and its login browser.
-- Support the Yostar, Apple, Google, and Facebook login flows through Wine compatibility helpers.
-- Check launcher and game versions independently; automatic checks can be disabled.
-- Display one-time project announcements from this repository; announcement checks can be disabled.
-- Store the Wine prefix and Windows user folders under Application Support.
-- Write separate launcher and Wine logs that can be opened from Settings.
+- Install, resume, update, repair, and remove the Global, Japan, or Korea PC client
+- Windowed, borderless, or fullscreen mode at a chosen resolution
+- HiDPI rendering for the game and its login browser
+- Yostar, Apple, Google, and Facebook login flows through Wine compatibility helpers
+- Independent version checks for launcher and game; automatic checks can be disabled
+- One-time project announcements from this repository; can also be disabled
+- Wine prefix and Windows user folders stored under Application Support
+- Separate launcher and Wine logs, viewable from Settings
 
 ## Installation
 
