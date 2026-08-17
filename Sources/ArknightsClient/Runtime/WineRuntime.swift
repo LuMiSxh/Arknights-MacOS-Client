@@ -94,6 +94,7 @@ struct WineRuntime: Sendable {
 		gameArguments: [String] = [],
 		displayConfiguration: WineDisplayConfiguration,
 		graphicsDiagnostics: Bool = false,
+		metalPerformanceHUDEnabled: Bool = false,
 		logURL: URL? = nil,
 		log: LauncherLog? = nil
 	) async throws -> WineLaunch {
@@ -172,6 +173,9 @@ struct WineRuntime: Sendable {
 		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
 			displayConfiguration.browserScaleFactor
 		)
+		if metalPerformanceHUDEnabled {
+			environment["MTL_HUD_ENABLED"] = "1"
+		}
 
 		let process = Process()
 		process.executableURL = executableURL

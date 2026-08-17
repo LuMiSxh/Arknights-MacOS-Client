@@ -23,6 +23,10 @@ extension LauncherViewModel {
 			show(LauncherError.wineRuntimeMissing)
 			return
 		}
+		guard RosettaAvailability.isInstalled() else {
+			show(LauncherError.rosettaMissing)
+			return
+		}
 
 		let hasPendingMigration = runtime.hasPendingMigration(prefixDirectory: paths.winePrefix)
 		if hasPendingMigration {
@@ -54,6 +58,7 @@ extension LauncherViewModel {
 						+ launchOptions.playerArguments,
 					displayConfiguration: displayConfiguration,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
+					metalPerformanceHUDEnabled: launchOptions.usesMetalPerformanceHUD,
 					logURL: paths.logFile,
 					log: log
 				)

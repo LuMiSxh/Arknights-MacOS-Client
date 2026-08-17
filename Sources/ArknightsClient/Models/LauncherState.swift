@@ -34,7 +34,9 @@ enum LauncherError: LocalizedError {
 	case cannotCreateFile(URL)
 	case missingConfiguration
 	case gameNotInstalled(URL)
+	case insufficientDiskSpace(required: Int64, available: Int64)
 	case wineRuntimeMissing
+	case rosettaMissing
 	case runtimeWindowTimeout
 	case runtimeConfiguration(String)
 	case runtimeExited(status: Int32, log: URL)
@@ -59,8 +61,12 @@ enum LauncherError: LocalizedError {
 			"The current game configuration has not been loaded yet."
 		case .gameNotInstalled(let url):
 			"Arknights.exe was not found: \(url.path)"
+		case .insufficientDiskSpace(let required, let available):
+			"Arknights needs about \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)) free, but only \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) is available. Free up space and try again."
 		case .wineRuntimeMissing:
 			"No compatible Windows runtime found. Use a build that bundles Wine + DXMT."
+		case .rosettaMissing:
+			"Rosetta 2 is required to run the bundled Wine runtime on Apple Silicon. Install it by running \"softwareupdate --install-rosetta --agree-to-license\" in Terminal, then try again."
 		case .runtimeWindowTimeout:
 			"Arknights did not open a window within 90 seconds. Check the Wine log and try again."
 		case .runtimeConfiguration(let message):

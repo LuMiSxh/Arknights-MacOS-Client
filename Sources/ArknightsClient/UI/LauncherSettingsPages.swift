@@ -47,6 +47,17 @@ struct GeneralSettingsPage: View {
 					)
 				}
 				.help("Overrides the game the next time it starts")
+				SettingsHairline()
+				LabeledContent("Metal Performance HUD") {
+					Toggle(
+						"Metal Performance HUD",
+						isOn: $model.launchOptions.usesMetalPerformanceHUD
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(SettingsVisuals.cyan)
+				}
+				.help("Shows Apple's native FPS and GPU overlay the next time the game starts")
 			}
 
 			SettingsPanel(title: "Artwork", systemImage: "photo") {

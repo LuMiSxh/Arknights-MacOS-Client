@@ -51,12 +51,14 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var resolution: GameResolution
 	var usesGameSettings: Bool = true
 	var usesHighResolutionMode: Bool = true
+	var usesMetalPerformanceHUD: Bool = false
 
 	static let `default` = GameLaunchOptions(
 		displayMode: .windowed,
 		resolution: .hd,
 		usesGameSettings: true,
-		usesHighResolutionMode: true
+		usesHighResolutionMode: true,
+		usesMetalPerformanceHUD: false
 	)
 
 	private enum CodingKeys: String, CodingKey {
@@ -64,18 +66,21 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		case resolution
 		case usesGameSettings
 		case usesHighResolutionMode
+		case usesMetalPerformanceHUD
 	}
 
 	init(
 		displayMode: GameDisplayMode,
 		resolution: GameResolution,
 		usesGameSettings: Bool = true,
-		usesHighResolutionMode: Bool = true
+		usesHighResolutionMode: Bool = true,
+		usesMetalPerformanceHUD: Bool = false
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
 		self.usesGameSettings = usesGameSettings
 		self.usesHighResolutionMode = usesHighResolutionMode
+		self.usesMetalPerformanceHUD = usesMetalPerformanceHUD
 	}
 
 	init(from decoder: any Decoder) throws {
@@ -92,6 +97,11 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 				Bool.self,
 				forKey: .usesHighResolutionMode
 			) ?? true
+		usesMetalPerformanceHUD =
+			try container.decodeIfPresent(
+				Bool.self,
+				forKey: .usesMetalPerformanceHUD
+			) ?? false
 	}
 
 	/// Unity standalone-player arguments supported by the Windows client.

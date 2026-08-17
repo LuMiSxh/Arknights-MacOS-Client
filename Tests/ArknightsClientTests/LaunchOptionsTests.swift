@@ -11,6 +11,7 @@ func defaultLaunchOptionsFavorCompatibleWindow() {
 	#expect(GameLaunchOptions.default.resolution == .hd)
 	#expect(GameLaunchOptions.default.usesGameSettings)
 	#expect(GameLaunchOptions.default.usesHighResolutionMode)
+	#expect(!GameLaunchOptions.default.usesMetalPerformanceHUD)
 	#expect(GameLaunchOptions.default.playerArguments.isEmpty)
 }
 
@@ -22,6 +23,7 @@ func legacyLaunchOptionsEnableHighResolutionModeWhenDecoded() throws {
 	let options = try JSONDecoder().decode(GameLaunchOptions.self, from: data)
 
 	#expect(options.usesHighResolutionMode)
+	#expect(!options.usesMetalPerformanceHUD)
 }
 
 @Test

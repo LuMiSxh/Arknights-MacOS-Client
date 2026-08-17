@@ -33,9 +33,17 @@ extension LauncherViewModel {
 			show(LauncherError.missingConfiguration)
 			return
 		}
+		let targetDirectory = installDirectory
+		if let required = configuration.requiredInstallBytes,
+			let available = GameInstaller.availableCapacityBytes(at: targetDirectory),
+			available < required
+		{
+			installationGate.finish(installationID)
+			show(LauncherError.insufficientDiskSpace(required: required, available: available))
+			return
+		}
 		activeRefreshID = nil
 		refreshTask?.cancel()
-		let targetDirectory = installDirectory
 		progress = nil
 		phase = .downloading
 		hasPartialDownload = false

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0]
+
+### Added
+
+- A free-disk-space check before installing or updating the game, using Yostar's own reported install size so it stays accurate as the game grows; installation now fails fast with a clear message instead of running out of space mid-download.
+- Detection of a missing Rosetta 2 runtime before launching the game, with an informative message instead of a silent 90-second window-readiness timeout.
+- A Metal Performance HUD toggle in Settings → General that shows Apple's native FPS and GPU overlay during gameplay.
+
 ## [0.3.0]
 
 ### Added

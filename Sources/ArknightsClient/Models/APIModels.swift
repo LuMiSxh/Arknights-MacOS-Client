@@ -22,6 +22,28 @@ struct GameConfiguration: Codable, Sendable {
 			? gameStartExeName
 			: "\(gameStartExeName).exe"
 	}
+
+	/// Yostar's own reported install footprint (e.g. "30GB"), which already covers the
+	/// game's post-launch asset downloads that this launcher's manifest doesn't see.
+	var requiredInstallBytes: Int64? {
+		Self.parseByteSize(decompressionSize)
+	}
+
+	static func parseByteSize(_ text: String) -> Int64? {
+		let trimmed = text.trimmingCharacters(in: .whitespaces).uppercased()
+		let digits = trimmed.prefix(while: { $0.isNumber || $0 == "." })
+		guard let value = Double(digits) else { return nil }
+		let unit = String(trimmed.dropFirst(digits.count)).trimmingCharacters(in: .whitespaces)
+		let multiplier: Double
+		switch unit {
+		case "TB": multiplier = 1_000_000_000_000
+		case "GB", "": multiplier = 1_000_000_000
+		case "MB": multiplier = 1_000_000
+		case "KB": multiplier = 1_000
+		default: return nil
+		}
+		return Int64(value * multiplier)
+	}
 }
 
 struct CDNConfiguration: Codable, Sendable {
