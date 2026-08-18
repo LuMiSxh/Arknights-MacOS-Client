@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #import <AppKit/AppKit.h>
+#import <CoreGraphics/CoreGraphics.h>
 #import <QuartzCore/QuartzCore.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
@@ -14,7 +15,7 @@
  * and Win32 coordinates in sync is essential because winemac.drv converts
  * global mouse coordinates back through the Windows window rectangle before
  * dispatching an input event. This bridge therefore changes only presentation:
- * Dock visibility, Spaces behavior, transparency, and the rounded crop.
+ * Dock visibility, Spaces behavior, transparency, fullscreen overlay, and the rounded crop.
  */
 
 static const volatile char launcher_marker[] =
@@ -46,7 +47,13 @@ static struct game_window game_window_info(void) {
 		CGRect bounds;
 		CGFloat area;
 
-		if (owner_pid.intValue == getpid() || layer.integerValue != 0) continue;
+		if (owner_pid.intValue == getpid()) continue;
+		if (layer.integerValue < 0) continue;
+
+		// SwiftUI Launcher ("Arknights Client")
+		if ([owner_name isEqualToString:@"Arknights Client"] || [name isEqualToString:@"Arknights Client"]) {
+			continue;
+		}
 		if (![owner_name hasPrefix:@"Arknights"] && ![name hasPrefix:@"Arknights"]) {
 			continue;
 		}
@@ -102,12 +109,15 @@ static void configure_window(NSWindow *window) {
 	NSView *frame = content.superview;
 	SEL selector;
 
-	behavior &= ~(NSWindowCollectionBehaviorCanJoinAllSpaces |
-		NSWindowCollectionBehaviorFullScreenPrimary);
-	behavior |= NSWindowCollectionBehaviorMoveToActiveSpace |
+	behavior &= ~NSWindowCollectionBehaviorFullScreenPrimary;
+	behavior |= NSWindowCollectionBehaviorCanJoinAllSpaces |
 		NSWindowCollectionBehaviorFullScreenAuxiliary |
-		NSWindowCollectionBehaviorParticipatesInCycle;
+		NSWindowCollectionBehaviorStationary |
+		NSWindowCollectionBehaviorIgnoresCycle;
 	if (window.collectionBehavior != behavior) window.collectionBehavior = behavior;
+
+	window.hidesOnDeactivate = NO;
+
 	selector = NSSelectorFromString(@"setNoForeground:");
 	if ([window respondsToSelector:selector]) {
 		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, NO);
@@ -133,9 +143,14 @@ static void configure_window(NSWindow *window) {
 		window.backgroundColor = NSColor.clearColor;
 	}
 	if (window.opaque) window.opaque = NO;
-	if (content != nil && !content.wantsLayer) content.wantsLayer = YES;
+	if (content != nil) {
+		content.wantsLayer = YES;
+		content.layer.opaque = NO;
+		content.layer.backgroundColor = NSColor.clearColor.CGColor;
+	}
 	if (frame != nil) {
-		if (!frame.wantsLayer) frame.wantsLayer = YES;
+		frame.wantsLayer = YES;
+		frame.layer.opaque = NO;
 		frame.layer.backgroundColor = NSColor.clearColor.CGColor;
 	}
 	apply_notice_mask(frame != nil ? frame : content);
@@ -174,25 +189,23 @@ static void maintain_presentation(void) {
 		);
 	}
 	game = game_window_info();
-	if (game.number != kCGNullWindowID) {
-		pid_t frontmost_process =
-			NSWorkspace.sharedWorkspace.frontmostApplication.processIdentifier;
-		NSWindowLevel target_level =
-			(frontmost_process == game.process_id || frontmost_process == getpid())
-				? NSFloatingWindowLevel
-				: NSNormalWindowLevel;
 
-		if (window.level != target_level) window.level = target_level;
-		if (logged_game_window != game.number) {
-			fprintf(
-				stderr,
-				"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
-				(long)window.windowNumber,
-				game.number,
-				game.process_id
-			);
-			logged_game_window = game.number;
-		}
+	NSWindowLevel target_level = (NSWindowLevel)(CGShieldingWindowLevel() + 1);
+
+	if (window.level != target_level) {
+		window.level = target_level;
+	}
+	[window orderFrontRegardless];
+
+	if (game.number != kCGNullWindowID && logged_game_window != game.number) {
+		fprintf(
+			stderr,
+			"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
+			(long)window.windowNumber,
+			game.number,
+			game.process_id
+		);
+		logged_game_window = game.number;
 	}
 }
 
@@ -215,8 +228,8 @@ __attribute__((constructor)) static void install_platform_process_bridge(void) {
 		dispatch_source_set_timer(
 			presentation_timer,
 			dispatch_time(DISPATCH_TIME_NOW, 0),
-			NSEC_PER_MSEC * 100,
-			NSEC_PER_MSEC * 10
+			NSEC_PER_MSEC * 16,
+			NSEC_PER_MSEC * 2
 		);
 		dispatch_source_set_event_handler(presentation_timer, ^{
 			maintain_presentation();

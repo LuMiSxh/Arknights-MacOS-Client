@@ -21,6 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Declared the app as a game (macOS application category) so the system can offer native game-related features.
 - Quieted DXMT's Metal translation logging by default; it previously ran at its noisiest level on every launch instead of only under diagnostics.
 
+### Fixed
+
+- Fixed the Notices companion window rendering with an opaque black background instead of a transparent overlay, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
+
 ## [0.3.0]
 
 ### Added
