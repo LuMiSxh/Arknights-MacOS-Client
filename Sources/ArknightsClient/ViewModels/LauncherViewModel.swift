@@ -113,6 +113,7 @@ final class LauncherViewModel {
 		automaticallyChecksLauncherUpdates = preferences.automaticLauncherUpdates()
 		automaticallyChecksGameUpdates = preferences.automaticGameUpdates()
 		announcementsEnabled = preferences.announcementsEnabled()
+		loadCustomAppIcon()
 
 		#if DEBUG
 			developerScenario = DeveloperScenario(arguments: arguments)

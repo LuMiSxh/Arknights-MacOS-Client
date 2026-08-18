@@ -69,6 +69,16 @@ struct GeneralSettingsPage: View {
 					Button("Use Default", action: model.resetArtwork)
 				}
 			}
+
+			SettingsPanel(title: "App Icon", systemImage: "app.badge") {
+				HStack {
+					Text("Choose a custom icon for the launcher in the Dock and Finder.")
+						.foregroundStyle(.secondary)
+					Spacer()
+					Button("Choose Custom Icon…", action: model.chooseCustomAppIcon)
+					Button("Reset to Default", action: model.resetAppIcon)
+				}
+			}
 		}
 	}
 }

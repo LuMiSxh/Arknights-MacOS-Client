@@ -83,6 +83,50 @@ extension LauncherViewModel {
 		}
 	}
 
+	/// Persists via `NSWorkspace.setIcon`, a Finder extended attribute on the app bundle
+	/// untouched by code signing, plus our own copy so the Dock icon can be reapplied on
+	/// the next launch (`NSApp.applicationIconImage` itself resets every launch).
+	func chooseCustomAppIcon() {
+		let panel = NSOpenPanel()
+		panel.title = "Choose an app icon"
+		panel.prompt = "Choose"
+		panel.allowedContentTypes = [.image]
+		panel.canChooseDirectories = false
+		panel.canChooseFiles = true
+		panel.allowsMultipleSelection = false
+		guard panel.runModal() == .OK, let selected = panel.url,
+			let image = NSImage(contentsOf: selected)
+		else { return }
+
+		do {
+			try FileManager.default.createDirectory(
+				at: paths.customAppIcon.deletingLastPathComponent(),
+				withIntermediateDirectories: true
+			)
+			if FileManager.default.fileExists(atPath: paths.customAppIcon.path) {
+				try FileManager.default.removeItem(at: paths.customAppIcon)
+			}
+			try FileManager.default.copyItem(at: selected, to: paths.customAppIcon)
+			NSWorkspace.shared.setIcon(image, forFile: Bundle.main.bundlePath, options: [])
+			NSApp.applicationIconImage = image
+		} catch {
+			show(error)
+		}
+	}
+
+	func resetAppIcon() {
+		try? FileManager.default.removeItem(at: paths.customAppIcon)
+		NSWorkspace.shared.setIcon(nil, forFile: Bundle.main.bundlePath, options: [])
+		NSApp.applicationIconImage = nil
+	}
+
+	@discardableResult
+	func loadCustomAppIcon() -> Bool {
+		guard let image = NSImage(contentsOf: paths.customAppIcon) else { return false }
+		NSApp.applicationIconImage = image
+		return true
+	}
+
 	func revealApplication() {
 		NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
 	}

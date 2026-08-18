@@ -101,4 +101,8 @@ struct AppPaths: Sendable {
 		applicationSupportRoot.appending(path: "Artwork/Custom/artwork")
 	}
 
+	var customAppIcon: URL {
+		applicationSupportRoot.appending(path: "Artwork/Custom/app-icon")
+	}
+
 }
