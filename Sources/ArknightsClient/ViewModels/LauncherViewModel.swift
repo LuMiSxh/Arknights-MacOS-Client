@@ -137,9 +137,6 @@ final class LauncherViewModel {
 			developerScenario = DeveloperScenario(arguments: arguments)
 			if let developerScenario {
 				applyDeveloperScenario(developerScenario)
-				if developerScenario == .customPopup {
-					applyDeveloperPopup(arguments: arguments)
-				}
 				refreshTask = Task { [weak self] in await self?.loadDeveloperArtwork() }
 				Task { [log] in await log.info("Developer simulation started") }
 				return

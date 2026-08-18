@@ -78,16 +78,12 @@ cd Arknights-MacOS-Client
 just check
 ```
 
-| Command                | Purpose                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `just run`             | Run the native launcher from SwiftPM                 |
-| `just preview`         | Run the isolated debug-state simulator               |
-| `just preview-popup …` | Preview a local Markdown popup                       |
-| `just preview-app`     | Build an isolated launcher-state simulator           |
-| `just runtime`         | Download and verify the tested Wine and DXMT runtime |
-| `just dev`             | Build the app with the runtime                       |
-| `just dev-dmg`         | Build an installable development DMG                 |
-| `just ci`              | Run all checks and build the release configuration   |
+| Command                    | Purpose                                                       |
+| -------------------------- | -------------------------------------------------------------- |
+| `just preview`             | Run the isolated debug-state simulator; every state is available from Settings → Developer |
+| `just runtime`             | Download and verify the tested Wine and DXMT runtime          |
+| `just dev [target] [run]`  | Build the app or dmg with the runtime, optionally opening it  |
+| `just ci`                  | Run all checks and build the release configuration            |
 
 Run `just --groups` for the complete command list.
 Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json).
@@ -103,6 +99,7 @@ Repository automation lives in `scripts/` as Python scripts. uv reads their inli
 - [Announcements](docs/announcements.md)
 - [Changelog](CHANGELOG.md)
 - [Third-party notices](docs/legal/third-party-notices.md)
+- [Source code](docs/legal/source-code.md)
 
 ## License
 

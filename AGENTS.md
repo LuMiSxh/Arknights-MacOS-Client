@@ -10,17 +10,18 @@
 
 ## Commands
 
-| Task          | Command        |
-| ------------- | -------------- |
-| Source checks | `just check`   |
-| Full CI       | `just ci`      |
-| Run launcher  | `just run`     |
-| UI preview    | `just preview` |
-| App bundle    | `just app`     |
-| Dev runtime   | `just runtime` |
-| App + runtime | `just dev`     |
-| DMG + runtime | `just dev-dmg` |
-| App icon      | `just icon`    |
+| Task               | Command            |
+| ------------------ | ------------------ |
+| Source checks      | `just check`       |
+| Format sources     | `just format`      |
+| Full CI            | `just ci`          |
+| UI preview         | `just preview`     |
+| App bundle         | `just app`         |
+| Dev runtime        | `just runtime`     |
+| App + runtime      | `just dev`         |
+| App + runtime, run | `just dev app run` |
+| DMG + runtime      | `just dev dmg`     |
+| App icon           | `just icon`        |
 
 ## Key Conventions
 

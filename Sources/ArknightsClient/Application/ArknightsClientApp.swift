@@ -17,14 +17,8 @@ struct ArknightsClientApp: App {
 	@State private var model: LauncherViewModel
 
 	init() {
-		var arguments = ProcessInfo.processInfo.arguments
+		let arguments = ProcessInfo.processInfo.arguments
 		#if DEBUG
-			if DeveloperScenario(arguments: arguments) == nil,
-				Bundle.main.object(forInfoDictionaryKey: "DeveloperPreviewEnabled") as? Bool
-					== true
-			{
-				arguments += ["--developer-scenario", DeveloperScenario.ready.rawValue]
-			}
 			if DeveloperScenario(arguments: arguments) != nil {
 				let root = FileManager.default.temporaryDirectory.appending(
 					path: "ArknightsClientPreview",

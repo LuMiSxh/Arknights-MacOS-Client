@@ -55,16 +55,7 @@
 					)
 				)
 			case .customPopup:
-				enqueuePopup(
-					LauncherPopup(
-						id: "developer-custom-popup",
-						title: "Custom popup",
-						content: .markdown("Use just preview-popup to load Markdown."),
-						dismissTitle: "Done",
-						actionTitle: nil,
-						actionURL: nil
-					)
-				)
+				break
 			case .yostarNotice:
 				let notice = LauncherNoticeFormatter.notice(
 					fromHTML:
@@ -127,19 +118,16 @@
 			}
 		}
 
-		func applyDeveloperPopup(arguments: [String]) {
-			guard
-				let title = Self.argument(after: "--developer-popup-title", in: arguments),
-				let file = Self.argument(after: "--developer-popup-file", in: arguments),
-				let markdown = try? String(contentsOfFile: file, encoding: .utf8)
-			else { return }
-			popup = LauncherPopup(
-				id: "developer-custom-popup",
-				title: title,
-				content: .markdown(markdown),
-				dismissTitle: "Done",
-				actionTitle: nil,
-				actionURL: nil
+		func applyDeveloperCustomPopup(title: String, markdown: String) {
+			enqueuePopup(
+				LauncherPopup(
+					id: "developer-custom-popup",
+					title: title,
+					content: .markdown(markdown),
+					dismissTitle: "Done",
+					actionTitle: nil,
+					actionURL: nil
+				)
 			)
 		}
 
@@ -175,12 +163,6 @@
 				actionTitle: "View Release",
 				actionURL: release.htmlURL
 			)
-		}
-
-		private static func argument(after flag: String, in arguments: [String]) -> String? {
-			guard let index = arguments.firstIndex(of: flag), arguments.indices.contains(index + 1)
-			else { return nil }
-			return arguments[index + 1]
 		}
 	}
 #endif

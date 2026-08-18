@@ -204,17 +204,6 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
         copy_file(
             PROJECT_DIR / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )
-        if configuration == "debug":
-            run(
-                [
-                    "plutil",
-                    "-insert",
-                    "DeveloperPreviewEnabled",
-                    "-bool",
-                    "YES",
-                    staged_app / "Contents/Info.plist",
-                ]
-            )
         copy_file(PROJECT_DIR / "Resources/AppIcon.icns", resources / "AppIcon.icns")
         copy_file(PROJECT_DIR / "Resources/Assets.car", resources / "Assets.car")
 

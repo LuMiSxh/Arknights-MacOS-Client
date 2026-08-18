@@ -50,7 +50,7 @@
 			case .ready: "An installed and current game client."
 			case .launcherUpdate: "A newer launcher release with release notes."
 			case .announcement: "A one-time message controlled by announcements.json."
-			case .customPopup: "Markdown loaded from the file passed to just preview-popup."
+			case .customPopup: "Type Markdown below and show it as the real popup."
 			case .yostarNotice: "An official notice returned by the game API."
 			case .gameUpdate: "An installed game with newer files available."
 			case .downloading: "An active game update at 43 percent."
