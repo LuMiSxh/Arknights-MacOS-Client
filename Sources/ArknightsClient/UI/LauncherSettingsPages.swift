@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import SwiftUI
+import UniformTypeIdentifiers
+
+private func isImageURL(_ url: URL) -> Bool {
+	UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
+}
 
 struct GeneralSettingsPage: View {
 	@Bindable var model: LauncherViewModel
@@ -47,17 +52,16 @@ struct GeneralSettingsPage: View {
 					)
 				}
 				.help("Overrides the game the next time it starts")
-				SettingsHairline()
-				LabeledContent("Metal Performance HUD") {
-					Toggle(
-						"Metal Performance HUD",
-						isOn: $model.launchOptions.usesMetalPerformanceHUD
-					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(SettingsVisuals.cyan)
+			}
+
+			SettingsPanel(title: "Launcher", systemImage: "sparkles") {
+				LabeledContent("Show Game Version") {
+					Toggle("Show Game Version", isOn: $model.showsGameVersion)
+						.labelsHidden()
+						.toggleStyle(.switch)
+						.tint(SettingsVisuals.cyan)
 				}
-				.help("Shows Apple's native FPS and GPU overlay the next time the game starts")
+				.help("Shows the installed Arknights version next to the region indicator")
 				SettingsHairline()
 				LabeledContent("Server Time & Reset Countdown") {
 					Toggle(
@@ -69,25 +73,44 @@ struct GeneralSettingsPage: View {
 					.tint(SettingsVisuals.cyan)
 				}
 				.help("Shows time until the daily server reset next to the version number")
+				SettingsHairline()
+				LabeledContent("Metal Performance HUD") {
+					Toggle(
+						"Metal Performance HUD",
+						isOn: $model.launchOptions.usesMetalPerformanceHUD
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(SettingsVisuals.cyan)
+				}
+				.help("Shows Apple's native FPS and GPU overlay the next time the game starts")
 			}
 
-			SettingsPanel(title: "Artwork", systemImage: "photo") {
-				HStack {
-					Text("Choose the image shown behind the launcher controls.")
-						.foregroundStyle(.secondary)
-					Spacer()
+			SettingsPanel(title: "Personalization", systemImage: "paintbrush") {
+				SettingsActionRow(
+					title: "Artwork",
+					detail: "Background shown behind the launcher controls."
+				) {
 					Button("Choose…", action: model.chooseCustomArtwork)
 					Button("Use Default", action: model.resetArtwork)
 				}
-			}
-
-			SettingsPanel(title: "App Icon", systemImage: "app.badge") {
-				HStack {
-					Text("Choose a custom icon for the launcher in the Dock and Finder.")
-						.foregroundStyle(.secondary)
-					Spacer()
-					Button("Choose Custom Icon…", action: model.chooseCustomAppIcon)
-					Button("Reset to Default", action: model.resetAppIcon)
+				.dropDestination(for: URL.self) { urls, _ in
+					guard let url = urls.first, isImageURL(url) else { return false }
+					model.applyCustomArtwork(from: url)
+					return true
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "App Icon",
+					detail: "Dock and Finder icon for the launcher."
+				) {
+					Button("Choose…", action: model.chooseCustomAppIcon)
+					Button("Use Default", action: model.resetAppIcon)
+				}
+				.dropDestination(for: URL.self) { urls, _ in
+					guard let url = urls.first, isImageURL(url) else { return false }
+					model.applyCustomAppIcon(from: url)
+					return true
 				}
 			}
 		}
@@ -171,8 +194,10 @@ struct UpdatesSettingsPage: View {
 
 struct InstallationSettingsPage: View {
 	var model: LauncherViewModel
-	@Binding var confirmsGameUninstall: Bool
-	@Binding var confirmsForceMigration: Bool
+	@State private var confirmsGameUninstall = false
+	@State private var confirmsForceMigration = false
+	@State private var confirmsWinePrefixDeletion = false
+	@State private var confirmsSettingsReset = false
 	@State private var showsGameModeUnavailableAlert = false
 
 	var body: some View {
@@ -264,14 +289,44 @@ struct InstallationSettingsPage: View {
 
 			DangerZonePanel {
 				SettingsActionRow(
-					title: "Game files",
-					detail: "Move the selected game installation to the Trash."
+					title: "Game Mode (Experimental)",
+					detail:
+						"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
 				) {
-					Button("Uninstall Game…", role: .destructive) {
-						confirmsGameUninstall = true
+					Toggle("Game Mode", isOn: gameModeBinding)
+						.labelsHidden()
+						.toggleStyle(.switch)
+						.tint(SettingsVisuals.danger)
+						.alert("Game Mode Needs Xcode", isPresented: $showsGameModeUnavailableAlert)
+						{}
+						message: {
+							Text(
+								"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
+							)
+						}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Launcher Settings",
+					detail:
+						"Reset every toggle and option on this screen to default. The install location and selected region are untouched."
+				) {
+					Button("Reset All Settings…", role: .destructive) {
+						confirmsSettingsReset = true
 					}
 					.tint(SettingsVisuals.danger)
-					.disabled(!model.isInstalled || model.isDownloading)
+					.confirmationDialog(
+						"Reset All Launcher Settings?",
+						isPresented: $confirmsSettingsReset,
+						titleVisibility: .visible
+					) {
+						Button(
+							"Reset Settings", role: .destructive, action: model.resetAllLauncherSettings
+						)
+						Button("Cancel", role: .cancel) {}
+					} message: {
+						Text("The install location and selected region are untouched.")
+					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -284,26 +339,69 @@ struct InstallationSettingsPage: View {
 					}
 					.tint(SettingsVisuals.danger)
 					.disabled(model.isDownloading || model.isGameActive)
+					.confirmationDialog(
+						"Force Wine Setup to Run Again?",
+						isPresented: $confirmsForceMigration,
+						titleVisibility: .visible
+					) {
+						Button(
+							"Force Migration", role: .destructive, action: model.forcePrefixMigration
+						)
+						Button("Cancel", role: .cancel) {}
+					} message: {
+						Text(
+							"Game files and saves stay untouched; only the next launch takes longer."
+						)
+					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Game Mode (Experimental)",
+					title: "Wine Prefix",
 					detail:
-						"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
+						"Delete the entire Wine environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else rebuilds on the next launch."
 				) {
-					Toggle("Game Mode", isOn: gameModeBinding)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(SettingsVisuals.danger)
+					Button("Delete Wine Prefix…", role: .destructive) {
+						confirmsWinePrefixDeletion = true
+					}
+					.tint(SettingsVisuals.danger)
+					.disabled(model.isDownloading || model.isGameActive)
+					.confirmationDialog(
+						"Delete the Wine Prefix?",
+						isPresented: $confirmsWinePrefixDeletion,
+						titleVisibility: .visible
+					) {
+						Button(
+							"Delete Wine Prefix", role: .destructive, action: model.deleteWinePrefix
+						)
+						Button("Cancel", role: .cancel) {}
+					} message: {
+						Text(
+							"This signs you out of every login saved in the embedded browser. Game files are untouched."
+						)
+					}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Game files",
+					detail: "Move the selected game installation to the Trash."
+				) {
+					Button("Uninstall Game…", role: .destructive) {
+						confirmsGameUninstall = true
+					}
+					.tint(SettingsVisuals.danger)
+					.disabled(!model.isInstalled || model.isDownloading)
+					.confirmationDialog(
+						"Uninstall Arknights?",
+						isPresented: $confirmsGameUninstall,
+						titleVisibility: .visible
+					) {
+						Button("Move Game to Trash", role: .destructive, action: model.uninstallGame)
+						Button("Cancel", role: .cancel) {}
+					} message: {
+						Text("The launcher stays installed.")
+					}
 				}
 			}
-		}
-		.alert("Game Mode Needs Xcode", isPresented: $showsGameModeUnavailableAlert) {
-			Button("OK") {}
-		} message: {
-			Text(
-				"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
-			)
 		}
 	}
 

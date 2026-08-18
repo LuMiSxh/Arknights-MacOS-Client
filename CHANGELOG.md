@@ -18,15 +18,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A custom app icon option in Settings → General; choose an image to replace the Dock and Finder icon, or reset to the default (Thanks to @RadioNoiseE, #24).
 - A toggleable server time and daily reset countdown next to the version label in Settings → General.
 - A "Clear Cache" action in Settings → Installation → Maintenance that shows and frees the space used by the DXMT shader and embedded browser caches; both rebuild automatically.
+- Drag-and-drop image support on the Artwork and App Icon panels in Settings → General, alongside the existing file pickers.
+- A "Show Game Version" toggle in Settings → General, on by default, for the version label next to the region indicator.
+- A "Delete Wine Prefix" action in the Danger Zone that fully rebuilds the Wine environment on the next launch, including saved Yostar/Google/Apple/Facebook browser logins, without touching game files — a stronger reset than Force Migration.
+- A "Reset All Settings" action in the Danger Zone that restores every launcher toggle and option to default, leaving the install location and selected region untouched.
 
 ### Changed
 
 - Declared the app as a game (macOS application category) so the system can offer native game-related features.
 - Quieted DXMT's Metal translation logging by default; it previously ran at its noisiest level on every launch instead of only under diagnostics.
+- Split Settings → General's "Display" panel into "Display" (game rendering: resolution, window mode) and a new "Launcher" panel (Metal HUD, server time, game version) as the list of launcher-only toggles grew past what belonged next to game display settings.
+- Combined the Artwork and App Icon panels in Settings → General into one "Personalization" panel with matching Choose…/Use Default buttons.
+- Moved the Uninstall Game and Force Migration confirmation dialogs to attach directly to their buttons instead of the Settings window, so their animations originate from the right place.
+- Reordered the Danger Zone from least to most destructive: Game Mode, Reset All Settings, Force Migration, Delete Wine Prefix, Uninstall Game.
 
 ### Fixed
 
-- Fixed the Notices companion window rendering with an opaque black background instead of a transparent overlay, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
+- Fixed the Notices companion window rendering behing the game window in fullscreen, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
 
 ## [0.3.0]
 

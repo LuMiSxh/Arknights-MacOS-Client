@@ -180,7 +180,7 @@ struct ContentView: View {
 					.foregroundStyle(.secondary)
 			}
 			regionIndicator
-			if model.versionText != "—" {
+			if model.showsGameVersion, model.versionText != "—" {
 				Text(model.versionText)
 					.font(.system(size: 11, weight: .medium, design: .monospaced))
 					.foregroundStyle(.secondary)

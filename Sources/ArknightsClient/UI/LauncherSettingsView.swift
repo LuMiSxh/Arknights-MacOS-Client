@@ -6,8 +6,6 @@ struct LauncherSettingsView: View {
 	var model: LauncherViewModel
 	@Environment(\.dismiss) private var dismiss
 	@State private var selectedSection = SettingsSection.general
-	@State private var confirmsGameUninstall = false
-	@State private var confirmsForceMigration = false
 	@State private var presentedDocument: BundledDocument?
 
 	var body: some View {
@@ -24,11 +22,7 @@ struct LauncherSettingsView: View {
 				case .updates:
 					UpdatesSettingsPage(model: model)
 				case .installation:
-					InstallationSettingsPage(
-						model: model,
-						confirmsGameUninstall: $confirmsGameUninstall,
-						confirmsForceMigration: $confirmsForceMigration
-					)
+					InstallationSettingsPage(model: model)
 				case .about:
 					AboutSettingsPage(model: model, presentedDocument: $presentedDocument)
 				#if DEBUG
@@ -49,26 +43,6 @@ struct LauncherSettingsView: View {
 					.buttonStyle(.glassProminent)
 					.tint(SettingsVisuals.cyan)
 			}
-		}
-		.confirmationDialog(
-			"Uninstall Arknights?",
-			isPresented: $confirmsGameUninstall,
-			titleVisibility: .visible
-		) {
-			Button("Move Game to Trash", role: .destructive, action: model.uninstallGame)
-			Button("Cancel", role: .cancel) {}
-		} message: {
-			Text("The launcher stays installed.")
-		}
-		.confirmationDialog(
-			"Force Wine Setup to Run Again?",
-			isPresented: $confirmsForceMigration,
-			titleVisibility: .visible
-		) {
-			Button("Force Migration", role: .destructive, action: model.forcePrefixMigration)
-			Button("Cancel", role: .cancel) {}
-		} message: {
-			Text("Game files and saves stay untouched; only the next launch takes longer.")
 		}
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(document: document)

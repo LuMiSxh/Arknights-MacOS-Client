@@ -16,6 +16,7 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.automaticLauncherUpdates())
 		#expect(store.automaticGameUpdates())
 		#expect(store.announcementsEnabled())
+		#expect(store.showsGameVersion())
 	}
 
 	@Test
@@ -27,10 +28,12 @@ struct LauncherPreferencesStoreTests {
 		store.setAutomaticLauncherUpdates(false)
 		store.setAutomaticGameUpdates(false)
 		store.setAnnouncementsEnabled(false)
+		store.setShowsGameVersion(false)
 
 		#expect(!store.automaticLauncherUpdates())
 		#expect(!store.automaticGameUpdates())
 		#expect(!store.announcementsEnabled())
+		#expect(!store.showsGameVersion())
 	}
 
 	@Test

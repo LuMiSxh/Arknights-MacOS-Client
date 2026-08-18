@@ -63,6 +63,9 @@ final class LauncherViewModel {
 		}
 	}
 	var resetCountdownText: String?
+	var showsGameVersion: Bool {
+		didSet { preferences.setShowsGameVersion(showsGameVersion) }
+	}
 
 	let api: any LauncherAPIProviding
 	let installer: any GameInstalling
@@ -122,6 +125,7 @@ final class LauncherViewModel {
 		automaticallyChecksGameUpdates = preferences.automaticGameUpdates()
 		announcementsEnabled = preferences.announcementsEnabled()
 		showsServerResetCountdown = preferences.showsServerResetCountdown()
+		showsGameVersion = preferences.showsGameVersion()
 		loadCustomAppIcon()
 		if showsServerResetCountdown { startResetCountdownTimer() }
 

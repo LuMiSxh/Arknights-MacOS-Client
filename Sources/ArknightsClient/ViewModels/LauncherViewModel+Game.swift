@@ -155,6 +155,22 @@ extension LauncherViewModel {
 		}
 	}
 
+	/// Unlike `forcePrefixMigration`, this removes the whole prefix, including Wine's own
+	/// user directories — the embedded browser's saved Yostar, Google, Apple, and Facebook
+	/// login sessions are gone too. The migration state that method resets lives inside the
+	/// prefix, so this also makes the next launch fully replay Wine setup.
+	func deleteWinePrefix() {
+		guard !isDownloading, !isGameActive else { return }
+		guard FileManager.default.fileExists(atPath: paths.winePrefix.path) else { return }
+		do {
+			try FileManager.default.removeItem(at: paths.winePrefix)
+			activityMessage = "Wine prefix deleted; setup will run again on next launch"
+			Task { [log] in await log.info("Wine prefix deleted on request") }
+		} catch {
+			show(error)
+		}
+	}
+
 	func monitorGame(
 		launch: WineLaunch,
 		runtime: WineRuntime,

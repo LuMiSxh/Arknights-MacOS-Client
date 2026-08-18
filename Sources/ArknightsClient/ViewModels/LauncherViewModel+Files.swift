@@ -54,7 +54,10 @@ extension LauncherViewModel {
 		panel.canChooseFiles = true
 		panel.allowsMultipleSelection = false
 		guard panel.runModal() == .OK, let selected = panel.url else { return }
+		applyCustomArtwork(from: selected)
+	}
 
+	func applyCustomArtwork(from url: URL) {
 		do {
 			try FileManager.default.createDirectory(
 				at: paths.customArtwork.deletingLastPathComponent(),
@@ -63,7 +66,7 @@ extension LauncherViewModel {
 			if FileManager.default.fileExists(atPath: paths.customArtwork.path) {
 				try FileManager.default.removeItem(at: paths.customArtwork)
 			}
-			try FileManager.default.copyItem(at: selected, to: paths.customArtwork)
+			try FileManager.default.copyItem(at: url, to: paths.customArtwork)
 			heroArtwork = NSImage(contentsOf: paths.customArtwork)
 		} catch {
 			show(error)
@@ -94,10 +97,12 @@ extension LauncherViewModel {
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true
 		panel.allowsMultipleSelection = false
-		guard panel.runModal() == .OK, let selected = panel.url,
-			let image = NSImage(contentsOf: selected)
-		else { return }
+		guard panel.runModal() == .OK, let selected = panel.url else { return }
+		applyCustomAppIcon(from: selected)
+	}
 
+	func applyCustomAppIcon(from url: URL) {
+		guard let image = NSImage(contentsOf: url) else { return }
 		do {
 			try FileManager.default.createDirectory(
 				at: paths.customAppIcon.deletingLastPathComponent(),
@@ -106,7 +111,7 @@ extension LauncherViewModel {
 			if FileManager.default.fileExists(atPath: paths.customAppIcon.path) {
 				try FileManager.default.removeItem(at: paths.customAppIcon)
 			}
-			try FileManager.default.copyItem(at: selected, to: paths.customAppIcon)
+			try FileManager.default.copyItem(at: url, to: paths.customAppIcon)
 			NSWorkspace.shared.setIcon(image, forFile: Bundle.main.bundlePath, options: [])
 			NSApp.applicationIconImage = image
 		} catch {
@@ -125,6 +130,20 @@ extension LauncherViewModel {
 		guard let image = NSImage(contentsOf: paths.customAppIcon) else { return false }
 		NSApp.applicationIconImage = image
 		return true
+	}
+
+	/// Deliberately leaves the selected region and install location alone: those point at
+	/// real files on disk, not cosmetic preferences, and resetting them would make the
+	/// launcher act as if an existing installation had vanished.
+	func resetAllLauncherSettings() {
+		automaticallyChecksLauncherUpdates = true
+		automaticallyChecksGameUpdates = true
+		announcementsEnabled = true
+		launchOptions = .default
+		showsServerResetCountdown = false
+		showsGameVersion = true
+		activityMessage = "Settings reset to default"
+		Task { [log] in await log.info("Launcher settings reset to default") }
 	}
 
 	func revealApplication() {
