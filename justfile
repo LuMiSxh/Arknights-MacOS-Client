@@ -57,8 +57,8 @@ icon:
 
 # Prepare, replace, or remove a repository-hosted announcement (set/remove). Commit the change to main to publish or withdraw it.
 [group('Owner')]
-announcement mode id title='' body_file='' action_title='' action_url='':
-    if [[ {{ quote(mode) }} == "remove" ]]; then uv run scripts/manage_announcements.py remove {{ quote(id) }}; else uv run scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }}; fi
+announcement mode id title='' body_file='' action_title='' action_url='' min_version='' max_version='' starts_at='' ends_at='':
+    if [[ {{ quote(mode) }} == "remove" ]]; then uv run scripts/manage_announcements.py remove {{ quote(id) }}; else uv run scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }} --min-version {{ quote(min_version) }} --max-version {{ quote(max_version) }} --starts-at {{ quote(starts_at) }} --ends-at {{ quote(ends_at) }}; fi
 
 # Trigger a draft release for the required X.Y.Z version. Requires repository write access.
 [group('Owner')]

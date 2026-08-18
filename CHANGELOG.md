@@ -36,7 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Reworked the Developer settings picker to cover every simulated launcher state, including live custom popups.
 - Unified script CLI output with color, spinners, and progress bars.
 - Added recipe-download tracking to release statistics.
-- Simplified the announcement management commands.
+- Simplified the announcement management commands, and added optional version-range and display-window flags to `just announcement set`.
 
 ### Fixed
 

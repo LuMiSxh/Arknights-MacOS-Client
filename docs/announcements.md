@@ -27,6 +27,18 @@ just announcement set \
 	https://github.com/LuMiSxh/Arknights-MacOS-Client/issues
 ```
 
+`action_title`/`action_url` may be left empty (`""`), and four more optional positional arguments follow them for a version range and display window: `min_version`, `max_version`, `starts_at`, and `ends_at` (ISO-8601 UTC, ending in `Z`). For example, to show a message only to installed `0.3.0` users between two dates:
+
+```sh
+just announcement set \
+	thanks-0-3-0 \
+	"Thanks for using 0.3.0" \
+	/tmp/thanks.md \
+	"" "" \
+	0.3.0 0.3.0 \
+	2026-08-18T00:00:00Z 2026-08-20T08:00:00Z
+```
+
 Review the resulting `announcements.json`, commit it to `main`, and push. Removing an entry prevents installations that have not fetched it yet from seeing it:
 
 ```sh

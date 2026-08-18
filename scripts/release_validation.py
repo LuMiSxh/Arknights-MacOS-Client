@@ -11,13 +11,10 @@ from __future__ import annotations
 
 import argparse
 import plistlib
-import re
 from pathlib import Path
 
 from extract_changelog import extract
-from lib.common import PROJECT_DIR, fail, run_main, success
-
-VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+from lib.common import PROJECT_DIR, VERSION_PATTERN, fail, run_main, success
 
 
 def validate_release(

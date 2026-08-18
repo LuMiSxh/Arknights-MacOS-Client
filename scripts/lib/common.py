@@ -9,6 +9,7 @@ import for both process and output helpers.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -22,6 +23,7 @@ __all__ = [
     "BUILD_DIR",
     "DIST_DIR",
     "PROJECT_DIR",
+    "VERSION_PATTERN",
     "ScriptError",
     "fail",
     "info",
@@ -40,6 +42,8 @@ __all__ = [
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = PROJECT_DIR / ".build"
 DIST_DIR = PROJECT_DIR / "dist"
+
+VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 
 _T = TypeVar("_T")
 
