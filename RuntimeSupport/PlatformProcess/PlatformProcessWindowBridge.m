@@ -18,8 +18,7 @@
  * Dock visibility, Spaces behavior, transparency, fullscreen overlay, and the rounded crop.
  */
 
-static const volatile char launcher_marker[] =
-	"Arknights Client PlatformProcess window bridge";
+static const volatile char launcher_marker[] = "Arknights Client PlatformProcess window bridge";
 static dispatch_source_t presentation_timer;
 static char notice_mask_key;
 static CGWindowID logged_game_window;
@@ -34,9 +33,7 @@ struct game_window {
  * launcher (which is also named "Arknights Client" and would otherwise self-match). */
 static struct game_window game_window_info(void) {
 	CFArrayRef windows = CGWindowListCopyWindowInfo(
-		kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
-		kCGNullWindowID
-	);
+		kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
 	struct game_window result = { kCGNullWindowID, 0 };
 	CGFloat largest_area = 0.0;
 
@@ -54,16 +51,16 @@ static struct game_window game_window_info(void) {
 		if (layer.integerValue < 0) continue;
 
 		// SwiftUI Launcher ("Arknights Client")
-		if ([owner_name isEqualToString:@"Arknights Client"] || [name isEqualToString:@"Arknights Client"]) {
+		if ([owner_name isEqualToString:@"Arknights Client"] ||
+			[name isEqualToString:@"Arknights Client"]) {
 			continue;
 		}
 		if (![owner_name hasPrefix:@"Arknights"] && ![name hasPrefix:@"Arknights"]) {
 			continue;
 		}
 		if (!CGRectMakeWithDictionaryRepresentation(
-			(__bridge CFDictionaryRef)bounds_description,
-			&bounds
-		)) continue;
+				(__bridge CFDictionaryRef)bounds_description, &bounds))
+			continue;
 		area = bounds.size.width * bounds.size.height;
 		if (area <= largest_area) continue;
 		largest_area = area;
@@ -91,12 +88,7 @@ static void apply_notice_mask(NSView *view) {
 	if (mask != nil && CGRectEqualToRect(mask.frame, bounds)) return;
 	if (mask == nil) {
 		mask = [CAShapeLayer layer];
-		objc_setAssociatedObject(
-			view,
-			&notice_mask_key,
-			mask,
-			OBJC_ASSOCIATION_RETAIN_NONATOMIC
-		);
+		objc_setAssociatedObject(view, &notice_mask_key, mask, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 	}
 	visible_bounds = bounds;
 	visible_bounds.size.width = MAX(0.0, visible_bounds.size.width - 1.0);
@@ -124,9 +116,8 @@ static void configure_window(NSWindow *window) {
 
 	behavior &= ~NSWindowCollectionBehaviorFullScreenPrimary;
 	behavior |= NSWindowCollectionBehaviorCanJoinAllSpaces |
-		NSWindowCollectionBehaviorFullScreenAuxiliary |
-		NSWindowCollectionBehaviorStationary |
-		NSWindowCollectionBehaviorIgnoresCycle;
+				NSWindowCollectionBehaviorFullScreenAuxiliary |
+				NSWindowCollectionBehaviorStationary | NSWindowCollectionBehaviorIgnoresCycle;
 	if (window.collectionBehavior != behavior) window.collectionBehavior = behavior;
 
 	window.hidesOnDeactivate = NO;
@@ -179,9 +170,8 @@ static NSWindow *notice_window(void) {
 		if (!window.visible || window.frame.size.width < 400 || window.frame.size.height < 300) {
 			continue;
 		}
-		if (candidate == nil ||
-			window.frame.size.width * window.frame.size.height >
-				candidate.frame.size.width * candidate.frame.size.height) {
+		if (candidate == nil || window.frame.size.width * window.frame.size.height >
+									candidate.frame.size.width * candidate.frame.size.height) {
 			candidate = window;
 		}
 	}
@@ -206,8 +196,7 @@ static void maintain_presentation(void) {
 			"platform-window-bridge: accessory policy pid=%d class=%s canKey=%d\n",
 			getpid(),
 			class_getName(window.class),
-			window.canBecomeKeyWindow
-		);
+			window.canBecomeKeyWindow);
 	}
 	game = game_window_info();
 
@@ -224,8 +213,7 @@ static void maintain_presentation(void) {
 			"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
 			(long)window.windowNumber,
 			game.number,
-			game.process_id
-		);
+			game.process_id);
 		logged_game_window = game.number;
 	}
 }
@@ -240,25 +228,19 @@ __attribute__((constructor)) static void install_platform_process_bridge(void) {
 		stderr,
 		"platform-window-bridge: loaded pid=%d process=%s\n",
 		getpid(),
-		NSProcessInfo.processInfo.processName.UTF8String
-	);
+		NSProcessInfo.processInfo.processName.UTF8String);
 
 	dispatch_async(dispatch_get_main_queue(), ^{
-		presentation_timer = dispatch_source_create(
-			DISPATCH_SOURCE_TYPE_TIMER,
-			0,
-			0,
-			dispatch_get_main_queue()
-		);
-		dispatch_source_set_timer(
-			presentation_timer,
-			dispatch_time(DISPATCH_TIME_NOW, 0),
-			NSEC_PER_MSEC * 16,
-			NSEC_PER_MSEC * 2
-		);
-		dispatch_source_set_event_handler(presentation_timer, ^{
-			maintain_presentation();
-		});
-		dispatch_resume(presentation_timer);
+	  presentation_timer =
+		  dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+	  dispatch_source_set_timer(
+		  presentation_timer,
+		  dispatch_time(DISPATCH_TIME_NOW, 0),
+		  NSEC_PER_MSEC * 16,
+		  NSEC_PER_MSEC * 2);
+	  dispatch_source_set_event_handler(presentation_timer, ^{
+		maintain_presentation();
+	  });
+	  dispatch_resume(presentation_timer);
 	});
 }

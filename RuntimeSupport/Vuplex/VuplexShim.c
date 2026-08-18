@@ -97,11 +97,8 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
  * at native density too instead of blurring to match the game's logical resolution. */
 static BOOL high_resolution_enabled(void) {
 	wchar_t value[8];
-	DWORD length = GetEnvironmentVariableW(
-		L"ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR",
-		value,
-		ARRAYSIZE(value)
-	);
+	DWORD length =
+		GetEnvironmentVariableW(L"ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR", value, ARRAYSIZE(value));
 
 	return length == 1 && value[0] == L'2';
 }
@@ -190,7 +187,8 @@ static BOOL enable_userenv_override(void) {
  * already present, enables the userenv.dll override, and launches the real helper hidden
  * and detached. Blocks until it exits and returns its exit code, so the game sees this
  * shim as behaviorally identical to the official helper it replaced. */
-int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_command) {
+int WINAPI
+WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_command) {
 	wchar_t *shim_path = NULL;
 	wchar_t *original_path = NULL;
 	wchar_t *child_command_line = NULL;
@@ -203,11 +201,9 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	int high_resolution_index;
 	BOOL use_high_resolution;
 	SIZE_T command_length = 1;
-	STARTUPINFOW startup_info = {
-		.cb = sizeof(startup_info),
-		.dwFlags = STARTF_USESHOWWINDOW,
-		.wShowWindow = SW_HIDE
-	};
+	STARTUPINFOW startup_info = { .cb = sizeof(startup_info),
+								  .dwFlags = STARTF_USESHOWWINDOW,
+								  .wShowWindow = SW_HIDE };
 	PROCESS_INFORMATION process_info = { 0 };
 	DWORD creation_flags = CREATE_NO_WINDOW | DETACHED_PROCESS;
 	DWORD exit_code;
@@ -252,15 +248,21 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	}
 	use_high_resolution = high_resolution_enabled();
 	command_length += 2 * wcslen(original_path) + 3;
-	for (index = 1; index < argument_count; index++) command_length += 2 * wcslen(arguments[index]) + 3;
-	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments); compatibility_index++) {
-		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
+	for (index = 1; index < argument_count; index++)
+		command_length += 2 * wcslen(arguments[index]) + 3;
+	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments);
+		 compatibility_index++) {
+		if (!has_argument(
+				argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			command_length += 2 * wcslen(compatibility_arguments[compatibility_index]) + 3;
 		}
 	}
 	if (use_high_resolution) {
-		for (high_resolution_index = 0; high_resolution_index < ARRAYSIZE(high_resolution_arguments); high_resolution_index++) {
-			if (!has_argument(argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+		for (high_resolution_index = 0;
+			 high_resolution_index < ARRAYSIZE(high_resolution_arguments);
+			 high_resolution_index++) {
+			if (!has_argument(
+					argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
 				command_length += 2 * wcslen(high_resolution_arguments[high_resolution_index]) + 3;
 			}
 		}
@@ -276,15 +278,20 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		*cursor++ = L' ';
 		cursor = append_quoted(cursor, arguments[index]);
 	}
-	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments); compatibility_index++) {
-		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
+	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments);
+		 compatibility_index++) {
+		if (!has_argument(
+				argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			*cursor++ = L' ';
 			cursor = append_quoted(cursor, compatibility_arguments[compatibility_index]);
 		}
 	}
 	if (use_high_resolution) {
-		for (high_resolution_index = 0; high_resolution_index < ARRAYSIZE(high_resolution_arguments); high_resolution_index++) {
-			if (!has_argument(argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+		for (high_resolution_index = 0;
+			 high_resolution_index < ARRAYSIZE(high_resolution_arguments);
+			 high_resolution_index++) {
+			if (!has_argument(
+					argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
 				*cursor++ = L' ';
 				cursor = append_quoted(cursor, high_resolution_arguments[high_resolution_index]);
 			}
@@ -298,7 +305,17 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		GlobalFree(original_path);
 		return (int)error;
 	}
-	if (!CreateProcessW(original_path, child_command_line, NULL, NULL, FALSE, creation_flags, NULL, NULL, &startup_info, &process_info)) {
+	if (!CreateProcessW(
+			original_path,
+			child_command_line,
+			NULL,
+			NULL,
+			FALSE,
+			creation_flags,
+			NULL,
+			NULL,
+			&startup_info,
+			&process_info)) {
 		error = GetLastError();
 		GlobalFree(child_command_line);
 		GlobalFree(original_path);

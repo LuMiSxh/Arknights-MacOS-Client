@@ -22,8 +22,7 @@
  * reads or modifies page content.
  */
 
-static const volatile char launcher_marker[] =
-	"Arknights Client PlatformProcess compatibility";
+static const volatile char launcher_marker[] = "Arknights Client PlatformProcess compatibility";
 static const wchar_t original_name[] = L"PlatformProcess.original.helper.exe";
 static const wchar_t bridge_name[] = L"PlatformProcessWindowBridge.dylib";
 
@@ -135,7 +134,8 @@ static BOOL CALLBACK find_process_window(HWND window, LPARAM context_value) {
 	GetWindowThreadProcessId(window, &process_id);
 	if (process_id != search->process_id || !IsWindowVisible(window)) return TRUE;
 	if (!GetWindowRect(window, &rectangle)) return TRUE;
-	if (rectangle.right - rectangle.left < 400 || rectangle.bottom - rectangle.top < 300) return TRUE;
+	if (rectangle.right - rectangle.left < 400 || rectangle.bottom - rectangle.top < 300)
+		return TRUE;
 	search->result = window;
 	return FALSE;
 }
@@ -155,8 +155,7 @@ static BOOL CALLBACK find_game_window(HWND window, LPARAM context_value) {
 	if (GetWindowTextW(window, title, ARRAYSIZE(title)) == 0) return TRUE;
 	if (wcsncmp(title, L"Arknights", 9) != 0) return TRUE;
 	if (!GetWindowRect(window, &rectangle)) return TRUE;
-	area = (LONG64)(rectangle.right - rectangle.left) *
-		(LONG64)(rectangle.bottom - rectangle.top);
+	area = (LONG64)(rectangle.right - rectangle.left) * (LONG64)(rectangle.bottom - rectangle.top);
 	if (area <= search->largest_area) return TRUE;
 	search->largest_area = area;
 	search->result = window;
@@ -204,8 +203,7 @@ static HWND repair_notice_window(DWORD process_id) {
 			0,
 			0,
 			0,
-			SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED
-		);
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED);
 	}
 	return search.result;
 }
@@ -241,14 +239,7 @@ static BOOL follow_game_window(HWND notice, HWND game, POINT offset) {
 	target_y = game_rectangle.top + offset.y;
 	if (notice_rectangle.left == target_x && notice_rectangle.top == target_y) return TRUE;
 	return SetWindowPos(
-		notice,
-		NULL,
-		target_x,
-		target_y,
-		0,
-		0,
-		SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER
-	);
+		notice, NULL, target_x, target_y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 /* Resolves the bridge dylib's Wine path to its real Unix path via
@@ -327,7 +318,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 	}
 	*cursor = L'\0';
 
-	if (!CreateProcessW(original, child_command, NULL, NULL, FALSE, 0, NULL, NULL, &startup, &process)) {
+	if (!CreateProcessW(
+			original, child_command, NULL, NULL, FALSE, 0, NULL, NULL, &startup, &process)) {
 		exit_code = GetLastError();
 		goto cleanup;
 	}
@@ -355,8 +347,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 				notice,
 				(unsigned long)GetWindowLongPtrW(notice, GWL_STYLE),
 				(unsigned long)GetWindowLongPtrW(notice, GWL_EXSTYLE),
-				game
-			);
+				game);
 			reported_windows = TRUE;
 		}
 		if (!has_notice_offset) {

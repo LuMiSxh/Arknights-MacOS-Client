@@ -32,10 +32,8 @@ __declspec(dllexport)
  * mirrors Windows' actual algorithm (SHA-256 of the lowercased name, folded into an
  * APP_PACKAGE-authority SID) closely enough to produce a valid, usable SID rather than a
  * placeholder that would fail a later access check. */
-HRESULT WINAPI DeriveAppContainerSidFromAppContainerName(
-	PCWSTR app_container_name,
-	PSID *app_container_sid
-) {
+HRESULT WINAPI
+DeriveAppContainerSidFromAppContainerName(PCWSTR app_container_name, PSID *app_container_sid) {
 	SID_IDENTIFIER_AUTHORITY authority = SECURITY_APP_PACKAGE_AUTHORITY;
 	HCRYPTPROV provider = 0;
 	HCRYPTHASH hash = 0;
@@ -56,32 +54,21 @@ HRESULT WINAPI DeriveAppContainerSidFromAppContainerName(
 	if (name_length > (MAXDWORD / sizeof(*normalized_name)) - 1) {
 		return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
 	}
-	normalized_name = HeapAlloc(
-		GetProcessHeap(),
-		0,
-		(name_length + 1) * sizeof(*normalized_name)
-	);
+	normalized_name = HeapAlloc(GetProcessHeap(), 0, (name_length + 1) * sizeof(*normalized_name));
 	if (normalized_name == NULL) return E_OUTOFMEMORY;
 	for (index = 0; index < name_length; index++) {
 		normalized_name[index] = towlower(app_container_name[index]);
 	}
 	normalized_name[name_length] = L'\0';
 
-	if (!CryptAcquireContextW(
-			&provider,
-			NULL,
-			NULL,
-			PROV_RSA_AES,
-			CRYPT_VERIFYCONTEXT
-		)
-		|| !CryptCreateHash(provider, CALG_SHA_256, 0, 0, &hash)
-		|| !CryptHashData(
+	if (!CryptAcquireContextW(&provider, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) ||
+		!CryptCreateHash(provider, CALG_SHA_256, 0, 0, &hash) ||
+		!CryptHashData(
 			hash,
 			(const BYTE *)normalized_name,
 			(DWORD)(name_length * sizeof(*normalized_name)),
-			0
-		)
-		|| !CryptGetHashParam(hash, HP_HASHVAL, (BYTE *)digest, &digest_size, 0)) {
+			0) ||
+		!CryptGetHashParam(hash, HP_HASHVAL, (BYTE *)digest, &digest_size, 0)) {
 		result = result_from_last_error();
 		goto cleanup;
 	}
@@ -100,8 +87,7 @@ HRESULT WINAPI DeriveAppContainerSidFromAppContainerName(
 			digest[4],
 			digest[5],
 			digest[6],
-			app_container_sid
-		)) {
+			app_container_sid)) {
 		result = result_from_last_error();
 		goto cleanup;
 	}
@@ -117,14 +103,14 @@ cleanup:
 __declspec(dllexport)
 /* Ignores display name, description, and capabilities: nothing in this compatibility layer
  * persists a profile, so only the SID derivation Chromium actually checks matters. */
-HRESULT WINAPI CreateAppContainerProfile(
+HRESULT WINAPI
+CreateAppContainerProfile(
 	PCWSTR app_container_name,
 	PCWSTR display_name,
 	PCWSTR description,
 	PSID_AND_ATTRIBUTES capabilities,
 	DWORD capability_count,
-	PSID *app_container_sid
-) {
+	PSID *app_container_sid) {
 	(void)display_name;
 	(void)description;
 	(void)capabilities;
@@ -134,9 +120,8 @@ HRESULT WINAPI CreateAppContainerProfile(
 
 __declspec(dllexport)
 /* No-op: CreateAppContainerProfile never persisted anything to delete. */
-HRESULT WINAPI DeleteAppContainerProfile(
-	PCWSTR app_container_name
-) {
+HRESULT WINAPI
+DeleteAppContainerProfile(PCWSTR app_container_name) {
 	(void)app_container_name;
 	return S_OK;
 }
@@ -144,10 +129,8 @@ HRESULT WINAPI DeleteAppContainerProfile(
 __declspec(dllexport)
 /* Not implemented: nothing in this compatibility layer backs an AppContainer with a
  * registry-stored profile, and Chromium's sandbox doesn't require this to succeed. */
-HRESULT WINAPI GetAppContainerRegistryLocation(
-	REGSAM desired_access,
-	PHKEY app_container_key
-) {
+HRESULT WINAPI
+GetAppContainerRegistryLocation(REGSAM desired_access, PHKEY app_container_key) {
 	(void)desired_access;
 	if (app_container_key == NULL) return E_POINTER;
 	*app_container_key = NULL;
@@ -157,10 +140,8 @@ HRESULT WINAPI GetAppContainerRegistryLocation(
 __declspec(dllexport)
 /* Not implemented, for the same reason as GetAppContainerRegistryLocation: no real
  * per-container storage exists in this compatibility layer. */
-HRESULT WINAPI GetAppContainerFolderPath(
-	PCWSTR app_container_sid,
-	PWSTR *folder_path
-) {
+HRESULT WINAPI
+GetAppContainerFolderPath(PCWSTR app_container_sid, PWSTR *folder_path) {
 	(void)app_container_sid;
 	if (folder_path == NULL) return E_POINTER;
 	*folder_path = NULL;
