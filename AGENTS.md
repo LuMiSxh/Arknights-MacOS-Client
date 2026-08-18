@@ -57,3 +57,9 @@
 - Never replace a published tag or release asset; issue a higher version for fixes.
 - Keep the prefix revision, tested runtime versions, provenance, URLs, and SHA-256 values in `runtime.json`. Increase `prefixRevision` when existing prefixes must reapply runtime configuration. Release automation must not replace these values with hidden repository configuration.
 - Do not claim Developer ID signing, notarization, or silent self-updates without an Apple Developer account.
+
+## Commit Rules
+
+- Dont mention your model or company
+- Follow the commit scheme by looking into the past commits
+- Only push when the user gives consent
