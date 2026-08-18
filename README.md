@@ -94,6 +94,7 @@ Repository automation lives in `scripts/` as Python scripts. uv reads their inli
 - [Architecture](docs/architecture.md)
 - [Design](docs/design.md)
 - [Storage](docs/storage.md)
+- [Runtime compatibility](docs/runtime-compatibility.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Releases and updates](docs/releases-and-updates.md)
 - [Announcements](docs/announcements.md)

@@ -18,15 +18,16 @@ Merge the release branch first, update the local `main` branch, and run `just re
 
 Repository owners can inspect published DMG download counts with `just stats`. GitHub reports asset downloads rather than unique users or installations, so the derived totals and latest-version share are directional metrics only.
 
-It then:
-
-1. formats and tests the source on an Apple Silicon macOS 26 runner;
-2. downloads the pinned runtime through the same script used locally and verifies its SHA-256;
-3. downloads and verifies the pinned runtime build recipe;
-4. builds an arm64 app and DMG;
-5. writes `SHA256SUMS`;
-6. extracts the matching `CHANGELOG.md` section as the release body; and
-7. creates a draft `vX.Y.Z` GitHub Release for review.
+```mermaid
+flowchart LR
+	Check["Validate branch, version,<br/>CHANGELOG, and Info.plist"] --> Test[just check]
+	Test --> Runtime["Download and verify<br/>the pinned runtime"]
+	Runtime --> Recipe["Download and verify<br/>the build recipe"]
+	Recipe --> Build[Build arm64 app and DMG]
+	Build --> Sums[Write SHA256SUMS]
+	Sums --> Notes["Extract the CHANGELOG<br/>section as release notes"]
+	Notes --> Draft["Create a draft<br/>vX.Y.Z release"]
+```
 
 [`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/runtime_config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
 
@@ -42,7 +43,7 @@ just dev
 
 `just runtime` downloads over HTTPS, verifies the SHA-256, safely extracts the archive, validates Wine and both DXMT architectures, and replaces `.build/runtime`. Repeated runs reuse the verified archive cache.
 
-The Wine and DXMT binaries are prebuilt. Packaging compiles only the native Swift launcher and the small x86-64 compatibility components in `RuntimeSupport`, then changes Wine's staged menu shortcut from Option-Command-Q to the standard Command-Q. `just dev` produces the complete app and `just dev-dmg` produces the installable disk image. Release users receive those finished artifacts and need no compiler or development tools.
+The Wine and DXMT binaries are prebuilt. Packaging compiles only the native Swift launcher and the small x86-64 compatibility components in `RuntimeSupport`, then changes Wine's staged menu shortcut from Option-Command-Q to the standard Command-Q. `just dev` produces the complete app and `just dev dmg` produces the installable disk image. Release users receive those finished artifacts and need no compiler or development tools.
 
 Release automation always uses `runtime.json`. The attached `Runtime-Build-Recipe.tar.gz` records the runtime build process; it is not a complete corresponding-source bundle for every bundled runtime component.
 

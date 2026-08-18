@@ -37,17 +37,20 @@
 - Keep the interface native to macOS while following `docs/design.md`; branding may be angular, but primary actions use native controls.
 - Add focused tests for changed installer, updater, storage, parsing, or concurrency behavior.
 - Record user-visible changes in the next release section in `CHANGELOG.md`.
+- Verify changes with `just ci` and `just dev run` before considering work done.
 - Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python source files.
 - Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` with `just icon`; do not edit them directly.
 - Unless explicitly requested, do not install, launch, download, uninstall, or alter a user's local game while verifying changes.
+- Write scripts as `uv run --script` entry points with inline PEP 723 metadata; share process/output helpers via `scripts/lib/common.py` and `scripts/lib/console.py` instead of duplicating them.
+- Add or update `scripts/tests/test_*.py` (`unittest`, run via `just check scripts`) for changed script behavior.
 
 ## Code Style & Commenting Philosophy
 
-- **Self-Documenting Code First:** Write expressive, clear Swift and C code with meaningful type, function, and variable names. Code should naturally explain _what_ it is doing without requiring descriptive line-by-line commentary.
-- **Comment the "WHY", Not the "WHAT":** Comments must strictly explain the underlying rationale, non-obvious workarounds (such as Wine/Windows/macOS quirks, IPC synchronization constraints, or API bugs), and security/memory invariants. Do not write redundant comments that merely restate what the code syntax already expresses.
-- **DocC Documentation Standards:** Provide concise `///` DocC comments on public APIs, protocol definitions, and complex domain models explaining expected preconditions, side effects, and thrown errors.
-- **Eliminate Magic Numbers and Strings (Single Source of Truth):** Never scatter raw numeric constants, timeouts, buffer sizes, retry counts, or fixed keys throughout implementation logic. Centralize all configuration constants into strongly typed namespaces within `AppConstants.swift`.
-- **Defensive Error Handling:** Avoid swallowing errors with silent `try?` in critical filesystem, process, or network operations. Use explicit `do-catch` blocks and log unexpected failures with contextual diagnostic details.
+- Write expressive Swift and C so code explains _what_ it does without line-by-line commentary.
+- Comment only the "WHY": non-obvious workarounds (Wine/Windows/macOS quirks, IPC constraints, API bugs) and security/memory invariants. No comments that restate the code.
+- Give public APIs, protocols, and complex domain models concise `///` DocC comments covering preconditions, side effects, and thrown errors.
+- Centralize magic numbers and strings (timeouts, buffer sizes, retry counts, fixed keys) into `AppConstants.swift`; never scatter them through implementation logic.
+- Avoid silent `try?` in filesystem, process, or network operations; use `do-catch` and log unexpected failures with context.
 
 ## External References
 
@@ -57,6 +60,8 @@
 | Architecture and source boundaries    | `docs/architecture.md`              |
 | Interface direction                   | `docs/design.md`                    |
 | Persistent files and removal behavior | `docs/storage.md`                   |
+| Wine/DXMT runtime contract            | `docs/runtime-compatibility.md`     |
+| Announcement feed format              | `docs/announcements.md`             |
 | Troubleshooting and log locations     | `docs/troubleshooting.md`           |
 | Versioning and release workflow       | `docs/releases-and-updates.md`      |
 | Third-party obligations               | `docs/legal/third-party-notices.md` |

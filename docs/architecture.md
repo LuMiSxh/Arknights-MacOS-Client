@@ -97,6 +97,20 @@ The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` give the main macOS pro
 
 Prefix changes run through an ordered migration plan: Wine initialization, DXMT installation, and registry overrides. The prefix stores completed migration IDs with the runtime archive checksum and `prefixRevision` in `.arknights-runtime-migrations.json`. Each successful step is recorded atomically, so an interrupted launch resumes at the first incomplete step. A checksum or prefix-revision change replays the complete plan; adding a migration ID runs only that new step for an otherwise current prefix. Version 0.1 markers are imported once and removed.
 
+```mermaid
+flowchart TD
+	Launch[Launch starts] --> Read["Read .arknights-runtime-migrations.json"]
+	Read --> Changed{"Checksum or<br/>prefixRevision changed?"}
+	Changed -->|yes| ReplayAll[Replay every migration step]
+	Changed -->|no| NewSteps{"New migration IDs<br/>since last launch?"}
+	NewSteps -->|yes| ReplayNew[Run only the new steps]
+	NewSteps -->|no| Skip[Skip migrations, verify state only]
+	ReplayAll --> Record[Record each completed step atomically]
+	ReplayNew --> Record
+	Record --> Ready[Prefix ready]
+	Skip --> Ready
+```
+
 Normal launches inspect migration, registry, drive, and private-home state without rewriting unchanged files. Runtime diagnostics record cumulative timings for filesystem setup, compatibility reconciliation, prefix preparation, display configuration, and process creation before the launcher records time to the first visible game window.
 
 Game-directory shims implement `GameCompatibilityComponent` and are registered with `GameCompatibilityManager`. Active components are reconciled before every launch; all active and retired components are restored before install, update, or repair. Removing a shim means moving its component from the active list to the retired list for a supported upgrade cycle, allowing launcher-owned files to be cleaned up even when replacement assets are no longer bundled.
@@ -105,27 +119,42 @@ Vuplex and PlatformProcess use this reconciliation path rather than one-time mig
 
 ## Launcher communication
 
-Launcher releases and optional project announcements use GitHub as a read-only endpoint; no separate application server is required. Release discovery reads the latest stable GitHub Release. The release body becomes the Markdown changelog popup and its release page remains available from Settings and the status capsule.
+Three read-only sources feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Any of the three can enqueue a popup.
 
-Announcements are read from `announcements.json` on `main`. The launcher validates the feed, version and date bounds, body length, and optional HTTPS action before displaying one eligible entry. Seen identifiers are stored locally, so editing an existing entry does not repeatedly interrupt users. Official Yostar HTML notices use the same popup queue after conversion to native attributed text.
+- **GitHub Releases** (`https://api.github.com/repos/.../releases/latest`), checked by `checkLauncherUpdates()` when automatic launcher-update checks are on. GitHub's `latest` endpoint already excludes drafts and pre-releases; the launcher re-checks both client-side anyway and compares the tag against the running version with an embedded SemVer parser tolerant of a leading `v` and of Yostar-style version strings. A newer, non-draft, non-prerelease version becomes a Markdown popup built from the release body, and its release page stays reachable afterward from Settings and the status capsule.
+- **GitHub Contents API** (`https://api.github.com/repos/.../contents/announcements.json?ref=main`), checked by `checkAnnouncements()` when announcements are enabled. The request sends `Accept: application/vnd.github.raw+json` so GitHub returns the raw file instead of a base64-wrapped JSON blob. The feed is capped at 20 entries and 128 KB and must declare schema version 1; the first entry that is enabled, not already seen, within its optional date window and version bounds, under the field-length limits, and using only an HTTPS action becomes the shown announcement.
+- **Yostar's own branding response** — not a dedicated notice endpoint. It rides along on the same `api.branding(region:)` call the launcher already makes for hero artwork, as part of `refresh()`'s concurrent branding fetch. If that response's `noticePopOpen` is true and its `noticeContent` differs from the last notice shown, the HTML is converted to native attributed text and queued. This channel has no persistent "seen" state: the in-memory guard resets on every region switch and on every fresh launch, so an active Yostar notice reappears each session, unlike the two GitHub-sourced popups.
+
+All three funnel into the same queue (`enqueuePopup`): if nothing is showing, the new popup is shown immediately and recorded as seen right away; otherwise it is appended to `pendingPopups` and only recorded as seen once `dismissPopup` actually promotes it into view. Entries are deduplicated by id — a duplicate of the currently-shown or an already-queued id is dropped silently. "Seen" persistence differs per source: announcements keep a set of seen ids, launcher updates keep the last version presented, and Yostar notices keep nothing beyond the current session (their id also embeds a fresh UUID each time, so the queue's own id-based dedup never catches a repeat there — only the upstream content comparison does). Dismissing a popup by its action button removes it from the queue before opening the URL, not after.
 
 ```mermaid
 sequenceDiagram
 	participant App as SwiftUI launcher
-	participant GitHub as GitHub API
-	participant Prefs as Local preferences
-	participant UI as Popup queue
+	participant Releases as GitHub Releases API
+	participant Contents as GitHub Contents API
+	participant Yostar as Yostar branding API
+	participant Queue as Popup queue
 
-	App->>GitHub: Latest stable release
-	GitHub-->>App: Version, URL, Markdown body
-	App->>Prefs: Was this version presented?
-	alt New launcher version
-		App->>UI: Queue release-note popup
+	par Launcher update check
+		App->>Releases: GET releases/latest
+		Releases-->>App: Version, URL, Markdown body
+		alt Newer, non-draft, non-prerelease version
+			App->>Queue: enqueue launcher-update popup
+		end
+	and Announcement check
+		App->>Contents: GET contents/announcements.json (raw)
+		Contents-->>App: Validated feed
+		alt First enabled, unseen, eligible entry
+			App->>Queue: enqueue announcement popup
+		end
+	and Branding fetch (shared with artwork)
+		App->>Yostar: GET branding/config
+		Yostar-->>App: noticePopOpen, noticeContent
+		alt New notice content this session
+			App->>Queue: enqueue notice popup
+		end
 	end
-	App->>GitHub: announcements.json from main
-	GitHub-->>App: Validated announcement feed
-	App->>Prefs: Filter identifiers already seen
-	App->>UI: Queue first eligible announcement
+	Queue->>Queue: Show now, or append to pendingPopups and dedup by id
 ```
 
 ## Boundaries
