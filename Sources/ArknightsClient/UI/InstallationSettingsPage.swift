@@ -108,12 +108,12 @@ struct InstallationSettingsPage: View {
 						.toggleStyle(.switch)
 						.tint(SettingsVisuals.danger)
 						.alert("Game Mode Needs Xcode", isPresented: $showsGameModeUnavailableAlert)
-						{}
-						message: {
-							Text(
-								"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
-							)
-						}
+					{
+					} message: {
+						Text(
+							"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
+						)
+					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -131,7 +131,8 @@ struct InstallationSettingsPage: View {
 						titleVisibility: .visible
 					) {
 						Button(
-							"Reset Settings", role: .destructive, action: model.resetAllLauncherSettings
+							"Reset Settings", role: .destructive,
+							action: model.resetAllLauncherSettings
 						)
 						Button("Cancel", role: .cancel) {}
 					} message: {
@@ -155,7 +156,8 @@ struct InstallationSettingsPage: View {
 						titleVisibility: .visible
 					) {
 						Button(
-							"Force Migration", role: .destructive, action: model.forcePrefixMigration
+							"Force Migration", role: .destructive,
+							action: model.forcePrefixMigration
 						)
 						Button("Cancel", role: .cancel) {}
 					} message: {
@@ -205,7 +207,8 @@ struct InstallationSettingsPage: View {
 						isPresented: $confirmsGameUninstall,
 						titleVisibility: .visible
 					) {
-						Button("Move Game to Trash", role: .destructive, action: model.uninstallGame)
+						Button(
+							"Move Game to Trash", role: .destructive, action: model.uninstallGame)
 						Button("Cancel", role: .cancel) {}
 					} message: {
 						Text("The launcher stays installed.")

@@ -12,7 +12,8 @@ enum GameCacheCleaner {
 		var directories = [
 			winePrefix.appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
 		]
-		let usersDirectory = winePrefix.appending(path: "drive_c/users", directoryHint: .isDirectory)
+		let usersDirectory = winePrefix.appending(
+			path: "drive_c/users", directoryHint: .isDirectory)
 		if let entries = try? fileManager.contentsOfDirectory(
 			at: usersDirectory,
 			includingPropertiesForKeys: nil
