@@ -6,6 +6,16 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
 	var stopGame: (() -> Void)?
 
+	// `swift run` (used by `just preview`) launches the executable directly rather than
+	// through LaunchServices: without a bundle, the process's activation policy isn't
+	// guaranteed to be `.regular`, so it can render a frontmost window while keyboard
+	// focus stays with whatever app was active before (the terminal, an IDE). Mouse
+	// clicks still reach controls since those don't require being the active app.
+	func applicationDidFinishLaunching(_ notification: Notification) {
+		NSApp.setActivationPolicy(.regular)
+		NSApp.activate(ignoringOtherApps: true)
+	}
+
 	func applicationWillTerminate(_ notification: Notification) {
 		stopGame?()
 	}
@@ -49,6 +59,7 @@ struct ArknightsClientApp: App {
 				.frame(minWidth: 880, minHeight: 560)
 				.onAppear {
 					appDelegate.stopGame = model.stopGameForApplicationTermination
+					NSApp.activate(ignoringOtherApps: true)
 				}
 		}
 		.windowStyle(.hiddenTitleBar)

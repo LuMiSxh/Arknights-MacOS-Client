@@ -52,7 +52,7 @@ struct LauncherPopupView: View {
 			Text(popup.title)
 				.font(.title2.bold())
 				.padding(.bottom, 16)
-			Divider()
+			SettingsHairline()
 			ScrollView {
 				Group {
 					switch popup.content {
@@ -66,16 +66,19 @@ struct LauncherPopupView: View {
 				.textSelection(.enabled)
 				.padding(.vertical, 18)
 			}
-			Divider()
+			SettingsHairline()
 			HStack {
 				Spacer()
 				if let actionTitle = popup.actionTitle {
 					Button(popup.dismissTitle, action: dismiss)
 					Button(actionTitle, action: openAction)
 						.buttonStyle(.glassProminent)
+						.tint(SettingsVisuals.cyan)
 						.keyboardShortcut(.defaultAction)
 				} else {
 					Button(popup.dismissTitle, action: dismiss)
+						.buttonStyle(.glassProminent)
+						.tint(SettingsVisuals.cyan)
 						.keyboardShortcut(.defaultAction)
 				}
 			}
@@ -83,5 +86,6 @@ struct LauncherPopupView: View {
 		}
 		.padding(24)
 		.frame(width: 560, height: 380)
+		.background(.thinMaterial)
 	}
 }
