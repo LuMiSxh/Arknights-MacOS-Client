@@ -56,6 +56,13 @@ final class LauncherViewModel {
 			if announcementsEnabled { checkAnnouncements() }
 		}
 	}
+	var showsServerResetCountdown: Bool {
+		didSet {
+			preferences.setShowsServerResetCountdown(showsServerResetCountdown)
+			showsServerResetCountdown ? startResetCountdownTimer() : stopResetCountdownTimer()
+		}
+	}
+	var resetCountdownText: String?
 
 	let api: any LauncherAPIProviding
 	let installer: any GameInstalling
@@ -77,6 +84,7 @@ final class LauncherViewModel {
 	@ObservationIgnored var gameProcessMonitorTask: Task<Void, Never>?
 	@ObservationIgnored var launcherUpdateTask: Task<Void, Never>?
 	@ObservationIgnored var announcementTask: Task<Void, Never>?
+	@ObservationIgnored var resetCountdownTask: Task<Void, Never>?
 	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
 	var activeGameSessionID: UUID?
@@ -113,7 +121,9 @@ final class LauncherViewModel {
 		automaticallyChecksLauncherUpdates = preferences.automaticLauncherUpdates()
 		automaticallyChecksGameUpdates = preferences.automaticGameUpdates()
 		announcementsEnabled = preferences.announcementsEnabled()
+		showsServerResetCountdown = preferences.showsServerResetCountdown()
 		loadCustomAppIcon()
+		if showsServerResetCountdown { startResetCountdownTimer() }
 
 		#if DEBUG
 			developerScenario = DeveloperScenario(arguments: arguments)
@@ -164,6 +174,24 @@ final class LauncherViewModel {
 		gameProcessMonitorTask?.cancel()
 		launcherUpdateTask?.cancel()
 		announcementTask?.cancel()
+		resetCountdownTask?.cancel()
+	}
+
+	func startResetCountdownTimer() {
+		resetCountdownTask?.cancel()
+		resetCountdownTask = Task { [weak self] in
+			while !Task.isCancelled {
+				guard let self else { return }
+				resetCountdownText = ServerReset.countdownText(for: region)
+				try? await Task.sleep(for: .seconds(30))
+			}
+		}
+	}
+
+	func stopResetCountdownTimer() {
+		resetCountdownTask?.cancel()
+		resetCountdownTask = nil
+		resetCountdownText = nil
 	}
 
 	var versionText: String {

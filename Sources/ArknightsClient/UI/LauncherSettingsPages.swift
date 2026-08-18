@@ -58,6 +58,17 @@ struct GeneralSettingsPage: View {
 					.tint(SettingsVisuals.cyan)
 				}
 				.help("Shows Apple's native FPS and GPU overlay the next time the game starts")
+				SettingsHairline()
+				LabeledContent("Server Time & Reset Countdown") {
+					Toggle(
+						"Server Time & Reset Countdown",
+						isOn: $model.showsServerResetCountdown
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(SettingsVisuals.cyan)
+				}
+				.help("Shows time until the daily server reset next to the version number")
 			}
 
 			SettingsPanel(title: "Artwork", systemImage: "photo") {

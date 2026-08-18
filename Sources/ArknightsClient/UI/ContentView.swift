@@ -174,6 +174,11 @@ struct ContentView: View {
 	@ViewBuilder
 	private var versionLabel: some View {
 		HStack(spacing: 6) {
+			if let countdown = model.resetCountdownText {
+				Text(countdown)
+					.font(.system(size: 11, weight: .medium, design: .monospaced))
+					.foregroundStyle(.secondary)
+			}
 			regionIndicator
 			if model.versionText != "—" {
 				Text(model.versionText)

@@ -8,6 +8,7 @@ struct LauncherPreferencesStore {
 		static let automaticLauncherUpdates = "automaticLauncherUpdates"
 		static let automaticGameUpdates = "automaticGameUpdates"
 		static let announcementsEnabled = "announcementsEnabled"
+		static let showsServerResetCountdown = "showsServerResetCountdown"
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
 		static let presentedLauncherUpdate = "presentedLauncherUpdate"
 		static let gameLaunchOptions = "gameLaunchOptions"
@@ -43,6 +44,14 @@ struct LauncherPreferencesStore {
 
 	func setAnnouncementsEnabled(_ value: Bool) {
 		defaults.set(value, forKey: Key.announcementsEnabled)
+	}
+
+	func showsServerResetCountdown() -> Bool {
+		bool(for: Key.showsServerResetCountdown, defaultValue: false)
+	}
+
+	func setShowsServerResetCountdown(_ value: Bool) {
+		defaults.set(value, forKey: Key.showsServerResetCountdown)
 	}
 
 	func seenAnnouncementIDs() -> Set<String> {
