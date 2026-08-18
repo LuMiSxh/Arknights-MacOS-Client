@@ -1,4 +1,17 @@
 {
 	"schemaVersion": 1,
-	"announcements": []
+	"announcements": [
+		{
+			"id": "thanks-0-3-0-2026-08",
+			"enabled": true,
+			"title": "Thanks for using 0.3.0",
+			"body": "Thanks for actually using Arknights Client — this is a small side project, so it means a lot that people are running it at all. A few of you have already sent in bug reports and feature ideas, and that feedback has genuinely made the launcher better, so thank you for that too.\n\nI'm off work this week and using the time to finish version 0.4.0, the first beta. **It's expected to go live Thursday morning around 10am German time (~08:00 UTC).**\n\nIf you've got a bug or feature request you'd like looked at before then, now's a good time to send it my way — I'm still actively working on it. Open an issue on GitHub, or find me on Reddit as u/Drageast if you'd rather just chat about it.\n\nThanks again for sticking around.",
+			"actionTitle": "Open GitHub Issues",
+			"actionURL": "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/open",
+			"minimumVersion": "0.3.0",
+			"maximumVersion": "0.3.0",
+			"startsAt": "2026-08-18T00:00:00Z",
+			"endsAt": "2026-08-20T08:00:00Z"
+		}
+	]
 }
