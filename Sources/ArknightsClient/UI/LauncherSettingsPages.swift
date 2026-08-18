@@ -232,6 +232,15 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
+					title: "Clear Cache",
+					detail:
+						"Free \(model.cacheSizeText) used by shader and browser caches. They rebuild automatically."
+				) {
+					Button("Clear Cache…", systemImage: "trash", action: model.clearCache)
+						.disabled(model.isGameActive)
+				}
+				SettingsHairline()
+				SettingsActionRow(
 					title: "Logs",
 					detail: "Use these files when reporting startup or game problems."
 				) {

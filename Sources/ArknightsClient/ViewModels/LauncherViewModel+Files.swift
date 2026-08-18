@@ -147,6 +147,23 @@ extension LauncherViewModel {
 		NSWorkspace.shared.activateFileViewerSelecting([installDirectory])
 	}
 
+	var cacheSizeText: String {
+		ByteCountFormatter.string(
+			fromByteCount: GameCacheCleaner.totalSize(winePrefix: paths.winePrefix),
+			countStyle: .file
+		)
+	}
+
+	func clearCache() {
+		do {
+			try GameCacheCleaner.clear(winePrefix: paths.winePrefix)
+			activityMessage = "Cache cleared"
+			Task { [log] in await log.info("Shader and browser caches cleared") }
+		} catch {
+			show(error)
+		}
+	}
+
 	func uninstallGame() {
 		#if DEBUG
 			if isDeveloperMode { return }

@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A Danger Zone panel in Settings → Installation that groups Uninstall Game and Force Migration together with a distinct visual style, since both undo real setup work.
 - A custom app icon option in Settings → General; choose an image to replace the Dock and Finder icon, or reset to the default (Thanks to @RadioNoiseE, #24).
 - A toggleable server time and daily reset countdown next to the version label in Settings → General.
+- A "Clear Cache" action in Settings → Installation → Maintenance that shows and frees the space used by the DXMT shader and embedded browser caches; both rebuild automatically.
 
 ### Changed
 
