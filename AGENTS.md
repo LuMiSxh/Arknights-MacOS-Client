@@ -28,6 +28,7 @@
 - Keep SwiftUI views in `UI`, state and user actions in `ViewModels`, external work in `Services` or `Runtime`, and persisted paths in `Storage`.
 - Keep handwritten Swift files below 350 lines; split cohesive behavior into focused types or extensions.
 - Keep UI state changes on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
+- Use Swift 5.9+ `@Observable` for fine-grained, property-level view invalidation; avoid legacy `ObservableObject` and `@Published` God-objects.
 - Treat game installation as an exclusive operation. A refresh, Settings action, or repeated click must never start another installer or overwrite active progress.
 - Preserve resumable `.part` downloads and validate every manifest path before writing it.
 - Use standard macOS storage locations through `AppPaths`; do not introduce repository-local or legacy migration paths without an explicit requirement.
@@ -39,6 +40,14 @@
 - Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` with `just icon`; do not edit them directly.
 - Unless explicitly requested, do not install, launch, download, uninstall, or alter a user's local game while verifying changes.
 
+## Code Style & Commenting Philosophy
+
+- **Self-Documenting Code First:** Write expressive, clear Swift and C code with meaningful type, function, and variable names. Code should naturally explain _what_ it is doing without requiring descriptive line-by-line commentary.
+- **Comment the "WHY", Not the "WHAT":** Comments must strictly explain the underlying rationale, non-obvious workarounds (such as Wine/Windows/macOS quirks, IPC synchronization constraints, or API bugs), and security/memory invariants. Do not write redundant comments that merely restate what the code syntax already expresses.
+- **DocC Documentation Standards:** Provide concise `///` DocC comments on public APIs, protocol definitions, and complex domain models explaining expected preconditions, side effects, and thrown errors.
+- **Eliminate Magic Numbers and Strings (Single Source of Truth):** Never scatter raw numeric constants, timeouts, buffer sizes, retry counts, or fixed keys throughout implementation logic. Centralize all configuration constants into strongly typed namespaces within `AppConstants.swift`.
+- **Defensive Error Handling:** Avoid swallowing errors with silent `try?` in critical filesystem, process, or network operations. Use explicit `do-catch` blocks and log unexpected failures with contextual diagnostic details.
+
 ## External References
 
 | Need                                  | File                                |
@@ -47,6 +56,7 @@
 | Architecture and source boundaries    | `docs/architecture.md`              |
 | Interface direction                   | `docs/design.md`                    |
 | Persistent files and removal behavior | `docs/storage.md`                   |
+| Troubleshooting and log locations     | `docs/troubleshooting.md`           |
 | Versioning and release workflow       | `docs/releases-and-updates.md`      |
 | Third-party obligations               | `docs/legal/third-party-notices.md` |
 
@@ -60,6 +70,6 @@
 
 ## Commit Rules
 
-- Dont mention your model or company
-- Follow the commit scheme by looking into the past commits
-- Only push when the user gives consent
+- Do not mention your AI model or company in commit messages or code.
+- Follow the established commit scheme by inspecting past git log history.
+- Only push commits when the user gives explicit consent.

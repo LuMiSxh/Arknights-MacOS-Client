@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A Metal Performance HUD toggle in Settings → General that shows Apple's native FPS and GPU overlay during gameplay.
 - An experimental Game Mode toggle in a new Danger Zone in Settings → Installation, requesting elevated macOS scheduling priority for the game while it runs; only takes effect if the full Xcode app is installed; disabled by default and off with a clear message otherwise.
 - A Danger Zone panel in Settings → Installation that groups Uninstall Game and Force Migration together with a distinct visual style, since both undo real setup work.
+- A custom app icon option in Settings → General; choose an image to replace the Dock and Finder icon, or reset to the default (Thanks to @RadioNoiseE, #24).
+- A toggleable server time and daily reset countdown next to the version label in Settings → General.
 
 ### Changed
 
