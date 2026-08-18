@@ -10,6 +10,10 @@ enum DirectWineProcessExitAction: Equatable {
 	case gameExited
 }
 
+/// The launcher's single source of truth: install/update/launch state, user preferences, and
+/// every action the UI can trigger. Behavior is split across `LauncherViewModel+*` extension
+/// files by concern (installation, game launch, files, updates, popups) to keep this
+/// declaration itself to properties, init, and cross-cutting state.
 @MainActor
 @Observable
 final class LauncherViewModel {
@@ -179,23 +183,6 @@ final class LauncherViewModel {
 		launcherUpdateTask?.cancel()
 		announcementTask?.cancel()
 		resetCountdownTask?.cancel()
-	}
-
-	func startResetCountdownTimer() {
-		resetCountdownTask?.cancel()
-		resetCountdownTask = Task { [weak self] in
-			while !Task.isCancelled {
-				guard let self else { return }
-				resetCountdownText = ServerReset.countdownText(for: region)
-				try? await Task.sleep(for: .seconds(30))
-			}
-		}
-	}
-
-	func stopResetCountdownTimer() {
-		resetCountdownTask?.cancel()
-		resetCountdownTask = nil
-		resetCountdownText = nil
 	}
 
 	var versionText: String {

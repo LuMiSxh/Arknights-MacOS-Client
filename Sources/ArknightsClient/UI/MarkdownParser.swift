@@ -11,6 +11,8 @@ enum MarkdownBlock: Equatable {
 	case divider
 }
 
+/// A small hand-rolled block parser (headings, paragraphs, bullets, tables, code, dividers)
+/// for changelog and license text bundled with the app — not general-purpose Markdown.
 struct MarkdownParser {
 	let source: String
 

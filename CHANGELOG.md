@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Combined the Artwork and App Icon panels in Settings → General into one "Personalization" panel with matching Choose…/Use Default buttons.
 - Moved the Uninstall Game and Force Migration confirmation dialogs to attach directly to their buttons instead of the Settings window, so their animations originate from the right place.
 - Reordered the Danger Zone from least to most destructive: Game Mode, Reset All Settings, Force Migration, Delete Wine Prefix, Uninstall Game.
+- Code hardening pass: split every Swift file back under the 350-line convention, centralized a scattered timeout into `AppConstants`, added `///` documentation to protocols and coordinator types across the Swift sources, and documented every function in the `RuntimeSupport` C and Objective-C compatibility shims. No behavior change.
 
 ### Fixed
 

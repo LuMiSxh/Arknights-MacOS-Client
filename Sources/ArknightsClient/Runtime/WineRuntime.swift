@@ -35,6 +35,8 @@ struct RuntimeConfiguration: Decodable, Sendable {
 	}
 }
 
+/// The bundled Wine + DXMT build, discovered from `RUNTIME.json` in the app's resources, and
+/// the single entry point for launching, monitoring, and stopping the Windows game process.
 struct WineRuntime: Sendable {
 	let executableURL: URL
 	let displayName: String

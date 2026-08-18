@@ -4,6 +4,9 @@ import AppKit
 import CoreGraphics
 import Foundation
 
+/// Polls `CGWindowListCopyWindowInfo` for the game's onscreen window instead of trusting
+/// process launch alone, since Wine's own startup can succeed well before Arknights actually
+/// has a visible, appropriately sized window.
 struct WineWindowReadiness {
 	static func wait(
 		processIdentifier: Int32,

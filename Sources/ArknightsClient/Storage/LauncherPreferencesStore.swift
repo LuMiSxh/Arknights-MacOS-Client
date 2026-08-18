@@ -3,6 +3,9 @@
 import Foundation
 
 @MainActor
+/// The single owner of every `UserDefaults`-backed launcher preference; `LauncherViewModel`
+/// reads and writes through here rather than touching `UserDefaults` directly, so
+/// `resetAllLauncherSettings` and tests have one place to reason about persisted state.
 struct LauncherPreferencesStore {
 	private enum Key {
 		static let automaticLauncherUpdates = "automaticLauncherUpdates"

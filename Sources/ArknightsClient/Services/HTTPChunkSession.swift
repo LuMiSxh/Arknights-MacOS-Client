@@ -24,6 +24,9 @@ struct HTTPChunkStream: Sendable {
 	}
 }
 
+/// Bridges `URLSessionDataDelegate`'s callback-based streaming into an `AsyncThrowingStream`
+/// per request, so `GameInstaller` can process each chunk as it arrives instead of buffering
+/// a whole file in memory.
 final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Sendable {
 	private typealias Continuation = AsyncThrowingStream<HTTPChunkEvent, any Error>.Continuation
 

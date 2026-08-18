@@ -2,6 +2,7 @@
 
 import Foundation
 
+/// One one-time Wine prefix setup step, recorded so it isn't replayed on every launch.
 enum RuntimeMigration: String, CaseIterable, Codable, Sendable {
 	case initializeWinePrefix = "initialize-wine-prefix"
 	case installDXMT = "install-dxmt"
@@ -34,6 +35,9 @@ struct RuntimeMigrationState: Codable, Equatable, Sendable {
 	}
 }
 
+/// Decides which migrations still need to run: a schema or runtime-revision mismatch, a
+/// missing system registry, or an explicitly invalidated step all restart from that point
+/// forward, rather than replaying every step unconditionally.
 struct RuntimeMigrationPlan: Sendable {
 	private(set) var state: RuntimeMigrationState
 	let pending: [RuntimeMigration]
@@ -67,6 +71,8 @@ struct RuntimeMigrationPlan: Sendable {
 	}
 }
 
+/// Reads and writes `RuntimeMigrationState` inside the Wine prefix, importing the legacy
+/// single-file revision/configuration markers older builds used before this schema existed.
 struct RuntimeMigrationStore {
 	static let stateFileName = ".arknights-runtime-migrations.json"
 	static let legacyRevisionFileName = ".arknights-runtime-revision"

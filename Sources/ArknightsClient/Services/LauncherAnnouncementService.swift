@@ -7,6 +7,9 @@ struct LauncherAnnouncementFeed: Decodable, Sendable {
 	let announcements: [LauncherAnnouncement]
 }
 
+/// A repository-hosted, one-time message; `isEligible` is the single gate for whether it's
+/// shown, checking the seen-IDs set, an active date window, version bounds, and field limits
+/// together so a malformed or already-dismissed entry can't surface.
 struct LauncherAnnouncement: Decodable, Sendable, Equatable, Identifiable {
 	let id: String
 	let enabled: Bool
@@ -42,6 +45,8 @@ struct LauncherAnnouncement: Decodable, Sendable, Equatable, Identifiable {
 	}
 }
 
+/// Fetches this repository's `announcements.json` for one-time project messages, separate
+/// from Yostar's own in-game notices.
 struct LauncherAnnouncementService: Sendable {
 	private let session: URLSession
 

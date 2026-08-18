@@ -29,6 +29,9 @@ struct game_window {
 	pid_t process_id;
 };
 
+/* Scans on-screen windows for the largest one owned by a process whose name (or window
+ * name) starts with "Arknights", excluding both this process itself and the SwiftUI
+ * launcher (which is also named "Arknights Client" and would otherwise self-match). */
 static struct game_window game_window_info(void) {
 	CFArrayRef windows = CGWindowListCopyWindowInfo(
 		kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
@@ -71,6 +74,10 @@ static struct game_window game_window_info(void) {
 	return result;
 }
 
+/* Applies a rounded-rect clip mask to `view`, caching the CAShapeLayer via an associated
+ * object and skipping regeneration when the bounds haven't changed, since this runs on
+ * every presentation tick. Insets the visible rect by 1pt so the rounded edge doesn't show
+ * a hairline of the window's square backing behind it. */
 static void apply_notice_mask(NSView *view) {
 	CAShapeLayer *mask;
 	CGRect bounds;
@@ -103,6 +110,12 @@ static void apply_notice_mask(NSView *view) {
 	view.clipsToBounds = YES;
 }
 
+/* The core presentation policy, reapplied every tick since Wine's window server can revert
+ * these at any time: joins all Spaces without forcing a Space switch, clears the private
+ * AppKit flags winemac.drv sets to keep helper windows out of the foreground (via selectors
+ * since these are undocumented SPI, not public API), drops the nonactivating panel style so
+ * it can receive clicks, and makes the window and its layers fully transparent so only the
+ * masked Qt content shows instead of a solid black surface. */
 static void configure_window(NSWindow *window) {
 	NSWindowCollectionBehavior behavior = window.collectionBehavior;
 	NSView *content = window.contentView;
@@ -156,6 +169,9 @@ static void configure_window(NSWindow *window) {
 	apply_notice_mask(frame != nil ? frame : content);
 }
 
+/* Picks the largest visible window this process owns that's at least 400x300 — the same
+ * size heuristic PlatformProcessShim.c uses on the Win32 side — to identify the actual
+ * notice window among any incidental smaller windows Qt creates. */
 static NSWindow *notice_window(void) {
 	NSWindow *candidate = nil;
 
@@ -172,6 +188,11 @@ static NSWindow *notice_window(void) {
 	return candidate;
 }
 
+/* Runs on every presentation timer tick: locates and reconfigures the notice window,
+ * ensures the process has no Dock icon (accessory activation policy), and pins the window
+ * level just above the fullscreen shielding window so it stays visible over a fullscreen
+ * game instead of behind it. Logs the accessory-policy switch and the first successful
+ * notice/game window pairing once each, not every tick. */
 static void maintain_presentation(void) {
 	NSWindow *window = notice_window();
 	struct game_window game;
@@ -209,6 +230,10 @@ static void maintain_presentation(void) {
 	}
 }
 
+/* Entry point: runs automatically when Wine loads this dylib (see PlatformProcessShim.c's
+ * __CX_UNIX_DYLD_INSERT_LIBRARIES injection). Starts a ~60 FPS presentation timer on the
+ * main queue; the short 2ms leeway keeps notice tracking smooth during game-window
+ * dragging instead of visibly lagging behind it. */
 __attribute__((constructor)) static void install_platform_process_bridge(void) {
 	if (launcher_marker[0] == '\0') return;
 	fprintf(

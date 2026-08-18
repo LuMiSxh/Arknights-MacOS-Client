@@ -64,6 +64,8 @@ struct LauncherBranding: Decodable, Sendable {
 	}
 }
 
+/// Downloads and disk-caches the launcher background and official logo by CRC64, so
+/// unchanged artwork across launches or branding refreshes doesn't refetch.
 actor ArtworkCache {
 	private static let officialLogoURL = URL(
 		string:

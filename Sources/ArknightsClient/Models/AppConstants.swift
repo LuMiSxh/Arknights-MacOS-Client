@@ -18,5 +18,6 @@ enum AppConstants {
 		static let processKillGracePeriod: TimeInterval = 1
 		static let windowReadiness: Duration = .seconds(90)
 		static let windowPollInterval: Duration = .milliseconds(250)
+		static let resetCountdownPollInterval: Duration = .seconds(30)
 	}
 }

@@ -2,6 +2,9 @@
 
 import Foundation
 
+/// One binary-swap fix applied to the game install (see `VuplexCompatibility`,
+/// `PlatformProcessCompatibility`); install and restore share `GameShimIO`'s atomic-swap and
+/// marker-check engine so every component behaves identically.
 protocol GameCompatibilityComponent: Sendable {
 	var identifier: String { get }
 
@@ -17,6 +20,9 @@ struct GameCompatibilityChanges: Equatable, Sendable {
 	var removed: [String] = []
 }
 
+/// Applies every active compatibility component on launch and restores retired ones on
+/// update, so a component removed in a later release still gets uninstalled from prefixes
+/// that installed it under an older build.
 struct GameCompatibilityManager: Sendable {
 	private let active: [any GameCompatibilityComponent]
 	private let retired: [any GameCompatibilityComponent]

@@ -2,6 +2,8 @@
 
 import Foundation
 
+/// Appends to a size-capped file the launcher and Wine layers share, so "Report a Problem"
+/// and Settings → Logs always have one place to find recent diagnostic history.
 actor LauncherLog {
 	private enum Level: String {
 		case debug = "DEBUG"

@@ -2,6 +2,8 @@
 
 import Foundation
 
+/// Every standard macOS location this app writes to, rooted under its bundle identifier;
+/// the one place these paths are computed, so nothing hardcodes a repository-local path.
 struct AppPaths: Sendable {
 	static let bundleIdentifier = "com.lumisxh.arknights-client"
 

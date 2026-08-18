@@ -56,6 +56,8 @@ static const wchar_t *high_resolution_arguments[] = {
 	L"--force-device-scale-factor=2",
 };
 
+/* Win32 gives no fixed upper bound for a module's own path, so this grows the buffer and
+ * retries until GetModuleFileNameW stops truncating. */
 static wchar_t *module_path(void) {
 	DWORD capacity = 1024;
 
@@ -79,6 +81,8 @@ static wchar_t *module_path(void) {
 	}
 }
 
+/* Exact-match scan so this shim never appends a compatibility or high-resolution flag the
+ * game already supplied, keeping the child's argument list idempotent across shim updates. */
 static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected) {
 	int index;
 
@@ -88,6 +92,9 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
 	return FALSE;
 }
 
+/* Reads the scale factor WineRuntime.swift sets before launch: "2" means the Swift launcher
+ * detected a Retina display with high-resolution mode enabled, so the browser should render
+ * at native density too instead of blurring to match the game's logical resolution. */
 static BOOL high_resolution_enabled(void) {
 	wchar_t value[8];
 	DWORD length = GetEnvironmentVariableW(
@@ -99,6 +106,11 @@ static BOOL high_resolution_enabled(void) {
 	return length == 1 && value[0] == L'2';
 }
 
+/* Appends `argument` to `destination` using the same quoting rules CommandLineToArgvW
+ * expects on the other end: backslashes are only doubled when they immediately precede a
+ * quote (or end the argument before the closing quote), so paths with plain backslashes
+ * round-trip unchanged while an embedded `"` or a trailing `\` doesn't break the split.
+ * Caller must have already sized `destination` for the worst case (2x length + quotes). */
 static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
 	const wchar_t *cursor = argument;
 	size_t backslashes = 0;
@@ -136,6 +148,11 @@ static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
 	return destination;
 }
 
+/* Appends "userenv=n,b" to WINEDLLOVERRIDES so Wine loads the process-local userenv.dll
+ * compatibility stub (UserenvCompat.c) instead of its own unimplemented AppContainer APIs.
+ * Preserves any override value already set rather than replacing it, since WINEDLLOVERRIDES
+ * is a single semicolon-joined string and clobbering it would silently undo unrelated
+ * overrides the launcher or user set elsewhere. */
 static BOOL enable_userenv_override(void) {
 	static const wchar_t variable_name[] = L"WINEDLLOVERRIDES";
 	DWORD existing_length = GetEnvironmentVariableW(variable_name, NULL, 0);
@@ -168,6 +185,11 @@ static BOOL enable_userenv_override(void) {
 	return result;
 }
 
+/* Locates the original helper beside this shim, preserves every argument the game supplied,
+ * appends only the compatibility (and, if enabled, high-resolution) flags that aren't
+ * already present, enables the userenv.dll override, and launches the real helper hidden
+ * and detached. Blocks until it exits and returns its exit code, so the game sees this
+ * shim as behaviorally identical to the official helper it replaced. */
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_command) {
 	wchar_t *shim_path = NULL;
 	wchar_t *original_path = NULL;

@@ -2,6 +2,8 @@
 
 import Foundation
 
+/// The network surface `LauncherViewModel` depends on; lets tests substitute a fake
+/// implementation instead of hitting Yostar's real API.
 protocol LauncherAPIProviding: Sendable {
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration
 	func branding(region: GameRegion) async throws -> LauncherBranding
@@ -10,6 +12,8 @@ protocol LauncherAPIProviding: Sendable {
 		-> GameManifest
 }
 
+/// The installer surface `LauncherViewModel` depends on, so tests can substitute a fake
+/// installer instead of downloading real game files.
 protocol GameInstalling: Sendable {
 	func install(
 		configuration: GameConfiguration,

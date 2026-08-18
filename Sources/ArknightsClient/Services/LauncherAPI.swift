@@ -3,6 +3,8 @@
 import CryptoKit
 import Foundation
 
+/// Talks to Yostar's launcher API using the same version, salt, and MD5 signature scheme
+/// their own official launcher sends; requests that don't match are rejected server-side.
 actor LauncherAPI {
 	// The version and salt Yostar's own official launcher sends; this API rejects requests
 	// that don't sign with them, so this is not this app's own version (see

@@ -2,6 +2,9 @@
 
 import Foundation
 
+/// Swaps the embedded browser's helper with one that disables accelerated paint and stubs
+/// `userenv.dll`, working around a Wine AppContainer gap that otherwise crashes Chromium's
+/// sandbox during OAuth and payment-provider popups.
 struct VuplexCompatibility: GameCompatibilityComponent {
 	let identifier = "vuplex-webview"
 	static let helperRelativePath =

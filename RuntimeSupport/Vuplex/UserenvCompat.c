@@ -16,6 +16,9 @@
 __declspec(dllexport) const char arknights_client_userenv_marker[] =
 	"Arknights Client AppContainer compatibility";
 
+/* HRESULT_FROM_WIN32(ERROR_SUCCESS) does not produce S_OK, so a failure path that never set
+ * a real Win32 error would misreport success; this substitutes a generic failure code in
+ * that case instead. */
 static HRESULT result_from_last_error(void) {
 	DWORD error = GetLastError();
 
@@ -24,6 +27,11 @@ static HRESULT result_from_last_error(void) {
 }
 
 __declspec(dllexport)
+/* The one real implementation among these stubs: Chromium's sandbox doesn't just check
+ * that this call succeeds, it uses the returned SID as a security identifier, so this
+ * mirrors Windows' actual algorithm (SHA-256 of the lowercased name, folded into an
+ * APP_PACKAGE-authority SID) closely enough to produce a valid, usable SID rather than a
+ * placeholder that would fail a later access check. */
 HRESULT WINAPI DeriveAppContainerSidFromAppContainerName(
 	PCWSTR app_container_name,
 	PSID *app_container_sid
@@ -107,6 +115,8 @@ cleanup:
 }
 
 __declspec(dllexport)
+/* Ignores display name, description, and capabilities: nothing in this compatibility layer
+ * persists a profile, so only the SID derivation Chromium actually checks matters. */
 HRESULT WINAPI CreateAppContainerProfile(
 	PCWSTR app_container_name,
 	PCWSTR display_name,
@@ -123,6 +133,7 @@ HRESULT WINAPI CreateAppContainerProfile(
 }
 
 __declspec(dllexport)
+/* No-op: CreateAppContainerProfile never persisted anything to delete. */
 HRESULT WINAPI DeleteAppContainerProfile(
 	PCWSTR app_container_name
 ) {
@@ -131,6 +142,8 @@ HRESULT WINAPI DeleteAppContainerProfile(
 }
 
 __declspec(dllexport)
+/* Not implemented: nothing in this compatibility layer backs an AppContainer with a
+ * registry-stored profile, and Chromium's sandbox doesn't require this to succeed. */
 HRESULT WINAPI GetAppContainerRegistryLocation(
 	REGSAM desired_access,
 	PHKEY app_container_key
@@ -142,6 +155,8 @@ HRESULT WINAPI GetAppContainerRegistryLocation(
 }
 
 __declspec(dllexport)
+/* Not implemented, for the same reason as GetAppContainerRegistryLocation: no real
+ * per-container storage exists in this compatibility layer. */
 HRESULT WINAPI GetAppContainerFolderPath(
 	PCWSTR app_container_sid,
 	PWSTR *folder_path

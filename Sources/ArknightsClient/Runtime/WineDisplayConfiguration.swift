@@ -3,6 +3,8 @@
 import AppKit
 import Foundation
 
+/// Whether to run the game and its login browser at full backing-store resolution, derived
+/// from the current screen's scale factor, the user's toggle, and a `--no-retina` override.
 struct WineDisplayConfiguration: Equatable, Sendable {
 	static let forceDisablePreference = "forceDisableRetina"
 

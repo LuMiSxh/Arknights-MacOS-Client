@@ -2,6 +2,9 @@
 
 import Foundation
 
+/// The starting point `ProgressCounter` accumulates onto: for an install resumed from a
+/// partial state, already-complete files count immediately instead of waiting for a full
+/// re-scan, so the progress bar doesn't jump backward when Repair or Resume restarts.
 struct DownloadProgressBaseline: Sendable {
 	let totalBytes: Int64
 	let totalFiles: Int

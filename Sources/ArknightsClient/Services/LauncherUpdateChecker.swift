@@ -22,6 +22,8 @@ struct LauncherRelease: Decodable, Sendable, Equatable {
 	}
 }
 
+/// Checks this repository's GitHub Releases for a newer launcher build, entirely separate
+/// from `LauncherAPI`'s game-version checks against Yostar's own servers.
 struct LauncherUpdateChecker: Sendable {
 	private let session: URLSession
 
@@ -53,6 +55,8 @@ struct LauncherUpdateChecker: Sendable {
 	}
 }
 
+/// Tolerant enough to compare both this repo's release tags and Yostar's own version
+/// strings, including an optional leading "v" and dot-separated prerelease identifiers.
 struct SemanticVersion: Comparable {
 	private enum PrereleaseIdentifier: Comparable {
 		case numeric(Int)

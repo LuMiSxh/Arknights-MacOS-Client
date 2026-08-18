@@ -40,6 +40,8 @@ struct game_window_search {
 	LONG64 largest_area;
 };
 
+/* Win32 gives no fixed upper bound for a module's own path, so this grows the buffer
+ * and retries until GetModuleFileNameW stops truncating. */
 static wchar_t *module_path(void) {
 	DWORD capacity = 1024;
 
@@ -60,6 +62,9 @@ static wchar_t *module_path(void) {
 	}
 }
 
+/* Builds the path to `name` in the same directory as `module` (the original helper or the
+ * bridge dylib both live beside this shim). Returns NULL if `module` has no directory
+ * separator, which should never happen for a path GetModuleFileNameW returns. */
 static wchar_t *sibling_path(const wchar_t *module, const wchar_t *name) {
 	const wchar_t *separator = wcsrchr(module, L'\\');
 	SIZE_T directory_length;
@@ -77,6 +82,11 @@ static wchar_t *sibling_path(const wchar_t *module, const wchar_t *name) {
 	return result;
 }
 
+/* Appends `argument` to `destination` using the same quoting rules CommandLineToArgvW
+ * expects on the other end: backslashes are only doubled when they immediately precede a
+ * quote (or end the argument before the closing quote), so paths with plain backslashes
+ * round-trip unchanged while an embedded `"` or a trailing `\` doesn't break the split.
+ * Caller must have already sized `destination` for the worst case (2x length + quotes). */
 static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
 	const wchar_t *cursor = argument;
 	SIZE_T backslashes = 0;
@@ -114,6 +124,9 @@ static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
 	return destination;
 }
 
+/* EnumWindows callback: picks the first visible top-level window owned by the child
+ * process that's at least 400x300, which filters out Qt's incidental tooltip/tool windows
+ * and leaves the real notice window. */
 static BOOL CALLBACK find_process_window(HWND window, LPARAM context_value) {
 	struct window_search *search = (struct window_search *)context_value;
 	DWORD process_id = 0;
@@ -127,6 +140,9 @@ static BOOL CALLBACK find_process_window(HWND window, LPARAM context_value) {
 	return FALSE;
 }
 
+/* EnumWindows callback: keeps the largest visible window titled "Arknights" that isn't
+ * owned by this wrapper's own child process, since the game may briefly own more than one
+ * window (splash, loading) and only the largest is the actual game window worth tracking. */
 static BOOL CALLBACK find_game_window(HWND window, LPARAM context_value) {
 	struct game_window_search *search = (struct game_window_search *)context_value;
 	DWORD process_id = 0;
@@ -147,6 +163,8 @@ static BOOL CALLBACK find_game_window(HWND window, LPARAM context_value) {
 	return TRUE;
 }
 
+/* Wraps find_game_window's EnumWindows scan; `excluded_process_id` is this wrapper's own
+ * child (the notice helper), never the game itself. */
 static HWND locate_game_window(DWORD excluded_process_id) {
 	struct game_window_search search = { excluded_process_id, NULL, 0 };
 
@@ -154,6 +172,10 @@ static HWND locate_game_window(DWORD excluded_process_id) {
 	return search.result;
 }
 
+/* Qt creates the notice window bordered and non-activating by default. Strips
+ * WS_BORDER/WS_DLGFRAME/WS_THICKFRAME and WS_EX_NOACTIVATE so it matches the borderless,
+ * interactive treatment the macOS-side bridge applies, then forces a frame-changed repaint
+ * only if a style bit actually changed (SetWindowPos is otherwise a visible no-op flicker). */
 static HWND repair_notice_window(DWORD process_id) {
 	struct window_search search = { process_id, NULL };
 	LONG_PTR style;
@@ -188,6 +210,8 @@ static HWND repair_notice_window(DWORD process_id) {
 	return search.result;
 }
 
+/* Records the notice window's current position relative to the game window, so whatever
+ * placement the user (or Qt) chose is preserved instead of snapping to a fixed corner. */
 static BOOL capture_notice_offset(HWND notice, HWND game, POINT *offset) {
 	RECT game_rectangle;
 	RECT notice_rectangle;
@@ -200,6 +224,10 @@ static BOOL capture_notice_offset(HWND notice, HWND game, POINT *offset) {
 	return TRUE;
 }
 
+/* Repositions the notice window to keep the captured offset from the game window, skipping
+ * SetWindowPos entirely when already at the target (avoids per-tick redundant moves while
+ * the game window is stationary). Returns FALSE on a failed rect query so the caller
+ * recaptures the offset next tick instead of drifting from a stale one. */
 static BOOL follow_game_window(HWND notice, HWND game, POINT offset) {
 	RECT game_rectangle;
 	RECT notice_rectangle;
@@ -223,6 +251,9 @@ static BOOL follow_game_window(HWND notice, HWND game, POINT offset) {
 	);
 }
 
+/* Resolves the bridge dylib's Wine path to its real Unix path via
+ * wine_get_unix_file_name, then arranges for it to be DYLD-injected into the child Unix
+ * process this shim is about to spawn. */
 static BOOL install_bridge_environment(const wchar_t *bridge_path) {
 	HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
 	wine_get_unix_file_name_fn convert;
@@ -242,6 +273,12 @@ static BOOL install_bridge_environment(const wchar_t *bridge_path) {
 	return result;
 }
 
+/* Locates the original helper and bridge dylib beside this shim, injects the bridge into
+ * the child's environment, rebuilds the original command line unchanged, and launches the
+ * real PlatformProcess.exe. While it runs, polls for the notice and game windows (fast
+ * 50ms until both are found, then 8ms) and keeps the notice positioned relative to the
+ * game window, since Wine gives it no owner-window relationship to do this automatically.
+ * Exits with the child's exit code once it terminates. */
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_line, int show) {
 	wchar_t *module = NULL;
 	wchar_t *original = NULL;
