@@ -22,6 +22,7 @@ from lib.common import (
     run_main,
     success,
 )
+from lib.console import spinner
 from release_validation import validate_release
 
 
@@ -56,13 +57,14 @@ def trigger(version: str) -> None:
     except ScriptError:
         fail("the current branch has no upstream")
 
-    info("Refreshing the upstream branch")
-    run(["git", "fetch", "--quiet"], cwd=PROJECT_DIR)
+    with spinner("Refreshing the upstream branch"):
+        run(["git", "fetch", "--quiet"], cwd=PROJECT_DIR)
     if output(["git", "rev-parse", "HEAD"], cwd=PROJECT_DIR) != output(
         ["git", "rev-parse", upstream], cwd=PROJECT_DIR
     ):
         fail(f"the current branch must match {upstream}")
-    run(["gh", "auth", "status"], capture=True)
+    with spinner("Checking GitHub authentication"):
+        run(["gh", "auth", "status"], capture=True)
     info(f"Triggering the v{version} draft release from {branch}")
     run(
         [

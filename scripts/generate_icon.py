@@ -17,7 +17,6 @@ from lib.common import (
     BUILD_DIR,
     PROJECT_DIR,
     fail,
-    info,
     remove_path,
     require_command,
     require_directory,
@@ -27,6 +26,7 @@ from lib.common import (
     success,
     warning,
 )
+from lib.console import spinner
 
 DEFAULT_ICON_COMPOSER = Path(
     "/Applications/Icon Composer.app/Contents/Executables/ictool"
@@ -89,38 +89,38 @@ def generate() -> None:
     for path in (iconset, compiled, dynamic):
         path.mkdir(parents=True)
 
-    info("Rendering the Icon Composer source")
-    run(
-        [
-            composer,
-            source,
-            "--export-image",
-            "--output-file",
-            rendered,
-            "--platform",
-            "macOS",
-            "--rendition",
-            "Default",
-            "--width",
-            "1024",
-            "--height",
-            "1024",
-            "--scale",
-            "1",
-        ]
-    )
-    run(
-        ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
-        capture=True,
-    )
+    with spinner("Rendering the Icon Composer source"):
+        run(
+            [
+                composer,
+                source,
+                "--export-image",
+                "--output-file",
+                rendered,
+                "--platform",
+                "macOS",
+                "--rendition",
+                "Default",
+                "--width",
+                "1024",
+                "--height",
+                "1024",
+                "--scale",
+                "1",
+            ]
+        )
+        run(
+            ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
+            capture=True,
+        )
 
-    info("Compiling the native layered icon")
-    result = subprocess.run(
-        [str(value) for value in compile_arguments(source, dynamic)],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    with spinner("Compiling the native layered icon"):
+        result = subprocess.run(
+            [str(value) for value in compile_arguments(source, dynamic)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
     (dynamic / "actool.log").write_text(result.stdout + result.stderr, encoding="utf-8")
     if (
         result.returncode == 0

@@ -1,10 +1,14 @@
 # SPDX-License-Identifier: MPL-2.0
 
-"""Shared paths, diagnostics, and process helpers for repository scripts."""
+"""Shared paths, diagnostics, and process helpers for repository scripts.
+
+Output rendering (color, unicode symbols, spinners, progress bars) lives in
+`lib.console`; `info`/`success`/`warning` are re-exported here so scripts only need one
+import for both process and output helpers.
+"""
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import sys
@@ -12,32 +16,36 @@ from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import NoReturn, TypeVar
 
+from lib.console import error, info, styled, success, warning
+
+__all__ = [
+    "BUILD_DIR",
+    "DIST_DIR",
+    "PROJECT_DIR",
+    "ScriptError",
+    "fail",
+    "info",
+    "output",
+    "remove_path",
+    "require_command",
+    "require_commands",
+    "require_directory",
+    "require_file",
+    "run",
+    "run_main",
+    "success",
+    "warning",
+]
+
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = PROJECT_DIR / ".build"
 DIST_DIR = PROJECT_DIR / "dist"
 
 _T = TypeVar("_T")
-_USE_COLOR = sys.stderr.isatty() and os.environ.get("NO_COLOR") is None
 
 
 class ScriptError(RuntimeError):
     """A concise, expected command-line failure."""
-
-
-def _styled(text: str, code: str) -> str:
-    return f"\033[{code}m{text}\033[0m" if _USE_COLOR else text
-
-
-def info(message: str) -> None:
-    print(f"{_styled('→', '36;1')} {message}", file=sys.stderr)
-
-
-def success(message: str) -> None:
-    print(f"{_styled('✓', '32;1')} {message}", file=sys.stderr)
-
-
-def warning(message: str) -> None:
-    print(f"{_styled('!', '33;1')} {message}", file=sys.stderr)
 
 
 def fail(message: str) -> NoReturn:
@@ -82,10 +90,10 @@ def run(
         )
     except FileNotFoundError:
         fail(f"required command not found: {arguments[0]}")
-    except subprocess.CalledProcessError as error:
-        if capture and error.stderr:
-            print(error.stderr.rstrip(), file=sys.stderr)
-        fail(f"command failed ({error.returncode}): {' '.join(arguments)}")
+    except subprocess.CalledProcessError as process_error:
+        if capture and process_error.stderr:
+            print(process_error.stderr.rstrip(), file=sys.stderr)
+        fail(f"command failed ({process_error.returncode}): {' '.join(arguments)}")
 
 
 def output(command: Sequence[str | Path], *, cwd: Path | None = None) -> str:
@@ -102,11 +110,11 @@ def remove_path(path: Path) -> None:
 def run_main(main: Callable[[], _T]) -> None:
     try:
         main()
-    except ScriptError as error:
-        print(f"{_styled('error:', '31;1')} {error}", file=sys.stderr)
+    except ScriptError as script_error:
+        error(str(script_error))
         raise SystemExit(1) from None
     except KeyboardInterrupt:
-        print(f"\n{_styled('cancelled', '33;1')}", file=sys.stderr)
+        print(f"\n{styled('cancelled', '33;1')}", file=sys.stderr)
         raise SystemExit(130) from None
 
 

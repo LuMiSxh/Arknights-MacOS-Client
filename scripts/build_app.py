@@ -32,6 +32,7 @@ from lib.common import (
     run_main,
     success,
 )
+from lib.console import spinner
 from lib.patch_wine_runtime import patch_file
 from runtime_config import validate_config
 
@@ -150,10 +151,10 @@ def embed_runtime(runtime: Path, resources: Path) -> None:
         fail(f"runtime DXMT payload not found: {runtime / 'DXMT/x64'}")
 
     destination = resources / "Runtime"
-    info("Embedding the Wine + DXMT runtime")
-    copy_runtime(runtime, destination)
-    info("Removing unused arm64 slices from the x86-64 runtime")
-    count = thin_universal_files(destination)
+    with spinner("Embedding the Wine + DXMT runtime"):
+        copy_runtime(runtime, destination)
+    with spinner("Removing unused arm64 slices from the x86-64 runtime"):
+        count = thin_universal_files(destination)
     if count:
         info(f"Thinned {count} universal runtime files")
 
