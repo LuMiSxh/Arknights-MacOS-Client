@@ -97,7 +97,7 @@ struct InstallationSettingsPage: View {
 					} label: {
 						Label("Report…", systemImage: "ladybug")
 					}
-					.buttonStyle(.glass)
+					.adaptiveGlassButton()
 				}
 			}
 

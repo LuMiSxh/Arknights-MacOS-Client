@@ -22,30 +22,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A "Show Game Version" toggle in Settings → General, on by default, for the version label next to the region indicator.
 - A "Delete Wine Prefix" action in the Danger Zone that fully rebuilds the Wine environment on the next launch, including saved Yostar/Google/Apple/Facebook browser logins, without touching game files — a stronger reset than Force Migration.
 - A "Reset All Settings" action in the Danger Zone that restores every launcher toggle and option to default, leaving the install location and selected region untouched.
-- Added optional YouTube-based launcher background music with URL validation, play/pause state handling, and optional now-playing title in the version label (Thanks to @darkwebdev, #27).
+- Optional YouTube-based launcher background music, on by default, with URL validation, playlist shuffling, and an optional now-playing title (Thanks to @darkwebdev, #27).
+- A Settings → General → Input toggle for precise trackpad scrolling, enabled by default, so two-finger horizontal swipes work as expected (Thanks to @darkwebdev, #28).
+- A "Dynamic Accent Color" option in Settings → General → Personalization that tints controls, badges, and HUD pills with a color sampled from the active artwork; on by default, with Arknights cyan as the fallback.
+- Small floating HUD pills above the main control bar for the now-playing track, region, reset countdown, and game version, each shown only when relevant.
+- Support for macOS 15 (Sequoia) and newer, down from macOS 26; Liquid Glass stays full-featured on macOS 26, with native Material and bordered-button fallbacks on macOS 15–25 (Thanks to @Mickhasinsomnia, #29).
 
 ### Changed
 
 - Declared the app as a game (macOS application category) so the system can offer native game-related features.
 - Quieted DXMT's Metal translation logging by default; it previously ran at its noisiest level on every launch instead of only under diagnostics.
-- Split Settings → General's "Display" panel into "Display" (game rendering: resolution, window mode) and a new "Launcher" panel (Metal HUD, server time, game version) as the list of launcher-only toggles grew past what belonged next to game display settings.
-- Combined the Artwork and App Icon panels in Settings → General into one "Personalization" panel with matching Choose…/Use Default buttons.
+- Reorganized Settings → General into "Display & Controls", "Launcher", and "Personalization" panels, and split Music out into its own "Audio" section.
 - Moved the Uninstall Game and Force Migration confirmation dialogs to attach directly to their buttons instead of the Settings window, so their animations originate from the right place.
 - Reordered the Danger Zone from least to most destructive: Game Mode, Reset All Settings, Force Migration, Delete Wine Prefix, Uninstall Game.
 - Code hardening pass: split every Swift file back under the 350-line convention, centralized a scattered timeout into `AppConstants`, added `///` documentation to protocols and coordinator types across the Swift sources, and documented every function in the `RuntimeSupport` C and Objective-C compatibility shims. No behavior change.
 - Consolidated the `justfile`'s check, format, and dev commands, and added clang-format for the C/Objective-C compatibility shims.
-- Reworked the Developer settings picker to cover every simulated launcher state, including live custom popups.
-- Unified script CLI output with color, spinners, and progress bars.
+- Reworked the Developer settings picker to cover every simulated launcher state, including live custom popups, and simplified the preview commands.
+- Unified script CLI output with color, spinners, and progress bars, and fixed the progress bar's width calculation.
 - Added recipe-download tracking to release statistics.
 - Simplified the announcement management commands, and added optional version-range and display-window flags to `just announcement set`.
-- Split Settings → General's "Music" panel into its own "Audio" section, and moved the region indicator, server reset countdown, game version, and now-playing music title from the main control bar into small floating pills above it.
-- Merged Settings → General's "Input" panel into "Display & Controls", and added a "Dynamic Accent Color" toggle in Personalization that tints the launcher's controls, badges, and HUD pills with a color sampled from the active artwork instead of the fixed Arknights cyan; on by default, with cyan as the fallback when no vibrant color is found. Documented in `docs/design.md`.
-- Background music now plays by default on first launch, gave the HUD pills small colored icons, and fixed the now-playing title sometimes showing the wrong track after the playlist shuffles to a new one.
 
 ### Fixed
 
-- Fixed the Notices companion window rendering behing the game window in fullscreen, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
-- Added a new Settings → General → Input toggle for precise trackpad scrolling, enabling high-fidelity trackpad input by default and allowing users to disable it if they prefer v0.3.0-style wheel behavior (Thanks to @darkwebdev, #28).
+- Fixed the Notices companion window rendering behind the game window in fullscreen, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
+- Matched the Notices/announcement popup's styling (glass tint, hairlines, background) to the rest of the app.
+- Fixed the now-playing title sometimes showing the wrong track right after the background music playlist shuffles to a new one.
 
 ## [0.3.0]
 

@@ -59,7 +59,7 @@ def compile_arguments(source: Path, destination: Path) -> list[str | Path]:
         "--target-device",
         "mac",
         "--minimum-deployment-target",
-        "26.0",
+        "15.0",
         "--platform",
         "macosx",
         "--notices",

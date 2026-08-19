@@ -21,7 +21,7 @@ Runs the official Windows client on Apple Silicon Macs via a bundled Wine and DX
 
 Arknights Client is a native SwiftUI launcher for the official Global PC client. It downloads game files from Yostar and runs the Windows game through a bundled Wine and DXMT runtime.
 
-The project is in beta and supports only Apple Silicon Macs running macOS 26 or newer.
+The project is in beta and supports only Apple Silicon Macs running macOS 15 (Sequoia) or newer. macOS 26 additionally gets full Liquid Glass.
 
 > [!WARNING]
 > Credit card and PayPal payments have been observed to work. These flows can still be unstable in this unofficial Wine environment, so transactions should be treated as high-risk. Verify every purchase directly with the provider and with Yostar, and monitor statements carefully. The launcher is community-maintained and includes patched compatibility layers; users accept all payment and billing risks themselves.
@@ -42,7 +42,7 @@ The project is in beta and supports only Apple Silicon Macs running macOS 26 or 
 The app requires:
 
 - Apple Silicon
-- macOS 26 or newer
+- macOS 15 (Sequoia) or newer
 - Rosetta 2
 
 Download `Arknights Client.dmg` from [GitHub Releases](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), open it, and drag the app to **Applications**.
@@ -78,12 +78,12 @@ cd Arknights-MacOS-Client
 just check
 ```
 
-| Command                    | Purpose                                                       |
-| -------------------------- | -------------------------------------------------------------- |
-| `just preview`             | Run the isolated debug-state simulator; every state is available from Settings → Developer |
-| `just runtime`             | Download and verify the tested Wine and DXMT runtime          |
-| `just dev [target] [run]`  | Build the app or dmg with the runtime, optionally opening it  |
-| `just ci`                  | Run all checks and build the release configuration            |
+| Command                   | Purpose                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------ |
+| `just preview`            | Run the isolated debug-state simulator; every state is available from Settings → Developer |
+| `just runtime`            | Download and verify the tested Wine and DXMT runtime                                       |
+| `just dev [target] [run]` | Build the app or dmg with the runtime, optionally opening it                               |
+| `just ci`                 | Run all checks and build the release configuration                                         |
 
 Run `just --groups` for the complete command list.
 Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json).

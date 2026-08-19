@@ -24,7 +24,7 @@ struct MusicHUDPill: View {
 			}
 			.padding(.horizontal, 14)
 			.padding(.vertical, 7)
-			.glassEffect(.regular.tint(model.hudTintColor), in: Capsule())
+			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
 		}
 	}
 }
@@ -46,7 +46,7 @@ struct VersionHUDPill: View {
 			}
 			.padding(.horizontal, 14)
 			.padding(.vertical, 7)
-			.glassEffect(.regular.tint(model.hudTintColor), in: Capsule())
+			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
 		}
 	}
 }
@@ -72,7 +72,7 @@ struct StatusHUDPill: View {
 			}
 			.padding(.horizontal, 14)
 			.padding(.vertical, 7)
-			.glassEffect(.regular.tint(model.hudTintColor), in: Capsule())
+			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
 		}
 	}
 

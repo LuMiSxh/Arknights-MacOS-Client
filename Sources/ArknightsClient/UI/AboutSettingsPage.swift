@@ -29,18 +29,18 @@ struct AboutSettingsPage: View {
 				Spacer()
 				Button("Show in Finder", systemImage: "folder", action: model.revealApplication)
 					.labelStyle(.iconOnly)
-					.buttonStyle(.glass)
+					.adaptiveGlassButton()
 					.help("Reveal the launcher application in Finder")
 				Link(
 					"GitHub Repository",
 					destination: URL(
 						string: "https://github.com/LuMiSxh/Arknights-MacOS-Client")!
 				)
-				.buttonStyle(.glass)
+				.adaptiveGlassButton()
 				.foregroundStyle(.primary)
 			}
 			.padding(20)
-			.glassEffect(.regular, in: .rect(cornerRadius: 20))
+			.adaptiveGlassEffect(in: .rect(cornerRadius: 20))
 
 			SettingsPanel(title: "Documents", systemImage: "doc.text") {
 				DocumentLinkRow(

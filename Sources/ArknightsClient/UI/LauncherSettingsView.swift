@@ -43,7 +43,7 @@ struct LauncherSettingsView: View {
 		.toolbar {
 			ToolbarItem(placement: .confirmationAction) {
 				Button("Done") { dismiss() }
-					.buttonStyle(.glassProminent)
+					.adaptiveGlassButton(prominent: true)
 					.tint(model.accentColor)
 			}
 		}

@@ -61,7 +61,7 @@ struct ContentView: View {
 					.font(.system(size: 17, weight: .medium))
 					.frame(width: 20, height: 20)
 			}
-			.buttonStyle(.glass)
+			.adaptiveGlassButton()
 			.buttonBorderShape(.circle)
 			.controlSize(.large)
 			.keyboardShortcut(",", modifiers: .command)
@@ -113,7 +113,7 @@ struct ContentView: View {
 						"Launcher Update", systemImage: "arrow.down.app",
 						action: model.openLauncherUpdate
 					)
-					.buttonStyle(.glass)
+					.adaptiveGlassButton()
 					.buttonBorderShape(.capsule)
 					.help("Open the latest launcher release in your browser")
 				}
@@ -122,10 +122,7 @@ struct ContentView: View {
 			}
 		}
 		.padding(16)
-		.glassEffect(
-			.regular.tint(model.hudTintColor),
-			in: Capsule()
-		)
+		.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
 	}
 
 	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill
@@ -202,14 +199,14 @@ struct ContentView: View {
 	private var primaryAction: some View {
 		if model.isGameRunning {
 			Button("Stop", systemImage: "stop.fill", action: model.stopGame)
-				.buttonStyle(.glass)
+				.adaptiveGlassButton()
 				.buttonBorderShape(.capsule)
 				.controlSize(.large)
 				.disabled(!model.canStopGame)
 				.help("Stop Arknights and its Windows runtime")
 		} else if model.isDownloading {
 			Button("Pause", systemImage: "pause.fill", action: model.cancelDownload)
-				.buttonStyle(.glass)
+				.adaptiveGlassButton()
 				.buttonBorderShape(.capsule)
 				.controlSize(.large)
 				.help("Pause the download; it resumes from partial files later")
@@ -219,7 +216,7 @@ struct ContentView: View {
 				systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down",
 				action: model.installOrUpdate
 			)
-			.buttonStyle(.glassProminent)
+			.adaptiveGlassButton(prominent: true)
 			.buttonBorderShape(.capsule)
 			.controlSize(.large)
 			.tint(cyan)
@@ -232,7 +229,7 @@ struct ContentView: View {
 			)
 		} else if model.isGameUpdateAvailable {
 			Button("Update", systemImage: "arrow.down", action: model.installOrUpdate)
-				.buttonStyle(.glassProminent)
+				.adaptiveGlassButton(prominent: true)
 				.buttonBorderShape(.capsule)
 				.controlSize(.large)
 				.tint(cyan)
@@ -241,7 +238,7 @@ struct ContentView: View {
 				.help("Download the changed game files")
 		} else {
 			Button("Play", systemImage: "play.fill", action: model.launch)
-				.buttonStyle(.glassProminent)
+				.adaptiveGlassButton(prominent: true)
 				.buttonBorderShape(.capsule)
 				.controlSize(.large)
 				.tint(cyan)

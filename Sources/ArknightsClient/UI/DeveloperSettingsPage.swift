@@ -41,7 +41,7 @@ import SwiftUI
 								markdown: customPopupMarkdown
 							)
 						}
-						.buttonStyle(.glassProminent)
+						.adaptiveGlassButton(prominent: true)
 						.tint(model.accentColor)
 						.disabled(customPopupMarkdown.isEmpty)
 					}

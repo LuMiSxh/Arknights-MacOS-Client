@@ -73,12 +73,12 @@ struct LauncherPopupView: View {
 				if let actionTitle = popup.actionTitle {
 					Button(popup.dismissTitle, action: dismiss)
 					Button(actionTitle, action: openAction)
-						.buttonStyle(.glassProminent)
+						.adaptiveGlassButton(prominent: true)
 						.tint(accentColor)
 						.keyboardShortcut(.defaultAction)
 				} else {
 					Button(popup.dismissTitle, action: dismiss)
-						.buttonStyle(.glassProminent)
+						.adaptiveGlassButton(prominent: true)
 						.tint(accentColor)
 						.keyboardShortcut(.defaultAction)
 				}

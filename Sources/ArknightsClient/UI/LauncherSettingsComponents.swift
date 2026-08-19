@@ -56,7 +56,7 @@ struct SettingsPanel<Content: View>: View {
 		}
 		.padding(18)
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.glassEffect(.regular, in: .rect(cornerRadius: 18))
+		.adaptiveGlassEffect(in: .rect(cornerRadius: 18))
 	}
 }
 
@@ -74,7 +74,7 @@ struct DangerZonePanel<Content: View>: View {
 		}
 		.padding(18)
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.glassEffect(.regular, in: .rect(cornerRadius: 18))
+		.adaptiveGlassEffect(in: .rect(cornerRadius: 18))
 		.overlay {
 			RoundedRectangle(cornerRadius: 18)
 				.strokeBorder(SettingsVisuals.danger.opacity(0.45), lineWidth: 1)

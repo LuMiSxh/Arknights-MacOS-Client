@@ -62,7 +62,7 @@ struct BundledDocumentView: View {
 			.toolbar {
 				ToolbarItem(placement: .confirmationAction) {
 					Button("Done") { dismiss() }
-						.buttonStyle(.glassProminent)
+						.adaptiveGlassButton(prominent: true)
 				}
 			}
 		}

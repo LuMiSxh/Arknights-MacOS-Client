@@ -2,7 +2,7 @@
 
 ## Scope
 
-- Build only for Apple Silicon and macOS 26 or newer.
+- Build only for Apple Silicon; support macOS 15 (Sequoia) and newer. Guard macOS-26-only APIs (Liquid Glass) with `#available(macOS 26, *)` via `adaptiveGlassEffect`/`adaptiveGlassButton` in `AdaptiveGlass.swift` — macOS 15–25 fall back to native Material/bordered styles.
 - Support the official Global, Japan, and Korea PC clients (all published by Yostar on `yo-star.com`, same launcher API shape and signature algorithm, verified 2026-08-16). Do not add CN behavior: it runs on separate Hypergryph infrastructure (its own launcher, its own account system) and its PC client bundles Tencent ACE, a kernel-mode anti-cheat with no Wine/Linux support — a verified technical blocker, not just unverified scope.
 - Keep source code, UI copy, documentation, commits, and tests in English.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
