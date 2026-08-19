@@ -48,6 +48,7 @@ struct ContentView: View {
 				popup: popup,
 				accentColor: cyan,
 				accentTextColor: model.accentTextColor,
+				hudTintColor: model.hudTintColor,
 				dismiss: model.dismissPopup,
 				openAction: model.openPopupAction
 			)

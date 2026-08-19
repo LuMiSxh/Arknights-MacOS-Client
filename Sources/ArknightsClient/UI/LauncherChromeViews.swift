@@ -37,40 +37,42 @@ struct LauncherPopupView: View {
 	let popup: LauncherPopup
 	let accentColor: Color
 	let accentTextColor: Color
+	let hudTintColor: Color
 	let dismiss: () -> Void
 	let openAction: () -> Void
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 0) {
-			Text(popup.title)
-				.font(.title2.bold())
-				.padding(.bottom, 16)
-			SettingsHairline()
-			ScrollView {
-				Group {
-					switch popup.content {
-					case .markdown(let source):
-						MarkdownDocument(source: source, accentColor: accentColor)
-					case .attributed(let content):
-						Text(content)
-					}
+		LauncherThemedPopup(
+			title: popup.title,
+			hudTintColor: hudTintColor
+		) {
+			Group {
+				switch popup.content {
+				case .markdown(let source):
+					MarkdownDocument(source: source, accentColor: accentColor)
+				case .attributed(let content):
+					Text(content)
 				}
-				.frame(maxWidth: .infinity, alignment: .leading)
-				.textSelection(.enabled)
-				.padding(.vertical, 18)
 			}
-			SettingsHairline()
-			HStack {
-				Spacer()
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.textSelection(.enabled)
+		} actions: {
+			HStack(spacing: 10) {
 				if let actionTitle = popup.actionTitle {
-					Button(popup.dismissTitle, action: dismiss)
 					Button(action: openAction) {
 						Text(actionTitle)
 							.foregroundStyle(accentTextColor)
 					}
-					.adaptiveGlassButton(prominent: true)
+					.adaptiveGlassButton()
 					.tint(accentColor)
 					.keyboardShortcut(.defaultAction)
+
+					Button(action: dismiss) {
+						Text(popup.dismissTitle)
+							.foregroundStyle(accentTextColor)
+					}
+					.adaptiveGlassButton(prominent: true)
+					.tint(accentColor)
 				} else {
 					Button(action: dismiss) {
 						Text(popup.dismissTitle)
@@ -81,10 +83,60 @@ struct LauncherPopupView: View {
 					.keyboardShortcut(.defaultAction)
 				}
 			}
-			.padding(.top, 14)
 		}
-		.padding(24)
-		.frame(width: 560, height: 380)
-		.background(.thinMaterial)
+	}
+}
+
+private struct LauncherThemedPopup<Content: View, Actions: View>: View {
+	let title: String
+	let hudTintColor: Color
+	@ViewBuilder let content: () -> Content
+	@ViewBuilder let actions: () -> Actions
+
+	var body: some View {
+		ZStack(alignment: .bottomTrailing) {
+			VStack(spacing: 0) {
+				Text(title)
+					.font(.title2.bold())
+					.padding(.horizontal, 24)
+					.padding(.top, 22)
+					.padding(.bottom, 16)
+
+				SettingsHairline()
+
+				ScrollView {
+					content()
+						.padding(.horizontal, 24)
+						.padding(.vertical, 18)
+				}
+				.contentMargins(.top, 8, for: .scrollIndicators)
+				.contentMargins(.bottom, 12, for: .scrollIndicators)
+				.scrollIndicators(.automatic)
+			}
+
+			// Soft bottom gradient scrim
+			LinearGradient(
+				colors: [.clear, Color.black.opacity(0.45)],
+				startPoint: .top,
+				endPoint: .bottom
+			)
+			.frame(height: 56)
+			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+			.allowsHitTesting(false)
+
+			HStack(spacing: 10) {
+				actions()
+			}
+			.padding(.trailing, 24)
+			.padding(.bottom, 18)
+		}
+		.frame(width: 620, height: 430)
+		.background(
+			ZStack {
+				Color(red: 0.07, green: 0.07, blue: 0.08)
+				hudTintColor
+			}
+		)
+		.preferredColorScheme(.dark)
 	}
 }
