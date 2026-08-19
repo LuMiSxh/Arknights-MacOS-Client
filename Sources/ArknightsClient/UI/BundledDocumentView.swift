@@ -39,6 +39,7 @@ enum BundledDocument: String, Identifiable {
 struct BundledDocumentView: View {
 	let document: BundledDocument
 	let accentColor: Color
+	let accentTextColor: Color
 	@Environment(\.dismiss) private var dismiss
 
 	var body: some View {
@@ -57,12 +58,17 @@ struct BundledDocumentView: View {
 				.textSelection(.enabled)
 				.padding(28)
 			}
+			.contentMargins(.top, 12, for: .scrollIndicators)
+			.contentMargins(.bottom, 16, for: .scrollIndicators)
 			.background(.ultraThinMaterial)
 			.navigationTitle(document.title)
 			.toolbar {
 				ToolbarItem(placement: .confirmationAction) {
-					Button("Done") { dismiss() }
-						.adaptiveGlassButton(prominent: true)
+					Button(action: { dismiss() }) {
+						Text("Done")
+							.foregroundStyle(accentTextColor)
+					}
+					.adaptiveGlassButton(prominent: true)
 				}
 			}
 		}

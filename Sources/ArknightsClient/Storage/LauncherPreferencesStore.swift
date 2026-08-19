@@ -89,7 +89,7 @@ struct LauncherPreferencesStore {
 	}
 
 	func showsPlayingMusic() -> Bool {
-		bool(for: Key.showsPlayingMusic, defaultValue: true)
+		bool(for: Key.showsPlayingMusic, defaultValue: false)
 	}
 
 	func setShowsPlayingMusic(_ value: Bool) {

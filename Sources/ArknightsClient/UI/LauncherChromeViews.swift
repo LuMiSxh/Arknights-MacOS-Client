@@ -28,15 +28,6 @@ struct ArknightsWordmark: View {
 			}
 		}
 		.padding(.trailing, 24)
-		.background {
-			RadialGradient(
-				colors: [.black.opacity(0.58), .black.opacity(0)],
-				center: .leading,
-				startRadius: 12,
-				endRadius: 185
-			)
-			.frame(width: 320, height: 130)
-		}
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel("Arknights Global macOS client")
 	}
@@ -45,6 +36,7 @@ struct ArknightsWordmark: View {
 struct LauncherPopupView: View {
 	let popup: LauncherPopup
 	let accentColor: Color
+	let accentTextColor: Color
 	let dismiss: () -> Void
 	let openAction: () -> Void
 
@@ -72,15 +64,21 @@ struct LauncherPopupView: View {
 				Spacer()
 				if let actionTitle = popup.actionTitle {
 					Button(popup.dismissTitle, action: dismiss)
-					Button(actionTitle, action: openAction)
-						.adaptiveGlassButton(prominent: true)
-						.tint(accentColor)
-						.keyboardShortcut(.defaultAction)
+					Button(action: openAction) {
+						Text(actionTitle)
+							.foregroundStyle(accentTextColor)
+					}
+					.adaptiveGlassButton(prominent: true)
+					.tint(accentColor)
+					.keyboardShortcut(.defaultAction)
 				} else {
-					Button(popup.dismissTitle, action: dismiss)
-						.adaptiveGlassButton(prominent: true)
-						.tint(accentColor)
-						.keyboardShortcut(.defaultAction)
+					Button(action: dismiss) {
+						Text(popup.dismissTitle)
+							.foregroundStyle(accentTextColor)
+					}
+					.adaptiveGlassButton(prominent: true)
+					.tint(accentColor)
+					.keyboardShortcut(.defaultAction)
 				}
 			}
 			.padding(.top, 14)

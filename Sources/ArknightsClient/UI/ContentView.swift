@@ -15,6 +15,19 @@ struct ContentView: View {
 			artwork
 				.ignoresSafeArea(.container, edges: .top)
 
+			// Seamless top-left corner vignette for traffic lights & wordmark readability
+			LinearGradient(
+				colors: [
+					Color.black.opacity(0.62),
+					Color.black.opacity(0.32),
+					Color.clear,
+				],
+				startPoint: .topLeading,
+				endPoint: .init(x: 0.38, y: 0.28)
+			)
+			.ignoresSafeArea(.container, edges: .top)
+			.allowsHitTesting(false)
+
 			VStack(spacing: 0) {
 				topBar
 				Spacer()
@@ -34,6 +47,7 @@ struct ContentView: View {
 			LauncherPopupView(
 				popup: popup,
 				accentColor: cyan,
+				accentTextColor: model.accentTextColor,
 				dismiss: model.dismissPopup,
 				openAction: model.openPopupAction
 			)
@@ -211,11 +225,13 @@ struct ContentView: View {
 				.controlSize(.large)
 				.help("Pause the download; it resumes from partial files later")
 		} else if !model.isInstalled {
-			Button(
-				model.hasPartialDownload ? "Resume" : "Install",
-				systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down",
-				action: model.installOrUpdate
-			)
+			Button(action: model.installOrUpdate) {
+				Label(
+					model.hasPartialDownload ? "Resume" : "Install",
+					systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
+				)
+				.foregroundStyle(model.accentTextColor)
+			}
 			.adaptiveGlassButton(prominent: true)
 			.buttonBorderShape(.capsule)
 			.controlSize(.large)
@@ -228,23 +244,29 @@ struct ContentView: View {
 					: "Download and verify the official Global PC files"
 			)
 		} else if model.isGameUpdateAvailable {
-			Button("Update", systemImage: "arrow.down", action: model.installOrUpdate)
-				.adaptiveGlassButton(prominent: true)
-				.buttonBorderShape(.capsule)
-				.controlSize(.large)
-				.tint(cyan)
-				.disabled(!model.canInstall)
-				.keyboardShortcut(.defaultAction)
-				.help("Download the changed game files")
+			Button(action: model.installOrUpdate) {
+				Label("Update", systemImage: "arrow.down")
+					.foregroundStyle(model.accentTextColor)
+			}
+			.adaptiveGlassButton(prominent: true)
+			.buttonBorderShape(.capsule)
+			.controlSize(.large)
+			.tint(cyan)
+			.disabled(!model.canInstall)
+			.keyboardShortcut(.defaultAction)
+			.help("Download the changed game files")
 		} else {
-			Button("Play", systemImage: "play.fill", action: model.launch)
-				.adaptiveGlassButton(prominent: true)
-				.buttonBorderShape(.capsule)
-				.controlSize(.large)
-				.tint(cyan)
-				.disabled(!model.canLaunch)
-				.keyboardShortcut(.defaultAction)
-				.help("Start Arknights")
+			Button(action: model.launch) {
+				Label("Play", systemImage: "play.fill")
+					.foregroundStyle(model.accentTextColor)
+			}
+			.adaptiveGlassButton(prominent: true)
+			.buttonBorderShape(.capsule)
+			.controlSize(.large)
+			.tint(cyan)
+			.disabled(!model.canLaunch)
+			.keyboardShortcut(.defaultAction)
+			.help("Start Arknights")
 		}
 	}
 

@@ -26,9 +26,13 @@ struct SettingsPage<Content: View>: View {
 				}
 				content
 			}
-			.padding(26)
+			.padding(.horizontal, 26)
+			.padding(.top, 26)
+			.padding(.bottom, 72)
 		}
-		.scrollIndicators(.hidden)
+		.contentMargins(.top, 14, for: .scrollIndicators)
+		.contentMargins(.bottom, 22, for: .scrollIndicators)
+		.scrollIndicators(.automatic)
 	}
 }
 
@@ -56,7 +60,11 @@ struct SettingsPanel<Content: View>: View {
 		}
 		.padding(18)
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.adaptiveGlassEffect(in: .rect(cornerRadius: 18))
+		.background(Color.white.opacity(0.04), in: .rect(cornerRadius: 18))
+		.overlay {
+			RoundedRectangle(cornerRadius: 18)
+				.strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+		}
 	}
 }
 

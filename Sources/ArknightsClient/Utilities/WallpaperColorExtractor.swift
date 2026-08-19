@@ -7,7 +7,17 @@ import SwiftUI
 /// for controls/text, and the same hue desaturated and darkened for tinting neutral chrome.
 struct ExtractedAccent {
 	let hue: Double
+	let saturation: Double
+	let brightness: Double
 	let accentColor: Color
+
+	/// High-contrast text color for prominent buttons tinted with `accentColor`.
+	/// Uses dark text on bright/vibrant accents (cyan, mint, yellow) and white on dark ones.
+	var accentTextColor: Color {
+		let (r, g, b) = rgb(hue: hue, saturation: saturation, brightness: brightness)
+		let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+		return luminance > 0.42 ? Color.black.opacity(0.92) : Color.white
+	}
 
 	var backgroundTint: Color {
 		Color(
@@ -122,8 +132,26 @@ private func bestAccentColor(in pixels: [UInt8]) -> ExtractedAccent? {
 	let hue = bucketHueSum[winner] / count
 	return ExtractedAccent(
 		hue: hue,
+		saturation: renderSaturation,
+		brightness: renderBrightness,
 		accentColor: Color(hue: hue, saturation: renderSaturation, brightness: renderBrightness)
 	)
+}
+
+private func rgb(hue: Double, saturation: Double, brightness: Double) -> (Double, Double, Double) {
+	let c = brightness * saturation
+	let x = c * (1 - abs((hue * 6).truncatingRemainder(dividingBy: 2) - 1))
+	let m = brightness - c
+	let (r1, g1, b1): (Double, Double, Double)
+	switch hue * 6 {
+	case 0..<1: (r1, g1, b1) = (c, x, 0)
+	case 1..<2: (r1, g1, b1) = (x, c, 0)
+	case 2..<3: (r1, g1, b1) = (0, c, x)
+	case 3..<4: (r1, g1, b1) = (0, x, c)
+	case 4..<5: (r1, g1, b1) = (x, 0, c)
+	default: (r1, g1, b1) = (c, 0, x)
+	}
+	return (r1 + m, g1 + m, b1 + m)
 }
 
 private func hsb(red: Double, green: Double, blue: Double) -> (

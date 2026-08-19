@@ -16,39 +16,72 @@ struct LauncherSettingsView: View {
 				accentColor: model.accentColor
 			)
 			Divider()
-			Group {
-				switch selectedSection {
-				case .general:
-					GeneralSettingsPage(model: model)
-				case .audio:
-					AudioSettingsPage(model: model)
-				case .updates:
-					UpdatesSettingsPage(model: model)
-				case .installation:
-					InstallationSettingsPage(model: model)
-				case .about:
-					AboutSettingsPage(model: model, presentedDocument: $presentedDocument)
-				#if DEBUG
-					case .developer:
-						DeveloperSettingsPage(model: model)
-				#endif
+				.overlay(Color.white.opacity(0.08))
+
+			ZStack(alignment: .bottomTrailing) {
+				Group {
+					switch selectedSection {
+					case .general:
+						GeneralSettingsPage(model: model)
+					case .audio:
+						AudioSettingsPage(model: model)
+					case .updates:
+						UpdatesSettingsPage(model: model)
+					case .installation:
+						InstallationSettingsPage(model: model)
+					case .about:
+						AboutSettingsPage(model: model, presentedDocument: $presentedDocument)
+					#if DEBUG
+						case .developer:
+							DeveloperSettingsPage(model: model)
+					#endif
+					}
 				}
+				.frame(maxWidth: .infinity, maxHeight: .infinity)
+
+				LinearGradient(
+					colors: [.clear, Color.black.opacity(0.45)],
+					startPoint: .top,
+					endPoint: .bottom
+				)
+				.frame(height: 60)
+				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+				.allowsHitTesting(false)
+
+				Button {
+					dismiss()
+				} label: {
+					Text("Done")
+						.fontWeight(.semibold)
+						.foregroundStyle(model.accentTextColor)
+						.padding(.horizontal, 10)
+						.padding(.vertical, 2)
+				}
+				.adaptiveGlassButton(prominent: true)
+				.buttonBorderShape(.capsule)
+				.tint(model.accentColor)
+				.shadow(color: Color.black.opacity(0.55), radius: 10, x: 0, y: 4)
+				.padding(.trailing, 26)
+				.padding(.bottom, 18)
+				.keyboardShortcut(.defaultAction)
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
-			.background(.ultraThinMaterial)
 		}
 		.tint(model.accentColor)
-		.background(.thinMaterial)
-		.frame(width: 820, height: 570)
-		.toolbar {
-			ToolbarItem(placement: .confirmationAction) {
-				Button("Done") { dismiss() }
-					.adaptiveGlassButton(prominent: true)
-					.tint(model.accentColor)
+		.background(
+			ZStack {
+				Color(red: 0.07, green: 0.07, blue: 0.08)
+				model.hudTintColor
 			}
-		}
+		)
+		.preferredColorScheme(.dark)
+		.frame(width: 820, height: 570)
 		.sheet(item: $presentedDocument) { document in
-			BundledDocumentView(document: document, accentColor: model.accentColor)
+			BundledDocumentView(
+				document: document,
+				accentColor: model.accentColor,
+				accentTextColor: model.accentTextColor
+			)
 		}
 	}
 }
@@ -102,7 +135,12 @@ private struct SettingsNavigationRail: View {
 			.padding(18)
 		}
 		.frame(width: 178)
-		.background(.regularMaterial)
+		.background(
+			ZStack {
+				Color.black.opacity(0.28)
+				accentColor.opacity(0.03)
+			}
+		)
 	}
 
 	private var visibleSections: [SettingsSection] {

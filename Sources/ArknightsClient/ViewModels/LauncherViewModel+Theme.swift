@@ -10,6 +10,7 @@ extension LauncherViewModel {
 	func updateThemeColor() {
 		guard usesDynamicTheme, let heroArtwork else {
 			accentColor = SettingsVisuals.cyan
+			accentTextColor = Color.black.opacity(0.92)
 			hudTintColor = SettingsVisuals.hudGlassTint
 			return
 		}
@@ -21,6 +22,7 @@ extension LauncherViewModel {
 			// a result that still matches the artwork it was sampled from.
 			guard self.heroArtwork === heroArtwork else { return }
 			self.accentColor = extracted?.accentColor ?? SettingsVisuals.cyan
+			self.accentTextColor = extracted?.accentTextColor ?? Color.black.opacity(0.92)
 			self.hudTintColor = extracted?.backgroundTint ?? SettingsVisuals.hudGlassTint
 		}
 	}

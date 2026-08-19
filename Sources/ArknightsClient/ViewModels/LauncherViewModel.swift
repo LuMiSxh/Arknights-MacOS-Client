@@ -86,6 +86,7 @@ final class LauncherViewModel {
 		didSet { preferences.setLauncherMusicVolume(launcherMusicVolume) }
 	}
 	var currentMusicTitle: String?
+	var currentMusicVideoID: String?
 	var usesDynamicTheme: Bool {
 		didSet {
 			preferences.setUsesDynamicTheme(usesDynamicTheme)
@@ -93,7 +94,10 @@ final class LauncherViewModel {
 		}
 	}
 	var accentColor: Color = SettingsVisuals.cyan
+	var accentTextColor: Color = Color.black.opacity(0.92)
 	var hudTintColor: Color = SettingsVisuals.hudGlassTint
+
+	var appVersion: String { IssueReportURL.appVersion }
 
 	let api: any LauncherAPIProviding
 	let installer: any GameInstalling
@@ -305,6 +309,19 @@ final class LauncherViewModel {
 		activityMessage = "Checking…"
 		Task { [log] in await log.info("Region switched to \(newRegion.displayName)") }
 		refreshTask = Task { [weak self] in await self?.refresh() }
+	}
+
+	func openCurrentMusicURL() {
+		if let currentMusicVideoID,
+			let url = URL(string: "https://www.youtube.com/watch?v=\(currentMusicVideoID)")
+		{
+			NSWorkspace.shared.open(url)
+			return
+		}
+		let trimmed = launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
+		if let url = URL(string: trimmed) {
+			NSWorkspace.shared.open(url)
+		}
 	}
 
 	func refresh(forceGameUpdateCheck: Bool = false) async {

@@ -7,23 +7,35 @@ import SwiftUI
 /// reserves empty space on the common no-music path.
 struct MusicHUDPill: View {
 	var model: LauncherViewModel
+	@State private var isHovering = false
 
 	var body: some View {
 		if model.showsPlayingMusic, let musicTitle = model.currentMusicTitle {
-			HStack(spacing: 5) {
-				Image(systemName: "music.note")
-					.font(.system(size: 10, weight: .semibold))
-					.foregroundStyle(model.accentColor)
-				Text(musicTitle)
-					.font(.system(size: 11, weight: .medium, design: .monospaced))
-					.foregroundStyle(.secondary)
-					.lineLimit(2)
-					.multilineTextAlignment(.center)
-					.frame(maxWidth: AppConstants.Music.nowPlayingTitleMaxWidth)
-					.fixedSize()
+			Button {
+				model.openCurrentMusicURL()
+			} label: {
+				HStack(spacing: 5) {
+					Image(systemName: "music.note")
+						.font(.system(size: 10, weight: .semibold))
+						.foregroundStyle(model.accentColor)
+					Text(musicTitle)
+						.font(.system(size: 11, weight: .medium, design: .monospaced))
+						.foregroundStyle(isHovering ? .primary : .secondary)
+						.lineLimit(1)
+						.truncationMode(.tail)
+						.multilineTextAlignment(.center)
+						.frame(maxWidth: AppConstants.Music.nowPlayingTitleMaxWidth)
+					Image(systemName: "arrow.up.right")
+						.font(.system(size: 8, weight: .bold))
+						.foregroundStyle(model.accentColor.opacity(isHovering ? 0.9 : 0.45))
+				}
+				.padding(.horizontal, 12)
+				.padding(.vertical, 7)
 			}
-			.padding(.horizontal, 14)
-			.padding(.vertical, 7)
+			.buttonStyle(.plain)
+			.onHover { isHovering = $0 }
+			.help("Open track in browser")
+			.fixedSize(horizontal: true, vertical: false)
 			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
 		}
 	}

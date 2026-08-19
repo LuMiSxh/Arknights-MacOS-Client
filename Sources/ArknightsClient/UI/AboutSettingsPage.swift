@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import SwiftUI
 
 struct AboutSettingsPage: View {
@@ -27,17 +28,28 @@ struct AboutSettingsPage: View {
 					.font(.callout.weight(.medium))
 				}
 				Spacer()
-				Button("Show in Finder", systemImage: "folder", action: model.revealApplication)
-					.labelStyle(.iconOnly)
-					.adaptiveGlassButton()
-					.help("Reveal the launcher application in Finder")
-				Link(
-					"GitHub Repository",
-					destination: URL(
-						string: "https://github.com/LuMiSxh/Arknights-MacOS-Client")!
-				)
+				Button(action: model.revealApplication) {
+					Label("Show in Finder", systemImage: "folder")
+						.foregroundStyle(model.accentTextColor)
+				}
+				.labelStyle(.iconOnly)
 				.adaptiveGlassButton()
-				.foregroundStyle(.primary)
+				.tint(model.accentColor)
+				.help("Reveal the launcher application in Finder")
+				Button {
+					NSWorkspace.shared.open(
+						URL(
+							string: "https://github.com/LuMiSxh/Arknights-MacOS-Client"
+						)!
+					)
+				} label: {
+					Text("GitHub Repository")
+						.foregroundStyle(model.accentTextColor)
+						.padding(.horizontal, 6)
+				}
+				.adaptiveGlassButton()
+				.tint(model.accentColor)
+				.help("Open project repository")
 			}
 			.padding(20)
 			.adaptiveGlassEffect(in: .rect(cornerRadius: 20))

@@ -14,7 +14,7 @@ struct UpdatesSettingsPage: View {
 			{
 				UpdateSettingsRow(
 					title: "Launcher",
-					status: model.launcherUpdateStatus ?? "Not checked",
+					status: launcherStatusText,
 					isEnabled: $model.automaticallyChecksLauncherUpdates,
 					isChecking: model.isCheckingLauncherUpdates,
 					accentColor: model.accentColor,
@@ -43,5 +43,11 @@ struct UpdatesSettingsPage: View {
 				}
 			}
 		}
+	}
+
+	private var launcherStatusText: String {
+		if model.isCheckingLauncherUpdates { return "Checking…" }
+		if model.launcherUpdate != nil { return "Update available" }
+		return "v\(model.appVersion)"
 	}
 }

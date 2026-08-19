@@ -190,6 +190,7 @@ struct BackgroundMusicView: View {
 		lastObservedTitle = title
 
 		model.currentMusicTitle = title
+		model.currentMusicVideoID = metadata.videoId
 		Task { [log = model.log] in
 			await log.info("Background music now playing: \(title)")
 		}

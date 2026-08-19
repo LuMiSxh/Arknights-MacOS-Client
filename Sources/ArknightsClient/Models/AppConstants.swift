@@ -5,7 +5,7 @@ import Foundation
 enum AppConstants {
 	enum Music {
 		static let defaultLauncherMusicURL =
-			"https://www.youtube.com/playlist?list=PLFxi1xOJXheF2zXThZTQnInoWZb1JfPf5"
+			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"
 		static let nowPlayingTitleMaxWidth: Double = 320
 		static let backgroundMusicViewFrame: Double = 300
 		static let backgroundMusicOpacity: Double = 0.01
