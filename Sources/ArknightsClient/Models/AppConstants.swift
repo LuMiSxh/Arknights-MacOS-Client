@@ -5,9 +5,10 @@ import Foundation
 enum AppConstants {
 	enum Icon {
 		static let canvasDimension: CGFloat = 512
-		static let squircleDimension: CGFloat = 456
-		static let squircleCornerRadius: CGFloat = 102.0
-		// 0.890625 (~89.0%)
+		// Balanced test size between strict Apple Grid (412) and previous rendering size (456).
+		static let squircleDimension: CGFloat = 434
+		static let squircleCornerRadius: CGFloat = 97.25
+		// 0.84765625 (~84.8%)
 		static let appleGridScale: CGFloat = squircleDimension / canvasDimension
 		static let baseCyanHue: Double = 0.533
 	}
