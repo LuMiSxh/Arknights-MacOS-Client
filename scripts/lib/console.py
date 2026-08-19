@@ -133,13 +133,26 @@ class Progress:
             self._next_report += 0.1
 
     def _render(self, current: int) -> None:
-        width = 24
+        import shutil
+
+        columns = shutil.get_terminal_size((80, 24)).columns
+
+        bar_width = 16
         mib = f"{current / 1_048_576:,.0f} MiB"
         if self.total:
             fraction = min(current / self.total, 1.0)
-            filled = int(width * fraction)
-            bar = _BAR_FULL * filled + _BAR_EMPTY * (width - filled)
-            text = f"{styled(bar, _CODES['info'])} {fraction * 100:5.1f}%  {mib}  {self.message}"
+            filled = int(bar_width * fraction)
+            bar = _BAR_FULL * filled + _BAR_EMPTY * (bar_width - filled)
+            percent = f"{fraction * 100:5.1f}%"
+            stats = f"{percent}  {mib}"
+
+            available_msg = max(columns - bar_width - len(stats) - 6, 8)
+            msg = (
+                self.message
+                if len(self.message) <= available_msg
+                else self.message[: available_msg - 1] + "…"
+            )
+            text = f"{styled(bar, _CODES['info'])} {stats}  {msg}"
         else:
             text = f"{mib}  {self.message}"
         print(f"\r{text}{_CLEAR_LINE}", end="", file=sys.stderr, flush=True)
