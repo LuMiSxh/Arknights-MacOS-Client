@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Small floating HUD pills above the main control bar for the now-playing track, region, reset countdown, and game version, each shown only when relevant.
 - Support for macOS 15 (Sequoia) and newer, down from macOS 26; Liquid Glass stays full-featured on macOS 26, with native Material and bordered-button fallbacks on macOS 15–25 (Thanks to @Mickhasinsomnia, #29).
 - Optional launcher background music now opens the currently playing track when tapping the now-playing HUD pill, and the pill now keeps to one-line text with truncation.
+- Added an in-app Asset Gallery in Settings → General → Personalization to browse and apply curated official Arknights wallpapers and operator avatar app icons with on-demand caching (Thanks to @darkwebdev #30, @RadioNoiseE #24).
 
 ### Changed
 

@@ -9,6 +9,7 @@ private func isImageURL(_ url: URL) -> Bool {
 
 struct GeneralSettingsPage: View {
 	@Bindable var model: LauncherViewModel
+	@State private var presentedGalleryTab: PresetGalleryTab?
 
 	var body: some View {
 		SettingsPage(
@@ -107,6 +108,7 @@ struct GeneralSettingsPage: View {
 					title: "Artwork",
 					detail: "Background shown behind the launcher controls."
 				) {
+					Button("Presets…") { presentedGalleryTab = .wallpapers }
 					Button("Choose…", action: model.chooseCustomArtwork)
 					Button("Use Default", action: model.resetArtwork)
 				}
@@ -120,6 +122,7 @@ struct GeneralSettingsPage: View {
 					title: "App Icon",
 					detail: "Dock and Finder icon for the launcher."
 				) {
+					Button("Presets…") { presentedGalleryTab = .avatars }
 					Button("Choose…", action: model.chooseCustomAppIcon)
 					Button("Use Default", action: model.resetAppIcon)
 				}
@@ -137,6 +140,9 @@ struct GeneralSettingsPage: View {
 				}
 				.help("Harmonizes launcher accents and the app icon with the active artwork")
 			}
+		}
+		.sheet(item: $presentedGalleryTab) { tab in
+			PresetGalleryView(model: model, initialTab: .constant(tab))
 		}
 	}
 }

@@ -33,7 +33,7 @@ extension LauncherViewModel {
 		guard !hasCustomAppIcon else { return }
 
 		if usesDynamicTheme, let hue {
-			if let tinted = DynamicAppIcon.tintedIcon(for: hue) {
+			if let tinted = AppIconRenderer.tintedDefaultIcon(for: hue) {
 				NSApp?.applicationIconImage = tinted
 			}
 		} else {

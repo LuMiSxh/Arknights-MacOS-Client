@@ -3,6 +3,15 @@
 import Foundation
 
 enum AppConstants {
+	enum Icon {
+		static let canvasDimension: CGFloat = 512
+		static let squircleDimension: CGFloat = 456
+		static let squircleCornerRadius: CGFloat = 102.0
+		// 0.890625 (~89.0%)
+		static let appleGridScale: CGFloat = squircleDimension / canvasDimension
+		static let baseCyanHue: Double = 0.533
+	}
+
 	enum Music {
 		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"

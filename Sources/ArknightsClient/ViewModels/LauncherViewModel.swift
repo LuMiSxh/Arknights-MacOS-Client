@@ -79,6 +79,7 @@ final class LauncherViewModel {
 	var launcherMusicURL: String {
 		didSet { preferences.setLauncherMusicURL(launcherMusicURL) }
 	}
+	var presetGalleryCacheSizeText = "Calculating…"
 	var showsPlayingMusic: Bool {
 		didSet { preferences.setShowsPlayingMusic(showsPlayingMusic) }
 	}
@@ -203,6 +204,7 @@ final class LauncherViewModel {
 		Task { [log] in
 			await log.info("Launcher \(appVersion) started")
 		}
+		refreshPresetGalleryCacheSize()
 	}
 
 	deinit {

@@ -80,6 +80,19 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
+					title: "Preset Gallery Caches",
+					detail:
+						"Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers). They currently use \(model.presetGalleryCacheSizeText)."
+				) {
+					Button(role: .destructive) {
+						model.clearPresetGalleryCache()
+					} label: {
+						Label("Clear Cache...", systemImage: "trash")
+					}
+					.tint(model.accentColor)
+				}
+				SettingsHairline()
+				SettingsActionRow(
 					title: "Logs",
 					detail: "Use these files when reporting startup or game problems."
 				) {
@@ -96,8 +109,11 @@ struct InstallationSettingsPage: View {
 						NSWorkspace.shared.open(IssueReportURL.build())
 					} label: {
 						Label("Report…", systemImage: "ladybug")
+							.foregroundStyle(model.accentTextColor)
+							.padding(.horizontal, 6)
 					}
-					.adaptiveGlassButton()
+					.adaptiveGlassButton(prominent: true)
+					.tint(model.accentColor)
 				}
 			}
 

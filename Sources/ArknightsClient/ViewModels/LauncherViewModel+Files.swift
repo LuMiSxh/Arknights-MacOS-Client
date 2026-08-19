@@ -67,7 +67,8 @@ extension LauncherViewModel {
 				try FileManager.default.removeItem(at: paths.customArtwork)
 			}
 			try FileManager.default.copyItem(at: url, to: paths.customArtwork)
-			heroArtwork = NSImage(contentsOf: paths.customArtwork)
+			let data = try Data(contentsOf: paths.customArtwork)
+			applyDirectCustomArtwork(data: data)
 		} catch {
 			show(error)
 		}
@@ -102,19 +103,38 @@ extension LauncherViewModel {
 	}
 
 	func applyCustomAppIcon(from url: URL) {
-		guard let image = NSImage(contentsOf: url) else { return }
+		guard let rawImage = NSImage(contentsOf: url) else { return }
+		let paddedImage = AppIconRenderer.padToAppleGrid(image: rawImage)
+		applyDirectCustomAppIcon(image: paddedImage)
+	}
+
+	func applyDirectCustomAppIcon(image: NSImage) {
+		guard let tiff = image.tiffRepresentation,
+			let rep = NSBitmapImageRep(data: tiff),
+			let png = rep.representation(using: .png, properties: [:])
+		else { return }
+
 		do {
 			try FileManager.default.createDirectory(
 				at: paths.customAppIcon.deletingLastPathComponent(),
 				withIntermediateDirectories: true
 			)
-			if FileManager.default.fileExists(atPath: paths.customAppIcon.path) {
-				try FileManager.default.removeItem(at: paths.customAppIcon)
-			}
-			try FileManager.default.copyItem(at: url, to: paths.customAppIcon)
+			try png.write(to: paths.customAppIcon)
 			NSWorkspace.shared.setIcon(image, forFile: Bundle.main.bundlePath, options: [])
-			let padded = DynamicAppIcon.padToAppleGrid(image: image)
-			NSApp?.applicationIconImage = padded
+			NSApp?.applicationIconImage = image
+		} catch {
+			show(error)
+		}
+	}
+
+	func applyDirectCustomArtwork(data: Data) {
+		do {
+			try FileManager.default.createDirectory(
+				at: paths.customArtwork.deletingLastPathComponent(),
+				withIntermediateDirectories: true
+			)
+			try data.write(to: paths.customArtwork)
+			heroArtwork = NSImage(data: data)
 		} catch {
 			show(error)
 		}
@@ -186,6 +206,27 @@ extension LauncherViewModel {
 			Task { [log] in await log.info("Shader and browser caches cleared") }
 		} catch {
 			show(error)
+		}
+	}
+
+	func clearPresetGalleryCache() {
+		Task {
+			await PresetCatalogService.shared.clearCaches()
+			let cacheSizeText = await PresetCatalogService.shared.cacheSizeText()
+			await MainActor.run {
+				activityMessage = "Asset gallery caches cleared"
+				presetGalleryCacheSizeText = cacheSizeText
+			}
+		}
+		Task { [log] in await log.info("Preset gallery caches cleared") }
+	}
+
+	func refreshPresetGalleryCacheSize() {
+		Task {
+			let cacheSizeText = await PresetCatalogService.shared.cacheSizeText()
+			await MainActor.run {
+				self.presetGalleryCacheSizeText = cacheSizeText
+			}
 		}
 	}
 
