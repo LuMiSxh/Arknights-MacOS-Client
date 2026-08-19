@@ -12,6 +12,7 @@ extension LauncherViewModel {
 			accentColor = SettingsVisuals.cyan
 			accentTextColor = Color.black.opacity(0.92)
 			hudTintColor = SettingsVisuals.hudGlassTint
+			updateDynamicAppIcon(hue: nil)
 			return
 		}
 
@@ -24,6 +25,19 @@ extension LauncherViewModel {
 			self.accentColor = extracted?.accentColor ?? SettingsVisuals.cyan
 			self.accentTextColor = extracted?.accentTextColor ?? Color.black.opacity(0.92)
 			self.hudTintColor = extracted?.backgroundTint ?? SettingsVisuals.hudGlassTint
+			self.updateDynamicAppIcon(hue: extracted?.hue)
+		}
+	}
+
+	func updateDynamicAppIcon(hue: Double?) {
+		guard !hasCustomAppIcon else { return }
+
+		if usesDynamicTheme, let hue {
+			if let tinted = DynamicAppIcon.tintedIcon(for: hue) {
+				NSApp?.applicationIconImage = tinted
+			}
+		} else {
+			NSApp?.applicationIconImage = nil
 		}
 	}
 }

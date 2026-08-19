@@ -24,7 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A "Reset All Settings" action in the Danger Zone that restores every launcher toggle and option to default, leaving the install location and selected region untouched.
 - Optional YouTube-based launcher background music, off by default, with URL validation, playlist shuffling, and an optional now-playing title (Thanks to @darkwebdev, #27).
 - A Settings → General → Input toggle for precise trackpad scrolling, enabled by default, so two-finger horizontal swipes work as expected (Thanks to @darkwebdev, #28).
-- A "Dynamic Accent Color" option in Settings → General → Personalization that tints controls, badges, and HUD pills with a color sampled from the active artwork; on by default, with Arknights cyan as the fallback.
+- A "Dynamic Theme" option in Settings → General → Personalization that harmonizes launcher controls, HUD pills, and the app icon with colors sampled from the active artwork.
+- Dynamic Theme now also updates the app icon: the default icon is hue-rotated in YIQ space to match sampled artwork colors, then normalized to a 512×512 point icon with Apple's 80.5% grid padding so the Dock tile no longer appears oversized.
 - Small floating HUD pills above the main control bar for the now-playing track, region, reset countdown, and game version, each shown only when relevant.
 - Support for macOS 15 (Sequoia) and newer, down from macOS 26; Liquid Glass stays full-featured on macOS 26, with native Material and bordered-button fallbacks on macOS 15–25 (Thanks to @Mickhasinsomnia, #29).
 - Optional launcher background music now opens the currently playing track when tapping the now-playing HUD pill, and the pill now keeps to one-line text with truncation.
@@ -41,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Consolidated the `justfile`'s check, format, and dev commands, and added clang-format for the C/Objective-C compatibility shims.
 - Reworked the Developer settings picker to cover every simulated launcher state, including live custom popups, and simplified the preview commands.
 - Made prominent CTA button label contrast adapt to sampled accent luminance so bright accents render dark text and darker accents render light text for better legibility.
+- Normalized user-provided custom app icons to Apple's default icon grid padding before assigning them to the Dock/Finder icon so the launcher icon keeps the same 80.5% visual bounds as system apps.
 - Unified script CLI output with color, spinners, and progress bars, and fixed the progress bar's width calculation.
 - Added recipe-download tracking to release statistics.
 - Simplified the announcement management commands, and added optional version-range and display-window flags to `just announcement set`.

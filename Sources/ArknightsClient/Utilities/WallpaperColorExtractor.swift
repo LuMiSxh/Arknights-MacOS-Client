@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import CoreImage
 import SwiftUI
 
 /// The dominant hue extracted from hero artwork, rendered two ways: a legible signal color
@@ -26,6 +27,75 @@ struct ExtractedAccent {
 			brightness: AppConstants.Theme.backgroundTintBrightness
 		)
 		.opacity(AppConstants.Theme.backgroundTintOpacity)
+	}
+}
+
+enum DynamicAppIcon {
+	/// Standard Apple Big Sur+ App Icon Grid scale ratio (824pt content inside 1024pt canvas).
+	private static let appleGridScale: CGFloat = 0.805
+
+	/// Generates a tinted version of the bundled app icon by shifting the cyan signal layer
+	/// to match the target hue in YIQ color space, preserving all Liquid Glass 3D reflections,
+	/// and padding it to Apple's standard 80.5% grid so it aligns pixel-perfectly with macOS system apps.
+	static func tintedIcon(for targetHue: Double) -> NSImage? {
+		guard let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+			let baseIcon = NSImage(contentsOf: iconURL),
+			let tiffData = baseIcon.tiffRepresentation,
+			let ciImage = CIImage(data: tiffData)
+		else { return nil }
+
+		// Calculate the exact rotation angle in Core Image's native YIQ color space
+		let (targetR, targetG, targetB) = rgb(hue: targetHue, saturation: 1.0, brightness: 1.0)
+		let baseAngle = yiqChromaAngle(red: 0.094, green: 0.82, blue: 1.0)
+		let targetAngle = yiqChromaAngle(red: targetR, green: targetG, blue: targetB)
+		var deltaAngle = targetAngle - baseAngle
+		while deltaAngle > .pi { deltaAngle -= 2 * .pi }
+		while deltaAngle < -.pi { deltaAngle += 2 * .pi }
+
+		let filter = CIFilter(name: "CIHueAdjust")
+		filter?.setValue(ciImage, forKey: kCIInputImageKey)
+		filter?.setValue(deltaAngle, forKey: kCIInputAngleKey)
+
+		guard let outputCI = filter?.outputImage else { return nil }
+		let context = CIContext(options: [.useSoftwareRenderer: false])
+		guard
+			let cgImage = context.createCGImage(outputCI, from: outputCI.extent)
+		else { return nil }
+
+		let rawTintedImage = NSImage(
+			cgImage: cgImage,
+			size: NSSize(width: outputCI.extent.width, height: outputCI.extent.height)
+		)
+		return padToAppleGrid(image: rawTintedImage)
+	}
+
+	/// Centers and insets full-bleed icon artwork onto the standard 80.5% Apple Icon Grid
+	/// with transparent outer margins, preventing `NSApp.applicationIconImage` from rendering
+	/// oversized (125%) in the macOS Dock.
+	static func padToAppleGrid(image: NSImage) -> NSImage {
+		let canvasSize = NSSize(width: 512, height: 512)
+		let contentSize = NSSize(
+			width: canvasSize.width * appleGridScale,
+			height: canvasSize.height * appleGridScale
+		)
+		let origin = NSPoint(
+			x: (canvasSize.width - contentSize.width) / 2.0,
+			y: (canvasSize.height - contentSize.height) / 2.0
+		)
+		let drawRect = NSRect(origin: origin, size: contentSize)
+
+		let padded = NSImage(size: canvasSize)
+		padded.lockFocus()
+		NSGraphicsContext.current?.imageInterpolation = .high
+		image.draw(in: drawRect, from: .zero, operation: .copy, fraction: 1.0)
+		padded.unlockFocus()
+		return padded
+	}
+
+	private static func yiqChromaAngle(red: Double, green: Double, blue: Double) -> Double {
+		let i = 0.596 * red - 0.274 * green - 0.322 * blue
+		let q = 0.211 * red - 0.523 * green + 0.312 * blue
+		return atan2(q, i)
 	}
 }
 

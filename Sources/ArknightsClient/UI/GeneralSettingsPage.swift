@@ -129,13 +129,13 @@ struct GeneralSettingsPage: View {
 					return true
 				}
 				SettingsHairline()
-				LabeledContent("Dynamic Accent Color") {
-					Toggle("Dynamic Accent Color", isOn: $model.usesDynamicTheme)
+				LabeledContent("Dynamic Theme") {
+					Toggle("Dynamic Theme", isOn: $model.usesDynamicTheme)
 						.labelsHidden()
 						.toggleStyle(.switch)
 						.tint(model.accentColor)
 				}
-				.help("Harmonizes launcher accents with the colors of the active artwork")
+				.help("Harmonizes launcher accents and the app icon with the active artwork")
 			}
 		}
 	}

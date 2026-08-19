@@ -113,22 +113,28 @@ extension LauncherViewModel {
 			}
 			try FileManager.default.copyItem(at: url, to: paths.customAppIcon)
 			NSWorkspace.shared.setIcon(image, forFile: Bundle.main.bundlePath, options: [])
-			NSApp.applicationIconImage = image
+			let padded = DynamicAppIcon.padToAppleGrid(image: image)
+			NSApp?.applicationIconImage = padded
 		} catch {
 			show(error)
 		}
 	}
 
+	var hasCustomAppIcon: Bool {
+		FileManager.default.fileExists(atPath: paths.customAppIcon.path)
+	}
+
 	func resetAppIcon() {
 		try? FileManager.default.removeItem(at: paths.customAppIcon)
 		NSWorkspace.shared.setIcon(nil, forFile: Bundle.main.bundlePath, options: [])
-		NSApp.applicationIconImage = nil
+		NSApp?.applicationIconImage = nil
+		updateThemeColor()
 	}
 
 	@discardableResult
 	func loadCustomAppIcon() -> Bool {
 		guard let image = NSImage(contentsOf: paths.customAppIcon) else { return false }
-		NSApp.applicationIconImage = image
+		NSApp?.applicationIconImage = image
 		return true
 	}
 
