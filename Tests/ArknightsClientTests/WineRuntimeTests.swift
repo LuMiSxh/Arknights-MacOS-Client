@@ -24,7 +24,7 @@ func runtimeForcesDXMTForTheGameProcess() {
 }
 
 @Test
-func runtimeDisablesPreciseTrackpadScrollingToMatchWindowsWheelSpeed() {
+func runtimeExposesPreciseScrollingRegistryKeys() {
 	#expect(WineRuntime.macDriverRegistryKey == "HKCU\\Software\\Wine\\Mac Driver")
 	#expect(WineRuntime.preciseScrollingRegistryValue == "UsePreciseScrolling")
 }
@@ -153,6 +153,7 @@ func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
 	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
 	#expect(state?.retinaMode == "y")
 	#expect(state?.logPixels == nil)
+	#expect(state?.usePreciseScrolling == nil)
 }
 
 @Test
@@ -184,8 +185,37 @@ func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
 	#expect(configuration.browserScaleFactor == 2)
 	#expect(
 		configuration.registryState(in: prefix)
-			== WineDisplayRegistryState(retinaMode: "y", logPixels: 192)
+			== WineDisplayRegistryState(
+				retinaMode: "y",
+				logPixels: 192,
+				usePreciseScrolling: nil
+			)
 	)
+}
+
+@Test
+func displayConfigurationReadsPreciseScrolling() throws {
+	let fileManager = FileManager.default
+	let prefix = fileManager.temporaryDirectory.appending(
+		path: "scrolling-registry-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: prefix) }
+	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
+	let registry =
+		"""
+		[Software\\\\Wine\\\\Mac Driver] 1786868782
+		"UsePreciseScrolling"="n"
+
+		"""
+	try registry.write(
+		to: prefix.appending(path: "user.reg"),
+		atomically: true,
+		encoding: .utf8
+	)
+
+	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
+	#expect(state?.usePreciseScrolling == "n")
 }
 
 @Test

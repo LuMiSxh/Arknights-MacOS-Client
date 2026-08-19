@@ -5,11 +5,13 @@ import Foundation
 extension WineRuntime {
 	func applyDisplayConfiguration(
 		_ configuration: WineDisplayConfiguration,
+		usesPreciseScrolling: Bool,
 		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle
 	) async throws {
 		let current = configuration.registryState(in: prefixDirectory)
+		let preciseScrollingValue = usesPreciseScrolling ? "y" : "n"
 		if current?.retinaMode != configuration.registryValue {
 			try await writeRegistryValue(
 				key: "HKCU\\Software\\Wine\\Mac Driver",
@@ -30,13 +32,24 @@ extension WineRuntime {
 				logHandle: logHandle
 			)
 		}
+		if current?.usePreciseScrolling != preciseScrollingValue {
+			try await writeRegistryValue(
+				key: Self.macDriverRegistryKey,
+				name: Self.preciseScrollingRegistryValue,
+				type: "REG_SZ",
+				value: preciseScrollingValue,
+				environment: environment,
+				logHandle: logHandle
+			)
+		}
 		guard
 			current?.retinaMode != configuration.registryValue
 				|| current?.logPixels != configuration.logPixels
+				|| current?.usePreciseScrolling != preciseScrollingValue
 		else { return }
 		try? logHandle.write(
 			contentsOf: Data(
-				"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels).\n"
+				"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels); UsePreciseScrolling=\(preciseScrollingValue).\n"
 					.utf8
 			)
 		)
@@ -217,22 +230,6 @@ extension WineRuntime {
 				"Wine could not disable its crash dialog (status \(crashDialogStatus))."
 			)
 		}
-		let scrollingStatus = try await runAndWait(
-			executable: executableURL,
-			arguments: [
-				"reg.exe", "add", Self.macDriverRegistryKey,
-				"/v", Self.preciseScrollingRegistryValue,
-				"/t", "REG_SZ", "/d", "n", "/f",
-			],
-			environment: environment,
-			output: logHandle
-		)
-		guard scrollingStatus == 0 else {
-			throw LauncherError.runtimeConfiguration(
-				"Wine could not adjust trackpad scroll sensitivity (status \(scrollingStatus))."
-			)
-		}
-
 		for name in [Self.leftCommandIsCtrlRegistryValue, Self.rightCommandIsCtrlRegistryValue] {
 			let status = try await runAndWait(
 				executable: executableURL,

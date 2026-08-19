@@ -57,6 +57,7 @@ extension LauncherViewModel {
 						+ (configuration?.gameStartParams ?? [])
 						+ launchOptions.playerArguments,
 					displayConfiguration: displayConfiguration,
+					usesPreciseScrolling: launchOptions.usesPreciseScrolling,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					metalPerformanceHUDEnabled: launchOptions.usesMetalPerformanceHUD,
 					logURL: paths.logFile,

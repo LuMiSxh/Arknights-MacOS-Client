@@ -102,6 +102,7 @@ struct WineRuntime: Sendable {
 		prefixDirectory: URL,
 		gameArguments: [String] = [],
 		displayConfiguration: WineDisplayConfiguration,
+		usesPreciseScrolling: Bool = false,
 		graphicsDiagnostics: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
 		logURL: URL? = nil,
@@ -174,6 +175,7 @@ struct WineRuntime: Sendable {
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
 		try await applyDisplayConfiguration(
 			displayConfiguration,
+			usesPreciseScrolling: usesPreciseScrolling,
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle

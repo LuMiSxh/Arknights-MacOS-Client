@@ -53,6 +53,7 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 		var section = ""
 		var retinaMode: String?
 		var configuredLogPixels: Int?
+		var usePreciseScrolling: String?
 		for line in contents.split(separator: "\n", omittingEmptySubsequences: false) {
 			if line.hasPrefix("["), let closingBracket = line.firstIndex(of: "]") {
 				section = String(line[...closingBracket])
@@ -61,13 +62,17 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 			if section == macDriverSection && line.hasPrefix("\"RetinaMode\"=\"") {
 				retinaMode = line.dropFirst(14).dropLast().lowercased()
 			}
+			if section == macDriverSection && line.hasPrefix("\"UsePreciseScrolling\"=\"") {
+				usePreciseScrolling = String(line.dropFirst(23).dropLast().lowercased())
+			}
 			if section == desktopSection && line.hasPrefix("\"LogPixels\"=dword:") {
 				configuredLogPixels = Int(line.dropFirst(18), radix: 16)
 			}
 		}
 		return WineDisplayRegistryState(
 			retinaMode: retinaMode,
-			logPixels: configuredLogPixels
+			logPixels: configuredLogPixels,
+			usePreciseScrolling: usePreciseScrolling
 		)
 	}
 }
@@ -75,4 +80,5 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 struct WineDisplayRegistryState: Equatable, Sendable {
 	let retinaMode: String?
 	let logPixels: Int?
+	let usePreciseScrolling: String?
 }

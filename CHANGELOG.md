@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Fixed the Notices companion window rendering behing the game window in fullscreen, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
+- Added a new Settings → General → Input toggle for precise trackpad scrolling, enabling high-fidelity trackpad input by default and allowing users to disable it if they prefer v0.3.0-style wheel behavior (Thanks to @darkwebdev, #28).
 
 ## [0.3.0]
 

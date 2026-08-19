@@ -54,6 +54,19 @@ struct GeneralSettingsPage: View {
 				.help("Overrides the game the next time it starts")
 			}
 
+			SettingsPanel(title: "Input", systemImage: "mouse") {
+				LabeledContent("Precise Touchpad Scrolling") {
+					Toggle(
+						"Precise Touchpad Scrolling",
+						isOn: $model.launchOptions.usesPreciseScrolling
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(SettingsVisuals.cyan)
+				}
+				.help("Restores horizontal panning, but vertical scrolling becomes very fast")
+			}
+
 			SettingsPanel(title: "Launcher", systemImage: "sparkles") {
 				LabeledContent("Show Game Version") {
 					Toggle("Show Game Version", isOn: $model.showsGameVersion)

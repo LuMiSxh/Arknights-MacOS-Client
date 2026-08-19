@@ -13,6 +13,7 @@ func defaultLaunchOptionsFavorCompatibleWindow() {
 	#expect(GameLaunchOptions.default.usesHighResolutionMode)
 	#expect(!GameLaunchOptions.default.usesMetalPerformanceHUD)
 	#expect(!GameLaunchOptions.default.usesGameMode)
+	#expect(GameLaunchOptions.default.usesPreciseScrolling)
 	#expect(GameLaunchOptions.default.playerArguments.isEmpty)
 }
 
@@ -26,6 +27,7 @@ func legacyLaunchOptionsEnableHighResolutionModeWhenDecoded() throws {
 	#expect(options.usesHighResolutionMode)
 	#expect(!options.usesMetalPerformanceHUD)
 	#expect(!options.usesGameMode)
+	#expect(options.usesPreciseScrolling)
 }
 
 @Test
