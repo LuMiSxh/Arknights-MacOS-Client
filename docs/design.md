@@ -16,11 +16,11 @@ The launcher should feel like a current macOS app first and an Arknights launche
 
 ## Visual language
 
-- Arknights cyan `#18D1FF` is the only signal color.
+- The launcher's signal color is a single accent, sampled from the active hero artwork by default; Arknights cyan `#18D1FF` is the fallback whenever no artwork is loaded or no accent can be extracted, and stays available as a user-facing option to turn dynamic theming off.
 - Black and steel are used for fallback surfaces and readable text.
 - Native controls provide Liquid Glass, focus, hover, and keyboard behavior.
 - Primary and download actions use native capsule shapes; branding remains rectangular.
-- Install, Update, and Play use cyan prominent Liquid Glass; secondary actions stay neutral.
+- Install, Update, and Play use the accent color as a prominent Liquid Glass tint; secondary actions stay neutral.
 - Avoid fake window chrome, decorative metadata, large status slogans, and rounded card grids.
 - The Endfield launcher is only a layout reference. Its yellow palette is not part of this app.
 

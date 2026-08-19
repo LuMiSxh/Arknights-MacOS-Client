@@ -6,7 +6,7 @@ struct ContentView: View {
 	var model: LauncherViewModel
 	@State private var settingsPresented = false
 
-	private let cyan = SettingsVisuals.cyan
+	private var cyan: Color { model.accentColor }
 
 	var body: some View {
 		ZStack {
@@ -18,8 +18,11 @@ struct ContentView: View {
 			VStack(spacing: 0) {
 				topBar
 				Spacer()
-				controlBar
-					.padding(20)
+				VStack(spacing: 10) {
+					hudPillRow
+					controlBar
+				}
+				.padding(20)
 			}
 		}
 		.background(Color.black)
@@ -30,6 +33,7 @@ struct ContentView: View {
 		.sheet(item: popupBinding) { popup in
 			LauncherPopupView(
 				popup: popup,
+				accentColor: cyan,
 				dismiss: model.dismissPopup,
 				openAction: model.openPopupAction
 			)
@@ -119,38 +123,47 @@ struct ContentView: View {
 		}
 		.padding(16)
 		.glassEffect(
-			.regular.tint(Color.black.opacity(0.52)),
+			.regular.tint(model.hudTintColor),
 			in: Capsule()
 		)
+	}
+
+	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill
+	/// has content — mirrors the visibility checks inside `MusicHUDPill`/`VersionHUDPill`/
+	/// `StatusHUDPill` so the common case (no music, single region) doesn't leave a stray gap.
+	@ViewBuilder
+	private var hudPillRow: some View {
+		if hasMusicPill || hasVersionPill || hasStatusPill {
+			HStack {
+				Spacer(minLength: 16)
+				HStack(spacing: 8) {
+					MusicHUDPill(model: model)
+					VersionHUDPill(model: model)
+					StatusHUDPill(model: model)
+				}
+			}
+		}
+	}
+
+	private var hasMusicPill: Bool {
+		model.showsPlayingMusic && model.currentMusicTitle != nil
+	}
+
+	private var hasVersionPill: Bool {
+		model.showsGameVersion && model.versionText != "—"
+	}
+
+	private var hasStatusPill: Bool {
+		model.resetCountdownText != nil
+			|| model.installedRegions.count > 1
+			|| model.region != .global
 	}
 
 	@ViewBuilder
 	private var controlBarLeadingRegion: some View {
 		if model.isDownloading {
 			VStack(alignment: .leading, spacing: 7) {
-				HStack(alignment: .firstTextBaseline, spacing: 16) {
-					HStack(alignment: .firstTextBaseline, spacing: 10) {
-						Text(statusTitle)
-							.font(.system(size: 14, weight: .semibold))
-						if let detail = statusDetail {
-							Text(detail)
-								.font(.caption)
-								.foregroundStyle(.secondary)
-								.lineLimit(1)
-						}
-					}
-
-					Spacer(minLength: 16)
-					versionLabel
-				}
-
-				ProgressView(value: model.progress?.fraction ?? 0)
-					.progressViewStyle(.linear)
-					.tint(cyan)
-			}
-		} else {
-			HStack(alignment: .firstTextBaseline, spacing: 16) {
-				VStack(alignment: .leading, spacing: 2) {
+				HStack(alignment: .firstTextBaseline, spacing: 10) {
 					Text(statusTitle)
 						.font(.system(size: 14, weight: .semibold))
 					if let detail = statusDetail {
@@ -158,91 +171,30 @@ struct ContentView: View {
 							.font(.caption)
 							.foregroundStyle(.secondary)
 							.lineLimit(1)
-						if isFailed {
-							CyanActionLink(title: "Report Problem") {
-								NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
-							}
-							.font(.caption)
-						}
 					}
 				}
 
-				Spacer(minLength: 16)
-				versionLabel
+				ProgressView(value: model.progress?.fraction ?? 0)
+					.progressViewStyle(.linear)
+					.tint(cyan)
 			}
-		}
-	}
-
-	@ViewBuilder
-	private var versionLabel: some View {
-		HStack(spacing: 6) {
-			if model.showsPlayingMusic, let musicTitle = model.currentMusicTitle {
-				Text(musicTitle)
-					.font(.system(size: 11, weight: .medium, design: .monospaced))
-					.foregroundStyle(cyan)
-					.lineLimit(1)
-					.frame(
-						maxWidth: AppConstants.Music.nowPlayingTitleMaxWidth,
-						alignment: .trailing
-					)
-			}
-
-			if let countdown = model.resetCountdownText {
-				Text(countdown)
-					.font(.system(size: 11, weight: .medium, design: .monospaced))
-					.foregroundStyle(.secondary)
-			}
-			regionIndicator
-			if model.showsGameVersion, model.versionText != "—" {
-				Text(model.versionText)
-					.font(.system(size: 11, weight: .medium, design: .monospaced))
-					.foregroundStyle(.secondary)
-			}
-		}
-	}
-
-	/// Stays invisible for the common single-region case; only becomes an interactive
-	/// switcher once a second region is actually installed, so the landing page doesn't
-	/// carry region chrome nobody can use yet.
-	@ViewBuilder
-	private var regionIndicator: some View {
-		if model.installedRegions.count > 1 {
-			Menu {
-				ForEach(model.installedRegions) { region in
-					Button {
-						model.selectRegion(region)
-					} label: {
-						if region == model.region {
-							Label(region.displayName, systemImage: "checkmark")
-						} else {
-							Text(region.displayName)
+		} else {
+			VStack(alignment: .leading, spacing: 2) {
+				Text(statusTitle)
+					.font(.system(size: 14, weight: .semibold))
+				if let detail = statusDetail {
+					Text(detail)
+						.font(.caption)
+						.foregroundStyle(.secondary)
+						.lineLimit(1)
+					if isFailed {
+						AccentActionLink(title: "Report Problem", accentColor: cyan) {
+							NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
 						}
+						.font(.caption)
 					}
 				}
-			} label: {
-				HStack(spacing: 3) {
-					Text(model.region.displayName)
-					Image(systemName: "chevron.up.chevron.down")
-						.font(.system(size: 7, weight: .bold))
-						.accessibilityHidden(true)
-				}
-				.font(.system(size: 10, weight: .semibold))
-				.foregroundStyle(cyan)
-				.padding(.horizontal, 6)
-				.padding(.vertical, 2)
-				.background(cyan.opacity(0.15), in: Capsule())
 			}
-			.menuStyle(.button)
-			.buttonStyle(.plain)
-			.disabled(!model.canSwitchRegion)
-			.help("Switch between installed regions")
-		} else if model.region != .global {
-			Text(model.region.displayName)
-				.font(.system(size: 10, weight: .semibold))
-				.foregroundStyle(cyan)
-				.padding(.horizontal, 6)
-				.padding(.vertical, 2)
-				.background(cyan.opacity(0.15), in: Capsule())
 		}
 	}
 

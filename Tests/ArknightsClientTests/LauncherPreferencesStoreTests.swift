@@ -17,8 +17,8 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.automaticGameUpdates())
 		#expect(store.announcementsEnabled())
 		#expect(store.showsGameVersion())
-		#expect(!store.playsLauncherMusic())
-		#expect(!store.showsPlayingMusic())
+		#expect(store.playsLauncherMusic())
+		#expect(store.showsPlayingMusic())
 	}
 
 	@Test
@@ -31,15 +31,15 @@ struct LauncherPreferencesStoreTests {
 		store.setAutomaticGameUpdates(false)
 		store.setAnnouncementsEnabled(false)
 		store.setShowsGameVersion(false)
-		store.setPlaysLauncherMusic(true)
-		store.setShowsPlayingMusic(true)
+		store.setPlaysLauncherMusic(false)
+		store.setShowsPlayingMusic(false)
 
 		#expect(!store.automaticLauncherUpdates())
 		#expect(!store.automaticGameUpdates())
 		#expect(!store.announcementsEnabled())
 		#expect(!store.showsGameVersion())
-		#expect(store.playsLauncherMusic())
-		#expect(store.showsPlayingMusic())
+		#expect(!store.playsLauncherMusic())
+		#expect(!store.showsPlayingMusic())
 	}
 
 	@Test
@@ -119,6 +119,19 @@ struct LauncherPreferencesStoreTests {
 
 		store.setLauncherMusicVolume(0.8)
 		#expect(store.launcherMusicVolume() == 0.8)
+	}
+
+	@Test
+	func usesDynamicThemeDefaultsToEnabledAndPersists() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.usesDynamicTheme())
+
+		store.setUsesDynamicTheme(false)
+
+		#expect(!store.usesDynamicTheme())
 	}
 
 	@Test

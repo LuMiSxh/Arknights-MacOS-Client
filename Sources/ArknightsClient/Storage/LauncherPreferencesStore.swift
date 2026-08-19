@@ -22,6 +22,7 @@ struct LauncherPreferencesStore {
 		static let gameLaunchOptions = "gameLaunchOptions"
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
+		static let usesDynamicTheme = "usesDynamicTheme"
 	}
 
 	let defaults: UserDefaults
@@ -71,7 +72,7 @@ struct LauncherPreferencesStore {
 	}
 
 	func playsLauncherMusic() -> Bool {
-		bool(for: Key.playsLauncherMusic, defaultValue: false)
+		bool(for: Key.playsLauncherMusic, defaultValue: true)
 	}
 
 	func setPlaysLauncherMusic(_ value: Bool) {
@@ -88,7 +89,7 @@ struct LauncherPreferencesStore {
 	}
 
 	func showsPlayingMusic() -> Bool {
-		bool(for: Key.showsPlayingMusic, defaultValue: false)
+		bool(for: Key.showsPlayingMusic, defaultValue: true)
 	}
 
 	func setShowsPlayingMusic(_ value: Bool) {
@@ -152,6 +153,14 @@ struct LauncherPreferencesStore {
 
 	func setSelectedRegion(_ region: GameRegion) {
 		defaults.set(region.rawValue, forKey: Key.selectedRegion)
+	}
+
+	func usesDynamicTheme() -> Bool {
+		bool(for: Key.usesDynamicTheme, defaultValue: true)
+	}
+
+	func setUsesDynamicTheme(_ value: Bool) {
+		defaults.set(value, forKey: Key.usesDynamicTheme)
 	}
 
 	private func bool(for key: String, defaultValue: Bool) -> Bool {

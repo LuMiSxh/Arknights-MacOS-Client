@@ -9,7 +9,10 @@ import SwiftUI
 		@State private var customPopupMarkdown = ""
 
 		var body: some View {
-			SettingsPage(title: "Developer", subtitle: "Preview launcher states safely") {
+			SettingsPage(
+				title: "Developer", subtitle: "Preview launcher states safely",
+				accentColor: model.accentColor
+			) {
 				SettingsPanel(title: "Scenario", systemImage: "switch.2") {
 					Picker("State", selection: scenarioBinding) {
 						ForEach(DeveloperScenario.allCases) { scenario in
@@ -39,7 +42,7 @@ import SwiftUI
 							)
 						}
 						.buttonStyle(.glassProminent)
-						.tint(SettingsVisuals.cyan)
+						.tint(model.accentColor)
 						.disabled(customPopupMarkdown.isEmpty)
 					}
 				}

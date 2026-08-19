@@ -6,7 +6,10 @@ struct UpdatesSettingsPage: View {
 	@Bindable var model: LauncherViewModel
 
 	var body: some View {
-		SettingsPage(title: "Updates", subtitle: "Keep the launcher and game current") {
+		SettingsPage(
+			title: "Updates", subtitle: "Keep the launcher and game current",
+			accentColor: model.accentColor
+		) {
 			SettingsPanel(title: "Automatic Checks", systemImage: "arrow.trianglehead.2.clockwise")
 			{
 				UpdateSettingsRow(
@@ -14,6 +17,7 @@ struct UpdatesSettingsPage: View {
 					status: model.launcherUpdateStatus ?? "Not checked",
 					isEnabled: $model.automaticallyChecksLauncherUpdates,
 					isChecking: model.isCheckingLauncherUpdates,
+					accentColor: model.accentColor,
 					check: model.checkLauncherUpdates
 				)
 				SettingsHairline()
@@ -22,6 +26,7 @@ struct UpdatesSettingsPage: View {
 					status: model.isGameUpdateAvailable ? "Update available" : model.versionText,
 					isEnabled: $model.automaticallyChecksGameUpdates,
 					isChecking: model.isDownloading,
+					accentColor: model.accentColor,
 					check: model.checkGameUpdates
 				)
 			}
@@ -34,7 +39,7 @@ struct UpdatesSettingsPage: View {
 					Toggle("Announcements", isOn: $model.announcementsEnabled)
 						.labelsHidden()
 						.toggleStyle(.switch)
-						.tint(SettingsVisuals.cyan)
+						.tint(model.accentColor)
 				}
 			}
 		}

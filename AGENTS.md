@@ -27,7 +27,7 @@
 
 - Use tabs with a width of four in Swift files; follow `.swift-format`.
 - Keep SwiftUI views in `UI`, state and user actions in `ViewModels`, external work in `Services` or `Runtime`, and persisted paths in `Storage`.
-- Keep handwritten Swift files below 350 lines; split cohesive behavior into focused types or extensions.
+- Keep handwritten Swift files below 350 lines; split cohesive behavior into focused types or extensions. Exceed it only when the excess is stored-property/declaration code Swift can't move into an extension (e.g. an `@Observable` class's properties); flag the overage instead of forcing an artificial split.
 - Keep UI state changes on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
 - Use Swift 5.9+ `@Observable` for fine-grained, property-level view invalidation; avoid legacy `ObservableObject` and `@Published` God-objects.
 - Treat game installation as an exclusive operation. A refresh, Settings action, or repeated click must never start another installer or overwrite active progress.

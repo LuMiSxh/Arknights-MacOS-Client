@@ -7,3 +7,4 @@ __pycache__/
 *.log
 .DS_Store
 /issues
+docs/superpowers

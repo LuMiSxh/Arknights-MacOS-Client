@@ -44,6 +44,7 @@ struct ArknightsWordmark: View {
 
 struct LauncherPopupView: View {
 	let popup: LauncherPopup
+	let accentColor: Color
 	let dismiss: () -> Void
 	let openAction: () -> Void
 
@@ -57,7 +58,7 @@ struct LauncherPopupView: View {
 				Group {
 					switch popup.content {
 					case .markdown(let source):
-						MarkdownDocument(source: source)
+						MarkdownDocument(source: source, accentColor: accentColor)
 					case .attributed(let content):
 						Text(content)
 					}
@@ -73,12 +74,12 @@ struct LauncherPopupView: View {
 					Button(popup.dismissTitle, action: dismiss)
 					Button(actionTitle, action: openAction)
 						.buttonStyle(.glassProminent)
-						.tint(SettingsVisuals.cyan)
+						.tint(accentColor)
 						.keyboardShortcut(.defaultAction)
 				} else {
 					Button(popup.dismissTitle, action: dismiss)
 						.buttonStyle(.glassProminent)
-						.tint(SettingsVisuals.cyan)
+						.tint(accentColor)
 						.keyboardShortcut(.defaultAction)
 				}
 			}

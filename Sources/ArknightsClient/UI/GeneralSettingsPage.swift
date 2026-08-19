@@ -11,8 +11,11 @@ struct GeneralSettingsPage: View {
 	@Bindable var model: LauncherViewModel
 
 	var body: some View {
-		SettingsPage(title: "General", subtitle: "Display and personalization") {
-			SettingsPanel(title: "Display", systemImage: "rectangle.on.rectangle") {
+		SettingsPage(
+			title: "General", subtitle: "Display and personalization",
+			accentColor: model.accentColor
+		) {
+			SettingsPanel(title: "Display & Controls", systemImage: "display") {
 				LabeledContent("High-resolution mode") {
 					Toggle(
 						"High-resolution mode",
@@ -20,7 +23,7 @@ struct GeneralSettingsPage: View {
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(SettingsVisuals.cyan)
+					.tint(model.accentColor)
 				}
 				.help("Use the display's full pixel density without enlarging the game window")
 				SettingsHairline()
@@ -31,7 +34,7 @@ struct GeneralSettingsPage: View {
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(SettingsVisuals.cyan)
+					.tint(model.accentColor)
 				}
 				.help("Lets changes made inside Arknights persist between launches")
 				SettingsHairline()
@@ -39,6 +42,7 @@ struct GeneralSettingsPage: View {
 					GlassMenuPicker(
 						selection: $model.launchOptions.displayMode,
 						options: GameDisplayMode.allCases.map { ($0, $0.displayName) },
+						accentColor: model.accentColor,
 						isDisabled: model.launchOptions.usesGameSettings
 					)
 				}
@@ -48,13 +52,12 @@ struct GeneralSettingsPage: View {
 					GlassMenuPicker(
 						selection: $model.launchOptions.resolution,
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
+						accentColor: model.accentColor,
 						isDisabled: model.launchOptions.usesGameSettings
 					)
 				}
 				.help("Overrides the game the next time it starts")
-			}
-
-			SettingsPanel(title: "Input", systemImage: "mouse") {
+				SettingsHairline()
 				LabeledContent("Precise Touchpad Scrolling") {
 					Toggle(
 						"Precise Touchpad Scrolling",
@@ -62,7 +65,7 @@ struct GeneralSettingsPage: View {
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(SettingsVisuals.cyan)
+					.tint(model.accentColor)
 				}
 				.help("Restores horizontal panning, but vertical scrolling becomes very fast")
 			}
@@ -72,7 +75,7 @@ struct GeneralSettingsPage: View {
 					Toggle("Show Game Version", isOn: $model.showsGameVersion)
 						.labelsHidden()
 						.toggleStyle(.switch)
-						.tint(SettingsVisuals.cyan)
+						.tint(model.accentColor)
 				}
 				.help("Shows the installed Arknights version next to the region indicator")
 				SettingsHairline()
@@ -83,7 +86,7 @@ struct GeneralSettingsPage: View {
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(SettingsVisuals.cyan)
+					.tint(model.accentColor)
 				}
 				.help("Shows time until the daily server reset next to the version number")
 				SettingsHairline()
@@ -94,65 +97,9 @@ struct GeneralSettingsPage: View {
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(SettingsVisuals.cyan)
+					.tint(model.accentColor)
 				}
 				.help("Shows Apple's native FPS and GPU overlay the next time the game starts")
-			}
-
-			SettingsPanel(title: "Music", systemImage: "music.note") {
-				LabeledContent("Play Background Music") {
-					Toggle(
-						"Play Background Music",
-						isOn: $model.playsLauncherMusic
-					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(SettingsVisuals.cyan)
-				}
-				.help("Plays music while the launcher is open and the game is not running")
-
-				if model.playsLauncherMusic {
-					SettingsHairline()
-					SettingsActionRow(
-						title: "Music URL",
-						detail: "YouTube video or playlist link."
-					) {
-						TextField(
-							"https://www.youtube.com/playlist?...",
-							text: $model.launcherMusicURL
-						)
-						.textFieldStyle(.roundedBorder)
-						.frame(width: 250)
-					}
-					SettingsHairline()
-					LabeledContent("Volume") {
-						HStack(spacing: 8) {
-							Image(systemName: "speaker.fill")
-								.font(.caption)
-								.foregroundStyle(.secondary)
-							Slider(value: $model.launcherMusicVolume, in: 0...1, step: 0.05)
-								.frame(width: 140)
-							Image(systemName: "speaker.wave.3.fill")
-								.font(.caption)
-								.foregroundStyle(.secondary)
-							Text("\(Int(model.launcherMusicVolume * 100))%")
-								.font(.caption.monospacedDigit())
-								.foregroundStyle(.secondary)
-								.frame(width: 36, alignment: .trailing)
-						}
-					}
-					SettingsHairline()
-					LabeledContent("Show Currently Playing") {
-						Toggle(
-							"Show Currently Playing",
-							isOn: $model.showsPlayingMusic
-						)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(SettingsVisuals.cyan)
-					}
-					.help("Shows the title of the current track next to the version indicator")
-				}
 			}
 
 			SettingsPanel(title: "Personalization", systemImage: "paintbrush") {
@@ -181,6 +128,14 @@ struct GeneralSettingsPage: View {
 					model.applyCustomAppIcon(from: url)
 					return true
 				}
+				SettingsHairline()
+				LabeledContent("Dynamic Accent Color") {
+					Toggle("Dynamic Accent Color", isOn: $model.usesDynamicTheme)
+						.labelsHidden()
+						.toggleStyle(.switch)
+						.tint(model.accentColor)
+				}
+				.help("Harmonizes launcher accents with the colors of the active artwork")
 			}
 		}
 	}

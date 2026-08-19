@@ -38,6 +38,7 @@ enum BundledDocument: String, Identifiable {
 
 struct BundledDocumentView: View {
 	let document: BundledDocument
+	let accentColor: Color
 	@Environment(\.dismiss) private var dismiss
 
 	var body: some View {
@@ -45,12 +46,12 @@ struct BundledDocumentView: View {
 			ScrollView {
 				VStack(alignment: .leading, spacing: 16) {
 					HStack(spacing: 8) {
-						Rectangle().fill(SettingsVisuals.cyan).frame(width: 72, height: 3)
+						Rectangle().fill(accentColor).frame(width: 72, height: 3)
 						Rectangle().fill(.secondary.opacity(0.28))
 							.frame(height: 1)
 							.frame(maxWidth: .infinity)
 					}
-					MarkdownDocument(source: document.contents())
+					MarkdownDocument(source: document.contents(), accentColor: accentColor)
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
 				.textSelection(.enabled)
@@ -65,18 +66,19 @@ struct BundledDocumentView: View {
 				}
 			}
 		}
-		.tint(SettingsVisuals.cyan)
+		.tint(accentColor)
 		.frame(width: 760, height: 600)
 	}
 }
 
 struct MarkdownDocument: View {
 	let source: String
+	let accentColor: Color
 
 	var body: some View {
 		LazyVStack(alignment: .leading, spacing: 10) {
 			ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-				MarkdownBlockView(block: block)
+				MarkdownBlockView(block: block, accentColor: accentColor)
 			}
 		}
 	}
@@ -88,6 +90,7 @@ struct MarkdownDocument: View {
 
 private struct MarkdownBlockView: View {
 	let block: MarkdownBlock
+	let accentColor: Color
 
 	@ViewBuilder
 	var body: some View {
@@ -103,13 +106,13 @@ private struct MarkdownBlockView: View {
 		case .bullet(let source):
 			HStack(alignment: .firstTextBaseline, spacing: 9) {
 				Circle()
-					.fill(SettingsVisuals.cyan)
+					.fill(accentColor)
 					.frame(width: 5, height: 5)
 				Text(inline(source))
 			}
 			.padding(.leading, 6)
 		case .table(let rows):
-			MarkdownTable(rows: rows)
+			MarkdownTable(rows: rows, accentColor: accentColor)
 				.padding(.vertical, 4)
 		case .code(let source):
 			Text(source)
@@ -141,6 +144,7 @@ private struct MarkdownBlockView: View {
 
 private struct MarkdownTable: View {
 	let rows: [[String]]
+	let accentColor: Color
 
 	var body: some View {
 		ScrollView(.horizontal) {
@@ -156,7 +160,7 @@ private struct MarkdownTable: View {
 								)
 								.padding(10)
 								.background(
-									rowIndex == 0 ? SettingsVisuals.cyan.opacity(0.14) : .clear
+									rowIndex == 0 ? accentColor.opacity(0.14) : .clear
 								)
 								.overlay(alignment: .trailing) { Divider() }
 						}

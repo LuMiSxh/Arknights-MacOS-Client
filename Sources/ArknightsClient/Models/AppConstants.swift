@@ -6,8 +6,7 @@ enum AppConstants {
 	enum Music {
 		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLFxi1xOJXheF2zXThZTQnInoWZb1JfPf5"
-		static let nowPlayingPrefix = "♫ "
-		static let nowPlayingTitleMaxWidth: Double = 160
+		static let nowPlayingTitleMaxWidth: Double = 320
 		static let backgroundMusicViewFrame: Double = 300
 		static let backgroundMusicOpacity: Double = 0.01
 		static let skipMetadataPlaceholderTitle = "YouTube"
@@ -33,5 +32,27 @@ enum AppConstants {
 		static let windowReadiness: Duration = .seconds(90)
 		static let windowPollInterval: Duration = .milliseconds(250)
 		static let resetCountdownPollInterval: Duration = .seconds(30)
+	}
+
+	enum Theme {
+		static let wallpaperSampleSide = 32
+		static let accentHueBuckets = 24
+		// Hero artwork can be anything from near-monochrome to neon: these only exclude
+		// true noise (near-gray, near-black, blown-out highlights) when picking a hue.
+		static let minimumPixelSaturation = 0.15
+		static let minimumPixelBrightness = 0.08
+		static let maximumPixelBrightness = 0.97
+		// The winning hue's own saturation/brightness are clamped into this range so the
+		// rendered accent stays legible against the launcher's dark chrome regardless of
+		// how dark, pale, or muted the source artwork actually was.
+		static let minimumRenderSaturation = 0.65
+		static let maximumRenderSaturation = 0.85
+		static let minimumRenderBrightness = 0.80
+		static let maximumRenderBrightness = 0.95
+		// The HUD glass tint stays near-black but picks up a whisper of the same hue as
+		// the accent, instead of being perfectly neutral — subtle, not a second signal color.
+		static let backgroundTintSaturation = 0.1
+		static let backgroundTintBrightness = 0.1
+		static let backgroundTintOpacity = 0.52
 	}
 }

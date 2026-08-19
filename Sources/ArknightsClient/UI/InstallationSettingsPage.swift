@@ -11,12 +11,16 @@ struct InstallationSettingsPage: View {
 	@State private var showsGameModeUnavailableAlert = false
 
 	var body: some View {
-		SettingsPage(title: "Installation", subtitle: "Files, repair, and removal") {
+		SettingsPage(
+			title: "Installation", subtitle: "Files, repair, and removal",
+			accentColor: model.accentColor
+		) {
 			SettingsPanel(title: "Region", systemImage: "globe") {
 				LabeledContent("Region") {
 					GlassMenuPicker(
 						selection: regionBinding,
 						options: GameRegion.allCases.map { ($0, $0.displayName) },
+						accentColor: model.accentColor,
 						isDisabled: !model.canSwitchRegion
 					)
 				}
@@ -26,7 +30,7 @@ struct InstallationSettingsPage: View {
 			SettingsPanel(title: "Location", systemImage: "externaldrive") {
 				LabeledContent("Status") {
 					Text(gameStatus)
-						.foregroundStyle(model.isDownloading ? SettingsVisuals.cyan : .secondary)
+						.foregroundStyle(model.isDownloading ? model.accentColor : .secondary)
 				}
 				SettingsHairline()
 				LabeledContent("Folder") {

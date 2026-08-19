@@ -13,6 +13,7 @@ struct BackgroundMusicView: View {
 	@State private var cancellables: Set<AnyCancellable> = []
 	@State private var didShuffleCurrentPlaylist = false
 	@State private var fadeTask: Task<Void, Never>?
+	@State private var lastObservedTitle: String?
 
 	var body: some View {
 		Group {
@@ -127,9 +128,14 @@ struct BackgroundMusicView: View {
 	}
 
 	private func setupObservation(for targetPlayer: YouTubePlayer, source: YouTubePlayer.Source) {
-		// Playback state drives playback lifecycle and the one-time playlist shuffle gate.
+		lastObservedTitle = nil
+
+		// The YouTube IFrame API is known to re-fire the same state transition (and the
+		// same metadata) more than once in a row; `removeDuplicates()` collapses those so
+		// a repeated `.cued`/`.unstarted` doesn't restart the fade-in task mid-fade.
 		targetPlayer.playbackStatePublisher
 			.receive(on: DispatchQueue.main)
+			.removeDuplicates()
 			.sink { state in
 				Task { [log = model.log] in
 					await log.debug("Background music state: \(state)")
@@ -152,6 +158,12 @@ struct BackgroundMusicView: View {
 							await model.log.info(
 								"Background music playlist shuffled and jumped to random track"
 							)
+							// The metadata publisher doesn't reliably re-fire right after a
+							// playlist jump, so pull the new track's title directly instead
+							// of only waiting on the push subscription below.
+							if let metadata = try? await targetPlayer.getPlaybackMetadata() {
+								applyTrackTitle(from: metadata)
+							}
 						}
 					}
 				}
@@ -161,21 +173,26 @@ struct BackgroundMusicView: View {
 		// Metadata events provide the active track title for every transition without retries.
 		targetPlayer.playbackMetadataPublisher
 			.receive(on: DispatchQueue.main)
-			.sink { metadata in
-				guard let titleRaw = metadata.title else {
-					return
-				}
-				let title = titleRaw.trimmingCharacters(in: .whitespacesAndNewlines)
-				guard !title.isEmpty, title != AppConstants.Music.skipMetadataPlaceholderTitle else {
-					return
-				}
-
-				model.currentMusicTitle = "\(AppConstants.Music.nowPlayingPrefix)\(title)"
-				Task { [log = model.log] in
-					await log.info("Background music now playing: \(title)")
-				}
-			}
+			.sink { metadata in applyTrackTitle(from: metadata) }
 			.store(in: &cancellables)
+	}
+
+	private func applyTrackTitle(from metadata: YouTubePlayer.PlaybackMetadata) {
+		guard let titleRaw = metadata.title else {
+			return
+		}
+		let title = titleRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !title.isEmpty, title != AppConstants.Music.skipMetadataPlaceholderTitle,
+			title != lastObservedTitle
+		else {
+			return
+		}
+		lastObservedTitle = title
+
+		model.currentMusicTitle = title
+		Task { [log = model.log] in
+			await log.info("Background music now playing: \(title)")
+		}
 	}
 
 	private func performFadeOut() {

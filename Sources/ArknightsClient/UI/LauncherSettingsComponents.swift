@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsPage<Content: View>: View {
 	let title: String
 	let subtitle: String
+	let accentColor: Color
 	@ViewBuilder let content: Content
 
 	var body: some View {
@@ -16,7 +17,7 @@ struct SettingsPage<Content: View>: View {
 					Text(subtitle)
 						.foregroundStyle(.secondary)
 					HStack(spacing: 8) {
-						Rectangle().fill(SettingsVisuals.cyan).frame(width: 72, height: 3)
+						Rectangle().fill(accentColor).frame(width: 72, height: 3)
 						Rectangle().fill(.secondary.opacity(0.28))
 							.frame(height: 1)
 							.frame(maxWidth: .infinity)
@@ -86,13 +87,14 @@ struct UpdateSettingsRow: View {
 	let status: String
 	@Binding var isEnabled: Bool
 	let isChecking: Bool
+	let accentColor: Color
 	let check: () -> Void
 
 	var body: some View {
 		HStack(spacing: 16) {
 			Toggle(title, isOn: $isEnabled)
 				.toggleStyle(.switch)
-				.tint(SettingsVisuals.cyan)
+				.tint(accentColor)
 				.frame(width: 180, alignment: .leading)
 			Text(status)
 				.foregroundStyle(.secondary)
@@ -129,6 +131,7 @@ struct SettingsActionRow<Actions: View>: View {
 struct GlassMenuPicker<Value: Hashable>: View {
 	let selection: Binding<Value>
 	let options: [(value: Value, title: String)]
+	let accentColor: Color
 	var isDisabled = false
 
 	var body: some View {
@@ -152,15 +155,16 @@ struct GlassMenuPicker<Value: Hashable>: View {
 					.accessibilityHidden(true)
 			}
 			.font(.system(size: 12, weight: .semibold))
-			.foregroundStyle(SettingsVisuals.cyan)
+			.foregroundStyle(isDisabled ? AnyShapeStyle(.secondary) : AnyShapeStyle(accentColor))
 			.padding(.horizontal, 10)
 			.padding(.vertical, 5)
-			.background(SettingsVisuals.cyan.opacity(0.15), in: Capsule())
+			.background(
+				isDisabled ? Color.white.opacity(0.08) : accentColor.opacity(0.15), in: Capsule()
+			)
 		}
 		.menuStyle(.button)
 		.buttonStyle(.plain)
 		.disabled(isDisabled)
-		.opacity(isDisabled ? 0.4 : 1)
 	}
 
 	private var currentTitle: String {
@@ -169,30 +173,32 @@ struct GlassMenuPicker<Value: Hashable>: View {
 }
 
 /// A `Link` that underlines on hover instead of sitting there looking unresponsive.
-struct CyanLink: View {
+struct AccentLink: View {
 	let title: String
 	let destination: URL
+	let accentColor: Color
 	@State private var isHovering = false
 
 	var body: some View {
 		Link(title, destination: destination)
-			.foregroundStyle(SettingsVisuals.cyan)
+			.foregroundStyle(accentColor)
 			.underline(isHovering)
 			.onHover { isHovering = $0 }
 	}
 }
 
-/// Same look as `CyanLink`, but for destinations that cost real work to build
+/// Same look as `AccentLink`, but for destinations that cost real work to build
 /// (e.g. read log files) and must run only on click, not on every view update.
-struct CyanActionLink: View {
+struct AccentActionLink: View {
 	let title: String
+	let accentColor: Color
 	let action: () -> Void
 	@State private var isHovering = false
 
 	var body: some View {
 		Button(title, action: action)
 			.buttonStyle(.plain)
-			.foregroundStyle(SettingsVisuals.cyan)
+			.foregroundStyle(accentColor)
 			.underline(isHovering)
 			.onHover { isHovering = $0 }
 	}
@@ -201,6 +207,7 @@ struct CyanActionLink: View {
 struct DocumentLinkRow: View {
 	let title: String
 	let systemImage: String
+	let accentColor: Color
 	let action: () -> Void
 	@State private var isHovering = false
 
@@ -213,11 +220,11 @@ struct DocumentLinkRow: View {
 					.font(.caption.weight(.semibold))
 					.foregroundStyle(.tertiary)
 			}
-			.foregroundStyle(isHovering ? SettingsVisuals.cyan : .primary)
+			.foregroundStyle(isHovering ? accentColor : .primary)
 			.padding(.vertical, 4)
 			.padding(.horizontal, 6)
 			.background(
-				isHovering ? SettingsVisuals.cyan.opacity(0.08) : .clear,
+				isHovering ? accentColor.opacity(0.08) : .clear,
 				in: .rect(cornerRadius: 8)
 			)
 			.contentShape(.rect)

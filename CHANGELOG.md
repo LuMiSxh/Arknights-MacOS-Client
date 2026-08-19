@@ -38,6 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Unified script CLI output with color, spinners, and progress bars.
 - Added recipe-download tracking to release statistics.
 - Simplified the announcement management commands, and added optional version-range and display-window flags to `just announcement set`.
+- Split Settings → General's "Music" panel into its own "Audio" section, and moved the region indicator, server reset countdown, game version, and now-playing music title from the main control bar into small floating pills above it.
+- Merged Settings → General's "Input" panel into "Display & Controls", and added a "Dynamic Accent Color" toggle in Personalization that tints the launcher's controls, badges, and HUD pills with a color sampled from the active artwork instead of the fixed Arknights cyan; on by default, with cyan as the fallback when no vibrant color is found. Documented in `docs/design.md`.
+- Background music now plays by default on first launch, gave the HUD pills small colored icons, and fixed the now-playing title sometimes showing the wrong track after the playlist shuffles to a new one.
 
 ### Fixed
 

@@ -12,13 +12,16 @@ struct LauncherSettingsView: View {
 		HStack(spacing: 0) {
 			SettingsNavigationRail(
 				selection: $selectedSection,
-				isDeveloperMode: model.isDeveloperMode
+				isDeveloperMode: model.isDeveloperMode,
+				accentColor: model.accentColor
 			)
 			Divider()
 			Group {
 				switch selectedSection {
 				case .general:
 					GeneralSettingsPage(model: model)
+				case .audio:
+					AudioSettingsPage(model: model)
 				case .updates:
 					UpdatesSettingsPage(model: model)
 				case .installation:
@@ -34,18 +37,18 @@ struct LauncherSettingsView: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
 			.background(.ultraThinMaterial)
 		}
-		.tint(SettingsVisuals.cyan)
+		.tint(model.accentColor)
 		.background(.thinMaterial)
 		.frame(width: 820, height: 570)
 		.toolbar {
 			ToolbarItem(placement: .confirmationAction) {
 				Button("Done") { dismiss() }
 					.buttonStyle(.glassProminent)
-					.tint(SettingsVisuals.cyan)
+					.tint(model.accentColor)
 			}
 		}
 		.sheet(item: $presentedDocument) { document in
-			BundledDocumentView(document: document)
+			BundledDocumentView(document: document, accentColor: model.accentColor)
 		}
 	}
 }
@@ -53,14 +56,15 @@ struct LauncherSettingsView: View {
 enum SettingsVisuals {
 	static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
 	static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
-	static let navigationSelection = cyan.opacity(0.12)
 	static let hairline = Color.white.opacity(0.12)
 	static let danger = Color(red: 0.69, green: 0.141, blue: 0.231)
+	static let hudGlassTint = Color.black.opacity(0.52)
 }
 
 private struct SettingsNavigationRail: View {
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
+	let accentColor: Color
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
@@ -76,7 +80,8 @@ private struct SettingsNavigationRail: View {
 				ForEach(visibleSections) { section in
 					SettingsNavigationButton(
 						section: section,
-						isSelected: selection == section
+						isSelected: selection == section,
+						accentColor: accentColor
 					) {
 						selection = section
 					}
@@ -88,7 +93,7 @@ private struct SettingsNavigationRail: View {
 
 			HStack(spacing: 8) {
 				Rectangle()
-					.fill(SettingsVisuals.cyan)
+					.fill(accentColor)
 					.frame(width: 28, height: 2)
 				Rectangle()
 					.fill(SettingsVisuals.hairline)
@@ -112,6 +117,7 @@ private struct SettingsNavigationRail: View {
 private struct SettingsNavigationButton: View {
 	let section: SettingsSection
 	let isSelected: Bool
+	let accentColor: Color
 	let action: () -> Void
 	@State private var isHovering = false
 
@@ -119,7 +125,7 @@ private struct SettingsNavigationButton: View {
 		Button(action: action) {
 			HStack(spacing: 10) {
 				RoundedRectangle(cornerRadius: 1)
-					.fill(isSelected ? SettingsVisuals.cyan : .clear)
+					.fill(isSelected ? accentColor : .clear)
 					.frame(width: 2, height: 20)
 				Image(systemName: section.systemImage)
 					.frame(width: 17)
@@ -128,7 +134,7 @@ private struct SettingsNavigationButton: View {
 					.fontWeight(isSelected ? .semibold : .regular)
 				Spacer(minLength: 0)
 			}
-			.foregroundStyle(isSelected || isHovering ? SettingsVisuals.cyan : .secondary)
+			.foregroundStyle(isSelected || isHovering ? accentColor : .secondary)
 			.padding(.vertical, 9)
 			.padding(.trailing, 12)
 			.background(backgroundFill, in: .rect(cornerRadius: 8))
@@ -140,14 +146,15 @@ private struct SettingsNavigationButton: View {
 	}
 
 	private var backgroundFill: Color {
-		if isSelected { return SettingsVisuals.navigationSelection }
-		if isHovering { return SettingsVisuals.cyan.opacity(0.06) }
+		if isSelected { return accentColor.opacity(0.12) }
+		if isHovering { return accentColor.opacity(0.06) }
 		return .clear
 	}
 }
 
 private enum SettingsSection: String, CaseIterable, Identifiable {
 	case general
+	case audio
 	case updates
 	case installation
 	case about
@@ -160,6 +167,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	var title: String {
 		switch self {
 		case .general: "General"
+		case .audio: "Audio"
 		case .updates: "Updates"
 		case .installation: "Installation"
 		case .about: "About"
@@ -172,6 +180,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	var systemImage: String {
 		switch self {
 		case .general: "slider.horizontal.3"
+		case .audio: "music.note"
 		case .updates: "arrow.trianglehead.2.clockwise"
 		case .installation: "externaldrive"
 		case .about: "info.circle"

@@ -3,6 +3,7 @@
 import AppKit
 import Foundation
 import Observation
+import SwiftUI
 
 enum DirectWineProcessExitAction: Equatable {
 	case ignore
@@ -22,7 +23,9 @@ final class LauncherViewModel {
 	var progress: DownloadProgress?
 	var runtimeName: String?
 	var branding: LauncherBranding?
-	var heroArtwork: NSImage?
+	var heroArtwork: NSImage? {
+		didSet { updateThemeColor() }
+	}
 	var officialLogo: NSImage?
 	var popup: LauncherPopup?
 	var isInstalled = false
@@ -83,6 +86,14 @@ final class LauncherViewModel {
 		didSet { preferences.setLauncherMusicVolume(launcherMusicVolume) }
 	}
 	var currentMusicTitle: String?
+	var usesDynamicTheme: Bool {
+		didSet {
+			preferences.setUsesDynamicTheme(usesDynamicTheme)
+			updateThemeColor()
+		}
+	}
+	var accentColor: Color = SettingsVisuals.cyan
+	var hudTintColor: Color = SettingsVisuals.hudGlassTint
 
 	let api: any LauncherAPIProviding
 	let installer: any GameInstalling
@@ -147,8 +158,10 @@ final class LauncherViewModel {
 		launcherMusicURL = preferences.launcherMusicURL()
 		showsPlayingMusic = preferences.showsPlayingMusic()
 		launcherMusicVolume = preferences.launcherMusicVolume()
+		usesDynamicTheme = preferences.usesDynamicTheme()
 		loadCustomAppIcon()
 		if showsServerResetCountdown { startResetCountdownTimer() }
+		updateThemeColor()
 
 		#if DEBUG
 			developerScenario = DeveloperScenario(arguments: arguments)
