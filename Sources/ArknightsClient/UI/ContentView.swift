@@ -10,6 +10,8 @@ struct ContentView: View {
 
 	var body: some View {
 		ZStack {
+			BackgroundMusicView(model: model)
+
 			artwork
 				.ignoresSafeArea(.container, edges: .top)
 
@@ -174,6 +176,17 @@ struct ContentView: View {
 	@ViewBuilder
 	private var versionLabel: some View {
 		HStack(spacing: 6) {
+			if model.showsPlayingMusic, let musicTitle = model.currentMusicTitle {
+				Text(musicTitle)
+					.font(.system(size: 11, weight: .medium, design: .monospaced))
+					.foregroundStyle(cyan)
+					.lineLimit(1)
+					.frame(
+						maxWidth: AppConstants.Music.nowPlayingTitleMaxWidth,
+						alignment: .trailing
+					)
+			}
+
 			if let countdown = model.resetCountdownText {
 				Text(countdown)
 					.font(.system(size: 11, weight: .medium, design: .monospaced))

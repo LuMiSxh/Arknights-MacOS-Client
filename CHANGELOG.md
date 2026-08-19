@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A "Show Game Version" toggle in Settings → General, on by default, for the version label next to the region indicator.
 - A "Delete Wine Prefix" action in the Danger Zone that fully rebuilds the Wine environment on the next launch, including saved Yostar/Google/Apple/Facebook browser logins, without touching game files — a stronger reset than Force Migration.
 - A "Reset All Settings" action in the Danger Zone that restores every launcher toggle and option to default, leaving the install location and selected region untouched.
+- Added optional YouTube-based launcher background music with URL validation, play/pause state handling, and optional now-playing title in the version label (Thanks to @darkwebdev, #27).
 
 ### Changed
 

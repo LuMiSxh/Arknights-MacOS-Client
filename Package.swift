@@ -11,9 +11,15 @@ let package = Package(
 	products: [
 		.executable(name: "ArknightsClient", targets: ["ArknightsClient"])
 	],
+	dependencies: [
+		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0")
+	],
 	targets: [
 		.executableTarget(
 			name: "ArknightsClient",
+			dependencies: [
+				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit")
+			],
 			path: "Sources/ArknightsClient"
 		),
 		.testTarget(

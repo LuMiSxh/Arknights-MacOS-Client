@@ -70,6 +70,19 @@ final class LauncherViewModel {
 	var showsGameVersion: Bool {
 		didSet { preferences.setShowsGameVersion(showsGameVersion) }
 	}
+	var playsLauncherMusic: Bool {
+		didSet { preferences.setPlaysLauncherMusic(playsLauncherMusic) }
+	}
+	var launcherMusicURL: String {
+		didSet { preferences.setLauncherMusicURL(launcherMusicURL) }
+	}
+	var showsPlayingMusic: Bool {
+		didSet { preferences.setShowsPlayingMusic(showsPlayingMusic) }
+	}
+	var launcherMusicVolume: Double {
+		didSet { preferences.setLauncherMusicVolume(launcherMusicVolume) }
+	}
+	var currentMusicTitle: String?
 
 	let api: any LauncherAPIProviding
 	let installer: any GameInstalling
@@ -130,6 +143,10 @@ final class LauncherViewModel {
 		announcementsEnabled = preferences.announcementsEnabled()
 		showsServerResetCountdown = preferences.showsServerResetCountdown()
 		showsGameVersion = preferences.showsGameVersion()
+		playsLauncherMusic = preferences.playsLauncherMusic()
+		launcherMusicURL = preferences.launcherMusicURL()
+		showsPlayingMusic = preferences.showsPlayingMusic()
+		launcherMusicVolume = preferences.launcherMusicVolume()
 		loadCustomAppIcon()
 		if showsServerResetCountdown { startResetCountdownTimer() }
 

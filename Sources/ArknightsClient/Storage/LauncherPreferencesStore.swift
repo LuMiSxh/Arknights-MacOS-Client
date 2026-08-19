@@ -13,6 +13,10 @@ struct LauncherPreferencesStore {
 		static let announcementsEnabled = "announcementsEnabled"
 		static let showsServerResetCountdown = "showsServerResetCountdown"
 		static let showsGameVersion = "showsGameVersion"
+		static let playsLauncherMusic = "playsLauncherMusic"
+		static let launcherMusicURL = "launcherMusicURL"
+		static let showsPlayingMusic = "showsPlayingMusic"
+		static let launcherMusicVolume = "launcherMusicVolume"
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
 		static let presentedLauncherUpdate = "presentedLauncherUpdate"
 		static let gameLaunchOptions = "gameLaunchOptions"
@@ -64,6 +68,40 @@ struct LauncherPreferencesStore {
 
 	func setShowsGameVersion(_ value: Bool) {
 		defaults.set(value, forKey: Key.showsGameVersion)
+	}
+
+	func playsLauncherMusic() -> Bool {
+		bool(for: Key.playsLauncherMusic, defaultValue: false)
+	}
+
+	func setPlaysLauncherMusic(_ value: Bool) {
+		defaults.set(value, forKey: Key.playsLauncherMusic)
+	}
+
+	func launcherMusicURL() -> String {
+		defaults.string(forKey: Key.launcherMusicURL)
+			?? AppConstants.Music.defaultLauncherMusicURL
+	}
+
+	func setLauncherMusicURL(_ value: String) {
+		defaults.set(value, forKey: Key.launcherMusicURL)
+	}
+
+	func showsPlayingMusic() -> Bool {
+		bool(for: Key.showsPlayingMusic, defaultValue: false)
+	}
+
+	func setShowsPlayingMusic(_ value: Bool) {
+		defaults.set(value, forKey: Key.showsPlayingMusic)
+	}
+
+	func launcherMusicVolume() -> Double {
+		guard defaults.object(forKey: Key.launcherMusicVolume) != nil else { return 0.5 }
+		return defaults.double(forKey: Key.launcherMusicVolume)
+	}
+
+	func setLauncherMusicVolume(_ value: Double) {
+		defaults.set(value, forKey: Key.launcherMusicVolume)
 	}
 
 	func seenAnnouncementIDs() -> Set<String> {

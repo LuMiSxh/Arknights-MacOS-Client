@@ -17,6 +17,8 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.automaticGameUpdates())
 		#expect(store.announcementsEnabled())
 		#expect(store.showsGameVersion())
+		#expect(!store.playsLauncherMusic())
+		#expect(!store.showsPlayingMusic())
 	}
 
 	@Test
@@ -29,11 +31,15 @@ struct LauncherPreferencesStoreTests {
 		store.setAutomaticGameUpdates(false)
 		store.setAnnouncementsEnabled(false)
 		store.setShowsGameVersion(false)
+		store.setPlaysLauncherMusic(true)
+		store.setShowsPlayingMusic(true)
 
 		#expect(!store.automaticLauncherUpdates())
 		#expect(!store.automaticGameUpdates())
 		#expect(!store.announcementsEnabled())
 		#expect(!store.showsGameVersion())
+		#expect(store.playsLauncherMusic())
+		#expect(store.showsPlayingMusic())
 	}
 
 	@Test
@@ -91,6 +97,28 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.installDirectory(for: .global, default: fallback) == global)
 		#expect(store.installDirectory(for: .japan, default: fallback) == japan)
 		#expect(store.installDirectory(for: .korea, default: fallback) == fallback)
+	}
+
+	@Test
+	func musicURLRoundTrip() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setLauncherMusicURL("https://youtube.com/playlist?list=123")
+		#expect(store.launcherMusicURL() == "https://youtube.com/playlist?list=123")
+	}
+
+	@Test
+	func musicVolumeRoundTrip() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.launcherMusicVolume() == 0.5)
+
+		store.setLauncherMusicVolume(0.8)
+		#expect(store.launcherMusicVolume() == 0.8)
 	}
 
 	@Test

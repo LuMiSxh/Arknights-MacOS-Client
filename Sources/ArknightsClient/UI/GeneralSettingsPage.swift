@@ -99,6 +99,62 @@ struct GeneralSettingsPage: View {
 				.help("Shows Apple's native FPS and GPU overlay the next time the game starts")
 			}
 
+			SettingsPanel(title: "Music", systemImage: "music.note") {
+				LabeledContent("Play Background Music") {
+					Toggle(
+						"Play Background Music",
+						isOn: $model.playsLauncherMusic
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(SettingsVisuals.cyan)
+				}
+				.help("Plays music while the launcher is open and the game is not running")
+
+				if model.playsLauncherMusic {
+					SettingsHairline()
+					SettingsActionRow(
+						title: "Music URL",
+						detail: "YouTube video or playlist link."
+					) {
+						TextField(
+							"https://www.youtube.com/playlist?...",
+							text: $model.launcherMusicURL
+						)
+						.textFieldStyle(.roundedBorder)
+						.frame(width: 250)
+					}
+					SettingsHairline()
+					LabeledContent("Volume") {
+						HStack(spacing: 8) {
+							Image(systemName: "speaker.fill")
+								.font(.caption)
+								.foregroundStyle(.secondary)
+							Slider(value: $model.launcherMusicVolume, in: 0...1, step: 0.05)
+								.frame(width: 140)
+							Image(systemName: "speaker.wave.3.fill")
+								.font(.caption)
+								.foregroundStyle(.secondary)
+							Text("\(Int(model.launcherMusicVolume * 100))%")
+								.font(.caption.monospacedDigit())
+								.foregroundStyle(.secondary)
+								.frame(width: 36, alignment: .trailing)
+						}
+					}
+					SettingsHairline()
+					LabeledContent("Show Currently Playing") {
+						Toggle(
+							"Show Currently Playing",
+							isOn: $model.showsPlayingMusic
+						)
+						.labelsHidden()
+						.toggleStyle(.switch)
+						.tint(SettingsVisuals.cyan)
+					}
+					.help("Shows the title of the current track next to the version indicator")
+				}
+			}
+
 			SettingsPanel(title: "Personalization", systemImage: "paintbrush") {
 				SettingsActionRow(
 					title: "Artwork",
