@@ -30,7 +30,7 @@ struct SettingsPage<Content: View>: View {
 			.padding(.top, 26)
 			.padding(.bottom, 72)
 		}
-		.contentMargins(.top, 14, for: .scrollIndicators)
+		.contentMargins(.top, 26, for: .scrollIndicators)
 		.contentMargins(.bottom, 22, for: .scrollIndicators)
 		.scrollIndicators(.automatic)
 	}
@@ -100,14 +100,19 @@ struct UpdateSettingsRow: View {
 
 	var body: some View {
 		HStack(spacing: 16) {
+			VStack(alignment: .leading, spacing: 3) {
+				Text(title)
+				Text(status)
+					.font(.caption)
+					.foregroundStyle(.secondary)
+					.lineLimit(1)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+			Spacer()
 			Toggle(title, isOn: $isEnabled)
+				.labelsHidden()
 				.toggleStyle(.switch)
 				.tint(accentColor)
-				.frame(width: 180, alignment: .leading)
-			Text(status)
-				.foregroundStyle(.secondary)
-				.lineLimit(1)
-			Spacer()
 			Button("Check Now", action: check)
 				.disabled(isChecking)
 		}
@@ -127,8 +132,10 @@ struct SettingsActionRow<Actions: View>: View {
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
-			Spacer()
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.layoutPriority(1)
 			actions
+				.fixedSize(horizontal: true, vertical: false)
 		}
 	}
 }

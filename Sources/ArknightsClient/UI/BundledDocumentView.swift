@@ -68,7 +68,7 @@ struct BundledDocumentView: View {
 						Text("Done")
 							.foregroundStyle(accentTextColor)
 					}
-					.adaptiveGlassButton(prominent: true)
+					.adaptiveGlassCapsuleButton(prominent: true)
 				}
 			}
 		}

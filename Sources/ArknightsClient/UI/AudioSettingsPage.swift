@@ -4,6 +4,7 @@ import SwiftUI
 
 struct AudioSettingsPage: View {
 	@Bindable var model: LauncherViewModel
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		SettingsPage(
@@ -11,7 +12,10 @@ struct AudioSettingsPage: View {
 			accentColor: model.accentColor
 		) {
 			SettingsPanel(title: "Music", systemImage: "music.note") {
-				LabeledContent("Play Background Music") {
+				SettingsActionRow(
+					title: "Play Background Music",
+					detail: "Plays music while the launcher is open and the game is not running."
+				) {
 					Toggle(
 						"Play Background Music",
 						isOn: $model.playsLauncherMusic
@@ -20,7 +24,6 @@ struct AudioSettingsPage: View {
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
 				}
-				.help("Plays music while the launcher is open and the game is not running")
 
 				if model.playsLauncherMusic {
 					SettingsHairline()
@@ -36,7 +39,10 @@ struct AudioSettingsPage: View {
 						.frame(width: 250)
 					}
 					SettingsHairline()
-					LabeledContent("Volume") {
+					SettingsActionRow(
+						title: "Volume",
+						detail: "Sets the launcher music playback level."
+					) {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")
 								.font(.caption)
@@ -54,7 +60,10 @@ struct AudioSettingsPage: View {
 						}
 					}
 					SettingsHairline()
-					LabeledContent("Show Currently Playing") {
+					SettingsActionRow(
+						title: "Show Currently Playing",
+						detail: "Shows the current track title above the launcher controls."
+					) {
 						Toggle(
 							"Show Currently Playing",
 							isOn: $model.showsPlayingMusic
@@ -63,9 +72,12 @@ struct AudioSettingsPage: View {
 						.toggleStyle(.switch)
 						.tint(model.accentColor)
 					}
-					.help("Shows the title of the current track next to the version indicator")
 				}
 			}
+			.animation(
+				reduceMotion ? nil : .easeInOut(duration: 0.2),
+				value: model.playsLauncherMusic
+			)
 		}
 	}
 }

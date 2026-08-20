@@ -165,6 +165,22 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
+	func dynamicThemeAccentsPersistPerArtworkSource() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+		let global = ThemeAccentSnapshot(hue: 0.03, saturation: 0.7, brightness: 0.8)
+		let custom = ThemeAccentSnapshot(hue: 0.55, saturation: 0.6, brightness: 0.7)
+
+		store.setDynamicThemeAccent(global, for: "official.global")
+		store.setDynamicThemeAccent(custom, for: "custom")
+
+		#expect(store.dynamicThemeAccent(for: "official.global") == global)
+		#expect(store.dynamicThemeAccent(for: "custom") == custom)
+		#expect(store.dynamicThemeAccent(for: "official.korea") == nil)
+	}
+
+	@Test
 	func selectedRegionDefaultsToGlobalAndPersists() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }

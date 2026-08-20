@@ -4,6 +4,17 @@ import AppKit
 import SwiftUI
 
 extension LauncherViewModel {
+	static let customThemeCacheKey = "custom"
+
+	static func officialThemeCacheKey(for region: GameRegion) -> String {
+		"official.\(region.rawValue)"
+	}
+
+	func setHeroArtwork(_ image: NSImage?, themeCacheKey: String?) {
+		activeThemeCacheKey = themeCacheKey
+		heroArtwork = image
+	}
+
 	/// Keeps `accentColor`/`hudTintColor` in sync with `usesDynamicTheme` and `heroArtwork`.
 	/// Falls back to the fixed Arknights cyan and the static HUD tint when dynamic theming
 	/// is off, no artwork is loaded, or extraction finds nothing vibrant enough.
@@ -17,20 +28,52 @@ extension LauncherViewModel {
 			Task { [weak self] in await self?.refreshPresetIconsForTheme(hue: nil) }
 			return
 		}
+		let themeCacheKey = activeThemeCacheKey
+		let artworkRegion = region
+		if let themeCacheKey,
+			let cached = preferences.dynamicThemeAccent(for: themeCacheKey)
+		{
+			applyThemeAccent(
+				ExtractedAccent(
+					hue: cached.hue,
+					saturation: cached.saturation,
+					brightness: cached.brightness
+				)
+			)
+		}
 
 		Task { [weak self] in
 			guard let self else { return }
 			let extracted = await WallpaperColorExtractor.extractAccent(from: heroArtwork)
 			// The artwork may have changed again while extraction was in flight; only apply
 			// a result that still matches the artwork it was sampled from.
-			guard self.heroArtwork === heroArtwork else { return }
-			self.dynamicThemeHue = extracted?.hue
-			self.accentColor = extracted?.accentColor ?? SettingsVisuals.cyan
-			self.accentTextColor = extracted?.accentTextColor ?? Color.black.opacity(0.92)
-			self.hudTintColor = extracted?.backgroundTint ?? SettingsVisuals.hudGlassTint
+			guard self.heroArtwork === heroArtwork,
+				self.activeThemeCacheKey == themeCacheKey,
+				self.region == artworkRegion
+			else { return }
+			if let themeCacheKey {
+				self.preferences.setDynamicThemeAccent(
+					extracted.map {
+						ThemeAccentSnapshot(
+							hue: $0.hue,
+							saturation: $0.saturation,
+							brightness: $0.brightness
+						)
+					},
+					for: themeCacheKey
+				)
+			}
+			self.applyThemeAccent(extracted)
 			self.updateDynamicAppIcon(hue: extracted?.hue)
 			await self.refreshPresetIconsForTheme(hue: extracted?.hue)
 		}
+	}
+
+	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
+		dynamicThemeHue = extracted?.hue
+		accentColor = extracted?.accentColor ?? SettingsVisuals.cyan
+		accentTextColor = extracted?.accentTextColor ?? Color.black.opacity(0.92)
+		hudTintColor = extracted?.backgroundTint ?? SettingsVisuals.hudGlassTint
 	}
 
 	func updateDynamicAppIcon(hue: Double?) {

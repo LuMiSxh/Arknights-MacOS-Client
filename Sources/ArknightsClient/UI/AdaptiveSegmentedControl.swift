@@ -4,6 +4,7 @@ import SwiftUI
 
 struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 	@Binding private var selection: Option
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	private let options: [Option]
 	private let accentColor: Color
 	private let label: (Option) -> Label
@@ -49,6 +50,10 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 			}
 			.padding(3)
 			.glassEffect(.regular, in: Capsule())
+			.animation(
+				reduceMotion ? nil : .easeInOut(duration: 0.16),
+				value: selection
+			)
 		} else {
 			Picker("", selection: $selection) {
 				ForEach(options, id: \.self) { option in
@@ -58,6 +63,10 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 			.labelsHidden()
 			.pickerStyle(.segmented)
 			.tint(accentColor)
+			.animation(
+				reduceMotion ? nil : .easeInOut(duration: 0.16),
+				value: selection
+			)
 		}
 	}
 }

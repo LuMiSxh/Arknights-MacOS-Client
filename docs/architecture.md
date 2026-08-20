@@ -7,6 +7,7 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 | Folder        | Responsibility                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------- |
 | `Application` | App entry point and macOS lifecycle                                                           |
+| `Onboarding`  | Resumable setup flow, update preflight, and focused wrappers around launcher actions          |
 | `UI`          | Launcher, Settings, and document views                                                        |
 | `ViewModels`  | UI state and user actions                                                                     |
 | `Models`      | API payloads, install state, launch options, and errors                                       |
@@ -16,6 +17,8 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 | `Utilities`   | CRC64 and diagnostic logging                                                                  |
 
 `LauncherViewModel` is the main UI orchestrator. Network access, installation, artwork caching, update discovery, announcements, and Wine execution remain separate service or runtime types; the view model coordinates their results into one user-facing `LauncherPhase`. Facts independent of that phase, such as whether game files are installed or a newer version exists, remain separate state.
+
+First-run setup is a separate `Onboarding` feature with its own `@Observable` coordinator and `UserDefaults` progress store. It never downloads files or persists launcher settings itself: each step calls the same region, installer, display, artwork, icon, update, and audio actions used by the main interface. A mandatory launcher-update preflight runs before setup; an available launcher release blocks the remaining steps until the newer app is installed and reopened. Interrupted setup resumes at its saved step, but an absent game always routes back through Region & Install before later steps.
 
 ## Installation
 

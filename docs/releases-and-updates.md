@@ -56,3 +56,5 @@ Versions follow Semantic Versioning. Before 1.0, minor versions may contain deli
 ## Signing limitation
 
 The app is ad-hoc signed so its bundle is internally consistent, but it is not notarized. Users must confirm the first launch with right-click → **Open**. Developer ID and silent self-updates are intentionally outside the current plan.
+
+The setup assistant always performs one launcher release check before version-specific onboarding, independent of the automatic-check preference. If a newer release exists, setup remains pending and sends the user to that release; it resumes only after the newer launcher is installed and reopened. A failed network check is recoverable and does not permanently block first-run setup.

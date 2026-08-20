@@ -122,9 +122,10 @@ final class LauncherViewModel {
 	@ObservationIgnored var launchTask: Task<Void, Never>?
 	@ObservationIgnored var gameMonitorTask: Task<Void, Never>?
 	@ObservationIgnored var gameProcessMonitorTask: Task<Void, Never>?
-	@ObservationIgnored var launcherUpdateTask: Task<Void, Never>?
+	@ObservationIgnored var launcherUpdateTask: Task<LauncherUpdateCheckOutcome, Never>?
 	@ObservationIgnored var announcementTask: Task<Void, Never>?
 	@ObservationIgnored var resetCountdownTask: Task<Void, Never>?
+	@ObservationIgnored var activeThemeCacheKey: String?
 	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
 	var activeGameSessionID: UUID?
@@ -170,6 +171,24 @@ final class LauncherViewModel {
 		usesDynamicTheme = preferences.usesDynamicTheme()
 		avatarIconStyle = preferences.avatarIconStyle()
 		loadCustomAppIcon()
+		let hasCustomArtwork = loadCustomArtwork()
+		if !hasCustomArtwork {
+			do {
+				if let cachedArtwork = try artworkCache.cachedActiveImage(for: selectedRegion) {
+					setHeroArtwork(
+						cachedArtwork,
+						themeCacheKey: Self.officialThemeCacheKey(for: selectedRegion)
+					)
+				}
+			} catch {
+				Task { [log] in
+					await log.error(
+						"Failed to load cached artwork for \(selectedRegion.displayName): \(error.localizedDescription)"
+					)
+				}
+			}
+		}
+		officialLogo = artworkCache.cachedOfficialLogo()
 		if showsServerResetCountdown { startResetCountdownTimer() }
 		updateThemeColor()
 
@@ -288,6 +307,14 @@ final class LauncherViewModel {
 		#endif
 	}
 
+	var isOnboardingPreview: Bool {
+		#if DEBUG
+			developerScenario == .onboarding
+		#else
+			false
+		#endif
+	}
+
 	var canSwitchRegion: Bool {
 		!isDownloading && !isGameActive
 	}
@@ -300,8 +327,8 @@ final class LauncherViewModel {
 		refreshTask?.cancel()
 		configuration = nil
 		branding = nil
-		heroArtwork = nil
-		officialLogo = nil
+		// Keep the previous branding visible until the replacement is ready. Clearing it here
+		// makes Dynamic Theme fall back to cyan between the old and new region requests.
 		isInstalled = false
 		hasPartialDownload = false
 		installedVersion = nil
@@ -380,12 +407,17 @@ final class LauncherViewModel {
 			}
 			let artworkTask = Task { [artworkCache] in
 				guard !hasCustomArtwork else { return nil as Data? }
-				return try? await artworkCache.imageData(for: currentBranding)
+				return try? await artworkCache.imageData(for: currentBranding, region: region)
 			}
 			let (logoData, artworkData) = await (logoTask.value, artworkTask.value)
 			guard isCurrentRefresh(refreshID) else { return }
 			if let logoData { officialLogo = NSImage(data: logoData) }
-			if let artworkData { heroArtwork = NSImage(data: artworkData) }
+			if let artworkData, let image = NSImage(data: artworkData) {
+				setHeroArtwork(
+					image,
+					themeCacheKey: Self.officialThemeCacheKey(for: region)
+				)
+			}
 		}
 
 		guard isCurrentRefresh(refreshID) else { return }

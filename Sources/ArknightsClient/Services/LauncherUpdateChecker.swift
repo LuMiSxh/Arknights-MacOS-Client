@@ -22,6 +22,13 @@ struct LauncherRelease: Decodable, Sendable, Equatable {
 	}
 }
 
+enum LauncherUpdateCheckOutcome: Sendable, Equatable {
+	case current
+	case updateAvailable(LauncherRelease)
+	case unavailable
+	case failed
+}
+
 /// Checks this repository's GitHub Releases for a newer launcher build, entirely separate
 /// from `LauncherAPI`'s game-version checks against Yostar's own servers.
 struct LauncherUpdateChecker: Sendable {

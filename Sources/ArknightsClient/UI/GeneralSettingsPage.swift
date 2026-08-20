@@ -9,6 +9,7 @@ private func isImageURL(_ url: URL) -> Bool {
 
 struct GeneralSettingsPage: View {
 	@Bindable var model: LauncherViewModel
+	let restartOnboarding: () -> Void
 	@State private var presentedGallery: PresetGalleryDestination?
 
 	var body: some View {
@@ -17,29 +18,37 @@ struct GeneralSettingsPage: View {
 			accentColor: model.accentColor
 		) {
 			SettingsPanel(title: "Display & Controls", systemImage: "display") {
-				LabeledContent("High-resolution mode") {
+				SettingsActionRow(
+					title: "High-Resolution Mode",
+					detail:
+						"Uses the display's full pixel density without enlarging the game window."
+				) {
 					Toggle(
-						"High-resolution mode",
+						"High-Resolution Mode",
 						isOn: $model.launchOptions.usesHighResolutionMode
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
 				}
-				.help("Use the display's full pixel density without enlarging the game window")
 				SettingsHairline()
-				LabeledContent("Use in-game display settings") {
+				SettingsActionRow(
+					title: "Use In-Game Display Settings",
+					detail: "Lets changes made inside Arknights persist between launches."
+				) {
 					Toggle(
-						"Use in-game display settings",
+						"Use In-Game Display Settings",
 						isOn: $model.launchOptions.usesGameSettings
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
 				}
-				.help("Lets changes made inside Arknights persist between launches")
 				SettingsHairline()
-				LabeledContent("Window Mode") {
+				SettingsActionRow(
+					title: "Window Mode",
+					detail: "Overrides the game window style the next time it starts."
+				) {
 					GlassMenuPicker(
 						selection: $model.launchOptions.displayMode,
 						options: GameDisplayMode.allCases.map { ($0, $0.displayName) },
@@ -47,9 +56,11 @@ struct GeneralSettingsPage: View {
 						isDisabled: model.launchOptions.usesGameSettings
 					)
 				}
-				.help("Overrides the game the next time it starts")
 				SettingsHairline()
-				LabeledContent("Resolution") {
+				SettingsActionRow(
+					title: "Resolution",
+					detail: "Overrides the game resolution the next time it starts."
+				) {
 					GlassMenuPicker(
 						selection: $model.launchOptions.resolution,
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
@@ -57,19 +68,23 @@ struct GeneralSettingsPage: View {
 						isDisabled: model.launchOptions.usesGameSettings
 					)
 				}
-				.help("Overrides the game the next time it starts")
 			}
 
 			SettingsPanel(title: "Launcher", systemImage: "sparkles") {
-				LabeledContent("Show Game Version") {
+				SettingsActionRow(
+					title: "Show Game Version",
+					detail: "Shows the installed Arknights version above the Play controls."
+				) {
 					Toggle("Show Game Version", isOn: $model.showsGameVersion)
 						.labelsHidden()
 						.toggleStyle(.switch)
 						.tint(model.accentColor)
 				}
-				.help("Shows the installed Arknights version next to the region indicator")
 				SettingsHairline()
-				LabeledContent("Server Time & Reset Countdown") {
+				SettingsActionRow(
+					title: "Server Time & Reset Countdown",
+					detail: "Shows the active server time and time until its next daily reset."
+				) {
 					Toggle(
 						"Server Time & Reset Countdown",
 						isOn: $model.showsServerResetCountdown
@@ -78,9 +93,11 @@ struct GeneralSettingsPage: View {
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
 				}
-				.help("Shows time until the daily server reset next to the version number")
 				SettingsHairline()
-				LabeledContent("Metal Performance HUD") {
+				SettingsActionRow(
+					title: "Metal Performance HUD",
+					detail: "Shows Apple's native FPS and GPU overlay during the next game launch."
+				) {
 					Toggle(
 						"Metal Performance HUD",
 						isOn: $model.launchOptions.usesMetalPerformanceHUD
@@ -89,7 +106,13 @@ struct GeneralSettingsPage: View {
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
 				}
-				.help("Shows Apple's native FPS and GPU overlay the next time the game starts")
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Setup Assistant",
+					detail: "Run the guided region, display, and personalization setup again."
+				) {
+					Button("Run Again…", systemImage: "wand.and.stars", action: restartOnboarding)
+				}
 			}
 
 			SettingsPanel(title: "Personalization", systemImage: "paintbrush") {

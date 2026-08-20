@@ -203,7 +203,9 @@ extension LauncherViewModel {
 				withIntermediateDirectories: true
 			)
 			try data.write(to: paths.customArtwork)
-			heroArtwork = NSImage(data: data)
+			if let image = NSImage(data: data) {
+				setHeroArtwork(image, themeCacheKey: Self.customThemeCacheKey)
+			}
 		} catch {
 			show(error)
 		}
@@ -244,7 +246,7 @@ extension LauncherViewModel {
 
 	func loadCustomArtwork() -> Bool {
 		guard let image = NSImage(contentsOf: paths.customArtwork) else { return false }
-		heroArtwork = image
+		setHeroArtwork(image, themeCacheKey: Self.customThemeCacheKey)
 		return true
 	}
 

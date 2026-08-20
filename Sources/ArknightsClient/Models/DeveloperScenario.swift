@@ -17,6 +17,7 @@
 		case running
 		case failure
 		case notInstalled = "not-installed"
+		case onboarding
 
 		var id: String { rawValue }
 
@@ -42,6 +43,7 @@
 			case .running: "Game running"
 			case .failure: "Failure"
 			case .notInstalled: "Not installed"
+			case .onboarding: "Onboarding"
 			}
 		}
 
@@ -60,6 +62,7 @@
 			case .running: "The game is running and can be stopped."
 			case .failure: "A runtime failure displayed in the status capsule."
 			case .notInstalled: "A fresh launcher before the game is installed."
+			case .onboarding: "The complete first-run setup assistant."
 			}
 		}
 	}

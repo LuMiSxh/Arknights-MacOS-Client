@@ -26,6 +26,7 @@ struct LauncherPreferencesStore {
 		static let avatarIconStyle = "avatarIconStyle"
 		static let launcherPresetIconStyle = "launcherPresetIconStyle"
 		static let gamePresetIconStyle = "gamePresetIconStyle"
+		static let dynamicThemeAccent = "dynamicThemeAccent"
 	}
 
 	let defaults: UserDefaults
@@ -190,6 +191,37 @@ struct LauncherPreferencesStore {
 		} else {
 			defaults.removeObject(forKey: key)
 		}
+	}
+
+	func dynamicThemeAccent(for cacheKey: String) -> ThemeAccentSnapshot? {
+		guard
+			let values = defaults.dictionary(forKey: "\(Key.dynamicThemeAccent).\(cacheKey)"),
+			let hue = values["hue"] as? Double,
+			let saturation = values["saturation"] as? Double,
+			let brightness = values["brightness"] as? Double
+		else { return nil }
+		let snapshot = ThemeAccentSnapshot(
+			hue: hue,
+			saturation: saturation,
+			brightness: brightness
+		)
+		return snapshot.isValid ? snapshot : nil
+	}
+
+	func setDynamicThemeAccent(_ snapshot: ThemeAccentSnapshot?, for cacheKey: String) {
+		let key = "\(Key.dynamicThemeAccent).\(cacheKey)"
+		guard let snapshot else {
+			defaults.removeObject(forKey: key)
+			return
+		}
+		defaults.set(
+			[
+				"hue": snapshot.hue,
+				"saturation": snapshot.saturation,
+				"brightness": snapshot.brightness,
+			],
+			forKey: key
+		)
 	}
 
 	private func bool(for key: String, defaultValue: Bool) -> Bool {

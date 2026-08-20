@@ -77,6 +77,34 @@ struct AboutSettingsPage: View {
 				}
 			}
 
+			SettingsPanel(title: "Support", systemImage: "questionmark.circle") {
+				SettingsActionRow(
+					title: "Launcher Issues",
+					detail:
+						"Report launcher, Wine runtime, or embedded browser problems with generated diagnostics."
+				) {
+					Button(
+						"Report…", systemImage: "ladybug", action: reportLauncherProblem
+					)
+					.adaptiveGlassCapsuleButton()
+					.tint(SettingsVisuals.controlTint)
+				}
+
+				SettingsHairline()
+
+				SettingsActionRow(
+					title: "Game & Account Issues",
+					detail: "Contact Yostar for account, payment, or game-service problems."
+				) {
+					Button(
+						"Contact Yostar…", systemImage: "arrow.up.right.square",
+						action: contactYostar
+					)
+					.adaptiveGlassCapsuleButton()
+					.tint(SettingsVisuals.controlTint)
+				}
+			}
+
 			SettingsPanel(title: "Arknights", systemImage: "link") {
 				HStack(spacing: 18) {
 					if let agreement = model.branding?.userAgreement {
@@ -101,4 +129,12 @@ struct AboutSettingsPage: View {
 	}
 
 	private var appVersion: String { IssueReportURL.appVersion }
+
+	private func reportLauncherProblem() {
+		NSWorkspace.shared.open(IssueReportURL.build())
+	}
+
+	private func contactYostar() {
+		NSWorkspace.shared.open(SupportLinks.yostarContact)
+	}
 }

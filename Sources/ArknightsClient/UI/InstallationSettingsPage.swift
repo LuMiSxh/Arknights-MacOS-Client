@@ -16,7 +16,10 @@ struct InstallationSettingsPage: View {
 			accentColor: model.accentColor
 		) {
 			SettingsPanel(title: "Region", systemImage: "globe") {
-				LabeledContent("Region") {
+				SettingsActionRow(
+					title: "Region",
+					detail: "Global, Japan, and Korea install, update, and launch independently."
+				) {
 					GlassMenuPicker(
 						selection: regionBinding,
 						options: GameRegion.allCases.map { ($0, $0.displayName) },
@@ -24,30 +27,32 @@ struct InstallationSettingsPage: View {
 						isDisabled: !model.canSwitchRegion
 					)
 				}
-				.help("Global, Japan, and Korea install, update, and launch independently")
 			}
 
 			SettingsPanel(title: "Location", systemImage: "externaldrive") {
-				LabeledContent("Status") {
+				SettingsActionRow(
+					title: "Status",
+					detail: "State of the selected region's game installation."
+				) {
 					Text(gameStatus)
 						.foregroundStyle(model.isDownloading ? model.accentColor : .secondary)
 				}
 				SettingsHairline()
-				LabeledContent("Folder") {
-					HStack(spacing: 10) {
-						Text(model.installDirectory.lastPathComponent)
-							.lineLimit(1)
-							.truncationMode(.middle)
-							.help(model.installDirectory.path)
-						Button("Show", systemImage: "folder", action: model.revealInstallDirectory)
-							.labelStyle(.iconOnly)
-							.disabled(!model.isInstalled)
-							.help("Show game files in Finder")
-					}
+				SettingsActionRow(
+					title: "Folder",
+					detail: model.installDirectory.lastPathComponent
+				) {
+					Button("Show", systemImage: "folder", action: model.revealInstallDirectory)
+						.labelStyle(.iconOnly)
+						.disabled(!model.isInstalled)
+						.help("Show game files in Finder")
 				}
 				SettingsHairline()
-				HStack {
-					Menu("Installation Location", systemImage: "arrow.triangle.swap") {
+				SettingsActionRow(
+					title: "Installation Location",
+					detail: "Choose a new folder or adopt an existing game installation."
+				) {
+					Menu("Change…", systemImage: "arrow.triangle.swap") {
 						Button("Choose New Location…", action: model.chooseInstallDirectory)
 						Button(
 							"Locate Existing Installation…",
@@ -55,7 +60,6 @@ struct InstallationSettingsPage: View {
 						)
 					}
 					.disabled(model.isDownloading)
-					Spacer()
 				}
 			}
 
@@ -99,21 +103,6 @@ struct InstallationSettingsPage: View {
 					Button(
 						"Show Logs", systemImage: "doc.text.magnifyingglass",
 						action: model.revealLogs)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: "Report a Problem",
-					detail: "Open a pre-filled bug report on GitHub."
-				) {
-					Button {
-						NSWorkspace.shared.open(IssueReportURL.build())
-					} label: {
-						Label("Report…", systemImage: "ladybug")
-							.foregroundStyle(model.accentTextColor)
-							.padding(.horizontal, 6)
-					}
-					.adaptiveGlassButton(prominent: true)
-					.tint(model.accentColor)
 				}
 			}
 

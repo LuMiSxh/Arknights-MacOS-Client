@@ -6,6 +6,7 @@ struct PresetGalleryView: View {
 	@Bindable var model: LauncherViewModel
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	@State private var selectedTab: PresetGalleryTab = .avatars
 	@State private var searchText = ""
@@ -50,6 +51,8 @@ struct PresetGalleryView: View {
 							}
 						}
 					}
+					.id(selectedTab)
+					.transition(.opacity)
 					.padding(.horizontal, 24)
 					.padding(.bottom, 64)
 				}
@@ -77,8 +80,7 @@ struct PresetGalleryView: View {
 					.padding(.horizontal, 10)
 					.padding(.vertical, 2)
 			}
-			.adaptiveGlassButton(prominent: true)
-			.buttonBorderShape(.capsule)
+			.adaptiveGlassCapsuleButton(prominent: true)
 			.tint(model.accentColor)
 			.shadow(color: Color.black.opacity(0.55), radius: 10, x: 0, y: 4)
 			.padding(.trailing, 24)
@@ -93,6 +95,14 @@ struct PresetGalleryView: View {
 			}
 		)
 		.preferredColorScheme(.dark)
+		.animation(
+			reduceMotion ? nil : .easeInOut(duration: 0.18),
+			value: selectedTab
+		)
+		.animation(
+			reduceMotion ? nil : .easeInOut(duration: 0.3),
+			value: model.dynamicThemeHue
+		)
 		.task {
 			selectedTab = destination.initialTab
 			avatars = await PresetCatalogService.shared.fetchAvatars()

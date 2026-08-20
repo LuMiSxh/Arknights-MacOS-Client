@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import Foundation
 import Testing
 
@@ -229,6 +230,18 @@ struct LauncherViewModelConcurrencyTests {
 		try FileManager.default.removeItem(at: partial)
 		model.updateInstalledState()
 		#expect(!model.hasPartialDownload)
+	}
+
+	@Test
+	func regionSwitchKeepsCurrentArtworkUntilReplacementLoads() {
+		let model = makeModel(api: BlockingBrandingAPI(), installer: ControllableInstaller())
+		let artwork = NSImage(size: NSSize(width: 32, height: 32))
+		model.heroArtwork = artwork
+
+		model.selectRegion(.japan)
+
+		#expect(model.region == .japan)
+		#expect(model.heroArtwork === artwork)
 	}
 
 	private func waitForDownloadToStop(_ model: LauncherViewModel) async {

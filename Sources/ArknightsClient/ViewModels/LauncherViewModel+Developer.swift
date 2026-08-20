@@ -115,6 +115,11 @@
 				hasPartialDownload = false
 				installedVersion = nil
 				activityMessage = "Install"
+			case .onboarding:
+				isInstalled = false
+				hasPartialDownload = false
+				installedVersion = nil
+				activityMessage = "Install"
 			}
 		}
 
@@ -139,8 +144,14 @@
 			if let logoData = try? await artworkCache.officialLogoData() {
 				officialLogo = NSImage(data: logoData)
 			}
-			if let imageData = try? await artworkCache.imageData(for: currentBranding) {
-				heroArtwork = NSImage(data: imageData)
+			if let imageData = try? await artworkCache.imageData(
+				for: currentBranding,
+				region: region
+			), let image = NSImage(data: imageData) {
+				setHeroArtwork(
+					image,
+					themeCacheKey: Self.officialThemeCacheKey(for: region)
+				)
 			}
 		}
 

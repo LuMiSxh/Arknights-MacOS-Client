@@ -63,7 +63,7 @@ struct LauncherPopupView: View {
 						Text(actionTitle)
 							.foregroundStyle(accentTextColor)
 					}
-					.adaptiveGlassButton()
+					.adaptiveGlassCapsuleButton()
 					.tint(accentColor)
 					.keyboardShortcut(.defaultAction)
 
@@ -71,14 +71,14 @@ struct LauncherPopupView: View {
 						Text(popup.dismissTitle)
 							.foregroundStyle(accentTextColor)
 					}
-					.adaptiveGlassButton(prominent: true)
+					.adaptiveGlassCapsuleButton(prominent: true)
 					.tint(accentColor)
 				} else {
 					Button(action: dismiss) {
 						Text(popup.dismissTitle)
 							.foregroundStyle(accentTextColor)
 					}
-					.adaptiveGlassButton(prominent: true)
+					.adaptiveGlassCapsuleButton(prominent: true)
 					.tint(accentColor)
 					.keyboardShortcut(.defaultAction)
 				}

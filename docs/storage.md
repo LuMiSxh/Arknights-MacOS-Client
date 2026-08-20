@@ -7,12 +7,14 @@ The app resolves standard directories through `FileManager`. All app-owned paths
 | Game files       | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global`         | Until **Uninstall Game**        |
 | Wine prefix      | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` | Persistent runtime state        |
 | Custom artwork and icons | `~/Library/Application Support/com.lumisxh.arknights-client/Artwork/Custom`          | Until individually reset or app data removal |
-| Official artwork | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                          | Recreated when missing          |
+| Official artwork | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                          | Recreated when missing; includes a small per-region pointer so the last active image appears before the branding refresh |
 | Launcher log     | `~/Library/Logs/com.lumisxh.arknights-client/launcher.log`                                  | Rotating diagnostics            |
 | Runtime log      | `~/Library/Logs/com.lumisxh.arknights-client/wine.log`                                      | Game and Wine diagnostics       |
 | Preferences      | `UserDefaults`                                                                              | Small settings only             |
 
 Partial game downloads stay beside their final files with a `.part` suffix so downloads can resume. Game files and the Wine prefix are excluded from backups.
+
+The setup assistant stores only its schema version and current step in `UserDefaults`. Completing or explicitly skipping the assistant clears the step and records the current schema; **Run Again** removes that completion marker. All choices made inside setup remain owned by the normal launcher preference and asset stores.
 
 The Wine prefix is intentionally isolated. Before the first `wineboot`, Wine receives a private Unix home and XDG user-folder configuration. The prebuilt runtime initializes Windows data under a `crossover` profile, while some processes use the current macOS account name; both profiles therefore remain inside the prefix instead of linking to macOS folders. Only the private `C:` drive and the selected game directory as `G:` are visible through normal Windows paths. The launcher removes Wine's default `Z:` mapping to the macOS file-system root before every start.
 

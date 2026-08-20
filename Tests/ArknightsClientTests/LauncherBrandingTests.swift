@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import Foundation
 import Testing
 
@@ -64,4 +65,36 @@ func brandingDecodesEmptyStringURLsAsNil() throws {
 	#expect(branding.launcherBackgroundImageCRC64 == "4615291511255606402")
 	#expect(branding.privacyPolicy == nil)
 	#expect(branding.userAgreement == nil)
+}
+
+@Test
+func artworkCacheRestoresTheLastActiveImagePerRegion() async throws {
+	let directory = FileManager.default.temporaryDirectory.appending(
+		path: "ArtworkCacheTests.\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? FileManager.default.removeItem(at: directory) }
+	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+	let imageData = try #require(
+		Data(
+			base64Encoded:
+				"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
+		)
+	)
+	try imageData.write(to: directory.appending(path: "artwork-key.jpg"))
+	let cache = ArtworkCache(directory: directory)
+	let branding = LauncherBranding(
+		launcherBackgroundImage: URL(string: "https://example.com/artwork.jpg"),
+		launcherBackgroundImageCRC64: "artwork-key",
+		copyrightInformation: nil,
+		privacyPolicy: nil,
+		userAgreement: nil,
+		noticePopOpen: nil,
+		noticeContent: nil
+	)
+
+	_ = try await cache.imageData(for: branding, region: .global)
+
+	#expect(try cache.cachedActiveImage(for: .global) != nil)
+	#expect(try cache.cachedActiveImage(for: .korea) == nil)
 }

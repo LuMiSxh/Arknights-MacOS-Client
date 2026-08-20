@@ -4,7 +4,18 @@ import SwiftUI
 
 struct ContentView: View {
 	var model: LauncherViewModel
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var settingsPresented = false
+	@State private var onboarding: OnboardingCoordinator
+
+	init(model: LauncherViewModel) {
+		self.model = model
+		_onboarding = State(
+			initialValue: OnboardingCoordinator(
+				store: OnboardingProgressStore(defaults: model.preferences.defaults)
+			)
+		)
+	}
 
 	private var cyan: Color { model.accentColor }
 
@@ -12,7 +23,7 @@ struct ContentView: View {
 		ZStack {
 			BackgroundMusicView(model: model)
 
-			artwork
+			LauncherArtworkView(image: model.heroArtwork, accentColor: cyan)
 				.ignoresSafeArea(.container, edges: .top)
 
 			// Seamless top-left corner vignette for traffic lights & wordmark readability
@@ -40,8 +51,18 @@ struct ContentView: View {
 		}
 		.background(Color.black)
 		.preferredColorScheme(.dark)
+		.animation(themeAnimation, value: model.dynamicThemeHue)
+		.overlay {
+			if onboarding.isPresented {
+				OnboardingView(
+					model: model,
+					coordinator: onboarding,
+					retryUpdateCheck: retryOnboardingUpdateCheck
+				)
+			}
+		}
 		.sheet(isPresented: $settingsPresented) {
-			LauncherSettingsView(model: model)
+			LauncherSettingsView(model: model, restartOnboarding: restartOnboarding)
 		}
 		.sheet(item: popupBinding) { popup in
 			LauncherPopupView(
@@ -53,11 +74,14 @@ struct ContentView: View {
 				openAction: model.openPopupAction
 			)
 		}
+		.task {
+			await startOnboardingIfNeeded()
+		}
 	}
 
 	private var popupBinding: Binding<LauncherPopup?> {
 		Binding(
-			get: { model.popup },
+			get: { onboarding.isPresented ? nil : model.popup },
 			set: { popup in
 				if popup == nil { model.dismissPopup() }
 			}
@@ -88,39 +112,38 @@ struct ContentView: View {
 		settingsPresented = true
 	}
 
-	private var artwork: some View {
-		GeometryReader { proxy in
-			Group {
-				if let image = model.heroArtwork {
-					Image(nsImage: image)
-						.resizable()
-						.scaledToFill()
-						.accessibilityLabel("Arknights artwork")
-				} else {
-					fallbackArtwork
-				}
-			}
-			.frame(width: proxy.size.width, height: proxy.size.height)
-			.clipped()
+	private func startOnboardingIfNeeded() async {
+		model.updateInstalledState()
+		await onboarding.startIfNeeded(
+			isDeveloperMode: model.isDeveloperMode,
+			isOnboardingPreview: model.isOnboardingPreview,
+			gameIsInstalled: model.isInstalled,
+			checkForUpdates: model.launcherUpdateCheckForOnboarding
+		)
+	}
+
+	private func retryOnboardingUpdateCheck() {
+		Task {
+			await onboarding.retryUpdateCheck(model.launcherUpdateCheckForOnboarding)
 		}
 	}
 
-	private var fallbackArtwork: some View {
-		ZStack {
-			Color(red: 0.035, green: 0.04, blue: 0.045)
-			Text("A")
-				.font(.custom("Avenir Next Condensed", size: 440).weight(.black))
-				.foregroundStyle(.white.opacity(0.07))
-			Rectangle()
-				.fill(cyan.opacity(0.4))
-				.frame(width: 620, height: 10)
-				.rotationEffect(.degrees(-42))
+	private func restartOnboarding() {
+		settingsPresented = false
+		model.updateInstalledState()
+		Task {
+			await onboarding.restart(
+				gameIsInstalled: model.isInstalled,
+				checkForUpdates: model.launcherUpdateCheckForOnboarding
+			)
 		}
 	}
 
 	private var controlBar: some View {
 		HStack(spacing: 16) {
 			controlBarLeadingRegion
+				.id(model.isDownloading ? "download-progress" : "launcher-status")
+				.transition(.opacity)
 				.frame(maxWidth: .infinity, alignment: .leading)
 
 			HStack(spacing: 8) {
@@ -129,16 +152,21 @@ struct ContentView: View {
 						"Launcher Update", systemImage: "arrow.down.app",
 						action: model.openLauncherUpdate
 					)
-					.adaptiveGlassButton()
-					.buttonBorderShape(.capsule)
+					.adaptiveGlassCapsuleButton()
+					.transition(.opacity)
 					.help("Open the latest launcher release in your browser")
 				}
 
-				primaryAction
+				LauncherPrimaryActionView(model: model)
+					.id(primaryActionIdentity)
+					.transition(primaryActionTransition)
 			}
 		}
 		.padding(16)
 		.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
+		.animation(stateAnimation, value: model.isDownloading)
+		.animation(stateAnimation, value: primaryActionIdentity)
+		.animation(stateAnimation, value: model.launcherUpdate != nil)
 	}
 
 	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill
@@ -150,11 +178,24 @@ struct ContentView: View {
 			HStack {
 				Spacer(minLength: 16)
 				HStack(spacing: 8) {
-					MusicHUDPill(model: model)
-					VersionHUDPill(model: model)
-					StatusHUDPill(model: model)
+					if hasMusicPill {
+						MusicHUDPill(model: model)
+							.transition(hudPillTransition)
+					}
+					if hasVersionPill {
+						VersionHUDPill(model: model)
+							.transition(hudPillTransition)
+					}
+					if hasStatusPill {
+						StatusHUDPill(model: model)
+							.transition(hudPillTransition)
+					}
 				}
 			}
+			.transition(hudPillTransition)
+			.animation(stateAnimation, value: hasMusicPill)
+			.animation(stateAnimation, value: hasVersionPill)
+			.animation(stateAnimation, value: hasStatusPill)
 		}
 	}
 
@@ -179,6 +220,7 @@ struct ContentView: View {
 				HStack(alignment: .firstTextBaseline, spacing: 10) {
 					Text(statusTitle)
 						.font(.system(size: 14, weight: .semibold))
+						.contentTransition(.numericText())
 					if let detail = statusDetail {
 						Text(detail)
 							.font(.caption)
@@ -190,11 +232,13 @@ struct ContentView: View {
 				ProgressView(value: model.progress?.fraction ?? 0)
 					.progressViewStyle(.linear)
 					.tint(cyan)
+					.animation(.linear(duration: 0.2), value: model.progress?.fraction ?? 0)
 			}
 		} else {
 			VStack(alignment: .leading, spacing: 2) {
 				Text(statusTitle)
 					.font(.system(size: 14, weight: .semibold))
+					.contentTransition(.opacity)
 				if let detail = statusDetail {
 					Text(detail)
 						.font(.caption)
@@ -208,67 +252,6 @@ struct ContentView: View {
 					}
 				}
 			}
-		}
-	}
-
-	@ViewBuilder
-	private var primaryAction: some View {
-		if model.isGameRunning {
-			Button("Stop", systemImage: "stop.fill", action: model.stopGame)
-				.adaptiveGlassButton()
-				.buttonBorderShape(.capsule)
-				.controlSize(.large)
-				.disabled(!model.canStopGame)
-				.help("Stop Arknights and its Windows runtime")
-		} else if model.isDownloading {
-			Button("Pause", systemImage: "pause.fill", action: model.cancelDownload)
-				.adaptiveGlassButton()
-				.buttonBorderShape(.capsule)
-				.controlSize(.large)
-				.help("Pause the download; it resumes from partial files later")
-		} else if !model.isInstalled {
-			Button(action: model.installOrUpdate) {
-				Label(
-					model.hasPartialDownload ? "Resume" : "Install",
-					systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
-				)
-				.foregroundStyle(model.accentTextColor)
-			}
-			.adaptiveGlassButton(prominent: true)
-			.buttonBorderShape(.capsule)
-			.controlSize(.large)
-			.tint(cyan)
-			.disabled(!model.canInstall)
-			.keyboardShortcut(.defaultAction)
-			.help(
-				model.hasPartialDownload
-					? "Continue downloading from the partial files"
-					: "Download and verify the official Global PC files"
-			)
-		} else if model.isGameUpdateAvailable {
-			Button(action: model.installOrUpdate) {
-				Label("Update", systemImage: "arrow.down")
-					.foregroundStyle(model.accentTextColor)
-			}
-			.adaptiveGlassButton(prominent: true)
-			.buttonBorderShape(.capsule)
-			.controlSize(.large)
-			.tint(cyan)
-			.disabled(!model.canInstall)
-			.keyboardShortcut(.defaultAction)
-			.help("Download the changed game files")
-		} else {
-			Button(action: model.launch) {
-				Label("Play", systemImage: "play.fill")
-					.foregroundStyle(model.accentTextColor)
-			}
-			.adaptiveGlassButton(prominent: true)
-			.buttonBorderShape(.capsule)
-			.controlSize(.large)
-			.tint(cyan)
-			.disabled(!model.canLaunch)
-			.keyboardShortcut(.defaultAction)
-			.help("Start Arknights")
 		}
 	}
 
@@ -300,5 +283,29 @@ struct ContentView: View {
 	private var isFailed: Bool {
 		if case .failed = model.phase { return true }
 		return false
+	}
+
+	private var primaryActionIdentity: String {
+		if model.isGameRunning { return "stop" }
+		if model.isDownloading { return "pause" }
+		if !model.isInstalled { return model.hasPartialDownload ? "resume" : "install" }
+		if model.isGameUpdateAvailable { return "update" }
+		return "play"
+	}
+
+	private var stateAnimation: Animation? {
+		reduceMotion ? nil : .easeInOut(duration: 0.2)
+	}
+
+	private var themeAnimation: Animation? {
+		reduceMotion ? nil : .easeInOut(duration: 0.3)
+	}
+
+	private var primaryActionTransition: AnyTransition {
+		reduceMotion ? .opacity : .scale(scale: 0.94).combined(with: .opacity)
+	}
+
+	private var hudPillTransition: AnyTransition {
+		reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
 	}
 }

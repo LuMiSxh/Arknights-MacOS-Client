@@ -11,6 +11,13 @@ struct ExtractedAccent {
 	let brightness: Double
 	let accentColor: Color
 
+	init(hue: Double, saturation: Double, brightness: Double) {
+		self.hue = hue
+		self.saturation = saturation
+		self.brightness = brightness
+		accentColor = Color(hue: hue, saturation: saturation, brightness: brightness)
+	}
+
 	/// High-contrast text color for prominent buttons tinted with `accentColor`.
 	/// Uses dark text on bright/vibrant accents (cyan, mint, yellow) and white on dark ones.
 	var accentTextColor: Color {
@@ -133,8 +140,7 @@ private func bestAccentColor(in pixels: [UInt8]) -> ExtractedAccent? {
 	return ExtractedAccent(
 		hue: hue,
 		saturation: renderSaturation,
-		brightness: renderBrightness,
-		accentColor: Color(hue: hue, saturation: renderSaturation, brightness: renderBrightness)
+		brightness: renderBrightness
 	)
 }
 

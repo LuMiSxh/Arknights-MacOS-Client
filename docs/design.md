@@ -23,6 +23,7 @@ The launcher should feel like a current macOS app first and an Arknights launche
 - Install, Update, and Play use the accent color as a prominent Liquid Glass tint; secondary actions stay neutral.
 - Avoid fake window chrome, decorative metadata, large status slogans, and rounded card grids.
 - The Endfield launcher is only a layout reference. Its yellow palette is not part of this app.
+- Crossfade artwork, theme colors, primary actions, and compact status pills with short native transitions; Reduce Motion replaces movement and scaling with opacity or no animation.
 
 ## Settings and documents
 
@@ -34,6 +35,15 @@ The launcher should feel like a current macOS app first and an Arknights launche
 - Keep developer terminology out of the interface; diagnostics may refer to launcher and Wine logs because users need those names when reporting a problem.
 - Render bundled Markdown as native text. Tables may scroll horizontally, but headings and ordinary paragraphs must fit the document width.
 - Link the author and repository directly from About.
+
+## First-run setup
+
+- Present setup as an operation briefing inside the launcher window: a persistent route on the left, one focused task on the right, and the active installation status inside the relevant step.
+- Check for a newer launcher before explaining version-specific settings. If one exists, stop setup at the update action until the newer launcher is installed and reopened.
+- Check Rosetta 2 after the launcher preflight and explain how to install it before the first game launch.
+- Let the official game download continue while the user configures display, artwork, theme, icons, updates, and audio. Do not duplicate installer progress or cancellation state inside the setup module.
+- Apply choices immediately through the same actions used in Settings. A skipped or completed assistant can be opened again from Settings → General.
+- End with an optional test launch and a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form; route account, payment, and game-service issues to official Yostar support.
 
 ## Artwork
 

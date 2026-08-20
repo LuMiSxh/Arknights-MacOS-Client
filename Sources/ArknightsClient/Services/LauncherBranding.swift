@@ -73,7 +73,7 @@ actor ArtworkCache {
 	)!
 
 	private let session: URLSession
-	private let directory: URL
+	private nonisolated let directory: URL
 
 	init(
 		session: URLSession = .shared,
@@ -83,15 +83,31 @@ actor ArtworkCache {
 		self.directory = directory
 	}
 
-	func imageData(for branding: LauncherBranding) async throws -> Data? {
-		guard let sourceURL = branding.launcherBackgroundImage else { return nil }
+	nonisolated func cachedActiveImage(for region: GameRegion) throws -> NSImage? {
+		let pointerURL = activeCacheKeyURL(for: region)
+		guard FileManager.default.fileExists(atPath: pointerURL.path) else { return nil }
+		let cacheKey = try String(contentsOf: pointerURL, encoding: .utf8)
+		guard Self.safeCacheKey(cacheKey) == cacheKey else { return nil }
+		return NSImage(contentsOf: cachedImageURL(for: cacheKey))
+	}
+
+	nonisolated func cachedOfficialLogo() -> NSImage? {
+		NSImage(contentsOf: officialLogoCacheURL)
+	}
+
+	func imageData(for branding: LauncherBranding, region: GameRegion) async throws -> Data? {
+		guard let sourceURL = branding.launcherBackgroundImage else {
+			try removeActiveCacheKey(for: region)
+			return nil
+		}
 		let cacheKey = branding.launcherBackgroundImageCRC64 ?? sourceURL.lastPathComponent
-		let safeKey = cacheKey.filter { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
+		let safeKey = Self.safeCacheKey(cacheKey)
 		guard !safeKey.isEmpty else { return nil }
 
 		let fileManager = FileManager.default
-		let cachedURL = directory.appending(path: "\(safeKey).jpg")
+		let cachedURL = cachedImageURL(for: safeKey)
 		if let data = try? Data(contentsOf: cachedURL), !data.isEmpty {
+			try persistActiveCacheKey(safeKey, for: region)
 			return data
 		}
 
@@ -108,11 +124,12 @@ actor ArtworkCache {
 
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 		try data.write(to: cachedURL, options: .atomic)
+		try persistActiveCacheKey(safeKey, for: region)
 		return data
 	}
 
 	func officialLogoData() async throws -> Data {
-		let cachedURL = directory.appending(path: "official-arknights-logo.png")
+		let cachedURL = officialLogoCacheURL
 		if let data = try? Data(contentsOf: cachedURL), !data.isEmpty {
 			return data
 		}
@@ -131,5 +148,40 @@ actor ArtworkCache {
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		try data.write(to: cachedURL, options: .atomic)
 		return data
+	}
+
+	private nonisolated var officialLogoCacheURL: URL {
+		directory.appending(path: "official-arknights-logo.png")
+	}
+
+	private nonisolated func cachedImageURL(for cacheKey: String) -> URL {
+		directory.appending(path: "\(cacheKey).jpg")
+	}
+
+	private nonisolated func activeCacheKeyURL(for region: GameRegion) -> URL {
+		directory.appending(path: "active-\(region.rawValue).txt")
+	}
+
+	private func persistActiveCacheKey(_ cacheKey: String, for region: GameRegion) throws {
+		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		try cacheKey.write(
+			to: activeCacheKeyURL(for: region),
+			atomically: true,
+			encoding: .utf8
+		)
+	}
+
+	private func removeActiveCacheKey(for region: GameRegion) throws {
+		let url = activeCacheKeyURL(for: region)
+		guard FileManager.default.fileExists(atPath: url.path) else { return }
+		try FileManager.default.removeItem(at: url)
+	}
+
+	private nonisolated static func safeCacheKey(_ value: String) -> String {
+		String(
+			value.prefix(256).filter {
+				$0.isLetter || $0.isNumber || $0 == "-" || $0 == "_"
+			}
+		)
 	}
 }

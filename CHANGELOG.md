@@ -10,57 +10,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- A free-disk-space check before installing or updating the game, using Yostar's own reported install size so it stays accurate as the game grows; installation now fails fast with a clear message instead of running out of space mid-download.
-- Detection of a missing Rosetta 2 runtime before launching the game, with an informative message instead of a silent 90-second window-readiness timeout.
-- A Metal Performance HUD toggle in Settings → General that shows Apple's native FPS and GPU overlay during gameplay.
-- An experimental Game Mode toggle in a new Danger Zone in Settings → Installation, requesting elevated macOS scheduling priority for the game while it runs; only takes effect if the full Xcode app is installed; disabled by default and off with a clear message otherwise.
-- A Danger Zone panel in Settings → Installation that groups Uninstall Game and Force Migration together with a distinct visual style, since both undo real setup work.
-- A custom app icon option in Settings → General; choose an image to replace the Dock and Finder icon, or reset to the default (Thanks to @RadioNoiseE, #24).
-- A toggleable server time and daily reset countdown next to the version label in Settings → General.
-- A "Clear Cache" action in Settings → Installation → Maintenance that shows and frees the space used by the DXMT shader and embedded browser caches; both rebuild automatically.
-- Drag-and-drop image support on the Artwork and App Icon panels in Settings → General, alongside the existing file pickers.
-- A "Show Game Version" toggle in Settings → General, on by default, for the version label next to the region indicator.
-- A "Delete Wine Prefix" action in the Danger Zone that fully rebuilds the Wine environment on the next launch, including saved Yostar/Google/Apple/Facebook browser logins, without touching game files — a stronger reset than Force Migration.
-- A "Reset All Settings" action in the Danger Zone that restores every launcher toggle and option to default, leaving the install location and selected region untouched.
-- Optional YouTube-based launcher background music, off by default, with URL validation, playlist shuffling, and an optional now-playing title (Thanks to @darkwebdev, #27).
-- A "Dynamic Theme" option in Settings → General → Personalization that harmonizes launcher controls, HUD pills, and the app icon with colors sampled from the active artwork.
-- Dynamic Theme now also updates the app icon: the default icon is hue-rotated in YIQ space to match sampled artwork colors, then normalized to a 512×512 point icon with Apple's 80.5% grid padding so the Dock tile no longer appears oversized.
-- Small floating HUD pills above the main control bar for the now-playing track, region, reset countdown, and game version, each shown only when relevant.
-- Support for macOS 15 (Sequoia) and newer, down from macOS 26; Liquid Glass stays full-featured on macOS 26, with native Material and bordered-button fallbacks on macOS 15–25 (Thanks to @Mickhasinsomnia, #29).
-- Optional launcher background music now opens the currently playing track when tapping the now-playing HUD pill, and the pill now keeps to one-line text with truncation.
-- Added an in-app Asset Gallery in Settings → General → Personalization to browse and apply curated official Arknights wallpapers and operator avatar app icons with on-demand caching (Thanks to @darkwebdev #30, @RadioNoiseE #24).
-- Added a separate Game Icon setting with presets, custom-image selection, and a normalized "Use Default" option that preserves the original Arknights icon.
-- Added Rhodes Dark, Launcher Icon, and Game Icon treatments for operator presets; Launcher Icon follows Dynamic Theme colors, while Game Icon combines the operator with the game's cyan crystalline background.
+- A resumable setup assistant for first installs and 0.3.x upgrades, with update preflight, background installation, guided settings, and a test launch.
+- Dedicated support actions for GitHub launcher reports and Yostar account, payment, or game-service issues.
+- Free-space validation before game installation or updates.
+- Rosetta 2 detection during setup and before launching the game.
+- An optional Metal Performance HUD for native FPS and GPU diagnostics.
+- An experimental Game Mode integration that requires the full Xcode app.
+- A Settings Danger Zone for resets, Wine-prefix maintenance, migration, and game removal.
+- Custom launcher icons with normalized Dock sizing (Thanks to @RadioNoiseE, #24).
+- Drag-and-drop selection for launcher artwork and icons.
+- Optional game-version, server-time, and daily-reset indicators above the Play controls.
+- Cache cleanup for DXMT shaders, the embedded browser, and downloaded gallery assets.
+- Optional YouTube background music with playlists, volume controls, and now-playing links (Thanks to @darkwebdev, #27).
+- Dynamic Theme colors for controls, HUD elements, and compatible launcher icons.
+- Floating HUD pills for region, game version, reset time, and background music.
+- Native macOS 15–25 fallbacks while preserving Liquid Glass on macOS 26 (Thanks to @Mickhasinsomnia, #29).
+- An Asset Gallery for official wallpapers and operator avatars with bounded downloads and caching (Thanks to @darkwebdev, #30; @RadioNoiseE, #24).
+- Separate launcher and game icon presets with Rhodes Dark, Launcher Icon, and Game Icon styles.
+- Custom game icons and a normalized "Use Default" option that preserves the original Arknights icon.
+- Version-range and display-window options for announcement management.
+- Recipe-download tracking in release statistics.
 
 ### Changed
 
-- Declared the app as a game (macOS application category) so the system can offer native game-related features.
-- Quieted DXMT's Metal translation logging by default; it previously ran at its noisiest level on every launch instead of only under diagnostics.
-- Reorganized Settings → General into "Display & Controls", "Launcher", and "Personalization" panels, and split Music out into its own "Audio" section.
-- Moved the Uninstall Game and Force Migration confirmation dialogs to attach directly to their buttons instead of the Settings window, so their animations originate from the right place.
-- Reordered the Danger Zone from least to most destructive: Game Mode, Reset All Settings, Force Migration, Delete Wine Prefix, Uninstall Game.
-- Reworked the Settings sheet to a single, cohesive dark glass surface: floating Done button, shared warm modal background, adjusted sidebar tint, and inset scrollbar indicators for full-page consistency.
-- Code hardening pass: split cohesive SwiftUI and service behavior into focused files, centralized resource limits in `AppConstants`, added `///` documentation to protocols and coordinator types across the Swift sources, and documented every function in the `RuntimeSupport` C and Objective-C compatibility shims.
-- Consolidated the `justfile`'s check, format, and dev commands, and added clang-format for the C/Objective-C compatibility shims.
-- Reworked the Developer settings picker to cover every simulated launcher state, including live custom popups, and simplified the preview commands.
-- Made prominent CTA button label contrast adapt to sampled accent luminance so bright accents render dark text and darker accents render light text for better legibility.
-- Normalized user-provided custom app icons to Apple's default icon grid padding before assigning them to the Dock/Finder icon so the launcher icon keeps the same 80.5% visual bounds as system apps.
-- Unified script CLI output with color, spinners, and progress bars, and fixed the progress bar's width calculation.
-- Added recipe-download tracking to release statistics.
-- Simplified the announcement management commands, and added optional version-range and display-window flags to `just announcement set`.
-- Hardened game installation against ambiguous or duplicate manifest paths and symbolic-link destinations before any game file is written.
-- Bounded Asset Gallery catalog responses, image downloads, decoded image dimensions, and its on-disk image cache; remote assets and redirects are now restricted to approved HTTPS hosts.
-- Replaced silent Game Mode, Wine-stop, preset-cache, custom-artwork, and app-icon failures with contextual launcher logging or visible errors.
-- Normalized the Wine game process icon to the same Dock footprint as native macOS apps without modifying `Arknights.exe` or other game files.
+- Declared the launcher as a game in its macOS application metadata.
+- Reduced DXMT logging to error-only output outside diagnostics.
+- Reorganized Settings and moved music controls into a dedicated Audio section.
+- Polished Settings with right-aligned actions, clearer descriptions, and better-positioned scrollbars.
+- Attached destructive confirmations directly to their initiating Settings controls.
+- Unified popups and bundled-document sheets with the Settings visual language.
+- Made prominent button text adapt to the sampled accent's luminance.
+- Hardened installer paths, temporary-file handling, and manifest conflict detection.
+- Replaced silent filesystem and process failures with contextual logging or visible errors.
+- Split large UI and service types, centralized limits, and expanded runtime documentation.
+- Consolidated development commands, preview scenarios, formatting, and script output.
 
 ### Fixed
 
-- Prevented the first click in the separate Notices window from briefly flashing the game during the macOS application-focus handoff.
-- Kept Wine's normalized mouse-wheel scrolling enabled on every launch and removed the experimental precise-scrolling toggle: it made vertical scrolling excessively fast and cannot restore horizontal panning in the game's Unity input path (Thanks to @darkwebdev, #28).
-- Fixed the Notices companion window rendering behind the game window in fullscreen, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
-- Matched the Notices/announcement popup's styling (glass tint, hairlines, background) to the rest of the app.
-- Fixed the now-playing title sometimes showing the wrong track right after the background music playlist shuffles to a new one.
-- Updated launcher version row in Settings → Updates to mirror game status behavior (`vX.Y.Z` when current, “Update available” only when needed), and made popup/About buttons use the same icon+text button treatment as other prominent actions.
+- Kept the Notices window above fullscreen gameplay and synchronized while dragging (Thanks to u/Fukksaks5th, #19).
+- Prevented the first Notices click from briefly flashing the game during focus handoff (#26).
+- Loaded cached artwork immediately and kept it visible while switching regions.
+- Reapplied normalized Wine scrolling on every launch to prevent excessive trackpad speed (Thanks to @darkwebdev, #28).
+- Matched launcher and game icon Dock footprints to native macOS apps (#24).
+- Corrected the launcher update status shown in Settings.
 
 ## [0.3.0]
 

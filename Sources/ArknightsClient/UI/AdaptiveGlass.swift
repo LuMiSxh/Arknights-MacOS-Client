@@ -44,4 +44,27 @@ extension View {
 			}
 		}
 	}
+
+	/// Uses the same adaptive styles as `adaptiveGlassButton`, while setting the border
+	/// shape before SwiftUI resolves the style so macOS 15–25 also render a true capsule.
+	@ViewBuilder
+	func adaptiveGlassCapsuleButton(prominent: Bool = false) -> some View {
+		if #available(macOS 26, *) {
+			if prominent {
+				self.buttonBorderShape(.capsule)
+					.buttonStyle(.glassProminent)
+			} else {
+				self.buttonBorderShape(.capsule)
+					.buttonStyle(.glass)
+			}
+		} else {
+			if prominent {
+				self.buttonBorderShape(.capsule)
+					.buttonStyle(.borderedProminent)
+			} else {
+				self.buttonBorderShape(.capsule)
+					.buttonStyle(.bordered)
+			}
+		}
+	}
 }

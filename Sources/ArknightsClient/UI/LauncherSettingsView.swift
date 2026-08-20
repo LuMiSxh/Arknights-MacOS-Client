@@ -4,7 +4,9 @@ import SwiftUI
 
 struct LauncherSettingsView: View {
 	var model: LauncherViewModel
+	let restartOnboarding: () -> Void
 	@Environment(\.dismiss) private var dismiss
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var selectedSection = SettingsSection.general
 	@State private var presentedDocument: BundledDocument?
 
@@ -22,7 +24,10 @@ struct LauncherSettingsView: View {
 				Group {
 					switch selectedSection {
 					case .general:
-						GeneralSettingsPage(model: model)
+						GeneralSettingsPage(
+							model: model,
+							restartOnboarding: restartOnboarding
+						)
 					case .audio:
 						AudioSettingsPage(model: model)
 					case .updates:
@@ -37,6 +42,8 @@ struct LauncherSettingsView: View {
 					#endif
 					}
 				}
+				.id(selectedSection)
+				.transition(.opacity)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
 
 				LinearGradient(
@@ -57,8 +64,7 @@ struct LauncherSettingsView: View {
 						.padding(.horizontal, 10)
 						.padding(.vertical, 2)
 				}
-				.adaptiveGlassButton(prominent: true)
-				.buttonBorderShape(.capsule)
+				.adaptiveGlassCapsuleButton(prominent: true)
 				.tint(model.accentColor)
 				.shadow(color: Color.black.opacity(0.55), radius: 10, x: 0, y: 4)
 				.padding(.trailing, 26)
@@ -66,6 +72,10 @@ struct LauncherSettingsView: View {
 				.keyboardShortcut(.defaultAction)
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
+			.animation(
+				reduceMotion ? nil : .easeInOut(duration: 0.18),
+				value: selectedSection
+			)
 		}
 		.tint(model.accentColor)
 		.background(
@@ -75,6 +85,10 @@ struct LauncherSettingsView: View {
 			}
 		)
 		.preferredColorScheme(.dark)
+		.animation(
+			reduceMotion ? nil : .easeInOut(duration: 0.3),
+			value: model.dynamicThemeHue
+		)
 		.frame(width: 820, height: 570)
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
