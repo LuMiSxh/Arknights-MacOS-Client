@@ -27,6 +27,7 @@ func runtimeForcesDXMTForTheGameProcess() {
 func runtimeExposesPreciseScrollingRegistryKeys() {
 	#expect(WineRuntime.macDriverRegistryKey == "HKCU\\Software\\Wine\\Mac Driver")
 	#expect(WineRuntime.preciseScrollingRegistryValue == "UsePreciseScrolling")
+	#expect(WineRuntime.normalizedScrollingRegistryData == "n")
 }
 
 @Test

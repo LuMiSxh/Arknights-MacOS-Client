@@ -24,18 +24,19 @@ extension GameInstaller {
 		)
 	}
 
-	func loadState(from installDirectory: URL) -> InstalledState? {
+	func loadState(from installDirectory: URL) throws -> InstalledState? {
 		let url = installDirectory.appending(path: ".arknights-client-state.json")
-		guard let data = try? Data(contentsOf: url) else { return nil }
+		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+		let data = try Data(contentsOf: url)
 		let decoder = JSONDecoder()
 		decoder.dateDecodingStrategy = .iso8601
-		return try? decoder.decode(InstalledState.self, from: data)
+		return try decoder.decode(InstalledState.self, from: data)
 	}
 
-	func excludeFromBackup(_ directory: URL) {
+	func excludeFromBackup(_ directory: URL) throws {
 		var directory = directory
 		var values = URLResourceValues()
 		values.isExcludedFromBackup = true
-		try? directory.setResourceValues(values)
+		try directory.setResourceValues(values)
 	}
 }

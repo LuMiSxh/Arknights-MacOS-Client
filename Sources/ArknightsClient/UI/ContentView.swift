@@ -69,22 +69,23 @@ struct ContentView: View {
 			ArknightsWordmark(logo: model.officialLogo, cyan: cyan)
 				.padding(.top, 34)
 			Spacer()
-			Button {
-				settingsPresented = true
-			} label: {
-				Image(systemName: "gearshape")
-					.font(.system(size: 17, weight: .medium))
-					.frame(width: 20, height: 20)
-			}
-			.adaptiveGlassButton()
-			.buttonBorderShape(.circle)
-			.controlSize(.large)
-			.keyboardShortcut(",", modifiers: .command)
-			.help("Open launcher settings")
+			Button("Settings", systemImage: "gearshape", action: presentSettings)
+				.labelStyle(.iconOnly)
+				.font(.system(size: 17, weight: .medium))
+				.frame(width: 20, height: 20)
+				.adaptiveGlassButton()
+				.buttonBorderShape(.circle)
+				.controlSize(.large)
+				.keyboardShortcut(",", modifiers: .command)
+				.help("Open launcher settings")
 		}
 		.padding(.top, 8)
 		.padding(.horizontal, 14)
 		.ignoresSafeArea(.container, edges: .top)
+	}
+
+	private func presentSettings() {
+		settingsPresented = true
 	}
 
 	private var artwork: some View {

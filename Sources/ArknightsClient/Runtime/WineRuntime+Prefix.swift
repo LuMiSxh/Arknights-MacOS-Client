@@ -5,13 +5,12 @@ import Foundation
 extension WineRuntime {
 	func applyDisplayConfiguration(
 		_ configuration: WineDisplayConfiguration,
-		usesPreciseScrolling: Bool,
 		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle
 	) async throws {
 		let current = configuration.registryState(in: prefixDirectory)
-		let preciseScrollingValue = usesPreciseScrolling ? "y" : "n"
+		let preciseScrollingValue = Self.normalizedScrollingRegistryData
 		if current?.retinaMode != configuration.registryValue {
 			try await writeRegistryValue(
 				key: "HKCU\\Software\\Wine\\Mac Driver",

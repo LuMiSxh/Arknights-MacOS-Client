@@ -40,7 +40,7 @@ extension LauncherViewModel {
 			await log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		}
 		let gameSessionID = UUID()
-		let launchRequestedAt = Date()
+		let launchRequestedAt = Date.now
 		let displayConfiguration = WineDisplayConfiguration.current(
 			highResolutionEnabled: launchOptions.usesHighResolutionMode
 		)
@@ -57,7 +57,6 @@ extension LauncherViewModel {
 						+ (configuration?.gameStartParams ?? [])
 						+ launchOptions.playerArguments,
 					displayConfiguration: displayConfiguration,
-					usesPreciseScrolling: launchOptions.usesPreciseScrolling,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					metalPerformanceHUDEnabled: launchOptions.usesMetalPerformanceHUD,
 					logURL: paths.logFile,
@@ -67,7 +66,7 @@ extension LauncherViewModel {
 					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 				guard activeGameSessionID == gameSessionID else { return }
-				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: true) }
+				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: true, log: log) }
 				phase = .launching
 				activityMessage = "Starting…"
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
@@ -77,7 +76,7 @@ extension LauncherViewModel {
 				guard activeGameSessionID == gameSessionID, isGameActive else { return }
 				phase = .running(processIdentifier: launch.processIdentifier)
 				activityMessage = "Running"
-				gameRunningSince = Date()
+				gameRunningSince = .now
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
 				await log.info(
 					"Game window became visible; elapsed=\(Self.launchDuration(since: launchRequestedAt))"
@@ -90,20 +89,28 @@ extension LauncherViewModel {
 			} catch LauncherError.runtimeWindowTimeout {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
-				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
-				try? await runtime.stop(prefixDirectory: paths.winePrefix)
+				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
+				do {
+					try await runtime.stop(prefixDirectory: paths.winePrefix)
+				} catch {
+					await log.error(
+						"Failed to stop Wine after window readiness timed out: \(error.localizedDescription)"
+					)
+				}
 				show(LauncherError.runtimeWindowTimeout)
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
-				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
+				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
 				show(error)
 			}
 		}
 	}
 
-	private static func launchDuration(since start: Date, now: Date = Date()) -> String {
-		String(format: "%.2fs", max(0, now.timeIntervalSince(start)))
+	private static func launchDuration(since start: Date, now: Date = .now) -> String {
+		max(0, now.timeIntervalSince(start)).formatted(
+			.number.locale(Locale(identifier: "en_US_POSIX")).precision(.fractionLength(2))
+		) + "s"
 	}
 
 	func stopGame() {
@@ -134,8 +141,8 @@ extension LauncherViewModel {
 			if isDeveloperMode { return }
 		#endif
 		guard isGameActive, let runtime = WineRuntime.discover() else { return }
-		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
-		runtime.stopSynchronously(prefixDirectory: paths.winePrefix)
+		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
+		runtime.stopSynchronously(prefixDirectory: paths.winePrefix, log: log)
 	}
 
 	func refreshRuntime() {
@@ -312,7 +319,7 @@ extension LauncherViewModel {
 		guard activeGameSessionID == sessionID else { return }
 		activeGameSessionID = nil
 		launchTask?.cancel()
-		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false) }
+		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
 		phase = .ready
 		activityMessage = isGameUpdateAvailable ? "Update available" : "Ready"
 		await log.info("Game process stopped")

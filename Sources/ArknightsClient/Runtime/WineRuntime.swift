@@ -68,6 +68,7 @@ struct WineRuntime: Sendable {
 	static let crashDialogRegistryValue = "ShowCrashDialog"
 	static let macDriverRegistryKey = "HKCU\\Software\\Wine\\Mac Driver"
 	static let preciseScrollingRegistryValue = "UsePreciseScrolling"
+	static let normalizedScrollingRegistryData = "n"
 	static let leftCommandIsCtrlRegistryValue = "LeftCommandIsCtrl"
 	static let rightCommandIsCtrlRegistryValue = "RightCommandIsCtrl"
 	static let isolatedUserDirectoryNames = [
@@ -102,7 +103,6 @@ struct WineRuntime: Sendable {
 		prefixDirectory: URL,
 		gameArguments: [String] = [],
 		displayConfiguration: WineDisplayConfiguration,
-		usesPreciseScrolling: Bool = false,
 		graphicsDiagnostics: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
 		logURL: URL? = nil,
@@ -175,7 +175,6 @@ struct WineRuntime: Sendable {
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
 		try await applyDisplayConfiguration(
 			displayConfiguration,
-			usesPreciseScrolling: usesPreciseScrolling,
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle
@@ -258,7 +257,7 @@ struct WineRuntime: Sendable {
 		}
 	}
 
-	func stopSynchronously(prefixDirectory: URL) {
+	func stopSynchronously(prefixDirectory: URL, log: LauncherLog? = nil) {
 		guard let wineserverURL else { return }
 		let process = Process()
 		process.executableURL = wineserverURL
@@ -268,7 +267,16 @@ struct WineRuntime: Sendable {
 		process.standardError = FileHandle.nullDevice
 		let terminated = DispatchSemaphore(value: 0)
 		process.terminationHandler = { _ in terminated.signal() }
-		guard (try? process.run()) != nil else { return }
+		do {
+			try process.run()
+		} catch {
+			Task {
+				await log?.error(
+					"Failed to start wineserver while terminating the app: \(error.localizedDescription)"
+				)
+			}
+			return
+		}
 		guard
 			terminated.wait(timeout: .now() + AppConstants.Timeouts.processTerminateGracePeriod)
 				== .timedOut

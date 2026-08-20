@@ -13,7 +13,6 @@ func defaultLaunchOptionsFavorCompatibleWindow() {
 	#expect(GameLaunchOptions.default.usesHighResolutionMode)
 	#expect(!GameLaunchOptions.default.usesMetalPerformanceHUD)
 	#expect(!GameLaunchOptions.default.usesGameMode)
-	#expect(GameLaunchOptions.default.usesPreciseScrolling)
 	#expect(GameLaunchOptions.default.playerArguments.isEmpty)
 }
 
@@ -27,7 +26,17 @@ func legacyLaunchOptionsEnableHighResolutionModeWhenDecoded() throws {
 	#expect(options.usesHighResolutionMode)
 	#expect(!options.usesMetalPerformanceHUD)
 	#expect(!options.usesGameMode)
-	#expect(options.usesPreciseScrolling)
+}
+
+@Test
+func prereleasePreciseScrollingSettingIsIgnoredWhenDecoded() throws {
+	let data = Data(
+		#"{"displayMode":"windowed","resolution":"1280x720","usesPreciseScrolling":true}"#.utf8
+	)
+
+	let options = try JSONDecoder().decode(GameLaunchOptions.self, from: data)
+
+	#expect(options == .default)
 }
 
 @Test

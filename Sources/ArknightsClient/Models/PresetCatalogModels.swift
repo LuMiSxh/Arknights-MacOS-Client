@@ -20,8 +20,8 @@ struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 	var url: URL {
 		URL(
 			string:
-				"https://cdn.jsdelivr.net/gh/PuppiizSunniiz/Arknight-Images@main/avatars/\(filename)"
-		)!
+				"https://cdn.jsdelivr.net/gh/PuppiizSunniiz/Arknight-Images@main/avatars/"
+		)!.appending(path: "\(id).png")
 	}
 }
 

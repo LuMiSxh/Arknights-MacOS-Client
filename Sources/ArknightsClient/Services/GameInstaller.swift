@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 
 /// Downloads a region's game manifest against the local install, resuming partial `.part`
@@ -11,9 +12,9 @@ struct GameInstaller: Sendable {
 	private let api: any LauncherAPIProviding
 	private let chunkSession: HTTPChunkSession
 	private let concurrentDownloads = AppConstants.Network.concurrentDownloads
-	private let log: LauncherLog?
+	let log: LauncherLog?
 
-	private var fileManager: FileManager { .default }
+	var fileManager: FileManager { .default }
 
 	init(api: any LauncherAPIProviding, session: URLSession = .shared, log: LauncherLog? = nil) {
 		self.api = api
@@ -31,15 +32,33 @@ struct GameInstaller: Sendable {
 		let (manifest, cdn) = try await (
 			api.manifest(for: configuration, region: region), api.cdnConfiguration(region: region)
 		)
+		try validateManifest(manifest, inside: installDirectory)
 		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
-		excludeFromBackup(installDirectory)
+		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
+		do {
+			try excludeFromBackup(installDirectory)
+		} catch {
+			await log?.error(
+				"Failed to exclude game installation from backups at \(installDirectory.path): \(error.localizedDescription)"
+			)
+		}
 		try GameCompatibilityManager().restoreForUpdate(in: installDirectory)
 
-		let previousFiles = loadState(from: installDirectory)?.files.map {
-			Dictionary(uniqueKeysWithValues: $0.map { ($0.path, $0) })
+		let previousState: InstalledState?
+		do {
+			previousState = try loadState(from: installDirectory)
+		} catch {
+			previousState = nil
+			await log?.error(
+				"Failed to read installed-state file at \(installDirectory.path): \(error.localizedDescription)"
+			)
+		}
+		let previousFiles = previousState?.files.map {
+			Dictionary($0.map { ($0.path, $0) }, uniquingKeysWith: { existing, _ in existing })
 		}
 		let pendingFiles = try manifest.file.filter { item in
 			let destination = try destinationURL(for: item, inside: installDirectory)
+			try assertNoSymbolicLinks(from: installDirectory, through: destination)
 			return try Self.needsDownload(
 				item,
 				destinationSize: fileSize(at: destination),
@@ -70,6 +89,7 @@ struct GameInstaller: Sendable {
 
 		if pendingFiles.isEmpty {
 			try Task.checkCancellation()
+			try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
 			try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
 			return InstallResult(
 				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
@@ -116,6 +136,7 @@ struct GameInstaller: Sendable {
 		}
 
 		try Task.checkCancellation()
+		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
 		try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
 		await log?.debug(
 			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes"
@@ -127,61 +148,7 @@ struct GameInstaller: Sendable {
 		)
 	}
 
-	private func addDownload(
-		_ item: ManifestFile,
-		manifest: GameManifest,
-		cdn: CDNConfiguration,
-		installDirectory: URL,
-		counter: ProgressCounter,
-		progress: @escaping ProgressHandler,
-		to group: inout ThrowingTaskGroup<Int64, any Error>
-	) {
-		group.addTask {
-			try await downloadWithRetry(
-				item,
-				source: manifest.source,
-				cdn: cdn,
-				installDirectory: installDirectory,
-				counter: counter,
-				progress: progress
-			)
-		}
-	}
-
-	private func downloadWithRetry(
-		_ item: ManifestFile,
-		source: String,
-		cdn: CDNConfiguration,
-		installDirectory: URL,
-		counter: ProgressCounter,
-		progress: @escaping ProgressHandler
-	) async throws -> Int64 {
-		let maxAttempts = AppConstants.Network.maxDownloadAttempts
-		for attempt in 1...maxAttempts {
-			do {
-				return try await download(
-					item,
-					source: source,
-					baseURL: attempt == 1 ? cdn.primaryCdn : cdn.backUpCdn,
-					installDirectory: installDirectory,
-					counter: counter,
-					progress: progress
-				)
-			} catch is CancellationError {
-				throw CancellationError()
-			} catch {
-				if attempt == maxAttempts { throw error }
-				await log?.debug(
-					"Retrying \(item.path) (attempt \(attempt + 1)/\(maxAttempts)) after: "
-						+ error.localizedDescription
-				)
-				try await Task.sleep(for: AppConstants.Network.retryBackoffStep * attempt)
-			}
-		}
-		throw LauncherError.invalidResponse
-	}
-
-	private func download(
+	func download(
 		_ item: ManifestFile,
 		source: String,
 		baseURL: URL,
@@ -196,6 +163,9 @@ struct GameInstaller: Sendable {
 			at: destination.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
+		try assertNoSymbolicLinks(from: installDirectory, through: destination)
+		try assertNoSymbolicLinks(from: installDirectory, through: partial)
+		try assertSafeExistingPartialFile(at: partial)
 
 		var existingBytes = fileSize(at: partial) ?? 0
 		if existingBytes > item.byteCount {
@@ -205,15 +175,20 @@ struct GameInstaller: Sendable {
 
 		if existingBytes == item.byteCount, existingBytes > 0 {
 			try Task.checkCancellation()
-			try finishDownload(item, partial: partial, destination: destination)
+			try finishDownload(
+				item,
+				partial: partial,
+				destination: destination,
+				installDirectory: installDirectory
+			)
 			if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 				await progress(update)
 			}
 			return 0
 		}
 
-		let relativeSource = try safeRelativePath(source)
-		let relativeFile = try safeRelativePath(item.path)
+		let relativeSource = try Self.safeRelativePath(source)
+		let relativeFile = try Self.safeRelativePath(item.path)
 		let downloadURL =
 			baseURL
 			.appending(path: relativeSource, directoryHint: .isDirectory)
@@ -223,18 +198,33 @@ struct GameInstaller: Sendable {
 			request.setValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
 		}
 
-		if !fileManager.fileExists(atPath: partial.path) {
-			guard fileManager.createFile(atPath: partial.path, contents: nil) else {
-				throw LauncherError.cannotCreateFile(partial)
-			}
+		let descriptor = open(
+			partial.path,
+			O_WRONLY | O_CREAT | O_NOFOLLOW,
+			S_IRUSR | S_IWUSR
+		)
+		guard descriptor >= 0 else { throw LauncherError.cannotCreateFile(partial) }
+		var fileStatus = stat()
+		guard fstat(descriptor, &fileStatus) == 0,
+			fileStatus.st_mode & S_IFMT == S_IFREG,
+			fileStatus.st_nlink == 1
+		else {
+			_ = close(descriptor)
+			throw LauncherError.unsafeInstallerTemporaryFile(partial)
 		}
-
-		let handle = try FileHandle(forWritingTo: partial)
+		let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+		var handleIsClosed = false
 		defer {
-			do {
-				try handle.close()
-			} catch {
-				// A later size/checksum validation reports incomplete writes.
+			if !handleIsClosed {
+				do {
+					try handle.close()
+				} catch {
+					Task {
+						await log?.error(
+							"Failed to close partial download at \(partial.path): \(error.localizedDescription)"
+						)
+					}
+				}
 			}
 		}
 		try handle.seekToEnd()
@@ -281,16 +271,29 @@ struct GameInstaller: Sendable {
 		guard receivedResponse else { throw LauncherError.invalidResponse }
 		try handle.synchronize()
 		try handle.close()
+		handleIsClosed = true
 
 		try Task.checkCancellation()
-		try finishDownload(item, partial: partial, destination: destination)
+		try finishDownload(
+			item,
+			partial: partial,
+			destination: destination,
+			installDirectory: installDirectory
+		)
 		if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 			await progress(update)
 		}
 		return newlyDownloaded
 	}
 
-	private func finishDownload(_ item: ManifestFile, partial: URL, destination: URL) throws {
+	private func finishDownload(
+		_ item: ManifestFile,
+		partial: URL,
+		destination: URL,
+		installDirectory: URL
+	) throws {
+		try assertNoSymbolicLinks(from: installDirectory, through: partial)
+		try assertNoSymbolicLinks(from: installDirectory, through: destination)
 		let actualSize = fileSize(at: partial) ?? 0
 		guard actualSize == item.byteCount else {
 			throw LauncherError.downloadedSizeMismatch(
@@ -309,21 +312,6 @@ struct GameInstaller: Sendable {
 			try fileManager.removeItem(at: destination)
 		}
 		try fileManager.moveItem(at: partial, to: destination)
-	}
-
-	private func destinationURL(for item: ManifestFile, inside installDirectory: URL) throws -> URL
-	{
-		installDirectory.appending(path: try safeRelativePath(item.path))
-	}
-
-	private func safeRelativePath(_ input: String) throws -> String {
-		let components = input.split(separator: "/", omittingEmptySubsequences: true)
-		guard !components.isEmpty,
-			components.allSatisfy({ $0 != "." && $0 != ".." && !$0.contains("\\") })
-		else {
-			throw LauncherError.invalidManifestPath(input)
-		}
-		return components.joined(separator: "/")
 	}
 
 	private func fileSize(at url: URL) -> Int64? {

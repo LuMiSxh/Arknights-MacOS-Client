@@ -31,6 +31,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 	private typealias Continuation = AsyncThrowingStream<HTTPChunkEvent, any Error>.Continuation
 
 	private let configuration: URLSessionConfiguration
+	private let redirectValidator: (@Sendable (URL) -> Bool)?
 	private let delegateQueue: OperationQueue
 	private let lock = NSLock()
 	private var continuations: [Int: Continuation] = [:]
@@ -40,8 +41,12 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		delegateQueue: delegateQueue
 	)
 
-	init(configuration: URLSessionConfiguration) {
+	init(
+		configuration: URLSessionConfiguration,
+		redirectValidator: (@Sendable (URL) -> Bool)? = nil
+	) {
 		self.configuration = configuration
+		self.redirectValidator = redirectValidator
 		delegateQueue = OperationQueue()
 		delegateQueue.maxConcurrentOperationCount = 1
 		delegateQueue.qualityOfService = .userInitiated
@@ -73,6 +78,26 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		}
 		continuation(for: dataTask.taskIdentifier)?.yield(.response(response))
 		completionHandler(.allow)
+	}
+
+	func urlSession(
+		_ session: URLSession,
+		task: URLSessionTask,
+		willPerformHTTPRedirection response: HTTPURLResponse,
+		newRequest request: URLRequest,
+		completionHandler: @escaping @Sendable (URLRequest?) -> Void
+	) {
+		guard let url = request.url, redirectValidator?(url) != false else {
+			completionHandler(nil)
+			finish(
+				taskIdentifier: task.taskIdentifier,
+				throwing: LauncherError.invalidRemoteAsset(
+					request.url ?? URL(filePath: "/invalid-redirect")
+				)
+			)
+			return
+		}
+		completionHandler(request)
 	}
 
 	func urlSession(

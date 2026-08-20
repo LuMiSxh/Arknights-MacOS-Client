@@ -32,6 +32,19 @@ enum AppConstants {
 		static let retryBackoffStep: Duration = .milliseconds(400)
 	}
 
+	enum Presets {
+		static let characterCatalogMaximumBytes = 32 * 1_024 * 1_024
+		static let wallpaperCatalogMaximumBytes = 4 * 1_024 * 1_024
+		static let imageMaximumBytes = 24 * 1_024 * 1_024
+		static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
+		static let imageMaximumDimension = 8_192
+		static let imageMaximumPixels = 36_000_000
+		static let avatarIdentifierMaximumLength = 96
+		static let wallpaperPageSize = 50
+		static let wallpaperPageLimit = 5
+		static let requestTimeout: TimeInterval = 8
+	}
+
 	enum IO {
 		static let checksumBufferSize = 4 * 1024 * 1024
 	}

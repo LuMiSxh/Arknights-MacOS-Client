@@ -23,7 +23,7 @@ enum GameResolution: String, CaseIterable, Codable, Sendable {
 	case quadHD = "2560x1440"
 	case ultraHD = "3840x2160"
 
-	var displayName: String { rawValue.replacingOccurrences(of: "x", with: " × ") }
+	var displayName: String { rawValue.replacing("x", with: " × ") }
 
 	var width: Int {
 		switch self {
@@ -53,7 +53,6 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var usesHighResolutionMode: Bool = true
 	var usesMetalPerformanceHUD: Bool = false
 	var usesGameMode: Bool = false
-	var usesPreciseScrolling: Bool = true
 
 	static let `default` = GameLaunchOptions(
 		displayMode: .windowed,
@@ -61,8 +60,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		usesGameSettings: true,
 		usesHighResolutionMode: true,
 		usesMetalPerformanceHUD: false,
-		usesGameMode: false,
-		usesPreciseScrolling: true
+		usesGameMode: false
 	)
 
 	private enum CodingKeys: String, CodingKey {
@@ -72,7 +70,6 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		case usesHighResolutionMode
 		case usesMetalPerformanceHUD
 		case usesGameMode
-		case usesPreciseScrolling
 	}
 
 	init(
@@ -81,8 +78,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		usesGameSettings: Bool = true,
 		usesHighResolutionMode: Bool = true,
 		usesMetalPerformanceHUD: Bool = false,
-		usesGameMode: Bool = false,
-		usesPreciseScrolling: Bool = true
+		usesGameMode: Bool = false
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
@@ -90,7 +86,6 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		self.usesHighResolutionMode = usesHighResolutionMode
 		self.usesMetalPerformanceHUD = usesMetalPerformanceHUD
 		self.usesGameMode = usesGameMode
-		self.usesPreciseScrolling = usesPreciseScrolling
 	}
 
 	init(from decoder: any Decoder) throws {
@@ -117,11 +112,6 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 				Bool.self,
 				forKey: .usesGameMode
 			) ?? false
-		usesPreciseScrolling =
-			try container.decodeIfPresent(
-				Bool.self,
-				forKey: .usesPreciseScrolling
-			) ?? true
 	}
 
 	/// Unity standalone-player arguments supported by the Windows client.

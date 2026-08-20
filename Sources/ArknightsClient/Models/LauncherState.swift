@@ -28,10 +28,20 @@ enum LauncherError: LocalizedError {
 	case invalidResponse
 	case server(code: Int, message: String)
 	case invalidManifestPath(String)
+	case duplicateManifestPath(String)
+	case conflictingManifestPaths(String, String)
+	case symbolicLinkInInstallPath(URL)
 	case invalidDownloadResponse(status: Int, path: String)
+	case remoteContentTooLarge(URL, maximumBytes: Int)
+	case invalidRemoteAsset(URL)
+	case invalidPresetImage(URL)
+	case invalidCustomImage(URL)
+	case cannotEncodeAppIcon
+	case cannotSetAppIcon
 	case downloadedSizeMismatch(path: String, expected: Int64, actual: Int64)
 	case checksumMismatch(path: String, expected: String, actual: String)
 	case cannotCreateFile(URL)
+	case unsafeInstallerTemporaryFile(URL)
 	case missingConfiguration
 	case gameNotInstalled(URL)
 	case insufficientDiskSpace(required: Int64, available: Int64)
@@ -49,14 +59,34 @@ enum LauncherError: LocalizedError {
 			"Yostar API error \(code): \(message)"
 		case .invalidManifestPath(let path):
 			"Unsafe path in game manifest: \(path)"
+		case .duplicateManifestPath(let path):
+			"Duplicate path in game manifest: \(path)"
+		case .conflictingManifestPaths(let parent, let child):
+			"Conflicting paths in game manifest: \(parent) and \(child)"
+		case .symbolicLinkInInstallPath(let url):
+			"The game installer refused a symbolic link in its destination: \(url.path)"
 		case .invalidDownloadResponse(let status, let path):
 			"Download for \(path) returned HTTP \(status)."
+		case .remoteContentTooLarge(let url, let maximumBytes):
+			"Remote content from \(url.host ?? url.absoluteString) exceeded the \(ByteCountFormatter.string(fromByteCount: Int64(maximumBytes), countStyle: .file)) limit."
+		case .invalidRemoteAsset(let url):
+			"Refused an unsupported remote asset URL: \(url.absoluteString)"
+		case .invalidPresetImage(let url):
+			"The preset asset is not a supported image or has unsafe dimensions: \(url.absoluteString)"
+		case .invalidCustomImage(let url):
+			"The selected file is not a supported image: \(url.path)"
+		case .cannotEncodeAppIcon:
+			"The selected image could not be converted into an app icon."
+		case .cannotSetAppIcon:
+			"macOS refused to update the app icon."
 		case .downloadedSizeMismatch(let path, let expected, let actual):
 			"\(path) has \(actual) bytes instead of \(expected)."
 		case .checksumMismatch(let path, let expected, let actual):
 			"CRC64 check for \(path) failed (\(actual), expected \(expected))."
 		case .cannotCreateFile(let url):
 			"Could not create temporary file: \(url.path)"
+		case .unsafeInstallerTemporaryFile(let url):
+			"The installer refused a non-regular or multiply linked temporary file: \(url.path)"
 		case .missingConfiguration:
 			"The current game configuration has not been loaded yet."
 		case .gameNotInstalled(let url):

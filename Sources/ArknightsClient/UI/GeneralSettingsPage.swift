@@ -58,17 +58,6 @@ struct GeneralSettingsPage: View {
 					)
 				}
 				.help("Overrides the game the next time it starts")
-				SettingsHairline()
-				LabeledContent("Precise Touchpad Scrolling") {
-					Toggle(
-						"Precise Touchpad Scrolling",
-						isOn: $model.launchOptions.usesPreciseScrolling
-					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(model.accentColor)
-				}
-				.help("Restores horizontal panning, but vertical scrolling becomes very fast")
 			}
 
 			SettingsPanel(title: "Launcher", systemImage: "sparkles") {
@@ -132,13 +121,16 @@ struct GeneralSettingsPage: View {
 					return true
 				}
 				SettingsHairline()
-				LabeledContent("Dynamic Theme") {
+				SettingsActionRow(
+					title: "Dynamic Theme",
+					detail:
+						"Automatically changes the launcher colors and app icon to match the selected background."
+				) {
 					Toggle("Dynamic Theme", isOn: $model.usesDynamicTheme)
 						.labelsHidden()
 						.toggleStyle(.switch)
 						.tint(model.accentColor)
 				}
-				.help("Harmonizes launcher accents and the app icon with the active artwork")
 			}
 		}
 		.sheet(item: $presentedGalleryTab) { tab in

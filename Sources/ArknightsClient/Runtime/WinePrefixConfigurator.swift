@@ -43,13 +43,13 @@ struct WinePrefixConfigurator {
 
 		let gameDrive = dosDevices.appending(path: "g:")
 		if !symbolicLink(at: gameDrive, pointsTo: gameDirectory, fileManager: fileManager) {
-			try? fileManager.removeItem(at: gameDrive)
+			try removeItemIfPresent(at: gameDrive, fileManager: fileManager)
 			try fileManager.createSymbolicLink(at: gameDrive, withDestinationURL: gameDirectory)
 		}
 
 		let logDrive = dosDevices.appending(path: "l:")
 		if !symbolicLink(at: logDrive, pointsTo: logsDirectory, fileManager: fileManager) {
-			try? fileManager.removeItem(at: logDrive)
+			try removeItemIfPresent(at: logDrive, fileManager: fileManager)
 			try fileManager.createSymbolicLink(at: logDrive, withDestinationURL: logsDirectory)
 		}
 
@@ -92,5 +92,16 @@ struct WinePrefixConfigurator {
 			? URL(filePath: current)
 			: link.deletingLastPathComponent().appending(path: current)
 		return currentURL.standardizedFileURL.path == destination.standardizedFileURL.path
+	}
+
+	private func removeItemIfPresent(at url: URL, fileManager: FileManager) throws {
+		do {
+			_ = try fileManager.attributesOfItem(atPath: url.path)
+			try fileManager.removeItem(at: url)
+		} catch let error as CocoaError
+			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
+		{
+			return
+		}
 	}
 }

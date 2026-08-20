@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import AppKit
 import SwiftUI
 
 struct PresetGalleryView: View {
@@ -39,13 +38,13 @@ struct PresetGalleryView: View {
 					Group {
 						if selectedTab == .avatars {
 							if isLoadingAvatars && avatars.isEmpty {
-								loadingState(text: "Loading operators…")
+								PresetGalleryLoadingView(text: "Loading operators…")
 							} else {
 								avatarsGrid
 							}
 						} else {
 							if isLoadingWallpapers && wallpapers.isEmpty {
-								loadingState(text: "Loading official wallpapers…")
+								PresetGalleryLoadingView(text: "Loading official wallpapers…")
 							} else {
 								wallpapersGrid
 							}
@@ -94,16 +93,14 @@ struct PresetGalleryView: View {
 			}
 		)
 		.preferredColorScheme(.dark)
-		.onAppear {
+		.task {
 			selectedTab = initialTab
-			Task {
-				avatars = await PresetCatalogService.shared.fetchAvatars()
-				isLoadingAvatars = false
-			}
-			Task {
-				wallpapers = await PresetCatalogService.shared.fetchWallpapers()
-				isLoadingWallpapers = false
-			}
+			avatars = await PresetCatalogService.shared.fetchAvatars()
+			isLoadingAvatars = false
+		}
+		.task {
+			wallpapers = await PresetCatalogService.shared.fetchWallpapers()
+			isLoadingWallpapers = false
 		}
 	}
 
@@ -140,25 +137,15 @@ struct PresetGalleryView: View {
 	}
 
 	private var filteredAvatars: [PresetAvatar] {
-		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		if query.isEmpty { return avatars }
-		return avatars.filter { $0.name.lowercased().contains(query) }
+		return avatars.filter { $0.name.localizedStandardContains(query) }
 	}
 
 	private var filteredWallpapers: [PresetWallpaper] {
-		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		if query.isEmpty { return wallpapers }
-		return wallpapers.filter { $0.title.lowercased().contains(query) }
-	}
-
-	private func loadingState(text: String) -> some View {
-		VStack(spacing: 12) {
-			ProgressView().controlSize(.regular)
-			Text(text)
-				.font(.caption)
-				.foregroundStyle(.secondary)
-		}
-		.frame(maxWidth: .infinity, minHeight: 240)
+		return wallpapers.filter { $0.title.localizedStandardContains(query) }
 	}
 
 	private var avatarsGrid: some View {
@@ -308,15 +295,18 @@ struct PresetGalleryView: View {
 		guard applyingItemID == nil else { return }
 		applyingItemID = avatar.id
 		Task {
-			if let data = try? await PresetCatalogService.shared.imageData(
-				for: avatar.url, cacheKey: avatar.id
-			),
-				let squircle = AppIconRenderer.createAvatarSquircle(from: data)
-			{
+			do {
+				let data = try await PresetCatalogService.shared.imageData(
+					for: avatar.url, cacheKey: avatar.id
+				)
+				guard let squircle = AppIconRenderer.createAvatarSquircle(from: data) else {
+					throw LauncherError.cannotEncodeAppIcon
+				}
 				model.applyDirectCustomAppIcon(image: squircle)
 				dismiss()
-			} else {
+			} catch {
 				applyingItemID = nil
+				model.show(error)
 			}
 		}
 	}
@@ -325,61 +315,15 @@ struct PresetGalleryView: View {
 		guard applyingItemID == nil else { return }
 		applyingItemID = wp.id
 		Task {
-			if let data = try? await PresetCatalogService.shared.imageData(
-				for: wp.url, cacheKey: wp.id
-			) {
+			do {
+				let data = try await PresetCatalogService.shared.imageData(
+					for: wp.url, cacheKey: wp.id
+				)
 				model.applyDirectCustomArtwork(data: data)
 				dismiss()
-			} else {
+			} catch {
 				applyingItemID = nil
-			}
-		}
-	}
-}
-
-/// A smooth, disk-backed image loader that caches images permanently in `~/Library/Caches/...`
-/// preventing redundant re-downloads and rate-limit drops during scrolling.
-private struct CachedPresetImage: View {
-	let url: URL
-	let cacheKey: String
-	var contentMode: ContentMode = .fill
-	var placeholderIcon: String = "photo"
-
-	@State private var image: NSImage?
-	@State private var hasFailed = false
-
-	var body: some View {
-		Group {
-			if let image {
-				Image(nsImage: image)
-					.resizable()
-					.aspectRatio(contentMode: contentMode)
-			} else if hasFailed {
-				ZStack {
-					Color.white.opacity(0.04)
-					Image(systemName: placeholderIcon)
-						.font(.system(size: 24))
-						.foregroundStyle(Color.white.opacity(0.15))
-				}
-			} else {
-				ZStack {
-					Color.white.opacity(0.04)
-					ProgressView()
-						.controlSize(.small)
-				}
-			}
-		}
-		.task(id: url) {
-			guard image == nil else { return }
-			if let data = try? await PresetCatalogService.shared.imageData(
-				for: url, cacheKey: cacheKey
-			),
-				let nsImage = NSImage(data: data)
-			{
-				self.image = nsImage
-				self.hasFailed = false
-			} else {
-				self.hasFailed = true
+				model.show(error)
 			}
 		}
 	}

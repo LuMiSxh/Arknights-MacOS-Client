@@ -23,7 +23,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A "Delete Wine Prefix" action in the Danger Zone that fully rebuilds the Wine environment on the next launch, including saved Yostar/Google/Apple/Facebook browser logins, without touching game files — a stronger reset than Force Migration.
 - A "Reset All Settings" action in the Danger Zone that restores every launcher toggle and option to default, leaving the install location and selected region untouched.
 - Optional YouTube-based launcher background music, off by default, with URL validation, playlist shuffling, and an optional now-playing title (Thanks to @darkwebdev, #27).
-- A Settings → General → Input toggle for precise trackpad scrolling, enabled by default, so two-finger horizontal swipes work as expected (Thanks to @darkwebdev, #28).
 - A "Dynamic Theme" option in Settings → General → Personalization that harmonizes launcher controls, HUD pills, and the app icon with colors sampled from the active artwork.
 - Dynamic Theme now also updates the app icon: the default icon is hue-rotated in YIQ space to match sampled artwork colors, then normalized to a 512×512 point icon with Apple's 80.5% grid padding so the Dock tile no longer appears oversized.
 - Small floating HUD pills above the main control bar for the now-playing track, region, reset countdown, and game version, each shown only when relevant.
@@ -39,7 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Moved the Uninstall Game and Force Migration confirmation dialogs to attach directly to their buttons instead of the Settings window, so their animations originate from the right place.
 - Reordered the Danger Zone from least to most destructive: Game Mode, Reset All Settings, Force Migration, Delete Wine Prefix, Uninstall Game.
 - Reworked the Settings sheet to a single, cohesive dark glass surface: floating Done button, shared warm modal background, adjusted sidebar tint, and inset scrollbar indicators for full-page consistency.
-- Code hardening pass: split every Swift file back under the 350-line convention, centralized a scattered timeout into `AppConstants`, added `///` documentation to protocols and coordinator types across the Swift sources, and documented every function in the `RuntimeSupport` C and Objective-C compatibility shims. No behavior change.
+- Code hardening pass: split cohesive SwiftUI and service behavior into focused files, centralized resource limits in `AppConstants`, added `///` documentation to protocols and coordinator types across the Swift sources, and documented every function in the `RuntimeSupport` C and Objective-C compatibility shims.
 - Consolidated the `justfile`'s check, format, and dev commands, and added clang-format for the C/Objective-C compatibility shims.
 - Reworked the Developer settings picker to cover every simulated launcher state, including live custom popups, and simplified the preview commands.
 - Made prominent CTA button label contrast adapt to sampled accent luminance so bright accents render dark text and darker accents render light text for better legibility.
@@ -47,9 +46,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Unified script CLI output with color, spinners, and progress bars, and fixed the progress bar's width calculation.
 - Added recipe-download tracking to release statistics.
 - Simplified the announcement management commands, and added optional version-range and display-window flags to `just announcement set`.
+- Hardened game installation against ambiguous or duplicate manifest paths and symbolic-link destinations before any game file is written.
+- Bounded Asset Gallery catalog responses, image downloads, decoded image dimensions, and its on-disk image cache; remote assets and redirects are now restricted to approved HTTPS hosts.
+- Replaced silent Game Mode, Wine-stop, preset-cache, custom-artwork, and app-icon failures with contextual launcher logging or visible errors.
 
 ### Fixed
 
+- Kept Wine's normalized mouse-wheel scrolling enabled on every launch and removed the experimental precise-scrolling toggle: it made vertical scrolling excessively fast and cannot restore horizontal panning in the game's Unity input path (Thanks to @darkwebdev, #28).
 - Fixed the Notices companion window rendering behind the game window in fullscreen, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
 - Matched the Notices/announcement popup's styling (glass tint, hairlines, background) to the rest of the app.
 - Fixed the now-playing title sometimes showing the wrong track right after the background music playlist shuffles to a new one.
