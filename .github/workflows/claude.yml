@@ -16,6 +16,7 @@ jobs:
   # get Claude to push code or open a PR here, regardless of what it asks for.
   claude:
     if: |
+      github.event.comment.user.login != 'anthropic-code-agent[bot]' &&
       github.actor != 'LuMiSxh' &&
       ((github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
@@ -52,6 +53,7 @@ jobs:
   # authored by the repo owner.
   claude-owner:
     if: |
+      github.event.comment.user.login != 'anthropic-code-agent[bot]' &&
       github.actor == 'LuMiSxh' &&
       ((github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
