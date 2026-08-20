@@ -55,6 +55,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Prevented the first click in the separate Notices window from briefly flashing the game during the macOS application-focus handoff.
 - Kept Wine's normalized mouse-wheel scrolling enabled on every launch and removed the experimental precise-scrolling toggle: it made vertical scrolling excessively fast and cannot restore horizontal panning in the game's Unity input path (Thanks to @darkwebdev, #28).
 - Fixed the Notices companion window rendering behind the game window in fullscreen, and made it track the game window smoothly while dragging instead of lagging behind (Thanks to u/Fukksaks5th).
 - Matched the Notices/announcement popup's styling (glass tint, hairlines, background) to the rest of the app.

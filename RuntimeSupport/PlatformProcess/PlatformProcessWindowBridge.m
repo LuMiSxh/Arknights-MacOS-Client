@@ -22,6 +22,7 @@ static const volatile char launcher_marker[] = "Arknights Client PlatformProcess
 static dispatch_source_t presentation_timer;
 static char notice_mask_key;
 static CGWindowID logged_game_window;
+static CGWindowID logged_notice_window;
 
 struct game_window {
 	CGWindowID number;
@@ -103,16 +104,19 @@ static void apply_notice_mask(NSView *view) {
 }
 
 /* The core presentation policy, reapplied every tick since Wine's window server can revert
- * these at any time: joins all Spaces without forcing a Space switch, clears the private
- * AppKit flags winemac.drv sets to keep helper windows out of the foreground (via selectors
- * since these are undocumented SPI, not public API), drops the nonactivating panel style so
- * it can receive clicks, and makes the window and its layers fully transparent so only the
- * masked Qt content shows instead of a solid black surface. */
+ * these at any time: joins all Spaces without forcing a Space switch, enables Wine's input
+ * path, and keeps the AppKit panel non-activating. WineBaseView already accepts first mouse,
+ * so Qt receives the initial click without turning this separate helper into the foreground
+ * application and making the game redraw its focus transition. The private activation
+ * selector mirrors Wine's own workaround for AppKit not updating the WindowServer tag when
+ * NSWindowStyleMaskNonactivatingPanel changes after window creation. Presentation remains
+ * transparent so only the masked Qt content shows instead of a solid black surface. */
 static void configure_window(NSWindow *window) {
 	NSWindowCollectionBehavior behavior = window.collectionBehavior;
 	NSView *content = window.contentView;
 	NSView *frame = content.superview;
 	SEL selector;
+	BOOL restored_nonactivating_style = NO;
 
 	behavior &= ~NSWindowCollectionBehaviorFullScreenPrimary;
 	behavior |= NSWindowCollectionBehaviorCanJoinAllSpaces |
@@ -132,14 +136,18 @@ static void configure_window(NSWindow *window) {
 	}
 	selector = NSSelectorFromString(@"setPreventsAppActivation:");
 	if ([window respondsToSelector:selector]) {
-		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, NO);
+		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, YES);
 	}
-	if ((window.styleMask & NSWindowStyleMaskNonactivatingPanel) != 0) {
-		window.styleMask &= ~NSWindowStyleMaskNonactivatingPanel;
+	if ((window.styleMask & NSWindowStyleMaskNonactivatingPanel) == 0) {
+		window.styleMask |= NSWindowStyleMaskNonactivatingPanel;
+		restored_nonactivating_style = YES;
 	}
 	selector = NSSelectorFromString(@"_setPreventsActivation:");
 	if ([window respondsToSelector:selector]) {
-		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, NO);
+		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, YES);
+	}
+	if (restored_nonactivating_style && content.acceptsFirstResponder) {
+		[window makeFirstResponder:content];
 	}
 	if (window.ignoresMouseEvents) window.ignoresMouseEvents = NO;
 	if (window.hasShadow) window.hasShadow = NO;
@@ -158,6 +166,20 @@ static void configure_window(NSWindow *window) {
 		frame.layer.backgroundColor = NSColor.clearColor.CGColor;
 	}
 	apply_notice_mask(frame != nil ? frame : content);
+
+	if (logged_notice_window != window.windowNumber) {
+		fprintf(
+			stderr,
+			"platform-window-bridge: configured notice=%ld class=%s nonactivating=%d "
+			"firstMouse=%d canKey=%d active=%d\n",
+			(long)window.windowNumber,
+			class_getName(window.class),
+			(window.styleMask & NSWindowStyleMaskNonactivatingPanel) != 0,
+			[content acceptsFirstMouse:nil],
+			window.canBecomeKeyWindow,
+			NSApp.active);
+		logged_notice_window = window.windowNumber;
+	}
 }
 
 /* Picks the largest visible window this process owns that's at least 400x300 — the same

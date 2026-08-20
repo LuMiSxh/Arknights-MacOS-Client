@@ -69,12 +69,12 @@ The embedded browser previously crashed on Chromium sandbox initialization. Chro
 
 The PlatformProcess component handles the separate Qt WebEngine window used by Notices:
 
-- A wrapper launches the untouched official `PlatformProcess.exe`, removes border and non-activating styles from its large visible window, follows the game's absolute Win32 position, and waits for the official process.
-- An x86-64 AppKit bridge is injected into the helper process tree through WineCX's `__CX_UNIX_` environment passthrough. It clears Wine's AppKit activation restrictions, enables mouse input, hides the helper's separate Dock presence, and applies the companion window's Spaces, level, transparency, and clipping policy.
+- A wrapper launches the untouched official `PlatformProcess.exe`, removes its border and Win32 `WS_EX_NOACTIVATE` style, follows the game's absolute position, and waits for the official process.
+- An x86-64 AppKit bridge is injected into the helper process tree through WineCX's `__CX_UNIX_` environment passthrough. It keeps Wine's `NSPanel` non-activating while the Wine content view delivers first-click mouse input, hides the helper's separate Dock presence, and applies the companion window's Spaces, level, transparency, and clipping policy.
 
 The compatibility component does not inspect input, Qt page data, network requests, or rendered content; the bridge changes only native window presentation. Chromium starts with the helper after Notices is selected. Collapsing Qt WebEngine into one process or disabling its sandbox is intentionally avoided.
 
-The helper and game remain separate top-level processes under the current compatibility boundary. Fast game-window drags can show a small tracking delay, and changing focus between the two processes can briefly expose the normal macOS focus transition. The current bridge accepts that presentation limitation instead of injecting coordination code into the main game process.
+The helper and game remain separate top-level processes under the current compatibility boundary. Fast game-window drags can show a small tracking delay. Mouse interaction with Notices remains in the non-activating helper panel so it does not transfer application focus away from the game; this relies on Wine's existing first-mouse delivery rather than injecting coordination code into the main game process.
 
 When high-resolution mode is enabled, the launcher enables Wine's prefix-wide Retina mode when Play is pressed from a window on a HiDPI display. Windows `LogPixels` remains at 96 because a global 192 DPI setting makes Unity restore window dimensions inconsistently. Instead, the game process passes a 2x scale factor to the Vuplex wrapper, which adds Chromium-only HiDPI arguments. This gives the game and browser high-density output without changing Unity's coordinate system. On a 1x display or when the setting is disabled, the launcher disables Retina mode and uses a 1x browser scale. The current registry values are read directly from the prefix, and `reg.exe` runs only when a value must change.
 
