@@ -70,8 +70,31 @@ extension AppIconRenderer {
 			dx: AppConstants.Icon.operatorFrameInset,
 			dy: AppConstants.Icon.operatorFrameInset
 		)
-		let tintedFrame = NSImage(size: frame.size)
-		tintedFrame.lockFocus()
+		let outline = tintedFrame(frame, color: .black)
+		let foreground = tintedFrame(frame, color: color)
+		let width = AppConstants.Icon.operatorFrameOutlineWidth
+		for horizontalOffset in [-width, 0, width] {
+			for verticalOffset in [-width, 0, width]
+			where horizontalOffset != 0 || verticalOffset != 0 {
+				outline.draw(
+					in: frameRect.offsetBy(dx: horizontalOffset, dy: verticalOffset),
+					from: NSRect(origin: .zero, size: outline.size),
+					operation: .sourceOver,
+					fraction: 1
+				)
+			}
+		}
+		foreground.draw(
+			in: frameRect,
+			from: NSRect(origin: .zero, size: foreground.size),
+			operation: .sourceOver,
+			fraction: AppConstants.Icon.operatorFrameOpacity
+		)
+	}
+
+	private static func tintedFrame(_ frame: NSImage, color: NSColor) -> NSImage {
+		let result = NSImage(size: frame.size)
+		result.lockFocus()
 		frame.draw(
 			in: NSRect(origin: .zero, size: frame.size),
 			from: NSRect(origin: .zero, size: frame.size),
@@ -80,13 +103,8 @@ extension AppIconRenderer {
 		)
 		color.setFill()
 		NSRect(origin: .zero, size: frame.size).fill(using: .sourceAtop)
-		tintedFrame.unlockFocus()
-		tintedFrame.draw(
-			in: frameRect,
-			from: NSRect(origin: .zero, size: tintedFrame.size),
-			operation: .sourceOver,
-			fraction: AppConstants.Icon.operatorFrameOpacity
-		)
+		result.unlockFocus()
+		return result
 	}
 
 	private static func createLauncherIcon(

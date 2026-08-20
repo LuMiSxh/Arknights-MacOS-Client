@@ -11,6 +11,7 @@ enum AppConstants {
 		static let operatorFrameInset: CGFloat = 36
 		/// Opacity of the dynamically tinted frame drawn over generated Game icons.
 		static let operatorFrameOpacity: CGFloat = 1.0
+		static let operatorFrameOutlineWidth: CGFloat = 1.5
 	}
 
 	enum Music {

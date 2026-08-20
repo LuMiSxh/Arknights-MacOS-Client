@@ -76,7 +76,8 @@ func gameTreatmentUsesTheDynamicThemeHue() throws {
 @Test
 func operatorFrameConfigurationIsValid() {
 	#expect(AppConstants.Icon.operatorFrameInset > 0)
-	#expect((0...1).contains(AppConstants.Icon.operatorFrameOpacity))
+	#expect(AppConstants.Icon.operatorFrameOpacity == 1)
+	#expect((1...2).contains(AppConstants.Icon.operatorFrameOutlineWidth))
 }
 
 @MainActor
