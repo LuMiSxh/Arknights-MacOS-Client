@@ -2,67 +2,6 @@
 
 import SwiftUI
 
-/// Floating pill above the main control bar showing the current background music track.
-/// Renders nothing when track display is off or no title has arrived yet, so it never
-/// reserves empty space on the common no-music path.
-struct MusicHUDPill: View {
-	var model: LauncherViewModel
-	@State private var isHovering = false
-
-	var body: some View {
-		if model.showsPlayingMusic, let musicTitle = model.currentMusicTitle {
-			Button {
-				model.openCurrentMusicURL()
-			} label: {
-				HStack(spacing: 5) {
-					Image(systemName: "music.note")
-						.font(.system(size: 10, weight: .semibold))
-						.foregroundStyle(model.accentColor)
-					Text(musicTitle)
-						.font(.system(size: 11, weight: .medium, design: .monospaced))
-						.foregroundStyle(isHovering ? .primary : .secondary)
-						.lineLimit(1)
-						.truncationMode(.tail)
-						.multilineTextAlignment(.center)
-						.frame(maxWidth: AppConstants.Music.nowPlayingTitleMaxWidth)
-					Image(systemName: "arrow.up.right")
-						.font(.system(size: 8, weight: .bold))
-						.foregroundStyle(model.accentColor.opacity(isHovering ? 0.9 : 0.45))
-				}
-				.padding(.horizontal, 12)
-				.padding(.vertical, 7)
-			}
-			.buttonStyle(.plain)
-			.onHover { isHovering = $0 }
-			.help("Open track in browser")
-			.fixedSize(horizontal: true, vertical: false)
-			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
-		}
-	}
-}
-
-/// Floating pill above the main control bar showing the installed game version, separate
-/// from `StatusHUDPill` so each can be shown or hidden independently via its own toggle.
-struct VersionHUDPill: View {
-	var model: LauncherViewModel
-
-	var body: some View {
-		if model.showsGameVersion, model.versionText != "—" {
-			HStack(spacing: 5) {
-				Image(systemName: "number")
-					.font(.system(size: 10, weight: .semibold))
-					.foregroundStyle(model.accentColor)
-				Text(model.versionText)
-					.font(.system(size: 11, weight: .medium, design: .monospaced))
-					.foregroundStyle(.secondary)
-			}
-			.padding(.horizontal, 14)
-			.padding(.vertical, 7)
-			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
-		}
-	}
-}
-
 /// Floating pill above the main control bar showing region and server reset countdown.
 /// Renders nothing when neither has content, matching the single-region/no-extras default
 /// the landing page starts from.
@@ -79,11 +18,18 @@ struct StatusHUDPill: View {
 					Text(countdown)
 						.font(.system(size: 11, weight: .medium, design: .monospaced))
 						.foregroundStyle(.secondary)
+						.lineLimit(1)
+						.truncationMode(.tail)
+						.frame(
+							maxWidth: AppConstants.HUD.collapsedStatusTitleMaxWidth
+						)
 				}
 				regionIndicator
 			}
 			.padding(.horizontal, 14)
 			.padding(.vertical, 7)
+			.frame(maxWidth: AppConstants.HUD.collapsedStatusMaxWidth)
+			.fixedSize(horizontal: true, vertical: false)
 			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
 		}
 	}

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import CryptoKit
 import Foundation
 import UniformTypeIdentifiers
 
@@ -216,7 +217,10 @@ extension LauncherViewModel {
 			)
 			try data.write(to: paths.customArtwork)
 			if let image = NSImage(data: data) {
-				setHeroArtwork(image, themeCacheKey: Self.customThemeCacheKey)
+				setHeroArtwork(
+					image,
+					themeCacheKey: Self.customThemeCacheKey(for: data)
+				)
 			}
 		} catch {
 			show(error)
@@ -257,9 +261,30 @@ extension LauncherViewModel {
 	}
 
 	func loadCustomArtwork() -> Bool {
-		guard let image = NSImage(contentsOf: paths.customArtwork) else { return false }
-		setHeroArtwork(image, themeCacheKey: Self.customThemeCacheKey)
-		return true
+		guard FileManager.default.fileExists(atPath: paths.customArtwork.path) else { return false }
+		do {
+			let data = try Data(contentsOf: paths.customArtwork, options: .mappedIfSafe)
+			guard let image = NSImage(data: data) else {
+				Task { [log] in
+					await log.error("Custom launcher artwork is not a valid image")
+				}
+				return false
+			}
+			setHeroArtwork(image, themeCacheKey: Self.customThemeCacheKey(for: data))
+			return true
+		} catch {
+			Task { [log] in
+				await log.error(
+					"Failed to load custom launcher artwork: \(error.localizedDescription)"
+				)
+			}
+			return false
+		}
+	}
+
+	private static func customThemeCacheKey(for data: Data) -> String {
+		let digest = SHA256.hash(data: data)
+		return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
 	}
 
 	func refreshLauncherPresetIconForTheme(hue: Double?) async {

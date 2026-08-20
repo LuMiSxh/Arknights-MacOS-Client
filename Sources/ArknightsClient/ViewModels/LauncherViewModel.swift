@@ -170,10 +170,15 @@ final class LauncherViewModel {
 		let hasCustomArtwork = loadCustomArtwork()
 		if !hasCustomArtwork {
 			do {
-				if let cachedArtwork = try artworkCache.cachedActiveImage(for: selectedRegion) {
+				if let cacheKey = try artworkCache.cachedActiveCacheKey(for: selectedRegion),
+					let cachedArtwork = try artworkCache.cachedActiveImage(for: selectedRegion)
+				{
 					setHeroArtwork(
 						cachedArtwork,
-						themeCacheKey: Self.officialThemeCacheKey(for: selectedRegion)
+						themeCacheKey: Self.officialThemeCacheKey(
+							for: selectedRegion,
+							artworkCacheKey: cacheKey
+						)
 					)
 				}
 			} catch {
@@ -239,7 +244,7 @@ final class LauncherViewModel {
 	}
 
 	var versionText: String {
-		configuration?.gameLatestVersion ?? installedVersion ?? "—"
+		installedVersion ?? configuration?.gameLatestVersion ?? "—"
 	}
 
 	var installSizeText: String {
@@ -408,10 +413,16 @@ final class LauncherViewModel {
 			let (logoData, artworkData) = await (logoTask.value, artworkTask.value)
 			guard isCurrentRefresh(refreshID) else { return }
 			if let logoData { officialLogo = NSImage(data: logoData) }
-			if let artworkData, let image = NSImage(data: artworkData) {
+			if let artworkData,
+				let image = NSImage(data: artworkData),
+				let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
+			{
 				setHeroArtwork(
 					image,
-					themeCacheKey: Self.officialThemeCacheKey(for: region)
+					themeCacheKey: Self.officialThemeCacheKey(
+						for: region,
+						artworkCacheKey: artworkCacheKey
+					)
 				)
 			}
 		}

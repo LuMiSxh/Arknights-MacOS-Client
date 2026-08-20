@@ -62,7 +62,8 @@ struct AudioSettingsPage: View {
 					SettingsHairline()
 					SettingsActionRow(
 						title: "Show Currently Playing",
-						detail: "Shows the current track title above the launcher controls."
+						detail:
+							"Shows the current track and expandable playback controls above the launcher controls."
 					) {
 						Toggle(
 							"Show Currently Playing",

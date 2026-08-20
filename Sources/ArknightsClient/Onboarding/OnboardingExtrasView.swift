@@ -70,7 +70,7 @@ struct OnboardingExtrasView: View {
 					OnboardingToggleRow(
 						title: "Show Currently Playing",
 						detail:
-							"Adds the current track title to a compact status pill on the main launcher.",
+							"Adds the current track and expandable playback controls to the main launcher.",
 						isOn: $model.showsPlayingMusic,
 						accentColor: model.accentColor
 					)

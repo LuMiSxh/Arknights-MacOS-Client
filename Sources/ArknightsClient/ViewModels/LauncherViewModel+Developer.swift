@@ -147,10 +147,15 @@
 			if let imageData = try? await artworkCache.imageData(
 				for: currentBranding,
 				region: region
-			), let image = NSImage(data: imageData) {
+			), let image = NSImage(data: imageData),
+				let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
+			{
 				setHeroArtwork(
 					image,
-					themeCacheKey: Self.officialThemeCacheKey(for: region)
+					themeCacheKey: Self.officialThemeCacheKey(
+						for: region,
+						artworkCacheKey: artworkCacheKey
+					)
 				)
 			}
 		}

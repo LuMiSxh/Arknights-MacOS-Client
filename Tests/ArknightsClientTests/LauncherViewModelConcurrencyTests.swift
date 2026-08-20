@@ -244,6 +244,25 @@ struct LauncherViewModelConcurrencyTests {
 		#expect(model.heroArtwork === artwork)
 	}
 
+	@Test
+	func unchangedArtworkIdentityKeepsThePresentedImageInstance() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		let visibleArtwork = NSImage(size: NSSize(width: 32, height: 32))
+		let duplicateDecode = NSImage(size: NSSize(width: 32, height: 32))
+		let replacementArtwork = NSImage(size: NSSize(width: 32, height: 32))
+
+		model.setHeroArtwork(visibleArtwork, themeCacheKey: "official.global.first")
+		model.setHeroArtwork(duplicateDecode, themeCacheKey: "official.global.first")
+		#expect(model.heroArtwork === visibleArtwork)
+
+		model.setHeroArtwork(replacementArtwork, themeCacheKey: "official.global.second")
+		#expect(model.heroArtwork === replacementArtwork)
+
+		await api.waitForBrandingRequest()
+		await api.resolveBranding()
+	}
+
 	private func waitForDownloadToStop(_ model: LauncherViewModel) async {
 		for _ in 0..<100 where model.isDownloading {
 			await Task.yield()

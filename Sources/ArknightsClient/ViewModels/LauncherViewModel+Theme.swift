@@ -4,13 +4,12 @@ import AppKit
 import SwiftUI
 
 extension LauncherViewModel {
-	static let customThemeCacheKey = "custom"
-
-	static func officialThemeCacheKey(for region: GameRegion) -> String {
-		"official.\(region.rawValue)"
+	static func officialThemeCacheKey(for region: GameRegion, artworkCacheKey: String) -> String {
+		"official.\(region.rawValue).\(artworkCacheKey)"
 	}
 
 	func setHeroArtwork(_ image: NSImage?, themeCacheKey: String?) {
+		guard heroArtwork == nil || activeThemeCacheKey != themeCacheKey else { return }
 		activeThemeCacheKey = themeCacheKey
 		heroArtwork = image
 	}

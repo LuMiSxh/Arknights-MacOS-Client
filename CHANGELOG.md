@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Optional game-version, server-time, and daily-reset indicators above the Play controls.
 - Cache cleanup for DXMT shaders, the embedded browser, and downloaded gallery assets.
 - Optional YouTube background music with playlists, volume controls, and now-playing links (Thanks to @darkwebdev, #27).
+- Expandable now-playing controls for pausing, resuming, and navigating playlists (#27).
+- Expandable game-version details with a manual update check.
 - Dynamic Theme colors for controls, HUD elements, and compatible launcher icons.
 - Floating HUD pills for region, game version, reset time, and background music.
 - Native macOS 15–25 fallbacks while preserving Liquid Glass on macOS 26 (Thanks to @Mickhasinsomnia, #29).
@@ -50,7 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Kept the Notices window above fullscreen gameplay and synchronized while dragging (Thanks to u/Fukksaks5th, #19).
 - Prevented the first Notices click from briefly flashing the game during focus handoff (#26).
-- Loaded cached artwork immediately and kept it visible while switching regions.
+- Loaded cached artwork immediately, kept it visible while switching regions, and avoided transitions when the server artwork is unchanged.
 - Reapplied normalized Wine scrolling on every launch to prevent excessive trackpad speed (Thanks to @darkwebdev, #28).
 - Matched launcher and game icon Dock footprints to native macOS apps (#24).
 - Corrected the launcher update status shown in Settings.

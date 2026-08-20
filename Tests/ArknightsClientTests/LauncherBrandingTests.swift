@@ -96,5 +96,7 @@ func artworkCacheRestoresTheLastActiveImagePerRegion() async throws {
 	_ = try await cache.imageData(for: branding, region: .global)
 
 	#expect(try cache.cachedActiveImage(for: .global) != nil)
+	#expect(try cache.cachedActiveCacheKey(for: .global) == "artwork-key")
+	#expect(cache.cacheKey(for: branding) == "artwork-key")
 	#expect(try cache.cachedActiveImage(for: .korea) == nil)
 }

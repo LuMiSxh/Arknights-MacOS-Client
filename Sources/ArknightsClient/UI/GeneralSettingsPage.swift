@@ -73,7 +73,8 @@ struct GeneralSettingsPage: View {
 			SettingsPanel(title: "Launcher", systemImage: "sparkles") {
 				SettingsActionRow(
 					title: "Show Game Version",
-					detail: "Shows the installed Arknights version above the Play controls."
+					detail:
+						"Shows the installed Arknights version and a manual update check above the Play controls."
 				) {
 					Toggle("Show Game Version", isOn: $model.showsGameVersion)
 						.labelsHidden()

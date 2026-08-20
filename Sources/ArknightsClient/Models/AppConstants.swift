@@ -13,14 +13,33 @@ enum AppConstants {
 	enum Music {
 		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"
-		static let nowPlayingTitleMaxWidth: Double = 320
 		static let backgroundMusicViewFrame: Double = 300
 		static let backgroundMusicOpacity: Double = 0.01
+		static let backgroundMusicOffscreenOffset: Double = -10_000
 		static let skipMetadataPlaceholderTitle = "YouTube"
 		static let fadeInDuration: Double = 1.5
 		static let fadeOutDuration: Double = 1.0
 		static let fadeSteps: Int = 15
 		static let playlistShuffleDelay: Duration = .milliseconds(200)
+		static let playerStatePollInterval: Duration = .milliseconds(100)
+		static let playerStatePollLimit = 100
+		static let collapsedPlayerMaxWidth: Double = 360
+		static let collapsedTitleMaxWidth: Double = 300
+		static let collapsedPlayerHeight: Double = 28
+		static let expandedPlayerWidth: Double = 360
+		static let expandedPlayerHeight: Double = 122
+		static let playerExpansionDuration: Double = 0.3
+	}
+
+	enum HUD {
+		static let collapsedVersionMaxWidth: Double = 150
+		static let collapsedVersionTitleMaxWidth: Double = 100
+		static let collapsedStatusMaxWidth: Double = 280
+		static let collapsedStatusTitleMaxWidth: Double = 210
+		static let expandedVersionWidth: Double = 260
+		static let expandedVersionHeight: Double = 68
+		static let expansionDuration: Double = 0.3
+		static let pillRowTrailingInset: Double = 2
 	}
 
 	enum Network {

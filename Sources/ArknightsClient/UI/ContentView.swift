@@ -7,6 +7,7 @@ struct ContentView: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var settingsPresented = false
 	@State private var onboarding: OnboardingCoordinator
+	@State private var musicController: BackgroundMusicController
 
 	init(model: LauncherViewModel) {
 		self.model = model
@@ -15,13 +16,14 @@ struct ContentView: View {
 				store: OnboardingProgressStore(defaults: model.preferences.defaults)
 			)
 		)
+		_musicController = State(initialValue: BackgroundMusicController(model: model))
 	}
 
 	private var cyan: Color { model.accentColor }
 
 	var body: some View {
 		ZStack {
-			BackgroundMusicView(model: model)
+			BackgroundMusicView(model: model, controller: musicController)
 
 			LauncherArtworkView(image: model.heroArtwork, accentColor: cyan)
 				.ignoresSafeArea(.container, edges: .top)
@@ -177,9 +179,9 @@ struct ContentView: View {
 		if hasMusicPill || hasVersionPill || hasStatusPill {
 			HStack {
 				Spacer(minLength: 16)
-				HStack(spacing: 8) {
+				HStack(alignment: .bottom, spacing: 8) {
 					if hasMusicPill {
-						MusicHUDPill(model: model)
+						MusicHUDPill(model: model, controller: musicController)
 							.transition(hudPillTransition)
 					}
 					if hasVersionPill {
@@ -192,6 +194,7 @@ struct ContentView: View {
 					}
 				}
 			}
+			.padding(.trailing, AppConstants.HUD.pillRowTrailingInset)
 			.transition(hudPillTransition)
 			.animation(stateAnimation, value: hasMusicPill)
 			.animation(stateAnimation, value: hasVersionPill)

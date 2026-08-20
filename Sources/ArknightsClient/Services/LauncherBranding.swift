@@ -84,11 +84,23 @@ actor ArtworkCache {
 	}
 
 	nonisolated func cachedActiveImage(for region: GameRegion) throws -> NSImage? {
+		guard let cacheKey = try cachedActiveCacheKey(for: region) else { return nil }
+		return NSImage(contentsOf: cachedImageURL(for: cacheKey))
+	}
+
+	nonisolated func cachedActiveCacheKey(for region: GameRegion) throws -> String? {
 		let pointerURL = activeCacheKeyURL(for: region)
 		guard FileManager.default.fileExists(atPath: pointerURL.path) else { return nil }
 		let cacheKey = try String(contentsOf: pointerURL, encoding: .utf8)
 		guard Self.safeCacheKey(cacheKey) == cacheKey else { return nil }
-		return NSImage(contentsOf: cachedImageURL(for: cacheKey))
+		return cacheKey
+	}
+
+	nonisolated func cacheKey(for branding: LauncherBranding) -> String? {
+		guard let sourceURL = branding.launcherBackgroundImage else { return nil }
+		let rawKey = branding.launcherBackgroundImageCRC64 ?? sourceURL.lastPathComponent
+		let cacheKey = Self.safeCacheKey(rawKey)
+		return cacheKey.isEmpty ? nil : cacheKey
 	}
 
 	nonisolated func cachedOfficialLogo() -> NSImage? {
@@ -100,9 +112,7 @@ actor ArtworkCache {
 			try removeActiveCacheKey(for: region)
 			return nil
 		}
-		let cacheKey = branding.launcherBackgroundImageCRC64 ?? sourceURL.lastPathComponent
-		let safeKey = Self.safeCacheKey(cacheKey)
-		guard !safeKey.isEmpty else { return nil }
+		guard let safeKey = cacheKey(for: branding) else { return nil }
 
 		let fileManager = FileManager.default
 		let cachedURL = cachedImageURL(for: safeKey)

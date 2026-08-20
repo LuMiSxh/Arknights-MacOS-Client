@@ -61,7 +61,7 @@ struct OnboardingPersonalizationView: View {
 				OnboardingToggleRow(
 					title: "Show Game Version",
 					detail:
-						"Adds the installed Arknights version to the compact status row above the Play controls.",
+						"Adds the installed Arknights version and a manual update check above the Play controls.",
 					isOn: $model.showsGameVersion,
 					accentColor: model.accentColor
 				)
