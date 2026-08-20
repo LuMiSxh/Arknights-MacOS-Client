@@ -15,7 +15,7 @@ struct PresetGalleryView: View {
 	@State private var applyingItemID: String?
 
 	private let avatarColumns = [
-		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
+		GridItem(.adaptive(minimum: 190, maximum: 220), spacing: 16)
 	]
 	private let wallpaperColumns = [
 		GridItem(.flexible(), spacing: 14),
@@ -148,19 +148,18 @@ struct PresetGalleryView: View {
 		LazyVGrid(columns: avatarColumns, spacing: 18) {
 			ForEach(filteredAvatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
-				let treatment = destination.iconTreatment ?? .launcher
 				Button {
 					applyAvatar(avatar)
 				} label: {
 					VStack(spacing: 6) {
 						ZStack {
-							CachedPresetOperatorIcon(
+							CachedPresetOperatorPair(
 								url: avatar.url,
 								cacheKey: avatar.id,
-								treatment: treatment,
 								accentHue: model.dynamicThemeHue
 							)
-							.frame(width: 104, height: 104)
+							.frame(width: 164, height: 78)
+							.padding(7)
 							.background(
 								LinearGradient(
 									colors: [
@@ -171,7 +170,7 @@ struct PresetGalleryView: View {
 									endPoint: .bottom
 								)
 							)
-							.clipShape(RoundedRectangle(cornerRadius: 22))
+							.clipShape(RoundedRectangle(cornerRadius: 18))
 
 							if isApplying {
 								ZStack {
@@ -180,12 +179,12 @@ struct PresetGalleryView: View {
 										.controlSize(.small)
 										.tint(model.accentColor)
 								}
-								.clipShape(RoundedRectangle(cornerRadius: 22))
+								.clipShape(RoundedRectangle(cornerRadius: 18))
 							}
 						}
-						.frame(width: 104, height: 104)
+						.frame(width: 178, height: 92)
 						.overlay {
-							RoundedRectangle(cornerRadius: 22)
+							RoundedRectangle(cornerRadius: 18)
 								.strokeBorder(
 									isApplying ? model.accentColor : Color.white.opacity(0.14),
 									lineWidth: isApplying ? 2.5 : 1.5
@@ -204,7 +203,7 @@ struct PresetGalleryView: View {
 							.lineLimit(1)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? model.accentColor : .primary)
-							.frame(maxWidth: 130)
+							.frame(maxWidth: 190)
 					}
 					.padding(.vertical, 4)
 					.frame(maxWidth: .infinity)
@@ -295,7 +294,7 @@ struct PresetGalleryView: View {
 				let data = try await PresetCatalogService.shared.imageData(
 					for: avatar.url, cacheKey: avatar.id
 				)
-				model.applyPresetAvatar(data: data, to: destination)
+				model.applyPresetAvatar(data: data)
 				dismiss()
 			} catch {
 				applyingItemID = nil

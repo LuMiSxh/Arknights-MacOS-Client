@@ -111,12 +111,8 @@ struct AppPaths: Sendable {
 		applicationSupportRoot.appending(path: "Artwork/Custom/game-icon")
 	}
 
-	var launcherPresetAvatar: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/launcher-avatar-source")
-	}
-
-	var gamePresetAvatar: URL {
-		applicationSupportRoot.appending(path: "Artwork/Custom/game-avatar-source")
+	var operatorPresetAvatar: URL {
+		applicationSupportRoot.appending(path: "Artwork/Custom/operator-avatar-source")
 	}
 
 }

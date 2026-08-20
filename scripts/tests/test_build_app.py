@@ -16,8 +16,8 @@ import build_app
 class AppBundleTests(unittest.TestCase):
     def test_game_icon_background_is_bundled(self) -> None:
         resource = (
-            "Sources/ArknightsClient/Resources/GameIconBackground.png",
-            "GameIconBackground.png",
+            "Sources/ArknightsClient/Resources/OperatorIconFrame.svg",
+            "OperatorIconFrame.svg",
         )
 
         self.assertIn(resource, build_app.APP_RESOURCES)

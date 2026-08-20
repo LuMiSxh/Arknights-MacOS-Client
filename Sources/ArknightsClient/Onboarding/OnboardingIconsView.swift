@@ -4,45 +4,58 @@ import SwiftUI
 
 struct OnboardingIconsView: View {
 	@Bindable var model: LauncherViewModel
-	let browseLauncherOperators: () -> Void
-	let browseGameOperators: () -> Void
+	let browseOperators: () -> Void
 
 	var body: some View {
 		OnboardingPage(
 			title: "Choose your Dock icons",
 			subtitle:
-				"Set either Dock icon independently. Operator presets use the correct treatment for the icon you choose.",
+				"Choose one operator once. The Launcher and game use distinct, coordinated treatments.",
 			accentColor: model.accentColor
 		) {
 			OnboardingPanel(title: "Dock icons", systemImage: "square.grid.2x2") {
 				SettingsActionRow(
-					title: "Launcher Icon",
-					detail: "Choose an operator in the Launcher treatment, or use a local image."
+					title: "Operator Icons",
+					detail: "Creates both Dock icons from the same operator."
 				) {
-					Button("Operators…", systemImage: "person.crop.square") {
-						browseLauncherOperators()
+					Button("Choose Operator…", systemImage: "person.2.crop.square.stack") {
+						browseOperators()
 					}
-					Button("Choose…", systemImage: "folder", action: model.chooseCustomAppIcon)
 					Button(
-						"Use Default",
+						"Use Defaults",
 						systemImage: "arrow.counterclockwise",
-						action: model.resetAppIcon
+						action: model.resetOperatorIcons
 					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Game Icon",
-					detail: "Choose an operator in the Game treatment, or use a local image."
+					title: "Custom Overrides",
+					detail: "Optionally replace either generated icon with a local image."
 				) {
-					Button("Operators…", systemImage: "person.crop.square") {
-						browseGameOperators()
+					GlassActionMenu(
+						title: "Launcher",
+						systemImage: "macwindow",
+						accentColor: model.accentColor
+					) {
+						Button(
+							"Choose Image…", systemImage: "folder",
+							action: model.chooseCustomAppIcon)
+						Button(
+							"Use Default", systemImage: "arrow.counterclockwise",
+							action: model.resetAppIcon)
 					}
-					Button("Choose…", systemImage: "folder", action: model.chooseCustomGameIcon)
-					Button(
-						"Use Default",
-						systemImage: "arrow.counterclockwise",
-						action: model.resetGameIcon
-					)
+					GlassActionMenu(
+						title: "Game",
+						systemImage: "gamecontroller",
+						accentColor: model.accentColor
+					) {
+						Button(
+							"Choose Image…", systemImage: "folder",
+							action: model.chooseCustomGameIcon)
+						Button(
+							"Use Default", systemImage: "arrow.counterclockwise",
+							action: model.resetGameIcon)
+					}
 				}
 			}
 		}

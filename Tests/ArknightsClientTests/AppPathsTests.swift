@@ -85,13 +85,8 @@ func appPathsUseStandardInjectedDirectories() {
 			== support.appending(path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/game-icon")
 	)
 	#expect(
-		paths.launcherPresetAvatar
+		paths.operatorPresetAvatar
 			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/launcher-avatar-source")
-	)
-	#expect(
-		paths.gamePresetAvatar
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/game-avatar-source")
+				path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/operator-avatar-source")
 	)
 }

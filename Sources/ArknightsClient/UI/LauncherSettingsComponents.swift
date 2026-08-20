@@ -187,6 +187,36 @@ struct GlassMenuPicker<Value: Hashable>: View {
 	}
 }
 
+/// A settings action menu using the same compact capsule treatment as `GlassMenuPicker`.
+struct GlassActionMenu<Content: View>: View {
+	let title: String
+	let systemImage: String
+	let accentColor: Color
+	@ViewBuilder let content: Content
+
+	var body: some View {
+		Menu {
+			content
+		} label: {
+			HStack(spacing: 5) {
+				Image(systemName: systemImage)
+					.accessibilityHidden(true)
+				Text(title)
+				Image(systemName: "chevron.up.chevron.down")
+					.font(.system(size: 9, weight: .bold))
+					.accessibilityHidden(true)
+			}
+			.font(.system(size: 12, weight: .semibold))
+			.foregroundStyle(accentColor)
+			.padding(.horizontal, 10)
+			.padding(.vertical, 5)
+			.background(accentColor.opacity(0.15), in: Capsule())
+		}
+		.menuStyle(.button)
+		.buttonStyle(.plain)
+	}
+}
+
 /// A `Link` that underlines on hover instead of sitting there looking unresponsive.
 struct AccentLink: View {
 	let title: String

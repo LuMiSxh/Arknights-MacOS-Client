@@ -27,8 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Dynamic Theme colors for controls, HUD elements, and compatible launcher icons.
 - Floating HUD pills for region, game version, reset time, and background music.
 - Native macOS 15–25 fallbacks while preserving Liquid Glass on macOS 26 (Thanks to @Mickhasinsomnia, #29).
-- Dedicated galleries for official wallpapers, Launcher operators, and Game operators, with bounded downloads and caching (Thanks to @darkwebdev, #30; @RadioNoiseE, #24).
-- Independent operator presets for Launcher and crystalline Game icons.
+- Dedicated galleries for official wallpapers and paired Launcher/Game operators, with bounded downloads and caching (Thanks to @darkwebdev, #30; @RadioNoiseE, #24).
+- Linked operator presets with distinct Launcher and dynamically tinted framed Game treatments.
 - Custom game icons and a normalized "Use Default" option that preserves the original Arknights icon.
 - Version-range and display-window options for announcement management.
 - Recipe-download tracking in release statistics.

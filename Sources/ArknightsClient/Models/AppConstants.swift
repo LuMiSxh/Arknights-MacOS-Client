@@ -8,6 +8,9 @@ enum AppConstants {
 		static let squircleDimension: CGFloat = 412
 		static let squircleCornerRadius: CGFloat = 92.3
 		static let baseCyanHue: Double = 0.533
+		static let operatorFrameInset: CGFloat = 36
+		/// Opacity of the dynamically tinted frame drawn over generated Game icons.
+		static let operatorFrameOpacity: CGFloat = 1.0
 	}
 
 	enum Music {

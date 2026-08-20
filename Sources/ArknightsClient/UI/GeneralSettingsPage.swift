@@ -138,51 +138,65 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Launcher Icon",
+					title: "Operator Icons",
 					detail:
-						"Choose an operator in the Launcher treatment, or use a local image."
+						"Choose one operator for a matched Launcher and Game Dock icon pair."
 				) {
-					Button("Operators…", systemImage: "person.crop.square") {
-						presentedGallery = .launcherIcon
+					Button("Choose Operator…", systemImage: "person.2.crop.square.stack") {
+						presentedGallery = .operatorIcons
 					}
-					Button("Choose…", systemImage: "folder", action: model.chooseCustomAppIcon)
 					Button(
-						"Use Default",
+						"Use Defaults",
 						systemImage: "arrow.counterclockwise",
-						action: model.resetAppIcon
+						action: model.resetOperatorIcons
 					)
-				}
-				.dropDestination(for: URL.self) { urls, _ in
-					guard let url = urls.first, isImageURL(url) else { return false }
-					model.applyCustomAppIcon(from: url)
-					return true
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Game Icon",
+					title: "Custom Icon Overrides",
 					detail:
-						"Choose an operator in the Game treatment, or use a local image."
+						"Use separate local images instead of the generated operator pair."
 				) {
-					Button("Operators…", systemImage: "person.crop.square") {
-						presentedGallery = .gameIcon
+					GlassActionMenu(
+						title: "Launcher",
+						systemImage: "macwindow",
+						accentColor: model.accentColor
+					) {
+						Button(
+							"Choose Image…", systemImage: "folder",
+							action: model.chooseCustomAppIcon)
+						Button(
+							"Use Default", systemImage: "arrow.counterclockwise",
+							action: model.resetAppIcon)
 					}
-					Button("Choose…", systemImage: "folder", action: model.chooseCustomGameIcon)
-					Button(
-						"Use Default",
-						systemImage: "arrow.counterclockwise",
-						action: model.resetGameIcon
-					)
-				}
-				.dropDestination(for: URL.self) { urls, _ in
-					guard let url = urls.first, isImageURL(url) else { return false }
-					model.applyCustomGameIcon(from: url)
-					return true
+					.dropDestination(for: URL.self) { urls, _ in
+						guard let url = urls.first, isImageURL(url) else { return false }
+						model.applyCustomAppIcon(from: url)
+						return true
+					}
+					GlassActionMenu(
+						title: "Game",
+						systemImage: "gamecontroller",
+						accentColor: model.accentColor
+					) {
+						Button(
+							"Choose Image…", systemImage: "folder",
+							action: model.chooseCustomGameIcon)
+						Button(
+							"Use Default", systemImage: "arrow.counterclockwise",
+							action: model.resetGameIcon)
+					}
+					.dropDestination(for: URL.self) { urls, _ in
+						guard let url = urls.first, isImageURL(url) else { return false }
+						model.applyCustomGameIcon(from: url)
+						return true
+					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Dynamic Theme",
 					detail:
-						"Automatically changes the launcher colors and compatible Launcher icons to match the selected background."
+						"Automatically changes the launcher colors and generated operator icon pair to match the selected background."
 				) {
 					Toggle("Dynamic Theme", isOn: $model.usesDynamicTheme)
 						.labelsHidden()
