@@ -55,6 +55,28 @@ REQUIRED_LICENSES = (
     "lgpl-3.0.txt",
     "mit-dxmt.txt",
 )
+COMPATIBILITY_HELPERS = (
+    ("Vuplex/Vuplex WebView.vuplex", "Vuplex/Vuplex WebView.vuplex"),
+    ("Vuplex/userenv.dll", "Vuplex/userenv.dll"),
+    ("PlatformProcess/PlatformProcess.exe", "PlatformProcess/PlatformProcess.exe"),
+    (
+        "PlatformProcess/PlatformProcessWindowBridge.dylib",
+        "PlatformProcess/PlatformProcessWindowBridge.dylib",
+    ),
+    ("GameIcon/GameIconBridge.dylib", "GameIcon/GameIconBridge.dylib"),
+)
+SIGNED_COMPATIBILITY_HELPERS = (
+    "PlatformProcess/PlatformProcessWindowBridge.dylib",
+    "GameIcon/GameIconBridge.dylib",
+)
+APP_RESOURCES = (
+    ("Resources/AppIcon.icns", "AppIcon.icns"),
+    ("Resources/Assets.car", "Assets.car"),
+    (
+        "Sources/ArknightsClient/Resources/GameIconBackground.png",
+        "GameIconBackground.png",
+    ),
+)
 
 
 def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
@@ -205,8 +227,8 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
         copy_file(
             PROJECT_DIR / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )
-        copy_file(PROJECT_DIR / "Resources/AppIcon.icns", resources / "AppIcon.icns")
-        copy_file(PROJECT_DIR / "Resources/Assets.car", resources / "Assets.car")
+        for source, destination in APP_RESOURCES:
+            copy_file(PROJECT_DIR / source, resources / destination)
 
         helper_root = BUILD_DIR / "helpers"
         info("Building the game compatibility components")
@@ -220,30 +242,19 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
             ]
         )
         compatibility = resources / "Compatibility"
-        compatibility_helpers = (
-            ("Vuplex/Vuplex WebView.vuplex", "Vuplex/Vuplex WebView.vuplex"),
-            ("Vuplex/userenv.dll", "Vuplex/userenv.dll"),
-            (
-                "PlatformProcess/PlatformProcess.exe",
-                "PlatformProcess/PlatformProcess.exe",
-            ),
-            (
-                "PlatformProcess/PlatformProcessWindowBridge.dylib",
-                "PlatformProcess/PlatformProcessWindowBridge.dylib",
-            ),
-        )
-        for source, destination in compatibility_helpers:
+        for source, destination in COMPATIBILITY_HELPERS:
             copy_file(helper_root / source, compatibility / destination)
-        run(
-            [
-                "codesign",
-                "--force",
-                "--sign",
-                "-",
-                "--timestamp=none",
-                compatibility / "PlatformProcess/PlatformProcessWindowBridge.dylib",
-            ]
-        )
+        for helper in SIGNED_COMPATIBILITY_HELPERS:
+            run(
+                [
+                    "codesign",
+                    "--force",
+                    "--sign",
+                    "-",
+                    "--timestamp=none",
+                    compatibility / helper,
+                ]
+            )
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:

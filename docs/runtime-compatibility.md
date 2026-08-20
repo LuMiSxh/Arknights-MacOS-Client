@@ -24,6 +24,8 @@ The runtime's macOS executables are x86-64 and therefore depend on Rosetta 2. ma
 
 Wine receives a private Unix home, XDG directories, temporary directory, and prefix. Only `C:` and the selected game directory as `G:` remain mapped. The runtime must honor `WINEPREFIX`, `WINEDLLOVERRIDES`, `WINEPRELOADERAPPNAME`, and the current synchronization variables.
 
+The launcher injects its signed x86-64 game-icon bridge into the main Wine process with `DYLD_INSERT_LIBRARIES`. The bridge waits for Wine to initialize AppKit before intercepting its normal `setApplicationIconImage` call, preserving Wine's application name and startup order. Without a custom selection it grid-normalizes the icon Wine extracts from `Arknights.exe`; with one it substitutes the launcher-owned PNG from Application Support. It does not patch the runtime or game executable.
+
 ## Required DXMT interface
 
 DXMT translates the game's Direct3D 11 calls to Metal. The runtime archive must contain x64 and x32 copies of:

@@ -9,7 +9,7 @@ private func isImageURL(_ url: URL) -> Bool {
 
 struct GeneralSettingsPage: View {
 	@Bindable var model: LauncherViewModel
-	@State private var presentedGalleryTab: PresetGalleryTab?
+	@State private var presentedGallery: PresetGalleryDestination?
 
 	var body: some View {
 		SettingsPage(
@@ -97,7 +97,7 @@ struct GeneralSettingsPage: View {
 					title: "Artwork",
 					detail: "Background shown behind the launcher controls."
 				) {
-					Button("Presets…") { presentedGalleryTab = .wallpapers }
+					Button("Presets…") { presentedGallery = .artwork }
 					Button("Choose…", action: model.chooseCustomArtwork)
 					Button("Use Default", action: model.resetArtwork)
 				}
@@ -108,16 +108,30 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "App Icon",
-					detail: "Dock and Finder icon for the launcher."
+					title: "Launcher Icon",
+					detail: "Dock and Finder icon for this launcher."
 				) {
-					Button("Presets…") { presentedGalleryTab = .avatars }
+					Button("Presets…") { presentedGallery = .launcherIcon }
 					Button("Choose…", action: model.chooseCustomAppIcon)
 					Button("Use Default", action: model.resetAppIcon)
 				}
 				.dropDestination(for: URL.self) { urls, _ in
 					guard let url = urls.first, isImageURL(url) else { return false }
 					model.applyCustomAppIcon(from: url)
+					return true
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Game Icon",
+					detail: "Dock icon used by Arknights on its next launch."
+				) {
+					Button("Presets…") { presentedGallery = .gameIcon }
+					Button("Choose…", action: model.chooseCustomGameIcon)
+					Button("Use Default", action: model.resetGameIcon)
+				}
+				.dropDestination(for: URL.self) { urls, _ in
+					guard let url = urls.first, isImageURL(url) else { return false }
+					model.applyCustomGameIcon(from: url)
 					return true
 				}
 				SettingsHairline()
@@ -133,8 +147,8 @@ struct GeneralSettingsPage: View {
 				}
 			}
 		}
-		.sheet(item: $presentedGalleryTab) { tab in
-			PresetGalleryView(model: model, initialTab: .constant(tab))
+		.sheet(item: $presentedGallery) { destination in
+			PresetGalleryView(model: model, destination: destination)
 		}
 	}
 }

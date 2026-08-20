@@ -237,6 +237,28 @@ func graphicsDiagnosticsExposeMacDriverAndDXMTInformation() {
 }
 
 @Test
+func gameIconEnvironmentInjectsBridgeAndOptionalCustomIcon() {
+	let runtime = WineRuntime(
+		executableURL: URL(filePath: "/runtime/bin/Arknights"),
+		displayName: "Test",
+		revision: "test",
+		gameIconBridgeURL: URL(filePath: "/runtime/GameIconBridge.dylib")
+	)
+
+	#expect(
+		runtime.gameIconEnvironment(customIconURL: nil)
+			== ["DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib"]
+	)
+	#expect(
+		runtime.gameIconEnvironment(customIconURL: URL(filePath: "/icons/game.png"))
+			== [
+				"DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib",
+				"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/icons/game.png",
+			]
+	)
+}
+
+@Test
 func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
 	let fileManager = FileManager.default
 	let root = fileManager.temporaryDirectory.appending(

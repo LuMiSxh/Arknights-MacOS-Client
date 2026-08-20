@@ -3,8 +3,8 @@
 import SwiftUI
 
 struct PresetGalleryView: View {
-	var model: LauncherViewModel
-	@Binding var initialTab: PresetGalleryTab
+	@Bindable var model: LauncherViewModel
+	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 
 	@State private var selectedTab: PresetGalleryTab = .avatars
@@ -94,7 +94,7 @@ struct PresetGalleryView: View {
 		)
 		.preferredColorScheme(.dark)
 		.task {
-			selectedTab = initialTab
+			selectedTab = destination.initialTab
 			avatars = await PresetCatalogService.shared.fetchAvatars()
 			isLoadingAvatars = false
 		}
@@ -115,24 +115,35 @@ struct PresetGalleryView: View {
 	}
 
 	private var searchAndFilterBar: some View {
-		HStack(spacing: 14) {
-			Picker("Category", selection: $selectedTab) {
-				ForEach(PresetGalleryTab.allCases) { tab in
-					Label(tab.rawValue, systemImage: tab.icon).tag(tab)
+		VStack(spacing: 10) {
+			HStack(spacing: 14) {
+				AdaptiveSegmentedControl(
+					selection: $selectedTab,
+					options: PresetGalleryTab.allCases,
+					accentColor: model.accentColor
+				) { tab in
+					Label(tab.rawValue, systemImage: tab.icon)
 				}
-			}
-			.pickerStyle(.segmented)
-			.frame(width: 320)
+				.frame(width: 320)
+				.accessibilityLabel("Asset Type")
 
-			HStack {
-				Image(systemName: "magnifyingglass")
-					.foregroundStyle(.tertiary)
-				TextField("Search…", text: $searchText)
-					.textFieldStyle(.plain)
+				HStack {
+					Image(systemName: "magnifyingglass")
+						.foregroundStyle(.tertiary)
+					TextField("Search…", text: $searchText)
+						.textFieldStyle(.plain)
+				}
+				.padding(.horizontal, 10)
+				.padding(.vertical, 6)
+				.background(Color.white.opacity(0.06), in: Capsule())
 			}
-			.padding(.horizontal, 10)
-			.padding(.vertical, 6)
-			.background(Color.white.opacity(0.06), in: Capsule())
+
+			if selectedTab == .avatars {
+				AvatarIconStylePicker(
+					selection: $model.avatarIconStyle,
+					accentColor: model.accentColor
+				)
+			}
 		}
 	}
 
@@ -157,11 +168,11 @@ struct PresetGalleryView: View {
 				} label: {
 					VStack(spacing: 6) {
 						ZStack {
-							CachedPresetImage(
+							CachedPresetAvatarIcon(
 								url: avatar.url,
 								cacheKey: avatar.id,
-								contentMode: .fill,
-								placeholderIcon: "person.crop.square.fill"
+								style: model.avatarIconStyle,
+								accentHue: model.dynamicThemeHue
 							)
 							.frame(width: 76, height: 76)
 							.background(
@@ -299,10 +310,7 @@ struct PresetGalleryView: View {
 				let data = try await PresetCatalogService.shared.imageData(
 					for: avatar.url, cacheKey: avatar.id
 				)
-				guard let squircle = AppIconRenderer.createAvatarSquircle(from: data) else {
-					throw LauncherError.cannotEncodeAppIcon
-				}
-				model.applyDirectCustomAppIcon(image: squircle)
+				model.applyPresetAvatar(data: data, to: destination)
 				dismiss()
 			} catch {
 				applyingItemID = nil

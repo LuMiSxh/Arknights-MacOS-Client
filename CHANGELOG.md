@@ -29,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Support for macOS 15 (Sequoia) and newer, down from macOS 26; Liquid Glass stays full-featured on macOS 26, with native Material and bordered-button fallbacks on macOS 15–25 (Thanks to @Mickhasinsomnia, #29).
 - Optional launcher background music now opens the currently playing track when tapping the now-playing HUD pill, and the pill now keeps to one-line text with truncation.
 - Added an in-app Asset Gallery in Settings → General → Personalization to browse and apply curated official Arknights wallpapers and operator avatar app icons with on-demand caching (Thanks to @darkwebdev #30, @RadioNoiseE #24).
+- Added a separate Game Icon setting with presets, custom-image selection, and a normalized "Use Default" option that preserves the original Arknights icon.
+- Added Rhodes Dark, Launcher Icon, and Game Icon treatments for operator presets; Launcher Icon follows Dynamic Theme colors, while Game Icon combines the operator with the game's cyan crystalline background.
 
 ### Changed
 
@@ -49,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Hardened game installation against ambiguous or duplicate manifest paths and symbolic-link destinations before any game file is written.
 - Bounded Asset Gallery catalog responses, image downloads, decoded image dimensions, and its on-disk image cache; remote assets and redirects are now restricted to approved HTTPS hosts.
 - Replaced silent Game Mode, Wine-stop, preset-cache, custom-artwork, and app-icon failures with contextual launcher logging or visible errors.
+- Normalized the Wine game process icon to the same Dock footprint as native macOS apps without modifying `Arknights.exe` or other game files.
 
 ### Fixed
 

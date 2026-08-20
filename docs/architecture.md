@@ -43,6 +43,8 @@ Arknights starts its Chromium-based Vuplex helper for account and in-game web pa
 
 Notices use a different Qt WebEngine helper named `PlatformProcess.exe`. It runs as a separate Wine and macOS process, so this implementation deliberately keeps it as a top-level companion instead of modifying the game process. A wrapper launches the untouched helper, clears its Win32 frame and non-activating styles, and follows the game in Wine's coordinate system. An AppKit bridge in the helper process tree clears Wine's native activation restrictions, enables input, removes the separate Dock presence, and applies companion-window presentation while Arknights is active. The compatibility components do not inspect page data; the bridge changes only native window presentation.
 
+A separate signed Objective-C bridge runs in the main Wine process. It waits for Wine to initialize AppKit, then normalizes Wine's original executable icon or substitutes a launcher-owned custom game icon through AppKit's public application-icon setter. Game files remain untouched, and removing the custom icon returns the next launch to the normalized original Arknights icon.
+
 ```mermaid
 flowchart LR
 	subgraph macOS

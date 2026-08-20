@@ -124,9 +124,42 @@ def build_platform_process(output_root: Path) -> BuildResult:
     return shim_output, bridge_output
 
 
+def build_game_icon(output_root: Path) -> BuildResult:
+    source = PROJECT_DIR / "RuntimeSupport/GameIcon/GameIconBridge.m"
+    require_sources(source)
+
+    destination = output_root / "GameIcon"
+    destination.mkdir(parents=True, exist_ok=True)
+    output_path = destination / "GameIconBridge.dylib"
+    with tempfile.TemporaryDirectory(
+        prefix=".game-icon-build.", dir=destination
+    ) as name:
+        temporary_output = Path(name) / output_path.name
+        with spinner("Compiling the game icon bridge"):
+            run(
+                [
+                    "xcrun",
+                    "clang",
+                    "-arch",
+                    "x86_64",
+                    "-O2",
+                    "-dynamiclib",
+                    "-lobjc",
+                    source,
+                    "-o",
+                    temporary_output,
+                ]
+            )
+        validate_macho_x86_64(temporary_output)
+        remove_path(output_path)
+        temporary_output.replace(output_path)
+    return (output_path,)
+
+
 BUILDERS: dict[str, Callable[[Path], BuildResult]] = {
     "vuplex": build_vuplex,
     "platform-process": build_platform_process,
+    "game-icon": build_game_icon,
 }
 
 

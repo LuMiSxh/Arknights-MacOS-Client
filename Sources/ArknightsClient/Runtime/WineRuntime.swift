@@ -41,6 +41,19 @@ struct WineRuntime: Sendable {
 	let executableURL: URL
 	let displayName: String
 	let revision: String
+	let gameIconBridgeURL: URL?
+
+	init(
+		executableURL: URL,
+		displayName: String,
+		revision: String,
+		gameIconBridgeURL: URL? = nil
+	) {
+		self.executableURL = executableURL
+		self.displayName = displayName
+		self.revision = revision
+		self.gameIconBridgeURL = gameIconBridgeURL
+	}
 
 	static let dllOverrides =
 		"d3d10core,d3d11,dxgi=n,b;winemetal=b;dcomp,mscoree,mshtml="
@@ -94,7 +107,10 @@ struct WineRuntime: Sendable {
 		return WineRuntime(
 			executableURL: executable,
 			displayName: "Bundled Wine + DXMT",
-			revision: configuration.revision
+			revision: configuration.revision,
+			gameIconBridgeURL: resources.appending(
+				path: "Compatibility/GameIcon/GameIconBridge.dylib"
+			)
 		)
 	}
 
@@ -105,6 +121,7 @@ struct WineRuntime: Sendable {
 		displayConfiguration: WineDisplayConfiguration,
 		graphicsDiagnostics: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
+		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
 		log: LauncherLog? = nil
 	) async throws -> WineLaunch {
@@ -185,6 +202,9 @@ struct WineRuntime: Sendable {
 		)
 		if metalPerformanceHUDEnabled {
 			environment["MTL_HUD_ENABLED"] = "1"
+		}
+		for (key, value) in gameIconEnvironment(customIconURL: gameIconURL) {
+			environment[key] = value
 		}
 
 		let process = Process()

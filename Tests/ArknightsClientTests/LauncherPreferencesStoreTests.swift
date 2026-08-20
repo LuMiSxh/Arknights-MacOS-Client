@@ -135,6 +135,36 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
+	func avatarIconStyleDefaultsToLauncherGlassAndPersists() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.avatarIconStyle() == .launcherGlass)
+
+		store.setAvatarIconStyle(.gameIcon)
+
+		#expect(store.avatarIconStyle() == .gameIcon)
+	}
+
+	@Test
+	func presetIconStylesPersistIndependentlyPerTarget() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setPresetIconStyle(.rhodesDark, for: .launcherIcon)
+		store.setPresetIconStyle(.gameIcon, for: .gameIcon)
+
+		#expect(store.presetIconStyle(for: .launcherIcon) == .rhodesDark)
+		#expect(store.presetIconStyle(for: .gameIcon) == .gameIcon)
+
+		store.setPresetIconStyle(nil, for: .gameIcon)
+
+		#expect(store.presetIconStyle(for: .gameIcon) == nil)
+	}
+
+	@Test
 	func selectedRegionDefaultsToGlobalAndPersists() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }

@@ -20,7 +20,10 @@ let package = Package(
 			dependencies: [
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit")
 			],
-			path: "Sources/ArknightsClient"
+			path: "Sources/ArknightsClient",
+			resources: [
+				.copy("Resources/GameIconBackground.png")
+			]
 		),
 		.testTarget(
 			name: "ArknightsClientTests",

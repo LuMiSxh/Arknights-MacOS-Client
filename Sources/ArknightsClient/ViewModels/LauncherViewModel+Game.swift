@@ -59,6 +59,7 @@ extension LauncherViewModel {
 					displayConfiguration: displayConfiguration,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					metalPerformanceHUDEnabled: launchOptions.usesMetalPerformanceHUD,
+					gameIconURL: hasCustomGameIcon ? paths.customGameIcon : nil,
 					logURL: paths.logFile,
 					log: log
 				)

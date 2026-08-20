@@ -94,6 +94,10 @@ final class LauncherViewModel {
 			updateThemeColor()
 		}
 	}
+	var avatarIconStyle: AvatarIconStyle {
+		didSet { preferences.setAvatarIconStyle(avatarIconStyle) }
+	}
+	var dynamicThemeHue: Double?
 	var accentColor: Color = SettingsVisuals.cyan
 	var accentTextColor: Color = Color.black.opacity(0.92)
 	var hudTintColor: Color = SettingsVisuals.hudGlassTint
@@ -164,6 +168,7 @@ final class LauncherViewModel {
 		showsPlayingMusic = preferences.showsPlayingMusic()
 		launcherMusicVolume = preferences.launcherMusicVolume()
 		usesDynamicTheme = preferences.usesDynamicTheme()
+		avatarIconStyle = preferences.avatarIconStyle()
 		loadCustomAppIcon()
 		if showsServerResetCountdown { startResetCountdownTimer() }
 		updateThemeColor()

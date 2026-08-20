@@ -3,8 +3,8 @@
 import Foundation
 
 enum PresetGalleryTab: String, CaseIterable, Identifiable {
-	case avatars = "Operator Icons"
-	case wallpapers = "Official Wallpapers"
+	case avatars = "Avatars"
+	case wallpapers = "Artwork"
 
 	var id: String { rawValue }
 	var icon: String { self == .avatars ? "person.crop.circle" : "photo" }
