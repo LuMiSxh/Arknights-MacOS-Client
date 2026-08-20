@@ -8,16 +8,14 @@ struct PresetGalleryView: View {
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-	@State private var selectedTab: PresetGalleryTab = .avatars
 	@State private var searchText = ""
 	@State private var avatars: [PresetAvatar] = []
 	@State private var wallpapers: [PresetWallpaper] = []
-	@State private var isLoadingAvatars = true
-	@State private var isLoadingWallpapers = true
+	@State private var isLoading = true
 	@State private var applyingItemID: String?
 
 	private let avatarColumns = [
-		GridItem(.adaptive(minimum: 88, maximum: 105), spacing: 14)
+		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
 	]
 	private let wallpaperColumns = [
 		GridItem(.flexible(), spacing: 14),
@@ -31,28 +29,23 @@ struct PresetGalleryView: View {
 				header
 				Divider().overlay(Color.white.opacity(0.08))
 
-				searchAndFilterBar
+				searchBar
 					.padding(.horizontal, 24)
 					.padding(.vertical, 14)
 
 				ScrollView {
 					Group {
-						if selectedTab == .avatars {
-							if isLoadingAvatars && avatars.isEmpty {
-								PresetGalleryLoadingView(text: "Loading operators…")
-							} else {
-								avatarsGrid
-							}
+						if isLoading {
+							PresetGalleryLoadingView(
+								text: destination == .artwork
+									? "Loading official wallpapers…" : "Loading operators…"
+							)
+						} else if destination == .artwork {
+							wallpapersGrid
 						} else {
-							if isLoadingWallpapers && wallpapers.isEmpty {
-								PresetGalleryLoadingView(text: "Loading official wallpapers…")
-							} else {
-								wallpapersGrid
-							}
+							avatarsGrid
 						}
 					}
-					.id(selectedTab)
-					.transition(.opacity)
 					.padding(.horizontal, 24)
 					.padding(.bottom, 64)
 				}
@@ -87,7 +80,7 @@ struct PresetGalleryView: View {
 			.padding(.bottom, 18)
 			.keyboardShortcut(.defaultAction)
 		}
-		.frame(width: 720, height: 540)
+		.frame(width: 760, height: 570)
 		.background(
 			ZStack {
 				Color(red: 0.07, green: 0.07, blue: 0.08)
@@ -96,65 +89,47 @@ struct PresetGalleryView: View {
 		)
 		.preferredColorScheme(.dark)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: 0.18),
-			value: selectedTab
-		)
-		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
 			value: model.dynamicThemeHue
 		)
-		.task {
-			selectedTab = destination.initialTab
-			avatars = await PresetCatalogService.shared.fetchAvatars()
-			isLoadingAvatars = false
-		}
-		.task {
-			wallpapers = await PresetCatalogService.shared.fetchWallpapers()
-			isLoadingWallpapers = false
+		.task(id: destination) {
+			if destination == .artwork {
+				wallpapers = await PresetCatalogService.shared.fetchWallpapers()
+			} else {
+				avatars = await PresetCatalogService.shared.fetchAvatars()
+			}
+			isLoading = false
 		}
 	}
 
 	private var header: some View {
 		HStack {
-			Text("Asset Gallery")
-				.font(.title3.bold())
+			VStack(alignment: .leading, spacing: 3) {
+				Text(destination.title)
+					.font(.title3.bold())
+				Text(destination.subtitle)
+					.font(.caption)
+					.foregroundStyle(.secondary)
+			}
 			Spacer()
 		}
 		.padding(.horizontal, 24)
 		.padding(.vertical, 16)
 	}
 
-	private var searchAndFilterBar: some View {
-		VStack(spacing: 10) {
-			HStack(spacing: 14) {
-				AdaptiveSegmentedControl(
-					selection: $selectedTab,
-					options: PresetGalleryTab.allCases,
-					accentColor: model.accentColor
-				) { tab in
-					Label(tab.rawValue, systemImage: tab.icon)
-				}
-				.frame(width: 320)
-				.accessibilityLabel("Asset Type")
-
-				HStack {
-					Image(systemName: "magnifyingglass")
-						.foregroundStyle(.tertiary)
-					TextField("Search…", text: $searchText)
-						.textFieldStyle(.plain)
-				}
-				.padding(.horizontal, 10)
-				.padding(.vertical, 6)
-				.background(Color.white.opacity(0.06), in: Capsule())
-			}
-
-			if selectedTab == .avatars {
-				AvatarIconStylePicker(
-					selection: $model.avatarIconStyle,
-					accentColor: model.accentColor
-				)
-			}
+	private var searchBar: some View {
+		HStack {
+			Image(systemName: "magnifyingglass")
+				.foregroundStyle(.tertiary)
+			TextField(
+				destination.searchPlaceholder,
+				text: $searchText
+			)
+			.textFieldStyle(.plain)
 		}
+		.padding(.horizontal, 10)
+		.padding(.vertical, 6)
+		.background(Color.white.opacity(0.06), in: Capsule())
 	}
 
 	private var filteredAvatars: [PresetAvatar] {
@@ -170,21 +145,22 @@ struct PresetGalleryView: View {
 	}
 
 	private var avatarsGrid: some View {
-		LazyVGrid(columns: avatarColumns, spacing: 16) {
+		LazyVGrid(columns: avatarColumns, spacing: 18) {
 			ForEach(filteredAvatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
+				let treatment = destination.iconTreatment ?? .launcher
 				Button {
 					applyAvatar(avatar)
 				} label: {
 					VStack(spacing: 6) {
 						ZStack {
-							CachedPresetAvatarIcon(
+							CachedPresetOperatorIcon(
 								url: avatar.url,
 								cacheKey: avatar.id,
-								style: model.avatarIconStyle,
+								treatment: treatment,
 								accentHue: model.dynamicThemeHue
 							)
-							.frame(width: 76, height: 76)
+							.frame(width: 104, height: 104)
 							.background(
 								LinearGradient(
 									colors: [
@@ -195,9 +171,8 @@ struct PresetGalleryView: View {
 									endPoint: .bottom
 								)
 							)
-							.clipShape(RoundedRectangle(cornerRadius: 17))
+							.clipShape(RoundedRectangle(cornerRadius: 22))
 
-							// Applying spinner overlay
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.65)
@@ -205,12 +180,12 @@ struct PresetGalleryView: View {
 										.controlSize(.small)
 										.tint(model.accentColor)
 								}
-								.clipShape(RoundedRectangle(cornerRadius: 17))
+								.clipShape(RoundedRectangle(cornerRadius: 22))
 							}
 						}
-						.frame(width: 76, height: 76)
+						.frame(width: 104, height: 104)
 						.overlay {
-							RoundedRectangle(cornerRadius: 17)
+							RoundedRectangle(cornerRadius: 22)
 								.strokeBorder(
 									isApplying ? model.accentColor : Color.white.opacity(0.14),
 									lineWidth: isApplying ? 2.5 : 1.5
@@ -225,11 +200,11 @@ struct PresetGalleryView: View {
 						)
 
 						Text(avatar.name)
-							.font(.system(size: 11, weight: isApplying ? .bold : .medium))
+							.font(.caption.weight(isApplying ? .bold : .medium))
 							.lineLimit(1)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? model.accentColor : .primary)
-							.frame(maxWidth: 88)
+							.frame(maxWidth: 130)
 					}
 					.padding(.vertical, 4)
 					.frame(maxWidth: .infinity)

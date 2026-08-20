@@ -7,7 +7,7 @@ import Testing
 
 @MainActor
 @Test
-func avatarIconStylesRenderOnTheNormalizedCanvas() throws {
+func operatorIconTreatmentsRenderOnTheNormalizedCanvas() throws {
 	let source = NSImage(size: NSSize(width: 64, height: 64))
 	source.lockFocus()
 	NSColor.systemOrange.setFill()
@@ -15,11 +15,11 @@ func avatarIconStylesRenderOnTheNormalizedCanvas() throws {
 	source.unlockFocus()
 	let sourceData = try #require(source.tiffRepresentation)
 
-	for style in AvatarIconStyle.allCases {
+	for treatment in [OperatorIconTreatment.launcher, .game] {
 		let icon = try #require(
-			AppIconRenderer.createAvatarIcon(
+			AppIconRenderer.createPresetIcon(
 				from: sourceData,
-				style: style,
+				treatment: treatment,
 				accentHue: 0.72
 			)
 		)
@@ -35,7 +35,7 @@ func avatarIconStylesRenderOnTheNormalizedCanvas() throws {
 
 @MainActor
 @Test
-func launcherGlassUsesTheDynamicThemeHue() throws {
+func launcherTreatmentUsesTheDynamicThemeHue() throws {
 	let source = NSImage(size: NSSize(width: 64, height: 64))
 	source.lockFocus()
 	NSColor.white.setFill()
@@ -43,19 +43,52 @@ func launcherGlassUsesTheDynamicThemeHue() throws {
 	source.unlockFocus()
 	let sourceData = try #require(source.tiffRepresentation)
 	let cyan = try #require(
-		AppIconRenderer.createAvatarIcon(
-			from: sourceData,
-			style: .launcherGlass,
-			accentHue: nil
-		)?.tiffRepresentation
+		AppIconRenderer.createPresetIcon(
+			from: sourceData, treatment: .launcher, accentHue: nil)
 	)
 	let purple = try #require(
-		AppIconRenderer.createAvatarIcon(
-			from: sourceData,
-			style: .launcherGlass,
-			accentHue: 0.78
-		)?.tiffRepresentation
+		AppIconRenderer.createPresetIcon(
+			from: sourceData, treatment: .launcher, accentHue: 0.78)
 	)
 
-	#expect(cyan != purple)
+	#expect(cyan.tiffRepresentation != purple.tiffRepresentation)
+}
+
+@MainActor
+@Test
+func gameTreatmentIgnoresTheDynamicThemeHue() throws {
+	let source = NSImage(size: NSSize(width: 64, height: 64))
+	source.lockFocus()
+	NSColor.white.setFill()
+	NSBezierPath(ovalIn: NSRect(x: 8, y: 8, width: 48, height: 48)).fill()
+	source.unlockFocus()
+	let sourceData = try #require(source.tiffRepresentation)
+	let cyan = try #require(
+		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: nil)
+	)
+	let purple = try #require(
+		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: 0.78)
+	)
+
+	#expect(cyan.tiffRepresentation == purple.tiffRepresentation)
+}
+
+@MainActor
+@Test
+func operatorIconTreatmentsRemainVisuallyDistinct() throws {
+	let source = NSImage(size: NSSize(width: 64, height: 64))
+	source.lockFocus()
+	NSColor.systemOrange.setFill()
+	NSBezierPath(rect: NSRect(x: 0, y: 0, width: 64, height: 64)).fill()
+	source.unlockFocus()
+	let sourceData = try #require(source.tiffRepresentation)
+	let launcher = try #require(
+		AppIconRenderer.createPresetIcon(
+			from: sourceData, treatment: .launcher, accentHue: nil)
+	)
+	let game = try #require(
+		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: nil)
+	)
+
+	#expect(launcher.tiffRepresentation != game.tiffRepresentation)
 }

@@ -25,7 +25,7 @@ extension LauncherViewModel {
 			accentTextColor = Color.black.opacity(0.92)
 			hudTintColor = SettingsVisuals.hudGlassTint
 			updateDynamicAppIcon(hue: nil)
-			Task { [weak self] in await self?.refreshPresetIconsForTheme(hue: nil) }
+			Task { [weak self] in await self?.refreshLauncherPresetIconForTheme(hue: nil) }
 			return
 		}
 		let themeCacheKey = activeThemeCacheKey
@@ -65,7 +65,7 @@ extension LauncherViewModel {
 			}
 			self.applyThemeAccent(extracted)
 			self.updateDynamicAppIcon(hue: extracted?.hue)
-			await self.refreshPresetIconsForTheme(hue: extracted?.hue)
+			await self.refreshLauncherPresetIconForTheme(hue: extracted?.hue)
 		}
 	}
 

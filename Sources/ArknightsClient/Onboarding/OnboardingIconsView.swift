@@ -4,33 +4,45 @@ import SwiftUI
 
 struct OnboardingIconsView: View {
 	@Bindable var model: LauncherViewModel
-	let browseLauncherIcons: () -> Void
-	let browseGameIcons: () -> Void
+	let browseLauncherOperators: () -> Void
+	let browseGameOperators: () -> Void
 
 	var body: some View {
 		OnboardingPage(
-			title: "Choose the two Dock icons",
+			title: "Choose your Dock icons",
 			subtitle:
-				"The launcher and the running game are separate macOS processes, so each has its own icon. Each preset gallery lets you choose an operator and icon treatment before applying it.",
+				"Set either Dock icon independently. Operator presets use the correct treatment for the icon you choose.",
 			accentColor: model.accentColor
 		) {
 			OnboardingPanel(title: "Dock icons", systemImage: "square.grid.2x2") {
 				SettingsActionRow(
 					title: "Launcher Icon",
-					detail: "Dock and Finder icon for this launcher."
+					detail: "Choose an operator in the Launcher treatment, or use a local image."
 				) {
-					Button("Presets…", action: browseLauncherIcons)
-					Button("Choose…", action: model.chooseCustomAppIcon)
-					Button("Use Default", action: model.resetAppIcon)
+					Button("Operators…", systemImage: "person.crop.square") {
+						browseLauncherOperators()
+					}
+					Button("Choose…", systemImage: "folder", action: model.chooseCustomAppIcon)
+					Button(
+						"Use Default",
+						systemImage: "arrow.counterclockwise",
+						action: model.resetAppIcon
+					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Game Icon",
-					detail: "Dock icon used by Arknights on its next launch."
+					detail: "Choose an operator in the Game treatment, or use a local image."
 				) {
-					Button("Presets…", action: browseGameIcons)
-					Button("Choose…", action: model.chooseCustomGameIcon)
-					Button("Use Default", action: model.resetGameIcon)
+					Button("Operators…", systemImage: "person.crop.square") {
+						browseGameOperators()
+					}
+					Button("Choose…", systemImage: "folder", action: model.chooseCustomGameIcon)
+					Button(
+						"Use Default",
+						systemImage: "arrow.counterclockwise",
+						action: model.resetGameIcon
+					)
 				}
 			}
 		}

@@ -54,7 +54,6 @@ extension LauncherViewModel {
 		launchOptions = .default
 		showsServerResetCountdown = false
 		showsGameVersion = true
-		avatarIconStyle = .launcherGlass
 		activityMessage = "Settings reset to default"
 		Task { [log] in await log.info("Launcher settings reset to default") }
 	}

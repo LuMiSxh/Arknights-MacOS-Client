@@ -1,58 +1,21 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
-import CoreImage
 
+@MainActor
 extension AppIconRenderer {
-	static func createAvatarIcon(
+	static func createPresetIcon(
 		from avatarData: Data,
-		style: AvatarIconStyle,
+		treatment: OperatorIconTreatment,
 		accentHue: Double?
 	) -> NSImage? {
 		guard let avatarImage = NSImage(data: avatarData) else { return nil }
-		switch style {
-		case .rhodesDark:
-			return createRhodesDarkIcon(from: avatarImage)
-		case .launcherGlass:
-			return createLauncherGlassIcon(from: avatarImage, accentHue: accentHue)
-		case .gameIcon:
+		switch treatment {
+		case .launcher:
+			return createLauncherIcon(from: avatarImage, accentHue: accentHue)
+		case .game:
 			return createGameIcon(from: avatarImage)
 		}
-	}
-
-	private static func createRhodesDarkIcon(from avatarImage: NSImage) -> NSImage? {
-		guard let canvas = iconCanvas() else { return nil }
-		let (result, context, squirclePath) = canvas
-		drawIconShadow(path: squirclePath, context: context)
-
-		context.saveGState()
-		squirclePath.addClip()
-		NSGradient(
-			starting: NSColor(calibratedRed: 0.18, green: 0.19, blue: 0.21, alpha: 1),
-			ending: NSColor(calibratedRed: 0.07, green: 0.07, blue: 0.08, alpha: 1)
-		)?.draw(in: standardSquircleRect, angle: -90)
-		if let ambientColor = sampleDominantColor(from: avatarImage) {
-			let center = NSPoint(
-				x: standardSquircleRect.midX,
-				y: standardSquircleRect.midY + 15
-			)
-			NSGradient(
-				starting: ambientColor.withAlphaComponent(0.28),
-				ending: .clear
-			)?.draw(
-				fromCenter: center,
-				radius: 10,
-				toCenter: center,
-				radius: AppConstants.Icon.squircleDimension * 0.55
-			)
-		}
-		drawAvatar(avatarImage, in: standardSquircleRect, context: context)
-		drawSpecular(in: standardSquircleRect)
-		context.restoreGState()
-		drawBevel(path: squirclePath, color: .white.withAlphaComponent(0.16))
-
-		result.unlockFocus()
-		return result
 	}
 
 	private static func createGameIcon(from avatarImage: NSImage) -> NSImage? {
@@ -99,19 +62,14 @@ extension AppIconRenderer {
 		return NSImage(contentsOf: url)
 	}
 
-	private static func createLauncherGlassIcon(
+	private static func createLauncherIcon(
 		from avatarImage: NSImage,
 		accentHue: Double?
 	) -> NSImage? {
 		guard let canvas = iconCanvas() else { return nil }
 		let (result, context, squirclePath) = canvas
 		let rect = standardSquircleRect
-		let accent = NSColor(
-			hue: accentHue ?? AppConstants.Icon.baseCyanHue,
-			saturation: 0.9,
-			brightness: 1,
-			alpha: 1
-		)
+		let accent = iconAccentColor(for: accentHue, saturation: 0.9)
 		drawIconShadow(path: squirclePath, context: context)
 
 		context.saveGState()
@@ -156,6 +114,18 @@ extension AppIconRenderer {
 
 		result.unlockFocus()
 		return result
+	}
+
+	private static func iconAccentColor(
+		for accentHue: Double?,
+		saturation: CGFloat
+	) -> NSColor {
+		NSColor(
+			hue: accentHue ?? AppConstants.Icon.baseCyanHue,
+			saturation: saturation,
+			brightness: 1,
+			alpha: 1
+		)
 	}
 
 	private static var standardSquircleRect: NSRect {
@@ -238,30 +208,4 @@ extension AppIconRenderer {
 		path.stroke()
 	}
 
-	private static func sampleDominantColor(from image: NSImage) -> NSColor? {
-		guard let data = image.tiffRepresentation, let input = CIImage(data: data) else {
-			return nil
-		}
-		let filter = CIFilter(name: "CIAreaAverage")
-		filter?.setValue(input, forKey: kCIInputImageKey)
-		filter?.setValue(CIVector(cgRect: input.extent), forKey: kCIInputExtentKey)
-		guard let output = filter?.outputImage else { return nil }
-
-		var pixel = [UInt8](repeating: 0, count: 4)
-		CIContext(options: [.useSoftwareRenderer: false]).render(
-			output,
-			toBitmap: &pixel,
-			rowBytes: 4,
-			bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
-			format: .RGBA8,
-			colorSpace: nil
-		)
-		guard pixel[3] > 25 else { return nil }
-		return NSColor(
-			calibratedRed: CGFloat(pixel[0]) / 255,
-			green: CGFloat(pixel[1]) / 255,
-			blue: CGFloat(pixel[2]) / 255,
-			alpha: 1
-		)
-	}
 }

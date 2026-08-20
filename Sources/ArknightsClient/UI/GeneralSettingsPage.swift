@@ -120,9 +120,15 @@ struct GeneralSettingsPage: View {
 					title: "Artwork",
 					detail: "Background shown behind the launcher controls."
 				) {
-					Button("Presets…") { presentedGallery = .artwork }
-					Button("Choose…", action: model.chooseCustomArtwork)
-					Button("Use Default", action: model.resetArtwork)
+					Button("Presets…", systemImage: "photo.on.rectangle") {
+						presentedGallery = .artwork
+					}
+					Button("Choose…", systemImage: "folder", action: model.chooseCustomArtwork)
+					Button(
+						"Use Default",
+						systemImage: "arrow.counterclockwise",
+						action: model.resetArtwork
+					)
 				}
 				.dropDestination(for: URL.self) { urls, _ in
 					guard let url = urls.first, isImageURL(url) else { return false }
@@ -132,11 +138,18 @@ struct GeneralSettingsPage: View {
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Launcher Icon",
-					detail: "Dock and Finder icon for this launcher."
+					detail:
+						"Choose an operator in the Launcher treatment, or use a local image."
 				) {
-					Button("Presets…") { presentedGallery = .launcherIcon }
-					Button("Choose…", action: model.chooseCustomAppIcon)
-					Button("Use Default", action: model.resetAppIcon)
+					Button("Operators…", systemImage: "person.crop.square") {
+						presentedGallery = .launcherIcon
+					}
+					Button("Choose…", systemImage: "folder", action: model.chooseCustomAppIcon)
+					Button(
+						"Use Default",
+						systemImage: "arrow.counterclockwise",
+						action: model.resetAppIcon
+					)
 				}
 				.dropDestination(for: URL.self) { urls, _ in
 					guard let url = urls.first, isImageURL(url) else { return false }
@@ -146,11 +159,18 @@ struct GeneralSettingsPage: View {
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Game Icon",
-					detail: "Dock icon used by Arknights on its next launch."
+					detail:
+						"Choose an operator in the Game treatment, or use a local image."
 				) {
-					Button("Presets…") { presentedGallery = .gameIcon }
-					Button("Choose…", action: model.chooseCustomGameIcon)
-					Button("Use Default", action: model.resetGameIcon)
+					Button("Operators…", systemImage: "person.crop.square") {
+						presentedGallery = .gameIcon
+					}
+					Button("Choose…", systemImage: "folder", action: model.chooseCustomGameIcon)
+					Button(
+						"Use Default",
+						systemImage: "arrow.counterclockwise",
+						action: model.resetGameIcon
+					)
 				}
 				.dropDestination(for: URL.self) { urls, _ in
 					guard let url = urls.first, isImageURL(url) else { return false }
@@ -161,7 +181,7 @@ struct GeneralSettingsPage: View {
 				SettingsActionRow(
 					title: "Dynamic Theme",
 					detail:
-						"Automatically changes the launcher colors and app icon to match the selected background."
+						"Automatically changes the launcher colors and compatible Launcher icons to match the selected background."
 				) {
 					Toggle("Dynamic Theme", isOn: $model.usesDynamicTheme)
 						.labelsHidden()

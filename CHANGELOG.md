@@ -25,8 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Dynamic Theme colors for controls, HUD elements, and compatible launcher icons.
 - Floating HUD pills for region, game version, reset time, and background music.
 - Native macOS 15–25 fallbacks while preserving Liquid Glass on macOS 26 (Thanks to @Mickhasinsomnia, #29).
-- An Asset Gallery for official wallpapers and operator avatars with bounded downloads and caching (Thanks to @darkwebdev, #30; @RadioNoiseE, #24).
-- Separate launcher and game icon presets with Rhodes Dark, Launcher Icon, and Game Icon styles.
+- Dedicated galleries for official wallpapers, Launcher operators, and Game operators, with bounded downloads and caching (Thanks to @darkwebdev, #30; @RadioNoiseE, #24).
+- Independent operator presets for Launcher and crystalline Game icons.
 - Custom game icons and a normalized "Use Default" option that preserves the original Arknights icon.
 - Version-range and display-window options for announcement management.
 - Recipe-download tracking in release statistics.
@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Attached destructive confirmations directly to their initiating Settings controls.
 - Unified popups and bundled-document sheets with the Settings visual language.
 - Made prominent button text adapt to the sampled accent's luminance.
+- Enlarged the main Settings control.
 - Hardened installer paths, temporary-file handling, and manifest conflict detection.
 - Replaced silent filesystem and process failures with contextual logging or visible errors.
 - Split large UI and service types, centralized limits, and expanded runtime documentation.

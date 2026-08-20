@@ -72,7 +72,7 @@ extension LauncherViewModel {
 			return
 		}
 		do {
-			try clearPresetAvatar(for: .launcherIcon)
+			try clearPresetAvatar(for: .launcher)
 		} catch {
 			show(error)
 			return
@@ -125,7 +125,7 @@ extension LauncherViewModel {
 			return
 		}
 		do {
-			try clearPresetAvatar(for: .gameIcon)
+			try clearPresetAvatar(for: .game)
 		} catch {
 			show(error)
 			return
@@ -134,29 +134,41 @@ extension LauncherViewModel {
 	}
 
 	func applyPresetAvatar(data: Data, to destination: PresetGalleryDestination) {
-		guard destination != .artwork,
-			let icon = AppIconRenderer.createAvatarIcon(
+		guard let treatment = destination.iconTreatment else { return }
+		guard
+			let icon = AppIconRenderer.createPresetIcon(
 				from: data,
-				style: avatarIconStyle,
+				treatment: treatment,
 				accentHue: dynamicThemeHue
-			)
+			),
+			let iconPNG = encodedIconPNG(icon)
 		else {
 			show(LauncherError.cannotEncodeAppIcon)
 			return
 		}
 
 		do {
-			let sourceURL = presetAvatarSourceURL(for: destination)
+			let sourceURL = presetAvatarSourceURL(for: treatment)
 			try FileManager.default.createDirectory(
 				at: sourceURL.deletingLastPathComponent(),
 				withIntermediateDirectories: true
 			)
 			try data.write(to: sourceURL, options: .atomic)
-			preferences.setPresetIconStyle(avatarIconStyle, for: destination)
-			if destination == .gameIcon {
-				applyDirectCustomGameIcon(image: icon)
-			} else {
-				applyDirectCustomAppIcon(image: icon)
+			switch treatment {
+			case .launcher:
+				try iconPNG.write(to: paths.customAppIcon, options: .atomic)
+				guard
+					NSWorkspace.shared.setIcon(
+						icon,
+						forFile: Bundle.main.bundlePath,
+						options: []
+					)
+				else { throw LauncherError.cannotSetAppIcon }
+				NSApp?.applicationIconImage = icon
+				activityMessage = "Launcher icon updated"
+			case .game:
+				try iconPNG.write(to: paths.customGameIcon, options: .atomic)
+				activityMessage = "Game icon updated for the next launch"
 			}
 		} catch {
 			show(error)
@@ -189,7 +201,7 @@ extension LauncherViewModel {
 			if FileManager.default.fileExists(atPath: paths.customGameIcon.path) {
 				try FileManager.default.removeItem(at: paths.customGameIcon)
 			}
-			try clearPresetAvatar(for: .gameIcon)
+			try clearPresetAvatar(for: .game)
 			activityMessage = "Default game icon restored for the next launch"
 		} catch {
 			show(error)
@@ -220,7 +232,7 @@ extension LauncherViewModel {
 			if FileManager.default.fileExists(atPath: paths.customAppIcon.path) {
 				try FileManager.default.removeItem(at: paths.customAppIcon)
 			}
-			try clearPresetAvatar(for: .launcherIcon)
+			try clearPresetAvatar(for: .launcher)
 			guard
 				NSWorkspace.shared.setIcon(
 					nil,
@@ -250,34 +262,27 @@ extension LauncherViewModel {
 		return true
 	}
 
-	func refreshPresetIconsForTheme(hue: Double?) async {
-		for destination in [PresetGalleryDestination.launcherIcon, .gameIcon] {
-			guard preferences.presetIconStyle(for: destination) == .launcherGlass else {
-				continue
-			}
-			let sourceURL = presetAvatarSourceURL(for: destination)
-			do {
-				let data = try await Task.detached(priority: .utility) {
-					try Data(contentsOf: sourceURL)
-				}.value
-				guard
-					let icon = AppIconRenderer.createAvatarIcon(
-						from: data,
-						style: .launcherGlass,
-						accentHue: hue
-					),
-					let png = encodedIconPNG(icon)
-				else { throw LauncherError.cannotEncodeAppIcon }
-				let iconURL = destination == .gameIcon ? paths.customGameIcon : paths.customAppIcon
-				try png.write(to: iconURL, options: .atomic)
-				if destination == .launcherIcon {
-					NSApp?.applicationIconImage = icon
-				}
-			} catch {
-				await log.error(
-					"Failed to refresh the \(destination.rawValue) preset icon for Dynamic Theme: \(error.localizedDescription)"
-				)
-			}
+	func refreshLauncherPresetIconForTheme(hue: Double?) async {
+		let sourceURL = paths.launcherPresetAvatar
+		guard FileManager.default.fileExists(atPath: sourceURL.path) else { return }
+		do {
+			let data = try await Task.detached(priority: .utility) {
+				try Data(contentsOf: sourceURL)
+			}.value
+			guard
+				let icon = AppIconRenderer.createPresetIcon(
+					from: data,
+					treatment: .launcher,
+					accentHue: hue
+				),
+				let launcherPNG = encodedIconPNG(icon)
+			else { throw LauncherError.cannotEncodeAppIcon }
+			try launcherPNG.write(to: paths.customAppIcon, options: .atomic)
+			NSApp?.applicationIconImage = icon
+		} catch {
+			await log.error(
+				"Failed to refresh the Launcher operator icon for Dynamic Theme: \(error.localizedDescription)"
+			)
 		}
 	}
 
@@ -288,15 +293,17 @@ extension LauncherViewModel {
 		return representation.representation(using: .png, properties: [:])
 	}
 
-	private func presetAvatarSourceURL(for destination: PresetGalleryDestination) -> URL {
-		destination == .gameIcon ? paths.gamePresetAvatar : paths.launcherPresetAvatar
+	private func presetAvatarSourceURL(for treatment: OperatorIconTreatment) -> URL {
+		switch treatment {
+		case .launcher: paths.launcherPresetAvatar
+		case .game: paths.gamePresetAvatar
+		}
 	}
 
-	private func clearPresetAvatar(for destination: PresetGalleryDestination) throws {
-		let sourceURL = presetAvatarSourceURL(for: destination)
+	private func clearPresetAvatar(for treatment: OperatorIconTreatment) throws {
+		let sourceURL = presetAvatarSourceURL(for: treatment)
 		if FileManager.default.fileExists(atPath: sourceURL.path) {
 			try FileManager.default.removeItem(at: sourceURL)
 		}
-		preferences.setPresetIconStyle(nil, for: destination)
 	}
 }

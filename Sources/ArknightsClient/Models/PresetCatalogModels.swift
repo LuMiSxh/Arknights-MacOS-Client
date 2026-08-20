@@ -2,14 +2,6 @@
 
 import Foundation
 
-enum PresetGalleryTab: String, CaseIterable, Identifiable {
-	case avatars = "Avatars"
-	case wallpapers = "Artwork"
-
-	var id: String { rawValue }
-	var icon: String { self == .avatars ? "person.crop.circle" : "photo" }
-}
-
 /// A lightweight operator avatar representation for the gallery.
 struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 	let id: String

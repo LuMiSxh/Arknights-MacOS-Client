@@ -23,9 +23,6 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let usesDynamicTheme = "usesDynamicTheme"
-		static let avatarIconStyle = "avatarIconStyle"
-		static let launcherPresetIconStyle = "launcherPresetIconStyle"
-		static let gamePresetIconStyle = "gamePresetIconStyle"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 	}
 
@@ -165,32 +162,6 @@ struct LauncherPreferencesStore {
 
 	func setUsesDynamicTheme(_ value: Bool) {
 		defaults.set(value, forKey: Key.usesDynamicTheme)
-	}
-
-	func avatarIconStyle() -> AvatarIconStyle {
-		defaults.string(forKey: Key.avatarIconStyle).flatMap(AvatarIconStyle.init(rawValue:))
-			?? .launcherGlass
-	}
-
-	func setAvatarIconStyle(_ value: AvatarIconStyle) {
-		defaults.set(value.rawValue, forKey: Key.avatarIconStyle)
-	}
-
-	func presetIconStyle(for destination: PresetGalleryDestination) -> AvatarIconStyle? {
-		let key = destination == .gameIcon ? Key.gamePresetIconStyle : Key.launcherPresetIconStyle
-		return defaults.string(forKey: key).flatMap(AvatarIconStyle.init(rawValue:))
-	}
-
-	func setPresetIconStyle(
-		_ value: AvatarIconStyle?,
-		for destination: PresetGalleryDestination
-	) {
-		let key = destination == .gameIcon ? Key.gamePresetIconStyle : Key.launcherPresetIconStyle
-		if let value {
-			defaults.set(value.rawValue, forKey: key)
-		} else {
-			defaults.removeObject(forKey: key)
-		}
 	}
 
 	func dynamicThemeAccent(for cacheKey: String) -> ThemeAccentSnapshot? {

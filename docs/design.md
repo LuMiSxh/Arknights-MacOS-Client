@@ -61,6 +61,8 @@ When the official configuration enables a notice, present its HTML as native for
 
 The source icon is an Icon Composer document with separate structure, glass glyph, and cyan signal layers. Packaging includes an asset-catalog rendition so macOS 26 recognizes the icon instead of placing a legacy ICNS on a gray backing plate.
 
-Launcher and game icon presets offer three treatments: Rhodes Dark, Launcher Icon, and Game Icon. Launcher Icon echoes the app icon's dark navy plate, signal corner, and glass facet while replacing the central glyph with the selected operator; its signal color follows Dynamic Theme when enabled and falls back to Arknights cyan otherwise. Game Icon places the operator over the game's full-bleed cyan crystalline background and does not change with Dynamic Theme.
+Launcher and game operator presets are independent. The Launcher gallery uses its dark navy plate, signal corner, and glass facet around the operator. The Game gallery places the operator over the bundled crystalline cyan launcher background. Dynamic Theme recolors only a Launcher operator preset; it never modifies the Game icon. A local image can override either destination without changing the other.
+
+Settings gives Launcher Icon and Game Icon their own operator and local-image actions. Each action opens an isolated picker for its destination and previews only the icon that will change. Artwork remains a separate gallery destination without an in-gallery mode switch.
 
 The Wine game process uses the original executable icon for **Use Default**, but scales it to the same 412/512 visual grid as the launcher and other native Dock icons. Preset and custom game icons use the same normalized canvas. Never patch icon resources inside `Arknights.exe`.

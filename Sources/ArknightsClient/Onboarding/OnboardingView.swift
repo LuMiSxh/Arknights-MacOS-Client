@@ -45,8 +45,8 @@ struct OnboardingView: View {
 						case .icons:
 							OnboardingIconsView(
 								model: model,
-								browseLauncherIcons: { presentedGallery = .launcherIcon },
-								browseGameIcons: { presentedGallery = .gameIcon }
+								browseLauncherOperators: { presentedGallery = .launcherIcon },
+								browseGameOperators: { presentedGallery = .gameIcon }
 							)
 						case .extras:
 							OnboardingExtrasView(model: model)

@@ -22,7 +22,7 @@ The Wine prefix is intentionally isolated. Before the first `wineboot`, Wine rec
 
 This limits accidental file access but is not a macOS security sandbox. Choosing a custom game location explicitly exposes that directory to the Windows client.
 
-Launcher and game icon presets keep their original operator avatar beside the rendered icon. This lets the Launcher Icon treatment be regenerated when Dynamic Theme changes. **Use Default** removes the corresponding launcher- or game-icon data; for the game, it restores Wine's normalized original Arknights icon.
+Launcher and Game operator presets keep separate source avatars beside their rendered icons. This lets Dynamic Theme regenerate the Launcher treatment without another download while leaving the Game icon untouched. Choosing a local image or using **Use Default** clears only that destination's source; for the game, **Use Default** restores Wine's normalized original Arknights icon.
 
 ## Removal
 
