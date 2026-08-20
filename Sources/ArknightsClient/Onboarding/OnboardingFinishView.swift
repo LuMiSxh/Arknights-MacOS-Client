@@ -23,12 +23,7 @@ struct OnboardingFinishView: View {
 						.tint(model.accentColor)
 				}
 
-				if model.canLaunch {
-					Button("Launch Test", systemImage: "play.fill", action: model.launch)
-						.adaptiveGlassCapsuleButton(prominent: true)
-						.controlSize(.large)
-						.tint(model.accentColor)
-				} else if !model.isInstalled && !model.isDownloading && model.canInstall {
+				if !model.isInstalled && !model.isDownloading && model.canInstall {
 					Button(
 						"Resume Download", systemImage: "arrow.clockwise",
 						action: model.installOrUpdate)
@@ -71,7 +66,7 @@ struct OnboardingFinishView: View {
 	}
 
 	private var gameStatusTitle: String {
-		if model.isGameActive { return "Test launch running" }
+		if model.isGameActive { return "Arknights is running" }
 		if model.isDownloading { return "Installation continues" }
 		if model.isInstalled { return "Arknights is ready" }
 		return "Installation is paused"
@@ -86,16 +81,14 @@ struct OnboardingFinishView: View {
 
 	private var gameStatusDetail: String {
 		if model.isGameActive {
-			return
-				"Close the game with Command-Q after checking performance, then return here to finish setup."
+			return "Close the game with Command-Q before finishing setup."
 		}
 		if model.isDownloading {
 			return
 				"Finishing setup does not stop the download. The main launcher shows progress and enables Play when verification completes."
 		}
 		if model.isInstalled {
-			return
-				"Use Launch Test to verify the selected display settings now, or finish setup and play later."
+			return "Finish setup to return to the launcher and start playing."
 		}
 		return "Resume the download now or finish setup and continue later from the main launcher."
 	}

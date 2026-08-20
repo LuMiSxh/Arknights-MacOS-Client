@@ -73,6 +73,10 @@ APP_RESOURCES = (
     ("Resources/AppIcon.icns", "AppIcon.icns"),
     ("Resources/Assets.car", "Assets.car"),
     (
+        "Sources/ArknightsClient/Resources/GameIconBackground.png",
+        "GameIconBackground.png",
+    ),
+    (
         "Sources/ArknightsClient/Resources/OperatorIconFrame.svg",
         "OperatorIconFrame.svg",
     ),

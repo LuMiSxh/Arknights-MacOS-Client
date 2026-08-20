@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- A resumable setup assistant for first installs and 0.3.x upgrades, with update preflight, background installation, guided settings, and a test launch.
+- A resumable setup assistant for first installs and 0.3.x upgrades, with update preflight, background installation, and guided settings.
 - Dedicated support actions for GitHub launcher reports and Yostar account, payment, or game-service issues.
 - Free-space validation before game installation or updates.
 - Rosetta 2 detection during setup and before launching the game.
@@ -28,7 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Floating HUD pills for region, game version, reset time, and background music.
 - Native macOS 15–25 fallbacks while preserving Liquid Glass on macOS 26 (Thanks to @Mickhasinsomnia, #29).
 - Dedicated galleries for official wallpapers and paired Launcher/Game operators, with bounded downloads and caching (Thanks to @darkwebdev, #30; @RadioNoiseE, #24).
-- Linked operator presets with distinct Launcher and dynamically tinted, outlined Game treatments.
+- Linked operator presets with a framed Launcher treatment and a simple character Game icon.
 - Custom game icons and a normalized "Use Default" option that preserves the original Arknights icon.
 - Version-range and display-window options for announcement management.
 - Recipe-download tracking in release statistics.

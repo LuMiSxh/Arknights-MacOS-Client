@@ -13,9 +13,10 @@ struct PresetGalleryView: View {
 	@State private var wallpapers: [PresetWallpaper] = []
 	@State private var isLoading = true
 	@State private var applyingItemID: String?
+	@State private var showsIconStylePreview = false
 
 	private let avatarColumns = [
-		GridItem(.adaptive(minimum: 190, maximum: 220), spacing: 16)
+		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
 	]
 	private let wallpaperColumns = [
 		GridItem(.flexible(), spacing: 14),
@@ -63,7 +64,6 @@ struct PresetGalleryView: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
 			.allowsHitTesting(false)
 
-			// Floating Done capsule button with shadow
 			Button {
 				dismiss()
 			} label: {
@@ -112,6 +112,21 @@ struct PresetGalleryView: View {
 					.foregroundStyle(.secondary)
 			}
 			Spacer()
+			if destination == .operatorIcons {
+				Button("Preview Styles", systemImage: "dock.rectangle") {
+					showsIconStylePreview = true
+				}
+				.adaptiveGlassCapsuleButton()
+				.controlSize(.small)
+				.tint(SettingsVisuals.controlTint)
+				.popover(isPresented: $showsIconStylePreview, arrowEdge: .top) {
+					OperatorIconStylePreview(
+						avatar: avatars.first,
+						accentHue: model.dynamicThemeHue,
+						accentColor: model.accentColor
+					)
+				}
+			}
 		}
 		.padding(.horizontal, 24)
 		.padding(.vertical, 16)
@@ -153,13 +168,13 @@ struct PresetGalleryView: View {
 				} label: {
 					VStack(spacing: 6) {
 						ZStack {
-							CachedPresetOperatorPair(
+							CachedPresetImage(
 								url: avatar.url,
 								cacheKey: avatar.id,
-								accentHue: model.dynamicThemeHue
+								contentMode: .fit,
+								placeholderIcon: "person.crop.square"
 							)
-							.frame(width: 164, height: 78)
-							.padding(7)
+							.frame(width: 104, height: 104)
 							.background(
 								LinearGradient(
 									colors: [
@@ -170,7 +185,7 @@ struct PresetGalleryView: View {
 									endPoint: .bottom
 								)
 							)
-							.clipShape(RoundedRectangle(cornerRadius: 18))
+							.clipShape(RoundedRectangle(cornerRadius: 22))
 
 							if isApplying {
 								ZStack {
@@ -179,12 +194,12 @@ struct PresetGalleryView: View {
 										.controlSize(.small)
 										.tint(model.accentColor)
 								}
-								.clipShape(RoundedRectangle(cornerRadius: 18))
+								.clipShape(RoundedRectangle(cornerRadius: 22))
 							}
 						}
-						.frame(width: 178, height: 92)
+						.frame(width: 104, height: 104)
 						.overlay {
-							RoundedRectangle(cornerRadius: 18)
+							RoundedRectangle(cornerRadius: 22)
 								.strokeBorder(
 									isApplying ? model.accentColor : Color.white.opacity(0.14),
 									lineWidth: isApplying ? 2.5 : 1.5
@@ -203,7 +218,7 @@ struct PresetGalleryView: View {
 							.lineLimit(1)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? model.accentColor : .primary)
-							.frame(maxWidth: 190)
+							.frame(maxWidth: 130)
 					}
 					.padding(.vertical, 4)
 					.frame(maxWidth: .infinity)

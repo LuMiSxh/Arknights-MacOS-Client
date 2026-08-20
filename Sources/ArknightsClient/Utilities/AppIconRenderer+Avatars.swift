@@ -14,7 +14,7 @@ extension AppIconRenderer {
 		case .launcher:
 			return createLauncherIcon(from: avatarImage, accentHue: accentHue)
 		case .game:
-			return createGameIcon(from: avatarImage, accentHue: accentHue)
+			return createGameIcon(from: avatarImage)
 		}
 	}
 
@@ -24,35 +24,47 @@ extension AppIconRenderer {
 	) -> (launcher: NSImage, game: NSImage)? {
 		guard let avatarImage = NSImage(data: avatarData),
 			let launcher = createLauncherIcon(from: avatarImage, accentHue: accentHue),
-			let game = createGameIcon(from: avatarImage, accentHue: accentHue)
+			let game = createGameIcon(from: avatarImage)
 		else { return nil }
 		return (launcher, game)
 	}
 
-	private static func createGameIcon(
-		from avatarImage: NSImage,
-		accentHue: Double?
-	) -> NSImage? {
-		guard let frame = operatorFrame(), let canvas = iconCanvas() else { return nil }
+	private static func createGameIcon(from avatarImage: NSImage) -> NSImage? {
+		guard let background = gameIconBackground(), let canvas = iconCanvas() else { return nil }
 		let (result, context, squirclePath) = canvas
 		let rect = standardSquircleRect
-		let accent = iconAccentColor(for: accentHue, saturation: 0.9)
 		drawIconShadow(path: squirclePath, context: context)
 
 		context.saveGState()
 		squirclePath.addClip()
-		NSGradient(
-			starting: NSColor(calibratedWhite: 0.12, alpha: 1),
-			ending: NSColor(calibratedWhite: 0.025, alpha: 1)
-		)?.draw(in: rect, angle: -90)
-		drawAvatar(avatarImage, in: rect, context: context)
-		drawTintedFrame(frame, in: rect, color: accent)
-		drawSpecular(in: rect)
+		background.draw(
+			in: rect,
+			from: NSRect(origin: .zero, size: background.size),
+			operation: .copy,
+			fraction: 1
+		)
+		drawAvatar(
+			avatarImage,
+			in: rect,
+			context: context,
+			shadowOpacity: 0.28,
+			shadowBlurRadius: 7
+		)
 		context.restoreGState()
-		drawBevel(path: squirclePath, color: accent.withAlphaComponent(0.42))
+		drawBevel(path: squirclePath, color: NSColor.white.withAlphaComponent(0.16))
 
 		result.unlockFocus()
 		return result
+	}
+
+	private static func gameIconBackground() -> NSImage? {
+		if let url = Bundle.main.url(forResource: "GameIconBackground", withExtension: "png") {
+			return NSImage(contentsOf: url)
+		}
+		guard
+			let url = Bundle.module.url(forResource: "GameIconBackground", withExtension: "png")
+		else { return nil }
+		return NSImage(contentsOf: url)
 	}
 
 	private static func operatorFrame() -> NSImage? {
@@ -111,7 +123,7 @@ extension AppIconRenderer {
 		from avatarImage: NSImage,
 		accentHue: Double?
 	) -> NSImage? {
-		guard let canvas = iconCanvas() else { return nil }
+		guard let frame = operatorFrame(), let canvas = iconCanvas() else { return nil }
 		let (result, context, squirclePath) = canvas
 		let rect = standardSquircleRect
 		let accent = iconAccentColor(for: accentHue, saturation: 0.9)
@@ -121,37 +133,10 @@ extension AppIconRenderer {
 		squirclePath.addClip()
 		NSGradient(
 			starting: NSColor(calibratedRed: 0.035, green: 0.055, blue: 0.065, alpha: 1),
-			ending: NSColor(calibratedRed: 0.035, green: 0.11, blue: 0.16, alpha: 1)
+			ending: NSColor(calibratedRed: 0.07, green: 0.075, blue: 0.085, alpha: 1)
 		)?.draw(in: rect, angle: -90)
-
-		let signal = NSBezierPath()
-		signal.move(to: NSPoint(x: rect.minX, y: rect.maxY))
-		signal.line(to: NSPoint(x: rect.minX + rect.width * 0.34, y: rect.maxY))
-		signal.line(to: NSPoint(x: rect.minX + rect.width * 0.18, y: rect.maxY - 72))
-		signal.line(to: NSPoint(x: rect.minX, y: rect.maxY - 72))
-		signal.close()
-		accent.withAlphaComponent(0.92).setFill()
-		signal.fill()
-
-		let facet = NSBezierPath()
-		facet.move(to: NSPoint(x: rect.maxX - 92, y: rect.maxY))
-		facet.line(to: NSPoint(x: rect.maxX, y: rect.maxY))
-		facet.line(to: NSPoint(x: rect.maxX, y: rect.maxY - 88))
-		facet.close()
-		NSColor.white.withAlphaComponent(0.12).setFill()
-		facet.fill()
-
-		let glowCenter = NSPoint(x: rect.midX, y: rect.midY + 35)
-		NSGradient(
-			starting: accent.withAlphaComponent(0.22),
-			ending: .clear
-		)?.draw(
-			fromCenter: glowCenter,
-			radius: 8,
-			toCenter: glowCenter,
-			radius: rect.width * 0.6
-		)
 		drawAvatar(avatarImage, in: rect.insetBy(dx: 18, dy: 12), context: context)
+		drawTintedFrame(frame, in: rect, color: accent)
 		drawSpecular(in: rect)
 
 		context.restoreGState()
@@ -216,12 +201,18 @@ extension AppIconRenderer {
 		context.restoreGState()
 	}
 
-	private static func drawAvatar(_ image: NSImage, in rect: NSRect, context: CGContext) {
+	private static func drawAvatar(
+		_ image: NSImage,
+		in rect: NSRect,
+		context: CGContext,
+		shadowOpacity: CGFloat = 0.55,
+		shadowBlurRadius: CGFloat = 10
+	) {
 		context.saveGState()
 		let shadow = NSShadow()
-		shadow.shadowColor = NSColor.black.withAlphaComponent(0.55)
+		shadow.shadowColor = NSColor.black.withAlphaComponent(shadowOpacity)
 		shadow.shadowOffset = NSSize(width: 0, height: -4)
-		shadow.shadowBlurRadius = 10
+		shadow.shadowBlurRadius = shadowBlurRadius
 		shadow.set()
 		image.draw(
 			in: rect,

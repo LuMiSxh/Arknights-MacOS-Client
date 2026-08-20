@@ -10,13 +10,13 @@ struct OnboardingIconsView: View {
 		OnboardingPage(
 			title: "Choose your Dock icons",
 			subtitle:
-				"Choose one operator once. The Launcher and game use distinct, coordinated treatments.",
+				"Choose an operator to create a Launcher icon with that character and a Game icon in the original Arknights style.",
 			accentColor: model.accentColor
 		) {
 			OnboardingPanel(title: "Dock icons", systemImage: "square.grid.2x2") {
 				SettingsActionRow(
 					title: "Operator Icons",
-					detail: "Creates both Dock icons from the same operator."
+					detail: "The same character is used for both Dock icons."
 				) {
 					Button("Choose Operator…", systemImage: "person.2.crop.square.stack") {
 						browseOperators()

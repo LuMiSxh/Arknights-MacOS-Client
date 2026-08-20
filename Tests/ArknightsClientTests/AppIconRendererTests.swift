@@ -56,7 +56,7 @@ func launcherTreatmentUsesTheDynamicThemeHue() throws {
 
 @MainActor
 @Test
-func gameTreatmentUsesTheDynamicThemeHue() throws {
+func gameTreatmentIgnoresTheDynamicThemeHue() throws {
 	let source = NSImage(size: NSSize(width: 64, height: 64))
 	source.lockFocus()
 	NSColor.white.setFill()
@@ -70,7 +70,7 @@ func gameTreatmentUsesTheDynamicThemeHue() throws {
 		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: 0.78)
 	)
 
-	#expect(cyan.tiffRepresentation != purple.tiffRepresentation)
+	#expect(cyan.tiffRepresentation == purple.tiffRepresentation)
 }
 
 @Test

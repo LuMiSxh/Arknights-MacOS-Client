@@ -22,6 +22,7 @@ let package = Package(
 			],
 			path: "Sources/ArknightsClient",
 			resources: [
+				.copy("Resources/GameIconBackground.png"),
 				.copy("Resources/OperatorIconFrame.svg"),
 			]
 		),

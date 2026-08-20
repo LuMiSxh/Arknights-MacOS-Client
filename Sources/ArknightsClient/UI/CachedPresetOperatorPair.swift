@@ -7,6 +7,8 @@ struct CachedPresetOperatorPair: View {
 	let url: URL
 	let cacheKey: String
 	let accentHue: Double?
+	var iconDimension: CGFloat = 82
+	var itemWidth: CGFloat = 104
 
 	@State private var icons: (launcher: NSImage, game: NSImage)?
 	@State private var hasFailed = false
@@ -14,7 +16,7 @@ struct CachedPresetOperatorPair: View {
 	var body: some View {
 		Group {
 			if let icons {
-				HStack(spacing: 8) {
+				HStack(spacing: 16) {
 					preview(icons.launcher)
 					preview(icons.game)
 				}
@@ -55,7 +57,8 @@ struct CachedPresetOperatorPair: View {
 		Image(nsImage: image)
 			.resizable()
 			.aspectRatio(contentMode: .fit)
-			.frame(width: 78, height: 78)
+			.frame(width: iconDimension, height: iconDimension)
+			.frame(width: itemWidth)
 	}
 
 	private var renderIdentifier: String {

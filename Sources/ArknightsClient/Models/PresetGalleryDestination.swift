@@ -20,7 +20,7 @@ enum PresetGalleryDestination: String, Identifiable {
 		case .artwork:
 			"Choose a background for the launcher."
 		case .operatorIcons:
-			"One choice creates the paired Launcher and Game Dock icons shown below."
+			"Choose one operator for both Dock icons."
 		}
 	}
 

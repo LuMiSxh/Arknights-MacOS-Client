@@ -140,7 +140,7 @@ struct GeneralSettingsPage: View {
 				SettingsActionRow(
 					title: "Operator Icons",
 					detail:
-						"Choose one operator for a matched Launcher and Game Dock icon pair."
+						"Use one operator for the Launcher and for a Game icon in the original Arknights style."
 				) {
 					Button("Choose Operator…", systemImage: "person.2.crop.square.stack") {
 						presentedGallery = .operatorIcons
