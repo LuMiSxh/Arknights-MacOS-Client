@@ -29,7 +29,7 @@
 - Keep views, state/actions, models, and external work together inside their owning feature; do not recreate top-level technical layer folders.
 - Keep components feature-local by default. Promote them to `Shared/UI/Components` only when multiple features use the same presentation contract.
 - Consolidate identical chrome and controls; do not merge controls that only look similar but differ in semantics, spacing, accessibility, or state.
-- Keep handwritten Swift files below 350 lines. Split by cohesive responsibility, not merely into extensions that preserve the same oversized dependency surface.
+- Keep handwritten Swift files below 350 lines. Split by cohesive responsibility, not merely into extensions that preserve the same oversized dependency surface. Exceed the limit only for declarations Swift cannot move into an extension, such as an `@Observable` type's stored properties; flag that exception instead of forcing an artificial split.
 - Use tabs with width four in Swift and follow `.swift-format`.
 - Keep UI state on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
 - Use Swift 5.9+ `@Observable`. Keep the root launcher model as composition state, while feature controllers use narrow dependencies rather than implicit singletons or the whole root model.
