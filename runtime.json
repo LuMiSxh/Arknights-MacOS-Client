@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "prefixRevision": 2,
   "runtime": {
-    "name": "WineCX 11.15 + DXMT 0.80 (frankea build)",
-    "url": "https://github.com/frankea/Whisky/releases/download/v4.5.105-beta.1/Libraries.tar.gz",
-    "sha256": "43d78bec577166b5f64b1903f92582e673fbb142ad23921550f77cfeb9ffe0ce"
+    "name": "WineCX 11.15 + DXMT 0.80 (dappermint build 4.5.118)",
+    "url": "https://github.com/dappermint/Whisky/releases/download/v4.5.118/Libraries.tar.gz",
+    "sha256": "e6fbb5b1da5c50bd4d5c87ec4fbd43ef40eb90b03fd5d219cfe9050a98f27cde"
   },
   "buildRecipe": {
-    "url": "https://github.com/frankea/winecx-gptk/archive/aa652a1433f4ac6be84ebc410ecce47118bb03c9.tar.gz",
-    "sha256": "370c0c98f65f9d23e7f4bb79b9f1f5f9066bbc18c0b2740a6291f5e6cd14d9bc"
+    "url": "https://github.com/dappermint/winecx-gptk/archive/fbae959a44194788873fc33a8fa990653d0820ce.tar.gz",
+    "sha256": "4f70e1cf3c281f7add3526bb5166c3c63d5cfbd30eeba1e4141f7b375182eb5f"
   },
   "components": {
     "wine": "11.15",
@@ -19,10 +19,10 @@
     "wineGecko": "2.47.4"
   },
   "provenance": {
-    "buildRepository": "https://github.com/frankea/winecx-gptk",
-    "buildCommit": "aa652a1433f4ac6be84ebc410ecce47118bb03c9",
+    "buildRepository": "https://github.com/dappermint/winecx-gptk",
+    "buildCommit": "fbae959a44194788873fc33a8fa990653d0820ce",
     "wineRepository": "https://github.com/dappermint/winecx",
-    "wineCommit": "c2cce0e61e01dd6e03ee854af526cc17d4412b52",
+    "wineCommit": "51e3854751e51ed25af4cd3af367f92f421ed0c8",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
     "dxmtCommit": "589adb780354b461645b29999cefaf533594ee99",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",

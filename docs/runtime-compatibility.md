@@ -4,13 +4,21 @@ Arknights Client packages a fixed Windows compatibility runtime. `runtime.json` 
 
 ## Runtime baseline
 
-The current artifact is produced by the maintained [`frankea/winecx-gptk`](https://github.com/frankea/winecx-gptk) recipe and published by the maintained [`frankea/Whisky`](https://github.com/frankea/Whisky) fork. It is not sourced from the archived original Whisky project.
+The current artifact is produced by the maintained [`dappermint/winecx-gptk`](https://github.com/dappermint/winecx-gptk) recipe and published as runtime `4.5.118` by the maintained [`dappermint/Whisky`](https://github.com/dappermint/Whisky) fork. The recipe repository builds and tests the archive; the Whisky release mirrors that exact artifact after validating its checksum and embedded version. It is not sourced from the archived original Whisky project.
 
 This build remains the baseline because it packages WineCX, DXMT, Wine Gecko, GStreamer, FFmpeg, and their relocatable dependencies together. Other free Wine distributions considered for macOS either omit DXMT, require a separately installed media stack, or do not publish a complete reproducible recipe. The launcher uses the generic Wine and DXMT component names; the host project is provenance, not part of the runtime interface.
 
 The runtime's macOS executables are x86-64 and therefore depend on Rosetta 2. macOS 26 may show Apple's Intel-app compatibility notice on the first game launch. An upgrade to macOS 27 may remove an existing Rosetta installation, and macOS 27's Legacy Game Test Mode disables the general Rosetta environment Wine requires. The launcher therefore checks the mode when available and executes `/usr/bin/arch -x86_64 /usr/bin/true` before allowing Wine to launch; an on-disk Rosetta marker alone is not sufficient.
 
 General-purpose Rosetta is supported through macOS 27. macOS 28's restricted old-game translation is not a compatible host for this x86-64 macOS Wine process, so the current runtime is blocked there. A future runtime should move to a native ARM64 Wine plus a suitable x86-64 Windows translation path once a free, reproducible build provides equivalent DXMT, media, Chromium, and child-window compatibility.
+
+## Runtime and prefix lifecycle
+
+The runtime and Wine prefix have separate lifecycles. `just runtime` stages the archive under `.build/runtime`, and packaging copies it into the app bundle at `Contents/Resources/Runtime`. This payload contains the Wine executables, libraries, and DXMT DLLs and is replaced when the pinned archive changes.
+
+The persistent Wine prefix lives at `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global`. The legacy directory name remains for storage compatibility, but the prefix is shared by all supported regions; the launcher repoints its `G:` drive to the selected game directory before launch. See [Storage](storage.md) for the complete path contract.
+
+The prefix's `.arknights-runtime-migrations.json` records completed migrations against an effective revision of `<archive SHA-256>-prefix-<prefixRevision>`. A new archive checksum therefore replays runtime migrations automatically while preserving the prefix. Increase `prefixRevision` only when an unchanged archive needs a new prefix configuration migration. Users do not need to delete their prefix for a binary-only runtime update unless troubleshooting indicates that its persistent state is itself damaged.
 
 ## Required Wine interface
 
@@ -25,6 +33,8 @@ General-purpose Rosetta is supported through macOS 27. macOS 28's restricted old
 | Wine Gecko, GStreamer, and FFmpeg | Support web and media paths used by the client.                            |
 
 Wine receives a private Unix home, XDG directories, temporary directory, and prefix. Only `C:` and the selected game directory as `G:` remain mapped. The runtime must honor `WINEPREFIX`, `WINEDLLOVERRIDES`, `WINEPRELOADERAPPNAME`, and the current synchronization variables.
+
+MSYNC is the tested default for runtime `4.5.118`; it maps Windows thread waits onto macOS Mach synchronization and produced steadier frame pacing in current tests. ESYNC uses Wine's older event-based synchronization path and remains available as an experimental compatibility fallback in Settings → Installation → Danger Zone. The launcher injects only `WINEMSYNC=1` or `WINEESYNC=1`, never both, and ignores matching variables inherited from the host. Switching modes does not modify the Wine prefix and therefore requires neither a migration nor prefix deletion.
 
 The launcher injects its signed x86-64 game-icon bridge into the main Wine process with `DYLD_INSERT_LIBRARIES`. The bridge waits for Wine to initialize AppKit before intercepting its normal `setApplicationIconImage` call, preserving Wine's application name and startup order. Without a custom selection it grid-normalizes the icon Wine extracts from `Arknights.exe`; with one it substitutes the launcher-owned PNG from Application Support. It does not patch the runtime or game executable.
 
@@ -81,6 +91,8 @@ The helper and game remain separate top-level processes under the current compat
 When high-resolution mode is enabled, the launcher enables Wine's prefix-wide Retina mode when Play is pressed from a window on a HiDPI display. Windows `LogPixels` remains at 96 because a global 192 DPI setting makes Unity restore window dimensions inconsistently. Instead, the game process passes a 2x scale factor to the Vuplex wrapper, which adds Chromium-only HiDPI arguments. This gives the game and browser high-density output without changing Unity's coordinate system. On a 1x display or when the setting is disabled, the launcher disables Retina mode and uses a 1x browser scale. The current registry values are read directly from the prefix, and `reg.exe` runs only when a value must change.
 
 On a scaled macOS desktop, maximizing a normal Retina window can create a backing surface larger than 4K. Borderless or fullscreen rendering at a deliberate 2560×1440 or 3840×2160 resolution avoids that extra pixel cost; DXMT-specific upscaling and frame-limit overrides remain disabled because the game already controls those tradeoffs.
+
+Arknights renders its own cursor inside the game frame. With VSync enabled, that software cursor can visibly trail the native macOS pointer on some systems; disabling VSync reduces the delay but can introduce tearing (#34). Similar behavior has been observed on Windows, so cursor lag alone is not treated as evidence of a DXMT defect, and the launcher does not override the game's VSync setting.
 
 Use `--no-retina` or `defaults write com.lumisxh.arknights-client forceDisableRetina -bool YES` as a troubleshooting fallback. `--graphics-diagnostics` temporarily enables Wine Mac-driver and DXMT info logging so the physical backing and swapchain dimensions can be verified in the Wine log.
 

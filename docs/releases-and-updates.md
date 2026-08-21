@@ -4,7 +4,7 @@
 
 Each release contains a complete Apple Silicon DMG with the launcher, Wine, DXMT, licenses, and an Applications shortcut. Arknights game files are never part of the DMG.
 
-Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary latest versions: the browser and graphics fixes must match the Wine build. The current runtime is Whisky `4.5.105-beta.1`, containing Wine 11.15, DXMT 0.80, GStreamer, and the Chromium child-window patches required by the game. A runtime change requires a game launch, web login, and exit test before release.
+Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary latest versions: the browser and graphics fixes must match the Wine build. The current runtime is [`dappermint/Whisky` `4.5.118`](https://github.com/dappermint/Whisky/releases/tag/v4.5.118), built by the pinned [`dappermint/winecx-gptk`](https://github.com/dappermint/winecx-gptk) recipe. It contains Wine 11.15, DXMT 0.80, GStreamer, and the Chromium child-window patches required by the game. A runtime change requires a fresh-prefix and existing-prefix game launch, web login, and clean exit test before release.
 
 The launcher checks GitHub for a newer launcher version when it opens. If one exists, it links to the release page. Installation remains manual because the app is not Developer-ID signed or notarized. The check can be disabled in Settings.
 
@@ -30,6 +30,8 @@ flowchart LR
 ```
 
 [`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/runtime_config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
+
+The archive checksum is also part of the effective runtime revision. Changing the pinned archive automatically replays the runtime migrations for an existing prefix, so a binary-only refresh does not require a `prefixRevision` increase or ask users to delete their prefix.
 
 Release automation does not use repository variables for these values. A runtime update is a reviewed `runtime.json` change, so local and GitHub builds cannot silently select different binaries.
 

@@ -44,11 +44,16 @@ extension LauncherViewModel {
 			await log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		}
 		let launchRequestedAt = Date.now
+		let requestedLaunchOptions = launchOptions
 		let displayConfiguration = WineDisplayConfiguration.current(
-			highResolutionEnabled: launchOptions.usesHighResolutionMode,
+			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
 			forceDisabled: preferences.forceDisableRetina()
 		)
-		Task { [log] in await log.info("Game launch requested") }
+		Task { [log] in
+			await log.info(
+				"Game launch requested; synchronization=\(requestedLaunchOptions.synchronizationMode.displayName)"
+			)
+		}
 		launchTask?.cancel()
 		launchTask = Task { [weak self] in
 			guard let self else { return }
@@ -58,10 +63,11 @@ extension LauncherViewModel {
 					prefixDirectory: paths.winePrefix,
 					gameArguments: ["-logFile", AppPaths.windowsUnityLogPath]
 						+ (configuration?.gameStartParams ?? [])
-						+ launchOptions.playerArguments,
+						+ requestedLaunchOptions.playerArguments,
 					displayConfiguration: displayConfiguration,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
-					metalPerformanceHUDEnabled: launchOptions.usesMetalPerformanceHUD,
+					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,
+					synchronizationMode: requestedLaunchOptions.synchronizationMode,
 					gameIconURL: hasCustomGameIcon ? paths.customGameIcon : nil,
 					logURL: paths.logFile,
 					log: log
@@ -70,7 +76,9 @@ extension LauncherViewModel {
 					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 				guard activeGameSessionID == gameSessionID else { return }
-				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: true, log: log) }
+				if requestedLaunchOptions.usesGameMode {
+					GamePolicyControl.setGameMode(on: true, log: log)
+				}
 				state.activity = .launchingGame(
 					sessionID: gameSessionID,
 					processIdentifier: launch.processIdentifier
@@ -98,7 +106,9 @@ extension LauncherViewModel {
 			} catch LauncherError.runtimeWindowTimeout {
 				guard activeGameSessionID == gameSessionID else { return }
 				state.activity = .idle
-				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
+				if requestedLaunchOptions.usesGameMode {
+					GamePolicyControl.setGameMode(on: false, log: log)
+				}
 				do {
 					try await runtime.stop(prefixDirectory: paths.winePrefix)
 				} catch {
@@ -110,7 +120,9 @@ extension LauncherViewModel {
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
 				state.activity = .idle
-				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
+				if requestedLaunchOptions.usesGameMode {
+					GamePolicyControl.setGameMode(on: false, log: log)
+				}
 				if RosettaAvailability.isBadCPUType(error) {
 					intelTranslationState = .unavailable
 					show(LauncherError.intelTranslationUnavailable)

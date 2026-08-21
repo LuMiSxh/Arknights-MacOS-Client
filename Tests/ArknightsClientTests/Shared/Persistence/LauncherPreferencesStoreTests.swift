@@ -55,7 +55,11 @@ struct LauncherPreferencesStoreTests {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
-		let expected = GameLaunchOptions(displayMode: .borderlessWindow, resolution: .quadHD)
+		let expected = GameLaunchOptions(
+			displayMode: .borderlessWindow,
+			resolution: .quadHD,
+			synchronizationMode: .esync
+		)
 
 		store.setLaunchOptions(expected)
 

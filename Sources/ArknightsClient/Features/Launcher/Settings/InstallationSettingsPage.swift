@@ -141,28 +141,16 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Launcher Settings",
+					title: "Wine Thread Synchronization",
 					detail:
-						"Reset every toggle and option on this screen to default. The install location and selected region are untouched."
+						"Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback. Applies on the next launch."
 				) {
-					CapsuleActionButton(
-						title: "Reset All Settings…", tone: .danger, presentation: .compact,
-						role: .destructive
-					) {
-						confirmsSettingsReset = true
-					}
-					.confirmationDialog(
-						"Reset All Launcher Settings?",
-						isPresented: $confirmsSettingsReset,
-						titleVisibility: .visible
-					) {
-						Button(
-							"Reset Settings", role: .destructive,
-							action: model.resetAllLauncherSettings
-						)
-						Button("Cancel", role: .cancel) {}
-					} message: {
-						Text("The install location and selected region are untouched.")
+					AdaptiveSegmentedControl(
+						selection: synchronizationModeBinding,
+						options: WineSynchronizationMode.allCases,
+						accentColor: LauncherVisuals.danger
+					) { mode in
+						Text(mode.displayName)
 					}
 				}
 				SettingsHairline()
@@ -192,6 +180,32 @@ struct InstallationSettingsPage: View {
 						Text(
 							"Game files and saves stay untouched; only the next launch takes longer."
 						)
+					}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Launcher Settings",
+					detail:
+						"Reset every toggle and option on this screen to default. The install location and selected region are untouched."
+				) {
+					CapsuleActionButton(
+						title: "Reset All Settings…", tone: .danger, presentation: .compact,
+						role: .destructive
+					) {
+						confirmsSettingsReset = true
+					}
+					.confirmationDialog(
+						"Reset All Launcher Settings?",
+						isPresented: $confirmsSettingsReset,
+						titleVisibility: .visible
+					) {
+						Button(
+							"Reset Settings", role: .destructive,
+							action: model.resetAllLauncherSettings
+						)
+						Button("Cancel", role: .cancel) {}
+					} message: {
+						Text("The install location and selected region are untouched.")
 					}
 				}
 				SettingsHairline()
@@ -248,6 +262,13 @@ struct InstallationSettingsPage: View {
 				}
 			}
 		}
+	}
+
+	private var synchronizationModeBinding: Binding<WineSynchronizationMode> {
+		Binding(
+			get: { model.launchOptions.synchronizationMode },
+			set: { model.launchOptions.synchronizationMode = $0 }
+		)
 	}
 
 	private var gameModeBinding: Binding<Bool> {

@@ -61,7 +61,8 @@ extension WineRuntime {
 		prefixDirectory: URL,
 		executableDirectory: URL,
 		baseEnvironment: [String: String] = ProcessInfo.processInfo.environment,
-		userName: String = NSUserName()
+		userName: String = NSUserName(),
+		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		let home = prefixDirectory.appending(path: "home", directoryHint: .isDirectory)
 		var environment: [String: String] = [:]
@@ -91,7 +92,9 @@ extension WineRuntime {
 		// Left unset, DXMT defaults to Info-level logging on every launch, not just
 		// under --graphics-diagnostics (which raises this back to "info" itself).
 		environment["DXMT_LOG_LEVEL"] = "error"
-		for (name, value) in Self.synchronizationEnvironment { environment[name] = value }
+		for (name, value) in Self.synchronizationEnvironment(for: synchronizationMode) {
+			environment[name] = value
+		}
 		environment["PATH"] = [
 			executableDirectory.path, "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
 		].joined(separator: ":")
@@ -102,11 +105,13 @@ extension WineRuntime {
 
 	func runtimeEnvironment(
 		prefixDirectory: URL,
-		graphicsDiagnostics: Bool = false
+		graphicsDiagnostics: Bool = false,
+		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		var environment = Self.isolatedEnvironment(
 			prefixDirectory: prefixDirectory,
-			executableDirectory: executableURL.deletingLastPathComponent()
+			executableDirectory: executableURL.deletingLastPathComponent(),
+			synchronizationMode: synchronizationMode
 		)
 		if graphicsDiagnostics {
 			environment["WINEDEBUG"] = "-all,err+all,+macdrv,+display"

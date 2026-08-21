@@ -63,7 +63,8 @@ struct LauncherViewModelConcurrencyTests {
 			usesGameSettings: false,
 			usesHighResolutionMode: true,
 			usesMetalPerformanceHUD: true,
-			usesGameMode: true
+			usesGameMode: true,
+			synchronizationMode: .esync
 		)
 
 		model.resetAllLauncherSettings()

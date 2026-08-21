@@ -59,6 +59,8 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(environment["DXMT_SHADER_CACHE"] == "1")
 	#expect(environment["DXMT_SHADER_CACHE_PATH"] == "/isolated/prefix/home/.cache/dxmt")
 	#expect(environment["DXMT_LOG_LEVEL"] == "error")
+	#expect(environment["WINEMSYNC"] == "1")
+	#expect(environment["WINEESYNC"] == nil)
 	#expect(environment["DYLD_FALLBACK_LIBRARY_PATH"] == "/runtime/lib")
 	#expect(environment["USER"] == "tester")
 	#expect(environment["LANG"] == "en_US.UTF-8")
@@ -102,14 +104,30 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesToWineboot() throws {
 
 @Test
 func runtimeUsesFastSynchronizationAndErrorOnlyDiagnostics() {
-	#expect(WineRuntime.synchronizationEnvironment["WINEESYNC"] == "1")
-	#expect(WineRuntime.synchronizationEnvironment["WINEMSYNC"] == nil)
+	let msync = WineRuntime.synchronizationEnvironment(for: .msync)
+	let esync = WineRuntime.synchronizationEnvironment(for: .esync)
+	#expect(msync == ["WINEMSYNC": "1"])
+	#expect(esync == ["WINEESYNC": "1"])
 	#expect(WineRuntime.debugChannels == "-all,err+all")
 	let configuration = RuntimeConfiguration(
 		prefixRevision: 3,
 		runtime: .init(sha256: "abc")
 	)
 	#expect(configuration.revision == "abc-prefix-3")
+}
+
+@Test
+func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
+	let environment = WineRuntime.isolatedEnvironment(
+		prefixDirectory: URL(filePath: "/prefix", directoryHint: .isDirectory),
+		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
+		baseEnvironment: ["WINEMSYNC": "host", "WINEESYNC": "host"],
+		userName: "tester",
+		synchronizationMode: .esync
+	)
+
+	#expect(environment["WINEMSYNC"] == nil)
+	#expect(environment["WINEESYNC"] == "1")
 }
 
 @Test

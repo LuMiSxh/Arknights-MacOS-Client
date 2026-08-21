@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Functional Rosetta 2 preflight and guided installation during setup and launch, including macOS 27 upgrade and Legacy Game Test Mode diagnostics (Thanks to @Sorula2079, #33).
 - An optional Metal Performance HUD for native FPS and GPU diagnostics.
 - An experimental Game Mode integration that requires the full Xcode app.
+- An experimental Danger Zone control for switching new game launches between MSYNC and ESYNC.
 - A Settings Danger Zone for resets, Wine-prefix maintenance, migration, and game removal.
 - Custom launcher icons with normalized Dock sizing (Thanks to @RadioNoiseE, #24).
 - Drag-and-drop selection for launcher artwork and icons.
@@ -35,7 +36,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Declared the launcher as a game in its macOS application metadata.
+- Updated the bundled WineCX 11.15 and DXMT 0.80 runtime to the maintained dappermint build `4.5.118`.
+- Matched the launcher's resolution choices to the options offered by the official PC client.
+- Made segmented controls consistently honor dynamic and Danger Zone tint colors across supported macOS versions.
 - Reduced DXMT logging to error-only output outside diagnostics.
 - Reorganized Settings and moved music controls into a dedicated Audio section.
 - Polished Settings with right-aligned actions, clearer descriptions, and better-positioned scrollbars.
