@@ -4,19 +4,26 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 
 ## Source layout
 
-| Folder        | Responsibility                                                                                |
-| ------------- | --------------------------------------------------------------------------------------------- |
-| `Application` | App entry point and macOS lifecycle                                                           |
-| `Onboarding`  | Resumable setup flow, update preflight, and focused wrappers around launcher actions          |
-| `UI`          | Launcher, Settings, and document views                                                        |
-| `ViewModels`  | UI state and user actions                                                                     |
-| `Models`      | API payloads, install state, launch options, and errors                                       |
-| `Services`    | Yostar API, artwork, installer, and launcher updates                                          |
-| `Storage`     | Standard macOS paths and preferences                                                          |
-| `Runtime`     | Wine environment, prefix configuration, DXMT, compatibility components, and process lifecycle |
-| `Utilities`   | CRC64 and diagnostic logging                                                                  |
+| Folder           | Responsibility                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| `Application`    | App entry point, dependency composition, and macOS lifecycle                                    |
+| `Core`           | Small application-wide declarations such as fixed limits and keys                              |
+| `Features`       | Feature-owned UI, state, domain models, services, and external work                             |
+| `Infrastructure` | Feature-independent network and system I/O primitives                                           |
+| `Shared`         | Persisted paths and preferences, diagnostics, support utilities, and cross-feature UI contracts |
+| `Resources`      | SwiftPM resources copied into the application bundle                                            |
 
-`LauncherViewModel` is the main UI orchestrator. Network access, installation, artwork caching, update discovery, announcements, and Wine execution remain separate service or runtime types; the view model coordinates their results into one user-facing `LauncherPhase`. Facts independent of that phase, such as whether game files are installed or a newer version exists, remain separate state.
+`Features` is organized around behavior rather than technical layers:
+
+- `Launcher` owns the root observable state, home, Settings, documents, popups, and launcher updates.
+- `Game` owns installation, Wine runtime behavior, Intel translation, and game-file compatibility components.
+- `Customization` owns artwork, icons, and the preset gallery.
+- `Audio` owns background playback, Now Playing integration, settings, and HUD controls.
+- `Onboarding` owns its resumable flow, progress persistence, and step views.
+
+Feature-specific components remain with their feature. `Shared/UI/Components` contains only presentation contracts used by multiple features, such as action buttons, modal chrome, and Settings panels.
+
+`LauncherViewModel` is the main UI orchestrator and application composition state. Network access, installation, artwork caching, update discovery, announcements, audio, and Wine execution remain feature-owned types with explicit dependencies; the view model coordinates their results into one user-facing `LauncherPhase`. Facts independent of that phase, such as whether game files are installed or a newer version exists, remain separate state.
 
 First-run setup is a separate `Onboarding` feature with its own `@Observable` coordinator and `UserDefaults` progress store. It never downloads files or persists launcher settings itself: each step calls the same region, installer, display, artwork, icon, update, and audio actions used by the main interface. A mandatory launcher-update preflight runs before setup; an available launcher release blocks the remaining steps until the newer app is installed and reopened. Interrupted setup resumes at its saved step, but an absent game always routes back through Region & Install before later steps.
 

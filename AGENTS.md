@@ -2,82 +2,66 @@
 
 ## Scope
 
-- Build only for Apple Silicon; support macOS 15 (Sequoia) and newer. Guard macOS-26-only APIs (Liquid Glass) with `#available(macOS 26, *)` via `adaptiveGlassEffect`/`adaptiveGlassButton` in `AdaptiveGlass.swift` — macOS 15–25 fall back to native Material/bordered styles.
-- Support the official Global, Japan, and Korea PC clients (all published by Yostar on `yo-star.com`, same launcher API shape and signature algorithm, verified 2026-08-16). Do not add CN behavior: it runs on separate Hypergryph infrastructure (its own launcher, its own account system) and its PC client bundles Tencent ACE, a kernel-mode anti-cheat with no Wine/Linux support — a verified technical blocker, not just unverified scope.
+- Build only for Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs through `AdaptiveGlass.swift` fallbacks.
+- Support only Yostar's official Global, Japan, and Korea PC clients. Do not add CN behavior; its Hypergryph infrastructure and Tencent ACE anti-cheat are incompatible.
 - Keep source code, UI copy, documentation, commits, and tests in English.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
-- Do not commit Arknights binaries, game files, downloaded artwork, Wine runtimes, or files from `dist/`.
+- Do not commit game/runtime binaries, downloaded artwork, generated app assets, or files from `dist/`.
 
 ## Commands
 
-| Task               | Command            |
-| ------------------ | ------------------ |
-| Source checks      | `just check`       |
-| Format sources     | `just format`      |
-| Full CI            | `just ci`          |
-| UI preview         | `just preview`     |
-| App bundle         | `just app`         |
-| Dev runtime        | `just runtime`     |
-| App + runtime      | `just dev`         |
+| Task | Command |
+| --- | --- |
+| Source checks | `just check` |
+| Format sources | `just format` |
+| Full CI | `just ci` |
+| UI preview | `just preview` |
+| App bundle | `just app` |
+| Dev runtime | `just runtime` |
+| App + runtime | `just dev` |
 | App + runtime, run | `just dev app run` |
-| DMG + runtime      | `just dev dmg`     |
-| App icon           | `just icon`        |
+| DMG + runtime | `just dev dmg` |
+| App icon | `just icon` |
 
-## Key Conventions
+## Architecture and Swift
 
-- Use tabs with a width of four in Swift files; follow `.swift-format`.
-- Keep SwiftUI views in `UI`, state and user actions in `ViewModels`, external work in `Services` or `Runtime`, and persisted paths in `Storage`.
-- Put shared modal chrome and reusable controls in `UI/Components`; feature views should compose them instead of duplicating action bars or control styling.
-- Keep handwritten Swift files below 350 lines; split cohesive behavior into focused types or extensions. Exceed it only when the excess is stored-property/declaration code Swift can't move into an extension (e.g. an `@Observable` class's properties); flag the overage instead of forcing an artificial split.
-- Keep UI state changes on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
-- Use Swift 5.9+ `@Observable` for fine-grained, property-level view invalidation; avoid legacy `ObservableObject` and `@Published` God-objects.
-- Treat game installation as an exclusive operation. A refresh, Settings action, or repeated click must never start another installer or overwrite active progress.
-- Preserve resumable `.part` downloads and validate every manifest path before writing it.
-- Use standard macOS storage locations through `AppPaths`; do not introduce repository-local or legacy migration paths without an explicit requirement.
-- Each `GameRegion` gets its own install directory and installed-state file so regions install and update independently; they share one Wine prefix, since `WinePrefixConfigurator` already re-points the `G:` drive to the active region's directory on every launch.
-- Keep the interface native to macOS while following `docs/design.md`; branding may be angular, but primary actions use native controls.
-- Use `CapsuleActionButton` for textual actions so visible and interactive bounds stay identical. Within each control family, keep shape, material, and padding identical and distinguish accent, neutral, and danger roles only by tint. Reserve filled accents for compact icon-only controls such as playback; use `adaptiveNavigationCapsuleButton` for Back/Skip and `GlassMenuPicker`/`GlassActionMenu` for compact Settings menus. Do not style actions per call.
-- Add focused tests for changed installer, updater, storage, parsing, or concurrency behavior.
-- Record user-visible changes in the next release section in `CHANGELOG.md`.
-- Verify changes with `just ci` and `just dev run` before considering work done.
-- Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python source files.
-- Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` with `just icon`; do not edit them directly.
-- Unless explicitly requested, do not install, launch, download, uninstall, or alter a user's local game while verifying changes.
-- Write scripts as `uv run --script` entry points with inline PEP 723 metadata; share process/output helpers via `scripts/lib/common.py` and `scripts/lib/console.py` instead of duplicating them.
-- Add or update `scripts/tests/test_*.py` (`unittest`, run via `just check scripts`) for changed script behavior.
+- Organize production code by feature. Keep app composition in `Application`, cross-feature primitives in `Shared`, and feature-independent I/O helpers in `Infrastructure`.
+- Keep views, state/actions, models, and external work together inside their owning feature; do not recreate top-level technical layer folders.
+- Keep components feature-local by default. Promote them to `Shared/UI/Components` only when multiple features use the same presentation contract.
+- Consolidate identical chrome and controls; do not merge controls that only look similar but differ in semantics, spacing, accessibility, or state.
+- Keep handwritten Swift files below 350 lines. Split by cohesive responsibility, not merely into extensions that preserve the same oversized dependency surface.
+- Use tabs with width four in Swift and follow `.swift-format`.
+- Keep UI state on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
+- Use Swift 5.9+ `@Observable`. Keep the root launcher model as composition state, while feature controllers use narrow dependencies rather than implicit singletons or the whole root model.
+- Treat installation as exclusive; preserve resumable `.part` files and validate every manifest path before writing.
+- Keep every region's installation/state independent while sharing one Wine prefix whose `G:` drive is repointed on launch.
+- Define persisted locations only through `AppPaths`; preserve existing paths, keys, and serialized formats unless migration is explicitly required.
+- Follow `docs/design.md`; use the existing shared action/control families instead of per-call styling.
+- Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add concise DocC for public APIs and complex domain models.
+- Centralize fixed keys, limits, retries, and timeouts in `AppConstants.swift`; avoid silent `try?` for filesystem, process, and network work.
+- Test behavior according to regression impact. Preserve installer safety, persistence, parsing, migration, runtime isolation, and concurrency coverage; do not require tests for file moves, view composition, trivial accessors, or wrappers.
+- Share test fixtures and parameterize equivalent cases. Apply the 350-line limit to test files too.
+- Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python files.
 
-## Code Style & Commenting Philosophy
+## Verification and Safety
 
-- Write expressive Swift and C so code explains _what_ it does without line-by-line commentary.
-- Comment only the "WHY": non-obvious workarounds (Wine/Windows/macOS quirks, IPC constraints, API bugs) and security/memory invariants. No comments that restate the code.
-- Give public APIs, protocols, and complex domain models concise `///` DocC comments covering preconditions, side effects, and thrown errors.
-- Centralize magic numbers and strings (timeouts, buffer sizes, retry counts, fixed keys) into `AppConstants.swift`; never scatter them through implementation logic.
-- Avoid silent `try?` in filesystem, process, or network operations; use `do-catch` and log unexpected failures with context.
+- Run focused checks while iterating and `just ci` before completion.
+- For UI refactors, compare the affected isolated developer scenarios; do not launch previews or apps unless the user authorizes it.
+- Unless explicitly requested, do not install, launch, download, uninstall, or alter the user's local game or runtime.
+- Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` only with `just icon`.
+- Write scripts as `uv run --script` entry points, reuse `scripts/lib`, and cover changed behavior in `scripts/tests/test_*.py`.
+- Record user-visible changes in `CHANGELOG.md`; follow `docs/releases-and-updates.md` for releases.
+- Follow the existing commit style. Do not mention agent/model vendors; push only with explicit user consent.
 
-## External References
+## References
 
-| Need                                  | File                                |
-| ------------------------------------- | ----------------------------------- |
-| Project setup and contribution rules  | `README.md`                         |
-| Architecture and source boundaries    | `docs/architecture.md`              |
-| Interface direction                   | `docs/design.md`                    |
-| Persistent files and removal behavior | `docs/storage.md`                   |
-| Wine/DXMT runtime contract            | `docs/runtime-compatibility.md`     |
-| Announcement feed format              | `docs/announcements.md`             |
-| Troubleshooting and log locations     | `docs/troubleshooting.md`           |
-| Versioning and release workflow       | `docs/releases-and-updates.md`      |
-| Third-party obligations               | `docs/legal/third-party-notices.md` |
-
-## Release Rules
-
-- Releases are manual draft releases triggered with an `X.Y.Z` version.
-- Trigger releases only from clean, pushed `main`; the version must match `CHANGELOG.md` and `Resources/Info.plist`.
-- Never replace a published tag or release asset; issue a higher version for fixes.
-- Keep the prefix revision, tested runtime versions, provenance, URLs, and SHA-256 values in `runtime.json`. Increase `prefixRevision` when existing prefixes must reapply runtime configuration. Release automation must not replace these values with hidden repository configuration.
-- Do not claim Developer ID signing, notarization, or silent self-updates without an Apple Developer account.
-
-## Commit Rules
-
-- Do not mention your AI model or company in commit messages or code.
-- Follow the established commit scheme by inspecting past git log history.
-- Only push commits when the user gives explicit consent.
+| Need | File |
+| --- | --- |
+| Setup and contribution | `README.md` |
+| Architecture | `docs/architecture.md` |
+| Interface | `docs/design.md` |
+| Storage | `docs/storage.md` |
+| Runtime contract | `docs/runtime-compatibility.md` |
+| Troubleshooting | `docs/troubleshooting.md` |
+| Releases | `docs/releases-and-updates.md` |
+| Third-party obligations | `docs/legal/third-party-notices.md` |
