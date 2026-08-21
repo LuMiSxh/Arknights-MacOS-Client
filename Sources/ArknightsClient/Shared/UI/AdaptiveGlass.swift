@@ -36,6 +36,18 @@ extension View {
 		}
 	}
 
+	/// Applies the shared accent action treatment independently of control geometry.
+	func adaptiveActionSurface<ControlShape: InsettableShape>(
+		tint: Color,
+		in shape: ControlShape
+	) -> some View {
+		self.foregroundStyle(tint)
+			.adaptiveGlassEffect(tint: tint.opacity(0.1), in: shape)
+			.overlay {
+				shape.strokeBorder(tint.opacity(0.2)).allowsHitTesting(false)
+			}
+	}
+
 	/// Keeps Back and Skip visually separate from actions that mutate launcher state.
 	func adaptiveNavigationCapsuleButton() -> some View {
 		self.buttonBorderShape(.capsule)

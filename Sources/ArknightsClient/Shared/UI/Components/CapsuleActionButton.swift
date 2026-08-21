@@ -94,17 +94,8 @@ struct CapsuleActionButton: View {
 				)
 			)
 		}
-		.buttonStyle(CapsuleActionPressStyle())
+		.buttonStyle(ActionPressStyle())
 		.opacity(isEnabled ? 1 : 0.55)
-	}
-}
-
-private struct CapsuleActionPressStyle: ButtonStyle {
-	func makeBody(configuration: Configuration) -> some View {
-		configuration.label
-			.opacity(configuration.isPressed ? 0.72 : 1)
-			.scaleEffect(configuration.isPressed ? 0.98 : 1)
-			.animation(.easeOut(duration: 0.12), value: configuration.isPressed)
 	}
 }
 
@@ -136,14 +127,10 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 
 	private func standardSurface(_ content: Content) -> some View {
 		content
-			.foregroundStyle(tint)
 			.padding(.horizontal, standardHorizontalPadding)
 			.padding(.vertical, standardVerticalPadding)
 			.contentShape(Capsule())
-			.adaptiveGlassEffect(tint: tint.opacity(0.1), in: Capsule())
-			.overlay {
-				Capsule().strokeBorder(tint.opacity(0.2)).allowsHitTesting(false)
-			}
+			.adaptiveActionSurface(tint: tint, in: Capsule())
 	}
 
 	@ViewBuilder

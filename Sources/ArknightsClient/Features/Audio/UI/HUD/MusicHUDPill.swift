@@ -57,7 +57,6 @@ struct MusicHUDPill: View {
 								title: "Previous Track",
 								systemImage: "backward.end.fill",
 								accentColor: model.accentColor,
-								accentTextColor: model.accentTextColor,
 								isDisabled: controller.controlsAreDisabled,
 								action: controller.playPreviousTrack
 							)
@@ -67,7 +66,6 @@ struct MusicHUDPill: View {
 							title: controller.isPlaying ? "Pause" : "Play",
 							systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
 							accentColor: model.accentColor,
-							accentTextColor: model.accentTextColor,
 							isProminent: true,
 							isDisabled: controller.controlsAreDisabled,
 							action: controller.togglePlayback
@@ -78,7 +76,6 @@ struct MusicHUDPill: View {
 								title: "Next Track",
 								systemImage: "forward.end.fill",
 								accentColor: model.accentColor,
-								accentTextColor: model.accentTextColor,
 								isDisabled: controller.controlsAreDisabled,
 								action: controller.playNextTrack
 							)
@@ -98,7 +95,6 @@ struct MusicHUDPill: View {
 							title: "Open on YouTube",
 							systemImage: "arrow.up.right.square",
 							accentColor: model.accentColor,
-							accentTextColor: model.accentTextColor,
 							isDisabled: controller.controlsAreDisabled,
 							action: model.openCurrentMusicURL
 						)
@@ -108,8 +104,7 @@ struct MusicHUDPill: View {
 				}
 			}
 			.padding(.horizontal, isExpanded ? 14 : 12)
-			.padding(.top, isExpanded ? 9 : 0)
-			.padding(.bottom, isExpanded ? 13 : 0)
+			.padding(.vertical, isExpanded ? 11 : 0)
 			.frame(
 				width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil,
 				height: isExpanded

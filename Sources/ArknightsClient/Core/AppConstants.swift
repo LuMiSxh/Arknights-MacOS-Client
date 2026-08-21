@@ -31,7 +31,7 @@ enum AppConstants {
 		static let collapsedTitleMaxWidth: Double = 300
 		static let collapsedPlayerHeight: Double = 28
 		static let expandedPlayerWidth: Double = 330
-		static let expandedPlayerHeight: Double = 88
+		static let expandedPlayerHeight: Double = 94
 		static let secondaryControlDimension: Double = 34
 		static let prominentControlDimension: Double = 38
 		static let volumeControlExpandedWidth: Double = 132
@@ -45,7 +45,7 @@ enum AppConstants {
 		static let collapsedStatusMaxWidth: Double = 280
 		static let collapsedStatusTitleMaxWidth: Double = 210
 		static let expandedVersionWidth: Double = 260
-		static let expandedVersionHeight: Double = 68
+		static let expandedVersionHeight: Double = 72
 		static let expansionDuration: Double = 0.3
 		static let pillRowTrailingInset: Double = 2
 	}

@@ -27,7 +27,7 @@ struct MusicVolumeControl: View {
 					)
 					.contentShape(Circle())
 			}
-			.buttonStyle(.plain)
+			.buttonStyle(ActionPressStyle())
 			.focused($focusedElement, equals: .speaker)
 			.disabled(isDisabled)
 			.accessibilityValue(isMuted ? "Muted" : volumeAccessibilityValue)
@@ -54,7 +54,7 @@ struct MusicVolumeControl: View {
 		.hudSecondaryControlSurface(in: Capsule())
 		.contentShape(Capsule())
 		.clipped()
-		.opacity(isDisabled ? 0.38 : 1)
+		.opacity(isDisabled ? 0.55 : 1)
 		.onHover { isHovering = $0 }
 		.animation(
 			reduceMotion

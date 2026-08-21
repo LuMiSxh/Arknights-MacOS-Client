@@ -21,7 +21,6 @@ extension LauncherViewModel {
 		guard usesDynamicTheme, let heroArtwork else {
 			dynamicThemeHue = nil
 			accentColor = LauncherVisuals.cyan
-			accentTextColor = Color.black.opacity(0.92)
 			hudTintColor = LauncherVisuals.hudGlassTint
 			updateDynamicAppIcon(hue: nil)
 			Task { [weak self] in await self?.refreshOperatorPresetIconsForTheme(hue: nil) }
@@ -71,7 +70,6 @@ extension LauncherViewModel {
 	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
 		dynamicThemeHue = extracted?.hue
 		accentColor = extracted?.accentColor ?? LauncherVisuals.cyan
-		accentTextColor = extracted?.accentTextColor ?? Color.black.opacity(0.92)
 		hudTintColor = extracted?.backgroundTint ?? LauncherVisuals.hudGlassTint
 	}
 

@@ -6,7 +6,6 @@ struct MusicPlayerControlButton: View {
 	let title: String
 	let systemImage: String
 	let accentColor: Color
-	let accentTextColor: Color
 	var isProminent = false
 	var isDisabled = false
 	let action: () -> Void
@@ -18,7 +17,7 @@ struct MusicPlayerControlButton: View {
 					.labelStyle(.iconOnly)
 					.font(.system(size: isProminent ? 16 : 13, weight: .semibold))
 					.foregroundStyle(
-						isProminent ? accentTextColor : LauncherVisuals.controlTint
+						isProminent ? accentColor : LauncherVisuals.controlTint
 					)
 					.frame(
 						width: isProminent
@@ -31,15 +30,15 @@ struct MusicPlayerControlButton: View {
 			)
 			.contentShape(Circle())
 		}
-		.buttonStyle(.plain)
+		.buttonStyle(ActionPressStyle())
 		.disabled(isDisabled)
-		.opacity(isDisabled ? 0.38 : 1)
+		.opacity(isDisabled ? 0.55 : 1)
 	}
 
 	@ViewBuilder
 	private func controlSurface(_ content: some View) -> some View {
 		if isProminent {
-			content.background(accentColor, in: Circle())
+			content.adaptiveActionSurface(tint: accentColor, in: Circle())
 		} else {
 			content.hudSecondaryControlSurface(in: Circle())
 		}

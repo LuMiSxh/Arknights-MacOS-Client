@@ -124,7 +124,6 @@ final class LauncherViewModel {
 	}
 	var dynamicThemeHue: Double?
 	var accentColor: Color = LauncherVisuals.cyan
-	var accentTextColor: Color = Color.black.opacity(0.92)
 	var hudTintColor: Color = LauncherVisuals.hudGlassTint
 
 	var appVersion: String { IssueReportURL.appVersion }
