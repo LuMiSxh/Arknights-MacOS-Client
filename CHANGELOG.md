@@ -62,6 +62,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Prevented repair, relocation, cache maintenance, and uninstall operations from modifying game files while Arknights is active.
 - Kept running games stoppable when a background refresh or unrelated Settings action reports an error.
 - Made concurrent downloads, Wine helper cancellation, and music player replacement resilient to stale asynchronous work.
+- Prevented a launch-time crash when macOS requests Now Playing artwork from its MediaPlayer queue.
+- Left-aligned the expanded version text consistently with the music HUD.
 
 ## [0.3.0]
 
