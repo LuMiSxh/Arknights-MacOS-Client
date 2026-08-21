@@ -102,31 +102,59 @@ extension LauncherViewModel {
 		}
 	}
 
-	func loadInitialAssets(for region: GameRegion) async {
-		_ = await loadCustomAppIcon()
-		let hasCustomArtwork = await loadCustomArtwork()
+	/// Restores local artwork during model construction so SwiftUI's first frame already
+	/// has the previous image and cached Dynamic Theme colors. Network refreshes and any
+	/// replacement decoding remain asynchronous after the window is visible.
+	func restoreInitialArtwork(for region: GameRegion) {
+		let hasCustomArtwork = restoreInitialCustomArtwork()
+		if !hasCustomArtwork {
+			restoreInitialOfficialArtwork(for: region)
+		}
+		officialLogo = artworkCache.cachedOfficialLogo()
+	}
+
+	private func restoreInitialCustomArtwork() -> Bool {
+		let artworkURL = paths.customArtwork
+		guard FileManager.default.fileExists(atPath: artworkURL.path) else { return false }
 		do {
-			let artworkCache = artworkCache
-			let cached = try await Task.detached(priority: .utility) {
-				let artwork =
-					hasCustomArtwork ? nil : try artworkCache.cachedActiveImageData(for: region)
-				let logo = try artworkCache.cachedOfficialLogoData()
-				return (artwork, logo)
-			}.value
-			if let (cacheKey, data) = cached.0, let image = NSImage(data: data) {
-				setHeroArtwork(
-					image,
-					themeCacheKey: Self.officialThemeCacheKey(
-						for: region,
-						artworkCacheKey: cacheKey
-					)
+			let data = try Data(contentsOf: artworkURL, options: .mappedIfSafe)
+			guard let image = NSImage(data: data) else {
+				Task { [log] in
+					await log.error("Custom launcher artwork is not a valid image")
+				}
+				return false
+			}
+			setHeroArtwork(image, themeCacheKey: Self.customThemeCacheKey(for: data))
+			return true
+		} catch {
+			Task { [log] in
+				await log.error(
+					"Failed to load custom launcher artwork: \(error.localizedDescription)"
 				)
 			}
-			if let logoData = cached.1 { officialLogo = NSImage(data: logoData) }
-		} catch {
-			await log.error(
-				"Failed to load cached artwork for \(region.displayName): \(error.localizedDescription)"
+			return false
+		}
+	}
+
+	private func restoreInitialOfficialArtwork(for region: GameRegion) {
+		do {
+			guard
+				let (cacheKey, data) = try artworkCache.cachedActiveImageData(for: region),
+				let image = NSImage(data: data)
+			else { return }
+			setHeroArtwork(
+				image,
+				themeCacheKey: Self.officialThemeCacheKey(
+					for: region,
+					artworkCacheKey: cacheKey
+				)
 			)
+		} catch {
+			Task { [log] in
+				await log.error(
+					"Failed to load cached artwork for \(region.displayName): \(error.localizedDescription)"
+				)
+			}
 		}
 	}
 

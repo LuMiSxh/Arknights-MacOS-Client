@@ -227,6 +227,7 @@ final class LauncherViewModel {
 		showsPlayingMusic = preferences.showsPlayingMusic()
 		launcherMusicVolume = preferences.launcherMusicVolume()
 		usesDynamicTheme = preferences.usesDynamicTheme()
+		restoreInitialArtwork(for: selectedRegion)
 		if showsServerResetCountdown { startResetCountdownTimer() }
 		updateThemeColor()
 
@@ -252,7 +253,7 @@ final class LauncherViewModel {
 
 		refreshTask = Task { [weak self] in
 			guard let self else { return }
-			await loadInitialAssets(for: selectedRegion)
+			_ = await loadCustomAppIcon()
 			await refreshIntelTranslationAvailability()
 			await refresh()
 			if launchOnStart {

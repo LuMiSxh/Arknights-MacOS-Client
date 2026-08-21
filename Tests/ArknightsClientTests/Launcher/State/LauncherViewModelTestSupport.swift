@@ -132,20 +132,22 @@ actor BlockingBrandingAPI: LauncherAPIProviding {
 		}
 	}
 
-	func resolveBranding() {
-		let branding = LauncherBranding(
-			launcherBackgroundImage: nil,
-			launcherBackgroundImageCRC64: nil,
-			copyrightInformation: nil,
-			privacyPolicy: nil,
-			userAgreement: nil,
-			noticePopOpen: nil,
-			noticeContent: nil
-		)
+	func resolveBranding(_ branding: LauncherBranding? = nil) {
+		let resolvedBranding =
+			branding
+			?? LauncherBranding(
+				launcherBackgroundImage: nil,
+				launcherBackgroundImageCRC64: nil,
+				copyrightInformation: nil,
+				privacyPolicy: nil,
+				userAgreement: nil,
+				noticePopOpen: nil,
+				noticeContent: nil
+			)
 		let responses = brandingResponses
 		brandingResponses.removeAll()
 		for response in responses {
-			response.resume(returning: branding)
+			response.resume(returning: resolvedBranding)
 		}
 	}
 }
