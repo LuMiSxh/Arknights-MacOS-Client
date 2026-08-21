@@ -58,7 +58,7 @@ final class NowPlayingCoordinator {
 			MPMediaItemPropertyTitle: title,
 			MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
 			MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
-			MPMediaItemPropertyArtwork: mediaArtwork(from: artwork),
+			MPMediaItemPropertyArtwork: Self.mediaArtwork(from: artwork),
 		]
 		if let artist, !artist.isEmpty {
 			information[MPMediaItemPropertyArtist] = artist
@@ -67,12 +67,10 @@ final class NowPlayingCoordinator {
 		center.playbackState = isPlaying ? .playing : .paused
 	}
 
-	private func mediaArtwork(from image: NSImage) -> MPMediaItemArtwork {
-		MPMediaItemArtwork(boundsSize: image.size) { requestedSize in
-			guard requestedSize.width > 0, requestedSize.height > 0 else { return image }
-			let copy = image.copy() as? NSImage ?? image
-			copy.size = requestedSize
-			return copy
+	private nonisolated static func mediaArtwork(from image: NSImage) -> MPMediaItemArtwork {
+		let provider = NowPlayingArtworkProvider(image: image)
+		return MPMediaItemArtwork(boundsSize: image.size) { requestedSize in
+			provider.image(for: requestedSize)
 		}
 	}
 }
