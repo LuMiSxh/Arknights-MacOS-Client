@@ -56,6 +56,8 @@ static const wchar_t *high_resolution_arguments[] = {
 	L"--force-device-scale-factor=2",
 };
 
+/* Win32 gives no fixed upper bound for a module's own path, so this grows the buffer and
+ * retries until GetModuleFileNameW stops truncating. */
 static wchar_t *module_path(void) {
 	DWORD capacity = 1024;
 
@@ -79,6 +81,8 @@ static wchar_t *module_path(void) {
 	}
 }
 
+/* Exact-match scan so this shim never appends a compatibility or high-resolution flag the
+ * game already supplied, keeping the child's argument list idempotent across shim updates. */
 static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected) {
 	int index;
 
@@ -88,17 +92,22 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
 	return FALSE;
 }
 
+/* Reads the scale factor WineRuntime.swift sets before launch: "2" means the Swift launcher
+ * detected a Retina display with high-resolution mode enabled, so the browser should render
+ * at native density too instead of blurring to match the game's logical resolution. */
 static BOOL high_resolution_enabled(void) {
 	wchar_t value[8];
-	DWORD length = GetEnvironmentVariableW(
-		L"ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR",
-		value,
-		ARRAYSIZE(value)
-	);
+	DWORD length =
+		GetEnvironmentVariableW(L"ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR", value, ARRAYSIZE(value));
 
 	return length == 1 && value[0] == L'2';
 }
 
+/* Appends `argument` to `destination` using the same quoting rules CommandLineToArgvW
+ * expects on the other end: backslashes are only doubled when they immediately precede a
+ * quote (or end the argument before the closing quote), so paths with plain backslashes
+ * round-trip unchanged while an embedded `"` or a trailing `\` doesn't break the split.
+ * Caller must have already sized `destination` for the worst case (2x length + quotes). */
 static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
 	const wchar_t *cursor = argument;
 	size_t backslashes = 0;
@@ -136,6 +145,11 @@ static wchar_t *append_quoted(wchar_t *destination, const wchar_t *argument) {
 	return destination;
 }
 
+/* Appends "userenv=n,b" to WINEDLLOVERRIDES so Wine loads the process-local userenv.dll
+ * compatibility stub (UserenvCompat.c) instead of its own unimplemented AppContainer APIs.
+ * Preserves any override value already set rather than replacing it, since WINEDLLOVERRIDES
+ * is a single semicolon-joined string and clobbering it would silently undo unrelated
+ * overrides the launcher or user set elsewhere. */
 static BOOL enable_userenv_override(void) {
 	static const wchar_t variable_name[] = L"WINEDLLOVERRIDES";
 	DWORD existing_length = GetEnvironmentVariableW(variable_name, NULL, 0);
@@ -168,7 +182,13 @@ static BOOL enable_userenv_override(void) {
 	return result;
 }
 
-int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_command) {
+/* Locates the original helper beside this shim, preserves every argument the game supplied,
+ * appends only the compatibility (and, if enabled, high-resolution) flags that aren't
+ * already present, enables the userenv.dll override, and launches the real helper hidden
+ * and detached. Blocks until it exits and returns its exit code, so the game sees this
+ * shim as behaviorally identical to the official helper it replaced. */
+int WINAPI
+WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_command) {
 	wchar_t *shim_path = NULL;
 	wchar_t *original_path = NULL;
 	wchar_t *child_command_line = NULL;
@@ -181,11 +201,9 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	int high_resolution_index;
 	BOOL use_high_resolution;
 	SIZE_T command_length = 1;
-	STARTUPINFOW startup_info = {
-		.cb = sizeof(startup_info),
-		.dwFlags = STARTF_USESHOWWINDOW,
-		.wShowWindow = SW_HIDE
-	};
+	STARTUPINFOW startup_info = { .cb = sizeof(startup_info),
+								  .dwFlags = STARTF_USESHOWWINDOW,
+								  .wShowWindow = SW_HIDE };
 	PROCESS_INFORMATION process_info = { 0 };
 	DWORD creation_flags = CREATE_NO_WINDOW | DETACHED_PROCESS;
 	DWORD exit_code;
@@ -230,15 +248,21 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 	}
 	use_high_resolution = high_resolution_enabled();
 	command_length += 2 * wcslen(original_path) + 3;
-	for (index = 1; index < argument_count; index++) command_length += 2 * wcslen(arguments[index]) + 3;
-	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments); compatibility_index++) {
-		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
+	for (index = 1; index < argument_count; index++)
+		command_length += 2 * wcslen(arguments[index]) + 3;
+	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments);
+		 compatibility_index++) {
+		if (!has_argument(
+				argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			command_length += 2 * wcslen(compatibility_arguments[compatibility_index]) + 3;
 		}
 	}
 	if (use_high_resolution) {
-		for (high_resolution_index = 0; high_resolution_index < ARRAYSIZE(high_resolution_arguments); high_resolution_index++) {
-			if (!has_argument(argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+		for (high_resolution_index = 0;
+			 high_resolution_index < ARRAYSIZE(high_resolution_arguments);
+			 high_resolution_index++) {
+			if (!has_argument(
+					argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
 				command_length += 2 * wcslen(high_resolution_arguments[high_resolution_index]) + 3;
 			}
 		}
@@ -254,15 +278,20 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		*cursor++ = L' ';
 		cursor = append_quoted(cursor, arguments[index]);
 	}
-	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments); compatibility_index++) {
-		if (!has_argument(argument_count, arguments, compatibility_arguments[compatibility_index])) {
+	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments);
+		 compatibility_index++) {
+		if (!has_argument(
+				argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			*cursor++ = L' ';
 			cursor = append_quoted(cursor, compatibility_arguments[compatibility_index]);
 		}
 	}
 	if (use_high_resolution) {
-		for (high_resolution_index = 0; high_resolution_index < ARRAYSIZE(high_resolution_arguments); high_resolution_index++) {
-			if (!has_argument(argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+		for (high_resolution_index = 0;
+			 high_resolution_index < ARRAYSIZE(high_resolution_arguments);
+			 high_resolution_index++) {
+			if (!has_argument(
+					argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
 				*cursor++ = L' ';
 				cursor = append_quoted(cursor, high_resolution_arguments[high_resolution_index]);
 			}
@@ -276,7 +305,17 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR comman
 		GlobalFree(original_path);
 		return (int)error;
 	}
-	if (!CreateProcessW(original_path, child_command_line, NULL, NULL, FALSE, creation_flags, NULL, NULL, &startup_info, &process_info)) {
+	if (!CreateProcessW(
+			original_path,
+			child_command_line,
+			NULL,
+			NULL,
+			FALSE,
+			creation_flags,
+			NULL,
+			NULL,
+			&startup_info,
+			&process_info)) {
 		error = GetLastError();
 		GlobalFree(child_command_line);
 		GlobalFree(original_path);

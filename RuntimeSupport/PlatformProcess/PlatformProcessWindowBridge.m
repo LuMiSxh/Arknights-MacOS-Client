@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #import <AppKit/AppKit.h>
+#import <CoreGraphics/CoreGraphics.h>
 #import <QuartzCore/QuartzCore.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
@@ -14,25 +15,26 @@
  * and Win32 coordinates in sync is essential because winemac.drv converts
  * global mouse coordinates back through the Windows window rectangle before
  * dispatching an input event. This bridge therefore changes only presentation:
- * Dock visibility, Spaces behavior, transparency, and the rounded crop.
+ * Dock visibility, Spaces behavior, transparency, fullscreen overlay, and the rounded crop.
  */
 
-static const volatile char launcher_marker[] =
-	"Arknights Client PlatformProcess window bridge";
+static const volatile char launcher_marker[] = "Arknights Client PlatformProcess window bridge";
 static dispatch_source_t presentation_timer;
 static char notice_mask_key;
 static CGWindowID logged_game_window;
+static CGWindowID logged_notice_window;
 
 struct game_window {
 	CGWindowID number;
 	pid_t process_id;
 };
 
+/* Scans on-screen windows for the largest one owned by a process whose name (or window
+ * name) starts with "Arknights", excluding both this process itself and the SwiftUI
+ * launcher (which is also named "Arknights Client" and would otherwise self-match). */
 static struct game_window game_window_info(void) {
 	CFArrayRef windows = CGWindowListCopyWindowInfo(
-		kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
-		kCGNullWindowID
-	);
+		kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
 	struct game_window result = { kCGNullWindowID, 0 };
 	CGFloat largest_area = 0.0;
 
@@ -46,14 +48,20 @@ static struct game_window game_window_info(void) {
 		CGRect bounds;
 		CGFloat area;
 
-		if (owner_pid.intValue == getpid() || layer.integerValue != 0) continue;
+		if (owner_pid.intValue == getpid()) continue;
+		if (layer.integerValue < 0) continue;
+
+		// SwiftUI Launcher ("Arknights Client")
+		if ([owner_name isEqualToString:@"Arknights Client"] ||
+			[name isEqualToString:@"Arknights Client"]) {
+			continue;
+		}
 		if (![owner_name hasPrefix:@"Arknights"] && ![name hasPrefix:@"Arknights"]) {
 			continue;
 		}
 		if (!CGRectMakeWithDictionaryRepresentation(
-			(__bridge CFDictionaryRef)bounds_description,
-			&bounds
-		)) continue;
+				(__bridge CFDictionaryRef)bounds_description, &bounds))
+			continue;
 		area = bounds.size.width * bounds.size.height;
 		if (area <= largest_area) continue;
 		largest_area = area;
@@ -64,6 +72,10 @@ static struct game_window game_window_info(void) {
 	return result;
 }
 
+/* Applies a rounded-rect clip mask to `view`, caching the CAShapeLayer via an associated
+ * object and skipping regeneration when the bounds haven't changed, since this runs on
+ * every presentation tick. Insets the visible rect by 1pt so the rounded edge doesn't show
+ * a hairline of the window's square backing behind it. */
 static void apply_notice_mask(NSView *view) {
 	CAShapeLayer *mask;
 	CGRect bounds;
@@ -77,12 +89,7 @@ static void apply_notice_mask(NSView *view) {
 	if (mask != nil && CGRectEqualToRect(mask.frame, bounds)) return;
 	if (mask == nil) {
 		mask = [CAShapeLayer layer];
-		objc_setAssociatedObject(
-			view,
-			&notice_mask_key,
-			mask,
-			OBJC_ASSOCIATION_RETAIN_NONATOMIC
-		);
+		objc_setAssociatedObject(view, &notice_mask_key, mask, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 	}
 	visible_bounds = bounds;
 	visible_bounds.size.width = MAX(0.0, visible_bounds.size.width - 1.0);
@@ -96,18 +103,29 @@ static void apply_notice_mask(NSView *view) {
 	view.clipsToBounds = YES;
 }
 
+/* The core presentation policy, reapplied every tick since Wine's window server can revert
+ * these at any time: joins all Spaces without forcing a Space switch, enables Wine's input
+ * path, and keeps the AppKit panel non-activating. WineBaseView already accepts first mouse,
+ * so Qt receives the initial click without turning this separate helper into the foreground
+ * application and making the game redraw its focus transition. The private activation
+ * selector mirrors Wine's own workaround for AppKit not updating the WindowServer tag when
+ * NSWindowStyleMaskNonactivatingPanel changes after window creation. Presentation remains
+ * transparent so only the masked Qt content shows instead of a solid black surface. */
 static void configure_window(NSWindow *window) {
 	NSWindowCollectionBehavior behavior = window.collectionBehavior;
 	NSView *content = window.contentView;
 	NSView *frame = content.superview;
 	SEL selector;
+	BOOL restored_nonactivating_style = NO;
 
-	behavior &= ~(NSWindowCollectionBehaviorCanJoinAllSpaces |
-		NSWindowCollectionBehaviorFullScreenPrimary);
-	behavior |= NSWindowCollectionBehaviorMoveToActiveSpace |
-		NSWindowCollectionBehaviorFullScreenAuxiliary |
-		NSWindowCollectionBehaviorParticipatesInCycle;
+	behavior &= ~NSWindowCollectionBehaviorFullScreenPrimary;
+	behavior |= NSWindowCollectionBehaviorCanJoinAllSpaces |
+				NSWindowCollectionBehaviorFullScreenAuxiliary |
+				NSWindowCollectionBehaviorStationary | NSWindowCollectionBehaviorIgnoresCycle;
 	if (window.collectionBehavior != behavior) window.collectionBehavior = behavior;
+
+	window.hidesOnDeactivate = NO;
+
 	selector = NSSelectorFromString(@"setNoForeground:");
 	if ([window respondsToSelector:selector]) {
 		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, NO);
@@ -118,14 +136,18 @@ static void configure_window(NSWindow *window) {
 	}
 	selector = NSSelectorFromString(@"setPreventsAppActivation:");
 	if ([window respondsToSelector:selector]) {
-		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, NO);
+		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, YES);
 	}
-	if ((window.styleMask & NSWindowStyleMaskNonactivatingPanel) != 0) {
-		window.styleMask &= ~NSWindowStyleMaskNonactivatingPanel;
+	if ((window.styleMask & NSWindowStyleMaskNonactivatingPanel) == 0) {
+		window.styleMask |= NSWindowStyleMaskNonactivatingPanel;
+		restored_nonactivating_style = YES;
 	}
 	selector = NSSelectorFromString(@"_setPreventsActivation:");
 	if ([window respondsToSelector:selector]) {
-		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, NO);
+		((void (*)(id, SEL, BOOL))objc_msgSend)(window, selector, YES);
+	}
+	if (restored_nonactivating_style && content.acceptsFirstResponder) {
+		[window makeFirstResponder:content];
 	}
 	if (window.ignoresMouseEvents) window.ignoresMouseEvents = NO;
 	if (window.hasShadow) window.hasShadow = NO;
@@ -133,14 +155,36 @@ static void configure_window(NSWindow *window) {
 		window.backgroundColor = NSColor.clearColor;
 	}
 	if (window.opaque) window.opaque = NO;
-	if (content != nil && !content.wantsLayer) content.wantsLayer = YES;
+	if (content != nil) {
+		content.wantsLayer = YES;
+		content.layer.opaque = NO;
+		content.layer.backgroundColor = NSColor.clearColor.CGColor;
+	}
 	if (frame != nil) {
-		if (!frame.wantsLayer) frame.wantsLayer = YES;
+		frame.wantsLayer = YES;
+		frame.layer.opaque = NO;
 		frame.layer.backgroundColor = NSColor.clearColor.CGColor;
 	}
 	apply_notice_mask(frame != nil ? frame : content);
+
+	if (logged_notice_window != window.windowNumber) {
+		fprintf(
+			stderr,
+			"platform-window-bridge: configured notice=%ld class=%s nonactivating=%d "
+			"firstMouse=%d canKey=%d active=%d\n",
+			(long)window.windowNumber,
+			class_getName(window.class),
+			(window.styleMask & NSWindowStyleMaskNonactivatingPanel) != 0,
+			[content acceptsFirstMouse:nil],
+			window.canBecomeKeyWindow,
+			NSApp.active);
+		logged_notice_window = window.windowNumber;
+	}
 }
 
+/* Picks the largest visible window this process owns that's at least 400x300 — the same
+ * size heuristic PlatformProcessShim.c uses on the Win32 side — to identify the actual
+ * notice window among any incidental smaller windows Qt creates. */
 static NSWindow *notice_window(void) {
 	NSWindow *candidate = nil;
 
@@ -148,15 +192,19 @@ static NSWindow *notice_window(void) {
 		if (!window.visible || window.frame.size.width < 400 || window.frame.size.height < 300) {
 			continue;
 		}
-		if (candidate == nil ||
-			window.frame.size.width * window.frame.size.height >
-				candidate.frame.size.width * candidate.frame.size.height) {
+		if (candidate == nil || window.frame.size.width * window.frame.size.height >
+									candidate.frame.size.width * candidate.frame.size.height) {
 			candidate = window;
 		}
 	}
 	return candidate;
 }
 
+/* Runs on every presentation timer tick: locates and reconfigures the notice window,
+ * ensures the process has no Dock icon (accessory activation policy), and pins the window
+ * level just above the fullscreen shielding window so it stays visible over a fullscreen
+ * game instead of behind it. Logs the accessory-policy switch and the first successful
+ * notice/game window pairing once each, not every tick. */
 static void maintain_presentation(void) {
 	NSWindow *window = notice_window();
 	struct game_window game;
@@ -170,57 +218,51 @@ static void maintain_presentation(void) {
 			"platform-window-bridge: accessory policy pid=%d class=%s canKey=%d\n",
 			getpid(),
 			class_getName(window.class),
-			window.canBecomeKeyWindow
-		);
+			window.canBecomeKeyWindow);
 	}
 	game = game_window_info();
-	if (game.number != kCGNullWindowID) {
-		pid_t frontmost_process =
-			NSWorkspace.sharedWorkspace.frontmostApplication.processIdentifier;
-		NSWindowLevel target_level =
-			(frontmost_process == game.process_id || frontmost_process == getpid())
-				? NSFloatingWindowLevel
-				: NSNormalWindowLevel;
 
-		if (window.level != target_level) window.level = target_level;
-		if (logged_game_window != game.number) {
-			fprintf(
-				stderr,
-				"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
-				(long)window.windowNumber,
-				game.number,
-				game.process_id
-			);
-			logged_game_window = game.number;
-		}
+	NSWindowLevel target_level = (NSWindowLevel)(CGShieldingWindowLevel() + 1);
+
+	if (window.level != target_level) {
+		window.level = target_level;
+	}
+	[window orderFrontRegardless];
+
+	if (game.number != kCGNullWindowID && logged_game_window != game.number) {
+		fprintf(
+			stderr,
+			"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
+			(long)window.windowNumber,
+			game.number,
+			game.process_id);
+		logged_game_window = game.number;
 	}
 }
 
+/* Entry point: runs automatically when Wine loads this dylib (see PlatformProcessShim.c's
+ * __CX_UNIX_DYLD_INSERT_LIBRARIES injection). Starts a ~60 FPS presentation timer on the
+ * main queue; the short 2ms leeway keeps notice tracking smooth during game-window
+ * dragging instead of visibly lagging behind it. */
 __attribute__((constructor)) static void install_platform_process_bridge(void) {
 	if (launcher_marker[0] == '\0') return;
 	fprintf(
 		stderr,
 		"platform-window-bridge: loaded pid=%d process=%s\n",
 		getpid(),
-		NSProcessInfo.processInfo.processName.UTF8String
-	);
+		NSProcessInfo.processInfo.processName.UTF8String);
 
 	dispatch_async(dispatch_get_main_queue(), ^{
-		presentation_timer = dispatch_source_create(
-			DISPATCH_SOURCE_TYPE_TIMER,
-			0,
-			0,
-			dispatch_get_main_queue()
-		);
-		dispatch_source_set_timer(
-			presentation_timer,
-			dispatch_time(DISPATCH_TIME_NOW, 0),
-			NSEC_PER_MSEC * 100,
-			NSEC_PER_MSEC * 10
-		);
-		dispatch_source_set_event_handler(presentation_timer, ^{
-			maintain_presentation();
-		});
-		dispatch_resume(presentation_timer);
+	  presentation_timer =
+		  dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+	  dispatch_source_set_timer(
+		  presentation_timer,
+		  dispatch_time(DISPATCH_TIME_NOW, 0),
+		  NSEC_PER_MSEC * 16,
+		  NSEC_PER_MSEC * 2);
+	  dispatch_source_set_event_handler(presentation_timer, ^{
+		maintain_presentation();
+	  });
+	  dispatch_resume(presentation_timer);
 	});
 }

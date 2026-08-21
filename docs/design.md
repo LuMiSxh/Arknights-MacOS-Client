@@ -16,13 +16,14 @@ The launcher should feel like a current macOS app first and an Arknights launche
 
 ## Visual language
 
-- Arknights cyan `#18D1FF` is the only signal color.
+- The launcher's signal color is a single accent, sampled from the active hero artwork by default; Arknights cyan `#18D1FF` is the fallback whenever no artwork is loaded or no accent can be extracted, and stays available as a user-facing option to turn dynamic theming off.
 - Black and steel are used for fallback surfaces and readable text.
 - Native controls provide Liquid Glass, focus, hover, and keyboard behavior.
 - Primary and download actions use native capsule shapes; branding remains rectangular.
-- Install, Update, and Play use cyan prominent Liquid Glass; secondary actions stay neutral.
+- Install, Update, and Play use the accent color as a prominent Liquid Glass tint; secondary actions stay neutral.
 - Avoid fake window chrome, decorative metadata, large status slogans, and rounded card grids.
 - The Endfield launcher is only a layout reference. Its yellow palette is not part of this app.
+- Crossfade artwork, theme colors, primary actions, and compact status pills with short native transitions; Reduce Motion replaces movement and scaling with opacity or no animation.
 
 ## Settings and documents
 
@@ -34,6 +35,15 @@ The launcher should feel like a current macOS app first and an Arknights launche
 - Keep developer terminology out of the interface; diagnostics may refer to launcher and Wine logs because users need those names when reporting a problem.
 - Render bundled Markdown as native text. Tables may scroll horizontally, but headings and ordinary paragraphs must fit the document width.
 - Link the author and repository directly from About.
+
+## First-run setup
+
+- Present setup as an operation briefing inside the launcher window: a persistent route on the left, one focused task on the right, and the active installation status inside the relevant step.
+- Check for a newer launcher before explaining version-specific settings. If one exists, stop setup at the update action until the newer launcher is installed and reopened.
+- Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 upgrade and Legacy Game Test Mode recovery before the first game launch.
+- Let the official game download continue while the user configures display, artwork, theme, icons, updates, and audio. Do not duplicate installer progress or cancellation state inside the setup module.
+- Apply choices immediately through the same actions used in Settings. A skipped or completed assistant can be opened again from Settings → General.
+- End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form; route account, payment, and game-service issues to official Yostar support.
 
 ## Artwork
 
@@ -50,3 +60,9 @@ When the official configuration enables a notice, present its HTML as native for
 ## App icon
 
 The source icon is an Icon Composer document with separate structure, glass glyph, and cyan signal layers. Packaging includes an asset-catalog rendition so macOS 26 recognizes the icon instead of placing a legacy ICNS on a gray backing plate.
+
+Launcher and game operator presets are independent. The Launcher gallery uses its dark navy plate, signal corner, and glass facet around the operator. The Game gallery places the operator over the bundled crystalline cyan launcher background. Dynamic Theme recolors only a Launcher operator preset; it never modifies the Game icon. A local image can override either destination without changing the other.
+
+Settings gives Launcher Icon and Game Icon their own operator and local-image actions. Each action opens an isolated picker for its destination and previews only the icon that will change. Artwork remains a separate gallery destination without an in-gallery mode switch.
+
+The Wine game process uses the original executable icon for **Use Default**, but scales it to the same 412/512 visual grid as the launcher and other native Dock icons. Preset and custom game icons use the same normalized canvas. Never patch icon resources inside `Arknights.exe`.

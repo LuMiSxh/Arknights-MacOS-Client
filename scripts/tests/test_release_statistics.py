@@ -13,7 +13,7 @@ from release_statistics import release_downloads, render_statistics
 
 
 class ReleaseStatisticsTests(unittest.TestCase):
-    def test_counts_only_published_dmg_assets(self) -> None:
+    def test_counts_dmg_and_recipe_assets_separately(self) -> None:
         payload = [
             [
                 {
@@ -22,6 +22,7 @@ class ReleaseStatisticsTests(unittest.TestCase):
                     "draft": False,
                     "assets": [
                         {"name": "Arknights.Client.dmg", "download_count": 12},
+                        {"name": "Runtime-Build-Recipe.tar.gz", "download_count": 4},
                         {"name": "SHA256SUMS", "download_count": 3},
                     ],
                 },
@@ -38,7 +39,8 @@ class ReleaseStatisticsTests(unittest.TestCase):
 
         self.assertEqual(len(releases), 1)
         self.assertEqual(releases[0].version, "0.2.0")
-        self.assertEqual(releases[0].downloads, 12)
+        self.assertEqual(releases[0].dmg_downloads, 12)
+        self.assertEqual(releases[0].recipe_downloads, 4)
 
     def test_renders_totals_rates_and_latest_share(self) -> None:
         releases = release_downloads(
@@ -63,6 +65,7 @@ class ReleaseStatisticsTests(unittest.TestCase):
         output = render_statistics(releases, datetime(2026, 8, 17, 12, tzinfo=UTC))
 
         self.assertIn("Total DMG downloads: 40", output)
+        self.assertIn("Total recipe downloads: 0", output)
         self.assertIn("Latest-version share (0.2.0 vs 0.1.0): 25.0%", output)
         self.assertIn("GitHub counts asset downloads", output)
 

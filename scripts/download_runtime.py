@@ -13,9 +13,7 @@ import argparse
 import hashlib
 import os
 import shutil
-import sys
 import tempfile
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -29,6 +27,7 @@ from lib.common import (
     run_main,
     success,
 )
+from lib.console import Progress, spinner
 from lib.extract_runtime import extract
 from runtime_config import read_config, validate_config
 
@@ -69,7 +68,6 @@ def download(url: str, output: Path, expected_sha256: str) -> None:
     request = urllib.request.Request(
         url, headers={"User-Agent": "Arknights-Client-Build"}
     )
-    info("Downloading the pinned Wine + DXMT runtime")
     try:
         with (
             urllib.request.urlopen(request, timeout=60) as response,
@@ -79,33 +77,15 @@ def download(url: str, output: Path, expected_sha256: str) -> None:
                 fail("runtime download redirected to a non-HTTPS URL")
             total = int(response.headers.get("Content-Length", "0"))
             received = 0
-            last_update = 0.0
-            next_noninteractive_report = 0.1
+            progress = Progress("Downloading the pinned Wine + DXMT runtime", total)
             while chunk := response.read(1024 * 1024):
                 file.write(chunk)
                 received += len(chunk)
-                now = time.monotonic()
-                if sys.stderr.isatty() and now - last_update >= 0.2:
-                    if total:
-                        percentage = min(received / total * 100, 100)
-                        message = (
-                            f"\r  {percentage:5.1f}%  {received / 1_048_576:,.0f} MiB"
-                        )
-                    else:
-                        message = f"\r  {received / 1_048_576:,.0f} MiB"
-                    print(message, end="", file=sys.stderr, flush=True)
-                    last_update = now
-                elif total and received / total >= next_noninteractive_report:
-                    percentage = min(received / total * 100, 100)
-                    info(
-                        f"Downloaded {percentage:.0f}% ({received / 1_048_576:,.0f} MiB)"
-                    )
-                    next_noninteractive_report += 0.1
-        if sys.stderr.isatty():
-            print(file=sys.stderr)
-    except (OSError, urllib.error.URLError) as error:
+                progress.update(received)
+            progress.finish()
+    except (OSError, urllib.error.URLError) as download_error:
         partial.unlink(missing_ok=True)
-        fail(f"unable to download the runtime: {error}")
+        fail(f"unable to download the runtime: {download_error}")
 
     actual_sha256 = sha256(partial)
     if actual_sha256 != expected_sha256:
@@ -138,8 +118,8 @@ def prepare_runtime(url: str, checksum: str) -> Path:
         prefix=".runtime-download.", dir=BUILD_DIR
     ) as name:
         staging = Path(name)
-        info("Extracting the verified runtime")
-        libraries = extract(archive, staging / "runtime-archive")
+        with spinner("Extracting the verified runtime"):
+            libraries = extract(archive, staging / "runtime-archive")
         wine = libraries / "Wine"
         dxmt = libraries / "DXMT"
         if not wine.is_dir() or not dxmt.is_dir():

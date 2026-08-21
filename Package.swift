@@ -6,15 +6,25 @@ import PackageDescription
 let package = Package(
 	name: "ArknightsClient",
 	platforms: [
-		.macOS(.v26)
+		.macOS(.v15)
 	],
 	products: [
 		.executable(name: "ArknightsClient", targets: ["ArknightsClient"])
 	],
+	dependencies: [
+		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0")
+	],
 	targets: [
 		.executableTarget(
 			name: "ArknightsClient",
-			path: "Sources/ArknightsClient"
+			dependencies: [
+				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit")
+			],
+			path: "Sources/ArknightsClient",
+			resources: [
+				.copy("Resources/GameIconBackground.png"),
+				.copy("Resources/OperatorIconFrame.svg"),
+			]
 		),
 		.testTarget(
 			name: "ArknightsClientTests",

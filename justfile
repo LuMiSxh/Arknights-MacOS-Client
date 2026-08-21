@@ -6,52 +6,25 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 default:
     @just --list
 
-# Run the Arknights client from SwiftPM.
+# Run an isolated debug preview with every simulated state available in Settings → Developer.
 [group('Development')]
-run:
-    swift run ArknightsClient
-
-# Run an isolated debug preview. Try launcher-update, announcement, game-update, or downloading.
-[group('Development')]
-preview scenario='launcher-update':
+preview scenario='ready':
     swift run ArknightsClient --developer-scenario {{ quote(scenario) }}
 
-# Preview a Markdown popup without touching the real installation.
+# Download the verified runtime and build a local app bundle or dmg; add run to open it after (default: app).
 [group('Development')]
-preview-popup title body_file:
-    swift run ArknightsClient --developer-scenario custom-popup --developer-popup-title {{ quote(title) }} --developer-popup-file {{ quote(body_file) }}
+dev target='app' run='':
+    runtime_dir="$(uv run scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then uv run scripts/build_dmg.py --runtime "$runtime_dir"; path="dist/Arknights Client.dmg"; else uv run scripts/build_app.py --runtime "$runtime_dir"; path="dist/Arknights Client.app"; fi; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi
 
-# Build an isolated debug app whose Settings can simulate launcher states.
-[group('Development')]
-preview-app:
-    uv run scripts/build_app.py --configuration debug
-
-# Download the verified runtime and build a local app bundle.
-[group('Development')]
-dev:
-    runtime_dir="$(uv run scripts/download_runtime.py)"; uv run scripts/build_app.py --runtime "$runtime_dir"
-
-# Check Swift formatting using the project's strict configuration.
+# Check formatting, lint, and test swift, scripts, shim, or all (default: all).
 [group('Checks')]
-format-check:
-    swift format lint --configuration .swift-format --recursive --strict Sources Tests
+check target='all':
+    uv run scripts/checks.py check {{ quote(target) }}
 
-# Lint and format-check the repository automation.
+# Format swift, scripts, shim, or all in place (default: all).
 [group('Checks')]
-script-check:
-    uv tool run --from 'ruff==0.16.3' ruff check scripts
-    uv tool run --from 'ruff==0.16.3' ruff format --check scripts
-    uv run scripts/runtime_config.py --validate runtime.json
-    uv run --python 3.13 python -m unittest discover --start-directory scripts/tests
-
-# Run the Apple Silicon test suite.
-[group('Checks')]
-test:
-    swift test --arch arm64
-
-# Run all validation checks.
-[group('Checks')]
-check: format-check script-check test
+format target='all':
+    uv run scripts/checks.py format {{ quote(target) }}
 
 # Build the Apple Silicon release binary.
 [group('Checks')]
@@ -77,25 +50,15 @@ app runtime='':
 dmg runtime:
     uv run scripts/build_dmg.py --runtime {{ quote(runtime) }}
 
-# Download the verified runtime and build a local DMG.
-[group('Packaging')]
-dev-dmg:
-    runtime_dir="$(uv run scripts/download_runtime.py)"; uv run scripts/build_dmg.py --runtime "$runtime_dir"
-
 # Regenerate the application icon assets.
 [group('Packaging')]
 icon:
     uv run scripts/generate_icon.py
 
-# Prepare or replace a repository-hosted announcement. Commit it to main to publish it.
+# Prepare, replace, or remove a repository-hosted announcement (set/remove). Commit the change to main to publish or withdraw it.
 [group('Owner')]
-announcement-set id title body_file action_title='' action_url='':
-    uv run scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }}
-
-# Remove a repository-hosted announcement. Commit the change to withdraw it.
-[group('Owner')]
-announcement-remove id:
-    uv run scripts/manage_announcements.py remove {{ quote(id) }}
+announcement mode id title='' body_file='' action_title='' action_url='' min_version='' max_version='' starts_at='' ends_at='':
+    if [[ {{ quote(mode) }} == "remove" ]]; then uv run scripts/manage_announcements.py remove {{ quote(id) }}; else uv run scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }} --min-version {{ quote(min_version) }} --max-version {{ quote(max_version) }} --starts-at {{ quote(starts_at) }} --ends-at {{ quote(ends_at) }}; fi
 
 # Trigger a draft release for the required X.Y.Z version. Requires repository write access.
 [group('Owner')]

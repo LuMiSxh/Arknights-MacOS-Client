@@ -32,6 +32,7 @@ from lib.common import (
     run_main,
     success,
 )
+from lib.console import spinner
 from lib.patch_wine_runtime import patch_file
 from runtime_config import validate_config
 
@@ -53,6 +54,32 @@ REQUIRED_LICENSES = (
     "lgpl-2.1.txt",
     "lgpl-3.0.txt",
     "mit-dxmt.txt",
+)
+COMPATIBILITY_HELPERS = (
+    ("Vuplex/Vuplex WebView.vuplex", "Vuplex/Vuplex WebView.vuplex"),
+    ("Vuplex/userenv.dll", "Vuplex/userenv.dll"),
+    ("PlatformProcess/PlatformProcess.exe", "PlatformProcess/PlatformProcess.exe"),
+    (
+        "PlatformProcess/PlatformProcessWindowBridge.dylib",
+        "PlatformProcess/PlatformProcessWindowBridge.dylib",
+    ),
+    ("GameIcon/GameIconBridge.dylib", "GameIcon/GameIconBridge.dylib"),
+)
+SIGNED_COMPATIBILITY_HELPERS = (
+    "PlatformProcess/PlatformProcessWindowBridge.dylib",
+    "GameIcon/GameIconBridge.dylib",
+)
+APP_RESOURCES = (
+    ("Resources/AppIcon.icns", "AppIcon.icns"),
+    ("Resources/Assets.car", "Assets.car"),
+    (
+        "Sources/ArknightsClient/Resources/GameIconBackground.png",
+        "GameIconBackground.png",
+    ),
+    (
+        "Sources/ArknightsClient/Resources/OperatorIconFrame.svg",
+        "OperatorIconFrame.svg",
+    ),
 )
 
 
@@ -150,10 +177,10 @@ def embed_runtime(runtime: Path, resources: Path) -> None:
         fail(f"runtime DXMT payload not found: {runtime / 'DXMT/x64'}")
 
     destination = resources / "Runtime"
-    info("Embedding the Wine + DXMT runtime")
-    copy_runtime(runtime, destination)
-    info("Removing unused arm64 slices from the x86-64 runtime")
-    count = thin_universal_files(destination)
+    with spinner("Embedding the Wine + DXMT runtime"):
+        copy_runtime(runtime, destination)
+    with spinner("Removing unused arm64 slices from the x86-64 runtime"):
+        count = thin_universal_files(destination)
     if count:
         info(f"Thinned {count} universal runtime files")
 
@@ -204,19 +231,8 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
         copy_file(
             PROJECT_DIR / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )
-        if configuration == "debug":
-            run(
-                [
-                    "plutil",
-                    "-insert",
-                    "DeveloperPreviewEnabled",
-                    "-bool",
-                    "YES",
-                    staged_app / "Contents/Info.plist",
-                ]
-            )
-        copy_file(PROJECT_DIR / "Resources/AppIcon.icns", resources / "AppIcon.icns")
-        copy_file(PROJECT_DIR / "Resources/Assets.car", resources / "Assets.car")
+        for source, destination in APP_RESOURCES:
+            copy_file(PROJECT_DIR / source, resources / destination)
 
         helper_root = BUILD_DIR / "helpers"
         info("Building the game compatibility components")
@@ -230,30 +246,19 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
             ]
         )
         compatibility = resources / "Compatibility"
-        compatibility_helpers = (
-            ("Vuplex/Vuplex WebView.vuplex", "Vuplex/Vuplex WebView.vuplex"),
-            ("Vuplex/userenv.dll", "Vuplex/userenv.dll"),
-            (
-                "PlatformProcess/PlatformProcess.exe",
-                "PlatformProcess/PlatformProcess.exe",
-            ),
-            (
-                "PlatformProcess/PlatformProcessWindowBridge.dylib",
-                "PlatformProcess/PlatformProcessWindowBridge.dylib",
-            ),
-        )
-        for source, destination in compatibility_helpers:
+        for source, destination in COMPATIBILITY_HELPERS:
             copy_file(helper_root / source, compatibility / destination)
-        run(
-            [
-                "codesign",
-                "--force",
-                "--sign",
-                "-",
-                "--timestamp=none",
-                compatibility / "PlatformProcess/PlatformProcessWindowBridge.dylib",
-            ]
-        )
+        for helper in SIGNED_COMPATIBILITY_HELPERS:
+            run(
+                [
+                    "codesign",
+                    "--force",
+                    "--sign",
+                    "-",
+                    "--timestamp=none",
+                    compatibility / helper,
+                ]
+            )
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:

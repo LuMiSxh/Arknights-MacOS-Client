@@ -12,10 +12,18 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from lib.common import PROJECT_DIR, fail, require_file, run_main, success
+from lib.common import (
+    PROJECT_DIR,
+    VERSION_PATTERN,
+    fail,
+    require_file,
+    run_main,
+    success,
+)
 
 FEED_PATH = PROJECT_DIR / "announcements.json"
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
@@ -51,6 +59,26 @@ def validate_url(value: str) -> str | None:
     return value
 
 
+def validate_version(value: str, *, flag: str) -> str | None:
+    if not value:
+        return None
+    if not VERSION_PATTERN.fullmatch(value):
+        fail(f"{flag} must use X.Y.Z with numeric components")
+    return value
+
+
+def validate_timestamp(value: str, *, flag: str) -> tuple[str, datetime] | None:
+    if not value:
+        return None
+    if not value.endswith("Z"):
+        fail(f"{flag} must be an ISO-8601 UTC timestamp ending in Z")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        fail(f"{flag} must be a valid ISO-8601 UTC timestamp")
+    return value, parsed
+
+
 def set_announcement(arguments: argparse.Namespace) -> None:
     if not ID_PATTERN.fullmatch(arguments.id):
         fail(
@@ -66,6 +94,12 @@ def set_announcement(arguments: argparse.Namespace) -> None:
     action_title = arguments.action_title.strip() or None
     if bool(action_title) != bool(action_url):
         fail("action title and action URL must either both be set or both be empty")
+    minimum_version = validate_version(arguments.min_version, flag="--min-version")
+    maximum_version = validate_version(arguments.max_version, flag="--max-version")
+    starts_at = validate_timestamp(arguments.starts_at, flag="--starts-at")
+    ends_at = validate_timestamp(arguments.ends_at, flag="--ends-at")
+    if starts_at and ends_at and starts_at[1] >= ends_at[1]:
+        fail("--starts-at must be earlier than --ends-at")
 
     announcement = {
         "id": arguments.id,
@@ -74,10 +108,10 @@ def set_announcement(arguments: argparse.Namespace) -> None:
         "body": body,
         "actionTitle": action_title,
         "actionURL": action_url,
-        "minimumVersion": None,
-        "maximumVersion": None,
-        "startsAt": None,
-        "endsAt": None,
+        "minimumVersion": minimum_version,
+        "maximumVersion": maximum_version,
+        "startsAt": starts_at[0] if starts_at else None,
+        "endsAt": ends_at[0] if ends_at else None,
     }
     feed = load_feed()
     items = feed["announcements"]
@@ -121,6 +155,10 @@ def main() -> None:
     set_parser.add_argument("body_file")
     set_parser.add_argument("--action-title", default="")
     set_parser.add_argument("--action-url", default="")
+    set_parser.add_argument("--min-version", default="")
+    set_parser.add_argument("--max-version", default="")
+    set_parser.add_argument("--starts-at", default="")
+    set_parser.add_argument("--ends-at", default="")
     set_parser.set_defaults(function=set_announcement)
     remove_parser = subparsers.add_parser("remove", help="remove an announcement")
     remove_parser.add_argument("id")

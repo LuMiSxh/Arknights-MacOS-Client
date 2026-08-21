@@ -14,6 +14,25 @@ import build_app
 
 
 class AppBundleTests(unittest.TestCase):
+    def test_operator_icon_resources_are_bundled(self) -> None:
+        background = (
+            "Sources/ArknightsClient/Resources/GameIconBackground.png",
+            "GameIconBackground.png",
+        )
+        frame = (
+            "Sources/ArknightsClient/Resources/OperatorIconFrame.svg",
+            "OperatorIconFrame.svg",
+        )
+
+        self.assertIn(background, build_app.APP_RESOURCES)
+        self.assertIn(frame, build_app.APP_RESOURCES)
+
+    def test_game_icon_bridge_is_bundled_and_signed(self) -> None:
+        helper = ("GameIcon/GameIconBridge.dylib", "GameIcon/GameIconBridge.dylib")
+
+        self.assertIn(helper, build_app.COMPATIBILITY_HELPERS)
+        self.assertIn(helper[1], build_app.SIGNED_COMPATIBILITY_HELPERS)
+
     def test_runtime_copy_excludes_development_payloads(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

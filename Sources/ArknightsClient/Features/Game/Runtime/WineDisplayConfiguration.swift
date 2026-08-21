@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import AppKit
+import Foundation
+
+/// Whether to run the game and its login browser at full backing-store resolution, derived
+/// from the current screen's scale factor, the user's toggle, and a `--no-retina` override.
+struct WineDisplayConfiguration: Equatable, Sendable {
+	let retinaEnabled: Bool
+
+	init(
+		backingScaleFactor: CGFloat,
+		highResolutionEnabled: Bool = true,
+		forceDisabled: Bool = false
+	) {
+		retinaEnabled = backingScaleFactor > 1 && highResolutionEnabled && !forceDisabled
+	}
+
+	@MainActor
+	static func current(
+		highResolutionEnabled: Bool,
+		arguments: [String] = ProcessInfo.processInfo.arguments,
+		forceDisabled: Bool = false
+	) -> WineDisplayConfiguration {
+		let scale =
+			NSApp.keyWindow?.screen?.backingScaleFactor
+			?? NSScreen.main?.backingScaleFactor
+			?? 1
+		return WineDisplayConfiguration(
+			backingScaleFactor: scale,
+			highResolutionEnabled: highResolutionEnabled,
+			forceDisabled: forceDisabled || arguments.contains("--no-retina")
+		)
+	}
+
+	var registryValue: String { retinaEnabled ? "y" : "n" }
+	var logPixels: Int { 96 }
+	var browserScaleFactor: Int { retinaEnabled ? 2 : 1 }
+
+	func registryState(in prefixDirectory: URL) -> WineDisplayRegistryState? {
+		let registryURL = prefixDirectory.appending(path: "user.reg")
+		guard
+			let contents = try? String(contentsOf: registryURL, encoding: .utf8)
+		else { return nil }
+
+		let macDriverSection = "[Software\\\\Wine\\\\Mac Driver]"
+		let desktopSection = "[Control Panel\\\\Desktop]"
+		var section = ""
+		var retinaMode: String?
+		var configuredLogPixels: Int?
+		var usePreciseScrolling: String?
+		for line in contents.split(separator: "\n", omittingEmptySubsequences: false) {
+			if line.hasPrefix("["), let closingBracket = line.firstIndex(of: "]") {
+				section = String(line[...closingBracket])
+				continue
+			}
+			if section == macDriverSection && line.hasPrefix("\"RetinaMode\"=\"") {
+				retinaMode = line.dropFirst(14).dropLast().lowercased()
+			}
+			if section == macDriverSection && line.hasPrefix("\"UsePreciseScrolling\"=\"") {
+				usePreciseScrolling = String(line.dropFirst(23).dropLast().lowercased())
+			}
+			if section == desktopSection && line.hasPrefix("\"LogPixels\"=dword:") {
+				configuredLogPixels = Int(line.dropFirst(18), radix: 16)
+			}
+		}
+		return WineDisplayRegistryState(
+			retinaMode: retinaMode,
+			logPixels: configuredLogPixels,
+			usePreciseScrolling: usePreciseScrolling
+		)
+	}
+}
+
+struct WineDisplayRegistryState: Equatable, Sendable {
+	let retinaMode: String?
+	let logPixels: Int?
+	let usePreciseScrolling: String?
+}
