@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// One one-time Wine prefix setup step, recorded so it isn't replayed on every launch.
+/// One-time Wine prefix setup step, recorded so it isn't replayed on every launch.
 enum RuntimeMigration: String, CaseIterable, Codable, Sendable {
 	case initializeWinePrefix = "initialize-wine-prefix"
 	case installDXMT = "install-dxmt"

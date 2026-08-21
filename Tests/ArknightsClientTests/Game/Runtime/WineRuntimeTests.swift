@@ -272,3 +272,27 @@ func gameWindowReadinessTimesOutWhenTheRuntimeNeverCreatesAWindow() async {
 		)
 	}
 }
+
+@Test
+func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
+	let runtime = WineRuntime(
+		executableURL: URL(filePath: "/runtime/bin/Arknights"),
+		displayName: "Test",
+		revision: "test",
+		compatibilityManager: GameCompatibilityManager()
+	)
+	let task = Task {
+		try await runtime.runAndWait(
+			executable: URL(filePath: "/bin/sh"),
+			arguments: ["-c", "exec sleep 30"],
+			environment: ProcessInfo.processInfo.environment,
+			output: .nullDevice
+		)
+	}
+	try await Task.sleep(for: .milliseconds(50))
+	task.cancel()
+
+	await #expect(throws: CancellationError.self) {
+		try await task.value
+	}
+}

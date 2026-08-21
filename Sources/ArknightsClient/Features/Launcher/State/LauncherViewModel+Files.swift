@@ -8,6 +8,7 @@ extension LauncherViewModel {
 		#if DEBUG
 			if isDeveloperMode { return }
 		#endif
+		guard state.activity == .idle else { return }
 		let panel = NSOpenPanel()
 		panel.title = "Choose where to install Arknights"
 		panel.prompt = "Choose"
@@ -29,6 +30,7 @@ extension LauncherViewModel {
 		#if DEBUG
 			if isDeveloperMode { return }
 		#endif
+		guard state.activity == .idle else { return }
 		let panel = NSOpenPanel()
 		panel.title = "Choose the folder containing Arknights.exe"
 		panel.prompt = "Use Folder"
@@ -40,7 +42,7 @@ extension LauncherViewModel {
 			installDirectory = selected
 			preferences.setInstallDirectory(selected, for: region)
 			updateInstalledState()
-			activityMessage = isInstalled ? "Ready" : "Arknights.exe not found"
+			setStatus(isInstalled ? .ready : .custom("Arknights.exe not found"))
 		}
 	}
 
@@ -54,7 +56,12 @@ extension LauncherViewModel {
 		launchOptions = .default
 		showsServerResetCountdown = false
 		showsGameVersion = true
-		activityMessage = "Settings reset to default"
+		playsLauncherMusic = true
+		launcherMusicURL = AppConstants.Music.defaultLauncherMusicURL
+		showsPlayingMusic = false
+		launcherMusicVolume = 0.5
+		usesDynamicTheme = true
+		setStatus(.custom("Settings reset to default"))
 		Task { [log] in await log.info("Launcher settings reset to default") }
 	}
 
@@ -78,21 +85,43 @@ extension LauncherViewModel {
 		NSWorkspace.shared.activateFileViewerSelecting([installDirectory])
 	}
 
-	var cacheSizeText: String {
-		ByteCountFormatter.string(
-			fromByteCount: GameCacheCleaner.totalSize(winePrefix: paths.winePrefix),
-			countStyle: .file
-		)
+	func clearCache() {
+		guard state.activity == .idle else { return }
+		state.activity = .maintaining(.clearingCache)
+		let winePrefix = paths.winePrefix
+		Task { [weak self] in
+			guard let self else { return }
+			do {
+				let updatedCacheSizeText = try await Task.detached(priority: .utility) {
+					try GameCacheCleaner.clear(winePrefix: winePrefix)
+					return Self.gameCacheSizeText(winePrefix: winePrefix)
+				}.value
+				state.activity = .idle
+				cacheSizeText = updatedCacheSizeText
+				setStatus(.custom("Cache cleared"))
+				await log.info("Shader and browser caches cleared")
+			} catch {
+				state.activity = .idle
+				show(error)
+			}
+		}
 	}
 
-	func clearCache() {
-		do {
-			try GameCacheCleaner.clear(winePrefix: paths.winePrefix)
-			activityMessage = "Cache cleared"
-			Task { [log] in await log.info("Shader and browser caches cleared") }
-		} catch {
-			show(error)
+	func refreshGameCacheSize() {
+		let winePrefix = paths.winePrefix
+		Task { [weak self] in
+			let text = await Task.detached(priority: .utility) {
+				Self.gameCacheSizeText(winePrefix: winePrefix)
+			}.value
+			self?.cacheSizeText = text
 		}
+	}
+
+	private nonisolated static func gameCacheSizeText(winePrefix: URL) -> String {
+		ByteCountFormatter.string(
+			fromByteCount: GameCacheCleaner.totalSize(winePrefix: winePrefix),
+			countStyle: .file
+		)
 	}
 
 	func clearPresetGalleryCache() {
@@ -101,7 +130,7 @@ extension LauncherViewModel {
 			do {
 				try await presetCatalog.clearCaches()
 				let cacheSizeText = await presetCatalog.cacheSizeText()
-				activityMessage = "Asset gallery caches cleared"
+				setStatus(.custom("Asset gallery caches cleared"))
 				presetGalleryCacheSizeText = cacheSizeText
 				await log.info("Preset gallery caches cleared")
 			} catch {
@@ -123,26 +152,28 @@ extension LauncherViewModel {
 		#if DEBUG
 			if isDeveloperMode { return }
 		#endif
-		guard !isDownloading else { return }
+		guard state.activity == .idle else { return }
 		guard FileManager.default.fileExists(atPath: installDirectory.path) else {
 			updateInstalledState()
 			return
 		}
 		let target = installDirectory
-		activityMessage = "Moving to Trash…"
+		state.activity = .maintaining(.uninstalling)
+		setStatus(.movingToTrash)
 		Task { [log] in await log.info("Game uninstall requested") }
 		NSWorkspace.shared.recycle([target]) { [weak self] _, error in
 			Task { @MainActor in
 				guard let self else { return }
 				if let error {
+					self.state.activity = .idle
 					self.show(error)
 				} else {
 					self.isInstalled = false
 					self.hasPartialDownload = false
 					self.installedVersion = nil
 					self.isGameUpdateAvailable = false
-					self.phase = .ready
-					self.activityMessage = "Uninstalled"
+					self.state.activity = .idle
+					self.setStatus(.uninstalled)
 				}
 			}
 		}
@@ -182,10 +213,20 @@ extension LauncherViewModel {
 
 	func loadInstalledState() -> InstalledState? {
 		let url = installDirectory.appending(path: ".arknights-client-state.json")
-		guard let data = try? Data(contentsOf: url) else { return nil }
-		let decoder = JSONDecoder()
-		decoder.dateDecodingStrategy = .iso8601
-		return try? decoder.decode(InstalledState.self, from: data)
+		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+		do {
+			let data = try Data(contentsOf: url)
+			let decoder = JSONDecoder()
+			decoder.dateDecodingStrategy = .iso8601
+			return try decoder.decode(InstalledState.self, from: data)
+		} catch {
+			Task { [log, region] in
+				await log.error(
+					"Installed state for \(region.displayName) is unreadable at \(url.path): \(error.localizedDescription)"
+				)
+			}
+			return nil
+		}
 	}
 
 	/// Cheap local existence check for a region that may not be the active one, so the main
@@ -231,13 +272,12 @@ extension LauncherViewModel {
 	}
 
 	func isCurrentRefresh(_ refreshID: UUID) -> Bool {
-		activeRefreshID == refreshID && !Task.isCancelled && !isDownloading
+		state.refresh.requestID == refreshID && !Task.isCancelled && !isDownloading
 	}
 
 	func show(_ error: Error) {
 		let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-		phase = .failed(message)
-		activityMessage = message
+		state.presentation.failureMessage = message
 		Task { [log] in await log.error(message) }
 	}
 }

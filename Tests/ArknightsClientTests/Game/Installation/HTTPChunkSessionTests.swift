@@ -5,40 +5,76 @@ import Testing
 
 @testable import ArknightsClient
 
-@Test
-func chunkSessionStreamsResponseAndBodyWithoutPerByteIteration() async throws {
-	let configuration = URLSessionConfiguration.ephemeral
-	configuration.protocolClasses = [ChunkedURLProtocol.self]
-	let session = HTTPChunkSession(configuration: configuration)
-	let url = URL(string: "https://download.test/game.bin")!
-	let expected = Data(repeating: 0xA5, count: 512 * 1_024)
-	ChunkedURLProtocol.response = HTTPURLResponse(
-		url: url,
-		statusCode: 206,
-		httpVersion: "HTTP/1.1",
-		headerFields: ["Content-Length": String(expected.count)]
-	)!
-	ChunkedURLProtocol.chunks = [
-		expected.subdata(in: 0..<(128 * 1_024)),
-		expected.subdata(in: (128 * 1_024)..<(384 * 1_024)),
-		expected.subdata(in: (384 * 1_024)..<expected.count),
-	]
-	defer { ChunkedURLProtocol.reset() }
+@Suite(.serialized)
+struct HTTPChunkSessionTests {
+	@Test
+	func chunkSessionStreamsResponseAndBodyWithoutPerByteIteration() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(configuration: configuration)
+		let url = URL(string: "https://download.test/game.bin")!
+		let expected = Data(repeating: 0xA5, count: 512 * 1_024)
+		ChunkedURLProtocol.response = HTTPURLResponse(
+			url: url,
+			statusCode: 206,
+			httpVersion: "HTTP/1.1",
+			headerFields: ["Content-Length": String(expected.count)]
+		)!
+		ChunkedURLProtocol.chunks = [
+			expected.subdata(in: 0..<(128 * 1_024)),
+			expected.subdata(in: (128 * 1_024)..<(384 * 1_024)),
+			expected.subdata(in: (384 * 1_024)..<expected.count),
+		]
+		defer { ChunkedURLProtocol.reset() }
 
-	let stream = session.stream(for: URLRequest(url: url))
-	var status: Int?
-	var received = Data()
-	for try await event in stream.events {
-		switch event {
-		case .response(let response):
-			status = response.statusCode
-		case .data(let data):
-			received.append(data)
+		let stream = session.stream(for: URLRequest(url: url))
+		var status: Int?
+		var received = Data()
+		for try await event in stream.events {
+			switch event {
+			case .response(let response):
+				status = response.statusCode
+			case .data(let data):
+				received.append(data)
+			}
 		}
+
+		#expect(status == 206)
+		#expect(received == expected)
 	}
 
-	#expect(status == 206)
-	#expect(received == expected)
+	@Test
+	func chunkSessionCreatesConcurrentStreamsWithoutRacingSessionSetup() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(configuration: configuration)
+		let url = URL(string: "https://download.test/game.bin")!
+		let expected = Data(repeating: 0x5A, count: 4_096)
+		ChunkedURLProtocol.response = HTTPURLResponse(
+			url: url,
+			statusCode: 206,
+			httpVersion: "HTTP/1.1",
+			headerFields: ["Content-Length": String(expected.count)]
+		)!
+		ChunkedURLProtocol.chunks = [expected]
+		defer { ChunkedURLProtocol.reset() }
+
+		let bodies = try await withThrowingTaskGroup(of: Data.self) { group in
+			for _ in 0..<16 {
+				group.addTask {
+					let stream = session.stream(for: URLRequest(url: url))
+					return try await stream.events.reduce(into: Data()) { body, event in
+						if case .data(let chunk) = event {
+							body.append(chunk)
+						}
+					}
+				}
+			}
+			return try await group.reduce(into: []) { $0.append($1) }
+		}
+
+		#expect(bodies == Array(repeating: expected, count: 16))
+	}
 }
 
 private final class ChunkedURLProtocol: URLProtocol, @unchecked Sendable {

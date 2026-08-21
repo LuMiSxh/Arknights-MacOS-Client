@@ -19,18 +19,20 @@ extension LauncherViewModel {
 	}
 
 	func applyCustomArtwork(from url: URL) {
-		do {
-			try FileManager.default.createDirectory(
-				at: paths.customArtwork.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			if FileManager.default.fileExists(atPath: paths.customArtwork.path) {
-				try FileManager.default.removeItem(at: paths.customArtwork)
+		Task { [weak self] in
+			guard let self else { return }
+			do {
+				let data = try await Task.detached(priority: .userInitiated) {
+					try Data(contentsOf: url, options: .mappedIfSafe)
+				}.value
+				guard NSImage(data: data) != nil else {
+					show(LauncherError.invalidCustomImage(url))
+					return
+				}
+				await applyDirectCustomArtwork(data: data)
+			} catch {
+				show(error)
 			}
-			try FileManager.default.copyItem(at: url, to: paths.customArtwork)
-			applyDirectCustomArtwork(data: try Data(contentsOf: paths.customArtwork))
-		} catch {
-			show(error)
 		}
 	}
 
@@ -47,202 +49,41 @@ extension LauncherViewModel {
 			return
 		}
 		guard !isDownloading else { return }
-		activeRefreshID = nil
+		state.refresh = .idle
 		refreshTask?.cancel()
 		refreshTask = Task { [weak self] in await self?.refresh() }
 	}
 
-	/// Keeps an Application Support copy for updates, then delegates every macOS icon surface
-	/// to `LauncherIconManager`; the running-process icon itself resets between launches.
-	func chooseCustomAppIcon() {
-		let panel = NSOpenPanel()
-		panel.title = "Choose an app icon"
-		panel.prompt = "Choose"
-		panel.allowedContentTypes = [.image]
-		panel.canChooseDirectories = false
-		panel.canChooseFiles = true
-		panel.allowsMultipleSelection = false
-		guard panel.runModal() == .OK, let selected = panel.url else { return }
-		applyCustomAppIcon(from: selected)
-	}
-
-	func applyCustomAppIcon(from url: URL) {
-		guard let rawImage = NSImage(contentsOf: url) else {
-			show(LauncherError.invalidCustomImage(url))
+	func applyDirectCustomArtwork(data: Data) async {
+		guard let image = NSImage(data: data) else {
+			show(LauncherError.invalidCustomImage(paths.customArtwork))
 			return
 		}
+		let destination = paths.customArtwork
 		do {
-			try clearOperatorPresetAvatar()
-		} catch {
-			show(error)
-			return
-		}
-		applyDirectCustomAppIcon(image: AppIconRenderer.padToAppleGrid(image: rawImage))
-	}
-
-	func applyDirectCustomAppIcon(image: NSImage) {
-		guard let png = encodedIconPNG(image) else {
-			show(LauncherError.cannotEncodeAppIcon)
-			return
-		}
-
-		do {
-			try FileManager.default.createDirectory(
-				at: paths.customAppIcon.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			try png.write(to: paths.customAppIcon)
-			guard launcherIconManager.apply(image) else {
-				throw LauncherError.cannotSetAppIcon
-			}
-		} catch {
-			show(error)
-		}
-	}
-
-	func chooseCustomGameIcon() {
-		let panel = NSOpenPanel()
-		panel.title = "Choose a game icon"
-		panel.prompt = "Choose"
-		panel.allowedContentTypes = [.image]
-		panel.canChooseDirectories = false
-		panel.canChooseFiles = true
-		panel.allowsMultipleSelection = false
-		guard panel.runModal() == .OK, let selected = panel.url else { return }
-		applyCustomGameIcon(from: selected)
-	}
-
-	func applyCustomGameIcon(from url: URL) {
-		guard let rawImage = NSImage(contentsOf: url) else {
-			show(LauncherError.invalidCustomImage(url))
-			return
-		}
-		do {
-			try clearOperatorPresetAvatar()
-		} catch {
-			show(error)
-			return
-		}
-		applyDirectCustomGameIcon(image: AppIconRenderer.padToAppleGrid(image: rawImage))
-	}
-
-	func applyPresetAvatar(data: Data) {
-		guard
-			let icons = AppIconRenderer.createPresetIconPair(
-				from: data, accentHue: dynamicThemeHue
-			),
-			let launcherPNG = encodedIconPNG(icons.launcher),
-			let gamePNG = encodedIconPNG(icons.game)
-		else {
-			show(LauncherError.cannotEncodeAppIcon)
-			return
-		}
-
-		do {
-			let sourceURL = paths.operatorPresetAvatar
-			try FileManager.default.createDirectory(
-				at: sourceURL.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			try launcherPNG.write(to: paths.customAppIcon, options: .atomic)
-			try gamePNG.write(to: paths.customGameIcon, options: .atomic)
-			guard launcherIconManager.apply(icons.launcher) else {
-				throw LauncherError.cannotSetAppIcon
-			}
-			try data.write(to: sourceURL, options: .atomic)
-			activityMessage = "Launcher and game icons updated"
-		} catch {
-			show(error)
-		}
-	}
-
-	func applyDirectCustomGameIcon(image: NSImage) {
-		guard let png = encodedIconPNG(image) else {
-			show(LauncherError.cannotEncodeAppIcon)
-			return
-		}
-		do {
-			try FileManager.default.createDirectory(
-				at: paths.customGameIcon.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			try png.write(to: paths.customGameIcon, options: .atomic)
-			activityMessage = "Game icon updated for the next launch"
-		} catch {
-			show(error)
-		}
-	}
-
-	var hasCustomGameIcon: Bool {
-		FileManager.default.fileExists(atPath: paths.customGameIcon.path)
-	}
-
-	func resetGameIcon() {
-		do {
-			if FileManager.default.fileExists(atPath: paths.customGameIcon.path) {
-				try FileManager.default.removeItem(at: paths.customGameIcon)
-			}
-			try clearOperatorPresetAvatar()
-			activityMessage = "Default game icon restored for the next launch"
-		} catch {
-			show(error)
-		}
-	}
-
-	func applyDirectCustomArtwork(data: Data) {
-		do {
-			try FileManager.default.createDirectory(
-				at: paths.customArtwork.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			try data.write(to: paths.customArtwork)
-			if let image = NSImage(data: data) {
-				setHeroArtwork(
-					image,
-					themeCacheKey: Self.customThemeCacheKey(for: data)
+			try await Task.detached(priority: .userInitiated) {
+				try FileManager.default.createDirectory(
+					at: destination.deletingLastPathComponent(),
+					withIntermediateDirectories: true
 				)
-			}
+				try data.write(to: destination, options: .atomic)
+			}.value
+			setHeroArtwork(
+				image,
+				themeCacheKey: Self.customThemeCacheKey(for: data)
+			)
 		} catch {
 			show(error)
 		}
 	}
 
-	var hasCustomAppIcon: Bool {
-		FileManager.default.fileExists(atPath: paths.customAppIcon.path)
-	}
-
-	func resetAppIcon() {
+	func loadCustomArtwork() async -> Bool {
+		let artworkURL = paths.customArtwork
+		guard FileManager.default.fileExists(atPath: artworkURL.path) else { return false }
 		do {
-			if FileManager.default.fileExists(atPath: paths.customAppIcon.path) {
-				try FileManager.default.removeItem(at: paths.customAppIcon)
-			}
-			try clearOperatorPresetAvatar()
-			guard launcherIconManager.reset() else {
-				throw LauncherError.cannotSetAppIcon
-			}
-			updateThemeColor()
-		} catch {
-			show(error)
-		}
-	}
-
-	@discardableResult
-	func loadCustomAppIcon() -> Bool {
-		guard let image = NSImage(contentsOf: paths.customAppIcon) else { return false }
-		if !launcherIconManager.apply(image) {
-			Task { [log] in
-				await log.error(
-					"Failed to reapply the saved launcher icon to the app bundle"
-				)
-			}
-		}
-		return true
-	}
-
-	func loadCustomArtwork() -> Bool {
-		guard FileManager.default.fileExists(atPath: paths.customArtwork.path) else { return false }
-		do {
-			let data = try Data(contentsOf: paths.customArtwork, options: .mappedIfSafe)
+			let data = try await Task.detached(priority: .utility) {
+				try Data(contentsOf: artworkURL, options: .mappedIfSafe)
+			}.value
 			guard let image = NSImage(data: data) else {
 				Task { [log] in
 					await log.error("Custom launcher artwork is not a valid image")
@@ -261,62 +102,36 @@ extension LauncherViewModel {
 		}
 	}
 
-	private static func customThemeCacheKey(for data: Data) -> String {
-		let digest = SHA256.hash(data: data)
-		return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
-	}
-
-	func resetOperatorIcons() {
+	func loadInitialAssets(for region: GameRegion) async {
+		_ = await loadCustomAppIcon()
+		let hasCustomArtwork = await loadCustomArtwork()
 		do {
-			for url in [paths.customAppIcon, paths.customGameIcon, paths.operatorPresetAvatar]
-			where FileManager.default.fileExists(atPath: url.path) {
-				try FileManager.default.removeItem(at: url)
-			}
-			guard launcherIconManager.reset() else {
-				throw LauncherError.cannotSetAppIcon
-			}
-			updateThemeColor()
-			activityMessage = "Default Launcher and game icons restored"
-		} catch {
-			show(error)
-		}
-	}
-
-	func refreshOperatorPresetIconsForTheme(hue: Double?) async {
-		let sourceURL = paths.operatorPresetAvatar
-		guard FileManager.default.fileExists(atPath: sourceURL.path) else { return }
-		do {
-			let data = try await Task.detached(priority: .utility) {
-				try Data(contentsOf: sourceURL)
+			let artworkCache = artworkCache
+			let cached = try await Task.detached(priority: .utility) {
+				let artwork =
+					hasCustomArtwork ? nil : try artworkCache.cachedActiveImageData(for: region)
+				let logo = try artworkCache.cachedOfficialLogoData()
+				return (artwork, logo)
 			}.value
-			guard
-				let icons = AppIconRenderer.createPresetIconPair(from: data, accentHue: hue),
-				let launcherPNG = encodedIconPNG(icons.launcher),
-				let gamePNG = encodedIconPNG(icons.game)
-			else { throw LauncherError.cannotEncodeAppIcon }
-			try launcherPNG.write(to: paths.customAppIcon, options: .atomic)
-			try gamePNG.write(to: paths.customGameIcon, options: .atomic)
-			guard launcherIconManager.apply(icons.launcher) else {
-				throw LauncherError.cannotSetAppIcon
+			if let (cacheKey, data) = cached.0, let image = NSImage(data: data) {
+				setHeroArtwork(
+					image,
+					themeCacheKey: Self.officialThemeCacheKey(
+						for: region,
+						artworkCacheKey: cacheKey
+					)
+				)
 			}
+			if let logoData = cached.1 { officialLogo = NSImage(data: logoData) }
 		} catch {
 			await log.error(
-				"Failed to refresh operator icons for Dynamic Theme: \(error.localizedDescription)"
+				"Failed to load cached artwork for \(region.displayName): \(error.localizedDescription)"
 			)
 		}
 	}
 
-	private func encodedIconPNG(_ image: NSImage) -> Data? {
-		guard let tiff = image.tiffRepresentation,
-			let representation = NSBitmapImageRep(data: tiff)
-		else { return nil }
-		return representation.representation(using: .png, properties: [:])
-	}
-
-	private func clearOperatorPresetAvatar() throws {
-		let sourceURL = paths.operatorPresetAvatar
-		if FileManager.default.fileExists(atPath: sourceURL.path) {
-			try FileManager.default.removeItem(at: sourceURL)
-		}
+	private static func customThemeCacheKey(for data: Data) -> String {
+		let digest = SHA256.hash(data: data)
+		return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
 	}
 }

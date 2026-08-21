@@ -3,7 +3,7 @@
 import Foundation
 
 /// One binary-swap fix applied to the game install (see `VuplexCompatibility`,
-/// `PlatformProcessCompatibility`); install and restore share `GameShimIO`'s atomic-swap and
+/// `PlatformProcessCompatibility`); install and restore share `GameShimIO`'s guarded-swap and
 /// marker-check engine so every component behaves identically.
 protocol GameCompatibilityComponent: Sendable {
 	var identifier: String { get }

@@ -38,7 +38,7 @@ struct ExtractedAccent {
 
 /// Derives a vibrant accent color from the launcher's hero artwork for dynamic theming.
 /// Drawing the thumbnail must stay on the main actor (AppKit drawing isn't thread-safe), but
-/// the pixel scan itself runs off it, per `AGENTS.md`'s rule for extraction work.
+/// the pixel scan itself runs on a background executor to keep synchronous image work off UI.
 @MainActor
 enum WallpaperColorExtractor {
 	/// Returns `nil` when the sampled thumbnail has no pixel with any real hue (e.g.

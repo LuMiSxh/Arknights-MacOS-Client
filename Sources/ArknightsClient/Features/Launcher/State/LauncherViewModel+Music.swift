@@ -1,16 +1,27 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import Foundation
 import YouTubePlayerKit
 
 extension LauncherViewModel: BackgroundMusicContext {}
 
 extension LauncherViewModel {
+	func openCurrentMusicURL() {
+		if let currentMusicVideoID,
+			let url = URL(string: "https://www.youtube.com/watch?v=\(currentMusicVideoID)")
+		{
+			NSWorkspace.shared.open(url)
+			return
+		}
+		let trimmed = launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
+		if let url = URL(string: trimmed) { NSWorkspace.shared.open(url) }
+	}
+
 	/// Is true only while the game window is actually running, not during launcher
 	/// startup and runtime preparation.
 	var isGameProcessRunning: Bool {
-		if case .running = phase { return true }
-		return false
+		state.activity.isGameProcessRunning
 	}
 
 	var parsedYouTubeSource: YouTubePlayer.Source? {

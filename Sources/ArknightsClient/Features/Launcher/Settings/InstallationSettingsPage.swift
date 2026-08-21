@@ -59,7 +59,7 @@ struct InstallationSettingsPage: View {
 						title: "Change…",
 						systemImage: "arrow.triangle.swap",
 						accentColor: model.accentColor,
-						isDisabled: model.isDownloading
+						isDisabled: !model.canModifyGameFiles
 					) {
 						Button("Choose New Location…", action: model.chooseInstallDirectory)
 						Button(
@@ -93,7 +93,7 @@ struct InstallationSettingsPage: View {
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.clearCache
 					)
-					.disabled(model.isGameActive)
+					.disabled(!model.canModifyGameFiles)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -177,7 +177,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsForceMigration = true
 					}
-					.disabled(model.isDownloading || model.isGameActive)
+					.disabled(!model.canModifyGameFiles)
 					.confirmationDialog(
 						"Force Wine Setup to Run Again?",
 						isPresented: $confirmsForceMigration,
@@ -206,7 +206,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsWinePrefixDeletion = true
 					}
-					.disabled(model.isDownloading || model.isGameActive)
+					.disabled(!model.canModifyGameFiles)
 					.confirmationDialog(
 						"Delete the Wine Prefix?",
 						isPresented: $confirmsWinePrefixDeletion,
@@ -233,7 +233,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsGameUninstall = true
 					}
-					.disabled(!model.isInstalled || model.isDownloading)
+					.disabled(!model.isInstalled || !model.canModifyGameFiles)
 					.confirmationDialog(
 						"Uninstall Arknights?",
 						isPresented: $confirmsGameUninstall,

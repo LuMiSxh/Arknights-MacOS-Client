@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Darwin
 import Foundation
 
 struct WineProcessExit: Sendable {
@@ -95,18 +94,44 @@ struct WineRuntime: Sendable {
 		bundle: Bundle = .main,
 		fileManager: FileManager = .default,
 		compatibilityManager: GameCompatibilityManager
-	) -> WineRuntime? {
-		guard let resources = bundle.resourceURL else { return nil }
+	) throws -> WineRuntime {
+		guard let resources = bundle.resourceURL else {
+			throw WineRuntimeDiscoveryError.missingResourceDirectory
+		}
 		let executable = resources.appending(path: "Runtime/bin/Arknights")
-		guard fileManager.isExecutableFile(atPath: executable.path) else { return nil }
+		guard fileManager.isExecutableFile(atPath: executable.path) else {
+			throw WineRuntimeDiscoveryError.missingExecutable(executable)
+		}
 		let configurationURL = resources.appending(path: "RUNTIME.json")
-		guard
-			let data = try? Data(contentsOf: configurationURL),
-			let configuration = try? JSONDecoder().decode(RuntimeConfiguration.self, from: data),
-			configuration.prefixRevision > 0,
-			!configuration.runtime.sha256.isEmpty
-		else {
-			return nil
+		let data: Data
+		do {
+			data = try Data(contentsOf: configurationURL)
+		} catch {
+			throw WineRuntimeDiscoveryError.unreadableConfiguration(
+				configurationURL,
+				error.localizedDescription
+			)
+		}
+		let configuration: RuntimeConfiguration
+		do {
+			configuration = try JSONDecoder().decode(RuntimeConfiguration.self, from: data)
+		} catch {
+			throw WineRuntimeDiscoveryError.invalidConfiguration(
+				configurationURL,
+				error.localizedDescription
+			)
+		}
+		guard configuration.prefixRevision > 0 else {
+			throw WineRuntimeDiscoveryError.invalidConfiguration(
+				configurationURL,
+				"prefixRevision must be greater than zero"
+			)
+		}
+		guard !configuration.runtime.sha256.isEmpty else {
+			throw WineRuntimeDiscoveryError.invalidConfiguration(
+				configurationURL,
+				"runtime.sha256 must not be empty"
+			)
 		}
 		return WineRuntime(
 			executableURL: executable,
@@ -161,6 +186,7 @@ struct WineRuntime: Sendable {
 			}
 		}
 		let logHandle = try FileHandle(forWritingTo: logURL)
+		defer { logHandle.closeFile() }
 		try logHandle.seekToEnd()
 		RuntimePerformanceLog.write(stage: "filesystem", since: launchStarted, to: logHandle)
 		let compatibilityChanges = try compatibilityManager.prepareForLaunch(
@@ -233,7 +259,6 @@ struct WineRuntime: Sendable {
 		}
 		try process.run()
 		RuntimePerformanceLog.write(stage: "process", since: launchStarted, to: logHandle)
-		try? logHandle.close()
 
 		let terminationTask = Task {
 			for await exit in terminationStatuses { return exit }
@@ -249,101 +274,4 @@ struct WineRuntime: Sendable {
 		"G:\\" + executable.lastPathComponent
 	}
 
-	func waitUntilStopped(prefixDirectory: URL) async throws {
-		guard let wineserverURL else {
-			throw LauncherError.runtimeConfiguration(
-				"wineserver is missing from the bundled runtime.")
-		}
-		let status = try await runAndWait(
-			executable: wineserverURL,
-			arguments: ["-w"],
-			environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
-			output: .nullDevice
-		)
-		guard status == 0 else {
-			throw LauncherError.runtimeConfiguration(
-				"Wine could not monitor the game process (status \(status)).")
-		}
-	}
-
-	func stop(prefixDirectory: URL) async throws {
-		guard let wineserverURL else {
-			throw LauncherError.runtimeConfiguration(
-				"wineserver is missing from the bundled runtime.")
-		}
-		let status = try await runAndWait(
-			executable: wineserverURL,
-			arguments: ["-k"],
-			environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
-			output: .nullDevice
-		)
-		guard status == 0 else {
-			throw LauncherError.runtimeConfiguration(
-				"Wine could not stop Arknights (status \(status)).")
-		}
-	}
-
-	func stopSynchronously(prefixDirectory: URL, log: LauncherLog? = nil) {
-		guard let wineserverURL else { return }
-		let process = Process()
-		process.executableURL = wineserverURL
-		process.arguments = ["-k"]
-		process.environment = runtimeEnvironment(prefixDirectory: prefixDirectory)
-		process.standardOutput = FileHandle.nullDevice
-		process.standardError = FileHandle.nullDevice
-		let terminated = DispatchSemaphore(value: 0)
-		process.terminationHandler = { _ in terminated.signal() }
-		do {
-			try process.run()
-		} catch {
-			Task {
-				await log?.error(
-					"Failed to start wineserver while terminating the app: \(error.localizedDescription)"
-				)
-			}
-			return
-		}
-		guard
-			terminated.wait(timeout: .now() + AppConstants.Timeouts.processTerminateGracePeriod)
-				== .timedOut
-		else { return }
-		process.terminate()
-		guard
-			terminated.wait(timeout: .now() + AppConstants.Timeouts.processKillGracePeriod)
-				== .timedOut
-		else { return }
-		// The process may have exited and its PID been recycled in the gap between the
-		// timeout above and here; confirm it still exists before sending SIGKILL.
-		guard Darwin.kill(process.processIdentifier, 0) == 0 else { return }
-		Darwin.kill(process.processIdentifier, SIGKILL)
-	}
-
-	var wineserverURL: URL? {
-		let candidate = executableURL.deletingLastPathComponent().appending(path: "wineserver")
-		return FileManager.default.isExecutableFile(atPath: candidate.path) ? candidate : nil
-	}
-
-	func runAndWait(
-		executable: URL,
-		arguments: [String],
-		environment: [String: String],
-		output: FileHandle
-	) async throws -> Int32 {
-		try await withCheckedThrowingContinuation { continuation in
-			let process = Process()
-			process.executableURL = executable
-			process.arguments = arguments
-			process.environment = environment
-			process.standardOutput = output
-			process.standardError = output
-			process.terminationHandler = { process in
-				continuation.resume(returning: process.terminationStatus)
-			}
-			do {
-				try process.run()
-			} catch {
-				continuation.resume(throwing: error)
-			}
-		}
-	}
 }

@@ -11,16 +11,19 @@ extension LauncherViewModel {
 				return
 			}
 		#endif
-		guard !isDownloading, !isGameActive else { return }
+		guard state.activity == .idle else { return }
 		let executable = installDirectory.appending(
 			path: configuration?.executableName ?? "Arknights.exe")
 		guard FileManager.default.fileExists(atPath: executable.path) else {
 			show(LauncherError.gameNotInstalled(executable))
 			return
 		}
-		guard let runtime = discoverRuntime() else {
+		let runtime: WineRuntime
+		do {
+			runtime = try discoverRuntime()
+		} catch {
 			refreshRuntime()
-			show(LauncherError.wineRuntimeMissing)
+			show(error)
 			return
 		}
 		guard intelTranslationState.allowsWine else {
@@ -29,23 +32,22 @@ extension LauncherViewModel {
 		}
 
 		let hasPendingMigration = runtime.hasPendingMigration(prefixDirectory: paths.winePrefix)
+		let gameSessionID = UUID()
 		if hasPendingMigration {
-			phase = .migrating
-			activityMessage = "Preparing Wine setup…"
+			state.activity = .preparingGame(sessionID: gameSessionID)
+			setStatus(.preparingWine)
 		} else {
-			phase = .launching
-			activityMessage = "Starting…"
+			state.activity = .launchingGame(sessionID: gameSessionID, processIdentifier: nil)
+			setStatus(.startingGame)
 		}
 		Task { [log] in
 			await log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		}
-		let gameSessionID = UUID()
 		let launchRequestedAt = Date.now
 		let displayConfiguration = WineDisplayConfiguration.current(
 			highResolutionEnabled: launchOptions.usesHighResolutionMode,
 			forceDisabled: preferences.forceDisableRetina()
 		)
-		activeGameSessionID = gameSessionID
 		Task { [log] in await log.info("Game launch requested") }
 		launchTask?.cancel()
 		launchTask = Task { [weak self] in
@@ -69,15 +71,21 @@ extension LauncherViewModel {
 				)
 				guard activeGameSessionID == gameSessionID else { return }
 				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: true, log: log) }
-				phase = .launching
-				activityMessage = "Starting…"
+				state.activity = .launchingGame(
+					sessionID: gameSessionID,
+					processIdentifier: launch.processIdentifier
+				)
+				setStatus(.startingGame)
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
 				try await WineWindowReadiness.wait(
 					processIdentifier: launch.processIdentifier
 				)
 				guard activeGameSessionID == gameSessionID, isGameActive else { return }
-				phase = .running(processIdentifier: launch.processIdentifier)
-				activityMessage = "Running"
+				state.activity = .runningGame(
+					sessionID: gameSessionID,
+					processIdentifier: launch.processIdentifier
+				)
+				setStatus(.running)
 				gameRunningSince = .now
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
 				await log.info(
@@ -85,12 +93,11 @@ extension LauncherViewModel {
 				)
 			} catch is CancellationError {
 				guard activeGameSessionID == gameSessionID else { return }
-				activeGameSessionID = nil
-				phase = .ready
-				activityMessage = isGameUpdateAvailable ? "Update available" : "Ready"
+				state.activity = .idle
+				setStatus(isGameUpdateAvailable ? .updateAvailable : .ready)
 			} catch LauncherError.runtimeWindowTimeout {
 				guard activeGameSessionID == gameSessionID else { return }
-				activeGameSessionID = nil
+				state.activity = .idle
 				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
 				do {
 					try await runtime.stop(prefixDirectory: paths.winePrefix)
@@ -102,7 +109,7 @@ extension LauncherViewModel {
 				show(LauncherError.runtimeWindowTimeout)
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
-				activeGameSessionID = nil
+				state.activity = .idle
 				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
 				if RosettaAvailability.isBadCPUType(error) {
 					intelTranslationState = .unavailable
@@ -114,12 +121,6 @@ extension LauncherViewModel {
 		}
 	}
 
-	private static func launchDuration(since start: Date, now: Date = .now) -> String {
-		max(0, now.timeIntervalSince(start)).formatted(
-			.number.locale(Locale(identifier: "en_US_POSIX")).precision(.fractionLength(2))
-		) + "s"
-	}
-
 	func stopGame() {
 		#if DEBUG
 			if isDeveloperMode {
@@ -127,17 +128,36 @@ extension LauncherViewModel {
 				return
 			}
 		#endif
-		guard canStopGame, let runtime = discoverRuntime() else { return }
-		isStoppingGame = true
-		activityMessage = "Stopping…"
+		guard case .runningGame(let sessionID, let processIdentifier) = state.activity else {
+			return
+		}
+		let runtime: WineRuntime
+		do {
+			runtime = try discoverRuntime()
+		} catch {
+			show(error)
+			return
+		}
+		state.activity = .stoppingGame(
+			sessionID: sessionID,
+			processIdentifier: processIdentifier
+		)
+		setStatus(.stoppingGame)
 		launchTask?.cancel()
 		Task { [weak self] in
 			guard let self else { return }
-			defer { isStoppingGame = false }
 			do {
 				await log.info("Game stop requested")
 				try await runtime.stop(prefixDirectory: paths.winePrefix)
 			} catch {
+				if case .stoppingGame(let activeSessionID, _) = state.activity,
+					activeSessionID == sessionID
+				{
+					state.activity = .runningGame(
+						sessionID: sessionID,
+						processIdentifier: processIdentifier
+					)
+				}
 				show(error)
 			}
 		}
@@ -147,27 +167,45 @@ extension LauncherViewModel {
 		#if DEBUG
 			if isDeveloperMode { return }
 		#endif
-		guard isGameActive, let runtime = discoverRuntime() else { return }
+		guard isGameActive else { return }
+		let runtime: WineRuntime
+		do {
+			runtime = try discoverRuntime()
+		} catch {
+			Task { [log] in
+				await log.error(
+					"Could not stop Wine during app termination: \(error.localizedDescription)"
+				)
+			}
+			return
+		}
 		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
 		runtime.stopSynchronously(prefixDirectory: paths.winePrefix, log: log)
 	}
 
 	func refreshRuntime() {
-		runtimeName = discoverRuntime()?.displayName
+		do {
+			runtimeName = try discoverRuntime().displayName
+		} catch {
+			runtimeName = nil
+			Task { [log] in
+				await log.error("Runtime discovery failed: \(error.localizedDescription)")
+			}
+		}
 	}
 
-	private func discoverRuntime() -> WineRuntime? {
-		WineRuntime.discover(compatibilityManager: gameCompatibilityManager)
+	private func discoverRuntime() throws -> WineRuntime {
+		try WineRuntime.discover(compatibilityManager: gameCompatibilityManager)
 	}
 
 	/// Discards the prefix's recorded migration state so the next launch fully
 	/// replays Wine initialization, DXMT installation, and registry overrides.
 	/// Leaves game files and Wine's own user directories untouched.
 	func forcePrefixMigration() {
-		guard !isDownloading, !isGameActive else { return }
+		guard state.activity == .idle else { return }
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: paths.winePrefix)
-			activityMessage = "Wine setup will run again on next launch"
+			setStatus(.custom("Wine setup will run again on next launch"))
 			Task { [log] in await log.info("Wine prefix migration state was reset on request") }
 		} catch {
 			show(error)
@@ -179,14 +217,24 @@ extension LauncherViewModel {
 	/// login sessions are gone too. The migration state that method resets lives inside the
 	/// prefix, so this also makes the next launch fully replay Wine setup.
 	func deleteWinePrefix() {
-		guard !isDownloading, !isGameActive else { return }
-		guard FileManager.default.fileExists(atPath: paths.winePrefix.path) else { return }
-		do {
-			try FileManager.default.removeItem(at: paths.winePrefix)
-			activityMessage = "Wine prefix deleted; setup will run again on next launch"
-			Task { [log] in await log.info("Wine prefix deleted on request") }
-		} catch {
-			show(error)
+		guard state.activity == .idle else { return }
+		let prefixDirectory = paths.winePrefix
+		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
+		state.activity = .maintaining(.deletingWinePrefix)
+		setStatus(.custom("Deleting Wine prefix…"))
+		Task { [weak self] in
+			guard let self else { return }
+			do {
+				try await Task.detached(priority: .userInitiated) {
+					try FileManager.default.removeItem(at: prefixDirectory)
+				}.value
+				state.activity = .idle
+				setStatus(.custom("Wine prefix deleted; setup will run again on next launch"))
+				await log.info("Wine prefix deleted on request")
+			} catch {
+				state.activity = .idle
+				show(error)
+			}
 		}
 	}
 
@@ -206,30 +254,36 @@ extension LauncherViewModel {
 				!Task.isCancelled
 			else { return }
 			switch Self.directWineProcessExitAction(
-				for: exit.status,
-				phase: phase,
-				hasActiveSession: activeGameSessionID == sessionID
+				activity: state.activity,
+				sessionID: sessionID
 			) {
 			case .ignore:
 				return
 			case .startupFailure:
-				activeGameSessionID = nil
+				state.activity = .idle
 				launchTask?.cancel()
+				let since = gameRunningSince
+				let diagnostics = await Task.detached(priority: .utility) {
+					Self.exitDiagnostics(exit, since: since, logURL: logURL)
+				}.value
 				await log.error(
-					"Game process exited unexpectedly; \(Self.exitDiagnostics(exit, since: gameRunningSince, logURL: logURL))"
+					"Game process exited unexpectedly; \(diagnostics)"
 				)
 				show(LauncherError.runtimeExited(status: exit.status, log: logURL))
 			case .gameExited:
 				let since = gameRunningSince
 				gameRunningSince = nil
+				let diagnostics = await Task.detached(priority: .utility) {
+					Self.exitDiagnostics(
+						exit,
+						since: since,
+						logURL: exit.status == 0 && exit.reason == .exit ? nil : logURL
+					)
+				}.value
 				if exit.status == 0, exit.reason == .exit {
-					await log.info(
-						"Game process exited; \(Self.exitDiagnostics(exit, since: since, logURL: nil))"
-					)
+					await log.info("Game process exited; \(diagnostics)")
 				} else {
-					await log.error(
-						"Game process exited unexpectedly; \(Self.exitDiagnostics(exit, since: since, logURL: logURL))"
-					)
+					await log.error("Game process exited unexpectedly; \(diagnostics)")
 				}
 				do {
 					try await runtime.stop(prefixDirectory: paths.winePrefix)
@@ -241,69 +295,6 @@ extension LauncherViewModel {
 				await finishGameSession(sessionID, log: log)
 			}
 		}
-	}
-
-	/// Builds a compact diagnostic summary for a game-process exit: how long it
-	/// ran, the raw exit status and reason, and, for anything that looks like a
-	/// crash, a wine.log tail and any matching macOS crash report. Issue #17
-	/// reported a crash with nothing but a bare exit status to go on.
-	static func exitDiagnostics(
-		_ exit: WineProcessExit,
-		since: Date?,
-		logURL: URL?
-	) -> String {
-		var parts = ["status=\(exit.status)", "reason=\(Self.reasonDescription(exit.reason))"]
-		if let since {
-			parts.append("ranFor=\(launchDuration(since: since))")
-		}
-		guard let logURL else { return parts.joined(separator: " ") }
-		if let crashReport = recentCrashReportPath(near: Date()) {
-			parts.append("crashReport=\(crashReport)")
-		}
-		if let tail = FileTail.read(of: logURL, maximumBytes: 2_000) {
-			parts.append("wine.log tail: \(tail)")
-		}
-		return parts.joined(separator: " ")
-	}
-
-	/// `Process.TerminationReason` bridges to `NSTaskTerminationReason` and
-	/// interpolates as an unreadable `NSTaskTerminationReason(rawValue: 2)`.
-	private static func reasonDescription(_ reason: Process.TerminationReason) -> String {
-		switch reason {
-		case .exit: "exit"
-		case .uncaughtSignal: "uncaughtSignal"
-		@unknown default: "unknown(\(reason.rawValue))"
-		}
-	}
-
-	/// Wine renames the game process to "Arknights" (`WINEPRELOADERAPPNAME`), so a
-	/// crash report for it is filed under that name in Diagnostic Reports.
-	static func recentCrashReportPath(
-		near date: Date,
-		in directory: URL = FileManager.default.homeDirectoryForCurrentUser
-			.appending(path: "Library/Logs/DiagnosticReports", directoryHint: .isDirectory),
-		window: TimeInterval = 120,
-		fileManager: FileManager = .default
-	) -> String? {
-		guard
-			let entries = try? fileManager.contentsOfDirectory(
-				at: directory,
-				includingPropertiesForKeys: [.contentModificationDateKey]
-			)
-		else { return nil }
-		return
-			entries
-			.filter { $0.lastPathComponent.hasPrefix("Arknights-") }
-			.compactMap { url -> (URL, Date)? in
-				guard
-					let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey])
-						.contentModificationDate
-				else { return nil }
-				return (url, modified)
-			}
-			.filter { abs($0.1.timeIntervalSince(date)) <= window }
-			.max { $0.1 < $1.1 }?
-			.0.path
 	}
 
 	func monitorGamePrefix(using runtime: WineRuntime, sessionID: UUID) {
@@ -328,11 +319,10 @@ extension LauncherViewModel {
 
 	func finishGameSession(_ sessionID: UUID, log: LauncherLog) async {
 		guard activeGameSessionID == sessionID else { return }
-		activeGameSessionID = nil
+		state.activity = .idle
 		launchTask?.cancel()
 		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
-		phase = .ready
-		activityMessage = isGameUpdateAvailable ? "Update available" : "Ready"
+		setStatus(isGameUpdateAvailable ? .updateAvailable : .ready)
 		await log.info("Game process stopped")
 	}
 }

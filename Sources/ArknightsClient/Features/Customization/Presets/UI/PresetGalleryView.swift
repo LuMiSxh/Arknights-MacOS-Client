@@ -54,7 +54,6 @@ struct PresetGalleryView: View {
 				.contentMargins(.bottom, 24, for: .scrollIndicators)
 			}
 
-			// Soft bottom gradient scrim
 			LinearGradient(
 				colors: [.clear, Color.black.opacity(0.45)],
 				startPoint: .top,
@@ -241,7 +240,6 @@ struct PresetGalleryView: View {
 							.clipped()
 							.clipShape(RoundedRectangle(cornerRadius: 10))
 
-							// Applying spinner overlay
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.68)
@@ -317,7 +315,7 @@ struct PresetGalleryView: View {
 				let data = try await model.presetCatalog.imageData(
 					for: wp.url, cacheKey: wp.id
 				)
-				model.applyDirectCustomArtwork(data: data)
+				await model.applyDirectCustomArtwork(data: data)
 				dismiss()
 			} catch {
 				applyingItemID = nil

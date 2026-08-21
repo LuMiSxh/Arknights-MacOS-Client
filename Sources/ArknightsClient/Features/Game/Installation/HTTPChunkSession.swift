@@ -35,11 +35,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 	private let delegateQueue: OperationQueue
 	private let lock = NSLock()
 	private var continuations: [Int: Continuation] = [:]
-	private lazy var session = URLSession(
-		configuration: configuration,
-		delegate: self,
-		delegateQueue: delegateQueue
-	)
+	private var session: URLSession!
 
 	init(
 		configuration: URLSessionConfiguration,
@@ -51,6 +47,13 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		delegateQueue.maxConcurrentOperationCount = 1
 		delegateQueue.qualityOfService = .userInitiated
 		super.init()
+		// `stream(for:)` is called concurrently by the installer. Create the session before
+		// exposing this instance so those calls never race a lazy property's initialization.
+		session = URLSession(
+			configuration: configuration,
+			delegate: self,
+			delegateQueue: delegateQueue
+		)
 	}
 
 	func stream(for request: URLRequest) -> HTTPChunkStream {

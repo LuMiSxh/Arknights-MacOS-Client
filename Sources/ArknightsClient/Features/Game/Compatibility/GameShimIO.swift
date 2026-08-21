@@ -27,7 +27,7 @@ enum GameShimIO {
 		}
 	}
 
-	/// Atomically swaps `helperURL` for `shimURL`, first backing up whatever is currently
+	/// Swaps `helperURL` for `shimURL`, first backing up whatever is currently
 	/// there (the official helper on a first install, or a previous shim on upgrade) to
 	/// `backupURL`. `installCompanions` runs only once the helper is in place; if it or the
 	/// helper move itself fails, the helper is restored from its backup before rethrowing.
@@ -61,18 +61,32 @@ enum GameShimIO {
 			try fileManager.moveItem(at: temporaryURL, to: helperURL)
 			try installCompanions()
 		} catch {
-			try? fileManager.removeItem(at: helperURL)
-			if fileManager.fileExists(atPath: previousURL.path) {
-				try? fileManager.moveItem(at: previousURL, to: helperURL)
-			} else {
-				try? fileManager.moveItem(at: backupURL, to: helperURL)
+			let operationError = error
+			var rollbackErrors: [String] = []
+			if fileManager.fileExists(atPath: helperURL.path) {
+				do { try fileManager.removeItem(at: helperURL) } catch {
+					rollbackErrors.append(error.localizedDescription)
+				}
 			}
-			throw error
+			let restoreURL =
+				fileManager.fileExists(atPath: previousURL.path) ? previousURL : backupURL
+			do {
+				try fileManager.moveItem(at: restoreURL, to: helperURL)
+			} catch {
+				rollbackErrors.append(error.localizedDescription)
+			}
+			if !rollbackErrors.isEmpty {
+				throw GameShimRollbackError(
+					operationDescription: operationError.localizedDescription,
+					rollbackDescriptions: rollbackErrors
+				)
+			}
+			throw operationError
 		}
 	}
 
-	/// Replaces `destinationURL` with `sourceURL`, moving any existing file at
-	/// `destinationURL` to `backupURL` first so a failed copy can restore it.
+	/// Replaces `destinationURL` with `sourceURL`; the caller-provided backup restores the
+	/// destination if copying or moving the replacement fails.
 	static func replaceWithBackup(
 		destinationURL: URL,
 		sourceURL: URL,
@@ -87,11 +101,27 @@ enum GameShimIO {
 			try fileManager.moveItem(at: temporaryURL, to: destinationURL)
 			try? fileManager.removeItem(at: backupURL)
 		} catch {
-			try? fileManager.removeItem(at: destinationURL)
-			if fileManager.fileExists(atPath: backupURL.path) {
-				try? fileManager.moveItem(at: backupURL, to: destinationURL)
+			let operationError = error
+			var rollbackErrors: [String] = []
+			if fileManager.fileExists(atPath: destinationURL.path) {
+				do { try fileManager.removeItem(at: destinationURL) } catch {
+					rollbackErrors.append(error.localizedDescription)
+				}
 			}
-			throw error
+			if fileManager.fileExists(atPath: backupURL.path) {
+				do {
+					try fileManager.moveItem(at: backupURL, to: destinationURL)
+				} catch {
+					rollbackErrors.append(error.localizedDescription)
+				}
+			}
+			if !rollbackErrors.isEmpty {
+				throw GameShimRollbackError(
+					operationDescription: operationError.localizedDescription,
+					rollbackDescriptions: rollbackErrors
+				)
+			}
+			throw operationError
 		}
 	}
 }

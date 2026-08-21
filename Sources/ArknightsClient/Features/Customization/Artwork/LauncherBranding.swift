@@ -88,6 +88,12 @@ actor ArtworkCache {
 		return NSImage(contentsOf: cachedImageURL(for: cacheKey))
 	}
 
+	nonisolated func cachedActiveImageData(for region: GameRegion) throws -> (String, Data)? {
+		guard let cacheKey = try cachedActiveCacheKey(for: region) else { return nil }
+		let data = try Data(contentsOf: cachedImageURL(for: cacheKey), options: .mappedIfSafe)
+		return data.isEmpty ? nil : (cacheKey, data)
+	}
+
 	nonisolated func cachedActiveCacheKey(for region: GameRegion) throws -> String? {
 		let pointerURL = activeCacheKeyURL(for: region)
 		guard FileManager.default.fileExists(atPath: pointerURL.path) else { return nil }
@@ -105,6 +111,12 @@ actor ArtworkCache {
 
 	nonisolated func cachedOfficialLogo() -> NSImage? {
 		NSImage(contentsOf: officialLogoCacheURL)
+	}
+
+	nonisolated func cachedOfficialLogoData() throws -> Data? {
+		guard FileManager.default.fileExists(atPath: officialLogoCacheURL.path) else { return nil }
+		let data = try Data(contentsOf: officialLogoCacheURL, options: .mappedIfSafe)
+		return data.isEmpty ? nil : data
 	}
 
 	func imageData(for branding: LauncherBranding, region: GameRegion) async throws -> Data? {
@@ -127,7 +139,7 @@ actor ArtworkCache {
 		guard
 			let http = response as? HTTPURLResponse,
 			http.statusCode == 200,
-			data.count <= 25 * 1_024 * 1_024
+			data.count <= AppConstants.Artwork.launcherMaximumBytes
 		else {
 			throw LauncherError.invalidResponse
 		}
@@ -150,7 +162,7 @@ actor ArtworkCache {
 		guard
 			let http = response as? HTTPURLResponse,
 			http.statusCode == 200,
-			data.count <= 2 * 1_024 * 1_024
+			data.count <= AppConstants.Artwork.officialLogoMaximumBytes
 		else {
 			throw LauncherError.invalidResponse
 		}

@@ -9,6 +9,80 @@ import Testing
 @MainActor
 struct LauncherViewModelConcurrencyTests {
 	@Test
+	func presentationFailureDoesNotOverwriteRunningGameLifecycle() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let sessionID = UUID()
+		model.state.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		model.setStatus(.running)
+
+		model.show(LauncherError.cannotSetAppIcon)
+
+		#expect(model.activeGameSessionID == sessionID)
+		#expect(model.isGameProcessRunning)
+		#expect(model.canStopGame)
+		#expect(model.failureMessage == LauncherError.cannotSetAppIcon.errorDescription)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func activeGameSessionRejectsInstallationAndGameFileMaintenance() async {
+		let api = BlockingBrandingAPI()
+		let installer = ControllableInstaller()
+		let model = makeModel(api: api, installer: installer)
+		await api.waitForBrandingRequest()
+		model.state.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+
+		model.repairGame()
+
+		#expect(!model.canInstall)
+		#expect(!model.canModifyGameFiles)
+		#expect(await installer.installationCount() == 0)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func resettingLauncherSettingsRestoresEveryUserFacingPreference() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		model.automaticallyChecksLauncherUpdates = false
+		model.automaticallyChecksGameUpdates = false
+		model.announcementsEnabled = false
+		model.showsServerResetCountdown = true
+		model.showsGameVersion = false
+		model.playsLauncherMusic = false
+		model.launcherMusicURL = "https://example.com/custom"
+		model.showsPlayingMusic = true
+		model.launcherMusicVolume = 0.1
+		model.usesDynamicTheme = false
+		model.launchOptions = GameLaunchOptions(
+			displayMode: .fullscreen,
+			resolution: .fullHD,
+			usesGameSettings: false,
+			usesHighResolutionMode: true,
+			usesMetalPerformanceHUD: true,
+			usesGameMode: true
+		)
+
+		model.resetAllLauncherSettings()
+
+		#expect(model.automaticallyChecksLauncherUpdates)
+		#expect(model.automaticallyChecksGameUpdates)
+		#expect(model.announcementsEnabled)
+		#expect(!model.showsServerResetCountdown)
+		#expect(model.showsGameVersion)
+		#expect(model.playsLauncherMusic)
+		#expect(model.launcherMusicURL == AppConstants.Music.defaultLauncherMusicURL)
+		#expect(!model.showsPlayingMusic)
+		#expect(model.launcherMusicVolume == 0.5)
+		#expect(model.usesDynamicTheme)
+		#expect(model.launchOptions == .default)
+		await api.resolveBranding()
+	}
+
+	@Test
 	func launchRequiresAWorkingIntelTranslationProbe() async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
@@ -77,64 +151,53 @@ struct LauncherViewModelConcurrencyTests {
 	}
 
 	@Test
-	func stopIsEnabledOnlyForRunningGamePhase() {
+	func stopIsEnabledOnlyForRunningGameActivity() {
+		let sessionID = UUID()
 		#expect(
 			!LauncherViewModel.canStopGame(
-				for: .launching,
-				hasActiveSession: true,
-				isStoppingGame: false
+				for: .launchingGame(sessionID: sessionID, processIdentifier: nil)
 			))
 		#expect(
 			LauncherViewModel.canStopGame(
-				for: .running(processIdentifier: 42),
-				hasActiveSession: true,
-				isStoppingGame: false
+				for: .runningGame(sessionID: sessionID, processIdentifier: 42)
 			))
 		#expect(
 			!LauncherViewModel.canStopGame(
-				for: .running(processIdentifier: 42),
-				hasActiveSession: true,
-				isStoppingGame: true
+				for: .stoppingGame(sessionID: sessionID, processIdentifier: 42)
 			))
 		#expect(
 			!LauncherViewModel.canStopGame(
-				for: .running(processIdentifier: 42),
-				hasActiveSession: false,
-				isStoppingGame: false
+				for: .idle
 			))
 	}
 
 	@Test
 	func directWineProcessExitTracksStartupAndRunningSessions() {
+		let sessionID = UUID()
 		#expect(
 			LauncherViewModel.directWineProcessExitAction(
-				for: 1,
-				phase: .launching,
-				hasActiveSession: true
+				activity: .launchingGame(sessionID: sessionID, processIdentifier: nil),
+				sessionID: sessionID
 			) == .startupFailure)
 		#expect(
 			LauncherViewModel.directWineProcessExitAction(
-				for: 0,
-				phase: .launching,
-				hasActiveSession: true
+				activity: .launchingGame(sessionID: sessionID, processIdentifier: 42),
+				sessionID: sessionID
 			) == .startupFailure)
 		#expect(
 			LauncherViewModel.directWineProcessExitAction(
-				for: 1,
-				phase: .running(processIdentifier: 42),
-				hasActiveSession: true
+				activity: .runningGame(sessionID: sessionID, processIdentifier: 42),
+				sessionID: sessionID
 			) == .gameExited)
 		#expect(
 			LauncherViewModel.directWineProcessExitAction(
-				for: 0,
-				phase: .running(processIdentifier: 42),
-				hasActiveSession: true
+				activity: .runningGame(sessionID: sessionID, processIdentifier: 42),
+				sessionID: sessionID
 			) == .gameExited)
 		#expect(
 			LauncherViewModel.directWineProcessExitAction(
-				for: 1,
-				phase: .launching,
-				hasActiveSession: false
+				activity: .launchingGame(sessionID: UUID(), processIdentifier: nil),
+				sessionID: sessionID
 			) == .ignore)
 	}
 

@@ -27,6 +27,7 @@ extension LauncherViewModel {
 		launchAfterCompletion: Bool,
 		verifyAllExistingFiles: Bool = false
 	) {
+		guard state.activity == .idle else { return }
 		guard let installationID = installationGate.begin() else { return }
 		guard let configuration else {
 			installationGate.finish(installationID)
@@ -42,12 +43,15 @@ extension LauncherViewModel {
 			show(LauncherError.insufficientDiskSpace(required: required, available: available))
 			return
 		}
-		activeRefreshID = nil
+		state.refresh = .idle
 		refreshTask?.cancel()
 		progress = nil
-		phase = .downloading
+		state.activity = .installing(
+			id: installationID,
+			stage: verifyAllExistingFiles ? .verifying : .preparing
+		)
 		hasPartialDownload = false
-		activityMessage = verifyAllExistingFiles ? "Verifying…" : "Preparing…"
+		setStatus(verifyAllExistingFiles ? .verifyingInstallation : .preparingInstallation)
 		Task { [log] in
 			await log.info(
 				"Installation started; repair=\(verifyAllExistingFiles); target=\(targetDirectory.path)"
@@ -68,7 +72,8 @@ extension LauncherViewModel {
 							return
 						}
 						self.progress = update
-						self.activityMessage = "Downloading…"
+						self.state.activity = .installing(id: installationID, stage: .downloading)
+						self.setStatus(.downloading)
 					}
 				}
 				guard finishInstallation(installationID) else { return }
@@ -76,8 +81,7 @@ extension LauncherViewModel {
 				hasPartialDownload = false
 				installedVersion = configuration.gameLatestVersion
 				isGameUpdateAvailable = false
-				phase = .ready
-				activityMessage = result.downloadedFiles == 0 ? "Ready" : "Updated"
+				setStatus(result.downloadedFiles == 0 ? .ready : .updated)
 				await log.info(
 					"Installation completed; files=\(result.downloadedFiles); bytes=\(result.downloadedBytes)"
 				)
@@ -85,8 +89,7 @@ extension LauncherViewModel {
 			} catch is CancellationError {
 				guard finishInstallation(installationID) else { return }
 				updateInstalledState()
-				phase = .ready
-				activityMessage = "Paused"
+				setStatus(.paused)
 				await log.info("Installation paused")
 			} catch {
 				guard finishInstallation(installationID) else { return }
@@ -103,7 +106,9 @@ extension LauncherViewModel {
 			}
 		#endif
 		guard isDownloading else { return }
-		activityMessage = "Pausing…"
+		guard case .installing(let installationID, _) = state.activity else { return }
+		state.activity = .installing(id: installationID, stage: .pausing)
+		setStatus(.pausing)
 		Task { [log] in await log.info("Installation pause requested") }
 		installationTask?.cancel()
 	}
@@ -112,6 +117,7 @@ extension LauncherViewModel {
 		guard installationGate.owns(installationID) else { return false }
 		installationGate.finish(installationID)
 		installationTask = nil
+		state.activity = .idle
 		return true
 	}
 }

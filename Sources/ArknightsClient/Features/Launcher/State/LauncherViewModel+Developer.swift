@@ -19,10 +19,9 @@
 			launcherUpdateStatus = "Up to date"
 			isCheckingLauncherUpdates = false
 			intelTranslationState = .available
-			activeGameSessionID = nil
-			isStoppingGame = false
-			phase = .ready
-			activityMessage = "Ready"
+			state.activity = .idle
+			state.refresh = .idle
+			setStatus(.ready)
 
 			switch scenario {
 			case .ready:
@@ -77,12 +76,12 @@
 			case .gameUpdate:
 				installedVersion = "041.2.0"
 				isGameUpdateAvailable = true
-				activityMessage = "Update available"
+				setStatus(.updateAvailable)
 			case .downloading:
 				installedVersion = "041.2.0"
 				isGameUpdateAvailable = true
-				phase = .downloading
-				activityMessage = "Downloading…"
+				state.activity = .installing(id: UUID(), stage: .downloading)
+				setStatus(.downloading)
 				progress = DownloadProgress(
 					downloadedBytes: 1_731_000_000,
 					totalBytes: 4_026_000_000,
@@ -94,28 +93,24 @@
 				installedVersion = "041.2.0"
 				isGameUpdateAvailable = true
 				hasPartialDownload = true
-				activityMessage = "Paused"
+				setStatus(.paused)
 			case .migrating:
-				activeGameSessionID = UUID()
-				phase = .migrating
-				activityMessage = "Preparing Wine setup…"
+				state.activity = .preparingGame(sessionID: UUID())
+				setStatus(.preparingWine)
 			case .launching:
-				activeGameSessionID = UUID()
-				phase = .launching
-				activityMessage = "Starting…"
+				state.activity = .launchingGame(sessionID: UUID(), processIdentifier: nil)
+				setStatus(.startingGame)
 			case .running:
-				activeGameSessionID = UUID()
-				phase = .running(processIdentifier: 42)
-				activityMessage = "Running"
+				state.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+				setStatus(.running)
 			case .failure:
-				phase = .failed(
-					"The Windows runtime exited unexpectedly. Check the logs for details.")
-				activityMessage = "The Windows runtime exited unexpectedly."
+				state.presentation.failureMessage =
+					"The Windows runtime exited unexpectedly. Check the logs for details."
 			case .notInstalled:
 				isInstalled = false
 				hasPartialDownload = false
 				installedVersion = nil
-				activityMessage = "Install"
+				setStatus(.install)
 			case .musicPlayer:
 				showsPlayingMusic = true
 				currentMusicTitle = "Arknights EP – Reforge"
@@ -124,7 +119,7 @@
 				isInstalled = false
 				hasPartialDownload = false
 				installedVersion = nil
-				activityMessage = "Install"
+				setStatus(.install)
 				if scenario == .onboardingRosetta {
 					intelTranslationState = .rosettaMissing
 				}
@@ -145,25 +140,42 @@
 		}
 
 		func loadDeveloperArtwork() async {
-			if loadCustomArtwork() { return }
-			guard let currentBranding = try? await api.branding(region: region), isDeveloperMode
-			else { return }
-			branding = currentBranding
-			if let logoData = try? await artworkCache.officialLogoData() {
-				officialLogo = NSImage(data: logoData)
-			}
-			if let imageData = try? await artworkCache.imageData(
-				for: currentBranding,
-				region: region
-			), let image = NSImage(data: imageData),
-				let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
-			{
-				setHeroArtwork(
-					image,
-					themeCacheKey: Self.officialThemeCacheKey(
-						for: region,
-						artworkCacheKey: artworkCacheKey
+			if await loadCustomArtwork() { return }
+			do {
+				let currentBranding = try await api.branding(region: region)
+				guard isDeveloperMode else { return }
+				branding = currentBranding
+				do {
+					let logoData = try await artworkCache.officialLogoData()
+					officialLogo = NSImage(data: logoData)
+				} catch {
+					await log.error(
+						"Failed to load developer logo: \(error.localizedDescription)"
 					)
+				}
+				do {
+					if let imageData = try await artworkCache.imageData(
+						for: currentBranding,
+						region: region
+					), let image = NSImage(data: imageData),
+						let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
+					{
+						setHeroArtwork(
+							image,
+							themeCacheKey: Self.officialThemeCacheKey(
+								for: region,
+								artworkCacheKey: artworkCacheKey
+							)
+						)
+					}
+				} catch {
+					await log.error(
+						"Failed to load developer artwork: \(error.localizedDescription)"
+					)
+				}
+			} catch {
+				await log.error(
+					"Failed to load developer branding: \(error.localizedDescription)"
 				)
 			}
 		}

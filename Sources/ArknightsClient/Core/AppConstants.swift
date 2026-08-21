@@ -74,6 +74,19 @@ enum AppConstants {
 		static let processDiagnosticMaximumCharacters = 4_096
 	}
 
+	enum Logging {
+		static let maximumFileSize = 4 * 1_024 * 1_024
+		static let maximumMessageBytes = 16 * 1_024
+		static let truncationMarker = " [trunc]"
+		static let wineLogTailBytes = 2_000
+		static let crashReportSearchWindow: TimeInterval = 120
+	}
+
+	enum Artwork {
+		static let launcherMaximumBytes = 25 * 1_024 * 1_024
+		static let officialLogoMaximumBytes = 2 * 1_024 * 1_024
+	}
+
 	enum Timeouts {
 		static let processTerminateGracePeriod: TimeInterval = 3
 		static let processKillGracePeriod: TimeInterval = 1

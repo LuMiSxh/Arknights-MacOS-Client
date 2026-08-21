@@ -185,8 +185,8 @@ actor PresetCatalogService {
 
 	static func readBoundedFile(at url: URL, maximumBytes: Int) throws -> Data {
 		let handle = try FileHandle(forReadingFrom: url)
+		defer { handle.closeFile() }
 		let data = try handle.read(upToCount: maximumBytes + 1) ?? Data()
-		try handle.close()
 		guard data.count <= maximumBytes else {
 			throw LauncherError.remoteContentTooLarge(url, maximumBytes: maximumBytes)
 		}

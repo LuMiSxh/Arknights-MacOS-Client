@@ -18,31 +18,56 @@ enum DirectWineProcessExitAction: Equatable {
 @MainActor
 @Observable
 final class LauncherViewModel {
-	var phase: LauncherPhase = .checking
-	var configuration: GameConfiguration?
+	var state = LauncherState()
+	var configuration: GameConfiguration? {
+		get { state.readiness.configuration }
+		set { state.readiness.configuration = newValue }
+	}
 	var progress: DownloadProgress?
-	var runtimeName: String?
+	var runtimeName: String? {
+		get { state.readiness.runtimeName }
+		set { state.readiness.runtimeName = newValue }
+	}
 	var branding: LauncherBranding?
 	var heroArtwork: NSImage? {
 		didSet { updateThemeColor() }
 	}
 	var officialLogo: NSImage?
 	var popup: LauncherPopup?
-	var isInstalled = false
-	var hasPartialDownload = false
-	var installedVersion: String?
-	var isGameUpdateAvailable = false
+	var isInstalled: Bool {
+		get { state.readiness.isInstalled }
+		set { state.readiness.isInstalled = newValue }
+	}
+	var hasPartialDownload: Bool {
+		get { state.readiness.hasPartialDownload }
+		set { state.readiness.hasPartialDownload = newValue }
+	}
+	var installedVersion: String? {
+		get { state.readiness.installedVersion }
+		set { state.readiness.installedVersion = newValue }
+	}
+	var isGameUpdateAvailable: Bool {
+		get { state.readiness.isGameUpdateAvailable }
+		set { state.readiness.isGameUpdateAvailable = newValue }
+	}
 	var launcherUpdate: LauncherRelease?
 	var launcherUpdateStatus: String?
 	var isCheckingLauncherUpdates = false
-	var activityMessage = "Checking…"
-	var intelTranslationState: IntelTranslationState = .checking
-	var rosettaInstallationState: RosettaInstallationState = .idle
+	var activityMessage: String { state.presentation.status.message }
+	var failureMessage: String? { state.presentation.failureMessage }
+	var intelTranslationState: IntelTranslationState {
+		get { state.readiness.intelTranslation }
+		set { state.readiness.intelTranslation = newValue }
+	}
+	var rosettaInstallationState: RosettaInstallationState {
+		get { state.readiness.rosettaInstallation }
+		set { state.readiness.rosettaInstallation = newValue }
+	}
 	#if DEBUG
 		var developerScenario: DeveloperScenario?
 	#endif
 
-	private(set) var region: GameRegion
+	var region: GameRegion
 	var installDirectory: URL
 	var launchOptions: GameLaunchOptions {
 		didSet { preferences.setLaunchOptions(launchOptions) }
@@ -81,6 +106,7 @@ final class LauncherViewModel {
 	var launcherMusicURL: String {
 		didSet { preferences.setLauncherMusicURL(launcherMusicURL) }
 	}
+	var cacheSizeText = "Calculating…"
 	var presetGalleryCacheSizeText = "Calculating…"
 	var showsPlayingMusic: Bool {
 		didSet { preferences.setShowsPlayingMusic(showsPlayingMusic) }
@@ -134,11 +160,8 @@ final class LauncherViewModel {
 	@ObservationIgnored var rosettaInstallationTask: Task<IntelTranslationProcessResult, any Error>?
 	@ObservationIgnored var activeThemeCacheKey: String?
 	var pendingPopups: [LauncherPopup] = []
-	var activeRefreshID: UUID?
-	var activeGameSessionID: UUID?
 	var gameRunningSince: Date?
 	var presentedNoticeContent: String?
-	var isStoppingGame = false
 	var installationGate = ExclusiveOperationGate()
 
 	init(
@@ -204,30 +227,6 @@ final class LauncherViewModel {
 		showsPlayingMusic = preferences.showsPlayingMusic()
 		launcherMusicVolume = preferences.launcherMusicVolume()
 		usesDynamicTheme = preferences.usesDynamicTheme()
-		loadCustomAppIcon()
-		let hasCustomArtwork = loadCustomArtwork()
-		if !hasCustomArtwork {
-			do {
-				if let cacheKey = try artworkCache.cachedActiveCacheKey(for: selectedRegion),
-					let cachedArtwork = try artworkCache.cachedActiveImage(for: selectedRegion)
-				{
-					setHeroArtwork(
-						cachedArtwork,
-						themeCacheKey: Self.officialThemeCacheKey(
-							for: selectedRegion,
-							artworkCacheKey: cacheKey
-						)
-					)
-				}
-			} catch {
-				Task { [log] in
-					await log.error(
-						"Failed to load cached artwork for \(selectedRegion.displayName): \(error.localizedDescription)"
-					)
-				}
-			}
-		}
-		officialLogo = artworkCache.cachedOfficialLogo()
 		if showsServerResetCountdown { startResetCountdownTimer() }
 		updateThemeColor()
 
@@ -235,7 +234,11 @@ final class LauncherViewModel {
 			developerScenario = DeveloperScenario(arguments: arguments)
 			if let developerScenario {
 				applyDeveloperScenario(developerScenario)
-				refreshTask = Task { [weak self] in await self?.loadDeveloperArtwork() }
+				refreshTask = Task { [weak self] in
+					guard let self else { return }
+					_ = await loadCustomAppIcon()
+					await loadDeveloperArtwork()
+				}
 				Task { [log] in await log.info("Developer simulation started") }
 				return
 			}
@@ -249,6 +252,7 @@ final class LauncherViewModel {
 
 		refreshTask = Task { [weak self] in
 			guard let self else { return }
+			await loadInitialAssets(for: selectedRegion)
 			await refreshIntelTranslationAvailability()
 			await refresh()
 			if launchOnStart {
@@ -268,6 +272,7 @@ final class LauncherViewModel {
 		Task { [log] in
 			await log.info("Launcher \(appVersion) started")
 		}
+		refreshGameCacheSize()
 		refreshPresetGalleryCacheSize()
 	}
 
@@ -282,201 +287,6 @@ final class LauncherViewModel {
 		resetCountdownTask?.cancel()
 		intelTranslationCheckTask?.cancel()
 		rosettaInstallationTask?.cancel()
-	}
-
-	var versionText: String {
-		installedVersion ?? configuration?.gameLatestVersion ?? "—"
-	}
-
-	var installSizeText: String {
-		configuration?.decompressionSize ?? "—"
-	}
-
-	var isDownloading: Bool {
-		phase == .downloading
-	}
-
-	var canInstall: Bool {
-		configuration != nil && !isDownloading
-	}
-
-	var canLaunch: Bool {
-		isInstalled && runtimeName != nil && intelTranslationState.allowsWine && !isDownloading
-			&& !isGameActive
-	}
-
-	var isGameRunning: Bool {
-		isGameActive
-	}
-
-	var canStopGame: Bool {
-		Self.canStopGame(
-			for: phase,
-			hasActiveSession: isGameActive,
-			isStoppingGame: isStoppingGame
-		)
-	}
-
-	static func canStopGame(
-		for phase: LauncherPhase,
-		hasActiveSession: Bool,
-		isStoppingGame: Bool
-	) -> Bool {
-		guard hasActiveSession, !isStoppingGame else { return false }
-		if case .running = phase { return true }
-		return false
-	}
-
-	static func directWineProcessExitAction(
-		for status: Int32,
-		phase: LauncherPhase,
-		hasActiveSession: Bool
-	) -> DirectWineProcessExitAction {
-		guard hasActiveSession else { return .ignore }
-		if case .launching = phase { return .startupFailure }
-		if case .running = phase { return .gameExited }
-		return .ignore
-	}
-
-	var isGameActive: Bool {
-		activeGameSessionID != nil
-	}
-
-	var isDeveloperMode: Bool {
-		#if DEBUG
-			developerScenario != nil
-		#else
-			false
-		#endif
-	}
-
-	var isOnboardingPreview: Bool {
-		#if DEBUG
-			developerScenario == .onboarding || developerScenario == .onboardingRosetta
-		#else
-			false
-		#endif
-	}
-
-	var canSwitchRegion: Bool {
-		!isDownloading && !isGameActive
-	}
-
-	func selectRegion(_ newRegion: GameRegion) {
-		guard newRegion != region, canSwitchRegion else { return }
-		region = newRegion
-		preferences.setSelectedRegion(newRegion)
-		activeRefreshID = nil
-		refreshTask?.cancel()
-		configuration = nil
-		branding = nil
-		// Keep the previous branding visible until the replacement is ready. Clearing it here
-		// makes Dynamic Theme fall back to cyan between the old and new region requests.
-		isInstalled = false
-		hasPartialDownload = false
-		installedVersion = nil
-		isGameUpdateAvailable = false
-		progress = nil
-		presentedNoticeContent = nil
-		installDirectory = preferences.installDirectory(
-			for: newRegion,
-			default: paths.gameInstall(for: newRegion)
-		)
-		phase = .checking
-		activityMessage = "Checking…"
-		Task { [log] in await log.info("Region switched to \(newRegion.displayName)") }
-		refreshTask = Task { [weak self] in await self?.refresh() }
-	}
-
-	func openCurrentMusicURL() {
-		if let currentMusicVideoID,
-			let url = URL(string: "https://www.youtube.com/watch?v=\(currentMusicVideoID)")
-		{
-			NSWorkspace.shared.open(url)
-			return
-		}
-		let trimmed = launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
-		if let url = URL(string: trimmed) {
-			NSWorkspace.shared.open(url)
-		}
-	}
-
-	func refresh(forceGameUpdateCheck: Bool = false) async {
-		guard !isDownloading else { return }
-		await log.info("Refreshing game and branding state")
-		let refreshID = UUID()
-		let region = region
-		activeRefreshID = refreshID
-		updateInstalledState()
-		phase = .checking
-		activityMessage = "Checking…"
-		let hasCustomArtwork = loadCustomArtwork()
-		let brandingTask = Task { [api] in try? await api.branding(region: region) }
-		defer { brandingTask.cancel() }
-
-		if !isInstalled || automaticallyChecksGameUpdates || forceGameUpdateCheck {
-			do {
-				let fetchedConfiguration = try await api.gameConfiguration(region: region)
-				guard isCurrentRefresh(refreshID) else { return }
-				configuration = fetchedConfiguration
-				updateGameAvailability()
-				await log.info(
-					"Game configuration loaded; latest=\(fetchedConfiguration.gameLatestVersion)"
-				)
-			} catch is CancellationError {
-				return
-			} catch {
-				await log.error("Game configuration failed: \(error.localizedDescription)")
-				guard isCurrentRefresh(refreshID) else { return }
-				if !isInstalled {
-					activeRefreshID = nil
-					show(error)
-					return
-				}
-			}
-		}
-
-		let fetchedBranding = await brandingTask.value
-		guard isCurrentRefresh(refreshID) else { return }
-		if let currentBranding = fetchedBranding {
-			branding = currentBranding
-			presentNoticeIfNeeded(currentBranding)
-			await log.info(
-				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
-			)
-			let logoTask = Task { [artworkCache] in
-				guard currentBranding.launcherBackgroundImage != nil else { return nil as Data? }
-				return try? await artworkCache.officialLogoData()
-			}
-			let artworkTask = Task { [artworkCache] in
-				guard !hasCustomArtwork else { return nil as Data? }
-				return try? await artworkCache.imageData(for: currentBranding, region: region)
-			}
-			let (logoData, artworkData) = await (logoTask.value, artworkTask.value)
-			guard isCurrentRefresh(refreshID) else { return }
-			if let logoData { officialLogo = NSImage(data: logoData) }
-			if let artworkData,
-				let image = NSImage(data: artworkData),
-				let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
-			{
-				setHeroArtwork(
-					image,
-					themeCacheKey: Self.officialThemeCacheKey(
-						for: region,
-						artworkCacheKey: artworkCacheKey
-					)
-				)
-			}
-		}
-
-		guard isCurrentRefresh(refreshID) else { return }
-		activeRefreshID = nil
-		phase = .ready
-		activityMessage =
-			isGameUpdateAvailable
-			? "Update available"
-			: (isInstalled ? "Ready" : (hasPartialDownload ? "Paused" : "Install"))
-		await log.info("Refresh completed; state=\(activityMessage)")
 	}
 
 }

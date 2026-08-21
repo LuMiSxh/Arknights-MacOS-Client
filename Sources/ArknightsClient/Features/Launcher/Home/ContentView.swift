@@ -20,16 +20,15 @@ struct ContentView: View {
 		_musicController = State(initialValue: BackgroundMusicController(context: model))
 	}
 
-	private var cyan: Color { model.accentColor }
+	private var accentColor: Color { model.accentColor }
 
 	var body: some View {
 		ZStack {
 			BackgroundMusicView(model: model, controller: musicController)
 
-			LauncherArtworkView(image: model.heroArtwork, accentColor: cyan)
+			LauncherArtworkView(image: model.heroArtwork, accentColor: accentColor)
 				.ignoresSafeArea(.container, edges: .top)
 
-			// Seamless top-left corner vignette for traffic lights & wordmark readability
 			LinearGradient(
 				colors: [
 					Color.black.opacity(0.62),
@@ -70,7 +69,7 @@ struct ContentView: View {
 		.sheet(item: popupBinding) { popup in
 			LauncherPopupView(
 				popup: popup,
-				accentColor: cyan,
+				accentColor: accentColor,
 				hudTintColor: model.hudTintColor,
 				dismiss: model.dismissPopup,
 				openAction: model.openPopupAction
@@ -96,7 +95,7 @@ struct ContentView: View {
 
 	private var topBar: some View {
 		HStack(alignment: .top) {
-			ArknightsWordmark(logo: model.officialLogo, cyan: cyan)
+			ArknightsWordmark(logo: model.officialLogo, cyan: accentColor)
 				.padding(.top, 34)
 			Spacer()
 			Button("Settings", systemImage: "gearshape", action: presentSettings)
@@ -253,7 +252,7 @@ struct ContentView: View {
 
 				ProgressView(value: model.progress?.fraction ?? 0)
 					.progressViewStyle(.linear)
-					.tint(cyan)
+					.tint(accentColor)
 					.animation(.linear(duration: 0.2), value: model.progress?.fraction ?? 0)
 			}
 		} else {
@@ -267,21 +266,21 @@ struct ContentView: View {
 						.foregroundStyle(.secondary)
 						.lineLimit(1)
 					if isFailed {
-						AccentActionLink(title: "Report Problem", accentColor: cyan) {
+						AccentActionLink(title: "Report Problem", accentColor: accentColor) {
 							NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
 						}
 						.font(.caption)
 					} else if model.isInstalled && model.canInstallRosetta {
 						AccentActionLink(
 							title: model.rosettaInstallationActionTitle,
-							accentColor: cyan,
+							accentColor: accentColor,
 							action: { confirmsRosettaInstallation = true }
 						)
 						.font(.caption)
 					} else if model.isInstalled && model.canRetryIntelTranslationCheck {
 						AccentActionLink(
 							title: "Check Again",
-							accentColor: cyan,
+							accentColor: accentColor,
 							action: retryIntelTranslationCheck
 						)
 						.font(.caption)
@@ -292,13 +291,13 @@ struct ContentView: View {
 	}
 
 	private var statusTitle: String {
-		if model.activityMessage == "Pausing…" {
+		if model.state.presentation.status == .pausing {
 			return model.activityMessage
 		}
 		if model.isDownloading, let progress = model.progress {
 			return "\(Int(progress.fraction * 100))%"
 		}
-		if case .failed = model.phase { return "Needs attention" }
+		if model.failureMessage != nil { return "Needs attention" }
 		if model.isInstalled, let title = model.intelTranslationStatusTitle { return title }
 		return model.activityMessage
 	}
@@ -313,14 +312,13 @@ struct ContentView: View {
 				fromByteCount: progress.totalBytes, countStyle: .file)
 			return "\(downloaded) of \(total)"
 		}
-		if case .failed(let message) = model.phase { return message }
+		if let failureMessage = model.failureMessage { return failureMessage }
 		if model.isInstalled { return model.intelTranslationStatusDetail }
 		return nil
 	}
 
 	private var isFailed: Bool {
-		if case .failed = model.phase { return true }
-		return false
+		model.failureMessage != nil
 	}
 
 	private var primaryActionIdentity: String {

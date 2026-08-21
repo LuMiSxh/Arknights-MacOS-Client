@@ -12,7 +12,7 @@ extension LauncherViewModel {
 			}
 		#endif
 		guard !isDownloading else { return }
-		activeRefreshID = nil
+		state.refresh = .idle
 		refreshTask?.cancel()
 		refreshTask = Task { [weak self] in
 			await self?.refresh(forceGameUpdateCheck: true)
