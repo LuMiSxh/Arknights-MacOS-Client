@@ -28,10 +28,10 @@ struct OnboardingView: View {
 						case .welcome:
 							OnboardingWelcomeView(
 								updateState: coordinator.updateState,
-								rosettaState: coordinator.rosettaState,
+								intelTranslationState: coordinator.intelTranslationState,
 								accentColor: model.accentColor,
 								retry: retryUpdateCheck,
-								retryRosetta: { coordinator.refreshRosettaAvailability() }
+								retryIntelTranslation: retryIntelTranslation
 							)
 						case .installation:
 							OnboardingInstallationView(model: model)
@@ -136,7 +136,8 @@ struct OnboardingView: View {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
 			case .checking: "Checking…"
-			case .current, .checkFailed: "Continue"
+			case .current, .checkFailed:
+				coordinator.intelTranslationState == .checking ? "Checking…" : "Continue"
 			case .updateRequired(let release): "View Version \(release.version)"
 			}
 		}
@@ -150,8 +151,15 @@ struct OnboardingView: View {
 
 	private var canPerformPrimaryAction: Bool {
 		if coordinator.step == .welcome {
-			if case .checking = coordinator.updateState { return false }
-			return true
+			switch coordinator.updateState {
+			case .checking:
+				return false
+			case .updateRequired:
+				return true
+			case .current, .checkFailed:
+				return coordinator.intelTranslationState != .checking
+					&& coordinator.intelTranslationState != .waitingForLauncherCheck
+			}
 		}
 		if coordinator.step == .installation {
 			return model.isInstalled || model.isDownloading || model.canInstall
@@ -181,5 +189,13 @@ struct OnboardingView: View {
 			model.installOrUpdate()
 		}
 		coordinator.advance()
+	}
+
+	private func retryIntelTranslation() {
+		Task {
+			await coordinator.refreshIntelTranslationAvailability {
+				await model.refreshIntelTranslationAvailability(force: true)
+			}
+		}
 	}
 }

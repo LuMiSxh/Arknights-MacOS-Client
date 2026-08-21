@@ -23,8 +23,8 @@ extension LauncherViewModel {
 			show(LauncherError.wineRuntimeMissing)
 			return
 		}
-		guard RosettaAvailability.isInstalled() else {
-			show(LauncherError.rosettaMissing)
+		guard intelTranslationState.allowsWine else {
+			show(intelTranslationLaunchError)
 			return
 		}
 
@@ -103,7 +103,12 @@ extension LauncherViewModel {
 				guard activeGameSessionID == gameSessionID else { return }
 				activeGameSessionID = nil
 				if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
-				show(error)
+				if RosettaAvailability.isBadCPUType(error) {
+					intelTranslationState = .unavailable
+					show(LauncherError.intelTranslationUnavailable)
+				} else {
+					show(error)
+				}
 			}
 		}
 	}

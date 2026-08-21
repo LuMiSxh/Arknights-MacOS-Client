@@ -8,7 +8,9 @@ The current artifact is produced by the maintained [`frankea/winecx-gptk`](https
 
 This build remains the baseline because it packages WineCX, DXMT, Wine Gecko, GStreamer, FFmpeg, and their relocatable dependencies together. Other free Wine distributions considered for macOS either omit DXMT, require a separately installed media stack, or do not publish a complete reproducible recipe. The launcher uses the generic Wine and DXMT component names; the host project is provenance, not part of the runtime interface.
 
-The runtime's macOS executables are x86-64 and therefore depend on Rosetta 2. macOS 26 may show Apple's Intel-app compatibility notice on the first game launch. A future runtime should move to a native ARM64 Wine plus a suitable x86-64 Windows translation path once a free, reproducible build provides equivalent DXMT, media, Chromium, and child-window compatibility.
+The runtime's macOS executables are x86-64 and therefore depend on Rosetta 2. macOS 26 may show Apple's Intel-app compatibility notice on the first game launch. An upgrade to macOS 27 may remove an existing Rosetta installation, and macOS 27's Legacy Game Test Mode disables the general Rosetta environment Wine requires. The launcher therefore checks the mode when available and executes `/usr/bin/arch -x86_64 /usr/bin/true` before allowing Wine to launch; an on-disk Rosetta marker alone is not sufficient.
+
+General-purpose Rosetta is supported through macOS 27. macOS 28's restricted old-game translation is not a compatible host for this x86-64 macOS Wine process, so the current runtime is blocked there. A future runtime should move to a native ARM64 Wine plus a suitable x86-64 Windows translation path once a free, reproducible build provides equivalent DXMT, media, Chromium, and child-window compatibility.
 
 ## Required Wine interface
 

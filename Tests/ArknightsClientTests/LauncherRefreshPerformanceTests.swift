@@ -27,6 +27,9 @@ func refreshStartsIndependentMetadataRequestsConcurrently() async {
 		api: api,
 		paths: paths,
 		preferences: preferences,
+		checkIntelTranslation: {
+			IntelTranslationCheck(state: .available, diagnostics: "test")
+		},
 		arguments: []
 	)
 

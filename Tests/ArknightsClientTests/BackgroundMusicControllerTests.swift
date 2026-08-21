@@ -73,6 +73,9 @@ struct BackgroundMusicControllerTests {
 				libraryDirectory: root.appending(path: "Library")
 			),
 			preferences: preferences,
+			checkIntelTranslation: {
+				IntelTranslationCheck(state: .available, diagnostics: "test")
+			},
 			arguments: ["--developer-scenario", "ready"]
 		)
 		return (BackgroundMusicController(model: model), defaults, identifier)

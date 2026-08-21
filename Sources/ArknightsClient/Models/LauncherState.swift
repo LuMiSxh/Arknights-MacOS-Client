@@ -47,6 +47,9 @@ enum LauncherError: LocalizedError {
 	case insufficientDiskSpace(required: Int64, available: Int64)
 	case wineRuntimeMissing
 	case rosettaMissing
+	case rosettaDisabledByGameTestMode
+	case intelTranslationUnavailable
+	case intelTranslationUnsupported
 	case runtimeWindowTimeout
 	case runtimeConfiguration(String)
 	case runtimeExited(status: Int32, log: URL)
@@ -96,7 +99,13 @@ enum LauncherError: LocalizedError {
 		case .wineRuntimeMissing:
 			"No compatible Windows runtime found. Use a build that bundles Wine + DXMT."
 		case .rosettaMissing:
-			"Rosetta 2 is required to run the bundled Wine runtime on Apple Silicon. Install it by running \"softwareupdate --install-rosetta --agree-to-license\" in Terminal, then try again."
+			"Rosetta 2 is required to run the bundled Wine runtime. Install it by running \"softwareupdate --install-rosetta --agree-to-license\" in Terminal, then check again."
+		case .rosettaDisabledByGameTestMode:
+			"macOS Legacy Game Test Mode disables the Rosetta translation required by Wine. Run \"sudo game-test-tool disable\" in Terminal, restart your Mac, then check again."
+		case .intelTranslationUnavailable:
+			"macOS could not start the Intel-based Wine runtime. Check that Rosetta 2 is installed and restart your Mac before trying again."
+		case .intelTranslationUnsupported:
+			"This macOS version no longer supports the general Intel translation required by the bundled Wine runtime."
 		case .runtimeWindowTimeout:
 			"Arknights did not open a window within 90 seconds. Check the Wine log and try again."
 		case .runtimeConfiguration(let message):

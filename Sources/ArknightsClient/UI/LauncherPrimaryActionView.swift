@@ -57,7 +57,7 @@ struct LauncherPrimaryActionView: View {
 			.tint(model.accentColor)
 			.disabled(!model.canLaunch)
 			.keyboardShortcut(.defaultAction)
-			.help("Start Arknights")
+			.help(model.playHelp)
 		}
 	}
 }

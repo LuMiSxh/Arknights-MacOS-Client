@@ -120,13 +120,17 @@ struct ContentView: View {
 			isDeveloperMode: model.isDeveloperMode,
 			isOnboardingPreview: model.isOnboardingPreview,
 			gameIsInstalled: model.isInstalled,
-			checkForUpdates: model.launcherUpdateCheckForOnboarding
+			checkForUpdates: model.launcherUpdateCheckForOnboarding,
+			checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
 		)
 	}
 
 	private func retryOnboardingUpdateCheck() {
 		Task {
-			await onboarding.retryUpdateCheck(model.launcherUpdateCheckForOnboarding)
+			await onboarding.retryUpdateCheck(
+				model.launcherUpdateCheckForOnboarding,
+				checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
+			)
 		}
 	}
 
@@ -136,8 +140,15 @@ struct ContentView: View {
 		Task {
 			await onboarding.restart(
 				gameIsInstalled: model.isInstalled,
-				checkForUpdates: model.launcherUpdateCheckForOnboarding
+				checkForUpdates: model.launcherUpdateCheckForOnboarding,
+				checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
 			)
+		}
+	}
+
+	private func retryIntelTranslationCheck() {
+		Task {
+			await model.refreshIntelTranslationAvailability(force: true)
 		}
 	}
 
@@ -252,6 +263,13 @@ struct ContentView: View {
 							NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
 						}
 						.font(.caption)
+					} else if model.isInstalled && model.canRetryIntelTranslationCheck {
+						AccentActionLink(
+							title: "Check Again",
+							accentColor: cyan,
+							action: retryIntelTranslationCheck
+						)
+						.font(.caption)
 					}
 				}
 			}
@@ -266,6 +284,7 @@ struct ContentView: View {
 			return "\(Int(progress.fraction * 100))%"
 		}
 		if case .failed = model.phase { return "Needs attention" }
+		if model.isInstalled, let title = model.intelTranslationStatusTitle { return title }
 		return model.activityMessage
 	}
 
@@ -280,6 +299,7 @@ struct ContentView: View {
 			return "\(downloaded) of \(total)"
 		}
 		if case .failed(let message) = model.phase { return message }
+		if model.isInstalled { return model.intelTranslationStatusDetail }
 		return nil
 	}
 

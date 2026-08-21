@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A resumable setup assistant for first installs and 0.3.x upgrades, with update preflight, background installation, and guided settings.
 - Dedicated support actions for GitHub launcher reports and Yostar account, payment, or game-service issues.
 - Free-space validation before game installation or updates.
-- Rosetta 2 detection during setup and before launching the game.
+- Functional Rosetta 2 preflight during setup and launch, including macOS 27 upgrade and Legacy Game Test Mode diagnostics.
 - An optional Metal Performance HUD for native FPS and GPU diagnostics.
 - An experimental Game Mode integration that requires the full Xcode app.
 - A Settings Danger Zone for resets, Wine-prefix maintenance, migration, and game removal.

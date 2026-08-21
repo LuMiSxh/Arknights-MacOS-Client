@@ -19,7 +19,7 @@ struct OnboardingCoordinatorTests {
 			isOnboardingPreview: false,
 			gameIsInstalled: true,
 			checkForUpdates: { .current },
-			checkRosetta: { true }
+			checkIntelTranslation: { .available }
 		)
 		#expect(coordinator.isPresented)
 		#expect(coordinator.step == .welcome)
@@ -34,7 +34,7 @@ struct OnboardingCoordinatorTests {
 			isOnboardingPreview: false,
 			gameIsInstalled: true,
 			checkForUpdates: { .current },
-			checkRosetta: { true }
+			checkIntelTranslation: { .available }
 		)
 		resumed.advance()
 
@@ -54,7 +54,7 @@ struct OnboardingCoordinatorTests {
 			isOnboardingPreview: false,
 			gameIsInstalled: false,
 			checkForUpdates: { .current },
-			checkRosetta: { true }
+			checkIntelTranslation: { .available }
 		)
 		coordinator.advance()
 
@@ -80,13 +80,13 @@ struct OnboardingCoordinatorTests {
 			isOnboardingPreview: false,
 			gameIsInstalled: false,
 			checkForUpdates: { .updateAvailable(release) },
-			checkRosetta: { true }
+			checkIntelTranslation: { .available }
 		)
 		coordinator.advance()
 		coordinator.skip()
 
 		#expect(coordinator.step == .welcome)
-		#expect(coordinator.rosettaState == .pending)
+		#expect(coordinator.intelTranslationState == .waitingForLauncherCheck)
 		#expect(coordinator.isPresented)
 		#expect(store.needsOnboarding)
 	}
@@ -103,7 +103,7 @@ struct OnboardingCoordinatorTests {
 			isOnboardingPreview: false,
 			gameIsInstalled: false,
 			checkForUpdates: { .failed },
-			checkRosetta: { true }
+			checkIntelTranslation: { .available }
 		)
 		coordinator.advance()
 		#expect(coordinator.step == .installation)
@@ -127,17 +127,19 @@ struct OnboardingCoordinatorTests {
 			isOnboardingPreview: false,
 			gameIsInstalled: false,
 			checkForUpdates: { .current },
-			checkRosetta: {
+			checkIntelTranslation: {
 				checks += 1
-				return false
+				return .rosettaMissing
 			}
 		)
 
 		#expect(checks == 1)
-		#expect(coordinator.rosettaState == .missing)
+		#expect(coordinator.intelTranslationState == .rosettaMissing)
 
-		coordinator.refreshRosettaAvailability(checkRosetta: { true })
-		#expect(coordinator.rosettaState == .available)
+		await coordinator.refreshIntelTranslationAvailability(
+			checkIntelTranslation: { .available }
+		)
+		#expect(coordinator.intelTranslationState == .available)
 	}
 
 	private func makeDefaults() -> (UserDefaults, String) {

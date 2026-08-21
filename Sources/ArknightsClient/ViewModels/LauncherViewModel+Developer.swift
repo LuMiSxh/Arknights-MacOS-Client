@@ -18,6 +18,7 @@
 			launcherUpdate = nil
 			launcherUpdateStatus = "Up to date"
 			isCheckingLauncherUpdates = false
+			intelTranslationState = .available
 			activeGameSessionID = nil
 			isStoppingGame = false
 			phase = .ready

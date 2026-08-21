@@ -9,6 +9,27 @@ import Testing
 @MainActor
 struct LauncherViewModelConcurrencyTests {
 	@Test
+	func launchRequiresAWorkingIntelTranslationProbe() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		model.isInstalled = true
+		model.runtimeName = "Test Runtime"
+
+		model.intelTranslationState = .rosettaMissing
+		#expect(!model.canLaunch)
+
+		model.intelTranslationState = .gameTestModeEnabled
+		#expect(!model.canLaunch)
+
+		model.intelTranslationState = .available
+		#expect(model.canLaunch)
+
+		await api.resolveBranding()
+		await Task.yield()
+	}
+
+	@Test
 	func stopIsEnabledOnlyForRunningGamePhase() {
 		#expect(
 			!LauncherViewModel.canStopGame(
@@ -294,6 +315,9 @@ struct LauncherViewModelConcurrencyTests {
 			installer: installer,
 			paths: paths,
 			preferences: preferences,
+			checkIntelTranslation: {
+				IntelTranslationCheck(state: .available, diagnostics: "test")
+			},
 			arguments: []
 		)
 	}

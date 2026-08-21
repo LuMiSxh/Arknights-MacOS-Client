@@ -82,7 +82,7 @@ The Windows game runs through Rosetta 2, Wine, and DXMT on macOS, while Apple si
 2. Let the setup assistant check for a newer launcher version and Rosetta 2.
 3. Choose **Global**, **Japan**, or **Korea** and begin the official PC-client download.
 4. Configure display, artwork, theme, icons, update checks, and audio while the download continues.
-5. Use the optional test launch or select **Play** from the main window.
+5. Finish setup and select **Play** from the main window.
 
 Each region has its own folder under:
 

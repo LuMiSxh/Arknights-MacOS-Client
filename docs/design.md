@@ -40,10 +40,10 @@ The launcher should feel like a current macOS app first and an Arknights launche
 
 - Present setup as an operation briefing inside the launcher window: a persistent route on the left, one focused task on the right, and the active installation status inside the relevant step.
 - Check for a newer launcher before explaining version-specific settings. If one exists, stop setup at the update action until the newer launcher is installed and reopened.
-- Check Rosetta 2 after the launcher preflight and explain how to install it before the first game launch.
+- Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 upgrade and Legacy Game Test Mode recovery before the first game launch.
 - Let the official game download continue while the user configures display, artwork, theme, icons, updates, and audio. Do not duplicate installer progress or cancellation state inside the setup module.
 - Apply choices immediately through the same actions used in Settings. A skipped or completed assistant can be opened again from Settings → General.
-- End with an optional test launch and a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form; route account, payment, and game-service issues to official Yostar support.
+- End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form; route account, payment, and game-service issues to official Yostar support.
 
 ## Artwork
 

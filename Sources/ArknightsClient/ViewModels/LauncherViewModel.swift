@@ -36,6 +36,7 @@ final class LauncherViewModel {
 	var launcherUpdateStatus: String?
 	var isCheckingLauncherUpdates = false
 	var activityMessage = "Checking…"
+	var intelTranslationState: IntelTranslationState = .checking
 	#if DEBUG
 		var developerScenario: DeveloperScenario?
 	#endif
@@ -110,6 +111,7 @@ final class LauncherViewModel {
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
 	let graphicsDiagnosticsEnabled: Bool
+	@ObservationIgnored let checkIntelTranslation: @Sendable () async -> IntelTranslationCheck
 	// @Observable's accessor synthesis breaks deinit's access to MainActor-isolated stored
 	// properties, so the task handles cancelled there stay plain storage via
 	// @ObservationIgnored; every other var below is left tracked since computed properties
@@ -122,6 +124,7 @@ final class LauncherViewModel {
 	@ObservationIgnored var launcherUpdateTask: Task<LauncherUpdateCheckOutcome, Never>?
 	@ObservationIgnored var announcementTask: Task<Void, Never>?
 	@ObservationIgnored var resetCountdownTask: Task<Void, Never>?
+	@ObservationIgnored var intelTranslationCheckTask: Task<IntelTranslationCheck, Never>?
 	@ObservationIgnored var activeThemeCacheKey: String?
 	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
@@ -138,6 +141,9 @@ final class LauncherViewModel {
 		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
 		updateChecker: LauncherUpdateChecker = LauncherUpdateChecker(),
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
+		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
+			await RosettaAvailability.check()
+		},
 		arguments: [String] = ProcessInfo.processInfo.arguments
 	) {
 		self.api = api
@@ -146,6 +152,7 @@ final class LauncherViewModel {
 		graphicsDiagnosticsEnabled = arguments.contains("--graphics-diagnostics")
 		self.updateChecker = updateChecker
 		self.announcementService = announcementService
+		self.checkIntelTranslation = checkIntelTranslation
 		log = LauncherLog(fileURL: paths.launcherLogFile)
 		self.installer = installer ?? GameInstaller(api: api, log: log)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
@@ -211,6 +218,7 @@ final class LauncherViewModel {
 
 		refreshTask = Task { [weak self] in
 			guard let self else { return }
+			await refreshIntelTranslationAvailability()
 			await refresh()
 			if launchOnStart {
 				launch()
@@ -241,6 +249,7 @@ final class LauncherViewModel {
 		launcherUpdateTask?.cancel()
 		announcementTask?.cancel()
 		resetCountdownTask?.cancel()
+		intelTranslationCheckTask?.cancel()
 	}
 
 	var versionText: String {
@@ -260,7 +269,8 @@ final class LauncherViewModel {
 	}
 
 	var canLaunch: Bool {
-		isInstalled && runtimeName != nil && !isDownloading && !isGameActive
+		isInstalled && runtimeName != nil && intelTranslationState.allowsWine && !isDownloading
+			&& !isGameActive
 	}
 
 	var isGameRunning: Bool {

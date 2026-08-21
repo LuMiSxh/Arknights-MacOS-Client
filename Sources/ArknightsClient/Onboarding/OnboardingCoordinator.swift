@@ -16,7 +16,7 @@ final class OnboardingCoordinator {
 	private(set) var isPresented = false
 	private(set) var step: OnboardingStep = .welcome
 	private(set) var updateState: OnboardingUpdateState = .checking
-	private(set) var rosettaState: OnboardingRosettaState = .pending
+	private(set) var intelTranslationState: IntelTranslationState = .waitingForLauncherCheck
 
 	init(store: OnboardingProgressStore) {
 		self.store = store
@@ -27,46 +27,55 @@ final class OnboardingCoordinator {
 		isOnboardingPreview: Bool,
 		gameIsInstalled: Bool,
 		checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,
-		checkRosetta: @escaping @MainActor () -> Bool = { RosettaAvailability.isInstalled() }
+		checkIntelTranslation: @escaping @MainActor () async -> IntelTranslationState = {
+			(await RosettaAvailability.check()).state
+		}
 	) async {
 		guard isOnboardingPreview || (!isDeveloperMode && store.needsOnboarding) else { return }
 		await begin(
 			gameIsInstalled: gameIsInstalled,
 			checkForUpdates: checkForUpdates,
-			checkRosetta: checkRosetta
+			checkIntelTranslation: checkIntelTranslation
 		)
 	}
 
 	func restart(
 		gameIsInstalled: Bool,
 		checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,
-		checkRosetta: @escaping @MainActor () -> Bool = { RosettaAvailability.isInstalled() }
+		checkIntelTranslation: @escaping @MainActor () async -> IntelTranslationState = {
+			(await RosettaAvailability.check()).state
+		}
 	) async {
 		store.reset()
 		await begin(
 			gameIsInstalled: gameIsInstalled,
 			checkForUpdates: checkForUpdates,
-			checkRosetta: checkRosetta
+			checkIntelTranslation: checkIntelTranslation
 		)
 	}
 
 	func retryUpdateCheck(
 		_ checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,
-		checkRosetta: @escaping @MainActor () -> Bool = { RosettaAvailability.isInstalled() }
+		checkIntelTranslation: @escaping @MainActor () async -> IntelTranslationState = {
+			(await RosettaAvailability.check()).state
+		}
 	) async {
 		updateState = .checking
 		updateState = Self.updateState(for: await checkForUpdates())
-		refreshRosettaAvailability(checkRosetta: checkRosetta)
+		await refreshIntelTranslationAvailability(checkIntelTranslation: checkIntelTranslation)
 	}
 
-	func refreshRosettaAvailability(
-		checkRosetta: @MainActor () -> Bool = { RosettaAvailability.isInstalled() }
-	) {
+	func refreshIntelTranslationAvailability(
+		checkIntelTranslation: @MainActor () async -> IntelTranslationState = {
+			(await RosettaAvailability.check()).state
+		}
+	) async {
 		guard updateState.allowsSetup else {
-			rosettaState = .pending
+			intelTranslationState = .waitingForLauncherCheck
 			return
 		}
-		rosettaState = checkRosetta() ? .available : .missing
+		intelTranslationState = .checking
+		intelTranslationState = await checkIntelTranslation()
 	}
 
 	func advance() {
@@ -107,16 +116,18 @@ final class OnboardingCoordinator {
 	private func begin(
 		gameIsInstalled: Bool,
 		checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,
-		checkRosetta: @escaping @MainActor () -> Bool
+		checkIntelTranslation: @escaping @MainActor () async -> IntelTranslationState
 	) async {
 		gameWasInstalled = gameIsInstalled
 		resumeStep = store.savedStep
 		step = .welcome
 		updateState = .checking
-		rosettaState = .pending
+		intelTranslationState = .waitingForLauncherCheck
 		isPresented = true
 		updateState = Self.updateState(for: await checkForUpdates())
-		refreshRosettaAvailability(checkRosetta: checkRosetta)
+		await refreshIntelTranslationAvailability(
+			checkIntelTranslation: checkIntelTranslation
+		)
 	}
 
 	private func move(to target: OnboardingStep) {

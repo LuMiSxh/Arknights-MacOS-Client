@@ -47,6 +47,12 @@ Revert with `-bool NO`.
 
 **Blank or slow social sign-in (Google, Apple, Facebook).** The OAuth flow starts a CEF background process through Wine on first use; allow 5–15 seconds for it to negotiate TLS and initialize. Repeatedly clicking the login button while it initializes does not help.
 
+**Play is disabled because Rosetta 2 is missing.** This can happen after upgrading from macOS 26 to macOS 27. Open Terminal, run `softwareupdate --install-rosetta --agree-to-license`, then select **Check Again** in the launcher.
+
+**Play is disabled because Legacy Game Test Mode is active.** On macOS 27, run `sudo game-test-tool disable` in Terminal and restart the Mac. This test mode disables the general Rosetta environment required by the bundled Wine runtime.
+
+**Play is disabled even though Rosetta appears installed.** The launcher found Rosetta but macOS could not execute a harmless Intel test process. Restart the Mac and select **Check Again**. Include `launcher.log` in a bug report if the check continues to fail.
+
 **Game window does not appear within 90 seconds** (the launcher stays on "Starting…" and times out with `runtimeWindowTimeout`). Open `wine.log` and check for Rosetta 2 or Metal errors; confirm Rosetta is installed with `softwareupdate --install-rosetta --agree-to-license`. If the log shows no obvious error, reset the Wine prefix migration state via **Settings** → **Installation** → **Repair** and launch again.
 
 ## Reporting bugs

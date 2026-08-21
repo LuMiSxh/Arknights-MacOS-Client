@@ -4,10 +4,10 @@ import SwiftUI
 
 struct OnboardingWelcomeView: View {
 	let updateState: OnboardingUpdateState
-	let rosettaState: OnboardingRosettaState
+	let intelTranslationState: IntelTranslationState
 	let accentColor: Color
 	let retry: () -> Void
-	let retryRosetta: () -> Void
+	let retryIntelTranslation: () -> Void
 
 	var body: some View {
 		OnboardingPage(
@@ -52,21 +52,27 @@ struct OnboardingWelcomeView: View {
 			}
 
 			if updateState.allowsSetup {
-				OnboardingPanel(title: "Rosetta 2", systemImage: rosettaImage) {
-					switch rosettaState {
-					case .pending:
-						Text("Rosetta 2 will be checked after the launcher update check.")
+				OnboardingPanel(title: "Intel compatibility", systemImage: translationImage) {
+					switch intelTranslationState {
+					case .waitingForLauncherCheck:
+						Text("Intel compatibility will be checked after the launcher update check.")
 							.foregroundStyle(.secondary)
+					case .checking:
+						HStack(spacing: 12) {
+							ProgressView()
+							Text("Checking whether the bundled Wine runtime can start…")
+								.foregroundStyle(.secondary)
+						}
 					case .available:
 						Label(
-							"Rosetta 2 is installed. The bundled Wine runtime can start.",
+							"Compatibility verified. The bundled Wine runtime can start.",
 							systemImage: "checkmark.circle.fill"
 						)
 						.foregroundStyle(accentColor)
-					case .missing:
+					case .rosettaMissing:
 						VStack(alignment: .leading, spacing: 10) {
 							Text(
-								"Rosetta 2 is required to run Arknights through Wine. Open Terminal and run:"
+								"Rosetta 2 is missing. This can happen after a macOS 27 upgrade. Open Terminal and run:"
 							)
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
@@ -75,9 +81,42 @@ struct OnboardingWelcomeView: View {
 								.textSelection(.enabled)
 							Button(
 								"Check Again", systemImage: "arrow.clockwise",
-								action: retryRosetta
+								action: retryIntelTranslation
 							)
 						}
+					case .gameTestModeEnabled:
+						VStack(alignment: .leading, spacing: 10) {
+							Text(
+								"macOS Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:"
+							)
+							.foregroundStyle(.secondary)
+							.fixedSize(horizontal: false, vertical: true)
+							Text("sudo game-test-tool disable")
+								.font(.callout.monospaced())
+								.textSelection(.enabled)
+							Button(
+								"Check Again", systemImage: "arrow.clockwise",
+								action: retryIntelTranslation
+							)
+						}
+					case .unavailable:
+						VStack(alignment: .leading, spacing: 10) {
+							Text(
+								"macOS could not start an Intel test process. Restart your Mac, then check again. If the problem remains, include the launcher log in a bug report."
+							)
+							.foregroundStyle(.secondary)
+							.fixedSize(horizontal: false, vertical: true)
+							Button(
+								"Check Again", systemImage: "arrow.clockwise",
+								action: retryIntelTranslation
+							)
+						}
+					case .unsupportedOS:
+						Text(
+							"This macOS version no longer provides the general Intel translation required by the bundled Wine runtime."
+						)
+						.foregroundStyle(.secondary)
+						.fixedSize(horizontal: false, vertical: true)
 					}
 				}
 			}
@@ -112,11 +151,12 @@ struct OnboardingWelcomeView: View {
 		}
 	}
 
-	private var rosettaImage: String {
-		switch rosettaState {
-		case .pending: "hourglass"
+	private var translationImage: String {
+		switch intelTranslationState {
+		case .waitingForLauncherCheck, .checking: "hourglass"
 		case .available: "cpu"
-		case .missing: "exclamationmark.triangle"
+		case .rosettaMissing, .gameTestModeEnabled, .unavailable, .unsupportedOS:
+			"exclamationmark.triangle"
 		}
 	}
 }
