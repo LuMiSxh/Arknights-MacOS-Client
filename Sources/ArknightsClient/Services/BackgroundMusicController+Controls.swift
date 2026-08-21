@@ -45,6 +45,7 @@ extension BackgroundMusicController {
 		isManuallyPaused = true
 		playbackIntent = .paused
 		isChangingPlayback = true
+		nowPlaying.updatePlayback(isPlaying: false)
 		fadeTask?.cancel()
 		fadeTask = nil
 		activeFadeID = nil
@@ -207,7 +208,9 @@ extension BackgroundMusicController {
 				?? targetVideoID
 			model.currentMusicVideoID = resolvedVideoID
 			if lastObservedVideoID != resolvedVideoID {
-				model.currentMusicTitle = "Playlist track \(targetIndex + 1)"
+				let fallbackTitle = "Playlist track \(targetIndex + 1)"
+				model.currentMusicTitle = fallbackTitle
+				nowPlaying.updateTrack(title: fallbackTitle, artist: nil)
 			}
 		}
 		let previous = previousVideoID ?? "unknown"
@@ -252,6 +255,7 @@ extension BackgroundMusicController {
 		}
 
 		model.currentMusicVideoID = metadata.videoId
+		nowPlaying.updateTrack(title: title, artist: metadata.author)
 		let changed = title != lastObservedTitle || metadata.videoId != lastObservedVideoID
 		lastObservedTitle = title
 		lastObservedVideoID = metadata.videoId

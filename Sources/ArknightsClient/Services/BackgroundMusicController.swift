@@ -16,6 +16,7 @@ final class BackgroundMusicController {
 	var isMuted = false
 
 	let model: LauncherViewModel
+	let nowPlaying: NowPlayingCoordinator
 	var currentSource: YouTubePlayer.Source?
 	var isManuallyPaused = false
 	var playbackIntent: PlaybackIntent?
@@ -33,6 +34,10 @@ final class BackgroundMusicController {
 
 	init(model: LauncherViewModel) {
 		self.model = model
+		nowPlaying = NowPlayingCoordinator(icon: model.launcherIconManager.currentIcon)
+		model.launcherIconManager.iconDidChange = { [weak self] icon in
+			self?.nowPlaying.updateArtwork(icon)
+		}
 		#if DEBUG
 			if model.developerScenario == .musicPlayer {
 				let previewSource = YouTubePlayer.Source.playlist(id: "developer-preview")
@@ -138,6 +143,7 @@ final class BackgroundMusicController {
 			isManuallyPaused = false
 			playbackIntent = .playing
 			isChangingPlayback = true
+			nowPlaying.updatePlayback(isPlaying: true)
 			performFadeIn(isUserInitiated: true)
 		}
 	}
@@ -233,6 +239,7 @@ final class BackgroundMusicController {
 				guard let self, let targetPlayer, self.player === targetPlayer else { return }
 				playbackState = state
 				reconcilePlaybackIntent(with: state)
+				nowPlaying.updatePlayback(isPlaying: isPlaying)
 				Task { [log = model.log] in
 					await log.debug("Background music state: \(state)")
 				}

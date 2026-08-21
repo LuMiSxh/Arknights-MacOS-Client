@@ -111,6 +111,7 @@ final class LauncherViewModel {
 	let paths: AppPaths
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
+	let launcherIconManager: LauncherIconManager
 	let graphicsDiagnosticsEnabled: Bool
 	@ObservationIgnored let checkIntelTranslation: @Sendable () async -> IntelTranslationCheck
 	@ObservationIgnored let installRosettaSystemSoftware:
@@ -145,6 +146,7 @@ final class LauncherViewModel {
 		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
 		updateChecker: LauncherUpdateChecker = LauncherUpdateChecker(),
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
+		launcherIconManager: LauncherIconManager? = nil,
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
@@ -161,6 +163,7 @@ final class LauncherViewModel {
 		graphicsDiagnosticsEnabled = arguments.contains("--graphics-diagnostics")
 		self.updateChecker = updateChecker
 		self.announcementService = announcementService
+		self.launcherIconManager = launcherIconManager ?? LauncherIconManager()
 		self.checkIntelTranslation = checkIntelTranslation
 		self.installRosettaSystemSoftware = installRosettaSystemSoftware
 		log = LauncherLog(fileURL: paths.launcherLogFile)

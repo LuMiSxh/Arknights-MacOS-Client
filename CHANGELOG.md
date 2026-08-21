@@ -56,6 +56,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Reapplied normalized Wine scrolling on every launch to prevent excessive trackpad speed (Thanks to @darkwebdev, #28).
 - Matched launcher and game icon Dock footprints to native macOS apps (#24).
 - Corrected the launcher update status shown in Settings.
+- Applied custom launcher icons consistently in the Dock, Finder, Spotlight, and macOS Now Playing surfaces.
 
 ## [0.3.0]
 

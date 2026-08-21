@@ -52,9 +52,8 @@ extension LauncherViewModel {
 		refreshTask = Task { [weak self] in await self?.refresh() }
 	}
 
-	/// Persists via `NSWorkspace.setIcon`, a Finder extended attribute on the app bundle
-	/// untouched by code signing, plus our own copy so the Dock icon can be reapplied on
-	/// the next launch (`NSApp.applicationIconImage` itself resets every launch).
+	/// Keeps an Application Support copy for updates, then delegates every macOS icon surface
+	/// to `LauncherIconManager`; the running-process icon itself resets between launches.
 	func chooseCustomAppIcon() {
 		let panel = NSOpenPanel()
 		panel.title = "Choose an app icon"
@@ -93,16 +92,9 @@ extension LauncherViewModel {
 				withIntermediateDirectories: true
 			)
 			try png.write(to: paths.customAppIcon)
-			guard
-				NSWorkspace.shared.setIcon(
-					image,
-					forFile: Bundle.main.bundlePath,
-					options: []
-				)
-			else {
+			guard launcherIconManager.apply(image) else {
 				throw LauncherError.cannotSetAppIcon
 			}
-			NSApp?.applicationIconImage = image
 		} catch {
 			show(error)
 		}
@@ -154,15 +146,10 @@ extension LauncherViewModel {
 			)
 			try launcherPNG.write(to: paths.customAppIcon, options: .atomic)
 			try gamePNG.write(to: paths.customGameIcon, options: .atomic)
-			guard
-				NSWorkspace.shared.setIcon(
-					icons.launcher,
-					forFile: Bundle.main.bundlePath,
-					options: []
-				)
-			else { throw LauncherError.cannotSetAppIcon }
+			guard launcherIconManager.apply(icons.launcher) else {
+				throw LauncherError.cannotSetAppIcon
+			}
 			try data.write(to: sourceURL, options: .atomic)
-			NSApp?.applicationIconImage = icons.launcher
 			activityMessage = "Launcher and game icons updated"
 		} catch {
 			show(error)
@@ -230,16 +217,9 @@ extension LauncherViewModel {
 				try FileManager.default.removeItem(at: paths.customAppIcon)
 			}
 			try clearOperatorPresetAvatar()
-			guard
-				NSWorkspace.shared.setIcon(
-					nil,
-					forFile: Bundle.main.bundlePath,
-					options: []
-				)
-			else {
+			guard launcherIconManager.reset() else {
 				throw LauncherError.cannotSetAppIcon
 			}
-			NSApp?.applicationIconImage = nil
 			updateThemeColor()
 		} catch {
 			show(error)
@@ -249,7 +229,13 @@ extension LauncherViewModel {
 	@discardableResult
 	func loadCustomAppIcon() -> Bool {
 		guard let image = NSImage(contentsOf: paths.customAppIcon) else { return false }
-		NSApp?.applicationIconImage = image
+		if !launcherIconManager.apply(image) {
+			Task { [log] in
+				await log.error(
+					"Failed to reapply the saved launcher icon to the app bundle"
+				)
+			}
+		}
 		return true
 	}
 
@@ -286,9 +272,9 @@ extension LauncherViewModel {
 			where FileManager.default.fileExists(atPath: url.path) {
 				try FileManager.default.removeItem(at: url)
 			}
-			guard NSWorkspace.shared.setIcon(nil, forFile: Bundle.main.bundlePath, options: [])
-			else { throw LauncherError.cannotSetAppIcon }
-			NSApp?.applicationIconImage = nil
+			guard launcherIconManager.reset() else {
+				throw LauncherError.cannotSetAppIcon
+			}
 			updateThemeColor()
 			activityMessage = "Default Launcher and game icons restored"
 		} catch {
@@ -310,7 +296,9 @@ extension LauncherViewModel {
 			else { throw LauncherError.cannotEncodeAppIcon }
 			try launcherPNG.write(to: paths.customAppIcon, options: .atomic)
 			try gamePNG.write(to: paths.customGameIcon, options: .atomic)
-			NSApp?.applicationIconImage = icons.launcher
+			guard launcherIconManager.apply(icons.launcher) else {
+				throw LauncherError.cannotSetAppIcon
+			}
 		} catch {
 			await log.error(
 				"Failed to refresh operator icons for Dynamic Theme: \(error.localizedDescription)"

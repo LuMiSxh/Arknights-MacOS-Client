@@ -13,7 +13,7 @@ struct AboutSettingsPage: View {
 			accentColor: model.accentColor
 		) {
 			HStack(alignment: .center, spacing: 18) {
-				Image(nsImage: NSApplication.shared.applicationIconImage)
+				Image(nsImage: model.launcherIconManager.currentIcon)
 					.resizable()
 					.frame(width: 76, height: 76)
 				VStack(alignment: .leading, spacing: 5) {

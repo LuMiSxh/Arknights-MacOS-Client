@@ -112,6 +112,7 @@ extension BackgroundMusicController {
 		lastObservedVideoID = nil
 		model.currentMusicTitle = nil
 		model.currentMusicVideoID = nil
+		nowPlaying.clear()
 
 		Task { [log = model.log] in
 			do {

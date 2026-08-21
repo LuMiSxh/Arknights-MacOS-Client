@@ -80,10 +80,24 @@ extension LauncherViewModel {
 
 		if usesDynamicTheme, let hue {
 			if let tinted = AppIconRenderer.tintedDefaultIcon(for: hue) {
-				NSApp?.applicationIconImage = tinted
+				applyDynamicLauncherIcon(tinted)
 			}
 		} else {
-			NSApp?.applicationIconImage = nil
+			resetDynamicLauncherIcon()
+		}
+	}
+
+	private func applyDynamicLauncherIcon(_ image: NSImage) {
+		guard !launcherIconManager.apply(image) else { return }
+		Task { [log] in
+			await log.error("Failed to persist the Dynamic Theme launcher icon")
+		}
+	}
+
+	private func resetDynamicLauncherIcon() {
+		guard !launcherIconManager.reset() else { return }
+		Task { [log] in
+			await log.error("Failed to restore the bundled launcher icon")
 		}
 	}
 }
