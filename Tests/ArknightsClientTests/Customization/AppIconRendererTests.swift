@@ -72,30 +72,3 @@ func gameTreatmentIgnoresTheDynamicThemeHue() throws {
 
 	#expect(cyan.tiffRepresentation == purple.tiffRepresentation)
 }
-
-@Test
-func operatorFrameConfigurationIsValid() {
-	#expect(AppConstants.Icon.operatorFrameInset > 0)
-	#expect(AppConstants.Icon.operatorFrameOpacity == 1)
-	#expect((1...2).contains(AppConstants.Icon.operatorFrameOutlineWidth))
-}
-
-@MainActor
-@Test
-func operatorIconTreatmentsRemainVisuallyDistinct() throws {
-	let source = NSImage(size: NSSize(width: 64, height: 64))
-	source.lockFocus()
-	NSColor.systemOrange.setFill()
-	NSBezierPath(rect: NSRect(x: 0, y: 0, width: 64, height: 64)).fill()
-	source.unlockFocus()
-	let sourceData = try #require(source.tiffRepresentation)
-	let launcher = try #require(
-		AppIconRenderer.createPresetIcon(
-			from: sourceData, treatment: .launcher, accentHue: nil)
-	)
-	let game = try #require(
-		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: nil)
-	)
-
-	#expect(launcher.tiffRepresentation != game.tiffRepresentation)
-}

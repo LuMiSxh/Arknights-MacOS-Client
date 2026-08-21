@@ -8,7 +8,7 @@ import Testing
 @MainActor
 struct LauncherPreferencesStoreTests {
 	@Test
-	func updateTogglesDefaultToConfiguredValues() {
+	func updateTogglesUseDefaultsAndPersistChanges() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
@@ -19,27 +19,20 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.showsGameVersion())
 		#expect(store.playsLauncherMusic())
 		#expect(!store.showsPlayingMusic())
-	}
-
-	@Test
-	func updateTogglesPersistDisabledValues() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
 
 		store.setAutomaticLauncherUpdates(false)
 		store.setAutomaticGameUpdates(false)
 		store.setAnnouncementsEnabled(false)
 		store.setShowsGameVersion(false)
 		store.setPlaysLauncherMusic(false)
-		store.setShowsPlayingMusic(false)
+		store.setShowsPlayingMusic(true)
 
 		#expect(!store.automaticLauncherUpdates())
 		#expect(!store.automaticGameUpdates())
 		#expect(!store.announcementsEnabled())
 		#expect(!store.showsGameVersion())
 		#expect(!store.playsLauncherMusic())
-		#expect(!store.showsPlayingMusic())
+		#expect(store.showsPlayingMusic())
 	}
 
 	@Test

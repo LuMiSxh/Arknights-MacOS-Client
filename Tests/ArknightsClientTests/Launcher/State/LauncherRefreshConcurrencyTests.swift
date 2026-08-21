@@ -10,7 +10,7 @@ import Testing
 func refreshStartsIndependentMetadataRequestsConcurrently() async {
 	let api = ConcurrentRefreshAPI()
 	let root = URL(filePath: NSTemporaryDirectory()).appending(
-		path: "LauncherRefreshPerformanceTests.(UUID().uuidString)",
+		path: "LauncherRefreshConcurrencyTests.\(UUID().uuidString)",
 		directoryHint: .isDirectory
 	)
 	let paths = AppPaths(
@@ -18,7 +18,18 @@ func refreshStartsIndependentMetadataRequestsConcurrently() async {
 		cachesDirectory: root.appending(path: "Caches", directoryHint: .isDirectory),
 		libraryDirectory: root.appending(path: "Library", directoryHint: .isDirectory)
 	)
-	let defaults = UserDefaults(suiteName: "LauncherRefreshPerformanceTests.(UUID().uuidString)")!
+	let suiteName = "LauncherRefreshConcurrencyTests.\(UUID().uuidString)"
+	let defaults = UserDefaults(suiteName: suiteName)!
+	defer {
+		defaults.removePersistentDomain(forName: suiteName)
+		do {
+			if FileManager.default.fileExists(atPath: root.path) {
+				try FileManager.default.removeItem(at: root)
+			}
+		} catch {
+			Issue.record("Failed to remove test directory: \(error)")
+		}
+	}
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	preferences.setAutomaticGameUpdates(false)
 	preferences.setAutomaticLauncherUpdates(false)
