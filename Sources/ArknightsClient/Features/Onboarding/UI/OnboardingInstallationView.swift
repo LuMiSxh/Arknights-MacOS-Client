@@ -18,7 +18,7 @@ struct OnboardingInstallationView: View {
 				"Regions use separate game files and accounts. Pick the server you already use; you can install another region later from Settings.",
 			accentColor: model.accentColor
 		) {
-			OnboardingPanel(title: "Server region", systemImage: "globe.asia.australia") {
+			SettingsPanel(title: "Server region", systemImage: "globe.asia.australia") {
 				AdaptiveSegmentedControl(
 					selection: $selectedRegion,
 					options: GameRegion.allCases,
@@ -35,7 +35,7 @@ struct OnboardingInstallationView: View {
 					.foregroundStyle(.secondary)
 			}
 
-			OnboardingPanel(title: "Official PC client", systemImage: installationImage) {
+			SettingsPanel(title: "Official PC client", systemImage: installationImage) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
 						Text(installationTitle)

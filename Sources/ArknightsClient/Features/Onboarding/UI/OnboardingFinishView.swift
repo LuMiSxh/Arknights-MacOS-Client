@@ -13,7 +13,7 @@ struct OnboardingFinishView: View {
 				"Your launcher settings are saved. You can change every choice again from Settings.",
 			accentColor: model.accentColor
 		) {
-			OnboardingPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
+			SettingsPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
 				Text(gameStatusDetail)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
@@ -32,7 +32,7 @@ struct OnboardingFinishView: View {
 				}
 			}
 
-			OnboardingPanel(title: "Community project", systemImage: "person.3") {
+			SettingsPanel(title: "Community project", systemImage: "person.3") {
 				Text(
 					"Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar."
 				)

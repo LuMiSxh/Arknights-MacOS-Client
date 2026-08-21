@@ -18,7 +18,7 @@ struct OnboardingWelcomeView: View {
 				"We’ll check the launcher first, then configure the game and the parts you see every day. Your choices apply immediately.",
 			accentColor: accentColor
 		) {
-			OnboardingPanel(title: statusTitle, systemImage: statusImage) {
+			SettingsPanel(title: statusTitle, systemImage: statusImage) {
 				switch updateState {
 				case .checking:
 					HStack(spacing: 12) {
@@ -57,7 +57,7 @@ struct OnboardingWelcomeView: View {
 			}
 
 			if updateState.allowsSetup {
-				OnboardingPanel(title: "Intel compatibility", systemImage: translationImage) {
+				SettingsPanel(title: "Intel compatibility", systemImage: translationImage) {
 					switch intelTranslationState {
 					case .waitingForLauncherCheck:
 						Text("Intel compatibility will be checked after the launcher update check.")
@@ -120,7 +120,7 @@ struct OnboardingWelcomeView: View {
 				}
 			}
 
-			OnboardingPanel(
+			SettingsPanel(
 				title: "What happens next", systemImage: "point.forward.to.point.capsulepath"
 			) {
 				Text(

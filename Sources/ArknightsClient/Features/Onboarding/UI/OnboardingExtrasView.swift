@@ -12,7 +12,7 @@ struct OnboardingExtrasView: View {
 				"Automatic checks only look for new versions. Downloads still begin when you choose them, except for the installation already started by this setup.",
 			accentColor: model.accentColor
 		) {
-			OnboardingPanel(
+			SettingsPanel(
 				title: "Updates & project notices", systemImage: "arrow.trianglehead.2.clockwise"
 			) {
 				OnboardingToggleRow(
@@ -40,7 +40,7 @@ struct OnboardingExtrasView: View {
 				)
 			}
 
-			OnboardingPanel(title: "Launcher music", systemImage: "music.note") {
+			SettingsPanel(title: "Launcher music", systemImage: "music.note") {
 				OnboardingToggleRow(
 					title: "Play Background Music",
 					detail:

@@ -2,6 +2,30 @@
 
 import SwiftUI
 
+struct SectionPageHeader: View {
+	let title: String
+	let subtitle: String
+	let accentColor: Color
+	var fixesSubtitleHeight = false
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 7) {
+			Text(title)
+				.font(.largeTitle.bold())
+			Text(subtitle)
+				.foregroundStyle(.secondary)
+				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
+			HStack(spacing: 8) {
+				Rectangle().fill(accentColor).frame(width: 72, height: 3)
+				Rectangle().fill(.secondary.opacity(0.28))
+					.frame(height: 1)
+					.frame(maxWidth: .infinity)
+			}
+			.padding(.top, 5)
+		}
+	}
+}
+
 struct SettingsPage<Content: View>: View {
 	let title: String
 	let subtitle: String
@@ -11,19 +35,7 @@ struct SettingsPage<Content: View>: View {
 	var body: some View {
 		ScrollView {
 			VStack(alignment: .leading, spacing: 18) {
-				VStack(alignment: .leading, spacing: 7) {
-					Text(title)
-						.font(.largeTitle.bold())
-					Text(subtitle)
-						.foregroundStyle(.secondary)
-					HStack(spacing: 8) {
-						Rectangle().fill(accentColor).frame(width: 72, height: 3)
-						Rectangle().fill(.secondary.opacity(0.28))
-							.frame(height: 1)
-							.frame(maxWidth: .infinity)
-					}
-					.padding(.top, 5)
-				}
+				SectionPageHeader(title: title, subtitle: subtitle, accentColor: accentColor)
 				content
 			}
 			.padding(.horizontal, 26)

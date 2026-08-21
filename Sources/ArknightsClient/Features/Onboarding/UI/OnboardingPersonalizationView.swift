@@ -13,7 +13,7 @@ struct OnboardingPersonalizationView: View {
 				"Artwork fills the launcher window. Dynamic Theme samples that image and carries its color into controls and compatible icon styles.",
 			accentColor: model.accentColor
 		) {
-			OnboardingPanel(title: "Launcher artwork", systemImage: "photo.on.rectangle.angled") {
+			SettingsPanel(title: "Launcher artwork", systemImage: "photo.on.rectangle.angled") {
 				Group {
 					if let artwork = model.heroArtwork {
 						Image(nsImage: artwork)
@@ -58,7 +58,7 @@ struct OnboardingPersonalizationView: View {
 				}
 			}
 
-			OnboardingPanel(title: "Theme & launcher status", systemImage: "paintpalette") {
+			SettingsPanel(title: "Theme & launcher status", systemImage: "paintpalette") {
 				OnboardingToggleRow(
 					title: "Dynamic Theme",
 					detail:

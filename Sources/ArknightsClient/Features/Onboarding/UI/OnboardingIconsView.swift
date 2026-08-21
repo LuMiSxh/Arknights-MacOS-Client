@@ -13,7 +13,7 @@ struct OnboardingIconsView: View {
 				"Choose an operator to create a Launcher icon with that character and a Game icon in the original Arknights style.",
 			accentColor: model.accentColor
 		) {
-			OnboardingPanel(title: "Dock icons", systemImage: "square.grid.2x2") {
+			SettingsPanel(title: "Dock icons", systemImage: "square.grid.2x2") {
 				SettingsActionRow(
 					title: "Operator Icons",
 					detail: "The same character is used for both Dock icons."

@@ -12,7 +12,7 @@ struct OnboardingGameSettingsView: View {
 				"These choices affect the next launch. Start conservatively on base-model Macs; you can raise resolution after confirming smooth gameplay.",
 			accentColor: model.accentColor
 		) {
-			OnboardingPanel(title: "Who controls display settings?", systemImage: "switch.2") {
+			SettingsPanel(title: "Who controls display settings?", systemImage: "switch.2") {
 				OnboardingToggleRow(
 					title: "Use In-Game Display Settings",
 					detail: model.launchOptions.usesGameSettings
@@ -23,7 +23,7 @@ struct OnboardingGameSettingsView: View {
 				)
 			}
 
-			OnboardingPanel(title: "Window & resolution", systemImage: "rectangle.on.rectangle") {
+			SettingsPanel(title: "Window & resolution", systemImage: "rectangle.on.rectangle") {
 				AdaptiveSegmentedControl(
 					selection: $model.launchOptions.displayMode,
 					options: GameDisplayMode.allCases,
@@ -49,7 +49,7 @@ struct OnboardingGameSettingsView: View {
 				.foregroundStyle(.secondary)
 			}
 
-			OnboardingPanel(title: "Pixel density", systemImage: "sparkles.rectangle.stack") {
+			SettingsPanel(title: "Pixel density", systemImage: "sparkles.rectangle.stack") {
 				OnboardingToggleRow(
 					title: "High-Resolution Mode",
 					detail:
