@@ -20,17 +20,17 @@ extension BackgroundMusicController {
 					expectsPlayback: true
 				)
 				if changed {
-					await model.log.info(
+					await context.log.info(
 						"Background music playlist shuffled and started a random track"
 					)
 				} else {
-					await model.log.error(
+					await context.log.error(
 						"Background music playlist shuffled, but the selected track did not start"
 					)
 				}
 			} catch {
 				guard !Task.isCancelled else { return }
-				await model.log.error(
+				await context.log.error(
 					"Background music failed to shuffle the playlist: \(error.localizedDescription)"
 				)
 			}
@@ -56,11 +56,11 @@ extension BackgroundMusicController {
 			guard let self else { return }
 			do {
 				try await player.pause()
-				await model.log.info("Background music paused by user")
+				await context.log.info("Background music paused by user")
 			} catch {
 				guard !Task.isCancelled else { return }
 				playbackIntent = nil
-				await model.log.error(
+				await context.log.error(
 					"Background music failed to pause: \(error.localizedDescription)"
 				)
 			}
@@ -74,7 +74,7 @@ extension BackgroundMusicController {
 	func changeTrack(direction: TrackDirection) {
 		guard canNavigatePlaylist, !controlsAreDisabled, let player else { return }
 		isChangingTrack = true
-		let previousVideoID = model.currentMusicVideoID
+		let previousVideoID = context.currentMusicVideoID
 		let expectsPlayback = !isManuallyPaused
 		controlTask?.cancel()
 		let controlID = UUID()
@@ -89,17 +89,17 @@ extension BackgroundMusicController {
 					expectsPlayback: expectsPlayback
 				)
 				if changed {
-					await model.log.info(
+					await context.log.info(
 						"Background music started the \(direction.logName) track"
 					)
 				} else {
-					await model.log.error(
+					await context.log.error(
 						"Background music did not start the \(direction.logName) track"
 					)
 				}
 			} catch {
 				guard !Task.isCancelled else { return }
-				await model.log.error(
+				await context.log.error(
 					"Background music failed to select the \(direction.logName) track: \(error.localizedDescription)"
 				)
 			}
@@ -117,7 +117,7 @@ extension BackgroundMusicController {
 		expectsPlayback: Bool
 	) async throws -> Bool {
 		guard let playlist = try await targetPlayer.getPlaylist(), !playlist.isEmpty else {
-			await model.log.error("Background music playlist is empty or unavailable")
+			await context.log.error("Background music playlist is empty or unavailable")
 			return false
 		}
 		let currentIndex = try await targetPlayer.getPlaylistIndex()
@@ -127,7 +127,7 @@ extension BackgroundMusicController {
 				currentIndex: currentIndex
 			)
 		else {
-			await model.log.error(
+			await context.log.error(
 				"Background music playlist has no different playable track; count=\(playlist.count) index=\(currentIndex)"
 			)
 			return false
@@ -206,10 +206,10 @@ extension BackgroundMusicController {
 					previousVideoID == nil || $0 != previousVideoID ? $0 : targetVideoID
 				}
 				?? targetVideoID
-			model.currentMusicVideoID = resolvedVideoID
+			context.currentMusicVideoID = resolvedVideoID
 			if lastObservedVideoID != resolvedVideoID {
 				let fallbackTitle = "Playlist track \(targetIndex + 1)"
-				model.currentMusicTitle = fallbackTitle
+				context.currentMusicTitle = fallbackTitle
 				nowPlaying.updateTrack(title: fallbackTitle, artist: nil)
 			}
 		}
@@ -218,7 +218,7 @@ extension BackgroundMusicController {
 		let observedVideoID = lastVideoID ?? "unknown"
 		let observedState = lastState.map(String.init(describing:)) ?? "unknown"
 		let errorDetail = lastError.map { " error=\($0)" } ?? ""
-		await model.log.error(
+		await context.log.error(
 			"Background music timed out waiting for target; previous=\(previous) targetIndex=\(targetIndex) targetVideo=\(targetVideoID) observedIndex=\(observedIndex) observedVideo=\(observedVideoID) state=\(observedState)\(errorDetail)"
 		)
 		return false
@@ -254,14 +254,14 @@ extension BackgroundMusicController {
 			return false
 		}
 
-		model.currentMusicVideoID = metadata.videoId
+		context.currentMusicVideoID = metadata.videoId
 		nowPlaying.updateTrack(title: title, artist: metadata.author)
 		let changed = title != lastObservedTitle || metadata.videoId != lastObservedVideoID
 		lastObservedTitle = title
 		lastObservedVideoID = metadata.videoId
-		model.currentMusicTitle = title
+		context.currentMusicTitle = title
 		guard changed else { return true }
-		Task { [log = model.log] in
+		Task { [log = context.log] in
 			await log.info("Background music now playing: \(title)")
 		}
 		return true

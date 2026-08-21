@@ -3,6 +3,8 @@
 import Foundation
 import YouTubePlayerKit
 
+extension LauncherViewModel: BackgroundMusicContext {}
+
 extension LauncherViewModel {
 	/// Is true only while the game window is actually running, not during launcher
 	/// startup and runtime preparation.

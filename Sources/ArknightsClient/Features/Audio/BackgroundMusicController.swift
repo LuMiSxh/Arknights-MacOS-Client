@@ -5,6 +5,23 @@ import Foundation
 import Observation
 import YouTubePlayerKit
 
+@MainActor
+protocol BackgroundMusicContext: AnyObject {
+	var phase: LauncherPhase { get }
+	var isGameProcessRunning: Bool { get }
+	var playsLauncherMusic: Bool { get }
+	var launcherMusicVolume: Double { get }
+	var launcherMusicURL: String { get }
+	var parsedYouTubeSource: YouTubePlayer.Source? { get }
+	var currentMusicTitle: String? { get set }
+	var currentMusicVideoID: String? { get set }
+	var log: LauncherLog { get }
+	var launcherIconManager: LauncherIconManager { get }
+	#if DEBUG
+		var developerScenario: DeveloperScenario? { get }
+	#endif
+}
+
 /// Owns the hidden YouTube player and coordinates launcher, game, and user playback actions.
 @MainActor
 @Observable
@@ -15,7 +32,7 @@ final class BackgroundMusicController {
 	var isChangingPlayback = false
 	var isMuted = false
 
-	let model: LauncherViewModel
+	let context: any BackgroundMusicContext
 	let nowPlaying: NowPlayingCoordinator
 	var currentSource: YouTubePlayer.Source?
 	var isManuallyPaused = false
@@ -32,14 +49,14 @@ final class BackgroundMusicController {
 	@ObservationIgnored var lastObservedTitle: String?
 	@ObservationIgnored var lastObservedVideoID: String?
 
-	init(model: LauncherViewModel) {
-		self.model = model
-		nowPlaying = NowPlayingCoordinator(icon: model.launcherIconManager.currentIcon)
-		model.launcherIconManager.iconDidChange = { [weak self] icon in
+	init(context: any BackgroundMusicContext) {
+		self.context = context
+		nowPlaying = NowPlayingCoordinator(icon: context.launcherIconManager.currentIcon)
+		context.launcherIconManager.iconDidChange = { [weak self] icon in
 			self?.nowPlaying.updateArtwork(icon)
 		}
 		#if DEBUG
-			if model.developerScenario == .musicPlayer {
+			if context.developerScenario == .musicPlayer {
 				let previewSource = YouTubePlayer.Source.playlist(id: "developer-preview")
 				currentSource = previewSource
 				playbackState = .playing
@@ -59,22 +76,23 @@ final class BackgroundMusicController {
 
 	var controlsAreDisabled: Bool {
 		#if DEBUG
-			if model.developerScenario == .musicPlayer { return false }
+			if context.developerScenario == .musicPlayer { return false }
 		#endif
-		return player == nil || model.isGameProcessRunning || isChangingTrack || isChangingPlayback
+		return player == nil || context.isGameProcessRunning || isChangingTrack
+			|| isChangingPlayback
 	}
 
 	var effectiveVolume: Double {
-		isMuted ? 0 : model.launcherMusicVolume
+		isMuted ? 0 : context.launcherMusicVolume
 	}
 
 	func startIfNeeded() {
 		#if DEBUG
-			if model.developerScenario == .musicPlayer { return }
+			if context.developerScenario == .musicPlayer { return }
 		#endif
-		guard model.phase != .checking,
-			model.playsLauncherMusic,
-			!model.isGameProcessRunning
+		guard context.phase != .checking,
+			context.playsLauncherMusic,
+			!context.isGameProcessRunning
 		else { return }
 		setupPlayer()
 	}
@@ -85,7 +103,7 @@ final class BackgroundMusicController {
 	}
 
 	func sourceDidChange() {
-		guard model.playsLauncherMusic, !model.isGameProcessRunning else { return }
+		guard context.playsLauncherMusic, !context.isGameProcessRunning else { return }
 		setupPlayer()
 	}
 
@@ -126,7 +144,7 @@ final class BackgroundMusicController {
 	func gameRunningDidChange(to isRunning: Bool) {
 		if isRunning {
 			performFadeOut()
-		} else if model.playsLauncherMusic, !isManuallyPaused {
+		} else if context.playsLauncherMusic, !isManuallyPaused {
 			if player == nil {
 				setupPlayer()
 			} else {
@@ -161,11 +179,11 @@ final class BackgroundMusicController {
 	}
 
 	private func setupPlayer() {
-		guard let source = model.parsedYouTubeSource else {
+		guard let source = context.parsedYouTubeSource else {
 			stopAndClearPlayer()
 			Task {
-				await model.log.error(
-					"Background music failed: invalid YouTube URL (\(model.launcherMusicURL))"
+				await context.log.error(
+					"Background music failed: invalid YouTube URL (\(context.launcherMusicURL))"
 				)
 			}
 			return
@@ -199,11 +217,11 @@ final class BackgroundMusicController {
 						try await player.load(source: source)
 					}
 					guard !Task.isCancelled else { return }
-					await model.log.info("Background music loaded source: \(source)")
+					await context.log.info("Background music loaded source: \(source)")
 					performFadeIn(on: player)
 				} catch {
 					guard !Task.isCancelled else { return }
-					await model.log.error(
+					await context.log.error(
 						"Background music failed to load source: \(error.localizedDescription)"
 					)
 				}
@@ -220,7 +238,7 @@ final class BackgroundMusicController {
 				restrictRelatedVideosToSameChannel: false
 			)
 		)
-		Task { [log = model.log] in
+		Task { [log = context.log] in
 			await log.info("Background music initializing player with source: \(source)")
 		}
 		player = newPlayer
@@ -240,13 +258,13 @@ final class BackgroundMusicController {
 				playbackState = state
 				reconcilePlaybackIntent(with: state)
 				nowPlaying.updatePlayback(isPlaying: isPlaying)
-				Task { [log = model.log] in
+				Task { [log = context.log] in
 					await log.debug("Background music state: \(state)")
 				}
 
 				if state == .cued || state == .unstarted {
-					if model.playsLauncherMusic
-						&& !model.isGameProcessRunning
+					if context.playsLauncherMusic
+						&& !context.isGameProcessRunning
 						&& !isManuallyPaused
 					{
 						performFadeIn(on: targetPlayer)

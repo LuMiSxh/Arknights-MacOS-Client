@@ -10,7 +10,7 @@ import YouTubePlayerKit
 struct BackgroundMusicControllerTests {
 	@Test
 	func trackNavigationIsAvailableOnlyForPlaylists() {
-		let (controller, defaults, suiteName) = makeController()
+		let (controller, _, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
 		controller.currentSource = .video(id: "one")
@@ -22,7 +22,7 @@ struct BackgroundMusicControllerTests {
 
 	@Test
 	func bufferingCountsAsActivePlaybackForThePauseControl() {
-		let (controller, defaults, suiteName) = makeController()
+		let (controller, _, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
 		controller.playbackState = .paused
@@ -37,7 +37,7 @@ struct BackgroundMusicControllerTests {
 
 	@Test
 	func playbackIntentImmediatelyDrivesControlsUntilPlayerConfirmsIt() {
-		let (controller, defaults, suiteName) = makeController()
+		let (controller, _, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
 		controller.playbackState = .playing
@@ -67,7 +67,7 @@ struct BackgroundMusicControllerTests {
 
 	@Test
 	func repeatedTitleStillUpdatesTheCurrentVideoIdentifier() {
-		let (controller, defaults, suiteName) = makeController()
+		let (controller, model, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
 		#expect(
@@ -81,8 +81,8 @@ struct BackgroundMusicControllerTests {
 			)
 		)
 
-		#expect(controller.model.currentMusicTitle == "Chase the Light")
-		#expect(controller.model.currentMusicVideoID == "second")
+		#expect(model.currentMusicTitle == "Chase the Light")
+		#expect(model.currentMusicVideoID == "second")
 		#expect(controller.lastObservedVideoID == "second")
 	}
 
@@ -113,16 +113,16 @@ struct BackgroundMusicControllerTests {
 
 	@Test
 	func mutePreservesTheConfiguredVolumeAndRestoresIt() {
-		let (controller, defaults, suiteName) = makeController()
+		let (controller, model, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		controller.model.launcherMusicVolume = 0.7
+		model.launcherMusicVolume = 0.7
 
 		controller.toggleMute()
 
 		#expect(controller.isMuted)
 		#expect(controller.effectiveVolume == 0)
-		#expect(controller.model.launcherMusicVolume == 0.7)
-		#expect(controller.model.preferences.launcherMusicVolume() == 0.7)
+		#expect(model.launcherMusicVolume == 0.7)
+		#expect(model.preferences.launcherMusicVolume() == 0.7)
 
 		controller.toggleMute()
 
@@ -132,11 +132,11 @@ struct BackgroundMusicControllerTests {
 
 	@Test
 	func volumeChangesWhileMutedBecomeTheNextAudibleLevel() {
-		let (controller, defaults, suiteName) = makeController()
+		let (controller, model, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		controller.toggleMute()
 
-		controller.model.launcherMusicVolume = 0.25
+		model.launcherMusicVolume = 0.25
 
 		#expect(controller.effectiveVolume == 0)
 		controller.toggleMute()
@@ -144,7 +144,7 @@ struct BackgroundMusicControllerTests {
 	}
 
 	private func makeController() -> (
-		BackgroundMusicController, UserDefaults, String
+		BackgroundMusicController, LauncherViewModel, UserDefaults, String
 	) {
 		let identifier = "BackgroundMusicControllerTests.\(UUID().uuidString)"
 		let root = URL(filePath: NSTemporaryDirectory()).appending(
@@ -168,6 +168,6 @@ struct BackgroundMusicControllerTests {
 			},
 			arguments: ["--developer-scenario", "ready"]
 		)
-		return (BackgroundMusicController(model: model), defaults, identifier)
+		return (BackgroundMusicController(context: model), model, defaults, identifier)
 	}
 }

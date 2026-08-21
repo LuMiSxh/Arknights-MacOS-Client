@@ -24,9 +24,9 @@ extension BackgroundMusicController {
 
 			do {
 				try await player?.pause()
-				await model.log.info("Background music faded out and paused")
+				await context.log.info("Background music faded out and paused")
 			} catch {
-				await model.log.error(
+				await context.log.error(
 					"Background music failed to pause after fading out: \(error.localizedDescription)"
 				)
 			}
@@ -59,14 +59,14 @@ extension BackgroundMusicController {
 			do {
 				try await target.play()
 				if isUserInitiated { isChangingPlayback = false }
-				await model.log.info("Background music resuming with fade-in")
+				await context.log.info("Background music resuming with fade-in")
 			} catch {
 				guard !Task.isCancelled else { return }
 				if isUserInitiated {
 					playbackIntent = nil
 					isChangingPlayback = false
 				}
-				await model.log.error(
+				await context.log.error(
 					"Background music failed to resume: \(error.localizedDescription)"
 				)
 				finishFade(id: fadeID)
@@ -110,11 +110,11 @@ extension BackgroundMusicController {
 		playbackIntent = nil
 		lastObservedTitle = nil
 		lastObservedVideoID = nil
-		model.currentMusicTitle = nil
-		model.currentMusicVideoID = nil
+		context.currentMusicTitle = nil
+		context.currentMusicVideoID = nil
 		nowPlaying.clear()
 
-		Task { [log = model.log] in
+		Task { [log = context.log] in
 			do {
 				try await playerToStop?.pause()
 				await log.info("Background music stopped")
@@ -138,7 +138,7 @@ extension BackgroundMusicController {
 			)
 		} catch {
 			guard !Task.isCancelled else { return }
-			await model.log.debug(
+			await context.log.debug(
 				"Background music volume update was not applied: \(error.localizedDescription)"
 			)
 		}

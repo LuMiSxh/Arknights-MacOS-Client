@@ -17,7 +17,7 @@ struct ContentView: View {
 				store: OnboardingProgressStore(defaults: model.preferences.defaults)
 			)
 		)
-		_musicController = State(initialValue: BackgroundMusicController(model: model))
+		_musicController = State(initialValue: BackgroundMusicController(context: model))
 	}
 
 	private var cyan: Color { model.accentColor }
