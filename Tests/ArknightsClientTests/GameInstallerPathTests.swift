@@ -6,7 +6,10 @@ import Testing
 @testable import ArknightsClient
 
 struct GameInstallerPathTests {
-	private let installer = GameInstaller(api: PathTestAPI())
+	private let installer = GameInstaller(
+		api: PathTestAPI(),
+		compatibilityManager: GameCompatibilityManager()
+	)
 
 	@Test
 	func manifestRejectsEmptyPathComponents() {
@@ -54,7 +57,10 @@ struct GameInstallerPathTests {
 			withDestinationURL: outside
 		)
 		let manifest = makeManifest(paths: ["bin/game.dat"])
-		let installer = GameInstaller(api: PathTestAPI(manifest: manifest))
+		let installer = GameInstaller(
+			api: PathTestAPI(manifest: manifest),
+			compatibilityManager: GameCompatibilityManager()
+		)
 
 		do {
 			_ = try await installer.install(
@@ -88,7 +94,10 @@ struct GameInstallerPathTests {
 			at: binDirectory.appending(path: "game.dat.part"),
 			withDestinationURL: outside
 		)
-		let installer = GameInstaller(api: PathTestAPI())
+		let installer = GameInstaller(
+			api: PathTestAPI(),
+			compatibilityManager: GameCompatibilityManager()
+		)
 
 		do {
 			_ = try await installer.install(
@@ -122,7 +131,10 @@ struct GameInstallerPathTests {
 			at: binDirectory.appending(path: "game.dat"),
 			withDestinationURL: outside
 		)
-		let installer = GameInstaller(api: PathTestAPI())
+		let installer = GameInstaller(
+			api: PathTestAPI(),
+			compatibilityManager: GameCompatibilityManager()
+		)
 
 		do {
 			_ = try await installer.install(
@@ -160,7 +172,10 @@ struct GameInstallerPathTests {
 			source: "payload",
 			file: [ManifestFile(path: "bin/game.dat", hash: "0", size: "16")]
 		)
-		let installer = GameInstaller(api: PathTestAPI(manifest: manifest))
+		let installer = GameInstaller(
+			api: PathTestAPI(manifest: manifest),
+			compatibilityManager: GameCompatibilityManager()
+		)
 
 		do {
 			_ = try await installer.install(

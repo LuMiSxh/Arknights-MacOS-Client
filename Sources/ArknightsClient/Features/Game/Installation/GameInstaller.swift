@@ -11,14 +11,21 @@ struct GameInstaller: Sendable {
 
 	private let api: any LauncherAPIProviding
 	private let chunkSession: HTTPChunkSession
+	private let compatibilityManager: GameCompatibilityManager
 	private let concurrentDownloads = AppConstants.Network.concurrentDownloads
 	let log: LauncherLog?
 
 	var fileManager: FileManager { .default }
 
-	init(api: any LauncherAPIProviding, session: URLSession = .shared, log: LauncherLog? = nil) {
+	init(
+		api: any LauncherAPIProviding,
+		session: URLSession = .shared,
+		compatibilityManager: GameCompatibilityManager,
+		log: LauncherLog? = nil
+	) {
 		self.api = api
 		chunkSession = HTTPChunkSession(configuration: session.configuration)
+		self.compatibilityManager = compatibilityManager
 		self.log = log
 	}
 
@@ -42,7 +49,7 @@ struct GameInstaller: Sendable {
 				"Failed to exclude game installation from backups at \(installDirectory.path): \(error.localizedDescription)"
 			)
 		}
-		try GameCompatibilityManager().restoreForUpdate(in: installDirectory)
+		try compatibilityManager.restoreForUpdate(in: installDirectory)
 
 		let previousState: InstalledState?
 		do {

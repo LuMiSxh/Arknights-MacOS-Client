@@ -109,7 +109,8 @@ struct GameInstallerStreamingTests {
 			configuration: configuration,
 			installer: GameInstaller(
 				api: api,
-				session: URLSession(configuration: sessionConfiguration)
+				session: URLSession(configuration: sessionConfiguration),
+				compatibilityManager: GameCompatibilityManager()
 			)
 		)
 	}

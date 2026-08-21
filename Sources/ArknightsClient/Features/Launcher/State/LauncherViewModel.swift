@@ -113,6 +113,7 @@ final class LauncherViewModel {
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
 	let launcherIconManager: LauncherIconManager
+	let gameCompatibilityManager: GameCompatibilityManager
 	let graphicsDiagnosticsEnabled: Bool
 	@ObservationIgnored let checkIntelTranslation: @Sendable () async -> IntelTranslationCheck
 	@ObservationIgnored let installRosettaSystemSoftware:
@@ -149,6 +150,7 @@ final class LauncherViewModel {
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
 		launcherIconManager: LauncherIconManager? = nil,
 		presetCatalog: PresetCatalogService? = nil,
+		gameCompatibilityManager: GameCompatibilityManager = GameCompatibilityManager(),
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
@@ -166,6 +168,7 @@ final class LauncherViewModel {
 		self.updateChecker = updateChecker
 		self.announcementService = announcementService
 		self.launcherIconManager = launcherIconManager ?? LauncherIconManager()
+		self.gameCompatibilityManager = gameCompatibilityManager
 		self.checkIntelTranslation = checkIntelTranslation
 		self.installRosettaSystemSoftware = installRosettaSystemSoftware
 		let launcherLog = LauncherLog(fileURL: paths.launcherLogFile)
@@ -176,7 +179,13 @@ final class LauncherViewModel {
 				cacheDirectory: paths.presetGalleryCache,
 				log: launcherLog
 			)
-		self.installer = installer ?? GameInstaller(api: api, log: launcherLog)
+		self.installer =
+			installer
+			?? GameInstaller(
+				api: api,
+				compatibilityManager: gameCompatibilityManager,
+				log: launcherLog
+			)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
 		let selectedRegion = preferences.selectedRegion()
 		region = selectedRegion

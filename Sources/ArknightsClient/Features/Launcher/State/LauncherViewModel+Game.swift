@@ -18,7 +18,11 @@ extension LauncherViewModel {
 			show(LauncherError.gameNotInstalled(executable))
 			return
 		}
-		guard let runtime = WineRuntime.discover() else {
+		guard
+			let runtime = WineRuntime.discover(
+				compatibilityManager: gameCompatibilityManager
+			)
+		else {
 			refreshRuntime()
 			show(LauncherError.wineRuntimeMissing)
 			return
@@ -127,7 +131,12 @@ extension LauncherViewModel {
 				return
 			}
 		#endif
-		guard canStopGame, let runtime = WineRuntime.discover() else { return }
+		guard
+			canStopGame,
+			let runtime = WineRuntime.discover(
+				compatibilityManager: gameCompatibilityManager
+			)
+		else { return }
 		isStoppingGame = true
 		activityMessage = "Stopping…"
 		launchTask?.cancel()
@@ -147,13 +156,21 @@ extension LauncherViewModel {
 		#if DEBUG
 			if isDeveloperMode { return }
 		#endif
-		guard isGameActive, let runtime = WineRuntime.discover() else { return }
+		guard
+			isGameActive,
+			let runtime = WineRuntime.discover(
+				compatibilityManager: gameCompatibilityManager
+			)
+		else { return }
 		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
 		runtime.stopSynchronously(prefixDirectory: paths.winePrefix, log: log)
 	}
 
 	func refreshRuntime() {
-		runtimeName = WineRuntime.discover()?.displayName
+		runtimeName =
+			WineRuntime.discover(
+				compatibilityManager: gameCompatibilityManager
+			)?.displayName
 	}
 
 	/// Discards the prefix's recorded migration state so the next launch fully

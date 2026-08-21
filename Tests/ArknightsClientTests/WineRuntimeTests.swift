@@ -224,7 +224,8 @@ func graphicsDiagnosticsExposeMacDriverAndDXMTInformation() {
 	let runtime = WineRuntime(
 		executableURL: URL(filePath: "/runtime/bin/Arknights"),
 		displayName: "Test",
-		revision: "test"
+		revision: "test",
+		compatibilityManager: GameCompatibilityManager()
 	)
 	let environment = runtime.runtimeEnvironment(
 		prefixDirectory: URL(filePath: "/prefix", directoryHint: .isDirectory),
@@ -242,7 +243,8 @@ func gameIconEnvironmentInjectsBridgeAndOptionalCustomIcon() {
 		executableURL: URL(filePath: "/runtime/bin/Arknights"),
 		displayName: "Test",
 		revision: "test",
-		gameIconBridgeURL: URL(filePath: "/runtime/GameIconBridge.dylib")
+		gameIconBridgeURL: URL(filePath: "/runtime/GameIconBridge.dylib"),
+		compatibilityManager: GameCompatibilityManager()
 	)
 
 	#expect(
@@ -322,7 +324,8 @@ func hasPendingMigrationReflectsSavedStateForTheCurrentRevision() throws {
 	let runtime = WineRuntime(
 		executableURL: root.appending(path: "bin/Arknights"),
 		displayName: "Test",
-		revision: "test-revision"
+		revision: "test-revision",
+		compatibilityManager: GameCompatibilityManager()
 	)
 
 	#expect(runtime.hasPendingMigration(prefixDirectory: prefix))

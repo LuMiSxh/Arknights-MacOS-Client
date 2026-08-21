@@ -42,17 +42,20 @@ struct WineRuntime: Sendable {
 	let displayName: String
 	let revision: String
 	let gameIconBridgeURL: URL?
+	private let compatibilityManager: GameCompatibilityManager
 
 	init(
 		executableURL: URL,
 		displayName: String,
 		revision: String,
-		gameIconBridgeURL: URL? = nil
+		gameIconBridgeURL: URL? = nil,
+		compatibilityManager: GameCompatibilityManager
 	) {
 		self.executableURL = executableURL
 		self.displayName = displayName
 		self.revision = revision
 		self.gameIconBridgeURL = gameIconBridgeURL
+		self.compatibilityManager = compatibilityManager
 	}
 
 	static let dllOverrides =
@@ -90,7 +93,8 @@ struct WineRuntime: Sendable {
 
 	static func discover(
 		bundle: Bundle = .main,
-		fileManager: FileManager = .default
+		fileManager: FileManager = .default,
+		compatibilityManager: GameCompatibilityManager
 	) -> WineRuntime? {
 		guard let resources = bundle.resourceURL else { return nil }
 		let executable = resources.appending(path: "Runtime/bin/Arknights")
@@ -110,7 +114,8 @@ struct WineRuntime: Sendable {
 			revision: configuration.revision,
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
-			)
+			),
+			compatibilityManager: compatibilityManager
 		)
 	}
 
@@ -158,7 +163,7 @@ struct WineRuntime: Sendable {
 		let logHandle = try FileHandle(forWritingTo: logURL)
 		try logHandle.seekToEnd()
 		RuntimePerformanceLog.write(stage: "filesystem", since: launchStarted, to: logHandle)
-		let compatibilityChanges = try GameCompatibilityManager().prepareForLaunch(
+		let compatibilityChanges = try compatibilityManager.prepareForLaunch(
 			in: gameExecutable.deletingLastPathComponent()
 		)
 		RuntimePerformanceLog.write(stage: "compatibility", since: launchStarted, to: logHandle)
