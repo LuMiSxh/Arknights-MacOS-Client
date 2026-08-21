@@ -25,13 +25,17 @@ enum AppConstants {
 		static let fadeOutDuration: Double = 1.0
 		static let fadeSteps: Int = 15
 		static let playlistShuffleDelay: Duration = .milliseconds(200)
-		static let playerStatePollInterval: Duration = .milliseconds(100)
-		static let playerStatePollLimit = 100
+		static let trackChangePollInterval: Duration = .milliseconds(250)
+		static let trackChangePollLimit = 80
 		static let collapsedPlayerMaxWidth: Double = 360
 		static let collapsedTitleMaxWidth: Double = 300
 		static let collapsedPlayerHeight: Double = 28
-		static let expandedPlayerWidth: Double = 360
-		static let expandedPlayerHeight: Double = 122
+		static let expandedPlayerWidth: Double = 330
+		static let expandedPlayerHeight: Double = 88
+		static let secondaryControlDimension: Double = 34
+		static let prominentControlDimension: Double = 38
+		static let volumeControlExpandedWidth: Double = 132
+		static let volumeSliderWidth: Double = 82
 		static let playerExpansionDuration: Double = 0.3
 	}
 
@@ -67,6 +71,7 @@ enum AppConstants {
 
 	enum IO {
 		static let checksumBufferSize = 4 * 1024 * 1024
+		static let processDiagnosticMaximumCharacters = 4_096
 	}
 
 	enum Timeouts {

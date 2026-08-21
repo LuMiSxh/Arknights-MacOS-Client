@@ -39,13 +39,22 @@ struct OnboardingPersonalizationView: View {
 				}
 
 				HStack {
-					Button("Browse Presets…", systemImage: "square.grid.2x2", action: browseArtwork)
-					Button(
+					CapsuleActionButton(
+						title: "Browse Presets…", systemImage: "square.grid.2x2",
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: browseArtwork
+					)
+					CapsuleActionButton(
 						"Choose Image…", systemImage: "photo.badge.plus",
+						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.chooseCustomArtwork
 					)
 					Spacer()
-					Button("Use Default", action: model.resetArtwork)
+					CapsuleActionButton(
+						"Use Default", systemImage: "arrow.counterclockwise",
+						tone: .neutral, presentation: .compact,
+						action: model.resetArtwork
+					)
 				}
 			}
 

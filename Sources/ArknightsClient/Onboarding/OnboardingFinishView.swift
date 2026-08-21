@@ -24,9 +24,11 @@ struct OnboardingFinishView: View {
 				}
 
 				if !model.isInstalled && !model.isDownloading && model.canInstall {
-					Button(
+					CapsuleActionButton(
 						"Resume Download", systemImage: "arrow.clockwise",
-						action: model.installOrUpdate)
+						tone: .accent(model.accentColor),
+						action: model.installOrUpdate
+					)
 				}
 			}
 
@@ -41,11 +43,10 @@ struct OnboardingFinishView: View {
 				.font(.callout)
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: true)
-				Button(
-					"Report a Launcher Problem…", systemImage: "ladybug", action: reportProblem
+				CapsuleActionButton(
+					title: "Report a Launcher Problem…", systemImage: "ladybug",
+					tone: .accent(model.accentColor), action: reportProblem
 				)
-				.adaptiveGlassCapsuleButton()
-				.tint(SettingsVisuals.controlTint)
 
 				SettingsHairline()
 
@@ -55,12 +56,11 @@ struct OnboardingFinishView: View {
 				.font(.callout)
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: true)
-				Button(
+				CapsuleActionButton(
 					"Contact Yostar Support…", systemImage: "arrow.up.right.square",
+					tone: .accent(model.accentColor),
 					action: contactYostar
 				)
-				.adaptiveGlassCapsuleButton()
-				.tint(SettingsVisuals.controlTint)
 			}
 		}
 	}

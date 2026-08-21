@@ -116,11 +116,18 @@
 				hasPartialDownload = false
 				installedVersion = nil
 				activityMessage = "Install"
-			case .onboarding:
+			case .musicPlayer:
+				showsPlayingMusic = true
+				currentMusicTitle = "Arknights EP – Reforge"
+				currentMusicVideoID = "developer-preview"
+			case .onboarding, .onboardingRosetta:
 				isInstalled = false
 				hasPartialDownload = false
 				installedVersion = nil
 				activityMessage = "Install"
+				if scenario == .onboardingRosetta {
+					intelTranslationState = .rosettaMissing
+				}
 			}
 		}
 

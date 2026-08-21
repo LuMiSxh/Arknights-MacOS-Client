@@ -12,7 +12,7 @@ extension BackgroundMusicController {
 		activeFadeID = fadeID
 		fadeTask = Task { [weak self] in
 			guard let self else { return }
-			let startVolume = model.launcherMusicVolume
+			let startVolume = effectiveVolume
 			let steps = AppConstants.Music.fadeSteps
 			let stepInterval = AppConstants.Music.fadeOutDuration / Double(steps)
 
@@ -51,7 +51,7 @@ extension BackgroundMusicController {
 				return
 			}
 
-			let targetVolume = model.launcherMusicVolume
+			let targetVolume = effectiveVolume
 			let steps = AppConstants.Music.fadeSteps
 			let stepInterval = AppConstants.Music.fadeInDuration / Double(steps)
 
@@ -109,6 +109,7 @@ extension BackgroundMusicController {
 		isChangingPlayback = false
 		playbackIntent = nil
 		lastObservedTitle = nil
+		lastObservedVideoID = nil
 		model.currentMusicTitle = nil
 		model.currentMusicVideoID = nil
 

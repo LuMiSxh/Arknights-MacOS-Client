@@ -6,6 +6,7 @@ struct ContentView: View {
 	var model: LauncherViewModel
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var settingsPresented = false
+	@State private var confirmsRosettaInstallation = false
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
 
@@ -70,12 +71,15 @@ struct ContentView: View {
 			LauncherPopupView(
 				popup: popup,
 				accentColor: cyan,
-				accentTextColor: model.accentTextColor,
 				hudTintColor: model.hudTintColor,
 				dismiss: model.dismissPopup,
 				openAction: model.openPopupAction
 			)
 		}
+		.confirmsRosettaInstallation(
+			isPresented: $confirmsRosettaInstallation,
+			install: installRosetta
+		)
 		.task {
 			await startOnboardingIfNeeded()
 		}
@@ -152,6 +156,10 @@ struct ContentView: View {
 		}
 	}
 
+	private func installRosetta() {
+		Task { await model.installRosetta() }
+	}
+
 	private var controlBar: some View {
 		HStack(spacing: 16) {
 			controlBarLeadingRegion
@@ -161,11 +169,11 @@ struct ContentView: View {
 
 			HStack(spacing: 8) {
 				if model.launcherUpdate != nil {
-					Button(
+					CapsuleActionButton(
 						"Launcher Update", systemImage: "arrow.down.app",
+						tone: .accent(model.accentColor),
 						action: model.openLauncherUpdate
 					)
-					.adaptiveGlassCapsuleButton()
 					.transition(.opacity)
 					.help("Open the latest launcher release in your browser")
 				}
@@ -262,6 +270,13 @@ struct ContentView: View {
 						AccentActionLink(title: "Report Problem", accentColor: cyan) {
 							NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
 						}
+						.font(.caption)
+					} else if model.isInstalled && model.canInstallRosetta {
+						AccentActionLink(
+							title: model.rosettaInstallationActionTitle,
+							accentColor: cyan,
+							action: { confirmsRosettaInstallation = true }
+						)
 						.font(.caption)
 					} else if model.isInstalled && model.canRetryIntelTranslationCheck {
 						AccentActionLink(

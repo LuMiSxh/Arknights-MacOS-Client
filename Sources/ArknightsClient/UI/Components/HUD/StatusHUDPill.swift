@@ -59,29 +59,18 @@ struct StatusHUDPill: View {
 					}
 				}
 			} label: {
-				HStack(spacing: 3) {
-					Text(model.region.displayName)
-					Image(systemName: "chevron.up.chevron.down")
-						.font(.system(size: 7, weight: .bold))
-						.accessibilityHidden(true)
-				}
-				.font(.system(size: 10, weight: .semibold))
-				.foregroundStyle(model.accentColor)
-				.padding(.horizontal, 6)
-				.padding(.vertical, 2)
-				.background(model.accentColor.opacity(0.15), in: Capsule())
+				HUDMenuLabel(
+					title: model.region.displayName,
+					accentColor: model.accentColor,
+					showsMenuIndicator: true
+				)
 			}
 			.menuStyle(.button)
 			.buttonStyle(.plain)
 			.disabled(!model.canSwitchRegion)
 			.help("Switch between installed regions")
 		} else if model.region != .global {
-			Text(model.region.displayName)
-				.font(.system(size: 10, weight: .semibold))
-				.foregroundStyle(model.accentColor)
-				.padding(.horizontal, 6)
-				.padding(.vertical, 2)
-				.background(model.accentColor.opacity(0.15), in: Capsule())
+			HUDMenuLabel(title: model.region.displayName, accentColor: model.accentColor)
 		}
 	}
 }

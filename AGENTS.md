@@ -27,6 +27,7 @@
 
 - Use tabs with a width of four in Swift files; follow `.swift-format`.
 - Keep SwiftUI views in `UI`, state and user actions in `ViewModels`, external work in `Services` or `Runtime`, and persisted paths in `Storage`.
+- Put shared modal chrome and reusable controls in `UI/Components`; feature views should compose them instead of duplicating action bars or control styling.
 - Keep handwritten Swift files below 350 lines; split cohesive behavior into focused types or extensions. Exceed it only when the excess is stored-property/declaration code Swift can't move into an extension (e.g. an `@Observable` class's properties); flag the overage instead of forcing an artificial split.
 - Keep UI state changes on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
 - Use Swift 5.9+ `@Observable` for fine-grained, property-level view invalidation; avoid legacy `ObservableObject` and `@Published` God-objects.
@@ -35,6 +36,7 @@
 - Use standard macOS storage locations through `AppPaths`; do not introduce repository-local or legacy migration paths without an explicit requirement.
 - Each `GameRegion` gets its own install directory and installed-state file so regions install and update independently; they share one Wine prefix, since `WinePrefixConfigurator` already re-points the `G:` drive to the active region's directory on every launch.
 - Keep the interface native to macOS while following `docs/design.md`; branding may be angular, but primary actions use native controls.
+- Use `CapsuleActionButton` for textual actions so visible and interactive bounds stay identical. Within each control family, keep shape, material, and padding identical and distinguish accent, neutral, and danger roles only by tint. Reserve filled accents for compact icon-only controls such as playback; use `adaptiveNavigationCapsuleButton` for Back/Skip and `GlassMenuPicker`/`GlassActionMenu` for compact Settings menus. Do not style actions per call.
 - Add focused tests for changed installer, updater, storage, parsing, or concurrency behavior.
 - Record user-visible changes in the next release section in `CHANGELOG.md`.
 - Verify changes with `just ci` and `just dev run` before considering work done.

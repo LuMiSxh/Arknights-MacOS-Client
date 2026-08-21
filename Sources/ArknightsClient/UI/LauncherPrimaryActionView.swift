@@ -8,27 +8,28 @@ struct LauncherPrimaryActionView: View {
 	@ViewBuilder
 	var body: some View {
 		if model.isGameRunning {
-			Button("Stop", systemImage: "stop.fill", action: model.stopGame)
-				.adaptiveGlassCapsuleButton()
-				.controlSize(.large)
-				.disabled(!model.canStopGame)
-				.help("Stop Arknights and its Windows runtime")
-		} else if model.isDownloading {
-			Button("Pause", systemImage: "pause.fill", action: model.cancelDownload)
-				.adaptiveGlassCapsuleButton()
-				.controlSize(.large)
-				.help("Pause the download; it resumes from partial files later")
-		} else if !model.isInstalled {
-			Button(action: model.installOrUpdate) {
-				Label(
-					model.hasPartialDownload ? "Resume" : "Install",
-					systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
-				)
-				.foregroundStyle(model.accentTextColor)
-			}
-			.adaptiveGlassCapsuleButton(prominent: true)
+			CapsuleActionButton(
+				title: "Stop", systemImage: "stop.fill", tone: .neutral,
+				action: model.stopGame
+			)
 			.controlSize(.large)
-			.tint(model.accentColor)
+			.disabled(!model.canStopGame)
+			.help("Stop Arknights and its Windows runtime")
+		} else if model.isDownloading {
+			CapsuleActionButton(
+				title: "Pause", systemImage: "pause.fill", tone: .neutral,
+				action: model.cancelDownload
+			)
+			.controlSize(.large)
+			.help("Pause the download; it resumes from partial files later")
+		} else if !model.isInstalled {
+			CapsuleActionButton(
+				title: model.hasPartialDownload ? "Resume" : "Install",
+				systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down",
+				tone: .accent(model.accentColor),
+				action: model.installOrUpdate
+			)
+			.controlSize(.large)
 			.disabled(!model.canInstall)
 			.keyboardShortcut(.defaultAction)
 			.help(
@@ -37,24 +38,20 @@ struct LauncherPrimaryActionView: View {
 					: "Download and verify the official \(model.region.displayName) PC files"
 			)
 		} else if model.isGameUpdateAvailable {
-			Button(action: model.installOrUpdate) {
-				Label("Update", systemImage: "arrow.down")
-					.foregroundStyle(model.accentTextColor)
-			}
-			.adaptiveGlassCapsuleButton(prominent: true)
+			CapsuleActionButton(
+				title: "Update", systemImage: "arrow.down", tone: .accent(model.accentColor),
+				action: model.installOrUpdate
+			)
 			.controlSize(.large)
-			.tint(model.accentColor)
 			.disabled(!model.canInstall)
 			.keyboardShortcut(.defaultAction)
 			.help("Download the changed game files")
 		} else {
-			Button(action: model.launch) {
-				Label("Play", systemImage: "play.fill")
-					.foregroundStyle(model.accentTextColor)
-			}
-			.adaptiveGlassCapsuleButton(prominent: true)
+			CapsuleActionButton(
+				title: "Play", systemImage: "play.fill", tone: .accent(model.accentColor),
+				action: model.launch
+			)
 			.controlSize(.large)
-			.tint(model.accentColor)
 			.disabled(!model.canLaunch)
 			.keyboardShortcut(.defaultAction)
 			.help(model.playHelp)

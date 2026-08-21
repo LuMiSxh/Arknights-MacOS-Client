@@ -18,12 +18,17 @@ struct OnboardingIconsView: View {
 					title: "Operator Icons",
 					detail: "The same character is used for both Dock icons."
 				) {
-					Button("Choose Operator…", systemImage: "person.2.crop.square.stack") {
+					CapsuleActionButton(
+						title: "Choose Operator…", systemImage: "person.2.crop.square.stack",
+						tone: .accent(model.accentColor), presentation: .compact
+					) {
 						browseOperators()
 					}
-					Button(
+					CapsuleActionButton(
 						"Use Defaults",
 						systemImage: "arrow.counterclockwise",
+						tone: .neutral,
+						presentation: .compact,
 						action: model.resetOperatorIcons
 					)
 				}

@@ -37,6 +37,7 @@ final class LauncherViewModel {
 	var isCheckingLauncherUpdates = false
 	var activityMessage = "Checking…"
 	var intelTranslationState: IntelTranslationState = .checking
+	var rosettaInstallationState: RosettaInstallationState = .idle
 	#if DEBUG
 		var developerScenario: DeveloperScenario?
 	#endif
@@ -96,9 +97,9 @@ final class LauncherViewModel {
 		}
 	}
 	var dynamicThemeHue: Double?
-	var accentColor: Color = SettingsVisuals.cyan
+	var accentColor: Color = LauncherVisuals.cyan
 	var accentTextColor: Color = Color.black.opacity(0.92)
-	var hudTintColor: Color = SettingsVisuals.hudGlassTint
+	var hudTintColor: Color = LauncherVisuals.hudGlassTint
 
 	var appVersion: String { IssueReportURL.appVersion }
 
@@ -112,6 +113,8 @@ final class LauncherViewModel {
 	let log: LauncherLog
 	let graphicsDiagnosticsEnabled: Bool
 	@ObservationIgnored let checkIntelTranslation: @Sendable () async -> IntelTranslationCheck
+	@ObservationIgnored let installRosettaSystemSoftware:
+		@Sendable () async throws -> IntelTranslationProcessResult
 	// @Observable's accessor synthesis breaks deinit's access to MainActor-isolated stored
 	// properties, so the task handles cancelled there stay plain storage via
 	// @ObservationIgnored; every other var below is left tracked since computed properties
@@ -125,6 +128,7 @@ final class LauncherViewModel {
 	@ObservationIgnored var announcementTask: Task<Void, Never>?
 	@ObservationIgnored var resetCountdownTask: Task<Void, Never>?
 	@ObservationIgnored var intelTranslationCheckTask: Task<IntelTranslationCheck, Never>?
+	@ObservationIgnored var rosettaInstallationTask: Task<IntelTranslationProcessResult, any Error>?
 	@ObservationIgnored var activeThemeCacheKey: String?
 	var pendingPopups: [LauncherPopup] = []
 	var activeRefreshID: UUID?
@@ -144,6 +148,11 @@ final class LauncherViewModel {
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
+		installRosettaSystemSoftware:
+			@escaping @Sendable () async throws
+			-> IntelTranslationProcessResult = {
+				try await RosettaInstaller.install()
+			},
 		arguments: [String] = ProcessInfo.processInfo.arguments
 	) {
 		self.api = api
@@ -153,6 +162,7 @@ final class LauncherViewModel {
 		self.updateChecker = updateChecker
 		self.announcementService = announcementService
 		self.checkIntelTranslation = checkIntelTranslation
+		self.installRosettaSystemSoftware = installRosettaSystemSoftware
 		log = LauncherLog(fileURL: paths.launcherLogFile)
 		self.installer = installer ?? GameInstaller(api: api, log: log)
 		artworkCache = ArtworkCache(directory: paths.artworkCache)
@@ -250,6 +260,7 @@ final class LauncherViewModel {
 		announcementTask?.cancel()
 		resetCountdownTask?.cancel()
 		intelTranslationCheckTask?.cancel()
+		rosettaInstallationTask?.cancel()
 	}
 
 	var versionText: String {
@@ -320,7 +331,7 @@ final class LauncherViewModel {
 
 	var isOnboardingPreview: Bool {
 		#if DEBUG
-			developerScenario == .onboarding
+			developerScenario == .onboarding || developerScenario == .onboardingRosetta
 		#else
 			false
 		#endif

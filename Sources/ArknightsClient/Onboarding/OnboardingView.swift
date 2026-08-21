@@ -29,9 +29,11 @@ struct OnboardingView: View {
 							OnboardingWelcomeView(
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
+								rosettaInstallationState: model.rosettaInstallationState,
 								accentColor: model.accentColor,
 								retry: retryUpdateCheck,
-								retryIntelTranslation: retryIntelTranslation
+								retryIntelTranslation: retryIntelTranslation,
+								installRosetta: installRosetta
 							)
 						case .installation:
 							OnboardingInstallationView(model: model)
@@ -75,42 +77,32 @@ struct OnboardingView: View {
 				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
 				.allowsHitTesting(false)
 
-				HStack(spacing: 12) {
+				FloatingActionBar(tint: model.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
 						Button(action: coordinator.skip) {
 							Label("Skip for Now", systemImage: "forward.end")
-								.foregroundStyle(.primary)
 						}
-						.adaptiveGlassCapsuleButton()
+						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
-						.tint(SettingsVisuals.controlTint)
 					}
 					Spacer()
 					if coordinator.step != .welcome {
 						Button(action: coordinator.goBack) {
 							Label("Back", systemImage: "chevron.backward")
-								.foregroundStyle(.primary)
 						}
-						.adaptiveGlassCapsuleButton()
+						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
-						.tint(SettingsVisuals.controlTint)
 					}
-					Button(action: performPrimaryAction) {
-						HStack(spacing: 6) {
-							Text(primaryTitle)
-							Image(systemName: primarySystemImage)
-								.accessibilityHidden(true)
-						}
-						.foregroundStyle(model.accentTextColor)
-					}
-					.adaptiveGlassCapsuleButton(prominent: true)
+					CapsuleActionButton(
+						title: primaryTitle,
+						systemImage: primarySystemImage,
+						tone: .accent(model.accentColor),
+						action: performPrimaryAction
+					)
 					.controlSize(.large)
-					.tint(model.accentColor)
 					.disabled(!canPerformPrimaryAction)
 					.keyboardShortcut(.defaultAction)
 				}
-				.padding(10)
-				.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
 				.padding(.horizontal, 24)
 				.padding(.bottom, 18)
 			}
@@ -196,6 +188,13 @@ struct OnboardingView: View {
 			await coordinator.refreshIntelTranslationAvailability {
 				await model.refreshIntelTranslationAvailability(force: true)
 			}
+		}
+	}
+
+	private func installRosetta() {
+		Task {
+			let state = await model.installRosetta()
+			await coordinator.refreshIntelTranslationAvailability { state }
 		}
 	}
 }

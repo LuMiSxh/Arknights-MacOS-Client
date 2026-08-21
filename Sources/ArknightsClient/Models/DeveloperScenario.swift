@@ -17,7 +17,9 @@
 		case running
 		case failure
 		case notInstalled = "not-installed"
+		case musicPlayer = "music-player"
 		case onboarding
+		case onboardingRosetta = "onboarding-rosetta"
 
 		var id: String { rawValue }
 
@@ -43,7 +45,9 @@
 			case .running: "Game running"
 			case .failure: "Failure"
 			case .notInstalled: "Not installed"
+			case .musicPlayer: "Music player"
 			case .onboarding: "Onboarding"
+			case .onboardingRosetta: "Onboarding · Rosetta missing"
 			}
 		}
 
@@ -62,7 +66,9 @@
 			case .running: "The game is running and can be stopped."
 			case .failure: "A runtime failure displayed in the status capsule."
 			case .notInstalled: "A fresh launcher before the game is installed."
+			case .musicPlayer: "An isolated, silent preview of the expanded music controls."
 			case .onboarding: "The complete first-run setup assistant."
+			case .onboardingRosetta: "First-run recovery when macOS removed Rosetta."
 			}
 		}
 	}

@@ -31,11 +31,13 @@ struct AudioSettingsPage: View {
 						title: "Music URL",
 						detail: "YouTube video or playlist link."
 					) {
-						TextField(
-							"https://www.youtube.com/playlist?...",
-							text: $model.launcherMusicURL
+						ThemedTextField(
+							"Music URL",
+							prompt: "https://www.youtube.com/playlist?...",
+							text: $model.launcherMusicURL,
+							systemImage: "link",
+							accentColor: model.accentColor
 						)
-						.textFieldStyle(.roundedBorder)
 						.frame(width: 250)
 					}
 					SettingsHairline()

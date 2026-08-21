@@ -45,12 +45,11 @@ struct VersionHUDPill: View {
 						)
 						.lineLimit(1)
 					Spacer()
-					Button(
-						"Check Now", systemImage: "arrow.clockwise", action: model.checkGameUpdates
+					CapsuleActionButton(
+						"Check Now", systemImage: "arrow.clockwise",
+						tone: .accent(model.accentColor), presentation: .hud,
+						action: model.checkGameUpdates
 					)
-					.adaptiveGlassCapsuleButton()
-					.controlSize(.small)
-					.tint(SettingsVisuals.controlTint)
 					.disabled(cannotCheck)
 				}
 				.transition(expandedContentTransition)

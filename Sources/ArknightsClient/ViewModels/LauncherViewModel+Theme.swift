@@ -20,9 +20,9 @@ extension LauncherViewModel {
 	func updateThemeColor() {
 		guard usesDynamicTheme, let heroArtwork else {
 			dynamicThemeHue = nil
-			accentColor = SettingsVisuals.cyan
+			accentColor = LauncherVisuals.cyan
 			accentTextColor = Color.black.opacity(0.92)
-			hudTintColor = SettingsVisuals.hudGlassTint
+			hudTintColor = LauncherVisuals.hudGlassTint
 			updateDynamicAppIcon(hue: nil)
 			Task { [weak self] in await self?.refreshOperatorPresetIconsForTheme(hue: nil) }
 			return
@@ -70,9 +70,9 @@ extension LauncherViewModel {
 
 	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
 		dynamicThemeHue = extracted?.hue
-		accentColor = extracted?.accentColor ?? SettingsVisuals.cyan
+		accentColor = extracted?.accentColor ?? LauncherVisuals.cyan
 		accentTextColor = extracted?.accentTextColor ?? Color.black.opacity(0.92)
-		hudTintColor = extracted?.backgroundTint ?? SettingsVisuals.hudGlassTint
+		hudTintColor = extracted?.backgroundTint ?? LauncherVisuals.hudGlassTint
 	}
 
 	func updateDynamicAppIcon(hue: Double?) {

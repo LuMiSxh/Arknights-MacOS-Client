@@ -39,41 +39,24 @@ enum BundledDocument: String, Identifiable {
 struct BundledDocumentView: View {
 	let document: BundledDocument
 	let accentColor: Color
-	let accentTextColor: Color
+	let hudTintColor: Color
 	@Environment(\.dismiss) private var dismiss
 
 	var body: some View {
-		NavigationStack {
-			ScrollView {
-				VStack(alignment: .leading, spacing: 16) {
-					HStack(spacing: 8) {
-						Rectangle().fill(accentColor).frame(width: 72, height: 3)
-						Rectangle().fill(.secondary.opacity(0.28))
-							.frame(height: 1)
-							.frame(maxWidth: .infinity)
-					}
-					MarkdownDocument(source: document.contents(), accentColor: accentColor)
-				}
-				.frame(maxWidth: .infinity, alignment: .leading)
+		ThemedModalView(
+			title: document.title,
+			accentColor: accentColor,
+			hudTintColor: hudTintColor,
+			width: 760,
+			height: 600
+		) {
+			MarkdownDocument(source: document.contents(), accentColor: accentColor)
 				.textSelection(.enabled)
-				.padding(28)
-			}
-			.contentMargins(.top, 12, for: .scrollIndicators)
-			.contentMargins(.bottom, 16, for: .scrollIndicators)
-			.background(.ultraThinMaterial)
-			.navigationTitle(document.title)
-			.toolbar {
-				ToolbarItem(placement: .confirmationAction) {
-					Button(action: { dismiss() }) {
-						Text("Done")
-							.foregroundStyle(accentTextColor)
-					}
-					.adaptiveGlassCapsuleButton(prominent: true)
-				}
+		} actions: {
+			FloatingDoneButton(accentColor: accentColor) {
+				dismiss()
 			}
 		}
-		.tint(accentColor)
-		.frame(width: 760, height: 600)
 	}
 }
 

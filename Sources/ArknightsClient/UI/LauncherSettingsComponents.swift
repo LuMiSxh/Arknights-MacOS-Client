@@ -41,7 +41,7 @@ struct SettingsPage<Content: View>: View {
 struct SettingsHairline: View {
 	var body: some View {
 		Rectangle()
-			.fill(SettingsVisuals.hairline)
+			.fill(LauncherVisuals.hairline)
 			.frame(height: 1)
 	}
 }
@@ -77,7 +77,7 @@ struct DangerZonePanel<Content: View>: View {
 		VStack(alignment: .leading, spacing: 14) {
 			Label("Danger Zone", systemImage: "exclamationmark.triangle.fill")
 				.font(.headline)
-				.foregroundStyle(SettingsVisuals.danger)
+				.foregroundStyle(LauncherVisuals.danger)
 			content
 		}
 		.padding(18)
@@ -85,7 +85,7 @@ struct DangerZonePanel<Content: View>: View {
 		.adaptiveGlassEffect(in: .rect(cornerRadius: 18))
 		.overlay {
 			RoundedRectangle(cornerRadius: 18)
-				.strokeBorder(SettingsVisuals.danger.opacity(0.45), lineWidth: 1)
+				.strokeBorder(LauncherVisuals.danger.opacity(0.45), lineWidth: 1)
 		}
 	}
 }
@@ -113,8 +113,11 @@ struct UpdateSettingsRow: View {
 				.labelsHidden()
 				.toggleStyle(.switch)
 				.tint(accentColor)
-			Button("Check Now", action: check)
-				.disabled(isChecking)
+			CapsuleActionButton(
+				title: "Check Now", tone: .accent(accentColor), presentation: .compact,
+				action: check
+			)
+			.disabled(isChecking)
 		}
 	}
 }
@@ -169,13 +172,7 @@ struct GlassMenuPicker<Value: Hashable>: View {
 					.font(.system(size: 9, weight: .bold))
 					.accessibilityHidden(true)
 			}
-			.font(.system(size: 12, weight: .semibold))
-			.foregroundStyle(isDisabled ? AnyShapeStyle(.secondary) : AnyShapeStyle(accentColor))
-			.padding(.horizontal, 10)
-			.padding(.vertical, 5)
-			.background(
-				isDisabled ? Color.white.opacity(0.08) : accentColor.opacity(0.15), in: Capsule()
-			)
+			.settingsControlCapsule(tint: accentColor, isDisabled: isDisabled)
 		}
 		.menuStyle(.button)
 		.buttonStyle(.plain)
@@ -192,6 +189,7 @@ struct GlassActionMenu<Content: View>: View {
 	let title: String
 	let systemImage: String
 	let accentColor: Color
+	var isDisabled = false
 	@ViewBuilder let content: Content
 
 	var body: some View {
@@ -206,14 +204,11 @@ struct GlassActionMenu<Content: View>: View {
 					.font(.system(size: 9, weight: .bold))
 					.accessibilityHidden(true)
 			}
-			.font(.system(size: 12, weight: .semibold))
-			.foregroundStyle(accentColor)
-			.padding(.horizontal, 10)
-			.padding(.vertical, 5)
-			.background(accentColor.opacity(0.15), in: Capsule())
+			.settingsControlCapsule(tint: accentColor, isDisabled: isDisabled)
 		}
 		.menuStyle(.button)
 		.buttonStyle(.plain)
+		.disabled(isDisabled)
 	}
 }
 

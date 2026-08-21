@@ -13,6 +13,7 @@ final class BackgroundMusicController {
 	var playbackState: YouTubePlayer.PlaybackState?
 	var isChangingTrack = false
 	var isChangingPlayback = false
+	var isMuted = false
 
 	let model: LauncherViewModel
 	var currentSource: YouTubePlayer.Source?
@@ -28,9 +29,17 @@ final class BackgroundMusicController {
 	@ObservationIgnored var activeControlID: UUID?
 	@ObservationIgnored var activeFadeID: UUID?
 	@ObservationIgnored var lastObservedTitle: String?
+	@ObservationIgnored var lastObservedVideoID: String?
 
 	init(model: LauncherViewModel) {
 		self.model = model
+		#if DEBUG
+			if model.developerScenario == .musicPlayer {
+				let previewSource = YouTubePlayer.Source.playlist(id: "developer-preview")
+				currentSource = previewSource
+				playbackState = .playing
+			}
+		#endif
 	}
 
 	var isPlaying: Bool {
@@ -44,10 +53,20 @@ final class BackgroundMusicController {
 	}
 
 	var controlsAreDisabled: Bool {
-		player == nil || model.isGameProcessRunning || isChangingTrack || isChangingPlayback
+		#if DEBUG
+			if model.developerScenario == .musicPlayer { return false }
+		#endif
+		return player == nil || model.isGameProcessRunning || isChangingTrack || isChangingPlayback
+	}
+
+	var effectiveVolume: Double {
+		isMuted ? 0 : model.launcherMusicVolume
 	}
 
 	func startIfNeeded() {
+		#if DEBUG
+			if model.developerScenario == .musicPlayer { return }
+		#endif
 		guard model.phase != .checking,
 			model.playsLauncherMusic,
 			!model.isGameProcessRunning
@@ -79,7 +98,21 @@ final class BackgroundMusicController {
 		volumeTask?.cancel()
 		volumeTask = Task { [weak self] in
 			guard let self else { return }
-			await applyVolume(volume)
+			await applyVolume(isMuted ? 0 : volume)
+			guard !Task.isCancelled else { return }
+			volumeTask = nil
+		}
+	}
+
+	func toggleMute() {
+		isMuted.toggle()
+		fadeTask?.cancel()
+		fadeTask = nil
+		activeFadeID = nil
+		volumeTask?.cancel()
+		volumeTask = Task { [weak self] in
+			guard let self else { return }
+			await applyVolume(effectiveVolume)
 			guard !Task.isCancelled else { return }
 			volumeTask = nil
 		}
@@ -190,6 +223,7 @@ final class BackgroundMusicController {
 
 	private func setupObservation(for targetPlayer: YouTubePlayer, source: YouTubePlayer.Source) {
 		lastObservedTitle = nil
+		lastObservedVideoID = nil
 		playbackState = nil
 
 		targetPlayer.playbackStatePublisher

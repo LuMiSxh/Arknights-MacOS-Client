@@ -117,6 +117,17 @@ struct RosettaAvailabilityTests {
 		#expect(RosettaAvailability.isBadCPUType(wrapped))
 	}
 
+	@Test
+	func rosettaInstallerUsesApplesSoftwareUpdateTool() async throws {
+		let result = try await RosettaInstaller.install { executable, arguments in
+			#expect(executable.path == "/usr/sbin/softwareupdate")
+			#expect(arguments == ["--install-rosetta", "--agree-to-license"])
+			return IntelTranslationProcessResult(status: 0, output: "installed")
+		}
+
+		#expect(result == IntelTranslationProcessResult(status: 0, output: "installed"))
+	}
+
 	private func macOS(_ majorVersion: Int) -> OperatingSystemVersion {
 		OperatingSystemVersion(majorVersion: majorVersion, minorVersion: 0, patchVersion: 0)
 	}

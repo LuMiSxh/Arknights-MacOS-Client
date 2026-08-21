@@ -64,21 +64,13 @@ struct PresetGalleryView: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
 			.allowsHitTesting(false)
 
-			Button {
-				dismiss()
-			} label: {
-				Text("Done")
-					.fontWeight(.semibold)
-					.foregroundStyle(model.accentTextColor)
-					.padding(.horizontal, 10)
-					.padding(.vertical, 2)
+			FloatingActionBar(tint: model.hudTintColor) {
+				FloatingDoneButton(accentColor: model.accentColor) {
+					dismiss()
+				}
 			}
-			.adaptiveGlassCapsuleButton(prominent: true)
-			.tint(model.accentColor)
-			.shadow(color: Color.black.opacity(0.55), radius: 10, x: 0, y: 4)
 			.padding(.trailing, 24)
 			.padding(.bottom, 18)
-			.keyboardShortcut(.defaultAction)
 		}
 		.frame(width: 760, height: 570)
 		.background(
@@ -113,12 +105,13 @@ struct PresetGalleryView: View {
 			}
 			Spacer()
 			if destination == .operatorIcons {
-				Button("Preview Styles", systemImage: "dock.rectangle") {
+				CapsuleActionButton(
+					title: "Preview Styles", systemImage: "dock.rectangle",
+					tone: .accent(model.accentColor)
+				) {
 					showsIconStylePreview = true
 				}
-				.adaptiveGlassCapsuleButton()
 				.controlSize(.small)
-				.tint(SettingsVisuals.controlTint)
 				.popover(isPresented: $showsIconStylePreview, arrowEdge: .top) {
 					OperatorIconStylePreview(
 						avatar: avatars.first,
@@ -133,18 +126,13 @@ struct PresetGalleryView: View {
 	}
 
 	private var searchBar: some View {
-		HStack {
-			Image(systemName: "magnifyingglass")
-				.foregroundStyle(.tertiary)
-			TextField(
-				destination.searchPlaceholder,
-				text: $searchText
-			)
-			.textFieldStyle(.plain)
-		}
-		.padding(.horizontal, 10)
-		.padding(.vertical, 6)
-		.background(Color.white.opacity(0.06), in: Capsule())
+		ThemedTextField(
+			"Search gallery",
+			prompt: destination.searchPlaceholder,
+			text: $searchText,
+			systemImage: "magnifyingglass",
+			accentColor: model.accentColor
+		)
 	}
 
 	private var filteredAvatars: [PresetAvatar] {

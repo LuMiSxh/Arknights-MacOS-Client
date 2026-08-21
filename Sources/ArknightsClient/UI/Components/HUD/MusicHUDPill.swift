@@ -51,7 +51,7 @@ struct MusicHUDPill: View {
 				.help(isExpanded ? "Hide music controls" : "Show music controls")
 
 				if isExpanded {
-					HStack(spacing: 8) {
+					HStack(spacing: 6) {
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
 								title: "Previous Track",
@@ -84,37 +84,32 @@ struct MusicHUDPill: View {
 							)
 						}
 
-						Spacer()
+						MusicVolumeControl(
+							volume: $model.launcherMusicVolume,
+							accentColor: model.accentColor,
+							isMuted: controller.isMuted,
+							isDisabled: controller.controlsAreDisabled,
+							toggleMute: controller.toggleMute
+						)
 
-						Button(
-							"Open on YouTube",
+						Spacer(minLength: 0)
+
+						MusicPlayerControlButton(
+							title: "Open on YouTube",
 							systemImage: "arrow.up.right.square",
+							accentColor: model.accentColor,
+							accentTextColor: model.accentTextColor,
+							isDisabled: controller.controlsAreDisabled,
 							action: model.openCurrentMusicURL
 						)
-						.labelStyle(.iconOnly)
-						.font(.body)
-						.foregroundStyle(model.accentColor)
-						.buttonStyle(.plain)
-						.help("Open current track on YouTube")
 					}
-
-					HStack(spacing: 8) {
-						Image(systemName: "speaker.fill")
-							.font(.caption)
-							.foregroundStyle(.secondary)
-						Slider(value: $model.launcherMusicVolume, in: 0...1, step: 0.05)
-							.tint(model.accentColor)
-							.accessibilityLabel("Music volume")
-						Text("\(Int(model.launcherMusicVolume * 100))%")
-							.font(.caption.monospacedDigit())
-							.foregroundStyle(.secondary)
-							.frame(width: 36, alignment: .trailing)
-					}
+					.frame(maxWidth: .infinity, alignment: .leading)
 					.transition(expandedContentTransition)
 				}
 			}
 			.padding(.horizontal, isExpanded ? 14 : 12)
-			.padding(.vertical, isExpanded ? 11 : 0)
+			.padding(.top, isExpanded ? 9 : 0)
+			.padding(.bottom, isExpanded ? 13 : 0)
 			.frame(
 				width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil,
 				height: isExpanded
@@ -122,7 +117,11 @@ struct MusicHUDPill: View {
 					: AppConstants.Music.collapsedPlayerHeight,
 				alignment: isExpanded ? .topLeading : .center
 			)
-			.frame(maxWidth: AppConstants.Music.collapsedPlayerMaxWidth)
+			.frame(
+				maxWidth: isExpanded
+					? AppConstants.Music.expandedPlayerWidth
+					: AppConstants.Music.collapsedPlayerMaxWidth
+			)
 			.fixedSize(horizontal: !isExpanded, vertical: false)
 			.clipped()
 			.adaptiveGlassEffect(

@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A resumable setup assistant for first installs and 0.3.x upgrades, with update preflight, background installation, and guided settings.
 - Dedicated support actions for GitHub launcher reports and Yostar account, payment, or game-service issues.
 - Free-space validation before game installation or updates.
-- Functional Rosetta 2 preflight during setup and launch, including macOS 27 upgrade and Legacy Game Test Mode diagnostics.
+- Functional Rosetta 2 preflight and guided installation during setup and launch, including macOS 27 upgrade and Legacy Game Test Mode diagnostics (Thanks to @Sorula2079, #33).
 - An optional Metal Performance HUD for native FPS and GPU diagnostics.
 - An experimental Game Mode integration that requires the full Xcode app.
 - A Settings Danger Zone for resets, Wine-prefix maintenance, migration, and game removal.
@@ -21,8 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Drag-and-drop selection for launcher artwork and icons.
 - Optional game-version, server-time, and daily-reset indicators above the Play controls.
 - Cache cleanup for DXMT shaders, the embedded browser, and downloaded gallery assets.
-- Optional YouTube background music with playlists, volume controls, and now-playing links (Thanks to @darkwebdev, #27).
-- Expandable now-playing controls for pausing, resuming, and navigating playlists (#27).
+- Optional YouTube background music with shuffled playlists, synchronized track titles, volume controls, and now-playing links (Thanks to @darkwebdev, #27).
+- Expandable now-playing controls with deterministic playlist navigation and compact mute or volume adjustment (#27).
 - Expandable game-version details with a manual update check.
 - Dynamic Theme colors for controls, HUD elements, and compatible launcher icons.
 - Floating HUD pills for region, game version, reset time, and background music.

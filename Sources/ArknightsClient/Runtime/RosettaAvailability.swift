@@ -7,11 +7,6 @@ struct IntelTranslationCheck: Equatable, Sendable {
 	let diagnostics: String
 }
 
-struct IntelTranslationProcessResult: Equatable, Sendable {
-	let status: Int32
-	let output: String
-}
-
 /// Verifies that macOS can execute an Intel process instead of trusting Rosetta's on-disk
 /// marker alone. macOS 27 can retain that marker while its beta-only game test mode disables
 /// general Rosetta translation, and an OS upgrade can remove Rosetta without surfacing the
@@ -32,7 +27,7 @@ enum RosettaAvailability {
 		gameTestToolAvailable: Bool? = nil,
 		runProcess:
 			@escaping @Sendable (URL, [String]) async throws
-			-> IntelTranslationProcessResult = run
+			-> IntelTranslationProcessResult = IntelTranslationProcess.run
 	) async -> IntelTranslationCheck {
 		let majorVersion = operatingSystemVersion.majorVersion
 		guard majorVersion < 28 else {
@@ -115,31 +110,4 @@ enum RosettaAvailability {
 		return isBadCPUType(underlying)
 	}
 
-	private static func run(
-		executable: URL,
-		arguments: [String]
-	) async throws -> IntelTranslationProcessResult {
-		try await withCheckedThrowingContinuation { continuation in
-			let process = Process()
-			let output = Pipe()
-			process.executableURL = executable
-			process.arguments = arguments
-			process.standardOutput = output
-			process.standardError = output
-			process.terminationHandler = { process in
-				let data = output.fileHandleForReading.readDataToEndOfFile()
-				continuation.resume(
-					returning: IntelTranslationProcessResult(
-						status: process.terminationStatus,
-						output: String(decoding: data, as: UTF8.self)
-					)
-				)
-			}
-			do {
-				try process.run()
-			} catch {
-				continuation.resume(throwing: error)
-			}
-		}
-	}
 }

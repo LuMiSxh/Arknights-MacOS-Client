@@ -14,12 +14,11 @@ import SwiftUI
 				accentColor: model.accentColor
 			) {
 				SettingsPanel(title: "Scenario", systemImage: "switch.2") {
-					Picker("State", selection: scenarioBinding) {
-						ForEach(DeveloperScenario.allCases) { scenario in
-							Text(scenario.title).tag(scenario)
-						}
-					}
-					.pickerStyle(.menu)
+					GlassMenuPicker(
+						selection: scenarioBinding,
+						options: DeveloperScenario.allCases.map { ($0, $0.title) },
+						accentColor: model.accentColor
+					)
 					SettingsHairline()
 					Text(scenarioBinding.wrappedValue.detail)
 						.foregroundStyle(.secondary)
@@ -35,15 +34,14 @@ import SwiftUI
 							.padding(8)
 							.frame(height: 140)
 							.background(.black.opacity(0.2), in: .rect(cornerRadius: 8))
-						Button("Show Popup") {
+						CapsuleActionButton(
+							title: "Show Popup", tone: .accent(model.accentColor)
+						) {
 							model.applyDeveloperCustomPopup(
 								title: customPopupTitle,
 								markdown: customPopupMarkdown
 							)
 						}
-						.adaptiveGlassCapsuleButton(prominent: true)
-						.tint(model.accentColor)
-						.foregroundStyle(model.accentTextColor)
 						.disabled(customPopupMarkdown.isEmpty)
 					}
 				}

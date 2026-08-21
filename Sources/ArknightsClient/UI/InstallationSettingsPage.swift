@@ -42,24 +42,31 @@ struct InstallationSettingsPage: View {
 					title: "Folder",
 					detail: model.installDirectory.lastPathComponent
 				) {
-					Button("Show", systemImage: "folder", action: model.revealInstallDirectory)
-						.labelStyle(.iconOnly)
-						.disabled(!model.isInstalled)
-						.help("Show game files in Finder")
+					CapsuleActionButton(
+						title: "Show", systemImage: "folder",
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: model.revealInstallDirectory
+					)
+					.disabled(!model.isInstalled)
+					.help("Show game files in Finder")
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Installation Location",
 					detail: "Choose a new folder or adopt an existing game installation."
 				) {
-					Menu("Change…", systemImage: "arrow.triangle.swap") {
+					GlassActionMenu(
+						title: "Change…",
+						systemImage: "arrow.triangle.swap",
+						accentColor: model.accentColor,
+						isDisabled: model.isDownloading
+					) {
 						Button("Choose New Location…", action: model.chooseInstallDirectory)
 						Button(
 							"Locate Existing Installation…",
 							action: model.locateExistingInstallation
 						)
 					}
-					.disabled(model.isDownloading)
 				}
 			}
 
@@ -68,8 +75,10 @@ struct InstallationSettingsPage: View {
 					title: "Repair",
 					detail: "Check every game file and download missing or damaged files again."
 				) {
-					Button(
-						"Repair…", systemImage: "wrench.and.screwdriver", action: model.repairGame
+					CapsuleActionButton(
+						"Repair…", systemImage: "wrench.and.screwdriver",
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: model.repairGame
 					)
 					.disabled(!model.isInstalled || !model.canInstall)
 				}
@@ -79,8 +88,12 @@ struct InstallationSettingsPage: View {
 					detail:
 						"Free \(model.cacheSizeText) used by shader and browser caches. They rebuild automatically."
 				) {
-					Button("Clear Cache…", systemImage: "trash", action: model.clearCache)
-						.disabled(model.isGameActive)
+					CapsuleActionButton(
+						title: "Clear Cache…", systemImage: "trash",
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: model.clearCache
+					)
+					.disabled(model.isGameActive)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -88,21 +101,23 @@ struct InstallationSettingsPage: View {
 					detail:
 						"Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers). They currently use \(model.presetGalleryCacheSizeText)."
 				) {
-					Button(role: .destructive) {
+					CapsuleActionButton(
+						title: "Clear Cache...", systemImage: "trash",
+						tone: .accent(model.accentColor), presentation: .compact
+					) {
 						model.clearPresetGalleryCache()
-					} label: {
-						Label("Clear Cache...", systemImage: "trash")
 					}
-					.tint(model.accentColor)
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Logs",
 					detail: "Use these files when reporting startup or game problems."
 				) {
-					Button(
+					CapsuleActionButton(
 						"Show Logs", systemImage: "doc.text.magnifyingglass",
-						action: model.revealLogs)
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: model.revealLogs
+					)
 				}
 			}
 
@@ -115,7 +130,7 @@ struct InstallationSettingsPage: View {
 					Toggle("Game Mode", isOn: gameModeBinding)
 						.labelsHidden()
 						.toggleStyle(.switch)
-						.tint(SettingsVisuals.danger)
+						.tint(LauncherVisuals.danger)
 						.alert("Game Mode Needs Xcode", isPresented: $showsGameModeUnavailableAlert)
 					{
 					} message: {
@@ -130,10 +145,12 @@ struct InstallationSettingsPage: View {
 					detail:
 						"Reset every toggle and option on this screen to default. The install location and selected region are untouched."
 				) {
-					Button("Reset All Settings…", role: .destructive) {
+					CapsuleActionButton(
+						title: "Reset All Settings…", tone: .danger, presentation: .compact,
+						role: .destructive
+					) {
 						confirmsSettingsReset = true
 					}
-					.tint(SettingsVisuals.danger)
 					.confirmationDialog(
 						"Reset All Launcher Settings?",
 						isPresented: $confirmsSettingsReset,
@@ -154,10 +171,12 @@ struct InstallationSettingsPage: View {
 					detail:
 						"Redo Wine initialization, DXMT installation, and registry overrides on the next launch. Game files and saves are untouched; only the next launch takes longer."
 				) {
-					Button("Force Migration…", role: .destructive) {
+					CapsuleActionButton(
+						title: "Force Migration…", tone: .danger, presentation: .compact,
+						role: .destructive
+					) {
 						confirmsForceMigration = true
 					}
-					.tint(SettingsVisuals.danger)
 					.disabled(model.isDownloading || model.isGameActive)
 					.confirmationDialog(
 						"Force Wine Setup to Run Again?",
@@ -181,10 +200,12 @@ struct InstallationSettingsPage: View {
 					detail:
 						"Delete the entire Wine environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else rebuilds on the next launch."
 				) {
-					Button("Delete Wine Prefix…", role: .destructive) {
+					CapsuleActionButton(
+						title: "Delete Wine Prefix…", tone: .danger, presentation: .compact,
+						role: .destructive
+					) {
 						confirmsWinePrefixDeletion = true
 					}
-					.tint(SettingsVisuals.danger)
 					.disabled(model.isDownloading || model.isGameActive)
 					.confirmationDialog(
 						"Delete the Wine Prefix?",
@@ -206,10 +227,12 @@ struct InstallationSettingsPage: View {
 					title: "Game files",
 					detail: "Move the selected game installation to the Trash."
 				) {
-					Button("Uninstall Game…", role: .destructive) {
+					CapsuleActionButton(
+						title: "Uninstall Game…", tone: .danger, presentation: .compact,
+						role: .destructive
+					) {
 						confirmsGameUninstall = true
 					}
-					.tint(SettingsVisuals.danger)
 					.disabled(!model.isInstalled || model.isDownloading)
 					.confirmationDialog(
 						"Uninstall Arknights?",

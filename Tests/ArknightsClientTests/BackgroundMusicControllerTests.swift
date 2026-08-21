@@ -53,6 +53,96 @@ struct BackgroundMusicControllerTests {
 		#expect(!controller.isPlaying)
 	}
 
+	@Test
+	func playlistNavigationWrapsAndSkipsDuplicateEntries() {
+		let playlist = ["first", "first", "middle", "last"]
+
+		#expect(TrackDirection.next.targetIndex(in: playlist, currentIndex: 0) == 2)
+		#expect(TrackDirection.previous.targetIndex(in: playlist, currentIndex: 0) == 3)
+		#expect(TrackDirection.next.targetIndex(in: playlist, currentIndex: 3) == 0)
+		#expect(TrackDirection.previous.targetIndex(in: playlist, currentIndex: 2) == 1)
+		#expect(TrackDirection.next.targetIndex(in: ["same", "same"], currentIndex: 0) == nil)
+		#expect(TrackDirection.next.targetIndex(in: playlist, currentIndex: 20) == nil)
+	}
+
+	@Test
+	func repeatedTitleStillUpdatesTheCurrentVideoIdentifier() {
+		let (controller, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+
+		#expect(
+			controller.applyTrackTitle(
+				from: .init(title: "Chase the Light", videoId: "first")
+			)
+		)
+		#expect(
+			controller.applyTrackTitle(
+				from: .init(title: "Chase the Light", videoId: "second")
+			)
+		)
+
+		#expect(controller.model.currentMusicTitle == "Chase the Light")
+		#expect(controller.model.currentMusicVideoID == "second")
+		#expect(controller.lastObservedVideoID == "second")
+	}
+
+	@Test
+	func initialShuffleAcceptsANewVideoAtTheSelectedIndex() {
+		#expect(
+			BackgroundMusicController.hasReachedSelectedVideo(
+				previousVideoID: "first",
+				expectedVideoID: "snapshot-second",
+				observedVideoID: "reshuffled-second"
+			)
+		)
+		#expect(
+			!BackgroundMusicController.hasReachedSelectedVideo(
+				previousVideoID: "first",
+				expectedVideoID: "snapshot-second",
+				observedVideoID: "first"
+			)
+		)
+		#expect(
+			!BackgroundMusicController.hasReachedSelectedVideo(
+				previousVideoID: "first",
+				expectedVideoID: "snapshot-second",
+				observedVideoID: nil
+			)
+		)
+	}
+
+	@Test
+	func mutePreservesTheConfiguredVolumeAndRestoresIt() {
+		let (controller, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		controller.model.launcherMusicVolume = 0.7
+
+		controller.toggleMute()
+
+		#expect(controller.isMuted)
+		#expect(controller.effectiveVolume == 0)
+		#expect(controller.model.launcherMusicVolume == 0.7)
+		#expect(controller.model.preferences.launcherMusicVolume() == 0.7)
+
+		controller.toggleMute()
+
+		#expect(!controller.isMuted)
+		#expect(controller.effectiveVolume == 0.7)
+	}
+
+	@Test
+	func volumeChangesWhileMutedBecomeTheNextAudibleLevel() {
+		let (controller, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		controller.toggleMute()
+
+		controller.model.launcherMusicVolume = 0.25
+
+		#expect(controller.effectiveVolume == 0)
+		controller.toggleMute()
+		#expect(controller.effectiveVolume == 0.25)
+	}
+
 	private func makeController() -> (
 		BackgroundMusicController, UserDefaults, String
 	) {

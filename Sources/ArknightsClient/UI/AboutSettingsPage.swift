@@ -28,27 +28,21 @@ struct AboutSettingsPage: View {
 					.font(.callout.weight(.medium))
 				}
 				Spacer()
-				Button(action: model.revealApplication) {
-					Label("Show in Finder", systemImage: "folder")
-						.foregroundStyle(model.accentTextColor)
-				}
-				.labelStyle(.iconOnly)
-				.adaptiveGlassButton()
-				.tint(model.accentColor)
+				CapsuleActionButton(
+					title: "Show in Finder", systemImage: "folder",
+					tone: .accent(model.accentColor), showsTitle: false,
+					action: model.revealApplication
+				)
 				.help("Reveal the launcher application in Finder")
-				Button {
+				CapsuleActionButton(
+					title: "GitHub Repository", tone: .accent(model.accentColor)
+				) {
 					NSWorkspace.shared.open(
 						URL(
 							string: "https://github.com/LuMiSxh/Arknights-MacOS-Client"
 						)!
 					)
-				} label: {
-					Text("GitHub Repository")
-						.foregroundStyle(model.accentTextColor)
-						.padding(.horizontal, 6)
 				}
-				.adaptiveGlassButton()
-				.tint(model.accentColor)
 				.help("Open project repository")
 			}
 			.padding(20)
@@ -83,11 +77,11 @@ struct AboutSettingsPage: View {
 					detail:
 						"Report launcher, Wine runtime, or embedded browser problems with generated diagnostics."
 				) {
-					Button(
-						"Report…", systemImage: "ladybug", action: reportLauncherProblem
+					CapsuleActionButton(
+						"Report…", systemImage: "ladybug",
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: reportLauncherProblem
 					)
-					.adaptiveGlassCapsuleButton()
-					.tint(SettingsVisuals.controlTint)
 				}
 
 				SettingsHairline()
@@ -96,12 +90,11 @@ struct AboutSettingsPage: View {
 					title: "Game & Account Issues",
 					detail: "Contact Yostar for account, payment, or game-service problems."
 				) {
-					Button(
+					CapsuleActionButton(
 						"Contact Yostar…", systemImage: "arrow.up.right.square",
+						tone: .accent(model.accentColor), presentation: .compact,
 						action: contactYostar
 					)
-					.adaptiveGlassCapsuleButton()
-					.tint(SettingsVisuals.controlTint)
 				}
 			}
 

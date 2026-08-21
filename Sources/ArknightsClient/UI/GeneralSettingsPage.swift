@@ -112,7 +112,11 @@ struct GeneralSettingsPage: View {
 					title: "Setup Assistant",
 					detail: "Run the guided region, display, and personalization setup again."
 				) {
-					Button("Run Again…", systemImage: "wand.and.stars", action: restartOnboarding)
+					CapsuleActionButton(
+						title: "Run Again…", systemImage: "wand.and.stars",
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: restartOnboarding
+					)
 				}
 			}
 
@@ -121,13 +125,22 @@ struct GeneralSettingsPage: View {
 					title: "Artwork",
 					detail: "Background shown behind the launcher controls."
 				) {
-					Button("Presets…", systemImage: "photo.on.rectangle") {
+					CapsuleActionButton(
+						title: "Presets…", systemImage: "photo.on.rectangle",
+						tone: .accent(model.accentColor), presentation: .compact
+					) {
 						presentedGallery = .artwork
 					}
-					Button("Choose…", systemImage: "folder", action: model.chooseCustomArtwork)
-					Button(
+					CapsuleActionButton(
+						title: "Choose…", systemImage: "folder",
+						tone: .accent(model.accentColor), presentation: .compact,
+						action: model.chooseCustomArtwork
+					)
+					CapsuleActionButton(
 						"Use Default",
 						systemImage: "arrow.counterclockwise",
+						tone: .neutral,
+						presentation: .compact,
 						action: model.resetArtwork
 					)
 				}
@@ -142,12 +155,19 @@ struct GeneralSettingsPage: View {
 					detail:
 						"Use one operator for the Launcher and for a Game icon in the original Arknights style."
 				) {
-					Button("Choose Operator…", systemImage: "person.2.crop.square.stack") {
+					CapsuleActionButton(
+						title: "Choose Operator…",
+						systemImage: "person.2.crop.square.stack",
+						tone: .accent(model.accentColor),
+						presentation: .compact
+					) {
 						presentedGallery = .operatorIcons
 					}
-					Button(
+					CapsuleActionButton(
 						"Use Defaults",
 						systemImage: "arrow.counterclockwise",
+						tone: .neutral,
+						presentation: .compact,
 						action: model.resetOperatorIcons
 					)
 				}

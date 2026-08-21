@@ -55,21 +55,13 @@ struct LauncherSettingsView: View {
 				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
 				.allowsHitTesting(false)
 
-				Button {
-					dismiss()
-				} label: {
-					Text("Done")
-						.fontWeight(.semibold)
-						.foregroundStyle(model.accentTextColor)
-						.padding(.horizontal, 10)
-						.padding(.vertical, 2)
+				FloatingActionBar(tint: model.hudTintColor) {
+					FloatingDoneButton(accentColor: model.accentColor) {
+						dismiss()
+					}
 				}
-				.adaptiveGlassCapsuleButton(prominent: true)
-				.tint(model.accentColor)
-				.shadow(color: Color.black.opacity(0.55), radius: 10, x: 0, y: 4)
 				.padding(.trailing, 26)
 				.padding(.bottom, 18)
-				.keyboardShortcut(.defaultAction)
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
 			.animation(
@@ -94,18 +86,10 @@ struct LauncherSettingsView: View {
 			BundledDocumentView(
 				document: document,
 				accentColor: model.accentColor,
-				accentTextColor: model.accentTextColor
+				hudTintColor: model.hudTintColor
 			)
 		}
 	}
-}
-
-enum SettingsVisuals {
-	static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
-	static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
-	static let hairline = Color.white.opacity(0.12)
-	static let danger = Color(red: 0.69, green: 0.141, blue: 0.231)
-	static let hudGlassTint = Color.black.opacity(0.52)
 }
 
 private struct SettingsNavigationRail: View {
@@ -143,7 +127,7 @@ private struct SettingsNavigationRail: View {
 					.fill(accentColor)
 					.frame(width: 28, height: 2)
 				Rectangle()
-					.fill(SettingsVisuals.hairline)
+					.fill(LauncherVisuals.hairline)
 					.frame(height: 1)
 			}
 			.padding(18)

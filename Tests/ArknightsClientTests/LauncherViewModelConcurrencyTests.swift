@@ -30,6 +30,53 @@ struct LauncherViewModelConcurrencyTests {
 	}
 
 	@Test
+	func successfulRosettaInstallationRepeatsTheFunctionalProbe() async {
+		let api = BlockingBrandingAPI()
+		let checks = TranslationCheckSequence(states: [.rosettaMissing, .available])
+		let installer = RosettaInstallationRecorder(status: 0)
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			checkIntelTranslation: { await checks.next() },
+			installRosettaSystemSoftware: { await installer.install() }
+		)
+		await api.waitForBrandingRequest()
+		#expect(model.intelTranslationState == .rosettaMissing)
+
+		let state = await model.installRosetta()
+
+		#expect(state == .available)
+		#expect(model.intelTranslationState == .available)
+		#expect(model.rosettaInstallationState == .idle)
+		#expect(await checks.count == 2)
+		#expect(await installer.count == 1)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func failedRosettaInstallationKeepsLaunchBlockedAndExposesRecovery() async {
+		let api = BlockingBrandingAPI()
+		let checks = TranslationCheckSequence(states: [.rosettaMissing])
+		let installer = RosettaInstallationRecorder(status: 7)
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			checkIntelTranslation: { await checks.next() },
+			installRosettaSystemSoftware: { await installer.install() }
+		)
+		await api.waitForBrandingRequest()
+
+		let state = await model.installRosetta()
+
+		#expect(state == .rosettaMissing)
+		#expect(!model.canLaunch)
+		#expect(model.rosettaInstallationState.failureMessage?.contains("status 7") == true)
+		#expect(model.rosettaInstallationActionTitle == "Try Installation Again…")
+		#expect(await checks.count == 1)
+		await api.resolveBranding()
+	}
+
+	@Test
 	func stopIsEnabledOnlyForRunningGamePhase() {
 		#expect(
 			!LauncherViewModel.canStopGame(
@@ -304,7 +351,15 @@ struct LauncherViewModelConcurrencyTests {
 
 	private func makeModel(
 		api: some LauncherAPIProviding,
-		installer: some GameInstalling
+		installer: some GameInstalling,
+		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
+			IntelTranslationCheck(state: .available, diagnostics: "test")
+		},
+		installRosettaSystemSoftware:
+			@escaping @Sendable () async throws
+			-> IntelTranslationProcessResult = {
+				IntelTranslationProcessResult(status: 0, output: "test")
+			}
 	) -> LauncherViewModel {
 		let root = URL(filePath: NSTemporaryDirectory())
 			.appending(
@@ -326,11 +381,39 @@ struct LauncherViewModelConcurrencyTests {
 			installer: installer,
 			paths: paths,
 			preferences: preferences,
-			checkIntelTranslation: {
-				IntelTranslationCheck(state: .available, diagnostics: "test")
-			},
+			checkIntelTranslation: checkIntelTranslation,
+			installRosettaSystemSoftware: installRosettaSystemSoftware,
 			arguments: []
 		)
+	}
+}
+
+private actor TranslationCheckSequence {
+	private var states: [IntelTranslationState]
+	private(set) var count = 0
+
+	init(states: [IntelTranslationState]) {
+		self.states = states
+	}
+
+	func next() -> IntelTranslationCheck {
+		count += 1
+		let state = states.isEmpty ? .unavailable : states.removeFirst()
+		return IntelTranslationCheck(state: state, diagnostics: "test-\(count)")
+	}
+}
+
+private actor RosettaInstallationRecorder {
+	private let status: Int32
+	private(set) var count = 0
+
+	init(status: Int32) {
+		self.status = status
+	}
+
+	func install() -> IntelTranslationProcessResult {
+		count += 1
+		return IntelTranslationProcessResult(status: status, output: "test")
 	}
 }
 

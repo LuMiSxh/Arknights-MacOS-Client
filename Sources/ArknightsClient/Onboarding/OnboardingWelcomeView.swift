@@ -5,9 +5,11 @@ import SwiftUI
 struct OnboardingWelcomeView: View {
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
+	let rosettaInstallationState: RosettaInstallationState
 	let accentColor: Color
 	let retry: () -> Void
 	let retryIntelTranslation: () -> Void
+	let installRosetta: () -> Void
 
 	var body: some View {
 		OnboardingPage(
@@ -46,7 +48,10 @@ struct OnboardingWelcomeView: View {
 							"The launcher could not reach the update source. You can continue now; automatic checks will try again later."
 						)
 						.foregroundStyle(.secondary)
-						Button("Try Again", systemImage: "arrow.clockwise", action: retry)
+						CapsuleActionButton(
+							title: "Try Again", systemImage: "arrow.clockwise",
+							tone: .accent(accentColor), action: retry
+						)
 					}
 				}
 			}
@@ -70,20 +75,12 @@ struct OnboardingWelcomeView: View {
 						)
 						.foregroundStyle(accentColor)
 					case .rosettaMissing:
-						VStack(alignment: .leading, spacing: 10) {
-							Text(
-								"Rosetta 2 is missing. This can happen after a macOS 27 upgrade. Open Terminal and run:"
-							)
-							.foregroundStyle(.secondary)
-							.fixedSize(horizontal: false, vertical: true)
-							Text("softwareupdate --install-rosetta --agree-to-license")
-								.font(.callout.monospaced())
-								.textSelection(.enabled)
-							Button(
-								"Check Again", systemImage: "arrow.clockwise",
-								action: retryIntelTranslation
-							)
-						}
+						OnboardingRosettaRecoveryView(
+							installationState: rosettaInstallationState,
+							accentColor: accentColor,
+							install: installRosetta,
+							checkAgain: retryIntelTranslation
+						)
 					case .gameTestModeEnabled:
 						VStack(alignment: .leading, spacing: 10) {
 							Text(
@@ -94,8 +91,9 @@ struct OnboardingWelcomeView: View {
 							Text("sudo game-test-tool disable")
 								.font(.callout.monospaced())
 								.textSelection(.enabled)
-							Button(
+							CapsuleActionButton(
 								"Check Again", systemImage: "arrow.clockwise",
+								tone: .accent(accentColor),
 								action: retryIntelTranslation
 							)
 						}
@@ -106,8 +104,9 @@ struct OnboardingWelcomeView: View {
 							)
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
-							Button(
+							CapsuleActionButton(
 								"Check Again", systemImage: "arrow.clockwise",
+								tone: .accent(accentColor),
 								action: retryIntelTranslation
 							)
 						}

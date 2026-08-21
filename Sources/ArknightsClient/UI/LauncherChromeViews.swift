@@ -36,15 +36,17 @@ struct ArknightsWordmark: View {
 struct LauncherPopupView: View {
 	let popup: LauncherPopup
 	let accentColor: Color
-	let accentTextColor: Color
 	let hudTintColor: Color
 	let dismiss: () -> Void
 	let openAction: () -> Void
 
 	var body: some View {
-		LauncherThemedPopup(
+		ThemedModalView(
 			title: popup.title,
-			hudTintColor: hudTintColor
+			accentColor: accentColor,
+			hudTintColor: hudTintColor,
+			width: 620,
+			height: 430
 		) {
 			Group {
 				switch popup.content {
@@ -57,86 +59,25 @@ struct LauncherPopupView: View {
 			.frame(maxWidth: .infinity, alignment: .leading)
 			.textSelection(.enabled)
 		} actions: {
-			HStack(spacing: 10) {
-				if let actionTitle = popup.actionTitle {
-					Button(action: openAction) {
-						Text(actionTitle)
-							.foregroundStyle(accentTextColor)
-					}
-					.adaptiveGlassCapsuleButton()
-					.tint(accentColor)
-					.keyboardShortcut(.defaultAction)
+			if let actionTitle = popup.actionTitle {
+				CapsuleActionButton(
+					title: actionTitle, tone: .neutral, action: openAction
+				)
+				.keyboardShortcut(.defaultAction)
 
-					Button(action: dismiss) {
-						Text(popup.dismissTitle)
-							.foregroundStyle(accentTextColor)
-					}
-					.adaptiveGlassCapsuleButton(prominent: true)
-					.tint(accentColor)
+				CapsuleActionButton(
+					title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
+				)
+			} else {
+				if popup.dismissTitle == "Done" {
+					FloatingDoneButton(accentColor: accentColor, action: dismiss)
 				} else {
-					Button(action: dismiss) {
-						Text(popup.dismissTitle)
-							.foregroundStyle(accentTextColor)
-					}
-					.adaptiveGlassCapsuleButton(prominent: true)
-					.tint(accentColor)
+					CapsuleActionButton(
+						title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
+					)
 					.keyboardShortcut(.defaultAction)
 				}
 			}
 		}
-	}
-}
-
-private struct LauncherThemedPopup<Content: View, Actions: View>: View {
-	let title: String
-	let hudTintColor: Color
-	@ViewBuilder let content: () -> Content
-	@ViewBuilder let actions: () -> Actions
-
-	var body: some View {
-		ZStack(alignment: .bottomTrailing) {
-			VStack(spacing: 0) {
-				Text(title)
-					.font(.title2.bold())
-					.padding(.horizontal, 24)
-					.padding(.top, 22)
-					.padding(.bottom, 16)
-
-				SettingsHairline()
-
-				ScrollView {
-					content()
-						.padding(.horizontal, 24)
-						.padding(.vertical, 18)
-				}
-				.contentMargins(.top, 8, for: .scrollIndicators)
-				.contentMargins(.bottom, 12, for: .scrollIndicators)
-				.scrollIndicators(.automatic)
-			}
-
-			// Soft bottom gradient scrim
-			LinearGradient(
-				colors: [.clear, Color.black.opacity(0.45)],
-				startPoint: .top,
-				endPoint: .bottom
-			)
-			.frame(height: 56)
-			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-			.allowsHitTesting(false)
-
-			HStack(spacing: 10) {
-				actions()
-			}
-			.padding(.trailing, 24)
-			.padding(.bottom, 18)
-		}
-		.frame(width: 620, height: 430)
-		.background(
-			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
-				hudTintColor
-			}
-		)
-		.preferredColorScheme(.dark)
 	}
 }
