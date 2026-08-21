@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Loads one bounded avatar asset and renders its coordinated Launcher and Game previews.
 struct CachedPresetOperatorPair: View {
+	let catalog: PresetCatalogService
 	let url: URL
 	let cacheKey: String
 	let accentHue: Double?
@@ -36,7 +37,7 @@ struct CachedPresetOperatorPair: View {
 			icons = nil
 			hasFailed = false
 			do {
-				let data = try await PresetCatalogService.shared.imageData(
+				let data = try await catalog.imageData(
 					for: url,
 					cacheKey: cacheKey
 				)

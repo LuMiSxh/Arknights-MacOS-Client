@@ -99,8 +99,8 @@ extension LauncherViewModel {
 		Task { [weak self] in
 			guard let self else { return }
 			do {
-				try await PresetCatalogService.shared.clearCaches()
-				let cacheSizeText = await PresetCatalogService.shared.cacheSizeText()
+				try await presetCatalog.clearCaches()
+				let cacheSizeText = await presetCatalog.cacheSizeText()
 				activityMessage = "Asset gallery caches cleared"
 				presetGalleryCacheSizeText = cacheSizeText
 				await log.info("Preset gallery caches cleared")
@@ -112,7 +112,7 @@ extension LauncherViewModel {
 
 	func refreshPresetGalleryCacheSize() {
 		Task {
-			let cacheSizeText = await PresetCatalogService.shared.cacheSizeText()
+			let cacheSizeText = await presetCatalog.cacheSizeText()
 			await MainActor.run {
 				self.presetGalleryCacheSizeText = cacheSizeText
 			}

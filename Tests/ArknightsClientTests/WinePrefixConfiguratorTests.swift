@@ -55,6 +55,7 @@ func winePrefixUsesOnlyIsolatedFoldersAndGameDrive() throws {
 	try WinePrefixConfigurator().configure(
 		prefixDirectory: prefix,
 		gameDirectory: gameDirectory,
+		logsDirectory: root.appending(path: "Logs", directoryHint: .isDirectory),
 		userName: "tester"
 	)
 	let gameDrive = dosDevices.appending(path: "g:")
@@ -65,6 +66,7 @@ func winePrefixUsesOnlyIsolatedFoldersAndGameDrive() throws {
 	try WinePrefixConfigurator().configure(
 		prefixDirectory: prefix,
 		gameDirectory: gameDirectory,
+		logsDirectory: root.appending(path: "Logs", directoryHint: .isDirectory),
 		userName: "tester"
 	)
 	let preservedFileNumber =
@@ -120,6 +122,7 @@ func winePrefixPreservesFilesInsideItsIsolatedFolders() throws {
 	try WinePrefixConfigurator().configure(
 		prefixDirectory: prefix,
 		gameDirectory: gameDirectory,
+		logsDirectory: root.appending(path: "Logs", directoryHint: .isDirectory),
 		userName: "tester"
 	)
 

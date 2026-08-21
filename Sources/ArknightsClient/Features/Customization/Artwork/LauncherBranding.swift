@@ -77,7 +77,7 @@ actor ArtworkCache {
 
 	init(
 		session: URLSession = .shared,
-		directory: URL = AppPaths().artworkCache
+		directory: URL
 	) {
 		self.session = session
 		self.directory = directory

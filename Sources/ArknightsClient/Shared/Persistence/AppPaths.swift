@@ -99,6 +99,10 @@ struct AppPaths: Sendable {
 		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
 	}
 
+	var presetGalleryCache: URL {
+		cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
+	}
+
 	var customArtwork: URL {
 		applicationSupportRoot.appending(path: "Artwork/Custom/artwork")
 	}

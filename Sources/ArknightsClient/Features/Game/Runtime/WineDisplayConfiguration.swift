@@ -6,8 +6,6 @@ import Foundation
 /// Whether to run the game and its login browser at full backing-store resolution, derived
 /// from the current screen's scale factor, the user's toggle, and a `--no-retina` override.
 struct WineDisplayConfiguration: Equatable, Sendable {
-	static let forceDisablePreference = "forceDisableRetina"
-
 	let retinaEnabled: Bool
 
 	init(
@@ -22,19 +20,16 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 	static func current(
 		highResolutionEnabled: Bool,
 		arguments: [String] = ProcessInfo.processInfo.arguments,
-		defaults: UserDefaults = .standard
+		forceDisabled: Bool = false
 	) -> WineDisplayConfiguration {
 		let scale =
 			NSApp.keyWindow?.screen?.backingScaleFactor
 			?? NSScreen.main?.backingScaleFactor
 			?? 1
-		let forceDisabled =
-			arguments.contains("--no-retina")
-			|| defaults.bool(forKey: forceDisablePreference)
 		return WineDisplayConfiguration(
 			backingScaleFactor: scale,
 			highResolutionEnabled: highResolutionEnabled,
-			forceDisabled: forceDisabled
+			forceDisabled: forceDisabled || arguments.contains("--no-retina")
 		)
 	}
 

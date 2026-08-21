@@ -116,6 +116,7 @@ extension WineRuntime {
 	func preparePrefixIfNeeded(
 		at prefixDirectory: URL,
 		gameDirectory: URL,
+		logsDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
 		log: LauncherLog? = nil
@@ -173,7 +174,8 @@ extension WineRuntime {
 		try store.removeLegacyMarkers(from: prefixDirectory)
 		try WinePrefixConfigurator().configure(
 			prefixDirectory: prefixDirectory,
-			gameDirectory: gameDirectory
+			gameDirectory: gameDirectory,
+			logsDirectory: logsDirectory
 		)
 	}
 

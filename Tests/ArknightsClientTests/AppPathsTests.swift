@@ -73,6 +73,13 @@ func appPathsUseStandardInjectedDirectories() {
 			)
 	)
 	#expect(
+		paths.presetGalleryCache
+			== caches.appending(
+				path: "\(AppPaths.bundleIdentifier)/PresetGallery",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
 		paths.customArtwork
 			== support.appending(path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/artwork")
 	)

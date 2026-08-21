@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Loads a validated preset image through the bounded on-disk gallery cache.
 struct CachedPresetImage: View {
+	let catalog: PresetCatalogService
 	let url: URL
 	let cacheKey: String
 	var contentMode: ContentMode = .fill
@@ -36,7 +37,7 @@ struct CachedPresetImage: View {
 		.task(id: url) {
 			guard image == nil else { return }
 			do {
-				let data = try await PresetCatalogService.shared.imageData(
+				let data = try await catalog.imageData(
 					for: url,
 					cacheKey: cacheKey
 				)

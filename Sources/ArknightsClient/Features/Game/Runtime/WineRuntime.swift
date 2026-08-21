@@ -184,6 +184,7 @@ struct WineRuntime: Sendable {
 		try await preparePrefixIfNeeded(
 			at: prefixDirectory,
 			gameDirectory: gameExecutable.deletingLastPathComponent(),
+			logsDirectory: logURL.deletingLastPathComponent(),
 			environment: environment,
 			logHandle: logHandle,
 			log: log

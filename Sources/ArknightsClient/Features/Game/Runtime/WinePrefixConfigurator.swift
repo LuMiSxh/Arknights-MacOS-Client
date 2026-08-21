@@ -15,7 +15,7 @@ struct WinePrefixConfigurator {
 	func configure(
 		prefixDirectory: URL,
 		gameDirectory: URL,
-		logsDirectory: URL = AppPaths().logRoot,
+		logsDirectory: URL,
 		fileManager: FileManager = .default,
 		userName: String = NSUserName()
 	) throws {

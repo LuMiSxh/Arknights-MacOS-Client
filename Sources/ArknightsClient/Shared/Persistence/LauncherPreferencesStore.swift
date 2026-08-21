@@ -24,6 +24,7 @@ struct LauncherPreferencesStore {
 		static let selectedRegion = "selectedRegion"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
+		static let forceDisableRetina = "forceDisableRetina"
 	}
 
 	let defaults: UserDefaults
@@ -162,6 +163,10 @@ struct LauncherPreferencesStore {
 
 	func setUsesDynamicTheme(_ value: Bool) {
 		defaults.set(value, forKey: Key.usesDynamicTheme)
+	}
+
+	func forceDisableRetina() -> Bool {
+		defaults.bool(forKey: Key.forceDisableRetina)
 	}
 
 	func dynamicThemeAccent(for cacheKey: String) -> ThemeAccentSnapshot? {

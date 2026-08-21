@@ -3,8 +3,6 @@
 import Foundation
 
 actor PresetCatalogService {
-	static let shared = PresetCatalogService()
-
 	static let characterTableURL = URL(
 		string:
 			"https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData_YoStar@main/en_US/gamedata/excel/character_table.json"
@@ -20,19 +18,14 @@ actor PresetCatalogService {
 	var hasEnforcedImageCacheLimit = false
 
 	init(
-		cacheDirectory: URL? = nil,
+		cacheDirectory: URL,
 		session: URLSession = .shared,
-		log: LauncherLog? = nil
+		log: LauncherLog
 	) {
-		let paths = AppPaths()
-		let resolvedLog = log ?? LauncherLog(fileURL: paths.launcherLogFile)
-		let resolvedCacheDirectory =
-			cacheDirectory
-			?? paths.cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
-		self.log = resolvedLog
-		self.cacheDirectory = resolvedCacheDirectory
-		cachedAvatarsFile = resolvedCacheDirectory.appending(path: "avatars_index_v1.json")
-		cachedWallpapersFile = resolvedCacheDirectory.appending(path: "wallpapers_index_v1.json")
+		self.log = log
+		self.cacheDirectory = cacheDirectory
+		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index_v1.json")
+		cachedWallpapersFile = cacheDirectory.appending(path: "wallpapers_index_v1.json")
 		loader = BoundedHTTPDataLoader(
 			session: session,
 			redirectValidator: Self.isAllowedRemoteAssetURL
@@ -40,13 +33,13 @@ actor PresetCatalogService {
 
 		do {
 			try FileManager.default.createDirectory(
-				at: resolvedCacheDirectory,
+				at: cacheDirectory,
 				withIntermediateDirectories: true
 			)
 		} catch {
 			Task {
-				await resolvedLog.error(
-					"Failed to create preset cache directory at \(resolvedCacheDirectory.path): \(error.localizedDescription)"
+				await log.error(
+					"Failed to create preset cache directory at \(cacheDirectory.path): \(error.localizedDescription)"
 				)
 			}
 		}

@@ -86,9 +86,9 @@ struct PresetGalleryView: View {
 		)
 		.task(id: destination) {
 			if destination == .artwork {
-				wallpapers = await PresetCatalogService.shared.fetchWallpapers()
+				wallpapers = await model.presetCatalog.fetchWallpapers()
 			} else {
-				avatars = await PresetCatalogService.shared.fetchAvatars()
+				avatars = await model.presetCatalog.fetchAvatars()
 			}
 			isLoading = false
 		}
@@ -114,6 +114,7 @@ struct PresetGalleryView: View {
 				.controlSize(.small)
 				.popover(isPresented: $showsIconStylePreview, arrowEdge: .top) {
 					OperatorIconStylePreview(
+						catalog: model.presetCatalog,
 						avatar: avatars.first,
 						accentHue: model.dynamicThemeHue,
 						accentColor: model.accentColor
@@ -157,6 +158,7 @@ struct PresetGalleryView: View {
 					VStack(spacing: 6) {
 						ZStack {
 							CachedPresetImage(
+								catalog: model.presetCatalog,
 								url: avatar.url,
 								cacheKey: avatar.id,
 								contentMode: .fit,
@@ -228,6 +230,7 @@ struct PresetGalleryView: View {
 					VStack(alignment: .leading, spacing: 6) {
 						ZStack {
 							CachedPresetImage(
+								catalog: model.presetCatalog,
 								url: wp.thumbnailURL ?? wp.url,
 								cacheKey: "thumb_\(wp.id)",
 								contentMode: .fill,
@@ -294,7 +297,7 @@ struct PresetGalleryView: View {
 		applyingItemID = avatar.id
 		Task {
 			do {
-				let data = try await PresetCatalogService.shared.imageData(
+				let data = try await model.presetCatalog.imageData(
 					for: avatar.url, cacheKey: avatar.id
 				)
 				model.applyPresetAvatar(data: data)
@@ -311,7 +314,7 @@ struct PresetGalleryView: View {
 		applyingItemID = wp.id
 		Task {
 			do {
-				let data = try await PresetCatalogService.shared.imageData(
+				let data = try await model.presetCatalog.imageData(
 					for: wp.url, cacheKey: wp.id
 				)
 				model.applyDirectCustomArtwork(data: data)

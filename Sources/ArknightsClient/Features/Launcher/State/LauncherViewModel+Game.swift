@@ -42,7 +42,8 @@ extension LauncherViewModel {
 		let gameSessionID = UUID()
 		let launchRequestedAt = Date.now
 		let displayConfiguration = WineDisplayConfiguration.current(
-			highResolutionEnabled: launchOptions.usesHighResolutionMode
+			highResolutionEnabled: launchOptions.usesHighResolutionMode,
+			forceDisabled: preferences.forceDisableRetina()
 		)
 		activeGameSessionID = gameSessionID
 		Task { [log] in await log.info("Game launch requested") }

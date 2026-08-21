@@ -45,7 +45,10 @@ struct PresetCatalogServiceTests {
 			directoryHint: .isDirectory
 		)
 		defer { try? FileManager.default.removeItem(at: root) }
-		let service = PresetCatalogService(cacheDirectory: root)
+		let service = PresetCatalogService(
+			cacheDirectory: root,
+			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
+		)
 
 		let first = await service.cacheFileURL(for: "../../outside")
 		let second = await service.cacheFileURL(for: "../../outside")
@@ -81,7 +84,10 @@ struct PresetCatalogServiceTests {
 			[.modificationDate: Date(timeIntervalSince1970: 2)],
 			ofItemAtPath: newer.path
 		)
-		let service = PresetCatalogService(cacheDirectory: root)
+		let service = PresetCatalogService(
+			cacheDirectory: root,
+			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
+		)
 
 		await service.enforceImageCacheLimitIfNeeded()
 

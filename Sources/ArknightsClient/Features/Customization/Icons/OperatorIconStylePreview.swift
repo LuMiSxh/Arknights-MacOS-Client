@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Explains the two generated treatments without adding a second interaction to the gallery.
 struct OperatorIconStylePreview: View {
+	let catalog: PresetCatalogService
 	let avatar: PresetAvatar?
 	let accentHue: Double?
 	let accentColor: Color
@@ -20,6 +21,7 @@ struct OperatorIconStylePreview: View {
 
 			if let avatar {
 				CachedPresetOperatorPair(
+					catalog: catalog,
 					url: avatar.url,
 					cacheKey: avatar.id,
 					accentHue: accentHue
