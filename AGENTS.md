@@ -51,6 +51,9 @@
 - Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` only with `just icon`.
 - Write scripts as `uv run --script` entry points, reuse `scripts/lib`, and cover changed behavior in `scripts/tests/test_*.py`.
 - Record user-visible changes in `CHANGELOG.md`; follow `docs/releases-and-updates.md` for releases.
+
+## Commit Rules
+
 - Follow the existing commit style. Do not mention agent/model vendors; push only with explicit user consent.
 
 ## References
