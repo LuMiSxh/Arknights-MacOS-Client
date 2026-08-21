@@ -41,8 +41,10 @@ struct BackgroundMusicControllerTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
 		controller.playbackState = .playing
-		controller.playbackIntent = .paused
-		controller.isChangingPlayback = true
+		let player = YouTubePlayer(source: .video(id: "test"))
+		controller.player = player
+		let operation = controller.beginOperation(.playbackChange(.paused), on: player)
+		controller.playbackExpectation = .init(token: operation, intent: .paused)
 		#expect(!controller.isPlaying)
 		#expect(controller.controlsAreDisabled)
 
@@ -51,6 +53,23 @@ struct BackgroundMusicControllerTests {
 		#expect(controller.playbackIntent == nil)
 		#expect(!controller.isChangingPlayback)
 		#expect(!controller.isPlaying)
+	}
+
+	@Test
+	func replacingThePlayerInvalidatesOlderOperations() {
+		let (controller, _, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+
+		let originalPlayer = YouTubePlayer(source: .video(id: "original"))
+		controller.player = originalPlayer
+		let operation = controller.beginOperation(.trackChange, on: originalPlayer)
+		let fade = controller.beginFade(on: originalPlayer)
+
+		controller.invalidatePlayerTasks()
+		controller.player = YouTubePlayer(source: .video(id: "replacement"))
+
+		#expect(!controller.isCurrent(operation))
+		#expect(!controller.isCurrent(fade))
 	}
 
 	@Test

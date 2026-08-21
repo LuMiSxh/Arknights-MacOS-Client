@@ -5,11 +5,10 @@ import YouTubePlayerKit
 
 extension BackgroundMusicController {
 	func performFadeOut() {
-		fadeTask?.cancel()
+		guard let player else { return }
 		volumeTask?.cancel()
 		volumeTask = nil
-		let fadeID = UUID()
-		activeFadeID = fadeID
+		let operation = beginFade(on: player)
 		fadeTask = Task { [weak self] in
 			guard let self else { return }
 			let startVolume = effectiveVolume
@@ -17,97 +16,101 @@ extension BackgroundMusicController {
 			let stepInterval = AppConstants.Music.fadeOutDuration / Double(steps)
 
 			for step in stride(from: steps, through: 0, by: -1) {
-				guard !Task.isCancelled else { return }
-				await applyVolume(startVolume * Double(step) / Double(steps))
-				try? await Task.sleep(for: .seconds(stepInterval))
+				guard !Task.isCancelled, isCurrent(operation) else { return }
+				await applyVolume(
+					startVolume * Double(step) / Double(steps),
+					on: player,
+					generation: operation.generation
+				)
+				do {
+					try await Task.sleep(for: .seconds(stepInterval))
+				} catch {
+					return
+				}
 			}
 
 			do {
-				try await player?.pause()
+				guard !Task.isCancelled, isCurrent(operation) else { return }
+				try await player.pause()
+				guard !Task.isCancelled, isCurrent(operation) else { return }
 				await context.log.info("Background music faded out and paused")
 			} catch {
+				guard !Task.isCancelled, isCurrent(operation) else { return }
 				await context.log.error(
 					"Background music failed to pause after fading out: \(error.localizedDescription)"
 				)
 			}
-			finishFade(id: fadeID)
+			finishFade(operation)
 		}
 	}
 
 	func performFadeIn(
 		on targetPlayer: YouTubePlayer? = nil,
-		isUserInitiated: Bool = false
+		userPlaybackOperation: BackgroundMusicOperationToken? = nil
 	) {
-		fadeTask?.cancel()
 		volumeTask?.cancel()
 		volumeTask = nil
-		let fadeID = UUID()
-		activeFadeID = fadeID
+		guard let target = targetPlayer ?? player else { return }
+		let operation = beginFade(on: target)
 		fadeTask = Task { [weak self] in
 			guard let self else { return }
-			let target = targetPlayer ?? player
-			guard let target else {
-				finishFade(id: fadeID)
-				return
-			}
 
 			let targetVolume = effectiveVolume
 			let steps = AppConstants.Music.fadeSteps
 			let stepInterval = AppConstants.Music.fadeInDuration / Double(steps)
 
-			await applyVolume(0, on: target)
+			guard isCurrent(operation) else { return }
+			await applyVolume(0, on: target, generation: operation.generation)
 			do {
+				guard !Task.isCancelled, isCurrent(operation) else { return }
 				try await target.play()
-				if isUserInitiated { isChangingPlayback = false }
+				guard !Task.isCancelled, isCurrent(operation) else { return }
+				if let userPlaybackOperation {
+					finishOperation(userPlaybackOperation)
+				}
 				await context.log.info("Background music resuming with fade-in")
 			} catch {
-				guard !Task.isCancelled else { return }
-				if isUserInitiated {
-					playbackIntent = nil
-					isChangingPlayback = false
+				guard !Task.isCancelled, isCurrent(operation) else { return }
+				if let userPlaybackOperation {
+					clearPlaybackExpectation(for: userPlaybackOperation)
+					finishOperation(userPlaybackOperation)
 				}
 				await context.log.error(
 					"Background music failed to resume: \(error.localizedDescription)"
 				)
-				finishFade(id: fadeID)
+				finishFade(operation)
 				return
 			}
 
 			for step in 1...steps {
-				guard !Task.isCancelled else { return }
+				guard !Task.isCancelled, isCurrent(operation) else { return }
 				await applyVolume(
 					targetVolume * Double(step) / Double(steps),
-					on: target
+					on: target,
+					generation: operation.generation
 				)
-				try? await Task.sleep(for: .seconds(stepInterval))
+				do {
+					try await Task.sleep(for: .seconds(stepInterval))
+				} catch {
+					return
+				}
 			}
 
-			await applyVolume(targetVolume, on: target)
-			finishFade(id: fadeID)
+			guard !Task.isCancelled, isCurrent(operation) else { return }
+			await applyVolume(targetVolume, on: target, generation: operation.generation)
+			finishFade(operation)
 		}
 	}
 
 	func stopAndClearPlayer() {
 		let playerToStop = player
-		loadingTask?.cancel()
-		controlTask?.cancel()
-		fadeTask?.cancel()
-		shuffleTask?.cancel()
-		volumeTask?.cancel()
-		loadingTask = nil
-		controlTask = nil
-		fadeTask = nil
-		shuffleTask = nil
-		volumeTask = nil
-		activeControlID = nil
-		activeFadeID = nil
+		invalidatePlayerTasks()
 		cancellables.removeAll()
 		player = nil
 		playbackState = nil
 		currentSource = nil
-		isChangingTrack = false
-		isChangingPlayback = false
-		playbackIntent = nil
+		operation = .idle
+		playbackExpectation = nil
 		lastObservedTitle = nil
 		lastObservedVideoID = nil
 		context.currentMusicTitle = nil
@@ -126,8 +129,8 @@ extension BackgroundMusicController {
 		}
 	}
 
-	func applyVolume(_ volume: Double, on targetPlayer: YouTubePlayer? = nil) async {
-		guard let playerToUse = targetPlayer ?? player else { return }
+	func applyVolume(_ volume: Double, on playerToUse: YouTubePlayer, generation: UUID) async {
+		guard isCurrent(playerToUse, generation: generation) else { return }
 		let normalizedVolume = max(0, min(100, Int(volume * 100)))
 		do {
 			try await playerToUse.evaluate(
@@ -137,16 +140,16 @@ extension BackgroundMusicController {
 				)
 			)
 		} catch {
-			guard !Task.isCancelled else { return }
+			guard !Task.isCancelled, isCurrent(playerToUse, generation: generation) else { return }
 			await context.log.debug(
 				"Background music volume update was not applied: \(error.localizedDescription)"
 			)
 		}
 	}
 
-	private func finishFade(id: UUID) {
-		guard activeFadeID == id else { return }
-		activeFadeID = nil
+	func finishFade(_ operation: BackgroundMusicFadeOperation) {
+		guard isCurrent(operation) else { return }
+		fadeOperation = nil
 		fadeTask = nil
 	}
 }

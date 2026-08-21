@@ -28,15 +28,14 @@ protocol BackgroundMusicContext: AnyObject {
 final class BackgroundMusicController {
 	var player: YouTubePlayer?
 	var playbackState: YouTubePlayer.PlaybackState?
-	var isChangingTrack = false
-	var isChangingPlayback = false
 	var isMuted = false
+	var operation: BackgroundMusicOperation = .idle
+	var playbackExpectation: BackgroundMusicPlaybackExpectation?
 
 	let context: any BackgroundMusicContext
 	let nowPlaying: NowPlayingCoordinator
 	var currentSource: YouTubePlayer.Source?
 	var isManuallyPaused = false
-	var playbackIntent: PlaybackIntent?
 	@ObservationIgnored var cancellables: Set<AnyCancellable> = []
 	@ObservationIgnored var didShuffleCurrentPlaylist = false
 	@ObservationIgnored var fadeTask: Task<Void, Never>?
@@ -44,8 +43,8 @@ final class BackgroundMusicController {
 	@ObservationIgnored var controlTask: Task<Void, Never>?
 	@ObservationIgnored var shuffleTask: Task<Void, Never>?
 	@ObservationIgnored var volumeTask: Task<Void, Never>?
-	@ObservationIgnored var activeControlID: UUID?
-	@ObservationIgnored var activeFadeID: UUID?
+	@ObservationIgnored var playerGeneration = UUID()
+	@ObservationIgnored var fadeOperation: BackgroundMusicFadeOperation?
 	@ObservationIgnored var lastObservedTitle: String?
 	@ObservationIgnored var lastObservedVideoID: String?
 
@@ -67,6 +66,15 @@ final class BackgroundMusicController {
 	var isPlaying: Bool {
 		if let playbackIntent { return playbackIntent == .playing }
 		return playbackState == .playing || playbackState == .buffering
+	}
+
+	var isChangingTrack: Bool { operation.isChangingTrack }
+
+	var isChangingPlayback: Bool { operation.isChangingPlayback }
+
+	var playbackIntent: PlaybackIntent? {
+		guard let playbackExpectation, isCurrent(playbackExpectation.token) else { return nil }
+		return playbackExpectation.intent
 	}
 
 	var canNavigatePlaylist: Bool {
@@ -118,27 +126,13 @@ final class BackgroundMusicController {
 
 	func volumeDidChange(to volume: Double) {
 		guard fadeTask == nil else { return }
-		volumeTask?.cancel()
-		volumeTask = Task { [weak self] in
-			guard let self else { return }
-			await applyVolume(isMuted ? 0 : volume)
-			guard !Task.isCancelled else { return }
-			volumeTask = nil
-		}
+		scheduleVolumeUpdate(to: isMuted ? 0 : volume)
 	}
 
 	func toggleMute() {
 		isMuted.toggle()
-		fadeTask?.cancel()
-		fadeTask = nil
-		activeFadeID = nil
-		volumeTask?.cancel()
-		volumeTask = Task { [weak self] in
-			guard let self else { return }
-			await applyVolume(effectiveVolume)
-			guard !Task.isCancelled else { return }
-			volumeTask = nil
-		}
+		cancelFade()
+		scheduleVolumeUpdate(to: effectiveVolume)
 	}
 
 	func gameRunningDidChange(to isRunning: Bool) {
@@ -159,10 +153,11 @@ final class BackgroundMusicController {
 			pauseFromUserAction()
 		} else {
 			isManuallyPaused = false
-			playbackIntent = .playing
-			isChangingPlayback = true
+			guard let player else { return }
+			let operation = beginOperation(.playbackChange(.playing), on: player)
+			playbackExpectation = .init(token: operation, intent: .playing)
 			nowPlaying.updatePlayback(isPlaying: true)
-			performFadeIn(isUserInitiated: true)
+			performFadeIn(on: player, userPlaybackOperation: operation)
 		}
 	}
 
@@ -189,20 +184,7 @@ final class BackgroundMusicController {
 			return
 		}
 
-		loadingTask?.cancel()
-		controlTask?.cancel()
-		shuffleTask?.cancel()
-		fadeTask?.cancel()
-		volumeTask?.cancel()
-		controlTask = nil
-		shuffleTask = nil
-		fadeTask = nil
-		volumeTask = nil
-		activeControlID = nil
-		activeFadeID = nil
-		isChangingTrack = false
-		isChangingPlayback = false
-		playbackIntent = nil
+		invalidatePlayerTasks()
 		didShuffleCurrentPlaylist = false
 		cancellables.removeAll()
 		currentSource = source
@@ -210,21 +192,27 @@ final class BackgroundMusicController {
 
 		if let player {
 			setupObservation(for: player, source: source)
+			let generation = playerGeneration
 			loadingTask = Task { [weak self] in
 				guard let self else { return }
 				do {
 					if player.source == nil || player.source != source {
 						try await player.load(source: source)
 					}
-					guard !Task.isCancelled else { return }
+					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
+						return
+					}
 					await context.log.info("Background music loaded source: \(source)")
 					performFadeIn(on: player)
 				} catch {
-					guard !Task.isCancelled else { return }
+					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
+						return
+					}
 					await context.log.error(
 						"Background music failed to load source: \(error.localizedDescription)"
 					)
 				}
+				guard isCurrent(player, generation: generation) else { return }
 				loadingTask = nil
 			}
 			return
@@ -246,6 +234,7 @@ final class BackgroundMusicController {
 	}
 
 	private func setupObservation(for targetPlayer: YouTubePlayer, source: YouTubePlayer.Source) {
+		let generation = playerGeneration
 		lastObservedTitle = nil
 		lastObservedVideoID = nil
 		playbackState = nil
@@ -254,7 +243,10 @@ final class BackgroundMusicController {
 			.receive(on: DispatchQueue.main)
 			.removeDuplicates()
 			.sink { [weak self, weak targetPlayer] state in
-				guard let self, let targetPlayer, self.player === targetPlayer else { return }
+				guard let self, let targetPlayer, isCurrent(targetPlayer, generation: generation)
+				else {
+					return
+				}
 				playbackState = state
 				reconcilePlaybackIntent(with: state)
 				nowPlaying.updatePlayback(isPlaying: isPlaying)
@@ -284,15 +276,13 @@ final class BackgroundMusicController {
 		targetPlayer.playbackMetadataPublisher
 			.receive(on: DispatchQueue.main)
 			.sink { [weak self, weak targetPlayer] metadata in
-				guard let self, let targetPlayer, self.player === targetPlayer else { return }
+				guard let self, let targetPlayer, isCurrent(targetPlayer, generation: generation)
+				else {
+					return
+				}
 				applyTrackTitle(from: metadata)
 			}
 			.store(in: &cancellables)
 	}
 
-}
-
-enum PlaybackIntent {
-	case playing
-	case paused
 }
