@@ -47,6 +47,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Replaced silent filesystem and process failures with contextual logging or visible errors.
 - Split large UI and service types, centralized limits, and expanded runtime documentation.
 - Consolidated development commands, preview scenarios, formatting, and script output.
+- Reworked launcher and music lifecycle handling around explicit hierarchical state machines.
+- Kept potentially private log excerpts out of pre-filled GitHub issue URLs.
 
 ### Fixed
 
@@ -57,6 +59,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Matched launcher and game icon Dock footprints to native macOS apps (#24).
 - Corrected the launcher update status shown in Settings.
 - Applied custom launcher icons consistently in the Dock, Finder, Spotlight, and macOS Now Playing surfaces.
+- Prevented repair, relocation, cache maintenance, and uninstall operations from modifying game files while Arknights is active.
+- Kept running games stoppable when a background refresh or unrelated Settings action reports an error.
+- Made concurrent downloads, Wine helper cancellation, and music player replacement resilient to stale asynchronous work.
 
 ## [0.3.0]
 
