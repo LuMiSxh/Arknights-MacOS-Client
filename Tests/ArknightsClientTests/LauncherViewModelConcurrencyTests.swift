@@ -201,11 +201,14 @@ struct LauncherViewModelConcurrencyTests {
 		await installer.acknowledgeCancellation()
 		await waitForDownloadToStop(model)
 		#expect(model.activityMessage == "Paused")
+		await api.resolveBranding()
 	}
 
 	@Test
-	func queuedPopupsAreRecordedOnlyWhenTheyBecomeVisible() {
-		let model = makeModel(api: BlockingBrandingAPI(), installer: ControllableInstaller())
+	func queuedPopupsAreRecordedOnlyWhenTheyBecomeVisible() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequests(1)
 		let popup: (String) -> LauncherPopup = { id in
 			LauncherPopup(
 				id: id,
@@ -230,11 +233,14 @@ struct LauncherViewModelConcurrencyTests {
 
 		model.dismissPopup()
 		#expect(model.preferences.presentedLauncherUpdate() == "0.2.0")
+		await api.resolveBranding()
 	}
 
 	@Test
-	func partialFilesRestoreTheResumableDownloadState() throws {
-		let model = makeModel(api: BlockingBrandingAPI(), installer: ControllableInstaller())
+	func partialFilesRestoreTheResumableDownloadState() async throws {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequests(1)
 		let partial = model.installDirectory.appending(path: "data/game.dat.part")
 		try FileManager.default.createDirectory(
 			at: partial.deletingLastPathComponent(),
@@ -251,18 +257,23 @@ struct LauncherViewModelConcurrencyTests {
 		try FileManager.default.removeItem(at: partial)
 		model.updateInstalledState()
 		#expect(!model.hasPartialDownload)
+		await api.resolveBranding()
 	}
 
 	@Test
-	func regionSwitchKeepsCurrentArtworkUntilReplacementLoads() {
-		let model = makeModel(api: BlockingBrandingAPI(), installer: ControllableInstaller())
+	func regionSwitchKeepsCurrentArtworkUntilReplacementLoads() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequests(1)
 		let artwork = NSImage(size: NSSize(width: 32, height: 32))
 		model.heroArtwork = artwork
 
 		model.selectRegion(.japan)
+		await api.waitForBrandingRequests(2)
 
 		#expect(model.region == .japan)
 		#expect(model.heroArtwork === artwork)
+		await api.resolveBranding()
 	}
 
 	@Test
@@ -324,9 +335,10 @@ struct LauncherViewModelConcurrencyTests {
 }
 
 private actor BlockingBrandingAPI: LauncherAPIProviding {
-	private var brandingRequested = false
-	private var brandingRequestWaiters: [CheckedContinuation<Void, Never>] = []
-	private var brandingResponse: CheckedContinuation<LauncherBranding, Never>?
+	private var brandingRequestCount = 0
+	private var brandingRequestWaiters:
+		[(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
+	private var brandingResponses: [CheckedContinuation<LauncherBranding, Never>] = []
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		GameConfiguration(
@@ -341,12 +353,15 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 	}
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
-		brandingRequested = true
-		for waiter in brandingRequestWaiters {
-			waiter.resume()
+		brandingRequestCount += 1
+		let readyWaiters = brandingRequestWaiters.filter {
+			$0.count <= brandingRequestCount
 		}
-		brandingRequestWaiters.removeAll()
-		return await withCheckedContinuation { brandingResponse = $0 }
+		brandingRequestWaiters.removeAll { $0.count <= brandingRequestCount }
+		for waiter in readyWaiters {
+			waiter.continuation.resume()
+		}
+		return await withCheckedContinuation { brandingResponses.append($0) }
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
@@ -361,8 +376,14 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 	}
 
 	func waitForBrandingRequest() async {
-		guard !brandingRequested else { return }
-		await withCheckedContinuation { brandingRequestWaiters.append($0) }
+		await waitForBrandingRequests(1)
+	}
+
+	func waitForBrandingRequests(_ count: Int) async {
+		guard brandingRequestCount < count else { return }
+		await withCheckedContinuation {
+			brandingRequestWaiters.append((count: count, continuation: $0))
+		}
 	}
 
 	func resolveBranding() {
@@ -375,8 +396,11 @@ private actor BlockingBrandingAPI: LauncherAPIProviding {
 			noticePopOpen: nil,
 			noticeContent: nil
 		)
-		brandingResponse?.resume(returning: branding)
-		brandingResponse = nil
+		let responses = brandingResponses
+		brandingResponses.removeAll()
+		for response in responses {
+			response.resume(returning: branding)
+		}
 	}
 }
 
