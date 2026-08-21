@@ -14,6 +14,10 @@ func issueReportURLAlwaysTargetsTheBugReportTemplate() {
 	#expect(components.path == "/LuMiSxh/Arknights-MacOS-Client/issues/new")
 	#expect(components.queryItems?.first { $0.name == "template" }?.value == "bug-report.yml")
 	#expect(components.queryItems?.contains { $0.name == "problem" } == false)
+	#expect(components.queryItems?.contains { $0.name == "logs" } == false)
+	#expect(
+		Set(components.queryItems?.map(\.name) ?? []) == ["template", "version", "environment"]
+	)
 }
 
 @Test
@@ -23,4 +27,5 @@ func issueReportURLPercentEncodesTheProblemDescription() {
 	let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
 
 	#expect(components.queryItems?.first { $0.name == "problem" }?.value == message)
+	#expect(components.queryItems?.contains { $0.name == "logs" } == false)
 }

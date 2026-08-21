@@ -57,4 +57,4 @@ Revert with `-bool NO`.
 
 ## Reporting bugs
 
-Include the Mac model and macOS version, the installed game region, and excerpts from `launcher.log`, `wine.log`, and `unity.log`/`chromium.log` around the time of the issue. The **Report a Problem** button in **Settings** → **Installation** opens a pre-filled GitHub issue with system specs and a recent log tail already attached.
+Include the Mac model and macOS version, the installed game region, and relevant excerpts from `launcher.log`, `wine.log`, and `unity.log`/`chromium.log` around the time of the issue. Review excerpts for private paths, URLs, or account-related data before attaching them. The **Report a Problem** button in **Settings** → **Installation** opens a pre-filled GitHub issue with safe system metadata but never uploads or embeds logs automatically.

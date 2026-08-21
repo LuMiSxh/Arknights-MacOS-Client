@@ -9,15 +9,12 @@ extension Bundle {
 	}
 }
 
-/// Builds a pre-filled GitHub bug-report URL so "Report a Problem" opens the
-/// browser with version, environment, and a log excerpt already in place.
+/// Builds a pre-filled GitHub bug-report URL with safe diagnostic metadata.
 ///
-/// Reads log files from disk, so callers should build this lazily (e.g. inside
-/// a button action), not as a `Link` destination evaluated on every view update.
+/// Log files are never included because they can contain private paths, URLs,
+/// and account-related data. Users can review and attach logs themselves when needed.
 enum IssueReportURL {
 	static let appVersion: String = Bundle.main.shortVersionString ?? "Development"
-
-	private static let logTailByteLimit = 1500
 
 	static func build(problem: String? = nil) -> URL {
 		var components = URLComponents(
@@ -29,9 +26,6 @@ enum IssueReportURL {
 		]
 		if let problem, !problem.isEmpty {
 			items.append(URLQueryItem(name: "problem", value: problem))
-		}
-		if let logs = recentLogExcerpt() {
-			items.append(URLQueryItem(name: "logs", value: logs))
 		}
 		components.queryItems = items
 		return components.url!
@@ -52,19 +46,4 @@ enum IssueReportURL {
 		return String(decoding: bytes, as: UTF8.self)
 	}
 
-	private static func recentLogExcerpt() -> String? {
-		let paths = AppPaths()
-		let sections: [(name: String, url: URL)] = [
-			("launcher.log", paths.launcherLogFile),
-			("wine.log", paths.logFile),
-		]
-		let excerpts = sections.compactMap { name, url in
-			FileTail.read(of: url, maximumBytes: logTailByteLimit).map {
-				"--- \(name) (tail) ---\n\($0)"
-			}
-		}
-		guard !excerpts.isEmpty else { return nil }
-		return excerpts.joined(separator: "\n\n")
-			.replacingOccurrences(of: NSHomeDirectory(), with: "~")
-	}
 }
