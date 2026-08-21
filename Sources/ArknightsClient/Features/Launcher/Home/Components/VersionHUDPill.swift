@@ -21,7 +21,12 @@ struct VersionHUDPill: View {
 						.foregroundStyle(isHovering ? .primary : .secondary)
 						.lineLimit(1)
 						.truncationMode(.tail)
-						.frame(maxWidth: AppConstants.HUD.collapsedVersionTitleMaxWidth)
+						.frame(
+							maxWidth: isExpanded
+								? .infinity
+								: AppConstants.HUD.collapsedVersionTitleMaxWidth,
+							alignment: .leading
+						)
 					Spacer(minLength: isExpanded ? 6 : 0)
 					if isExpanded {
 						Image(systemName: "chevron.down")
