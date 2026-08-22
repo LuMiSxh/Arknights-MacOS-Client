@@ -3,6 +3,23 @@
 import Foundation
 
 extension LauncherViewModel {
+	nonisolated static func launchDiagnostics(
+		sessionID: UUID,
+		region: GameRegion,
+		options: GameLaunchOptions,
+		graphicsDiagnosticsEnabled: Bool
+	) -> String {
+		"Game launch requested; session=\(sessionID.uuidString); region=\(region.displayName); "
+			+ "usesGameSettings=\(options.usesGameSettings); "
+			+ "displayMode=\(options.displayMode.displayName); "
+			+ "resolution=\(options.resolution.rawValue); "
+			+ "highResolution=\(options.usesHighResolutionMode); "
+			+ "metalHUD=\(options.usesMetalPerformanceHUD); "
+			+ "gameMode=\(options.usesGameMode); "
+			+ "synchronization=\(options.synchronizationMode.displayName); "
+			+ "graphicsDiagnostics=\(graphicsDiagnosticsEnabled)"
+	}
+
 	nonisolated static func launchDuration(since start: Date, now: Date = .now) -> String {
 		max(0, now.timeIntervalSince(start)).formatted(
 			.number.locale(Locale(identifier: "en_US_POSIX")).precision(.fractionLength(2))

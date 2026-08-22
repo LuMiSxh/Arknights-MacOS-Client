@@ -19,13 +19,13 @@ extension GameInstaller {
 		encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
 		encoder.dateEncodingStrategy = .iso8601
 		try encoder.encode(state).write(
-			to: installDirectory.appending(path: ".arknights-client-state.json"),
+			to: installDirectory.appending(path: AppConstants.Game.installedStateFileName),
 			options: .atomic
 		)
 	}
 
 	func loadState(from installDirectory: URL) throws -> InstalledState? {
-		let url = installDirectory.appending(path: ".arknights-client-state.json")
+		let url = installDirectory.appending(path: AppConstants.Game.installedStateFileName)
 		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 		let data = try Data(contentsOf: url)
 		let decoder = JSONDecoder()

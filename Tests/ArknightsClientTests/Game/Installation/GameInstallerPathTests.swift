@@ -12,8 +12,24 @@ struct GameInstallerPathTests {
 	)
 
 	@Test
-	func manifestRejectsEmptyPathComponents() {
-		for path in ["/bin/game.dat", "bin//game.dat", "bin/game.dat/"] {
+	func manifestAcceptsOfficialLeadingSlashPaths() throws {
+		let source = try GameInstaller.safeRelativePath("/Arknights_JP-36.7.23-game")
+		#expect(source == "Arknights_JP-36.7.23-game")
+		#expect(try GameInstaller.safeRelativePath("/bin/game.dat") == "bin/game.dat")
+
+		let manifest = GameManifest(
+			source: "/Arknights_JP-36.7.23-game",
+			file: [ManifestFile(path: "/Arknights.exe", hash: "0", size: "0")]
+		)
+		try installer.validateManifest(manifest, inside: temporaryInstallDirectory())
+	}
+
+	@Test
+	func manifestRejectsUnsafePathComponents() {
+		for path in [
+			"", "/", "//bin/game.dat", "bin//game.dat", "bin/game.dat/", ".",
+			"../game.dat", "bin/../game.dat", "bin\\game.dat", "bin/game\n.dat",
+		] {
 			#expect(throws: LauncherError.self) {
 				_ = try GameInstaller.safeRelativePath(path)
 			}
@@ -35,6 +51,34 @@ struct GameInstallerPathTests {
 
 		#expect(throws: LauncherError.self) {
 			try installer.validateManifest(manifest, inside: temporaryInstallDirectory())
+		}
+	}
+
+	@Test
+	func manifestRejectsNonAdjacentFileDirectoryConflicts() {
+		let manifest = makeManifest(
+			paths: ["assets", "assets-foo", "assets/image.png"]
+		)
+
+		#expect(throws: LauncherError.self) {
+			try installer.validateManifest(manifest, inside: temporaryInstallDirectory())
+		}
+	}
+
+	@Test
+	func manifestRejectsInstallerOwnedPathCollisions() {
+		for paths in [
+			["foo", "foo.part"],
+			["foo", "foo.part/content"],
+			[AppConstants.Game.installedStateFileName],
+			[AppConstants.Game.installedStateFileName + "/content"],
+		] {
+			#expect(throws: LauncherError.self) {
+				try installer.validateManifest(
+					makeManifest(paths: paths),
+					inside: temporaryInstallDirectory()
+				)
+			}
 		}
 	}
 

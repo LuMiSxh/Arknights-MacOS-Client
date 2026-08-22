@@ -3,6 +3,10 @@
 import Foundation
 
 enum AppConstants {
+	enum Game {
+		static let installedStateFileName = ".arknights-client-state.json"
+	}
+
 	enum Icon {
 		static let canvasDimension: CGFloat = 512
 		static let squircleDimension: CGFloat = 412
@@ -29,6 +33,11 @@ enum AppConstants {
 		static let trackChangePollLimit = 80
 		static let collapsedPlayerMaxWidth: Double = 360
 		static let collapsedTitleMaxWidth: Double = 300
+		static let titleLineHeight: Double = 14
+		static let titleScrollGap: Double = 24
+		static let titleScrollSpeed: Double = 24
+		static let titleScrollDelay: Duration = .seconds(1.25)
+		static let titleScrollMinimumDuration: Double = 3
 		static let collapsedPlayerHeight: Double = 28
 		static let expandedPlayerWidth: Double = 330
 		static let expandedPlayerHeight: Double = 94

@@ -50,6 +50,7 @@ extension LauncherViewModel {
 	/// real files on disk, not cosmetic preferences, and resetting them would make the
 	/// launcher act as if an existing installation had vanished.
 	func resetAllLauncherSettings() {
+		guard canModifyLaunchOptions else { return }
 		automaticallyChecksLauncherUpdates = true
 		automaticallyChecksGameUpdates = true
 		announcementsEnabled = true
@@ -212,7 +213,7 @@ extension LauncherViewModel {
 	}
 
 	func loadInstalledState() -> InstalledState? {
-		let url = installDirectory.appending(path: ".arknights-client-state.json")
+		let url = installDirectory.appending(path: AppConstants.Game.installedStateFileName)
 		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 		do {
 			let data = try Data(contentsOf: url)
@@ -241,7 +242,7 @@ extension LauncherViewModel {
 		guard fileManager.fileExists(atPath: directory.appending(path: "Arknights.exe").path)
 		else { return false }
 		return fileManager.fileExists(
-			atPath: directory.appending(path: ".arknights-client-state.json").path
+			atPath: directory.appending(path: AppConstants.Game.installedStateFileName).path
 		)
 	}
 
@@ -275,9 +276,11 @@ extension LauncherViewModel {
 		state.refresh.requestID == refreshID && !Task.isCancelled && !isDownloading
 	}
 
-	func show(_ error: Error) {
+	func show(_ error: Error, context: String? = nil) {
 		let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
 		state.presentation.failureMessage = message
-		Task { [log] in await log.error(message) }
+		let diagnostic = launcherDiagnosticDescription(for: error)
+		let logMessage = context.map { "\($0): \(diagnostic)" } ?? diagnostic
+		Task { [log] in await log.error(logMessage) }
 	}
 }

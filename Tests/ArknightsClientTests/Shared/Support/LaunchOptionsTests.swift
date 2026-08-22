@@ -47,6 +47,38 @@ func legacyLaunchOptionsEnableHighResolutionModeWhenDecoded() throws {
 }
 
 @Test
+func launchDiagnosticsRecordEveryOptionAppliedToWine() throws {
+	let sessionID = try #require(UUID(uuidString: "B59431CE-EC59-4CE0-9677-752876A01001"))
+	let options = GameLaunchOptions(
+		displayMode: .fullscreen,
+		resolution: .quadHD,
+		usesGameSettings: false,
+		usesHighResolutionMode: false,
+		usesMetalPerformanceHUD: true,
+		usesGameMode: true,
+		synchronizationMode: .esync
+	)
+
+	let diagnostic = LauncherViewModel.launchDiagnostics(
+		sessionID: sessionID,
+		region: .korea,
+		options: options,
+		graphicsDiagnosticsEnabled: true
+	)
+
+	#expect(diagnostic.contains("session=B59431CE-EC59-4CE0-9677-752876A01001"))
+	#expect(diagnostic.contains("region=Korea"))
+	#expect(diagnostic.contains("usesGameSettings=false"))
+	#expect(diagnostic.contains("displayMode=Fullscreen"))
+	#expect(diagnostic.contains("resolution=2560x1440"))
+	#expect(diagnostic.contains("highResolution=false"))
+	#expect(diagnostic.contains("metalHUD=true"))
+	#expect(diagnostic.contains("gameMode=true"))
+	#expect(diagnostic.contains("synchronization=ESYNC"))
+	#expect(diagnostic.contains("graphicsDiagnostics=true"))
+}
+
+@Test
 func prereleasePreciseScrollingSettingIsIgnoredWhenDecoded() throws {
 	let data = Data(
 		#"{"displayMode":"windowed","resolution":"1280x720","usesPreciseScrolling":true}"#.utf8

@@ -131,6 +131,7 @@ struct InstallationSettingsPage: View {
 						.labelsHidden()
 						.toggleStyle(.switch)
 						.tint(LauncherVisuals.danger)
+						.disabled(!model.canModifyLaunchOptions)
 						.alert("Game Mode Needs Xcode", isPresented: $showsGameModeUnavailableAlert)
 					{
 					} message: {
@@ -148,7 +149,8 @@ struct InstallationSettingsPage: View {
 					AdaptiveSegmentedControl(
 						selection: synchronizationModeBinding,
 						options: WineSynchronizationMode.allCases,
-						accentColor: LauncherVisuals.danger
+						accentColor: LauncherVisuals.danger,
+						isDisabled: !model.canModifyLaunchOptions
 					) { mode in
 						Text(mode.displayName)
 					}
@@ -194,6 +196,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsSettingsReset = true
 					}
+					.disabled(!model.canModifyLaunchOptions)
 					.confirmationDialog(
 						"Reset All Launcher Settings?",
 						isPresented: $confirmsSettingsReset,

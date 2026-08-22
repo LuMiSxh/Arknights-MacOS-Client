@@ -158,6 +158,7 @@ final class LauncherViewModel {
 	@ObservationIgnored var intelTranslationCheckTask: Task<IntelTranslationCheck, Never>?
 	@ObservationIgnored var rosettaInstallationTask: Task<IntelTranslationProcessResult, any Error>?
 	@ObservationIgnored var activeThemeCacheKey: String?
+	@ObservationIgnored var activeGameModeEnabled = false
 	var pendingPopups: [LauncherPopup] = []
 	var gameRunningSince: Date?
 	var presentedNoticeContent: String?

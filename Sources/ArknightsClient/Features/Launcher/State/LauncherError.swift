@@ -2,6 +2,23 @@
 
 import Foundation
 
+protocol LauncherDiagnosticError: Error {
+	var diagnosticDescription: String { get }
+}
+
+/// Keeps alerts concise while carrying operation details into `launcher.log`.
+struct ContextualLauncherError: LocalizedError, LauncherDiagnosticError, Sendable {
+	let userMessage: String
+	let diagnosticDescription: String
+
+	var errorDescription: String? { userMessage }
+}
+
+func launcherDiagnosticDescription(for error: any Error) -> String {
+	(error as? any LauncherDiagnosticError)?.diagnosticDescription
+		?? error.localizedDescription
+}
+
 enum LauncherError: LocalizedError {
 	case invalidResponse
 	case server(code: Int, message: String)

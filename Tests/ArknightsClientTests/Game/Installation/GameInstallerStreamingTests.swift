@@ -65,13 +65,119 @@ struct GameInstallerStreamingTests {
 		#expect(updates.last?.downloadedBytes == Int64(body.count))
 	}
 
-	private func makeFixture(body: Data) throws -> InstallerFixture {
+	@Test
+	func installerDownloadsOfficialLeadingSlashManifestPaths() async throws {
+		let body = Data("game".utf8)
+		let fixture = try makeFixture(
+			body: body,
+			source: "/Arknights_JP-36.7.23-game",
+			relativePath: "/Arknights.exe"
+		)
+		defer { fixture.remove() }
+		StreamingURLProtocol.handler = { request in
+			#expect(
+				request.url?.absoluteString
+					== "https://download.test/Arknights_JP-36.7.23-game/Arknights.exe"
+			)
+			return (Self.response(url: request.url!, status: 200), body)
+		}
+		defer { StreamingURLProtocol.handler = nil }
+
+		_ = try await fixture.installer.install(
+			configuration: fixture.configuration,
+			region: .japan,
+			into: fixture.directory,
+			progress: { _ in }
+		)
+
+		#expect(fixture.destination.lastPathComponent == "Arknights.exe")
+		#expect(try Data(contentsOf: fixture.destination) == body)
+	}
+
+	@Test
+	func installerStopsWritingWhenAResponseExceedsTheManifestSize() async throws {
+		let body = Data("game".utf8)
+		let fixture = try makeFixture(body: body)
+		defer { fixture.remove() }
+		StreamingURLProtocol.handler = { request in
+			return (
+				Self.response(url: request.url!, status: 200),
+				body + Data(repeating: 0xFF, count: 64 * 1_024)
+			)
+		}
+		defer { StreamingURLProtocol.handler = nil }
+
+		do {
+			_ = try await fixture.installer.download(
+				fixture.item,
+				source: fixture.source,
+				baseURL: fixture.baseURL,
+				installDirectory: fixture.directory,
+				counter: ProgressCounter(
+					totalBytes: fixture.item.byteCount,
+					totalFiles: 1
+				),
+				progress: { _ in }
+			)
+			Issue.record("Expected the oversized response to be rejected")
+		} catch LauncherError.downloadedSizeMismatch(_, let expected, let actual) {
+			#expect(expected == Int64(body.count))
+			#expect(actual > expected)
+		} catch {
+			Issue.record("Unexpected installer error: \(error)")
+		}
+
+		let partialSize =
+			try FileManager.default.attributesOfItem(
+				atPath: fixture.partial.path
+			)[.size] as? NSNumber
+		#expect(partialSize?.int64Value == 0)
+	}
+
+	@Test
+	func checksumRetryRollsBackAttemptProgress() async throws {
+		let body = Data("correct".utf8)
+		let fixture = try makeFixture(body: body)
+		defer { fixture.remove() }
+		var requestCount = 0
+		StreamingURLProtocol.handler = { request in
+			requestCount += 1
+			let responseBody =
+				requestCount == 1
+				? Data(repeating: 0xFF, count: body.count)
+				: body
+			return (Self.response(url: request.url!, status: 200), responseBody)
+		}
+		defer { StreamingURLProtocol.handler = nil }
+		let recorder = ProgressRecorder()
+
+		_ = try await fixture.installer.install(
+			configuration: fixture.configuration,
+			region: .global,
+			into: fixture.directory,
+			progress: { update in await recorder.record(update) }
+		)
+
+		let updates = await recorder.updates()
+		#expect(requestCount == 2)
+		#expect(updates.contains(where: { $0.downloadedBytes == 0 }))
+		#expect(updates.allSatisfy { $0.downloadedBytes <= Int64(body.count) })
+		#expect(updates.last?.downloadedBytes == Int64(body.count))
+		#expect(try Data(contentsOf: fixture.destination) == body)
+	}
+
+	private func makeFixture(
+		body: Data,
+		source: String = "payload",
+		relativePath: String = "bin/game.dat"
+	) throws -> InstallerFixture {
 		let directory = FileManager.default.temporaryDirectory.appending(
-			path: "GameInstallerStreamingTests.(UUID().uuidString)",
+			path: "GameInstallerStreamingTests-\(UUID().uuidString)",
 			directoryHint: .isDirectory
 		)
-		let relativePath = "bin/game.dat"
-		let destination = directory.appending(path: relativePath)
+		let destination = directory.appending(
+			path: try GameInstaller.safeRelativePath(relativePath)
+		)
 		try FileManager.default.createDirectory(
 			at: destination.deletingLastPathComponent(),
 			withIntermediateDirectories: true
@@ -88,16 +194,15 @@ struct GameInstallerStreamingTests {
 			decompressionSize: "1 MB"
 		)
 		let baseURL = URL(string: "https://download.test/")!
+		let item = ManifestFile(
+			path: relativePath,
+			hash: checksum.decimalString,
+			size: String(body.count)
+		)
 		let api = InstallerAPI(
 			manifest: GameManifest(
-				source: "payload",
-				file: [
-					ManifestFile(
-						path: relativePath,
-						hash: checksum.decimalString,
-						size: String(body.count)
-					)
-				]
+				source: source,
+				file: [item]
 			),
 			cdn: CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
 		)
@@ -107,6 +212,9 @@ struct GameInstallerStreamingTests {
 			directory: directory,
 			destination: destination,
 			configuration: configuration,
+			item: item,
+			source: source,
+			baseURL: baseURL,
 			installer: GameInstaller(
 				api: api,
 				session: URLSession(configuration: sessionConfiguration),
@@ -141,6 +249,9 @@ private struct InstallerFixture {
 	let directory: URL
 	let destination: URL
 	let configuration: GameConfiguration
+	let item: ManifestFile
+	let source: String
+	let baseURL: URL
 	let installer: GameInstaller
 
 	var partial: URL { destination.appendingPathExtension("part") }

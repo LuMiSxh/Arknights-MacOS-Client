@@ -38,7 +38,42 @@ struct LauncherViewModelConcurrencyTests {
 
 		#expect(!model.canInstall)
 		#expect(!model.canModifyGameFiles)
+		#expect(!model.canModifyLaunchOptions)
 		#expect(await installer.installationCount() == 0)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func launchOptionsStayLockedForTheEntireGameSession() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let sessionID = UUID()
+		let selectedOptions = GameLaunchOptions(
+			displayMode: .fullscreen,
+			resolution: .quadHD,
+			usesGameSettings: false,
+			usesHighResolutionMode: false,
+			usesMetalPerformanceHUD: true,
+			usesGameMode: true,
+			synchronizationMode: .esync
+		)
+		model.launchOptions = selectedOptions
+
+		#expect(model.canModifyLaunchOptions)
+		model.state.activity = .preparingGame(sessionID: sessionID)
+		#expect(!model.canModifyLaunchOptions)
+		model.resetAllLauncherSettings()
+		#expect(model.launchOptions == selectedOptions)
+		model.state.activity = .launchingGame(sessionID: sessionID, processIdentifier: nil)
+		#expect(!model.canModifyLaunchOptions)
+		model.state.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		#expect(!model.canModifyLaunchOptions)
+		model.state.activity = .stoppingGame(sessionID: sessionID, processIdentifier: 42)
+		#expect(!model.canModifyLaunchOptions)
+		model.state.activity = .idle
+		#expect(model.canModifyLaunchOptions)
+
 		await api.resolveBranding()
 	}
 

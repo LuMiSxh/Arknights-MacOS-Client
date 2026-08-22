@@ -22,15 +22,27 @@ actor LauncherAPI {
 	}
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		try await request(region: region, path: "/api/launcher/game/config")
+		try await request(
+			region: region,
+			path: "/api/launcher/game/config",
+			operation: "game configuration"
+		)
 	}
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
-		try await request(region: region, path: "/api/launcher/base/config")
+		try await request(
+			region: region,
+			path: "/api/launcher/base/config",
+			operation: "launcher branding"
+		)
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		try await request(region: region, path: "/api/launcher/advanced/game/download/cdn")
+		try await request(
+			region: region,
+			path: "/api/launcher/advanced/game/download/cdn",
+			operation: "CDN configuration"
+		)
 	}
 
 	func manifest(
@@ -46,17 +58,64 @@ actor LauncherAPI {
 			URLQueryItem(name: "file_path", value: configuration.gameLatestFilePath),
 		]
 		guard let locationURL = components?.url else {
-			throw LauncherError.invalidResponse
+			throw requestError(
+				operation: "manifest location",
+				region: region,
+				url: region.apiBaseURL,
+				reason: "could not construct the request URL"
+			)
 		}
-		let location: ManifestLocation = try await request(region: region, url: locationURL)
+		let location: ManifestLocation = try await request(
+			region: region,
+			url: locationURL,
+			operation: "manifest location"
+		)
 
 		var manifestRequest = URLRequest(url: location.url)
 		manifestRequest.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-		let (data, response) = try await session.data(for: manifestRequest)
-		guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-			throw LauncherError.invalidResponse
+		let data: Data
+		let response: URLResponse
+		do {
+			(data, response) = try await session.data(for: manifestRequest)
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch {
+			throw requestError(
+				operation: "manifest download",
+				region: region,
+				url: location.url,
+				reason: "transport error: \(error.localizedDescription)",
+				userMessage: error.localizedDescription
+			)
 		}
-		return try decoder.decode(GameManifest.self, from: data)
+		guard let http = response as? HTTPURLResponse else {
+			throw requestError(
+				operation: "manifest download",
+				region: region,
+				url: location.url,
+				reason: "response was not HTTP"
+			)
+		}
+		guard http.statusCode == 200 else {
+			throw requestError(
+				operation: "manifest download",
+				region: region,
+				url: location.url,
+				statusCode: http.statusCode,
+				reason: "unexpected HTTP status"
+			)
+		}
+		do {
+			return try decoder.decode(GameManifest.self, from: data)
+		} catch {
+			throw requestError(
+				operation: "manifest download",
+				region: region,
+				url: location.url,
+				statusCode: http.statusCode,
+				reason: "decoding failed: \(error.localizedDescription)"
+			)
+		}
 	}
 
 	func authorizationHeader(
@@ -70,23 +129,103 @@ actor LauncherAPI {
 		return "{\"head\":\(head),\"sign\":\"\(signature)\"}"
 	}
 
-	private func request<Value: Decodable>(region: GameRegion, path: String) async throws -> Value {
-		try await request(region: region, url: region.apiBaseURL.appending(path: path))
+	private func request<Value: Decodable>(
+		region: GameRegion,
+		path: String,
+		operation: String
+	) async throws -> Value {
+		try await request(
+			region: region,
+			url: region.apiBaseURL.appending(path: path),
+			operation: operation
+		)
 	}
 
-	private func request<Value: Decodable>(region: GameRegion, url: URL) async throws -> Value {
+	private func request<Value: Decodable>(
+		region: GameRegion,
+		url: URL,
+		operation: String
+	) async throws -> Value {
 		var request = URLRequest(url: url)
 		request.setValue(authorizationHeader(region: region), forHTTPHeaderField: "Authorization")
 		request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
-		let (data, response) = try await session.data(for: request)
-		guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-			throw LauncherError.invalidResponse
+		let data: Data
+		let response: URLResponse
+		do {
+			(data, response) = try await session.data(for: request)
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch {
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				reason: "transport error: \(error.localizedDescription)",
+				userMessage: error.localizedDescription
+			)
 		}
-		let envelope = try decoder.decode(APIEnvelope<Value>.self, from: data)
+		guard let http = response as? HTTPURLResponse else {
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				reason: "response was not HTTP"
+			)
+		}
+		guard http.statusCode == 200 else {
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				statusCode: http.statusCode,
+				reason: "unexpected HTTP status"
+			)
+		}
+		let envelope: APIEnvelope<Value>
+		do {
+			envelope = try decoder.decode(APIEnvelope<Value>.self, from: data)
+		} catch {
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				statusCode: http.statusCode,
+				reason: "decoding failed: \(error.localizedDescription)"
+			)
+		}
 		guard envelope.code == 200 else {
-			throw LauncherError.server(
-				code: envelope.code, message: envelope.msg ?? "Unknown error")
+			let serverError = LauncherError.server(
+				code: envelope.code,
+				message: envelope.msg ?? "Unknown error"
+			)
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				statusCode: http.statusCode,
+				reason: "API envelope code \(envelope.code): \(envelope.msg ?? "Unknown error")",
+				userMessage: serverError.localizedDescription
+			)
 		}
 		return envelope.data
+	}
+
+	private func requestError(
+		operation: String,
+		region: GameRegion,
+		url: URL,
+		statusCode: Int? = nil,
+		reason: String,
+		userMessage: String = LauncherError.invalidResponse.localizedDescription
+	) -> ContextualLauncherError {
+		let endpoint = [url.host, url.path.isEmpty ? nil : url.path]
+			.compactMap { $0 }
+			.joined()
+		let status = statusCode.map { " status=\($0)" } ?? ""
+		return ContextualLauncherError(
+			userMessage: userMessage,
+			diagnosticDescription:
+				"Yostar API request failed; operation=\(operation); region=\(region.displayName); endpoint=\(endpoint);\(status) reason=\(reason)"
+		)
 	}
 }

@@ -19,11 +19,13 @@ struct MusicHUDPill: View {
 							.font(.system(size: 10, weight: .semibold))
 							.foregroundStyle(model.accentColor)
 						VStack(alignment: .leading, spacing: 1) {
-							Text(musicTitle)
+							OverflowingMusicTitle(title: musicTitle)
 								.font(.system(size: 11, weight: .medium, design: .monospaced))
 								.foregroundStyle(isHovering ? .primary : .secondary)
-								.lineLimit(1)
-								.truncationMode(.tail)
+								.frame(
+									height: AppConstants.Music.titleLineHeight,
+									alignment: .leading
+								)
 								.frame(
 									maxWidth: isExpanded
 										? .infinity

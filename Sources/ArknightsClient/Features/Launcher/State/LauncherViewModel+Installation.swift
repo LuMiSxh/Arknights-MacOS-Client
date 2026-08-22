@@ -93,7 +93,11 @@ extension LauncherViewModel {
 				await log.info("Installation paused")
 			} catch {
 				guard finishInstallation(installationID) else { return }
-				show(error)
+				show(
+					error,
+					context: verifyAllExistingFiles
+						? "Game repair failed" : "Game installation failed"
+				)
 			}
 		}
 	}

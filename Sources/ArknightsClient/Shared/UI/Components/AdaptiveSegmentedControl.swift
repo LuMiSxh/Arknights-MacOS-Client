@@ -7,17 +7,20 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	private let options: [Option]
 	private let accentColor: Color
+	private let isDisabled: Bool
 	private let label: (Option) -> Label
 
 	init(
 		selection: Binding<Option>,
 		options: [Option],
 		accentColor: Color,
+		isDisabled: Bool = false,
 		@ViewBuilder label: @escaping (Option) -> Label
 	) {
 		_selection = selection
 		self.options = options
 		self.accentColor = accentColor
+		self.isDisabled = isDisabled
 		self.label = label
 	}
 
@@ -36,7 +39,11 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 						.contentShape(Capsule())
 				}
 				.buttonStyle(.plain)
-				.foregroundStyle(selection == option ? accentColor : .secondary)
+				.foregroundStyle(
+					isDisabled
+						? Color.secondary.opacity(0.55)
+						: (selection == option ? accentColor : .secondary)
+				)
 				.background {
 					if selection == option {
 						Color.clear
@@ -54,6 +61,8 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 		}
 		.padding(3)
 		.adaptiveGlassEffect(in: Capsule())
+		.opacity(isDisabled ? 0.6 : 1)
+		.disabled(isDisabled)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.16),
 			value: selection

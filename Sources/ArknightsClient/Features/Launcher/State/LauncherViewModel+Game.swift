@@ -23,7 +23,7 @@ extension LauncherViewModel {
 			runtime = try discoverRuntime()
 		} catch {
 			refreshRuntime()
-			show(error)
+			show(error, context: "Game launch runtime discovery failed")
 			return
 		}
 		guard intelTranslationState.allowsWine else {
@@ -45,13 +45,19 @@ extension LauncherViewModel {
 		}
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = launchOptions
+		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let displayConfiguration = WineDisplayConfiguration.current(
 			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
 			forceDisabled: preferences.forceDisableRetina()
 		)
 		Task { [log] in
 			await log.info(
-				"Game launch requested; synchronization=\(requestedLaunchOptions.synchronizationMode.displayName)"
+				Self.launchDiagnostics(
+					sessionID: gameSessionID,
+					region: region,
+					options: requestedLaunchOptions,
+					graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
+				)
 			)
 		}
 		launchTask?.cancel()
@@ -73,7 +79,7 @@ extension LauncherViewModel {
 					log: log
 				)
 				await log.info(
-					"Game runtime started; pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
+					"Game runtime started; session=\(gameSessionID.uuidString); pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 				guard activeGameSessionID == gameSessionID else { return }
 				if requestedLaunchOptions.usesGameMode {
@@ -97,18 +103,17 @@ extension LauncherViewModel {
 				gameRunningSince = .now
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
 				await log.info(
-					"Game window became visible; elapsed=\(Self.launchDuration(since: launchRequestedAt))"
+					"Game window became visible; session=\(gameSessionID.uuidString); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 			} catch is CancellationError {
 				guard activeGameSessionID == gameSessionID else { return }
 				state.activity = .idle
+				disableActiveGameMode()
 				setStatus(isGameUpdateAvailable ? .updateAvailable : .ready)
 			} catch LauncherError.runtimeWindowTimeout {
 				guard activeGameSessionID == gameSessionID else { return }
 				state.activity = .idle
-				if requestedLaunchOptions.usesGameMode {
-					GamePolicyControl.setGameMode(on: false, log: log)
-				}
+				disableActiveGameMode()
 				do {
 					try await runtime.stop(prefixDirectory: paths.winePrefix)
 				} catch {
@@ -120,14 +125,12 @@ extension LauncherViewModel {
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
 				state.activity = .idle
-				if requestedLaunchOptions.usesGameMode {
-					GamePolicyControl.setGameMode(on: false, log: log)
-				}
+				disableActiveGameMode()
 				if RosettaAvailability.isBadCPUType(error) {
 					intelTranslationState = .unavailable
 					show(LauncherError.intelTranslationUnavailable)
 				} else {
-					show(error)
+					show(error, context: "Game launch failed")
 				}
 			}
 		}
@@ -147,7 +150,7 @@ extension LauncherViewModel {
 		do {
 			runtime = try discoverRuntime()
 		} catch {
-			show(error)
+			show(error, context: "Game stop runtime discovery failed")
 			return
 		}
 		state.activity = .stoppingGame(
@@ -170,7 +173,7 @@ extension LauncherViewModel {
 						processIdentifier: processIdentifier
 					)
 				}
-				show(error)
+				show(error, context: "Game stop failed")
 			}
 		}
 	}
@@ -180,6 +183,7 @@ extension LauncherViewModel {
 			if isDeveloperMode { return }
 		#endif
 		guard isGameActive else { return }
+		disableActiveGameMode()
 		let runtime: WineRuntime
 		do {
 			runtime = try discoverRuntime()
@@ -191,7 +195,6 @@ extension LauncherViewModel {
 			}
 			return
 		}
-		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
 		runtime.stopSynchronously(prefixDirectory: paths.winePrefix, log: log)
 	}
 
@@ -274,6 +277,7 @@ extension LauncherViewModel {
 			case .startupFailure:
 				state.activity = .idle
 				launchTask?.cancel()
+				disableActiveGameMode()
 				let since = gameRunningSince
 				let diagnostics = await Task.detached(priority: .utility) {
 					Self.exitDiagnostics(exit, since: since, logURL: logURL)
@@ -333,7 +337,7 @@ extension LauncherViewModel {
 		guard activeGameSessionID == sessionID else { return }
 		state.activity = .idle
 		launchTask?.cancel()
-		if launchOptions.usesGameMode { GamePolicyControl.setGameMode(on: false, log: log) }
+		disableActiveGameMode()
 		setStatus(isGameUpdateAvailable ? .updateAvailable : .ready)
 		await log.info("Game process stopped")
 	}

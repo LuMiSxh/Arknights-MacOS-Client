@@ -35,6 +35,10 @@ extension LauncherViewModel {
 
 	var canModifyGameFiles: Bool { state.activity == .idle }
 
+	/// Launch options are captured before Wine starts and must stay stable until the active
+	/// game session has fully stopped, including its native Game Mode cleanup.
+	var canModifyLaunchOptions: Bool { !isGameActive }
+
 	var canLaunch: Bool {
 		isInstalled && runtimeName != nil && intelTranslationState.allowsWine
 			&& state.activity == .idle

@@ -30,6 +30,7 @@ struct GeneralSettingsPage: View {
 					.labelsHidden()
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
+					.disabled(!model.canModifyLaunchOptions)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -43,6 +44,7 @@ struct GeneralSettingsPage: View {
 					.labelsHidden()
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
+					.disabled(!model.canModifyLaunchOptions)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -54,6 +56,7 @@ struct GeneralSettingsPage: View {
 						options: GameDisplayMode.allCases.map { ($0, $0.displayName) },
 						accentColor: model.accentColor,
 						isDisabled: model.launchOptions.usesGameSettings
+							|| !model.canModifyLaunchOptions
 					)
 				}
 				SettingsHairline()
@@ -66,6 +69,7 @@ struct GeneralSettingsPage: View {
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
 						accentColor: model.accentColor,
 						isDisabled: model.launchOptions.usesGameSettings
+							|| !model.canModifyLaunchOptions
 					)
 				}
 			}
@@ -106,6 +110,7 @@ struct GeneralSettingsPage: View {
 					.labelsHidden()
 					.toggleStyle(.switch)
 					.tint(model.accentColor)
+					.disabled(!model.canModifyLaunchOptions)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -117,6 +122,7 @@ struct GeneralSettingsPage: View {
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: restartOnboarding
 					)
+					.disabled(!model.canModifyLaunchOptions)
 				}
 			}
 

@@ -182,11 +182,14 @@ struct GameInstaller: Sendable {
 
 		if existingBytes == item.byteCount, existingBytes > 0 {
 			try Task.checkCancellation()
-			try finishDownload(
+			try await finishDownload(
 				item,
 				partial: partial,
 				destination: destination,
-				installDirectory: installDirectory
+				installDirectory: installDirectory,
+				countedBytes: existingBytes,
+				counter: counter,
+				progress: progress
 			)
 			if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 				await progress(update)
@@ -263,10 +266,25 @@ struct GameInstaller: Sendable {
 						receivedResponse = true
 					case .data(let data):
 						guard receivedResponse else { throw LauncherError.invalidResponse }
+						let accumulatedBytes = existingBytes + newlyDownloaded
+						let incomingBytes = Int64(data.count)
+						let (receivedBytes, overflow) = accumulatedBytes.addingReportingOverflow(
+							incomingBytes
+						)
+						guard !overflow, receivedBytes <= item.byteCount else {
+							try handle.truncate(atOffset: 0)
+							await progress(
+								await counter.remove(bytes: accumulatedBytes, file: item.path)
+							)
+							throw LauncherError.downloadedSizeMismatch(
+								path: item.path,
+								expected: item.byteCount,
+								actual: overflow ? Int64.max : receivedBytes
+							)
+						}
 						try handle.write(contentsOf: data)
-						newlyDownloaded += Int64(data.count)
-						if let update = await counter.add(bytes: Int64(data.count), file: item.path)
-						{
+						newlyDownloaded += incomingBytes
+						if let update = await counter.add(bytes: incomingBytes, file: item.path) {
 							await progress(update)
 						}
 					}
@@ -281,11 +299,14 @@ struct GameInstaller: Sendable {
 		handleIsClosed = true
 
 		try Task.checkCancellation()
-		try finishDownload(
+		try await finishDownload(
 			item,
 			partial: partial,
 			destination: destination,
-			installDirectory: installDirectory
+			installDirectory: installDirectory,
+			countedBytes: existingBytes + newlyDownloaded,
+			counter: counter,
+			progress: progress
 		)
 		if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 			await progress(update)
@@ -293,40 +314,4 @@ struct GameInstaller: Sendable {
 		return newlyDownloaded
 	}
 
-	private func finishDownload(
-		_ item: ManifestFile,
-		partial: URL,
-		destination: URL,
-		installDirectory: URL
-	) throws {
-		try assertNoSymbolicLinks(from: installDirectory, through: partial)
-		try assertNoSymbolicLinks(from: installDirectory, through: destination)
-		let actualSize = fileSize(at: partial) ?? 0
-		guard actualSize == item.byteCount else {
-			throw LauncherError.downloadedSizeMismatch(
-				path: item.path,
-				expected: item.byteCount,
-				actual: actualSize
-			)
-		}
-		let checksum = try CRC64.checksum(of: partial)
-		guard checksum == item.hash else {
-			try fileManager.removeItem(at: partial)
-			throw LauncherError.checksumMismatch(
-				path: item.path, expected: item.hash, actual: checksum)
-		}
-		if fileManager.fileExists(atPath: destination.path) {
-			try fileManager.removeItem(at: destination)
-		}
-		try fileManager.moveItem(at: partial, to: destination)
-	}
-
-	private func fileSize(at url: URL) -> Int64? {
-		guard let attributes = try? fileManager.attributesOfItem(atPath: url.path),
-			let number = attributes[.size] as? NSNumber
-		else {
-			return nil
-		}
-		return number.int64Value
-	}
 }

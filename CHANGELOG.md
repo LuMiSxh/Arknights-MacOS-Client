@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.1]
+
+### Changed
+
+- Scrolled the current song title only when it is too wide for the music HUD, while preserving a static truncated title when Reduce Motion is enabled.
+- Locked launch-only display, Metal HUD, Game Mode, and Wine synchronization settings while a game session is starting or running, and recorded the selected launch configuration in diagnostics.
+- Added the Yostar API operation, region, endpoint, HTTP status, and decoding phase to launcher logs without exposing request authorization or response bodies.
+
+### Fixed
+
+- Accepted the official leading-slash convention in game manifests while preserving installer path-containment protections, restoring installs, updates, and repairs for every region (Thanks to @NemesisHoshiko, #36).
+- Rejected manifest collisions with installer-owned files and stopped oversized download responses before they can grow temporary files beyond their declared size (Thanks to @NemesisHoshiko, #36).
+- Kept installation progress accurate when a checksum failure removes a partial download before retrying.
+
 ## [0.4.0]
 
 ### Added
@@ -131,7 +145,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[Unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.2.0

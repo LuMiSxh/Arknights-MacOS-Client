@@ -49,7 +49,7 @@ extension LauncherViewModel {
 				return nil
 			} catch {
 				await log.error(
-					"Branding for \(region.displayName) failed: \(error.localizedDescription)"
+					"Branding for \(region.displayName) failed: \(launcherDiagnosticDescription(for: error))"
 				)
 				return nil
 			}
@@ -68,13 +68,15 @@ extension LauncherViewModel {
 			} catch is CancellationError {
 				return
 			} catch {
-				await log.error("Game configuration failed: \(error.localizedDescription)")
 				guard isCurrentRefresh(refreshID) else { return }
 				if !isInstalled {
 					state.refresh = .idle
-					show(error)
+					show(error, context: "Game configuration failed")
 					return
 				}
+				await log.error(
+					"Game configuration failed: \(launcherDiagnosticDescription(for: error))"
+				)
 			}
 		}
 

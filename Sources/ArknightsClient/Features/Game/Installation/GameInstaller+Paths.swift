@@ -16,13 +16,32 @@ extension GameInstaller {
 			originalPathByKey[key] = manifest.file[index].path
 		}
 
-		let sortedKeys = originalPathByKey.keys.sorted()
-		for (parent, child) in zip(sortedKeys, sortedKeys.dropFirst())
-		where child.hasPrefix(parent + "/") {
-			throw LauncherError.conflictingManifestPaths(
-				originalPathByKey[parent] ?? parent,
-				originalPathByKey[child] ?? child
-			)
+		var ownerByInstallerPathKey = [
+			Self.manifestPathKey(AppConstants.Game.installedStateFileName):
+				AppConstants.Game.installedStateFileName
+		]
+		for (index, path) in paths.enumerated() {
+			let originalPath = manifest.file[index].path
+			for installerPath in [path, path + ".part"] {
+				let key = Self.manifestPathKey(installerPath)
+				if let existingOwner = ownerByInstallerPathKey[key] {
+					throw LauncherError.conflictingManifestPaths(existingOwner, originalPath)
+				}
+				ownerByInstallerPathKey[key] = originalPath
+			}
+		}
+
+		for child in ownerByInstallerPathKey.keys.sorted() {
+			var parent = child
+			while let separator = parent.lastIndex(of: "/") {
+				parent = String(parent[..<separator])
+				if let parentOwner = ownerByInstallerPathKey[parent] {
+					throw LauncherError.conflictingManifestPaths(
+						parentOwner,
+						ownerByInstallerPathKey[child] ?? child
+					)
+				}
+			}
 		}
 
 		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
@@ -48,7 +67,8 @@ extension GameInstaller {
 	}
 
 	static func safeRelativePath(_ input: String) throws -> String {
-		let components = input.split(separator: "/", omittingEmptySubsequences: false)
+		let relativeInput = input.hasPrefix("/") ? input.dropFirst() : input[...]
+		let components = relativeInput.split(separator: "/", omittingEmptySubsequences: false)
 		guard !components.isEmpty,
 			components.allSatisfy({ component in
 				!component.isEmpty
