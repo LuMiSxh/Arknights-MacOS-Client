@@ -63,6 +63,10 @@ enum AppConstants {
 		static let concurrentDownloads = 6
 		static let maxDownloadAttempts = 3
 		static let retryBackoffStep: Duration = .milliseconds(400)
+		static let launcherReleaseMaximumBytes = 1 * 1_024 * 1_024
+		static let announcementFeedMaximumBytes = 128 * 1_024
+		static let yostarAPIResponseMaximumBytes = 4 * 1_024 * 1_024
+		static let yostarManifestMaximumBytes = 32 * 1_024 * 1_024
 	}
 
 	enum Presets {

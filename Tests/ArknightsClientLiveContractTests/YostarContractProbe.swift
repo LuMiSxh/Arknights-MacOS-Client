@@ -7,8 +7,6 @@ import Foundation
 struct YostarContractProbe {
 	private static let attempts = 3
 	private static let retryDelay: Duration = .seconds(2)
-	private static let maximumAPIBytes = 4 * 1_024 * 1_024
-	private static let maximumManifestBytes = 32 * 1_024 * 1_024
 
 	private let api: LauncherAPI
 	private let installer: GameInstaller
@@ -17,11 +15,7 @@ struct YostarContractProbe {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.timeoutIntervalForRequest = 15
 		configuration.timeoutIntervalForResource = 30
-		let api = LauncherAPI(
-			session: URLSession(configuration: configuration),
-			maximumAPIResponseBytes: Self.maximumAPIBytes,
-			maximumManifestResponseBytes: Self.maximumManifestBytes
-		)
+		let api = LauncherAPI(session: URLSession(configuration: configuration))
 		self.api = api
 		installer = GameInstaller(
 			api: api,

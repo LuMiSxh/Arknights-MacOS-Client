@@ -32,22 +32,22 @@ enum LauncherUpdateCheckOutcome: Sendable, Equatable {
 /// Checks this repository's GitHub Releases for a newer launcher build, entirely separate
 /// from `LauncherAPI`'s game-version checks against Yostar's own servers.
 struct LauncherUpdateChecker: Sendable {
-	private let session: URLSession
+	private let loader: BoundedHTTPDataLoader
 
 	init(session: URLSession = .shared) {
-		self.session = session
+		loader = BoundedHTTPDataLoader(session: session)
 	}
 
 	func latestRelease(from endpoint: URL) async throws -> LauncherRelease? {
 		var request = URLRequest(url: endpoint)
 		request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 		request.setValue("ArknightsClient", forHTTPHeaderField: "User-Agent")
-		let (data, response) = try await session.data(for: request)
-		guard let http = response as? HTTPURLResponse else {
-			throw LauncherError.invalidResponse
-		}
-		if http.statusCode == 404 { return nil }
-		guard http.statusCode == 200 else { throw LauncherError.invalidResponse }
+		let (data, response) = try await loader.data(
+			for: request,
+			maximumBytes: AppConstants.Network.launcherReleaseMaximumBytes
+		)
+		if response.statusCode == 404 { return nil }
+		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		return try JSONDecoder().decode(LauncherRelease.self, from: data)
 	}
 

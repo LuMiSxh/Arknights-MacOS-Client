@@ -12,17 +12,17 @@ actor LauncherAPI {
 	static let launcherVersion = "1.8.1"
 
 	private let salt = "DE7108E9B2842FD460F4777702727869"
-	private let session: URLSession
+	private let loader: BoundedHTTPDataLoader
 	private let decoder: JSONDecoder
-	private let maximumAPIResponseBytes: Int?
-	private let maximumManifestResponseBytes: Int?
+	private let maximumAPIResponseBytes: Int
+	private let maximumManifestResponseBytes: Int
 
 	init(
 		session: URLSession = .shared,
-		maximumAPIResponseBytes: Int? = nil,
-		maximumManifestResponseBytes: Int? = nil
+		maximumAPIResponseBytes: Int = AppConstants.Network.yostarAPIResponseMaximumBytes,
+		maximumManifestResponseBytes: Int = AppConstants.Network.yostarManifestMaximumBytes
 	) {
-		self.session = session
+		loader = BoundedHTTPDataLoader(session: session)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 		decoder = JSONDecoder()
@@ -94,46 +94,22 @@ actor LauncherAPI {
 	) async throws -> (manifest: GameManifest, byteCount: Int) {
 		var manifestRequest = URLRequest(url: url)
 		manifestRequest.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-		let data: Data
-		let response: URLResponse
-		do {
-			(data, response) = try await session.data(for: manifestRequest)
-		} catch is CancellationError {
-			throw CancellationError()
-		} catch {
-			throw requestError(
-				operation: "manifest download",
-				region: region,
-				url: url,
-				reason: "transport error: \(error.localizedDescription)",
-				userMessage: error.localizedDescription
-			)
-		}
-		guard let http = response as? HTTPURLResponse else {
-			throw requestError(
-				operation: "manifest download",
-				region: region,
-				url: url,
-				reason: "response was not HTTP"
-			)
-		}
-		guard http.statusCode == 200 else {
-			throw requestError(
-				operation: "manifest download",
-				region: region,
-				url: url,
-				statusCode: http.statusCode,
-				reason: "unexpected HTTP status"
-			)
-		}
-		try validateResponseSize(
-			data.count,
+		let (data, response) = try await responseData(
+			for: manifestRequest,
 			maximumBytes: maximumManifestResponseBytes,
 			operation: "manifest download",
 			region: region,
-			url: url,
-			statusCode: http.statusCode
+			url: url
 		)
+		guard response.statusCode == 200 else {
+			throw requestError(
+				operation: "manifest download",
+				region: region,
+				url: url,
+				statusCode: response.statusCode,
+				reason: "unexpected HTTP status"
+			)
+		}
 		do {
 			return (try decoder.decode(GameManifest.self, from: data), data.count)
 		} catch {
@@ -141,7 +117,7 @@ actor LauncherAPI {
 				operation: "manifest download",
 				region: region,
 				url: url,
-				statusCode: http.statusCode,
+				statusCode: response.statusCode,
 				reason: "decoding failed: \(error.localizedDescription)"
 			)
 		}
@@ -178,46 +154,22 @@ actor LauncherAPI {
 		var request = URLRequest(url: url)
 		request.setValue(authorizationHeader(region: region), forHTTPHeaderField: "Authorization")
 		request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
-		let data: Data
-		let response: URLResponse
-		do {
-			(data, response) = try await session.data(for: request)
-		} catch is CancellationError {
-			throw CancellationError()
-		} catch {
-			throw requestError(
-				operation: operation,
-				region: region,
-				url: url,
-				reason: "transport error: \(error.localizedDescription)",
-				userMessage: error.localizedDescription
-			)
-		}
-		guard let http = response as? HTTPURLResponse else {
-			throw requestError(
-				operation: operation,
-				region: region,
-				url: url,
-				reason: "response was not HTTP"
-			)
-		}
-		guard http.statusCode == 200 else {
-			throw requestError(
-				operation: operation,
-				region: region,
-				url: url,
-				statusCode: http.statusCode,
-				reason: "unexpected HTTP status"
-			)
-		}
-		try validateResponseSize(
-			data.count,
+		let (data, response) = try await responseData(
+			for: request,
 			maximumBytes: maximumAPIResponseBytes,
 			operation: operation,
 			region: region,
-			url: url,
-			statusCode: http.statusCode
+			url: url
 		)
+		guard response.statusCode == 200 else {
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				statusCode: response.statusCode,
+				reason: "unexpected HTTP status"
+			)
+		}
 		let envelope: APIEnvelope<Value>
 		do {
 			envelope = try decoder.decode(APIEnvelope<Value>.self, from: data)
@@ -226,7 +178,7 @@ actor LauncherAPI {
 				operation: operation,
 				region: region,
 				url: url,
-				statusCode: http.statusCode,
+				statusCode: response.statusCode,
 				reason: "decoding failed: \(error.localizedDescription)"
 			)
 		}
@@ -239,12 +191,59 @@ actor LauncherAPI {
 				operation: operation,
 				region: region,
 				url: url,
-				statusCode: http.statusCode,
+				statusCode: response.statusCode,
 				reason: "API envelope code \(envelope.code): \(envelope.msg ?? "Unknown error")",
 				userMessage: serverError.localizedDescription
 			)
 		}
 		return envelope.data
+	}
+
+	private func responseData(
+		for request: URLRequest,
+		maximumBytes: Int,
+		operation: String,
+		region: GameRegion,
+		url: URL
+	) async throws -> (Data, HTTPURLResponse) {
+		do {
+			return try await loader.data(for: request, maximumBytes: maximumBytes)
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch let error as LauncherError {
+			switch error {
+			case .remoteContentTooLarge:
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "response exceeded \(maximumBytes) bytes"
+				)
+			case .invalidResponse:
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "response was not HTTP"
+				)
+			default:
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "transport error: \(error.localizedDescription)",
+					userMessage: error.localizedDescription
+				)
+			}
+		} catch {
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				reason: "transport error: \(error.localizedDescription)",
+				userMessage: error.localizedDescription
+			)
+		}
 	}
 
 	private func requestError(
@@ -263,24 +262,6 @@ actor LauncherAPI {
 			userMessage: userMessage,
 			diagnosticDescription:
 				"Yostar API request failed; operation=\(operation); region=\(region.displayName); endpoint=\(endpoint);\(status) reason=\(reason)"
-		)
-	}
-
-	private func validateResponseSize(
-		_ byteCount: Int,
-		maximumBytes: Int?,
-		operation: String,
-		region: GameRegion,
-		url: URL,
-		statusCode: Int
-	) throws {
-		guard let maximumBytes, byteCount > maximumBytes else { return }
-		throw requestError(
-			operation: operation,
-			region: region,
-			url: url,
-			statusCode: statusCode,
-			reason: "response exceeded \(maximumBytes) bytes"
 		)
 	}
 }

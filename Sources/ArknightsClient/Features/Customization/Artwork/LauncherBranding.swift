@@ -72,14 +72,14 @@ actor ArtworkCache {
 			"https://webusstatic.yo-star.com/arknights-us/arknights-us-website/main/h5/assets/logo-4f95ced5.png"
 	)!
 
-	private let session: URLSession
+	private let loader: BoundedHTTPDataLoader
 	private nonisolated let directory: URL
 
 	init(
 		session: URLSession = .shared,
 		directory: URL
 	) {
-		self.session = session
+		loader = BoundedHTTPDataLoader(session: session)
 		self.directory = directory
 	}
 
@@ -133,16 +133,10 @@ actor ArtworkCache {
 			return data
 		}
 
-		var request = URLRequest(url: sourceURL)
-		request.cachePolicy = .reloadRevalidatingCacheData
-		let (data, response) = try await session.data(for: request)
-		guard
-			let http = response as? HTTPURLResponse,
-			http.statusCode == 200,
-			data.count <= AppConstants.Artwork.launcherMaximumBytes
-		else {
-			throw LauncherError.invalidResponse
-		}
+		let data = try await downloadData(
+			from: sourceURL,
+			maximumBytes: AppConstants.Artwork.launcherMaximumBytes
+		)
 
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 		try data.write(to: cachedURL, options: .atomic)
@@ -156,19 +150,24 @@ actor ArtworkCache {
 			return data
 		}
 
-		var request = URLRequest(url: Self.officialLogoURL)
-		request.cachePolicy = .reloadRevalidatingCacheData
-		let (data, response) = try await session.data(for: request)
-		guard
-			let http = response as? HTTPURLResponse,
-			http.statusCode == 200,
-			data.count <= AppConstants.Artwork.officialLogoMaximumBytes
-		else {
-			throw LauncherError.invalidResponse
-		}
+		let data = try await downloadData(
+			from: Self.officialLogoURL,
+			maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes
+		)
 
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		try data.write(to: cachedURL, options: .atomic)
+		return data
+	}
+
+	private func downloadData(from url: URL, maximumBytes: Int) async throws -> Data {
+		var request = URLRequest(url: url)
+		request.cachePolicy = .reloadRevalidatingCacheData
+		let (data, response) = try await loader.data(
+			for: request,
+			maximumBytes: maximumBytes
+		)
+		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		return data
 	}
 
