@@ -16,13 +16,6 @@ from lib.common import PROJECT_DIR, fail, output, require_file
 
 ARCHITECTURE_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 
-__all__ = [
-    "PackageMetadata",
-    "ProductMetadata",
-    "ProjectConfiguration",
-    "load_project_configuration",
-]
-
 
 @dataclass(frozen=True)
 class ProductMetadata:

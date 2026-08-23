@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Summarize live reports and reconcile monitor-owned GitHub issues."""
@@ -14,7 +10,8 @@ import json
 import os
 from pathlib import Path
 
-from lib.common import ScriptError, fail, run_main, success
+from lib.common import ScriptError, fail, run_main
+from lib.console import success
 from lib.contract_monitor import (
     ContractAlertReconciler,
     ContractReport,

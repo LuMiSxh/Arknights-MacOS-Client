@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked
 # SPDX-License-Identifier: MPL-2.0
 
 """Check or format Swift, Python, and C/Objective-C sources."""
@@ -10,17 +6,18 @@
 from __future__ import annotations
 
 import argparse
-import os
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from lib.common import PROJECT_DIR, info, run, run_main, success
+from lib.common import PROJECT_DIR, run, run_main
+from lib.console import info, success
 from lib.project_config import load_project_configuration
 from localization import synchronize_localization
 from runtime_config import validate_config
 from swift_tests import run_level as run_swift_test_level
 
-RUFF = ("uv", "tool", "run", "--from", "ruff==0.16.3", "ruff")
+RUFF = (sys.executable, "-m", "ruff")
 
 
 def check_localization() -> None:
@@ -91,19 +88,15 @@ def check_scripts() -> None:
     run([*RUFF, "format", "--check", "scripts"], cwd=PROJECT_DIR)
     load_project_configuration()
     validate_config(PROJECT_DIR / "runtime.json")
-    environment = os.environ.copy()
-    environment.pop("VIRTUAL_ENV", None)
     info("Linting GitHub Actions workflows")
     run(
-        ["uv", "run", "--locked", "actionlint", *workflow_files()],
+        ["actionlint", *workflow_files()],
         cwd=PROJECT_DIR,
-        environment=environment,
     )
     info("Running the Python script test suite")
     run(
-        ["uv", "run", "--locked", "pytest", "-q"],
+        [sys.executable, "-m", "pytest", "-q"],
         cwd=PROJECT_DIR,
-        environment=environment,
     )
 
 

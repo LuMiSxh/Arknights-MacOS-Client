@@ -54,7 +54,7 @@ jobs:
       - name: Add contract summary
         if: always() && steps.contracts.outputs.has-report == 'true'
         run: >-
-          uv run scripts/contract_monitor.py summarize
+          uv run --locked --no-dev scripts/contract_monitor.py summarize
           "${{ runner.temp }}/contract-report.json"
           --output "$GITHUB_STEP_SUMMARY"
 
@@ -108,5 +108,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >-
-          uv run scripts/contract_monitor.py reconcile
+          uv run --locked --no-dev scripts/contract_monitor.py reconcile
           "${{ runner.temp }}/contract-report/contract-report.json"

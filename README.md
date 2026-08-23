@@ -122,7 +122,7 @@ just check
 | `just dev app run`    | Build the app with its runtime and open it                  |
 | `just ci`             | Run deterministic tests and build the release configuration |
 
-Run `just --groups` for the complete command list. Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json). Repository automation lives in `scripts/` as uv-managed Python entry points.
+Run `just --groups` for the complete command list. Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json). Repository automation lives in `scripts/` and resolves from the root `pyproject.toml` and `uv.lock`; packaging-only Python tools remain in a separate dependency group.
 
 A fresh checkout may resolve pinned uv and SwiftPM development dependencies before tests start. Unit and integration test execution itself is isolated from the public network.
 

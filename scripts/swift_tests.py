@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Build and run one explicitly isolated Swift test level."""
@@ -15,7 +11,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from lib.common import PROJECT_DIR, fail, info, require_command, run, run_main, success
+from lib.common import PROJECT_DIR, fail, require_command, run, run_main
+from lib.console import info, success
 from lib.project_config import load_project_configuration
 
 _NETWORK_DENY_PROFILE = "(version 1) (allow default) (deny network*)"

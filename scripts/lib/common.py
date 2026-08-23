@@ -1,11 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 
-"""Shared paths, diagnostics, and process helpers for repository scripts.
-
-Output rendering (color, unicode symbols, spinners, progress bars) lives in
-`lib.console`; `info`/`success`/`warning` are re-exported here so scripts only need one
-import for both process and output helpers.
-"""
+"""Shared paths, diagnostics, and process helpers for repository scripts."""
 
 from __future__ import annotations
 
@@ -17,27 +12,7 @@ from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from lib.console import error, info, styled, success, warning
-
-__all__ = [
-    "BUILD_DIR",
-    "DIST_DIR",
-    "PROJECT_DIR",
-    "VERSION_PATTERN",
-    "ScriptError",
-    "fail",
-    "info",
-    "output",
-    "remove_path",
-    "require_command",
-    "require_commands",
-    "require_directory",
-    "require_file",
-    "run",
-    "run_main",
-    "success",
-    "warning",
-]
+from lib.console import error, styled
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = PROJECT_DIR / ".build"

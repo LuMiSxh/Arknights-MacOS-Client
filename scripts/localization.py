@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Generate or verify SwiftPM localization resources from the String Catalog."""
@@ -17,7 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from lib.common import PROJECT_DIR, ScriptError, run, run_main, success
+from lib.common import PROJECT_DIR, ScriptError, run, run_main
+from lib.console import success
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 LICENSE_HEADER = "// SPDX-License-Identifier: MPL-2.0\n\n"

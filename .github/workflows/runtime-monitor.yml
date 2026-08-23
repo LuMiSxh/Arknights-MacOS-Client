@@ -54,7 +54,7 @@ jobs:
             arguments+=(--verify-archive)
           fi
           set +e
-          uv run scripts/runtime_monitor.py probe runtime.json \
+          uv run --locked --no-dev scripts/runtime_monitor.py probe runtime.json \
             --output "$REPORT_PATH" "${arguments[@]}"
           monitor_status=$?
           set -e
@@ -66,7 +66,7 @@ jobs:
       - name: Add runtime summary
         if: always() && steps.monitor.outputs.has-report == 'true'
         run: >-
-          uv run scripts/runtime_monitor.py summarize
+          uv run --locked --no-dev scripts/runtime_monitor.py summarize
           "${{ runner.temp }}/runtime-monitor-report.json"
           --output "$GITHUB_STEP_SUMMARY"
 
@@ -120,5 +120,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >-
-          uv run scripts/runtime_monitor.py reconcile
+          uv run --locked --no-dev scripts/runtime_monitor.py reconcile
           "${{ runner.temp }}/runtime-monitor/runtime-monitor-report.json"

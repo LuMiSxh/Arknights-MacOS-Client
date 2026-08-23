@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Regenerate the layered app icon, README preview, and fallback assets."""
@@ -23,10 +19,8 @@ from lib.common import (
     require_file,
     run,
     run_main,
-    success,
-    warning,
 )
-from lib.console import spinner
+from lib.console import spinner, success, warning
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 DEFAULT_ICON_COMPOSER = Path(

@@ -55,7 +55,7 @@
 - For UI refactors, compare the affected isolated developer scenarios; do not launch previews or apps unless the user authorizes it.
 - Unless explicitly requested, do not install, launch, download, uninstall, or alter the user's local game or runtime.
 - Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` only with `just icon`.
-- Write scripts as `uv run --script` entry points, reuse `scripts/lib`, and cover changed behavior in `scripts/tests/test_*.py`.
+- Run scripts from the root `pyproject.toml` and `uv.lock` with `uv run --locked`; keep packaging-only dependencies in the `packaging` group, reuse `scripts/lib`, and cover changed behavior in `scripts/tests/test_*.py`.
 - Derive script product and package metadata through `scripts/lib/project_config.py`; keep runtime layout in `runtime.json` instead of duplicating either contract in Python.
 - Record user-visible changes in `CHANGELOG.md`; follow `docs/releases-and-updates.md` for releases.
 

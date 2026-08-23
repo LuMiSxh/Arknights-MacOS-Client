@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Prepare the repository-hosted launcher announcement feed."""
@@ -22,8 +18,8 @@ from lib.common import (
     fail,
     require_file,
     run_main,
-    success,
 )
+from lib.console import success
 
 FEED_PATH = PROJECT_DIR / "announcements.json"
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")

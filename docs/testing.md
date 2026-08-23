@@ -12,7 +12,7 @@ The repository separates tests by dependency boundary. Unit and integration test
 
 `just ci` runs unit checks, deterministic integration tests, and the release Swift build. It never downloads the Wine runtime or game files and never launches the app or Wine. On a fresh checkout, uv and SwiftPM may resolve pinned development dependencies before test execution; the test processes themselves remain network-denied.
 
-Python tests use `pytest` from the uv-locked development dependency group. Swift levels are separate SwiftPM test targets:
+Repository scripts resolve from the root `pyproject.toml` and `uv.lock`. Python tests use `pytest` from the default development group, while DMG and compatibility builds opt into the separate `packaging` group. Swift levels are separate SwiftPM test targets:
 
 - `ArknightsClientTests`
 - `ArknightsClientIntegrationTests`

@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Download, verify, and prepare the runtime pinned in runtime.json."""
@@ -21,12 +17,10 @@ from lib.common import (
     BUILD_DIR,
     PROJECT_DIR,
     fail,
-    info,
     remove_path,
     run_main,
-    success,
 )
-from lib.console import Progress, spinner
+from lib.console import Progress, info, spinner, success
 from lib.extract_runtime import extract
 from lib.project_config import load_project_configuration
 from runtime_config import RuntimeLayout, load_runtime_config, runtime_is_valid

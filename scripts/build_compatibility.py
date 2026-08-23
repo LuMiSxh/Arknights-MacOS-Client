@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = ["ziglang==0.15.1"]
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev --group packaging
 # SPDX-License-Identifier: MPL-2.0
 
 """Build the game compatibility components bundled with the launcher."""
@@ -10,6 +6,8 @@
 from __future__ import annotations
 
 import argparse
+import struct
+import sys
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -18,15 +16,54 @@ from lib.common import (
     BUILD_DIR,
     PROJECT_DIR,
     fail,
+    output,
     remove_path,
     run,
     run_main,
-    success,
 )
-from lib.compat_toolchain import compile_windows, validate_macho_x86_64, validate_pe
-from lib.console import spinner
+from lib.console import spinner, success
 
 BuildResult = tuple[Path, ...]
+
+
+def compile_windows(source: Path, destination: Path, *arguments: str) -> None:
+    run(
+        [
+            sys.executable,
+            "-m",
+            "ziglang",
+            "cc",
+            "-target",
+            "x86_64-windows-gnu",
+            "-O2",
+            source,
+            *arguments,
+            "-o",
+            destination,
+        ]
+    )
+
+
+def validate_pe(path: Path, *, dll: bool) -> None:
+    data = path.read_bytes()
+    if len(data) < 0x40 or data[:2] != b"MZ":
+        fail(f"expected a Windows PE file: {path}")
+    header_offset = struct.unpack_from("<I", data, 0x3C)[0]
+    valid = (
+        header_offset + 26 <= len(data)
+        and data[header_offset : header_offset + 4] == b"PE\0\0"
+        and struct.unpack_from("<H", data, header_offset + 4)[0] == 0x8664
+        and struct.unpack_from("<H", data, header_offset + 24)[0] == 0x20B
+    )
+    if not valid:
+        kind = "DLL" if dll else "executable"
+        fail(f"expected a PE32+ x86-64 {kind}: {path}")
+
+
+def validate_macho_x86_64(path: Path) -> None:
+    architectures = output(["lipo", "-archs", path]).split()
+    if architectures != ["x86_64"]:
+        fail(f"expected an x86-64 Mach-O file: {path}")
 
 
 def require_sources(*paths: Path) -> None:
@@ -163,11 +200,11 @@ BUILDERS: dict[str, Callable[[Path], BuildResult]] = {
 }
 
 
-def build(output_root: Path, components: tuple[str, ...]) -> BuildResult:
+def build(output_root: Path, components: tuple[str, ...] | None = None) -> BuildResult:
     output_root = output_root.resolve()
     output_root.mkdir(parents=True, exist_ok=True)
     built: list[Path] = []
-    for component in components:
+    for component in tuple(BUILDERS) if components is None else components:
         built.extend(BUILDERS[component](output_root))
     return tuple(built)
 
@@ -187,7 +224,7 @@ def main() -> None:
         default=BUILD_DIR / "helpers",
     )
     arguments = parser.parse_args()
-    components = tuple(arguments.components or BUILDERS)
+    components = tuple(arguments.components) if arguments.components else None
     for path in build(arguments.output, components):
         success(f"Built {path.relative_to(PROJECT_DIR)}")
 

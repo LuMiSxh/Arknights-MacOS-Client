@@ -7,65 +7,13 @@ from pathlib import Path
 
 import pytest
 import runtime_config
+from lib.common import PROJECT_DIR
 
 
 def valid_config() -> dict[str, object]:
-    return {
-        "schemaVersion": 2,
-        "prefixRevision": 1,
-        "runtime": {
-            "name": "Test runtime",
-            "url": "https://example.com/runtime.tar.gz",
-            "sha256": "a" * 64,
-        },
-        "buildRecipe": {
-            "url": "https://example.com/source.tar.gz",
-            "sha256": "b" * 64,
-        },
-        "interface": {
-            "archive": {"wineDirectory": "Wine", "dxmtDirectory": "DXMT"},
-            "executables": ["bin/wine64", "bin/wineserver"],
-            "requiredFiles": ["lib/wine/x86_64-windows/winemetal.dll"],
-            "macDriver": "lib/wine/x86_64-unix/winemac.so",
-            "launcher": {"path": "bin/Arknights", "target": "wine64"},
-            "dxmt": {
-                "payloadDirectory": "DXMT",
-                "destinations": {"x64": "system32", "x32": "syswow64"},
-                "libraries": [
-                    "d3d10core.dll",
-                    "d3d11.dll",
-                    "dxgi.dll",
-                    "winemetal.dll",
-                ],
-            },
-        },
-        "components": {
-            "wine": "1",
-            "dxmt": "1",
-            "gstreamer": "1",
-            "ffmpeg": "1",
-            "moltenvk": "1",
-            "wineGecko": "1",
-        },
-        "provenance": {
-            "buildRepository": "https://example.com/build",
-            "buildCommit": "c" * 40,
-            "wineRepository": "https://example.com/wine",
-            "wineCommit": "d" * 40,
-            "dxmtRepository": "https://example.com/dxmt",
-            "dxmtCommit": "e" * 40,
-            "moltenvkRepository": "https://example.com/moltenvk",
-            "moltenvkCommit": "f" * 40,
-            "gstreamerRepository": "https://example.com/gstreamer",
-            "gstreamerCommit": "a" * 40,
-            "ffmpegRepository": "https://example.com/ffmpeg",
-            "ffmpegCommit": "b" * 40,
-            "wineGeckoRepository": "https://example.com/gecko",
-            "wineGeckoCommit": "c" * 40,
-            "nixpkgsRepository": "https://example.com/nixpkgs",
-            "nixpkgsCommit": "e" * 40,
-        },
-    }
+    value = json.loads((PROJECT_DIR / "runtime.json").read_text(encoding="utf-8"))
+    assert isinstance(value, dict)
+    return value
 
 
 def write_config(path: Path, value: dict[str, object]) -> None:
@@ -92,14 +40,15 @@ def test_rejects_missing_value(tmp_path: Path) -> None:
 
 def test_validates_complete_configuration(tmp_path: Path) -> None:
     config = tmp_path / "runtime.json"
-    write_config(config, valid_config())
+    value = valid_config()
+    write_config(config, value)
 
     loaded = runtime_config.load_runtime_config(config)
 
-    assert loaded.runtime_url == "https://example.com/runtime.tar.gz"
-    assert tuple(loaded.layout.dxmt.destinations) == (
-        ("x64", "system32"),
-        ("x32", "syswow64"),
+    assert loaded.runtime_url == value["runtime"]["url"]
+    assert (
+        dict(loaded.layout.dxmt.destinations)
+        == value["interface"]["dxmt"]["destinations"]
     )
 
 

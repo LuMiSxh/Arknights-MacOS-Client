@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Print project metadata derived from Info.plist and Package.swift."""
@@ -28,15 +24,11 @@ FIELDS: dict[str, Callable[[ProjectConfiguration], str]] = {
 }
 
 
-def read_field(configuration: ProjectConfiguration, field: str) -> str:
-    return FIELDS[field](configuration)
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("field", choices=tuple(FIELDS))
     arguments = parser.parse_args()
-    print(read_field(load_project_configuration(), arguments.field))
+    print(FIELDS[arguments.field](load_project_configuration()))
 
 
 if __name__ == "__main__":

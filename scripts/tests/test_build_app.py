@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import struct
+from dataclasses import replace
 from pathlib import Path
 
 import build_app
+import build_dmg
+import generate_icon
+import project_config as project_config_command
 import pytest
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
@@ -38,37 +42,50 @@ def test_swift_localizations_are_copied_into_app_resources(
     ).exists()
 
 
-def test_package_copy_resources_are_bundled_automatically(
+def test_app_resources_follow_project_configuration(
     configuration: ProjectConfiguration,
 ) -> None:
     resources = dict(build_app.app_resources(configuration))
 
     for source in configuration.copied_resource_source_paths:
         assert resources[source] == Path(source.name)
-
-
-def test_resource_directories_are_copied_recursively(tmp_path: Path) -> None:
-    source = tmp_path / "Configuration"
-    (source / "nested").mkdir(parents=True)
-    (source / "nested/value.json").write_text("{}", encoding="utf-8")
-    destination = tmp_path / "App/Contents/Resources/Configuration"
-
-    build_app.copy_resource(source, destination)
-
-    assert (destination / "nested/value.json").read_text(encoding="utf-8") == "{}"
-
-
-def test_main_bundle_localizations_are_bundled(
-    configuration: ProjectConfiguration,
-) -> None:
-    resources = dict(build_app.app_resources(configuration))
-
     for language in configuration.product.localizations:
         source = (
             configuration.project_directory
             / f"Resources/{language}.lproj/InfoPlist.strings"
         )
         assert resources[source] == Path(f"{language}.lproj/InfoPlist.strings")
+
+
+def test_packaging_commands_follow_changed_project_metadata(
+    tmp_path: Path, configuration: ProjectConfiguration
+) -> None:
+    changed = replace(
+        configuration,
+        product=replace(
+            configuration.product,
+            display_name="Renamed Client",
+            icon_name="RenamedIcon",
+            development_region="fr",
+        ),
+        package=replace(configuration.package, macos_version="16.0"),
+    )
+
+    dmg_arguments = build_dmg.dmgbuild_arguments(
+        tmp_path / "Renamed Client.app", tmp_path / "Renamed Client.dmg", changed
+    )
+    icon_arguments = generate_icon.compile_arguments(
+        tmp_path / "RenamedIcon.icon", tmp_path / "compiled", changed
+    )
+
+    assert "app_name=Renamed Client.app" in dmg_arguments
+    assert project_config_command.FIELDS["dmg-name"](changed) == "Renamed Client.dmg"
+    assert icon_arguments[icon_arguments.index("--app-icon") + 1] == "RenamedIcon"
+    assert icon_arguments[icon_arguments.index("--development-region") + 1] == "fr"
+    assert (
+        icon_arguments[icon_arguments.index("--minimum-deployment-target") + 1]
+        == "16.0"
+    )
 
 
 def test_compatibility_artifacts_are_discovered_recursively(tmp_path: Path) -> None:

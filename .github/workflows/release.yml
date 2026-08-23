@@ -39,7 +39,7 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - name: Validate runtime configuration
-        run: uv run scripts/runtime_config.py --validate runtime.json
+        run: uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json
 
       - name: Set up just
         uses: extractions/setup-just@v4
@@ -50,7 +50,7 @@ jobs:
             echo "Releases must be triggered from main after the release branch is merged." >&2
             exit 1
           fi
-          uv run scripts/release_validation.py "$RELEASE_VERSION"
+          uv run --locked --no-dev scripts/release_validation.py "$RELEASE_VERSION"
           release_tag="v$RELEASE_VERSION"
           set +e
           git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null
@@ -81,15 +81,15 @@ jobs:
         run: just ci
 
       - name: Prepare release notes
-        run: uv run scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
+        run: uv run --locked --no-dev scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
 
       - name: Download runtime and build recipe
         run: |
           mkdir -p dist
           build_recipe="$RUNNER_TEMP/Runtime-Build-Recipe.tar.gz"
-          build_recipe_url="$(uv run scripts/runtime_config.py runtime.json buildRecipe.url)"
-          build_recipe_sha256="$(uv run scripts/runtime_config.py runtime.json buildRecipe.sha256)"
-          uv run scripts/download_runtime.py
+          build_recipe_url="$(uv run --locked --no-dev scripts/runtime_config.py runtime.json buildRecipe.url)"
+          build_recipe_sha256="$(uv run --locked --no-dev scripts/runtime_config.py runtime.json buildRecipe.sha256)"
+          uv run --locked --no-dev scripts/download_runtime.py
           curl --fail --location --proto '=https' --tlsv1.2 "$build_recipe_url" --output "$build_recipe"
           echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
           mv "$build_recipe" "dist/Runtime-Build-Recipe.tar.gz"
@@ -101,7 +101,7 @@ jobs:
       - name: Build DMG
         run: |
           just dmg "$GITHUB_WORKSPACE/.build/runtime"
-          dmg_name="$(uv run scripts/project_config.py dmg-name)"
+          dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
           shasum -a 256 "dist/$dmg_name" dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
 
       - name: Attest release provenance
@@ -115,8 +115,8 @@ jobs:
       - name: Create draft release
         run: |
           release_tag="v$RELEASE_VERSION"
-          display_name="$(uv run scripts/project_config.py display-name)"
-          dmg_name="$(uv run scripts/project_config.py dmg-name)"
+          display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
+          dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
           gh release create "$release_tag" \
             "dist/$dmg_name" \
             dist/Runtime-Build-Recipe.tar.gz \

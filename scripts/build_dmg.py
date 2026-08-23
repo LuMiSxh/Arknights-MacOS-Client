@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = ["dmgbuild==1.6.7"]
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev --group packaging
 # SPDX-License-Identifier: MPL-2.0
 
 """Build and verify the distributable application disk image."""
@@ -15,7 +11,8 @@ import tempfile
 from pathlib import Path
 
 from build_app import build
-from lib.common import info, remove_path, run, run_main, success
+from lib.common import remove_path, run, run_main
+from lib.console import info, success
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 

@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev --group packaging
 # SPDX-License-Identifier: MPL-2.0
 
 """Build and ad-hoc sign the native application bundle."""
@@ -17,12 +13,12 @@ import struct
 import tempfile
 from pathlib import Path
 
+from build_compatibility import build as build_compatibility
 from lib.common import (
     BUILD_DIR,
     DIST_DIR,
     PROJECT_DIR,
     fail,
-    info,
     output,
     remove_path,
     require_commands,
@@ -30,10 +26,8 @@ from lib.common import (
     require_file,
     run,
     run_main,
-    success,
 )
-from lib.console import spinner
-from lib.file_operations import copy_file, copy_resource
+from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
 from runtime_config import (
@@ -58,6 +52,21 @@ REQUIRED_LICENSES = (
     "lgpl-3.0.txt",
     "mit-dxmt.txt",
 )
+
+
+def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, destination)
+    destination.chmod(mode)
+
+
+def copy_resource(source: Path, destination: Path) -> None:
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    elif source.is_file():
+        copy_file(source, destination)
+    else:
+        fail(f"required resource not found: {source}")
 
 
 def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
@@ -185,7 +194,7 @@ def validate_inputs(
     configuration: ProjectConfiguration,
     runtime_configuration: RuntimeConfiguration,
 ) -> None:
-    require_commands(("codesign", "lipo", "plutil", "swift", "uv"))
+    require_commands(("codesign", "lipo", "plutil", "swift"))
     project = configuration.project_directory
     require_file(project / "Resources/Info.plist")
     for source, _ in app_resources(configuration):
@@ -284,16 +293,7 @@ def build(
         helper_root = project / BUILD_DIR.relative_to(PROJECT_DIR) / "helpers"
         remove_path(helper_root)
         info("Building the game compatibility components")
-        run(
-            [
-                "uv",
-                "run",
-                project / "scripts/build_compatibility.py",
-                "--output",
-                helper_root,
-            ],
-            cwd=project,
-        )
+        build_compatibility(helper_root)
         compatibility = resources / "Compatibility"
         helpers = copy_compatibility_helpers(helper_root, compatibility)
         for helper in (path for path in helpers if path.suffix == ".dylib"):
