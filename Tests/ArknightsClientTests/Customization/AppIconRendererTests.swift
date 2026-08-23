@@ -36,12 +36,7 @@ func operatorIconTreatmentsRenderOnTheNormalizedCanvas() throws {
 @MainActor
 @Test
 func launcherTreatmentUsesTheDynamicThemeHue() throws {
-	let source = NSImage(size: NSSize(width: 64, height: 64))
-	source.lockFocus()
-	NSColor.white.setFill()
-	NSBezierPath(ovalIn: NSRect(x: 8, y: 8, width: 48, height: 48)).fill()
-	source.unlockFocus()
-	let sourceData = try #require(source.tiffRepresentation)
+	let sourceData = try whiteCircleSourceData()
 	let cyan = try #require(
 		AppIconRenderer.createPresetIcon(
 			from: sourceData, treatment: .launcher, accentHue: nil)
@@ -57,12 +52,7 @@ func launcherTreatmentUsesTheDynamicThemeHue() throws {
 @MainActor
 @Test
 func gameTreatmentIgnoresTheDynamicThemeHue() throws {
-	let source = NSImage(size: NSSize(width: 64, height: 64))
-	source.lockFocus()
-	NSColor.white.setFill()
-	NSBezierPath(ovalIn: NSRect(x: 8, y: 8, width: 48, height: 48)).fill()
-	source.unlockFocus()
-	let sourceData = try #require(source.tiffRepresentation)
+	let sourceData = try whiteCircleSourceData()
 	let cyan = try #require(
 		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: nil)
 	)
@@ -71,4 +61,14 @@ func gameTreatmentIgnoresTheDynamicThemeHue() throws {
 	)
 
 	#expect(cyan.tiffRepresentation == purple.tiffRepresentation)
+}
+
+@MainActor
+private func whiteCircleSourceData() throws -> Data {
+	let source = NSImage(size: NSSize(width: 64, height: 64))
+	source.lockFocus()
+	NSColor.white.setFill()
+	NSBezierPath(ovalIn: NSRect(x: 8, y: 8, width: 48, height: 48)).fill()
+	source.unlockFocus()
+	return try #require(source.tiffRepresentation)
 }

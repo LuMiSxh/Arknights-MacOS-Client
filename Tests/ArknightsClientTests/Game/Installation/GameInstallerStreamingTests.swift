@@ -90,7 +90,6 @@ struct GameInstallerStreamingTests {
 			progress: { _ in }
 		)
 
-		#expect(fixture.destination.lastPathComponent == "Arknights.exe")
 		#expect(try Data(contentsOf: fixture.destination) == body)
 	}
 

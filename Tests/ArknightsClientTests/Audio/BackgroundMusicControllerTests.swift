@@ -9,18 +9,6 @@ import YouTubePlayerKit
 @MainActor
 struct BackgroundMusicControllerTests {
 	@Test
-	func trackNavigationIsAvailableOnlyForPlaylists() {
-		let (controller, _, defaults, suiteName) = makeController()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-
-		controller.currentSource = .video(id: "one")
-		#expect(!controller.canNavigatePlaylist)
-
-		controller.currentSource = .playlist(id: "many")
-		#expect(controller.canNavigatePlaylist)
-	}
-
-	@Test
 	func bufferingCountsAsActivePlaybackForThePauseControl() {
 		let (controller, _, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }

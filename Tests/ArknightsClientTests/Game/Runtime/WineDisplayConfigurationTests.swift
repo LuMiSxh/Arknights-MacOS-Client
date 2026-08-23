@@ -22,13 +22,6 @@ func displayConfigurationEnablesRetinaOnlyForScaledDisplays() {
 
 @Test
 func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
-	let fileManager = FileManager.default
-	let prefix = fileManager.temporaryDirectory.appending(
-		path: "retina-registry-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: prefix) }
-	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
 	let registry =
 		"""
 		[Software\\\\Wine\\\\AppDefaults\\\\Arknights.exe\\\\Mac Driver] 1786868781
@@ -38,11 +31,8 @@ func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
 		"RetinaMode"="y"
 
 		"""
-	try registry.write(
-		to: prefix.appending(path: "user.reg"),
-		atomically: true,
-		encoding: .utf8
-	)
+	let prefix = try makeRegistryPrefix(registry)
+	defer { try? FileManager.default.removeItem(at: prefix) }
 
 	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
 	#expect(state?.retinaMode == "y")
@@ -52,13 +42,6 @@ func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
 
 @Test
 func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
-	let fileManager = FileManager.default
-	let prefix = fileManager.temporaryDirectory.appending(
-		path: "dpi-registry-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: prefix) }
-	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
 	let registry =
 		"""
 		[Control Panel\\\\Desktop] 1786869739
@@ -68,11 +51,8 @@ func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
 		"RetinaMode"="y"
 
 		"""
-	try registry.write(
-		to: prefix.appending(path: "user.reg"),
-		atomically: true,
-		encoding: .utf8
-	)
+	let prefix = try makeRegistryPrefix(registry)
+	defer { try? FileManager.default.removeItem(at: prefix) }
 
 	let configuration = WineDisplayConfiguration(backingScaleFactor: 2)
 	#expect(configuration.logPixels == 96)
@@ -89,25 +69,29 @@ func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
 
 @Test
 func displayConfigurationReadsPreciseScrolling() throws {
-	let fileManager = FileManager.default
-	let prefix = fileManager.temporaryDirectory.appending(
-		path: "scrolling-registry-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: prefix) }
-	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
 	let registry =
 		"""
 		[Software\\\\Wine\\\\Mac Driver] 1786868782
 		"UsePreciseScrolling"="n"
 
 		"""
+	let prefix = try makeRegistryPrefix(registry)
+	defer { try? FileManager.default.removeItem(at: prefix) }
+
+	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
+	#expect(state?.usePreciseScrolling == "n")
+}
+
+private func makeRegistryPrefix(_ registry: String) throws -> URL {
+	let prefix = FileManager.default.temporaryDirectory.appending(
+		path: "wine-registry-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	try FileManager.default.createDirectory(at: prefix, withIntermediateDirectories: true)
 	try registry.write(
 		to: prefix.appending(path: "user.reg"),
 		atomically: true,
 		encoding: .utf8
 	)
-
-	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
-	#expect(state?.usePreciseScrolling == "n")
+	return prefix
 }

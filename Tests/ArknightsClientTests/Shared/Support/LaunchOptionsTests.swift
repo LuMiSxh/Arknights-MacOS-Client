@@ -89,47 +89,36 @@ func prereleasePreciseScrollingSettingIsIgnoredWhenDecoded() throws {
 	#expect(options == .default)
 }
 
-@Test
-func fullscreenLaunchArgumentsUseSelectedResolution() {
+@Test(arguments: [
+	(
+		GameDisplayMode.fullscreen,
+		GameResolution.quadHD,
+		["-screen-fullscreen", "1", "-screen-width", "2560", "-screen-height", "1440"]
+	),
+	(
+		GameDisplayMode.windowed,
+		GameResolution.fullHD,
+		["-screen-fullscreen", "0", "-screen-width", "1920", "-screen-height", "1080"]
+	),
+	(
+		GameDisplayMode.borderlessWindow,
+		GameResolution.ultraHD,
+		[
+			"-screen-fullscreen", "0", "-screen-width", "3840", "-screen-height", "2160",
+			"-popupwindow",
+		]
+	),
+])
+func launchArgumentsMatchDisplayMode(
+	displayMode: GameDisplayMode,
+	resolution: GameResolution,
+	expected: [String]
+) {
 	let options = GameLaunchOptions(
-		displayMode: .fullscreen,
-		resolution: .quadHD,
+		displayMode: displayMode,
+		resolution: resolution,
 		usesGameSettings: false
 	)
 
-	#expect(
-		options.playerArguments
-			== ["-screen-fullscreen", "1", "-screen-width", "2560", "-screen-height", "1440"]
-	)
-}
-
-@Test
-func windowedLaunchArgumentsDisableFullscreen() {
-	let options = GameLaunchOptions(
-		displayMode: .windowed,
-		resolution: .fullHD,
-		usesGameSettings: false
-	)
-
-	#expect(
-		options.playerArguments
-			== ["-screen-fullscreen", "0", "-screen-width", "1920", "-screen-height", "1080"]
-	)
-}
-
-@Test
-func borderlessLaunchArgumentsAddPopupWindowFlag() {
-	let options = GameLaunchOptions(
-		displayMode: .borderlessWindow,
-		resolution: .ultraHD,
-		usesGameSettings: false
-	)
-
-	#expect(
-		options.playerArguments
-			== [
-				"-screen-fullscreen", "0", "-screen-width", "3840", "-screen-height", "2160",
-				"-popupwindow",
-			]
-	)
+	#expect(options.playerArguments == expected)
 }
