@@ -74,10 +74,10 @@ class ProjectConfiguration:
         localization_parents = {
             path.parent
             for path in self.package.processed_resource_paths
-            if path.name.endswith(".lproj")
+            if path.suffix == ".xcstrings"
         }
         if len(localization_parents) != 1:
-            fail("package localizations must share one resource directory")
+            fail("package String Catalogs must share one resource directory")
         return self.target_directory / localization_parents.pop()
 
     @property
@@ -226,16 +226,16 @@ def _validate_agreement(product: ProductMetadata, package: PackageMetadata) -> N
         fail("package defaultLocalization must match CFBundleDevelopmentRegion")
     if package.macos_version != product.minimum_macos_version:
         fail("package macOS platform must match LSMinimumSystemVersion")
-    processed_languages = tuple(
-        _language(path.name.removesuffix(".lproj"), "processed localization language")
-        for path in package.processed_resource_paths
-        if path.name.endswith(".lproj")
+    processed_catalogs = tuple(
+        path for path in package.processed_resource_paths if path.suffix == ".xcstrings"
     )
-    if len(processed_languages) != len(set(processed_languages)):
-        fail("package processed localization resources must be unique")
-    if set(processed_languages) != set(product.localizations):
+    if not processed_catalogs:
+        fail("package must process at least one String Catalog")
+    if len(processed_catalogs) != len(set(processed_catalogs)):
+        fail("package processed String Catalogs must be unique")
+    if any(path.name.endswith(".lproj") for path in package.processed_resource_paths):
         fail(
-            "package processed .lproj languages must exactly match CFBundleLocalizations"
+            "package must process String Catalogs instead of generated .lproj resources"
         )
 
 

@@ -93,33 +93,23 @@ def test_shipping_languages_come_from_the_layout(tmp_path: Path) -> None:
     )
 
 
-def test_writes_missing_generated_file(tmp_path: Path) -> None:
-    source = tmp_path / "generated"
-    destination = tmp_path / "nested/output"
-    source.write_text("localized", encoding="utf-8")
+def test_catalog_fingerprint_invalidates_symbols_after_copy_changes(
+    tmp_path: Path,
+) -> None:
+    catalog = tmp_path / "Localizable.xcstrings"
+    symbols = tmp_path / "GeneratedStringSymbols_Localizable.swift"
+    catalog.write_text("first", encoding="utf-8")
+    fingerprint = localization.catalog_fingerprint(catalog)
+    symbols.write_text(
+        f"{localization.LICENSE_HEADER}"
+        f"{localization.APP_RESOURCE_BUNDLE_DECLARATION}\n"
+        f"{localization.FINGERPRINT_PREFIX}{fingerprint}\n",
+        encoding="utf-8",
+    )
 
-    localization.synchronize_file(source, destination, write=True)
+    assert localization.symbols_are_current(symbols, fingerprint)
 
-    assert destination.read_text(encoding="utf-8") == "localized"
-
-
-def test_rejects_stale_generated_file_in_check_mode(tmp_path: Path) -> None:
-    source = tmp_path / "generated"
-    destination = tmp_path / "output"
-    source.write_text("new", encoding="utf-8")
-    destination.write_text("old", encoding="utf-8")
-
-    with pytest.raises(ScriptError, match="generated localization file is stale"):
-        localization.synchronize_file(source, destination, write=False)
-
-
-def test_removes_obsolete_generated_files_in_format_mode(tmp_path: Path) -> None:
-    current = tmp_path / "current"
-    obsolete = tmp_path / "obsolete"
-    current.touch()
-    obsolete.touch()
-
-    localization.remove_stale_files({current, obsolete}, {current}, write=True)
-
-    assert current.exists()
-    assert not obsolete.exists()
+    catalog.write_text("second", encoding="utf-8")
+    assert not localization.symbols_are_current(
+        symbols, localization.catalog_fingerprint(catalog)
+    )

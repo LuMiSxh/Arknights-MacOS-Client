@@ -49,7 +49,7 @@ struct OnboardingRosettaRecoveryView: View {
 						confirmsInstallation = true
 					}
 					CapsuleActionButton(
-						L10n.string(OnboardingStrings.checkAgain),
+						title: L10n.string(OnboardingStrings.checkAgain),
 						systemImage: "checkmark.arrow.trianglehead.counterclockwise",
 						tone: .accent(accentColor)
 					) {

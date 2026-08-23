@@ -30,6 +30,7 @@ from lib.common import (
 from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
+from localization import prepare_localization
 from runtime_config import (
     RuntimeConfiguration,
     load_runtime_config,
@@ -243,6 +244,7 @@ def build(
     project_configuration: ProjectConfiguration | None = None,
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
+    prepare_localization(configuration=project_configuration)
     project = project_configuration.project_directory
     runtime_configuration = load_runtime_config(project / "runtime.json")
     runtime = runtime.resolve() if runtime is not None else None

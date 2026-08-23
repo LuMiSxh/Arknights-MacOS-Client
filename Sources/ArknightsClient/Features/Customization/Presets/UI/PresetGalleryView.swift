@@ -62,14 +62,7 @@ struct PresetGalleryView: View {
 				.contentMargins(.bottom, 24, for: .scrollIndicators)
 			}
 
-			LinearGradient(
-				colors: [.clear, Color.black.opacity(0.45)],
-				startPoint: .top,
-				endPoint: .bottom
-			)
-			.frame(height: 56)
-			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-			.allowsHitTesting(false)
+			FloatingActionFooterFade(height: 56)
 
 			FloatingActionBar(tint: model.hudTintColor) {
 				FloatingDoneButton(accentColor: model.accentColor) {

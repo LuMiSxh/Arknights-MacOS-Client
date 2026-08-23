@@ -182,7 +182,7 @@ struct ContentView: View {
 			HStack(spacing: 8) {
 				if model.launcherUpdate != nil {
 					CapsuleActionButton(
-						L10n.string(HomeStrings.launcherUpdate),
+						title: L10n.string(HomeStrings.launcherUpdate),
 						systemImage: "arrow.down.app",
 						tone: .accent(model.accentColor),
 						action: model.openLauncherUpdate

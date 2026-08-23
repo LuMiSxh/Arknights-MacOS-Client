@@ -4,12 +4,6 @@ import SwiftUI
 
 struct OnboardingInstallationView: View {
 	@Bindable var model: LauncherViewModel
-	@State private var selectedRegion: GameRegion
-
-	init(model: LauncherViewModel) {
-		self.model = model
-		_selectedRegion = State(initialValue: model.region)
-	}
 
 	var body: some View {
 		OnboardingPage(
@@ -22,16 +16,13 @@ struct OnboardingInstallationView: View {
 				systemImage: "globe.asia.australia"
 			) {
 				AdaptiveSegmentedControl(
-					selection: $selectedRegion,
+					selection: regionBinding,
 					options: GameRegion.allCases,
 					accentColor: model.accentColor
 				) { region in
 					Text(region.localizedDisplayName)
 				}
 				.disabled(!model.canSwitchRegion)
-				.onChange(of: selectedRegion) { _, newRegion in
-					model.selectRegion(newRegion)
-				}
 				Text(regionDetail)
 					.font(.callout)
 					.foregroundStyle(.secondary)
@@ -77,7 +68,7 @@ struct OnboardingInstallationView: View {
 	}
 
 	private var regionDetail: LocalizedStringResource {
-		OnboardingStrings.regionDetail(selectedRegion)
+		OnboardingStrings.regionDetail(model.region)
 	}
 
 	private var installationImage: String {
@@ -90,7 +81,7 @@ struct OnboardingInstallationView: View {
 		if model.isDownloading { return OnboardingStrings.downloadingTitle }
 		if model.isInstalled { return OnboardingStrings.existingTitle }
 		if model.hasPartialDownload { return OnboardingStrings.partialTitle }
-		return OnboardingStrings.readyToInstall(selectedRegion.localizedDisplayName)
+		return OnboardingStrings.readyToInstall(model.region.localizedDisplayName)
 	}
 
 	private var installationDetail: LocalizedStringResource {
@@ -103,5 +94,9 @@ struct OnboardingInstallationView: View {
 		}
 		if model.hasPartialDownload { return OnboardingStrings.partialDetail }
 		return OnboardingStrings.installationSize(model.installSizeText)
+	}
+
+	private var regionBinding: Binding<GameRegion> {
+		Binding(get: { model.region }, set: { model.selectRegion($0) })
 	}
 }

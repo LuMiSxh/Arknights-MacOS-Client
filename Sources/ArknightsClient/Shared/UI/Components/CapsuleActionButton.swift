@@ -36,7 +36,7 @@ struct CapsuleActionButton: View {
 	@Environment(\.isEnabled) private var isEnabled
 
 	init(
-		_ title: String,
+		title: String,
 		systemImage: String? = nil,
 		tone: CapsuleActionTone,
 		presentation: CapsuleActionPresentation = .standard,
@@ -51,26 +51,6 @@ struct CapsuleActionButton: View {
 		self.role = role
 		self.showsTitle = showsTitle
 		self.action = action
-	}
-
-	init(
-		title: String,
-		systemImage: String? = nil,
-		tone: CapsuleActionTone,
-		presentation: CapsuleActionPresentation = .standard,
-		role: ButtonRole? = nil,
-		showsTitle: Bool = true,
-		action: @escaping () -> Void
-	) {
-		self.init(
-			title,
-			systemImage: systemImage,
-			tone: tone,
-			presentation: presentation,
-			role: role,
-			showsTitle: showsTitle,
-			action: action
-		)
 	}
 
 	var body: some View {

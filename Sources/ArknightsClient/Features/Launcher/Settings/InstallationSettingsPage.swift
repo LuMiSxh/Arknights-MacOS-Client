@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct InstallationSettingsPage: View {
-	var model: LauncherViewModel
+	@Bindable var model: LauncherViewModel
 	@State private var confirmsGameUninstall = false
 	@State private var confirmsForceMigration = false
 	@State private var confirmsWinePrefixDeletion = false
@@ -84,7 +84,7 @@ struct InstallationSettingsPage: View {
 					detail: L10n.string(SettingsStrings.repairDetail)
 				) {
 					CapsuleActionButton(
-						L10n.string(SettingsStrings.repairAction),
+						title: L10n.string(SettingsStrings.repairAction),
 						systemImage: "wrench.and.screwdriver",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.repairGame
@@ -122,7 +122,7 @@ struct InstallationSettingsPage: View {
 					detail: L10n.string(SettingsStrings.logsDetail)
 				) {
 					CapsuleActionButton(
-						L10n.string(SettingsStrings.showLogs),
+						title: L10n.string(SettingsStrings.showLogs),
 						systemImage: "doc.text.magnifyingglass",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.revealLogs
@@ -156,7 +156,7 @@ struct InstallationSettingsPage: View {
 					detail: L10n.string(SettingsStrings.wineSynchronizationDetail)
 				) {
 					AdaptiveSegmentedControl(
-						selection: synchronizationModeBinding,
+						selection: $model.launchOptions.synchronizationMode,
 						options: WineSynchronizationMode.allCases,
 						accentColor: LauncherVisuals.danger,
 						isDisabled: !model.canModifyLaunchOptions
@@ -275,13 +275,6 @@ struct InstallationSettingsPage: View {
 				}
 			}
 		}
-	}
-
-	private var synchronizationModeBinding: Binding<WineSynchronizationMode> {
-		Binding(
-			get: { model.launchOptions.synchronizationMode },
-			set: { model.launchOptions.synchronizationMode = $0 }
-		)
 	}
 
 	private var gameModeBinding: Binding<Bool> {

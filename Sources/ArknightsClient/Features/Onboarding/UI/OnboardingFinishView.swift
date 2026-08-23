@@ -24,7 +24,7 @@ struct OnboardingFinishView: View {
 
 				if !model.isInstalled && !model.isDownloading && model.canInstall {
 					CapsuleActionButton(
-						L10n.string(OnboardingStrings.resumeDownload),
+						title: L10n.string(OnboardingStrings.resumeDownload),
 						systemImage: "arrow.clockwise",
 						tone: .accent(model.accentColor),
 						action: model.installOrUpdate
@@ -53,7 +53,7 @@ struct OnboardingFinishView: View {
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					L10n.string(OnboardingStrings.contactSupport),
+					title: L10n.string(OnboardingStrings.contactSupport),
 					systemImage: "arrow.up.right.square",
 					tone: .accent(model.accentColor),
 					action: contactYostar

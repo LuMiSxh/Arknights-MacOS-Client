@@ -41,7 +41,7 @@
 - Keep every region's installation/state independent while sharing one Wine prefix whose `G:` drive is repointed on launch.
 - Define persisted locations only through `AppPaths`; preserve existing paths, keys, and serialized formats unless migration is explicitly required.
 - Follow `docs/design.md`; use the existing shared action/control families instead of per-call styling.
-- Follow `docs/localization.md`; do not edit generated localization symbols or `.strings` files directly.
+- Follow `docs/localization.md`; edit only the String Catalog sources, never generated localization symbols.
 - Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add concise DocC for public APIs and complex domain models.
 - Centralize fixed keys, limits, retries, and timeouts in `AppConstants.swift`; avoid silent `try?` for filesystem, process, and network work.
 - Test behavior according to regression impact. Preserve installer safety, persistence, parsing, migration, runtime isolation, and concurrency coverage; do not require tests for file moves, view composition, trivial accessors, or wrappers.

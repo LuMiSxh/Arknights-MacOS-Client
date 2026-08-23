@@ -42,14 +42,7 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 				.scrollIndicators(.automatic)
 			}
 
-			LinearGradient(
-				colors: [.clear, Color.black.opacity(0.45)],
-				startPoint: .top,
-				endPoint: .bottom
-			)
-			.frame(height: 72)
-			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-			.allowsHitTesting(false)
+			FloatingActionFooterFade(height: 72)
 
 			FloatingActionBar(tint: hudTintColor) {
 				actions

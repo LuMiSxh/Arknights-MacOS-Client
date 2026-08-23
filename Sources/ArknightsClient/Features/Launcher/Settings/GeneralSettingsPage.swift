@@ -164,7 +164,7 @@ struct GeneralSettingsPage: View {
 						action: model.chooseCustomArtwork
 					)
 					CapsuleActionButton(
-						L10n.string(SettingsStrings.useDefault),
+						title: L10n.string(SettingsStrings.useDefault),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
@@ -190,7 +190,7 @@ struct GeneralSettingsPage: View {
 						presentedGallery = .operatorIcons
 					}
 					CapsuleActionButton(
-						L10n.string(SettingsStrings.useDefaults),
+						title: L10n.string(SettingsStrings.useDefaults),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,

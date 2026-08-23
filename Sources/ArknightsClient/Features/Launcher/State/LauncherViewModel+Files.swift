@@ -144,10 +144,7 @@ extension LauncherViewModel {
 
 	func refreshPresetGalleryCacheSize() {
 		Task {
-			let cacheSizeText = await presetCatalog.cacheSizeText()
-			await MainActor.run {
-				self.presetGalleryCacheSizeText = cacheSizeText
-			}
+			presetGalleryCacheSizeText = await presetCatalog.cacheSizeText()
 		}
 	}
 

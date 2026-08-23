@@ -13,7 +13,8 @@ from pathlib import Path
 
 from lib.common import PROJECT_DIR, fail, require_command, run, run_main
 from lib.console import info, success
-from lib.project_config import load_project_configuration
+from lib.project_config import ProjectConfiguration, load_project_configuration
+from localization import prepare_localization
 
 _NETWORK_DENY_PROFILE = "(version 1) (allow default) (deny network*)"
 
@@ -50,8 +51,10 @@ LEVELS = {
 }
 
 
-def architecture_arguments() -> list[str]:
-    configuration = load_project_configuration()
+def architecture_arguments(
+    configuration: ProjectConfiguration | None = None,
+) -> list[str]:
+    configuration = configuration or load_project_configuration()
     return [
         argument
         for architecture in configuration.product.architecture_priority
@@ -123,7 +126,9 @@ def isolated_environment(root: Path, level: SwiftTestLevel) -> dict[str, str]:
 
 def run_level(name: str) -> None:
     level = LEVELS[name]
-    architectures = architecture_arguments()
+    configuration = load_project_configuration()
+    prepare_localization(configuration=configuration)
+    architectures = architecture_arguments(configuration)
     require_command("swift")
     if not level.allows_network:
         require_command("sandbox-exec")

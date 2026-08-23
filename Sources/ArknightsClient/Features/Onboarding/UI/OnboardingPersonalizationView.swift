@@ -48,13 +48,14 @@ struct OnboardingPersonalizationView: View {
 						action: browseArtwork
 					)
 					CapsuleActionButton(
-						L10n.string(OnboardingStrings.chooseImage), systemImage: "photo.badge.plus",
+						title: L10n.string(OnboardingStrings.chooseImage),
+						systemImage: "photo.badge.plus",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.chooseCustomArtwork
 					)
 					Spacer()
 					CapsuleActionButton(
-						L10n.string(OnboardingStrings.useDefault),
+						title: L10n.string(OnboardingStrings.useDefault),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral, presentation: .compact,
 						action: model.resetArtwork

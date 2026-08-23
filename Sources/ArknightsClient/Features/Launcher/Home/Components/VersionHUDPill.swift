@@ -55,7 +55,7 @@ struct VersionHUDPill: View {
 						.lineLimit(1)
 					Spacer()
 					CapsuleActionButton(
-						L10n.string(HomeStrings.versionCheckNow),
+						title: L10n.string(HomeStrings.versionCheckNow),
 						systemImage: "arrow.clockwise",
 						tone: .accent(model.accentColor), presentation: .hud,
 						action: model.checkGameUpdates

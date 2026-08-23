@@ -13,7 +13,7 @@ from pathlib import Path
 from lib.common import PROJECT_DIR, run, run_main
 from lib.console import info, success
 from lib.project_config import load_project_configuration
-from localization import synchronize_localization
+from localization import prepare_localization
 from runtime_config import validate_config
 from swift_tests import run_level as run_swift_test_level
 
@@ -21,13 +21,13 @@ RUFF = (sys.executable, "-m", "ruff")
 
 
 def check_localization() -> None:
-    info("Checking generated localization resources")
-    synchronize_localization(write=False)
+    info("Checking localization catalogs")
+    prepare_localization()
 
 
 def format_localization() -> None:
-    info("Generating localization resources")
-    synchronize_localization(write=True)
+    info("Regenerating localization symbols")
+    prepare_localization(force=True)
 
 
 def shim_sources() -> list[Path]:

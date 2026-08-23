@@ -30,11 +30,9 @@ def plist(
 
 def package_dump(
     *,
-    languages: list[str] | None = None,
     name: str = "Client",
     resources: list[dict[str, object]] | None = None,
 ) -> dict[str, object]:
-    languages = languages or ["en", "de"]
     return {
         "name": name,
         "defaultLocalization": "en",
@@ -48,13 +46,10 @@ def package_dump(
                 "resources": resources
                 or [
                     {"path": "Resources/Icon.png", "rule": {"copy": {}}},
-                    *(
-                        {
-                            "path": f"Resources/{language}.lproj",
-                            "rule": {"process": {}},
-                        }
-                        for language in languages
-                    ),
+                    {
+                        "path": "Resources/Localizable.xcstrings",
+                        "rule": {"process": {}},
+                    },
                 ],
             }
         ],
@@ -94,21 +89,21 @@ def test_renames_languages_and_resources_are_derived_automatically(
     languages = ["en", "de", "ja"]
     resources = [
         {"path": "Assets/Brand.png", "rule": {"copy": {}}},
-        *(
-            {"path": f"Assets/{language}.lproj", "rule": {"process": {}}}
-            for language in languages
-        ),
+        {"path": "Assets/Launcher.xcstrings", "rule": {"process": {}}},
+        {"path": "Assets/Settings.xcstrings", "rule": {"process": {}}},
     ]
     configuration = load_configuration(
         tmp_path,
         plist(languages=languages, executable="Renamed"),
-        package_dump(languages=languages, name="Renamed", resources=resources),
+        package_dump(name="Renamed", resources=resources),
     )
 
     assert configuration.swift_resource_bundle_name == "Renamed_Renamed.bundle"
     assert configuration.package.processed_resource_paths == tuple(
-        Path(f"Assets/{language}.lproj") for language in languages
+        Path(path)
+        for path in ("Assets/Launcher.xcstrings", "Assets/Settings.xcstrings")
     )
+    assert configuration.product.localizations == ("en", "de", "ja")
     assert configuration.copied_resource_source_paths == (
         configuration.target_directory / "Assets/Brand.png",
     )
@@ -118,7 +113,6 @@ def test_renames_languages_and_resources_are_derived_automatically(
     ("plist_value", "dump_value"),
     [
         pytest.param(plist(executable="Other"), package_dump(), id="executable"),
-        pytest.param(plist(languages=["en", "fr"]), package_dump(), id="localizations"),
         pytest.param(
             {**plist(), "CFBundleIconFile": "OtherIcon"},
             package_dump(),

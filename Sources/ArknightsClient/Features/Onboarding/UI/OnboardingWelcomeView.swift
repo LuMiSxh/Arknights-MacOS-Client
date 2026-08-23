@@ -107,7 +107,7 @@ struct OnboardingWelcomeView: View {
 								.font(.callout.monospaced())
 								.textSelection(.enabled)
 							CapsuleActionButton(
-								L10n.string(OnboardingStrings.checkAgain),
+								title: L10n.string(OnboardingStrings.checkAgain),
 								systemImage: "arrow.clockwise",
 								tone: .accent(model.accentColor),
 								action: retryIntelTranslation
@@ -119,7 +119,7 @@ struct OnboardingWelcomeView: View {
 								.foregroundStyle(.secondary)
 								.fixedSize(horizontal: false, vertical: true)
 							CapsuleActionButton(
-								L10n.string(OnboardingStrings.checkAgain),
+								title: L10n.string(OnboardingStrings.checkAgain),
 								systemImage: "arrow.clockwise",
 								tone: .accent(model.accentColor),
 								action: retryIntelTranslation

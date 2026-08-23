@@ -1,11 +1,12 @@
 #!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
-"""Generate or verify SwiftPM localization resources from the String Catalog."""
+"""Prepare and validate type-safe Swift symbols from the String Catalogs."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import tempfile
@@ -18,6 +19,8 @@ from lib.console import success
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 LICENSE_HEADER = "// SPDX-License-Identifier: MPL-2.0\n\n"
+FINGERPRINT_PREFIX = "// Localization catalog fingerprint: "
+GENERATOR_SOURCE = Path(__file__).read_bytes()
 KEY_PATTERN = re.compile(r"^[a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)+$")
 SWIFT_PACKAGE_BUNDLE_DECLARATION = (
     "private nonisolated let resourceBundle = Foundation.Bundle.module"
@@ -36,13 +39,6 @@ class LocalizationLayout:
     catalogs: tuple[Path, ...]
 
 
-@dataclass(frozen=True)
-class CatalogGeneration:
-    name: str
-    symbols: Path
-    compiled: dict[str, Path]
-
-
 def discover_layout(configuration: ProjectConfiguration) -> LocalizationLayout:
     resource_directory = configuration.resource_directory
     catalogs = tuple(sorted(resource_directory.glob("*.xcstrings")))
@@ -50,11 +46,16 @@ def discover_layout(configuration: ProjectConfiguration) -> LocalizationLayout:
         raise ScriptError("no localization catalogs found")
     target_directory = configuration.target_directory
     excluded = set(configuration.package.excluded_paths)
+    processed = set(configuration.package.processed_resource_paths)
     for catalog in catalogs:
         relative = catalog.relative_to(target_directory)
-        if relative not in excluded:
+        if relative in excluded:
             raise ScriptError(
-                f"Package.swift does not exclude String Catalog: {relative}"
+                f"Package.swift excludes processed String Catalog: {relative}"
+            )
+        if relative not in processed:
+            raise ScriptError(
+                f"Package.swift does not process String Catalog: {relative}"
             )
     return LocalizationLayout(
         resource_directory=resource_directory,
@@ -119,37 +120,6 @@ def _string_units(value: object) -> list[dict[str, str]]:
     return []
 
 
-def synchronize_file(source: Path, destination: Path, *, write: bool) -> None:
-    expected = source.read_bytes()
-    actual = destination.read_bytes() if destination.is_file() else None
-    if actual == expected:
-        return
-    if not write:
-        raise ScriptError(
-            f"generated localization file is stale: {_display_path(destination)}"
-        )
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_bytes(expected)
-
-
-def remove_stale_files(
-    actual_files: set[Path], expected_files: set[Path], *, write: bool
-) -> None:
-    for stale in sorted(actual_files - expected_files):
-        if not write:
-            raise ScriptError(
-                f"obsolete generated localization file remains: {_display_path(stale)}"
-            )
-        stale.unlink()
-
-
-def _display_path(path: Path) -> Path:
-    try:
-        return path.relative_to(PROJECT_DIR)
-    except ValueError:
-        return path
-
-
 def use_app_resource_bundle(generated_symbols: str) -> str:
     if generated_symbols.count(SWIFT_PACKAGE_BUNDLE_DECLARATION) != 1:
         raise ScriptError("unexpected generated Swift package resource declaration")
@@ -159,28 +129,33 @@ def use_app_resource_bundle(generated_symbols: str) -> str:
     )
 
 
+def catalog_fingerprint(catalog: Path) -> str:
+    digest = hashlib.sha256(GENERATOR_SOURCE)
+    digest.update(catalog.read_bytes())
+    return digest.hexdigest()
+
+
+def symbols_are_current(path: Path, fingerprint: str) -> bool:
+    if not path.is_file():
+        return False
+    prefix = f"{FINGERPRINT_PREFIX}{fingerprint}"
+    try:
+        contents = path.read_text(encoding="utf-8")
+        return (
+            prefix in contents.splitlines()[-4:]
+            and APP_RESOURCE_BUNDLE_DECLARATION in contents
+        )
+    except OSError:
+        return False
+
+
 def generate_catalog(
-    layout: LocalizationLayout,
     catalog: Path,
     output_directory: Path,
-) -> CatalogGeneration:
+) -> tuple[str, Path]:
     catalog_directory = output_directory / catalog.stem
-    compiled_directory = catalog_directory / "compiled"
     symbols_directory = catalog_directory / "symbols"
     symbols_directory.mkdir(parents=True)
-    run(
-        [
-            "xcrun",
-            "xcstringstool",
-            "compile",
-            catalog,
-            "--output-directory",
-            compiled_directory,
-            "--format",
-            "stringsAndStringsdict",
-        ],
-        cwd=PROJECT_DIR,
-    )
     run(
         [
             "xcrun",
@@ -199,99 +174,78 @@ def generate_catalog(
         raise ScriptError(f"unexpected generated symbol output for {catalog.name}")
     symbols_path = generated_symbols[0]
     symbols = use_app_resource_bundle(symbols_path.read_text(encoding="utf-8"))
-    symbols_path.write_text(LICENSE_HEADER + symbols, encoding="utf-8")
-    return CatalogGeneration(
-        name=catalog.stem,
-        symbols=symbols_path,
-        compiled={
-            language: compiled_directory / f"{language}.lproj/{catalog.stem}.strings"
-            for language in layout.localizations
-        },
+    fingerprint = catalog_fingerprint(catalog)
+    symbols_path.write_text(
+        LICENSE_HEADER + symbols + "\n" + FINGERPRINT_PREFIX + fingerprint + "\n",
+        encoding="utf-8",
     )
+    return catalog.stem, symbols_path
 
 
 def generate_localization(
     layout: LocalizationLayout, output_directory: Path
-) -> tuple[dict[str, Path], dict[tuple[str, str], Path]]:
+) -> dict[str, Path]:
     with ThreadPoolExecutor(max_workers=min(4, len(layout.catalogs))) as executor:
-        generations = tuple(
+        generated = dict(
             executor.map(
-                lambda catalog: generate_catalog(layout, catalog, output_directory),
+                lambda catalog: generate_catalog(catalog, output_directory),
                 layout.catalogs,
             )
         )
-    generated = {generation.name: generation.symbols for generation in generations}
-    run(
-        [
-            "swift",
-            "format",
-            "format",
-            "--configuration",
-            PROJECT_DIR / ".swift-format",
-            "--in-place",
-            *generated.values(),
-        ],
-        cwd=PROJECT_DIR,
-    )
-    compiled = {
-        (generation.name, language): path
-        for generation in generations
-        for language, path in generation.compiled.items()
-    }
-    return generated, compiled
+    return generated
 
 
-def synchronize_localization(
-    *,
-    write: bool,
-    configuration: ProjectConfiguration | None = None,
-) -> None:
+def prepare_localization(
+    *, force: bool = False, configuration: ProjectConfiguration | None = None
+) -> bool:
     configuration = configuration or load_project_configuration()
     layout = discover_layout(configuration)
     for catalog in layout.catalogs:
         validate_catalog(catalog, layout)
-    with tempfile.TemporaryDirectory() as directory:
-        generated, compiled = generate_localization(layout, Path(directory))
-        expected_symbols = {
-            layout.generated_directory / f"GeneratedStringSymbols_{catalog_name}.swift"
-            for catalog_name in generated
-        }
-        for catalog_name, source in generated.items():
-            destination = (
-                layout.generated_directory
-                / f"GeneratedStringSymbols_{catalog_name}.swift"
-            )
-            synchronize_file(source, destination, write=write)
-        remove_stale_files(
-            set(layout.generated_directory.glob("GeneratedStringSymbols_*.swift")),
-            expected_symbols,
-            write=write,
+
+    expected = {
+        layout.generated_directory / f"GeneratedStringSymbols_{catalog.stem}.swift": (
+            catalog,
+            catalog_fingerprint(catalog),
         )
-        for (catalog_name, language), source in compiled.items():
-            destination = (
-                layout.resource_directory / f"{language}.lproj/{catalog_name}.strings"
+        for catalog in layout.catalogs
+    }
+    stale = {
+        destination: catalog
+        for destination, (catalog, fingerprint) in expected.items()
+        if force or not symbols_are_current(destination, fingerprint)
+    }
+    obsolete = set(
+        layout.generated_directory.glob("GeneratedStringSymbols_*.swift")
+    ) - set(expected)
+    if not stale and not obsolete:
+        return False
+
+    if stale:
+        with tempfile.TemporaryDirectory() as directory:
+            stale_layout = LocalizationLayout(
+                resource_directory=layout.resource_directory,
+                generated_directory=layout.generated_directory,
+                source_language=layout.source_language,
+                localizations=layout.localizations,
+                catalogs=tuple(stale.values()),
             )
-            synchronize_file(source, destination, write=write)
-        for language in layout.localizations:
-            expected_strings = {
-                layout.resource_directory / f"{language}.lproj/{catalog_name}.strings"
-                for catalog_name in generated
-            }
-            remove_stale_files(
-                set(
-                    (layout.resource_directory / f"{language}.lproj").glob("*.strings")
-                ),
-                expected_strings,
-                write=write,
-            )
+            generated = generate_localization(stale_layout, Path(directory))
+            layout.generated_directory.mkdir(parents=True, exist_ok=True)
+            for destination, catalog in stale.items():
+                destination.write_bytes(generated[catalog.stem].read_bytes())
+    for path in obsolete:
+        path.unlink()
+    return True
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("check", "format"))
+    parser.add_argument("mode", choices=("prepare", "format"))
     arguments = parser.parse_args()
-    synchronize_localization(write=arguments.mode == "format")
-    success(f"localization {arguments.mode} complete")
+    changed = prepare_localization(force=arguments.mode == "format")
+    if changed:
+        success("Localization symbols generated")
 
 
 if __name__ == "__main__":

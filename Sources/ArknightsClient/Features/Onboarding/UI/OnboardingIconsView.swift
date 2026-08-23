@@ -27,7 +27,7 @@ struct OnboardingIconsView: View {
 						browseOperators()
 					}
 					CapsuleActionButton(
-						L10n.string(OnboardingStrings.useDefaults),
+						title: L10n.string(OnboardingStrings.useDefaults),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,

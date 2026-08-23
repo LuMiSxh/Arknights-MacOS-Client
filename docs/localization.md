@@ -6,23 +6,19 @@ The launcher UI is localized, but technical identifiers and third-party content 
 
 ## Source and generated files
 
-The Apple String Catalogs in `Sources/ArknightsClient/Resources` are the source of truth for copy. `CFBundleDevelopmentRegion` and `CFBundleLocalizations` in `Resources/Info.plist` define the source and shipping languages. `Package.swift` declares the matching processed `.lproj` directories. The localization check reads and cross-validates all three instead of maintaining a separate language list in Python.
+The Apple String Catalogs in `Sources/ArknightsClient/Resources` are the source of truth for copy. `CFBundleDevelopmentRegion` and `CFBundleLocalizations` in `Resources/Info.plist` define the source and shipping languages. `Package.swift` processes the catalogs as SwiftPM resources. The localization check reads and cross-validates all three instead of maintaining a separate language list in Python.
 
 Large features may own a dedicated catalog; closely related smaller surfaces may share `Localizable.xcstrings`. Use stable symbolic keys namespaced by the owning feature, such as `onboarding.action.continue` or `settings.installation.repair`. English copy and translator comments belong in the catalogs; every shipping translation must be reviewed by a fluent speaker.
 
-The repository checks in three kinds of generated files because command-line SwiftPM does not compile String Catalogs itself:
+SwiftPM compiles the catalogs into the shipping `.strings` resources. Apple's command-line SwiftPM integration does not generate the type-safe Swift declarations, so the supported `just` build, test, preview, and packaging commands generate `Shared/Localization/GeneratedStringSymbols_*.swift` on demand. These ignored files carry a catalog fingerprint and are regenerated only when missing or stale.
 
-- `Shared/Localization/GeneratedStringSymbols_*.swift` provides Foundation's type-safe catalog symbols.
-- `Resources/en.lproj/*.strings` provides the source language and deterministic fallback.
-- `Resources/de.lproj/*.strings` provides the reviewed German translation.
-
-Do not edit generated files directly. Regenerate them after catalog changes:
+Do not edit generated symbols directly. A normal command prepares them automatically; force a local regeneration after changing the generation pipeline with:
 
 ```sh
 just format localization
 ```
 
-`just check` regenerates the files in a temporary directory and fails when committed output is stale. This keeps the workflow independent of an Xcode project.
+The generated symbols are not repository state. A pristine checkout is ready through the documented `just` commands without adding thousands of derived lines to reviews.
 
 ## Adding or changing copy
 

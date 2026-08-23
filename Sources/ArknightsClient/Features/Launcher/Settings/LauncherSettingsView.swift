@@ -46,14 +46,7 @@ struct LauncherSettingsView: View {
 				.transition(.opacity)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
 
-				LinearGradient(
-					colors: [.clear, Color.black.opacity(0.45)],
-					startPoint: .top,
-					endPoint: .bottom
-				)
-				.frame(height: 60)
-				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-				.allowsHitTesting(false)
+				FloatingActionFooterFade(height: 60)
 
 				FloatingActionBar(tint: model.hudTintColor) {
 					FloatingDoneButton(accentColor: model.accentColor) {

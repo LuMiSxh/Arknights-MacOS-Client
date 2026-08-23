@@ -68,14 +68,7 @@ struct OnboardingView: View {
 				.scrollIndicators(.automatic)
 				.id(coordinator.step)
 
-				LinearGradient(
-					colors: [.clear, Color.black.opacity(0.45)],
-					startPoint: .top,
-					endPoint: .bottom
-				)
-				.frame(height: 76)
-				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-				.allowsHitTesting(false)
+				FloatingActionFooterFade(height: 76)
 
 				FloatingActionBar(tint: model.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {

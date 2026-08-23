@@ -82,7 +82,7 @@ struct AboutSettingsPage: View {
 					detail: L10n.string(SettingsStrings.launcherIssuesDetail)
 				) {
 					CapsuleActionButton(
-						L10n.string(SettingsStrings.report), systemImage: "ladybug",
+						title: L10n.string(SettingsStrings.report), systemImage: "ladybug",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: reportLauncherProblem
 					)
@@ -95,7 +95,7 @@ struct AboutSettingsPage: View {
 					detail: L10n.string(SettingsStrings.gameAccountIssuesDetail)
 				) {
 					CapsuleActionButton(
-						L10n.string(SettingsStrings.contactYostar),
+						title: L10n.string(SettingsStrings.contactYostar),
 						systemImage: "arrow.up.right.square",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: contactYostar
