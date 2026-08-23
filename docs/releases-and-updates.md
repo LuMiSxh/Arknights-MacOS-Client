@@ -20,13 +20,13 @@ Repository owners can inspect published DMG download counts with `just stats`. G
 
 ```mermaid
 flowchart LR
-	Check["Validate branch, version,<br/>CHANGELOG, and Info.plist"] --> Test[just check]
-	Test --> Runtime["Download and verify<br/>the pinned runtime"]
+	Check["Validate branch, version,<br/>CHANGELOG, and Info.plist"] --> Test[just ci]
+	Test --> Notes["Extract the CHANGELOG<br/>section as release notes"]
+	Notes --> Runtime["Download and verify<br/>the pinned runtime"]
 	Runtime --> Recipe["Download and verify<br/>the build recipe"]
 	Recipe --> Build[Build arm64 app and DMG]
 	Build --> Sums[Write SHA256SUMS]
-	Sums --> Notes["Extract the CHANGELOG<br/>section as release notes"]
-	Notes --> Draft["Create a draft<br/>vX.Y.Z release"]
+	Sums --> Draft["Create a draft<br/>vX.Y.Z release"]
 ```
 
 [`runtime.json`](../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/runtime_config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.

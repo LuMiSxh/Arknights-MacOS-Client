@@ -52,13 +52,13 @@ The project is community-maintained, currently in beta, and is not affiliated wi
 
 ## Requirements
 
-|                | Minimum to run                       | Recommended for smoother play                        |
-| -------------- | ------------------------------------ | ---------------------------------------------------- |
-| Mac chip       | Apple M1 with 7- or 8-core GPU       | M1 Pro or Max, 10-core GPU M2, or any newer chip     |
-| Unified memory | 8 GB                                 | 16 GB or more                                        |
-| macOS          | 15 Sequoia                           | macOS 15 or newer, fully updated                     |
-| Free storage   | 50 GB during installation            | 60 GB or more for updates, repairs, and caches       |
-| Translation    | Rosetta 2                            | Rosetta 2                                            |
+|                | Minimum to run                 | Recommended for smoother play                    |
+| -------------- | ------------------------------ | ------------------------------------------------ |
+| Mac chip       | Apple M1 with 7- or 8-core GPU | M1 Pro or Max, 10-core GPU M2, or any newer chip |
+| Unified memory | 8 GB                           | 16 GB or more                                    |
+| macOS          | 15 Sequoia                     | macOS 15 or newer, fully updated                 |
+| Free storage   | 50 GB during installation      | 60 GB or more for updates, repairs, and caches   |
+| Translation    | Rosetta 2                      | Rosetta 2                                        |
 
 macOS 26 receives the Liquid Glass interface. macOS 15–25 use native Material and bordered-control fallbacks.
 
@@ -112,15 +112,19 @@ cd Arknights-MacOS-Client
 just check
 ```
 
-| Command            | Purpose                                              |
-| ------------------ | ---------------------------------------------------- |
-| `just check`       | Run source checks and tests                          |
-| `just preview`     | Open the isolated UI-state simulator                 |
-| `just runtime`     | Download and verify the tested Wine and DXMT runtime |
-| `just dev app run` | Build the app with its runtime and open it           |
-| `just ci`          | Run all checks and build the release configuration   |
+| Command               | Purpose                                                     |
+| --------------------- | ----------------------------------------------------------- |
+| `just check`          | Run source checks and network-denied Python and Swift tests |
+| `just integration`    | Run the network-denied onboarding-to-download workflow      |
+| `just live-contracts` | Deliberately check the current public Yostar API contracts  |
+| `just preview`        | Open the isolated UI-state simulator                        |
+| `just runtime`        | Download and verify the tested Wine and DXMT runtime        |
+| `just dev app run`    | Build the app with its runtime and open it                  |
+| `just ci`             | Run deterministic tests and build the release configuration |
 
 Run `just --groups` for the complete command list. Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json). Repository automation lives in `scripts/` as uv-managed Python entry points.
+
+A fresh checkout may resolve pinned uv and SwiftPM development dependencies before tests start. Unit and integration test execution itself is isolated from the public network.
 
 ## Documentation
 
@@ -134,6 +138,7 @@ Run `just --groups` for the complete command list. Tested runtime versions, down
 ### Contributors and maintainers
 
 - [Architecture](docs/architecture.md)
+- [Testing architecture](docs/testing.md)
 - [Design](docs/design.md)
 - [Localization](docs/localization.md)
 - [Releases and updates](docs/releases-and-updates.md)

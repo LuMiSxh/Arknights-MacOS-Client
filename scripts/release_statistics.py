@@ -30,7 +30,7 @@ def parse_timestamp(value: object) -> datetime:
     if not isinstance(value, str):
         fail("GitHub returned a release without a publication date")
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return datetime.fromisoformat(value)
     except ValueError:
         fail(f"GitHub returned an invalid publication date: {value}")
 

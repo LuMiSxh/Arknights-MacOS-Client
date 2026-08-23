@@ -3,137 +3,123 @@
 from __future__ import annotations
 
 import json
-import sys
-import tempfile
-import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parents[1]))
-
 import localization
+import pytest
 from lib.common import ScriptError
 
 
-class LocalizationSynchronizationTests(unittest.TestCase):
-    def layout(
-        self,
-        root: Path,
-        *,
-        localizations: tuple[str, ...] = ("en", "de"),
-        catalogs: tuple[Path, ...] = (),
-    ) -> localization.LocalizationLayout:
-        return localization.LocalizationLayout(
-            resource_directory=root,
-            generated_directory=root / "Generated",
-            source_language="en",
-            localizations=localizations,
-            catalogs=catalogs,
-        )
+def layout(
+    root: Path,
+    *,
+    localizations: tuple[str, ...] = ("en", "de"),
+    catalogs: tuple[Path, ...] = (),
+) -> localization.LocalizationLayout:
+    return localization.LocalizationLayout(
+        resource_directory=root,
+        generated_directory=root / "Generated",
+        source_language="en",
+        localizations=localizations,
+        catalogs=catalogs,
+    )
 
-    def test_generated_symbols_use_the_packaged_app_resource_bundle(self) -> None:
-        generated = (
-            "#if SWIFT_PACKAGE\n"
-            "private nonisolated let resourceBundle = Foundation.Bundle.module\n"
-            "#endif\n"
-        )
 
-        result = localization.use_app_resource_bundle(generated)
+def test_generated_symbols_use_the_packaged_app_resource_bundle() -> None:
+    generated = (
+        "#if SWIFT_PACKAGE\n"
+        "private nonisolated let resourceBundle = Foundation.Bundle.module\n"
+        "#endif\n"
+    )
 
-        self.assertIn("AppResourceBundle.bundle", result)
-        self.assertNotIn("Foundation.Bundle.module", result)
+    result = localization.use_app_resource_bundle(generated)
 
-    def test_rejects_catalog_keys_without_shipping_translations(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            catalog = Path(directory) / "Localizable.xcstrings"
-            catalog.write_text(
-                json.dumps(
-                    {
-                        "sourceLanguage": "en",
-                        "strings": {
-                            "home.settings": {
-                                "comment": "Settings button",
-                                "localizations": {
-                                    "en": {
-                                        "stringUnit": {
-                                            "state": "translated",
-                                            "value": "Settings",
-                                        }
-                                    }
-                                },
+    assert "AppResourceBundle.bundle" in result
+    assert "Foundation.Bundle.module" not in result
+
+
+def test_rejects_catalog_keys_without_shipping_translations(tmp_path: Path) -> None:
+    catalog = tmp_path / "Localizable.xcstrings"
+    catalog.write_text(
+        json.dumps(
+            {
+                "sourceLanguage": "en",
+                "strings": {
+                    "home.settings": {
+                        "comment": "Settings button",
+                        "localizations": {
+                            "en": {
+                                "stringUnit": {
+                                    "state": "translated",
+                                    "value": "Settings",
+                                }
                             }
                         },
                     }
-                ),
-                encoding="utf-8",
-            )
-
-            with self.assertRaisesRegex(ScriptError, "missing language: de"):
-                localization.validate_catalog(catalog, self.layout(catalog.parent))
-
-    def test_shipping_languages_come_from_the_layout(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            catalog = Path(directory) / "Localizable.xcstrings"
-            localizations = {
-                language: {"stringUnit": {"state": "translated", "value": language}}
-                for language in ("en", "de", "fr")
+                },
             }
-            catalog.write_text(
-                json.dumps(
-                    {
-                        "sourceLanguage": "en",
-                        "strings": {
-                            "home.settings": {
-                                "comment": "Settings button",
-                                "localizations": localizations,
-                            }
-                        },
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ScriptError, match="missing language: de"):
+        localization.validate_catalog(catalog, layout(catalog.parent))
+
+
+def test_shipping_languages_come_from_the_layout(tmp_path: Path) -> None:
+    catalog = tmp_path / "Localizable.xcstrings"
+    localizations = {
+        language: {"stringUnit": {"state": "translated", "value": language}}
+        for language in ("en", "de", "fr")
+    }
+    catalog.write_text(
+        json.dumps(
+            {
+                "sourceLanguage": "en",
+                "strings": {
+                    "home.settings": {
+                        "comment": "Settings button",
+                        "localizations": localizations,
                     }
-                ),
-                encoding="utf-8",
-            )
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
 
-            localization.validate_catalog(
-                catalog,
-                self.layout(catalog.parent, localizations=("en", "de", "fr")),
-            )
-
-    def test_writes_missing_generated_file(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            source = root / "generated"
-            destination = root / "nested/output"
-            source.write_text("localized", encoding="utf-8")
-
-            localization.synchronize_file(source, destination, write=True)
-
-            self.assertEqual(destination.read_text(encoding="utf-8"), "localized")
-
-    def test_rejects_stale_generated_file_in_check_mode(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            source = root / "generated"
-            destination = root / "output"
-            source.write_text("new", encoding="utf-8")
-            destination.write_text("old", encoding="utf-8")
-
-            with self.assertRaisesRegex(
-                ScriptError, "generated localization file is stale"
-            ):
-                localization.synchronize_file(source, destination, write=False)
-
-    def test_removes_obsolete_generated_files_in_format_mode(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            current = root / "current"
-            obsolete = root / "obsolete"
-            current.touch()
-            obsolete.touch()
-
-            localization.remove_stale_files({current, obsolete}, {current}, write=True)
-
-            self.assertTrue(current.exists())
-            self.assertFalse(obsolete.exists())
+    localization.validate_catalog(
+        catalog,
+        layout(catalog.parent, localizations=("en", "de", "fr")),
+    )
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_writes_missing_generated_file(tmp_path: Path) -> None:
+    source = tmp_path / "generated"
+    destination = tmp_path / "nested/output"
+    source.write_text("localized", encoding="utf-8")
+
+    localization.synchronize_file(source, destination, write=True)
+
+    assert destination.read_text(encoding="utf-8") == "localized"
+
+
+def test_rejects_stale_generated_file_in_check_mode(tmp_path: Path) -> None:
+    source = tmp_path / "generated"
+    destination = tmp_path / "output"
+    source.write_text("new", encoding="utf-8")
+    destination.write_text("old", encoding="utf-8")
+
+    with pytest.raises(ScriptError, match="generated localization file is stale"):
+        localization.synchronize_file(source, destination, write=False)
+
+
+def test_removes_obsolete_generated_files_in_format_mode(tmp_path: Path) -> None:
+    current = tmp_path / "current"
+    obsolete = tmp_path / "obsolete"
+    current.touch()
+    obsolete.touch()
+
+    localization.remove_stale_files({current, obsolete}, {current}, write=True)
+
+    assert current.exists()
+    assert not obsolete.exists()

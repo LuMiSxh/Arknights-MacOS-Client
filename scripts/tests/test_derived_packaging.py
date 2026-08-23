@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-import sys
-import tempfile
-import unittest
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parents[1]))
 
 import build_dmg
 import generate_icon
@@ -46,56 +41,38 @@ def configuration(root: Path) -> ProjectConfiguration:
     return ProjectConfiguration(root, product, package)
 
 
-class DerivedPackagingTests(unittest.TestCase):
-    def test_dmg_arguments_follow_product_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            config = configuration(Path(directory))
-            arguments = build_dmg.dmgbuild_arguments(
-                Path("dist/Renamed Client.app"),
-                Path("dist/Renamed Client.dmg"),
-                config,
-            )
+def test_dmg_arguments_follow_product_metadata(tmp_path: Path) -> None:
+    config = configuration(tmp_path)
+    arguments = build_dmg.dmgbuild_arguments(
+        Path("dist/Renamed Client.app"),
+        Path("dist/Renamed Client.dmg"),
+        config,
+    )
 
-            self.assertIn("app_name=Renamed Client.app", arguments)
-            self.assertIn("Renamed Client", arguments)
-
-    def test_icon_arguments_follow_product_and_package_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            config = configuration(Path(directory))
-            arguments = generate_icon.compile_arguments(
-                Path("RenamedIcon.icon"), Path("output"), config
-            )
-
-            self.assertEqual(
-                arguments[arguments.index("--app-icon") + 1], "RenamedIcon"
-            )
-            self.assertEqual(
-                arguments[arguments.index("--development-region") + 1], "fr"
-            )
-            self.assertEqual(
-                arguments[arguments.index("--minimum-deployment-target") + 1],
-                "16.0",
-            )
-
-    def test_command_fields_are_derived_from_configuration(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            config = configuration(Path(directory))
-
-            self.assertEqual(
-                project_config_command.read_field(config, "app-bundle-name"),
-                "Renamed Client.app",
-            )
-            self.assertEqual(
-                project_config_command.read_field(config, "dmg-name"),
-                "Renamed Client.dmg",
-            )
-            self.assertEqual(
-                project_config_command.read_field(
-                    config, "swift-architecture-arguments"
-                ),
-                "--arch arm64",
-            )
+    assert "app_name=Renamed Client.app" in arguments
+    assert "Renamed Client" in arguments
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_icon_arguments_follow_product_and_package_metadata(tmp_path: Path) -> None:
+    config = configuration(tmp_path)
+    arguments = generate_icon.compile_arguments(
+        Path("RenamedIcon.icon"), Path("output"), config
+    )
+
+    assert arguments[arguments.index("--app-icon") + 1] == "RenamedIcon"
+    assert arguments[arguments.index("--development-region") + 1] == "fr"
+    assert arguments[arguments.index("--minimum-deployment-target") + 1] == "16.0"
+
+
+def test_command_fields_are_derived_from_configuration(tmp_path: Path) -> None:
+    config = configuration(tmp_path)
+
+    assert (
+        project_config_command.read_field(config, "app-bundle-name")
+        == "Renamed Client.app"
+    )
+    assert project_config_command.read_field(config, "dmg-name") == "Renamed Client.dmg"
+    assert (
+        project_config_command.read_field(config, "swift-architecture-arguments")
+        == "--arch arm64"
+    )

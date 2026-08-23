@@ -1,52 +1,47 @@
 # SPDX-License-Identifier: MPL-2.0
 
-import tempfile
-import unittest
 from pathlib import Path
 
+import pytest
 from release_validation import validate_release
 
 
-class ReleaseValidationTests(unittest.TestCase):
-    def setUp(self) -> None:
-        self.temporary_directory = tempfile.TemporaryDirectory()
-        self.root = Path(self.temporary_directory.name)
-        self.changelog = self.root / "CHANGELOG.md"
-
-    def tearDown(self) -> None:
-        self.temporary_directory.cleanup()
-
-    def write_metadata(self, *, changelog_version: str) -> None:
-        self.changelog.write_text(
-            f"# Changelog\n\n## [{changelog_version}]\n\n- Release notes.\n",
-            encoding="utf-8",
-        )
-
-    def test_accepts_matching_release_metadata(self) -> None:
-        self.write_metadata(changelog_version="0.2.0")
-
-        notes = validate_release("0.2.0", self.changelog, "0.2.0")
-
-        self.assertEqual(notes, "- Release notes.")
-
-    def test_rejects_mismatched_info_plist_version(self) -> None:
-        self.write_metadata(changelog_version="0.2.0")
-
-        with self.assertRaisesRegex(RuntimeError, "CFBundleShortVersionString"):
-            validate_release("0.2.0", self.changelog, "0.1.0")
-
-    def test_rejects_missing_changelog_section(self) -> None:
-        self.write_metadata(changelog_version="0.1.0")
-
-        with self.assertRaisesRegex(RuntimeError, "does not contain"):
-            validate_release("0.2.0", self.changelog, "0.2.0")
-
-    def test_rejects_non_semantic_version(self) -> None:
-        self.write_metadata(changelog_version="0.2.0")
-
-        with self.assertRaisesRegex(RuntimeError, "X.Y.Z"):
-            validate_release("v0.2.0", self.changelog, "0.2.0")
+@pytest.fixture
+def changelog(tmp_path: Path) -> Path:
+    return tmp_path / "CHANGELOG.md"
 
 
-if __name__ == "__main__":
-    unittest.main()
+def write_metadata(changelog: Path, *, changelog_version: str) -> None:
+    changelog.write_text(
+        f"# Changelog\n\n## [{changelog_version}]\n\n- Release notes.\n",
+        encoding="utf-8",
+    )
+
+
+def test_accepts_matching_release_metadata(changelog: Path) -> None:
+    write_metadata(changelog, changelog_version="0.2.0")
+
+    notes = validate_release("0.2.0", changelog, "0.2.0")
+
+    assert notes == "- Release notes."
+
+
+def test_rejects_mismatched_info_plist_version(changelog: Path) -> None:
+    write_metadata(changelog, changelog_version="0.2.0")
+
+    with pytest.raises(RuntimeError, match="CFBundleShortVersionString"):
+        validate_release("0.2.0", changelog, "0.1.0")
+
+
+def test_rejects_missing_changelog_section(changelog: Path) -> None:
+    write_metadata(changelog, changelog_version="0.1.0")
+
+    with pytest.raises(RuntimeError, match="does not contain"):
+        validate_release("0.2.0", changelog, "0.2.0")
+
+
+def test_rejects_non_semantic_version(changelog: Path) -> None:
+    write_metadata(changelog, changelog_version="0.2.0")
+
+    with pytest.raises(RuntimeError, match="X.Y.Z"):
+        validate_release("v0.2.0", changelog, "0.2.0")

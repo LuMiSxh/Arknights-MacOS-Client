@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from collections.abc import Callable
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from lib.common import PROJECT_DIR, info, run, run_main, success
 from lib.project_config import load_project_configuration
 from localization import synchronize_localization
 from runtime_config import validate_config
+from swift_tests import run_level as run_swift_test_level
 
 RUFF = ("uv", "tool", "run", "--from", "ruff==0.16.3", "ruff")
 
@@ -47,7 +49,6 @@ def handwritten_swift_sources() -> list[Path]:
 
 
 def check_swift() -> None:
-    configuration = load_project_configuration()
     info("Linting Swift sources")
     run(
         [
@@ -61,13 +62,7 @@ def check_swift() -> None:
         ],
         cwd=PROJECT_DIR,
     )
-    info("Running the Swift test suite")
-    architecture_arguments = [
-        argument
-        for architecture in configuration.product.architecture_priority
-        for argument in ("--arch", architecture)
-    ]
-    run(["swift", "test", *architecture_arguments], cwd=PROJECT_DIR)
+    run_swift_test_level("unit")
 
 
 def format_swift() -> None:
@@ -93,20 +88,12 @@ def check_scripts() -> None:
     load_project_configuration()
     validate_config(PROJECT_DIR / "runtime.json")
     info("Running the Python script test suite")
+    environment = os.environ.copy()
+    environment.pop("VIRTUAL_ENV", None)
     run(
-        [
-            "uv",
-            "run",
-            "--python",
-            "3.13",
-            "python",
-            "-m",
-            "unittest",
-            "discover",
-            "--start-directory",
-            "scripts/tests",
-        ],
+        ["uv", "run", "--locked", "pytest", "-q"],
         cwd=PROJECT_DIR,
+        environment=environment,
     )
 
 

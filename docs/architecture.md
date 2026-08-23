@@ -7,7 +7,7 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 | Folder           | Responsibility                                                                                  |
 | ---------------- | ----------------------------------------------------------------------------------------------- |
 | `Application`    | App entry point, dependency composition, and macOS lifecycle                                    |
-| `Core`           | Small application-wide declarations such as fixed limits and keys                              |
+| `Core`           | Small application-wide declarations such as fixed limits and keys                               |
 | `Features`       | Feature-owned UI, state, domain models, services, and external work                             |
 | `Infrastructure` | Feature-independent network and system I/O primitives                                           |
 | `Shared`         | Persisted paths and preferences, diagnostics, support utilities, and cross-feature UI contracts |
@@ -26,6 +26,8 @@ Feature-specific components remain with their feature. `Shared/UI/Components` co
 User-facing launcher copy lives in Apple String Catalogs with stable, feature-namespaced keys. Generated Foundation symbols make catalog references type-safe, while small feature-local `…Strings` namespaces keep ownership with the UI that uses the copy. English is the source language and deterministic fallback; the launcher follows macOS language preferences without persisting a separate language setting. The catalog workflow is documented in [Localization](localization.md).
 
 Repository scripts derive shipping product metadata from `Resources/Info.plist`, target and resource layout from SwiftPM's evaluated `Package.swift`, and runtime layout from `runtime.json`. `scripts/lib/project_config.py` cross-validates the first two before builds and checks. Scripts must not maintain separate app-name, executable, platform, architecture, language, or package-resource lists.
+
+Tests follow separate unit, deterministic integration, and live-contract boundaries. Their target ownership, network and filesystem isolation, fixtures, CI cadence, and manual Wine/game matrix are documented in [Testing architecture](testing.md).
 
 `LauncherViewModel` is the main UI orchestrator around one hierarchical `LauncherState`. Its orthogonal sub-states own mutually exclusive game activity, metadata refreshes, launch readiness, and presentation. A background refresh or non-fatal settings error therefore cannot overwrite an active game session. Views derive permissions and labels from this tree; `LauncherPhase` is only a compact compatibility projection for views that do not need the complete state.
 

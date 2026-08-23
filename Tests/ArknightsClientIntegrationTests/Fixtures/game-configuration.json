@@ -1,0 +1,13 @@
+{
+  "code": 200,
+  "data": {
+    "game_lowest_version": "1.0.0",
+    "game_latest_version": "1.2.3",
+    "game_latest_file_path": "fixture-manifest.json",
+    "game_start_exe_name": "Arknights",
+    "game_start_params": ["--fixture"],
+    "game_uninstall_script": "uninstall.exe",
+    "decompression_size": "1 MB"
+  },
+  "msg": "ok"
+}

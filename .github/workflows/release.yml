@@ -70,7 +70,7 @@ jobs:
           fi
 
       - name: Test source
-        run: just check
+        run: just ci
 
       - name: Prepare release notes
         run: uv run scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"

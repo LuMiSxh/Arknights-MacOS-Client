@@ -40,5 +40,16 @@ let package = Package(
 			dependencies: ["ArknightsClient"],
 			path: "Tests/ArknightsClientTests"
 		),
+		.testTarget(
+			name: "ArknightsClientIntegrationTests",
+			dependencies: ["ArknightsClient"],
+			path: "Tests/ArknightsClientIntegrationTests",
+			resources: [.copy("Fixtures")]
+		),
+		.testTarget(
+			name: "ArknightsClientLiveContractTests",
+			dependencies: ["ArknightsClient"],
+			path: "Tests/ArknightsClientLiveContractTests"
+		),
 	]
 )

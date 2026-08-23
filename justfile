@@ -31,9 +31,19 @@ format target='all':
 build:
     swift build --configuration release $(uv run scripts/project_config.py swift-architecture-arguments)
 
-# Run validation and build the release binary.
+# Run deterministic onboarding, API, installer, and persistence workflows without public network access.
 [group('Checks')]
-ci: check build
+integration:
+    uv run scripts/swift_tests.py integration
+
+# Run read-only contracts against the live Yostar services; never part of normal source checks.
+[group('Checks')]
+live-contracts:
+    uv run scripts/swift_tests.py live
+
+# Run deterministic validation, integration tests, and build the release binary.
+[group('Checks')]
+ci: check integration build
 
 # Download the runtime pinned in runtime.json to .build/runtime.
 [group('Runtime')]

@@ -40,6 +40,7 @@ func makeModel(
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	preferences.setAutomaticGameUpdates(false)
 	preferences.setAutomaticLauncherUpdates(false)
+	preferences.setAnnouncementsEnabled(false)
 	return LauncherViewModel(
 		api: api,
 		installer: installer,

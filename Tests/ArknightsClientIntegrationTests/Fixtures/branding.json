@@ -1,0 +1,13 @@
+{
+  "code": 200,
+  "data": {
+    "launcher_background_img": "",
+    "launcher_background_img_crc64": "",
+    "copyright_information": "Fixture",
+    "privacy_policy": "",
+    "user_agreement": "",
+    "notice_pop_open": false,
+    "notice_content": ""
+  },
+  "msg": "ok"
+}

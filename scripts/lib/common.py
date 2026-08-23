@@ -15,7 +15,7 @@ import subprocess
 import sys
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
-from typing import NoReturn, TypeVar
+from typing import NoReturn
 
 from lib.console import error, info, styled, success, warning
 
@@ -44,8 +44,6 @@ BUILD_DIR = PROJECT_DIR / ".build"
 DIST_DIR = PROJECT_DIR / "dist"
 
 VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
-
-_T = TypeVar("_T")
 
 
 class ScriptError(RuntimeError):
@@ -111,7 +109,7 @@ def remove_path(path: Path) -> None:
         shutil.rmtree(path)
 
 
-def run_main(main: Callable[[], _T]) -> None:
+def run_main[T](main: Callable[[], T]) -> None:
     try:
         main()
     except ScriptError as script_error:

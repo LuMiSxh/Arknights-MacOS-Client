@@ -1,0 +1,8 @@
+{
+  "code": 200,
+  "data": {
+    "primary_cdn": "https://local-cdn.invalid/",
+    "back_up_cdn": "https://local-cdn.invalid/"
+  },
+  "msg": "ok"
+}

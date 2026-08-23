@@ -6,13 +6,15 @@
 - Support only Yostar's official Global, Japan, and Korea PC clients. Do not add CN behavior; its Hypergryph infrastructure and Tencent ACE anti-cheat are incompatible.
 - Keep source code, documentation, commits, tests, localization keys, and translator comments in English. Maintain reviewed English and German UI copy through the String Catalogs.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
-- Do not commit game/runtime binaries, downloaded artwork, generated app assets, or files from `dist/`.
+- Do not commit game/runtime binaries, downloaded artwork, or files from `dist/`. Commit the tracked shipping icon assets only when regenerated with `just icon`.
 
 ## Commands
 
 | Task                     | Command                    |
 | ------------------------ | -------------------------- |
 | Source checks            | `just check`               |
+| Integration tests        | `just integration`         |
+| Live service contracts   | `just live-contracts`      |
 | Format sources           | `just format`              |
 | Regenerate localizations | `just format localization` |
 | Full CI                  | `just ci`                  |
@@ -48,6 +50,7 @@
 ## Verification and Safety
 
 - Run focused checks while iterating and `just ci` before completion.
+- Keep unit and integration tests fixture-backed and offline; follow `docs/testing.md` for level ownership and live-contract gates.
 - For UI refactors, compare the affected isolated developer scenarios; do not launch previews or apps unless the user authorizes it.
 - Unless explicitly requested, do not install, launch, download, uninstall, or alter the user's local game or runtime.
 - Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` only with `just icon`.
@@ -65,6 +68,7 @@
 | ----------------------- | ----------------------------------- |
 | Setup and contribution  | `README.md`                         |
 | Architecture            | `docs/architecture.md`              |
+| Testing                 | `docs/testing.md`                   |
 | Interface               | `docs/design.md`                    |
 | Localization            | `docs/localization.md`              |
 | Storage                 | `docs/storage.md`                   |

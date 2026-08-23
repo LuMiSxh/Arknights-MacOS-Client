@@ -1,0 +1,31 @@
+name: Live contracts
+
+on:
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-contracts
+  cancel-in-progress: true
+
+jobs:
+  yostar:
+    name: Yostar launcher API
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+
+      - name: Check live contracts
+        run: just live-contracts

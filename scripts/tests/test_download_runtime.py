@@ -2,71 +2,64 @@
 
 from __future__ import annotations
 
-import sys
-import tempfile
-import unittest
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parents[1]))
+from pathlib import Path, PurePosixPath
 
 import download_runtime
+import pytest
 from lib.common import PROJECT_DIR
-from runtime_config import load_runtime_config
+from runtime_config import RuntimeLayout, load_runtime_config
 
 
-class DownloadRuntimeTests(unittest.TestCase):
-    def setUp(self) -> None:
-        self.layout = load_runtime_config(PROJECT_DIR / "runtime.json").layout
-
-    def create_runtime(self, runtime: Path) -> None:
-        for relative in self.layout.required_paths:
-            path = runtime / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.touch()
-        for relative in self.layout.executables:
-            (runtime / relative).chmod(0o755)
-        launcher = runtime / self.layout.launcher.path
-        launcher.parent.mkdir(parents=True, exist_ok=True)
-        launcher.symlink_to(self.layout.launcher.target)
-
-    def test_accepts_complete_runtime_layout(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            runtime = Path(directory)
-            self.create_runtime(runtime)
-
-            self.assertTrue(download_runtime.runtime_is_valid(runtime, self.layout))
-
-    def test_rejects_wrong_launcher_link(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            runtime = Path(directory)
-            self.create_runtime(runtime)
-            launcher = runtime / self.layout.launcher.path
-            launcher.unlink()
-            launcher.symlink_to("wrong")
-
-            self.assertFalse(download_runtime.runtime_is_valid(runtime, self.layout))
-
-    def test_rejects_executable_directory(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            runtime = Path(directory)
-            self.create_runtime(runtime)
-            executable = runtime / self.layout.executables[0]
-            executable.unlink()
-            executable.mkdir()
-
-            self.assertFalse(download_runtime.runtime_is_valid(runtime, self.layout))
-
-    def test_rejects_every_missing_declared_runtime_path(self) -> None:
-        for missing in self.layout.required_paths:
-            with self.subTest(path=missing), tempfile.TemporaryDirectory() as directory:
-                runtime = Path(directory)
-                self.create_runtime(runtime)
-                (runtime / missing).unlink()
-
-                self.assertFalse(
-                    download_runtime.runtime_is_valid(runtime, self.layout)
-                )
+@pytest.fixture(scope="module")
+def layout() -> RuntimeLayout:
+    return load_runtime_config(PROJECT_DIR / "runtime.json").layout
 
 
-if __name__ == "__main__":
-    unittest.main()
+def create_runtime(runtime: Path, layout: RuntimeLayout) -> None:
+    for relative in layout.required_paths:
+        path = runtime / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    for relative in layout.executables:
+        (runtime / relative).chmod(0o755)
+    launcher = runtime / layout.launcher.path
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.symlink_to(layout.launcher.target)
+
+
+def test_accepts_complete_runtime_layout(tmp_path: Path, layout: RuntimeLayout) -> None:
+    create_runtime(tmp_path, layout)
+
+    assert download_runtime.runtime_is_valid(tmp_path, layout)
+
+
+def test_rejects_wrong_launcher_link(tmp_path: Path, layout: RuntimeLayout) -> None:
+    create_runtime(tmp_path, layout)
+    launcher = tmp_path / layout.launcher.path
+    launcher.unlink()
+    launcher.symlink_to("wrong")
+
+    assert not download_runtime.runtime_is_valid(tmp_path, layout)
+
+
+def test_rejects_executable_directory(tmp_path: Path, layout: RuntimeLayout) -> None:
+    create_runtime(tmp_path, layout)
+    executable = tmp_path / layout.executables[0]
+    executable.unlink()
+    executable.mkdir()
+
+    assert not download_runtime.runtime_is_valid(tmp_path, layout)
+
+
+@pytest.mark.parametrize(
+    "missing",
+    load_runtime_config(PROJECT_DIR / "runtime.json").layout.required_paths,
+    ids=str,
+)
+def test_rejects_every_missing_declared_runtime_path(
+    tmp_path: Path, layout: RuntimeLayout, missing: PurePosixPath
+) -> None:
+    create_runtime(tmp_path, layout)
+    (tmp_path / missing).unlink()
+
+    assert not download_runtime.runtime_is_valid(tmp_path, layout)

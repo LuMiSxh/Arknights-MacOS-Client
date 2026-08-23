@@ -13,6 +13,7 @@ import argparse
 import json
 import re
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -36,6 +37,13 @@ class LocalizationLayout:
     source_language: str
     localizations: tuple[str, ...]
     catalogs: tuple[Path, ...]
+
+
+@dataclass(frozen=True)
+class CatalogGeneration:
+    name: str
+    symbols: Path
+    compiled: dict[str, Path]
 
 
 def discover_layout(configuration: ProjectConfiguration) -> LocalizationLayout:
@@ -154,65 +162,85 @@ def use_app_resource_bundle(generated_symbols: str) -> str:
     )
 
 
+def generate_catalog(
+    layout: LocalizationLayout,
+    catalog: Path,
+    output_directory: Path,
+) -> CatalogGeneration:
+    catalog_directory = output_directory / catalog.stem
+    compiled_directory = catalog_directory / "compiled"
+    symbols_directory = catalog_directory / "symbols"
+    symbols_directory.mkdir(parents=True)
+    run(
+        [
+            "xcrun",
+            "xcstringstool",
+            "compile",
+            catalog,
+            "--output-directory",
+            compiled_directory,
+            "--format",
+            "stringsAndStringsdict",
+        ],
+        cwd=PROJECT_DIR,
+    )
+    run(
+        [
+            "xcrun",
+            "xcstringstool",
+            "generate-symbols",
+            catalog,
+            "--output-directory",
+            symbols_directory,
+            "--language",
+            "swift",
+        ],
+        cwd=PROJECT_DIR,
+    )
+    generated_symbols = tuple(symbols_directory.glob("*.swift"))
+    if len(generated_symbols) != 1:
+        raise ScriptError(f"unexpected generated symbol output for {catalog.name}")
+    symbols_path = generated_symbols[0]
+    symbols = use_app_resource_bundle(symbols_path.read_text(encoding="utf-8"))
+    symbols_path.write_text(LICENSE_HEADER + symbols, encoding="utf-8")
+    return CatalogGeneration(
+        name=catalog.stem,
+        symbols=symbols_path,
+        compiled={
+            language: compiled_directory / f"{language}.lproj/{catalog.stem}.strings"
+            for language in layout.localizations
+        },
+    )
+
+
 def generate_localization(
     layout: LocalizationLayout, output_directory: Path
 ) -> tuple[dict[str, Path], dict[tuple[str, str], Path]]:
-    compiled_directory = output_directory / "compiled"
-    symbols_directory = output_directory / "symbols"
-    symbols_directory.mkdir(parents=True)
-    generated: dict[str, Path] = {}
-    compiled: dict[tuple[str, str], Path] = {}
-    for catalog in layout.catalogs:
-        run(
-            [
-                "xcrun",
-                "xcstringstool",
-                "compile",
-                catalog,
-                "--output-directory",
-                compiled_directory,
-                "--format",
-                "stringsAndStringsdict",
-            ],
-            cwd=PROJECT_DIR,
-        )
-        before = set(symbols_directory.glob("*.swift"))
-        run(
-            [
-                "xcrun",
-                "xcstringstool",
-                "generate-symbols",
-                catalog,
-                "--output-directory",
-                symbols_directory,
-                "--language",
-                "swift",
-            ],
-            cwd=PROJECT_DIR,
-        )
-        new_symbols = set(symbols_directory.glob("*.swift")) - before
-        if len(new_symbols) != 1:
-            raise ScriptError(f"unexpected generated symbol output for {catalog.name}")
-        generated_symbols = new_symbols.pop()
-        symbols = use_app_resource_bundle(generated_symbols.read_text(encoding="utf-8"))
-        generated_symbols.write_text(LICENSE_HEADER + symbols, encoding="utf-8")
-        run(
-            [
-                "swift",
-                "format",
-                "format",
-                "--configuration",
-                PROJECT_DIR / ".swift-format",
-                "--in-place",
-                generated_symbols,
-            ],
-            cwd=PROJECT_DIR,
-        )
-        generated[catalog.stem] = generated_symbols
-        for language in layout.localizations:
-            compiled[(catalog.stem, language)] = (
-                compiled_directory / f"{language}.lproj/{catalog.stem}.strings"
+    with ThreadPoolExecutor(max_workers=min(4, len(layout.catalogs))) as executor:
+        generations = tuple(
+            executor.map(
+                lambda catalog: generate_catalog(layout, catalog, output_directory),
+                layout.catalogs,
             )
+        )
+    generated = {generation.name: generation.symbols for generation in generations}
+    run(
+        [
+            "swift",
+            "format",
+            "format",
+            "--configuration",
+            PROJECT_DIR / ".swift-format",
+            "--in-place",
+            *generated.values(),
+        ],
+        cwd=PROJECT_DIR,
+    )
+    compiled = {
+        (generation.name, language): path
+        for generation in generations
+        for language, path in generation.compiled.items()
+    }
     return generated, compiled
 
 

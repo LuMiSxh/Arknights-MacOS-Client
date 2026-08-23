@@ -73,7 +73,7 @@ def validate_timestamp(value: str, *, flag: str) -> tuple[str, datetime] | None:
     if not value.endswith("Z"):
         fail(f"{flag} must be an ISO-8601 UTC timestamp ending in Z")
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value)
     except ValueError:
         fail(f"{flag} must be a valid ISO-8601 UTC timestamp")
     return value, parsed
