@@ -41,6 +41,11 @@ integration:
 live-contracts:
     uv run scripts/swift_tests.py live
 
+# Inspect pinned runtime provenance and discover review candidates without changing runtime.json.
+[group('Checks')]
+runtime-monitor verify_archive='false':
+    report="$(mktemp)"; verify_flag=""; if [[ {{ quote(verify_archive) }} == "true" ]]; then verify_flag="--verify-archive"; fi; github_token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"; if [[ -z "$github_token" ]] && command -v gh >/dev/null; then github_token="$(gh auth token 2>/dev/null || true)"; fi; set +e; GITHUB_TOKEN="$github_token" uv run scripts/runtime_monitor.py probe runtime.json --output "$report" $verify_flag; monitor_status=$?; set -e; uv run scripts/runtime_monitor.py summarize "$report"; exit "$monitor_status"
+
 # Run deterministic validation, integration tests, and build the release binary.
 [group('Checks')]
 ci: check integration build

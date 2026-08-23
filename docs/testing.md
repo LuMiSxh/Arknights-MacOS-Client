@@ -46,9 +46,19 @@ Each run checks branding, game configuration, CDN configuration, manifest locati
 
 The probe writes a schema-versioned report containing only contract names, health states, ordinary version or file-count observations, and sanitized failure categories. Reports are retained as Actions artifacts for 30 days and rendered into the workflow summary. Authorization values and response bodies are never persisted.
 
-Scheduled alert reconciliation is isolated in a second job with `issues: write`; the probe itself has read-only repository access. A contract must fail in two consecutive scheduled reports before the workflow creates or reopens its single `automated-monitor` issue. An unchanged failure updates the issue timestamp without comment spam, a changed failure adds a comment, and two consecutive healthy reports add a recovery comment and close only the issue carrying that contract's private monitor marker. Manual runs never mutate issues.
+Scheduled alert reconciliation is isolated in a second job with `issues: write`; the probe itself has read-only repository access. A contract must fail in two consecutive scheduled reports before the workflow creates or reopens its single `automated` issue. An unchanged failure updates the issue timestamp without comment spam, a changed failure adds a comment, and two consecutive healthy reports add a recovery comment and close only the issue carrying that contract's private monitor marker. Manual runs never mutate issues.
 
 Failures indicate that an external schema or endpoint may have changed. They do not automatically rewrite fixtures or production code. Review the sanitized report and upstream change, then update production decoding and recorded fixtures together.
+
+## Runtime monitoring
+
+Runtime monitoring reads `runtime.json` as the pinned source of truth and never changes it. The dedicated workflow performs a metadata and provenance check every Wednesday at 05:37 UTC. A second schedule on the first day of each month downloads and independently hashes the pinned runtime archive; manual dispatch can request the same full verification. `just runtime-monitor` runs the metadata check locally, while `just runtime-monitor true` also verifies the approximately 460 MB archive.
+
+The monitor ignores dappermint application-preview releases and selects the newest numeric Whisky release that actually contains `Libraries.tar.gz`. It requires an exact matching winecx-gptk recipe release, equal GitHub asset and checksum-file digests, a matching recipe tag and build commit, an explicit mirror-to-recipe link, and available pinned recipe and component commits. The small pinned build-recipe archive is downloaded and checked every run. Candidate comparisons summarize changed recipe pins, commits, and files without downloading the candidate runtime.
+
+Scheduled runs maintain at most one open runtime-candidate issue and one source-availability issue, both carrying the `automated` label and private ownership markers. A newer candidate updates and reopens the existing candidate issue; the workflow never closes it without a maintainer decision. Availability incidents update their existing issue and close only after two healthy scheduled reports. Manual runs never mutate issues.
+
+The normal probe job has read-only repository access. Issue writes are isolated in the reconciliation job, and the monitor persists only bounded, validated release metadata and sanitized summaries. It never publishes a release, edits the runtime pin, or treats a higher version number as approved.
 
 ## Manual compatibility matrix
 

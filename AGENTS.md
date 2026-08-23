@@ -15,6 +15,7 @@
 | Source checks            | `just check`               |
 | Integration tests        | `just integration`         |
 | Live service contracts   | `just live-contracts`      |
+| Runtime source monitor   | `just runtime-monitor`     |
 | Format sources           | `just format`              |
 | Regenerate localizations | `just format localization` |
 | Full CI                  | `just ci`                  |

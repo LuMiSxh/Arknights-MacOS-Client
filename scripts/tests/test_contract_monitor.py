@@ -9,7 +9,6 @@ import contract_monitor as contract_monitor_cli
 import pytest
 from lib.common import ScriptError
 from lib.contract_monitor import (
-    MONITOR_LABEL,
     MONITOR_MARKER_PREFIX,
     ContractAlertReconciler,
     ContractCheck,
@@ -259,10 +258,6 @@ class FakeIssueStore:
 
     def add_comment(self, number: int, body: str) -> None:
         self.comments.append((number, body))
-
-
-def test_monitor_label_constant_is_stable() -> None:
-    assert MONITOR_LABEL == "automated-monitor"
 
 
 def test_cli_bounds_remote_responses() -> None:

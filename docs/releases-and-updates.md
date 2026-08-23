@@ -35,6 +35,8 @@ The archive checksum is also part of the effective runtime revision. Changing th
 
 Release automation does not use repository variables for these values. A runtime update is a reviewed `runtime.json` change, so local and GitHub builds cannot silently select different binaries.
 
+The runtime monitor reports newer mirrored dappermint builds for review and checks that pinned artifacts, source commits, recipe metadata, and checksums remain available. It never edits `runtime.json` or opens an update pull request. Candidate issues remain open or closed according to a maintainer decision; availability incidents recover automatically only after two healthy scheduled checks.
+
 ## Local packaging
 
 The root [`runtime.json`](../runtime.json) file pins the prebuilt, tested runtime archive and its checksum. To download it and build the app, run:

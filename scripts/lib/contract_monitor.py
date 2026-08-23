@@ -12,7 +12,7 @@ from typing import Protocol
 from urllib.parse import urlparse
 
 REPORT_SCHEMA_VERSION = 1
-MONITOR_LABEL = "automated-monitor"
+MONITOR_LABEL = "automated"
 MONITOR_MARKER_PREFIX = "arknights-contract-monitor:"
 CONSECUTIVE_FAILURES_TO_ALERT = 2
 CONSECUTIVE_SUCCESSES_TO_RECOVER = 2
