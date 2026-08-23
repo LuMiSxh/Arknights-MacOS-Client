@@ -4,9 +4,16 @@ import Foundation
 import YouTubePlayerKit
 
 extension BackgroundMusicController {
+	func shuffleInitialPlaylistIfNeeded(on targetPlayer: YouTubePlayer) {
+		guard case .playlist = currentSource, !didShuffleCurrentPlaylist else { return }
+		didShuffleCurrentPlaylist = true
+		shuffleInitialPlaylist(on: targetPlayer)
+	}
+
 	func shuffleInitialPlaylist(on targetPlayer: YouTubePlayer) {
 		shuffleTask?.cancel()
 		let operation = beginOperation(.trackChange, on: targetPlayer)
+		expectPlayback(.playing, on: targetPlayer)
 		shuffleTask = Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -47,8 +54,7 @@ extension BackgroundMusicController {
 		guard let player else { return }
 		isManuallyPaused = true
 		let operation = beginOperation(.playbackChange(.paused), on: player)
-		playbackExpectation = .init(token: operation, intent: .paused)
-		nowPlaying.updatePlayback(isPlaying: false)
+		let expectation = expectPlayback(.paused, on: player)
 		cancelFade()
 		controlTask = Task { [weak self] in
 			guard let self else { return }
@@ -59,7 +65,7 @@ extension BackgroundMusicController {
 				await context.log.info("Background music paused by user")
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				clearPlaybackExpectation(for: operation)
+				clearPlaybackExpectation(expectation)
 				await context.log.error(
 					"Background music failed to pause: \(error.localizedDescription)"
 				)
@@ -136,6 +142,7 @@ extension BackgroundMusicController {
 			?? (playlist.indices.contains(currentIndex) ? playlist[currentIndex] : nil)
 		let targetVideoID = playlist[targetIndex]
 		playbackState = nil
+		expectPlayback(expectsPlayback ? .playing : .paused, on: targetPlayer)
 		try await targetPlayer.playVideoInPlaylist(at: targetIndex)
 		guard isCurrent(operation) else { return false }
 		return await waitForTrackStart(
@@ -239,15 +246,19 @@ extension BackgroundMusicController {
 	}
 
 	func reconcilePlaybackIntent(with state: YouTubePlayer.PlaybackState) {
-		guard let playbackExpectation, isCurrent(playbackExpectation.token) else { return }
+		guard let playbackExpectation, isCurrent(playbackExpectation) else { return }
 		let reachedIntent =
 			switch playbackExpectation.intent {
 			case .playing: state == .playing || state == .buffering
 			case .paused: state == .paused
 			}
 		guard reachedIntent else { return }
-		clearPlaybackExpectation(for: playbackExpectation.token)
-		finishOperation(playbackExpectation.token)
+		if case .playbackChange(let operation, let intent) = operation,
+			intent == playbackExpectation.intent
+		{
+			finishOperation(operation)
+		}
+		clearPlaybackExpectation(playbackExpectation)
 	}
 
 	@discardableResult

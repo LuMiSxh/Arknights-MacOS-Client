@@ -6,6 +6,7 @@ import YouTubePlayerKit
 extension BackgroundMusicController {
 	func performFadeOut() {
 		guard let player else { return }
+		expectPlayback(.paused, on: player)
 		volumeTask?.cancel()
 		volumeTask = nil
 		let operation = beginFade(on: player)
@@ -51,6 +52,7 @@ extension BackgroundMusicController {
 		volumeTask?.cancel()
 		volumeTask = nil
 		guard let target = targetPlayer ?? player else { return }
+		let expectation = expectPlayback(.playing, on: target)
 		let operation = beginFade(on: target)
 		fadeTask = Task { [weak self] in
 			guard let self else { return }
@@ -69,12 +71,13 @@ extension BackgroundMusicController {
 					finishOperation(userPlaybackOperation)
 				}
 				await context.log.info("Background music resuming with fade-in")
+				shuffleInitialPlaylistIfNeeded(on: target)
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				if let userPlaybackOperation {
-					clearPlaybackExpectation(for: userPlaybackOperation)
 					finishOperation(userPlaybackOperation)
 				}
+				clearPlaybackExpectation(expectation)
 				await context.log.error(
 					"Background music failed to resume: \(error.localizedDescription)"
 				)

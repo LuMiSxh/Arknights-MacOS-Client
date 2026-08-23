@@ -43,8 +43,8 @@ struct BackgroundMusicControllerTests {
 		controller.playbackState = .playing
 		let player = YouTubePlayer(source: .video(id: "test"))
 		controller.player = player
-		let operation = controller.beginOperation(.playbackChange(.paused), on: player)
-		controller.playbackExpectation = .init(token: operation, intent: .paused)
+		_ = controller.beginOperation(.playbackChange(.paused), on: player)
+		controller.expectPlayback(.paused, on: player)
 		#expect(!controller.isPlaying)
 		#expect(controller.controlsAreDisabled)
 
@@ -53,6 +53,77 @@ struct BackgroundMusicControllerTests {
 		#expect(controller.playbackIntent == nil)
 		#expect(!controller.isChangingPlayback)
 		#expect(!controller.isPlaying)
+	}
+
+	@Test
+	func playbackIntentSurvivesCommandCompletionUntilPlayerConfirmsIt() {
+		let (controller, _, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+
+		controller.playbackState = .playing
+		let player = YouTubePlayer(source: .video(id: "test"))
+		controller.player = player
+		let operation = controller.beginOperation(.playbackChange(.paused), on: player)
+		controller.expectPlayback(.paused, on: player)
+
+		controller.finishOperation(operation)
+		controller.reconcilePlaybackIntent(with: .playing)
+
+		#expect(controller.playbackIntent == .paused)
+		#expect(!controller.isPlaying)
+		#expect(!controller.controlsAreDisabled)
+
+		controller.reconcilePlaybackIntent(with: .paused)
+		#expect(controller.playbackIntent == nil)
+	}
+
+	@Test
+	func automaticPlaybackIntentCoversStartupWithoutAControlOperation() {
+		let (controller, _, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+
+		let player = YouTubePlayer(source: .video(id: "test"))
+		controller.player = player
+		controller.expectPlayback(.playing, on: player)
+
+		#expect(controller.operation.token == nil)
+		#expect(controller.isPlaying)
+
+		controller.playbackState = .paused
+		controller.reconcilePlaybackIntent(with: .paused)
+		#expect(controller.playbackIntent == .playing)
+		#expect(controller.isPlaying)
+
+		controller.playbackState = .playing
+		controller.reconcilePlaybackIntent(with: .playing)
+		#expect(controller.playbackIntent == nil)
+		#expect(controller.isPlaying)
+	}
+
+	@Test
+	func newerPlayIntentIgnoresALatePausedStateFromThePreviousRequest() {
+		let (controller, _, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+
+		let player = YouTubePlayer(source: .video(id: "test"))
+		controller.player = player
+		let pauseOperation = controller.beginOperation(.playbackChange(.paused), on: player)
+		controller.expectPlayback(.paused, on: player)
+		controller.finishOperation(pauseOperation)
+
+		let playOperation = controller.beginOperation(.playbackChange(.playing), on: player)
+		controller.expectPlayback(.playing, on: player)
+		controller.finishOperation(playOperation)
+		controller.playbackState = .paused
+		controller.reconcilePlaybackIntent(with: .paused)
+
+		#expect(controller.playbackIntent == .playing)
+		#expect(controller.isPlaying)
+
+		controller.playbackState = .buffering
+		controller.reconcilePlaybackIntent(with: .buffering)
+		#expect(controller.playbackIntent == nil)
+		#expect(controller.isPlaying)
 	}
 
 	@Test

@@ -73,7 +73,7 @@ final class BackgroundMusicController {
 	var isChangingPlayback: Bool { operation.isChangingPlayback }
 
 	var playbackIntent: PlaybackIntent? {
-		guard let playbackExpectation, isCurrent(playbackExpectation.token) else { return nil }
+		guard let playbackExpectation, isCurrent(playbackExpectation) else { return nil }
 		return playbackExpectation.intent
 	}
 
@@ -155,8 +155,6 @@ final class BackgroundMusicController {
 			isManuallyPaused = false
 			guard let player else { return }
 			let operation = beginOperation(.playbackChange(.playing), on: player)
-			playbackExpectation = .init(token: operation, intent: .playing)
-			nowPlaying.updatePlayback(isPlaying: true)
 			performFadeIn(on: player, userPlaybackOperation: operation)
 		}
 	}
@@ -263,12 +261,8 @@ final class BackgroundMusicController {
 					}
 				}
 
-				if state == .playing,
-					case .playlist = source,
-					!didShuffleCurrentPlaylist
-				{
-					didShuffleCurrentPlaylist = true
-					shuffleInitialPlaylist(on: targetPlayer)
+				if state == .playing, case .playlist = source {
+					shuffleInitialPlaylistIfNeeded(on: targetPlayer)
 				}
 			}
 			.store(in: &cancellables)
