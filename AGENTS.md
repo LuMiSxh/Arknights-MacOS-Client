@@ -4,24 +4,25 @@
 
 - Build only for Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs through `AdaptiveGlass.swift` fallbacks.
 - Support only Yostar's official Global, Japan, and Korea PC clients. Do not add CN behavior; its Hypergryph infrastructure and Tencent ACE anti-cheat are incompatible.
-- Keep source code, UI copy, documentation, commits, and tests in English.
+- Keep source code, documentation, commits, tests, localization keys, and translator comments in English. Maintain reviewed English and German UI copy through the String Catalogs.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
 - Do not commit game/runtime binaries, downloaded artwork, generated app assets, or files from `dist/`.
 
 ## Commands
 
-| Task | Command |
-| --- | --- |
-| Source checks | `just check` |
-| Format sources | `just format` |
-| Full CI | `just ci` |
-| UI preview | `just preview` |
-| App bundle | `just app` |
-| Dev runtime | `just runtime` |
-| App + runtime | `just dev` |
-| App + runtime, run | `just dev app run` |
-| DMG + runtime | `just dev dmg` |
-| App icon | `just icon` |
+| Task                     | Command                    |
+| ------------------------ | -------------------------- |
+| Source checks            | `just check`               |
+| Format sources           | `just format`              |
+| Regenerate localizations | `just format localization` |
+| Full CI                  | `just ci`                  |
+| UI preview               | `just preview`             |
+| App bundle               | `just app`                 |
+| Dev runtime              | `just runtime`             |
+| App + runtime            | `just dev`                 |
+| App + runtime, run       | `just dev app run`         |
+| DMG + runtime            | `just dev dmg`             |
+| App icon                 | `just icon`                |
 
 ## Architecture and Swift
 
@@ -37,6 +38,7 @@
 - Keep every region's installation/state independent while sharing one Wine prefix whose `G:` drive is repointed on launch.
 - Define persisted locations only through `AppPaths`; preserve existing paths, keys, and serialized formats unless migration is explicitly required.
 - Follow `docs/design.md`; use the existing shared action/control families instead of per-call styling.
+- Follow `docs/localization.md`; do not edit generated localization symbols or `.strings` files directly.
 - Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add concise DocC for public APIs and complex domain models.
 - Centralize fixed keys, limits, retries, and timeouts in `AppConstants.swift`; avoid silent `try?` for filesystem, process, and network work.
 - Test behavior according to regression impact. Preserve installer safety, persistence, parsing, migration, runtime isolation, and concurrency coverage; do not require tests for file moves, view composition, trivial accessors, or wrappers.
@@ -58,13 +60,14 @@
 
 ## References
 
-| Need | File |
-| --- | --- |
-| Setup and contribution | `README.md` |
-| Architecture | `docs/architecture.md` |
-| Interface | `docs/design.md` |
-| Storage | `docs/storage.md` |
-| Runtime contract | `docs/runtime-compatibility.md` |
-| Troubleshooting | `docs/troubleshooting.md` |
-| Releases | `docs/releases-and-updates.md` |
+| Need                    | File                                |
+| ----------------------- | ----------------------------------- |
+| Setup and contribution  | `README.md`                         |
+| Architecture            | `docs/architecture.md`              |
+| Interface               | `docs/design.md`                    |
+| Localization            | `docs/localization.md`              |
+| Storage                 | `docs/storage.md`                   |
+| Runtime contract        | `docs/runtime-compatibility.md`     |
+| Troubleshooting         | `docs/troubleshooting.md`           |
+| Releases                | `docs/releases-and-updates.md`      |
 | Third-party obligations | `docs/legal/third-party-notices.md` |

@@ -87,9 +87,12 @@ struct DangerZonePanel<Content: View>: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
-			Label("Danger Zone", systemImage: "exclamationmark.triangle.fill")
-				.font(.headline)
-				.foregroundStyle(LauncherVisuals.danger)
+			Label(
+				L10n.string(SettingsStrings.dangerZone),
+				systemImage: "exclamationmark.triangle.fill"
+			)
+			.font(.headline)
+			.foregroundStyle(LauncherVisuals.danger)
 			content
 		}
 		.padding(18)
@@ -126,7 +129,8 @@ struct UpdateSettingsRow: View {
 				.toggleStyle(.switch)
 				.tint(accentColor)
 			CapsuleActionButton(
-				title: "Check Now", tone: .accent(accentColor), presentation: .compact,
+				title: L10n.string(SettingsStrings.checkNow), tone: .accent(accentColor),
+				presentation: .compact,
 				action: check
 			)
 			.disabled(isChecking)

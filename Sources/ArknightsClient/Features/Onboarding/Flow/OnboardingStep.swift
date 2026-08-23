@@ -13,18 +13,6 @@ enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Sendable {
 
 	var id: Int { rawValue }
 
-	var title: String {
-		switch self {
-		case .welcome: "Preflight"
-		case .installation: "Region & Install"
-		case .game: "Game Display"
-		case .personalization: "Launcher"
-		case .icons: "Icons"
-		case .extras: "Updates & Audio"
-		case .finish: "Ready"
-		}
-	}
-
 	var systemImage: String {
 		switch self {
 		case .welcome: "checkmark.shield"

@@ -99,7 +99,7 @@ private struct SettingsNavigationRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETTINGS")
+			Text(SettingsStrings.navigationLabel)
 				.font(.caption2.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
@@ -202,13 +202,13 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var title: String {
 		switch self {
-		case .general: "General"
-		case .audio: "Audio"
-		case .updates: "Updates"
-		case .installation: "Installation"
-		case .about: "About"
+		case .general: L10n.string(SettingsStrings.navigationGeneral)
+		case .audio: L10n.string(SettingsStrings.navigationAudio)
+		case .updates: L10n.string(SettingsStrings.navigationUpdates)
+		case .installation: L10n.string(SettingsStrings.navigationInstallation)
+		case .about: L10n.string(SettingsStrings.navigationAbout)
 		#if DEBUG
-			case .developer: "Developer"
+			case .developer: L10n.string(SettingsStrings.navigationDeveloper)
 		#endif
 		}
 	}

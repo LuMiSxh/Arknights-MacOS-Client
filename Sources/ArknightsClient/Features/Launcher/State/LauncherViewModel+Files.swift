@@ -10,8 +10,8 @@ extension LauncherViewModel {
 		#endif
 		guard state.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = "Choose where to install Arknights"
-		panel.prompt = "Choose"
+		panel.title = L10n.string(LauncherStrings.pickerInstallDirectory)
+		panel.prompt = L10n.string(LauncherStrings.pickerChoose)
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.canCreateDirectories = true
@@ -32,8 +32,8 @@ extension LauncherViewModel {
 		#endif
 		guard state.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = "Choose the folder containing Arknights.exe"
-		panel.prompt = "Use Folder"
+		panel.title = L10n.string(LauncherStrings.pickerLocateInstallation)
+		panel.prompt = L10n.string(LauncherStrings.pickerUseFolder)
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.allowsMultipleSelection = false
@@ -42,7 +42,8 @@ extension LauncherViewModel {
 			installDirectory = selected
 			preferences.setInstallDirectory(selected, for: region)
 			updateInstalledState()
-			setStatus(isInstalled ? .ready : .custom("Arknights.exe not found"))
+			setStatus(
+				isInstalled ? .ready : .custom(L10n.string(.Launcher.launcherStatusGameNotFound)))
 		}
 	}
 
@@ -62,7 +63,7 @@ extension LauncherViewModel {
 		showsPlayingMusic = false
 		launcherMusicVolume = 0.5
 		usesDynamicTheme = true
-		setStatus(.custom("Settings reset to default"))
+		setStatus(.custom(L10n.string(.Launcher.launcherStatusSettingsReset)))
 		Task { [log] in await log.info("Launcher settings reset to default") }
 	}
 
@@ -99,7 +100,7 @@ extension LauncherViewModel {
 				}.value
 				state.activity = .idle
 				cacheSizeText = updatedCacheSizeText
-				setStatus(.custom("Cache cleared"))
+				setStatus(.custom(L10n.string(.Launcher.launcherStatusCacheCleared)))
 				await log.info("Shader and browser caches cleared")
 			} catch {
 				state.activity = .idle
@@ -131,7 +132,7 @@ extension LauncherViewModel {
 			do {
 				try await presetCatalog.clearCaches()
 				let cacheSizeText = await presetCatalog.cacheSizeText()
-				setStatus(.custom("Asset gallery caches cleared"))
+				setStatus(.custom(L10n.string(.Launcher.launcherStatusGalleryCacheCleared)))
 				presetGalleryCacheSizeText = cacheSizeText
 				await log.info("Preset gallery caches cleared")
 			} catch {
@@ -263,9 +264,9 @@ extension LauncherViewModel {
 		enqueuePopup(
 			LauncherPopup(
 				id: "yostar-notice-\(formattedNotice.id.uuidString)",
-				title: "Notice",
+				title: L10n.string(LauncherStrings.popupNotice),
 				content: .attributed(formattedNotice.content),
-				dismissTitle: "Done",
+				dismissTitle: L10n.string(LauncherStrings.popupDone),
 				actionTitle: nil,
 				actionURL: nil
 			)

@@ -8,16 +8,18 @@ struct AudioSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: "Audio", subtitle: "Background music playback",
+			title: L10n.string(SettingsStrings.audioTitle),
+			subtitle: L10n.string(SettingsStrings.audioSubtitle),
 			accentColor: model.accentColor
 		) {
-			SettingsPanel(title: "Music", systemImage: "music.note") {
+			SettingsPanel(title: L10n.string(SettingsStrings.audioMusic), systemImage: "music.note")
+			{
 				SettingsActionRow(
-					title: "Play Background Music",
-					detail: "Plays music while the launcher is open and the game is not running."
+					title: L10n.string(SettingsStrings.audioBackgroundMusic),
+					detail: L10n.string(SettingsStrings.audioBackgroundMusicDetail)
 				) {
 					Toggle(
-						"Play Background Music",
+						L10n.string(SettingsStrings.audioBackgroundMusic),
 						isOn: $model.playsLauncherMusic
 					)
 					.labelsHidden()
@@ -28,12 +30,12 @@ struct AudioSettingsPage: View {
 				if model.playsLauncherMusic {
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Music URL",
-						detail: "YouTube video or playlist link."
+						title: L10n.string(SettingsStrings.audioURL),
+						detail: L10n.string(SettingsStrings.audioURLDetail)
 					) {
 						ThemedTextField(
-							"Music URL",
-							prompt: "https://www.youtube.com/playlist?...",
+							L10n.string(SettingsStrings.audioURL),
+							prompt: L10n.string(SettingsStrings.audioURLPrompt),
 							text: $model.launcherMusicURL,
 							systemImage: "link",
 							accentColor: model.accentColor
@@ -42,8 +44,8 @@ struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Volume",
-						detail: "Sets the launcher music playback level."
+						title: L10n.string(SettingsStrings.audioVolume),
+						detail: L10n.string(SettingsStrings.audioVolumeDetail)
 					) {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")
@@ -55,20 +57,23 @@ struct AudioSettingsPage: View {
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
-							Text("\(Int(model.launcherMusicVolume * 100))%")
-								.font(.caption.monospacedDigit())
-								.foregroundStyle(.secondary)
-								.frame(width: 36, alignment: .trailing)
+							Text(
+								SettingsStrings.audioVolumePercent(
+									Int(model.launcherMusicVolume * 100)
+								)
+							)
+							.font(.caption.monospacedDigit())
+							.foregroundStyle(.secondary)
+							.frame(width: 36, alignment: .trailing)
 						}
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Show Currently Playing",
-						detail:
-							"Shows the current track and expandable playback controls above the launcher controls."
+						title: L10n.string(SettingsStrings.audioCurrentlyPlaying),
+						detail: L10n.string(SettingsStrings.audioCurrentlyPlayingDetail)
 					) {
 						Toggle(
-							"Show Currently Playing",
+							L10n.string(SettingsStrings.audioCurrentlyPlaying),
 							isOn: $model.showsPlayingMusic
 						)
 						.labelsHidden()

@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ArknightsWordmark: View {
 	let logo: NSImage?
+	let regionName: String
 	let cyan: Color
 
 	var body: some View {
@@ -29,7 +30,9 @@ struct ArknightsWordmark: View {
 		}
 		.padding(.trailing, 24)
 		.accessibilityElement(children: .ignore)
-		.accessibilityLabel("Arknights Global macOS client")
+		.accessibilityLabel(
+			L10n.string(HomeStrings.wordmarkAccessibility(region: regionName))
+		)
 	}
 }
 
@@ -69,14 +72,11 @@ struct LauncherPopupView: View {
 					title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
 				)
 			} else {
-				if popup.dismissTitle == "Done" {
-					FloatingDoneButton(accentColor: accentColor, action: dismiss)
-				} else {
-					CapsuleActionButton(
-						title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
-					)
-					.keyboardShortcut(.defaultAction)
-				}
+				FloatingDoneButton(
+					title: popup.dismissTitle,
+					accentColor: accentColor,
+					action: dismiss
+				)
 			}
 		}
 	}

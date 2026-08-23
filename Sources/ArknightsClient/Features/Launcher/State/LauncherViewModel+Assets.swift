@@ -8,8 +8,8 @@ import UniformTypeIdentifiers
 extension LauncherViewModel {
 	func chooseCustomArtwork() {
 		let panel = NSOpenPanel()
-		panel.title = "Choose launcher artwork"
-		panel.prompt = "Choose"
+		panel.title = L10n.string(LauncherStrings.pickerLauncherArtwork)
+		panel.prompt = L10n.string(LauncherStrings.pickerChoose)
 		panel.allowedContentTypes = [.image]
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true

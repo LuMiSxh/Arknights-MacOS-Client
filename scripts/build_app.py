@@ -38,6 +38,7 @@ from runtime_config import validate_config
 
 APP_NAME = "Arknights Client"
 EXECUTABLE_NAME = "ArknightsClient"
+SWIFT_RESOURCE_BUNDLE_NAME = "ArknightsClient_ArknightsClient.bundle"
 APP_BUNDLE = DIST_DIR / f"{APP_NAME}.app"
 LEGAL_FILES = {
     "docs/legal/third-party-notices.md": "THIRD_PARTY_NOTICES.md",
@@ -72,6 +73,8 @@ SIGNED_COMPATIBILITY_HELPERS = (
 APP_RESOURCES = (
     ("Resources/AppIcon.icns", "AppIcon.icns"),
     ("Resources/Assets.car", "Assets.car"),
+    ("Resources/en.lproj/InfoPlist.strings", "en.lproj/InfoPlist.strings"),
+    ("Resources/de.lproj/InfoPlist.strings", "de.lproj/InfoPlist.strings"),
     (
         "Sources/ArknightsClient/Resources/GameIconBackground.png",
         "GameIconBackground.png",
@@ -87,6 +90,15 @@ def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source, destination)
     destination.chmod(mode)
+
+
+def copy_swift_localizations(binary_dir: Path, resources: Path) -> None:
+    source = require_directory(binary_dir / SWIFT_RESOURCE_BUNDLE_NAME)
+    localizations = sorted(source.glob("*.lproj/*.strings"))
+    if not localizations:
+        fail("Swift resource bundle does not contain localizations")
+    for localization in localizations:
+        copy_file(localization, resources / localization.relative_to(source))
 
 
 def copy_runtime(source: Path, destination: Path) -> None:
@@ -228,6 +240,7 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
         macos.mkdir(parents=True)
         resources.mkdir(parents=True)
         copy_file(binary, macos / EXECUTABLE_NAME, 0o755)
+        copy_swift_localizations(binary_dir, resources)
         copy_file(
             PROJECT_DIR / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )

@@ -40,7 +40,7 @@ extension LauncherViewModel {
 						id: "announcement-\(announcement.id)",
 						title: announcement.title,
 						content: .markdown(announcement.body),
-						dismissTitle: "Done",
+						dismissTitle: L10n.string(LauncherStrings.popupDone),
 						actionTitle: announcement.actionTitle,
 						actionURL: announcement.actionURL
 					)
@@ -58,14 +58,15 @@ extension LauncherViewModel {
 		guard preferences.presentedLauncherUpdate() != release.version else { return }
 		let notes = release.body?.trimmingCharacters(in: .whitespacesAndNewlines)
 		let content =
-			notes.flatMap { $0.isEmpty ? nil : $0 } ?? "A new launcher version is available."
+			notes.flatMap { $0.isEmpty ? nil : $0 }
+			?? L10n.string(LauncherStrings.popupReleaseFallback)
 		enqueuePopup(
 			LauncherPopup(
 				id: "launcher-update-\(release.version)",
-				title: "Arknights Client \(release.version)",
+				title: L10n.string(LauncherStrings.popupUpdateTitle(release.version)),
 				content: .markdown(content),
-				dismissTitle: "Later",
-				actionTitle: "View Release",
+				dismissTitle: L10n.string(LauncherStrings.popupLater),
+				actionTitle: L10n.string(LauncherStrings.popupViewRelease),
 				actionURL: release.htmlURL
 			)
 		)

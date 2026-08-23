@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
 	name: "ArknightsClient",
+	defaultLocalization: "en",
 	platforms: [
 		.macOS(.v15)
 	],
@@ -21,9 +22,17 @@ let package = Package(
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit")
 			],
 			path: "Sources/ArknightsClient",
+			exclude: [
+				"Resources/Customization.xcstrings",
+				"Resources/Launcher.xcstrings",
+				"Resources/Localizable.xcstrings",
+				"Resources/Settings.xcstrings"
+			],
 			resources: [
 				.copy("Resources/GameIconBackground.png"),
 				.copy("Resources/OperatorIconFrame.svg"),
+				.process("Resources/en.lproj"),
+				.process("Resources/de.lproj"),
 			]
 		),
 		.testTarget(

@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>audio.controls.hide</key>
+	<string>Hide music controls</string>
+	<key>audio.controls.next</key>
+	<string>Next Track</string>
+	<key>audio.controls.openYouTube</key>
+	<string>Open on YouTube</string>
+	<key>audio.controls.pause</key>
+	<string>Pause</string>
+	<key>audio.controls.play</key>
+	<string>Play</string>
+	<key>audio.controls.previous</key>
+	<string>Previous Track</string>
+	<key>audio.controls.show</key>
+	<string>Show music controls</string>
+	<key>audio.status.changingTrack</key>
+	<string>Changing track…</string>
+	<key>audio.status.paused</key>
+	<string>Paused</string>
+	<key>audio.status.pausedForGame</key>
+	<string>Paused while the game is running</string>
+	<key>audio.status.playing</key>
+	<string>Playing</string>
+	<key>audio.volume.label</key>
+	<string>Music volume</string>
+	<key>audio.volume.mute</key>
+	<string>Mute music</string>
+	<key>audio.volume.muted</key>
+	<string>Muted</string>
+	<key>audio.volume.percent</key>
+	<string>%lld percent</string>
+	<key>audio.volume.unmute</key>
+	<string>Unmute music</string>
+	<key>home.action.install</key>
+	<string>Install</string>
+	<key>home.action.install.help</key>
+	<string>Download and verify the official %1$@ PC files</string>
+	<key>home.action.pause</key>
+	<string>Pause</string>
+	<key>home.action.pause.help</key>
+	<string>Pause the download; it resumes from partial files later</string>
+	<key>home.action.play</key>
+	<string>Play</string>
+	<key>home.action.play.help</key>
+	<string>Start Arknights</string>
+	<key>home.action.resume</key>
+	<string>Resume</string>
+	<key>home.action.resume.help</key>
+	<string>Continue downloading from the partial files</string>
+	<key>home.action.stop</key>
+	<string>Stop</string>
+	<key>home.action.stop.help</key>
+	<string>Stop Arknights and its Windows runtime</string>
+	<key>home.action.update</key>
+	<string>Update</string>
+	<key>home.action.update.help</key>
+	<string>Download the changed game files</string>
+	<key>home.checkAgain</key>
+	<string>Check Again</string>
+	<key>home.download.percentage</key>
+	<string>%lld%%</string>
+	<key>home.download.progress</key>
+	<string>%1$@ of %2$@</string>
+	<key>home.launcherUpdate</key>
+	<string>Launcher Update</string>
+	<key>home.launcherUpdate.help</key>
+	<string>Open the latest launcher release in your browser</string>
+	<key>home.region.switch.help</key>
+	<string>Switch between installed regions</string>
+	<key>home.reportProblem</key>
+	<string>Report Problem</string>
+	<key>home.settings</key>
+	<string>Settings</string>
+	<key>home.settings.help</key>
+	<string>Open launcher settings</string>
+	<key>home.status.needsAttention</key>
+	<string>Needs attention</string>
+	<key>home.version.available</key>
+	<string>%1$@ available</string>
+	<key>home.version.checkNow</key>
+	<string>Check Now</string>
+	<key>home.version.checking</key>
+	<string>Checking…</string>
+	<key>home.version.hideDetails</key>
+	<string>Hide version details</string>
+	<key>home.version.showDetails</key>
+	<string>Show version details</string>
+	<key>home.version.upToDate</key>
+	<string>Up to date</string>
+	<key>home.wordmark.accessibility</key>
+	<string>Arknights %1$@ macOS client</string>
+	<key>onboarding.action.back</key>
+	<string>Back</string>
+	<key>onboarding.action.browsePresets</key>
+	<string>Browse Presets…</string>
+	<key>onboarding.action.checkAgain</key>
+	<string>Check Again</string>
+	<key>onboarding.action.chooseImage</key>
+	<string>Choose Image…</string>
+	<key>onboarding.action.chooseOperator</key>
+	<string>Choose Operator…</string>
+	<key>onboarding.action.continue</key>
+	<string>Continue</string>
+	<key>onboarding.action.continueSetup</key>
+	<string>Continue Setup</string>
+	<key>onboarding.action.finishSetup</key>
+	<string>Finish Setup</string>
+	<key>onboarding.action.installAndContinue</key>
+	<string>Install &amp; Continue</string>
+	<key>onboarding.action.installRosetta</key>
+	<string>Install Rosetta 2…</string>
+	<key>onboarding.action.open</key>
+	<string>Open</string>
+	<key>onboarding.action.reportProblem</key>
+	<string>Report a Launcher Problem…</string>
+	<key>onboarding.action.resumeAndContinue</key>
+	<string>Resume &amp; Continue</string>
+	<key>onboarding.action.resumeDownload</key>
+	<string>Resume Download</string>
+	<key>onboarding.action.skipForNow</key>
+	<string>Skip for Now</string>
+	<key>onboarding.action.tryAgain</key>
+	<string>Try Again</string>
+	<key>onboarding.action.tryInstallationAgain</key>
+	<string>Try Installation Again…</string>
+	<key>onboarding.action.useDefault</key>
+	<string>Use Default</string>
+	<key>onboarding.action.useDefaults</key>
+	<string>Use Defaults</string>
+	<key>onboarding.action.viewVersion</key>
+	<string>View Version %1$@</string>
+	<key>onboarding.common.checking</key>
+	<string>Checking…</string>
+	<key>onboarding.extras.artwork.title</key>
+	<string>Launcher artwork</string>
+	<key>onboarding.extras.audio.detail</key>
+	<string>Plays the configured YouTube music while the launcher is open and the game is not running.</string>
+	<key>onboarding.extras.audio.title</key>
+	<string>Play Background Music</string>
+	<key>onboarding.extras.music.title</key>
+	<string>Launcher music</string>
+	<key>onboarding.extras.nowPlaying.detail</key>
+	<string>Adds the current track and expandable playback controls to the main launcher.</string>
+	<key>onboarding.extras.nowPlaying.title</key>
+	<string>Show Currently Playing</string>
+	<key>onboarding.extras.subtitle</key>
+	<string>Automatic checks only look for new versions. Downloads still begin when you choose them, except for the installation already started by this setup.</string>
+	<key>onboarding.extras.title</key>
+	<string>Keep things current and comfortable</string>
+	<key>onboarding.extras.updates.game.detail</key>
+	<string>Compares your installed files with Yostar's current version and offers Update when needed.</string>
+	<key>onboarding.extras.updates.game.title</key>
+	<string>Check for Game Updates</string>
+	<key>onboarding.extras.updates.launcher.detail</key>
+	<string>Looks for a new launcher release when the app opens. You still choose when to download it.</string>
+	<key>onboarding.extras.updates.launcher.title</key>
+	<string>Check for Launcher Updates</string>
+	<key>onboarding.extras.updates.notices.detail</key>
+	<string>Shows important launcher notices, such as compatibility guidance, once per launch.</string>
+	<key>onboarding.extras.updates.notices.title</key>
+	<string>Show Project Announcements</string>
+	<key>onboarding.extras.updates.title</key>
+	<string>Updates &amp; project notices</string>
+	<key>onboarding.extras.volume</key>
+	<string>Volume</string>
+	<key>onboarding.finish.community.detail</key>
+	<string>Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar.</string>
+	<key>onboarding.finish.community.support</key>
+	<string>For account, payment, or game-service issues, contact Yostar support instead.</string>
+	<key>onboarding.finish.community.title</key>
+	<string>Community project</string>
+	<key>onboarding.finish.contactSupport</key>
+	<string>Contact Yostar Support…</string>
+	<key>onboarding.finish.downloading.detail</key>
+	<string>Finishing setup does not stop the download. The main launcher shows progress and enables Play when verification completes.</string>
+	<key>onboarding.finish.gameActive.detail</key>
+	<string>Close the game with Command-Q before finishing setup.</string>
+	<key>onboarding.finish.installed.detail</key>
+	<string>Finish setup to return to the launcher and start playing.</string>
+	<key>onboarding.finish.issue.detail</key>
+	<string>If the launcher, Wine runtime, or embedded browser misbehaves, please report it on GitHub with the generated diagnostics.</string>
+	<key>onboarding.finish.paused.detail</key>
+	<string>Resume the download now or finish setup and continue later from the main launcher.</string>
+	<key>onboarding.finish.status.downloading</key>
+	<string>Installation continues</string>
+	<key>onboarding.finish.status.installed</key>
+	<string>Arknights is ready</string>
+	<key>onboarding.finish.status.paused</key>
+	<string>Installation is paused</string>
+	<key>onboarding.finish.status.running</key>
+	<string>Arknights is running</string>
+	<key>onboarding.finish.subtitle</key>
+	<string>Your launcher settings are saved. You can change every choice again from Settings.</string>
+	<key>onboarding.finish.title</key>
+	<string>Ready for deployment</string>
+	<key>onboarding.game.displayMode.borderless</key>
+	<string>Borderless</string>
+	<key>onboarding.game.displayMode.fullscreen</key>
+	<string>Fullscreen</string>
+	<key>onboarding.game.displayMode.windowed</key>
+	<string>Windowed</string>
+	<key>onboarding.game.displaySettings.detail.game</key>
+	<string>Changes made inside Arknights remain in control after the first successful launch.</string>
+	<key>onboarding.game.displaySettings.detail.launcher</key>
+	<string>The launcher overrides window mode and resolution every time the game starts.</string>
+	<key>onboarding.game.displaySettings.title</key>
+	<string>Use In-Game Display Settings</string>
+	<key>onboarding.game.displaySettingsPanel</key>
+	<string>Who controls display settings?</string>
+	<key>onboarding.game.highResolution.detail</key>
+	<string>Makes text sharper on Retina displays, but the larger backing surface can reduce performance. Turn it off first when the game feels uneven.</string>
+	<key>onboarding.game.highResolution.title</key>
+	<string>High-Resolution Mode</string>
+	<key>onboarding.game.higherResolution.detail</key>
+	<string>Higher resolutions increase the work done by both Wine and the graphics translator.</string>
+	<key>onboarding.game.pixelDensityPanel</key>
+	<string>Pixel density</string>
+	<key>onboarding.game.resolution</key>
+	<string>Resolution</string>
+	<key>onboarding.game.subtitle</key>
+	<string>These choices affect the next launch. Start conservatively on base-model Macs; you can raise resolution after confirming smooth gameplay.</string>
+	<key>onboarding.game.title</key>
+	<string>Tune the game window</string>
+	<key>onboarding.game.windowResolutionPanel</key>
+	<string>Window &amp; resolution</string>
+	<key>onboarding.icons.custom.detail</key>
+	<string>Optionally replace either generated icon with a local image.</string>
+	<key>onboarding.icons.custom.title</key>
+	<string>Custom Overrides</string>
+	<key>onboarding.icons.detail</key>
+	<string>Choose an operator to create a Launcher icon with that character and a Game icon in the original Arknights style.</string>
+	<key>onboarding.icons.dock.title</key>
+	<string>Dock icons</string>
+	<key>onboarding.icons.game</key>
+	<string>Game</string>
+	<key>onboarding.icons.launcher</key>
+	<string>Launcher</string>
+	<key>onboarding.icons.operator.detail</key>
+	<string>The same character is used for both Dock icons.</string>
+	<key>onboarding.icons.operator.title</key>
+	<string>Operator Icons</string>
+	<key>onboarding.icons.title</key>
+	<string>Choose your Dock icons</string>
+	<key>onboarding.installation.download.detail</key>
+	<string>Selecting Install &amp; Continue starts a resumable download. Closing the launcher pauses it safely.</string>
+	<key>onboarding.installation.downloading.detail</key>
+	<string>You can continue setup while the game files download.</string>
+	<key>onboarding.installation.downloading.title</key>
+	<string>Downloading in the background</string>
+	<key>onboarding.installation.existing.detail</key>
+	<string>Arknights %1$@ is ready in %2$@.</string>
+	<key>onboarding.installation.existing.title</key>
+	<string>Existing installation found</string>
+	<key>onboarding.installation.officialClient</key>
+	<string>Official PC client</string>
+	<key>onboarding.installation.partial.detail</key>
+	<string>The installer will continue from verified partial files.</string>
+	<key>onboarding.installation.partial.title</key>
+	<string>Paused download found</string>
+	<key>onboarding.installation.ready.detail</key>
+	<string>Download size after extraction: %1$@.</string>
+	<key>onboarding.installation.ready.title</key>
+	<string>Ready to install %1$@</string>
+	<key>onboarding.installation.region.detail.global</key>
+	<string>For the English Global client and Global Yostar accounts.</string>
+	<key>onboarding.installation.region.detail.japan</key>
+	<string>For the Japanese client and Japan-region Yostar accounts.</string>
+	<key>onboarding.installation.region.detail.korea</key>
+	<string>For the Korean client and Korea-region Yostar accounts.</string>
+	<key>onboarding.installation.region.panel</key>
+	<string>Server region</string>
+	<key>onboarding.installation.subtitle</key>
+	<string>Regions use separate game files and accounts. Pick the server you already use; you can install another region later from Settings.</string>
+	<key>onboarding.installation.title</key>
+	<string>Choose where you play</string>
+	<key>onboarding.personalization.artwork.accessibility</key>
+	<string>Current launcher artwork</string>
+	<key>onboarding.personalization.dynamicTheme.detail</key>
+	<string>Matches the launcher accent, glass tint, and compatible icon styles to the selected artwork.</string>
+	<key>onboarding.personalization.dynamicTheme.title</key>
+	<string>Dynamic Theme</string>
+	<key>onboarding.personalization.reset.detail</key>
+	<string>Shows the active region and time remaining until that server's next daily reset.</string>
+	<key>onboarding.personalization.reset.title</key>
+	<string>Server Time &amp; Reset Countdown</string>
+	<key>onboarding.personalization.statusPanel</key>
+	<string>Theme &amp; launcher status</string>
+	<key>onboarding.personalization.subtitle</key>
+	<string>Artwork fills the launcher window. Dynamic Theme samples that image and carries its color into controls and compatible icon styles.</string>
+	<key>onboarding.personalization.title</key>
+	<string>Make the launcher yours</string>
+	<key>onboarding.personalization.version.detail</key>
+	<string>Adds the installed Arknights version and a manual update check above the Play controls.</string>
+	<key>onboarding.personalization.version.title</key>
+	<string>Show Game Version</string>
+	<key>onboarding.progress.assistant</key>
+	<string>SETUP ASSISTANT</string>
+	<key>onboarding.progress.step.extras</key>
+	<string>Updates &amp; Audio</string>
+	<key>onboarding.progress.step.finish</key>
+	<string>Ready</string>
+	<key>onboarding.progress.step.game</key>
+	<string>Game Display</string>
+	<key>onboarding.progress.step.icons</key>
+	<string>Icons</string>
+	<key>onboarding.progress.step.installation</key>
+	<string>Region &amp; Install</string>
+	<key>onboarding.progress.step.personalization</key>
+	<string>Launcher</string>
+	<key>onboarding.progress.step.welcome</key>
+	<string>Preflight</string>
+	<key>onboarding.progress.version</key>
+	<string>Launcher v%1$@</string>
+	<key>onboarding.rosetta.failed</key>
+	<string>Installation failed</string>
+	<key>onboarding.rosetta.installing</key>
+	<string>Installing Rosetta 2 with Apple’s software update tool…</string>
+	<key>onboarding.rosetta.introduction</key>
+	<string>Rosetta 2 is missing. Install Apple’s compatibility layer so the bundled Wine runtime can start.</string>
+	<key>onboarding.rosetta.manualInstall</key>
+	<string>You can also install Rosetta manually in Terminal:</string>
+	<key>onboarding.welcome.compatibility.available</key>
+	<string>Compatibility verified. The bundled Wine runtime can start.</string>
+	<key>onboarding.welcome.compatibility.checking</key>
+	<string>Checking whether the bundled Wine runtime can start…</string>
+	<key>onboarding.welcome.compatibility.gameTestMode</key>
+	<string>macOS Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:</string>
+	<key>onboarding.welcome.compatibility.panel</key>
+	<string>Intel compatibility</string>
+	<key>onboarding.welcome.compatibility.unavailable</key>
+	<string>macOS could not start an Intel test process. Restart your Mac, then check again. If the problem remains, include the launcher log in a bug report.</string>
+	<key>onboarding.welcome.compatibility.unsupported</key>
+	<string>This macOS version no longer provides the general Intel translation required by the bundled Wine runtime.</string>
+	<key>onboarding.welcome.compatibility.waiting</key>
+	<string>Intel compatibility will be checked after the launcher update check.</string>
+	<key>onboarding.welcome.next.detail</key>
+	<string>Choose a server region, begin the official PC-client download, tune display settings, and personalize the launcher. The download keeps running while you continue.</string>
+	<key>onboarding.welcome.next.title</key>
+	<string>What happens next</string>
+	<key>onboarding.welcome.status.checkFailed</key>
+	<string>Update check unavailable</string>
+	<key>onboarding.welcome.status.checking</key>
+	<string>Checking for launcher updates</string>
+	<key>onboarding.welcome.status.current</key>
+	<string>Ready for setup</string>
+	<key>onboarding.welcome.status.currentDetail</key>
+	<string>This launcher is current. Setup can continue.</string>
+	<key>onboarding.welcome.status.failedDetail</key>
+	<string>The launcher could not reach the update source. You can continue now; automatic checks will try again later.</string>
+	<key>onboarding.welcome.status.releaseCheck</key>
+	<string>Checking GitHub Releases before setup starts…</string>
+	<key>onboarding.welcome.status.updateDetail</key>
+	<string>Install the newer launcher and open it again. Setup stays pending so instructions always match the version you are using.</string>
+	<key>onboarding.welcome.status.updateRequired</key>
+	<string>Update before setup</string>
+	<key>onboarding.welcome.status.versionAvailable</key>
+	<string>Version %1$@ is available.</string>
+	<key>onboarding.welcome.subtitle</key>
+	<string>We’ll check the launcher first, then configure the game and the parts you see every day. Your choices apply immediately.</string>
+	<key>onboarding.welcome.title</key>
+	<string>Welcome to Arknights Client</string>
+	<key>shared.action.done</key>
+	<string>Done</string>
+	<key>shared.region.global</key>
+	<string>Global</string>
+	<key>shared.region.japan</key>
+	<string>Japan</string>
+	<key>shared.region.korea</key>
+	<string>Korea</string>
+</dict>
+</plist>

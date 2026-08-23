@@ -135,6 +135,7 @@ Run `just --groups` for the complete command list. Tested runtime versions, down
 
 - [Architecture](docs/architecture.md)
 - [Design](docs/design.md)
+- [Localization](docs/localization.md)
 - [Releases and updates](docs/releases-and-updates.md)
 - [Announcements](docs/announcements.md)
 - [Third-party notices](docs/legal/third-party-notices.md)

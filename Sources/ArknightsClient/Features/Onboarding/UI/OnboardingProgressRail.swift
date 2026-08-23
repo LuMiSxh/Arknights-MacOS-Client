@@ -9,7 +9,7 @@ struct OnboardingProgressRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETUP ASSISTANT")
+			Text(OnboardingStrings.setupAssistant)
 				.font(.caption2.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
@@ -26,7 +26,7 @@ struct OnboardingProgressRail: View {
 						Image(systemName: markerImage(for: step))
 							.frame(width: 17)
 							.symbolRenderingMode(.monochrome)
-						Text(step.title)
+						Text(OnboardingStrings.stepTitle(step))
 							.fontWeight(currentStep == step ? .semibold : .regular)
 						Spacer(minLength: 0)
 					}
@@ -46,7 +46,7 @@ struct OnboardingProgressRail: View {
 				Rectangle()
 					.fill(accentColor)
 					.frame(width: 28, height: 2)
-				Text("Launcher v\(appVersion)")
+				Text(OnboardingStrings.progressVersion(appVersion))
 					.font(.caption.monospaced())
 					.foregroundStyle(.tertiary)
 			}

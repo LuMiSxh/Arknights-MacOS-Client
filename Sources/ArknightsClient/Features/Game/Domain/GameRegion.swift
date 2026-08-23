@@ -17,6 +17,10 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		}
 	}
 
+	var localizedDisplayName: String {
+		L10n.string(SharedStrings.region(self))
+	}
+
 	/// Matches the `game_tag` the Yostar launcher API expects and, by convention in this
 	/// codebase, the install directory name the official client uses for the region.
 	var gameTag: String {

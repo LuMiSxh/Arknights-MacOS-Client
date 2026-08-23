@@ -95,18 +95,26 @@ struct ContentView: View {
 
 	private var topBar: some View {
 		HStack(alignment: .top) {
-			ArknightsWordmark(logo: model.officialLogo, cyan: accentColor)
-				.padding(.top, 34)
+			ArknightsWordmark(
+				logo: model.officialLogo,
+				regionName: model.region.localizedDisplayName,
+				cyan: accentColor
+			)
+			.padding(.top, 34)
 			Spacer()
-			Button("Settings", systemImage: "gearshape", action: presentSettings)
-				.labelStyle(.iconOnly)
-				.font(.system(size: 23, weight: .medium))
-				.frame(width: 30, height: 30)
-				.adaptiveGlassButton()
-				.buttonBorderShape(.circle)
-				.controlSize(.extraLarge)
-				.keyboardShortcut(",", modifiers: .command)
-				.help("Open launcher settings")
+			Button(
+				L10n.string(HomeStrings.settings),
+				systemImage: "gearshape",
+				action: presentSettings
+			)
+			.labelStyle(.iconOnly)
+			.font(.system(size: 23, weight: .medium))
+			.frame(width: 30, height: 30)
+			.adaptiveGlassButton()
+			.buttonBorderShape(.circle)
+			.controlSize(.extraLarge)
+			.keyboardShortcut(",", modifiers: .command)
+			.help(L10n.string(HomeStrings.settingsHelp))
 		}
 		.padding(.top, 8)
 		.padding(.horizontal, 14)
@@ -161,20 +169,26 @@ struct ContentView: View {
 
 	private var controlBar: some View {
 		HStack(spacing: 16) {
-			controlBarLeadingRegion
-				.id(model.isDownloading ? "download-progress" : "launcher-status")
-				.transition(.opacity)
-				.frame(maxWidth: .infinity, alignment: .leading)
+			LauncherActivityStatusView(
+				model: model,
+				accentColor: accentColor,
+				requestRosettaInstallation: { confirmsRosettaInstallation = true },
+				retryIntelTranslationCheck: retryIntelTranslationCheck
+			)
+			.id(model.isDownloading ? "download-progress" : "launcher-status")
+			.transition(.opacity)
+			.frame(maxWidth: .infinity, alignment: .leading)
 
 			HStack(spacing: 8) {
 				if model.launcherUpdate != nil {
 					CapsuleActionButton(
-						"Launcher Update", systemImage: "arrow.down.app",
+						L10n.string(HomeStrings.launcherUpdate),
+						systemImage: "arrow.down.app",
 						tone: .accent(model.accentColor),
 						action: model.openLauncherUpdate
 					)
 					.transition(.opacity)
-					.help("Open the latest launcher release in your browser")
+					.help(L10n.string(HomeStrings.launcherUpdateHelp))
 				}
 
 				LauncherPrimaryActionView(model: model)
@@ -232,93 +246,6 @@ struct ContentView: View {
 		model.resetCountdownText != nil
 			|| model.installedRegions.count > 1
 			|| model.region != .global
-	}
-
-	@ViewBuilder
-	private var controlBarLeadingRegion: some View {
-		if model.isDownloading {
-			VStack(alignment: .leading, spacing: 7) {
-				HStack(alignment: .firstTextBaseline, spacing: 10) {
-					Text(statusTitle)
-						.font(.system(size: 14, weight: .semibold))
-						.contentTransition(.numericText())
-					if let detail = statusDetail {
-						Text(detail)
-							.font(.caption)
-							.foregroundStyle(.secondary)
-							.lineLimit(1)
-					}
-				}
-
-				ProgressView(value: model.progress?.fraction ?? 0)
-					.progressViewStyle(.linear)
-					.tint(accentColor)
-					.animation(.linear(duration: 0.2), value: model.progress?.fraction ?? 0)
-			}
-		} else {
-			VStack(alignment: .leading, spacing: 2) {
-				Text(statusTitle)
-					.font(.system(size: 14, weight: .semibold))
-					.contentTransition(.opacity)
-				if let detail = statusDetail {
-					Text(detail)
-						.font(.caption)
-						.foregroundStyle(.secondary)
-						.lineLimit(1)
-					if isFailed {
-						AccentActionLink(title: "Report Problem", accentColor: accentColor) {
-							NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
-						}
-						.font(.caption)
-					} else if model.isInstalled && model.canInstallRosetta {
-						AccentActionLink(
-							title: model.rosettaInstallationActionTitle,
-							accentColor: accentColor,
-							action: { confirmsRosettaInstallation = true }
-						)
-						.font(.caption)
-					} else if model.isInstalled && model.canRetryIntelTranslationCheck {
-						AccentActionLink(
-							title: "Check Again",
-							accentColor: accentColor,
-							action: retryIntelTranslationCheck
-						)
-						.font(.caption)
-					}
-				}
-			}
-		}
-	}
-
-	private var statusTitle: String {
-		if model.state.presentation.status == .pausing {
-			return model.activityMessage
-		}
-		if model.isDownloading, let progress = model.progress {
-			return "\(Int(progress.fraction * 100))%"
-		}
-		if model.failureMessage != nil { return "Needs attention" }
-		if model.isInstalled, let title = model.intelTranslationStatusTitle { return title }
-		return model.activityMessage
-	}
-
-	private var statusDetail: String? {
-		if model.isDownloading, let progress = model.progress {
-			let downloaded = ByteCountFormatter.string(
-				fromByteCount: progress.downloadedBytes,
-				countStyle: .file
-			)
-			let total = ByteCountFormatter.string(
-				fromByteCount: progress.totalBytes, countStyle: .file)
-			return "\(downloaded) of \(total)"
-		}
-		if let failureMessage = model.failureMessage { return failureMessage }
-		if model.isInstalled { return model.intelTranslationStatusDetail }
-		return nil
-	}
-
-	private var isFailed: Bool {
-		model.failureMessage != nil
 	}
 
 	private var primaryActionIdentity: String {

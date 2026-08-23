@@ -220,7 +220,7 @@ extension LauncherViewModel {
 		guard state.activity == .idle else { return }
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: paths.winePrefix)
-			setStatus(.custom("Wine setup will run again on next launch"))
+			setStatus(.custom(L10n.string(.Launcher.launcherStatusWineMigrationPending)))
 			Task { [log] in await log.info("Wine prefix migration state was reset on request") }
 		} catch {
 			show(error)
@@ -236,7 +236,7 @@ extension LauncherViewModel {
 		let prefixDirectory = paths.winePrefix
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
 		state.activity = .maintaining(.deletingWinePrefix)
-		setStatus(.custom("Deleting Wine prefix…"))
+		setStatus(.custom(L10n.string(.Launcher.launcherStatusWinePrefixDeleting)))
 		Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -244,7 +244,7 @@ extension LauncherViewModel {
 					try FileManager.default.removeItem(at: prefixDirectory)
 				}.value
 				state.activity = .idle
-				setStatus(.custom("Wine prefix deleted; setup will run again on next launch"))
+				setStatus(.custom(L10n.string(.Launcher.launcherStatusWineMigrationDeleted)))
 				await log.info("Wine prefix deleted on request")
 			} catch {
 				state.activity = .idle

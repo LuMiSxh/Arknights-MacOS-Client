@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>launcher.artwork.accessibility</key>
+	<string>Arknights artwork</string>
+	<key>launcher.dialog.cancel</key>
+	<string>Cancel</string>
+	<key>launcher.document.changelog</key>
+	<string>Changelog</string>
+	<key>launcher.document.license</key>
+	<string>MPL-2.0 License</string>
+	<key>launcher.document.notices</key>
+	<string>Third-Party Notices</string>
+	<key>launcher.document.unavailable</key>
+	<string>This document is unavailable in the current build.</string>
+	<key>launcher.error.cannotCreateFile</key>
+	<string>Could not create temporary file: %@</string>
+	<key>launcher.error.cannotEncodeAppIcon</key>
+	<string>The selected image could not be converted into an app icon.</string>
+	<key>launcher.error.cannotSetAppIcon</key>
+	<string>macOS refused to update the app icon.</string>
+	<key>launcher.error.checksumMismatch</key>
+	<string>CRC64 check for %@ failed (%@, expected %@).</string>
+	<key>launcher.error.conflictingManifestPaths</key>
+	<string>Conflicting paths in game manifest: %@ and %@</string>
+	<key>launcher.error.downloadResponse</key>
+	<string>Download for %@ returned HTTP %@.</string>
+	<key>launcher.error.downloadedSizeMismatch</key>
+	<string>%@ has %@ bytes instead of %@.</string>
+	<key>launcher.error.duplicateManifestPath</key>
+	<string>Duplicate path in game manifest: %@</string>
+	<key>launcher.error.gameNotInstalled</key>
+	<string>Arknights.exe was not found: %@</string>
+	<key>launcher.error.insufficientDiskSpace</key>
+	<string>Arknights needs about %@ free, but only %@ is available. Free up space and try again.</string>
+	<key>launcher.error.intelTranslationUnavailable</key>
+	<string>macOS could not start the Intel-based Wine runtime. Check that Rosetta 2 is installed and restart your Mac before trying again.</string>
+	<key>launcher.error.intelTranslationUnsupported</key>
+	<string>This macOS version no longer supports the general Intel translation required by the bundled Wine runtime.</string>
+	<key>launcher.error.invalidCustomImage</key>
+	<string>The selected file is not a supported image: %@</string>
+	<key>launcher.error.invalidManifestPath</key>
+	<string>Unsafe path in game manifest: %@</string>
+	<key>launcher.error.invalidPresetImage</key>
+	<string>The preset asset is not a supported image or has unsafe dimensions: %@</string>
+	<key>launcher.error.invalidRemoteAsset</key>
+	<string>Refused an unsupported remote asset URL: %@</string>
+	<key>launcher.error.invalidResponse</key>
+	<string>Yostar's server returned an invalid response.</string>
+	<key>launcher.error.missingConfiguration</key>
+	<string>The current game configuration has not been loaded yet.</string>
+	<key>launcher.error.remoteContentTooLarge</key>
+	<string>Remote content from %@ exceeded the %@ limit.</string>
+	<key>launcher.error.rosettaDisabled</key>
+	<string>macOS Legacy Game Test Mode disables the Rosetta translation required by Wine. Run "sudo game-test-tool disable" in Terminal, restart your Mac, then check again.</string>
+	<key>launcher.error.rosettaMissing</key>
+	<string>Rosetta 2 is required to run the bundled Wine runtime. Install it by running "softwareupdate --install-rosetta --agree-to-license" in Terminal, then check again.</string>
+	<key>launcher.error.runtimeConfiguration</key>
+	<string>The Windows runtime could not be configured: %@</string>
+	<key>launcher.error.runtimeExited</key>
+	<string>The Windows runtime exited with status %@. See %@.</string>
+	<key>launcher.error.runtimeWindowTimeout</key>
+	<string>Arknights did not open a window within 90 seconds. Check the Wine log and try again.</string>
+	<key>launcher.error.server</key>
+	<string>Yostar API error %@: %@</string>
+	<key>launcher.error.symbolicLink</key>
+	<string>The game installer refused a symbolic link in its destination: %@</string>
+	<key>launcher.error.unsafeTemporaryFile</key>
+	<string>The installer refused a non-regular or multiply linked temporary file: %@</string>
+	<key>launcher.error.wineRuntimeMissing</key>
+	<string>No compatible Windows runtime found. Use a build that bundles Wine + DXMT.</string>
+	<key>launcher.filePicker.choose</key>
+	<string>Choose</string>
+	<key>launcher.filePicker.gameIcon</key>
+	<string>Choose a game icon</string>
+	<key>launcher.filePicker.installDirectory</key>
+	<string>Choose where to install Arknights</string>
+	<key>launcher.filePicker.launcherArtwork</key>
+	<string>Choose launcher artwork</string>
+	<key>launcher.filePicker.launcherIcon</key>
+	<string>Choose an app icon</string>
+	<key>launcher.filePicker.locateInstallation</key>
+	<string>Choose the folder containing Arknights.exe</string>
+	<key>launcher.filePicker.useFolder</key>
+	<string>Use Folder</string>
+	<key>launcher.popup.done</key>
+	<string>Done</string>
+	<key>launcher.popup.later</key>
+	<string>Later</string>
+	<key>launcher.popup.notice</key>
+	<string>Notice</string>
+	<key>launcher.popup.releaseFallback</key>
+	<string>A new launcher version is available.</string>
+	<key>launcher.popup.updateTitle</key>
+	<string>Arknights Client %@</string>
+	<key>launcher.popup.viewRelease</key>
+	<string>View Release</string>
+	<key>launcher.rosetta.action.install</key>
+	<string>Install Rosetta 2</string>
+	<key>launcher.rosetta.action.installAgain</key>
+	<string>Try Installation Again…</string>
+	<key>launcher.rosetta.action.installEllipsis</key>
+	<string>Install Rosetta 2…</string>
+	<key>launcher.rosetta.confirmation.message</key>
+	<string>Rosetta 2 is Apple system software that lets this Apple silicon Mac run the bundled Intel-based Wine runtime. Continuing runs Apple’s software update tool and accepts Apple’s Rosetta license.</string>
+	<key>launcher.rosetta.confirmation.title</key>
+	<string>Install Rosetta 2?</string>
+	<key>launcher.rosetta.detail.availableCheck</key>
+	<string>The launcher is verifying that the bundled Wine runtime can start.</string>
+	<key>launcher.rosetta.detail.gameTestMode</key>
+	<string>This macOS 27 test mode disables Rosetta. Turn it off, restart your Mac, then check again.</string>
+	<key>launcher.rosetta.detail.installing</key>
+	<string>Apple’s software update tool is installing the Intel compatibility layer.</string>
+	<key>launcher.rosetta.detail.missing</key>
+	<string>Install Rosetta 2, then check again.</string>
+	<key>launcher.rosetta.detail.unavailable</key>
+	<string>macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again.</string>
+	<key>launcher.rosetta.detail.unsupported</key>
+	<string>This macOS version no longer provides the general Rosetta support Wine requires.</string>
+	<key>launcher.rosetta.failure.installerExited</key>
+	<string>Apple’s installer exited with status %@. Use the Terminal command below or check the launcher log for details.</string>
+	<key>launcher.rosetta.failure.installerStart</key>
+	<string>Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details.</string>
+	<key>launcher.rosetta.status.checking</key>
+	<string>Checking Intel compatibility…</string>
+	<key>launcher.rosetta.status.gameTestMode</key>
+	<string>Legacy Game Test Mode is active</string>
+	<key>launcher.rosetta.status.installationFailed</key>
+	<string>Rosetta installation failed</string>
+	<key>launcher.rosetta.status.installing</key>
+	<string>Installing Rosetta 2…</string>
+	<key>launcher.rosetta.status.missing</key>
+	<string>Rosetta 2 required</string>
+	<key>launcher.rosetta.status.unavailable</key>
+	<string>Intel compatibility unavailable</string>
+	<key>launcher.rosetta.status.unsupported</key>
+	<string>Windows runtime unsupported</string>
+	<key>launcher.serverReset.countdown</key>
+	<string>Reset in %lldh %02lldm</string>
+	<key>launcher.status.cacheCleared</key>
+	<string>Cache cleared</string>
+	<key>launcher.status.checking</key>
+	<string>Checking…</string>
+	<key>launcher.status.downloading</key>
+	<string>Downloading…</string>
+	<key>launcher.status.galleryCacheCleared</key>
+	<string>Asset gallery caches cleared</string>
+	<key>launcher.status.gameIconRestored</key>
+	<string>Default game icon restored for the next launch</string>
+	<key>launcher.status.gameIconUpdated</key>
+	<string>Game icon updated for the next launch</string>
+	<key>launcher.status.gameNotFound</key>
+	<string>Arknights.exe not found</string>
+	<key>launcher.status.iconsRestored</key>
+	<string>Default launcher and game icons restored</string>
+	<key>launcher.status.iconsUpdated</key>
+	<string>Launcher and game icons updated</string>
+	<key>launcher.status.install</key>
+	<string>Install</string>
+	<key>launcher.status.movingToTrash</key>
+	<string>Moving to Trash…</string>
+	<key>launcher.status.paused</key>
+	<string>Paused</string>
+	<key>launcher.status.pausing</key>
+	<string>Pausing…</string>
+	<key>launcher.status.preparing</key>
+	<string>Preparing…</string>
+	<key>launcher.status.preparingWine</key>
+	<string>Preparing Wine setup…</string>
+	<key>launcher.status.ready</key>
+	<string>Ready</string>
+	<key>launcher.status.running</key>
+	<string>Running</string>
+	<key>launcher.status.settingsReset</key>
+	<string>Settings reset to default</string>
+	<key>launcher.status.starting</key>
+	<string>Starting…</string>
+	<key>launcher.status.stopping</key>
+	<string>Stopping…</string>
+	<key>launcher.status.uninstalled</key>
+	<string>Uninstalled</string>
+	<key>launcher.status.updateAvailable</key>
+	<string>Update available</string>
+	<key>launcher.status.updated</key>
+	<string>Updated</string>
+	<key>launcher.status.verifying</key>
+	<string>Verifying…</string>
+	<key>launcher.status.wineMigrationDeleted</key>
+	<string>Wine prefix deleted; setup will run again on next launch</string>
+	<key>launcher.status.wineMigrationPending</key>
+	<string>Wine setup will run again on next launch</string>
+	<key>launcher.status.winePrefixDeleting</key>
+	<string>Deleting Wine prefix…</string>
+	<key>launcher.update.status.checking</key>
+	<string>Checking…</string>
+	<key>launcher.update.status.failed</key>
+	<string>Couldn’t check for updates</string>
+	<key>launcher.update.status.noReleases</key>
+	<string>No releases available</string>
+	<key>launcher.update.status.sourceUnavailable</key>
+	<string>Update source unavailable</string>
+	<key>launcher.update.status.upToDate</key>
+	<string>Up to date</string>
+	<key>launcher.update.status.versionAvailable</key>
+	<string>Version %1$@ available</string>
+</dict>
+</plist>

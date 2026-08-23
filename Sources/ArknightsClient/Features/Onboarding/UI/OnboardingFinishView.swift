@@ -8,12 +8,11 @@ struct OnboardingFinishView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Ready for deployment",
-			subtitle:
-				"Your launcher settings are saved. You can change every choice again from Settings.",
+			title: L10n.string(OnboardingStrings.finishTitle),
+			subtitle: L10n.string(OnboardingStrings.finishSubtitle),
 			accentColor: model.accentColor
 		) {
-			SettingsPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
+			SettingsPanel(title: L10n.string(gameStatusTitle), systemImage: gameStatusImage) {
 				Text(gameStatusDetail)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
@@ -25,39 +24,37 @@ struct OnboardingFinishView: View {
 
 				if !model.isInstalled && !model.isDownloading && model.canInstall {
 					CapsuleActionButton(
-						"Resume Download", systemImage: "arrow.clockwise",
+						L10n.string(OnboardingStrings.resumeDownload),
+						systemImage: "arrow.clockwise",
 						tone: .accent(model.accentColor),
 						action: model.installOrUpdate
 					)
 				}
 			}
 
-			SettingsPanel(title: "Community project", systemImage: "person.3") {
-				Text(
-					"Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar."
-				)
-				.fixedSize(horizontal: false, vertical: true)
-				Text(
-					"If the launcher, Wine runtime, or embedded browser misbehaves, please report it on GitHub with the generated diagnostics."
-				)
-				.font(.callout)
-				.foregroundStyle(.secondary)
-				.fixedSize(horizontal: false, vertical: true)
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.communityTitle), systemImage: "person.3"
+			) {
+				Text(OnboardingStrings.communityDetail)
+					.fixedSize(horizontal: false, vertical: true)
+				Text(OnboardingStrings.issueDetail)
+					.font(.callout)
+					.foregroundStyle(.secondary)
+					.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					title: "Report a Launcher Problem…", systemImage: "ladybug",
+					title: L10n.string(OnboardingStrings.reportProblem), systemImage: "ladybug",
 					tone: .accent(model.accentColor), action: reportProblem
 				)
 
 				SettingsHairline()
 
-				Text(
-					"For account, payment, or game-service issues, contact Yostar support instead."
-				)
-				.font(.callout)
-				.foregroundStyle(.secondary)
-				.fixedSize(horizontal: false, vertical: true)
+				Text(OnboardingStrings.communitySupport)
+					.font(.callout)
+					.foregroundStyle(.secondary)
+					.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					"Contact Yostar Support…", systemImage: "arrow.up.right.square",
+					L10n.string(OnboardingStrings.contactSupport),
+					systemImage: "arrow.up.right.square",
 					tone: .accent(model.accentColor),
 					action: contactYostar
 				)
@@ -65,11 +62,11 @@ struct OnboardingFinishView: View {
 		}
 	}
 
-	private var gameStatusTitle: String {
-		if model.isGameActive { return "Arknights is running" }
-		if model.isDownloading { return "Installation continues" }
-		if model.isInstalled { return "Arknights is ready" }
-		return "Installation is paused"
+	private var gameStatusTitle: LocalizedStringResource {
+		if model.isGameActive { return OnboardingStrings.finishStatusRunning }
+		if model.isDownloading { return OnboardingStrings.finishStatusDownloading }
+		if model.isInstalled { return OnboardingStrings.finishStatusInstalled }
+		return OnboardingStrings.finishStatusPaused
 	}
 
 	private var gameStatusImage: String {
@@ -79,18 +76,11 @@ struct OnboardingFinishView: View {
 		return "pause.circle"
 	}
 
-	private var gameStatusDetail: String {
-		if model.isGameActive {
-			return "Close the game with Command-Q before finishing setup."
-		}
-		if model.isDownloading {
-			return
-				"Finishing setup does not stop the download. The main launcher shows progress and enables Play when verification completes."
-		}
-		if model.isInstalled {
-			return "Finish setup to return to the launcher and start playing."
-		}
-		return "Resume the download now or finish setup and continue later from the main launcher."
+	private var gameStatusDetail: LocalizedStringResource {
+		if model.isGameActive { return OnboardingStrings.finishGameActiveDetail }
+		if model.isDownloading { return OnboardingStrings.finishDownloadingDetail }
+		if model.isInstalled { return OnboardingStrings.finishInstalledDetail }
+		return OnboardingStrings.finishPausedDetail
 	}
 
 	private func reportProblem() {

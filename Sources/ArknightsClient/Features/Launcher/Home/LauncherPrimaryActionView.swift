@@ -9,22 +9,26 @@ struct LauncherPrimaryActionView: View {
 	var body: some View {
 		if model.isGameRunning {
 			CapsuleActionButton(
-				title: "Stop", systemImage: "stop.fill", tone: .neutral,
+				title: L10n.string(HomeStrings.actionStop),
+				systemImage: "stop.fill", tone: .neutral,
 				action: model.stopGame
 			)
 			.controlSize(.large)
 			.disabled(!model.canStopGame)
-			.help("Stop Arknights and its Windows runtime")
+			.help(L10n.string(HomeStrings.actionStopHelp))
 		} else if model.isDownloading {
 			CapsuleActionButton(
-				title: "Pause", systemImage: "pause.fill", tone: .neutral,
+				title: L10n.string(HomeStrings.actionPause),
+				systemImage: "pause.fill", tone: .neutral,
 				action: model.cancelDownload
 			)
 			.controlSize(.large)
-			.help("Pause the download; it resumes from partial files later")
+			.help(L10n.string(HomeStrings.actionPauseHelp))
 		} else if !model.isInstalled {
 			CapsuleActionButton(
-				title: model.hasPartialDownload ? "Resume" : "Install",
+				title: L10n.string(
+					model.hasPartialDownload ? HomeStrings.actionResume : HomeStrings.actionInstall
+				),
 				systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down",
 				tone: .accent(model.accentColor),
 				action: model.installOrUpdate
@@ -34,27 +38,34 @@ struct LauncherPrimaryActionView: View {
 			.keyboardShortcut(.defaultAction)
 			.help(
 				model.hasPartialDownload
-					? "Continue downloading from the partial files"
-					: "Download and verify the official \(model.region.displayName) PC files"
+					? L10n.string(HomeStrings.actionResumeHelp)
+					: L10n.string(
+						HomeStrings.actionInstallHelp(region: model.region.localizedDisplayName)
+					)
 			)
 		} else if model.isGameUpdateAvailable {
 			CapsuleActionButton(
-				title: "Update", systemImage: "arrow.down", tone: .accent(model.accentColor),
+				title: L10n.string(HomeStrings.actionUpdate),
+				systemImage: "arrow.down", tone: .accent(model.accentColor),
 				action: model.installOrUpdate
 			)
 			.controlSize(.large)
 			.disabled(!model.canInstall)
 			.keyboardShortcut(.defaultAction)
-			.help("Download the changed game files")
+			.help(L10n.string(HomeStrings.actionUpdateHelp))
 		} else {
 			CapsuleActionButton(
-				title: "Play", systemImage: "play.fill", tone: .accent(model.accentColor),
+				title: L10n.string(HomeStrings.actionPlay),
+				systemImage: "play.fill", tone: .accent(model.accentColor),
 				action: model.launch
 			)
 			.controlSize(.large)
 			.disabled(!model.canLaunch)
 			.keyboardShortcut(.defaultAction)
-			.help(model.playHelp)
+			.help(
+				model.intelTranslationStatusDetail
+					?? L10n.string(HomeStrings.actionPlayHelp)
+			)
 		}
 	}
 }

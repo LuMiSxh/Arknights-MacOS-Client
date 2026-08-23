@@ -32,5 +32,12 @@ func offsetsMatchEachRegionsFixedServerTime() {
 func countdownTextFormatsHoursAndMinutes() {
 	let now = ISO8601DateFormatter().date(from: "2026-08-17T02:00:00-07:00")!
 
-	#expect(ServerReset.countdownText(for: .global, now: now) == "Reset in 2h 00m")
+	#expect(
+		ServerReset.countdownText(for: .global, now: now, locale: Locale(identifier: "en"))
+			== "Reset in 2h 00m"
+	)
+	#expect(
+		ServerReset.countdownText(for: .global, now: now, locale: Locale(identifier: "de"))
+			== "Reset in 2 Std. 00 Min."
+	)
 }

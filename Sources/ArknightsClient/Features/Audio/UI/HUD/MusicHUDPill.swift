@@ -50,13 +50,17 @@ struct MusicHUDPill: View {
 				}
 				.buttonStyle(.plain)
 				.onHover { isHovering = $0 }
-				.help(isExpanded ? "Hide music controls" : "Show music controls")
+				.help(
+					L10n.string(
+						isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
+					)
+				)
 
 				if isExpanded {
 					HStack(spacing: 6) {
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: "Previous Track",
+								title: L10n.string(AudioStrings.previousTrack),
 								systemImage: "backward.end.fill",
 								accentColor: model.accentColor,
 								isDisabled: controller.controlsAreDisabled,
@@ -65,7 +69,9 @@ struct MusicHUDPill: View {
 						}
 
 						MusicPlayerControlButton(
-							title: controller.isPlaying ? "Pause" : "Play",
+							title: L10n.string(
+								controller.isPlaying ? AudioStrings.pause : AudioStrings.play
+							),
 							systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
 							accentColor: model.accentColor,
 							isProminent: true,
@@ -75,7 +81,7 @@ struct MusicHUDPill: View {
 
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: "Next Track",
+								title: L10n.string(AudioStrings.nextTrack),
 								systemImage: "forward.end.fill",
 								accentColor: model.accentColor,
 								isDisabled: controller.controlsAreDisabled,
@@ -94,7 +100,7 @@ struct MusicHUDPill: View {
 						Spacer(minLength: 0)
 
 						MusicPlayerControlButton(
-							title: "Open on YouTube",
+							title: L10n.string(AudioStrings.openYouTube),
 							systemImage: "arrow.up.right.square",
 							accentColor: model.accentColor,
 							isDisabled: controller.controlsAreDisabled,
@@ -135,9 +141,9 @@ struct MusicHUDPill: View {
 	}
 
 	private var playbackStatus: String {
-		if model.isGameProcessRunning { return "Paused while the game is running" }
-		if controller.isChangingTrack { return "Changing track…" }
-		return controller.isPlaying ? "Playing" : "Paused"
+		if model.isGameProcessRunning { return L10n.string(AudioStrings.pausedForGame) }
+		if controller.isChangingTrack { return L10n.string(AudioStrings.changingTrack) }
+		return L10n.string(controller.isPlaying ? AudioStrings.playing : AudioStrings.paused)
 	}
 
 	private var expandedContentTransition: AnyTransition {

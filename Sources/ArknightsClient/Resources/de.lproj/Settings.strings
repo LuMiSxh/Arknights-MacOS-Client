@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>settings.about.application</key>
+	<string>Arknights Client</string>
+	<key>settings.about.changelog</key>
+	<string>Änderungsprotokoll</string>
+	<key>settings.about.contactYostar</key>
+	<string>Yostar kontaktieren…</string>
+	<key>settings.about.documents</key>
+	<string>Dokumente</string>
+	<key>settings.about.gameAccountIssues</key>
+	<string>Spiel- und Kontoprobleme</string>
+	<key>settings.about.gameAccountIssues.detail</key>
+	<string>Bei Konto-, Zahlungs- oder Spielservice-Problemen Yostar kontaktieren.</string>
+	<key>settings.about.github</key>
+	<string>GitHub-Repository</string>
+	<key>settings.about.github.help</key>
+	<string>Projekt-Repository öffnen</string>
+	<key>settings.about.launcherIssues</key>
+	<string>Launcher-Probleme</string>
+	<key>settings.about.launcherIssues.detail</key>
+	<string>Launcher-, Wine-Laufzeit- oder eingebettete Browserprobleme mit erzeugten Diagnosedaten melden.</string>
+	<key>settings.about.license</key>
+	<string>MPL-2.0-Lizenz</string>
+	<key>settings.about.notAffiliated</key>
+	<string>Dieser Launcher steht in keiner Verbindung zu Hypergryph oder Yostar.</string>
+	<key>settings.about.openFinder</key>
+	<string>Im Finder zeigen</string>
+	<key>settings.about.openFinder.help</key>
+	<string>Launcher-App im Finder anzeigen</string>
+	<key>settings.about.privacyPolicy</key>
+	<string>Datenschutzerklärung</string>
+	<key>settings.about.report</key>
+	<string>Melden…</string>
+	<key>settings.about.support</key>
+	<string>Support</string>
+	<key>settings.about.thirdPartyNotices</key>
+	<string>Hinweise zu Drittanbietern</string>
+	<key>settings.about.title</key>
+	<string>Über</string>
+	<key>settings.about.unofficialLauncher</key>
+	<string>Inoffizieller macOS-Launcher</string>
+	<key>settings.about.userAgreement</key>
+	<string>Nutzungsvereinbarung</string>
+	<key>settings.audio.backgroundMusic</key>
+	<string>Hintergrundmusik abspielen</string>
+	<key>settings.audio.backgroundMusic.detail</key>
+	<string>Spielt Musik, während der Launcher geöffnet ist und das Spiel nicht läuft.</string>
+	<key>settings.audio.currentlyPlaying</key>
+	<string>Aktuellen Titel anzeigen</string>
+	<key>settings.audio.currentlyPlaying.detail</key>
+	<string>Zeigt den aktuellen Titel und aufklappbare Wiedergabesteuerungen über den Launcher-Steuerelementen an.</string>
+	<key>settings.audio.music</key>
+	<string>Musik</string>
+	<key>settings.audio.subtitle</key>
+	<string>Wiedergabe der Hintergrundmusik</string>
+	<key>settings.audio.title</key>
+	<string>Audio</string>
+	<key>settings.audio.url</key>
+	<string>Musik-URL</string>
+	<key>settings.audio.url.detail</key>
+	<string>Link zu einem YouTube-Video oder einer Playlist.</string>
+	<key>settings.audio.url.prompt</key>
+	<string>https://www.youtube.com/playlist?...</string>
+	<key>settings.audio.volume</key>
+	<string>Lautstärke</string>
+	<key>settings.audio.volume.detail</key>
+	<string>Legt die Wiedergabelautstärke der Launcher-Musik fest.</string>
+	<key>settings.audio.volume.percent</key>
+	<string>%lld %%</string>
+	<key>settings.common.cancel</key>
+	<string>Abbrechen</string>
+	<key>settings.common.change</key>
+	<string>Ändern…</string>
+	<key>settings.common.checkNow</key>
+	<string>Jetzt prüfen</string>
+	<key>settings.common.choose</key>
+	<string>Auswählen…</string>
+	<key>settings.common.chooseImage</key>
+	<string>Bild auswählen…</string>
+	<key>settings.common.clearCache</key>
+	<string>Cache leeren…</string>
+	<key>settings.common.dangerZone</key>
+	<string>Gefahrenbereich</string>
+	<key>settings.common.game</key>
+	<string>Spiel</string>
+	<key>settings.common.show</key>
+	<string>Anzeigen</string>
+	<key>settings.common.useDefault</key>
+	<string>Standard verwenden</string>
+	<key>settings.common.useDefaults</key>
+	<string>Standards verwenden</string>
+	<key>settings.developer.customPopup</key>
+	<string>Benutzerdefiniertes Pop-up</string>
+	<key>settings.developer.customPopupTitle</key>
+	<string>Titel</string>
+	<key>settings.developer.isolation</key>
+	<string>Isolierung</string>
+	<key>settings.developer.isolation.detail</key>
+	<string>Spielaktionen wechseln nur zwischen simulierten Zuständen. Die Vorschau verwendet separate temporäre Pfade und Einstellungen.</string>
+	<key>settings.developer.scenario</key>
+	<string>Szenario</string>
+	<key>settings.developer.showPopup</key>
+	<string>Pop-up anzeigen</string>
+	<key>settings.developer.subtitle</key>
+	<string>Launcher-Zustände gefahrlos testen</string>
+	<key>settings.developer.title</key>
+	<string>Entwicklung</string>
+	<key>settings.general.artwork</key>
+	<string>Hintergrundbild</string>
+	<key>settings.general.artwork.detail</key>
+	<string>Hintergrund hinter den Launcher-Steuerelementen.</string>
+	<key>settings.general.chooseOperator</key>
+	<string>Operator auswählen…</string>
+	<key>settings.general.customIconOverrides</key>
+	<string>Eigene Symbolüberschreibungen</string>
+	<key>settings.general.customIconOverrides.detail</key>
+	<string>Verwendet separate lokale Bilder statt des erzeugten Operator-Paars.</string>
+	<key>settings.general.displayControls</key>
+	<string>Anzeige und Steuerung</string>
+	<key>settings.general.displayMode.borderlessWindow</key>
+	<string>Randloses Fenster (empfohlen)</string>
+	<key>settings.general.displayMode.fullscreen</key>
+	<string>Vollbild</string>
+	<key>settings.general.displayMode.windowed</key>
+	<string>Fenster</string>
+	<key>settings.general.dynamicTheme</key>
+	<string>Dynamisches Farbschema</string>
+	<key>settings.general.dynamicTheme.detail</key>
+	<string>Passt Launcher-Farben und das erzeugte Operator-Symbolpaar automatisch an das gewählte Hintergrundbild an.</string>
+	<key>settings.general.gameDisplaySettings</key>
+	<string>Anzeigeeinstellungen im Spiel verwenden</string>
+	<key>settings.general.gameDisplaySettings.detail</key>
+	<string>Behält Änderungen, die du in Arknights vornimmst, auch zwischen Starts bei.</string>
+	<key>settings.general.highResolution</key>
+	<string>Hochauflösender Modus</string>
+	<key>settings.general.highResolution.detail</key>
+	<string>Nutzt die volle Pixeldichte des Displays, ohne das Spielfenster zu vergrößern.</string>
+	<key>settings.general.launcher</key>
+	<string>Launcher</string>
+	<key>settings.general.metalHUD</key>
+	<string>Metal-Leistungsanzeige</string>
+	<key>settings.general.metalHUD.detail</key>
+	<string>Zeigt beim nächsten Spielstart Apples native FPS- und GPU-Einblendung an.</string>
+	<key>settings.general.operatorIcons</key>
+	<string>Operator-Symbole</string>
+	<key>settings.general.operatorIcons.detail</key>
+	<string>Verwendet einen Operator für den Launcher und ein Spielsymbol im ursprünglichen Arknights-Stil.</string>
+	<key>settings.general.personalization</key>
+	<string>Personalisierung</string>
+	<key>settings.general.presets</key>
+	<string>Vorlagen…</string>
+	<key>settings.general.resolution</key>
+	<string>Auflösung</string>
+	<key>settings.general.resolution.detail</key>
+	<string>Überschreibt beim nächsten Start die Spielauflösung.</string>
+	<key>settings.general.runAgain</key>
+	<string>Erneut ausführen…</string>
+	<key>settings.general.serverTime</key>
+	<string>Serverzeit und Reset-Countdown</string>
+	<key>settings.general.serverTime.detail</key>
+	<string>Zeigt die aktive Serverzeit und die Zeit bis zum nächsten täglichen Reset an.</string>
+	<key>settings.general.setupAssistant</key>
+	<string>Einrichtungsassistent</string>
+	<key>settings.general.setupAssistant.detail</key>
+	<string>Führt die geführte Einrichtung von Region, Anzeige und Personalisierung erneut aus.</string>
+	<key>settings.general.showGameVersion</key>
+	<string>Spielversion anzeigen</string>
+	<key>settings.general.showGameVersion.detail</key>
+	<string>Zeigt die installierte Arknights-Version und eine manuelle Update-Prüfung über den Spielsteuerungen an.</string>
+	<key>settings.general.subtitle</key>
+	<string>Anzeige und Personalisierung</string>
+	<key>settings.general.title</key>
+	<string>Allgemein</string>
+	<key>settings.general.windowMode</key>
+	<string>Fenstermodus</string>
+	<key>settings.general.windowMode.detail</key>
+	<string>Überschreibt beim nächsten Start den Stil des Spielfensters.</string>
+	<key>settings.installation.cache.detail</key>
+	<string>Gibt %1$@ Speicherplatz frei, der von Shader- und Browser-Caches belegt wird. Sie werden automatisch neu aufgebaut.</string>
+	<key>settings.installation.cacheGallery</key>
+	<string>Vorlagen-Galerie-Caches</string>
+	<key>settings.installation.cacheGallery.detail</key>
+	<string>Löscht zwischengespeicherte Vorlagen-Metadaten und alle geladenen Galerie-Dateien (Avatare und Hintergrundbilder). Sie belegen derzeit %1$@.</string>
+	<key>settings.installation.chooseNewLocation</key>
+	<string>Neuen Ort auswählen…</string>
+	<key>settings.installation.clearCache</key>
+	<string>Cache leeren</string>
+	<key>settings.installation.downloading</key>
+	<string>Wird heruntergeladen: %lld %%</string>
+	<key>settings.installation.folder</key>
+	<string>Ordner</string>
+	<key>settings.installation.forceMigration</key>
+	<string>Migration erzwingen</string>
+	<key>settings.installation.forceMigration.action</key>
+	<string>Migration erzwingen…</string>
+	<key>settings.installation.forceMigration.confirmation</key>
+	<string>Wine-Einrichtung erneut ausführen?</string>
+	<key>settings.installation.forceMigration.detail</key>
+	<string>Führt Wine-Initialisierung, DXMT-Installation und Registry-Overrides beim nächsten Start erneut aus. Spieldateien und Spielstände bleiben unverändert; nur der nächste Start dauert länger.</string>
+	<key>settings.installation.gameFiles</key>
+	<string>Spieldateien</string>
+	<key>settings.installation.gameFiles.detail</key>
+	<string>Verschiebt die Installation der gewählten Region in den Papierkorb.</string>
+	<key>settings.installation.gameMode</key>
+	<string>Game Mode (experimentell)</string>
+	<key>settings.installation.gameMode.alert</key>
+	<string>Game Mode benötigt Xcode</string>
+	<key>settings.installation.gameMode.alert.detail</key>
+	<string>Dafür wird Apples Werkzeug gamepolicyctl benötigt. Es ist nur in der vollständigen Xcode-App enthalten, nicht in den Command Line Tools. Installiere Xcode aus dem App Store, um es zu verwenden.</string>
+	<key>settings.installation.gameMode.detail</key>
+	<string>Fordert macOS auf, das Spiel während der Laufzeit zu priorisieren. Dafür muss die vollständige Xcode-App installiert sein, denn nur Xcode liefert das benötigte Werkzeug.</string>
+	<key>settings.installation.installationLocation</key>
+	<string>Installationsort</string>
+	<key>settings.installation.installationLocation.detail</key>
+	<string>Wähle einen neuen Ordner oder übernimm eine bestehende Spielinstallation.</string>
+	<key>settings.installation.installed</key>
+	<string>Installiert</string>
+	<key>settings.installation.launcherSettings</key>
+	<string>Launcher-Einstellungen</string>
+	<key>settings.installation.locateExisting</key>
+	<string>Vorhandene Installation suchen…</string>
+	<key>settings.installation.location</key>
+	<string>Speicherort</string>
+	<key>settings.installation.logs</key>
+	<string>Protokolle</string>
+	<key>settings.installation.logs.detail</key>
+	<string>Verwende diese Dateien, wenn du Probleme beim Start oder im Spiel meldest.</string>
+	<key>settings.installation.maintenance</key>
+	<string>Wartung</string>
+	<key>settings.installation.notInstalled</key>
+	<string>Nicht installiert</string>
+	<key>settings.installation.paused</key>
+	<string>Pausiert</string>
+	<key>settings.installation.preparingDownload</key>
+	<string>Download wird vorbereitet</string>
+	<key>settings.installation.region</key>
+	<string>Region</string>
+	<key>settings.installation.region.detail</key>
+	<string>Global, Japan und Korea werden unabhängig installiert, aktualisiert und gestartet.</string>
+	<key>settings.installation.repair</key>
+	<string>Reparieren</string>
+	<key>settings.installation.repair.action</key>
+	<string>Reparieren…</string>
+	<key>settings.installation.repair.detail</key>
+	<string>Prüft jede Spieldatei und lädt fehlende oder beschädigte Dateien erneut herunter.</string>
+	<key>settings.installation.resetSettings</key>
+	<string>Einstellungen zurücksetzen</string>
+	<key>settings.installation.resetSettings.action</key>
+	<string>Alle Einstellungen zurücksetzen…</string>
+	<key>settings.installation.resetSettings.confirmation</key>
+	<string>Alle Launcher-Einstellungen zurücksetzen?</string>
+	<key>settings.installation.resetSettings.detail</key>
+	<string>Setzt jeden Schalter und jede Option auf diesem Bildschirm zurück. Installationsort und gewählte Region bleiben unverändert.</string>
+	<key>settings.installation.showGameFiles.help</key>
+	<string>Spieldateien im Finder anzeigen</string>
+	<key>settings.installation.showLogs</key>
+	<string>Protokolle anzeigen</string>
+	<key>settings.installation.status</key>
+	<string>Status</string>
+	<key>settings.installation.status.detail</key>
+	<string>Zustand der Spielinstallation für die gewählte Region.</string>
+	<key>settings.installation.subtitle</key>
+	<string>Dateien, Reparatur und Entfernen</string>
+	<key>settings.installation.title</key>
+	<string>Installation</string>
+	<key>settings.installation.uninstall</key>
+	<string>Spiel deinstallieren…</string>
+	<key>settings.installation.uninstall.confirmation</key>
+	<string>Arknights deinstallieren?</string>
+	<key>settings.installation.uninstall.detail</key>
+	<string>Der Launcher bleibt installiert.</string>
+	<key>settings.installation.uninstall.moveToTrash</key>
+	<string>Spiel in den Papierkorb legen</string>
+	<key>settings.installation.winePrefix</key>
+	<string>Wine-Prefix</string>
+	<key>settings.installation.winePrefix.delete</key>
+	<string>Wine-Prefix löschen…</string>
+	<key>settings.installation.winePrefix.delete.action</key>
+	<string>Wine-Prefix löschen</string>
+	<key>settings.installation.winePrefix.delete.confirmation</key>
+	<string>Wine-Prefix löschen?</string>
+	<key>settings.installation.winePrefix.delete.detail</key>
+	<string>Dadurch wirst du von jeder im eingebetteten Browser gespeicherten Anmeldung abgemeldet. Spieldateien bleiben unverändert.</string>
+	<key>settings.installation.winePrefix.detail</key>
+	<string>Löscht die gesamte Wine-Umgebung einschließlich gespeicherter Yostar-, Google-, Apple- und Facebook-Anmeldungen. Spieldateien bleiben unverändert; alles andere wird beim nächsten Start neu aufgebaut.</string>
+	<key>settings.installation.wineSetup</key>
+	<string>Wine-Einrichtung</string>
+	<key>settings.installation.wineSynchronization</key>
+	<string>Wine-Thread-Synchronisierung</string>
+	<key>settings.installation.wineSynchronization.detail</key>
+	<string>Steuert, wie Wine auf Windows-Thread-Wartevorgänge abbildet. MSYNC verwendet die Mach-Synchronisierung von macOS und lieferte in unseren Tests gleichmäßigere Frame-Zeiten. ESYNC verwendet den älteren ereignisbasierten Wine-Pfad und bleibt der Kompatibilitäts-Fallback. Gilt ab dem nächsten Start.</string>
+	<key>settings.navigation.about</key>
+	<string>Über</string>
+	<key>settings.navigation.audio</key>
+	<string>Audio</string>
+	<key>settings.navigation.developer</key>
+	<string>Entwicklung</string>
+	<key>settings.navigation.general</key>
+	<string>Allgemein</string>
+	<key>settings.navigation.installation</key>
+	<string>Installation</string>
+	<key>settings.navigation.label</key>
+	<string>EINSTELLUNGEN</string>
+	<key>settings.navigation.updates</key>
+	<string>Updates</string>
+	<key>settings.updates.announcements</key>
+	<string>Ankündigungen</string>
+	<key>settings.updates.announcements.detail</key>
+	<string>Zeigt gelegentliche Projektmitteilungen jeweils einmal an.</string>
+	<key>settings.updates.automaticChecks</key>
+	<string>Automatische Prüfungen</string>
+	<key>settings.updates.checking</key>
+	<string>Wird geprüft…</string>
+	<key>settings.updates.subtitle</key>
+	<string>Launcher und Spiel aktuell halten</string>
+	<key>settings.updates.title</key>
+	<string>Updates</string>
+	<key>settings.updates.updateAvailable</key>
+	<string>Update verfügbar</string>
+</dict>
+</plist>

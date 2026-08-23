@@ -52,15 +52,15 @@ struct StatusHUDPill: View {
 						model.selectRegion(region)
 					} label: {
 						if region == model.region {
-							Label(region.displayName, systemImage: "checkmark")
+							Label(region.localizedDisplayName, systemImage: "checkmark")
 						} else {
-							Text(region.displayName)
+							Text(region.localizedDisplayName)
 						}
 					}
 				}
 			} label: {
 				HUDMenuLabel(
-					title: model.region.displayName,
+					title: model.region.localizedDisplayName,
 					accentColor: model.accentColor,
 					showsMenuIndicator: true
 				)
@@ -68,9 +68,9 @@ struct StatusHUDPill: View {
 			.menuStyle(.button)
 			.buttonStyle(.plain)
 			.disabled(!model.canSwitchRegion)
-			.help("Switch between installed regions")
+			.help(L10n.string(HomeStrings.switchRegionHelp))
 		} else if model.region != .global {
-			HUDMenuLabel(title: model.region.displayName, accentColor: model.accentColor)
+			HUDMenuLabel(title: model.region.localizedDisplayName, accentColor: model.accentColor)
 		}
 	}
 }

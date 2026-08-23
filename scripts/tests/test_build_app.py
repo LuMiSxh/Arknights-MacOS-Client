@@ -14,6 +14,27 @@ import build_app
 
 
 class AppBundleTests(unittest.TestCase):
+    def test_swift_localizations_are_copied_into_app_resources(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binary_dir = root / "bin"
+            bundle = binary_dir / build_app.SWIFT_RESOURCE_BUNDLE_NAME
+            (bundle / "de.lproj").mkdir(parents=True)
+            (bundle / "de.lproj/Localizable.strings").write_text(
+                '"home.settings" = "Einstellungen";', encoding="utf-8"
+            )
+            resources = root / "Arknights Client.app/Contents/Resources"
+
+            build_app.copy_swift_localizations(binary_dir, resources)
+
+            localized = resources / "de.lproj/Localizable.strings"
+            self.assertTrue(localized.is_file())
+            self.assertFalse(
+                (
+                    root / "Arknights Client.app" / build_app.SWIFT_RESOURCE_BUNDLE_NAME
+                ).exists()
+            )
+
     def test_operator_icon_resources_are_bundled(self) -> None:
         background = (
             "Sources/ArknightsClient/Resources/GameIconBackground.png",
@@ -26,6 +47,16 @@ class AppBundleTests(unittest.TestCase):
 
         self.assertIn(background, build_app.APP_RESOURCES)
         self.assertIn(frame, build_app.APP_RESOURCES)
+
+    def test_main_bundle_localizations_are_bundled(self) -> None:
+        self.assertIn(
+            ("Resources/en.lproj/InfoPlist.strings", "en.lproj/InfoPlist.strings"),
+            build_app.APP_RESOURCES,
+        )
+        self.assertIn(
+            ("Resources/de.lproj/InfoPlist.strings", "de.lproj/InfoPlist.strings"),
+            build_app.APP_RESOURCES,
+        )
 
     def test_game_icon_bridge_is_bundled_and_signed(self) -> None:
         helper = ("GameIcon/GameIconBridge.dylib", "GameIcon/GameIconBridge.dylib")

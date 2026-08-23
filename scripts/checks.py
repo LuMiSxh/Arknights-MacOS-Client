@@ -14,14 +14,35 @@ from collections.abc import Callable
 from pathlib import Path
 
 from lib.common import PROJECT_DIR, info, run, run_main, success
+from localization import synchronize_localization
 from runtime_config import validate_config
 
 RUFF = ("uv", "tool", "run", "--from", "ruff==0.16.3", "ruff")
 
 
+def check_localization() -> None:
+    info("Checking generated localization resources")
+    synchronize_localization(write=False)
+
+
+def format_localization() -> None:
+    info("Generating localization resources")
+    synchronize_localization(write=True)
+
+
 def shim_sources() -> list[Path]:
     runtime_support = PROJECT_DIR / "RuntimeSupport"
     return sorted(runtime_support.rglob("*.c")) + sorted(runtime_support.rglob("*.m"))
+
+
+def handwritten_swift_sources() -> list[Path]:
+    sources = sorted((PROJECT_DIR / "Sources").rglob("*.swift"))
+    tests = sorted((PROJECT_DIR / "Tests").rglob("*.swift"))
+    return [
+        path
+        for path in [*sources, *tests]
+        if not path.name.startswith("GeneratedStringSymbols_")
+    ]
 
 
 def check_swift() -> None:
@@ -33,10 +54,8 @@ def check_swift() -> None:
             "lint",
             "--configuration",
             ".swift-format",
-            "--recursive",
             "--strict",
-            "Sources",
-            "Tests",
+            *handwritten_swift_sources(),
         ],
         cwd=PROJECT_DIR,
     )
@@ -53,10 +72,8 @@ def format_swift() -> None:
             "format",
             "--configuration",
             ".swift-format",
-            "--recursive",
             "--in-place",
-            "Sources",
-            "Tests",
+            *handwritten_swift_sources(),
         ],
         cwd=PROJECT_DIR,
     )
@@ -104,6 +121,7 @@ def format_shim() -> None:
 
 
 TARGETS: dict[str, tuple[Callable[[], None], Callable[[], None]]] = {
+    "localization": (check_localization, format_localization),
     "swift": (check_swift, format_swift),
     "scripts": (check_scripts, format_scripts),
     "shim": (check_shim, format_shim),

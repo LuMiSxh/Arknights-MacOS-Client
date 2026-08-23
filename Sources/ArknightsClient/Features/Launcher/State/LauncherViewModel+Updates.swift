@@ -51,7 +51,7 @@ extension LauncherViewModel {
 
 		launcherUpdateTask?.cancel()
 		isCheckingLauncherUpdates = true
-		launcherUpdateStatus = "Checking…"
+		launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusChecking)
 		let task = Task { [weak self] in
 			guard let self else { return LauncherUpdateCheckOutcome.failed }
 			defer { isCheckingLauncherUpdates = false }
@@ -62,7 +62,7 @@ extension LauncherViewModel {
 				let endpoint = URL(string: endpointString)
 			else {
 				launcherUpdate = nil
-				launcherUpdateStatus = "Update source unavailable"
+				launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusSourceUnavailable)
 				await log.error("Launcher update check failed: update source unavailable")
 				return .unavailable
 			}
@@ -70,7 +70,7 @@ extension LauncherViewModel {
 			do {
 				guard let release = try await updateChecker.latestRelease(from: endpoint) else {
 					launcherUpdate = nil
-					launcherUpdateStatus = "No releases available"
+					launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusNoReleases)
 					await log.info("Launcher update check completed; no releases available")
 					return .current
 				}
@@ -79,16 +79,18 @@ extension LauncherViewModel {
 					&& updateChecker.isNewer(release.version, than: currentVersion)
 				{
 					launcherUpdate = release
-					launcherUpdateStatus = "Version \(release.version) available"
+					launcherUpdateStatus = L10n.string(
+						.Launcher.launcherUpdateStatusVersionAvailable(release.version)
+					)
 					presentLauncherUpdateIfNeeded(release)
 					await log.info(
-						"Launcher update check completed; status=\(launcherUpdateStatus ?? "Unknown")"
+						"Launcher update check completed; status=Version \(release.version) available"
 					)
 					return .updateAvailable(release)
 				}
 
 				launcherUpdate = nil
-				launcherUpdateStatus = "Up to date"
+				launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusUpToDate)
 				await log.info("Launcher update check completed; status=Up to date")
 				return .current
 			} catch is CancellationError {
@@ -96,7 +98,7 @@ extension LauncherViewModel {
 				return .failed
 			} catch {
 				launcherUpdate = nil
-				launcherUpdateStatus = "Couldn’t check for updates"
+				launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusFailed)
 				await log.error("Launcher update check failed: \(error.localizedDescription)")
 				return .failed
 			}

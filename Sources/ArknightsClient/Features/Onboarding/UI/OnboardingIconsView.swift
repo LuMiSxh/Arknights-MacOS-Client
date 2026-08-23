@@ -8,24 +8,26 @@ struct OnboardingIconsView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Choose your Dock icons",
-			subtitle:
-				"Choose an operator to create a Launcher icon with that character and a Game icon in the original Arknights style.",
+			title: L10n.string(OnboardingStrings.iconsTitle),
+			subtitle: L10n.string(OnboardingStrings.iconsSubtitle),
 			accentColor: model.accentColor
 		) {
-			SettingsPanel(title: "Dock icons", systemImage: "square.grid.2x2") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.dockIcons), systemImage: "square.grid.2x2"
+			) {
 				SettingsActionRow(
-					title: "Operator Icons",
-					detail: "The same character is used for both Dock icons."
+					title: L10n.string(OnboardingStrings.operatorIcons),
+					detail: L10n.string(OnboardingStrings.operatorIconsDetail)
 				) {
 					CapsuleActionButton(
-						title: "Choose Operator…", systemImage: "person.2.crop.square.stack",
+						title: L10n.string(OnboardingStrings.chooseOperator),
+						systemImage: "person.2.crop.square.stack",
 						tone: .accent(model.accentColor), presentation: .compact
 					) {
 						browseOperators()
 					}
 					CapsuleActionButton(
-						"Use Defaults",
+						L10n.string(OnboardingStrings.useDefaults),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
@@ -34,31 +36,33 @@ struct OnboardingIconsView: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Custom Overrides",
-					detail: "Optionally replace either generated icon with a local image."
+					title: L10n.string(OnboardingStrings.customOverrides),
+					detail: L10n.string(OnboardingStrings.customOverridesDetail)
 				) {
 					GlassActionMenu(
-						title: "Launcher",
+						title: L10n.string(OnboardingStrings.iconLauncher),
 						systemImage: "macwindow",
 						accentColor: model.accentColor
 					) {
 						Button(
-							"Choose Image…", systemImage: "folder",
+							L10n.string(OnboardingStrings.chooseImage), systemImage: "folder",
 							action: model.chooseCustomAppIcon)
 						Button(
-							"Use Default", systemImage: "arrow.counterclockwise",
+							L10n.string(OnboardingStrings.useDefault),
+							systemImage: "arrow.counterclockwise",
 							action: model.resetAppIcon)
 					}
 					GlassActionMenu(
-						title: "Game",
+						title: L10n.string(OnboardingStrings.iconGame),
 						systemImage: "gamecontroller",
 						accentColor: model.accentColor
 					) {
 						Button(
-							"Choose Image…", systemImage: "folder",
+							L10n.string(OnboardingStrings.chooseImage), systemImage: "folder",
 							action: model.chooseCustomGameIcon)
 						Button(
-							"Use Default", systemImage: "arrow.counterclockwise",
+							L10n.string(OnboardingStrings.useDefault),
+							systemImage: "arrow.counterclockwise",
 							action: model.resetGameIcon)
 					}
 				}

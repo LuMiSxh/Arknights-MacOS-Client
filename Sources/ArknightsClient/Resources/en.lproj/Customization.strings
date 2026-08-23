@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>customization.gallery.action.previewStyles</key>
+	<string>Preview Styles</string>
+	<key>customization.gallery.applying</key>
+	<string>Applying…</string>
+	<key>customization.gallery.artwork.empty</key>
+	<string>No matching artwork</string>
+	<key>customization.gallery.artwork.loading</key>
+	<string>Loading official wallpapers…</string>
+	<key>customization.gallery.artwork.searchPlaceholder</key>
+	<string>Search artwork…</string>
+	<key>customization.gallery.artwork.subtitle</key>
+	<string>Choose a background for the launcher.</string>
+	<key>customization.gallery.artwork.title</key>
+	<string>Artwork Gallery</string>
+	<key>customization.gallery.operator.applyHelp</key>
+	<string>Use %1$@ for both Dock icons</string>
+	<key>customization.gallery.operator.empty</key>
+	<string>No matching operators</string>
+	<key>customization.gallery.operator.loading</key>
+	<string>Loading operators…</string>
+	<key>customization.gallery.operator.searchPlaceholder</key>
+	<string>Search operators…</string>
+	<key>customization.gallery.operator.subtitle</key>
+	<string>Choose one operator for both Dock icons.</string>
+	<key>customization.gallery.operator.title</key>
+	<string>Choose an Operator</string>
+	<key>customization.gallery.search.label</key>
+	<string>Search gallery</string>
+	<key>customization.gallery.wallpaper.applyHelp</key>
+	<string>Use %1$@ as the launcher background</string>
+	<key>customization.iconPreview.game.detail</key>
+	<string>Original Arknights style</string>
+	<key>customization.iconPreview.game.title</key>
+	<string>Game</string>
+	<key>customization.iconPreview.launcher.detail</key>
+	<string>Launcher style</string>
+	<key>customization.iconPreview.launcher.title</key>
+	<string>Launcher</string>
+	<key>customization.iconPreview.loading</key>
+	<string>Loading preview…</string>
+	<key>customization.iconPreview.pair.accessibilityLabel</key>
+	<string>Launcher and game icon previews</string>
+	<key>customization.iconPreview.pair.unavailable</key>
+	<string>Icon previews unavailable</string>
+	<key>customization.iconPreview.subtitle</key>
+	<string>Your operator is applied to both icons.</string>
+	<key>customization.iconPreview.title</key>
+	<string>Generated Icon Styles</string>
+</dict>
+</plist>

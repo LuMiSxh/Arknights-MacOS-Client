@@ -11,9 +11,9 @@ enum BundledDocument: String, Identifiable {
 
 	var title: String {
 		switch self {
-		case .changelog: "Changelog"
-		case .projectLicense: "MPL-2.0 License"
-		case .thirdPartyNotices: "Third-Party Notices"
+		case .changelog: L10n.string(LauncherStrings.documentChangelog)
+		case .projectLicense: L10n.string(LauncherStrings.documentLicense)
+		case .thirdPartyNotices: L10n.string(LauncherStrings.documentNotices)
 		}
 	}
 
@@ -30,7 +30,7 @@ enum BundledDocument: String, Identifiable {
 		guard let url = bundle.url(forResource: resource.name, withExtension: resource.extension),
 			let contents = try? String(contentsOf: url, encoding: .utf8)
 		else {
-			return "This document is unavailable in the current build."
+			return L10n.string(LauncherStrings.documentUnavailable)
 		}
 		return contents
 	}

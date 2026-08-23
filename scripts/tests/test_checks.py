@@ -13,6 +13,14 @@ import checks
 
 
 class RunModeTests(unittest.TestCase):
+    def test_handwritten_swift_sources_exclude_generated_catalog_symbols(self) -> None:
+        sources = checks.handwritten_swift_sources()
+
+        self.assertTrue(any(path.name == "L10n.swift" for path in sources))
+        self.assertFalse(
+            any(path.name.startswith("GeneratedStringSymbols_") for path in sources)
+        )
+
     def test_check_all_runs_every_target_once(self) -> None:
         calls: list[str] = []
         with mock.patch.object(

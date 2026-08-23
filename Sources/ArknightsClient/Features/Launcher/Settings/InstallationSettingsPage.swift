@@ -12,71 +12,80 @@ struct InstallationSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: "Installation", subtitle: "Files, repair, and removal",
+			title: L10n.string(SettingsStrings.installationTitle),
+			subtitle: L10n.string(SettingsStrings.installationSubtitle),
 			accentColor: model.accentColor
 		) {
-			SettingsPanel(title: "Region", systemImage: "globe") {
+			SettingsPanel(title: L10n.string(SettingsStrings.region), systemImage: "globe") {
 				SettingsActionRow(
-					title: "Region",
-					detail: "Global, Japan, and Korea install, update, and launch independently."
+					title: L10n.string(SettingsStrings.region),
+					detail: L10n.string(SettingsStrings.regionDetail)
 				) {
 					GlassMenuPicker(
 						selection: regionBinding,
-						options: GameRegion.allCases.map { ($0, $0.displayName) },
+						options: GameRegion.allCases.map { ($0, $0.localizedDisplayName) },
 						accentColor: model.accentColor,
 						isDisabled: !model.canSwitchRegion
 					)
 				}
 			}
 
-			SettingsPanel(title: "Location", systemImage: "externaldrive") {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.location), systemImage: "externaldrive"
+			) {
 				SettingsActionRow(
-					title: "Status",
-					detail: "State of the selected region's game installation."
+					title: L10n.string(SettingsStrings.status),
+					detail: L10n.string(SettingsStrings.statusDetail)
 				) {
 					Text(gameStatus)
 						.foregroundStyle(model.isDownloading ? model.accentColor : .secondary)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Folder",
+					title: L10n.string(SettingsStrings.folder),
 					detail: model.installDirectory.lastPathComponent
 				) {
 					CapsuleActionButton(
-						title: "Show", systemImage: "folder",
+						title: L10n.string(SettingsStrings.show), systemImage: "folder",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.revealInstallDirectory
 					)
 					.disabled(!model.isInstalled)
-					.help("Show game files in Finder")
+					.help(L10n.string(SettingsStrings.showGameFilesHelp))
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Installation Location",
-					detail: "Choose a new folder or adopt an existing game installation."
+					title: L10n.string(SettingsStrings.installationLocation),
+					detail: L10n.string(SettingsStrings.installationLocationDetail)
 				) {
 					GlassActionMenu(
-						title: "Change…",
+						title: L10n.string(SettingsStrings.change),
 						systemImage: "arrow.triangle.swap",
 						accentColor: model.accentColor,
 						isDisabled: !model.canModifyGameFiles
 					) {
-						Button("Choose New Location…", action: model.chooseInstallDirectory)
 						Button(
-							"Locate Existing Installation…",
+							L10n.string(SettingsStrings.chooseNewLocation),
+							action: model.chooseInstallDirectory)
+						Button(
+							L10n.string(SettingsStrings.locateExisting),
 							action: model.locateExistingInstallation
 						)
 					}
 				}
 			}
 
-			SettingsPanel(title: "Maintenance", systemImage: "wrench.and.screwdriver") {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.maintenance),
+				systemImage: "wrench.and.screwdriver"
+			) {
 				SettingsActionRow(
-					title: "Repair",
-					detail: "Check every game file and download missing or damaged files again."
+					title: L10n.string(SettingsStrings.repair),
+					detail: L10n.string(SettingsStrings.repairDetail)
 				) {
 					CapsuleActionButton(
-						"Repair…", systemImage: "wrench.and.screwdriver",
+						L10n.string(SettingsStrings.repairAction),
+						systemImage: "wrench.and.screwdriver",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.repairGame
 					)
@@ -84,12 +93,11 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Clear Cache",
-					detail:
-						"Free \(model.cacheSizeText) used by shader and browser caches. They rebuild automatically."
+					title: L10n.string(SettingsStrings.clearCache),
+					detail: L10n.string(SettingsStrings.cacheDetail(model.cacheSizeText))
 				) {
 					CapsuleActionButton(
-						title: "Clear Cache…", systemImage: "trash",
+						title: L10n.string(SettingsStrings.clearCache), systemImage: "trash",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.clearCache
 					)
@@ -97,12 +105,12 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Preset Gallery Caches",
-					detail:
-						"Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers). They currently use \(model.presetGalleryCacheSizeText)."
+					title: L10n.string(SettingsStrings.cacheGallery),
+					detail: L10n.string(
+						SettingsStrings.cacheGalleryDetail(model.presetGalleryCacheSizeText))
 				) {
 					CapsuleActionButton(
-						title: "Clear Cache...", systemImage: "trash",
+						title: L10n.string(SettingsStrings.clearCache), systemImage: "trash",
 						tone: .accent(model.accentColor), presentation: .compact
 					) {
 						model.clearPresetGalleryCache()
@@ -110,11 +118,12 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Logs",
-					detail: "Use these files when reporting startup or game problems."
+					title: L10n.string(SettingsStrings.logs),
+					detail: L10n.string(SettingsStrings.logsDetail)
 				) {
 					CapsuleActionButton(
-						"Show Logs", systemImage: "doc.text.magnifyingglass",
+						L10n.string(SettingsStrings.showLogs),
+						systemImage: "doc.text.magnifyingglass",
 						tone: .accent(model.accentColor), presentation: .compact,
 						action: model.revealLogs
 					)
@@ -123,28 +132,28 @@ struct InstallationSettingsPage: View {
 
 			DangerZonePanel {
 				SettingsActionRow(
-					title: "Game Mode (Experimental)",
-					detail:
-						"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
+					title: L10n.string(SettingsStrings.gameMode),
+					detail: L10n.string(SettingsStrings.gameModeDetail)
 				) {
-					Toggle("Game Mode", isOn: gameModeBinding)
+					Toggle(L10n.string(SettingsStrings.gameMode), isOn: gameModeBinding)
 						.labelsHidden()
 						.toggleStyle(.switch)
 						.tint(LauncherVisuals.danger)
 						.disabled(!model.canModifyLaunchOptions)
-						.alert("Game Mode Needs Xcode", isPresented: $showsGameModeUnavailableAlert)
-					{
-					} message: {
-						Text(
-							"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
-						)
-					}
+						.alert(
+							L10n.string(SettingsStrings.gameModeAlert),
+							isPresented: $showsGameModeUnavailableAlert
+						) {
+						} message: {
+							Text(
+								SettingsStrings.gameModeAlertDetail
+							)
+						}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Wine Thread Synchronization",
-					detail:
-						"Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback. Applies on the next launch."
+					title: L10n.string(SettingsStrings.wineSynchronization),
+					detail: L10n.string(SettingsStrings.wineSynchronizationDetail)
 				) {
 					AdaptiveSegmentedControl(
 						selection: synchronizationModeBinding,
@@ -157,110 +166,111 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Wine Setup",
-					detail:
-						"Redo Wine initialization, DXMT installation, and registry overrides on the next launch. Game files and saves are untouched; only the next launch takes longer."
+					title: L10n.string(SettingsStrings.wineSetup),
+					detail: L10n.string(SettingsStrings.forceMigrationDetail)
 				) {
 					CapsuleActionButton(
-						title: "Force Migration…", tone: .danger, presentation: .compact,
+						title: L10n.string(SettingsStrings.forceMigrationAction), tone: .danger,
+						presentation: .compact,
 						role: .destructive
 					) {
 						confirmsForceMigration = true
 					}
 					.disabled(!model.canModifyGameFiles)
 					.confirmationDialog(
-						"Force Wine Setup to Run Again?",
+						L10n.string(SettingsStrings.forceMigrationConfirmation),
 						isPresented: $confirmsForceMigration,
 						titleVisibility: .visible
 					) {
 						Button(
-							"Force Migration", role: .destructive,
+							L10n.string(SettingsStrings.forceMigration), role: .destructive,
 							action: model.forcePrefixMigration
 						)
-						Button("Cancel", role: .cancel) {}
+						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
 						Text(
-							"Game files and saves stay untouched; only the next launch takes longer."
+							SettingsStrings.forceMigrationDetail
 						)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Launcher Settings",
-					detail:
-						"Reset every toggle and option on this screen to default. The install location and selected region are untouched."
+					title: L10n.string(SettingsStrings.launcherSettings),
+					detail: L10n.string(SettingsStrings.resetSettingsDetail)
 				) {
 					CapsuleActionButton(
-						title: "Reset All Settings…", tone: .danger, presentation: .compact,
+						title: L10n.string(SettingsStrings.resetSettingsAction), tone: .danger,
+						presentation: .compact,
 						role: .destructive
 					) {
 						confirmsSettingsReset = true
 					}
 					.disabled(!model.canModifyLaunchOptions)
 					.confirmationDialog(
-						"Reset All Launcher Settings?",
+						L10n.string(SettingsStrings.resetSettingsConfirmation),
 						isPresented: $confirmsSettingsReset,
 						titleVisibility: .visible
 					) {
 						Button(
-							"Reset Settings", role: .destructive,
+							L10n.string(SettingsStrings.resetSettings), role: .destructive,
 							action: model.resetAllLauncherSettings
 						)
-						Button("Cancel", role: .cancel) {}
+						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text("The install location and selected region are untouched.")
+						Text(SettingsStrings.resetSettingsDetail)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Wine Prefix",
-					detail:
-						"Delete the entire Wine environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else rebuilds on the next launch."
+					title: L10n.string(SettingsStrings.winePrefix),
+					detail: L10n.string(SettingsStrings.winePrefixDetail)
 				) {
 					CapsuleActionButton(
-						title: "Delete Wine Prefix…", tone: .danger, presentation: .compact,
+						title: L10n.string(SettingsStrings.deleteWinePrefix), tone: .danger,
+						presentation: .compact,
 						role: .destructive
 					) {
 						confirmsWinePrefixDeletion = true
 					}
 					.disabled(!model.canModifyGameFiles)
 					.confirmationDialog(
-						"Delete the Wine Prefix?",
+						L10n.string(SettingsStrings.deleteWinePrefixConfirmation),
 						isPresented: $confirmsWinePrefixDeletion,
 						titleVisibility: .visible
 					) {
 						Button(
-							"Delete Wine Prefix", role: .destructive, action: model.deleteWinePrefix
+							L10n.string(SettingsStrings.deleteWinePrefixAction), role: .destructive,
+							action: model.deleteWinePrefix
 						)
-						Button("Cancel", role: .cancel) {}
+						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text(
-							"This signs you out of every login saved in the embedded browser. Game files are untouched."
-						)
+						Text(SettingsStrings.deleteWinePrefixDetail)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Game files",
-					detail: "Move the selected game installation to the Trash."
+					title: L10n.string(SettingsStrings.gameFiles),
+					detail: L10n.string(SettingsStrings.gameFilesDetail)
 				) {
 					CapsuleActionButton(
-						title: "Uninstall Game…", tone: .danger, presentation: .compact,
+						title: L10n.string(SettingsStrings.uninstall), tone: .danger,
+						presentation: .compact,
 						role: .destructive
 					) {
 						confirmsGameUninstall = true
 					}
 					.disabled(!model.isInstalled || !model.canModifyGameFiles)
 					.confirmationDialog(
-						"Uninstall Arknights?",
+						L10n.string(SettingsStrings.uninstallConfirmation),
 						isPresented: $confirmsGameUninstall,
 						titleVisibility: .visible
 					) {
 						Button(
-							"Move Game to Trash", role: .destructive, action: model.uninstallGame)
-						Button("Cancel", role: .cancel) {}
+							L10n.string(SettingsStrings.moveGameToTrash), role: .destructive,
+							action: model.uninstallGame)
+						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text("The launcher stays installed.")
+						Text(SettingsStrings.uninstallDetail)
 					}
 				}
 			}
@@ -289,11 +299,12 @@ struct InstallationSettingsPage: View {
 
 	private var gameStatus: String {
 		if model.isDownloading, let progress = model.progress {
-			return "Downloading \(Int(progress.fraction * 100))%"
+			return L10n.string(SettingsStrings.downloading(Int(progress.fraction * 100)))
 		}
-		if model.isDownloading { return "Preparing download" }
-		if model.isInstalled { return "Installed" }
-		return model.hasPartialDownload ? "Paused" : "Not installed"
+		if model.isDownloading { return L10n.string(SettingsStrings.preparingDownload) }
+		if model.isInstalled { return L10n.string(SettingsStrings.installed) }
+		return L10n.string(
+			model.hasPartialDownload ? SettingsStrings.paused : SettingsStrings.notInstalled)
 	}
 
 	private var regionBinding: Binding<GameRegion> {

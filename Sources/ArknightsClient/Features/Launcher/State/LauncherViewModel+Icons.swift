@@ -9,8 +9,8 @@ extension LauncherViewModel {
 	/// to `LauncherIconManager`; the running-process icon itself resets between launches.
 	func chooseCustomAppIcon() {
 		let panel = NSOpenPanel()
-		panel.title = "Choose an app icon"
-		panel.prompt = "Choose"
+		panel.title = L10n.string(LauncherStrings.pickerLauncherIcon)
+		panel.prompt = L10n.string(LauncherStrings.pickerChoose)
 		panel.allowedContentTypes = [.image]
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true
@@ -55,8 +55,8 @@ extension LauncherViewModel {
 
 	func chooseCustomGameIcon() {
 		let panel = NSOpenPanel()
-		panel.title = "Choose a game icon"
-		panel.prompt = "Choose"
+		panel.title = L10n.string(LauncherStrings.pickerGameIcon)
+		panel.prompt = L10n.string(LauncherStrings.pickerChoose)
 		panel.allowedContentTypes = [.image]
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true
@@ -103,7 +103,7 @@ extension LauncherViewModel {
 				throw LauncherError.cannotSetAppIcon
 			}
 			try data.write(to: sourceURL, options: .atomic)
-			setStatus(.custom("Launcher and game icons updated"))
+			setStatus(.custom(L10n.string(.Launcher.launcherStatusIconsUpdated)))
 		} catch {
 			show(error)
 		}
@@ -120,7 +120,7 @@ extension LauncherViewModel {
 				withIntermediateDirectories: true
 			)
 			try png.write(to: paths.customGameIcon, options: .atomic)
-			setStatus(.custom("Game icon updated for the next launch"))
+			setStatus(.custom(L10n.string(.Launcher.launcherStatusGameIconUpdated)))
 		} catch {
 			show(error)
 		}
@@ -136,7 +136,7 @@ extension LauncherViewModel {
 				try FileManager.default.removeItem(at: paths.customGameIcon)
 			}
 			try clearOperatorPresetAvatar()
-			setStatus(.custom("Default game icon restored for the next launch"))
+			setStatus(.custom(L10n.string(.Launcher.launcherStatusGameIconRestored)))
 		} catch {
 			show(error)
 		}
@@ -198,7 +198,7 @@ extension LauncherViewModel {
 				throw LauncherError.cannotSetAppIcon
 			}
 			updateThemeColor()
-			setStatus(.custom("Default Launcher and game icons restored"))
+			setStatus(.custom(L10n.string(.Launcher.launcherStatusIconsRestored)))
 		} catch {
 			show(error)
 		}

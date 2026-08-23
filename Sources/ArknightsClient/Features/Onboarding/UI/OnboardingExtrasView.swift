@@ -7,51 +7,49 @@ struct OnboardingExtrasView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Keep things current and comfortable",
-			subtitle:
-				"Automatic checks only look for new versions. Downloads still begin when you choose them, except for the installation already started by this setup.",
+			title: L10n.string(OnboardingStrings.extrasTitle),
+			subtitle: L10n.string(OnboardingStrings.extrasSubtitle),
 			accentColor: model.accentColor
 		) {
 			SettingsPanel(
-				title: "Updates & project notices", systemImage: "arrow.trianglehead.2.clockwise"
+				title: L10n.string(OnboardingStrings.updatesTitle),
+				systemImage: "arrow.trianglehead.2.clockwise"
 			) {
 				OnboardingToggleRow(
-					title: "Check for Launcher Updates",
-					detail:
-						"Looks for a new launcher release when the app opens. You still choose when to download it.",
+					title: L10n.string(OnboardingStrings.launcherUpdateTitle),
+					detail: L10n.string(OnboardingStrings.launcherUpdateDetail),
 					isOn: $model.automaticallyChecksLauncherUpdates,
 					accentColor: model.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: "Check for Game Updates",
-					detail:
-						"Compares your installed files with Yostar's current version and offers Update when needed.",
+					title: L10n.string(OnboardingStrings.gameUpdateTitle),
+					detail: L10n.string(OnboardingStrings.gameUpdateDetail),
 					isOn: $model.automaticallyChecksGameUpdates,
 					accentColor: model.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: "Show Project Announcements",
-					detail:
-						"Shows important launcher notices, such as compatibility guidance, once per launch.",
+					title: L10n.string(OnboardingStrings.announcementsTitle),
+					detail: L10n.string(OnboardingStrings.announcementsDetail),
 					isOn: $model.announcementsEnabled,
 					accentColor: model.accentColor
 				)
 			}
 
-			SettingsPanel(title: "Launcher music", systemImage: "music.note") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.musicTitle), systemImage: "music.note"
+			) {
 				OnboardingToggleRow(
-					title: "Play Background Music",
-					detail:
-						"Plays the configured YouTube music while the launcher is open and the game is not running.",
+					title: L10n.string(OnboardingStrings.backgroundMusicTitle),
+					detail: L10n.string(OnboardingStrings.backgroundMusicDetail),
 					isOn: $model.playsLauncherMusic,
 					accentColor: model.accentColor
 				)
 
 				if model.playsLauncherMusic {
 					SettingsHairline()
-					LabeledContent("Volume") {
+					LabeledContent(L10n.string(OnboardingStrings.volume)) {
 						HStack(spacing: 10) {
 							Image(systemName: "speaker.fill")
 								.foregroundStyle(.secondary)
@@ -68,9 +66,8 @@ struct OnboardingExtrasView: View {
 					}
 					SettingsHairline()
 					OnboardingToggleRow(
-						title: "Show Currently Playing",
-						detail:
-							"Adds the current track and expandable playback controls to the main launcher.",
+						title: L10n.string(OnboardingStrings.nowPlayingTitle),
+						detail: L10n.string(OnboardingStrings.nowPlayingDetail),
 						isOn: $model.showsPlayingMusic,
 						accentColor: model.accentColor
 					)

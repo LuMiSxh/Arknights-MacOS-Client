@@ -37,14 +37,22 @@ struct PresetGalleryView: View {
 				ScrollView {
 					Group {
 						if isLoading {
-							PresetGalleryLoadingView(
-								text: destination == .artwork
-									? "Loading official wallpapers…" : "Loading operators…"
-							)
+							PresetGalleryLoadingView(text: destination.loadingText)
 						} else if destination == .artwork {
-							wallpapersGrid
+							if filteredWallpapers.isEmpty {
+								PresetGalleryEmptyView(
+									text: destination.emptyText, systemImage: "photo")
+							} else {
+								wallpapersGrid
+							}
 						} else {
-							avatarsGrid
+							if filteredAvatars.isEmpty {
+								PresetGalleryEmptyView(
+									text: destination.emptyText, systemImage: "person.crop.square"
+								)
+							} else {
+								avatarsGrid
+							}
 						}
 					}
 					.padding(.horizontal, 24)
@@ -105,7 +113,8 @@ struct PresetGalleryView: View {
 			Spacer()
 			if destination == .operatorIcons {
 				CapsuleActionButton(
-					title: "Preview Styles", systemImage: "dock.rectangle",
+					title: L10n.string(CustomizationStrings.previewStyles),
+					systemImage: "dock.rectangle",
 					tone: .accent(model.accentColor)
 				) {
 					showsIconStylePreview = true
@@ -127,8 +136,8 @@ struct PresetGalleryView: View {
 
 	private var searchBar: some View {
 		ThemedTextField(
-			"Search gallery",
-			prompt: destination.searchPlaceholder,
+			L10n.string(CustomizationStrings.searchLabel),
+			prompt: L10n.string(destination.searchPlaceholder),
 			text: $searchText,
 			systemImage: "magnifyingglass",
 			accentColor: model.accentColor
@@ -215,6 +224,8 @@ struct PresetGalleryView: View {
 				}
 				.buttonStyle(.plain)
 				.disabled(applyingItemID != nil)
+				.accessibilityHint(CustomizationStrings.operatorApplyHelp(avatar.name))
+				.accessibilityValue(isApplying ? Text(CustomizationStrings.applying) : Text(""))
 			}
 		}
 	}
@@ -247,7 +258,7 @@ struct PresetGalleryView: View {
 										ProgressView()
 											.controlSize(.regular)
 											.tint(model.accentColor)
-										Text("Applying…")
+										Text(CustomizationStrings.applying)
 											.font(.caption2.bold())
 											.foregroundStyle(.white)
 									}
@@ -286,6 +297,8 @@ struct PresetGalleryView: View {
 				}
 				.buttonStyle(.plain)
 				.disabled(applyingItemID != nil)
+				.accessibilityHint(CustomizationStrings.wallpaperApplyHelp(wp.title))
+				.accessibilityValue(isApplying ? Text(CustomizationStrings.applying) : Text(""))
 			}
 		}
 	}

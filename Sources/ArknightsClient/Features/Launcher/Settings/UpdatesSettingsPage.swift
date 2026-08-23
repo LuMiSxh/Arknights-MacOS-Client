@@ -7,11 +7,14 @@ struct UpdatesSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: "Updates", subtitle: "Keep the launcher and game current",
+			title: L10n.string(SettingsStrings.updatesTitle),
+			subtitle: L10n.string(SettingsStrings.updatesSubtitle),
 			accentColor: model.accentColor
 		) {
-			SettingsPanel(title: "Automatic Checks", systemImage: "arrow.trianglehead.2.clockwise")
-			{
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.automaticChecks),
+				systemImage: "arrow.trianglehead.2.clockwise"
+			) {
 				UpdateSettingsRow(
 					title: "Launcher",
 					status: launcherStatusText,
@@ -23,7 +26,8 @@ struct UpdatesSettingsPage: View {
 				SettingsHairline()
 				UpdateSettingsRow(
 					title: "Arknights",
-					status: model.isGameUpdateAvailable ? "Update available" : model.versionText,
+					status: model.isGameUpdateAvailable
+						? L10n.string(SettingsStrings.updateAvailable) : model.versionText,
 					isEnabled: $model.automaticallyChecksGameUpdates,
 					isChecking: model.isDownloading,
 					accentColor: model.accentColor,
@@ -31,23 +35,28 @@ struct UpdatesSettingsPage: View {
 				)
 			}
 
-			SettingsPanel(title: "Announcements", systemImage: "megaphone") {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.announcements), systemImage: "megaphone"
+			) {
 				SettingsActionRow(
-					title: "Announcements",
-					detail: "Show occasional project messages once per announcement."
+					title: L10n.string(SettingsStrings.announcements),
+					detail: L10n.string(SettingsStrings.announcementsDetail)
 				) {
-					Toggle("Announcements", isOn: $model.announcementsEnabled)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(model.accentColor)
+					Toggle(
+						L10n.string(SettingsStrings.announcements),
+						isOn: $model.announcementsEnabled
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(model.accentColor)
 				}
 			}
 		}
 	}
 
 	private var launcherStatusText: String {
-		if model.isCheckingLauncherUpdates { return "Checking…" }
-		if model.launcherUpdate != nil { return "Update available" }
+		if model.isCheckingLauncherUpdates { return L10n.string(SettingsStrings.checking) }
+		if model.launcherUpdate != nil { return L10n.string(SettingsStrings.updateAvailable) }
 		return "v\(model.appVersion)"
 	}
 }

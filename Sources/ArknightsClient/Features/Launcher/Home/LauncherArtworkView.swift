@@ -16,7 +16,7 @@ struct LauncherArtworkView: View {
 						.scaledToFill()
 						.id(ObjectIdentifier(image))
 						.transition(.opacity)
-						.accessibilityLabel("Arknights artwork")
+						.accessibilityLabel(LauncherStrings.artworkAccessibility)
 				} else {
 					fallbackArtwork
 						.transition(.opacity)

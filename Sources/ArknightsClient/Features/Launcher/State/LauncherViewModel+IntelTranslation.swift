@@ -37,7 +37,8 @@ extension LauncherViewModel {
 			)
 			guard result.status == 0 else {
 				rosettaInstallationState = .failed(
-					"Apple’s installer exited with status \(result.status). Use the Terminal command below or check the launcher log for details."
+					L10n.string(
+						.Launcher.launcherRosettaFailureInstallerExited(String(result.status)))
 				)
 				return intelTranslationState
 			}
@@ -49,8 +50,7 @@ extension LauncherViewModel {
 			return intelTranslationState
 		} catch {
 			rosettaInstallationTask = nil
-			let message =
-				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
+			let message = L10n.string(.Launcher.launcherRosettaFailureInstallerStart)
 			rosettaInstallationState = .failed(message)
 			await log.error("Rosetta installation failed: \(error.localizedDescription)")
 			return intelTranslationState
@@ -92,44 +92,46 @@ extension LauncherViewModel {
 	}
 
 	var intelTranslationStatusTitle: String? {
-		if rosettaInstallationState.isInstalling { return "Installing Rosetta 2…" }
+		if rosettaInstallationState.isInstalling {
+			return L10n.string(.Launcher.launcherRosettaStatusInstalling)
+		}
 		if rosettaInstallationState.failureMessage != nil {
-			return "Rosetta installation failed"
+			return L10n.string(.Launcher.launcherRosettaStatusInstallationFailed)
 		}
 		return switch intelTranslationState {
 		case .waitingForLauncherCheck, .checking:
-			"Checking Intel compatibility…"
+			L10n.string(.Launcher.launcherRosettaStatusChecking)
 		case .available:
 			nil
 		case .rosettaMissing:
-			"Rosetta 2 required"
+			L10n.string(.Launcher.launcherRosettaStatusMissing)
 		case .gameTestModeEnabled:
-			"Legacy Game Test Mode is active"
+			L10n.string(.Launcher.launcherRosettaStatusGameTestMode)
 		case .unavailable:
-			"Intel compatibility unavailable"
+			L10n.string(.Launcher.launcherRosettaStatusUnavailable)
 		case .unsupportedOS:
-			"Windows runtime unsupported"
+			L10n.string(.Launcher.launcherRosettaStatusUnsupported)
 		}
 	}
 
 	var intelTranslationStatusDetail: String? {
 		if rosettaInstallationState.isInstalling {
-			return "Apple’s software update tool is installing the Intel compatibility layer."
+			return L10n.string(.Launcher.launcherRosettaDetailInstalling)
 		}
 		if let failure = rosettaInstallationState.failureMessage { return failure }
 		return switch intelTranslationState {
 		case .waitingForLauncherCheck, .checking:
-			"The launcher is verifying that the bundled Wine runtime can start."
+			L10n.string(.Launcher.launcherRosettaDetailAvailableCheck)
 		case .available:
 			nil
 		case .rosettaMissing:
-			"Install Rosetta 2, then check again."
+			L10n.string(.Launcher.launcherRosettaDetailMissing)
 		case .gameTestModeEnabled:
-			"This macOS 27 test mode disables Rosetta. Turn it off, restart your Mac, then check again."
+			L10n.string(.Launcher.launcherRosettaDetailGameTestMode)
 		case .unavailable:
-			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
+			L10n.string(.Launcher.launcherRosettaDetailUnavailable)
 		case .unsupportedOS:
-			"This macOS version no longer provides the general Rosetta support Wine requires."
+			L10n.string(.Launcher.launcherRosettaDetailUnsupported)
 		}
 	}
 
@@ -149,11 +151,8 @@ extension LauncherViewModel {
 
 	var rosettaInstallationActionTitle: String {
 		rosettaInstallationState.failureMessage == nil
-			? "Install Rosetta 2…" : "Try Installation Again…"
-	}
-
-	var playHelp: String {
-		intelTranslationStatusDetail ?? "Start Arknights"
+			? L10n.string(.Launcher.launcherRosettaActionInstallEllipsis)
+			: L10n.string(.Launcher.launcherRosettaActionInstallAgain)
 	}
 
 	var intelTranslationLaunchError: LauncherError {

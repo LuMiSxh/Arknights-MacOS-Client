@@ -180,8 +180,14 @@ struct LauncherViewModelConcurrencyTests {
 
 		#expect(state == .rosettaMissing)
 		#expect(!model.canLaunch)
-		#expect(model.rosettaInstallationState.failureMessage?.contains("status 7") == true)
-		#expect(model.rosettaInstallationActionTitle == "Try Installation Again…")
+		#expect(
+			model.rosettaInstallationState.failureMessage
+				== L10n.string(.Launcher.launcherRosettaFailureInstallerExited("7"))
+		)
+		#expect(
+			model.rosettaInstallationActionTitle
+				== L10n.string(.Launcher.launcherRosettaActionInstallAgain)
+		)
 		#expect(await checks.count == 1)
 		await api.resolveBranding()
 	}
@@ -233,7 +239,7 @@ struct LauncherViewModelConcurrencyTests {
 
 		await installer.acknowledgeCancellation()
 		await waitForDownloadToStop(model)
-		#expect(model.activityMessage == "Paused")
+		#expect(model.activityMessage == L10n.string(.Launcher.launcherStatusPaused))
 		await api.resolveBranding()
 	}
 

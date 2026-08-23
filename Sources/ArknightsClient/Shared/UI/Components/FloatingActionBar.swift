@@ -20,12 +20,16 @@ struct FloatingActionBar<Content: View>: View {
 
 /// Standard confirmation action used by floating modal footers.
 struct FloatingDoneButton: View {
+	var title = L10n.string(SharedStrings.done)
 	let accentColor: Color
 	let action: () -> Void
 
 	var body: some View {
 		CapsuleActionButton(
-			title: "Done", systemImage: "checkmark", tone: .accent(accentColor), action: action
+			title: title,
+			systemImage: "checkmark",
+			tone: .accent(accentColor),
+			action: action
 		)
 		.controlSize(.large)
 		.keyboardShortcut(.defaultAction)

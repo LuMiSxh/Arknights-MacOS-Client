@@ -22,17 +22,20 @@ struct CachedPresetOperatorPair: View {
 					preview(icons.game)
 				}
 			} else if hasFailed {
-				Label("Icon previews unavailable", systemImage: "person.crop.square.fill")
-					.labelStyle(.iconOnly)
-					.font(.title2)
-					.foregroundStyle(.tertiary)
+				Label(
+					CustomizationStrings.iconPreviewUnavailable,
+					systemImage: "person.crop.square.fill"
+				)
+				.labelStyle(.iconOnly)
+				.font(.title2)
+				.foregroundStyle(.tertiary)
 			} else {
 				ProgressView()
 					.controlSize(.small)
 			}
 		}
 		.accessibilityElement(children: .ignore)
-		.accessibilityLabel("Launcher and game icon previews")
+		.accessibilityLabel(CustomizationStrings.iconPreviewPairAccessibilityLabel)
 		.task(id: renderIdentifier) {
 			icons = nil
 			hasFailed = false

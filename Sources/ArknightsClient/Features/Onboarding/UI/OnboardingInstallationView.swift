@@ -13,18 +13,20 @@ struct OnboardingInstallationView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Choose where you play",
-			subtitle:
-				"Regions use separate game files and accounts. Pick the server you already use; you can install another region later from Settings.",
+			title: L10n.string(OnboardingStrings.installationTitle),
+			subtitle: L10n.string(OnboardingStrings.installationSubtitle),
 			accentColor: model.accentColor
 		) {
-			SettingsPanel(title: "Server region", systemImage: "globe.asia.australia") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.serverRegion),
+				systemImage: "globe.asia.australia"
+			) {
 				AdaptiveSegmentedControl(
 					selection: $selectedRegion,
 					options: GameRegion.allCases,
 					accentColor: model.accentColor
 				) { region in
-					Text(region.displayName)
+					Text(region.localizedDisplayName)
 				}
 				.disabled(!model.canSwitchRegion)
 				.onChange(of: selectedRegion) { _, newRegion in
@@ -35,7 +37,9 @@ struct OnboardingInstallationView: View {
 					.foregroundStyle(.secondary)
 			}
 
-			SettingsPanel(title: "Official PC client", systemImage: installationImage) {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.officialClient), systemImage: installationImage
+			) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
 						Text(installationTitle)
@@ -64,22 +68,16 @@ struct OnboardingInstallationView: View {
 				}
 
 				if !model.isInstalled && !model.isDownloading {
-					Text(
-						"Selecting Install & Continue starts a resumable download. Closing the launcher pauses it safely."
-					)
-					.font(.callout)
-					.foregroundStyle(.secondary)
+					Text(OnboardingStrings.installDownloadDetail)
+						.font(.callout)
+						.foregroundStyle(.secondary)
 				}
 			}
 		}
 	}
 
-	private var regionDetail: String {
-		switch selectedRegion {
-		case .global: "For the English Global client and Global Yostar accounts."
-		case .japan: "For the Japanese client and Japan-region Yostar accounts."
-		case .korea: "For the Korean client and Korea-region Yostar accounts."
-		}
+	private var regionDetail: LocalizedStringResource {
+		OnboardingStrings.regionDetail(selectedRegion)
 	}
 
 	private var installationImage: String {
@@ -88,22 +86,22 @@ struct OnboardingInstallationView: View {
 		return "externaldrive.badge.plus"
 	}
 
-	private var installationTitle: String {
-		if model.isDownloading { return "Downloading in the background" }
-		if model.isInstalled { return "Existing installation found" }
-		if model.hasPartialDownload { return "Paused download found" }
-		return "Ready to install \(selectedRegion.displayName)"
+	private var installationTitle: LocalizedStringResource {
+		if model.isDownloading { return OnboardingStrings.downloadingTitle }
+		if model.isInstalled { return OnboardingStrings.existingTitle }
+		if model.hasPartialDownload { return OnboardingStrings.partialTitle }
+		return OnboardingStrings.readyToInstall(selectedRegion.localizedDisplayName)
 	}
 
-	private var installationDetail: String {
-		if model.isDownloading { return "You can continue setup while the game files download." }
+	private var installationDetail: LocalizedStringResource {
+		if model.isDownloading { return OnboardingStrings.downloadingDetail }
 		if model.isInstalled {
-			return
-				"Arknights \(model.installedVersion ?? model.versionText) is ready in \(model.installDirectory.lastPathComponent)."
+			return OnboardingStrings.installationExisting(
+				version: model.installedVersion ?? model.versionText,
+				directory: model.installDirectory.lastPathComponent
+			)
 		}
-		if model.hasPartialDownload {
-			return "The installer will continue from verified partial files."
-		}
-		return "Download size after extraction: \(model.installSizeText)."
+		if model.hasPartialDownload { return OnboardingStrings.partialDetail }
+		return OnboardingStrings.installationSize(model.installSizeText)
 	}
 }

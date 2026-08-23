@@ -80,7 +80,7 @@ struct OnboardingView: View {
 				FloatingActionBar(tint: model.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
 						Button(action: coordinator.skip) {
-							Label("Skip for Now", systemImage: "forward.end")
+							Label(OnboardingStrings.skipForNow, systemImage: "forward.end")
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
@@ -88,13 +88,13 @@ struct OnboardingView: View {
 					Spacer()
 					if coordinator.step != .welcome {
 						Button(action: coordinator.goBack) {
-							Label("Back", systemImage: "chevron.backward")
+							Label(OnboardingStrings.back, systemImage: "chevron.backward")
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
 					}
 					CapsuleActionButton(
-						title: primaryTitle,
+						title: L10n.string(primaryTitle),
 						systemImage: primarySystemImage,
 						tone: .accent(model.accentColor),
 						action: performPrimaryAction
@@ -124,21 +124,23 @@ struct OnboardingView: View {
 		}
 	}
 
-	private var primaryTitle: String {
+	private var primaryTitle: LocalizedStringResource {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
-			case .checking: "Checking…"
+			case .checking: OnboardingStrings.checking
 			case .current, .checkFailed:
-				coordinator.intelTranslationState == .checking ? "Checking…" : "Continue"
-			case .updateRequired(let release): "View Version \(release.version)"
+				coordinator.intelTranslationState == .checking
+					? OnboardingStrings.checking : OnboardingStrings.continue
+			case .updateRequired(let release): OnboardingStrings.viewVersion(release.version)
 			}
 		}
 		if coordinator.step == .installation {
-			if model.isInstalled || model.isDownloading { return "Continue Setup" }
-			return model.hasPartialDownload ? "Resume & Continue" : "Install & Continue"
+			if model.isInstalled || model.isDownloading { return OnboardingStrings.continueSetup }
+			return model.hasPartialDownload
+				? OnboardingStrings.resumeAndContinue : OnboardingStrings.installAndContinue
 		}
-		if coordinator.step == .finish { return "Finish Setup" }
-		return "Continue"
+		if coordinator.step == .finish { return OnboardingStrings.finishSetup }
+		return OnboardingStrings.continue
 	}
 
 	private var canPerformPrimaryAction: Bool {

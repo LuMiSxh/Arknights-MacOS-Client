@@ -1,0 +1,1734 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "launcher.artwork.accessibility": {
+      "comment": "Accessibility label for the launcher background artwork",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights-Grafik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights artwork"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.dialog.cancel": {
+      "comment": "Cancel action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.document.changelog": {
+      "comment": "Title of the bundled changelog",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungsprotokoll"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changelog"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.document.license": {
+      "comment": "Title of the bundled project license",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MPL-2.0-Lizenz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MPL-2.0 License"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.document.notices": {
+      "comment": "Title of bundled third-party notices",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweise zu Drittanbieter-Software"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Third-Party Notices"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.document.unavailable": {
+      "comment": "Fallback when a bundled document cannot be loaded",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Dokument ist in diesem Build nicht verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This document is unavailable in the current build."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.cannotCreateFile": {
+      "comment": "Installer cannot create its temporary file; path follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporäre Datei konnte nicht erstellt werden: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not create temporary file: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.cannotEncodeAppIcon": {
+      "comment": "Selected image cannot become app icon",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ausgewählte Bild konnte nicht in ein App-Symbol umgewandelt werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected image could not be converted into an app icon."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.cannotSetAppIcon": {
+      "comment": "macOS refused app icon update",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS konnte das App-Symbol nicht aktualisieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS refused to update the app icon."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.checksumMismatch": {
+      "comment": "CRC check failed; file, actual checksum, expected checksum follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die CRC64-Prüfung für %@ ist fehlgeschlagen (%@, erwartet %@)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CRC64 check for %@ failed (%@, expected %@)."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.conflictingManifestPaths": {
+      "comment": "Two game manifest paths conflict; both paths follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widersprüchliche Pfade im Spielmanifest: %@ und %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conflicting paths in game manifest: %@ and %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.downloadResponse": {
+      "comment": "Download returned an HTTP status; path then status follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Download für %@ gab HTTP %@ zurück."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download for %@ returned HTTP %@."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.downloadedSizeMismatch": {
+      "comment": "Downloaded file has wrong byte size; path, actual and expected byte counts follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ hat %@ Bytes statt %@ Bytes."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ has %@ bytes instead of %@."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.duplicateManifestPath": {
+      "comment": "Game manifest includes a duplicate path",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doppelter Pfad im Spielmanifest: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate path in game manifest: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.gameNotInstalled": {
+      "comment": "Arknights executable was not found; path follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights.exe wurde nicht gefunden: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights.exe was not found: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.insufficientDiskSpace": {
+      "comment": "Required and available disk space follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights benötigt etwa %@ freien Speicher, aber es sind nur %@ verfügbar. Gib Speicher frei und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights needs about %@ free, but only %@ is available. Free up space and try again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.intelTranslationUnavailable": {
+      "comment": "Rosetta cannot start Wine",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS konnte die Intel-basierte Wine-Laufzeit nicht starten. Prüfe, ob Rosetta 2 installiert ist, starte deinen Mac neu und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS could not start the Intel-based Wine runtime. Check that Rosetta 2 is installed and restart your Mac before trying again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.intelTranslationUnsupported": {
+      "comment": "macOS version no longer supports Wine Rosetta requirement",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese macOS-Version unterstützt die allgemeine Intel-Übersetzung nicht mehr, die die gebündelte Wine-Laufzeit benötigt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This macOS version no longer supports the general Intel translation required by the bundled Wine runtime."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.invalidCustomImage": {
+      "comment": "Selected custom image is unsupported; path follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die ausgewählte Datei ist kein unterstütztes Bild: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected file is not a supported image: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.invalidManifestPath": {
+      "comment": "Unsafe game manifest path",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsicherer Pfad im Spielmanifest: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unsafe path in game manifest: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.invalidPresetImage": {
+      "comment": "Preset image is unsupported or unsafe; URL follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Preset-Grafik ist kein unterstütztes Bild oder hat unsichere Abmessungen: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The preset asset is not a supported image or has unsafe dimensions: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.invalidRemoteAsset": {
+      "comment": "Remote asset URL was refused",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht unterstützte Remote-Asset-URL abgelehnt: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refused an unsupported remote asset URL: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.invalidResponse": {
+      "comment": "Yostar server sent invalid response",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Yostar-Server hat eine ungültige Antwort zurückgegeben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yostar's server returned an invalid response."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.missingConfiguration": {
+      "comment": "Game configuration has not loaded",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die aktuelle Spielkonfiguration wurde noch nicht geladen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The current game configuration has not been loaded yet."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.remoteContentTooLarge": {
+      "comment": "Remote host and size limit follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remote-Inhalte von %@ haben das Limit von %@ überschritten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remote content from %@ exceeded the %@ limit."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.rosettaDisabled": {
+      "comment": "macOS Legacy Game Test Mode blocks Rosetta; command stays technical",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der macOS-Modus Legacy Game Test Mode deaktiviert die von Wine benötigte Rosetta-Übersetzung. Führe \"sudo game-test-tool disable\" im Terminal aus, starte deinen Mac neu und prüfe anschließend erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS Legacy Game Test Mode disables the Rosetta translation required by Wine. Run \"sudo game-test-tool disable\" in Terminal, restart your Mac, then check again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.rosettaMissing": {
+      "comment": "Rosetta required; command stays technical",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 wird benötigt, um die gebündelte Wine-Laufzeit zu starten. Installiere es mit \"softwareupdate --install-rosetta --agree-to-license\" im Terminal und prüfe anschließend erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 is required to run the bundled Wine runtime. Install it by running \"softwareupdate --install-rosetta --agree-to-license\" in Terminal, then check again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.runtimeConfiguration": {
+      "comment": "Windows runtime setup failed; technical reason follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Windows-Laufzeit konnte nicht eingerichtet werden: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Windows runtime could not be configured: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.runtimeExited": {
+      "comment": "Windows runtime exit status and log path follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Windows-Laufzeit wurde mit Status %@ beendet. Details: %@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Windows runtime exited with status %@. See %@."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.runtimeWindowTimeout": {
+      "comment": "Game did not show a window in time",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights hat innerhalb von 90 Sekunden kein Fenster geöffnet. Prüfe das Wine-Protokoll und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights did not open a window within 90 seconds. Check the Wine log and try again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.server": {
+      "comment": "Yostar API code and unmodified message follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yostar-API-Fehler %@: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yostar API error %@: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.symbolicLink": {
+      "comment": "Installer refused symlink in destination; path follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Spiel-Installer hat einen symbolischen Link im Zielordner abgelehnt: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The game installer refused a symbolic link in its destination: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.unsafeTemporaryFile": {
+      "comment": "Installer refused unsafe temporary file; path follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Installer hat eine temporäre Datei abgelehnt, die keine reguläre Datei ist oder mehrere Hardlinks hat: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The installer refused a non-regular or multiply linked temporary file: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.wineRuntimeMissing": {
+      "comment": "Compatible Wine runtime is missing",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine kompatible Windows-Laufzeit gefunden. Verwende einen Build mit Wine + DXMT."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No compatible Windows runtime found. Use a build that bundles Wine + DXMT."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.filePicker.choose": {
+      "comment": "Generic file picker confirmation action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.filePicker.gameIcon": {
+      "comment": "Title for game icon picker",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel-Symbol auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a game icon"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.filePicker.installDirectory": {
+      "comment": "Title for install directory picker",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installationsort für Arknights auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose where to install Arknights"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.filePicker.launcherArtwork": {
+      "comment": "Title for launcher artwork picker",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-Grafik auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose launcher artwork"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.filePicker.launcherIcon": {
+      "comment": "Title for launcher icon picker",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-Symbol auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an app icon"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.filePicker.locateInstallation": {
+      "comment": "Title for existing game folder picker",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner mit Arknights.exe auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the folder containing Arknights.exe"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.filePicker.useFolder": {
+      "comment": "Existing game folder picker confirmation action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner verwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Folder"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.popup.done": {
+      "comment": "Dismiss popup action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.popup.later": {
+      "comment": "Defer launcher update action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.popup.notice": {
+      "comment": "Generic official notice title",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notice"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.popup.releaseFallback": {
+      "comment": "Fallback update popup content when release notes are blank",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine neue Launcher-Version ist verfügbar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new launcher version is available."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.popup.updateTitle": {
+      "comment": "Launcher update popup title; version follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights Client %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights Client %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.popup.viewRelease": {
+      "comment": "Open launcher release action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Release ansehen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View Release"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.action.install": {
+      "comment": "Install Rosetta action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 installieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Rosetta 2"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.action.installAgain": {
+      "comment": "Retry Rosetta installation action",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation erneut versuchen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Installation Again…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.action.installEllipsis": {
+      "comment": "Install Rosetta action with ellipsis",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 installieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Rosetta 2…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.confirmation.message": {
+      "comment": "Explanation before starting Apple's Rosetta installer",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 ist Apple-Systemsoftware, mit der dieser Apple-Silicon-Mac die gebündelte Intel-basierte Wine-Laufzeit ausführen kann. Beim Fortfahren wird Apples Softwareupdate gestartet und die Rosetta-Lizenz von Apple akzeptiert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 is Apple system software that lets this Apple silicon Mac run the bundled Intel-based Wine runtime. Continuing runs Apple’s software update tool and accepts Apple’s Rosetta license."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.confirmation.title": {
+      "comment": "Rosetta installation confirmation title",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 installieren?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Rosetta 2?"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.detail.availableCheck": {
+      "comment": "Intel compatibility is being checked",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Launcher prüft, ob die gebündelte Wine-Laufzeit starten kann."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The launcher is verifying that the bundled Wine runtime can start."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.detail.gameTestMode": {
+      "comment": "Legacy Game Test Mode explanation",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser macOS-27-Testmodus deaktiviert Rosetta. Schalte ihn aus, starte deinen Mac neu und prüfe erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This macOS 27 test mode disables Rosetta. Turn it off, restart your Mac, then check again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.detail.installing": {
+      "comment": "Apple software update is installing Rosetta",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apples Softwareupdate installiert die Intel-Kompatibilitätsschicht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple’s software update tool is installing the Intel compatibility layer."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.detail.missing": {
+      "comment": "Rosetta needs installation",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installiere Rosetta 2 und prüfe anschließend erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Rosetta 2, then check again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.detail.unavailable": {
+      "comment": "Intel test process cannot start",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS konnte keinen Intel-Testprozess starten. Prüfe Rosetta, starte deinen Mac neu und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.detail.unsupported": {
+      "comment": "General Rosetta unsupported on current macOS",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese macOS-Version bietet die allgemeine Rosetta-Unterstützung nicht mehr, die Wine benötigt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This macOS version no longer provides the general Rosetta support Wine requires."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.failure.installerExited": {
+      "comment": "Apple installer exit status follows",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Apple-Installationsprogramm wurde mit Status %@ beendet. Verwende den Terminal-Befehl unten oder prüfe das Launcher-Protokoll für Details."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple’s installer exited with status %@. Use the Terminal command below or check the launcher log for details."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.failure.installerStart": {
+      "comment": "Apple Rosetta installer did not start",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Apple-Installationsprogramm für Rosetta konnte nicht gestartet werden. Verwende den Terminal-Befehl unten oder prüfe das Launcher-Protokoll für Details."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.status.checking": {
+      "comment": "Intel compatibility checking status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intel-Kompatibilität wird geprüft…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking Intel compatibility…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.status.gameTestMode": {
+      "comment": "Legacy Game Test Mode active status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legacy Game Test Mode ist aktiv"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legacy Game Test Mode is active"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.status.installing": {
+      "comment": "Rosetta installation status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 wird installiert…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing Rosetta 2…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.status.installationFailed": {
+      "comment": "Rosetta installation failure status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta-Installation fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta installation failed"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.status.missing": {
+      "comment": "Rosetta required status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 erforderlich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosetta 2 required"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.status.unavailable": {
+      "comment": "Intel compatibility unavailable status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intel-Kompatibilität nicht verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intel compatibility unavailable"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.rosetta.status.unsupported": {
+      "comment": "Wine runtime unsupported status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows-Laufzeit nicht unterstützt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows runtime unsupported"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.serverReset.countdown": {
+      "comment": "Time remaining until daily reset; hours then minutes follow",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset in %lld Std. %02lld Min."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset in %lldh %02lldm"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.cacheCleared": {
+      "comment": "Cache cleanup success status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache geleert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache cleared"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.checking": {
+      "comment": "Generic checking status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird geprüft…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.downloading": {
+      "comment": "Game download status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird heruntergeladen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.gameIconUpdated": {
+      "comment": "Game icon success status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel-Symbol wird beim nächsten Start verwendet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game icon updated for the next launch"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.gameIconRestored": {
+      "comment": "Game icon reset success status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard-Spiel-Symbol wird beim nächsten Start verwendet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default game icon restored for the next launch"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.gameNotFound": {
+      "comment": "Selected folder does not contain game executable",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights.exe nicht gefunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights.exe not found"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.install": {
+      "comment": "Game can be installed",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.movingToTrash": {
+      "comment": "Game uninstall moving files to Trash",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In den Papierkorb verschieben…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moving to Trash…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.paused": {
+      "comment": "Download paused status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.pausing": {
+      "comment": "Download being paused status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird pausiert…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausing…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.preparing": {
+      "comment": "Preparing game installation",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird vorbereitet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.preparingWine": {
+      "comment": "Preparing Wine prefix status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Einrichtung wird vorbereitet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing Wine setup…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.ready": {
+      "comment": "Launcher ready status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.running": {
+      "comment": "Game running status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läuft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.settingsReset": {
+      "comment": "Settings reset success status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen auf Standard zurückgesetzt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings reset to default"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.starting": {
+      "comment": "Game starting status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird gestartet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.stopping": {
+      "comment": "Game stopping status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird beendet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopping…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.uninstalled": {
+      "comment": "Game removed status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deinstalliert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uninstalled"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.updateAvailable": {
+      "comment": "Game update available status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update available"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.updated": {
+      "comment": "Game updated status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualisiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updated"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.verifying": {
+      "comment": "Game files being verified",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird überprüft…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.wineMigrationDeleted": {
+      "comment": "Wine prefix reset success status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Präfix gelöscht; die Einrichtung wird beim nächsten Start erneut ausgeführt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine prefix deleted; setup will run again on next launch"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.wineMigrationPending": {
+      "comment": "Wine prefix migration reset success status",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Einrichtung wird beim nächsten Start erneut ausgeführt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine setup will run again on next launch"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.winePrefixDeleting": {
+      "comment": "Wine prefix deletion in progress",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Präfix wird gelöscht…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting Wine prefix…"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.galleryCacheCleared": {
+      "comment": "Preset gallery cache cleanup success status",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Galerie-Caches geleert" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Asset gallery caches cleared" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.iconsRestored": {
+      "comment": "Launcher and game icons reset success status",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Standard-Symbole für Launcher und Spiel wiederhergestellt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Default launcher and game icons restored" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.status.iconsUpdated": {
+      "comment": "Launcher and game icon update success status",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Launcher- und Spielsymbole aktualisiert" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Launcher and game icons updated" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.status.checking": {
+      "comment": "Launcher update check in progress",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wird geprüft…" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Checking…" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.status.failed": {
+      "comment": "Launcher update check failure",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Updates konnten nicht geprüft werden" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t check for updates" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.status.noReleases": {
+      "comment": "Launcher update check found no releases",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Keine Versionen verfügbar" } },
+        "en": { "stringUnit": { "state": "translated", "value": "No releases available" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.status.sourceUnavailable": {
+      "comment": "Launcher update source is not configured",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Update-Quelle nicht verfügbar" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Update source unavailable" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.status.upToDate": {
+      "comment": "Launcher is on the current version",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Aktuell" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Up to date" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.status.versionAvailable": {
+      "comment": "Launcher update available; argument is version",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Version %1$@ verfügbar" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Version %1$@ available" } }
+      },
+      "extractionState": "manual"
+    }
+  },
+  "version": "1.0"
+}

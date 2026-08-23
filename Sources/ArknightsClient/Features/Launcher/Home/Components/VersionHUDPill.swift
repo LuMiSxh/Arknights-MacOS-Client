@@ -39,7 +39,11 @@ struct VersionHUDPill: View {
 			}
 			.buttonStyle(.plain)
 			.onHover { isHovering = $0 }
-			.help(isExpanded ? "Hide version details" : "Show version details")
+			.help(
+				L10n.string(
+					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+				)
+			)
 
 			if isExpanded {
 				HStack(spacing: 10) {
@@ -51,7 +55,8 @@ struct VersionHUDPill: View {
 						.lineLimit(1)
 					Spacer()
 					CapsuleActionButton(
-						"Check Now", systemImage: "arrow.clockwise",
+						L10n.string(HomeStrings.versionCheckNow),
+						systemImage: "arrow.clockwise",
 						tone: .accent(model.accentColor), presentation: .hud,
 						action: model.checkGameUpdates
 					)
@@ -93,13 +98,13 @@ struct VersionHUDPill: View {
 	}
 
 	private var updateStatus: String {
-		if model.phase == .checking { return "Checking…" }
+		if model.phase == .checking { return L10n.string(HomeStrings.versionChecking) }
 		if model.isGameUpdateAvailable,
 			let latest = model.configuration?.gameLatestVersion
 		{
-			return "\(latest) available"
+			return L10n.string(HomeStrings.versionAvailable(latest))
 		}
-		return "Up to date"
+		return L10n.string(HomeStrings.versionUpToDate)
 	}
 
 	private var updateStatusIcon: String {
