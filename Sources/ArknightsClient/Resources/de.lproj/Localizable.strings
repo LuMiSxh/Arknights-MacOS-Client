@@ -336,6 +336,18 @@
 	<string>Diese macOS-Version bietet die allgemeine Intel-Übersetzung nicht mehr, die die gebündelte Wine-Laufzeit benötigt.</string>
 	<key>onboarding.welcome.compatibility.waiting</key>
 	<string>Die Intel-Kompatibilität wird nach der Launcher-Update-Prüfung geprüft.</string>
+	<key>onboarding.welcome.language.detail</key>
+	<string>Wähle die Sprache für den Launcher. Du kannst sie später in den Einstellungen ändern.</string>
+	<key>onboarding.welcome.language.english</key>
+	<string>Englisch</string>
+	<key>onboarding.welcome.language.german</key>
+	<string>Deutsch</string>
+	<key>onboarding.welcome.language.panel</key>
+	<string>Sprache</string>
+	<key>onboarding.welcome.language.system</key>
+	<string>Systemstandard</string>
+	<key>onboarding.welcome.language.title</key>
+	<string>Launcher-Sprache</string>
 	<key>onboarding.welcome.next.detail</key>
 	<string>Wähle eine Serverregion, starte den offiziellen PC-Client-Download, passe Anzeigeeinstellungen an und personalisiere den Launcher. Der Download läuft weiter, während du fortfährst.</string>
 	<key>onboarding.welcome.next.title</key>

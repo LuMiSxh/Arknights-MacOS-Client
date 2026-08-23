@@ -1801,6 +1801,72 @@ nonisolated extension LocalizedStringResource {
 	}
 
 	/**
+	 Launcher language selection description during onboarding
+
+	 Localized string for key “onboarding.welcome.language.detail” in table “Localizable.xcstrings”.
+	 */
+	static var onboardingWelcomeLanguageDetail: LocalizedStringResource {
+		LocalizedStringResource(
+			"onboarding.welcome.language.detail", table: "Localizable",
+			bundle: resourceBundleDescription)
+	}
+
+	/**
+	 English launcher language option during onboarding
+
+	 Localized string for key “onboarding.welcome.language.english” in table “Localizable.xcstrings”.
+	 */
+	static var onboardingWelcomeLanguageEnglish: LocalizedStringResource {
+		LocalizedStringResource(
+			"onboarding.welcome.language.english", table: "Localizable",
+			bundle: resourceBundleDescription)
+	}
+
+	/**
+	 German launcher language option during onboarding
+
+	 Localized string for key “onboarding.welcome.language.german” in table “Localizable.xcstrings”.
+	 */
+	static var onboardingWelcomeLanguageGerman: LocalizedStringResource {
+		LocalizedStringResource(
+			"onboarding.welcome.language.german", table: "Localizable",
+			bundle: resourceBundleDescription)
+	}
+
+	/**
+	 Launcher language panel title during onboarding
+
+	 Localized string for key “onboarding.welcome.language.panel” in table “Localizable.xcstrings”.
+	 */
+	static var onboardingWelcomeLanguagePanel: LocalizedStringResource {
+		LocalizedStringResource(
+			"onboarding.welcome.language.panel", table: "Localizable",
+			bundle: resourceBundleDescription)
+	}
+
+	/**
+	 Use the macOS preferred launcher language option during onboarding
+
+	 Localized string for key “onboarding.welcome.language.system” in table “Localizable.xcstrings”.
+	 */
+	static var onboardingWelcomeLanguageSystem: LocalizedStringResource {
+		LocalizedStringResource(
+			"onboarding.welcome.language.system", table: "Localizable",
+			bundle: resourceBundleDescription)
+	}
+
+	/**
+	 Launcher language setting title during onboarding
+
+	 Localized string for key “onboarding.welcome.language.title” in table “Localizable.xcstrings”.
+	 */
+	static var onboardingWelcomeLanguageTitle: LocalizedStringResource {
+		LocalizedStringResource(
+			"onboarding.welcome.language.title", table: "Localizable",
+			bundle: resourceBundleDescription)
+	}
+
+	/**
 	 Onboarding next steps explanation
 
 	 Localized string for key “onboarding.welcome.next.detail” in table “Localizable.xcstrings”.

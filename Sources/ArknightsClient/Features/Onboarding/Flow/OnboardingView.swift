@@ -27,10 +27,10 @@ struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
+								model: model,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
 								rosettaInstallationState: model.rosettaInstallationState,
-								accentColor: model.accentColor,
 								retry: retryUpdateCheck,
 								retryIntelTranslation: retryIntelTranslation,
 								installRosetta: installRosetta

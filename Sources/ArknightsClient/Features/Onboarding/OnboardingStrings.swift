@@ -112,6 +112,12 @@ enum OnboardingStrings {
 
 	static let welcomeTitle = LocalizedStringResource.onboardingWelcomeTitle
 	static let welcomeSubtitle = LocalizedStringResource.onboardingWelcomeSubtitle
+	static let languagePanel = LocalizedStringResource.onboardingWelcomeLanguagePanel
+	static let language = LocalizedStringResource.onboardingWelcomeLanguageTitle
+	static let languageDetail = LocalizedStringResource.onboardingWelcomeLanguageDetail
+	static let languageSystem = LocalizedStringResource.onboardingWelcomeLanguageSystem
+	static let languageEnglish = LocalizedStringResource.onboardingWelcomeLanguageEnglish
+	static let languageGerman = LocalizedStringResource.onboardingWelcomeLanguageGerman
 	static let releaseCheck = LocalizedStringResource.onboardingWelcomeStatusReleaseCheck
 	static let launcherCurrent = LocalizedStringResource.onboardingWelcomeStatusCurrentDetail
 	static let updateDetail = LocalizedStringResource.onboardingWelcomeStatusUpdateDetail
@@ -135,6 +141,13 @@ enum OnboardingStrings {
 
 	static func versionAvailable(_ version: String) -> LocalizedStringResource {
 		.onboardingWelcomeStatusVersionAvailable(version)
+	}
+	static func appLanguage(_ language: AppLanguage) -> LocalizedStringResource {
+		switch language {
+		case .system: languageSystem
+		case .english: languageEnglish
+		case .german: languageGerman
+		}
 	}
 	static func viewVersion(_ version: String) -> LocalizedStringResource {
 		.onboardingActionViewVersion(version)
