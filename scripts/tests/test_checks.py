@@ -13,6 +13,17 @@ def test_handwritten_swift_sources_exclude_generated_catalog_symbols() -> None:
     assert not any(path.name.startswith("GeneratedStringSymbols_") for path in sources)
 
 
+def test_workflow_files_find_every_actions_workflow() -> None:
+    workflows = checks.workflow_files()
+
+    assert {path.name for path in workflows} == {
+        "ci.yml",
+        "claude.yml",
+        "live-contracts.yml",
+        "release.yml",
+    }
+
+
 def test_check_all_runs_every_target_once(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     monkeypatch.setattr(

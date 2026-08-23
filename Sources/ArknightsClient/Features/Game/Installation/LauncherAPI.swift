@@ -14,9 +14,17 @@ actor LauncherAPI {
 	private let salt = "DE7108E9B2842FD460F4777702727869"
 	private let session: URLSession
 	private let decoder: JSONDecoder
+	private let maximumAPIResponseBytes: Int?
+	private let maximumManifestResponseBytes: Int?
 
-	init(session: URLSession = .shared) {
+	init(
+		session: URLSession = .shared,
+		maximumAPIResponseBytes: Int? = nil,
+		maximumManifestResponseBytes: Int? = nil
+	) {
 		self.session = session
+		self.maximumAPIResponseBytes = maximumAPIResponseBytes
+		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 		decoder = JSONDecoder()
 		decoder.keyDecodingStrategy = .convertFromSnakeCase
 	}
@@ -49,6 +57,14 @@ actor LauncherAPI {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> GameManifest {
+		let location = try await manifestLocation(for: configuration, region: region)
+		return try await manifestPayload(at: location.url, region: region).manifest
+	}
+
+	func manifestLocation(
+		for configuration: GameConfiguration,
+		region: GameRegion
+	) async throws -> ManifestLocation {
 		var components = URLComponents(
 			url: region.apiBaseURL.appending(path: "/api/launcher/game/config/json"),
 			resolvingAgainstBaseURL: false
@@ -65,13 +81,18 @@ actor LauncherAPI {
 				reason: "could not construct the request URL"
 			)
 		}
-		let location: ManifestLocation = try await request(
+		return try await request(
 			region: region,
 			url: locationURL,
 			operation: "manifest location"
 		)
+	}
 
-		var manifestRequest = URLRequest(url: location.url)
+	func manifestPayload(
+		at url: URL,
+		region: GameRegion
+	) async throws -> (manifest: GameManifest, byteCount: Int) {
+		var manifestRequest = URLRequest(url: url)
 		manifestRequest.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 		let data: Data
 		let response: URLResponse
@@ -83,7 +104,7 @@ actor LauncherAPI {
 			throw requestError(
 				operation: "manifest download",
 				region: region,
-				url: location.url,
+				url: url,
 				reason: "transport error: \(error.localizedDescription)",
 				userMessage: error.localizedDescription
 			)
@@ -92,7 +113,7 @@ actor LauncherAPI {
 			throw requestError(
 				operation: "manifest download",
 				region: region,
-				url: location.url,
+				url: url,
 				reason: "response was not HTTP"
 			)
 		}
@@ -100,18 +121,26 @@ actor LauncherAPI {
 			throw requestError(
 				operation: "manifest download",
 				region: region,
-				url: location.url,
+				url: url,
 				statusCode: http.statusCode,
 				reason: "unexpected HTTP status"
 			)
 		}
+		try validateResponseSize(
+			data.count,
+			maximumBytes: maximumManifestResponseBytes,
+			operation: "manifest download",
+			region: region,
+			url: url,
+			statusCode: http.statusCode
+		)
 		do {
-			return try decoder.decode(GameManifest.self, from: data)
+			return (try decoder.decode(GameManifest.self, from: data), data.count)
 		} catch {
 			throw requestError(
 				operation: "manifest download",
 				region: region,
-				url: location.url,
+				url: url,
 				statusCode: http.statusCode,
 				reason: "decoding failed: \(error.localizedDescription)"
 			)
@@ -181,6 +210,14 @@ actor LauncherAPI {
 				reason: "unexpected HTTP status"
 			)
 		}
+		try validateResponseSize(
+			data.count,
+			maximumBytes: maximumAPIResponseBytes,
+			operation: operation,
+			region: region,
+			url: url,
+			statusCode: http.statusCode
+		)
 		let envelope: APIEnvelope<Value>
 		do {
 			envelope = try decoder.decode(APIEnvelope<Value>.self, from: data)
@@ -226,6 +263,24 @@ actor LauncherAPI {
 			userMessage: userMessage,
 			diagnosticDescription:
 				"Yostar API request failed; operation=\(operation); region=\(region.displayName); endpoint=\(endpoint);\(status) reason=\(reason)"
+		)
+	}
+
+	private func validateResponseSize(
+		_ byteCount: Int,
+		maximumBytes: Int?,
+		operation: String,
+		region: GameRegion,
+		url: URL,
+		statusCode: Int
+	) throws {
+		guard let maximumBytes, byteCount > maximumBytes else { return }
+		throw requestError(
+			operation: operation,
+			region: region,
+			url: url,
+			statusCode: statusCode,
+			reason: "response exceeded \(maximumBytes) bytes"
 		)
 	}
 }

@@ -40,9 +40,15 @@ The main-branch CI packaging smoke builds an app without a runtime. Complete run
 
 ## Live contracts
 
-Live contracts perform safe read-only requests and make no local installation changes. They are separate from deterministic CI because service outages, rate limits, and upstream deployments must not make unrelated pull requests flaky. The scheduled workflow runs them weekly; `workflow_dispatch` and `just live-contracts` provide deliberate manual execution.
+Live contracts perform safe read-only requests and make no local installation changes. They are separate from deterministic CI because service outages, rate limits, and upstream deployments must not make unrelated pull requests flaky. The dedicated workflow runs every Monday at 04:23 UTC; `workflow_dispatch` and `just live-contracts` provide deliberate manual execution.
 
-Failures indicate that an external schema or endpoint may have changed. They do not automatically rewrite fixtures or production code. Capture a minimal sanitized response, review the upstream change, then update production decoding and recorded fixtures together.
+Each run checks branding, game configuration, CDN configuration, manifest location, and the complete manifest for Global, Japan, and Korea through the production request signing and decoders. It requires credential-free HTTPS URLs, bounded response time and manifest size, safe non-conflicting paths, parseable CRC64 values, and nonnegative file sizes. Network and HTTP failures are retried three times; deterministic decoding and validation failures are not.
+
+The probe writes a schema-versioned report containing only contract names, health states, ordinary version or file-count observations, and sanitized failure categories. Reports are retained as Actions artifacts for 30 days and rendered into the workflow summary. Authorization values and response bodies are never persisted.
+
+Scheduled alert reconciliation is isolated in a second job with `issues: write`; the probe itself has read-only repository access. A contract must fail in two consecutive scheduled reports before the workflow creates or reopens its single `automated-monitor` issue. An unchanged failure updates the issue timestamp without comment spam, a changed failure adds a comment, and two consecutive healthy reports add a recovery comment and close only the issue carrying that contract's private monitor marker. Manual runs never mutate issues.
+
+Failures indicate that an external schema or endpoint may have changed. They do not automatically rewrite fixtures or production code. Review the sanitized report and upstream change, then update production decoding and recorded fixtures together.
 
 ## Manual compatibility matrix
 

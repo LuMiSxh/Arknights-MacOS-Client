@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: write
+  attestations: write
+  id-token: write
 
 concurrency:
   group: release-${{ inputs.version }}
@@ -26,9 +28,15 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Validate runtime configuration
         run: uv run scripts/runtime_config.py --validate runtime.json
@@ -95,6 +103,14 @@ jobs:
           just dmg "$GITHUB_WORKSPACE/.build/runtime"
           dmg_name="$(uv run scripts/project_config.py dmg-name)"
           shasum -a 256 "dist/$dmg_name" dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
+
+      - name: Attest release provenance
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-path: |
+            dist/*.dmg
+            dist/Runtime-Build-Recipe.tar.gz
+            dist/SHA256SUMS
 
       - name: Create draft release
         run: |

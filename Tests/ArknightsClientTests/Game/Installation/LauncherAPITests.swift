@@ -70,6 +70,36 @@ struct LauncherAPITests {
 		}
 	}
 
+	@Test
+	func configuredResponseLimitRejectsManifestBeforeDecoding() async throws {
+		let session = makeSession()
+		LauncherAPIURLProtocol.handler = { request in
+			guard let url = request.url,
+				let response = HTTPURLResponse(
+					url: url,
+					statusCode: 200,
+					httpVersion: nil,
+					headerFields: nil
+				)
+			else { fatalError("URLProtocol received an invalid HTTP request") }
+			return (response, Data(repeating: 0x41, count: 9))
+		}
+		defer { LauncherAPIURLProtocol.handler = nil }
+		let api = LauncherAPI(session: session, maximumManifestResponseBytes: 8)
+
+		do {
+			_ = try await api.manifestPayload(
+				at: URL(string: "https://fixtures.invalid/manifest.json")!,
+				region: .global
+			)
+			Issue.record("Expected the manifest response to exceed its configured limit")
+		} catch {
+			let diagnostic = launcherDiagnosticDescription(for: error)
+			#expect(diagnostic.contains("operation=manifest download"))
+			#expect(diagnostic.contains("response exceeded 8 bytes"))
+		}
+	}
+
 	private func makeSession() -> URLSession {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [LauncherAPIURLProtocol.self]

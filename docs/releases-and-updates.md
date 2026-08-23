@@ -51,6 +51,8 @@ Release automation always uses `runtime.json`. The attached `Runtime-Build-Recip
 
 Keep the release as a draft until the runtime notice and corresponding-source work described in [`legal/third-party-notices.md`](legal/third-party-notices.md) is complete. Then install its DMG on a clean Mac and test Install, Update, Repair, and Play before publishing. Published assets and version tags are never replaced. A broken release is fixed with a higher version.
 
+The release workflow creates GitHub build-provenance attestations for the DMG, runtime recipe, and checksum file before opening the draft release. GitHub Actions dependencies remain on readable release tags. Every workflow declares bounded job runtimes and job-specific token permissions; write access is limited to release publication, scheduled contract-alert reconciliation, and the existing repository-owner-gated coding assistant.
+
 ## Versioning and changelog
 
 Versions follow Semantic Versioning. Before 1.0, minor versions may contain deliberate compatibility changes; patch versions contain compatible fixes. User-visible work starts in `Unreleased` and moves into an `X.Y.Z` section before release.

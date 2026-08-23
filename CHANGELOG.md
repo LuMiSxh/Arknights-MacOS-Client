@@ -9,13 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts, and release packaging smoke checks (#42).
-- Added a separate weekly live-contract probe for the Global, Japan, and Korea Yostar configuration, CDN, and manifest endpoints as the foundation for automated upstream monitoring (#39).
+- Added weekly live-contract monitoring for every supported Yostar region, including transient retries, sanitized run summaries, retained reports, and deduplicated GitHub alerts after two failures with automatic recovery after two healthy checks (#39).
 - Added language switchers to onboarding and Settings for the system default, English, and German.
 - Added a reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
 - Added a SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
 
 ### Changed
 
+- Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
 - Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2 with a shared physical runtime interface for download and packaging scripts.
 
 ### Fixed

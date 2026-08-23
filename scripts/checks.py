@@ -38,6 +38,10 @@ def shim_sources() -> list[Path]:
     return sorted(runtime_support.rglob("*.c")) + sorted(runtime_support.rglob("*.m"))
 
 
+def workflow_files() -> list[Path]:
+    return sorted((PROJECT_DIR / ".github" / "workflows").glob("*.yml"))
+
+
 def handwritten_swift_sources() -> list[Path]:
     sources = sorted((PROJECT_DIR / "Sources").rglob("*.swift"))
     tests = sorted((PROJECT_DIR / "Tests").rglob("*.swift"))
@@ -87,9 +91,15 @@ def check_scripts() -> None:
     run([*RUFF, "format", "--check", "scripts"], cwd=PROJECT_DIR)
     load_project_configuration()
     validate_config(PROJECT_DIR / "runtime.json")
-    info("Running the Python script test suite")
     environment = os.environ.copy()
     environment.pop("VIRTUAL_ENV", None)
+    info("Linting GitHub Actions workflows")
+    run(
+        ["uv", "run", "--locked", "actionlint", *workflow_files()],
+        cwd=PROJECT_DIR,
+        environment=environment,
+    )
+    info("Running the Python script test suite")
     run(
         ["uv", "run", "--locked", "pytest", "-q"],
         cwd=PROJECT_DIR,
