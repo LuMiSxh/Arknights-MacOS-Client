@@ -25,6 +25,7 @@ struct LauncherPreferencesStore {
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let forceDisableRetina = "forceDisableRetina"
+		static let appLanguage = "appLanguage"
 	}
 
 	let defaults: UserDefaults
@@ -163,6 +164,14 @@ struct LauncherPreferencesStore {
 
 	func setUsesDynamicTheme(_ value: Bool) {
 		defaults.set(value, forKey: Key.usesDynamicTheme)
+	}
+
+	func appLanguage() -> AppLanguage {
+		defaults.string(forKey: Key.appLanguage).flatMap(AppLanguage.init(rawValue:)) ?? .system
+	}
+
+	func setAppLanguage(_ language: AppLanguage) {
+		defaults.set(language.rawValue, forKey: Key.appLanguage)
 	}
 
 	func forceDisableRetina() -> Bool {

@@ -80,6 +80,19 @@ struct GeneralSettingsPage: View {
 
 			SettingsPanel(title: L10n.string(SettingsStrings.launcher), systemImage: "sparkles") {
 				SettingsActionRow(
+					title: L10n.string(SettingsStrings.language),
+					detail: L10n.string(SettingsStrings.languageDetail)
+				) {
+					GlassMenuPicker(
+						selection: $model.appLanguage,
+						options: AppLanguage.allCases.map {
+							($0, L10n.string(SettingsStrings.appLanguage($0)))
+						},
+						accentColor: model.accentColor
+					)
+				}
+				SettingsHairline()
+				SettingsActionRow(
 					title: L10n.string(SettingsStrings.showGameVersion),
 					detail: L10n.string(SettingsStrings.showGameVersionDetail)
 				) {

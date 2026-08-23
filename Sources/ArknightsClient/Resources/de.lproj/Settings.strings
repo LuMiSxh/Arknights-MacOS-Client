@@ -138,6 +138,16 @@
 	<string>Hochauflösender Modus</string>
 	<key>settings.general.highResolution.detail</key>
 	<string>Nutzt die volle Pixeldichte des Displays, ohne das Spielfenster zu vergrößern.</string>
+	<key>settings.general.language</key>
+	<string>Sprache</string>
+	<key>settings.general.language.detail</key>
+	<string>Wähle die Sprache für die Benutzeroberfläche des Launchers.</string>
+	<key>settings.general.language.english</key>
+	<string>Englisch</string>
+	<key>settings.general.language.german</key>
+	<string>Deutsch</string>
+	<key>settings.general.language.system</key>
+	<string>Systemstandard</string>
 	<key>settings.general.launcher</key>
 	<string>Launcher</string>
 	<key>settings.general.metalHUD</key>

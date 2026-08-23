@@ -63,6 +63,7 @@ extension LauncherViewModel {
 		showsPlayingMusic = false
 		launcherMusicVolume = 0.5
 		usesDynamicTheme = true
+		appLanguage = .system
 		setStatus(.custom(L10n.string(.Launcher.launcherStatusSettingsReset)))
 		Task { [log] in await log.info("Launcher settings reset to default") }
 	}

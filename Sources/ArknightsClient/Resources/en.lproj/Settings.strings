@@ -138,6 +138,16 @@
 	<string>High-Resolution Mode</string>
 	<key>settings.general.highResolution.detail</key>
 	<string>Uses the display's full pixel density without enlarging the game window.</string>
+	<key>settings.general.language</key>
+	<string>Language</string>
+	<key>settings.general.language.detail</key>
+	<string>Choose the language used by the launcher interface.</string>
+	<key>settings.general.language.english</key>
+	<string>English</string>
+	<key>settings.general.language.german</key>
+	<string>German</string>
+	<key>settings.general.language.system</key>
+	<string>System Default</string>
 	<key>settings.general.launcher</key>
 	<string>Launcher</string>
 	<key>settings.general.metalHUD</key>

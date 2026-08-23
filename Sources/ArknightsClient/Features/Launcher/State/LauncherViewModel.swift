@@ -122,6 +122,15 @@ final class LauncherViewModel {
 			updateThemeColor()
 		}
 	}
+	var appLanguage: AppLanguage {
+		didSet {
+			preferences.setAppLanguage(appLanguage)
+			L10n.useAppLanguage(appLanguage)
+			if showsServerResetCountdown {
+				resetCountdownText = ServerReset.countdownText(for: region)
+			}
+		}
+	}
 	var dynamicThemeHue: Double?
 	var accentColor: Color = LauncherVisuals.cyan
 	var hudTintColor: Color = LauncherVisuals.hudGlassTint
@@ -227,6 +236,8 @@ final class LauncherViewModel {
 		showsPlayingMusic = preferences.showsPlayingMusic()
 		launcherMusicVolume = preferences.launcherMusicVolume()
 		usesDynamicTheme = preferences.usesDynamicTheme()
+		appLanguage = preferences.appLanguage()
+		L10n.useAppLanguage(appLanguage)
 		restoreInitialArtwork(for: selectedRegion)
 		if showsServerResetCountdown { startResetCountdownTimer() }
 		updateThemeColor()

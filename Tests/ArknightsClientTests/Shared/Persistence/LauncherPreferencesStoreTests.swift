@@ -160,6 +160,19 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.selectedRegion() == .korea)
 	}
 
+	@Test
+	func appLanguageDefaultsToSystemAndPersists() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.appLanguage() == .system)
+
+		store.setAppLanguage(.german)
+
+		#expect(store.appLanguage() == .german)
+	}
+
 	private func makeDefaults() -> (UserDefaults, String) {
 		let suiteName = "LauncherPreferencesStoreTests.\(UUID().uuidString)"
 		return (UserDefaults(suiteName: suiteName)!, suiteName)

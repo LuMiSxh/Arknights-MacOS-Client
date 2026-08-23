@@ -741,6 +741,60 @@ nonisolated extension LocalizedStringResource {
 		}
 
 		/**
+		 Launcher interface language setting
+
+		 Localized string for key “settings.general.language” in table “Settings.xcstrings”.
+		 */
+		static var settingsGeneralLanguage: LocalizedStringResource {
+			LocalizedStringResource(
+				"settings.general.language", table: "Settings", bundle: resourceBundleDescription)
+		}
+
+		/**
+		 Launcher interface language setting description
+
+		 Localized string for key “settings.general.language.detail” in table “Settings.xcstrings”.
+		 */
+		static var settingsGeneralLanguageDetail: LocalizedStringResource {
+			LocalizedStringResource(
+				"settings.general.language.detail", table: "Settings",
+				bundle: resourceBundleDescription)
+		}
+
+		/**
+		 English interface language option
+
+		 Localized string for key “settings.general.language.english” in table “Settings.xcstrings”.
+		 */
+		static var settingsGeneralLanguageEnglish: LocalizedStringResource {
+			LocalizedStringResource(
+				"settings.general.language.english", table: "Settings",
+				bundle: resourceBundleDescription)
+		}
+
+		/**
+		 German interface language option
+
+		 Localized string for key “settings.general.language.german” in table “Settings.xcstrings”.
+		 */
+		static var settingsGeneralLanguageGerman: LocalizedStringResource {
+			LocalizedStringResource(
+				"settings.general.language.german", table: "Settings",
+				bundle: resourceBundleDescription)
+		}
+
+		/**
+		 Use the macOS preferred interface language option
+
+		 Localized string for key “settings.general.language.system” in table “Settings.xcstrings”.
+		 */
+		static var settingsGeneralLanguageSystem: LocalizedStringResource {
+			LocalizedStringResource(
+				"settings.general.language.system", table: "Settings",
+				bundle: resourceBundleDescription)
+		}
+
+		/**
 		 Launcher panel title
 
 		 Localized string for key “settings.general.launcher” in table “Settings.xcstrings”.

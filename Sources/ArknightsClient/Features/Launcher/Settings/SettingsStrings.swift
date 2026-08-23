@@ -45,6 +45,11 @@ enum SettingsStrings {
 	static let resolution = LocalizedStringResource.Settings.settingsGeneralResolution
 	static let resolutionDetail = LocalizedStringResource.Settings.settingsGeneralResolutionDetail
 	static let launcher = LocalizedStringResource.Settings.settingsGeneralLauncher
+	static let language = LocalizedStringResource.Settings.settingsGeneralLanguage
+	static let languageDetail = LocalizedStringResource.Settings.settingsGeneralLanguageDetail
+	static let languageSystem = LocalizedStringResource.Settings.settingsGeneralLanguageSystem
+	static let languageEnglish = LocalizedStringResource.Settings.settingsGeneralLanguageEnglish
+	static let languageGerman = LocalizedStringResource.Settings.settingsGeneralLanguageGerman
 	static let showGameVersion = LocalizedStringResource.Settings.settingsGeneralShowGameVersion
 	static let showGameVersionDetail = LocalizedStringResource.Settings
 		.settingsGeneralShowGameVersionDetail
@@ -71,6 +76,14 @@ enum SettingsStrings {
 	static let dynamicTheme = LocalizedStringResource.Settings.settingsGeneralDynamicTheme
 	static let dynamicThemeDetail = LocalizedStringResource.Settings
 		.settingsGeneralDynamicThemeDetail
+
+	static func appLanguage(_ language: AppLanguage) -> LocalizedStringResource {
+		switch language {
+		case .system: languageSystem
+		case .english: languageEnglish
+		case .german: languageGerman
+		}
+	}
 
 	static let audioTitle = LocalizedStringResource.Settings.settingsAudioTitle
 	static let audioSubtitle = LocalizedStringResource.Settings.settingsAudioSubtitle

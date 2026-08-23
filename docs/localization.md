@@ -1,6 +1,6 @@
 # Localization
 
-The native launcher follows the preferred language configured by macOS, including the per-app language override in System Settings. It does not store a separate language preference. English is the authoritative source language and fallback; German is the first reviewed translation.
+The native launcher defaults to the preferred language configured by macOS, including the per-app language override in System Settings. Its General settings can override that choice with English or German immediately; the launcher stores this preference independently. English is the authoritative source language and fallback; German is the first reviewed translation.
 
 The launcher UI is localized, but technical identifiers and third-party content are not. Keep file names, paths, serialized values, API fields, log messages, error codes, terminal commands, Wine and registry identifiers, official game or operator names, and remote Yostar content unchanged. Bundled licenses and third-party notices remain verbatim unless an authoritative localized source is available.
 
