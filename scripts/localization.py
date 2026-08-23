@@ -13,13 +13,12 @@ import argparse
 import json
 import re
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 
 from lib.common import PROJECT_DIR, ScriptError, run, run_main, success
+from lib.project_config import ProjectConfiguration, load_project_configuration
 
-RESOURCE_DIRECTORY = PROJECT_DIR / "Sources/ArknightsClient/Resources"
-GENERATED_DIRECTORY = PROJECT_DIR / "Sources/ArknightsClient/Shared/Localization"
-LOCALIZATIONS = ("en", "de")
 LICENSE_HEADER = "// SPDX-License-Identifier: MPL-2.0\n\n"
 KEY_PATTERN = re.compile(r"^[a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)+$")
 SWIFT_PACKAGE_BUNDLE_DECLARATION = (
@@ -30,17 +29,44 @@ APP_RESOURCE_BUNDLE_DECLARATION = (
 )
 
 
-def catalog_paths() -> list[Path]:
-    catalogs = sorted(RESOURCE_DIRECTORY.glob("*.xcstrings"))
+@dataclass(frozen=True)
+class LocalizationLayout:
+    resource_directory: Path
+    generated_directory: Path
+    source_language: str
+    localizations: tuple[str, ...]
+    catalogs: tuple[Path, ...]
+
+
+def discover_layout(configuration: ProjectConfiguration) -> LocalizationLayout:
+    resource_directory = configuration.resource_directory
+    catalogs = tuple(sorted(resource_directory.glob("*.xcstrings")))
     if not catalogs:
         raise ScriptError("no localization catalogs found")
-    return catalogs
+    target_directory = configuration.target_directory
+    excluded = set(configuration.package.excluded_paths)
+    for catalog in catalogs:
+        relative = catalog.relative_to(target_directory)
+        if relative not in excluded:
+            raise ScriptError(
+                f"Package.swift does not exclude String Catalog: {relative}"
+            )
+    return LocalizationLayout(
+        resource_directory=resource_directory,
+        generated_directory=target_directory / "Shared/Localization",
+        source_language=configuration.product.development_region,
+        localizations=configuration.product.localizations,
+        catalogs=catalogs,
+    )
 
 
-def validate_catalog(catalog_path: Path) -> None:
+def validate_catalog(catalog_path: Path, layout: LocalizationLayout) -> None:
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
-    if catalog.get("sourceLanguage") != "en":
-        raise ScriptError("localization source language must be English")
+    if catalog.get("sourceLanguage") != layout.source_language:
+        raise ScriptError(
+            "catalog source language must match CFBundleDevelopmentRegion: "
+            f"{catalog_path.name}"
+        )
     strings = catalog.get("strings")
     if not isinstance(strings, dict) or not strings:
         raise ScriptError("localization catalog does not contain any strings")
@@ -53,7 +79,7 @@ def validate_catalog(catalog_path: Path) -> None:
                 f"localization key is missing a translator comment: {key}"
             )
         localizations = entry.get("localizations", {})
-        for language in LOCALIZATIONS:
+        for language in layout.localizations:
             localization = localizations.get(language)
             if not isinstance(localization, dict):
                 raise ScriptError(
@@ -94,8 +120,9 @@ def synchronize_file(source: Path, destination: Path, *, write: bool) -> None:
     if actual == expected:
         return
     if not write:
-        relative = destination.relative_to(PROJECT_DIR)
-        raise ScriptError(f"generated localization file is stale: {relative}")
+        raise ScriptError(
+            f"generated localization file is stale: {_display_path(destination)}"
+        )
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(expected)
 
@@ -105,11 +132,17 @@ def remove_stale_files(
 ) -> None:
     for stale in sorted(actual_files - expected_files):
         if not write:
-            relative = stale.relative_to(PROJECT_DIR)
             raise ScriptError(
-                f"obsolete generated localization file remains: {relative}"
+                f"obsolete generated localization file remains: {_display_path(stale)}"
             )
         stale.unlink()
+
+
+def _display_path(path: Path) -> Path:
+    try:
+        return path.relative_to(PROJECT_DIR)
+    except ValueError:
+        return path
 
 
 def use_app_resource_bundle(generated_symbols: str) -> str:
@@ -122,14 +155,14 @@ def use_app_resource_bundle(generated_symbols: str) -> str:
 
 
 def generate_localization(
-    catalogs: list[Path], output_directory: Path
+    layout: LocalizationLayout, output_directory: Path
 ) -> tuple[dict[str, Path], dict[tuple[str, str], Path]]:
     compiled_directory = output_directory / "compiled"
     symbols_directory = output_directory / "symbols"
     symbols_directory.mkdir(parents=True)
     generated: dict[str, Path] = {}
     compiled: dict[tuple[str, str], Path] = {}
-    for catalog in catalogs:
+    for catalog in layout.catalogs:
         run(
             [
                 "xcrun",
@@ -176,45 +209,53 @@ def generate_localization(
             cwd=PROJECT_DIR,
         )
         generated[catalog.stem] = generated_symbols
-        for language in LOCALIZATIONS:
+        for language in layout.localizations:
             compiled[(catalog.stem, language)] = (
                 compiled_directory / f"{language}.lproj/{catalog.stem}.strings"
             )
     return generated, compiled
 
 
-def synchronize_localization(*, write: bool) -> None:
-    catalogs = catalog_paths()
-    for catalog in catalogs:
-        validate_catalog(catalog)
+def synchronize_localization(
+    *,
+    write: bool,
+    configuration: ProjectConfiguration | None = None,
+) -> None:
+    configuration = configuration or load_project_configuration()
+    layout = discover_layout(configuration)
+    for catalog in layout.catalogs:
+        validate_catalog(catalog, layout)
     with tempfile.TemporaryDirectory() as directory:
-        generated, compiled = generate_localization(catalogs, Path(directory))
+        generated, compiled = generate_localization(layout, Path(directory))
         expected_symbols = {
-            GENERATED_DIRECTORY / f"GeneratedStringSymbols_{catalog_name}.swift"
+            layout.generated_directory / f"GeneratedStringSymbols_{catalog_name}.swift"
             for catalog_name in generated
         }
         for catalog_name, source in generated.items():
             destination = (
-                GENERATED_DIRECTORY / f"GeneratedStringSymbols_{catalog_name}.swift"
+                layout.generated_directory
+                / f"GeneratedStringSymbols_{catalog_name}.swift"
             )
             synchronize_file(source, destination, write=write)
         remove_stale_files(
-            set(GENERATED_DIRECTORY.glob("GeneratedStringSymbols_*.swift")),
+            set(layout.generated_directory.glob("GeneratedStringSymbols_*.swift")),
             expected_symbols,
             write=write,
         )
         for (catalog_name, language), source in compiled.items():
             destination = (
-                RESOURCE_DIRECTORY / f"{language}.lproj/{catalog_name}.strings"
+                layout.resource_directory / f"{language}.lproj/{catalog_name}.strings"
             )
             synchronize_file(source, destination, write=write)
-        for language in LOCALIZATIONS:
+        for language in layout.localizations:
             expected_strings = {
-                RESOURCE_DIRECTORY / f"{language}.lproj/{catalog_name}.strings"
+                layout.resource_directory / f"{language}.lproj/{catalog_name}.strings"
                 for catalog_name in generated
             }
             remove_stale_files(
-                set((RESOURCE_DIRECTORY / f"{language}.lproj").glob("*.strings")),
+                set(
+                    (layout.resource_directory / f"{language}.lproj").glob("*.strings")
+                ),
                 expected_strings,
                 write=write,
             )

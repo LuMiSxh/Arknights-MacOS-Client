@@ -93,16 +93,19 @@ jobs:
       - name: Build DMG
         run: |
           just dmg "$GITHUB_WORKSPACE/.build/runtime"
-          shasum -a 256 "dist/Arknights Client.dmg" dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
+          dmg_name="$(uv run scripts/project_config.py dmg-name)"
+          shasum -a 256 "dist/$dmg_name" dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
 
       - name: Create draft release
         run: |
           release_tag="v$RELEASE_VERSION"
+          display_name="$(uv run scripts/project_config.py display-name)"
+          dmg_name="$(uv run scripts/project_config.py dmg-name)"
           gh release create "$release_tag" \
-            "dist/Arknights Client.dmg" \
+            "dist/$dmg_name" \
             dist/Runtime-Build-Recipe.tar.gz \
             dist/SHA256SUMS \
             --draft \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             --target "$GITHUB_SHA" \
-            --title "Arknights Client $release_tag"
+            --title "$display_name $release_tag"

@@ -6,7 +6,9 @@ The launcher UI is localized, but technical identifiers and third-party content 
 
 ## Source and generated files
 
-The Apple String Catalogs in `Sources/ArknightsClient/Resources` are the source of truth. Large features may own a dedicated catalog; closely related smaller surfaces may share `Localizable.xcstrings`. Use stable symbolic keys namespaced by the owning feature, such as `onboarding.action.continue` or `settings.installation.repair`. English copy and translator comments belong in the catalogs; every shipping translation must be reviewed by a fluent speaker.
+The Apple String Catalogs in `Sources/ArknightsClient/Resources` are the source of truth for copy. `CFBundleDevelopmentRegion` and `CFBundleLocalizations` in `Resources/Info.plist` define the source and shipping languages. `Package.swift` declares the matching processed `.lproj` directories. The localization check reads and cross-validates all three instead of maintaining a separate language list in Python.
+
+Large features may own a dedicated catalog; closely related smaller surfaces may share `Localizable.xcstrings`. Use stable symbolic keys namespaced by the owning feature, such as `onboarding.action.continue` or `settings.installation.repair`. English copy and translator comments belong in the catalogs; every shipping translation must be reviewed by a fluent speaker.
 
 The repository checks in three kinds of generated files because command-line SwiftPM does not compile String Catalogs itself:
 

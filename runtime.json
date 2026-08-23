@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
     "name": "WineCX 11.15 + DXMT 0.80 (dappermint build 4.5.118)",
@@ -9,6 +9,27 @@
   "buildRecipe": {
     "url": "https://github.com/dappermint/winecx-gptk/archive/fbae959a44194788873fc33a8fa990653d0820ce.tar.gz",
     "sha256": "4f70e1cf3c281f7add3526bb5166c3c63d5cfbd30eeba1e4141f7b375182eb5f"
+  },
+  "interface": {
+    "archive": {
+      "wineDirectory": "Wine",
+      "dxmtDirectory": "DXMT"
+    },
+    "executables": ["bin/wine64", "bin/wineserver"],
+    "requiredFiles": ["lib/wine/x86_64-windows/winemetal.dll"],
+    "macDriver": "lib/wine/x86_64-unix/winemac.so",
+    "launcher": {
+      "path": "bin/Arknights",
+      "target": "wine64"
+    },
+    "dxmt": {
+      "payloadDirectory": "DXMT",
+      "destinations": {
+        "x64": "system32",
+        "x32": "syswow64"
+      },
+      "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
+    }
   },
   "components": {
     "wine": "11.15",

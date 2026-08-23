@@ -1,6 +1,8 @@
 # Runtime compatibility
 
-Arknights Client packages a fixed Windows compatibility runtime. `runtime.json` is the source of truth for the artifact URL, checksum, component versions, source revisions, and prefix revision. Runtime changes must preserve the contract below or update the launcher and its migrations in the same release.
+Arknights Client packages a fixed Windows compatibility runtime. `runtime.json` is the source of truth for the artifact URL, checksum, component versions, source revisions, prefix revision, and physical runtime interface. Runtime changes must preserve the contract below or update the launcher and its migrations in the same release.
+
+The `interface` object declares the archive directories, required executables and files, launcher symlink, macOS driver, and DXMT payload layout. Runtime download and app-packaging scripts consume the same declaration, so a layout change is made in `runtime.json` instead of being copied between scripts.
 
 ## Runtime baseline
 

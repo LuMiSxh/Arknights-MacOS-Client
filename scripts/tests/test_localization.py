@@ -15,6 +15,21 @@ from lib.common import ScriptError
 
 
 class LocalizationSynchronizationTests(unittest.TestCase):
+    def layout(
+        self,
+        root: Path,
+        *,
+        localizations: tuple[str, ...] = ("en", "de"),
+        catalogs: tuple[Path, ...] = (),
+    ) -> localization.LocalizationLayout:
+        return localization.LocalizationLayout(
+            resource_directory=root,
+            generated_directory=root / "Generated",
+            source_language="en",
+            localizations=localizations,
+            catalogs=catalogs,
+        )
+
     def test_generated_symbols_use_the_packaged_app_resource_bundle(self) -> None:
         generated = (
             "#if SWIFT_PACKAGE\n"
@@ -53,7 +68,34 @@ class LocalizationSynchronizationTests(unittest.TestCase):
             )
 
             with self.assertRaisesRegex(ScriptError, "missing language: de"):
-                localization.validate_catalog(catalog)
+                localization.validate_catalog(catalog, self.layout(catalog.parent))
+
+    def test_shipping_languages_come_from_the_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            catalog = Path(directory) / "Localizable.xcstrings"
+            localizations = {
+                language: {"stringUnit": {"state": "translated", "value": language}}
+                for language in ("en", "de", "fr")
+            }
+            catalog.write_text(
+                json.dumps(
+                    {
+                        "sourceLanguage": "en",
+                        "strings": {
+                            "home.settings": {
+                                "comment": "Settings button",
+                                "localizations": localizations,
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            localization.validate_catalog(
+                catalog,
+                self.layout(catalog.parent, localizations=("en", "de", "fr")),
+            )
 
     def test_writes_missing_generated_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -70,11 +112,9 @@ class LocalizationSynchronizationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / "generated"
-            destination = localization.PROJECT_DIR / ".build/test-stale-localization"
+            destination = root / "output"
             source.write_text("new", encoding="utf-8")
-            destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_text("old", encoding="utf-8")
-            self.addCleanup(destination.unlink, missing_ok=True)
 
             with self.assertRaisesRegex(
                 ScriptError, "generated localization file is stale"

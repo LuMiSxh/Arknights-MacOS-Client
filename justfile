@@ -9,12 +9,12 @@ default:
 # Run an isolated debug preview with every simulated state available in Settings → Developer.
 [group('Development')]
 preview scenario='ready':
-    swift run ArknightsClient --developer-scenario {{ quote(scenario) }}
+    executable_name="$(uv run scripts/project_config.py executable-name)"; swift run "$executable_name" --developer-scenario {{ quote(scenario) }}
 
 # Download the verified runtime and build a local app bundle or dmg; add run to open it after (default: app).
 [group('Development')]
 dev target='app' run='':
-    runtime_dir="$(uv run scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then uv run scripts/build_dmg.py --runtime "$runtime_dir"; path="dist/Arknights Client.dmg"; else uv run scripts/build_app.py --runtime "$runtime_dir"; path="dist/Arknights Client.app"; fi; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi
+    runtime_dir="$(uv run scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then uv run scripts/build_dmg.py --runtime "$runtime_dir"; artifact_name="$(uv run scripts/project_config.py dmg-name)"; else uv run scripts/build_app.py --runtime "$runtime_dir"; artifact_name="$(uv run scripts/project_config.py app-bundle-name)"; fi; path="dist/$artifact_name"; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi
 
 # Check formatting, lint, and test swift, scripts, shim, or all (default: all).
 [group('Checks')]
@@ -29,7 +29,7 @@ format target='all':
 # Build the Apple Silicon release binary.
 [group('Checks')]
 build:
-    swift build --configuration release --arch arm64
+    swift build --configuration release $(uv run scripts/project_config.py swift-architecture-arguments)
 
 # Run validation and build the release binary.
 [group('Checks')]

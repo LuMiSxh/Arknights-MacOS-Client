@@ -27,6 +27,7 @@ from lib.common import (
     warning,
 )
 from lib.console import spinner
+from lib.project_config import ProjectConfiguration, load_project_configuration
 
 DEFAULT_ICON_COMPOSER = Path(
     "/Applications/Icon Composer.app/Contents/Executables/ictool"
@@ -42,7 +43,11 @@ def icon_composer() -> Path:
     fail("Icon Composer command not found; install Icon Composer or add ictool to PATH")
 
 
-def compile_arguments(source: Path, destination: Path) -> list[str | Path]:
+def compile_arguments(
+    source: Path,
+    destination: Path,
+    configuration: ProjectConfiguration,
+) -> list[str | Path]:
     return [
         "actool",
         source,
@@ -51,15 +56,15 @@ def compile_arguments(source: Path, destination: Path) -> list[str | Path]:
         "--output-partial-info-plist",
         destination / "Info.plist",
         "--app-icon",
-        "AppIcon",
+        configuration.product.icon_name,
         "--enable-on-demand-resources",
         "NO",
         "--development-region",
-        "en",
+        configuration.product.development_region,
         "--target-device",
         "mac",
         "--minimum-deployment-target",
-        "15.0",
+        configuration.package.macos_version,
         "--platform",
         "macosx",
         "--notices",
@@ -70,20 +75,26 @@ def compile_arguments(source: Path, destination: Path) -> list[str | Path]:
     ]
 
 
-def generate() -> None:
+def generate(configuration: ProjectConfiguration | None = None) -> None:
+    configuration = configuration or load_project_configuration()
+    project = configuration.project_directory
+    icon_name = configuration.product.icon_name
+    icon_file = configuration.product.icon_file
+    icon_filename = icon_file if Path(icon_file).suffix else f"{icon_file}.icns"
     require_command("actool")
     require_command("sips")
     composer = icon_composer()
-    source = require_directory(PROJECT_DIR / "Resources/AppIcon.icon")
+    source = require_directory(project / f"Resources/{icon_name}.icon")
 
-    rendered = BUILD_DIR / "AppIcon.png"
-    preview = PROJECT_DIR / "Resources/AppIcon.png"
-    catalog = BUILD_DIR / "AppIcon.xcassets"
-    iconset = catalog / "AppIcon.appiconset"
-    compiled = BUILD_DIR / "AppIcon.compiled"
-    dynamic = BUILD_DIR / "AppIcon.dynamic"
-    output_icns = PROJECT_DIR / "Resources/AppIcon.icns"
-    output_assets = PROJECT_DIR / "Resources/Assets.car"
+    build_directory = project / BUILD_DIR.relative_to(PROJECT_DIR)
+    rendered = build_directory / f"{icon_name}.png"
+    preview = project / f"Resources/{icon_name}.png"
+    catalog = build_directory / f"{icon_name}.xcassets"
+    iconset = catalog / f"{icon_name}.appiconset"
+    compiled = build_directory / f"{icon_name}.compiled"
+    dynamic = build_directory / f"{icon_name}.dynamic"
+    output_icns = project / "Resources" / icon_filename
+    output_assets = project / "Resources/Assets.car"
     for path in (catalog, compiled, dynamic):
         remove_path(path)
     for path in (iconset, compiled, dynamic):
@@ -116,7 +127,7 @@ def generate() -> None:
 
     with spinner("Compiling the native layered icon"):
         result = subprocess.run(
-            [str(value) for value in compile_arguments(source, dynamic)],
+            [str(value) for value in compile_arguments(source, dynamic, configuration)],
             text=True,
             capture_output=True,
             check=False,
@@ -124,25 +135,25 @@ def generate() -> None:
     (dynamic / "actool.log").write_text(result.stdout + result.stderr, encoding="utf-8")
     if (
         result.returncode == 0
-        and (dynamic / "AppIcon.icns").is_file()
+        and (dynamic / icon_filename).is_file()
         and (dynamic / "Assets.car").is_file()
     ):
-        shutil.copyfile(dynamic / "AppIcon.icns", output_icns)
+        shutil.copyfile(dynamic / icon_filename, output_icns)
         shutil.copyfile(dynamic / "Assets.car", output_assets)
         success("Built the native layered app icon")
         return
 
     warning("Native .icon compilation is unavailable; using the asset-catalog fallback")
     require_command("magick")
-    contents = require_file(PROJECT_DIR / "Resources/AppIconAssetContents.json")
+    contents = require_file(project / f"Resources/{icon_name}AssetContents.json")
     shutil.copyfile(contents, iconset / "Contents.json")
     for size in (16, 32, 128, 256, 512):
         for scale, pixels in ((1, size), (2, size * 2)):
             suffix = "" if scale == 1 else "@2x"
             output = iconset / f"icon_{size}x{size}{suffix}.png"
             run(["magick", rendered, "-resize", f"{pixels}x{pixels}", output])
-    run(compile_arguments(catalog, compiled))
-    shutil.copyfile(require_file(compiled / "AppIcon.icns"), output_icns)
+    run(compile_arguments(catalog, compiled, configuration))
+    shutil.copyfile(require_file(compiled / icon_filename), output_icns)
     shutil.copyfile(require_file(compiled / "Assets.car"), output_assets)
     success("Built the asset-catalog app icon fallback")
 

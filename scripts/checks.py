@@ -14,6 +14,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from lib.common import PROJECT_DIR, info, run, run_main, success
+from lib.project_config import load_project_configuration
 from localization import synchronize_localization
 from runtime_config import validate_config
 
@@ -46,6 +47,7 @@ def handwritten_swift_sources() -> list[Path]:
 
 
 def check_swift() -> None:
+    configuration = load_project_configuration()
     info("Linting Swift sources")
     run(
         [
@@ -60,7 +62,12 @@ def check_swift() -> None:
         cwd=PROJECT_DIR,
     )
     info("Running the Swift test suite")
-    run(["swift", "test", "--arch", "arm64"], cwd=PROJECT_DIR)
+    architecture_arguments = [
+        argument
+        for architecture in configuration.product.architecture_priority
+        for argument in ("--arch", architecture)
+    ]
+    run(["swift", "test", *architecture_arguments], cwd=PROJECT_DIR)
 
 
 def format_swift() -> None:
@@ -83,6 +90,7 @@ def check_scripts() -> None:
     info("Linting Python scripts")
     run([*RUFF, "check", "scripts"], cwd=PROJECT_DIR)
     run([*RUFF, "format", "--check", "scripts"], cwd=PROJECT_DIR)
+    load_project_configuration()
     validate_config(PROJECT_DIR / "runtime.json")
     info("Running the Python script test suite")
     run(

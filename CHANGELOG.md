@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
 - Added a SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
 
+### Changed
+
+- Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2 with a shared physical runtime interface for download and packaging scripts.
+
 ### Fixed
 
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).

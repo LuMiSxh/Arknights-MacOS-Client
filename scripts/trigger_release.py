@@ -23,14 +23,16 @@ from lib.common import (
     success,
 )
 from lib.console import spinner
+from lib.project_config import load_project_configuration
 from release_validation import validate_release
 
 
 def trigger(version: str) -> None:
+    configuration = load_project_configuration()
     validate_release(
         version,
         PROJECT_DIR / "CHANGELOG.md",
-        PROJECT_DIR / "Resources/Info.plist",
+        configuration.product.marketing_version,
     )
     require_commands(("gh", "git"))
     if output(["git", "status", "--porcelain"], cwd=PROJECT_DIR):

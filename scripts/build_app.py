@@ -5,7 +5,7 @@
 # ///
 # SPDX-License-Identifier: MPL-2.0
 
-"""Build and ad-hoc sign the native Arknights Client application bundle."""
+"""Build and ad-hoc sign the native application bundle."""
 
 from __future__ import annotations
 
@@ -33,13 +33,15 @@ from lib.common import (
     success,
 )
 from lib.console import spinner
+from lib.file_operations import copy_file, copy_resource
 from lib.patch_wine_runtime import patch_file
-from runtime_config import validate_config
+from lib.project_config import ProjectConfiguration, load_project_configuration
+from runtime_config import (
+    RuntimeConfiguration,
+    load_runtime_config,
+    runtime_is_valid,
+)
 
-APP_NAME = "Arknights Client"
-EXECUTABLE_NAME = "ArknightsClient"
-SWIFT_RESOURCE_BUNDLE_NAME = "ArknightsClient_ArknightsClient.bundle"
-APP_BUNDLE = DIST_DIR / f"{APP_NAME}.app"
 LEGAL_FILES = {
     "docs/legal/third-party-notices.md": "THIRD_PARTY_NOTICES.md",
     "LICENSE": "LICENSE",
@@ -56,49 +58,63 @@ REQUIRED_LICENSES = (
     "lgpl-3.0.txt",
     "mit-dxmt.txt",
 )
-COMPATIBILITY_HELPERS = (
-    ("Vuplex/Vuplex WebView.vuplex", "Vuplex/Vuplex WebView.vuplex"),
-    ("Vuplex/userenv.dll", "Vuplex/userenv.dll"),
-    ("PlatformProcess/PlatformProcess.exe", "PlatformProcess/PlatformProcess.exe"),
-    (
-        "PlatformProcess/PlatformProcessWindowBridge.dylib",
-        "PlatformProcess/PlatformProcessWindowBridge.dylib",
-    ),
-    ("GameIcon/GameIconBridge.dylib", "GameIcon/GameIconBridge.dylib"),
-)
-SIGNED_COMPATIBILITY_HELPERS = (
-    "PlatformProcess/PlatformProcessWindowBridge.dylib",
-    "GameIcon/GameIconBridge.dylib",
-)
-APP_RESOURCES = (
-    ("Resources/AppIcon.icns", "AppIcon.icns"),
-    ("Resources/Assets.car", "Assets.car"),
-    ("Resources/en.lproj/InfoPlist.strings", "en.lproj/InfoPlist.strings"),
-    ("Resources/de.lproj/InfoPlist.strings", "de.lproj/InfoPlist.strings"),
-    (
-        "Sources/ArknightsClient/Resources/GameIconBackground.png",
-        "GameIconBackground.png",
-    ),
-    (
-        "Sources/ArknightsClient/Resources/OperatorIconFrame.svg",
-        "OperatorIconFrame.svg",
-    ),
-)
 
 
-def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(source, destination)
-    destination.chmod(mode)
+def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
+    project = configuration.project_directory
+    icon_file = configuration.product.icon_file
+    icon_filename = icon_file if Path(icon_file).suffix else f"{icon_file}.icns"
+    entries = [
+        (project / "Resources" / icon_filename, Path(icon_filename)),
+        (project / "Resources/Assets.car", Path("Assets.car")),
+        *(
+            (
+                project / f"Resources/{language}.lproj/InfoPlist.strings",
+                Path(f"{language}.lproj/InfoPlist.strings"),
+            )
+            for language in configuration.product.localizations
+        ),
+        *(
+            (source, Path(source.name))
+            for source in configuration.copied_resource_source_paths
+        ),
+    ]
+    destinations = [destination for _, destination in entries]
+    if len(destinations) != len(set(destinations)):
+        fail("application resources contain duplicate destinations")
+    return tuple(entries)
 
 
-def copy_swift_localizations(binary_dir: Path, resources: Path) -> None:
-    source = require_directory(binary_dir / SWIFT_RESOURCE_BUNDLE_NAME)
+def copy_swift_localizations(
+    binary_dir: Path,
+    resources: Path,
+    configuration: ProjectConfiguration,
+) -> None:
+    source = require_directory(binary_dir / configuration.swift_resource_bundle_name)
     localizations = sorted(source.glob("*.lproj/*.strings"))
     if not localizations:
         fail("Swift resource bundle does not contain localizations")
+    discovered = {path.parent.name.removesuffix(".lproj") for path in localizations}
+    expected = set(configuration.product.localizations)
+    if discovered != expected:
+        fail(
+            "Swift resource bundle localizations do not match CFBundleLocalizations "
+            f"(found {sorted(discovered)}, expected {sorted(expected)})"
+        )
     for localization in localizations:
         copy_file(localization, resources / localization.relative_to(source))
+
+
+def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, ...]:
+    files = sorted(path for path in source.rglob("*") if path.is_file())
+    if not files:
+        fail("compatibility build produced no artifacts")
+    copied = []
+    for artifact in files:
+        packaged = destination / artifact.relative_to(source)
+        copy_file(artifact, packaged)
+        copied.append(packaged)
+    return tuple(copied)
 
 
 def copy_runtime(source: Path, destination: Path) -> None:
@@ -164,30 +180,34 @@ def thin_universal_files(runtime: Path) -> int:
     return count
 
 
-def validate_inputs(runtime: Path | None) -> None:
+def validate_inputs(
+    runtime: Path | None,
+    configuration: ProjectConfiguration,
+    runtime_configuration: RuntimeConfiguration,
+) -> None:
     require_commands(("codesign", "lipo", "plutil", "swift", "uv"))
-    for relative in (
-        "Resources/Info.plist",
-        "Resources/AppIcon.icns",
-        "Resources/Assets.car",
-        *LEGAL_FILES,
-    ):
-        require_file(PROJECT_DIR / relative)
-    licenses = require_directory(PROJECT_DIR / "docs/legal/licenses")
+    project = configuration.project_directory
+    require_file(project / "Resources/Info.plist")
+    for source, _ in app_resources(configuration):
+        if not source.exists():
+            fail(f"required resource not found: {source}")
+    for relative in LEGAL_FILES:
+        require_file(project / relative)
+    licenses = require_directory(project / "docs/legal/licenses")
     for name in REQUIRED_LICENSES:
         require_file(licenses / name)
-    validate_config(PROJECT_DIR / "runtime.json")
     if runtime is not None:
         require_directory(runtime)
+        if not runtime_is_valid(runtime, runtime_configuration.layout):
+            fail("runtime directory does not satisfy runtime.json interface")
 
 
-def embed_runtime(runtime: Path, resources: Path) -> None:
-    for relative in ("bin/wine64", "bin/wineserver"):
-        if not os.access(runtime / relative, os.X_OK):
-            fail(f"runtime executable not found: {runtime / relative}")
-    if not (runtime / "DXMT/x64").is_dir():
-        fail(f"runtime DXMT payload not found: {runtime / 'DXMT/x64'}")
-
+def embed_runtime(
+    runtime: Path,
+    resources: Path,
+    runtime_configuration: RuntimeConfiguration,
+) -> None:
+    layout = runtime_configuration.layout
     destination = resources / "Runtime"
     with spinner("Embedding the Wine + DXMT runtime"):
         copy_runtime(runtime, destination)
@@ -196,23 +216,38 @@ def embed_runtime(runtime: Path, resources: Path) -> None:
     if count:
         info(f"Thinned {count} universal runtime files")
 
-    driver = destination / "lib/wine/x86_64-unix/winemac.so"
+    driver = destination / layout.mac_driver
     require_file(driver)
     info("Applying the native Command-Q integration patch")
     patch_file(driver)
     run(["codesign", "--force", "--sign", "-", "--timestamp=none", driver])
-    launcher = destination / "bin/Arknights"
+    launcher = destination / layout.launcher.path
     remove_path(launcher)
-    launcher.symlink_to("wine64")
+    launcher.symlink_to(layout.launcher.target)
+    if not runtime_is_valid(destination, layout):
+        fail("packaged runtime does not satisfy runtime.json interface")
 
 
-def build(runtime: Path | None, configuration: str = "release") -> Path:
+def build(
+    runtime: Path | None,
+    configuration: str = "release",
+    project_configuration: ProjectConfiguration | None = None,
+) -> Path:
+    project_configuration = project_configuration or load_project_configuration()
+    project = project_configuration.project_directory
+    runtime_configuration = load_runtime_config(project / "runtime.json")
     runtime = runtime.resolve() if runtime is not None else None
-    validate_inputs(runtime)
-    info(f"Building the Apple Silicon {configuration} executable")
+    validate_inputs(runtime, project_configuration, runtime_configuration)
+    architectures = project_configuration.product.architecture_priority
+    architecture_arguments = [
+        argument
+        for architecture in architectures
+        for argument in ("--arch", architecture)
+    ]
+    info(f"Building the {configuration} executable for {', '.join(architectures)}")
     run(
-        ["swift", "build", "--configuration", configuration, "--arch", "arm64"],
-        cwd=PROJECT_DIR,
+        ["swift", "build", "--configuration", configuration, *architecture_arguments],
+        cwd=project,
     )
     binary_dir = Path(
         output(
@@ -221,47 +256,47 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
                 "build",
                 "--configuration",
                 configuration,
-                "--arch",
-                "arm64",
+                *architecture_arguments,
                 "--show-bin-path",
             ],
-            cwd=PROJECT_DIR,
+            cwd=project,
         )
     )
-    binary = binary_dir / EXECUTABLE_NAME
+    binary = binary_dir / project_configuration.product.executable_name
     if not os.access(binary, os.X_OK):
         fail(f"{configuration} executable not found: {binary}")
 
-    DIST_DIR.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".app-build.", dir=DIST_DIR) as name:
-        staged_app = Path(name) / f"{APP_NAME}.app"
+    dist = project / DIST_DIR.relative_to(PROJECT_DIR)
+    app_bundle = dist / project_configuration.app_bundle_name
+    dist.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".app-build.", dir=dist) as name:
+        staged_app = Path(name) / project_configuration.app_bundle_name
         macos = staged_app / "Contents/MacOS"
         resources = staged_app / "Contents/Resources"
         macos.mkdir(parents=True)
         resources.mkdir(parents=True)
-        copy_file(binary, macos / EXECUTABLE_NAME, 0o755)
-        copy_swift_localizations(binary_dir, resources)
-        copy_file(
-            PROJECT_DIR / "Resources/Info.plist", staged_app / "Contents/Info.plist"
-        )
-        for source, destination in APP_RESOURCES:
-            copy_file(PROJECT_DIR / source, resources / destination)
+        copy_file(binary, macos / project_configuration.product.executable_name, 0o755)
+        copy_swift_localizations(binary_dir, resources, project_configuration)
+        copy_file(project / "Resources/Info.plist", staged_app / "Contents/Info.plist")
+        for source, destination in app_resources(project_configuration):
+            copy_resource(source, resources / destination)
 
-        helper_root = BUILD_DIR / "helpers"
+        helper_root = project / BUILD_DIR.relative_to(PROJECT_DIR) / "helpers"
+        remove_path(helper_root)
         info("Building the game compatibility components")
         run(
             [
                 "uv",
                 "run",
-                PROJECT_DIR / "scripts/build_compatibility.py",
+                project / "scripts/build_compatibility.py",
                 "--output",
                 helper_root,
-            ]
+            ],
+            cwd=project,
         )
         compatibility = resources / "Compatibility"
-        for source, destination in COMPATIBILITY_HELPERS:
-            copy_file(helper_root / source, compatibility / destination)
-        for helper in SIGNED_COMPATIBILITY_HELPERS:
+        helpers = copy_compatibility_helpers(helper_root, compatibility)
+        for helper in (path for path in helpers if path.suffix == ".dylib"):
             run(
                 [
                     "codesign",
@@ -269,17 +304,17 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
                     "--sign",
                     "-",
                     "--timestamp=none",
-                    compatibility / helper,
+                    helper,
                 ]
             )
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:
-            embed_runtime(runtime, resources)
+            embed_runtime(runtime, resources, runtime_configuration)
         for source, destination in LEGAL_FILES.items():
-            copy_file(PROJECT_DIR / source, resources / destination)
+            copy_file(project / source, resources / destination)
         licenses = resources / "ThirdPartyLicenses"
-        license_files = sorted((PROJECT_DIR / "docs/legal/licenses").glob("*.txt"))
+        license_files = sorted((project / "docs/legal/licenses").glob("*.txt"))
         if not license_files:
             fail("no third-party license files found")
         for license_file in license_files:
@@ -288,10 +323,10 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
         info("Ad-hoc signing the application bundle")
         run(["codesign", "--force", "--sign", "-", "--timestamp=none", staged_app])
         run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", staged_app])
-        remove_path(APP_BUNDLE)
-        staged_app.replace(APP_BUNDLE)
-    success(f"Built {APP_BUNDLE.relative_to(PROJECT_DIR)}")
-    return APP_BUNDLE
+        remove_path(app_bundle)
+        staged_app.replace(app_bundle)
+    success(f"Built {app_bundle.relative_to(project)}")
+    return app_bundle
 
 
 def main() -> None:
