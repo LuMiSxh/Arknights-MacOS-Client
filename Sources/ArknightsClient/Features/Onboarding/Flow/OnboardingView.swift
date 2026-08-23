@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct OnboardingView: View {
-	@Bindable var model: LauncherViewModel
+	let model: LauncherViewModel
 	@Bindable var coordinator: OnboardingCoordinator
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var presentedGallery: PresetGalleryDestination?
@@ -14,8 +14,8 @@ struct OnboardingView: View {
 		HStack(spacing: 0) {
 			OnboardingProgressRail(
 				currentStep: coordinator.step,
-				accentColor: model.accentColor,
-				appVersion: model.appVersion
+				accentColor: model.customization.accentColor,
+				appVersion: IssueReportURL.appVersion
 			)
 
 			Divider()
@@ -27,32 +27,51 @@ struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
-								model: model,
+								preferences: model.settings,
+								accentColor: model.customization.accentColor,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
-								rosettaInstallationState: model.rosettaInstallationState,
+								rosettaInstallationState: model.lifecycle.rosettaInstallationState,
 								retry: retryUpdateCheck,
 								retryIntelTranslation: retryIntelTranslation,
 								installRosetta: installRosetta
 							)
 						case .installation:
-							OnboardingInstallationView(model: model)
+							OnboardingInstallationView(
+								installation: model.installation,
+								accentColor: model.customization.accentColor,
+								canSwitchRegion: model.refreshController.canSwitchRegion,
+								selectRegion: model.selectRegion
+							)
 						case .game:
-							OnboardingGameSettingsView(model: model)
+							OnboardingGameSettingsView(
+								preferences: model.settings,
+								accentColor: model.customization.accentColor
+							)
 						case .personalization:
 							OnboardingPersonalizationView(
-								model: model,
+								customization: model.customization,
+								preferences: model.settings,
+								resetArtwork: model.resetArtwork,
 								browseArtwork: { presentedGallery = .artwork }
 							)
 						case .icons:
 							OnboardingIconsView(
-								model: model,
+								customization: model.customization,
 								browseOperators: { presentedGallery = .operatorIcons }
 							)
 						case .extras:
-							OnboardingExtrasView(model: model)
+							OnboardingExtrasView(
+								preferences: model.settings,
+								accentColor: model.customization.accentColor
+							)
 						case .finish:
-							OnboardingFinishView(model: model)
+							OnboardingFinishView(
+								installation: model.installation,
+								lifecycle: model.lifecycle,
+								accentColor: model.customization.accentColor,
+								install: model.installOrUpdate
+							)
 						}
 					}
 					.id(coordinator.step)
@@ -70,7 +89,7 @@ struct OnboardingView: View {
 
 				FloatingActionFooterFade(height: 76)
 
-				FloatingActionBar(tint: model.hudTintColor) {
+				FloatingActionBar(tint: model.customization.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
 						Button(action: coordinator.skip) {
 							Label(OnboardingStrings.skipForNow, systemImage: "forward.end")
@@ -89,7 +108,7 @@ struct OnboardingView: View {
 					CapsuleActionButton(
 						title: L10n.string(primaryTitle),
 						systemImage: primarySystemImage,
-						tone: .accent(model.accentColor),
+						tone: .accent(model.customization.accentColor),
 						action: performPrimaryAction
 					)
 					.controlSize(.large)
@@ -104,16 +123,24 @@ struct OnboardingView: View {
 		.background {
 			ZStack {
 				Color(red: 0.07, green: 0.07, blue: 0.08)
-				model.hudTintColor
+				model.customization.hudTintColor
 			}
 			.ignoresSafeArea(.container, edges: .top)
 		}
-		.tint(model.accentColor)
+		.tint(model.customization.accentColor)
 		.preferredColorScheme(.dark)
 		.animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: coordinator.step)
-		.animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: model.dynamicThemeHue)
+		.animation(
+			reduceMotion ? nil : .easeInOut(duration: 0.3),
+			value: model.customization.dynamicThemeHue
+		)
 		.sheet(item: $presentedGallery) { destination in
-			PresetGalleryView(model: model, destination: destination)
+			PresetGalleryView(
+				catalog: model.presetCatalog,
+				customization: model.customization,
+				lifecycle: model.lifecycle,
+				destination: destination
+			)
 		}
 	}
 
@@ -128,8 +155,10 @@ struct OnboardingView: View {
 			}
 		}
 		if coordinator.step == .installation {
-			if model.isInstalled || model.isDownloading { return OnboardingStrings.continueSetup }
-			return model.hasPartialDownload
+			if model.installation.isInstalled || model.installation.isDownloading {
+				return OnboardingStrings.continueSetup
+			}
+			return model.installation.hasPartialDownload
 				? OnboardingStrings.resumeAndContinue : OnboardingStrings.installAndContinue
 		}
 		if coordinator.step == .finish { return OnboardingStrings.finishSetup }
@@ -149,7 +178,8 @@ struct OnboardingView: View {
 			}
 		}
 		if coordinator.step == .installation {
-			return model.isInstalled || model.isDownloading || model.canInstall
+			return model.installation.isInstalled || model.installation.isDownloading
+				|| model.installation.canInstall
 		}
 		return true
 	}
@@ -158,8 +188,10 @@ struct OnboardingView: View {
 		if coordinator.step == .welcome, case .updateRequired = coordinator.updateState {
 			return "arrow.up.right"
 		}
-		if coordinator.step == .installation && !model.isInstalled && !model.isDownloading {
-			return model.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
+		if coordinator.step == .installation && !model.installation.isInstalled
+			&& !model.installation.isDownloading
+		{
+			return model.installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
 		}
 		if coordinator.step == .finish { return "checkmark" }
 		return "chevron.forward"
@@ -169,10 +201,12 @@ struct OnboardingView: View {
 		if coordinator.step == .welcome,
 			case .updateRequired = coordinator.updateState
 		{
-			model.openLauncherUpdate()
+			model.communication.openLauncherUpdate()
 			return
 		}
-		if coordinator.step == .installation && !model.isInstalled && !model.isDownloading {
+		if coordinator.step == .installation && !model.installation.isInstalled
+			&& !model.installation.isDownloading
+		{
 			model.installOrUpdate()
 		}
 		coordinator.advance()
@@ -181,7 +215,7 @@ struct OnboardingView: View {
 	private func retryIntelTranslation() {
 		Task {
 			await coordinator.refreshIntelTranslationAvailability {
-				await model.refreshIntelTranslationAvailability(force: true)
+				await model.intelTranslation.refreshAvailability(force: true)
 			}
 		}
 	}

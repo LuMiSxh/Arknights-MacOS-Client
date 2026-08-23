@@ -8,7 +8,13 @@ private func isImageURL(_ url: URL) -> Bool {
 }
 
 struct GeneralSettingsPage: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var settings: LauncherPreferencesController
+	let customization: CustomizationController
+	let gameSession: GameSessionController
+	let lifecycle: LauncherLifecycleStore
+	let presetCatalog: PresetCatalogService
+	let accentColor: Color
+	let resetArtwork: () -> Void
 	let restartOnboarding: () -> Void
 	@State private var presentedGallery: PresetGalleryDestination?
 
@@ -16,7 +22,7 @@ struct GeneralSettingsPage: View {
 		SettingsPage(
 			title: L10n.string(SettingsStrings.generalTitle),
 			subtitle: L10n.string(SettingsStrings.generalSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(
 				title: L10n.string(SettingsStrings.displayControls), systemImage: "display"
@@ -27,12 +33,12 @@ struct GeneralSettingsPage: View {
 				) {
 					Toggle(
 						L10n.string(SettingsStrings.highResolution),
-						isOn: $model.launchOptions.usesHighResolutionMode
+						isOn: $settings.launchOptions.usesHighResolutionMode
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(model.accentColor)
-					.disabled(!model.canModifyLaunchOptions)
+					.tint(accentColor)
+					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -41,12 +47,12 @@ struct GeneralSettingsPage: View {
 				) {
 					Toggle(
 						L10n.string(SettingsStrings.gameDisplaySettings),
-						isOn: $model.launchOptions.usesGameSettings
+						isOn: $settings.launchOptions.usesGameSettings
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(model.accentColor)
-					.disabled(!model.canModifyLaunchOptions)
+					.tint(accentColor)
+					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -54,13 +60,13 @@ struct GeneralSettingsPage: View {
 					detail: L10n.string(SettingsStrings.windowModeDetail)
 				) {
 					GlassMenuPicker(
-						selection: $model.launchOptions.displayMode,
+						selection: $settings.launchOptions.displayMode,
 						options: GameDisplayMode.allCases.map {
 							($0, L10n.string(SettingsStrings.displayMode($0)))
 						},
-						accentColor: model.accentColor,
-						isDisabled: model.launchOptions.usesGameSettings
-							|| !model.canModifyLaunchOptions
+						accentColor: accentColor,
+						isDisabled: settings.launchOptions.usesGameSettings
+							|| gameSession.isGameActive
 					)
 				}
 				SettingsHairline()
@@ -69,11 +75,11 @@ struct GeneralSettingsPage: View {
 					detail: L10n.string(SettingsStrings.resolutionDetail)
 				) {
 					GlassMenuPicker(
-						selection: $model.launchOptions.resolution,
+						selection: $settings.launchOptions.resolution,
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
-						accentColor: model.accentColor,
-						isDisabled: model.launchOptions.usesGameSettings
-							|| !model.canModifyLaunchOptions
+						accentColor: accentColor,
+						isDisabled: settings.launchOptions.usesGameSettings
+							|| gameSession.isGameActive
 					)
 				}
 			}
@@ -84,11 +90,11 @@ struct GeneralSettingsPage: View {
 					detail: L10n.string(SettingsStrings.languageDetail)
 				) {
 					GlassMenuPicker(
-						selection: $model.appLanguage,
+						selection: $settings.appLanguage,
 						options: AppLanguage.allCases.map {
 							($0, L10n.string(SettingsStrings.appLanguage($0)))
 						},
-						accentColor: model.accentColor
+						accentColor: accentColor
 					)
 				}
 				SettingsHairline()
@@ -97,11 +103,12 @@ struct GeneralSettingsPage: View {
 					detail: L10n.string(SettingsStrings.showGameVersionDetail)
 				) {
 					Toggle(
-						L10n.string(SettingsStrings.showGameVersion), isOn: $model.showsGameVersion
+						L10n.string(SettingsStrings.showGameVersion),
+						isOn: $settings.showsGameVersion
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(model.accentColor)
+					.tint(accentColor)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -110,11 +117,11 @@ struct GeneralSettingsPage: View {
 				) {
 					Toggle(
 						L10n.string(SettingsStrings.serverTime),
-						isOn: $model.showsServerResetCountdown
+						isOn: $settings.showsServerResetCountdown
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(model.accentColor)
+					.tint(accentColor)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -123,12 +130,12 @@ struct GeneralSettingsPage: View {
 				) {
 					Toggle(
 						L10n.string(SettingsStrings.metalHUD),
-						isOn: $model.launchOptions.usesMetalPerformanceHUD
+						isOn: $settings.launchOptions.usesMetalPerformanceHUD
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(model.accentColor)
-					.disabled(!model.canModifyLaunchOptions)
+					.tint(accentColor)
+					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -137,10 +144,10 @@ struct GeneralSettingsPage: View {
 				) {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.runAgain), systemImage: "wand.and.stars",
-						tone: .accent(model.accentColor), presentation: .compact,
+						tone: .accent(accentColor), presentation: .compact,
 						action: restartOnboarding
 					)
-					.disabled(!model.canModifyLaunchOptions)
+					.disabled(gameSession.isGameActive)
 				}
 			}
 
@@ -154,26 +161,26 @@ struct GeneralSettingsPage: View {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.presets),
 						systemImage: "photo.on.rectangle",
-						tone: .accent(model.accentColor), presentation: .compact
+						tone: .accent(accentColor), presentation: .compact
 					) {
 						presentedGallery = .artwork
 					}
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.choose), systemImage: "folder",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.chooseCustomArtwork
+						tone: .accent(accentColor), presentation: .compact,
+						action: customization.chooseCustomArtwork
 					)
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.useDefault),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
-						action: model.resetArtwork
+						action: resetArtwork
 					)
 				}
 				.dropDestination(for: URL.self) { urls, _ in
 					guard let url = urls.first, isImageURL(url) else { return false }
-					model.applyCustomArtwork(from: url)
+					customization.applyCustomArtwork(from: url)
 					return true
 				}
 				SettingsHairline()
@@ -184,7 +191,7 @@ struct GeneralSettingsPage: View {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.chooseOperator),
 						systemImage: "person.2.crop.square.stack",
-						tone: .accent(model.accentColor),
+						tone: .accent(accentColor),
 						presentation: .compact
 					) {
 						presentedGallery = .operatorIcons
@@ -194,7 +201,7 @@ struct GeneralSettingsPage: View {
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
-						action: model.resetOperatorIcons
+						action: customization.resetOperatorIcons
 					)
 				}
 				SettingsHairline()
@@ -205,37 +212,37 @@ struct GeneralSettingsPage: View {
 					GlassActionMenu(
 						title: L10n.string(SettingsStrings.launcher),
 						systemImage: "macwindow",
-						accentColor: model.accentColor
+						accentColor: accentColor
 					) {
 						Button(
 							L10n.string(SettingsStrings.chooseImage), systemImage: "folder",
-							action: model.chooseCustomAppIcon)
+							action: customization.chooseCustomAppIcon)
 						Button(
 							L10n.string(SettingsStrings.useDefault),
 							systemImage: "arrow.counterclockwise",
-							action: model.resetAppIcon)
+							action: customization.resetAppIcon)
 					}
 					.dropDestination(for: URL.self) { urls, _ in
 						guard let url = urls.first, isImageURL(url) else { return false }
-						model.applyCustomAppIcon(from: url)
+						customization.applyCustomAppIcon(from: url)
 						return true
 					}
 					GlassActionMenu(
 						title: L10n.string(SettingsStrings.game),
 						systemImage: "gamecontroller",
-						accentColor: model.accentColor
+						accentColor: accentColor
 					) {
 						Button(
 							L10n.string(SettingsStrings.chooseImage), systemImage: "folder",
-							action: model.chooseCustomGameIcon)
+							action: customization.chooseCustomGameIcon)
 						Button(
 							L10n.string(SettingsStrings.useDefault),
 							systemImage: "arrow.counterclockwise",
-							action: model.resetGameIcon)
+							action: customization.resetGameIcon)
 					}
 					.dropDestination(for: URL.self) { urls, _ in
 						guard let url = urls.first, isImageURL(url) else { return false }
-						model.applyCustomGameIcon(from: url)
+						customization.applyCustomGameIcon(from: url)
 						return true
 					}
 				}
@@ -244,15 +251,22 @@ struct GeneralSettingsPage: View {
 					title: L10n.string(SettingsStrings.dynamicTheme),
 					detail: L10n.string(SettingsStrings.dynamicThemeDetail)
 				) {
-					Toggle(L10n.string(SettingsStrings.dynamicTheme), isOn: $model.usesDynamicTheme)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(model.accentColor)
+					Toggle(
+						L10n.string(SettingsStrings.dynamicTheme), isOn: $settings.usesDynamicTheme
+					)
+					.labelsHidden()
+					.toggleStyle(.switch)
+					.tint(accentColor)
 				}
 			}
 		}
 		.sheet(item: $presentedGallery) { destination in
-			PresetGalleryView(model: model, destination: destination)
+			PresetGalleryView(
+				catalog: presetCatalog,
+				customization: customization,
+				lifecycle: lifecycle,
+				destination: destination
+			)
 		}
 	}
 }

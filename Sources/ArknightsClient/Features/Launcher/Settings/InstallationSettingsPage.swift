@@ -3,7 +3,18 @@
 import SwiftUI
 
 struct InstallationSettingsPage: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var settings: LauncherPreferencesController
+	let installation: InstallationController
+	let storage: StorageMaintenanceController
+	let gameSession: GameSessionController
+	let lifecycle: LauncherLifecycleStore
+	let accentColor: Color
+	let selectRegion: (GameRegion) -> Void
+	let chooseInstallDirectory: () -> Void
+	let locateExistingInstallation: () -> Void
+	let repairGame: () -> Void
+	let resetAllLauncherSettings: () -> Void
+	let uninstallGame: () -> Void
 	@State private var confirmsGameUninstall = false
 	@State private var confirmsForceMigration = false
 	@State private var confirmsWinePrefixDeletion = false
@@ -14,7 +25,7 @@ struct InstallationSettingsPage: View {
 		SettingsPage(
 			title: L10n.string(SettingsStrings.installationTitle),
 			subtitle: L10n.string(SettingsStrings.installationSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(title: L10n.string(SettingsStrings.region), systemImage: "globe") {
 				SettingsActionRow(
@@ -24,8 +35,8 @@ struct InstallationSettingsPage: View {
 					GlassMenuPicker(
 						selection: regionBinding,
 						options: GameRegion.allCases.map { ($0, $0.localizedDisplayName) },
-						accentColor: model.accentColor,
-						isDisabled: !model.canSwitchRegion
+						accentColor: accentColor,
+						isDisabled: lifecycle.activity != .idle
 					)
 				}
 			}
@@ -38,19 +49,19 @@ struct InstallationSettingsPage: View {
 					detail: L10n.string(SettingsStrings.statusDetail)
 				) {
 					Text(gameStatus)
-						.foregroundStyle(model.isDownloading ? model.accentColor : .secondary)
+						.foregroundStyle(installation.isDownloading ? accentColor : .secondary)
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.folder),
-					detail: model.installDirectory.lastPathComponent
+					detail: installation.installDirectory.lastPathComponent
 				) {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.show), systemImage: "folder",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.revealInstallDirectory
+						tone: .accent(accentColor), presentation: .compact,
+						action: installation.revealInstallDirectory
 					)
-					.disabled(!model.isInstalled)
+					.disabled(!installation.isInstalled)
 					.help(L10n.string(SettingsStrings.showGameFilesHelp))
 				}
 				SettingsHairline()
@@ -61,15 +72,15 @@ struct InstallationSettingsPage: View {
 					GlassActionMenu(
 						title: L10n.string(SettingsStrings.change),
 						systemImage: "arrow.triangle.swap",
-						accentColor: model.accentColor,
-						isDisabled: !model.canModifyGameFiles
+						accentColor: accentColor,
+						isDisabled: !installation.canModifyGameFiles
 					) {
 						Button(
 							L10n.string(SettingsStrings.chooseNewLocation),
-							action: model.chooseInstallDirectory)
+							action: chooseInstallDirectory)
 						Button(
 							L10n.string(SettingsStrings.locateExisting),
-							action: model.locateExistingInstallation
+							action: locateExistingInstallation
 						)
 					}
 				}
@@ -86,34 +97,34 @@ struct InstallationSettingsPage: View {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.repairAction),
 						systemImage: "wrench.and.screwdriver",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.repairGame
+						tone: .accent(accentColor), presentation: .compact,
+						action: repairGame
 					)
-					.disabled(!model.isInstalled || !model.canInstall)
+					.disabled(!installation.isInstalled || !installation.canInstall)
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.clearCache),
-					detail: L10n.string(SettingsStrings.cacheDetail(model.cacheSizeText))
+					detail: L10n.string(SettingsStrings.cacheDetail(storage.gameCacheSizeText))
 				) {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.clearCache), systemImage: "trash",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.clearCache
+						tone: .accent(accentColor), presentation: .compact,
+						action: storage.clearGameCache
 					)
-					.disabled(!model.canModifyGameFiles)
+					.disabled(!installation.canModifyGameFiles)
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.cacheGallery),
 					detail: L10n.string(
-						SettingsStrings.cacheGalleryDetail(model.presetGalleryCacheSizeText))
+						SettingsStrings.cacheGalleryDetail(storage.presetGalleryCacheSizeText))
 				) {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.clearCache), systemImage: "trash",
-						tone: .accent(model.accentColor), presentation: .compact
+						tone: .accent(accentColor), presentation: .compact
 					) {
-						model.clearPresetGalleryCache()
+						storage.clearPresetGalleryCache()
 					}
 				}
 				SettingsHairline()
@@ -124,8 +135,8 @@ struct InstallationSettingsPage: View {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.showLogs),
 						systemImage: "doc.text.magnifyingglass",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.revealLogs
+						tone: .accent(accentColor), presentation: .compact,
+						action: storage.revealLogs
 					)
 				}
 			}
@@ -139,7 +150,7 @@ struct InstallationSettingsPage: View {
 						.labelsHidden()
 						.toggleStyle(.switch)
 						.tint(LauncherVisuals.danger)
-						.disabled(!model.canModifyLaunchOptions)
+						.disabled(gameSession.isGameActive)
 						.alert(
 							L10n.string(SettingsStrings.gameModeAlert),
 							isPresented: $showsGameModeUnavailableAlert
@@ -156,10 +167,10 @@ struct InstallationSettingsPage: View {
 					detail: L10n.string(SettingsStrings.wineSynchronizationDetail)
 				) {
 					AdaptiveSegmentedControl(
-						selection: $model.launchOptions.synchronizationMode,
+						selection: $settings.launchOptions.synchronizationMode,
 						options: WineSynchronizationMode.allCases,
 						accentColor: LauncherVisuals.danger,
-						isDisabled: !model.canModifyLaunchOptions
+						isDisabled: gameSession.isGameActive
 					) { mode in
 						Text(mode.displayName)
 					}
@@ -176,7 +187,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsForceMigration = true
 					}
-					.disabled(!model.canModifyGameFiles)
+					.disabled(!installation.canModifyGameFiles)
 					.confirmationDialog(
 						L10n.string(SettingsStrings.forceMigrationConfirmation),
 						isPresented: $confirmsForceMigration,
@@ -184,7 +195,7 @@ struct InstallationSettingsPage: View {
 					) {
 						Button(
 							L10n.string(SettingsStrings.forceMigration), role: .destructive,
-							action: model.forcePrefixMigration
+							action: gameSession.forcePrefixMigration
 						)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
@@ -205,7 +216,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsSettingsReset = true
 					}
-					.disabled(!model.canModifyLaunchOptions)
+					.disabled(gameSession.isGameActive)
 					.confirmationDialog(
 						L10n.string(SettingsStrings.resetSettingsConfirmation),
 						isPresented: $confirmsSettingsReset,
@@ -213,7 +224,7 @@ struct InstallationSettingsPage: View {
 					) {
 						Button(
 							L10n.string(SettingsStrings.resetSettings), role: .destructive,
-							action: model.resetAllLauncherSettings
+							action: resetAllLauncherSettings
 						)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
@@ -232,7 +243,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsWinePrefixDeletion = true
 					}
-					.disabled(!model.canModifyGameFiles)
+					.disabled(!installation.canModifyGameFiles)
 					.confirmationDialog(
 						L10n.string(SettingsStrings.deleteWinePrefixConfirmation),
 						isPresented: $confirmsWinePrefixDeletion,
@@ -240,7 +251,7 @@ struct InstallationSettingsPage: View {
 					) {
 						Button(
 							L10n.string(SettingsStrings.deleteWinePrefixAction), role: .destructive,
-							action: model.deleteWinePrefix
+							action: gameSession.deleteWinePrefix
 						)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
@@ -259,7 +270,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsGameUninstall = true
 					}
-					.disabled(!model.isInstalled || !model.canModifyGameFiles)
+					.disabled(!installation.isInstalled || !installation.canModifyGameFiles)
 					.confirmationDialog(
 						L10n.string(SettingsStrings.uninstallConfirmation),
 						isPresented: $confirmsGameUninstall,
@@ -267,7 +278,7 @@ struct InstallationSettingsPage: View {
 					) {
 						Button(
 							L10n.string(SettingsStrings.moveGameToTrash), role: .destructive,
-							action: model.uninstallGame)
+							action: uninstallGame)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
 						Text(SettingsStrings.uninstallDetail)
@@ -279,28 +290,31 @@ struct InstallationSettingsPage: View {
 
 	private var gameModeBinding: Binding<Bool> {
 		Binding(
-			get: { model.launchOptions.usesGameMode },
+			get: { settings.launchOptions.usesGameMode },
 			set: { newValue in
 				if newValue, !GamePolicyControl.isAvailable() {
 					showsGameModeUnavailableAlert = true
 					return
 				}
-				model.launchOptions.usesGameMode = newValue
+				settings.launchOptions.usesGameMode = newValue
 			}
 		)
 	}
 
 	private var gameStatus: String {
-		if model.isDownloading, let progress = model.progress {
+		if installation.isDownloading, let progress = installation.progress {
 			return L10n.string(SettingsStrings.downloading(Int(progress.fraction * 100)))
 		}
-		if model.isDownloading { return L10n.string(SettingsStrings.preparingDownload) }
-		if model.isInstalled { return L10n.string(SettingsStrings.installed) }
+		if installation.isDownloading { return L10n.string(SettingsStrings.preparingDownload) }
+		if installation.isInstalled { return L10n.string(SettingsStrings.installed) }
 		return L10n.string(
-			model.hasPartialDownload ? SettingsStrings.paused : SettingsStrings.notInstalled)
+			installation.hasPartialDownload ? SettingsStrings.paused : SettingsStrings.notInstalled)
 	}
 
 	private var regionBinding: Binding<GameRegion> {
-		Binding(get: { model.region }, set: { model.selectRegion($0) })
+		Binding(
+			get: { installation.region },
+			set: { region in selectRegion(region) }
+		)
 	}
 }

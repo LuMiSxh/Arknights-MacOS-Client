@@ -15,7 +15,8 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 
 `Features` is organized around behavior rather than technical layers:
 
-- `Launcher` owns the root observable state, home, Settings, documents, popups, and launcher updates.
+- `Launcher` owns application composition, shared lifecycle presentation, home, Settings, documents,
+  popups, and launcher updates.
 - `Game` owns installation, Wine runtime behavior, Intel translation, and game-file compatibility components.
 - `Customization` owns artwork, icons, and the preset gallery.
 - `Audio` owns background playback, Now Playing integration, settings, and HUD controls.
@@ -29,9 +30,48 @@ Repository scripts derive shipping product metadata from `Resources/Info.plist`,
 
 Tests follow separate unit, deterministic integration, and live-contract boundaries. Their target ownership, network and filesystem isolation, fixtures, CI cadence, and manual Wine/game matrix are documented in [Testing architecture](testing.md).
 
-`LauncherViewModel` is the main UI orchestrator around one hierarchical `LauncherState`. Its orthogonal sub-states own mutually exclusive game activity, metadata refreshes, launch readiness, and presentation. A background refresh or non-fatal settings error therefore cannot overwrite an active game session. Views derive permissions and labels from this tree; `LauncherPhase` is only a compact compatibility projection for views that do not need the complete state.
+`LauncherViewModel` is the application composition root. It constructs feature controllers, wires the
+few transitions that cross feature boundaries, and provides the application shell used by developer
+scenarios and background music. It does not implement network, filesystem, installation, Wine,
+customization, or update work itself. Feature-local views receive their owning controller or explicit
+values and actions instead of the complete root model.
 
-Installation, maintenance, and the Wine-backed game lifecycle share the exclusive `LauncherActivity` sub-machine because they may touch the same game files or runtime. Refresh and presentation remain separate so safe metadata checks and actionable errors can coexist with a running game.
+Long-lived state and asynchronous work have one feature owner:
+
+| Owner                             | Responsibility                                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `LauncherLifecycleStore`          | Mutually exclusive launcher activity, metadata-refresh state, launch readiness, status, and failure UI    |
+| `InstallationController`          | Region, install directory, installed state, resumable install/update/repair tasks, progress, and removal  |
+| `GameSessionController`           | Runtime discovery, prefix maintenance, launch options capture, Wine processes, Game Mode, and diagnostics |
+| `IntelTranslationController`      | Rosetta preflight, installation, recovery state, and launch eligibility                                   |
+| `LauncherRefreshController`       | Concurrent Yostar configuration and branding refreshes, stale-result rejection, and region transitions    |
+| `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, and preset application                                   |
+| `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, and popup ordering                                      |
+| `LauncherPreferencesController`   | Persisted user-facing settings and the region-aware server-reset timer                                    |
+| `StorageMaintenanceController`    | Cache measurement and targeted cache cleanup                                                              |
+
+Installation, maintenance, and the Wine-backed game lifecycle share the exclusive
+`LauncherActivity` state machine because they may touch the same game files or runtime. Refresh and
+presentation remain orthogonal so safe metadata checks and actionable errors can coexist with a
+running game. Controllers use explicit narrow feature dependencies and callbacks configured by the
+composition root; they never depend on `LauncherViewModel` or implicit singleton state.
+
+```mermaid
+flowchart TD
+	Root[LauncherViewModel composition root] --> Lifecycle[LauncherLifecycleStore]
+	Root --> Installation[InstallationController]
+	Root --> Session[GameSessionController]
+	Root --> Refresh[LauncherRefreshController]
+	Root --> Communication[LauncherCommunicationController]
+	Root --> Customization[CustomizationController]
+	Root --> Preferences[LauncherPreferencesController]
+	Root --> Storage[StorageMaintenanceController]
+	Installation --> Lifecycle
+	Session --> Lifecycle
+	Refresh --> Lifecycle
+	Communication --> Popup[Popup presentation]
+	Customization --> Artwork[Artwork and icons]
+```
 
 First-run setup is a separate `Onboarding` feature with its own `@Observable` coordinator and `UserDefaults` progress store. It never downloads files or persists launcher settings itself: each step calls the same region, installer, display, artwork, icon, update, and audio actions used by the main interface. A mandatory launcher-update preflight runs before setup; an available launcher release blocks the remaining steps until the newer app is installed and reopened. Interrupted setup resumes at its saved step, but an absent game always routes back through Region & Install before later steps.
 

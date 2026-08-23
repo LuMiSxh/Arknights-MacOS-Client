@@ -4,8 +4,8 @@ import Foundation
 import Observation
 
 /// Owns first-run presentation, resumable navigation, and the mandatory launcher-update
-/// preflight checks. Individual steps apply settings through `LauncherViewModel`; the coordinator
-/// never duplicates installation, networking, or asset persistence.
+/// preflight checks. Individual steps apply settings through their feature controllers; the
+/// coordinator never duplicates installation, networking, or asset persistence.
 @MainActor
 @Observable
 final class OnboardingCoordinator {

@@ -3,7 +3,9 @@
 import SwiftUI
 
 struct PresetGalleryView: View {
-	@Bindable var model: LauncherViewModel
+	let catalog: PresetCatalogService
+	let customization: CustomizationController
+	let lifecycle: LauncherLifecycleStore
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -23,6 +25,18 @@ struct PresetGalleryView: View {
 		GridItem(.flexible(), spacing: 14),
 		GridItem(.flexible(), spacing: 14),
 	]
+
+	init(
+		catalog: PresetCatalogService,
+		customization: CustomizationController,
+		lifecycle: LauncherLifecycleStore,
+		destination: PresetGalleryDestination
+	) {
+		self.catalog = catalog
+		self.customization = customization
+		self.lifecycle = lifecycle
+		self.destination = destination
+	}
 
 	var body: some View {
 		ZStack(alignment: .bottomTrailing) {
@@ -64,8 +78,8 @@ struct PresetGalleryView: View {
 
 			FloatingActionFooterFade(height: 56)
 
-			FloatingActionBar(tint: model.hudTintColor) {
-				FloatingDoneButton(accentColor: model.accentColor) {
+			FloatingActionBar(tint: customization.hudTintColor) {
+				FloatingDoneButton(accentColor: customization.accentColor) {
 					dismiss()
 				}
 			}
@@ -76,19 +90,19 @@ struct PresetGalleryView: View {
 		.background(
 			ZStack {
 				Color(red: 0.07, green: 0.07, blue: 0.08)
-				model.hudTintColor
+				customization.hudTintColor
 			}
 		)
 		.preferredColorScheme(.dark)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
-			value: model.dynamicThemeHue
+			value: customization.dynamicThemeHue
 		)
 		.task(id: destination) {
 			if destination == .artwork {
-				wallpapers = await model.presetCatalog.fetchWallpapers()
+				wallpapers = await catalog.fetchWallpapers()
 			} else {
-				avatars = await model.presetCatalog.fetchAvatars()
+				avatars = await catalog.fetchAvatars()
 			}
 			isLoading = false
 		}
@@ -108,17 +122,17 @@ struct PresetGalleryView: View {
 				CapsuleActionButton(
 					title: L10n.string(CustomizationStrings.previewStyles),
 					systemImage: "dock.rectangle",
-					tone: .accent(model.accentColor)
+					tone: .accent(customization.accentColor)
 				) {
 					showsIconStylePreview = true
 				}
 				.controlSize(.small)
 				.popover(isPresented: $showsIconStylePreview, arrowEdge: .top) {
 					OperatorIconStylePreview(
-						catalog: model.presetCatalog,
+						catalog: catalog,
 						avatar: avatars.first,
-						accentHue: model.dynamicThemeHue,
-						accentColor: model.accentColor
+						accentHue: customization.dynamicThemeHue,
+						accentColor: customization.accentColor
 					)
 				}
 			}
@@ -133,7 +147,7 @@ struct PresetGalleryView: View {
 			prompt: L10n.string(destination.searchPlaceholder),
 			text: $searchText,
 			systemImage: "magnifyingglass",
-			accentColor: model.accentColor
+			accentColor: customization.accentColor
 		)
 	}
 
@@ -159,7 +173,7 @@ struct PresetGalleryView: View {
 					VStack(spacing: 6) {
 						ZStack {
 							CachedPresetImage(
-								catalog: model.presetCatalog,
+								catalog: catalog,
 								url: avatar.url,
 								cacheKey: avatar.id,
 								contentMode: .fit,
@@ -183,7 +197,7 @@ struct PresetGalleryView: View {
 									Color.black.opacity(0.65)
 									ProgressView()
 										.controlSize(.small)
-										.tint(model.accentColor)
+										.tint(customization.accentColor)
 								}
 								.clipShape(RoundedRectangle(cornerRadius: 22))
 							}
@@ -192,13 +206,14 @@ struct PresetGalleryView: View {
 						.overlay {
 							RoundedRectangle(cornerRadius: 22)
 								.strokeBorder(
-									isApplying ? model.accentColor : Color.white.opacity(0.14),
+									isApplying
+										? customization.accentColor : Color.white.opacity(0.14),
 									lineWidth: isApplying ? 2.5 : 1.5
 								)
 						}
 						.shadow(
 							color: isApplying
-								? model.accentColor.opacity(0.5) : Color.black.opacity(0.4),
+								? customization.accentColor.opacity(0.5) : Color.black.opacity(0.4),
 							radius: isApplying ? 8 : 5,
 							x: 0,
 							y: 3
@@ -208,7 +223,7 @@ struct PresetGalleryView: View {
 							.font(.caption.weight(isApplying ? .bold : .medium))
 							.lineLimit(1)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? model.accentColor : .primary)
+							.foregroundStyle(isApplying ? customization.accentColor : .primary)
 							.frame(maxWidth: 130)
 					}
 					.padding(.vertical, 4)
@@ -233,7 +248,7 @@ struct PresetGalleryView: View {
 					VStack(alignment: .leading, spacing: 6) {
 						ZStack {
 							CachedPresetImage(
-								catalog: model.presetCatalog,
+								catalog: catalog,
 								url: wp.thumbnailURL ?? wp.url,
 								cacheKey: "thumb_\(wp.id)",
 								contentMode: .fill,
@@ -250,7 +265,7 @@ struct PresetGalleryView: View {
 									VStack(spacing: 6) {
 										ProgressView()
 											.controlSize(.regular)
-											.tint(model.accentColor)
+											.tint(customization.accentColor)
 										Text(CustomizationStrings.applying)
 											.font(.caption2.bold())
 											.foregroundStyle(.white)
@@ -266,23 +281,24 @@ struct PresetGalleryView: View {
 							.font(.caption.weight(isApplying ? .bold : .medium))
 							.lineLimit(1)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? model.accentColor : .primary)
+							.foregroundStyle(isApplying ? customization.accentColor : .primary)
 					}
 					.padding(8)
 					.frame(maxWidth: .infinity)
 					.background(
-						isApplying ? model.accentColor.opacity(0.12) : Color.white.opacity(0.03),
+						isApplying
+							? customization.accentColor.opacity(0.12) : Color.white.opacity(0.03),
 						in: .rect(cornerRadius: 12)
 					)
 					.overlay {
 						RoundedRectangle(cornerRadius: 12)
 							.strokeBorder(
-								isApplying ? model.accentColor : Color.white.opacity(0.07),
+								isApplying ? customization.accentColor : Color.white.opacity(0.07),
 								lineWidth: isApplying ? 2 : 1
 							)
 					}
 					.shadow(
-						color: isApplying ? model.accentColor.opacity(0.4) : .clear,
+						color: isApplying ? customization.accentColor.opacity(0.4) : .clear,
 						radius: 8,
 						x: 0,
 						y: 2
@@ -301,14 +317,14 @@ struct PresetGalleryView: View {
 		applyingItemID = avatar.id
 		Task {
 			do {
-				let data = try await model.presetCatalog.imageData(
+				let data = try await catalog.imageData(
 					for: avatar.url, cacheKey: avatar.id
 				)
-				model.applyPresetAvatar(data: data)
+				customization.applyPresetAvatar(data: data)
 				dismiss()
 			} catch {
 				applyingItemID = nil
-				model.show(error)
+				lifecycle.show(error)
 			}
 		}
 	}
@@ -318,14 +334,14 @@ struct PresetGalleryView: View {
 		applyingItemID = wp.id
 		Task {
 			do {
-				let data = try await model.presetCatalog.imageData(
+				let data = try await catalog.imageData(
 					for: wp.url, cacheKey: wp.id
 				)
-				await model.applyDirectCustomArtwork(data: data)
+				await customization.applyDirectCustomArtwork(data: data)
 				dismiss()
 			} catch {
 				applyingItemID = nil
-				model.show(error)
+				lifecycle.show(error)
 			}
 		}
 	}

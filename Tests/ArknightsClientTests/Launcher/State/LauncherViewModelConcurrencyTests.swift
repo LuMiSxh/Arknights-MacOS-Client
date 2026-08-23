@@ -14,15 +14,15 @@ struct LauncherViewModelConcurrencyTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
 		let sessionID = UUID()
-		model.state.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
-		model.setStatus(.running)
+		model.lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		model.lifecycle.setStatus(.running)
 
-		model.show(LauncherError.cannotSetAppIcon)
+		model.lifecycle.show(LauncherError.cannotSetAppIcon)
 
-		#expect(model.activeGameSessionID == sessionID)
-		#expect(model.isGameProcessRunning)
-		#expect(model.canStopGame)
-		#expect(model.failureMessage == LauncherError.cannotSetAppIcon.errorDescription)
+		#expect(model.gameSession.activeGameSessionID == sessionID)
+		#expect(model.gameSession.isGameProcessRunning)
+		#expect(model.gameSession.canStopGame)
+		#expect(model.lifecycle.failureMessage == LauncherError.cannotSetAppIcon.errorDescription)
 		await api.resolveBranding()
 	}
 
@@ -32,13 +32,13 @@ struct LauncherViewModelConcurrencyTests {
 		let installer = ControllableInstaller()
 		let model = makeModel(api: api, installer: installer)
 		await api.waitForBrandingRequest()
-		model.state.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+		model.lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
 
-		model.repairGame()
+		model.installation.repairGame()
 
-		#expect(!model.canInstall)
-		#expect(!model.canModifyGameFiles)
-		#expect(!model.canModifyLaunchOptions)
+		#expect(!model.installation.canInstall)
+		#expect(!model.installation.canModifyGameFiles)
+		#expect(model.gameSession.isGameActive)
 		#expect(await installer.installationCount() == 0)
 		await api.resolveBranding()
 	}
@@ -58,21 +58,21 @@ struct LauncherViewModelConcurrencyTests {
 			usesGameMode: true,
 			synchronizationMode: .esync
 		)
-		model.launchOptions = selectedOptions
+		model.settings.launchOptions = selectedOptions
 
-		#expect(model.canModifyLaunchOptions)
-		model.state.activity = .preparingGame(sessionID: sessionID)
-		#expect(!model.canModifyLaunchOptions)
+		#expect(!model.gameSession.isGameActive)
+		model.lifecycle.activity = .preparingGame(sessionID: sessionID)
+		#expect(model.gameSession.isGameActive)
 		model.resetAllLauncherSettings()
-		#expect(model.launchOptions == selectedOptions)
-		model.state.activity = .launchingGame(sessionID: sessionID, processIdentifier: nil)
-		#expect(!model.canModifyLaunchOptions)
-		model.state.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
-		#expect(!model.canModifyLaunchOptions)
-		model.state.activity = .stoppingGame(sessionID: sessionID, processIdentifier: 42)
-		#expect(!model.canModifyLaunchOptions)
-		model.state.activity = .idle
-		#expect(model.canModifyLaunchOptions)
+		#expect(model.settings.launchOptions == selectedOptions)
+		model.lifecycle.activity = .launchingGame(sessionID: sessionID, processIdentifier: nil)
+		#expect(model.gameSession.isGameActive)
+		model.lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		#expect(model.gameSession.isGameActive)
+		model.lifecycle.activity = .stoppingGame(sessionID: sessionID, processIdentifier: 42)
+		#expect(model.gameSession.isGameActive)
+		model.lifecycle.activity = .idle
+		#expect(!model.gameSession.isGameActive)
 
 		await api.resolveBranding()
 	}
@@ -82,17 +82,17 @@ struct LauncherViewModelConcurrencyTests {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
-		model.automaticallyChecksLauncherUpdates = false
-		model.automaticallyChecksGameUpdates = false
-		model.announcementsEnabled = false
-		model.showsServerResetCountdown = true
-		model.showsGameVersion = false
-		model.playsLauncherMusic = false
-		model.launcherMusicURL = "https://example.com/custom"
-		model.showsPlayingMusic = true
-		model.launcherMusicVolume = 0.1
-		model.usesDynamicTheme = false
-		model.launchOptions = GameLaunchOptions(
+		model.settings.automaticallyChecksLauncherUpdates = false
+		model.settings.automaticallyChecksGameUpdates = false
+		model.settings.announcementsEnabled = false
+		model.settings.showsServerResetCountdown = true
+		model.settings.showsGameVersion = false
+		model.settings.playsLauncherMusic = false
+		model.settings.launcherMusicURL = "https://example.com/custom"
+		model.settings.showsPlayingMusic = true
+		model.settings.launcherMusicVolume = 0.1
+		model.settings.usesDynamicTheme = false
+		model.settings.launchOptions = GameLaunchOptions(
 			displayMode: .fullscreen,
 			resolution: .fullHD,
 			usesGameSettings: false,
@@ -104,17 +104,17 @@ struct LauncherViewModelConcurrencyTests {
 
 		model.resetAllLauncherSettings()
 
-		#expect(model.automaticallyChecksLauncherUpdates)
-		#expect(model.automaticallyChecksGameUpdates)
-		#expect(model.announcementsEnabled)
-		#expect(!model.showsServerResetCountdown)
-		#expect(model.showsGameVersion)
-		#expect(model.playsLauncherMusic)
-		#expect(model.launcherMusicURL == AppConstants.Music.defaultLauncherMusicURL)
-		#expect(!model.showsPlayingMusic)
-		#expect(model.launcherMusicVolume == 0.5)
-		#expect(model.usesDynamicTheme)
-		#expect(model.launchOptions == .default)
+		#expect(model.settings.automaticallyChecksLauncherUpdates)
+		#expect(model.settings.automaticallyChecksGameUpdates)
+		#expect(model.settings.announcementsEnabled)
+		#expect(!model.settings.showsServerResetCountdown)
+		#expect(model.settings.showsGameVersion)
+		#expect(model.settings.playsLauncherMusic)
+		#expect(model.settings.launcherMusicURL == AppConstants.Music.defaultLauncherMusicURL)
+		#expect(!model.settings.showsPlayingMusic)
+		#expect(model.settings.launcherMusicVolume == 0.5)
+		#expect(model.settings.usesDynamicTheme)
+		#expect(model.settings.launchOptions == .default)
 		await api.resolveBranding()
 	}
 
@@ -123,73 +123,20 @@ struct LauncherViewModelConcurrencyTests {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
-		model.isInstalled = true
-		model.runtimeName = "Test Runtime"
+		model.installation.isInstalled = true
+		model.gameSession.runtimeName = "Test Runtime"
 
-		model.intelTranslationState = .rosettaMissing
-		#expect(!model.canLaunch)
+		model.lifecycle.intelTranslationState = .rosettaMissing
+		#expect(!model.gameSession.canLaunch)
 
-		model.intelTranslationState = .gameTestModeEnabled
-		#expect(!model.canLaunch)
+		model.lifecycle.intelTranslationState = .gameTestModeEnabled
+		#expect(!model.gameSession.canLaunch)
 
-		model.intelTranslationState = .available
-		#expect(model.canLaunch)
+		model.lifecycle.intelTranslationState = .available
+		#expect(model.gameSession.canLaunch)
 
 		await api.resolveBranding()
 		await Task.yield()
-	}
-
-	@Test
-	func successfulRosettaInstallationRepeatsTheFunctionalProbe() async {
-		let api = BlockingBrandingAPI()
-		let checks = TranslationCheckSequence(states: [.rosettaMissing, .available])
-		let installer = RosettaInstallationRecorder(status: 0)
-		let model = makeModel(
-			api: api,
-			installer: ControllableInstaller(),
-			checkIntelTranslation: { await checks.next() },
-			installRosettaSystemSoftware: { await installer.install() }
-		)
-		await api.waitForBrandingRequest()
-		#expect(model.intelTranslationState == .rosettaMissing)
-
-		let state = await model.installRosetta()
-
-		#expect(state == .available)
-		#expect(model.intelTranslationState == .available)
-		#expect(model.rosettaInstallationState == .idle)
-		#expect(await checks.count == 2)
-		#expect(await installer.count == 1)
-		await api.resolveBranding()
-	}
-
-	@Test
-	func failedRosettaInstallationKeepsLaunchBlockedAndExposesRecovery() async {
-		let api = BlockingBrandingAPI()
-		let checks = TranslationCheckSequence(states: [.rosettaMissing])
-		let installer = RosettaInstallationRecorder(status: 7)
-		let model = makeModel(
-			api: api,
-			installer: ControllableInstaller(),
-			checkIntelTranslation: { await checks.next() },
-			installRosettaSystemSoftware: { await installer.install() }
-		)
-		await api.waitForBrandingRequest()
-
-		let state = await model.installRosetta()
-
-		#expect(state == .rosettaMissing)
-		#expect(!model.canLaunch)
-		#expect(
-			model.rosettaInstallationState.failureMessage
-				== L10n.string(.Launcher.launcherRosettaFailureInstallerExited("7"))
-		)
-		#expect(
-			model.rosettaInstallationActionTitle
-				== L10n.string(.Launcher.launcherRosettaActionInstallAgain)
-		)
-		#expect(await checks.count == 1)
-		await api.resolveBranding()
 	}
 
 	@Test
@@ -199,20 +146,20 @@ struct LauncherViewModelConcurrencyTests {
 		let model = makeModel(api: api, installer: installer)
 
 		await api.waitForBrandingRequest()
-		model.installOrUpdate()
+		model.installation.installOrUpdate()
 		await installer.waitForInstallationStart()
 		await installer.sendProgress()
 
-		#expect(model.isDownloading)
-		#expect(model.phase == .downloading)
-		#expect(model.progress?.downloadedBytes == 50)
+		#expect(model.installation.isDownloading)
+		#expect(model.lifecycle.phase == .downloading)
+		#expect(model.installation.progress?.downloadedBytes == 50)
 
 		await api.resolveBranding()
 		await Task.yield()
 
-		#expect(model.isDownloading)
-		#expect(model.phase == .downloading)
-		#expect(model.progress?.downloadedBytes == 50)
+		#expect(model.installation.isDownloading)
+		#expect(model.lifecycle.phase == .downloading)
+		#expect(model.installation.progress?.downloadedBytes == 50)
 
 		await installer.completeSuccessfully()
 		await waitForDownloadToStop(model)
@@ -225,53 +172,23 @@ struct LauncherViewModelConcurrencyTests {
 		let model = makeModel(api: api, installer: installer)
 
 		await api.waitForBrandingRequest()
-		model.installOrUpdate()
+		model.installation.installOrUpdate()
 		await installer.waitForInstallationStart()
 
-		model.installOrUpdate()
+		model.installation.installOrUpdate()
 		#expect(await installer.installationCount() == 1)
 
-		model.cancelDownload()
+		model.installation.cancelDownload()
 		await installer.waitForCancellationRequest()
-		model.installOrUpdate()
+		model.installation.installOrUpdate()
 		#expect(await installer.installationCount() == 1)
-		#expect(model.isDownloading)
+		#expect(model.installation.isDownloading)
 
 		await installer.acknowledgeCancellation()
 		await waitForDownloadToStop(model)
-		#expect(model.activityMessage == L10n.string(.Launcher.launcherStatusPaused))
-		await api.resolveBranding()
-	}
-
-	@Test
-	func queuedPopupsAreRecordedOnlyWhenTheyBecomeVisible() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequests(1)
-		let popup: (String) -> LauncherPopup = { id in
-			LauncherPopup(
-				id: id,
-				title: "Test",
-				content: .markdown("Test"),
-				dismissTitle: "Done",
-				actionTitle: nil,
-				actionURL: nil
-			)
-		}
-
-		model.enqueuePopup(popup("official-notice"))
-		model.enqueuePopup(popup("announcement-feedback"))
-		model.enqueuePopup(popup("launcher-update-0.2.0"))
-
-		#expect(!model.preferences.seenAnnouncementIDs().contains("feedback"))
-		#expect(model.preferences.presentedLauncherUpdate() == nil)
-
-		model.dismissPopup()
-		#expect(model.preferences.seenAnnouncementIDs().contains("feedback"))
-		#expect(model.preferences.presentedLauncherUpdate() == nil)
-
-		model.dismissPopup()
-		#expect(model.preferences.presentedLauncherUpdate() == "0.2.0")
+		#expect(
+			model.lifecycle.activityMessage == L10n.string(.Launcher.launcherStatusPaused)
+		)
 		await api.resolveBranding()
 	}
 
@@ -280,22 +197,22 @@ struct LauncherViewModelConcurrencyTests {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequests(1)
-		let partial = model.installDirectory.appending(path: "data/game.dat.part")
+		let partial = model.installation.installDirectory.appending(path: "data/game.dat.part")
 		try FileManager.default.createDirectory(
 			at: partial.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
 		try Data("partial".utf8).write(to: partial)
-		defer { try? FileManager.default.removeItem(at: model.installDirectory) }
+		defer { try? FileManager.default.removeItem(at: model.installation.installDirectory) }
 
-		model.updateInstalledState()
+		model.installation.updateInstalledState()
 
-		#expect(!model.isInstalled)
-		#expect(model.hasPartialDownload)
+		#expect(!model.installation.isInstalled)
+		#expect(model.installation.hasPartialDownload)
 
 		try FileManager.default.removeItem(at: partial)
-		model.updateInstalledState()
-		#expect(!model.hasPartialDownload)
+		model.installation.updateInstalledState()
+		#expect(!model.installation.hasPartialDownload)
 		await api.resolveBranding()
 	}
 
@@ -305,33 +222,71 @@ struct LauncherViewModelConcurrencyTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequests(1)
 		let artwork = NSImage(size: NSSize(width: 32, height: 32))
-		model.heroArtwork = artwork
+		model.customization.heroArtwork = artwork
 
 		model.selectRegion(.japan)
 		await api.waitForBrandingRequests(2)
 
-		#expect(model.region == .japan)
-		#expect(model.heroArtwork === artwork)
+		#expect(model.installation.region == .japan)
+		#expect(model.customization.heroArtwork === artwork)
 		await api.resolveBranding()
 	}
 
 	@Test
-	func unchangedArtworkIdentityKeepsThePresentedImageInstance() async {
-		let api = BlockingBrandingAPI()
+	func installationCancelsTheTrackedMetadataRefresh() async throws {
+		let api = CancellableBrandingAPI()
+		let installer = ControllableInstaller()
+		let model = makeModel(api: api, installer: installer)
+		await api.waitForBrandingRequests(1)
+		for _ in 0..<100 where model.installation.configuration == nil {
+			await Task.yield()
+		}
+		try #require(model.installation.configuration != nil)
+
+		model.installation.installOrUpdate()
+
+		await api.waitForCancellations(1)
+		await installer.waitForInstallationStart()
+		#expect(model.installation.isDownloading)
+
+		model.installation.cancelDownload()
+		await installer.waitForCancellationRequest()
+		await installer.acknowledgeCancellation()
+		await waitForDownloadToStop(model)
+	}
+
+	@Test
+	func artworkResetRefreshRemainsTrackedAcrossARegionChange() async {
+		let api = CancellableBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
-		let visibleArtwork = NSImage(size: NSSize(width: 32, height: 32))
-		let duplicateDecode = NSImage(size: NSSize(width: 32, height: 32))
-		let replacementArtwork = NSImage(size: NSSize(width: 32, height: 32))
+		await api.waitForBrandingRequests(1)
 
-		model.setHeroArtwork(visibleArtwork, themeCacheKey: "official.global.first")
-		model.setHeroArtwork(duplicateDecode, themeCacheKey: "official.global.first")
-		#expect(model.heroArtwork === visibleArtwork)
+		model.resetArtwork()
+		await api.waitForCancellations(1)
+		await api.waitForBrandingRequests(2)
 
-		model.setHeroArtwork(replacementArtwork, themeCacheKey: "official.global.second")
-		#expect(model.heroArtwork === replacementArtwork)
+		model.selectRegion(.japan)
+		await api.waitForCancellations(2)
+		await api.waitForBrandingRequests(3)
+		#expect(model.installation.region == .japan)
 
-		await api.waitForBrandingRequest()
-		await api.resolveBranding()
+		model.refreshController.cancelRefresh()
+		await api.waitForCancellations(3)
+	}
+
+	@Test
+	func onboardingRosettaSimulationDoesNotInvokeTheSystemInstaller() async {
+		let installer = RosettaInstallationRecorder(status: 0)
+		let model = makeModel(
+			api: BlockingBrandingAPI(),
+			installer: ControllableInstaller(),
+			installRosettaSystemSoftware: { await installer.install() },
+			arguments: ["ArknightsClient", "--developer-scenario", "onboarding-rosetta"]
+		)
+
+		#expect(model.lifecycle.intelTranslationState == .rosettaMissing)
+		#expect(await model.installRosetta() == .available)
+		#expect(await installer.count == 0)
 	}
 
 }

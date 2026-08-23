@@ -15,6 +15,7 @@ enum SettingsStrings {
 	static let dangerZone = LocalizedStringResource.Settings.settingsCommonDangerZone
 	static let game = LocalizedStringResource.Settings.settingsCommonGame
 	static let checkNow = LocalizedStringResource.Settings.settingsCommonCheckNow
+	static let calculating = LocalizedStringResource.Settings.settingsCommonCalculating
 	static let cancel = LocalizedStringResource.Settings.settingsCommonCancel
 	static let choose = LocalizedStringResource.Settings.settingsCommonChoose
 	static let chooseImage = LocalizedStringResource.Settings.settingsCommonChooseImage

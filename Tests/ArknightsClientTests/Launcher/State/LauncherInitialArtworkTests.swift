@@ -51,7 +51,7 @@ struct LauncherInitialArtworkTests {
 		try imageData.write(to: paths.artworkCache.appending(path: "\(cacheKey).jpg"))
 		let cache = ArtworkCache(directory: paths.artworkCache)
 		_ = try await cache.imageData(for: branding, region: .global)
-		let themeKey = LauncherViewModel.officialThemeCacheKey(
+		let themeKey = CustomizationController.officialThemeCacheKey(
 			for: .global,
 			artworkCacheKey: cacheKey
 		)
@@ -70,14 +70,14 @@ struct LauncherInitialArtworkTests {
 			arguments: []
 		)
 
-		let initialArtwork = try #require(model.heroArtwork)
-		#expect(model.activeThemeCacheKey == themeKey)
-		#expect(model.dynamicThemeHue == accent.hue)
+		let initialArtwork = try #require(model.customization.heroArtwork)
+		#expect(model.customization.activeThemeCacheKey == themeKey)
+		#expect(model.customization.dynamicThemeHue == accent.hue)
 
 		await api.waitForBrandingRequest()
 		await api.resolveBranding(branding)
-		await model.refreshTask?.value
+		await model.waitForStartup()
 
-		#expect(model.heroArtwork === initialArtwork)
+		#expect(model.customization.heroArtwork === initialArtwork)
 	}
 }

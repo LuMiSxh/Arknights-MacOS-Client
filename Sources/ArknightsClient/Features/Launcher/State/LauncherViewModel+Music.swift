@@ -7,6 +7,11 @@ import YouTubePlayerKit
 extension LauncherViewModel: BackgroundMusicContext {}
 
 extension LauncherViewModel {
+	var phase: LauncherPhase { lifecycle.phase }
+	var playsLauncherMusic: Bool { settings.playsLauncherMusic }
+	var launcherMusicVolume: Double { settings.launcherMusicVolume }
+	var launcherMusicURL: String { settings.launcherMusicURL }
+
 	func openCurrentMusicURL() {
 		if let currentMusicVideoID,
 			let url = URL(string: "https://www.youtube.com/watch?v=\(currentMusicVideoID)")
@@ -14,18 +19,18 @@ extension LauncherViewModel {
 			NSWorkspace.shared.open(url)
 			return
 		}
-		let trimmed = launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
+		let trimmed = settings.launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
 		if let url = URL(string: trimmed) { NSWorkspace.shared.open(url) }
 	}
 
 	/// Is true only while the game window is actually running, not during launcher
 	/// startup and runtime preparation.
 	var isGameProcessRunning: Bool {
-		state.activity.isGameProcessRunning
+		lifecycle.activity.isGameProcessRunning
 	}
 
 	var parsedYouTubeSource: YouTubePlayer.Source? {
-		let trimmedURL = launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
+		let trimmedURL = settings.launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard
 			let url = URL(string: trimmedURL),
 			let host = url.host?.lowercased()

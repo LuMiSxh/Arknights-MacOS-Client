@@ -3,13 +3,16 @@
 import SwiftUI
 
 struct OnboardingInstallationView: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var installation: InstallationController
+	let accentColor: Color
+	let canSwitchRegion: Bool
+	let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
 	var body: some View {
 		OnboardingPage(
 			title: L10n.string(OnboardingStrings.installationTitle),
 			subtitle: L10n.string(OnboardingStrings.installationSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(
 				title: L10n.string(OnboardingStrings.serverRegion),
@@ -18,11 +21,11 @@ struct OnboardingInstallationView: View {
 				AdaptiveSegmentedControl(
 					selection: regionBinding,
 					options: GameRegion.allCases,
-					accentColor: model.accentColor
+					accentColor: accentColor
 				) { region in
 					Text(region.localizedDisplayName)
 				}
-				.disabled(!model.canSwitchRegion)
+				.disabled(!canSwitchRegion)
 				Text(regionDetail)
 					.font(.callout)
 					.foregroundStyle(.secondary)
@@ -40,17 +43,17 @@ struct OnboardingInstallationView: View {
 							.foregroundStyle(.secondary)
 					}
 					Spacer()
-					if model.phase == .checking {
+					if installation.lifecycle.refresh.isChecking {
 						ProgressView()
-					} else if model.isInstalled && !model.isDownloading {
+					} else if installation.isInstalled && !installation.isDownloading {
 						Image(systemName: "checkmark.circle.fill")
-							.foregroundStyle(model.accentColor)
+							.foregroundStyle(accentColor)
 					}
 				}
 
-				if model.isDownloading, let progress = model.progress {
+				if installation.isDownloading, let progress = installation.progress {
 					ProgressView(value: progress.fraction)
-						.tint(model.accentColor)
+						.tint(accentColor)
 					Text(
 						"\(ByteCountFormatter.string(fromByteCount: progress.downloadedBytes, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: progress.totalBytes, countStyle: .file))"
 					)
@@ -58,7 +61,7 @@ struct OnboardingInstallationView: View {
 					.foregroundStyle(.secondary)
 				}
 
-				if !model.isInstalled && !model.isDownloading {
+				if !installation.isInstalled && !installation.isDownloading {
 					Text(OnboardingStrings.installDownloadDetail)
 						.font(.callout)
 						.foregroundStyle(.secondary)
@@ -68,35 +71,37 @@ struct OnboardingInstallationView: View {
 	}
 
 	private var regionDetail: LocalizedStringResource {
-		OnboardingStrings.regionDetail(model.region)
+		OnboardingStrings.regionDetail(installation.region)
 	}
 
 	private var installationImage: String {
-		if model.isDownloading { return "arrow.down.circle" }
-		if model.isInstalled { return "checkmark.circle" }
+		if installation.isDownloading { return "arrow.down.circle" }
+		if installation.isInstalled { return "checkmark.circle" }
 		return "externaldrive.badge.plus"
 	}
 
 	private var installationTitle: LocalizedStringResource {
-		if model.isDownloading { return OnboardingStrings.downloadingTitle }
-		if model.isInstalled { return OnboardingStrings.existingTitle }
-		if model.hasPartialDownload { return OnboardingStrings.partialTitle }
-		return OnboardingStrings.readyToInstall(model.region.localizedDisplayName)
+		if installation.isDownloading { return OnboardingStrings.downloadingTitle }
+		if installation.isInstalled { return OnboardingStrings.existingTitle }
+		if installation.hasPartialDownload { return OnboardingStrings.partialTitle }
+		return OnboardingStrings.readyToInstall(installation.region.localizedDisplayName)
 	}
 
 	private var installationDetail: LocalizedStringResource {
-		if model.isDownloading { return OnboardingStrings.downloadingDetail }
-		if model.isInstalled {
+		if installation.isDownloading { return OnboardingStrings.downloadingDetail }
+		if installation.isInstalled {
 			return OnboardingStrings.installationExisting(
-				version: model.installedVersion ?? model.versionText,
-				directory: model.installDirectory.lastPathComponent
+				version: installation.installedVersion
+					?? installation.configuration?.gameLatestVersion ?? "—",
+				directory: installation.installDirectory.lastPathComponent
 			)
 		}
-		if model.hasPartialDownload { return OnboardingStrings.partialDetail }
-		return OnboardingStrings.installationSize(model.installSizeText)
+		if installation.hasPartialDownload { return OnboardingStrings.partialDetail }
+		return OnboardingStrings.installationSize(
+			installation.configuration?.decompressionSize ?? "—")
 	}
 
 	private var regionBinding: Binding<GameRegion> {
-		Binding(get: { model.region }, set: { model.selectRegion($0) })
+		Binding(get: { installation.region }, set: { selectRegion($0) })
 	}
 }

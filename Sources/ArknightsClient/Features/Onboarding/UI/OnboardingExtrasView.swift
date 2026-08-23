@@ -3,13 +3,14 @@
 import SwiftUI
 
 struct OnboardingExtrasView: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var preferences: LauncherPreferencesController
+	let accentColor: Color
 
 	var body: some View {
 		OnboardingPage(
 			title: L10n.string(OnboardingStrings.extrasTitle),
 			subtitle: L10n.string(OnboardingStrings.extrasSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(
 				title: L10n.string(OnboardingStrings.updatesTitle),
@@ -18,22 +19,22 @@ struct OnboardingExtrasView: View {
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.launcherUpdateTitle),
 					detail: L10n.string(OnboardingStrings.launcherUpdateDetail),
-					isOn: $model.automaticallyChecksLauncherUpdates,
-					accentColor: model.accentColor
+					isOn: $preferences.automaticallyChecksLauncherUpdates,
+					accentColor: accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.gameUpdateTitle),
 					detail: L10n.string(OnboardingStrings.gameUpdateDetail),
-					isOn: $model.automaticallyChecksGameUpdates,
-					accentColor: model.accentColor
+					isOn: $preferences.automaticallyChecksGameUpdates,
+					accentColor: accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.announcementsTitle),
 					detail: L10n.string(OnboardingStrings.announcementsDetail),
-					isOn: $model.announcementsEnabled,
-					accentColor: model.accentColor
+					isOn: $preferences.announcementsEnabled,
+					accentColor: accentColor
 				)
 			}
 
@@ -43,20 +44,20 @@ struct OnboardingExtrasView: View {
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.backgroundMusicTitle),
 					detail: L10n.string(OnboardingStrings.backgroundMusicDetail),
-					isOn: $model.playsLauncherMusic,
-					accentColor: model.accentColor
+					isOn: $preferences.playsLauncherMusic,
+					accentColor: accentColor
 				)
 
-				if model.playsLauncherMusic {
+				if preferences.playsLauncherMusic {
 					SettingsHairline()
 					LabeledContent(L10n.string(OnboardingStrings.volume)) {
 						HStack(spacing: 10) {
 							Image(systemName: "speaker.fill")
 								.foregroundStyle(.secondary)
-							Slider(value: $model.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(model.accentColor)
+							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
+								.tint(accentColor)
 							Text(
-								model.launcherMusicVolume,
+								preferences.launcherMusicVolume,
 								format: .percent.precision(.fractionLength(0))
 							)
 							.font(.caption.monospacedDigit())
@@ -68,8 +69,8 @@ struct OnboardingExtrasView: View {
 					OnboardingToggleRow(
 						title: L10n.string(OnboardingStrings.nowPlayingTitle),
 						detail: L10n.string(OnboardingStrings.nowPlayingDetail),
-						isOn: $model.showsPlayingMusic,
-						accentColor: model.accentColor
+						isOn: $preferences.showsPlayingMusic,
+						accentColor: accentColor
 					)
 				}
 			}

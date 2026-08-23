@@ -56,7 +56,7 @@ struct ArknightsClientApp: App {
 	var body: some Scene {
 		WindowGroup("Arknights Client") {
 			ContentView(model: model)
-				.environment(\.locale, model.appLanguage.locale ?? .autoupdatingCurrent)
+				.environment(\.locale, model.settings.appLanguage.locale ?? .autoupdatingCurrent)
 				.frame(minWidth: 880, minHeight: 560)
 				.onAppear {
 					appDelegate.stopGame = model.stopGameForApplicationTermination

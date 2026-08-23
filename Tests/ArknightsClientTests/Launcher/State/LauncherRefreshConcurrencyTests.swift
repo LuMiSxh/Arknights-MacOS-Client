@@ -47,10 +47,10 @@ func refreshStartsIndependentMetadataRequestsConcurrently() async {
 	await api.waitForBothRequests()
 	#expect(await api.requestedEndpoints() == [.configuration, .branding])
 	await api.resolveConfiguration()
-	for _ in 0..<100 where model.phase == .checking {
+	for _ in 0..<100 where model.lifecycle.phase == .checking {
 		await Task.yield()
 	}
-	#expect(model.phase == .ready)
+	#expect(model.lifecycle.phase == .ready)
 }
 
 private actor ConcurrentRefreshAPI: LauncherAPIProviding {

@@ -3,14 +3,15 @@
 import SwiftUI
 
 struct AudioSettingsPage: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var settings: LauncherPreferencesController
+	let accentColor: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		SettingsPage(
 			title: L10n.string(SettingsStrings.audioTitle),
 			subtitle: L10n.string(SettingsStrings.audioSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(title: L10n.string(SettingsStrings.audioMusic), systemImage: "music.note")
 			{
@@ -20,14 +21,14 @@ struct AudioSettingsPage: View {
 				) {
 					Toggle(
 						L10n.string(SettingsStrings.audioBackgroundMusic),
-						isOn: $model.playsLauncherMusic
+						isOn: $settings.playsLauncherMusic
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(model.accentColor)
+					.tint(accentColor)
 				}
 
-				if model.playsLauncherMusic {
+				if settings.playsLauncherMusic {
 					SettingsHairline()
 					SettingsActionRow(
 						title: L10n.string(SettingsStrings.audioURL),
@@ -36,9 +37,9 @@ struct AudioSettingsPage: View {
 						ThemedTextField(
 							L10n.string(SettingsStrings.audioURL),
 							prompt: L10n.string(SettingsStrings.audioURLPrompt),
-							text: $model.launcherMusicURL,
+							text: $settings.launcherMusicURL,
 							systemImage: "link",
-							accentColor: model.accentColor
+							accentColor: accentColor
 						)
 						.frame(width: 250)
 					}
@@ -51,15 +52,15 @@ struct AudioSettingsPage: View {
 							Image(systemName: "speaker.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
-							Slider(value: $model.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(model.accentColor)
+							Slider(value: $settings.launcherMusicVolume, in: 0...1, step: 0.05)
+								.tint(accentColor)
 								.frame(width: 140)
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
 							Text(
 								SettingsStrings.audioVolumePercent(
-									Int(model.launcherMusicVolume * 100)
+									Int(settings.launcherMusicVolume * 100)
 								)
 							)
 							.font(.caption.monospacedDigit())
@@ -74,17 +75,17 @@ struct AudioSettingsPage: View {
 					) {
 						Toggle(
 							L10n.string(SettingsStrings.audioCurrentlyPlaying),
-							isOn: $model.showsPlayingMusic
+							isOn: $settings.showsPlayingMusic
 						)
 						.labelsHidden()
 						.toggleStyle(.switch)
-						.tint(model.accentColor)
+						.tint(accentColor)
 					}
 				}
 			}
 			.animation(
 				reduceMotion ? nil : .easeInOut(duration: 0.2),
-				value: model.playsLauncherMusic
+				value: settings.playsLauncherMusic
 			)
 		}
 	}

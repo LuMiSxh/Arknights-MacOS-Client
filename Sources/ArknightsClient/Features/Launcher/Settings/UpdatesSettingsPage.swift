@@ -3,13 +3,19 @@
 import SwiftUI
 
 struct UpdatesSettingsPage: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var settings: LauncherPreferencesController
+	let communication: LauncherCommunicationController
+	let installation: InstallationController
+	let accentColor: Color
+	let appVersion: String
+	let checkLauncherUpdates: () -> Void
+	let checkGameUpdates: () -> Void
 
 	var body: some View {
 		SettingsPage(
 			title: L10n.string(SettingsStrings.updatesTitle),
 			subtitle: L10n.string(SettingsStrings.updatesSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(
 				title: L10n.string(SettingsStrings.automaticChecks),
@@ -18,20 +24,20 @@ struct UpdatesSettingsPage: View {
 				UpdateSettingsRow(
 					title: "Launcher",
 					status: launcherStatusText,
-					isEnabled: $model.automaticallyChecksLauncherUpdates,
-					isChecking: model.isCheckingLauncherUpdates,
-					accentColor: model.accentColor,
-					check: model.checkLauncherUpdates
+					isEnabled: $settings.automaticallyChecksLauncherUpdates,
+					isChecking: communication.isCheckingLauncherUpdates,
+					accentColor: accentColor,
+					check: checkLauncherUpdates
 				)
 				SettingsHairline()
 				UpdateSettingsRow(
 					title: "Arknights",
-					status: model.isGameUpdateAvailable
-						? L10n.string(SettingsStrings.updateAvailable) : model.versionText,
-					isEnabled: $model.automaticallyChecksGameUpdates,
-					isChecking: model.isDownloading,
-					accentColor: model.accentColor,
-					check: model.checkGameUpdates
+					status: installation.isGameUpdateAvailable
+						? L10n.string(SettingsStrings.updateAvailable) : versionText,
+					isEnabled: $settings.automaticallyChecksGameUpdates,
+					isChecking: installation.isDownloading,
+					accentColor: accentColor,
+					check: checkGameUpdates
 				)
 			}
 
@@ -44,19 +50,25 @@ struct UpdatesSettingsPage: View {
 				) {
 					Toggle(
 						L10n.string(SettingsStrings.announcements),
-						isOn: $model.announcementsEnabled
+						isOn: $settings.announcementsEnabled
 					)
 					.labelsHidden()
 					.toggleStyle(.switch)
-					.tint(model.accentColor)
+					.tint(accentColor)
 				}
 			}
 		}
 	}
 
 	private var launcherStatusText: String {
-		if model.isCheckingLauncherUpdates { return L10n.string(SettingsStrings.checking) }
-		if model.launcherUpdate != nil { return L10n.string(SettingsStrings.updateAvailable) }
-		return "v\(model.appVersion)"
+		if communication.isCheckingLauncherUpdates { return L10n.string(SettingsStrings.checking) }
+		if communication.launcherUpdate != nil {
+			return L10n.string(SettingsStrings.updateAvailable)
+		}
+		return "v\(appVersion)"
+	}
+
+	private var versionText: String {
+		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
 	}
 }

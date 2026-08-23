@@ -49,15 +49,15 @@ struct InstallationPipelineIntegrationTests {
 			},
 			arguments: []
 		)
-		await model.refreshTask?.value
-		let configuration = try #require(model.configuration)
+		await model.waitForStartup()
+		let configuration = try #require(model.installation.configuration)
 
 		let onboardingStore = OnboardingProgressStore(defaults: environment.defaults)
 		let onboarding = OnboardingCoordinator(store: onboardingStore)
 		await onboarding.startIfNeeded(
 			isDeveloperMode: false,
 			isOnboardingPreview: false,
-			gameIsInstalled: model.isInstalled,
+			gameIsInstalled: model.installation.isInstalled,
 			checkForUpdates: { .current },
 			checkIntelTranslation: { .available }
 		)
@@ -67,9 +67,9 @@ struct InstallationPipelineIntegrationTests {
 		#expect(onboarding.step == .installation)
 
 		let progress = IntegrationProgressRecorder()
-		model.startInstallation(launchAfterCompletion: false)
-		await model.installationTask?.value
-		if let modelProgress = model.progress {
+		model.installation.startInstallation(launchAfterCompletion: false)
+		await model.installation.waitForCurrentInstallation()
+		if let modelProgress = model.installation.progress {
 			await progress.record(modelProgress)
 		}
 
@@ -77,8 +77,8 @@ struct InstallationPipelineIntegrationTests {
 		let expectedPayload = try fixturePayload()
 		#expect(configuration.gameLatestVersion == "1.2.3")
 		#expect(configuration.executableName == "Arknights.exe")
-		#expect(model.isInstalled)
-		#expect(model.installedVersion == "1.2.3")
+		#expect(model.installation.isInstalled)
+		#expect(model.installation.installedVersion == "1.2.3")
 		#expect(try Data(contentsOf: payloadURL) == expectedPayload)
 		#expect(
 			!FileManager.default.fileExists(atPath: payloadURL.appendingPathExtension("part").path))
@@ -124,8 +124,11 @@ struct InstallationPipelineIntegrationTests {
 		)
 		#expect(secondResult.downloadedFiles == 0)
 		#expect(secondResult.downloadedBytes == 0)
-		model.updateInstalledState()
-		#expect(model.isInstalled, "The persisted installation must be discoverable after refresh")
+		model.installation.updateInstalledState()
+		#expect(
+			model.installation.isInstalled,
+			"The persisted installation must be discoverable after refresh"
+		)
 		#expect(network.recorder.count(path: "/fixture-source/Arknights.exe") == 1)
 		#expect(network.recorder.count(path: "/api/launcher/game/config") == 1)
 		#expect(network.recorder.count(path: "/api/launcher/base/config") == 1)

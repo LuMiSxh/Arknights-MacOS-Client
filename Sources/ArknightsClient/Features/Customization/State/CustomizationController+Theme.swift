@@ -3,22 +3,11 @@
 import AppKit
 import SwiftUI
 
-extension LauncherViewModel {
-	static func officialThemeCacheKey(for region: GameRegion, artworkCacheKey: String) -> String {
-		"official.\(region.rawValue).\(artworkCacheKey)"
-	}
-
-	func setHeroArtwork(_ image: NSImage?, themeCacheKey: String?) {
-		guard heroArtwork == nil || activeThemeCacheKey != themeCacheKey else { return }
-		activeThemeCacheKey = themeCacheKey
-		heroArtwork = image
-	}
-
-	/// Keeps `accentColor`/`hudTintColor` in sync with `usesDynamicTheme` and `heroArtwork`.
-	/// Falls back to the fixed Arknights cyan and the static HUD tint when dynamic theming
-	/// is off, no artwork is loaded, or extraction finds nothing vibrant enough.
+extension CustomizationController {
+	/// Keeps Dynamic Theme state aligned with the current artwork and the region supplied by the
+	/// caller, while rejecting a delayed extraction for artwork that is no longer visible.
 	func updateThemeColor() {
-		guard usesDynamicTheme, let heroArtwork else {
+		guard usesDynamicTheme(), let heroArtwork else {
 			dynamicThemeHue = nil
 			accentColor = LauncherVisuals.cyan
 			hudTintColor = LauncherVisuals.hudGlassTint
@@ -27,10 +16,8 @@ extension LauncherViewModel {
 			return
 		}
 		let themeCacheKey = activeThemeCacheKey
-		let artworkRegion = region
-		if let themeCacheKey,
-			let cached = preferences.dynamicThemeAccent(for: themeCacheKey)
-		{
+		let artworkRegion = region()
+		if let themeCacheKey, let cached = preferences.dynamicThemeAccent(for: themeCacheKey) {
 			applyThemeAccent(
 				ExtractedAccent(
 					hue: cached.hue,
@@ -43,11 +30,9 @@ extension LauncherViewModel {
 		Task { [weak self] in
 			guard let self else { return }
 			let extracted = await WallpaperColorExtractor.extractAccent(from: heroArtwork)
-			// The artwork may have changed again while extraction was in flight; only apply
-			// a result that still matches the artwork it was sampled from.
 			guard self.heroArtwork === heroArtwork,
 				self.activeThemeCacheKey == themeCacheKey,
-				self.region == artworkRegion
+				self.region() == artworkRegion
 			else { return }
 			if let themeCacheKey {
 				self.preferences.setDynamicThemeAccent(
@@ -67,16 +52,9 @@ extension LauncherViewModel {
 		}
 	}
 
-	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
-		dynamicThemeHue = extracted?.hue
-		accentColor = extracted?.accentColor ?? LauncherVisuals.cyan
-		hudTintColor = extracted?.backgroundTint ?? LauncherVisuals.hudGlassTint
-	}
-
 	func updateDynamicAppIcon(hue: Double?) {
 		guard !hasCustomAppIcon else { return }
-
-		if usesDynamicTheme, let hue {
+		if usesDynamicTheme(), let hue {
 			if let tinted = AppIconRenderer.tintedDefaultIcon(for: hue) {
 				applyDynamicLauncherIcon(tinted)
 			}
@@ -85,17 +63,19 @@ extension LauncherViewModel {
 		}
 	}
 
+	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
+		dynamicThemeHue = extracted?.hue
+		accentColor = extracted?.accentColor ?? LauncherVisuals.cyan
+		hudTintColor = extracted?.backgroundTint ?? LauncherVisuals.hudGlassTint
+	}
+
 	private func applyDynamicLauncherIcon(_ image: NSImage) {
 		guard !launcherIconManager.apply(image) else { return }
-		Task { [log] in
-			await log.error("Failed to persist the Dynamic Theme launcher icon")
-		}
+		Task { [log] in await log.error("Failed to persist the Dynamic Theme launcher icon") }
 	}
 
 	private func resetDynamicLauncherIcon() {
 		guard !launcherIconManager.reset() else { return }
-		Task { [log] in
-			await log.error("Failed to restore the bundled launcher icon")
-		}
+		Task { [log] in await log.error("Failed to restore the bundled launcher icon") }
 	}
 }

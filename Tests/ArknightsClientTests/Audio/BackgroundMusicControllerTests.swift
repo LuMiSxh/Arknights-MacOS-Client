@@ -193,13 +193,13 @@ struct BackgroundMusicControllerTests {
 	func mutePreservesTheConfiguredVolumeAndRestoresIt() {
 		let (controller, model, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		model.launcherMusicVolume = 0.7
+		model.settings.launcherMusicVolume = 0.7
 
 		controller.toggleMute()
 
 		#expect(controller.isMuted)
 		#expect(controller.effectiveVolume == 0)
-		#expect(model.launcherMusicVolume == 0.7)
+		#expect(model.settings.launcherMusicVolume == 0.7)
 		#expect(model.preferences.launcherMusicVolume() == 0.7)
 
 		controller.toggleMute()
@@ -214,7 +214,7 @@ struct BackgroundMusicControllerTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		controller.toggleMute()
 
-		model.launcherMusicVolume = 0.25
+		model.settings.launcherMusicVolume = 0.25
 
 		#expect(controller.effectiveVolume == 0)
 		controller.toggleMute()

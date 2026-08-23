@@ -72,7 +72,7 @@ extension WineRuntime {
 		environment["LOGNAME"] = userName
 		environment["WINEPREFIX"] = prefixDirectory.path
 		environment["WINEHOMEDIR"] = home.path
-		// Crash-report matching (LauncherViewModel.recentCrashReportPath) looks for
+		// Crash-report matching (GameSessionController.recentCrashReportPath) looks for
 		// "Arknights-*.ips" under DiagnosticReports, so this name must stay in sync.
 		environment["WINEPRELOADERAPPNAME"] = "Arknights"
 		environment["WINEDEBUG"] = Self.debugChannels

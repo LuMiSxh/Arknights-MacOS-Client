@@ -7,21 +7,20 @@
 	extension LauncherViewModel {
 		func applyDeveloperScenario(_ scenario: DeveloperScenario) {
 			developerScenario = scenario
-			pendingPopups.removeAll()
-			popup = nil
-			configuration = Self.developerConfiguration
-			progress = nil
-			runtimeName = "Wine 11.15 + DXMT 0.80"
-			isInstalled = true
-			installedVersion = Self.developerConfiguration.gameLatestVersion
-			isGameUpdateAvailable = false
-			launcherUpdate = nil
-			launcherUpdateStatus = "Up to date"
-			isCheckingLauncherUpdates = false
-			intelTranslationState = .available
-			state.activity = .idle
-			state.refresh = .idle
-			setStatus(.ready)
+			communication.resetPopupQueueForDeveloper()
+			installation.configuration = Self.developerConfiguration
+			installation.progress = nil
+			gameSession.runtimeName = "Wine 11.15 + DXMT 0.80"
+			installation.isInstalled = true
+			installation.installedVersion = Self.developerConfiguration.gameLatestVersion
+			installation.isGameUpdateAvailable = false
+			communication.launcherUpdate = nil
+			communication.launcherUpdateStatus = "Up to date"
+			communication.isCheckingLauncherUpdates = false
+			lifecycle.intelTranslationState = .available
+			lifecycle.activity = .idle
+			lifecycle.refresh = .idle
+			lifecycle.setStatus(.ready)
 
 			switch scenario {
 			case .ready:
@@ -36,11 +35,11 @@
 					isDraft: false,
 					isPrerelease: false
 				)
-				launcherUpdate = release
-				launcherUpdateStatus = "Version 0.2.0 available"
-				enqueuePopup(Self.developerUpdatePopup(release))
+				communication.launcherUpdate = release
+				communication.launcherUpdateStatus = "Version 0.2.0 available"
+				communication.enqueuePopup(Self.developerUpdatePopup(release))
 			case .announcement:
-				enqueuePopup(
+				communication.enqueuePopup(
 					LauncherPopup(
 						id: "developer-announcement",
 						title: "Help improve Arknights Client",
@@ -62,7 +61,7 @@
 						"<h2>Scheduled maintenance</h2><p>The game will be unavailable during maintenance.</p>"
 				)
 				if let notice {
-					enqueuePopup(
+					communication.enqueuePopup(
 						LauncherPopup(
 							id: "developer-yostar-notice",
 							title: "Notice",
@@ -74,15 +73,15 @@
 					)
 				}
 			case .gameUpdate:
-				installedVersion = "041.2.0"
-				isGameUpdateAvailable = true
-				setStatus(.updateAvailable)
+				installation.installedVersion = "041.2.0"
+				installation.isGameUpdateAvailable = true
+				lifecycle.setStatus(.updateAvailable)
 			case .downloading:
-				installedVersion = "041.2.0"
-				isGameUpdateAvailable = true
-				state.activity = .installing(id: UUID(), stage: .downloading)
-				setStatus(.downloading)
-				progress = DownloadProgress(
+				installation.installedVersion = "041.2.0"
+				installation.isGameUpdateAvailable = true
+				lifecycle.activity = .installing(id: UUID(), stage: .downloading)
+				lifecycle.setStatus(.downloading)
+				installation.progress = DownloadProgress(
 					downloadedBytes: 1_731_000_000,
 					totalBytes: 4_026_000_000,
 					completedFiles: 128,
@@ -90,44 +89,44 @@
 					currentFile: "Arknights_Data/data.unity3d"
 				)
 			case .paused:
-				installedVersion = "041.2.0"
-				isGameUpdateAvailable = true
-				hasPartialDownload = true
-				setStatus(.paused)
+				installation.installedVersion = "041.2.0"
+				installation.isGameUpdateAvailable = true
+				installation.hasPartialDownload = true
+				lifecycle.setStatus(.paused)
 			case .migrating:
-				state.activity = .preparingGame(sessionID: UUID())
-				setStatus(.preparingWine)
+				lifecycle.activity = .preparingGame(sessionID: UUID())
+				lifecycle.setStatus(.preparingWine)
 			case .launching:
-				state.activity = .launchingGame(sessionID: UUID(), processIdentifier: nil)
-				setStatus(.startingGame)
+				lifecycle.activity = .launchingGame(sessionID: UUID(), processIdentifier: nil)
+				lifecycle.setStatus(.startingGame)
 			case .running:
-				state.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
-				setStatus(.running)
+				lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+				lifecycle.setStatus(.running)
 			case .failure:
-				state.presentation.failureMessage =
+				lifecycle.presentation.failureMessage =
 					"The Windows runtime exited unexpectedly. Check the logs for details."
 			case .notInstalled:
-				isInstalled = false
-				hasPartialDownload = false
-				installedVersion = nil
-				setStatus(.install)
+				installation.isInstalled = false
+				installation.hasPartialDownload = false
+				installation.installedVersion = nil
+				lifecycle.setStatus(.install)
 			case .musicPlayer:
-				showsPlayingMusic = true
+				settings.showsPlayingMusic = true
 				currentMusicTitle = "Arknights EP – Reforge"
 				currentMusicVideoID = "developer-preview"
 			case .onboarding, .onboardingRosetta:
-				isInstalled = false
-				hasPartialDownload = false
-				installedVersion = nil
-				setStatus(.install)
+				installation.isInstalled = false
+				installation.hasPartialDownload = false
+				installation.installedVersion = nil
+				lifecycle.setStatus(.install)
 				if scenario == .onboardingRosetta {
-					intelTranslationState = .rosettaMissing
+					lifecycle.intelTranslationState = .rosettaMissing
 				}
 			}
 		}
 
 		func applyDeveloperCustomPopup(title: String, markdown: String) {
-			enqueuePopup(
+			communication.enqueuePopup(
 				LauncherPopup(
 					id: "developer-custom-popup",
 					title: title,
@@ -140,14 +139,15 @@
 		}
 
 		func loadDeveloperArtwork() async {
-			if await loadCustomArtwork() { return }
+			if await customization.loadCustomArtwork() { return }
+			let artworkCache = customization.artworkCache
 			do {
-				let currentBranding = try await api.branding(region: region)
+				let currentBranding = try await api.branding(region: installation.region)
 				guard isDeveloperMode else { return }
-				branding = currentBranding
+				refreshController.branding = currentBranding
 				do {
 					let logoData = try await artworkCache.officialLogoData()
-					officialLogo = NSImage(data: logoData)
+					customization.officialLogo = NSImage(data: logoData)
 				} catch {
 					await log.error(
 						"Failed to load developer logo: \(error.localizedDescription)"
@@ -156,14 +156,14 @@
 				do {
 					if let imageData = try await artworkCache.imageData(
 						for: currentBranding,
-						region: region
+						region: installation.region
 					), let image = NSImage(data: imageData),
 						let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
 					{
-						setHeroArtwork(
+						customization.setHeroArtwork(
 							image,
-							themeCacheKey: Self.officialThemeCacheKey(
-								for: region,
+							themeCacheKey: CustomizationController.officialThemeCacheKey(
+								for: installation.region,
 								artworkCacheKey: artworkCacheKey
 							)
 						)

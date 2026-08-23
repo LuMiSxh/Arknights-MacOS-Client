@@ -3,24 +3,25 @@
 import SwiftUI
 
 struct OnboardingGameSettingsView: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var preferences: LauncherPreferencesController
+	let accentColor: Color
 
 	var body: some View {
 		OnboardingPage(
 			title: L10n.string(OnboardingStrings.gameTitle),
 			subtitle: L10n.string(OnboardingStrings.gameSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(
 				title: L10n.string(OnboardingStrings.displaySettingsPanel), systemImage: "switch.2"
 			) {
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.useGameDisplaySettings),
-					detail: model.launchOptions.usesGameSettings
+					detail: preferences.launchOptions.usesGameSettings
 						? L10n.string(OnboardingStrings.gameDisplaySettingsDetail)
 						: L10n.string(OnboardingStrings.launcherDisplaySettingsDetail),
-					isOn: $model.launchOptions.usesGameSettings,
-					accentColor: model.accentColor
+					isOn: $preferences.launchOptions.usesGameSettings,
+					accentColor: accentColor
 				)
 			}
 
@@ -29,21 +30,21 @@ struct OnboardingGameSettingsView: View {
 				systemImage: "rectangle.on.rectangle"
 			) {
 				AdaptiveSegmentedControl(
-					selection: $model.launchOptions.displayMode,
+					selection: $preferences.launchOptions.displayMode,
 					options: GameDisplayMode.allCases,
-					accentColor: model.accentColor
+					accentColor: accentColor
 				) { mode in
 					Text(shortTitle(for: mode))
 				}
-				.disabled(model.launchOptions.usesGameSettings)
+				.disabled(preferences.launchOptions.usesGameSettings)
 
 				SettingsHairline()
 				LabeledContent(L10n.string(OnboardingStrings.resolution)) {
 					GlassMenuPicker(
-						selection: $model.launchOptions.resolution,
+						selection: $preferences.launchOptions.resolution,
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
-						accentColor: model.accentColor,
-						isDisabled: model.launchOptions.usesGameSettings
+						accentColor: accentColor,
+						isDisabled: preferences.launchOptions.usesGameSettings
 					)
 				}
 				Text(OnboardingStrings.higherResolutionDetail)
@@ -58,8 +59,8 @@ struct OnboardingGameSettingsView: View {
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.highResolutionTitle),
 					detail: L10n.string(OnboardingStrings.highResolutionDetail),
-					isOn: $model.launchOptions.usesHighResolutionMode,
-					accentColor: model.accentColor
+					isOn: $preferences.launchOptions.usesHighResolutionMode,
+					accentColor: accentColor
 				)
 			}
 		}

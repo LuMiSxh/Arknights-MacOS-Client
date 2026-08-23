@@ -2,7 +2,7 @@
 
 import Foundation
 
-extension LauncherViewModel {
+extension GameSessionController {
 	nonisolated static func launchDiagnostics(
 		sessionID: UUID,
 		region: GameRegion,
@@ -26,21 +26,15 @@ extension LauncherViewModel {
 		) + "s"
 	}
 
-	/// Builds a compact diagnostic summary for a game-process exit: how long it
-	/// ran, the raw exit status and reason, and, for anything that looks like a
-	/// crash, a wine.log tail and any matching macOS crash report. Issue #17
-	/// reported a crash with nothing but a bare exit status to go on.
 	nonisolated static func exitDiagnostics(
 		_ exit: WineProcessExit,
 		since: Date?,
 		logURL: URL?
 	) -> String {
 		var parts = ["status=\(exit.status)", "reason=\(Self.reasonDescription(exit.reason))"]
-		if let since {
-			parts.append("ranFor=\(launchDuration(since: since))")
-		}
+		if let since { parts.append("ranFor=\(launchDuration(since: since))") }
 		guard let logURL else { return parts.joined(separator: " ") }
-		if let crashReport = recentCrashReportPath(near: Date()) {
+		if let crashReport = recentCrashReportPath(near: .now) {
 			parts.append("crashReport=\(crashReport)")
 		}
 		if let tail = FileTail.read(
@@ -52,8 +46,6 @@ extension LauncherViewModel {
 		return parts.joined(separator: " ")
 	}
 
-	/// `Process.TerminationReason` bridges to `NSTaskTerminationReason` and
-	/// interpolates as an unreadable `NSTaskTerminationReason(rawValue: 2)`.
 	private nonisolated static func reasonDescription(
 		_ reason: Process.TerminationReason
 	) -> String {
@@ -64,8 +56,6 @@ extension LauncherViewModel {
 		}
 	}
 
-	/// Wine renames the game process to "Arknights" (`WINEPRELOADERAPPNAME`), so a
-	/// crash report for it is filed under that name in Diagnostic Reports.
 	nonisolated static func recentCrashReportPath(
 		near date: Date,
 		in directory: URL = FileManager.default.homeDirectoryForCurrentUser
@@ -84,8 +74,9 @@ extension LauncherViewModel {
 			.filter { $0.lastPathComponent.hasPrefix("Arknights-") }
 			.compactMap { url -> (URL, Date)? in
 				guard
-					let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey])
-						.contentModificationDate
+					let modified = try? url.resourceValues(
+						forKeys: [.contentModificationDateKey]
+					).contentModificationDate
 				else { return nil }
 				return (url, modified)
 			}

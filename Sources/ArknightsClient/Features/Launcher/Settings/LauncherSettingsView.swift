@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct LauncherSettingsView: View {
-	var model: LauncherViewModel
+	let model: LauncherViewModel
 	let restartOnboarding: () -> Void
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -15,7 +15,7 @@ struct LauncherSettingsView: View {
 			SettingsNavigationRail(
 				selection: $selectedSection,
 				isDeveloperMode: model.isDeveloperMode,
-				accentColor: model.accentColor
+				accentColor: model.customization.accentColor
 			)
 			Divider()
 				.overlay(Color.white.opacity(0.08))
@@ -25,20 +25,60 @@ struct LauncherSettingsView: View {
 					switch selectedSection {
 					case .general:
 						GeneralSettingsPage(
-							model: model,
+							settings: model.settings,
+							customization: model.customization,
+							gameSession: model.gameSession,
+							lifecycle: model.lifecycle,
+							presetCatalog: model.presetCatalog,
+							accentColor: model.customization.accentColor,
+							resetArtwork: model.resetArtwork,
 							restartOnboarding: restartOnboarding
 						)
 					case .audio:
-						AudioSettingsPage(model: model)
+						AudioSettingsPage(
+							settings: model.settings,
+							accentColor: model.customization.accentColor
+						)
 					case .updates:
-						UpdatesSettingsPage(model: model)
+						UpdatesSettingsPage(
+							settings: model.settings,
+							communication: model.communication,
+							installation: model.installation,
+							accentColor: model.customization.accentColor,
+							appVersion: IssueReportURL.appVersion,
+							checkLauncherUpdates: model.checkLauncherUpdates,
+							checkGameUpdates: model.checkGameUpdates
+						)
 					case .installation:
-						InstallationSettingsPage(model: model)
+						InstallationSettingsPage(
+							settings: model.settings,
+							installation: model.installation,
+							storage: model.storage,
+							gameSession: model.gameSession,
+							lifecycle: model.lifecycle,
+							accentColor: model.customization.accentColor,
+							selectRegion: model.selectRegion,
+							chooseInstallDirectory: model.chooseInstallDirectory,
+							locateExistingInstallation: model.locateExistingInstallation,
+							repairGame: model.repairGame,
+							resetAllLauncherSettings: model.resetAllLauncherSettings,
+							uninstallGame: model.uninstallGame
+						)
 					case .about:
-						AboutSettingsPage(model: model, presentedDocument: $presentedDocument)
+						AboutSettingsPage(
+							accentColor: model.customization.accentColor,
+							launcherIconManager: model.launcherIconManager,
+							branding: model.refreshController.branding,
+							revealApplication: model.storage.revealApplication,
+							presentedDocument: $presentedDocument
+						)
 					#if DEBUG
 						case .developer:
-							DeveloperSettingsPage(model: model)
+							DeveloperSettingsPage(
+								scenario: developerScenarioBinding,
+								accentColor: model.customization.accentColor,
+								applyCustomPopup: model.applyDeveloperCustomPopup
+							)
 					#endif
 					}
 				}
@@ -48,8 +88,8 @@ struct LauncherSettingsView: View {
 
 				FloatingActionFooterFade(height: 60)
 
-				FloatingActionBar(tint: model.hudTintColor) {
-					FloatingDoneButton(accentColor: model.accentColor) {
+				FloatingActionBar(tint: model.customization.hudTintColor) {
+					FloatingDoneButton(accentColor: model.customization.accentColor) {
 						dismiss()
 					}
 				}
@@ -62,27 +102,36 @@ struct LauncherSettingsView: View {
 				value: selectedSection
 			)
 		}
-		.tint(model.accentColor)
+		.tint(model.customization.accentColor)
 		.background(
 			ZStack {
 				Color(red: 0.07, green: 0.07, blue: 0.08)
-				model.hudTintColor
+				model.customization.hudTintColor
 			}
 		)
 		.preferredColorScheme(.dark)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
-			value: model.dynamicThemeHue
+			value: model.customization.dynamicThemeHue
 		)
 		.frame(width: 820, height: 570)
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
 				document: document,
-				accentColor: model.accentColor,
-				hudTintColor: model.hudTintColor
+				accentColor: model.customization.accentColor,
+				hudTintColor: model.customization.hudTintColor
 			)
 		}
 	}
+
+	#if DEBUG
+		private var developerScenarioBinding: Binding<DeveloperScenario> {
+			Binding(
+				get: { model.developerScenario ?? .ready },
+				set: { model.applyDeveloperScenario($0) }
+			)
+		}
+	#endif
 }
 
 private struct SettingsNavigationRail: View {

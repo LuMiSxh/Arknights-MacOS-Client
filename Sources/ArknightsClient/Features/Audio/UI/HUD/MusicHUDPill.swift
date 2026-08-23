@@ -4,20 +4,25 @@ import SwiftUI
 
 /// Morphs the now-playing HUD into an in-place controller without covering the launcher.
 struct MusicHUDPill: View {
-	@Bindable var model: LauncherViewModel
-	var controller: BackgroundMusicController
+	@Bindable var settings: LauncherPreferencesController
+	let gameSession: GameSessionController
+	let musicTitle: String?
+	let accentColor: Color
+	let hudTintColor: Color
+	let openCurrentMusicURL: () -> Void
+	let controller: BackgroundMusicController
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isExpanded = false
 	@State private var isHovering = false
 
 	var body: some View {
-		if let musicTitle = model.currentMusicTitle {
+		if let musicTitle {
 			VStack(alignment: .leading, spacing: isExpanded ? 9 : 0) {
 				Button(action: toggleExpansion) {
 					HStack(spacing: 5) {
 						Image(systemName: "music.note")
 							.font(.system(size: 10, weight: .semibold))
-							.foregroundStyle(model.accentColor)
+							.foregroundStyle(accentColor)
 						VStack(alignment: .leading, spacing: 1) {
 							OverflowingMusicTitle(title: musicTitle)
 								.font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -35,14 +40,14 @@ struct MusicHUDPill: View {
 							if isExpanded {
 								Text(playbackStatus)
 									.font(.caption)
-									.foregroundStyle(model.accentColor)
+									.foregroundStyle(accentColor)
 									.transition(.opacity)
 							}
 						}
 						Spacer(minLength: 6)
 						Image(systemName: isExpanded ? "chevron.down" : "slider.horizontal.3")
 							.font(.caption.bold())
-							.foregroundStyle(model.accentColor.opacity(isHovering ? 1 : 0.65))
+							.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
 							.contentTransition(.symbolEffect(.replace))
 							.accessibilityHidden(true)
 					}
@@ -62,7 +67,7 @@ struct MusicHUDPill: View {
 							MusicPlayerControlButton(
 								title: L10n.string(AudioStrings.previousTrack),
 								systemImage: "backward.end.fill",
-								accentColor: model.accentColor,
+								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
 								action: controller.playPreviousTrack
 							)
@@ -73,7 +78,7 @@ struct MusicHUDPill: View {
 								controller.isPlaying ? AudioStrings.pause : AudioStrings.play
 							),
 							systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
-							accentColor: model.accentColor,
+							accentColor: accentColor,
 							isProminent: true,
 							isDisabled: controller.controlsAreDisabled,
 							action: controller.togglePlayback
@@ -83,15 +88,15 @@ struct MusicHUDPill: View {
 							MusicPlayerControlButton(
 								title: L10n.string(AudioStrings.nextTrack),
 								systemImage: "forward.end.fill",
-								accentColor: model.accentColor,
+								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
 								action: controller.playNextTrack
 							)
 						}
 
 						MusicVolumeControl(
-							volume: $model.launcherMusicVolume,
-							accentColor: model.accentColor,
+							volume: $settings.launcherMusicVolume,
+							accentColor: accentColor,
 							isMuted: controller.isMuted,
 							isDisabled: controller.controlsAreDisabled,
 							toggleMute: controller.toggleMute
@@ -102,9 +107,9 @@ struct MusicHUDPill: View {
 						MusicPlayerControlButton(
 							title: L10n.string(AudioStrings.openYouTube),
 							systemImage: "arrow.up.right.square",
-							accentColor: model.accentColor,
+							accentColor: accentColor,
 							isDisabled: controller.controlsAreDisabled,
-							action: model.openCurrentMusicURL
+							action: openCurrentMusicURL
 						)
 					}
 					.frame(maxWidth: .infinity, alignment: .leading)
@@ -128,7 +133,7 @@ struct MusicHUDPill: View {
 			.fixedSize(horizontal: !isExpanded, vertical: false)
 			.clipped()
 			.adaptiveGlassEffect(
-				tint: model.hudTintColor,
+				tint: hudTintColor,
 				in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)
 			)
 			.shadow(
@@ -141,7 +146,7 @@ struct MusicHUDPill: View {
 	}
 
 	private var playbackStatus: String {
-		if model.isGameProcessRunning { return L10n.string(AudioStrings.pausedForGame) }
+		if gameSession.isGameProcessRunning { return L10n.string(AudioStrings.pausedForGame) }
 		if controller.isChangingTrack { return L10n.string(AudioStrings.changingTrack) }
 		return L10n.string(controller.isPlaying ? AudioStrings.playing : AudioStrings.paused)
 	}

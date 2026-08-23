@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct ContentView: View {
-	var model: LauncherViewModel
+	let model: LauncherViewModel
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var settingsPresented = false
 	@State private var confirmsRosettaInstallation = false
@@ -20,13 +20,18 @@ struct ContentView: View {
 		_musicController = State(initialValue: BackgroundMusicController(context: model))
 	}
 
-	private var accentColor: Color { model.accentColor }
+	private var accentColor: Color { model.customization.accentColor }
 
 	var body: some View {
 		ZStack {
-			BackgroundMusicView(model: model, controller: musicController)
+			BackgroundMusicView(
+				lifecycle: model.lifecycle,
+				settings: model.settings,
+				gameSession: model.gameSession,
+				controller: musicController
+			)
 
-			LauncherArtworkView(image: model.heroArtwork, accentColor: accentColor)
+			LauncherArtworkView(image: model.customization.heroArtwork, accentColor: accentColor)
 				.ignoresSafeArea(.container, edges: .top)
 
 			LinearGradient(
@@ -53,7 +58,7 @@ struct ContentView: View {
 		}
 		.background(Color.black)
 		.preferredColorScheme(.dark)
-		.animation(themeAnimation, value: model.dynamicThemeHue)
+		.animation(themeAnimation, value: model.customization.dynamicThemeHue)
 		.overlay {
 			if onboarding.isPresented {
 				OnboardingView(
@@ -70,9 +75,9 @@ struct ContentView: View {
 			LauncherPopupView(
 				popup: popup,
 				accentColor: accentColor,
-				hudTintColor: model.hudTintColor,
-				dismiss: model.dismissPopup,
-				openAction: model.openPopupAction
+				hudTintColor: model.customization.hudTintColor,
+				dismiss: model.communication.dismissPopup,
+				openAction: model.communication.openPopupAction
 			)
 		}
 		.confirmsRosettaInstallation(
@@ -86,9 +91,9 @@ struct ContentView: View {
 
 	private var popupBinding: Binding<LauncherPopup?> {
 		Binding(
-			get: { onboarding.isPresented ? nil : model.popup },
+			get: { onboarding.isPresented ? nil : model.communication.popup },
 			set: { popup in
-				if popup == nil { model.dismissPopup() }
+				if popup == nil { model.communication.dismissPopup() }
 			}
 		)
 	}
@@ -96,8 +101,8 @@ struct ContentView: View {
 	private var topBar: some View {
 		HStack(alignment: .top) {
 			ArknightsWordmark(
-				logo: model.officialLogo,
-				regionName: model.region.localizedDisplayName,
+				logo: model.customization.officialLogo,
+				regionName: model.installation.region.localizedDisplayName,
 				cyan: accentColor
 			)
 			.padding(.top, 34)
@@ -126,13 +131,13 @@ struct ContentView: View {
 	}
 
 	private func startOnboardingIfNeeded() async {
-		model.updateInstalledState()
+		model.installation.updateInstalledState()
 		await onboarding.startIfNeeded(
 			isDeveloperMode: model.isDeveloperMode,
 			isOnboardingPreview: model.isOnboardingPreview,
-			gameIsInstalled: model.isInstalled,
+			gameIsInstalled: model.installation.isInstalled,
 			checkForUpdates: model.launcherUpdateCheckForOnboarding,
-			checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
+			checkIntelTranslation: { await model.intelTranslation.refreshAvailability() }
 		)
 	}
 
@@ -140,67 +145,78 @@ struct ContentView: View {
 		Task {
 			await onboarding.retryUpdateCheck(
 				model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
+				checkIntelTranslation: { await model.intelTranslation.refreshAvailability() }
 			)
 		}
 	}
 
 	private func restartOnboarding() {
 		settingsPresented = false
-		model.updateInstalledState()
+		model.installation.updateInstalledState()
 		Task {
 			await onboarding.restart(
-				gameIsInstalled: model.isInstalled,
+				gameIsInstalled: model.installation.isInstalled,
 				checkForUpdates: model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
+				checkIntelTranslation: { await model.intelTranslation.refreshAvailability() }
 			)
 		}
 	}
 
 	private func retryIntelTranslationCheck() {
 		Task {
-			await model.refreshIntelTranslationAvailability(force: true)
+			await model.intelTranslation.refreshAvailability(force: true)
 		}
 	}
 
 	private func installRosetta() {
-		Task { await model.installRosetta() }
+		Task { await model.intelTranslation.installRosetta() }
 	}
 
 	private var controlBar: some View {
 		HStack(spacing: 16) {
 			LauncherActivityStatusView(
-				model: model,
+				lifecycle: model.lifecycle,
+				installation: model.installation,
+				intelTranslation: model.intelTranslation,
 				accentColor: accentColor,
 				requestRosettaInstallation: { confirmsRosettaInstallation = true },
 				retryIntelTranslationCheck: retryIntelTranslationCheck
 			)
-			.id(model.isDownloading ? "download-progress" : "launcher-status")
+			.id(model.installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)
 			.frame(maxWidth: .infinity, alignment: .leading)
 
 			HStack(spacing: 8) {
-				if model.launcherUpdate != nil {
+				if model.communication.launcherUpdate != nil {
 					CapsuleActionButton(
 						title: L10n.string(HomeStrings.launcherUpdate),
 						systemImage: "arrow.down.app",
-						tone: .accent(model.accentColor),
-						action: model.openLauncherUpdate
+						tone: .accent(accentColor),
+						action: model.communication.openLauncherUpdate
 					)
 					.transition(.opacity)
 					.help(L10n.string(HomeStrings.launcherUpdateHelp))
 				}
 
-				LauncherPrimaryActionView(model: model)
-					.id(primaryActionIdentity)
-					.transition(primaryActionTransition)
+				LauncherPrimaryActionView(
+					installation: model.installation,
+					gameSession: model.gameSession,
+					intelTranslation: model.intelTranslation,
+					accentColor: accentColor,
+					installOrUpdate: model.installOrUpdate,
+					cancelDownload: model.cancelDownload,
+					launch: model.launch,
+					stopGame: model.stopGame
+				)
+				.id(primaryActionIdentity)
+				.transition(primaryActionTransition)
 			}
 		}
 		.padding(16)
-		.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
-		.animation(stateAnimation, value: model.isDownloading)
+		.adaptiveGlassEffect(tint: model.customization.hudTintColor, in: Capsule())
+		.animation(stateAnimation, value: model.installation.isDownloading)
 		.animation(stateAnimation, value: primaryActionIdentity)
-		.animation(stateAnimation, value: model.launcherUpdate != nil)
+		.animation(stateAnimation, value: model.communication.launcherUpdate != nil)
 	}
 
 	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill
@@ -213,16 +229,38 @@ struct ContentView: View {
 				Spacer(minLength: 16)
 				HStack(alignment: .bottom, spacing: 8) {
 					if hasMusicPill {
-						MusicHUDPill(model: model, controller: musicController)
-							.transition(hudPillTransition)
+						MusicHUDPill(
+							settings: model.settings,
+							gameSession: model.gameSession,
+							musicTitle: model.currentMusicTitle,
+							accentColor: accentColor,
+							hudTintColor: model.customization.hudTintColor,
+							openCurrentMusicURL: model.openCurrentMusicURL,
+							controller: musicController
+						)
+						.transition(hudPillTransition)
 					}
 					if hasVersionPill {
-						VersionHUDPill(model: model)
-							.transition(hudPillTransition)
+						VersionHUDPill(
+							lifecycle: model.lifecycle,
+							installation: model.installation,
+							gameSession: model.gameSession,
+							accentColor: accentColor,
+							hudTintColor: model.customization.hudTintColor,
+							checkGameUpdates: model.checkGameUpdates
+						)
+						.transition(hudPillTransition)
 					}
 					if hasStatusPill {
-						StatusHUDPill(model: model)
-							.transition(hudPillTransition)
+						StatusHUDPill(
+							settings: model.settings,
+							installation: model.installation,
+							canSwitchRegion: model.refreshController.canSwitchRegion,
+							accentColor: accentColor,
+							hudTintColor: model.customization.hudTintColor,
+							selectRegion: { model.selectRegion($0) }
+						)
+						.transition(hudPillTransition)
 					}
 				}
 			}
@@ -235,25 +273,33 @@ struct ContentView: View {
 	}
 
 	private var hasMusicPill: Bool {
-		model.showsPlayingMusic && model.currentMusicTitle != nil
+		model.settings.showsPlayingMusic && model.currentMusicTitle != nil
 	}
 
 	private var hasVersionPill: Bool {
-		model.showsGameVersion && model.versionText != "—"
+		model.settings.showsGameVersion && versionText != "—"
 	}
 
 	private var hasStatusPill: Bool {
-		model.resetCountdownText != nil
-			|| model.installedRegions.count > 1
-			|| model.region != .global
+		model.settings.resetCountdownText != nil
+			|| model.installation.installedRegions.count > 1
+			|| model.installation.region != .global
 	}
 
 	private var primaryActionIdentity: String {
-		if model.isGameRunning { return "stop" }
-		if model.isDownloading { return "pause" }
-		if !model.isInstalled { return model.hasPartialDownload ? "resume" : "install" }
-		if model.isGameUpdateAvailable { return "update" }
+		if model.gameSession.isGameActive { return "stop" }
+		if model.installation.isDownloading { return "pause" }
+		if !model.installation.isInstalled {
+			return model.installation.hasPartialDownload ? "resume" : "install"
+		}
+		if model.installation.isGameUpdateAvailable { return "update" }
 		return "play"
+	}
+
+	private var versionText: String {
+		model.installation.installedVersion
+			?? model.installation.configuration?.gameLatestVersion
+			?? "—"
 	}
 
 	private var stateAnimation: Animation? {

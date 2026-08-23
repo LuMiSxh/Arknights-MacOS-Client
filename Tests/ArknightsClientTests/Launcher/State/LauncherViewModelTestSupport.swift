@@ -7,10 +7,10 @@ import Testing
 
 @MainActor
 func waitForDownloadToStop(_ model: LauncherViewModel) async {
-	for _ in 0..<100 where model.isDownloading {
+	for _ in 0..<100 where model.installation.isDownloading {
 		await Task.yield()
 	}
-	#expect(!model.isDownloading)
+	#expect(!model.installation.isDownloading)
 }
 
 @MainActor
@@ -24,7 +24,8 @@ func makeModel(
 		@escaping @Sendable () async throws
 		-> IntelTranslationProcessResult = {
 			IntelTranslationProcessResult(status: 0, output: "test")
-		}
+		},
+	arguments: [String] = []
 ) -> LauncherViewModel {
 	let root = URL(filePath: NSTemporaryDirectory())
 		.appending(
@@ -48,7 +49,7 @@ func makeModel(
 		preferences: preferences,
 		checkIntelTranslation: checkIntelTranslation,
 		installRosettaSystemSoftware: installRosettaSystemSoftware,
-		arguments: []
+		arguments: arguments
 	)
 }
 
@@ -230,5 +231,76 @@ actor ControllableInstaller: GameInstalling {
 			waiter.resume()
 		}
 		cancellationRequestWaiters.removeAll()
+	}
+}
+
+actor CancellableBrandingAPI: LauncherAPIProviding {
+	private var brandingRequests = 0
+	private var cancellations = 0
+	private var requestWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
+	private var cancellationWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
+
+	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
+		GameConfiguration(
+			gameLowestVersion: "1.0.0",
+			gameLatestVersion: "2.0.0",
+			gameLatestFilePath: "game.zip",
+			gameStartExeName: "Arknights",
+			gameStartParams: [],
+			gameUninstallScript: "uninstall.exe",
+			decompressionSize: "1 GB"
+		)
+	}
+
+	func branding(region: GameRegion) async throws -> LauncherBranding {
+		brandingRequests += 1
+		resumeReadyWaiters()
+		do {
+			try await Task.sleep(for: .seconds(60))
+			return LauncherBranding(
+				launcherBackgroundImage: nil,
+				launcherBackgroundImageCRC64: nil,
+				copyrightInformation: nil,
+				privacyPolicy: nil,
+				userAgreement: nil,
+				noticePopOpen: false,
+				noticeContent: nil
+			)
+		} catch {
+			cancellations += 1
+			resumeReadyWaiters()
+			throw error
+		}
+	}
+
+	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
+		throw CancellationError()
+	}
+
+	func manifest(
+		for configuration: GameConfiguration,
+		region: GameRegion
+	) async throws -> GameManifest {
+		throw CancellationError()
+	}
+
+	func waitForBrandingRequests(_ count: Int) async {
+		guard brandingRequests < count else { return }
+		await withCheckedContinuation { requestWaiters.append((count, $0)) }
+	}
+
+	func waitForCancellations(_ count: Int) async {
+		guard cancellations < count else { return }
+		await withCheckedContinuation { cancellationWaiters.append((count, $0)) }
+	}
+
+	private func resumeReadyWaiters() {
+		let readyRequests = requestWaiters.filter { $0.0 <= brandingRequests }
+		requestWaiters.removeAll { $0.0 <= brandingRequests }
+		for (_, continuation) in readyRequests { continuation.resume() }
+
+		let readyCancellations = cancellationWaiters.filter { $0.0 <= cancellations }
+		cancellationWaiters.removeAll { $0.0 <= cancellations }
+		for (_, continuation) in readyCancellations { continuation.resume() }
 	}
 }

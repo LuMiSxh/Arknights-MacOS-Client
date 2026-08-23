@@ -4,7 +4,9 @@ import SwiftUI
 
 #if DEBUG
 	struct DeveloperSettingsPage: View {
-		var model: LauncherViewModel
+		@Binding var scenario: DeveloperScenario
+		let accentColor: Color
+		let applyCustomPopup: (String, String) -> Void
 		@State private var customPopupTitle = L10n.string(SettingsStrings.developerCustomPopup)
 		@State private var customPopupMarkdown = ""
 
@@ -12,22 +14,22 @@ import SwiftUI
 			SettingsPage(
 				title: L10n.string(SettingsStrings.developerTitle),
 				subtitle: L10n.string(SettingsStrings.developerSubtitle),
-				accentColor: model.accentColor
+				accentColor: accentColor
 			) {
 				SettingsPanel(
 					title: L10n.string(SettingsStrings.developerScenario), systemImage: "switch.2"
 				) {
 					GlassMenuPicker(
-						selection: scenarioBinding,
+						selection: $scenario,
 						options: DeveloperScenario.allCases.map { ($0, $0.title) },
-						accentColor: model.accentColor
+						accentColor: accentColor
 					)
 					SettingsHairline()
-					Text(scenarioBinding.wrappedValue.detail)
+					Text(scenario.detail)
 						.foregroundStyle(.secondary)
 				}
 
-				if scenarioBinding.wrappedValue == .customPopup {
+				if scenario == .customPopup {
 					SettingsPanel(
 						title: L10n.string(SettingsStrings.developerCustomPopup),
 						systemImage: "text.bubble"
@@ -45,12 +47,9 @@ import SwiftUI
 							.background(.black.opacity(0.2), in: .rect(cornerRadius: 8))
 						CapsuleActionButton(
 							title: L10n.string(SettingsStrings.developerShowPopup),
-							tone: .accent(model.accentColor)
+							tone: .accent(accentColor)
 						) {
-							model.applyDeveloperCustomPopup(
-								title: customPopupTitle,
-								markdown: customPopupMarkdown
-							)
+							applyCustomPopup(customPopupTitle, customPopupMarkdown)
 						}
 						.disabled(customPopupMarkdown.isEmpty)
 					}
@@ -66,13 +65,6 @@ import SwiftUI
 					.foregroundStyle(.secondary)
 				}
 			}
-		}
-
-		private var scenarioBinding: Binding<DeveloperScenario> {
-			Binding(
-				get: { model.developerScenario ?? .ready },
-				set: { scenario in model.applyDeveloperScenario(scenario) }
-			)
 		}
 	}
 #endif

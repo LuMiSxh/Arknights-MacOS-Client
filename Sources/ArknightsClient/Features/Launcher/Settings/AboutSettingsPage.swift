@@ -4,17 +4,20 @@ import AppKit
 import SwiftUI
 
 struct AboutSettingsPage: View {
-	var model: LauncherViewModel
+	let accentColor: Color
+	let launcherIconManager: LauncherIconManager
+	let branding: LauncherBranding?
+	let revealApplication: () -> Void
 	@Binding var presentedDocument: BundledDocument?
 
 	var body: some View {
 		SettingsPage(
 			title: L10n.string(SettingsStrings.aboutTitle),
 			subtitle: "\(L10n.string(SettingsStrings.application)) \(appVersion)",
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			HStack(alignment: .center, spacing: 18) {
-				Image(nsImage: model.launcherIconManager.currentIcon)
+				Image(nsImage: launcherIconManager.currentIcon)
 					.resizable()
 					.frame(width: 76, height: 76)
 				VStack(alignment: .leading, spacing: 5) {
@@ -24,19 +27,19 @@ struct AboutSettingsPage: View {
 						.foregroundStyle(.secondary)
 					AccentLink(
 						title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
-						accentColor: model.accentColor
+						accentColor: accentColor
 					)
 					.font(.callout.weight(.medium))
 				}
 				Spacer()
 				CapsuleActionButton(
 					title: L10n.string(SettingsStrings.openFinder), systemImage: "folder",
-					tone: .accent(model.accentColor), showsTitle: false,
-					action: model.revealApplication
+					tone: .accent(accentColor), showsTitle: false,
+					action: revealApplication
 				)
 				.help(L10n.string(SettingsStrings.openFinderHelp))
 				CapsuleActionButton(
-					title: L10n.string(SettingsStrings.github), tone: .accent(model.accentColor)
+					title: L10n.string(SettingsStrings.github), tone: .accent(accentColor)
 				) {
 					NSWorkspace.shared.open(
 						URL(
@@ -53,14 +56,14 @@ struct AboutSettingsPage: View {
 				DocumentLinkRow(
 					title: L10n.string(SettingsStrings.changelog),
 					systemImage: "clock.arrow.circlepath",
-					accentColor: model.accentColor
+					accentColor: accentColor
 				) {
 					presentedDocument = .changelog
 				}
 				SettingsHairline()
 				DocumentLinkRow(
 					title: L10n.string(SettingsStrings.license), systemImage: "checkmark.seal",
-					accentColor: model.accentColor
+					accentColor: accentColor
 				) {
 					presentedDocument = .projectLicense
 				}
@@ -68,7 +71,7 @@ struct AboutSettingsPage: View {
 				DocumentLinkRow(
 					title: L10n.string(SettingsStrings.thirdPartyNotices),
 					systemImage: "shippingbox",
-					accentColor: model.accentColor
+					accentColor: accentColor
 				) {
 					presentedDocument = .thirdPartyNotices
 				}
@@ -83,7 +86,7 @@ struct AboutSettingsPage: View {
 				) {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.report), systemImage: "ladybug",
-						tone: .accent(model.accentColor), presentation: .compact,
+						tone: .accent(accentColor), presentation: .compact,
 						action: reportLauncherProblem
 					)
 				}
@@ -97,7 +100,7 @@ struct AboutSettingsPage: View {
 					CapsuleActionButton(
 						title: L10n.string(SettingsStrings.contactYostar),
 						systemImage: "arrow.up.right.square",
-						tone: .accent(model.accentColor), presentation: .compact,
+						tone: .accent(accentColor), presentation: .compact,
 						action: contactYostar
 					)
 				}
@@ -105,17 +108,17 @@ struct AboutSettingsPage: View {
 
 			SettingsPanel(title: "Arknights", systemImage: "link") {
 				HStack(spacing: 18) {
-					if let agreement = model.branding?.userAgreement {
+					if let agreement = branding?.userAgreement {
 						AccentLink(
 							title: L10n.string(SettingsStrings.userAgreement),
 							destination: agreement,
-							accentColor: model.accentColor
+							accentColor: accentColor
 						)
 					}
-					if let privacy = model.branding?.privacyPolicy {
+					if let privacy = branding?.privacyPolicy {
 						AccentLink(
 							title: L10n.string(SettingsStrings.privacyPolicy), destination: privacy,
-							accentColor: model.accentColor
+							accentColor: accentColor
 						)
 					}
 					Spacer()

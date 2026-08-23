@@ -59,7 +59,7 @@ func launchDiagnosticsRecordEveryOptionAppliedToWine() throws {
 		synchronizationMode: .esync
 	)
 
-	let diagnostic = LauncherViewModel.launchDiagnostics(
+	let diagnostic = GameSessionController.launchDiagnostics(
 		sessionID: sessionID,
 		region: .korea,
 		options: options,

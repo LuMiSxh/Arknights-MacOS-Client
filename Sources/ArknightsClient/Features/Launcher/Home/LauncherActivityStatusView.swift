@@ -4,14 +4,16 @@ import AppKit
 import SwiftUI
 
 struct LauncherActivityStatusView: View {
-	let model: LauncherViewModel
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
+	let intelTranslation: IntelTranslationController
 	let accentColor: Color
 	let requestRosettaInstallation: () -> Void
 	let retryIntelTranslationCheck: () -> Void
 
 	@ViewBuilder
 	var body: some View {
-		if model.isDownloading {
+		if installation.isDownloading {
 			VStack(alignment: .leading, spacing: 7) {
 				HStack(alignment: .firstTextBaseline, spacing: 10) {
 					Text(statusTitle)
@@ -25,10 +27,11 @@ struct LauncherActivityStatusView: View {
 					}
 				}
 
-				ProgressView(value: model.progress?.fraction ?? 0)
+				ProgressView(value: installation.progress?.fraction ?? 0)
 					.progressViewStyle(.linear)
 					.tint(accentColor)
-					.animation(.linear(duration: 0.2), value: model.progress?.fraction ?? 0)
+					.animation(
+						.linear(duration: 0.2), value: installation.progress?.fraction ?? 0)
 			}
 		} else {
 			VStack(alignment: .leading, spacing: 2) {
@@ -48,7 +51,7 @@ struct LauncherActivityStatusView: View {
 
 	@ViewBuilder
 	private func statusAction(detail: String) -> some View {
-		if model.failureMessage != nil {
+		if lifecycle.failureMessage != nil {
 			AccentActionLink(
 				title: L10n.string(HomeStrings.reportProblem),
 				accentColor: accentColor
@@ -56,14 +59,14 @@ struct LauncherActivityStatusView: View {
 				NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
 			}
 			.font(.caption)
-		} else if model.isInstalled && model.canInstallRosetta {
+		} else if installation.isInstalled && intelTranslation.canInstallRosetta {
 			AccentActionLink(
-				title: model.rosettaInstallationActionTitle,
+				title: intelTranslation.installationActionTitle,
 				accentColor: accentColor,
 				action: requestRosettaInstallation
 			)
 			.font(.caption)
-		} else if model.isInstalled && model.canRetryIntelTranslationCheck {
+		} else if installation.isInstalled && intelTranslation.canRetryAvailabilityCheck {
 			AccentActionLink(
 				title: L10n.string(HomeStrings.checkAgain),
 				accentColor: accentColor,
@@ -74,17 +77,17 @@ struct LauncherActivityStatusView: View {
 	}
 
 	private var statusTitle: String {
-		if model.state.presentation.status == .pausing { return model.activityMessage }
-		if model.isDownloading, let progress = model.progress {
+		if lifecycle.presentation.status == .pausing { return lifecycle.activityMessage }
+		if installation.isDownloading, let progress = installation.progress {
 			return L10n.string(HomeStrings.downloadPercentage(Int(progress.fraction * 100)))
 		}
-		if model.failureMessage != nil { return L10n.string(HomeStrings.needsAttention) }
-		if model.isInstalled, let title = model.intelTranslationStatusTitle { return title }
-		return model.activityMessage
+		if lifecycle.failureMessage != nil { return L10n.string(HomeStrings.needsAttention) }
+		if installation.isInstalled, let title = intelTranslation.statusTitle { return title }
+		return lifecycle.activityMessage
 	}
 
 	private var statusDetail: String? {
-		if model.isDownloading, let progress = model.progress {
+		if installation.isDownloading, let progress = installation.progress {
 			let downloaded = ByteCountFormatter.string(
 				fromByteCount: progress.downloadedBytes,
 				countStyle: .file
@@ -97,8 +100,8 @@ struct LauncherActivityStatusView: View {
 				HomeStrings.downloadProgress(downloaded: downloaded, total: total)
 			)
 		}
-		if let failureMessage = model.failureMessage { return failureMessage }
-		if model.isInstalled { return model.intelTranslationStatusDetail }
+		if let failureMessage = lifecycle.failureMessage { return failureMessage }
+		if installation.isInstalled { return intelTranslation.statusDetail }
 		return nil
 	}
 }

@@ -3,67 +3,76 @@
 import SwiftUI
 
 struct LauncherPrimaryActionView: View {
-	var model: LauncherViewModel
+	let installation: InstallationController
+	let gameSession: GameSessionController
+	let intelTranslation: IntelTranslationController
+	let accentColor: Color
+	let installOrUpdate: () -> Void
+	let cancelDownload: () -> Void
+	let launch: () -> Void
+	let stopGame: () -> Void
 
 	@ViewBuilder
 	var body: some View {
-		if model.isGameRunning {
+		if gameSession.isGameActive {
 			CapsuleActionButton(
 				title: L10n.string(HomeStrings.actionStop),
 				systemImage: "stop.fill", tone: .neutral,
-				action: model.stopGame
+				action: stopGame
 			)
 			.controlSize(.large)
-			.disabled(!model.canStopGame)
+			.disabled(!gameSession.canStopGame)
 			.help(L10n.string(HomeStrings.actionStopHelp))
-		} else if model.isDownloading {
+		} else if installation.isDownloading {
 			CapsuleActionButton(
 				title: L10n.string(HomeStrings.actionPause),
 				systemImage: "pause.fill", tone: .neutral,
-				action: model.cancelDownload
+				action: cancelDownload
 			)
 			.controlSize(.large)
 			.help(L10n.string(HomeStrings.actionPauseHelp))
-		} else if !model.isInstalled {
+		} else if !installation.isInstalled {
 			CapsuleActionButton(
 				title: L10n.string(
-					model.hasPartialDownload ? HomeStrings.actionResume : HomeStrings.actionInstall
+					installation.hasPartialDownload
+						? HomeStrings.actionResume : HomeStrings.actionInstall
 				),
-				systemImage: model.hasPartialDownload ? "arrow.clockwise" : "arrow.down",
-				tone: .accent(model.accentColor),
-				action: model.installOrUpdate
+				systemImage: installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down",
+				tone: .accent(accentColor),
+				action: installOrUpdate
 			)
 			.controlSize(.large)
-			.disabled(!model.canInstall)
+			.disabled(!installation.canInstall)
 			.keyboardShortcut(.defaultAction)
 			.help(
-				model.hasPartialDownload
+				installation.hasPartialDownload
 					? L10n.string(HomeStrings.actionResumeHelp)
 					: L10n.string(
-						HomeStrings.actionInstallHelp(region: model.region.localizedDisplayName)
+						HomeStrings.actionInstallHelp(
+							region: installation.region.localizedDisplayName)
 					)
 			)
-		} else if model.isGameUpdateAvailable {
+		} else if installation.isGameUpdateAvailable {
 			CapsuleActionButton(
 				title: L10n.string(HomeStrings.actionUpdate),
-				systemImage: "arrow.down", tone: .accent(model.accentColor),
-				action: model.installOrUpdate
+				systemImage: "arrow.down", tone: .accent(accentColor),
+				action: installOrUpdate
 			)
 			.controlSize(.large)
-			.disabled(!model.canInstall)
+			.disabled(!installation.canInstall)
 			.keyboardShortcut(.defaultAction)
 			.help(L10n.string(HomeStrings.actionUpdateHelp))
 		} else {
 			CapsuleActionButton(
 				title: L10n.string(HomeStrings.actionPlay),
-				systemImage: "play.fill", tone: .accent(model.accentColor),
-				action: model.launch
+				systemImage: "play.fill", tone: .accent(accentColor),
+				action: launch
 			)
 			.controlSize(.large)
-			.disabled(!model.canLaunch)
+			.disabled(!gameSession.canLaunch)
 			.keyboardShortcut(.defaultAction)
 			.help(
-				model.intelTranslationStatusDetail
+				intelTranslation.statusDetail
 					?? L10n.string(HomeStrings.actionPlayHelp)
 			)
 		}

@@ -3,7 +3,8 @@
 import SwiftUI
 
 struct OnboardingWelcomeView: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var preferences: LauncherPreferencesController
+	let accentColor: Color
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
 	let rosettaInstallationState: RosettaInstallationState
@@ -15,7 +16,7 @@ struct OnboardingWelcomeView: View {
 		OnboardingPage(
 			title: L10n.string(OnboardingStrings.welcomeTitle),
 			subtitle: L10n.string(OnboardingStrings.welcomeSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(
 				title: L10n.string(OnboardingStrings.languagePanel),
@@ -26,11 +27,11 @@ struct OnboardingWelcomeView: View {
 					detail: L10n.string(OnboardingStrings.languageDetail)
 				) {
 					GlassMenuPicker(
-						selection: $model.appLanguage,
+						selection: $preferences.appLanguage,
 						options: AppLanguage.allCases.map {
 							($0, L10n.string(OnboardingStrings.appLanguage($0)))
 						},
-						accentColor: model.accentColor
+						accentColor: accentColor
 					)
 				}
 			}
@@ -48,7 +49,7 @@ struct OnboardingWelcomeView: View {
 						OnboardingStrings.launcherCurrent,
 						systemImage: "checkmark.circle.fill"
 					)
-					.foregroundStyle(model.accentColor)
+					.foregroundStyle(accentColor)
 				case .updateRequired(let release):
 					VStack(alignment: .leading, spacing: 8) {
 						Text(OnboardingStrings.versionAvailable(release.version))
@@ -64,7 +65,7 @@ struct OnboardingWelcomeView: View {
 						CapsuleActionButton(
 							title: L10n.string(OnboardingStrings.tryAgain),
 							systemImage: "arrow.clockwise",
-							tone: .accent(model.accentColor), action: retry
+							tone: .accent(accentColor), action: retry
 						)
 					}
 				}
@@ -90,11 +91,11 @@ struct OnboardingWelcomeView: View {
 							OnboardingStrings.compatibilityAvailable,
 							systemImage: "checkmark.circle.fill"
 						)
-						.foregroundStyle(model.accentColor)
+						.foregroundStyle(accentColor)
 					case .rosettaMissing:
 						OnboardingRosettaRecoveryView(
 							installationState: rosettaInstallationState,
-							accentColor: model.accentColor,
+							accentColor: accentColor,
 							install: installRosetta,
 							checkAgain: retryIntelTranslation
 						)
@@ -109,7 +110,7 @@ struct OnboardingWelcomeView: View {
 							CapsuleActionButton(
 								title: L10n.string(OnboardingStrings.checkAgain),
 								systemImage: "arrow.clockwise",
-								tone: .accent(model.accentColor),
+								tone: .accent(accentColor),
 								action: retryIntelTranslation
 							)
 						}
@@ -121,7 +122,7 @@ struct OnboardingWelcomeView: View {
 							CapsuleActionButton(
 								title: L10n.string(OnboardingStrings.checkAgain),
 								systemImage: "arrow.clockwise",
-								tone: .accent(model.accentColor),
+								tone: .accent(accentColor),
 								action: retryIntelTranslation
 							)
 						}

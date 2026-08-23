@@ -4,7 +4,12 @@ import SwiftUI
 
 /// Expands the installed game version into an independent manual update check.
 struct VersionHUDPill: View {
-	@Bindable var model: LauncherViewModel
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
+	let gameSession: GameSessionController
+	let accentColor: Color
+	let hudTintColor: Color
+	let checkGameUpdates: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isExpanded = false
 	@State private var isHovering = false
@@ -15,8 +20,8 @@ struct VersionHUDPill: View {
 				HStack(spacing: 5) {
 					Image(systemName: "number")
 						.font(.system(size: 10, weight: .semibold))
-						.foregroundStyle(model.accentColor)
-					Text(model.versionText)
+						.foregroundStyle(accentColor)
+					Text(versionText)
 						.font(.system(size: 11, weight: .medium, design: .monospaced))
 						.foregroundStyle(isHovering ? .primary : .secondary)
 						.lineLimit(1)
@@ -31,7 +36,7 @@ struct VersionHUDPill: View {
 					if isExpanded {
 						Image(systemName: "chevron.down")
 							.font(.caption.bold())
-							.foregroundStyle(model.accentColor.opacity(isHovering ? 1 : 0.65))
+							.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
 							.accessibilityHidden(true)
 					}
 				}
@@ -50,15 +55,15 @@ struct VersionHUDPill: View {
 					Label(updateStatus, systemImage: updateStatusIcon)
 						.font(.caption)
 						.foregroundStyle(
-							model.isGameUpdateAvailable ? model.accentColor : .secondary
+							installation.isGameUpdateAvailable ? accentColor : .secondary
 						)
 						.lineLimit(1)
 					Spacer()
 					CapsuleActionButton(
 						title: L10n.string(HomeStrings.versionCheckNow),
 						systemImage: "arrow.clockwise",
-						tone: .accent(model.accentColor), presentation: .hud,
-						action: model.checkGameUpdates
+						tone: .accent(accentColor), presentation: .hud,
+						action: checkGameUpdates
 					)
 					.disabled(cannotCheck)
 				}
@@ -82,7 +87,7 @@ struct VersionHUDPill: View {
 		.fixedSize(horizontal: !isExpanded, vertical: false)
 		.clipped()
 		.adaptiveGlassEffect(
-			tint: model.hudTintColor,
+			tint: hudTintColor,
 			in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)
 		)
 		.shadow(
@@ -94,13 +99,17 @@ struct VersionHUDPill: View {
 	}
 
 	private var cannotCheck: Bool {
-		model.phase == .checking || model.isDownloading || model.isGameActive
+		lifecycle.refresh.isChecking || installation.isDownloading || gameSession.isGameActive
+	}
+
+	private var versionText: String {
+		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
 	}
 
 	private var updateStatus: String {
-		if model.phase == .checking { return L10n.string(HomeStrings.versionChecking) }
-		if model.isGameUpdateAvailable,
-			let latest = model.configuration?.gameLatestVersion
+		if lifecycle.refresh.isChecking { return L10n.string(HomeStrings.versionChecking) }
+		if installation.isGameUpdateAvailable,
+			let latest = installation.configuration?.gameLatestVersion
 		{
 			return L10n.string(HomeStrings.versionAvailable(latest))
 		}
@@ -108,8 +117,8 @@ struct VersionHUDPill: View {
 	}
 
 	private var updateStatusIcon: String {
-		if model.phase == .checking { return "arrow.trianglehead.2.clockwise" }
-		return model.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
+		if lifecycle.refresh.isChecking { return "arrow.trianglehead.2.clockwise" }
+		return installation.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
 	}
 
 	private var expandedContentTransition: AnyTransition {

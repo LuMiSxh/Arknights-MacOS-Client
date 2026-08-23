@@ -4,30 +4,35 @@ import AppKit
 import SwiftUI
 
 struct OnboardingFinishView: View {
-	let model: LauncherViewModel
+	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let accentColor: Color
+	let install: () -> Void
 
 	var body: some View {
 		OnboardingPage(
 			title: L10n.string(OnboardingStrings.finishTitle),
 			subtitle: L10n.string(OnboardingStrings.finishSubtitle),
-			accentColor: model.accentColor
+			accentColor: accentColor
 		) {
 			SettingsPanel(title: L10n.string(gameStatusTitle), systemImage: gameStatusImage) {
 				Text(gameStatusDetail)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 
-				if model.isDownloading, let progress = model.progress {
+				if installation.isDownloading, let progress = installation.progress {
 					ProgressView(value: progress.fraction)
-						.tint(model.accentColor)
+						.tint(accentColor)
 				}
 
-				if !model.isInstalled && !model.isDownloading && model.canInstall {
+				if !installation.isInstalled && !installation.isDownloading
+					&& installation.canInstall
+				{
 					CapsuleActionButton(
 						title: L10n.string(OnboardingStrings.resumeDownload),
 						systemImage: "arrow.clockwise",
-						tone: .accent(model.accentColor),
-						action: model.installOrUpdate
+						tone: .accent(accentColor),
+						action: install
 					)
 				}
 			}
@@ -43,7 +48,7 @@ struct OnboardingFinishView: View {
 					.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
 					title: L10n.string(OnboardingStrings.reportProblem), systemImage: "ladybug",
-					tone: .accent(model.accentColor), action: reportProblem
+					tone: .accent(accentColor), action: reportProblem
 				)
 
 				SettingsHairline()
@@ -55,7 +60,7 @@ struct OnboardingFinishView: View {
 				CapsuleActionButton(
 					title: L10n.string(OnboardingStrings.contactSupport),
 					systemImage: "arrow.up.right.square",
-					tone: .accent(model.accentColor),
+					tone: .accent(accentColor),
 					action: contactYostar
 				)
 			}
@@ -63,23 +68,23 @@ struct OnboardingFinishView: View {
 	}
 
 	private var gameStatusTitle: LocalizedStringResource {
-		if model.isGameActive { return OnboardingStrings.finishStatusRunning }
-		if model.isDownloading { return OnboardingStrings.finishStatusDownloading }
-		if model.isInstalled { return OnboardingStrings.finishStatusInstalled }
+		if lifecycle.activity.isGameActive { return OnboardingStrings.finishStatusRunning }
+		if installation.isDownloading { return OnboardingStrings.finishStatusDownloading }
+		if installation.isInstalled { return OnboardingStrings.finishStatusInstalled }
 		return OnboardingStrings.finishStatusPaused
 	}
 
 	private var gameStatusImage: String {
-		if model.isGameActive { return "gamecontroller.fill" }
-		if model.isDownloading { return "arrow.down.circle" }
-		if model.isInstalled { return "checkmark.circle" }
+		if lifecycle.activity.isGameActive { return "gamecontroller.fill" }
+		if installation.isDownloading { return "arrow.down.circle" }
+		if installation.isInstalled { return "checkmark.circle" }
 		return "pause.circle"
 	}
 
 	private var gameStatusDetail: LocalizedStringResource {
-		if model.isGameActive { return OnboardingStrings.finishGameActiveDetail }
-		if model.isDownloading { return OnboardingStrings.finishDownloadingDetail }
-		if model.isInstalled { return OnboardingStrings.finishInstalledDetail }
+		if lifecycle.activity.isGameActive { return OnboardingStrings.finishGameActiveDetail }
+		if installation.isDownloading { return OnboardingStrings.finishDownloadingDetail }
+		if installation.isInstalled { return OnboardingStrings.finishInstalledDetail }
 		return OnboardingStrings.finishPausedDetail
 	}
 

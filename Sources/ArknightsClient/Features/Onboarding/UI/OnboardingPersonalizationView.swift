@@ -3,21 +3,23 @@
 import SwiftUI
 
 struct OnboardingPersonalizationView: View {
-	@Bindable var model: LauncherViewModel
+	let customization: CustomizationController
+	@Bindable var preferences: LauncherPreferencesController
+	let resetArtwork: () -> Void
 	let browseArtwork: () -> Void
 
 	var body: some View {
 		OnboardingPage(
 			title: L10n.string(OnboardingStrings.personalizationTitle),
 			subtitle: L10n.string(OnboardingStrings.personalizationSubtitle),
-			accentColor: model.accentColor
+			accentColor: customization.accentColor
 		) {
 			SettingsPanel(
 				title: L10n.string(OnboardingStrings.artwork),
 				systemImage: "photo.on.rectangle.angled"
 			) {
 				Group {
-					if let artwork = model.heroArtwork {
+					if let artwork = customization.heroArtwork {
 						Image(nsImage: artwork)
 							.resizable()
 							.scaledToFill()
@@ -44,21 +46,21 @@ struct OnboardingPersonalizationView: View {
 					CapsuleActionButton(
 						title: L10n.string(OnboardingStrings.browsePresets),
 						systemImage: "square.grid.2x2",
-						tone: .accent(model.accentColor), presentation: .compact,
+						tone: .accent(customization.accentColor), presentation: .compact,
 						action: browseArtwork
 					)
 					CapsuleActionButton(
 						title: L10n.string(OnboardingStrings.chooseImage),
 						systemImage: "photo.badge.plus",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.chooseCustomArtwork
+						tone: .accent(customization.accentColor), presentation: .compact,
+						action: customization.chooseCustomArtwork
 					)
 					Spacer()
 					CapsuleActionButton(
 						title: L10n.string(OnboardingStrings.useDefault),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral, presentation: .compact,
-						action: model.resetArtwork
+						action: resetArtwork
 					)
 				}
 			}
@@ -69,22 +71,22 @@ struct OnboardingPersonalizationView: View {
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.dynamicTheme),
 					detail: L10n.string(OnboardingStrings.dynamicThemeDetail),
-					isOn: $model.usesDynamicTheme,
-					accentColor: model.accentColor
+					isOn: $preferences.usesDynamicTheme,
+					accentColor: customization.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.gameVersion),
 					detail: L10n.string(OnboardingStrings.gameVersionDetail),
-					isOn: $model.showsGameVersion,
-					accentColor: model.accentColor
+					isOn: $preferences.showsGameVersion,
+					accentColor: customization.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
 					title: L10n.string(OnboardingStrings.resetCountdown),
 					detail: L10n.string(OnboardingStrings.resetCountdownDetail),
-					isOn: $model.showsServerResetCountdown,
-					accentColor: model.accentColor
+					isOn: $preferences.showsServerResetCountdown,
+					accentColor: customization.accentColor
 				)
 			}
 		}
