@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import io
 from dataclasses import replace
 
-import contract_monitor as contract_monitor_cli
 import pytest
-from lib.common import ScriptError
 from lib.contract_monitor import (
     MONITOR_MARKER_PREFIX,
     ContractAlertReconciler,
@@ -226,10 +223,10 @@ class FakeIssueStore:
         self.comments: list[tuple[int, str]] = []
         self.label_ensured = 0
 
-    def ensure_monitor_label(self) -> None:
+    def ensure_label(self) -> None:
         self.label_ensured += 1
 
-    def list_monitor_issues(self) -> list[MonitorIssue]:
+    def list_issues(self) -> list[MonitorIssue]:
         return list(self.issues)
 
     def create_issue(self, title: str, body: str) -> MonitorIssue:
@@ -258,15 +255,3 @@ class FakeIssueStore:
 
     def add_comment(self, number: int, body: str) -> None:
         self.comments.append((number, body))
-
-
-def test_cli_bounds_remote_responses() -> None:
-    response = io.BytesIO(b"12345")
-
-    with pytest.raises(ScriptError, match="exceeds 4 bytes"):
-        contract_monitor_cli._bounded_read(response, 4)
-
-
-def test_cli_rejects_invalid_repository_environment_values() -> None:
-    with pytest.raises(ScriptError, match="invalid value"):
-        contract_monitor_cli.GitHubMonitorClient("owner/repo?unexpected=true", "token")

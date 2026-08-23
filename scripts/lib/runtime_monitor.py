@@ -12,7 +12,6 @@ from typing import Protocol
 from urllib.parse import urlparse
 
 REPORT_SCHEMA_VERSION = 1
-AUTOMATED_LABEL = "automated"
 RUNTIME_TAG_PATTERN = re.compile(r"^v([0-9]+)\.([0-9]+)\.([0-9]+)$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -194,9 +193,9 @@ class RuntimeMonitorIssue:
 
 
 class RuntimeIssueStore(Protocol):
-    def ensure_automated_label(self) -> None: ...
+    def ensure_label(self) -> None: ...
 
-    def list_automated_issues(self) -> list[RuntimeMonitorIssue]: ...
+    def list_issues(self) -> list[RuntimeMonitorIssue]: ...
 
     def create_issue(self, title: str, body: str) -> RuntimeMonitorIssue: ...
 
@@ -215,7 +214,7 @@ class RuntimeAlertReconciler:
         self, current: RuntimeMonitorReport, history: list[RuntimeMonitorReport]
     ) -> list[str]:
         issues: dict[str, RuntimeMonitorIssue] = {}
-        for issue in self.store.list_automated_issues():
+        for issue in self.store.list_issues():
             key = issue.key
             if key not in {"candidate", "availability"}:
                 continue
@@ -241,7 +240,7 @@ class RuntimeAlertReconciler:
             return None
         body = candidate_issue_body(candidate, report)
         if issue is None:
-            self.store.ensure_automated_label()
+            self.store.ensure_label()
             self.store.create_issue(
                 "Review newer Wine runtime",
                 body,
@@ -268,7 +267,7 @@ class RuntimeAlertReconciler:
         if report.incidents:
             body, condition = availability_issue_body(report)
             if issue is None:
-                self.store.ensure_automated_label()
+                self.store.ensure_label()
                 self.store.create_issue("Runtime source availability incident", body)
                 return "opened runtime availability incident"
             self.store.update_issue(issue.number, body=body, state="open")

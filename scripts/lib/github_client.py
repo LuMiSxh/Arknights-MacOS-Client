@@ -55,7 +55,13 @@ class GitHubClient:
         ).decode("utf-8")
 
     def repository_json(
-        self, repository: str, path: str, *, method: str = "GET", payload: object = None
+        self,
+        repository: str,
+        path: str,
+        *,
+        method: str = "GET",
+        payload: object = None,
+        maximum_bytes: int = MAXIMUM_API_BYTES,
     ) -> object:
         data = None if payload is None else json.dumps(payload).encode()
         response = self._request(
@@ -63,7 +69,7 @@ class GitHubClient:
             method=method,
             data=data,
             authenticated=True,
-            maximum_bytes=MAXIMUM_API_BYTES,
+            maximum_bytes=maximum_bytes,
             accept="application/vnd.github+json",
         )
         return json.loads(response) if response else None

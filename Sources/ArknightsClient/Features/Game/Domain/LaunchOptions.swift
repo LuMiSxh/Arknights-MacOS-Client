@@ -41,44 +41,18 @@ enum GameResolution: String, CaseIterable, Codable, Sendable {
 
 	var displayName: String { rawValue.replacing("x", with: " × ") }
 
-	var width: Int {
-		switch self {
-		case .ultraHD: 3840
-		case .quadHD: 2560
-		case .cinemaFullHD: 2048
-		case .wuxga, .fullHD: 1920
-		case .wsxgaPlus: 1680
-		case .uxga, .wsxga, .hdPlus: 1600
-		case .hdFourThree: 1440
-		case .hdWide: 1360
-		case .sxgaPlus, .wxga, .wxgaWide, .hd: 1280
-		case .scaledHD: 1176
-		case .xgaPlus: 1152
-		case .xga: 1024
-		case .svga: 800
-		case .ntscWide: 720
-		case .sd: 640
-		}
-	}
+	var width: Int { dimensions.width }
+	var height: Int { dimensions.height }
 
-	var height: Int {
-		switch self {
-		case .ultraHD: 2160
-		case .quadHD: 1440
-		case .cinemaFullHD, .fullHD, .hdFourThree: 1080
-		case .wuxga, .uxga: 1200
-		case .wsxgaPlus: 1050
-		case .wsxga: 1024
-		case .hdPlus: 900
-		case .hdWide, .wxgaWide, .xga: 768
-		case .sxgaPlus: 960
-		case .wxga: 800
-		case .hd: 720
-		case .scaledHD: 664
-		case .xgaPlus: 864
-		case .svga: 600
-		case .ntscWide, .sd: 480
+	private var dimensions: (width: Int, height: Int) {
+		let components = rawValue.split(separator: "x")
+		guard components.count == 2,
+			let width = Int(components[0]),
+			let height = Int(components[1])
+		else {
+			preconditionFailure("Invalid built-in game resolution: \(rawValue)")
 		}
+		return (width, height)
 	}
 }
 

@@ -16,14 +16,25 @@ from pathlib import Path
 
 from lib.common import PROJECT_DIR, ScriptError, fail, run_main, success
 from lib.github_client import GitHubClient
+from lib.github_monitor import GitHubIssueStore, historical_reports
 from lib.runtime_monitor import (
     RuntimeAlertReconciler,
+    RuntimeMonitorIssue,
     RuntimeMonitorReport,
     report_markdown,
     report_value,
 )
-from lib.runtime_monitor_github import RuntimeGitHubIssueStore, historical_reports
 from lib.runtime_probe import RuntimeProbe
+
+REPORT_ARTIFACT_NAME = "runtime-monitor-report"
+
+
+def issue_from_json(value: dict[str, object]) -> RuntimeMonitorIssue:
+    return RuntimeMonitorIssue(
+        number=int(value["number"]),
+        state=str(value["state"]),
+        body=str(value.get("body") or ""),
+    )
 
 
 def load_report(path: Path) -> RuntimeMonitorReport:
@@ -65,9 +76,23 @@ def reconcile(report_path: Path) -> None:
         success("manual runtime report does not mutate GitHub issues")
         return
     client = GitHubClient(token)
-    actions = RuntimeAlertReconciler(
-        RuntimeGitHubIssueStore(client, repository)
-    ).reconcile(report, historical_reports(client, repository, run_id))
+    store = GitHubIssueStore(
+        client,
+        repository,
+        issue_factory=issue_from_json,
+        label_color="6E7781",
+        label_description="Created and maintained by repository automation",
+    )
+    history = historical_reports(
+        client,
+        repository,
+        run_id,
+        artifact_name=REPORT_ARTIFACT_NAME,
+        report_filename="runtime-monitor-report.json",
+        report_factory=RuntimeMonitorReport.from_json,
+        limit=4,
+    )
+    actions = RuntimeAlertReconciler(store).reconcile(report, history)
     success(", ".join(actions) if actions else "runtime alert state unchanged")
 
 

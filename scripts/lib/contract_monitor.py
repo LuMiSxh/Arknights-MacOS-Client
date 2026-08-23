@@ -12,7 +12,6 @@ from typing import Protocol
 from urllib.parse import urlparse
 
 REPORT_SCHEMA_VERSION = 1
-MONITOR_LABEL = "automated"
 MONITOR_MARKER_PREFIX = "arknights-contract-monitor:"
 CONSECUTIVE_FAILURES_TO_ALERT = 2
 CONSECUTIVE_SUCCESSES_TO_RECOVER = 2
@@ -116,9 +115,9 @@ class MonitorIssue:
 
 
 class MonitorIssueStore(Protocol):
-    def ensure_monitor_label(self) -> None: ...
+    def ensure_label(self) -> None: ...
 
-    def list_monitor_issues(self) -> list[MonitorIssue]: ...
+    def list_issues(self) -> list[MonitorIssue]: ...
 
     def create_issue(self, title: str, body: str) -> MonitorIssue: ...
 
@@ -146,7 +145,7 @@ class ContractAlertReconciler:
             report for report in history if report.trigger == "schedule"
         ]
         issues: dict[str, MonitorIssue] = {}
-        for issue in self.store.list_monitor_issues():
+        for issue in self.store.list_issues():
             key = issue.key
             if key is None:
                 continue
@@ -197,7 +196,7 @@ class ContractAlertReconciler:
         ):
             return None
 
-        self.store.ensure_monitor_label()
+        self.store.ensure_label()
         failure_reports = _consecutive_reports(
             current, previous_reports, "failed", check.key
         )

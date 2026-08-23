@@ -116,10 +116,10 @@ class FakeIssueStore:
         self.issues = list(issues or [])
         self.comments: list[tuple[int, str]] = []
 
-    def ensure_automated_label(self) -> None:
+    def ensure_label(self) -> None:
         pass
 
-    def list_automated_issues(self) -> list[RuntimeMonitorIssue]:
+    def list_issues(self) -> list[RuntimeMonitorIssue]:
         return list(self.issues)
 
     def create_issue(self, title: str, body: str) -> RuntimeMonitorIssue:
