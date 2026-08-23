@@ -55,6 +55,10 @@ struct ContentView: View {
 				}
 				.padding(20)
 			}
+			// L10n reads a plain mutex, not an Observable value, so SwiftUI never invalidates
+			// this content on its own when the language changes. Re-key it so a language
+			// switch redraws it immediately instead of waiting on an unrelated state change.
+			.id(model.settings.appLanguage)
 		}
 		.background(Color.black)
 		.preferredColorScheme(.dark)

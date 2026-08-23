@@ -102,6 +102,9 @@ struct LauncherSettingsView: View {
 				value: selectedSection
 			)
 		}
+		// See ContentView: L10n reads a plain mutex, not an Observable value, so a
+		// language change here needs an explicit re-key to redraw immediately.
+		.id(model.settings.appLanguage)
 		.tint(model.customization.accentColor)
 		.background(
 			ZStack {
