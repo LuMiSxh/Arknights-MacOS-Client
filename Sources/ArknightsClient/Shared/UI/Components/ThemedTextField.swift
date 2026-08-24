@@ -44,5 +44,7 @@ struct ThemedTextField: View {
 		.padding(.horizontal, 10)
 		.padding(.vertical, 7)
 		.themedInputSurface(accentColor: accentColor, isFocused: isFocused)
+		.focusEffectDisabled(true)
+		.keyboardFocusIndicator(isFocused: isFocused, in: RoundedRectangle(cornerRadius: 8))
 	}
 }

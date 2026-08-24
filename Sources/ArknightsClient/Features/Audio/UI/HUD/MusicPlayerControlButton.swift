@@ -31,6 +31,7 @@ struct MusicPlayerControlButton: View {
 			.contentShape(Circle())
 		}
 		.buttonStyle(ActionPressStyle())
+		.keyboardFocusIndicator(in: Circle())
 		.disabled(isDisabled)
 		.opacity(isDisabled ? 0.55 : 1)
 	}

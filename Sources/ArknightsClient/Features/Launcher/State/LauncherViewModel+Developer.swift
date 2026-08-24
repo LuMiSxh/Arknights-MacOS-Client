@@ -114,6 +114,13 @@
 				settings.showsPlayingMusic = true
 				currentMusicTitle = "Arknights EP – Reforge"
 				currentMusicVideoID = "developer-preview"
+			case .accessibility:
+				settings.showsPlayingMusic = true
+				settings.showsGameVersion = true
+				settings.showsServerResetCountdown = true
+				currentMusicTitle =
+					"A very long Arknights soundtrack title for Dynamic Type and keyboard layout checks"
+				currentMusicVideoID = "developer-accessibility-preview"
 			case .onboarding, .onboardingRosetta:
 				installation.isInstalled = false
 				installation.hasPartialDownload = false

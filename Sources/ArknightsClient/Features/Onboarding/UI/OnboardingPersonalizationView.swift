@@ -30,6 +30,7 @@ struct OnboardingPersonalizationView: View {
 							Image(systemName: "photo")
 								.font(.largeTitle)
 								.foregroundStyle(.tertiary)
+								.accessibilityHidden(true)
 						}
 					}
 				}

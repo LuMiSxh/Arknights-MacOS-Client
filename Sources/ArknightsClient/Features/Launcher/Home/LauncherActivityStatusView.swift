@@ -38,6 +38,9 @@ struct LauncherActivityStatusView: View {
 					.animation(
 						.linear(duration: 0.2), value: installation.progress?.fraction ?? 0)
 			}
+			.accessibilityElement(children: .ignore)
+			.accessibilityLabel(Text(statusTitle))
+			.accessibilityValue(Text(accessibilityProgressValue))
 		} else {
 			VStack(alignment: .leading, spacing: 2) {
 				Text(statusTitle)
@@ -103,6 +106,32 @@ struct LauncherActivityStatusView: View {
 		if let failureMessage = lifecycle.failureMessage { return failureMessage }
 		if installation.isInstalled { return intelTranslation.statusDetail }
 		return nil
+	}
+
+	private var accessibilityProgressValue: String {
+		var values: [String] = []
+		if let statusDetail { values.append(statusDetail) }
+		if let progress = installation.progress {
+			if let rate = progress.transferRateBytesPerSecond {
+				values.append(
+					L10n.string(
+						HomeStrings.downloadSpeed(
+							DownloadProgressFormatting.byteRate(rate)
+						)
+					)
+				)
+			}
+			if let eta = progress.estimatedTimeRemaining {
+				values.append(
+					L10n.string(
+						HomeStrings.downloadEta(DownloadProgressFormatting.duration(eta))
+					)
+				)
+			} else if progress.isTransferStalled {
+				values.append(L10n.string(HomeStrings.downloadWaiting))
+			}
+		}
+		return values.joined(separator: ", ")
 	}
 
 	private var downloadProgressDetail: some View {

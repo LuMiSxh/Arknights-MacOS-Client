@@ -20,11 +20,13 @@ struct StatusHUDPill: View {
 					Image(systemName: "clock")
 						.font(.system(size: 10, weight: .semibold))
 						.foregroundStyle(accentColor)
+						.accessibilityHidden(true)
 					Text(countdown)
 						.font(.system(size: 11, weight: .medium, design: .monospaced))
 						.foregroundStyle(.secondary)
-						.lineLimit(1)
+						.lineLimit(2)
 						.truncationMode(.tail)
+						.fixedSize(horizontal: false, vertical: true)
 						.frame(
 							maxWidth: AppConstants.HUD.collapsedStatusTitleMaxWidth
 						)
@@ -72,6 +74,7 @@ struct StatusHUDPill: View {
 			}
 			.menuStyle(.button)
 			.buttonStyle(.plain)
+			.keyboardFocusIndicator(in: Capsule())
 			.disabled(!canSwitchRegion)
 			.help(L10n.string(HomeStrings.switchRegionHelp))
 		} else if installation.region != .global {

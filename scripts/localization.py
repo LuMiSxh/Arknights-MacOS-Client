@@ -14,7 +14,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
-from lib.common import PROJECT_DIR, ScriptError, run, run_main
+from lib.common import (
+    PROJECT_DIR,
+    ScriptError,
+    require_directory,
+    run,
+    run_main,
+)
 from lib.console import success
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
@@ -195,6 +201,58 @@ def generate_localization(
     return generated
 
 
+def compile_swift_localizations(
+    binary_directory: Path,
+    configuration: ProjectConfiguration | None = None,
+) -> None:
+    """Compile SwiftPM's raw catalogs into the resource bundle's .lproj files.
+
+    SwiftPM copies ``.xcstrings`` resources but does not currently invoke
+    Apple's catalog compiler for command-line macOS builds.  Foundation's
+    localized-string lookup therefore needs this explicit build step before
+    tests or app packaging consume the resource bundle.
+    """
+    configuration = configuration or load_project_configuration()
+    bundle = require_directory(
+        binary_directory / configuration.swift_resource_bundle_name
+    )
+    catalogs = tuple(sorted(bundle.glob("*.xcstrings")))
+    if not catalogs:
+        raise ScriptError(
+            f"Swift resource bundle contains no String Catalogs: {bundle}"
+        )
+
+    languages = tuple(configuration.product.localizations)
+    language_arguments = [
+        argument for language in languages for argument in ("--language", language)
+    ]
+    for catalog in catalogs:
+        run(
+            [
+                "xcrun",
+                "xcstringstool",
+                "compile",
+                catalog,
+                "--output-directory",
+                bundle,
+                *language_arguments,
+            ],
+            cwd=PROJECT_DIR,
+        )
+
+    expected = {
+        bundle / f"{language}.lproj" / f"{catalog.stem}.strings"
+        for language in languages
+        for catalog in catalogs
+    }
+    missing = sorted(path for path in expected if not path.is_file())
+    if missing:
+        raise ScriptError(
+            "xcstringstool did not produce all localized Swift resources: "
+            + ", ".join(str(path.relative_to(bundle)) for path in missing)
+        )
+
+
 def prepare_localization(
     *, force: bool = False, configuration: ProjectConfiguration | None = None
 ) -> bool:
@@ -241,8 +299,20 @@ def prepare_localization(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("prepare", "format"))
+    parser.add_argument("mode", choices=("prepare", "format", "compile"))
+    parser.add_argument(
+        "binary_directory",
+        nargs="?",
+        type=Path,
+        help="SwiftPM binary directory used by the compile mode",
+    )
     arguments = parser.parse_args()
+    if arguments.mode == "compile":
+        if arguments.binary_directory is None:
+            parser.error("compile requires a SwiftPM binary directory")
+        compile_swift_localizations(arguments.binary_directory)
+        success("SwiftPM localization resources compiled")
+        return
     changed = prepare_localization(force=arguments.mode == "format")
     if changed:
         success("Localization symbols generated")

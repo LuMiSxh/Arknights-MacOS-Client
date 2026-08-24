@@ -57,6 +57,7 @@ struct BundledDocumentView: View {
 				dismiss()
 			}
 		}
+		.onExitCommand(perform: dismiss.callAsFunction)
 	}
 }
 

@@ -124,7 +124,7 @@ struct ContentView: View {
 			)
 			.labelStyle(.iconOnly)
 			.font(.system(size: 23, weight: .medium))
-			.frame(width: 30, height: 30)
+			.frame(minWidth: 44, minHeight: 44)
 			.adaptiveGlassButton()
 			.buttonBorderShape(.circle)
 			.controlSize(.extraLarge)
@@ -218,7 +218,6 @@ struct ContentView: View {
 					launch: model.launch,
 					stopGame: model.stopGame
 				)
-				.id(primaryActionIdentity)
 				.transition(primaryActionTransition)
 			}
 		}

@@ -30,7 +30,7 @@ from lib.common import (
 from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
-from localization import prepare_localization
+from localization import compile_swift_localizations, prepare_localization
 from runtime_config import (
     RuntimeConfiguration,
     load_runtime_config,
@@ -273,6 +273,7 @@ def build(
             cwd=project,
         )
     )
+    compile_swift_localizations(binary_dir, project_configuration)
     binary = binary_dir / project_configuration.product.executable_name
     if not os.access(binary, os.X_OK):
         fail(f"{configuration} executable not found: {binary}")

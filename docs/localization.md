@@ -10,7 +10,7 @@ The Apple String Catalogs in `Sources/ArknightsClient/Resources` are the source 
 
 Large features may own a dedicated catalog; closely related smaller surfaces may share `Localizable.xcstrings`. Use stable symbolic keys namespaced by the owning feature, such as `onboarding.action.continue` or `settings.installation.repair`. English copy and translator comments belong in the catalogs; every shipping translation must be reviewed by a fluent speaker.
 
-SwiftPM compiles the catalogs into the shipping `.strings` resources. Apple's command-line SwiftPM integration does not generate the type-safe Swift declarations, so the supported `just` build, test, preview, and packaging commands generate `Shared/Localization/GeneratedStringSymbols_*.swift` on demand. These ignored files carry a catalog fingerprint and are regenerated only when missing or stale.
+SwiftPM copies the catalogs into its resource bundle, but Apple's command-line SwiftPM integration does not currently compile them into the `.strings` resources that Foundation uses for lookup. The supported `just` build, test, preview, and packaging commands therefore run `scripts/localization.py compile` after SwiftPM builds and before consuming the bundle. The same commands generate the type-safe Swift declarations in `Shared/Localization/GeneratedStringSymbols_*.swift` on demand. These ignored files carry a catalog fingerprint and are regenerated only when missing or stale.
 
 Do not edit generated symbols directly. A normal command prepares them automatically; force a local regeneration after changing the generation pipeline with:
 

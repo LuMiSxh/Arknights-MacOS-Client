@@ -20,6 +20,7 @@ struct AboutSettingsPage: View {
 				Image(nsImage: launcherIconManager.currentIcon)
 					.resizable()
 					.frame(width: 76, height: 76)
+					.accessibilityHidden(true)
 				VStack(alignment: .leading, spacing: 5) {
 					Text(SettingsStrings.application)
 						.font(.title2.bold())
@@ -107,21 +108,23 @@ struct AboutSettingsPage: View {
 			}
 
 			SettingsPanel(title: "Arknights", systemImage: "link") {
-				HStack(spacing: 18) {
-					if let agreement = branding?.userAgreement {
-						AccentLink(
-							title: L10n.string(SettingsStrings.userAgreement),
-							destination: agreement,
-							accentColor: accentColor
-						)
+				VStack(alignment: .leading, spacing: 8) {
+					HStack(spacing: 18) {
+						if let agreement = branding?.userAgreement {
+							AccentLink(
+								title: L10n.string(SettingsStrings.userAgreement),
+								destination: agreement,
+								accentColor: accentColor
+							)
+						}
+						if let privacy = branding?.privacyPolicy {
+							AccentLink(
+								title: L10n.string(SettingsStrings.privacyPolicy),
+								destination: privacy,
+								accentColor: accentColor
+							)
+						}
 					}
-					if let privacy = branding?.privacyPolicy {
-						AccentLink(
-							title: L10n.string(SettingsStrings.privacyPolicy), destination: privacy,
-							accentColor: accentColor
-						)
-					}
-					Spacer()
 					Text(SettingsStrings.notAffiliated)
 						.font(.caption)
 						.foregroundStyle(.secondary)

@@ -21,6 +21,7 @@ struct VersionHUDPill: View {
 					Image(systemName: "number")
 						.font(.system(size: 10, weight: .semibold))
 						.foregroundStyle(accentColor)
+						.accessibilityHidden(true)
 					Text(versionText)
 						.font(.system(size: 11, weight: .medium, design: .monospaced))
 						.foregroundStyle(isHovering ? .primary : .secondary)
@@ -43,7 +44,16 @@ struct VersionHUDPill: View {
 				.contentShape(Rectangle())
 			}
 			.buttonStyle(.plain)
+			.keyboardFocusIndicator(
+				in: RoundedRectangle(cornerRadius: 8)
+			)
 			.onHover { isHovering = $0 }
+			.accessibilityLabel(
+				L10n.string(
+					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+				)
+			)
+			.accessibilityValue(Text(versionText))
 			.help(
 				L10n.string(
 					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
@@ -57,7 +67,7 @@ struct VersionHUDPill: View {
 						.foregroundStyle(
 							installation.isGameUpdateAvailable ? accentColor : .secondary
 						)
-						.lineLimit(1)
+						.fixedSize(horizontal: false, vertical: true)
 					Spacer()
 					CapsuleActionButton(
 						title: L10n.string(HomeStrings.versionCheckNow),
@@ -72,9 +82,9 @@ struct VersionHUDPill: View {
 		}
 		.padding(.horizontal, isExpanded ? 14 : 12)
 		.padding(.vertical, isExpanded ? 11 : 0)
+		.frame(width: isExpanded ? AppConstants.HUD.expandedVersionWidth : nil)
 		.frame(
-			width: isExpanded ? AppConstants.HUD.expandedVersionWidth : nil,
-			height: isExpanded
+			minHeight: isExpanded
 				? AppConstants.HUD.expandedVersionHeight
 				: AppConstants.Music.collapsedPlayerHeight,
 			alignment: isExpanded ? .topLeading : .center
@@ -85,7 +95,6 @@ struct VersionHUDPill: View {
 				: AppConstants.HUD.collapsedVersionMaxWidth
 		)
 		.fixedSize(horizontal: !isExpanded, vertical: false)
-		.clipped()
 		.adaptiveGlassEffect(
 			tint: hudTintColor,
 			in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)

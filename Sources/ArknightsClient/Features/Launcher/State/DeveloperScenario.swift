@@ -18,6 +18,7 @@
 		case failure
 		case notInstalled = "not-installed"
 		case musicPlayer = "music-player"
+		case accessibility = "accessibility"
 		case onboarding
 		case onboardingRosetta = "onboarding-rosetta"
 
@@ -46,6 +47,7 @@
 			case .failure: "Failure"
 			case .notInstalled: "Not installed"
 			case .musicPlayer: "Music player"
+			case .accessibility: "Accessibility & layout"
 			case .onboarding: "Onboarding"
 			case .onboardingRosetta: "Onboarding · Rosetta missing"
 			}
@@ -67,6 +69,8 @@
 			case .failure: "A runtime failure displayed in the status capsule."
 			case .notInstalled: "A fresh launcher before the game is installed."
 			case .musicPlayer: "An isolated, silent preview of the expanded music controls."
+			case .accessibility:
+				"Long status text for keyboard, Dynamic Type, Reduce Motion, and contrast checks."
 			case .onboarding: "The complete first-run setup assistant."
 			case .onboardingRosetta: "First-run recovery when macOS removed Rosetta."
 			}

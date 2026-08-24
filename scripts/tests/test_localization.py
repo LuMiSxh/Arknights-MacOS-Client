@@ -8,6 +8,7 @@ from pathlib import Path
 import localization
 import pytest
 from lib.common import ScriptError
+from lib.project_config import load_project_configuration
 
 
 def layout(
@@ -113,3 +114,42 @@ def test_catalog_fingerprint_invalidates_symbols_after_copy_changes(
     assert not localization.symbols_are_current(
         symbols, localization.catalog_fingerprint(catalog)
     )
+
+
+def test_compiles_swift_resource_bundle_catalogs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configuration = load_project_configuration()
+    binary_directory = tmp_path / "bin"
+    bundle = binary_directory / configuration.swift_resource_bundle_name
+    bundle.mkdir(parents=True)
+    catalogs = (bundle / "Launcher.xcstrings", bundle / "Settings.xcstrings")
+    for catalog in catalogs:
+        catalog.write_text("{}", encoding="utf-8")
+
+    commands: list[list[str | Path]] = []
+
+    def fake_run(command: list[str | Path], *, cwd: Path) -> None:
+        commands.append(command)
+        catalog = Path(command[3])
+        for language in configuration.product.localizations:
+            output = bundle / f"{language}.lproj" / f"{catalog.stem}.strings"
+            output.parent.mkdir(exist_ok=True)
+            output.touch()
+
+    monkeypatch.setattr(localization, "run", fake_run)
+
+    localization.compile_swift_localizations(binary_directory, configuration)
+
+    assert len(commands) == len(catalogs)
+    for command, catalog in zip(commands, catalogs, strict=True):
+        assert command[:4] == [
+            "xcrun",
+            "xcstringstool",
+            "compile",
+            catalog,
+        ]
+        assert command[command.index("--output-directory") + 1] == bundle
+        assert all(
+            language in command for language in configuration.product.localizations
+        )

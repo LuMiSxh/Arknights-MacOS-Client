@@ -10,7 +10,7 @@ struct OnboardingProgressRail: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			Text(OnboardingStrings.setupAssistant)
-				.font(.caption2.monospaced().weight(.semibold))
+				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
 				.padding(.horizontal, 18)
@@ -23,9 +23,11 @@ struct OnboardingProgressRail: View {
 						RoundedRectangle(cornerRadius: 1)
 							.fill(currentStep == step ? accentColor : .clear)
 							.frame(width: 2, height: 20)
+							.accessibilityHidden(true)
 						Image(systemName: markerImage(for: step))
 							.frame(width: 17)
 							.symbolRenderingMode(.monochrome)
+							.accessibilityHidden(true)
 						Text(OnboardingStrings.stepTitle(step))
 							.fontWeight(currentStep == step ? .semibold : .regular)
 						Spacer(minLength: 0)
@@ -34,7 +36,9 @@ struct OnboardingProgressRail: View {
 					.padding(.vertical, 9)
 					.padding(.trailing, 12)
 					.background(backgroundFill(for: step), in: .rect(cornerRadius: 8))
+					.frame(minHeight: 44)
 					.accessibilityElement(children: .combine)
+					.accessibilityLabel(L10n.string(OnboardingStrings.stepTitle(step)))
 					.accessibilityAddTraits(currentStep == step ? .isSelected : [])
 				}
 			}

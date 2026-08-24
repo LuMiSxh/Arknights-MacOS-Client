@@ -150,20 +150,21 @@ struct InstallationSettingsPage: View {
 					title: L10n.string(SettingsStrings.gameMode),
 					detail: L10n.string(SettingsStrings.gameModeDetail)
 				) {
-					Toggle(L10n.string(SettingsStrings.gameMode), isOn: gameModeBinding)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(LauncherVisuals.danger)
-						.disabled(gameSession.isGameActive)
-						.alert(
-							L10n.string(SettingsStrings.gameModeAlert),
-							isPresented: $showsGameModeUnavailableAlert
-						) {
-						} message: {
-							Text(
-								SettingsStrings.gameModeAlertDetail
-							)
-						}
+					SettingsToggle(
+						L10n.string(SettingsStrings.gameMode),
+						isOn: gameModeBinding,
+						accentColor: LauncherVisuals.danger
+					)
+					.disabled(gameSession.isGameActive)
+					.alert(
+						L10n.string(SettingsStrings.gameModeAlert),
+						isPresented: $showsGameModeUnavailableAlert
+					) {
+					} message: {
+						Text(
+							SettingsStrings.gameModeAlertDetail
+						)
+					}
 				}
 				SettingsHairline()
 				SettingsActionRow(

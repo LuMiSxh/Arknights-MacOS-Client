@@ -19,13 +19,11 @@ struct AudioSettingsPage: View {
 					title: L10n.string(SettingsStrings.audioBackgroundMusic),
 					detail: L10n.string(SettingsStrings.audioBackgroundMusicDetail)
 				) {
-					Toggle(
+					SettingsToggle(
 						L10n.string(SettingsStrings.audioBackgroundMusic),
-						isOn: $settings.playsLauncherMusic
+						isOn: $settings.playsLauncherMusic,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 				}
 
 				if settings.playsLauncherMusic {
@@ -52,9 +50,21 @@ struct AudioSettingsPage: View {
 							Image(systemName: "speaker.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
-							Slider(value: $settings.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(accentColor)
-								.frame(width: 140)
+							SettingsSlider(
+								value: $settings.launcherMusicVolume,
+								range: 0...1,
+								step: 0.05,
+								accentColor: accentColor,
+								width: 140
+							)
+							.accessibilityLabel(L10n.string(SettingsStrings.audioVolume))
+							.accessibilityValue(
+								Text(
+									SettingsStrings.audioVolumePercent(
+										Int(settings.launcherMusicVolume * 100)
+									)
+								)
+							)
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
@@ -73,13 +83,11 @@ struct AudioSettingsPage: View {
 						title: L10n.string(SettingsStrings.audioCurrentlyPlaying),
 						detail: L10n.string(SettingsStrings.audioCurrentlyPlayingDetail)
 					) {
-						Toggle(
+						SettingsToggle(
 							L10n.string(SettingsStrings.audioCurrentlyPlaying),
-							isOn: $settings.showsPlayingMusic
+							isOn: $settings.showsPlayingMusic,
+							accentColor: accentColor
 						)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(accentColor)
 					}
 				}
 			}

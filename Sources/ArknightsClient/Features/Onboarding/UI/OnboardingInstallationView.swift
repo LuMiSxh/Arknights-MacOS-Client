@@ -48,6 +48,7 @@ struct OnboardingInstallationView: View {
 					} else if installation.isInstalled && !installation.isDownloading {
 						Image(systemName: "checkmark.circle.fill")
 							.foregroundStyle(accentColor)
+							.accessibilityHidden(true)
 					}
 				}
 

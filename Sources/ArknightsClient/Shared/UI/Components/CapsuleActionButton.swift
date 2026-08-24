@@ -75,6 +75,7 @@ struct CapsuleActionButton: View {
 			)
 		}
 		.buttonStyle(ActionPressStyle())
+		.keyboardFocusIndicator(in: Capsule())
 		.opacity(isEnabled ? 1 : 0.55)
 	}
 }
@@ -117,7 +118,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 	private func compactSurface(_ content: Content) -> some View {
 		if #available(macOS 26, *) {
 			content
-				.font(.system(size: 12, weight: .semibold))
+				.font(.caption.weight(.semibold))
 				.foregroundStyle(tint)
 				.padding(.horizontal, 10)
 				.padding(.vertical, 5)
@@ -125,7 +126,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 				.glassEffect(.regular.tint(tint.opacity(0.13)), in: .capsule)
 		} else {
 			content
-				.font(.system(size: 12, weight: .semibold))
+				.font(.caption.weight(.semibold))
 				.foregroundStyle(tint)
 				.padding(.horizontal, 10)
 				.padding(.vertical, 5)

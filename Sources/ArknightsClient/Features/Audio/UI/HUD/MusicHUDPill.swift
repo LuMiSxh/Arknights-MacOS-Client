@@ -23,6 +23,7 @@ struct MusicHUDPill: View {
 						Image(systemName: "music.note")
 							.font(.system(size: 10, weight: .semibold))
 							.foregroundStyle(accentColor)
+							.accessibilityHidden(true)
 						VStack(alignment: .leading, spacing: 1) {
 							OverflowingMusicTitle(title: musicTitle)
 								.font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -48,13 +49,22 @@ struct MusicHUDPill: View {
 						Image(systemName: isExpanded ? "chevron.down" : "slider.horizontal.3")
 							.font(.caption.bold())
 							.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
-							.contentTransition(.symbolEffect(.replace))
+							.contentTransition(
+								reduceMotion ? .identity : .symbolEffect(.replace)
+							)
 							.accessibilityHidden(true)
 					}
 					.contentShape(Rectangle())
 				}
 				.buttonStyle(.plain)
+				.keyboardFocusIndicator(
+					in: RoundedRectangle(cornerRadius: 8)
+				)
 				.onHover { isHovering = $0 }
+				.accessibilityLabel(
+					L10n.string(isExpanded ? AudioStrings.hideControls : AudioStrings.showControls)
+				)
+				.accessibilityValue(Text(musicTitle))
 				.help(
 					L10n.string(
 						isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
@@ -118,20 +128,17 @@ struct MusicHUDPill: View {
 			}
 			.padding(.horizontal, isExpanded ? 14 : 12)
 			.padding(.vertical, isExpanded ? 11 : 0)
+			.frame(width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil)
 			.frame(
-				width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil,
-				height: isExpanded
+				minHeight: isExpanded
 					? AppConstants.Music.expandedPlayerHeight
 					: AppConstants.Music.collapsedPlayerHeight,
 				alignment: isExpanded ? .topLeading : .center
 			)
 			.frame(
-				maxWidth: isExpanded
-					? AppConstants.Music.expandedPlayerWidth
-					: AppConstants.Music.collapsedPlayerMaxWidth
+				maxWidth: AppConstants.Music.expandedPlayerWidth
 			)
 			.fixedSize(horizontal: !isExpanded, vertical: false)
-			.clipped()
 			.adaptiveGlassEffect(
 				tint: hudTintColor,
 				in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)

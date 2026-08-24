@@ -5,13 +5,20 @@ import SwiftUI
 /// Shared fade behind floating footer controls so scroll content remains legible.
 struct FloatingActionFooterFade: View {
 	let height: CGFloat
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
 	var body: some View {
-		LinearGradient(
-			colors: [.clear, Color.black.opacity(0.45)],
-			startPoint: .top,
-			endPoint: .bottom
-		)
+		Group {
+			if reduceTransparency {
+				Color.black.opacity(0.72)
+			} else {
+				LinearGradient(
+					colors: [.clear, Color.black.opacity(0.45)],
+					startPoint: .top,
+					endPoint: .bottom
+				)
+			}
+		}
 		.frame(height: height)
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
 		.allowsHitTesting(false)

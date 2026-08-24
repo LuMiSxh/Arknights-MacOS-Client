@@ -54,8 +54,10 @@ struct OnboardingExtrasView: View {
 						HStack(spacing: 10) {
 							Image(systemName: "speaker.fill")
 								.foregroundStyle(.secondary)
+								.accessibilityHidden(true)
 							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
 								.tint(accentColor)
+								.accessibilityLabel(L10n.string(OnboardingStrings.volume))
 							Text(
 								preferences.launcherMusicVolume,
 								format: .percent.precision(.fractionLength(0))
@@ -63,6 +65,7 @@ struct OnboardingExtrasView: View {
 							.font(.caption.monospacedDigit())
 							.foregroundStyle(.secondary)
 							.frame(width: 42, alignment: .trailing)
+							.accessibilityHidden(true)
 						}
 					}
 					SettingsHairline()

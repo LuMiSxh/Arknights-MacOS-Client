@@ -31,13 +31,11 @@ struct GeneralSettingsPage: View {
 					title: L10n.string(SettingsStrings.highResolution),
 					detail: L10n.string(SettingsStrings.highResolutionDetail)
 				) {
-					Toggle(
+					SettingsToggle(
 						L10n.string(SettingsStrings.highResolution),
-						isOn: $settings.launchOptions.usesHighResolutionMode
+						isOn: $settings.launchOptions.usesHighResolutionMode,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
@@ -45,13 +43,11 @@ struct GeneralSettingsPage: View {
 					title: L10n.string(SettingsStrings.gameDisplaySettings),
 					detail: L10n.string(SettingsStrings.gameDisplaySettingsDetail)
 				) {
-					Toggle(
+					SettingsToggle(
 						L10n.string(SettingsStrings.gameDisplaySettings),
-						isOn: $settings.launchOptions.usesGameSettings
+						isOn: $settings.launchOptions.usesGameSettings,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
@@ -102,39 +98,33 @@ struct GeneralSettingsPage: View {
 					title: L10n.string(SettingsStrings.showGameVersion),
 					detail: L10n.string(SettingsStrings.showGameVersionDetail)
 				) {
-					Toggle(
+					SettingsToggle(
 						L10n.string(SettingsStrings.showGameVersion),
-						isOn: $settings.showsGameVersion
+						isOn: $settings.showsGameVersion,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.serverTime),
 					detail: L10n.string(SettingsStrings.serverTimeDetail)
 				) {
-					Toggle(
+					SettingsToggle(
 						L10n.string(SettingsStrings.serverTime),
-						isOn: $settings.showsServerResetCountdown
+						isOn: $settings.showsServerResetCountdown,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.metalHUD),
 					detail: L10n.string(SettingsStrings.metalHUDDetail)
 				) {
-					Toggle(
+					SettingsToggle(
 						L10n.string(SettingsStrings.metalHUD),
-						isOn: $settings.launchOptions.usesMetalPerformanceHUD
+						isOn: $settings.launchOptions.usesMetalPerformanceHUD,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
@@ -251,12 +241,11 @@ struct GeneralSettingsPage: View {
 					title: L10n.string(SettingsStrings.dynamicTheme),
 					detail: L10n.string(SettingsStrings.dynamicThemeDetail)
 				) {
-					Toggle(
-						L10n.string(SettingsStrings.dynamicTheme), isOn: $settings.usesDynamicTheme
+					SettingsToggle(
+						L10n.string(SettingsStrings.dynamicTheme),
+						isOn: $settings.usesDynamicTheme,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 				}
 			}
 		}

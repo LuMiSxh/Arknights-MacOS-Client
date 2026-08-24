@@ -117,6 +117,7 @@ struct LauncherSettingsView: View {
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
 			value: model.customization.dynamicThemeHue
 		)
+		.onExitCommand(perform: dismiss.callAsFunction)
 		.frame(width: 820, height: 570)
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
@@ -145,7 +146,7 @@ private struct SettingsNavigationRail: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			Text(SettingsStrings.navigationLabel)
-				.font(.caption2.monospaced().weight(.semibold))
+				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
 				.padding(.horizontal, 18)
@@ -208,9 +209,11 @@ private struct SettingsNavigationButton: View {
 				RoundedRectangle(cornerRadius: 1)
 					.fill(isSelected ? accentColor : .clear)
 					.frame(width: 2, height: 20)
+					.accessibilityHidden(true)
 				Image(systemName: section.systemImage)
 					.frame(width: 17)
 					.symbolRenderingMode(.monochrome)
+					.accessibilityHidden(true)
 				Text(section.title)
 					.fontWeight(isSelected ? .semibold : .regular)
 				Spacer(minLength: 0)
@@ -220,9 +223,14 @@ private struct SettingsNavigationButton: View {
 			.padding(.trailing, 12)
 			.background(backgroundFill, in: .rect(cornerRadius: 8))
 			.contentShape(.rect)
+			.frame(minHeight: 44)
 		}
 		.buttonStyle(.plain)
+		.keyboardFocusIndicator(
+			in: RoundedRectangle(cornerRadius: 8)
+		)
 		.onHover { isHovering = $0 }
+		.accessibilityLabel(section.title)
 		.accessibilityAddTraits(isSelected ? .isSelected : [])
 	}
 

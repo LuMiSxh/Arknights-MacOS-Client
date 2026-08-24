@@ -31,7 +31,6 @@ enum AppConstants {
 		static let playlistShuffleDelay: Duration = .milliseconds(200)
 		static let trackChangePollInterval: Duration = .milliseconds(250)
 		static let trackChangePollLimit = 80
-		static let collapsedPlayerMaxWidth: Double = 360
 		static let collapsedTitleMaxWidth: Double = 300
 		static let titleLineHeight: Double = 14
 		static let titleScrollGap: Double = 24

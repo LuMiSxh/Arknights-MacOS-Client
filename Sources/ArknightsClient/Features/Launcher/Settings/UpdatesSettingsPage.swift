@@ -48,13 +48,11 @@ struct UpdatesSettingsPage: View {
 					title: L10n.string(SettingsStrings.announcements),
 					detail: L10n.string(SettingsStrings.announcementsDetail)
 				) {
-					Toggle(
+					SettingsToggle(
 						L10n.string(SettingsStrings.announcements),
-						isOn: $settings.announcementsEnabled
+						isOn: $settings.announcementsEnabled,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(accentColor)
 				}
 			}
 		}

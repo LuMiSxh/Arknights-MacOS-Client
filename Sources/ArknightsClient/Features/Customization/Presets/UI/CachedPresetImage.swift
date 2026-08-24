@@ -34,6 +34,7 @@ struct CachedPresetImage: View {
 				}
 			}
 		}
+		.accessibilityHidden(true)
 		.task(id: url) {
 			guard image == nil else { return }
 			do {

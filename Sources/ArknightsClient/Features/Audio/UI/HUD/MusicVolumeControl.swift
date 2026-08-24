@@ -29,6 +29,8 @@ struct MusicVolumeControl: View {
 			}
 			.buttonStyle(ActionPressStyle())
 			.focused($focusedElement, equals: .speaker)
+			.focusEffectDisabled(true)
+			.keyboardFocusIndicator(isFocused: focusedElement == .speaker, in: Circle())
 			.disabled(isDisabled)
 			.accessibilityValue(
 				isMuted ? L10n.string(AudioStrings.muted) : volumeAccessibilityValue
@@ -40,6 +42,11 @@ struct MusicVolumeControl: View {
 					.tint(accentColor)
 					.frame(width: AppConstants.Music.volumeSliderWidth)
 					.focused($focusedElement, equals: .slider)
+					.focusEffectDisabled(true)
+					.keyboardFocusIndicator(
+						isFocused: focusedElement == .slider,
+						in: Capsule()
+					)
 					.accessibilityLabel(L10n.string(AudioStrings.volume))
 					.accessibilityValue(volumeAccessibilityValue)
 					.disabled(isDisabled)

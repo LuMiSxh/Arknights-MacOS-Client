@@ -41,7 +41,13 @@ struct PresetGalleryView: View {
 	var body: some View {
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {
-				header
+				PresetGalleryHeader(
+					destination: destination,
+					catalog: catalog,
+					customization: customization,
+					avatars: avatars,
+					showsIconStylePreview: $showsIconStylePreview
+				)
 				Divider().overlay(Color.white.opacity(0.08))
 
 				searchBar
@@ -98,6 +104,7 @@ struct PresetGalleryView: View {
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
 			value: customization.dynamicThemeHue
 		)
+		.onExitCommand(perform: dismiss.callAsFunction)
 		.task(id: destination) {
 			if destination == .artwork {
 				wallpapers = await catalog.fetchWallpapers()
@@ -106,39 +113,6 @@ struct PresetGalleryView: View {
 			}
 			isLoading = false
 		}
-	}
-
-	private var header: some View {
-		HStack {
-			VStack(alignment: .leading, spacing: 3) {
-				Text(destination.title)
-					.font(.title3.bold())
-				Text(destination.subtitle)
-					.font(.caption)
-					.foregroundStyle(.secondary)
-			}
-			Spacer()
-			if destination == .operatorIcons {
-				CapsuleActionButton(
-					title: L10n.string(CustomizationStrings.previewStyles),
-					systemImage: "dock.rectangle",
-					tone: .accent(customization.accentColor)
-				) {
-					showsIconStylePreview = true
-				}
-				.controlSize(.small)
-				.popover(isPresented: $showsIconStylePreview, arrowEdge: .top) {
-					OperatorIconStylePreview(
-						catalog: catalog,
-						avatar: avatars.first,
-						accentHue: customization.dynamicThemeHue,
-						accentColor: customization.accentColor
-					)
-				}
-			}
-		}
-		.padding(.horizontal, 24)
-		.padding(.vertical, 16)
 	}
 
 	private var searchBar: some View {
@@ -221,7 +195,7 @@ struct PresetGalleryView: View {
 
 						Text(avatar.name)
 							.font(.caption.weight(isApplying ? .bold : .medium))
-							.lineLimit(1)
+							.lineLimit(2)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? customization.accentColor : .primary)
 							.frame(maxWidth: 130)
@@ -231,7 +205,9 @@ struct PresetGalleryView: View {
 					.contentShape(Rectangle())
 				}
 				.buttonStyle(.plain)
+				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
 				.disabled(applyingItemID != nil)
+				.accessibilityLabel(avatar.name)
 				.accessibilityHint(CustomizationStrings.operatorApplyHelp(avatar.name))
 				.accessibilityValue(isApplying ? Text(CustomizationStrings.applying) : Text(""))
 			}
@@ -279,7 +255,7 @@ struct PresetGalleryView: View {
 
 						Text(wp.title)
 							.font(.caption.weight(isApplying ? .bold : .medium))
-							.lineLimit(1)
+							.lineLimit(2)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? customization.accentColor : .primary)
 					}
@@ -305,7 +281,9 @@ struct PresetGalleryView: View {
 					)
 				}
 				.buttonStyle(.plain)
+				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
 				.disabled(applyingItemID != nil)
+				.accessibilityLabel(wp.title)
 				.accessibilityHint(CustomizationStrings.wallpaperApplyHelp(wp.title))
 				.accessibilityValue(isApplying ? Text(CustomizationStrings.applying) : Text(""))
 			}

@@ -42,7 +42,7 @@ struct OperatorIconStylePreview: View {
 			}
 		}
 		.padding(18)
-		.frame(width: 282)
+		.frame(minWidth: 282, maxWidth: 360)
 		.background(accentColor.opacity(0.06))
 		.preferredColorScheme(.dark)
 	}
@@ -60,6 +60,6 @@ struct OperatorIconStylePreview: View {
 				.lineLimit(2)
 				.fixedSize(horizontal: false, vertical: true)
 		}
-		.frame(width: 104)
+		.frame(maxWidth: .infinity)
 	}
 }
