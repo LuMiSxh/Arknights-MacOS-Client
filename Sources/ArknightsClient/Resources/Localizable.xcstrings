@@ -249,6 +249,30 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ of %2$@" } }
       }
     },
+    "home.download.speed" : {
+      "comment" : "Current game download rate; argument is a localized byte rate",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@" } }
+      }
+    },
+    "home.download.eta" : {
+      "comment" : "Estimated remaining game download time; argument is a localized duration",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch etwa %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "About %@ remaining" } }
+      }
+    },
+    "home.download.waiting" : {
+      "comment" : "Download status while no useful transfer rate can be calculated",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Warte auf Netzwerk…" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waiting for network…" } }
+      }
+    },
     "home.launcherUpdate" : {
       "comment" : "Available launcher update button",
       "extractionState" : "manual",

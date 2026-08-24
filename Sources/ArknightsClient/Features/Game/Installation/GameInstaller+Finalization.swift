@@ -9,6 +9,7 @@ extension GameInstaller {
 		destination: URL,
 		installDirectory: URL,
 		countedBytes: Int64,
+		networkBytes: Int64,
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler
 	) async throws {
@@ -25,7 +26,13 @@ extension GameInstaller {
 		let checksum = try CRC64.checksum(of: partial)
 		guard checksum == item.hash else {
 			try fileManager.removeItem(at: partial)
-			await progress(await counter.remove(bytes: countedBytes, file: item.path))
+			await progress(
+				await counter.remove(
+					bytes: countedBytes,
+					networkBytes: networkBytes,
+					file: item.path
+				)
+			)
 			throw LauncherError.checksumMismatch(
 				path: item.path, expected: item.hash, actual: checksum)
 		}

@@ -10,6 +10,7 @@ final class InstallationController {
 	var region: GameRegion
 	var installDirectory: URL
 	var progress: DownloadProgress?
+	@ObservationIgnored var progressSequence: UInt64 = 0
 
 	var configuration: GameConfiguration? {
 		get { lifecycle.readiness.configuration }
@@ -83,6 +84,7 @@ final class InstallationController {
 		installedVersion = nil
 		isGameUpdateAvailable = false
 		progress = nil
+		progressSequence = 0
 		installDirectory = preferences.installDirectory(
 			for: newRegion,
 			default: paths.gameInstall(for: newRegion)

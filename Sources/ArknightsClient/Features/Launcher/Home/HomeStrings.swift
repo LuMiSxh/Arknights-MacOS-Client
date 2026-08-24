@@ -32,6 +32,16 @@ enum HomeStrings {
 		.homeDownloadProgress(downloaded, total)
 	}
 
+	static func downloadSpeed(_ speed: String) -> LocalizedStringResource {
+		.homeDownloadSpeed(speed)
+	}
+
+	static func downloadEta(_ eta: String) -> LocalizedStringResource {
+		.homeDownloadEta(eta)
+	}
+
+	static let downloadWaiting = LocalizedStringResource.homeDownloadWaiting
+
 	static func downloadPercentage(_ percentage: Int) -> LocalizedStringResource {
 		.homeDownloadPercentage(percentage)
 	}

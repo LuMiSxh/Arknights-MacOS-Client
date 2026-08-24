@@ -48,8 +48,12 @@ struct InstallationSettingsPage: View {
 					title: L10n.string(SettingsStrings.status),
 					detail: L10n.string(SettingsStrings.statusDetail)
 				) {
-					Text(gameStatus)
-						.foregroundStyle(installation.isDownloading ? accentColor : .secondary)
+					VStack(alignment: .trailing, spacing: 2) {
+						Text(gameStatus)
+							.foregroundStyle(installation.isDownloading ? accentColor : .secondary)
+						transferDetails
+					}
+					.accessibilityElement(children: .combine)
 				}
 				SettingsHairline()
 				SettingsActionRow(

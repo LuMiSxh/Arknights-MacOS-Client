@@ -236,6 +236,17 @@ enum SettingsStrings {
 		LocalizedStringResource.Settings.settingsInstallationDownloading(percentage)
 	}
 
+	static func downloadSpeed(_ speed: String) -> LocalizedStringResource {
+		LocalizedStringResource.Settings.settingsInstallationDownloadSpeed(speed)
+	}
+
+	static func downloadEta(_ eta: String) -> LocalizedStringResource {
+		LocalizedStringResource.Settings.settingsInstallationDownloadEta(eta)
+	}
+
+	static let downloadWaiting = LocalizedStringResource.Settings
+		.settingsInstallationDownloadWaiting
+
 	static func audioVolumePercent(_ percentage: Int) -> LocalizedStringResource {
 		LocalizedStringResource.Settings.settingsAudioVolumePercent(percentage)
 	}

@@ -35,6 +35,7 @@ extension InstallationController {
 		onMetadataRefreshCancellationRequested?()
 		lifecycle.refresh = .idle
 		progress = nil
+		progressSequence = 0
 		lifecycle.activity = .installing(
 			id: installationID,
 			stage: verifyAllExistingFiles ? .verifying : .preparing
@@ -60,6 +61,13 @@ extension InstallationController {
 				) { [weak self] update in
 					await MainActor.run {
 						guard let self, self.installationGate.owns(installationID) else { return }
+						guard
+							(update.sequence == 0 && self.progressSequence == 0)
+								|| update.sequence >= self.progressSequence
+						else {
+							return
+						}
+						self.progressSequence = update.sequence
 						self.progress = update
 						self.lifecycle.activity = .installing(
 							id: installationID,

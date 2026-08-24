@@ -20,11 +20,16 @@ struct LauncherActivityStatusView: View {
 						.font(.system(size: 14, weight: .semibold))
 						.contentTransition(.numericText())
 					if let detail = statusDetail {
-						Text(detail)
-							.font(.caption)
-							.foregroundStyle(.secondary)
-							.lineLimit(1)
+						if installation.isDownloading {
+							downloadProgressDetail
+						} else {
+							Text(detail)
+								.font(.caption)
+								.foregroundStyle(.secondary)
+								.lineLimit(1)
+						}
 					}
+					transferDetails
 				}
 
 				ProgressView(value: installation.progress?.fraction ?? 0)
@@ -43,6 +48,7 @@ struct LauncherActivityStatusView: View {
 						.font(.caption)
 						.foregroundStyle(.secondary)
 						.lineLimit(1)
+					transferDetails
 					statusAction(detail: detail)
 				}
 			}
@@ -88,14 +94,8 @@ struct LauncherActivityStatusView: View {
 
 	private var statusDetail: String? {
 		if installation.isDownloading, let progress = installation.progress {
-			let downloaded = ByteCountFormatter.string(
-				fromByteCount: progress.downloadedBytes,
-				countStyle: .file
-			)
-			let total = ByteCountFormatter.string(
-				fromByteCount: progress.totalBytes,
-				countStyle: .file
-			)
+			let downloaded = DownloadProgressFormatting.byteCount(progress.downloadedBytes)
+			let total = DownloadProgressFormatting.byteCount(progress.totalBytes)
 			return L10n.string(
 				HomeStrings.downloadProgress(downloaded: downloaded, total: total)
 			)
@@ -103,5 +103,53 @@ struct LauncherActivityStatusView: View {
 		if let failureMessage = lifecycle.failureMessage { return failureMessage }
 		if installation.isInstalled { return intelTranslation.statusDetail }
 		return nil
+	}
+
+	private var downloadProgressDetail: some View {
+		Text(statusDetail ?? "")
+			.font(.caption)
+			.foregroundStyle(.secondary)
+			.monospacedDigit()
+			.frame(
+				minWidth: AppConstants.HUD.downloadProgressDetailMinWidth,
+				alignment: .leading
+			)
+			.fixedSize(horizontal: false, vertical: true)
+			.layoutPriority(1)
+			.accessibilityLabel(Text(statusDetail ?? ""))
+	}
+
+	@ViewBuilder
+	private var transferDetails: some View {
+		if installation.isDownloading, let progress = installation.progress {
+			HStack(spacing: 7) {
+				if let rate = progress.transferRateBytesPerSecond {
+					Text(
+						L10n.string(
+							HomeStrings.downloadSpeed(
+								DownloadProgressFormatting.byteRate(rate)
+							)
+						)
+					)
+				}
+				if let eta = progress.estimatedTimeRemaining {
+					Text("·")
+						.accessibilityHidden(true)
+					Text(
+						L10n.string(
+							HomeStrings.downloadEta(DownloadProgressFormatting.duration(eta))
+						)
+					)
+				} else if progress.isTransferStalled {
+					Text("·")
+						.accessibilityHidden(true)
+					Text(L10n.string(HomeStrings.downloadWaiting))
+				}
+			}
+			.font(.caption)
+			.foregroundStyle(.secondary)
+			.lineLimit(1)
+			.accessibilityElement(children: .combine)
+		}
 	}
 }

@@ -10,6 +10,10 @@ enum L10n {
 		localeOverride.withLock { $0 = language.locale }
 	}
 
+	static var activeLocale: Locale? {
+		localeOverride.withLock { $0 }
+	}
+
 	static func string(
 		_ resource: LocalizedStringResource,
 		locale: Locale? = nil

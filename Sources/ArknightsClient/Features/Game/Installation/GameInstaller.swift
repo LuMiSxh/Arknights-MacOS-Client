@@ -188,6 +188,7 @@ struct GameInstaller: Sendable {
 				destination: destination,
 				installDirectory: installDirectory,
 				countedBytes: existingBytes,
+				networkBytes: 0,
 				counter: counter,
 				progress: progress
 			)
@@ -241,58 +242,87 @@ struct GameInstaller: Sendable {
 
 		let stream = chunkSession.stream(for: request)
 		defer { stream.cancel() }
+		let progressMonitor = Task {
+			do {
+				while !Task.isCancelled {
+					try await Task.sleep(for: AppConstants.Network.transferRateMonitorInterval)
+					guard !Task.isCancelled else { break }
+					await progress(await counter.refresh(file: item.path))
+				}
+			} catch {
+				// The monitor's sleep ends when the stream completes or installation pauses.
+			}
+		}
 		var newlyDownloaded: Int64 = 0
 		var receivedResponse = false
-		try await withTaskCancellationHandler(
-			operation: {
-				for try await event in stream.events {
-					try Task.checkCancellation()
-					switch event {
-					case .response(let response):
-						guard response.statusCode == 200 || response.statusCode == 206 else {
-							throw LauncherError.invalidDownloadResponse(
-								status: response.statusCode,
-								path: item.path
-							)
-						}
-						if existingBytes > 0, response.statusCode == 200 {
-							try handle.truncate(atOffset: 0)
-							try handle.seek(toOffset: 0)
-							await progress(
-								await counter.remove(bytes: existingBytes, file: item.path)
-							)
-							existingBytes = 0
-						}
-						receivedResponse = true
-					case .data(let data):
-						guard receivedResponse else { throw LauncherError.invalidResponse }
-						let accumulatedBytes = existingBytes + newlyDownloaded
-						let incomingBytes = Int64(data.count)
-						let (receivedBytes, overflow) = accumulatedBytes.addingReportingOverflow(
-							incomingBytes
-						)
-						guard !overflow, receivedBytes <= item.byteCount else {
-							try handle.truncate(atOffset: 0)
-							await progress(
-								await counter.remove(bytes: accumulatedBytes, file: item.path)
-							)
-							throw LauncherError.downloadedSizeMismatch(
-								path: item.path,
-								expected: item.byteCount,
-								actual: overflow ? Int64.max : receivedBytes
-							)
-						}
-						try handle.write(contentsOf: data)
-						newlyDownloaded += incomingBytes
-						if let update = await counter.add(bytes: incomingBytes, file: item.path) {
-							await progress(update)
+		do {
+			try await withTaskCancellationHandler(
+				operation: {
+					for try await event in stream.events {
+						try Task.checkCancellation()
+						switch event {
+						case .response(let response):
+							guard response.statusCode == 200 || response.statusCode == 206 else {
+								throw LauncherError.invalidDownloadResponse(
+									status: response.statusCode,
+									path: item.path
+								)
+							}
+							if existingBytes > 0, response.statusCode == 200 {
+								try handle.truncate(atOffset: 0)
+								try handle.seek(toOffset: 0)
+								await progress(
+									await counter.remove(
+										bytes: existingBytes,
+										networkBytes: 0,
+										file: item.path
+									)
+								)
+								existingBytes = 0
+							}
+							receivedResponse = true
+						case .data(let data):
+							guard receivedResponse else { throw LauncherError.invalidResponse }
+							let accumulatedBytes = existingBytes + newlyDownloaded
+							let incomingBytes = Int64(data.count)
+							let (receivedBytes, overflow) =
+								accumulatedBytes.addingReportingOverflow(
+									incomingBytes
+								)
+							guard !overflow, receivedBytes <= item.byteCount else {
+								try handle.truncate(atOffset: 0)
+								await progress(
+									await counter.remove(
+										bytes: accumulatedBytes,
+										networkBytes: newlyDownloaded,
+										file: item.path
+									)
+								)
+								throw LauncherError.downloadedSizeMismatch(
+									path: item.path,
+									expected: item.byteCount,
+									actual: overflow ? Int64.max : receivedBytes
+								)
+							}
+							try handle.write(contentsOf: data)
+							newlyDownloaded += incomingBytes
+							if let update = await counter.add(bytes: incomingBytes, file: item.path)
+							{
+								await progress(update)
+							}
 						}
 					}
-				}
-			},
-			onCancel: {
-				stream.cancel()
-			})
+				},
+				onCancel: {
+					stream.cancel()
+				})
+		} catch {
+			progressMonitor.cancel()
+			await progressMonitor.value
+			throw error
+		}
+		progressMonitor.cancel()
+		await progressMonitor.value
 		guard receivedResponse else { throw LauncherError.invalidResponse }
 		try handle.synchronize()
 		try handle.close()
@@ -305,6 +335,7 @@ struct GameInstaller: Sendable {
 			destination: destination,
 			installDirectory: installDirectory,
 			countedBytes: existingBytes + newlyDownloaded,
+			networkBytes: newlyDownloaded,
 			counter: counter,
 			progress: progress
 		)
