@@ -8,14 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts, and release packaging smoke checks (#42).
-- Added weekly live-contract monitoring for every supported Yostar region, including transient retries, sanitized run summaries, retained reports, and deduplicated GitHub alerts after two failures with automatic recovery after two healthy checks (#39).
-- Added weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, monthly archive verification, and deduplicated maintainer review alerts (#47).
-- Added language switchers to onboarding and Settings for the system default, English, and German.
-- Added a reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
-- Added a SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
-- Added region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, and localized text fallbacks (#37).
-- Added smoothed download speed and honest remaining-time estimates based on actual network bytes, including resumable downloads, retries, stalls, and checksum recovery (#48).
+- Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts, and release packaging smoke checks (#42).
+- Weekly live-contract monitoring for every supported Yostar region, including transient retries, sanitized run summaries, retained reports, and deduplicated GitHub alerts after two failures with automatic recovery after two healthy checks (#39).
+- Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, monthly archive verification, and deduplicated maintainer review alerts (#47).
+- Language switchers to onboarding and Settings for the system default, English, and German.
+- A reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
+- A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
+- Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, and localized text fallbacks (#37).
 
 ### Changed
 

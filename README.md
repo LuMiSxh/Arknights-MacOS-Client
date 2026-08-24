@@ -117,7 +117,7 @@ just check
 | `just check`          | Run source checks and network-denied Python and Swift tests |
 | `just integration`    | Run the network-denied onboarding-to-download workflow      |
 | `just live-contracts` | Deliberately check the current public Yostar API contracts  |
-| `just preview`        | Open the isolated UI-state simulator                        |
+| `just preview`        | Open the focused isolated UI-state simulator                |
 | `just runtime`        | Download and verify the tested Wine and DXMT runtime        |
 | `just dev app run`    | Build the app with its runtime and open it                  |
 | `just ci`             | Run deterministic tests and build the release configuration |

@@ -55,23 +55,6 @@
 				)
 			case .customPopup:
 				break
-			case .yostarNotice:
-				let notice = LauncherNoticeFormatter.notice(
-					fromHTML:
-						"<h2>Scheduled maintenance</h2><p>The game will be unavailable during maintenance.</p>"
-				)
-				if let notice {
-					communication.enqueuePopup(
-						LauncherPopup(
-							id: "developer-yostar-notice",
-							title: "Notice",
-							content: .attributed(notice.content),
-							dismissTitle: "Done",
-							actionTitle: nil,
-							actionURL: nil
-						)
-					)
-				}
 			case .gameUpdate:
 				installation.installedVersion = "041.2.0"
 				installation.isGameUpdateAvailable = true
@@ -93,35 +76,19 @@
 				installation.isGameUpdateAvailable = true
 				installation.hasPartialDownload = true
 				lifecycle.setStatus(.paused)
-			case .migrating:
-				lifecycle.activity = .preparingGame(sessionID: UUID())
-				lifecycle.setStatus(.preparingWine)
 			case .launching:
 				lifecycle.activity = .launchingGame(sessionID: UUID(), processIdentifier: nil)
 				lifecycle.setStatus(.startingGame)
-			case .running:
-				lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
-				lifecycle.setStatus(.running)
 			case .failure:
 				lifecycle.presentation.failureMessage =
 					"The Windows runtime exited unexpectedly. Check the logs for details."
-			case .notInstalled:
-				installation.isInstalled = false
-				installation.hasPartialDownload = false
-				installation.installedVersion = nil
-				lifecycle.setStatus(.install)
-			case .musicPlayer:
-				settings.showsPlayingMusic = true
-				currentMusicTitle = "Arknights EP – Reforge"
-				currentMusicVideoID = "developer-preview"
 			case .accessibility:
 				settings.showsPlayingMusic = true
 				settings.showsGameVersion = true
 				settings.showsServerResetCountdown = true
 				currentMusicTitle =
 					"A very long Arknights soundtrack title for Dynamic Type and keyboard layout checks"
-				currentMusicVideoID = "developer-accessibility-preview"
-			case .onboarding, .onboardingRosetta:
+			case .onboardingRosetta:
 				installation.isInstalled = false
 				installation.hasPartialDownload = false
 				installation.installedVersion = nil

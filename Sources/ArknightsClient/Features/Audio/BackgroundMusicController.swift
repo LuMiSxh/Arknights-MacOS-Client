@@ -17,9 +17,6 @@ protocol BackgroundMusicContext: AnyObject {
 	var currentMusicVideoID: String? { get set }
 	var log: LauncherLog { get }
 	var launcherIconManager: LauncherIconManager { get }
-	#if DEBUG
-		var developerScenario: DeveloperScenario? { get }
-	#endif
 }
 
 /// Owns the hidden YouTube player and coordinates launcher, game, and user playback actions.
@@ -54,13 +51,6 @@ final class BackgroundMusicController {
 		context.launcherIconManager.iconDidChange = { [weak self] icon in
 			self?.nowPlaying.updateArtwork(icon)
 		}
-		#if DEBUG
-			if context.developerScenario == .musicPlayer {
-				let previewSource = YouTubePlayer.Source.playlist(id: "developer-preview")
-				currentSource = previewSource
-				playbackState = .playing
-			}
-		#endif
 	}
 
 	var isPlaying: Bool {
@@ -83,9 +73,6 @@ final class BackgroundMusicController {
 	}
 
 	var controlsAreDisabled: Bool {
-		#if DEBUG
-			if context.developerScenario == .musicPlayer { return false }
-		#endif
 		return player == nil || context.isGameProcessRunning || isChangingTrack
 			|| isChangingPlayback
 	}
@@ -95,9 +82,6 @@ final class BackgroundMusicController {
 	}
 
 	func startIfNeeded() {
-		#if DEBUG
-			if context.developerScenario == .musicPlayer { return }
-		#endif
 		guard context.phase != .checking,
 			context.playsLauncherMusic,
 			!context.isGameProcessRunning

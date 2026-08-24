@@ -65,7 +65,7 @@ actor ProgressCounter {
 		return progress(file: file)
 	}
 
-	/// Clears rate and ETA state while preserving accurate byte progress, for example when
+	/// Clears rate state while preserving accurate byte progress, for example when
 	/// a CDN retry or a stalled stream starts a new network attempt.
 	func resetRate(file: String) -> DownloadProgress {
 		estimator.reset()
@@ -79,7 +79,7 @@ actor ProgressCounter {
 
 	private func progress(file: String) -> DownloadProgress {
 		sequence &+= 1
-		let snapshot = estimator.snapshot(remainingBytes: totalBytes - downloadedBytes)
+		let snapshot = estimator.snapshot()
 		return DownloadProgress(
 			downloadedBytes: downloadedBytes,
 			totalBytes: totalBytes,
@@ -88,7 +88,6 @@ actor ProgressCounter {
 			currentFile: file,
 			networkDownloadedBytes: networkDownloadedBytes,
 			transferRateBytesPerSecond: snapshot.bytesPerSecond,
-			estimatedTimeRemaining: snapshot.estimatedTimeRemaining,
 			isTransferStalled: snapshot.isStalled,
 			sequence: sequence
 		)

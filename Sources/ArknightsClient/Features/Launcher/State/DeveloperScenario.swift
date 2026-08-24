@@ -8,27 +8,27 @@
 		case launcherUpdate = "launcher-update"
 		case announcement
 		case customPopup = "custom-popup"
-		case yostarNotice = "yostar-notice"
 		case gameUpdate = "game-update"
 		case downloading
 		case paused
-		case migrating
 		case launching
-		case running
 		case failure
-		case notInstalled = "not-installed"
-		case musicPlayer = "music-player"
 		case accessibility = "accessibility"
-		case onboarding
 		case onboardingRosetta = "onboarding-rosetta"
 
 		var id: String { rawValue }
 
 		init?(arguments: [String]) {
-			guard let flag = arguments.firstIndex(of: "--developer-scenario"),
-				arguments.indices.contains(flag + 1)
-			else { return nil }
-			self.init(rawValue: arguments[flag + 1])
+			guard let flag = arguments.firstIndex(of: "--developer-scenario") else { return nil }
+			guard arguments.indices.contains(flag + 1),
+				let scenario = Self(rawValue: arguments[flag + 1])
+			else {
+				// Keep stale or malformed preview commands isolated instead of falling back to
+				// normal startup, which could contact services or touch a real installation.
+				self = .ready
+				return
+			}
+			self = scenario
 		}
 
 		var title: String {
@@ -37,18 +37,12 @@
 			case .launcherUpdate: "Launcher update"
 			case .announcement: "Announcement"
 			case .customPopup: "Custom popup"
-			case .yostarNotice: "Yostar notice"
 			case .gameUpdate: "Game update"
 			case .downloading: "Downloading"
 			case .paused: "Paused download"
-			case .migrating: "Preparing Wine runtime"
 			case .launching: "Starting game"
-			case .running: "Game running"
 			case .failure: "Failure"
-			case .notInstalled: "Not installed"
-			case .musicPlayer: "Music player"
 			case .accessibility: "Accessibility & layout"
-			case .onboarding: "Onboarding"
 			case .onboardingRosetta: "Onboarding · Rosetta missing"
 			}
 		}
@@ -59,19 +53,13 @@
 			case .launcherUpdate: "A newer launcher release with release notes."
 			case .announcement: "A one-time message controlled by announcements.json."
 			case .customPopup: "Type Markdown below and show it as the real popup."
-			case .yostarNotice: "An official notice returned by the game API."
 			case .gameUpdate: "An installed game with newer files available."
 			case .downloading: "An active game update at 43 percent."
 			case .paused: "A resumable update after the user selected Pause."
-			case .migrating: "The Wine prefix is replaying setup after Force Migration."
 			case .launching: "The Windows runtime is starting; Stop is disabled."
-			case .running: "The game is running and can be stopped."
 			case .failure: "A runtime failure displayed in the status capsule."
-			case .notInstalled: "A fresh launcher before the game is installed."
-			case .musicPlayer: "An isolated, silent preview of the expanded music controls."
 			case .accessibility:
 				"Long status text for keyboard, Dynamic Type, Reduce Motion, and contrast checks."
-			case .onboarding: "The complete first-run setup assistant."
 			case .onboardingRosetta: "First-run recovery when macOS removed Rosetta."
 			}
 		}

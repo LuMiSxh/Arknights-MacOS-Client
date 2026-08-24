@@ -24,16 +24,30 @@ struct ContentView: View {
 	private var accentColor: Color { model.customization.accentColor }
 
 	private var readabilityField: some View {
-		RadialGradient(
-			colors: reduceTransparency
-				? [Color.black.opacity(0.78), Color.black.opacity(0.52), Color.clear]
-				: [Color.black.opacity(0.58), Color.black.opacity(0.28), Color.clear],
-			center: .topLeading,
-			startRadius: 0,
-			endRadius: 520
-		)
-		.frame(width: 760, height: 420, alignment: .topLeading)
-		.blur(radius: reduceTransparency ? 0 : 14)
+		ZStack(alignment: .topLeading) {
+			if !reduceTransparency {
+				Rectangle()
+					.fill(.regularMaterial)
+					.frame(width: 640, height: 500, alignment: .topLeading)
+					.mask {
+						RadialGradient(
+							colors: [.white, .white.opacity(0.92), .white.opacity(0.62), .clear],
+							center: .topLeading,
+							startRadius: 0,
+							endRadius: 500
+						)
+					}
+			}
+			RadialGradient(
+				colors: [.black, .black.opacity(0.68), .black.opacity(0.2), .clear],
+				center: .topLeading,
+				startRadius: 0,
+				endRadius: 450
+			)
+			.frame(width: 680, height: 390, alignment: .topLeading)
+			.blur(radius: reduceTransparency ? 0 : 3)
+			.opacity(reduceTransparency ? 0.96 : 0.86)
+		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 	}
 
@@ -46,8 +60,12 @@ struct ContentView: View {
 				controller: musicController
 			)
 
-			LauncherArtworkView(image: model.customization.heroArtwork, accentColor: accentColor)
-				.ignoresSafeArea(.container, edges: .top)
+			LauncherArtworkView(
+				image: model.customization.heroArtwork,
+				themeCacheKey: model.customization.activeThemeCacheKey,
+				accentColor: accentColor
+			)
+			.ignoresSafeArea(.container, edges: .top)
 
 			readabilityField
 				.ignoresSafeArea(.container, edges: .top)

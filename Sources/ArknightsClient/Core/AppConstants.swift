@@ -53,6 +53,7 @@ enum AppConstants {
 		static let collapsedStatusMaxWidth: Double = 280
 		static let collapsedStatusTitleMaxWidth: Double = 210
 		static let downloadProgressDetailMinWidth: Double = 132
+		static let downloadSpeedDetailMinWidth: Double = 84
 		static let expandedVersionWidth: Double = 260
 		static let expandedVersionHeight: Double = 72
 		static let expansionDuration: Double = 0.3
@@ -67,18 +68,9 @@ enum AppConstants {
 		/// converted into a rate. This keeps individual HTTP chunks from making the
 		/// displayed speed oscillate.
 		static let transferRateSampleInterval: Duration = .milliseconds(250)
-		/// A rate must have two comparable samples before it is suitable for ETA.
-		static let transferRateMinimumStableSamples = 2
-		/// No useful ETA can be inferred after this much time without network data.
+		/// No useful rate can be inferred after this much time without network data.
 		/// This deliberately exceeds a normal file/stream hand-off gap.
 		static let transferRateStallTimeout: Duration = .seconds(5)
-		/// Re-anchor the projected finish only after a meaningful estimate change.
-		static let transferRateEtaHysteresis: Duration = .seconds(10)
-		static let transferRateEtaRebaseHorizon: Duration = .seconds(5)
-		/// Keep short ETAs precise enough to avoid abrupt minute-boundary jumps.
-		static let transferRateEtaMinuteSecondThreshold: Duration = .seconds(600)
-		static let transferRateEtaSubminuteQuantum: Duration = .seconds(5)
-		static let transferRateEtaMinuteSecondQuantum: Duration = .seconds(10)
 		/// Refresh stalled-download state even when the HTTP stream has no new chunks.
 		static let transferRateMonitorInterval: Duration = .seconds(1)
 		/// Weight of the newest sample in the smoothed transfer rate.

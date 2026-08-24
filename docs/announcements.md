@@ -12,7 +12,7 @@ Run the isolated debug simulator, open Settings → Developer, pick "Custom popu
 just preview
 ```
 
-The preview uses separate temporary paths and preferences. Its game controls never start, update, or remove the real installation. Every other simulated state (launcher update, announcement, downloading, and so on) is available from the same Scenario menu.
+The preview uses separate temporary paths and preferences. Its game controls intercept installation and launch actions, and the focused Scenario menu covers release notices, updates, downloads, accessibility/layout, failures, Rosetta recovery, and custom popups.
 
 ## Publishing
 

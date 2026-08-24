@@ -12,7 +12,6 @@ struct DownloadProgress: Sendable {
 	/// already-present bytes are deliberately excluded.
 	let networkDownloadedBytes: Int64
 	let transferRateBytesPerSecond: Double?
-	let estimatedTimeRemaining: Duration?
 	let isTransferStalled: Bool
 	/// Monotonic within one installer operation, so concurrent stream callbacks cannot move
 	/// the controller back to an older snapshot.
@@ -26,7 +25,6 @@ struct DownloadProgress: Sendable {
 		currentFile: String,
 		networkDownloadedBytes: Int64 = 0,
 		transferRateBytesPerSecond: Double? = nil,
-		estimatedTimeRemaining: Duration? = nil,
 		isTransferStalled: Bool = false,
 		sequence: UInt64 = 0
 	) {
@@ -37,7 +35,6 @@ struct DownloadProgress: Sendable {
 		self.currentFile = currentFile
 		self.networkDownloadedBytes = networkDownloadedBytes
 		self.transferRateBytesPerSecond = transferRateBytesPerSecond
-		self.estimatedTimeRemaining = estimatedTimeRemaining
 		self.isTransferStalled = isTransferStalled
 		self.sequence = sequence
 	}

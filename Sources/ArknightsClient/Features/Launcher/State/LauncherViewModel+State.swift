@@ -13,7 +13,7 @@ extension LauncherViewModel {
 
 	var isOnboardingPreview: Bool {
 		#if DEBUG
-			developerScenario == .onboarding || developerScenario == .onboardingRosetta
+			developerScenario == .onboardingRosetta
 		#else
 			false
 		#endif

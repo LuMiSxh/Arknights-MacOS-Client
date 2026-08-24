@@ -10,7 +10,7 @@ uv_packaging := "uv run --locked --no-dev --group packaging"
 default:
     @just --list
 
-# Run an isolated debug preview with every simulated state available in Settings → Developer.
+# Run the focused isolated debug simulator for safe launcher UI states.
 [group('Development')]
 preview scenario='ready':
     {{ uv }} scripts/localization.py prepare; swift build; binary_dir="$(swift build --show-bin-path)"; {{ uv }} scripts/localization.py compile "$binary_dir"; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; swift run --skip-build "$executable_name" --developer-scenario {{ quote(scenario) }}

@@ -257,14 +257,6 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%@" } }
       }
     },
-    "home.download.eta" : {
-      "comment" : "Estimated remaining game download time; argument is a localized duration",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch etwa %@" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "About %@ remaining" } }
-      }
-    },
     "home.download.waiting" : {
       "comment" : "Download status while no useful transfer rate can be calculated",
       "extractionState" : "manual",

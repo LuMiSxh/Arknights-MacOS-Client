@@ -15,17 +15,17 @@ extension InstallationSettingsPage {
 							)
 						)
 					)
-				}
-				if let eta = progress.estimatedTimeRemaining {
-					Text(
-						L10n.string(
-							SettingsStrings.downloadEta(
-								DownloadProgressFormatting.duration(eta)
-							)
-						)
+					.monospacedDigit()
+					.frame(
+						minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
+						alignment: .trailing
 					)
 				} else if progress.isTransferStalled {
 					Text(L10n.string(SettingsStrings.downloadWaiting))
+						.frame(
+							minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
+							alignment: .trailing
+						)
 				}
 			}
 			.font(.caption)

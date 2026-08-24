@@ -14,20 +14,20 @@ struct ArknightsWordmark: View {
 			// without introducing another card or glass surface.
 			wordmarkBacking
 
-			Group {
-				if let logo {
-					Image(nsImage: logo)
-						.resizable()
-						.scaledToFit()
-				} else {
-					Text(HomeStrings.wordmarkFallback(region: region))
-						.font(.system(.title, design: .serif))
-						.minimumScaleFactor(0.7)
-						.lineLimit(1)
-				}
+			if let logo {
+				Image(nsImage: logo)
+					.resizable()
+					.scaledToFit()
+					.id(wordmarkIdentity)
+					.transition(wordmarkTransition)
+			} else {
+				Text(HomeStrings.wordmarkFallback(region: region))
+					.font(.system(.title, design: .serif))
+					.minimumScaleFactor(0.7)
+					.lineLimit(1)
+					.id(wordmarkIdentity)
+					.transition(wordmarkTransition)
 			}
-			.id(wordmarkIdentity)
-			.transition(wordmarkTransition)
 		}
 		.frame(width: 245, height: 69, alignment: .leading)
 		.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
@@ -40,8 +40,7 @@ struct ArknightsWordmark: View {
 	}
 
 	private var wordmarkIdentity: String {
-		if let logo { return "logo-\(ObjectIdentifier(logo))" }
-		return "fallback-\(region.rawValue)"
+		"\(region.rawValue).\(logo == nil ? "fallback" : "official")"
 	}
 
 	private var wordmarkAnimation: Animation? {

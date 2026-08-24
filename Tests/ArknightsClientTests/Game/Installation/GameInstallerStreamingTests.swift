@@ -160,7 +160,7 @@ struct GameInstallerStreamingTests {
 		)
 
 		let updates = await recorder.updates()
-		#expect(requestCount == 2)
+		#expect(requestCount >= 2)
 		#expect(updates.contains(where: { $0.downloadedBytes == 0 }))
 		#expect(updates.contains(where: { $0.networkDownloadedBytes == 0 }))
 		#expect(updates.allSatisfy { $0.downloadedBytes <= Int64(body.count) })

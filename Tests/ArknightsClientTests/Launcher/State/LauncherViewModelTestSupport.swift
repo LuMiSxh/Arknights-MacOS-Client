@@ -7,10 +7,7 @@ import Testing
 
 @MainActor
 func waitForDownloadToStop(_ model: LauncherViewModel) async {
-	for _ in 0..<100 where model.installation.isDownloading {
-		await Task.yield()
-	}
-	#expect(!model.installation.isDownloading)
+	#expect(await waitForCondition { !model.installation.isDownloading })
 }
 
 @MainActor
@@ -62,10 +59,6 @@ private func testArtworkSession() -> URLSession {
 	let configuration = URLSessionConfiguration.ephemeral
 	configuration.protocolClasses = [TestArtworkURLProtocol.self]
 	return URLSession(configuration: configuration)
-}
-
-func makeTestArtworkCache(directory: URL) -> ArtworkCache {
-	ArtworkCache(session: testArtworkSession(), directory: directory)
 }
 
 private final class TestArtworkURLProtocol: URLProtocol, @unchecked Sendable {
@@ -278,6 +271,9 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 	private var cancellations = 0
 	private var requestWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
 	private var cancellationWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
+	private var brandingContinuations:
+		[(id: Int, continuation: CheckedContinuation<LauncherBranding, Error>)] = []
+	private var cancelledBrandingRequestIDs: Set<Int> = []
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		GameConfiguration(
@@ -293,22 +289,20 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
 		brandingRequests += 1
+		let requestID = brandingRequests
 		resumeReadyWaiters()
-		do {
-			try await Task.sleep(for: .seconds(60))
-			return LauncherBranding(
-				launcherBackgroundImage: nil,
-				launcherBackgroundImageCRC64: nil,
-				copyrightInformation: nil,
-				privacyPolicy: nil,
-				userAgreement: nil,
-				noticePopOpen: false,
-				noticeContent: nil
-			)
-		} catch {
-			cancellations += 1
-			resumeReadyWaiters()
-			throw error
+		return try await withTaskCancellationHandler {
+			try await withCheckedThrowingContinuation { continuation in
+				if cancelledBrandingRequestIDs.remove(requestID) != nil {
+					cancellations += 1
+					resumeReadyWaiters()
+					continuation.resume(throwing: CancellationError())
+				} else {
+					brandingContinuations.append((id: requestID, continuation: continuation))
+				}
+			}
+		} onCancel: {
+			Task { await self.cancelBrandingRequest(id: requestID) }
 		}
 	}
 
@@ -327,10 +321,20 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 		guard brandingRequests < count else { return }
 		await withCheckedContinuation { requestWaiters.append((count, $0)) }
 	}
-
 	func waitForCancellations(_ count: Int) async {
 		guard cancellations < count else { return }
 		await withCheckedContinuation { cancellationWaiters.append((count, $0)) }
+	}
+
+	private func cancelBrandingRequest(id: Int) {
+		guard let index = brandingContinuations.firstIndex(where: { $0.id == id }) else {
+			cancelledBrandingRequestIDs.insert(id)
+			return
+		}
+		let continuation = brandingContinuations.remove(at: index).continuation
+		cancellations += 1
+		resumeReadyWaiters()
+		continuation.resume(throwing: CancellationError())
 	}
 
 	private func resumeReadyWaiters() {

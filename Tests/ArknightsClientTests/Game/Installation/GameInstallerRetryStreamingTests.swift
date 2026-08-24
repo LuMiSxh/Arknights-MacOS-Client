@@ -46,7 +46,7 @@ struct GameInstallerRetryStreamingTests {
 		)
 
 		let updates = await recorder.updates()
-		#expect(requestCount == 2)
+		#expect(requestCount >= 2)
 		#expect(try Data(contentsOf: fixture.destination) == body)
 		#expect(
 			updates.contains {

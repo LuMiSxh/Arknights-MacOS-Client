@@ -136,7 +136,6 @@ struct LauncherViewModelConcurrencyTests {
 		#expect(model.gameSession.canLaunch)
 
 		await api.resolveBranding()
-		await Task.yield()
 	}
 
 	@Test
@@ -235,7 +234,6 @@ struct LauncherViewModelConcurrencyTests {
 		await api.resolveBranding()
 		let logoLoaded = await waitForCondition { model.customization.officialLogo != nil }
 		#expect(logoLoaded)
-		#expect(model.customization.officialLogo != nil)
 	}
 
 	@Test
@@ -285,8 +283,6 @@ struct LauncherViewModelConcurrencyTests {
 			model.customization.activeThemeCacheKey?.hasPrefix("custom.") == true
 		}
 		#expect(customArtworkApplied)
-
-		#expect(model.customization.activeThemeCacheKey?.hasPrefix("custom.") == true)
 	}
 
 	@Test

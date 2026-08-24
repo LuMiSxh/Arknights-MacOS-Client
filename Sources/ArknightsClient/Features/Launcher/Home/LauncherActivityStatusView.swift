@@ -120,13 +120,6 @@ struct LauncherActivityStatusView: View {
 						)
 					)
 				)
-			}
-			if let eta = progress.estimatedTimeRemaining {
-				values.append(
-					L10n.string(
-						HomeStrings.downloadEta(DownloadProgressFormatting.duration(eta))
-					)
-				)
 			} else if progress.isTransferStalled {
 				values.append(L10n.string(HomeStrings.downloadWaiting))
 			}
@@ -160,19 +153,17 @@ struct LauncherActivityStatusView: View {
 							)
 						)
 					)
-				}
-				if let eta = progress.estimatedTimeRemaining {
-					Text("·")
-						.accessibilityHidden(true)
-					Text(
-						L10n.string(
-							HomeStrings.downloadEta(DownloadProgressFormatting.duration(eta))
-						)
+					.monospacedDigit()
+					.frame(
+						minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
+						alignment: .leading
 					)
 				} else if progress.isTransferStalled {
-					Text("·")
-						.accessibilityHidden(true)
 					Text(L10n.string(HomeStrings.downloadWaiting))
+						.frame(
+							minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
+							alignment: .leading
+						)
 				}
 			}
 			.font(.caption)

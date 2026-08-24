@@ -240,10 +240,6 @@ enum SettingsStrings {
 		LocalizedStringResource.Settings.settingsInstallationDownloadSpeed(speed)
 	}
 
-	static func downloadEta(_ eta: String) -> LocalizedStringResource {
-		LocalizedStringResource.Settings.settingsInstallationDownloadEta(eta)
-	}
-
 	static let downloadWaiting = LocalizedStringResource.Settings
 		.settingsInstallationDownloadWaiting
 

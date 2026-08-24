@@ -13,11 +13,10 @@ struct LauncherMetadataRefreshCancellationTests {
 		let installer = ControllableInstaller()
 		let model = makeModel(api: api, installer: installer)
 		await api.waitForBrandingRequests(1)
-		let configurationLoaded = await waitForCondition {
-			model.installation.configuration != nil
-		}
-		#expect(configurationLoaded)
-		try #require(model.installation.configuration != nil)
+		try #require(
+			await waitForCondition {
+				model.installation.configuration != nil
+			})
 
 		model.installation.installOrUpdate()
 

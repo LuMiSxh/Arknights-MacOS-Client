@@ -20,38 +20,4 @@ enum DownloadProgressFormatting {
 		let bytes = Int64(rounded)
 		return bytes.formatted(byteCountStyle) + "/s"
 	}
-
-	static func duration(_ duration: Duration) -> String {
-		let components = duration.components
-		let totalSeconds = max(
-			0,
-			Double(components.seconds)
-				+ Double(components.attoseconds) / 1_000_000_000_000_000_000
-		)
-		let threshold = durationInSeconds(AppConstants.Network.transferRateEtaMinuteSecondThreshold)
-		let quantum = durationInSeconds(
-			totalSeconds < 60
-				? AppConstants.Network.transferRateEtaSubminuteQuantum
-				: AppConstants.Network.transferRateEtaMinuteSecondQuantum
-		)
-		var style = Duration.UnitsFormatStyle(
-			allowedUnits: totalSeconds < threshold
-				? [.hours, .minutes, .seconds] : [.hours, .minutes],
-			width: .abbreviated,
-			maximumUnitCount: 2
-		)
-		style.locale = L10n.activeLocale ?? .current
-		if totalSeconds >= threshold {
-			let roundedMinutes = max(1, Int((totalSeconds / 60).rounded()))
-			return Duration.seconds(roundedMinutes * 60).formatted(style)
-		}
-		let roundedSeconds = max(0, Int((totalSeconds / quantum).rounded()) * Int(quantum))
-		return Duration.seconds(roundedSeconds).formatted(style)
-	}
-
-	private static func durationInSeconds(_ duration: Duration) -> Double {
-		let components = duration.components
-		return Double(components.seconds) + Double(components.attoseconds)
-			/ 1_000_000_000_000_000_000
-	}
 }
