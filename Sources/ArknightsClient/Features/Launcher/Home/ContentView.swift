@@ -5,6 +5,7 @@ import SwiftUI
 struct ContentView: View {
 	let model: LauncherViewModel
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State private var settingsPresented = false
 	@State private var confirmsRosettaInstallation = false
 	@State private var onboarding: OnboardingCoordinator
@@ -22,6 +23,20 @@ struct ContentView: View {
 
 	private var accentColor: Color { model.customization.accentColor }
 
+	private var readabilityField: some View {
+		RadialGradient(
+			colors: reduceTransparency
+				? [Color.black.opacity(0.78), Color.black.opacity(0.52), Color.clear]
+				: [Color.black.opacity(0.58), Color.black.opacity(0.28), Color.clear],
+			center: .topLeading,
+			startRadius: 0,
+			endRadius: 520
+		)
+		.frame(width: 760, height: 420, alignment: .topLeading)
+		.blur(radius: reduceTransparency ? 0 : 14)
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+	}
+
 	var body: some View {
 		ZStack {
 			BackgroundMusicView(
@@ -34,17 +49,9 @@ struct ContentView: View {
 			LauncherArtworkView(image: model.customization.heroArtwork, accentColor: accentColor)
 				.ignoresSafeArea(.container, edges: .top)
 
-			LinearGradient(
-				colors: [
-					Color.black.opacity(0.62),
-					Color.black.opacity(0.32),
-					Color.clear,
-				],
-				startPoint: .topLeading,
-				endPoint: .init(x: 0.38, y: 0.28)
-			)
-			.ignoresSafeArea(.container, edges: .top)
-			.allowsHitTesting(false)
+			readabilityField
+				.ignoresSafeArea(.container, edges: .top)
+				.allowsHitTesting(false)
 
 			VStack(spacing: 0) {
 				topBar
@@ -106,8 +113,7 @@ struct ContentView: View {
 		HStack(alignment: .top) {
 			ArknightsWordmark(
 				logo: model.customization.officialLogo,
-				regionName: model.installation.region.localizedDisplayName,
-				cyan: accentColor
+				region: model.installation.region
 			)
 			.padding(.top, 34)
 			Spacer()

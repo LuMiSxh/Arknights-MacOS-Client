@@ -4,35 +4,68 @@ import SwiftUI
 
 struct ArknightsWordmark: View {
 	let logo: NSImage?
-	let regionName: String
-	let cyan: Color
+	let region: GameRegion
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 9) {
+		ZStack(alignment: .leading) {
+			// Keep official wallpaper logos from competing with the launcher wordmark
+			// without introducing another card or glass surface.
+			wordmarkBacking
+
 			Group {
 				if let logo {
 					Image(nsImage: logo)
 						.resizable()
 						.scaledToFit()
 				} else {
-					Text("ARKNIGHTS")
-						.font(.system(size: 32, weight: .regular, design: .serif))
+					Text(HomeStrings.wordmarkFallback(region: region))
+						.font(.system(.title, design: .serif))
+						.minimumScaleFactor(0.7)
+						.lineLimit(1)
 				}
 			}
-			.frame(width: 245, height: 69, alignment: .leading)
-			.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
-
-			HStack(spacing: 10) {
-				Rectangle().fill(cyan).frame(width: 66, height: 3)
-				Rectangle().fill(.white.opacity(0.34)).frame(width: 66, height: 3)
-				Rectangle().fill(.white.opacity(0.16)).frame(width: 66, height: 3)
-			}
+			.id(wordmarkIdentity)
+			.transition(wordmarkTransition)
 		}
+		.frame(width: 245, height: 69, alignment: .leading)
+		.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
 		.padding(.trailing, 24)
+		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(
-			L10n.string(HomeStrings.wordmarkAccessibility(region: regionName))
+			L10n.string(HomeStrings.wordmarkAccessibility(region: region.localizedDisplayName))
 		)
+	}
+
+	private var wordmarkIdentity: String {
+		if let logo { return "logo-\(ObjectIdentifier(logo))" }
+		return "fallback-\(region.rawValue)"
+	}
+
+	private var wordmarkAnimation: Animation? {
+		reduceMotion ? nil : .easeInOut(duration: 0.28)
+	}
+
+	@ViewBuilder
+	private var wordmarkBacking: some View {
+		if reduceTransparency {
+			Ellipse()
+				.fill(.black.opacity(0.62))
+				.frame(width: 292, height: 88)
+				.offset(x: -12, y: 3)
+		} else {
+			Ellipse()
+				.fill(.black.opacity(0.34))
+				.frame(width: 292, height: 88)
+				.blur(radius: 17)
+				.offset(x: -12, y: 3)
+		}
+	}
+
+	private var wordmarkTransition: AnyTransition {
+		reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98))
 	}
 }
 

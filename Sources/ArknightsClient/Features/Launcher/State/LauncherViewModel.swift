@@ -36,6 +36,7 @@ final class LauncherViewModel {
 		api: any LauncherAPIProviding = LauncherAPI(),
 		installer: (any GameInstalling)? = nil,
 		paths: AppPaths = AppPaths(),
+		artworkCache: ArtworkCache? = nil,
 		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
 		updateChecker: LauncherUpdateChecker = LauncherUpdateChecker(),
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
@@ -69,7 +70,7 @@ final class LauncherViewModel {
 			presetCatalog
 			?? PresetCatalogService(cacheDirectory: paths.presetGalleryCache, log: launcherLog)
 		self.presetCatalog = catalog
-		let artworkCache = ArtworkCache(directory: paths.artworkCache)
+		let resolvedArtworkCache = artworkCache ?? ArtworkCache(directory: paths.artworkCache)
 		let gameInstaller =
 			installer
 			?? GameInstaller(
@@ -97,7 +98,7 @@ final class LauncherViewModel {
 			paths: paths,
 			preferences: preferences,
 			log: launcherLog,
-			artworkCache: artworkCache,
+			artworkCache: resolvedArtworkCache,
 			launcherIconManager: iconManager,
 			region: { [weak installation] in installation?.region ?? .global },
 			usesDynamicTheme: { [weak settings] in settings?.usesDynamicTheme ?? true }
@@ -154,7 +155,7 @@ final class LauncherViewModel {
 			customization?.updateThemeColor()
 		}
 		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in
-			refreshController?.cancelRefresh()
+			refreshController?.cancelForInstallationStart()
 		}
 		installation.onLaunchRequested = { [weak gameSession] in gameSession?.launch() }
 		gameSession.customGameIconURL = { [weak customization, paths] in

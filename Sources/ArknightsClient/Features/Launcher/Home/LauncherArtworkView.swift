@@ -15,11 +15,12 @@ struct LauncherArtworkView: View {
 						.resizable()
 						.scaledToFill()
 						.id(ObjectIdentifier(image))
-						.transition(.opacity)
+						.transition(artworkTransition)
 						.accessibilityLabel(LauncherStrings.artworkAccessibility)
 				} else {
 					fallbackArtwork
-						.transition(.opacity)
+						.transition(artworkTransition)
+						.accessibilityHidden(true)
 				}
 			}
 			.frame(width: proxy.size.width, height: proxy.size.height)
@@ -29,6 +30,10 @@ struct LauncherArtworkView: View {
 				value: image.map(ObjectIdentifier.init)
 			)
 		}
+	}
+
+	private var artworkTransition: AnyTransition {
+		reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.015))
 	}
 
 	private var fallbackArtwork: some View {

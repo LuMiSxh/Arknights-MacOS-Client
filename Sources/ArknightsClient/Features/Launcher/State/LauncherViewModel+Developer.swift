@@ -141,12 +141,16 @@
 		func loadDeveloperArtwork() async {
 			if await customization.loadCustomArtwork() { return }
 			let artworkCache = customization.artworkCache
+			let region = installation.region
 			do {
-				let currentBranding = try await api.branding(region: installation.region)
-				guard isDeveloperMode else { return }
+				let currentBranding = try await api.branding(region: region)
+				guard isDeveloperMode, installation.region == region else { return }
 				refreshController.branding = currentBranding
 				do {
-					let logoData = try await artworkCache.officialLogoData()
+					let logoData = try await artworkCache.officialLogoData(
+						for: region
+					)
+					guard installation.region == region else { return }
 					customization.officialLogo = NSImage(data: logoData)
 				} catch {
 					await log.error(
@@ -156,14 +160,15 @@
 				do {
 					if let imageData = try await artworkCache.imageData(
 						for: currentBranding,
-						region: installation.region
+						region: region
 					), let image = NSImage(data: imageData),
 						let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
 					{
+						guard installation.region == region else { return }
 						customization.setHeroArtwork(
 							image,
 							themeCacheKey: CustomizationController.officialThemeCacheKey(
-								for: installation.region,
+								for: region,
 								artworkCacheKey: artworkCacheKey
 							)
 						)

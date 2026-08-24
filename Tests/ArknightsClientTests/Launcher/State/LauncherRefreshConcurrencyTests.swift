@@ -37,6 +37,7 @@ func refreshStartsIndependentMetadataRequestsConcurrently() async {
 	let model = LauncherViewModel(
 		api: api,
 		paths: paths,
+		artworkCache: makeTestArtworkCache(directory: paths.artworkCache),
 		preferences: preferences,
 		checkIntelTranslation: {
 			IntelTranslationCheck(state: .available, diagnostics: "test")
@@ -47,9 +48,8 @@ func refreshStartsIndependentMetadataRequestsConcurrently() async {
 	await api.waitForBothRequests()
 	#expect(await api.requestedEndpoints() == [.configuration, .branding])
 	await api.resolveConfiguration()
-	for _ in 0..<100 where model.lifecycle.phase == .checking {
-		await Task.yield()
-	}
+	let becameReady = await waitForCondition { model.lifecycle.phase == .ready }
+	#expect(becameReady)
 	#expect(model.lifecycle.phase == .ready)
 }
 

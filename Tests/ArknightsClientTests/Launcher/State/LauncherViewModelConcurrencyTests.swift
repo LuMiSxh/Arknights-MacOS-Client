@@ -223,36 +223,70 @@ struct LauncherViewModelConcurrencyTests {
 		await api.waitForBrandingRequests(1)
 		let artwork = NSImage(size: NSSize(width: 32, height: 32))
 		model.customization.heroArtwork = artwork
+		let globalLogo = NSImage(size: NSSize(width: 32, height: 32))
+		model.customization.officialLogo = globalLogo
 
 		model.selectRegion(.japan)
 		await api.waitForBrandingRequests(2)
 
 		#expect(model.installation.region == .japan)
 		#expect(model.customization.heroArtwork === artwork)
+		#expect(model.customization.officialLogo == nil)
 		await api.resolveBranding()
+		let logoLoaded = await waitForCondition { model.customization.officialLogo != nil }
+		#expect(logoLoaded)
+		#expect(model.customization.officialLogo != nil)
 	}
 
 	@Test
-	func installationCancelsTheTrackedMetadataRefresh() async throws {
-		let api = CancellableBrandingAPI()
-		let installer = ControllableInstaller()
-		let model = makeModel(api: api, installer: installer)
-		await api.waitForBrandingRequests(1)
-		for _ in 0..<100 where model.installation.configuration == nil {
-			await Task.yield()
+	func customArtworkWinsWhenOfficialArtworkWasAlreadyInFlight() async {
+		let directory = FileManager.default.temporaryDirectory.appending(
+			path: "BrandingRaceCache.\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [BlockingArtworkURLProtocol.self]
+		let cache = ArtworkCache(
+			session: URLSession(configuration: configuration),
+			directory: directory
+		)
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			artworkCache: cache
+		)
+		defer {
+			BlockingArtworkURLProtocol.releaseArtwork()
+			BlockingArtworkURLProtocol.reset()
 		}
-		try #require(model.installation.configuration != nil)
+		await api.waitForBrandingRequest()
 
-		model.installation.installOrUpdate()
+		let branding = LauncherBranding(
+			launcherBackgroundImage: URL(string: "https://example.com/japan-artwork.png"),
+			launcherBackgroundImageCRC64: "japan-artwork",
+			copyrightInformation: nil,
+			privacyPolicy: nil,
+			userAgreement: nil,
+			noticePopOpen: nil,
+			noticeContent: nil
+		)
+		await api.resolveBranding(branding)
+		let artworkStarted = await waitForCondition {
+			BlockingArtworkURLProtocol.artworkRequestStarted
+		}
+		#expect(artworkStarted)
 
-		await api.waitForCancellations(1)
-		await installer.waitForInstallationStart()
-		#expect(model.installation.isDownloading)
+		let customData = BlockingArtworkURLProtocol.imageData
+		await model.customization.applyDirectCustomArtwork(data: customData)
+		BlockingArtworkURLProtocol.releaseArtwork()
+		let customArtworkApplied = await waitForCondition {
+			model.customization.activeThemeCacheKey?.hasPrefix("custom.") == true
+		}
+		#expect(customArtworkApplied)
 
-		model.installation.cancelDownload()
-		await installer.waitForCancellationRequest()
-		await installer.acknowledgeCancellation()
-		await waitForDownloadToStop(model)
+		#expect(model.customization.activeThemeCacheKey?.hasPrefix("custom.") == true)
 	}
 
 	@Test

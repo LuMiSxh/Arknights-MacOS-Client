@@ -52,6 +52,7 @@ extension CustomizationController {
 			lifecycle.show(error)
 			return
 		}
+		customArtworkDidChange()
 		guard !isDownloading else { return }
 		lifecycle.refresh = .idle
 		restartRefresh()
@@ -63,6 +64,7 @@ extension CustomizationController {
 			return
 		}
 		let destination = paths.customArtwork
+		customArtworkDidChange()
 		do {
 			try await Task.detached(priority: .userInitiated) {
 				try FileManager.default.createDirectory(
@@ -103,7 +105,12 @@ extension CustomizationController {
 		if !hasCustomArtwork {
 			restoreInitialOfficialArtwork(for: region)
 		}
-		officialLogo = artworkCache.cachedOfficialLogo()
+		officialLogo = artworkCache.cachedOfficialLogo(for: region)
+	}
+
+	/// Clears any previous region's wordmark before a refresh can load the selected region's asset.
+	func restoreOfficialLogo(for region: GameRegion) {
+		officialLogo = artworkCache.cachedOfficialLogo(for: region)
 	}
 
 	private func restoreInitialCustomArtwork() -> Bool {

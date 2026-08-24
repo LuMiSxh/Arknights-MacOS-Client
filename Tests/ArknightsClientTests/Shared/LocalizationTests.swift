@@ -36,6 +36,31 @@ struct LocalizationTests {
 	}
 
 	@Test
+	func regionalWordmarkFallbackNamesTheActiveRegion() {
+		#expect(
+			L10n.string(
+				HomeStrings.wordmarkFallback(region: .global),
+				locale: Locale(identifier: "en")
+			)
+				== "ARKNIGHTS · GLOBAL"
+		)
+		#expect(
+			L10n.string(
+				HomeStrings.wordmarkFallback(region: .japan),
+				locale: Locale(identifier: "en")
+			)
+				== "ARKNIGHTS · JAPAN"
+		)
+		#expect(
+			L10n.string(
+				HomeStrings.wordmarkFallback(region: .korea),
+				locale: Locale(identifier: "en")
+			)
+				== "ARKNIGHTS · KOREA"
+		)
+	}
+
+	@Test
 	func appliesLocaleSpecificPercentageFormatting() {
 		let german = L10n.string(
 			SettingsStrings.audioVolumePercent(60),

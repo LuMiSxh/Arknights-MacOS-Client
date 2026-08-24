@@ -44,6 +44,14 @@ enum HomeStrings {
 		.homeWordmarkAccessibility(region)
 	}
 
+	static func wordmarkFallback(region: GameRegion) -> LocalizedStringResource {
+		switch region {
+		case .global: .homeWordmarkFallbackGlobal
+		case .japan: .homeWordmarkFallbackJapan
+		case .korea: .homeWordmarkFallbackKorea
+		}
+	}
+
 	static func versionAvailable(_ version: String) -> LocalizedStringResource {
 		.homeVersionAvailable(version)
 	}

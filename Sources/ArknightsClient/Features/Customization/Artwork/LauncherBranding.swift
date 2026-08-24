@@ -64,14 +64,9 @@ struct LauncherBranding: Decodable, Sendable {
 	}
 }
 
-/// Downloads and disk-caches the launcher background and official logo by CRC64, so
-/// unchanged artwork across launches or branding refreshes doesn't refetch.
+/// Downloads and disk-caches launcher artwork and the active region's official wordmark, so
+/// unchanged assets across launches or branding refreshes don't refetch.
 actor ArtworkCache {
-	private static let officialLogoURL = URL(
-		string:
-			"https://webusstatic.yo-star.com/arknights-us/arknights-us-website/main/h5/assets/logo-4f95ced5.png"
-	)!
-
 	private let loader: BoundedHTTPDataLoader
 	private nonisolated let directory: URL
 
@@ -109,13 +104,14 @@ actor ArtworkCache {
 		return cacheKey.isEmpty ? nil : cacheKey
 	}
 
-	nonisolated func cachedOfficialLogo() -> NSImage? {
-		NSImage(contentsOf: officialLogoCacheURL)
+	nonisolated func cachedOfficialLogo(for region: GameRegion) -> NSImage? {
+		NSImage(contentsOf: officialLogoCacheURL(for: region))
 	}
 
-	nonisolated func cachedOfficialLogoData() throws -> Data? {
-		guard FileManager.default.fileExists(atPath: officialLogoCacheURL.path) else { return nil }
-		let data = try Data(contentsOf: officialLogoCacheURL, options: .mappedIfSafe)
+	nonisolated func cachedOfficialLogoData(for region: GameRegion) throws -> Data? {
+		let cacheURL = officialLogoCacheURL(for: region)
+		guard FileManager.default.fileExists(atPath: cacheURL.path) else { return nil }
+		let data = try Data(contentsOf: cacheURL, options: .mappedIfSafe)
 		return data.isEmpty ? nil : data
 	}
 
@@ -128,9 +124,15 @@ actor ArtworkCache {
 
 		let fileManager = FileManager.default
 		let cachedURL = cachedImageURL(for: safeKey)
-		if let data = try? Data(contentsOf: cachedURL), !data.isEmpty {
-			try persistActiveCacheKey(safeKey, for: region)
-			return data
+		do {
+			let data = try Data(contentsOf: cachedURL, options: .mappedIfSafe)
+			if !data.isEmpty, NSImage(data: data) != nil {
+				try persistActiveCacheKey(safeKey, for: region)
+				return data
+			}
+		} catch {
+			// A missing or malformed cache is recovered by downloading the active
+			// Yostar asset below.
 		}
 
 		let data = try await downloadData(
@@ -144,14 +146,21 @@ actor ArtworkCache {
 		return data
 	}
 
-	func officialLogoData() async throws -> Data {
-		let cachedURL = officialLogoCacheURL
-		if let data = try? Data(contentsOf: cachedURL), !data.isEmpty {
-			return data
+	func officialLogoData(for region: GameRegion) async throws -> Data {
+		let cachedURL = officialLogoCacheURL(for: region)
+		do {
+			let data = try Data(contentsOf: cachedURL, options: .mappedIfSafe)
+			if !data.isEmpty, NSImage(data: data) != nil {
+				return data
+			}
+		} catch {
+			// A missing cache is the normal first-launch path. A malformed cache is
+			// treated the same way so a transient or interrupted prior response can
+			// never pin the regional wordmark to the text fallback.
 		}
 
 		let data = try await downloadData(
-			from: Self.officialLogoURL,
+			from: Self.officialLogoURL(for: region),
 			maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes
 		)
 
@@ -161,18 +170,30 @@ actor ArtworkCache {
 	}
 
 	private func downloadData(from url: URL, maximumBytes: Int) async throws -> Data {
-		var request = URLRequest(url: url)
-		request.cachePolicy = .reloadRevalidatingCacheData
-		let (data, response) = try await loader.data(
-			for: request,
-			maximumBytes: maximumBytes
-		)
-		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
-		return data
+		for attempt in 1...AppConstants.Network.maxDownloadAttempts {
+			do {
+				var request = URLRequest(url: url)
+				request.cachePolicy = .reloadRevalidatingCacheData
+				let (data, response) = try await loader.data(
+					for: request,
+					maximumBytes: maximumBytes
+				)
+				guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
+				guard !data.isEmpty else { throw LauncherError.invalidResponse }
+				guard NSImage(data: data) != nil else { throw LauncherError.invalidResponse }
+				return data
+			} catch is CancellationError {
+				throw CancellationError()
+			} catch {
+				if attempt == AppConstants.Network.maxDownloadAttempts { throw error }
+				try await Task.sleep(for: AppConstants.Network.retryBackoffStep * attempt)
+			}
+		}
+		throw LauncherError.invalidResponse
 	}
 
-	private nonisolated var officialLogoCacheURL: URL {
-		directory.appending(path: "official-arknights-logo.png")
+	private nonisolated func officialLogoCacheURL(for region: GameRegion) -> URL {
+		directory.appending(path: "official-arknights-logo-" + region.rawValue + ".png")
 	}
 
 	private nonisolated func cachedImageURL(for cacheKey: String) -> URL {
@@ -204,5 +225,25 @@ actor ArtworkCache {
 				$0.isLetter || $0.isNumber || $0 == "-" || $0 == "_"
 			}
 		)
+	}
+
+	nonisolated static func officialLogoURL(for region: GameRegion) -> URL {
+		switch region {
+		case .global:
+			URL(
+				string:
+					"https://webusstatic.yo-star.com/arknights-us/arknights-us-website/main/h5/assets/logo-4f95ced5.png"
+			)!
+		case .japan:
+			URL(
+				string:
+					"https://webusstatic.yo-star.com/arknights-jp/arknights-jp-website/main/arknights-jp-website/assets/logo-0bd0cb04.png"
+			)!
+		case .korea:
+			URL(
+				string:
+					"https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
+			)!
+		}
 	}
 }

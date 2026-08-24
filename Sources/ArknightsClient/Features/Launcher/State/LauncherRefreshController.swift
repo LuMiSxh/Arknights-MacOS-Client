@@ -19,6 +19,10 @@ final class LauncherRefreshController {
 	private let api: any LauncherAPIProviding
 	private let log: LauncherLog
 	@ObservationIgnored private var refreshTask: Task<Void, Never>?
+	@ObservationIgnored private var brandingAssetTask: Task<Void, Never>?
+	/// Asset results are accepted only for the currently active metadata refresh generation.
+	/// Starting or cancelling a refresh invalidates the token before any older task can finish.
+	@ObservationIgnored private var brandingRequestID: UUID?
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -40,20 +44,36 @@ final class LauncherRefreshController {
 
 	deinit {
 		refreshTask?.cancel()
+		brandingAssetTask?.cancel()
 	}
 
 	@discardableResult
 	func startRefresh(forceGameUpdateCheck: Bool = false) -> Task<Void, Never> {
 		refreshTask?.cancel()
+		brandingAssetTask?.cancel()
+		brandingAssetTask = nil
+		let refreshID = UUID()
+		brandingRequestID = refreshID
 		let task = Task { [weak self] in
 			guard let self else { return }
-			await refresh(forceGameUpdateCheck: forceGameUpdateCheck)
+			await refresh(forceGameUpdateCheck: forceGameUpdateCheck, refreshID: refreshID)
 		}
 		refreshTask = task
 		return task
 	}
 
 	func cancelRefresh() {
+		refreshTask?.cancel()
+		refreshTask = nil
+		brandingAssetTask?.cancel()
+		brandingAssetTask = nil
+		brandingRequestID = UUID()
+	}
+
+	/// Stops metadata work because installation has exclusive ownership of the network and
+	/// lifecycle state. The current region's already-started branding task remains valid and
+	/// may finish applying its assets before the next normal refresh replaces it.
+	func cancelForInstallationStart() {
 		refreshTask?.cancel()
 		refreshTask = nil
 	}
@@ -70,6 +90,7 @@ final class LauncherRefreshController {
 		lifecycle.refresh = .checking(requestID: nil)
 		refreshTask?.cancel()
 		branding = nil
+		customization.restoreOfficialLogo(for: newRegion)
 		communication.resetPresentedNotice()
 		settings.regionDidChange()
 		lifecycle.setStatus(.checking)
@@ -78,15 +99,15 @@ final class LauncherRefreshController {
 		return true
 	}
 
-	func refresh(forceGameUpdateCheck: Bool = false) async {
+	private func refresh(forceGameUpdateCheck: Bool, refreshID: UUID) async {
 		guard !installation.isDownloading else { return }
 		await log.info("Refreshing game and branding state")
-		let refreshID = UUID()
 		let region = installation.region
 		lifecycle.refresh = .checking(requestID: refreshID)
 		installation.updateInstalledState()
 		if lifecycle.activity == .idle { lifecycle.setStatus(.checking) }
-		let hasCustomArtwork = await customization.loadCustomArtwork()
+		_ = await customization.loadCustomArtwork()
+		let customArtworkGeneration = customization.customArtworkGeneration
 		let brandingTask = Task<LauncherBranding?, Never> { [api, log] in
 			do {
 				return try await api.branding(region: region)
@@ -139,12 +160,17 @@ final class LauncherRefreshController {
 			await log.info(
 				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
 			)
-			await loadBrandingAssets(
-				currentBranding,
-				region: region,
-				hasCustomArtwork: hasCustomArtwork,
-				refreshID: refreshID
-			)
+			let assetTask = Task { [weak self] in
+				guard let self else { return }
+				await loadBrandingAssets(
+					currentBranding,
+					region: region,
+					customArtworkGeneration: customArtworkGeneration,
+					refreshID: refreshID
+				)
+			}
+			brandingAssetTask = assetTask
+			await assetTask.value
 		}
 
 		guard isCurrentRefresh(refreshID) else { return }
@@ -168,21 +194,22 @@ final class LauncherRefreshController {
 	private func loadBrandingAssets(
 		_ branding: LauncherBranding,
 		region: GameRegion,
-		hasCustomArtwork: Bool,
+		customArtworkGeneration: UInt64,
 		refreshID: UUID
 	) async {
 		let artworkCache = customization.artworkCache
-		let logoTask = Task { [artworkCache, log] in
-			guard branding.launcherBackgroundImage != nil else { return nil as Data? }
+		let logoTask = Task<Data?, Never> { [artworkCache, log] in
 			do {
-				return try await artworkCache.officialLogoData()
+				return try await artworkCache.officialLogoData(for: region)
 			} catch {
-				await log.error("Official logo load failed: \(error.localizedDescription)")
+				await log.error(
+					"Official \(region.displayName) logo load failed: \(error.localizedDescription)"
+				)
 				return nil
 			}
 		}
-		let artworkTask = Task { [artworkCache, log] in
-			guard !hasCustomArtwork else { return nil as Data? }
+		let artworkTask = Task { [artworkCache, log, customization] in
+			guard !customization.hasPersistedCustomArtwork else { return nil as Data? }
 			do {
 				return try await artworkCache.imageData(for: branding, region: region)
 			} catch {
@@ -193,13 +220,23 @@ final class LauncherRefreshController {
 			}
 		}
 		let (logoData, artworkData) = await withTaskCancellationHandler {
-			await (logoTask.value, artworkTask.value)
+			let logoData = await logoTask.value
+			let artworkData = await artworkTask.value
+			return (logoData, artworkData)
 		} onCancel: {
 			logoTask.cancel()
 			artworkTask.cancel()
 		}
-		guard isCurrentRefresh(refreshID) else { return }
-		if let logoData { customization.officialLogo = NSImage(data: logoData) }
+		guard
+			isCurrentBrandingAssetLoad(refreshID, region: region)
+		else { return }
+		if let logoData, let logo = NSImage(data: logoData) {
+			customization.officialLogo = logo
+		}
+		guard
+			customization.customArtworkGeneration == customArtworkGeneration,
+			!customization.hasPersistedCustomArtwork
+		else { return }
 		if let artworkData,
 			let image = NSImage(data: artworkData),
 			let artworkCacheKey = artworkCache.cacheKey(for: branding)
@@ -212,5 +249,9 @@ final class LauncherRefreshController {
 				)
 			)
 		}
+	}
+
+	private func isCurrentBrandingAssetLoad(_ refreshID: UUID, region: GameRegion) -> Bool {
+		brandingRequestID == refreshID && installation.region == region
 	}
 }

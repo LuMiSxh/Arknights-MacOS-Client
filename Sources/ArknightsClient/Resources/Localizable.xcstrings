@@ -502,6 +502,30 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Arknights %1$@ macOS client" } }
       }
     },
+    "home.wordmark.fallback.global" : {
+      "comment" : "Regional text fallback when the Global wordmark is unavailable",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ARKNIGHTS · GLOBAL" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ARKNIGHTS · GLOBAL" } }
+      }
+    },
+    "home.wordmark.fallback.japan" : {
+      "comment" : "Regional text fallback when the Japan wordmark is unavailable",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ARKNIGHTS · JAPAN" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ARKNIGHTS · JAPAN" } }
+      }
+    },
+    "home.wordmark.fallback.korea" : {
+      "comment" : "Regional text fallback when the Korea wordmark is unavailable",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "ARKNIGHTS · KOREA" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ARKNIGHTS · KOREA" } }
+      }
+    },
     "shared.action.done" : {
       "comment" : "Standard action that closes a completed modal flow",
       "extractionState" : "manual",

@@ -26,6 +26,17 @@ final class CustomizationController {
 	var accentColor: Color = LauncherVisuals.cyan
 	var hudTintColor: Color = LauncherVisuals.hudGlassTint
 	private(set) var activeThemeCacheKey: String?
+	/// Increments only when the persisted custom artwork changes. Branding refreshes use this
+	/// generation to reject an official image that was already in flight when the user chose a
+	/// custom image.
+	private(set) var customArtworkGeneration: UInt64 = 0
+	var hasPersistedCustomArtwork: Bool {
+		FileManager.default.fileExists(atPath: paths.customArtwork.path)
+	}
+
+	func customArtworkDidChange() {
+		customArtworkGeneration &+= 1
+	}
 
 	init(
 		lifecycle: LauncherLifecycleStore,

@@ -17,6 +17,7 @@ func waitForDownloadToStop(_ model: LauncherViewModel) async {
 func makeModel(
 	api: some LauncherAPIProviding,
 	installer: some GameInstalling,
+	artworkCache: ArtworkCache? = nil,
 	checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 		IntelTranslationCheck(state: .available, diagnostics: "test")
 	},
@@ -42,15 +43,53 @@ func makeModel(
 	preferences.setAutomaticGameUpdates(false)
 	preferences.setAutomaticLauncherUpdates(false)
 	preferences.setAnnouncementsEnabled(false)
+	let resolvedArtworkCache =
+		artworkCache
+		?? ArtworkCache(session: testArtworkSession(), directory: paths.artworkCache)
 	return LauncherViewModel(
 		api: api,
 		installer: installer,
 		paths: paths,
+		artworkCache: resolvedArtworkCache,
 		preferences: preferences,
 		checkIntelTranslation: checkIntelTranslation,
 		installRosettaSystemSoftware: installRosettaSystemSoftware,
 		arguments: arguments
 	)
+}
+
+private func testArtworkSession() -> URLSession {
+	let configuration = URLSessionConfiguration.ephemeral
+	configuration.protocolClasses = [TestArtworkURLProtocol.self]
+	return URLSession(configuration: configuration)
+}
+
+func makeTestArtworkCache(directory: URL) -> ArtworkCache {
+	ArtworkCache(session: testArtworkSession(), directory: directory)
+}
+
+private final class TestArtworkURLProtocol: URLProtocol, @unchecked Sendable {
+	static let imageData = Data(
+		base64Encoded:
+			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
+	)!
+
+	override class func canInit(with request: URLRequest) -> Bool { true }
+	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+	override func startLoading() {
+		let response = HTTPURLResponse(
+			url: request.url!,
+			statusCode: 200,
+			httpVersion: nil,
+			headerFields: nil
+		)!
+		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+		client?.urlProtocol(self, didLoad: Self.imageData)
+		client?.urlProtocolDidFinishLoading(self)
+	}
+
+	override func stopLoading() {}
 }
 
 actor TranslationCheckSequence {
