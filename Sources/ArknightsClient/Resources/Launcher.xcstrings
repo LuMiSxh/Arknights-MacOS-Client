@@ -757,24 +757,6 @@
       },
       "extractionState": "manual"
     },
-    "launcher.popup.later": {
-      "comment": "Defer launcher update action",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Später"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Later"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
     "launcher.popup.notice": {
       "comment": "Generic official notice title",
       "localizations": {
@@ -793,57 +775,253 @@
       },
       "extractionState": "manual"
     },
-    "launcher.popup.releaseFallback": {
-      "comment": "Fallback update popup content when release notes are blank",
+    "launcher.update.busy": {
+      "comment": "Launcher update safety message while game or maintenance is active",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine neue Launcher-Version ist verfügbar."
+            "value": "Das Launcher-Update ist während einer aktiven Operation nicht verfügbar."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A new launcher version is available."
+            "value": "Launcher updates are unavailable during an active operation."
           }
         }
       },
       "extractionState": "manual"
     },
-    "launcher.popup.updateTitle": {
-      "comment": "Launcher update popup title; version follows",
+    "launcher.update.title": {
+      "comment": "Custom launcher update modal title",
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Arknights Client %@"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Arknights Client %@"
-          }
-        }
+        "de": { "stringUnit": { "state": "translated", "value": "Launcher-Update" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Launcher Update" } }
       },
       "extractionState": "manual"
     },
-    "launcher.popup.viewRelease": {
-      "comment": "Open launcher release action",
+    "launcher.update.version": {
+      "comment": "Version shown in the launcher update modal; version follows",
       "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Release ansehen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "View Release"
-          }
-        }
+        "de": { "stringUnit": { "state": "translated", "value": "Version %@" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Version %@" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.checking": {
+      "comment": "Launcher update check in progress",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nach Updates wird gesucht…" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Checking for updates…" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.available": {
+      "comment": "Launcher update is available",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Ein Update ist verfügbar." } },
+        "en": { "stringUnit": { "state": "translated", "value": "An update is available." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.install": {
+      "comment": "Install launcher update action",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Update installieren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Install Update" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.installNow": {
+      "comment": "Install a downloaded launcher update now",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Jetzt installieren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Install Now" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.later": {
+      "comment": "Dismiss launcher update action",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Später" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Later" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.cancel": {
+      "comment": "Cancel launcher update check or download action",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Abbrechen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.done": {
+      "comment": "Dismiss launcher update result action",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fertig" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Done" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.checkAgain": {
+      "comment": "Retry launcher update check action",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erneut prüfen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Check Again" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.tryAgain": {
+      "comment": "Retry failed launcher update action",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Erneut versuchen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Try Again" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.moreInformation": {
+      "comment": "Open information-only launcher update link",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Weitere Informationen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "More Information" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.noUpdate": {
+      "comment": "No launcher update was found",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Launcher ist aktuell." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The launcher is up to date." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.noUpdateDetail": {
+      "comment": "No launcher update detail",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Es wurde keine neuere Version gefunden." } },
+        "en": { "stringUnit": { "state": "translated", "value": "No newer version was found." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.downloading": {
+      "comment": "Launcher update download in progress",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Update wird heruntergeladen…" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Downloading update…" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.extracting": {
+      "comment": "Launcher update extraction in progress",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Update wird vorbereitet…" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Preparing update…" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.ready": {
+      "comment": "Launcher update ready to install",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Update ist bereit." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Update is ready." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.readyDetail": {
+      "comment": "Launcher update ready detail",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Das Update kann jetzt installiert werden." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The update can be installed now." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.installing": {
+      "comment": "Launcher update installation in progress",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Update wird abgeschlossen…" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Finishing update…" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.installingDetail": {
+      "comment": "Launcher update installation detail after termination",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Launcher wird automatisch beendet und zur Aktualisierung neu geöffnet." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The launcher will close and reopen automatically to finish the update." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.quitDetail": {
+      "comment": "Launcher update waiting for application termination",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Schließe das Spiel, um die Launcher-Aktualisierung abzuschließen. Die Installation wird danach automatisch fortgesetzt." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Close the game to finish the launcher update. Installation continues automatically afterward." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.waitingDetail": {
+      "comment": "Launcher update waiting for another launcher activity to finish",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Launcher wartet, bis die aktuelle Aktivität abgeschlossen ist." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The launcher is waiting for its current activity to finish." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.installed": {
+      "comment": "Launcher update installation finished",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Update installiert" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Update installed" } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.installedDetail": {
+      "comment": "Launcher update finished without relaunch",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Das Update wurde installiert." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The update was installed." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.relaunchDetail": {
+      "comment": "Launcher update finished with relaunch",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Der Launcher wurde neu gestartet." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The launcher was restarted." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.errorDetail": {
+      "comment": "Fallback launcher update error detail",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Das Update konnte nicht abgeschlossen werden." } },
+        "en": { "stringUnit": { "state": "translated", "value": "The update could not be completed." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.releaseNotesUnavailable": {
+      "comment": "Fallback when launcher release notes cannot be shown",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Release Notes sind nicht verfügbar." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Release notes are unavailable." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.informationOnlyDetail": {
+      "comment": "Information-only launcher update explanation",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Diese Version enthält nur Informationen und kann nicht über den Launcher installiert werden." } },
+        "en": { "stringUnit": { "state": "translated", "value": "This version is informational only and cannot be installed by the launcher." } }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.update.retryQuit": {
+      "comment": "Retry terminating the launcher before installation",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Beenden erneut versuchen" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Try Quitting Again" } }
       },
       "extractionState": "manual"
     },
@@ -1694,22 +1872,6 @@
       "localizations": {
         "de": { "stringUnit": { "state": "translated", "value": "Updates konnten nicht geprüft werden" } },
         "en": { "stringUnit": { "state": "translated", "value": "Couldn’t check for updates" } }
-      },
-      "extractionState": "manual"
-    },
-    "launcher.update.status.noReleases": {
-      "comment": "Launcher update check found no releases",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Keine Versionen verfügbar" } },
-        "en": { "stringUnit": { "state": "translated", "value": "No releases available" } }
-      },
-      "extractionState": "manual"
-    },
-    "launcher.update.status.sourceUnavailable": {
-      "comment": "Launcher update source is not configured",
-      "localizations": {
-        "de": { "stringUnit": { "state": "translated", "value": "Update-Quelle nicht verfügbar" } },
-        "en": { "stringUnit": { "state": "translated", "value": "Update source unavailable" } }
       },
       "extractionState": "manual"
     },

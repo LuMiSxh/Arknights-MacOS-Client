@@ -118,7 +118,6 @@ enum OnboardingStrings {
 	static let languageSystem = LocalizedStringResource.onboardingWelcomeLanguageSystem
 	static let languageEnglish = LocalizedStringResource.onboardingWelcomeLanguageEnglish
 	static let languageGerman = LocalizedStringResource.onboardingWelcomeLanguageGerman
-	static let releaseCheck = LocalizedStringResource.onboardingWelcomeStatusReleaseCheck
 	static let launcherCurrent = LocalizedStringResource.onboardingWelcomeStatusCurrentDetail
 	static let updateDetail = LocalizedStringResource.onboardingWelcomeStatusUpdateDetail
 	static let updateCheckFailedDetail = LocalizedStringResource.onboardingWelcomeStatusFailedDetail
@@ -149,8 +148,8 @@ enum OnboardingStrings {
 		case .german: languageGerman
 		}
 	}
-	static func viewVersion(_ version: String) -> LocalizedStringResource {
-		.onboardingActionViewVersion(version)
+	static func installUpdate(_ version: String) -> LocalizedStringResource {
+		.onboardingActionInstallUpdate(version)
 	}
 	static func installationExisting(version: String, directory: String) -> LocalizedStringResource
 	{ .onboardingInstallationExistingDetail(version, directory) }

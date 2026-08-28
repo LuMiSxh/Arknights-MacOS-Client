@@ -9,6 +9,22 @@ import Testing
 @MainActor
 struct LauncherViewModelConcurrencyTests {
 	@Test
+	func onboardingProbeWaitsForInitialRefreshToReachIdle() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+
+		let probeTask = Task { await model.launcherUpdateCheckForOnboarding() }
+		await Task.yield()
+		#expect(model.lifecycle.refresh != .idle)
+		#expect(!model.communication.isCheckingLauncherUpdates)
+
+		await api.resolveBranding()
+		_ = await probeTask.value
+		#expect(model.lifecycle.refresh == .idle)
+	}
+
+	@Test
 	func presentationFailureDoesNotOverwriteRunningGameLifecycle() async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())

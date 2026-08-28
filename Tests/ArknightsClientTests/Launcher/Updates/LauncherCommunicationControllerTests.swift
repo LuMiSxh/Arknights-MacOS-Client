@@ -16,11 +16,13 @@ struct LauncherCommunicationControllerTests {
 		let logURL = FileManager.default.temporaryDirectory.appending(
 			path: "\(suiteName).log"
 		)
+		let log = LauncherLog(fileURL: logURL)
+		let lifecycle = LauncherLifecycleStore(log: log)
 		let controller = LauncherCommunicationController(
-			updateChecker: LauncherUpdateChecker(),
+			lifecycle: lifecycle,
 			announcementService: LauncherAnnouncementService(),
 			preferences: preferences,
-			log: LauncherLog(fileURL: logURL)
+			log: log
 		)
 		let popup: (String) -> LauncherPopup = { id in
 			LauncherPopup(
@@ -35,16 +37,83 @@ struct LauncherCommunicationControllerTests {
 
 		controller.enqueuePopup(popup("official-notice"))
 		controller.enqueuePopup(popup("announcement-feedback"))
-		controller.enqueuePopup(popup("launcher-update-0.2.0"))
 
 		#expect(!preferences.seenAnnouncementIDs().contains("feedback"))
-		#expect(preferences.presentedLauncherUpdate() == nil)
 
 		controller.dismissPopup()
 		#expect(preferences.seenAnnouncementIDs().contains("feedback"))
-		#expect(preferences.presentedLauncherUpdate() == nil)
 
 		controller.dismissPopup()
-		#expect(preferences.presentedLauncherUpdate() == "0.2.0")
+		#expect(controller.popup == nil)
+	}
+
+	@Test
+	func silentProbeUpdatesAvailabilityWithoutPresentingTheDriver() {
+		let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
+		let defaults = UserDefaults(suiteName: suiteName)!
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let preferences = LauncherPreferencesStore(defaults: defaults)
+		let logURL = FileManager.default.temporaryDirectory.appending(
+			path: "\(suiteName).log"
+		)
+		let log = LauncherLog(fileURL: logURL)
+		let lifecycle = LauncherLifecycleStore(log: log)
+		let controller = LauncherCommunicationController(
+			lifecycle: lifecycle,
+			announcementService: LauncherAnnouncementService(),
+			preferences: preferences,
+			log: log
+		)
+		controller.recordLauncherUpdateAvailability(.updateAvailable("0.5.0"))
+
+		#expect(controller.launcherUpdateVersion == "0.5.0")
+		#expect(!controller.launcherUpdateUserDriver.isPresented)
+	}
+
+	@Test
+	func currentAvailabilityClearsTheLauncherUpdateAction() {
+		let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
+		let defaults = UserDefaults(suiteName: suiteName)!
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let preferences = LauncherPreferencesStore(defaults: defaults)
+		let logURL = FileManager.default.temporaryDirectory.appending(path: "\(suiteName).log")
+		let log = LauncherLog(fileURL: logURL)
+		let lifecycle = LauncherLifecycleStore(log: log)
+		let controller = LauncherCommunicationController(
+			lifecycle: lifecycle,
+			announcementService: LauncherAnnouncementService(),
+			preferences: preferences,
+			log: log
+		)
+		controller.recordLauncherUpdateAvailability(.updateAvailable("0.5.0"))
+		#expect(controller.shouldShowLauncherUpdateButton)
+
+		controller.recordLauncherUpdateAvailability(.current)
+
+		#expect(controller.launcherUpdateVersion == nil)
+		#expect(!controller.shouldShowLauncherUpdateButton)
+	}
+
+	@Test
+	func hiddenActiveUpdateKeepsLauncherButtonVisibleWithoutCachedVersion() {
+		let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
+		let defaults = UserDefaults(suiteName: suiteName)!
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let preferences = LauncherPreferencesStore(defaults: defaults)
+		let logURL = FileManager.default.temporaryDirectory.appending(path: "\(suiteName).log")
+		let log = LauncherLog(fileURL: logURL)
+		let lifecycle = LauncherLifecycleStore(log: log)
+		let controller = LauncherCommunicationController(
+			lifecycle: lifecycle,
+			announcementService: LauncherAnnouncementService(),
+			preferences: preferences,
+			log: log
+		)
+		controller.launcherUpdateUserDriver.showReady { _ in }
+		controller.launcherUpdateUserDriver.dismissFromUser()
+
+		#expect(controller.launcherUpdateVersion == nil)
+		#expect(!controller.launcherUpdateUserDriver.isPresented)
+		#expect(controller.shouldShowLauncherUpdateButton)
 	}
 }

@@ -5,7 +5,7 @@ import Foundation
 enum OnboardingUpdateState: Equatable, Sendable {
 	case checking
 	case current
-	case updateRequired(LauncherRelease)
+	case updateRequired(String)
 	case checkFailed
 
 	var allowsSetup: Bool {

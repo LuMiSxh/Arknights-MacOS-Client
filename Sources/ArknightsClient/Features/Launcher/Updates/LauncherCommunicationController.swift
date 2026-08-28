@@ -8,30 +8,36 @@ import Observation
 @MainActor
 @Observable
 final class LauncherCommunicationController {
-	var launcherUpdate: LauncherRelease?
+	var launcherUpdateVersion: String?
 	var launcherUpdateStatus: String?
 	var isCheckingLauncherUpdates = false
 	var popup: LauncherPopup?
+	var canOpenLauncherUpdate: Bool { launcherUpdater.canOpenUpdate }
+	var shouldShowLauncherUpdateButton: Bool {
+		launcherUpdateVersion != nil || launcherUpdater.hasActiveUpdate
+	}
 
-	private let updateChecker: LauncherUpdateChecker
 	private let announcementService: LauncherAnnouncementService
 	private let preferences: LauncherPreferencesStore
 	private let log: LauncherLog
+	private let launcherUpdater: LauncherUpdaterController
 	private var pendingPopups: [LauncherPopup] = []
 	private var presentedNoticeContent: String?
 	@ObservationIgnored private var launcherUpdateTask: Task<LauncherUpdateCheckOutcome, Never>?
 	@ObservationIgnored private var announcementTask: Task<Void, Never>?
+	private var startupProbeOutcome: LauncherUpdateCheckOutcome?
 
 	init(
-		updateChecker: LauncherUpdateChecker,
+		lifecycle: LauncherLifecycleStore,
 		announcementService: LauncherAnnouncementService,
 		preferences: LauncherPreferencesStore,
 		log: LauncherLog
 	) {
-		self.updateChecker = updateChecker
 		self.announcementService = announcementService
 		self.preferences = preferences
 		self.log = log
+		let updater = LauncherUpdaterController(lifecycle: lifecycle, log: log)
+		self.launcherUpdater = updater
 	}
 
 	deinit {
@@ -39,18 +45,38 @@ final class LauncherCommunicationController {
 		announcementTask?.cancel()
 	}
 
-	func checkLauncherUpdates() {
-		_ = startLauncherUpdateCheck()
+	@discardableResult
+	func checkLauncherUpdates(presentUpdate: Bool = false)
+		-> Task<LauncherUpdateCheckOutcome, Never>
+	{
+		let task = startLauncherUpdateCheck()
+		guard presentUpdate else { return task }
+		return Task { [weak self] in
+			let outcome = await task.value
+			guard let self else { return outcome }
+			startupProbeOutcome = outcome
+			if case .updateAvailable = outcome {
+				launcherUpdater.checkForUpdates()
+			}
+			return outcome
+		}
 	}
 
 	/// Reuses an active request so onboarding and the automatic check cannot race.
 	func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
-		await startLauncherUpdateCheck().value
+		if let startupProbeOutcome {
+			self.startupProbeOutcome = nil
+			return startupProbeOutcome
+		}
+		return await startLauncherUpdateCheck().value
 	}
 
 	func openLauncherUpdate() {
-		guard let url = launcherUpdate?.htmlURL else { return }
-		NSWorkspace.shared.open(url)
+		launcherUpdater.checkForUpdates()
+	}
+
+	var launcherUpdateUserDriver: LauncherUpdateUserDriver {
+		launcherUpdater.userDriver
 	}
 
 	func checkAnnouncements(isEnabled: Bool) {
@@ -121,24 +147,6 @@ final class LauncherCommunicationController {
 		presentedNoticeContent = nil
 	}
 
-	func presentLauncherUpdateIfNeeded(_ release: LauncherRelease) {
-		guard preferences.presentedLauncherUpdate() != release.version else { return }
-		let notes = release.body?.trimmingCharacters(in: .whitespacesAndNewlines)
-		let content =
-			notes.flatMap { $0.isEmpty ? nil : $0 }
-			?? L10n.string(LauncherStrings.popupReleaseFallback)
-		enqueuePopup(
-			LauncherPopup(
-				id: "launcher-update-\(release.version)",
-				title: L10n.string(LauncherStrings.popupUpdateTitle(release.version)),
-				content: .markdown(content),
-				dismissTitle: L10n.string(LauncherStrings.popupLater),
-				actionTitle: L10n.string(LauncherStrings.popupViewRelease),
-				actionURL: release.htmlURL
-			)
-		)
-	}
-
 	func enqueuePopup(_ newPopup: LauncherPopup) {
 		guard popup?.id != newPopup.id,
 			!pendingPopups.contains(where: { $0.id == newPopup.id })
@@ -174,75 +182,44 @@ final class LauncherCommunicationController {
 			return launcherUpdateTask
 		}
 
-		launcherUpdateTask?.cancel()
 		isCheckingLauncherUpdates = true
 		launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusChecking)
-		let task = Task { [weak self] in
-			guard let self else { return LauncherUpdateCheckOutcome.failed }
-			defer { isCheckingLauncherUpdates = false }
-			guard
-				let endpointString = Bundle.main.object(
-					forInfoDictionaryKey: "LauncherUpdatesURL"
-				) as? String,
-				let endpoint = URL(string: endpointString)
-			else {
-				launcherUpdate = nil
-				launcherUpdateStatus = L10n.string(
-					.Launcher.launcherUpdateStatusSourceUnavailable)
-				await log.error("Launcher update check failed: update source unavailable")
-				return .unavailable
-			}
-
-			do {
-				guard let release = try await updateChecker.latestRelease(from: endpoint) else {
-					launcherUpdate = nil
-					launcherUpdateStatus = L10n.string(
-						.Launcher.launcherUpdateStatusNoReleases)
-					await log.info("Launcher update check completed; no releases available")
-					return .current
+		let task = Task<LauncherUpdateCheckOutcome, Never> { [weak self] in
+			guard let self else { return .failed }
+			let outcome = await withCheckedContinuation {
+				(continuation: CheckedContinuation<LauncherUpdateCheckOutcome, Never>) in
+				self.launcherUpdater.checkForUpdateInformation {
+					continuation.resume(returning: $0)
 				}
-				let currentVersion = Bundle.main.shortVersionString ?? "0"
-				if !release.isDraft && !release.isPrerelease
-					&& updateChecker.isNewer(release.version, than: currentVersion)
-				{
-					launcherUpdate = release
-					launcherUpdateStatus = L10n.string(
-						.Launcher.launcherUpdateStatusVersionAvailable(release.version)
-					)
-					presentLauncherUpdateIfNeeded(release)
-					await log.info(
-						"Launcher update check completed; status=Version \(release.version) available"
-					)
-					return .updateAvailable(release)
-				}
-
-				launcherUpdate = nil
-				launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusUpToDate)
-				await log.info("Launcher update check completed; status=Up to date")
-				return .current
-			} catch is CancellationError {
-				launcherUpdateStatus = nil
-				return .failed
-			} catch {
-				launcherUpdate = nil
-				launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusFailed)
-				await log.error("Launcher update check failed: \(error.localizedDescription)")
-				return .failed
 			}
+			recordLauncherUpdateAvailability(outcome)
+			isCheckingLauncherUpdates = false
+			return outcome
 		}
 		launcherUpdateTask = task
 		return task
 	}
 
+	func recordLauncherUpdateAvailability(_ outcome: LauncherUpdateCheckOutcome) {
+		switch outcome {
+		case .current:
+			launcherUpdateVersion = nil
+			launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusUpToDate)
+		case .updateAvailable(let version):
+			launcherUpdateVersion = version
+			launcherUpdateStatus = L10n.string(
+				.Launcher.launcherUpdateStatusVersionAvailable(version)
+			)
+		case .failed:
+			launcherUpdateVersion = nil
+			launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusFailed)
+		}
+	}
+
 	private func recordPopupPresentation(_ popup: LauncherPopup) {
 		let announcementPrefix = "announcement-"
-		let launcherUpdatePrefix = "launcher-update-"
 		if popup.id.hasPrefix(announcementPrefix) {
 			preferences.markAnnouncementSeen(String(popup.id.dropFirst(announcementPrefix.count)))
-		} else if popup.id.hasPrefix(launcherUpdatePrefix) {
-			preferences.markLauncherUpdatePresented(
-				String(popup.id.dropFirst(launcherUpdatePrefix.count))
-			)
 		}
 	}
 }

@@ -140,8 +140,8 @@ final class OnboardingCoordinator {
 	) -> OnboardingUpdateState {
 		switch outcome {
 		case .current: .current
-		case .updateAvailable(let release): .updateRequired(release)
-		case .unavailable, .failed: .checkFailed
+		case .updateAvailable(let version): .updateRequired(version)
+		case .failed: .checkFailed
 		}
 	}
 }

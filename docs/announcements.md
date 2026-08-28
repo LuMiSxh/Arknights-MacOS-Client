@@ -2,7 +2,7 @@
 
 The launcher can fetch occasional project messages from the repository without a separate server. The feed lives in [`announcements.json`](../announcements.json) on `main` and is read once when the launcher starts. Users can disable these checks in Settings.
 
-Each announcement is shown once per installation. Changing its text does not show it again; use a new `id` when a follow-up message should be presented. See [Architecture § Launcher communication](architecture.md#launcher-communication) for exactly how announcements are fetched, filtered, and queued alongside launcher updates and Yostar's own in-game notices.
+Each announcement is shown once per installation. Changing its text does not show it again; use a new `id` when a follow-up message should be presented. See [Architecture § Launcher communication](architecture.md#launcher-communication) for exactly how announcements are fetched, filtered, and queued alongside launcher status and Yostar's own in-game notices.
 
 ## Previewing a popup
 
@@ -12,7 +12,7 @@ Run the isolated debug simulator, open Settings → Developer, pick "Custom popu
 just preview
 ```
 
-The preview uses separate temporary paths and preferences. Its game controls intercept installation and launch actions, and the focused Scenario menu covers release notices, updates, downloads, accessibility/layout, failures, Rosetta recovery, and custom popups.
+The preview uses separate temporary paths and preferences. Its game controls intercept installation and launch actions, and the focused Scenario menu covers launcher-update state, downloads, accessibility/layout, failures, Rosetta recovery, and custom popups.
 
 ## Publishing
 

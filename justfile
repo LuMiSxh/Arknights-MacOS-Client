@@ -18,7 +18,7 @@ preview scenario='ready':
 # Download the verified runtime and build a local app bundle or dmg; add run to open it after (default: app).
 [group('Development')]
 dev target='app' run='':
-    runtime_dir="$({{ uv }} scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then {{ uv_packaging }} scripts/build_dmg.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py dmg-name)"; else {{ uv_packaging }} scripts/build_app.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py app-bundle-name)"; fi; path="dist/$artifact_name"; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi
+    @runtime_dir="$({{ uv }} scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then {{ uv_packaging }} scripts/build_dmg.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py dmg-name)"; else {{ uv_packaging }} scripts/build_app.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py app-bundle-name)"; fi; path="dist/$artifact_name"; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi
 
 # Check formatting, lint, and test swift, scripts, shim, or all (default: all).
 [group('Checks')]

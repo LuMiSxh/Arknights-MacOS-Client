@@ -34,6 +34,7 @@ extension LauncherViewModel {
 	}
 
 	func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
+		await waitForStartup()
 		#if DEBUG
 			if isOnboardingPreview { return .current }
 		#endif

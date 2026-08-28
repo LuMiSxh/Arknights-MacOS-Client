@@ -6,6 +6,7 @@ struct UpdatesSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
 	let communication: LauncherCommunicationController
 	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
 	let accentColor: Color
 	let appVersion: String
 	let checkLauncherUpdates: () -> Void
@@ -26,6 +27,7 @@ struct UpdatesSettingsPage: View {
 					status: launcherStatusText,
 					isEnabled: $settings.automaticallyChecksLauncherUpdates,
 					isChecking: communication.isCheckingLauncherUpdates,
+					isDisabled: !communication.canOpenLauncherUpdate,
 					accentColor: accentColor,
 					check: checkLauncherUpdates
 				)
@@ -36,6 +38,7 @@ struct UpdatesSettingsPage: View {
 						? L10n.string(SettingsStrings.updateAvailable) : versionText,
 					isEnabled: $settings.automaticallyChecksGameUpdates,
 					isChecking: installation.isDownloading,
+					isDisabled: !lifecycle.canBeginExclusiveActivity,
 					accentColor: accentColor,
 					check: checkGameUpdates
 				)
@@ -60,7 +63,7 @@ struct UpdatesSettingsPage: View {
 
 	private var launcherStatusText: String {
 		if communication.isCheckingLauncherUpdates { return L10n.string(SettingsStrings.checking) }
-		if communication.launcherUpdate != nil {
+		if communication.launcherUpdateVersion != nil {
 			return L10n.string(SettingsStrings.updateAvailable)
 		}
 		return "v\(appVersion)"

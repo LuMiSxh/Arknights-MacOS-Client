@@ -143,6 +143,7 @@ struct UpdateSettingsRow: View {
 	let status: String
 	@Binding var isEnabled: Bool
 	let isChecking: Bool
+	var isDisabled = false
 	let accentColor: Color
 	let check: () -> Void
 
@@ -158,12 +159,13 @@ struct UpdateSettingsRow: View {
 			.frame(maxWidth: .infinity, alignment: .leading)
 			Spacer()
 			SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
+				.disabled(isDisabled)
 			CapsuleActionButton(
 				title: L10n.string(SettingsStrings.checkNow), tone: .accent(accentColor),
 				presentation: .compact,
 				action: check
 			)
-			.disabled(isChecking)
+			.disabled(isChecking || isDisabled)
 		}
 	}
 }

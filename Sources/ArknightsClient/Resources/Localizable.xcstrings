@@ -269,16 +269,16 @@
       "comment" : "Available launcher update button",
       "extractionState" : "manual",
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Launcher-Update" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Launcher Update" } }
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Update installieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Install Update" } }
       }
     },
     "home.launcherUpdate.help" : {
       "comment" : "Available launcher update button help",
       "extractionState" : "manual",
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neueste Launcher-Version im Browser öffnen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open the latest launcher release in your browser" } }
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neueste Launcher-Version installieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Install the latest launcher update" } }
       }
     },
     "home.region.switch.help" : {
@@ -500,14 +500,13 @@
     "onboarding.welcome.status.current" : { "comment" : "Setup ready status title", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Bereit für die Einrichtung" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Ready for setup" } } } },
     "onboarding.welcome.status.currentDetail" : { "comment" : "Launcher current confirmation", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Dieser Launcher ist aktuell. Die Einrichtung kann fortgesetzt werden." } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "This launcher is current. Setup can continue." } } } },
     "onboarding.welcome.status.failedDetail" : { "comment" : "Update check failure guidance", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Der Launcher konnte die Update-Quelle nicht erreichen. Du kannst jetzt fortfahren; automatische Prüfungen versuchen es später erneut." } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "The launcher could not reach the update source. You can continue now; automatic checks will try again later." } } } },
-    "onboarding.welcome.status.releaseCheck" : { "comment" : "GitHub releases checking status", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "GitHub-Releases werden geprüft, bevor die Einrichtung startet…" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking GitHub Releases before setup starts…" } } } },
     "onboarding.welcome.status.updateDetail" : { "comment" : "Update required guidance", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Installiere den neueren Launcher und öffne ihn erneut. Die Einrichtung bleibt ausstehend, damit die Hinweise immer zu deiner verwendeten Version passen." } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Install the newer launcher and open it again. Setup stays pending so instructions always match the version you are using." } } } },
     "onboarding.welcome.status.updateRequired" : { "comment" : "Update required status title", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Vor der Einrichtung aktualisieren" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Update before setup" } } } },
     "onboarding.welcome.status.versionAvailable" : { "comment" : "Launcher update available; argument is version", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Version %1$@ ist verfügbar." } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Version %1$@ is available." } } } },
     "onboarding.welcome.subtitle" : { "comment" : "Onboarding welcome subtitle", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Wir prüfen zuerst den Launcher und richten dann das Spiel sowie die Bereiche ein, die du täglich siehst. Deine Auswahl gilt sofort." } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "We’ll check the launcher first, then configure the game and the parts you see every day. Your choices apply immediately." } } } },
     "onboarding.welcome.title" : { "comment" : "Onboarding welcome title", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Willkommen bei Arknights Client" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome to Arknights Client" } } } },
     "onboarding.action.browsePresets" : { "comment" : "Browse artwork presets action", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorlagen durchsuchen…" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Browse Presets…" } } } },
-    "onboarding.action.viewVersion" : { "comment" : "Open available launcher version; argument is version", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Version %1$@ anzeigen" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "View Version %1$@" } } } },
+    "onboarding.action.installUpdate" : { "comment" : "Install available launcher update; argument is version", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Update %1$@ installieren" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Install Update %1$@" } } } },
     "onboarding.icons.game" : { "comment" : "Game icon override menu title", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Spiel" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Game" } } } },
     "onboarding.icons.launcher" : { "comment" : "Launcher icon override menu title", "extractionState" : "manual", "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Launcher" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Launcher" } } } },
     "home.wordmark.accessibility" : {

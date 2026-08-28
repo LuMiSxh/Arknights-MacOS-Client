@@ -68,8 +68,11 @@ def run(
     except FileNotFoundError:
         fail(f"required command not found: {arguments[0]}")
     except subprocess.CalledProcessError as process_error:
-        if capture and process_error.stderr:
-            print(process_error.stderr.rstrip(), file=sys.stderr)
+        if capture:
+            if process_error.stdout:
+                print(process_error.stdout.rstrip())
+            if process_error.stderr:
+                print(process_error.stderr.rstrip(), file=sys.stderr)
         fail(f"command failed ({process_error.returncode}): {' '.join(arguments)}")
 
 

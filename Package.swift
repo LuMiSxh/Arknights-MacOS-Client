@@ -13,13 +13,15 @@ let package = Package(
 		.executable(name: "ArknightsClient", targets: ["ArknightsClient"])
 	],
 	dependencies: [
+		.package(url: "https://github.com/sparkle-project/Sparkle.git", exact: "2.9.6"),
 		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0")
 	],
 	targets: [
 		.executableTarget(
 			name: "ArknightsClient",
 			dependencies: [
-				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit")
+				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
+				.product(name: "Sparkle", package: "Sparkle")
 			],
 			path: "Sources/ArknightsClient",
 			resources: [

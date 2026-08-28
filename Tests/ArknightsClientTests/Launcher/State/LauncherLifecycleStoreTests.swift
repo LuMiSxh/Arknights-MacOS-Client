@@ -31,6 +31,38 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.failureMessage == nil)
 		#expect(lifecycle.activityMessage == L10n.string(.Launcher.launcherStatusRunning))
 	}
+
+	@Test
+	func idleLifecycleAllowsLauncherUpdateActivity() {
+		let lifecycle = makeLifecycleStore()
+
+		#expect(lifecycle.canBeginExclusiveActivity)
+		#expect(!lifecycle.hasActiveActivity)
+
+		lifecycle.beginLauncherUpdate()
+		#expect(!lifecycle.canBeginExclusiveActivity)
+		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
+	}
+
+	@Test
+	func pendingLauncherUpdateWaitsForActiveActivityToFinish() {
+		let lifecycle = makeLifecycleStore()
+		let sessionID = UUID()
+		lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		lifecycle.beginLauncherUpdate()
+
+		#expect(!lifecycle.canBeginExclusiveActivity)
+		#expect(lifecycle.hasActiveActivity)
+		#expect(lifecycle.activity == .runningGame(sessionID: sessionID, processIdentifier: 42))
+
+		lifecycle.activity = .idle
+		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
+		#expect(!lifecycle.canBeginExclusiveActivity)
+
+		lifecycle.finishLauncherUpdate()
+		#expect(lifecycle.activity == .idle)
+		#expect(lifecycle.canBeginExclusiveActivity)
+	}
 }
 
 @MainActor

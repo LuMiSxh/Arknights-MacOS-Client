@@ -14,7 +14,7 @@
 			installation.isInstalled = true
 			installation.installedVersion = Self.developerConfiguration.gameLatestVersion
 			installation.isGameUpdateAvailable = false
-			communication.launcherUpdate = nil
+			communication.launcherUpdateVersion = nil
 			communication.launcherUpdateStatus = "Up to date"
 			communication.isCheckingLauncherUpdates = false
 			lifecycle.intelTranslationState = .available
@@ -26,18 +26,8 @@
 			case .ready:
 				break
 			case .launcherUpdate:
-				let release = LauncherRelease(
-					tagName: "v0.2.0",
-					htmlURL: URL(
-						string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/releases")!,
-					body:
-						"## What’s new\n\n- Faster game startup\n- Improved embedded browser rendering\n- More reliable runtime migrations",
-					isDraft: false,
-					isPrerelease: false
-				)
-				communication.launcherUpdate = release
+				communication.launcherUpdateVersion = "0.2.0"
 				communication.launcherUpdateStatus = "Version 0.2.0 available"
-				communication.enqueuePopup(Self.developerUpdatePopup(release))
 			case .announcement:
 				communication.enqueuePopup(
 					LauncherPopup(
@@ -169,15 +159,5 @@
 			decompressionSize: "38 GB"
 		)
 
-		private static func developerUpdatePopup(_ release: LauncherRelease) -> LauncherPopup {
-			LauncherPopup(
-				id: "developer-launcher-update",
-				title: "Arknights Client \(release.version)",
-				content: .markdown(release.body ?? ""),
-				dismissTitle: "Later",
-				actionTitle: "View Release",
-				actionURL: release.htmlURL
-			)
-		}
 	}
 #endif

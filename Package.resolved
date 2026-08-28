@@ -1,6 +1,15 @@
 {
-  "originHash" : "ebdb8a12550e05d63c462b5ac2c9417bc125b0485c69ce89be949cf46402c30c",
+  "originHash" : "26203a52b150400f8135f668f2f3165ea7469c62e4de475a3202c560944fd445",
   "pins" : [
+    {
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle.git",
+      "state" : {
+        "revision" : "ac2def288cbff5cfc7df3ffef6abdf45b72bcb0a",
+        "version" : "2.9.6"
+      }
+    },
     {
       "identity" : "youtubeplayerkit",
       "kind" : "remoteSourceControl",

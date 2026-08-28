@@ -108,7 +108,10 @@ struct VersionHUDPill: View {
 	}
 
 	private var cannotCheck: Bool {
-		lifecycle.refresh.isChecking || installation.isDownloading || gameSession.isGameActive
+		!lifecycle.canBeginExclusiveActivity
+			|| lifecycle.refresh.isChecking
+			|| installation.isDownloading
+			|| gameSession.isGameActive
 	}
 
 	private var versionText: String {

@@ -38,7 +38,6 @@ final class LauncherViewModel {
 		paths: AppPaths = AppPaths(),
 		artworkCache: ArtworkCache? = nil,
 		preferences: LauncherPreferencesStore = LauncherPreferencesStore(),
-		updateChecker: LauncherUpdateChecker = LauncherUpdateChecker(),
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
 		launcherIconManager: LauncherIconManager? = nil,
 		presetCatalog: PresetCatalogService? = nil,
@@ -105,7 +104,7 @@ final class LauncherViewModel {
 		)
 		self.customization = customization
 		let communication = LauncherCommunicationController(
-			updateChecker: updateChecker,
+			lifecycle: lifecycle,
 			announcementService: announcementService,
 			preferences: preferences,
 			log: launcherLog
@@ -190,15 +189,15 @@ final class LauncherViewModel {
 			_ = await intelTranslation.refreshAvailability()
 			let refreshTask = refreshController.startRefresh()
 			await refreshTask.value
+			if settings.automaticallyChecksLauncherUpdates {
+				_ = await communication.checkLauncherUpdates(presentUpdate: true).value
+			}
 			if launchOnStart {
 				gameSession.launch()
 			} else if installOnLaunch {
 				installation.startInstallation(
 					launchAfterCompletion: launchAfterInstall)
 			}
-		}
-		if settings.automaticallyChecksLauncherUpdates {
-			communication.checkLauncherUpdates()
 		}
 		if settings.announcementsEnabled {
 			communication.checkAnnouncements(isEnabled: true)

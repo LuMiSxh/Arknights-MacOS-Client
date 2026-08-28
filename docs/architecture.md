@@ -179,27 +179,30 @@ Vuplex and PlatformProcess use this reconciliation path rather than one-time mig
 
 ## Launcher communication
 
-Three read-only sources feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Any of the three can enqueue a popup.
+Three read-only sources feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Announcements and Yostar notices can enqueue a popup; launcher updates use status state and the themed Sparkle UI.
 
-- **GitHub Releases** (`https://api.github.com/repos/.../releases/latest`), checked by `checkLauncherUpdates()` when automatic launcher-update checks are on. GitHub's `latest` endpoint already excludes drafts and pre-releases; the launcher re-checks both client-side anyway and compares the tag against the running version with an embedded SemVer parser tolerant of a leading `v` and of Yostar-style version strings. A newer, non-draft, non-prerelease version becomes a Markdown popup built from the release body, and its release page stays reachable afterward from Settings and the status capsule.
+- **Sparkle appcast** (`SUFeedURL`), checked silently when automatic launcher-update checks are on and before onboarding. Sparkle validates the signed feed and compares its update item against the running version. A newer version becomes launcher status state and enables the update action; an automatic startup discovery and manual actions open the launcher's themed Sparkle UI.
 - **GitHub Contents API** (`https://api.github.com/repos/.../contents/announcements.json?ref=main`), checked by `checkAnnouncements()` when announcements are enabled. The request sends `Accept: application/vnd.github.raw+json` so GitHub returns the raw file instead of a base64-wrapped JSON blob. The feed is capped at 20 entries and 128 KB and must declare schema version 1; the first entry that is enabled, not already seen, within its optional date window and version bounds, under the field-length limits, and using only an HTTPS action becomes the shown announcement.
-- **Yostar's own branding response** — not a dedicated notice endpoint. It rides along on the same `api.branding(region:)` call the launcher already makes for hero artwork, as part of `refresh()`'s concurrent branding fetch. If that response's `noticePopOpen` is true and its `noticeContent` differs from the last notice shown, the HTML is converted to native attributed text and queued. This channel has no persistent "seen" state: the in-memory guard resets on every region switch and on every fresh launch, so an active Yostar notice reappears each session, unlike the two GitHub-sourced popups.
+- **Yostar's own branding response** — not a dedicated notice endpoint. It rides along on the same `api.branding(region:)` call the launcher already makes for hero artwork, as part of `refresh()`'s concurrent branding fetch. If that response's `noticePopOpen` is true and its `noticeContent` differs from the last notice shown, the HTML is converted to native attributed text and queued. This channel has no persistent "seen" state: the in-memory guard resets on every region switch and on every fresh launch, so an active Yostar notice reappears each session, unlike announcements, which persist seen IDs.
 
-All three funnel into the same queue (`enqueuePopup`): if nothing is showing, the new popup is shown immediately and recorded as seen right away; otherwise it is appended to `pendingPopups` and only recorded as seen once `dismissPopup` actually promotes it into view. Entries are deduplicated by id — a duplicate of the currently-shown or an already-queued id is dropped silently. "Seen" persistence differs per source: announcements keep a set of seen ids, launcher updates keep the last version presented, and Yostar notices keep nothing beyond the current session (their id also embeds a fresh UUID each time, so the queue's own id-based dedup never catches a repeat there — only the upstream content comparison does). Dismissing a popup by its action button removes it from the queue before opening the URL, not after.
+Launcher release discovery and installation are owned by `LauncherUpdaterController`, a feature-local wrapper around Sparkle 2.9.6's `SPUUpdater` and the launcher's `LauncherUpdateUserDriver`. Sparkle validates the feed, handles release notes data, download, signature verification, replacement, and relaunch; the feature-local SwiftUI driver supplies the launcher's accessible themed presentation. The wrapper rejects checks while the shared lifecycle is installing, migrating, launching, or running the game and postpones a pending relaunch until that activity returns to idle.
+
+Announcements and Yostar notices funnel into the same queue (`enqueuePopup`): if nothing is showing, the new popup is shown immediately and recorded as seen right away; otherwise it is appended to `pendingPopups` and only recorded as seen once `dismissPopup` actually promotes it into view. Entries are deduplicated by id — a duplicate of the currently-shown or an already-queued id is dropped silently. Announcements keep a set of seen ids, while Yostar notices keep nothing beyond the current session (their id also embeds a fresh UUID each time, so the queue's own id-based dedup never catches a repeat there — only the upstream content comparison does). Dismissing a popup by its action button removes it from the queue before opening the URL, not after.
 
 ```mermaid
 sequenceDiagram
 	participant App as SwiftUI launcher
-	participant Releases as GitHub Releases API
+	participant Releases as Sparkle appcast
 	participant Contents as GitHub Contents API
 	participant Yostar as Yostar branding API
 	participant Queue as Popup queue
 
 	par Launcher update check
-		App->>Releases: GET releases/latest
-		Releases-->>App: Version, URL, Markdown body
-		alt Newer, non-draft, non-prerelease version
-			App->>Queue: enqueue launcher-update popup
+		App->>Releases: Check signed appcast
+		Releases-->>App: Validated update metadata
+		alt Newer version
+			App->>App: Record available version and show update action
+			App->>App: Open custom Sparkle update UI on user action
 		end
 	and Announcement check
 		App->>Contents: GET contents/announcements.json (raw)

@@ -151,7 +151,7 @@ struct OnboardingView: View {
 			case .current, .checkFailed:
 				coordinator.intelTranslationState == .checking
 					? OnboardingStrings.checking : OnboardingStrings.continue
-			case .updateRequired(let release): OnboardingStrings.viewVersion(release.version)
+			case .updateRequired(let version): OnboardingStrings.installUpdate(version)
 			}
 		}
 		if coordinator.step == .installation {
@@ -186,7 +186,7 @@ struct OnboardingView: View {
 
 	private var primarySystemImage: String {
 		if coordinator.step == .welcome, case .updateRequired = coordinator.updateState {
-			return "arrow.up.right"
+			return "arrow.down.app"
 		}
 		if coordinator.step == .installation && !model.installation.isInstalled
 			&& !model.installation.isDownloading

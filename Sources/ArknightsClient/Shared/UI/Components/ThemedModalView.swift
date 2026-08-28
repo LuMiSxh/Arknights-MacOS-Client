@@ -47,6 +47,7 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 			FloatingActionBar(tint: hudTintColor) {
 				actions
 			}
+			.textSelection(.disabled)
 			.padding(.trailing, 24)
 			.padding(.bottom, 18)
 		}

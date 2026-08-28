@@ -67,19 +67,11 @@ struct OnboardingCoordinatorTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = OnboardingProgressStore(defaults: defaults)
 		let coordinator = OnboardingCoordinator(store: store)
-		let release = LauncherRelease(
-			tagName: "v0.5.0",
-			htmlURL: URL(string: "https://example.com/release")!,
-			body: nil,
-			isDraft: false,
-			isPrerelease: false
-		)
-
 		await coordinator.startIfNeeded(
 			isDeveloperMode: false,
 			isOnboardingPreview: false,
 			gameIsInstalled: false,
-			checkForUpdates: { .updateAvailable(release) },
+			checkForUpdates: { .updateAvailable("0.5.0") },
 			checkIntelTranslation: { .available }
 		)
 		coordinator.advance()

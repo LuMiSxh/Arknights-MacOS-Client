@@ -38,6 +38,8 @@ Future integration scenarios belong in the same level when they can use fixture 
 
 The main-branch CI packaging smoke builds an app without a runtime. Complete runtime/DMG packaging remains in the release workflow because it downloads the pinned runtime and has a substantially larger time and disk budget.
 
+Sparkle packaging checks run as part of the app smoke and release workflow. The app bundle must contain Sparkle.framework with its symlinks and nested XPC/helper code intact, an `@executable_path/../Frameworks` rpath, inside-out ad-hoc signatures, and a final outer-bundle verification. `SUPublicEDKey` is always read from the tracked `Resources/Info.plist` and must decode to exactly 32 bytes. The release workflow derives and compares that key with the protected `SPARKLE_ED25519_PRIVATE_KEY` seed, then signs `appcast.xml` through standard input. Manual release-candidate testing must install the DMG, start a newer signed update from the launcher, confirm the themed update UI and Sparkle download/restart flow, then repeat while a game or installation operation is active to verify that replacement is deferred.
+
 ## Live contracts
 
 Live contracts perform safe read-only requests and make no local installation changes. They are separate from deterministic CI because service outages, rate limits, and upstream deployments must not make unrelated pull requests flaky. The dedicated workflow runs every Monday at 04:23 UTC; `workflow_dispatch` and `just live-contracts` provide deliberate manual execution.

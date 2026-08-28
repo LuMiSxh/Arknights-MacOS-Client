@@ -6,91 +6,8 @@ import Testing
 @testable import ArknightsClient
 
 @Suite(.serialized)
-struct LauncherUpdateCheckerTests {
-	@Test
-	func latestReleaseDecodesGitHubResponseAndSendsExpectedHeaders() async throws {
-		let endpoint = URL(
-			string: "https://api.github.test/repos/example/arknights/releases/latest")!
-		let session = makeMockSession()
-		let receivedRequest = LockedValue<URLRequest?>(nil)
 
-		MockURLProtocol.handler = { request in
-			receivedRequest.set(request)
-			return .success(
-				(
-					HTTPURLResponse(
-						url: endpoint, statusCode: 200, httpVersion: nil, headerFields: nil)!,
-					Data(
-						#"""
-						{
-						  "tag_name": "v1.4.0-rc.1",
-						  "html_url": "https://github.com/example/arknights/releases/tag/v1.4.0-rc.1",
-						  "body": "## Changes\n\n- Faster startup",
-						  "draft": false,
-						  "prerelease": true
-						}
-						"""#.utf8
-					)
-				)
-			)
-		}
-		defer { MockURLProtocol.handler = nil }
-
-		let result = try await LauncherUpdateChecker(session: session).latestRelease(
-			from: endpoint)
-		let release = try #require(result)
-
-		#expect(release.tagName == "v1.4.0-rc.1")
-		#expect(release.version == "1.4.0-rc.1")
-		#expect(release.body == "## Changes\n\n- Faster startup")
-		#expect(release.isPrerelease)
-		#expect(
-			receivedRequest.value?.value(forHTTPHeaderField: "Accept")
-				== "application/vnd.github+json")
-		#expect(receivedRequest.value?.value(forHTTPHeaderField: "User-Agent") == "ArknightsClient")
-	}
-
-	@Test
-	func latestReleaseTreatsMissingReleasesAsAnEmptyResult() async throws {
-		let endpoint = URL(
-			string: "https://api.github.test/repos/example/arknights/releases/latest")!
-		let session = makeMockSession()
-		MockURLProtocol.handler = { _ in
-			.success(
-				(
-					HTTPURLResponse(
-						url: endpoint, statusCode: 404, httpVersion: nil, headerFields: nil)!,
-					Data()
-				))
-		}
-		defer { MockURLProtocol.handler = nil }
-
-		let release = try await LauncherUpdateChecker(session: session).latestRelease(
-			from: endpoint)
-
-		#expect(release == nil)
-	}
-
-	@Test
-	func latestReleaseRejectsNonSuccessHTTPResponses() async {
-		let endpoint = URL(
-			string: "https://api.github.test/repos/example/arknights/releases/latest")!
-		let session = makeMockSession()
-		MockURLProtocol.handler = { _ in
-			.success(
-				(
-					HTTPURLResponse(
-						url: endpoint, statusCode: 503, httpVersion: nil, headerFields: nil)!,
-					Data()
-				))
-		}
-		defer { MockURLProtocol.handler = nil }
-
-		await #expect(throws: LauncherError.self) {
-			try await LauncherUpdateChecker(session: session).latestRelease(from: endpoint)
-		}
-	}
-
+struct LauncherAnnouncementServiceTests {
 	@Test(arguments: [
 		("v1.2.4", "1.2.3", true),
 		("1.2.3", "v1.2.3-rc.1", true),
@@ -105,7 +22,12 @@ struct LauncherUpdateCheckerTests {
 		("v1.2.3", "not-a-version", false),
 	])
 	func semanticVersionComparison(candidate: String, current: String, expected: Bool) {
-		#expect(LauncherUpdateChecker().isNewer(candidate, than: current) == expected)
+		guard let candidate = SemanticVersion(candidate), let current = SemanticVersion(current)
+		else {
+			#expect(!expected)
+			return
+		}
+		#expect((candidate > current) == expected)
 	}
 
 	@Test

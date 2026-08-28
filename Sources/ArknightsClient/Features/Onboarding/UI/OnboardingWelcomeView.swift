@@ -41,7 +41,7 @@ struct OnboardingWelcomeView: View {
 				case .checking:
 					HStack(spacing: 12) {
 						ProgressView()
-						Text(OnboardingStrings.releaseCheck)
+						Text(OnboardingStrings.checking)
 							.foregroundStyle(.secondary)
 					}
 				case .current:
@@ -50,9 +50,9 @@ struct OnboardingWelcomeView: View {
 						systemImage: "checkmark.circle.fill"
 					)
 					.foregroundStyle(accentColor)
-				case .updateRequired(let release):
+				case .updateRequired(let version):
 					VStack(alignment: .leading, spacing: 8) {
-						Text(OnboardingStrings.versionAvailable(release.version))
+						Text(OnboardingStrings.versionAvailable(version))
 							.bold()
 						Text(OnboardingStrings.updateDetail)
 							.foregroundStyle(.secondary)

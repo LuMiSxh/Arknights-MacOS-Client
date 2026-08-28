@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
 - A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
 - Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, and localized text fallbacks (#37).
+- Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
 
 ### Changed
 

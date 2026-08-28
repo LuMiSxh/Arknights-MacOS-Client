@@ -5,12 +5,11 @@ import SwiftUI
 struct ContentView: View {
 	let model: LauncherViewModel
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State private var settingsPresented = false
+	@State private var launcherUpdateCheckAfterSettingsDismiss = false
 	@State private var confirmsRosettaInstallation = false
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
-
 	init(model: LauncherViewModel) {
 		self.model = model
 		_onboarding = State(
@@ -20,37 +19,7 @@ struct ContentView: View {
 		)
 		_musicController = State(initialValue: BackgroundMusicController(context: model))
 	}
-
 	private var accentColor: Color { model.customization.accentColor }
-
-	private var readabilityField: some View {
-		ZStack(alignment: .topLeading) {
-			if !reduceTransparency {
-				Rectangle()
-					.fill(.regularMaterial)
-					.frame(width: 640, height: 500, alignment: .topLeading)
-					.mask {
-						RadialGradient(
-							colors: [.white, .white.opacity(0.92), .white.opacity(0.62), .clear],
-							center: .topLeading,
-							startRadius: 0,
-							endRadius: 500
-						)
-					}
-			}
-			RadialGradient(
-				colors: [.black, .black.opacity(0.68), .black.opacity(0.2), .clear],
-				center: .topLeading,
-				startRadius: 0,
-				endRadius: 450
-			)
-			.frame(width: 680, height: 390, alignment: .topLeading)
-			.blur(radius: reduceTransparency ? 0 : 3)
-			.opacity(reduceTransparency ? 0.96 : 0.86)
-		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-	}
-
 	var body: some View {
 		ZStack {
 			BackgroundMusicView(
@@ -67,7 +36,7 @@ struct ContentView: View {
 			)
 			.ignoresSafeArea(.container, edges: .top)
 
-			readabilityField
+			LauncherReadabilityField()
 				.ignoresSafeArea(.container, edges: .top)
 				.allowsHitTesting(false)
 
@@ -80,9 +49,7 @@ struct ContentView: View {
 				}
 				.padding(20)
 			}
-			// L10n reads a plain mutex, not an Observable value, so SwiftUI never invalidates
-			// this content on its own when the language changes. Re-key it so a language
-			// switch redraws it immediately instead of waiting on an unrelated state change.
+			// Re-key because L10n reads a mutex and SwiftUI otherwise misses language changes.
 			.id(model.settings.appLanguage)
 		}
 		.background(Color.black)
@@ -97,8 +64,25 @@ struct ContentView: View {
 				)
 			}
 		}
-		.sheet(isPresented: $settingsPresented) {
-			LauncherSettingsView(model: model, restartOnboarding: restartOnboarding)
+		.sheet(isPresented: $settingsPresented, onDismiss: openLauncherUpdateAfterSettingsDismiss) {
+			LauncherSettingsView(
+				model: model,
+				restartOnboarding: restartOnboarding,
+				requestLauncherUpdateCheck: requestLauncherUpdateCheck
+			)
+		}
+		.overlay {
+			if model.communication.launcherUpdateUserDriver.isPresented {
+				ZStack {
+					Color.black.opacity(0.55).ignoresSafeArea()
+					LauncherUpdateView(
+						driver: model.communication.launcherUpdateUserDriver,
+						accentColor: accentColor,
+						hudTintColor: model.customization.hudTintColor,
+						checkForUpdates: model.communication.openLauncherUpdate
+					)
+				}
+			}
 		}
 		.sheet(item: popupBinding) { popup in
 			LauncherPopupView(
@@ -120,7 +104,12 @@ struct ContentView: View {
 
 	private var popupBinding: Binding<LauncherPopup?> {
 		Binding(
-			get: { onboarding.isPresented ? nil : model.communication.popup },
+			get: {
+				guard !onboarding.isPresented,
+					!model.communication.launcherUpdateUserDriver.isPresented
+				else { return nil }
+				return model.communication.popup
+			},
 			set: { popup in
 				if popup == nil { model.communication.dismissPopup() }
 			}
@@ -158,7 +147,19 @@ struct ContentView: View {
 		settingsPresented = true
 	}
 
+	private func requestLauncherUpdateCheck() {
+		launcherUpdateCheckAfterSettingsDismiss = true
+		settingsPresented = false
+	}
+
+	private func openLauncherUpdateAfterSettingsDismiss() {
+		guard launcherUpdateCheckAfterSettingsDismiss else { return }
+		launcherUpdateCheckAfterSettingsDismiss = false
+		model.communication.openLauncherUpdate()
+	}
+
 	private func startOnboardingIfNeeded() async {
+		await model.waitForStartup()
 		model.installation.updateInstalledState()
 		await onboarding.startIfNeeded(
 			isDeveloperMode: model.isDeveloperMode,
@@ -215,13 +216,14 @@ struct ContentView: View {
 			.frame(maxWidth: .infinity, alignment: .leading)
 
 			HStack(spacing: 8) {
-				if model.communication.launcherUpdate != nil {
+				if model.communication.shouldShowLauncherUpdateButton {
 					CapsuleActionButton(
 						title: L10n.string(HomeStrings.launcherUpdate),
 						systemImage: "arrow.down.app",
 						tone: .accent(accentColor),
 						action: model.communication.openLauncherUpdate
 					)
+					.disabled(!model.communication.canOpenLauncherUpdate)
 					.transition(.opacity)
 					.help(L10n.string(HomeStrings.launcherUpdateHelp))
 				}
@@ -243,7 +245,7 @@ struct ContentView: View {
 		.adaptiveGlassEffect(tint: model.customization.hudTintColor, in: Capsule())
 		.animation(stateAnimation, value: model.installation.isDownloading)
 		.animation(stateAnimation, value: primaryActionIdentity)
-		.animation(stateAnimation, value: model.communication.launcherUpdate != nil)
+		.animation(stateAnimation, value: model.communication.shouldShowLauncherUpdateButton)
 	}
 
 	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill

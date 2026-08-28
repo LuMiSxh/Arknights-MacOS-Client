@@ -50,7 +50,7 @@
 		var detail: String {
 			switch self {
 			case .ready: "An installed and current game client."
-			case .launcherUpdate: "A newer launcher release with release notes."
+			case .launcherUpdate: "A newer launcher update reported by Sparkle."
 			case .announcement: "A one-time message controlled by announcements.json."
 			case .customPopup: "Type Markdown below and show it as the real popup."
 			case .gameUpdate: "An installed game with newer files available."

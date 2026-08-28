@@ -79,7 +79,7 @@ final class LauncherRefreshController {
 	}
 
 	func checkGameUpdates() {
-		guard !installation.isDownloading else { return }
+		guard lifecycle.canBeginExclusiveActivity, !installation.isDownloading else { return }
 		lifecycle.refresh = .idle
 		startRefresh(forceGameUpdateCheck: true)
 	}

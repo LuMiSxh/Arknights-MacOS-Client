@@ -55,7 +55,7 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func popupHistoryPersistsAndCapsAnnouncementIDs() {
+	func announcementHistoryPersistsAndCapsIDs() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
@@ -63,10 +63,7 @@ struct LauncherPreferencesStoreTests {
 		for index in 0..<110 {
 			store.markAnnouncementSeen("message-\(index)")
 		}
-		store.markLauncherUpdatePresented("0.2.0")
-
 		#expect(store.seenAnnouncementIDs().count == 100)
-		#expect(store.presentedLauncherUpdate() == "0.2.0")
 	}
 
 	@Test

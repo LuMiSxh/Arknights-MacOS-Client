@@ -23,7 +23,6 @@ jobs:
     timeout-minutes: 90
     environment: release
     env:
-      GH_TOKEN: ${{ github.token }}
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - name: Check out repository
@@ -45,8 +44,10 @@ jobs:
         uses: extractions/setup-just@v4
 
       - name: Validate release inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$GITHUB_REF_NAME" != "main" ]]; then
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
             echo "Releases must be triggered from main after the release branch is merged." >&2
             exit 1
           fi
@@ -101,24 +102,65 @@ jobs:
       - name: Build DMG
         run: |
           just dmg "$GITHUB_WORKSPACE/.build/runtime"
+
+      - name: Create and sign Sparkle update
+        env:
+          SPARKLE_ED25519_PRIVATE_KEY: ${{ secrets.SPARKLE_ED25519_PRIVATE_KEY }}
+        run: |
+          display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
+          app_name="$(uv run --locked --no-dev scripts/project_config.py app-bundle-name)"
+          update_directory="$RUNNER_TEMP/sparkle-updates"
+          mkdir -p "$update_directory"
+          ditto -c -k --sequesterRsrc --keepParent "dist/$app_name" \
+            "$update_directory/$display_name $RELEASE_VERSION.zip"
+          cp "$RUNNER_TEMP/release-notes.md" \
+            "$update_directory/$display_name $RELEASE_VERSION.md"
+          generate_appcast="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
+            -type f -path '*/Sparkle/bin/generate_appcast' -perm -111 -print -quit)"
+          if [[ -z "$generate_appcast" ]]; then
+            echo "Sparkle generate_appcast tool not found." >&2
+            exit 1
+          fi
+          release_prefix="https://github.com/$GITHUB_REPOSITORY/releases/download/v$RELEASE_VERSION/"
+          printf '%s' "$SPARKLE_ED25519_PRIVATE_KEY" | "$generate_appcast" \
+            --ed-key-file - \
+            --download-url-prefix "$release_prefix" \
+            --embed-release-notes \
+            "$update_directory"
+          uv run --locked --no-dev scripts/validate_sparkle_keys.py \
+            --plist "dist/$app_name/Contents/Info.plist" \
+            --appcast "$update_directory/appcast.xml"
+          cp "$update_directory/$display_name $RELEASE_VERSION.zip" "dist/$display_name $RELEASE_VERSION.zip"
+          cp "$update_directory/appcast.xml" dist/appcast.xml
           dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
-          shasum -a 256 "dist/$dmg_name" dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
+          shasum -a 256 "dist/$dmg_name" \
+            "dist/$display_name $RELEASE_VERSION.zip" \
+            dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
 
       - name: Attest release provenance
         uses: actions/attest-build-provenance@v4.2.2
+        env:
+          GH_TOKEN: ${{ github.token }}
         with:
           subject-path: |
             dist/*.dmg
+            dist/*.zip
+            dist/appcast.xml
             dist/Runtime-Build-Recipe.tar.gz
             dist/SHA256SUMS
 
       - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           release_tag="v$RELEASE_VERSION"
           display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
           dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
+          update_name="$display_name $RELEASE_VERSION.zip"
           gh release create "$release_tag" \
             "dist/$dmg_name" \
+            "dist/$update_name" \
+            dist/appcast.xml \
             dist/Runtime-Build-Recipe.tar.gz \
             dist/SHA256SUMS \
             --draft \

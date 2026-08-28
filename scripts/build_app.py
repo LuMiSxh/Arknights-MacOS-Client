@@ -6,7 +6,10 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import os
+import plistlib
 import shutil
 import stat
 import struct
@@ -52,7 +55,11 @@ REQUIRED_LICENSES = (
     "lgpl-2.1.txt",
     "lgpl-3.0.txt",
     "mit-dxmt.txt",
+    "sparkle.txt",
 )
+SPARKLE_FRAMEWORK_NAME = "Sparkle.framework"
+SPARKLE_FRAMEWORK_VERSION = "2.9.6"
+SPARKLE_PUBLIC_KEY_BYTES = 32
 
 
 def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
@@ -68,6 +75,97 @@ def copy_resource(source: Path, destination: Path) -> None:
         copy_file(source, destination)
     else:
         fail(f"required resource not found: {source}")
+
+
+def sparkle_framework(binary_dir: Path, project: Path) -> Path:
+    """Find the validated Sparkle artifact emitted by SwiftPM."""
+    roots = (
+        binary_dir,
+        project / BUILD_DIR.relative_to(PROJECT_DIR) / "artifacts/sparkle",
+    )
+    for root in roots:
+        for candidate in sorted(root.rglob(SPARKLE_FRAMEWORK_NAME)):
+            if not candidate.is_dir():
+                continue
+            version = candidate / "Versions/Current"
+            binary = version / "Sparkle"
+            if not binary.is_file() or not (version / "Updater.app").is_dir():
+                continue
+            try:
+                with (version / "Resources/Info.plist").open("rb") as file:
+                    metadata = plistlib.load(file)
+            except (OSError, plistlib.InvalidFileException) as error:
+                fail(f"could not read Sparkle framework metadata: {error}")
+            if metadata.get("CFBundleShortVersionString") != SPARKLE_FRAMEWORK_VERSION:
+                fail(f"expected Sparkle {SPARKLE_FRAMEWORK_VERSION}, found {metadata}")
+            for service in ("Downloader.xpc", "Installer.xpc"):
+                if not (version / "XPCServices" / service).is_dir():
+                    fail(f"Sparkle framework is missing {service}")
+            return candidate
+    fail("SwiftPM did not produce a validated Sparkle.framework artifact")
+
+
+def copy_sparkle_framework(source: Path, destination: Path) -> Path:
+    """Copy Sparkle while retaining framework symlinks and executable modes."""
+    remove_path(destination)
+    shutil.copytree(source, destination, symlinks=True)
+    return destination
+
+
+def configure_info_plist(source: Path, destination: Path) -> None:
+    try:
+        with source.open("rb") as file:
+            metadata = plistlib.load(file)
+    except (OSError, plistlib.InvalidFileException) as error:
+        fail(f"could not read application Info.plist: {error}")
+
+    validate_sparkle_public_key(metadata)
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("wb") as file:
+        plistlib.dump(metadata, file, fmt=plistlib.FMT_XML, sort_keys=False)
+    destination.chmod(0o644)
+
+
+def validate_sparkle_public_key(metadata: dict[str, object]) -> None:
+    public_key = metadata.get("SUPublicEDKey")
+    if not isinstance(public_key, str) or not public_key:
+        fail("SUPublicEDKey must be configured in the source Info.plist")
+    if any(character.isspace() for character in public_key):
+        fail("SUPublicEDKey must not contain whitespace")
+    try:
+        decoded = base64.b64decode(public_key, validate=True)
+    except (ValueError, binascii.Error) as error:
+        fail(f"SUPublicEDKey must be valid base64: {error}")
+    if len(decoded) != SPARKLE_PUBLIC_KEY_BYTES:
+        fail("SUPublicEDKey must decode to 32 bytes")
+
+
+def sign_code(path: Path) -> None:
+    run(["codesign", "--force", "--sign", "-", "--timestamp=none", path])
+
+
+def sign_sparkle_framework(framework: Path) -> None:
+    version = (framework / "Versions/Current").resolve()
+    sign_code(version / "Autoupdate")
+    for service in sorted((version / "XPCServices").glob("*.xpc")):
+        executable = service / "Contents/MacOS" / service.stem
+        require_file(executable)
+        sign_code(executable)
+        sign_code(service)
+    updater = version / "Updater.app"
+    updater_executable = updater / "Contents/MacOS/Updater"
+    require_file(updater_executable)
+    sign_code(updater_executable)
+    sign_code(updater)
+    sign_code(version / "Sparkle")
+    sign_code(framework)
+
+
+def ensure_framework_rpath(binary: Path) -> None:
+    rpath = "@executable_path/../Frameworks"
+    if rpath not in output(["otool", "-l", binary]):
+        run(["install_name_tool", "-add_rpath", rpath, binary])
 
 
 def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
@@ -195,7 +293,9 @@ def validate_inputs(
     configuration: ProjectConfiguration,
     runtime_configuration: RuntimeConfiguration,
 ) -> None:
-    require_commands(("codesign", "lipo", "plutil", "swift"))
+    require_commands(
+        ("codesign", "install_name_tool", "lipo", "otool", "plutil", "swift")
+    )
     project = configuration.project_directory
     require_file(project / "Resources/Info.plist")
     for source, _ in app_resources(configuration):
@@ -230,7 +330,10 @@ def embed_runtime(
     require_file(driver)
     info("Applying the native Command-Q integration patch")
     patch_file(driver)
-    run(["codesign", "--force", "--sign", "-", "--timestamp=none", driver])
+    run(
+        ["codesign", "--force", "--sign", "-", "--timestamp=none", driver],
+        capture=True,
+    )
     launcher = destination / layout.launcher.path
     remove_path(launcher)
     launcher.symlink_to(layout.launcher.target)
@@ -289,7 +392,9 @@ def build(
         resources.mkdir(parents=True)
         copy_file(binary, macos / project_configuration.product.executable_name, 0o755)
         copy_swift_localizations(binary_dir, resources, project_configuration)
-        copy_file(project / "Resources/Info.plist", staged_app / "Contents/Info.plist")
+        configure_info_plist(
+            project / "Resources/Info.plist", staged_app / "Contents/Info.plist"
+        )
         for source, destination in app_resources(project_configuration):
             copy_resource(source, resources / destination)
 
@@ -308,12 +413,19 @@ def build(
                     "-",
                     "--timestamp=none",
                     helper,
-                ]
+                ],
+                capture=True,
             )
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:
             embed_runtime(runtime, resources, runtime_configuration)
+        framework = copy_sparkle_framework(
+            sparkle_framework(binary_dir, project),
+            staged_app / "Contents/Frameworks/Sparkle.framework",
+        )
+        ensure_framework_rpath(macos / project_configuration.product.executable_name)
+        sign_sparkle_framework(framework)
         for source, destination in LEGAL_FILES.items():
             copy_file(project / source, resources / destination)
         licenses = resources / "ThirdPartyLicenses"
@@ -324,8 +436,14 @@ def build(
             copy_file(license_file, licenses / license_file.name)
 
         info("Ad-hoc signing the application bundle")
-        run(["codesign", "--force", "--sign", "-", "--timestamp=none", staged_app])
-        run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", staged_app])
+        run(
+            ["codesign", "--force", "--sign", "-", "--timestamp=none", staged_app],
+            capture=True,
+        )
+        run(
+            ["codesign", "--verify", "--deep", "--strict", "--verbose=2", staged_app],
+            capture=True,
+        )
         remove_path(app_bundle)
         staged_app.replace(app_bundle)
     success(f"Built {app_bundle.relative_to(project)}")

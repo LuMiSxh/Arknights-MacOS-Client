@@ -5,6 +5,7 @@ import SwiftUI
 struct LauncherSettingsView: View {
 	let model: LauncherViewModel
 	let restartOnboarding: () -> Void
+	let requestLauncherUpdateCheck: () -> Void
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var selectedSection = SettingsSection.general
@@ -44,9 +45,10 @@ struct LauncherSettingsView: View {
 							settings: model.settings,
 							communication: model.communication,
 							installation: model.installation,
+							lifecycle: model.lifecycle,
 							accentColor: model.customization.accentColor,
 							appVersion: IssueReportURL.appVersion,
-							checkLauncherUpdates: model.checkLauncherUpdates,
+							checkLauncherUpdates: requestLauncherUpdateCheck,
 							checkGameUpdates: model.checkGameUpdates
 						)
 					case .installation:

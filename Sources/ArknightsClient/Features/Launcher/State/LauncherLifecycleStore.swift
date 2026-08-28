@@ -11,11 +11,28 @@ import Observation
 final class LauncherLifecycleStore {
 	var state: LauncherState
 	let log: LauncherLog
+	private(set) var isLauncherUpdatePending = false
+	private var activityObservers: [UUID: () -> Void] = [:]
 
 	var activity: LauncherActivity {
-		get { state.activity }
-		set { state.activity = newValue }
+		get {
+			if isLauncherUpdatePending, state.activity == .idle {
+				return .maintaining(.updatingLauncher)
+			}
+			return state.activity
+		}
+		set {
+			guard state.activity != newValue else { return }
+			state.activity = newValue
+			for observer in Array(activityObservers.values) {
+				observer()
+			}
+		}
 	}
+
+	/// The underlying activity excludes the Sparkle update gate itself.
+	var hasActiveActivity: Bool { state.activity != .idle }
+	var canBeginExclusiveActivity: Bool { !hasActiveActivity && !isLauncherUpdatePending }
 
 	var refresh: LauncherRefreshState {
 		get { state.refresh }
@@ -75,6 +92,25 @@ final class LauncherLifecycleStore {
 
 	func clearFailure() {
 		state.presentation.failureMessage = nil
+	}
+
+	func beginLauncherUpdate() {
+		isLauncherUpdatePending = true
+	}
+
+	func finishLauncherUpdate() {
+		isLauncherUpdatePending = false
+	}
+
+	@discardableResult
+	func observeActivityChanges(_ observer: @escaping () -> Void) -> UUID {
+		let id = UUID()
+		activityObservers[id] = observer
+		return id
+	}
+
+	func removeActivityObserver(_ id: UUID) {
+		activityObservers[id] = nil
 	}
 
 	func show(_ error: any Error, context: String? = nil) {

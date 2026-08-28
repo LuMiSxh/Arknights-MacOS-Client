@@ -6,9 +6,9 @@ Each release contains a complete Apple Silicon DMG with the launcher, Wine, DXMT
 
 Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary latest versions: the browser and graphics fixes must match the Wine build. The current runtime is [`dappermint/Whisky` `4.5.118`](https://github.com/dappermint/Whisky/releases/tag/v4.5.118), built by the pinned [`dappermint/winecx-gptk`](https://github.com/dappermint/winecx-gptk) recipe. It contains Wine 11.15, DXMT 0.80, GStreamer, and the Chromium child-window patches required by the game. A runtime change requires a fresh-prefix and existing-prefix game launch, web login, and clean exit test before release.
 
-The launcher checks GitHub for a newer launcher version when it opens. If one exists, it links to the release page. Installation remains manual because the app is not Developer-ID signed or notarized. The check can be disabled in Settings.
+The launcher performs a silent Sparkle feed check when it opens. If a newer launcher version exists, the launcher invokes its themed Sparkle update UI for the signed update archive. Installation remains manual because the app is not Developer-ID signed or notarized. The check can be disabled in Settings.
 
-The first check that discovers a new version shows a native popup containing the version and that GitHub Release's Markdown body. Dismissing it keeps the release button in the launcher's status capsule and the version in Settings. The same version is not presented as a popup again.
+The first check that discovers a new version records it in the launcher's status capsule and Settings. Selecting the update action opens the launcher's accessible Sparkle UI, which presents embedded release notes while Sparkle owns the download, verification, and installation flow; release pages remain available through GitHub.
 
 Game updates are checked separately against Yostar. The check can also be disabled. A check never downloads game data by itself; the user starts the update.
 
@@ -25,7 +25,8 @@ flowchart LR
 	Notes --> Runtime["Download and verify<br/>the pinned runtime"]
 	Runtime --> Recipe["Download and verify<br/>the build recipe"]
 	Recipe --> Build[Build arm64 app and DMG]
-	Build --> Sums[Write SHA256SUMS]
+	Build --> Archive["Create signed app ZIP<br/>and appcast"]
+	Archive --> Sums[Write SHA256SUMS]
 	Sums --> Draft["Create a draft<br/>vX.Y.Z release"]
 ```
 
@@ -61,6 +62,10 @@ Versions follow Semantic Versioning. Before 1.0, minor versions may contain deli
 
 ## Signing limitation
 
-The app is ad-hoc signed so its bundle is internally consistent, but it is not notarized. Users must confirm the first launch with right-click → **Open**. Developer ID and silent self-updates are intentionally outside the current plan.
+The app is ad-hoc signed so its bundle is internally consistent, but it is not notarized. Users must confirm the first launch with right-click → **Open**. Sparkle updates are signed separately with Ed25519 and replace the complete app bundle through Sparkle's helper; this does not remove the first-launch Gatekeeper confirmation.
 
-The setup assistant always performs one launcher release check before version-specific onboarding, independent of the automatic-check preference. If a newer release exists, setup remains pending and sends the user to that release; it resumes only after the newer launcher is installed and reopened. A failed network check is recoverable and does not permanently block first-run setup.
+The appcast is published as the `appcast.xml` asset of the latest GitHub release and is read through the stable `releases/latest/download/appcast.xml` URL. Each release also contains a complete `.app.zip` update archive. The release workflow creates both from the fully packaged app, preserving bundle symlinks and executable modes, then generates and signs the appcast with Sparkle's `generate_appcast` tool.
+
+The Sparkle public key is tracked in `Resources/Info.plist` as `SUPublicEDKey` and is validated as exactly 32 decoded bytes during every package build. The private key is supplied to GitHub Actions only through the protected `release` environment as `SPARKLE_ED25519_PRIVATE_KEY`; it is passed to `generate_appcast` through standard input and never appears in command arguments. Export a current Sparkle `generate_keys -x` seed and ensure it decodes to exactly 32 bytes; legacy 96-byte key-pair exports are rejected. Release validation derives the public key from that seed and compares it with the embedded key before upload. Keep the private key in the macOS login Keychain and one separate encrypted offline recovery copy; never commit it.
+
+The setup assistant always performs one silent Sparkle feed check before version-specific onboarding, independent of the automatic-check preference. If a newer release exists, setup remains pending and opens Sparkle's updater; it resumes only after the newer launcher is installed and reopened. A failed network check is recoverable and does not permanently block first-run setup.

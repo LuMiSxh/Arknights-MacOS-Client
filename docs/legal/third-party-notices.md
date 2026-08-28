@@ -2,6 +2,8 @@
 
 Arknights Client packages a prebuilt compatibility runtime. Exact versions, archive hashes, and build provenance are pinned in [`runtime.json`](../../runtime.json). The app also embeds a small MPL-2.0 wrapper built from `RuntimeSupport/Vuplex`; it does not distribute the Vuplex SDK.
 
+The launcher embeds [Sparkle 2.9.6](https://github.com/sparkle-project/Sparkle), an MIT-licensed update framework. Its MIT license and notices for bundled bsdiff, sais-lite, Ed25519, and signature-verifier code are included in [`ThirdPartyLicenses/sparkle.txt`](licenses/sparkle.txt) in the app bundle.
+
 ## Runtime components
 
 | Component     | Version or revision                                    | License                                                                                             | Source                                                                                                  |

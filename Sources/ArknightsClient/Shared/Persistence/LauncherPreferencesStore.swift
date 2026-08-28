@@ -18,7 +18,6 @@ struct LauncherPreferencesStore {
 		static let showsPlayingMusic = "showsPlayingMusic"
 		static let launcherMusicVolume = "launcherMusicVolume"
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
-		static let presentedLauncherUpdate = "presentedLauncherUpdate"
 		static let gameLaunchOptions = "gameLaunchOptions"
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
@@ -116,14 +115,6 @@ struct LauncherPreferencesStore {
 		var ids = seenAnnouncementIDs()
 		ids.insert(id)
 		defaults.set(Array(ids.sorted().suffix(100)), forKey: Key.seenAnnouncementIDs)
-	}
-
-	func presentedLauncherUpdate() -> String? {
-		defaults.string(forKey: Key.presentedLauncherUpdate)
-	}
-
-	func markLauncherUpdatePresented(_ version: String) {
-		defaults.set(version, forKey: Key.presentedLauncherUpdate)
 	}
 
 	func launchOptions() -> GameLaunchOptions {
