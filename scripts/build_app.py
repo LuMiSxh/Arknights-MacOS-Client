@@ -142,7 +142,10 @@ def validate_sparkle_public_key(metadata: dict[str, object]) -> None:
 
 
 def sign_code(path: Path) -> None:
-    run(["codesign", "--force", "--sign", "-", "--timestamp=none", path])
+    run(
+        ["codesign", "--force", "--sign", "-", "--timestamp=none", path],
+        capture=True,
+    )
 
 
 def sign_sparkle_framework(framework: Path) -> None:

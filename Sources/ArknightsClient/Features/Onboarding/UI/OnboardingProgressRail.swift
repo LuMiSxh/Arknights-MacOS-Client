@@ -59,7 +59,7 @@ struct OnboardingProgressRail: View {
 		.frame(width: 205)
 		.background {
 			ZStack {
-				Color.black.opacity(0.28)
+				LauncherVisuals.navigationRailBackground
 				accentColor.opacity(0.03)
 			}
 		}

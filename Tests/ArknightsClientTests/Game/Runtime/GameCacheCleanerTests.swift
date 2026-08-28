@@ -33,24 +33,24 @@ func cacheDirectoriesFindsDXMTAndEveryWindowsUserBrowserCache() {
 }
 
 @Test
-func totalSizeSumsAllCacheDirectories() {
-	let fileManager = FileManager.default
-	let prefix = makePrefix(fileManager: fileManager)
-	defer { try? fileManager.removeItem(at: prefix) }
-
-	#expect(GameCacheCleaner.totalSize(winePrefix: prefix, fileManager: fileManager) == 30)
-}
-
-@Test
 func clearRemovesEveryCacheDirectoryButLeavesTheRestOfThePrefix() throws {
 	let fileManager = FileManager.default
 	let prefix = makePrefix(fileManager: fileManager)
 	defer { try? fileManager.removeItem(at: prefix) }
 	let untouched = prefix.appending(path: "drive_c/windows", directoryHint: .isDirectory)
 	try fileManager.createDirectory(at: untouched, withIntermediateDirectories: true)
+	let externalUser = prefix.deletingLastPathComponent().appending(
+		path: "external-user", directoryHint: .isDirectory)
+	let externalCache = externalUser.appending(
+		path: "AppData/Local/cache", directoryHint: .isDirectory)
+	try fileManager.createDirectory(at: externalCache, withIntermediateDirectories: true)
+	let externalFile = externalCache.appending(path: "must-survive")
+	try Data(repeating: 0, count: 5).write(to: externalFile)
+	let linkedUser = prefix.appending(path: "drive_c/users/linked-user")
+	try fileManager.createSymbolicLink(at: linkedUser, withDestinationURL: externalUser)
 
 	try GameCacheCleaner.clear(winePrefix: prefix, fileManager: fileManager)
 
-	#expect(GameCacheCleaner.totalSize(winePrefix: prefix, fileManager: fileManager) == 0)
 	#expect(fileManager.fileExists(atPath: untouched.path))
+	#expect(fileManager.fileExists(atPath: externalFile.path))
 }

@@ -2,14 +2,11 @@
 
 import AppKit
 import Foundation
-import Observation
 
 /// Owns existing cache measurement and targeted cleanup operations.
 @MainActor
-@Observable
 final class StorageMaintenanceController {
-	var gameCacheSizeText: String
-	var presetGalleryCacheSizeText: String
+	var onStorageOverviewChanged: (() -> Void)?
 
 	private let lifecycle: LauncherLifecycleStore
 	private let paths: AppPaths
@@ -22,18 +19,10 @@ final class StorageMaintenanceController {
 		presetCatalog: PresetCatalogService,
 		log: LauncherLog
 	) {
-		let calculatingText = L10n.string(SettingsStrings.calculating)
-		gameCacheSizeText = calculatingText
-		presetGalleryCacheSizeText = calculatingText
 		self.lifecycle = lifecycle
 		self.paths = paths
 		self.presetCatalog = presetCatalog
 		self.log = log
-	}
-
-	func refreshSizes() {
-		refreshGameCacheSize()
-		refreshPresetGalleryCacheSize()
 	}
 
 	func clearGameCache() {
@@ -43,13 +32,12 @@ final class StorageMaintenanceController {
 		Task { [weak self] in
 			guard let self else { return }
 			do {
-				let updatedCacheSizeText = try await Task.detached(priority: .utility) {
+				try await Task.detached(priority: .utility) {
 					try GameCacheCleaner.clear(winePrefix: winePrefix)
-					return Self.gameCacheSizeText(winePrefix: winePrefix)
 				}.value
 				lifecycle.activity = .idle
-				gameCacheSizeText = updatedCacheSizeText
 				lifecycle.setStatus(.custom(L10n.string(.Launcher.launcherStatusCacheCleared)))
+				onStorageOverviewChanged?()
 				await log.info("Shader and browser caches cleared")
 			} catch {
 				lifecycle.activity = .idle
@@ -58,35 +46,22 @@ final class StorageMaintenanceController {
 		}
 	}
 
-	func refreshGameCacheSize() {
-		let winePrefix = paths.winePrefix
-		Task { [weak self] in
-			let text = await Task.detached(priority: .utility) {
-				Self.gameCacheSizeText(winePrefix: winePrefix)
-			}.value
-			self?.gameCacheSizeText = text
-		}
-	}
-
 	func clearPresetGalleryCache() {
+		guard lifecycle.activity == .idle else { return }
+		lifecycle.activity = .maintaining(.clearingCache)
 		Task { [weak self] in
 			guard let self else { return }
 			do {
 				try await presetCatalog.clearCaches()
-				presetGalleryCacheSizeText = await presetCatalog.cacheSizeText()
+				lifecycle.activity = .idle
 				lifecycle.setStatus(
 					.custom(L10n.string(.Launcher.launcherStatusGalleryCacheCleared)))
+				onStorageOverviewChanged?()
 				await log.info("Preset gallery caches cleared")
 			} catch {
+				lifecycle.activity = .idle
 				lifecycle.show(error)
 			}
-		}
-	}
-
-	func refreshPresetGalleryCacheSize() {
-		Task { [weak self] in
-			guard let self else { return }
-			presetGalleryCacheSizeText = await presetCatalog.cacheSizeText()
 		}
 	}
 
@@ -104,12 +79,5 @@ final class StorageMaintenanceController {
 				paths.chromiumLogFile,
 			])
 		}
-	}
-
-	private nonisolated static func gameCacheSizeText(winePrefix: URL) -> String {
-		ByteCountFormatter.string(
-			fromByteCount: GameCacheCleaner.totalSize(winePrefix: winePrefix),
-			countStyle: .file
-		)
 	}
 }

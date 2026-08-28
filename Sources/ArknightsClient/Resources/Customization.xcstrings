@@ -1,198 +1,438 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "customization.gallery.action.previewStyles" : {
-      "comment" : "Open generated launcher and game icon style preview",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stile ansehen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preview Styles" } }
+  "sourceLanguage": "en",
+  "strings": {
+    "customization.gallery.action.previewStyles": {
+      "comment": "Open generated launcher and game icon style preview",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stile ansehen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview Styles"
+          }
+        }
       }
     },
-    "customization.gallery.applying" : {
-      "comment" : "Progress state while applying a selected gallery item",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wird angewendet…" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applying…" } }
+    "customization.gallery.applying": {
+      "comment": "Progress state while applying a selected gallery item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird angewendet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applying…"
+          }
+        }
       }
     },
-    "customization.gallery.artwork.empty" : {
-      "comment" : "Empty state when no artwork matches the gallery search",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine passenden Hintergründe" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matching artwork" } }
+    "customization.gallery.artwork.empty": {
+      "comment": "Empty state when no artwork matches the gallery search",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine passenden Hintergründe"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching artwork"
+          }
+        }
       }
     },
-    "customization.gallery.artwork.loading" : {
-      "comment" : "Loading state while fetching official wallpaper choices",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offizielle Hintergründe werden geladen…" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading official wallpapers…" } }
+    "customization.gallery.artwork.loading": {
+      "comment": "Loading state while fetching official wallpaper choices",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offizielle Hintergründe werden geladen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading official wallpapers…"
+          }
+        }
       }
     },
-    "customization.gallery.artwork.searchPlaceholder" : {
-      "comment" : "Artwork gallery search field placeholder",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hintergründe suchen…" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search artwork…" } }
+    "customization.gallery.artwork.searchPlaceholder": {
+      "comment": "Artwork gallery search field placeholder",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hintergründe suchen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search artwork…"
+          }
+        }
       }
     },
-    "customization.gallery.artwork.subtitle" : {
-      "comment" : "Artwork gallery explanation",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wähle einen Hintergrund für den Launcher." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose a background for the launcher." } }
+    "customization.gallery.artwork.subtitle": {
+      "comment": "Artwork gallery explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle einen Hintergrund für den Launcher."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a background for the launcher."
+          }
+        }
       }
     },
-    "customization.gallery.artwork.title" : {
-      "comment" : "Artwork gallery title",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hintergrundgalerie" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Artwork Gallery" } }
+    "customization.gallery.artwork.title": {
+      "comment": "Artwork gallery title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hintergrundgalerie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Artwork Gallery"
+          }
+        }
       }
     },
-    "customization.gallery.operator.applyHelp" : {
-      "comment" : "Accessibility help for applying an operator to the launcher and game icons; operator name is supplied content",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ für beide Dock-Symbole verwenden" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use %1$@ for both Dock icons" } }
+    "customization.gallery.operator.applyHelp": {
+      "comment": "Accessibility help for applying an operator to the launcher and game icons; operator name is supplied content",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ für beide Dock-Symbole verwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use %1$@ for both Dock icons"
+          }
+        }
       }
     },
-    "customization.gallery.operator.empty" : {
-      "comment" : "Empty state when no operators match the gallery search",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine passenden Operatoren" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matching operators" } }
+    "customization.gallery.operator.empty": {
+      "comment": "Empty state when no operators match the gallery search",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine passenden Operatoren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching operators"
+          }
+        }
       }
     },
-    "customization.gallery.operator.loading" : {
-      "comment" : "Loading state while fetching operator choices",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Operatoren werden geladen…" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading operators…" } }
+    "customization.gallery.operator.loading": {
+      "comment": "Loading state while fetching operator choices",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operatoren werden geladen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading operators…"
+          }
+        }
       }
     },
-    "customization.gallery.operator.searchPlaceholder" : {
-      "comment" : "Operator gallery search field placeholder",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Operatoren suchen…" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search operators…" } }
+    "customization.gallery.operator.searchPlaceholder": {
+      "comment": "Operator gallery search field placeholder",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operatoren suchen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search operators…"
+          }
+        }
       }
     },
-    "customization.gallery.operator.subtitle" : {
-      "comment" : "Operator gallery explanation",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wähle einen Operator für beide Dock-Symbole." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose one operator for both Dock icons." } }
+    "customization.gallery.operator.subtitle": {
+      "comment": "Operator gallery explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle einen Operator für beide Dock-Symbole."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one operator for both Dock icons."
+          }
+        }
       }
     },
-    "customization.gallery.operator.title" : {
-      "comment" : "Operator gallery title",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Operator auswählen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose an Operator" } }
+    "customization.gallery.operator.title": {
+      "comment": "Operator gallery title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operator auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an Operator"
+          }
+        }
       }
     },
-    "customization.gallery.search.label" : {
-      "comment" : "Accessibility label for the current gallery search field",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Galerie durchsuchen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search gallery" } }
+    "customization.gallery.search.label": {
+      "comment": "Accessibility label for the current gallery search field",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Galerie durchsuchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search gallery"
+          }
+        }
       }
     },
-    "customization.gallery.wallpaper.applyHelp" : {
-      "comment" : "Accessibility help for applying a wallpaper; wallpaper title is supplied content",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ als Launcher-Hintergrund verwenden" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Use %1$@ as the launcher background" } }
+    "customization.gallery.wallpaper.applyHelp": {
+      "comment": "Accessibility help for applying a wallpaper; wallpaper title is supplied content",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ als Launcher-Hintergrund verwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use %1$@ as the launcher background"
+          }
+        }
       }
     },
-    "customization.iconPreview.game.detail" : {
-      "comment" : "Game icon style explanation",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Originaler Arknights-Stil" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Original Arknights style" } }
+    "customization.iconPreview.game.detail": {
+      "comment": "Game icon style explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Originaler Arknights-Stil"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original Arknights style"
+          }
+        }
       }
     },
-    "customization.iconPreview.game.title" : {
-      "comment" : "Game icon style label",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Spiel" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Game" } }
+    "customization.iconPreview.game.title": {
+      "comment": "Game icon style label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game"
+          }
+        }
       }
     },
-    "customization.iconPreview.launcher.detail" : {
-      "comment" : "Launcher icon style explanation",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Launcher-Stil" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Launcher style" } }
+    "customization.iconPreview.launcher.detail": {
+      "comment": "Launcher icon style explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-Stil"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher style"
+          }
+        }
       }
     },
-    "customization.iconPreview.launcher.title" : {
-      "comment" : "Launcher icon style label",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Launcher" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Launcher" } }
+    "customization.iconPreview.launcher.title": {
+      "comment": "Launcher icon style label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher"
+          }
+        }
       }
     },
-    "customization.iconPreview.loading" : {
-      "comment" : "Loading state while rendering the generated icon previews",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorschau wird geladen…" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading preview…" } }
+    "customization.iconPreview.loading": {
+      "comment": "Loading state while rendering the generated icon previews",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau wird geladen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading preview…"
+          }
+        }
       }
     },
-    "customization.iconPreview.pair.accessibilityLabel" : {
-      "comment" : "Accessibility label for the paired launcher and game icon preview",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorschau für Launcher- und Spielsymbol" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Launcher and game icon previews" } }
+    "customization.iconPreview.pair.accessibilityLabel": {
+      "comment": "Accessibility label for the paired launcher and game icon preview",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau für Launcher- und Spielsymbol"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher and game icon previews"
+          }
+        }
       }
     },
-    "customization.iconPreview.pair.unavailable" : {
-      "comment" : "Accessibility label when generated icon previews cannot be rendered",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Symbolvorschau nicht verfügbar" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Icon previews unavailable" } }
+    "customization.iconPreview.pair.unavailable": {
+      "comment": "Accessibility label when generated icon previews cannot be rendered",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Symbolvorschau nicht verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon previews unavailable"
+          }
+        }
       }
     },
-    "customization.iconPreview.subtitle" : {
-      "comment" : "Generated icon preview explanation",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dein Operator wird auf beide Symbole angewendet." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your operator is applied to both icons." } }
+    "customization.iconPreview.subtitle": {
+      "comment": "Generated icon preview explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Operator wird auf beide Symbole angewendet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your operator is applied to both icons."
+          }
+        }
       }
     },
-    "customization.iconPreview.title" : {
-      "comment" : "Generated icon preview title",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Generierte Symbolstile" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Generated Icon Styles" } }
+    "customization.iconPreview.title": {
+      "comment": "Generated icon preview title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generierte Symbolstile"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generated Icon Styles"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

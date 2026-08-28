@@ -54,11 +54,10 @@ extension InstallationController {
 			updateInstalledState()
 			return
 		}
-		let target = installDirectory
 		lifecycle.activity = .maintaining(.uninstalling)
 		lifecycle.setStatus(.movingToTrash)
 		Task { [log] in await log.info("Game uninstall requested") }
-		NSWorkspace.shared.recycle([target]) { [weak self] _, error in
+		NSWorkspace.shared.recycle([installDirectory]) { [weak self] _, error in
 			Task { @MainActor in
 				guard let self else { return }
 				self.lifecycle.activity = .idle

@@ -113,8 +113,7 @@ struct SettingsPanel<Content: View>: View {
 	}
 }
 
-/// Same shape as `SettingsPanel`, tinted red for actions that are destructive or
-/// depend on undocumented system behavior (see the panel's own contents for which).
+/// Same shape as `SettingsPanel`, tinted red for risky compatibility and destructive actions.
 struct DangerZonePanel<Content: View>: View {
 	@ViewBuilder let content: Content
 

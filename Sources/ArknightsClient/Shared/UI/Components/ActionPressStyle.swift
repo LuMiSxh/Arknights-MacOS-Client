@@ -26,7 +26,7 @@ struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 	func body(content: Content) -> some View {
 		content.overlay {
 			shape
-				.stroke(isFocused ? Color.white.opacity(0.92) : .clear, lineWidth: 2)
+				.stroke(isFocused ? Color.primary.opacity(0.92) : .clear, lineWidth: 2)
 				.padding(-3)
 				.allowsHitTesting(false)
 		}
@@ -53,7 +53,7 @@ private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
 	func body(content: Content) -> some View {
 		content.overlay {
 			shape
-				.stroke(isFocused ? Color.white.opacity(0.92) : .clear, lineWidth: 2)
+				.stroke(isFocused ? Color.primary.opacity(0.92) : .clear, lineWidth: 2)
 				.padding(-3)
 				.allowsHitTesting(false)
 		}

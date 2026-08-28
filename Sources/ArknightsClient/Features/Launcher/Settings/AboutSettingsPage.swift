@@ -49,6 +49,14 @@ struct AboutSettingsPage: View {
 					)
 				}
 				.help(L10n.string(SettingsStrings.githubHelp))
+				CapsuleActionButton(
+					title: L10n.string(SettingsStrings.donate),
+					systemImage: "heart.fill",
+					tone: .accent(accentColor)
+				) {
+					NSWorkspace.shared.open(SupportLinks.donate)
+				}
+				.help(L10n.string(SettingsStrings.donateHelp))
 			}
 			.padding(20)
 			.adaptiveGlassEffect(in: .rect(cornerRadius: 20))

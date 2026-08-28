@@ -55,7 +55,6 @@ struct LauncherSettingsView: View {
 						InstallationSettingsPage(
 							settings: model.settings,
 							installation: model.installation,
-							storage: model.storage,
 							gameSession: model.gameSession,
 							lifecycle: model.lifecycle,
 							accentColor: model.customization.accentColor,
@@ -65,6 +64,17 @@ struct LauncherSettingsView: View {
 							repairGame: model.repairGame,
 							resetAllLauncherSettings: model.resetAllLauncherSettings,
 							uninstallGame: model.uninstallGame
+						)
+					case .storage:
+						StorageOverviewPage(
+							controller: model.storageOverview,
+							copy: StorageStrings.copy(),
+							actions: StorageOverviewActions(
+								clearGameCaches: model.storage.clearGameCache,
+								clearGalleryCache: model.storage.clearPresetGalleryCache,
+								revealLogs: model.storage.revealLogs
+							),
+							accentColor: model.customization.accentColor
 						)
 					case .about:
 						AboutSettingsPage(
@@ -91,6 +101,16 @@ struct LauncherSettingsView: View {
 				FloatingActionFooterFade(height: 60)
 
 				FloatingActionBar(tint: model.customization.hudTintColor) {
+					if selectedSection == .storage {
+						CapsuleActionButton(
+							title: L10n.string(StorageStrings.refresh),
+							systemImage: "arrow.clockwise",
+							tone: .neutral,
+							action: model.storageOverview.refresh
+						)
+						.controlSize(.large)
+						.disabled(model.storageOverview.isMeasuring)
+					}
 					FloatingDoneButton(accentColor: model.customization.accentColor) {
 						dismiss()
 					}
@@ -110,7 +130,7 @@ struct LauncherSettingsView: View {
 		.tint(model.customization.accentColor)
 		.background(
 			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
+				LauncherVisuals.modalBackground
 				model.customization.hudTintColor
 			}
 		)
@@ -183,7 +203,7 @@ private struct SettingsNavigationRail: View {
 		.frame(width: 178)
 		.background(
 			ZStack {
-				Color.black.opacity(0.28)
+				LauncherVisuals.navigationRailBackground
 				accentColor.opacity(0.03)
 			}
 		)
@@ -248,6 +268,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	case audio
 	case updates
 	case installation
+	case storage
 	case about
 	#if DEBUG
 		case developer
@@ -261,6 +282,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 		case .audio: L10n.string(SettingsStrings.navigationAudio)
 		case .updates: L10n.string(SettingsStrings.navigationUpdates)
 		case .installation: L10n.string(SettingsStrings.navigationInstallation)
+		case .storage: L10n.string(SettingsStrings.navigationStorage)
 		case .about: L10n.string(SettingsStrings.navigationAbout)
 		#if DEBUG
 			case .developer: L10n.string(SettingsStrings.navigationDeveloper)
@@ -274,6 +296,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 		case .audio: "music.note"
 		case .updates: "arrow.trianglehead.2.clockwise"
 		case .installation: "externaldrive"
+		case .storage: "internaldrive"
 		case .about: "info.circle"
 		#if DEBUG
 			case .developer: "hammer"

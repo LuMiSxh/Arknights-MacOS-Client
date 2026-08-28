@@ -63,7 +63,6 @@ final class LauncherPreferencesController {
 			refreshResetCountdown()
 		}
 	}
-
 	@ObservationIgnored var onLauncherUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onGameUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onAnnouncementCheckRequested: (() -> Void)?

@@ -5,7 +5,6 @@ import SwiftUI
 struct InstallationSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
 	let installation: InstallationController
-	let storage: StorageMaintenanceController
 	let gameSession: GameSessionController
 	let lifecycle: LauncherLifecycleStore
 	let accentColor: Color
@@ -106,46 +105,24 @@ struct InstallationSettingsPage: View {
 					)
 					.disabled(!installation.isInstalled || !installation.canInstall)
 				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: L10n.string(SettingsStrings.clearCache),
-					detail: L10n.string(SettingsStrings.cacheDetail(storage.gameCacheSizeText))
-				) {
-					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.clearCache), systemImage: "trash",
-						tone: .accent(accentColor), presentation: .compact,
-						action: storage.clearGameCache
-					)
-					.disabled(!installation.canModifyGameFiles)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: L10n.string(SettingsStrings.cacheGallery),
-					detail: L10n.string(
-						SettingsStrings.cacheGalleryDetail(storage.presetGalleryCacheSizeText))
-				) {
-					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.clearCache), systemImage: "trash",
-						tone: .accent(accentColor), presentation: .compact
-					) {
-						storage.clearPresetGalleryCache()
-					}
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: L10n.string(SettingsStrings.logs),
-					detail: L10n.string(SettingsStrings.logsDetail)
-				) {
-					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.showLogs),
-						systemImage: "doc.text.magnifyingglass",
-						tone: .accent(accentColor), presentation: .compact,
-						action: storage.revealLogs
-					)
-				}
 			}
 
-			DangerZonePanel {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.compatibility),
+				systemImage: "slider.horizontal.2.square"
+			) {
+				SettingsActionRow(
+					title: L10n.string(SettingsStrings.metalHUD),
+					detail: L10n.string(SettingsStrings.metalHUDDetail)
+				) {
+					SettingsToggle(
+						L10n.string(SettingsStrings.metalHUD),
+						isOn: $settings.launchOptions.usesMetalPerformanceHUD,
+						accentColor: accentColor
+					)
+					.disabled(gameSession.isGameActive)
+				}
+				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.gameMode),
 					detail: L10n.string(SettingsStrings.gameModeDetail)
@@ -153,7 +130,7 @@ struct InstallationSettingsPage: View {
 					SettingsToggle(
 						L10n.string(SettingsStrings.gameMode),
 						isOn: gameModeBinding,
-						accentColor: LauncherVisuals.danger
+						accentColor: accentColor
 					)
 					.disabled(gameSession.isGameActive)
 					.alert(
@@ -161,9 +138,7 @@ struct InstallationSettingsPage: View {
 						isPresented: $showsGameModeUnavailableAlert
 					) {
 					} message: {
-						Text(
-							SettingsStrings.gameModeAlertDetail
-						)
+						Text(SettingsStrings.gameModeAlertDetail)
 					}
 				}
 				SettingsHairline()
@@ -174,13 +149,15 @@ struct InstallationSettingsPage: View {
 					AdaptiveSegmentedControl(
 						selection: $settings.launchOptions.synchronizationMode,
 						options: WineSynchronizationMode.allCases,
-						accentColor: LauncherVisuals.danger,
+						accentColor: accentColor,
 						isDisabled: gameSession.isGameActive
 					) { mode in
 						Text(mode.displayName)
 					}
 				}
-				SettingsHairline()
+			}
+
+			DangerZonePanel {
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.wineSetup),
 					detail: L10n.string(SettingsStrings.forceMigrationDetail)

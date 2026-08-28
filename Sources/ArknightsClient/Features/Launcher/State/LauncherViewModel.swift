@@ -16,6 +16,7 @@ final class LauncherViewModel {
 	let communication: LauncherCommunicationController
 	let refreshController: LauncherRefreshController
 	let storage: StorageMaintenanceController
+	let storageOverview: StorageOverviewController
 
 	let presetCatalog: PresetCatalogService
 	let preferences: LauncherPreferencesStore
@@ -127,6 +128,16 @@ final class LauncherViewModel {
 			log: launcherLog
 		)
 		self.storage = storage
+		let storageOverview = StorageOverviewController(
+			lifecycle: lifecycle,
+			paths: paths,
+			preferences: preferences,
+			log: launcherLog
+		)
+		self.storageOverview = storageOverview
+		storage.onStorageOverviewChanged = { [weak storageOverview] in
+			storageOverview?.refresh()
+		}
 		let gameSession = GameSessionController(
 			lifecycle: lifecycle,
 			installation: installation,
@@ -205,7 +216,6 @@ final class LauncherViewModel {
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
 		Task { [log] in await log.info("Launcher \(appVersion) started") }
-		storage.refreshSizes()
 	}
 
 	deinit {

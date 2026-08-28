@@ -48,7 +48,8 @@ Long-lived state and asynchronous work have one feature owner:
 | `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, and preset application                                   |
 | `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, and popup ordering                                      |
 | `LauncherPreferencesController`   | Persisted user-facing settings and the region-aware server-reset timer                                    |
-| `StorageMaintenanceController`    | Cache measurement and targeted cache cleanup                                                              |
+| `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                          |
+| `StorageOverviewController`       | Asynchronous usage measurement for installations, shared runtime data, caches, and logs                  |
 
 Installation, maintenance, and the Wine-backed game lifecycle share the exclusive
 `LauncherActivity` state machine because they may touch the same game files or runtime. Refresh and
@@ -66,6 +67,7 @@ flowchart TD
 	Root --> Customization[CustomizationController]
 	Root --> Preferences[LauncherPreferencesController]
 	Root --> Storage[StorageMaintenanceController]
+	Root --> StorageOverview[StorageOverviewController]
 	Installation --> Lifecycle
 	Session --> Lifecycle
 	Refresh --> Lifecycle

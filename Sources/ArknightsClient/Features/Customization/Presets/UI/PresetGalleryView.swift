@@ -95,7 +95,7 @@ struct PresetGalleryView: View {
 		.frame(width: 760, height: 570)
 		.background(
 			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
+				LauncherVisuals.modalBackground
 				customization.hudTintColor
 			}
 		)
@@ -269,7 +269,8 @@ struct PresetGalleryView: View {
 					.overlay {
 						RoundedRectangle(cornerRadius: 12)
 							.strokeBorder(
-								isApplying ? customization.accentColor : Color.white.opacity(0.07),
+								isApplying
+									? customization.accentColor : Color.white.opacity(0.07),
 								lineWidth: isApplying ? 2 : 1
 							)
 					}

@@ -122,7 +122,7 @@ struct OnboardingView: View {
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background {
 			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
+				LauncherVisuals.modalBackground
 				model.customization.hudTintColor
 			}
 			.ignoresSafeArea(.container, edges: .top)

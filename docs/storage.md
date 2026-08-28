@@ -6,11 +6,23 @@ The app resolves standard directories through `FileManager`. All app-owned paths
 | ---------------- | ------------------------------------------------------------------------------------------- | ------------------------------- |
 | Game files       | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global`         | Until **Uninstall Game**        |
 | Wine prefix      | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` | Persistent runtime state        |
+| Bundled runtime  | Inside the app bundle under `Contents/Resources/Runtime`                                    | Read-only, replaced with launcher updates |
+| DXMT cache       | `<WinePrefix>/home/.cache/dxmt`                                                            | Recreated automatically; targeted cleanup |
+| Browser caches   | `<WinePrefix>/drive_c/users/<user>/AppData/Local/cache`                                   | Recreated automatically; targeted cleanup |
+| Gallery cache    | `~/Library/Caches/com.lumisxh.arknights-client/PresetGallery`                              | Recreated automatically; targeted cleanup |
 | Custom artwork and icons | `~/Library/Application Support/com.lumisxh.arknights-client/Artwork/Custom`          | Until individually reset or app data removal |
 | Official artwork | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                          | Recreated when missing; includes a small per-region pointer so the last active image appears before the branding refresh |
 | Launcher log     | `~/Library/Logs/com.lumisxh.arknights-client/launcher.log`                                  | Rotating diagnostics            |
 | Runtime log      | `~/Library/Logs/com.lumisxh.arknights-client/wine.log`                                      | Game and Wine diagnostics       |
 | Preferences      | `UserDefaults`                                                                              | Small settings only             |
+
+## Settings storage overview
+
+**Settings → Storage** measures the three regional game installations independently, then shows
+the shared Wine prefix and bundled compatibility runtime. **Recreatable Caches** groups DXMT,
+embedded-browser, and gallery data; its targeted actions clear only those caches. **Logs** is
+read-only and offers **Show Logs**, which creates the log directory when needed and opens it in
+Finder. Game files, the Wine prefix, and the bundled runtime have no deletion action in this view.
 
 Partial game downloads stay beside their final files with a `.part` suffix so downloads can resume. Game files and the Wine prefix are excluded from backups.
 

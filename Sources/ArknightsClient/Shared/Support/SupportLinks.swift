@@ -5,4 +5,5 @@ import Foundation
 /// Official destinations for problems outside the community launcher's responsibility.
 enum SupportLinks {
 	static let yostarContact = URL(string: "https://account.yo-star.com/contact")!
+	static let donate = URL(string: "https://ko-fi.com/lumisxh")!
 }

@@ -18,7 +18,7 @@ All logs write to the central macOS log directory or the isolated game/prefix fo
 
 `<GameDir>` defaults to `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global` (or `Arknights-Japan` / `Arknights-Korea`).
 
-Open **Settings** (`Cmd + ,`) → **Installation** → **Show Logs** to select every active log file in Finder at once.
+Open **Settings** (`Cmd + ,`) → **Storage** → **Show Logs** to select every active log file in Finder at once.
 
 ## Diagnostic launch flags
 

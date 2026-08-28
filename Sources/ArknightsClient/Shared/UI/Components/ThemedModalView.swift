@@ -54,7 +54,7 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 		.frame(width: width, height: height)
 		.background {
 			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
+				LauncherVisuals.modalBackground
 				hudTintColor
 			}
 		}

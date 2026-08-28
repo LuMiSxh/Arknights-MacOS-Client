@@ -27,7 +27,7 @@ The launcher should feel like a current macOS app first and an Arknights launche
 
 ## Settings and documents
 
-- Use a compact material navigation rail for General, Installation, and About.
+- Use a compact material navigation rail for General, Audio, Updates, Installation, Storage, and About.
 - Keep navigation neutral. The selected section uses a quiet graphite fill and a two-pixel cyan marker rather than the system accent color.
 - Keep links and ordinary controls monochrome; cyan indicates progress or a primary game action.
 - Group related controls in quiet Liquid Glass panels instead of form-style gray boxes.
@@ -35,6 +35,7 @@ The launcher should feel like a current macOS app first and an Arknights launche
 - Keep developer terminology out of the interface; diagnostics may refer to launcher and Wine logs because users need those names when reporting a problem.
 - Render bundled Markdown as native text. Tables may scroll horizontally, but headings and ordinary paragraphs must fit the document width.
 - Link the author and repository directly from About.
+- About links to the project's Ko-fi page as an optional way to support development.
 
 ## First-run setup
 

@@ -82,19 +82,6 @@ struct GeneralSettingsPage: View {
 
 			SettingsPanel(title: L10n.string(SettingsStrings.launcher), systemImage: "sparkles") {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.language),
-					detail: L10n.string(SettingsStrings.languageDetail)
-				) {
-					GlassMenuPicker(
-						selection: $settings.appLanguage,
-						options: AppLanguage.allCases.map {
-							($0, L10n.string(SettingsStrings.appLanguage($0)))
-						},
-						accentColor: accentColor
-					)
-				}
-				SettingsHairline()
-				SettingsActionRow(
 					title: L10n.string(SettingsStrings.showGameVersion),
 					detail: L10n.string(SettingsStrings.showGameVersionDetail)
 				) {
@@ -117,18 +104,6 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.metalHUD),
-					detail: L10n.string(SettingsStrings.metalHUDDetail)
-				) {
-					SettingsToggle(
-						L10n.string(SettingsStrings.metalHUD),
-						isOn: $settings.launchOptions.usesMetalPerformanceHUD,
-						accentColor: accentColor
-					)
-					.disabled(gameSession.isGameActive)
-				}
-				SettingsHairline()
-				SettingsActionRow(
 					title: L10n.string(SettingsStrings.setupAssistant),
 					detail: L10n.string(SettingsStrings.setupAssistantDetail)
 				) {
@@ -144,6 +119,19 @@ struct GeneralSettingsPage: View {
 			SettingsPanel(
 				title: L10n.string(SettingsStrings.personalization), systemImage: "paintbrush"
 			) {
+				SettingsActionRow(
+					title: L10n.string(SettingsStrings.language),
+					detail: L10n.string(SettingsStrings.languageDetail)
+				) {
+					GlassMenuPicker(
+						selection: $settings.appLanguage,
+						options: AppLanguage.allCases.map {
+							($0, L10n.string(SettingsStrings.appLanguage($0)))
+						},
+						accentColor: accentColor
+					)
+				}
+				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.artwork),
 					detail: L10n.string(SettingsStrings.artworkDetail)

@@ -8,21 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts, and release packaging smoke checks (#42).
-- Weekly live-contract monitoring for every supported Yostar region, including transient retries, sanitized run summaries, retained reports, and deduplicated GitHub alerts after two failures with automatic recovery after two healthy checks (#39).
-- Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, monthly archive verification, and deduplicated maintainer review alerts (#47).
+- Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
+- Weekly live-contract monitoring for every supported Yostar region (#39).
+- Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, archive verification (#47).
 - Language switchers to onboarding and Settings for the system default, English, and German.
 - A reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
 - A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
 - Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, and localized text fallbacks (#37).
 - Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
+- Storage overview in Settings with independent regional installations, shared runtime data, recreatable caches, and diagnostic logs, plus targeted cleanup actions (#43).
+- Donate button for people who want to support the project.
 
 ### Changed
 
 - Refactor root model by extracting launcher features into dedicated controllers (#52).
-- Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping across onboarding, Settings, galleries, HUD controls, and bundled documents (#40).
+- Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).
 - Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
-- Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2 with a shared physical runtime interface for download and packaging scripts.
+- Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
 - Consolidated repository scripts into one locked uv project, isolated packaging-only tools in their own dependency group, and removed single-use helpers and low-value wrapper tests.
 
 ### Fixed

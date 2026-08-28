@@ -10,6 +10,7 @@ enum SettingsStrings {
 	static let navigationUpdates = LocalizedStringResource.Settings.settingsNavigationUpdates
 	static let navigationInstallation = LocalizedStringResource.Settings
 		.settingsNavigationInstallation
+	static let navigationStorage = LocalizedStringResource.Settings.settingsNavigationStorage
 	static let navigationAbout = LocalizedStringResource.Settings.settingsNavigationAbout
 	static let navigationDeveloper = LocalizedStringResource.Settings.settingsNavigationDeveloper
 	static let dangerZone = LocalizedStringResource.Settings.settingsCommonDangerZone
@@ -20,7 +21,6 @@ enum SettingsStrings {
 	static let choose = LocalizedStringResource.Settings.settingsCommonChoose
 	static let chooseImage = LocalizedStringResource.Settings.settingsCommonChooseImage
 	static let change = LocalizedStringResource.Settings.settingsCommonChange
-	static let clearCache = LocalizedStringResource.Settings.settingsCommonClearCache
 	static let show = LocalizedStringResource.Settings.settingsCommonShow
 	static let useDefault = LocalizedStringResource.Settings.settingsCommonUseDefault
 	static let useDefaults = LocalizedStringResource.Settings.settingsCommonUseDefaults
@@ -127,12 +127,12 @@ enum SettingsStrings {
 		.settingsInstallationChooseNewLocation
 	static let locateExisting = LocalizedStringResource.Settings.settingsInstallationLocateExisting
 	static let maintenance = LocalizedStringResource.Settings.settingsInstallationMaintenance
+	static let compatibility = LocalizedStringResource.Settings.settingsInstallationCompatibility
 	static let repair = LocalizedStringResource.Settings.settingsInstallationRepair
 	static let repairAction = LocalizedStringResource.Settings.settingsInstallationRepairAction
 	static let repairDetail = LocalizedStringResource.Settings.settingsInstallationRepairDetail
 	static let cacheGallery = LocalizedStringResource.Settings.settingsInstallationCacheGallery
 	static let logs = LocalizedStringResource.Settings.settingsInstallationLogs
-	static let logsDetail = LocalizedStringResource.Settings.settingsInstallationLogsDetail
 	static let showLogs = LocalizedStringResource.Settings.settingsInstallationShowLogs
 	static let showGameFilesHelp = LocalizedStringResource.Settings
 		.settingsInstallationShowGameFilesHelp
@@ -196,6 +196,8 @@ enum SettingsStrings {
 	static let openFinderHelp = LocalizedStringResource.Settings.settingsAboutOpenFinderHelp
 	static let github = LocalizedStringResource.Settings.settingsAboutGithub
 	static let githubHelp = LocalizedStringResource.Settings.settingsAboutGithubHelp
+	static let donate = LocalizedStringResource.Settings.settingsAboutDonate
+	static let donateHelp = LocalizedStringResource.Settings.settingsAboutDonateHelp
 	static let documents = LocalizedStringResource.Settings.settingsAboutDocuments
 	static let changelog = LocalizedStringResource.Settings.settingsAboutChangelog
 	static let license = LocalizedStringResource.Settings.settingsAboutLicense
@@ -223,10 +225,6 @@ enum SettingsStrings {
 	static let developerIsolation = LocalizedStringResource.Settings.settingsDeveloperIsolation
 	static let developerIsolationDetail = LocalizedStringResource.Settings
 		.settingsDeveloperIsolationDetail
-
-	static func cacheDetail(_ size: String) -> LocalizedStringResource {
-		LocalizedStringResource.Settings.settingsInstallationCacheDetail(size)
-	}
 
 	static func cacheGalleryDetail(_ size: String) -> LocalizedStringResource {
 		LocalizedStringResource.Settings.settingsInstallationCacheGalleryDetail(size)
