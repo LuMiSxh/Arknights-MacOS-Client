@@ -15,17 +15,17 @@ default:
 preview scenario='ready':
     {{ uv }} scripts/localization.py prepare; swift build; binary_dir="$(swift build --show-bin-path)"; {{ uv }} scripts/localization.py compile "$binary_dir"; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; swift run --skip-build "$executable_name" --developer-scenario {{ quote(scenario) }}
 
-# Download the verified runtime and build a local app bundle or dmg; add run to open it after (default: app).
+# Start the website or download the verified runtime and build a local app bundle or dmg; add run to open app artifacts (default: app).
 [group('Development')]
 dev target='app' run='':
-    @runtime_dir="$({{ uv }} scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then {{ uv_packaging }} scripts/build_dmg.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py dmg-name)"; else {{ uv_packaging }} scripts/build_app.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py app-bundle-name)"; fi; path="dist/$artifact_name"; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi
+    @if [[ {{ quote(target) }} == "web" ]]; then cd web && pnpm dev; else runtime_dir="$({{ uv }} scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then {{ uv_packaging }} scripts/build_dmg.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py dmg-name)"; else {{ uv_packaging }} scripts/build_app.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py app-bundle-name)"; fi; path="dist/$artifact_name"; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi; fi
 
-# Check formatting, lint, and test swift, scripts, shim, or all (default: all).
+# Check core sources (default: all) or the website separately.
 [group('Checks')]
 check target='all':
     {{ uv_dev }} scripts/checks.py check {{ quote(target) }}
 
-# Format swift, scripts, shim, or all in place (default: all).
+# Format core sources (default: all) or the website separately.
 [group('Checks')]
 format target='all':
     {{ uv_dev }} scripts/checks.py format {{ quote(target) }}

@@ -47,3 +47,43 @@ func markdownParserTreatsSetextHeadingsAsHeadingsInsteadOfTables() {
 		]
 	)
 }
+
+@Test
+func markdownParserIgnoresLeadingFrontmatter() {
+	let blocks = MarkdownParser(
+		source: """
+			---
+			title: Changelog
+			description: Project release history.
+			---
+
+			# Changelog
+
+			- Added a website.
+			"""
+	).blocks
+
+	#expect(
+		blocks == [
+			.heading(level: 1, source: "Changelog"),
+			.bullet("Added a website."),
+		]
+	)
+}
+
+@Test
+func markdownParserRemovesGitHubAlertMarkers() {
+	let blocks = MarkdownParser(
+		source: """
+			> [!IMPORTANT]
+			> Keep the runtime components together.
+			"""
+	).blocks
+
+	#expect(
+		blocks == [
+			.paragraph("**Important**"),
+			.paragraph("Keep the runtime components together."),
+		]
+	)
+}

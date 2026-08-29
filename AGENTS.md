@@ -6,6 +6,7 @@
 - Support only Yostar's official Global, Japan, and Korea PC clients. Do not add CN behavior; its Hypergryph infrastructure and Tencent ACE anti-cheat are incompatible.
 - Keep source code, documentation, commits, tests, localization keys, and translator comments in English. Maintain reviewed English and German UI copy through the String Catalogs.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
+- Keep the static SvelteKit website in `web/`; follow `docs/development/README.md#documentation-website` and do not add Vitest.
 - Do not commit game/runtime binaries, downloaded artwork, or files from `dist/`. Commit the tracked shipping icon assets only when regenerated with `just icon`.
 
 ## Commands
@@ -19,6 +20,9 @@
 | Format sources           | `just format`              |
 | Regenerate localizations | `just format localization` |
 | Full CI                  | `just ci`                  |
+| Website checks           | `just check web`           |
+| Format website           | `just format web`          |
+| Website dev server       | `just dev web`             |
 | UI preview               | `just preview`             |
 | App bundle               | `just app`                 |
 | Dev runtime              | `just runtime`             |
@@ -40,8 +44,8 @@
 - Treat installation as exclusive; preserve resumable `.part` files and validate every manifest path before writing.
 - Keep every region's installation/state independent while sharing one Wine prefix whose `G:` drive is repointed on launch.
 - Define persisted locations only through `AppPaths`; preserve existing paths, keys, and serialized formats unless migration is explicitly required.
-- Follow `docs/design.md`; use the existing shared action/control families instead of per-call styling.
-- Follow `docs/localization.md`; edit only the String Catalog sources, never generated localization symbols.
+- Follow `docs/development/design.md`; use the existing shared action/control families instead of per-call styling.
+- Follow `docs/development/localization.md`; edit only the String Catalog sources, never generated localization symbols.
 - Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add concise DocC for public APIs and complex domain models.
 - Centralize fixed keys, limits, retries, and timeouts in `AppConstants.swift`; avoid silent `try?` for filesystem, process, and network work.
 - Test behavior according to regression impact. Preserve installer safety, persistence, parsing, migration, runtime isolation, and concurrency coverage; do not require tests for file moves, view composition, trivial accessors, or wrappers.
@@ -51,13 +55,13 @@
 ## Verification and Safety
 
 - Run focused checks while iterating and `just ci` before completion.
-- Keep unit and integration tests fixture-backed and offline; follow `docs/testing.md` for level ownership and live-contract gates.
+- Keep unit and integration tests fixture-backed and offline; follow `docs/development/testing.md` for level ownership and live-contract gates.
 - For UI refactors, compare the affected isolated developer scenarios; do not launch previews or apps unless the user authorizes it.
 - Unless explicitly requested, do not install, launch, download, uninstall, or alter the user's local game or runtime.
 - Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` only with `just icon`.
 - Run scripts from the root `pyproject.toml` and `uv.lock` with `uv run --locked`; keep packaging-only dependencies in the `packaging` group, reuse `scripts/lib`, and cover changed behavior in `scripts/tests/test_*.py`.
 - Derive script product and package metadata through `scripts/lib/project_config.py`; keep runtime layout in `runtime.json` instead of duplicating either contract in Python.
-- Record user-visible changes in `CHANGELOG.md`; follow `docs/releases-and-updates.md` for releases.
+- Record user-visible changes in `CHANGELOG.md`; follow `docs/development/releases-and-updates.md` for releases.
 
 ## Commit Rules
 
@@ -65,15 +69,15 @@
 
 ## References
 
-| Need                    | File                                |
-| ----------------------- | ----------------------------------- |
-| Setup and contribution  | `README.md`                         |
-| Architecture            | `docs/architecture.md`              |
-| Testing                 | `docs/testing.md`                   |
-| Interface               | `docs/design.md`                    |
-| Localization            | `docs/localization.md`              |
-| Storage                 | `docs/storage.md`                   |
-| Runtime contract        | `docs/runtime-compatibility.md`     |
-| Troubleshooting         | `docs/troubleshooting.md`           |
-| Releases                | `docs/releases-and-updates.md`      |
-| Third-party obligations | `docs/legal/third-party-notices.md` |
+| Need                    | File                                       |
+| ----------------------- | ------------------------------------------ |
+| Setup and contribution  | `README.md`                                |
+| Architecture            | `docs/development/architecture/README.md`  |
+| Testing                 | `docs/development/testing.md`              |
+| Interface               | `docs/development/design.md`               |
+| Localization            | `docs/development/localization.md`         |
+| Storage                 | `docs/help/storage.md`                     |
+| Runtime contract        | `docs/help/runtime-compatibility.md`       |
+| Troubleshooting         | `docs/help/troubleshooting.md`             |
+| Releases                | `docs/development/releases-and-updates.md` |
+| Third-party obligations | `docs/legal/third-party-notices.md`        |

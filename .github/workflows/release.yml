@@ -18,6 +18,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Keep this independent from packaging: a Pages failure must fail the run,
+  # but must not prevent the package job from creating its draft release.
+  pages:
+    name: Publish website
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
+
   package:
     runs-on: macos-26
     timeout-minutes: 90

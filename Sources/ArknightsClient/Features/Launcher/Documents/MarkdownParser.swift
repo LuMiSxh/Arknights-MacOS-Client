@@ -17,12 +17,16 @@ struct MarkdownParser {
 	let source: String
 
 	var blocks: [MarkdownBlock] {
-		let lines = source.components(separatedBy: .newlines)
+		let lines = contentLines
 		var result: [MarkdownBlock] = []
 		var index = 0
 
 		while index < lines.count {
 			let line = lines[index]
+			if line.hasPrefix(">") {
+				result.append(contentsOf: parseQuote(lines: lines, index: &index))
+				continue
+			}
 			if line.trimmingCharacters(in: .whitespaces).isEmpty || isLinkDefinition(line) {
 				index += 1
 				continue
@@ -65,6 +69,34 @@ struct MarkdownParser {
 			index = paragraph.nextIndex
 		}
 		return result
+	}
+
+	private func parseQuote(lines: [String], index: inout Int) -> [MarkdownBlock] {
+		var quoted: [String] = []
+		while index < lines.count, lines[index].hasPrefix(">") {
+			var line = String(lines[index].dropFirst())
+			if line.hasPrefix(" ") { line.removeFirst() }
+			quoted.append(line)
+			index += 1
+		}
+		if let marker = quoted.first,
+			marker.hasPrefix("[!"), marker.hasSuffix("]")
+		{
+			let label = marker.dropFirst(2).dropLast().lowercased().capitalized
+			quoted[0] = "**\(label)**"
+			quoted.insert("", at: 1)
+		}
+		return MarkdownParser(source: quoted.joined(separator: "\n")).blocks
+	}
+
+	private var contentLines: [String] {
+		let lines = source.components(separatedBy: .newlines)
+		guard lines.first == "---",
+			let closingDelimiter = lines.dropFirst().firstIndex(of: "---")
+		else {
+			return lines
+		}
+		return Array(lines[lines.index(after: closingDelimiter)...])
 	}
 
 	private func parseHeading(_ line: String) -> MarkdownBlock? {
@@ -121,6 +153,7 @@ struct MarkdownParser {
 	private func isSpecialLine(_ line: String) -> Bool {
 		line == "---" || line.hasPrefix("# ") || line.hasPrefix("## ")
 			|| line.hasPrefix("### ") || line.hasPrefix("- ") || line.hasPrefix("```")
+			|| line.hasPrefix(">")
 			|| isLinkDefinition(line)
 	}
 

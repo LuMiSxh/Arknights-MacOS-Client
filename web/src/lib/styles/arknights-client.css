@@ -1,0 +1,87 @@
+:root {
+	--color-anasthasia-bg: #f2f3f5;
+	--color-anasthasia-surface: #fbfbfc;
+	--color-anasthasia-panel: #e7e9ec;
+	--color-anasthasia-border: #b8bdc5;
+	--color-anasthasia-divider: #d4d7dc;
+	--color-anasthasia-text: #15171a;
+	--color-anasthasia-muted: #5d636c;
+	--color-anasthasia-accent: #00799e;
+	--color-anasthasia-accent-strong: #005d7a;
+	--color-anasthasia-action-secondary: #2d3339;
+	--color-anasthasia-action-secondary-border: #8d949c;
+	--color-anasthasia-on-accent: #ffffff;
+	--color-anasthasia-overlay: rgb(8 11 14 / 0.7);
+	--color-anasthasia-info: #315d70;
+	--color-anasthasia-info-surface: #e8f0f3;
+	--color-anasthasia-info-border: #91aeb9;
+	--color-anasthasia-success: #276646;
+	--color-anasthasia-success-surface: #e9f3ed;
+	--color-anasthasia-success-border: #86ab96;
+	--color-anasthasia-warning: #765515;
+	--color-anasthasia-warning-surface: #f7f1e3;
+	--color-anasthasia-warning-border: #c7ab69;
+	--color-anasthasia-danger: #9d3333;
+	--color-anasthasia-danger-surface: #f7eaea;
+	--color-anasthasia-danger-border: #c98787;
+	--font-anasthasia-sans:
+		-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+	--font-anasthasia-mono:
+		'SFMono-Regular', 'SF Mono', ui-monospace, monospace;
+	--font-anasthasia-label:
+		'SFMono-Regular', 'SF Mono', ui-monospace, monospace;
+	--font-anasthasia-control:
+		-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+	--height-anasthasia-control-sm: 1.65rem;
+	--height-anasthasia-control-md: 1.9rem;
+	--height-anasthasia-control-lg: 2.35rem;
+	--padding-inline-anasthasia-control-sm: 0.55rem;
+	--padding-inline-anasthasia-control-md: 0.75rem;
+	--padding-inline-anasthasia-control-lg: 1rem;
+	--padding-anasthasia-container: 0.75rem;
+	--font-size-anasthasia-control-sm: 0.7rem;
+	--font-size-anasthasia-control: 0.82rem;
+	--duration-anasthasia-interaction: 140ms;
+	--translate-anasthasia-active: 0px;
+	--brightness-anasthasia-action-hover: 0.92;
+	--shadow-anasthasia-action: none;
+	--shadow-anasthasia-floating: 0 12px 30px rgb(26 32 38 / 0.18);
+	--shadow-anasthasia-dialog: 0 24px 72px rgb(26 32 38 / 0.32);
+	--radius-anasthasia-sm: 2px;
+	--radius-anasthasia-md: 3px;
+	--radius-anasthasia-lg: 4px;
+	--radius-anasthasia-xl: 5px;
+	--radius-anasthasia-2xl: 6px;
+	--background-image-anasthasia-accent-gradient: none;
+}
+
+:root.dark {
+	--color-anasthasia-bg: #090b0d;
+	--color-anasthasia-surface: #11151a;
+	--color-anasthasia-panel: #1a2026;
+	--color-anasthasia-border: #3d4650;
+	--color-anasthasia-divider: #293039;
+	--color-anasthasia-text: #f4f7f8;
+	--color-anasthasia-muted: #aab2ba;
+	--color-anasthasia-accent: #18d1ff;
+	--color-anasthasia-accent-strong: #71e2ff;
+	--color-anasthasia-action-secondary: #d9dfe3;
+	--color-anasthasia-action-secondary-border: #56616d;
+	--color-anasthasia-on-accent: #071014;
+	--color-anasthasia-overlay: rgb(0 0 0 / 0.78);
+	--color-anasthasia-info: #a8c5d1;
+	--color-anasthasia-info-surface: #17232a;
+	--color-anasthasia-info-border: #496977;
+	--color-anasthasia-success: #9bd5b4;
+	--color-anasthasia-success-surface: #14271e;
+	--color-anasthasia-success-border: #47775e;
+	--color-anasthasia-warning: #e5c77c;
+	--color-anasthasia-warning-surface: #2d2514;
+	--color-anasthasia-warning-border: #806b36;
+	--color-anasthasia-danger: #f0a0a0;
+	--color-anasthasia-danger-surface: #32191b;
+	--color-anasthasia-danger-border: #884a4d;
+	--brightness-anasthasia-action-hover: 1.08;
+	--shadow-anasthasia-floating: 0 14px 36px rgb(0 0 0 / 0.56);
+	--shadow-anasthasia-dialog: 0 28px 80px rgb(0 0 0 / 0.7);
+}

@@ -1,3 +1,10 @@
+---
+title: Experimental custom runtime and CN compatibility
+description: Boundaries for custom runtimes and unsupported CN compatibility work
+order: 10
+hidden: true
+---
+
 # Experimental custom runtime and CN compatibility
 
 Status: Proposed

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --locked
 # SPDX-License-Identifier: MPL-2.0
 
-"""Check or format Swift, Python, and C/Objective-C sources."""
+"""Check or format project sources."""
 
 from __future__ import annotations
 
@@ -118,16 +118,29 @@ def format_shim() -> None:
     run(["xcrun", "clang-format", "-i", *shim_sources()], cwd=PROJECT_DIR)
 
 
+def check_website() -> None:
+    info("Checking website sources")
+    run(["pnpm", "check"], cwd=PROJECT_DIR / "web")
+    run(["pnpm", "format:check"], cwd=PROJECT_DIR / "web")
+
+
+def format_website() -> None:
+    info("Formatting website sources")
+    run(["pnpm", "format"], cwd=PROJECT_DIR / "web")
+
+
 TARGETS: dict[str, tuple[Callable[[], None], Callable[[], None]]] = {
     "localization": (check_localization, format_localization),
     "swift": (check_swift, format_swift),
     "scripts": (check_scripts, format_scripts),
     "shim": (check_shim, format_shim),
+    "web": (check_website, format_website),
 }
+DEFAULT_TARGETS = ("localization", "swift", "scripts", "shim")
 
 
 def run_mode(mode: str, target: str) -> None:
-    names = TARGETS if target == "all" else (target,)
+    names = DEFAULT_TARGETS if target == "all" else (target,)
     for name in names:
         checker, formatter = TARGETS[name]
         (checker if mode == "check" else formatter)()

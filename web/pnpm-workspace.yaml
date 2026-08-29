@@ -1,0 +1,4 @@
+allowBuilds:
+    'anasthasia@https://codeload.github.com/LuMiSxh/Anasthasia/tar.gz/cff2ef0f6391b94e7ae33a0c5da992d665f465a4': true
+minimumReleaseAgeExclude:
+    - svelte@5.57.0

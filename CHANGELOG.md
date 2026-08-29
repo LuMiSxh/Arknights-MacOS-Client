@@ -1,3 +1,8 @@
+---
+title: Changelog
+description: Release history for Arknights Client
+---
+
 # Changelog
 
 All notable changes to this project are documented here.
@@ -8,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- A static project website built from the repository documentation and deployed with releases through GitHub Pages (#56).
 - Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
 - Weekly live-contract monitoring for every supported Yostar region (#39).
 - Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, archive verification (#47).

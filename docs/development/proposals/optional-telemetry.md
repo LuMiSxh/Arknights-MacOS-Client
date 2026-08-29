@@ -1,3 +1,10 @@
+---
+title: Optional privacy-preserving telemetry
+description: Proposed privacy and infrastructure boundaries for optional anonymous telemetry
+order: 20
+hidden: true
+---
+
 # Optional privacy-preserving telemetry
 
 Status: Proposed
@@ -403,6 +410,6 @@ breaker and public endpoints can be attacked. Pricing and limits must be recheck
 - [Cloudflare Terraform provider](https://developers.cloudflare.com/api/terraform/)
 - [GDPR principles and consent](https://eur-lex.europa.eu/eli/reg/2016/679/)
 - [Announcement behavior](../announcements.md)
-- [Architecture](../architecture.md)
-- [Storage](../storage.md)
-- [Troubleshooting and diagnostic handling](../troubleshooting.md)
+- [Architecture](../architecture/README.md)
+- [Storage](../../help/storage.md)
+- [Troubleshooting and diagnostic handling](../../help/troubleshooting.md)
