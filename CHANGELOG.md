@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Recovered official wallpapers whose Fankit gallery entries wrap the image URL in a single-element array instead of a plain string, restoring most of the official wallpaper catalog instead of only the newest entries.
+
 ## [0.4.1]
 
 ### Changed
