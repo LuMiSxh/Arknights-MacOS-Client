@@ -17,7 +17,7 @@ Arknights Client has a native SwiftUI launcher and a bundled Windows compatibili
 
 - `Launcher` owns the root observable state, home, Settings, documents, popups, and launcher updates.
 - `Game` owns installation, Wine runtime behavior, Intel translation, and game-file compatibility components.
-- `Customization` owns artwork, icons, and the preset gallery.
+- `Customization` owns artwork, icons, and the preset gallery. The gallery's search matches both wallpaper titles and maintainer-curated tags; see [Wallpaper tagging and search](wallpaper-tagging.md) for how tags are collected and applied.
 - `Audio` owns background playback, Now Playing integration, settings, and HUD controls.
 - `Onboarding` owns its resumable flow, progress persistence, and step views.
 

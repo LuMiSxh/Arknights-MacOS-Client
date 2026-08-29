@@ -137,6 +137,7 @@ Run `just --groups` for the complete command list. Tested runtime versions, down
 - [Design](docs/design.md)
 - [Releases and updates](docs/releases-and-updates.md)
 - [Announcements](docs/announcements.md)
+- [Wallpaper tagging and search](docs/wallpaper-tagging.md)
 - [Third-party notices](docs/legal/third-party-notices.md)
 - [Corresponding source](docs/legal/source-code.md)
 
