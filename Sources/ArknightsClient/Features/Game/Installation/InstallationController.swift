@@ -76,6 +76,7 @@ final class InstallationController {
 
 	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
+		lifecycle.clearFailure()
 		region = newRegion
 		preferences.setSelectedRegion(newRegion)
 		configuration = nil

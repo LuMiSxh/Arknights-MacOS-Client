@@ -17,6 +17,7 @@ Use this section after [Installation](../installation.md) when the launcher, a r
 | Find game files, logs, or the Wine prefix                            | [Storage](storage.md)                             |
 | Understand Rosetta, Wine, and DXMT                                   | [Runtime compatibility](runtime-compatibility.md) |
 | Check whether a behavior belongs to the launcher or the game service | [FAQ](faq.md)                                     |
+| Look up a word shown with a launcher failure                         | [Error codes](errors/README.md)                   |
 
 > [!TIP]
 > Start with the least destructive step that matches the symptom. Reopen the launcher, check the selected region, and use **Settings → Storage → Show Logs** before deleting a prefix or reinstalling game files.
@@ -32,4 +33,4 @@ The launcher owns its download, manifest verification, runtime setup, display in
 
 Record the selected region, Mac model, macOS version, launcher version, and the step that failed. Then collect the relevant log excerpts from [Troubleshooting](troubleshooting.md#log-locations). Remove account data, private paths, tokens, and unrelated URLs before sharing logs.
 
-The **Report a Problem…** action in the launcher opens a pre-filled public GitHub issue with basic environment metadata. Logs are never attached automatically; you choose what to review and attach.
+The **Report a Problem…** action in the launcher opens a pre-filled public GitHub issue with basic environment metadata. When a failed operation has an error code, the report also includes that code, operation, and selected region. Logs and error messages are never attached automatically; you choose what to review and attach.

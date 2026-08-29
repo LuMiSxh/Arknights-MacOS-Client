@@ -13,13 +13,23 @@ extension InstallationController {
 
 	func startInstallation(
 		launchAfterCompletion: Bool,
-		verifyAllExistingFiles: Bool = false
+		verifyAllExistingFiles: Bool = false,
+		operationOverride: SupportOperation? = nil
 	) {
 		guard lifecycle.activity == .idle else { return }
 		guard let installationID = installationGate.begin() else { return }
+		let requestedRegion = region
+		let operation: SupportOperation =
+			operationOverride
+			?? (verifyAllExistingFiles ? .repair : (isInstalled ? .update : .install))
 		guard let configuration else {
 			installationGate.finish(installationID)
-			lifecycle.show(LauncherError.missingConfiguration)
+			presentInstallationFailure(
+				LauncherError.missingConfiguration,
+				id: installationID,
+				operation: operation,
+				region: requestedRegion
+			)
 			return
 		}
 		let targetDirectory = installDirectory
@@ -28,8 +38,12 @@ extension InstallationController {
 			available < required
 		{
 			installationGate.finish(installationID)
-			lifecycle.show(
-				LauncherError.insufficientDiskSpace(required: required, available: available))
+			presentInstallationFailure(
+				LauncherError.insufficientDiskSpace(required: required, available: available),
+				id: installationID,
+				operation: operation,
+				region: requestedRegion
+			)
 			return
 		}
 		onMetadataRefreshCancellationRequested?()
@@ -49,7 +63,6 @@ extension InstallationController {
 			)
 		}
 
-		let requestedRegion = region
 		installationTask = Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -93,13 +106,45 @@ extension InstallationController {
 				await log.info("Installation paused")
 			} catch {
 				guard finishInstallation(installationID) else { return }
-				lifecycle.show(
+				presentInstallationFailure(
 					error,
-					context: verifyAllExistingFiles
-						? "Game repair failed" : "Game installation failed"
+					id: installationID,
+					operation: operation,
+					region: requestedRegion
 				)
 			}
 		}
+	}
+
+	@discardableResult
+	func retryInstallationFailure(id: UUID) -> Bool {
+		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
+		guard failure.context.region == region.supportRegion else { return false }
+		guard
+			failure.context.operation == .install || failure.context.operation == .update
+				|| failure.context.operation == .repair
+		else { return false }
+		switch failure.context.operation {
+		case .install where isInstalled,
+			.update where !isInstalled,
+			.repair where !isInstalled:
+			return false
+		default:
+			break
+		}
+		guard lifecycle.consumeFailure(id: id) != nil else { return false }
+		Task { [log] in
+			await log.info(
+				"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(region.rawValue)"
+			)
+		}
+		startInstallation(
+			launchAfterCompletion: false,
+			verifyAllExistingFiles: failure.context.operation == .repair,
+			operationOverride: failure.context.operation
+		)
+		return true
 	}
 
 	func cancelDownload() {

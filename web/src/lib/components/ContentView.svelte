@@ -12,6 +12,9 @@
 
 	let { content, neighbors = {} }: Props = $props();
 	let activeHeading = $state('');
+	let tocNavigation = $state<HTMLElement>();
+	let copyStatus = $state('');
+	let copyStatusTimer: number | undefined;
 	const visibleChildren = $derived(
 		content.kind === 'directory'
 			? content.children.filter((entry) => !entry.hidden)
@@ -45,15 +48,48 @@
 			if (element && element.getBoundingClientRect().top <= offset)
 				current = heading.id;
 		}
+		if (activeHeading === current) return;
 		activeHeading = current;
+		requestAnimationFrame(() => {
+			tocNavigation
+				?.querySelector('[aria-current="location"]')
+				?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		});
+	}
+
+	async function copyHeadingLink(event: MouseEvent) {
+		if (!(event.target instanceof Element)) return;
+		const link = event.target.closest<HTMLAnchorElement>(
+			'a[data-heading-link]'
+		);
+		if (!link) return;
+
+		event.preventDefault();
+		const url = new URL(link.href, window.location.href);
+		try {
+			await navigator.clipboard.writeText(url.href);
+			history.replaceState(history.state, '', url);
+			link.dataset.copied = 'true';
+			copyStatus = 'Section link copied';
+			window.clearTimeout(copyStatusTimer);
+			copyStatusTimer = window.setTimeout(() => {
+				delete link.dataset.copied;
+				copyStatus = '';
+			}, 1500);
+		} catch {
+			window.location.hash = link.hash;
+			copyStatus = 'Unable to copy the section link';
+		}
 	}
 
 	onMount(() => {
 		syncActiveHeading();
+		return () => window.clearTimeout(copyStatusTimer);
 	});
 </script>
 
 <svelte:window onscroll={syncActiveHeading} onresize={syncActiveHeading} />
+<svelte:document onclick={copyHeadingLink} />
 
 <svelte:head>
 	<title>{content.title} · Arknights Client</title>
@@ -80,14 +116,14 @@
 					: 'Documentation'}
 			</div>
 			<h1>{content.title}</h1>
-			<p>{content.description}</p>
+			{#if !content.code}<p>{content.description}</p>{/if}
 		</div>
-		{#if content.code}<span class="content-code">{content.code}</span>{/if}
 	</div>
 </header>
 
 <div class:with-toc={toc.length > 0} class="content-layout">
 	<article class="content-copy">
+		<p class="copy-status" aria-live="polite">{copyStatus}</p>
 		{#if content.html}
 			{@html content.html}
 		{:else}
@@ -120,7 +156,7 @@
 	{#if toc.length > 0}
 		<aside class="content-toc" aria-label="On this page">
 			<SectionLabel>On this page</SectionLabel>
-			<nav>
+			<nav bind:this={tocNavigation}>
 				{#each toc as heading (heading.id)}
 					<a
 						class={heading.level > 2 ? 'toc-nested' : undefined}
@@ -208,13 +244,6 @@
 		font-size: 0.9rem;
 	}
 
-	.content-code {
-		border: 1px solid var(--site-line);
-		padding: 0.25rem 0.4rem;
-		font-family: var(--font-anasthasia-mono);
-		font-size: 0.62rem;
-	}
-
 	.content-layout {
 		position: relative;
 	}
@@ -229,6 +258,51 @@
 		min-width: 0;
 	}
 
+	.copy-status {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		clip: rect(0, 0, 0, 0);
+		clip-path: inset(50%);
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.content-copy :global(.heading-link) {
+		display: inline-grid;
+		width: 1em;
+		height: 1em;
+		place-items: center;
+		margin-left: 0.4em;
+		color: var(--color-anasthasia-muted);
+		font-family: var(--font-anasthasia-mono);
+		font-size: 0.72em;
+		font-weight: 500;
+		line-height: 1;
+		opacity: 0;
+		text-decoration: none;
+		vertical-align: middle;
+		transition:
+			opacity 120ms ease,
+			color 120ms ease;
+	}
+
+	.content-copy :global(:is(h2, h3, h4, h5, h6):hover .heading-link),
+	.content-copy :global(.heading-link:focus-visible),
+	.content-copy :global(.heading-link[data-copied='true']) {
+		opacity: 1;
+	}
+
+	.content-copy :global(.heading-link:hover),
+	.content-copy :global(.heading-link:focus-visible) {
+		color: var(--color-anasthasia-accent);
+	}
+
+	.content-copy :global(.heading-link[data-copied='true']) {
+		color: var(--color-anasthasia-success);
+	}
+
 	.empty-directory-note {
 		border-left: 2px solid var(--color-anasthasia-text);
 		padding-left: 0.8rem;
@@ -238,14 +312,22 @@
 		position: sticky;
 		top: 1.25rem;
 		align-self: start;
+		display: flex;
+		max-height: calc(100dvh - 2.5rem);
+		flex-direction: column;
 		border-left: 1px solid var(--site-line);
 		padding-left: 0.8rem;
+		overflow: hidden;
 	}
 
 	.content-toc nav {
 		display: grid;
+		min-height: 0;
 		gap: 0.15rem;
 		margin-top: 0.6rem;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		scrollbar-gutter: stable;
 	}
 
 	.content-toc a {
@@ -360,10 +442,18 @@
 
 		.content-toc {
 			position: static;
+			display: block;
+			max-height: none;
 			border-top: 1px solid var(--site-line);
 			border-left: 0;
 			margin-top: 2rem;
 			padding: 1rem 0 0;
+			overflow: visible;
+		}
+
+		.content-toc nav {
+			overflow: visible;
+			scrollbar-gutter: auto;
 		}
 	}
 

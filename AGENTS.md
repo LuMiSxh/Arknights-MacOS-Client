@@ -79,5 +79,6 @@
 | Storage                 | `docs/help/storage.md`                     |
 | Runtime contract        | `docs/help/runtime-compatibility.md`       |
 | Troubleshooting         | `docs/help/troubleshooting.md`             |
+| Error recovery          | `docs/development/error-recovery.md`       |
 | Releases                | `docs/development/releases-and-updates.md` |
 | Third-party obligations | `docs/legal/third-party-notices.md`        |

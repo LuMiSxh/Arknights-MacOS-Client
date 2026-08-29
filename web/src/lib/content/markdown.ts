@@ -87,6 +87,14 @@ function renderImage(
 	return `<img src="${escapeHtml(href)}" alt="${escapeHtml(token.text)}"${title} loading="lazy">`;
 }
 
+function addHeadingLinks(html: string): string {
+	return html.replace(
+		/<h([2-6]) id="([^"]+)">([\s\S]*?)<\/h\1>/g,
+		(_match, level: string, id: string, content: string) =>
+			`<h${level} id="${id}">${content}<a class="heading-link" href="#${id}" data-heading-link aria-label="Copy link to this section" title="Copy link to this section">#</a></h${level}>`
+	);
+}
+
 export function renderMarkdown(
 	source: string,
 	input: string,
@@ -129,7 +137,7 @@ export function renderMarkdown(
 	});
 	parser.use(gfmHeadingId());
 	resetHeadings();
-	const html = parser.parse(input) as string;
+	const html = addHeadingLinks(parser.parse(input) as string);
 	const headings = getHeadingList().map(({ level, raw, id }) => ({
 		level,
 		text: raw,

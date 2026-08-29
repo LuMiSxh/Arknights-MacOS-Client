@@ -12,6 +12,8 @@
 
 	const navigation = $derived(data.navigation);
 	let themeMode = $state<ThemeMode>('system');
+	let mobileMenuOpen = $state(false);
+	let mobileMenu = $state<HTMLDetailsElement>();
 	const themeOptions = [
 		{ value: 'light' as const, label: 'Light' },
 		{ value: 'system' as const, label: 'Auto' },
@@ -41,7 +43,20 @@
 		const current = page.url.pathname.replace(/\/$/, '');
 		return current === resolve(route as `/${string}`).replace(/\/$/, '');
 	}
+
+	function closeMobileMenu() {
+		mobileMenuOpen = false;
+	}
+
+	function closeMobileMenuFromOutside(event: MouseEvent) {
+		if (!(event.target instanceof Node)) return;
+		if (mobileMenuOpen && !mobileMenu?.contains(event.target)) {
+			closeMobileMenu();
+		}
+	}
 </script>
+
+<svelte:document onclick={closeMobileMenuFromOutside} />
 
 <svelte:head>
 	<meta
@@ -84,7 +99,7 @@
 			/>
 		</div>
 
-		<div>
+		<div class="rail-navigation">
 			<p class="site-rail-label">Navigation</p>
 			<nav class="site-nav" aria-label="Primary">
 				<a
@@ -114,6 +129,9 @@
 										href={resolve(
 											child.route as `/${string}`
 										)}
+										data-current={isCurrent(child.route)
+											? 'true'
+											: undefined}
 										aria-current={isExact(child.route)
 											? 'page'
 											: undefined}>{child.title}</a
@@ -157,18 +175,20 @@
 			<img class="site-mark-icon" src={appIconUrl} alt="" />
 			<span>Arknights Client</span>
 		</a>
-		<details>
+		<details bind:this={mobileMenu} bind:open={mobileMenuOpen}>
 			<summary>Menu</summary>
 			<div class="mobile-menu">
 				<nav aria-label="Mobile primary">
 					<a
 						href={resolve('/')}
+						onclick={closeMobileMenu}
 						aria-current={isCurrent('/') ? 'page' : undefined}
 						>Home</a
 					>
 					{#each navigation as entry (entry.route)}
 						<a
 							href={resolve(entry.route as `/${string}`)}
+							onclick={closeMobileMenu}
 							aria-current={isCurrent(entry.route)
 								? 'page'
 								: undefined}
@@ -178,6 +198,7 @@
 					{/each}
 					<a
 						href={resolve('/changelog/')}
+						onclick={closeMobileMenu}
 						aria-current={isCurrent('/changelog/')
 							? 'page'
 							: undefined}

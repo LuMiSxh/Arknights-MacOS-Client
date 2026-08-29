@@ -121,7 +121,7 @@ Deleting the Wine prefix signs every embedded-browser provider out across all re
 
 ## Does “Report a Problem…” upload my logs?
 
-No. The action opens a pre-filled public GitHub issue with the launcher version, macOS version, chip name, and memory size. It never attaches logs automatically. Review excerpts from `launcher.log`, `wine.log`, `unity.log`, or `chromium.log`, remove private paths and account-related data, and attach only what is relevant.
+No. The action opens a pre-filled public GitHub issue with the launcher version, macOS version, chip name, and memory size. For a coded failure, it also includes the code, operation, and selected region. It never attaches the displayed message or logs automatically. Review excerpts from `launcher.log`, `wine.log`, `unity.log`, or `chromium.log`, remove private paths and account-related data, and attach only what is relevant.
 
 ## Can I control the game window from the launcher?
 

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - A static project website built from the repository documentation and deployed with releases through GitHub Pages (#56).
+- Stable word-based error codes with direct troubleshooting links, safe report context, and guarded Retry, Repair, and log actions (#57).
 - Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
 - Weekly live-contract monitoring for every supported Yostar region (#39).
 - Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, archive verification (#47).

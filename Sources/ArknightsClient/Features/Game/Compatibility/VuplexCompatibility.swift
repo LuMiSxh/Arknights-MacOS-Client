@@ -70,7 +70,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		if helperIsInstalledShim,
 			!fileManager.fileExists(atPath: officialHelperURL.path)
 		{
-			throw LauncherError.runtimeConfiguration(
+			throw LauncherError.gameCompatibility(
 				"The official Vuplex helper is missing. Repair the game before launching."
 			)
 		}
@@ -178,7 +178,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 					maximumSize: Self.maximumShimSize
 				)
 			else {
-				throw LauncherError.runtimeConfiguration(
+				throw LauncherError.gameCompatibility(
 					"The Vuplex folder contains an unknown userenv.dll. Repair the game before launching."
 				)
 			}
@@ -238,7 +238,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		) {
 			try fileManager.removeItem(at: backupURL)
 		} else {
-			throw LauncherError.runtimeConfiguration(
+			throw LauncherError.gameCompatibility(
 				"The Vuplex folder contains an unknown compatibility backup. Repair the game before launching."
 			)
 		}

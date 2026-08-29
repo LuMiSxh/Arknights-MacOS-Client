@@ -54,6 +54,8 @@ extension InstallationController {
 			updateInstalledState()
 			return
 		}
+		let operationID = UUID()
+		let requestedRegion = region
 		lifecycle.activity = .maintaining(.uninstalling)
 		lifecycle.setStatus(.movingToTrash)
 		Task { [log] in await log.info("Game uninstall requested") }
@@ -62,7 +64,12 @@ extension InstallationController {
 				guard let self else { return }
 				self.lifecycle.activity = .idle
 				if let error {
-					self.lifecycle.show(error)
+					self.presentInstallationFailure(
+						error,
+						id: operationID,
+						operation: .uninstall,
+						region: requestedRegion
+					)
 				} else {
 					self.isInstalled = false
 					self.hasPartialDownload = false
@@ -72,5 +79,21 @@ extension InstallationController {
 				}
 			}
 		}
+	}
+
+	@discardableResult
+	func retryUninstallFailure(id: UUID) -> Bool {
+		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard failure.context.operation == .uninstall else { return false }
+		guard failure.context.region == region.supportRegion else { return false }
+		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
+		guard isInstalled, lifecycle.consumeFailure(id: id) != nil else { return false }
+		Task { [log] in
+			await log.info(
+				"Recovery selected; action=retry operation=uninstall region=\(region.rawValue)"
+			)
+		}
+		uninstallGame()
+		return true
 	}
 }

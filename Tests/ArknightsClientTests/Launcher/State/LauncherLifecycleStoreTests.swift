@@ -63,6 +63,18 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.activity == .idle)
 		#expect(lifecycle.canBeginExclusiveActivity)
 	}
+
+	@Test
+	func duplicatePresentationAndConsumptionAreIdempotent() {
+		let lifecycle = makeLifecycleStore()
+		let failure = testFailure(id: UUID(), message: "failure")
+		#expect(lifecycle.presentFailure(failure, diagnostic: "first"))
+		#expect(!lifecycle.presentFailure(failure, diagnostic: "duplicate"))
+
+		#expect(lifecycle.consumeFailure(id: UUID()) == nil)
+		#expect(lifecycle.consumeFailure(id: failure.id) == failure)
+		#expect(lifecycle.consumeFailure(id: failure.id) == nil)
+	}
 }
 
 @MainActor
@@ -71,4 +83,14 @@ private func makeLifecycleStore() -> LauncherLifecycleStore {
 		path: "LauncherLifecycleStoreTests.\(UUID().uuidString).log"
 	)
 	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
+}
+
+private func testFailure(id: UUID, message: String) -> LauncherFailurePresentation {
+	LauncherFailurePresentation(
+		id: id,
+		message: message,
+		code: .virga,
+		context: SupportContext(operation: .launcher, region: nil),
+		actions: [.showLogs, .openTroubleshooting, .reportProblem]
+	)
 }

@@ -70,8 +70,17 @@
 				lifecycle.activity = .launchingGame(sessionID: UUID(), processIdentifier: nil)
 				lifecycle.setStatus(.startingGame)
 			case .failure:
-				lifecycle.presentation.failureMessage =
-					"The Windows runtime exited unexpectedly. Check the logs for details."
+				lifecycle.presentation.failure = LauncherFailurePresentation(
+					id: UUID(),
+					message: "The Windows runtime exited with status 1. See wine.log.",
+					code: .crux,
+					context: SupportContext(
+						operation: .runtimeExit,
+						region: installation.region.supportRegion
+					),
+					actions: [.retry, .showLogs, .openTroubleshooting, .repair, .reportProblem],
+					blocksGameLaunch: true
+				)
 			case .accessibility:
 				settings.showsPlayingMusic = true
 				settings.showsGameVersion = true

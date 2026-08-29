@@ -60,7 +60,8 @@ final class LauncherLifecycleStore {
 	}
 
 	var activityMessage: String { state.presentation.status.message }
-	var failureMessage: String? { state.presentation.failureMessage }
+	var failure: LauncherFailurePresentation? { state.presentation.failure }
+	var failureMessage: String? { state.presentation.failure?.message }
 	var phase: LauncherPhase {
 		switch state.activity {
 		case .installing:
@@ -87,11 +88,11 @@ final class LauncherLifecycleStore {
 
 	func setStatus(_ status: LauncherStatus, clearsFailure: Bool = true) {
 		state.presentation.status = status
-		if clearsFailure { state.presentation.failureMessage = nil }
+		if clearsFailure { state.presentation.failure = nil }
 	}
 
 	func clearFailure() {
-		state.presentation.failureMessage = nil
+		state.presentation.failure = nil
 	}
 
 	func beginLauncherUpdate() {
@@ -113,11 +114,47 @@ final class LauncherLifecycleStore {
 		activityObservers[id] = nil
 	}
 
-	func show(_ error: any Error, context: String? = nil) {
+	func show(
+		_ error: any Error,
+		context: String? = nil
+	) {
 		let message = (error as? any LocalizedError)?.errorDescription ?? error.localizedDescription
-		state.presentation.failureMessage = message
+		let failure = LauncherFailurePresentation(
+			id: UUID(), message: message, code: nil,
+			context: SupportContext(operation: .launcher, region: nil),
+			actions: [.showLogs, .reportProblem]
+		)
 		let diagnostic = launcherDiagnosticDescription(for: error)
 		let logMessage = context.map { "\($0): \(diagnostic)" } ?? diagnostic
-		Task { [log] in await log.error(logMessage) }
+		presentFailure(failure, diagnostic: logMessage)
+	}
+
+	@discardableResult
+	func presentFailure(
+		_ failure: LauncherFailurePresentation,
+		diagnostic: String
+	) -> Bool {
+		if state.presentation.failure?.id == failure.id {
+			Task { [log] in
+				await log.error(
+					"Failure not presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
+				)
+			}
+			return false
+		}
+		state.presentation.failure = failure
+		Task { [log] in
+			await log.error(
+				"Failure presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
+			)
+		}
+		return true
+	}
+
+	@discardableResult
+	func consumeFailure(id: UUID) -> LauncherFailurePresentation? {
+		guard state.presentation.failure?.id == id else { return nil }
+		defer { state.presentation.failure = nil }
+		return state.presentation.failure
 	}
 }

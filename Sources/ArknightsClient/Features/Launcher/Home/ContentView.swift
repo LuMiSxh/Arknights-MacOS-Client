@@ -9,6 +9,10 @@ struct ContentView: View {
 	@State private var settingsPresented = false
 	@State private var launcherUpdateCheckAfterSettingsDismiss = false
 	@State private var confirmsRosettaInstallation = false
+	@State private var confirmsRepair = false
+	@State private var repairFailureID: UUID?
+	@State private var presentedFailure: LauncherFailurePresentation?
+	@State private var failureAfterSettingsDismiss: LauncherFailurePresentation?
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
 	init(
@@ -22,6 +26,7 @@ struct ContentView: View {
 				store: OnboardingProgressStore(defaults: model.preferences.defaults)
 			)
 		)
+		_presentedFailure = State(initialValue: model.lifecycle.failure)
 		_musicController = State(initialValue: BackgroundMusicController(context: model))
 	}
 	private var accentColor: Color { model.customization.accentColor }
@@ -54,7 +59,8 @@ struct ContentView: View {
 					hudTintColor: model.customization.hudTintColor,
 					musicController: musicController,
 					requestRosettaInstallation: { confirmsRosettaInstallation = true },
-					retryIntelTranslationCheck: retryIntelTranslationCheck
+					retryIntelTranslationCheck: retryIntelTranslationCheck,
+					showFailureDetails: showFailureDetails
 				)
 			}
 			// Re-key because L10n reads a mutex and SwiftUI otherwise misses language changes.
@@ -72,7 +78,7 @@ struct ContentView: View {
 				)
 			}
 		}
-		.sheet(isPresented: $settingsPresented, onDismiss: openLauncherUpdateAfterSettingsDismiss) {
+		.sheet(isPresented: $settingsPresented, onDismiss: settingsDidDismiss) {
 			LauncherSettingsView(
 				model: model,
 				restartOnboarding: restartOnboarding,
@@ -101,12 +107,38 @@ struct ContentView: View {
 				openAction: model.communication.openPopupAction
 			)
 		}
+		.sheet(item: $presentedFailure, onDismiss: failureDetailsDidDismiss) { failure in
+			LauncherFailureDetailView(
+				failure: failure,
+				accentColor: accentColor,
+				hudTintColor: model.customization.hudTintColor,
+				perform: performRecoveryAction
+			)
+		}
 		.confirmsRosettaInstallation(
 			isPresented: $confirmsRosettaInstallation,
 			install: installRosetta
 		)
+		.confirmationDialog(
+			L10n.string(HomeStrings.repairConfirmationTitle),
+			isPresented: $confirmsRepair,
+			titleVisibility: .visible
+		) {
+			Button(
+				L10n.string(HomeStrings.repairConfirmationAction),
+				action: confirmRepair
+			)
+			Button(L10n.string(LauncherStrings.cancel), role: .cancel) {
+				cancelRepair()
+			}
+		} message: {
+			Text(HomeStrings.repairConfirmationDetail)
+		}
 		.onAppear {
 			registerOpenSettings(presentSettings)
+		}
+		.onChange(of: model.lifecycle.failure) { _, failure in
+			presentFailure(failure)
 		}
 		.task {
 			await startOnboardingIfNeeded()
@@ -169,8 +201,35 @@ struct ContentView: View {
 		model.communication.openLauncherUpdate()
 	}
 
+	private func settingsDidDismiss() {
+		if let failureAfterSettingsDismiss,
+			model.lifecycle.failure?.id == failureAfterSettingsDismiss.id
+		{
+			self.failureAfterSettingsDismiss = nil
+			presentedFailure = failureAfterSettingsDismiss
+			return
+		}
+		failureAfterSettingsDismiss = nil
+		openLauncherUpdateAfterSettingsDismiss()
+	}
+
+	private func presentFailure(_ failure: LauncherFailurePresentation?) {
+		guard let failure else {
+			failureAfterSettingsDismiss = nil
+			presentedFailure = nil
+			return
+		}
+		if settingsPresented {
+			failureAfterSettingsDismiss = failure
+			settingsPresented = false
+		} else {
+			presentedFailure = failure
+		}
+	}
+
 	private func startOnboardingIfNeeded() async {
 		await model.waitForStartup()
+		if model.isDeveloperMode, !model.isOnboardingPreview { return }
 		model.installation.updateInstalledState()
 		await onboarding.startIfNeeded(
 			isDeveloperMode: model.isDeveloperMode,
@@ -209,7 +268,41 @@ struct ContentView: View {
 	}
 
 	private func installRosetta() {
-		Task { await model.intelTranslation.installRosetta() }
+		Task { await model.installRosetta() }
+	}
+
+	private func performRecoveryAction(_ action: RecoveryAction, failureID: UUID) {
+		if model.performRecoveryAction(action, failureID: failureID)
+			== .repairConfirmationRequired
+		{
+			presentedFailure = nil
+			repairFailureID = failureID
+			confirmsRepair = true
+		}
+	}
+
+	private func showFailureDetails() {
+		presentedFailure = model.lifecycle.failure
+	}
+
+	private func failureDetailsDidDismiss() {
+		guard repairFailureID == nil else { return }
+		if model.lifecycle.failure?.blocksGameLaunch == false {
+			model.lifecycle.clearFailure()
+		}
+	}
+
+	private func cancelRepair() {
+		repairFailureID = nil
+		if model.lifecycle.failure?.blocksGameLaunch == false {
+			model.lifecycle.clearFailure()
+		}
+	}
+
+	private func confirmRepair() {
+		guard let repairFailureID else { return }
+		self.repairFailureID = nil
+		model.confirmRepair(failureID: repairFailureID)
 	}
 
 	private var themeAnimation: Animation? {

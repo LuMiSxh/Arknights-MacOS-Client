@@ -631,6 +631,24 @@
         }
       }
     },
+    "home.errorCode.accessibility": {
+      "comment": "Accessibility label for a public troubleshooting code; first argument is the word and second is its space-separated spelling",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fehlercode %1$@, buchstabiert %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error code %1$@, spelled %2$@"
+          }
+        }
+      }
+    },
     "home.launcherUpdate": {
       "comment": "Available launcher update button",
       "extractionState": "manual",
@@ -681,6 +699,168 @@
           "stringUnit": {
             "state": "translated",
             "value": "Switch between installed regions"
+          }
+        }
+      }
+    },
+    "home.recovery.actions": {
+      "comment": "Compact menu containing the available failure recovery actions",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions"
+          }
+        }
+      }
+    },
+    "home.recovery.details": {
+      "comment": "Open the details for the current launcher failure",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Details"
+          }
+        }
+      }
+    },
+    "home.recovery.openTroubleshooting": {
+      "comment": "Open the documentation page for a launcher error code",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fehlerbehebung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Troubleshooting"
+          }
+        }
+      }
+    },
+    "home.recovery.repair": {
+      "comment": "Repair installed game files after a recoverable failure",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reparieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair"
+          }
+        }
+      }
+    },
+    "home.recovery.repair.confirm": {
+      "comment": "Confirmed action that starts a full game-file repair",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reparatur starten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Repair"
+          }
+        }
+      }
+    },
+    "home.recovery.repair.detail": {
+      "comment": "Repair confirmation detail explaining verification and download cost",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Spieldateien dieser Region werden geprüft. Fehlende oder beschädigte Dateien werden erneut heruntergeladen; dies kann viel Datenvolumen benötigen. Launcher-Einstellungen und das Wine-Prefix bleiben erhalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every game file for this region will be checked. Missing or damaged files will be downloaded again and may use substantial data. Launcher settings and the Wine prefix are preserved."
+          }
+        }
+      }
+    },
+    "home.recovery.repair.title": {
+      "comment": "Title of the confirmation shown before a full game-file repair",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spieldateien reparieren?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair game files?"
+          }
+        }
+      }
+    },
+    "home.recovery.retry": {
+      "comment": "Retry the exact failed launcher operation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
+    "home.recovery.showLogs": {
+      "comment": "Reveal launcher and runtime logs in Finder",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logs anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Logs"
           }
         }
       }

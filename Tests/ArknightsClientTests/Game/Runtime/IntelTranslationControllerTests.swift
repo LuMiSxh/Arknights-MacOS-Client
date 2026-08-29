@@ -57,6 +57,7 @@ struct IntelTranslationControllerTests {
 			lifecycle.rosettaInstallationState.failureMessage
 				== L10n.string(.Launcher.launcherRosettaFailureInstallerExited("7"))
 		)
+		#expect(lifecycle.failure?.blocksGameLaunch == true)
 	}
 
 	@Test
@@ -78,6 +79,26 @@ struct IntelTranslationControllerTests {
 		#expect(await checks.count == 1)
 	}
 
+	@Test(
+		arguments: [
+			(IntelTranslationState.rosettaMissing, SupportCode?.some(.limpet)),
+			(.gameTestModeEnabled, SupportCode?.some(.limpet)),
+			(.unavailable, SupportCode?.some(.limpet)),
+			(.unsupportedOS, SupportCode?.some(.limpet)),
+			(.available, SupportCode?.none),
+			(.checking, SupportCode?.none),
+		]
+	)
+	func readinessExposesLimpetOnlyForTerminalBlockedStates(
+		fixture: (IntelTranslationState, SupportCode?)
+	) {
+		let lifecycle = makeLifecycleStore()
+		lifecycle.intelTranslationState = fixture.0
+		let controller = IntelTranslationController(lifecycle: lifecycle)
+
+		#expect(controller.supportCode == fixture.1)
+	}
+
 	@Test
 	func cancelledCallerDoesNotDiscardTheSharedProbeResult() async {
 		let probe = BlockingTranslationProbe()
@@ -95,6 +116,28 @@ struct IntelTranslationControllerTests {
 		_ = await request.value
 
 		#expect(lifecycle.intelTranslationState == .available)
+	}
+
+	@Test
+	func retryConsumesOnlyTheCurrentRosettaFailure() async throws {
+		let installer = RosettaInstallationRecorder(status: 7)
+		let lifecycle = makeLifecycleStore()
+		lifecycle.intelTranslationState = .rosettaMissing
+		let controller = IntelTranslationController(
+			lifecycle: lifecycle,
+			checkIntelTranslation: {
+				IntelTranslationCheck(state: .rosettaMissing, diagnostics: "test")
+			},
+			installRosettaSystemSoftware: { await installer.install() }
+		)
+		_ = await controller.installRosetta()
+		let failureID = try #require(lifecycle.failure?.id)
+
+		#expect(!controller.retryRosettaFailure(id: UUID()))
+		#expect(controller.retryRosettaFailure(id: failureID))
+		#expect(!controller.retryRosettaFailure(id: failureID))
+		await installer.waitForInstallations(2)
+		#expect(await installer.count == 2)
 	}
 }
 

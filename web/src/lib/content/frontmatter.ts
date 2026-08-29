@@ -17,7 +17,7 @@ export interface ParsedMarkdown {
 }
 
 const FRONTMATTER = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
-const ERROR_CODE = /^AKC-[A-Z][A-Z0-9]*$/;
+const ERROR_CODE = /^[A-Z]+$/;
 const AUDIENCES = new Set(['all', 'developers', 'users']);
 
 function requiredString(value: unknown, key: string, source: string): string {
@@ -103,7 +103,10 @@ export function parseFrontmatter(
 		code !== undefined &&
 		(typeof code !== 'string' || !ERROR_CODE.test(code))
 	) {
-		throw new ContentError(source, 'frontmatter.code must match AKC-WORD');
+		throw new ContentError(
+			source,
+			'frontmatter.code must be one uppercase English word'
+		);
 	}
 	if (
 		code !== undefined &&

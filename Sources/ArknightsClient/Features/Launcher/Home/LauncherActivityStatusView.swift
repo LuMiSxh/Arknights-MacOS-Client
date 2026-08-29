@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import AppKit
 import SwiftUI
 
 struct LauncherActivityStatusView: View {
@@ -52,37 +51,50 @@ struct LauncherActivityStatusView: View {
 						.foregroundStyle(.secondary)
 						.lineLimit(1)
 					transferDetails
-					statusAction(detail: detail)
+					statusAction
 				}
 			}
 		}
 	}
 
 	@ViewBuilder
-	private func statusAction(detail: String) -> some View {
-		if lifecycle.failureMessage != nil {
-			AccentActionLink(
-				title: L10n.string(HomeStrings.reportProblem),
-				accentColor: accentColor
-			) {
-				NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
+	private var statusAction: some View {
+		if lifecycle.failure == nil,
+			installation.isInstalled, let code = intelTranslation.supportCode
+		{
+			VStack(alignment: .leading, spacing: 4) {
+				LauncherSupportCodeLabel(code: code, accentColor: accentColor)
+				ViewThatFits(in: .horizontal) {
+					HStack(spacing: 10) { intelTranslationActions(code: code) }
+					VStack(alignment: .leading, spacing: 4) {
+						intelTranslationActions(code: code)
+					}
+				}
+				.font(.caption)
 			}
-			.font(.caption)
-		} else if installation.isInstalled && intelTranslation.canInstallRosetta {
+		}
+	}
+
+	@ViewBuilder
+	private func intelTranslationActions(code: SupportCode) -> some View {
+		if intelTranslation.canInstallRosetta {
 			AccentActionLink(
 				title: intelTranslation.installationActionTitle,
 				accentColor: accentColor,
 				action: requestRosettaInstallation
 			)
-			.font(.caption)
-		} else if installation.isInstalled && intelTranslation.canRetryAvailabilityCheck {
+		} else if intelTranslation.canRetryAvailabilityCheck {
 			AccentActionLink(
 				title: L10n.string(HomeStrings.checkAgain),
 				accentColor: accentColor,
 				action: retryIntelTranslationCheck
 			)
-			.font(.caption)
 		}
+		AccentLink(
+			title: L10n.string(HomeStrings.openTroubleshooting),
+			destination: code.troubleshootingURL,
+			accentColor: accentColor
+		)
 	}
 
 	private var statusTitle: String {
@@ -90,7 +102,9 @@ struct LauncherActivityStatusView: View {
 		if installation.isDownloading, let progress = installation.progress {
 			return L10n.string(HomeStrings.downloadPercentage(Int(progress.fraction * 100)))
 		}
-		if lifecycle.failureMessage != nil { return L10n.string(HomeStrings.needsAttention) }
+		if lifecycle.failure?.blocksGameLaunch == true {
+			return L10n.string(HomeStrings.needsAttention)
+		}
 		if installation.isInstalled, let title = intelTranslation.statusTitle { return title }
 		return lifecycle.activityMessage
 	}
@@ -103,7 +117,7 @@ struct LauncherActivityStatusView: View {
 				HomeStrings.downloadProgress(downloaded: downloaded, total: total)
 			)
 		}
-		if let failureMessage = lifecycle.failureMessage { return failureMessage }
+		if lifecycle.failure?.blocksGameLaunch == true { return nil }
 		if installation.isInstalled { return intelTranslation.statusDetail }
 		return nil
 	}

@@ -47,6 +47,7 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 	case intelTranslationUnsupported
 	case runtimeWindowTimeout
 	case runtimeConfiguration(String)
+	case gameCompatibility(String)
 	case runtimeExited(status: Int32, log: URL)
 
 	var errorDescription: String? {
@@ -116,6 +117,8 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 			L10n.string(.Launcher.launcherErrorRuntimeWindowTimeout)
 		case .runtimeConfiguration(let message):
 			L10n.string(.Launcher.launcherErrorRuntimeConfiguration(message))
+		case .gameCompatibility:
+			L10n.string(.Launcher.launcherErrorGameCompatibility)
 		case .runtimeExited(let status, let log):
 			L10n.string(.Launcher.launcherErrorRuntimeExited(String(status), log.path))
 		}
@@ -167,6 +170,8 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 			"Arknights did not open a window within 90 seconds. Check the Wine log and try again."
 		case .runtimeConfiguration(let message):
 			"The Windows runtime could not be configured: \(message)"
+		case .gameCompatibility(let message):
+			"Game compatibility setup could not be completed: \(message)"
 		case .runtimeExited(let status, let log):
 			"The Windows runtime exited with status \(status). See \(log.path)."
 		}

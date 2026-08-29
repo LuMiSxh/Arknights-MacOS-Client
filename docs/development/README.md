@@ -8,7 +8,7 @@ order: 30
 
 These documents describe how Arknights Client is organized, tested, localized, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer and supports Yostar's official Global, Japan, and Korea PC clients.
 
-Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md), [Design](design.md), and [Localization](localization.md) as applicable. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
+Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md), [Design](design.md), and [Localization](localization.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
 
 Proposals are retained under `proposals/` for project history and are hidden from the primary development index until accepted. They are not implementation or support commitments.
 
@@ -35,7 +35,7 @@ toc: true
 ---
 ```
 
-`title` and `description` are required. `order` is a finite number used for sorting; `hidden`, `draft`, and `toc` are booleans; and `audience` is `all`, `developers`, or `users`. An optional `code` must match `AKC-WORD` and must be paired with a non-empty `domain`; error codes are unique across documentation files. `audience` is currently descriptive metadata, while `hidden` controls navigation and `toc` controls the page table of contents. A `draft: true` file fails the production build rather than silently publishing an unfinished page.
+`title` and `description` are required. `order` is a finite number used for sorting; `hidden`, `draft`, and `toc` are booleans; and `audience` is `all`, `developers`, or `users`. An optional `code` must be one uppercase English word and must be paired with a non-empty `domain`; error codes are unique across documentation files. Public codes are registered in `docs/help/errors/registry.json`, use `/help/errors/<lowercase-code>/`, and must have exactly one matching page. `audience` is currently descriptive metadata, while `hidden` controls navigation and `toc` controls the page table of contents. A `draft: true` file fails the production build rather than silently publishing an unfinished page.
 
 The site renders the frontmatter title in its page header. A first-level Markdown heading that exactly matches `title` is removed from the body, so use that heading when the same document is also read in the repository or launcher. A different first heading remains visible and is useful only when the page deliberately needs a second title.
 

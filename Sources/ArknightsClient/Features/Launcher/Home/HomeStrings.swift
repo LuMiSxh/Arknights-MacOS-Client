@@ -8,6 +8,15 @@ enum HomeStrings {
 	static let launcherUpdate = LocalizedStringResource.homeLauncherUpdate
 	static let launcherUpdateHelp = LocalizedStringResource.homeLauncherUpdateHelp
 	static let reportProblem = LocalizedStringResource.homeReportProblem
+	static let recoveryActions = LocalizedStringResource.homeRecoveryActions
+	static let recoveryDetails = LocalizedStringResource.homeRecoveryDetails
+	static let retry = LocalizedStringResource.homeRecoveryRetry
+	static let showLogs = LocalizedStringResource.homeRecoveryShowLogs
+	static let openTroubleshooting = LocalizedStringResource.homeRecoveryOpenTroubleshooting
+	static let repair = LocalizedStringResource.homeRecoveryRepair
+	static let repairConfirmationTitle = LocalizedStringResource.homeRecoveryRepairTitle
+	static let repairConfirmationDetail = LocalizedStringResource.homeRecoveryRepairDetail
+	static let repairConfirmationAction = LocalizedStringResource.homeRecoveryRepairConfirm
 	static let checkAgain = LocalizedStringResource.homeCheckAgain
 	static let needsAttention = LocalizedStringResource.homeStatusNeedsAttention
 	static let actionStop = LocalizedStringResource.homeActionStop
@@ -60,5 +69,12 @@ enum HomeStrings {
 
 	static func versionAvailable(_ version: String) -> LocalizedStringResource {
 		.homeVersionAvailable(version)
+	}
+
+	static func errorCodeAccessibility(
+		code: String,
+		spelling: String
+	) -> LocalizedStringResource {
+		.homeErrorCodeAccessibility(code, spelling)
 	}
 }

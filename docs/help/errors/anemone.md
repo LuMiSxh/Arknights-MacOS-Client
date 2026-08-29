@@ -1,0 +1,31 @@
+---
+title: ANEMONE
+description: Launcher-owned game compatibility files could not be applied or restored safely
+order: 90
+audience: users
+code: ANEMONE
+domain: runtime
+---
+
+# ANEMONE
+
+The launcher could not safely apply, update, or restore one of its game-file compatibility helpers. These helpers make the embedded sign-in browser and Notices window work correctly through Wine. The launcher stops instead of overwriting an unknown file or leaving an official helper without a recoverable backup.
+
+## Try this
+
+1. Quit Arknights and any official updater that may be changing the same game folder.
+2. Choose **Repair**, confirm the full verification, and let it finish.
+3. Choose **Retry** after Repair completes.
+4. If the code returns, open **Show Logs** and keep the lines that mention `compatibility`, `Vuplex`, `PlatformProcess`, `userenv`, or `rollback`.
+
+> [!IMPORTANT]
+> Repair restores official game files from Yostar and then reapplies only launcher-owned compatibility files. It preserves the shared Wine prefix, saved sign-ins, and launcher settings.
+
+> [!CAUTION]
+> Do not delete or rename `.original.helper`, bridge, DLL, or launcher temporary files by hand. A rollback failure means the launcher could not prove that another manual change would preserve the official helper.
+
+If Repair itself ends with `ANEMONE`, restart the Mac once to release any open helper files and run Repair again.
+
+## Logs and reports
+
+Use **Show Logs** and keep the lines that identify the compatibility component and whether apply, restore, or rollback failed. Report the code, operation, region, and a reviewed excerpt if the second Repair fails. Do not attach helper binaries or an unreviewed full log.

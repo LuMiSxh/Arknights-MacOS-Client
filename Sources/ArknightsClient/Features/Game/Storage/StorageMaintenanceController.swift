@@ -27,6 +27,7 @@ final class StorageMaintenanceController {
 
 	func clearGameCache() {
 		guard lifecycle.activity == .idle else { return }
+		let operationID = UUID()
 		lifecycle.activity = .maintaining(.clearingCache)
 		let winePrefix = paths.winePrefix
 		Task { [weak self] in
@@ -41,9 +42,23 @@ final class StorageMaintenanceController {
 				await log.info("Shader and browser caches cleared")
 			} catch {
 				lifecycle.activity = .idle
-				lifecycle.show(error)
+				presentCacheFailure(error, id: operationID)
 			}
 		}
+	}
+
+	@discardableResult
+	func retryCacheFailure(id: UUID) -> Bool {
+		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard failure.context.operation == .cacheClearing else { return false }
+		guard failure.context.region == nil, lifecycle.activity == .idle else { return false }
+		guard failure.actions.contains(.retry) else { return false }
+		guard lifecycle.consumeFailure(id: id) != nil else { return false }
+		Task { [log] in
+			await log.info("Recovery selected; action=retry operation=cache-clearing")
+		}
+		clearGameCache()
+		return true
 	}
 
 	func clearPresetGalleryCache() {
@@ -79,5 +94,21 @@ final class StorageMaintenanceController {
 				paths.chromiumLogFile,
 			])
 		}
+	}
+
+	private func presentCacheFailure(_ error: any Error, id: UUID) {
+		let message =
+			(error as? any LocalizedError)?.errorDescription
+			?? error.localizedDescription
+		lifecycle.presentFailure(
+			LauncherFailurePresentation(
+				id: id,
+				message: message,
+				code: .basalt,
+				context: SupportContext(operation: .cacheClearing, region: nil),
+				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem]
+			),
+			diagnostic: launcherDiagnosticDescription(for: error)
+		)
 	}
 }

@@ -9,6 +9,7 @@ struct LauncherHUDView: View {
 	let musicController: BackgroundMusicController
 	let requestRosettaInstallation: () -> Void
 	let retryIntelTranslationCheck: () -> Void
+	let showFailureDetails: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
@@ -46,6 +47,17 @@ struct LauncherHUDView: View {
 					.help(L10n.string(HomeStrings.launcherUpdateHelp))
 				}
 
+				if model.lifecycle.failure?.blocksGameLaunch == true {
+					CapsuleActionButton(
+						title: L10n.string(HomeStrings.recoveryDetails),
+						systemImage: "info.circle",
+						tone: .accent(accentColor),
+						action: showFailureDetails
+					)
+					.controlSize(.large)
+					.transition(primaryActionTransition)
+				}
+
 				LauncherPrimaryActionView(
 					installation: model.installation,
 					gameSession: model.gameSession,
@@ -56,6 +68,7 @@ struct LauncherHUDView: View {
 					launch: model.launch,
 					stopGame: model.stopGame
 				)
+				.disabled(model.lifecycle.failure?.blocksGameLaunch == true)
 				.transition(primaryActionTransition)
 			}
 		}
@@ -64,6 +77,7 @@ struct LauncherHUDView: View {
 		.animation(stateAnimation, value: model.installation.isDownloading)
 		.animation(stateAnimation, value: primaryActionIdentity)
 		.animation(stateAnimation, value: model.communication.shouldShowLauncherUpdateButton)
+		.animation(stateAnimation, value: model.lifecycle.failure?.id)
 	}
 
 	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill

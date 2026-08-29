@@ -487,6 +487,24 @@
       },
       "extractionState": "manual"
     },
+    "launcher.error.gameCompatibility": {
+      "comment": "Game helper compatibility setup failed; technical details are written to logs",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Kompatibilitätsanpassungen der Spieldateien konnten nicht abgeschlossen werden. Repariere die Spieldateien und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game-file compatibility setup could not be completed. Repair the game files and try again."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
     "launcher.error.runtimeConfiguration": {
       "comment": "Windows runtime setup failed; technical reason follows",
       "localizations": {

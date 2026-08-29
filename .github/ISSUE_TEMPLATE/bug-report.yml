@@ -21,6 +21,25 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: code
+    attributes:
+      label: Error code
+      description: Keep the code shown by the launcher, if one was provided.
+      placeholder: PEBBLE
+
+  - type: input
+    id: operation
+    attributes:
+      label: Failed operation
+      description: The launcher fills this when the report starts from a recovery action.
+
+  - type: input
+    id: region
+    attributes:
+      label: Selected region
+      description: Global, Japan, or Korea when the failure belongs to a regional operation.
+
   - type: textarea
     id: problem
     attributes:

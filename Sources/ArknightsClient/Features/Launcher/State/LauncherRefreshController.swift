@@ -89,6 +89,25 @@ final class LauncherRefreshController {
 	}
 
 	@discardableResult
+	func retryConfigurationFailure(id: UUID) -> Bool {
+		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard failure.actions.contains(.retry), lifecycle.canBeginExclusiveActivity else {
+			return false
+		}
+		guard failure.context.operation == .configurationRefresh else { return false }
+		guard failure.context.region == installation.region.supportRegion else { return false }
+		guard lifecycle.consumeFailure(id: id) != nil else { return false }
+		Task { [log] in
+			await log.info(
+				"Recovery selected; action=retry operation=configuration-refresh region=\(installation.region.rawValue)"
+			)
+		}
+		lifecycle.refresh = .idle
+		startRefresh(forceGameUpdateCheck: true)
+		return true
+	}
+
+	@discardableResult
 	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard installation.selectRegion(newRegion) else { return false }
 		lifecycle.refresh = .checking(requestID: nil)
@@ -141,9 +160,13 @@ final class LauncherRefreshController {
 				return
 			} catch {
 				guard isCurrentRefresh(refreshID) else { return }
-				if !installation.isInstalled {
+				if !installation.isInstalled || forceGameUpdateCheck {
 					lifecycle.refresh = .idle
-					lifecycle.show(error, context: "Game configuration failed")
+					presentConfigurationFailure(
+						error,
+						id: refreshID,
+						region: region
+					)
 					return
 				}
 				await log.error(
@@ -188,6 +211,30 @@ final class LauncherRefreshController {
 			)
 		}
 		await log.info("Refresh completed; state=\(lifecycle.activityMessage)")
+	}
+
+	private func presentConfigurationFailure(
+		_ error: any Error,
+		id: UUID,
+		region: GameRegion
+	) {
+		let message =
+			(error as? any LocalizedError)?.errorDescription
+			?? error.localizedDescription
+		lifecycle.presentFailure(
+			LauncherFailurePresentation(
+				id: id,
+				message: message,
+				code: .virga,
+				context: SupportContext(
+					operation: .configurationRefresh,
+					region: region.supportRegion
+				),
+				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem],
+				blocksGameLaunch: !installation.isInstalled
+			),
+			diagnostic: launcherDiagnosticDescription(for: error)
+		)
 	}
 
 	func isCurrentRefresh(_ refreshID: UUID) -> Bool {

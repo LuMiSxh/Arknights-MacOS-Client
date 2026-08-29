@@ -49,23 +49,27 @@ struct GameCompatibilityManager: Sendable {
 		in gameDirectory: URL,
 		fileManager: FileManager = .default
 	) throws -> GameCompatibilityChanges {
-		try validateIdentifiers()
-		var changes = GameCompatibilityChanges()
-		for component in retired
-		where try component.restoreIfInstalled(
-			in: gameDirectory,
-			fileManager: fileManager
-		) {
-			changes.removed.append(component.identifier)
+		do {
+			try validateIdentifiers()
+			var changes = GameCompatibilityChanges()
+			for component in retired
+			where try component.restoreIfInstalled(
+				in: gameDirectory,
+				fileManager: fileManager
+			) {
+				changes.removed.append(component.identifier)
+			}
+			for component in active
+			where try component.installIfSupported(
+				in: gameDirectory,
+				fileManager: fileManager
+			) {
+				changes.installed.append(component.identifier)
+			}
+			return changes
+		} catch {
+			throw Self.compatibilityError(from: error)
 		}
-		for component in active
-		where try component.installIfSupported(
-			in: gameDirectory,
-			fileManager: fileManager
-		) {
-			changes.installed.append(component.identifier)
-		}
-		return changes
 	}
 
 	@discardableResult
@@ -73,24 +77,35 @@ struct GameCompatibilityManager: Sendable {
 		in gameDirectory: URL,
 		fileManager: FileManager = .default
 	) throws -> [String] {
-		try validateIdentifiers()
-		var restored: [String] = []
-		for component in active + retired
-		where try component.restoreIfInstalled(
-			in: gameDirectory,
-			fileManager: fileManager
-		) {
-			restored.append(component.identifier)
+		do {
+			try validateIdentifiers()
+			var restored: [String] = []
+			for component in active + retired
+			where try component.restoreIfInstalled(
+				in: gameDirectory,
+				fileManager: fileManager
+			) {
+				restored.append(component.identifier)
+			}
+			return restored
+		} catch {
+			throw Self.compatibilityError(from: error)
 		}
-		return restored
 	}
 
 	private func validateIdentifiers() throws {
 		let identifiers = (active + retired).map(\.identifier)
 		guard Set(identifiers).count == identifiers.count else {
-			throw LauncherError.runtimeConfiguration(
+			throw LauncherError.gameCompatibility(
 				"Game compatibility component identifiers must be unique."
 			)
 		}
+	}
+
+	private static func compatibilityError(from error: any Error) -> LauncherError {
+		if case LauncherError.gameCompatibility(let message) = error {
+			return .gameCompatibility(message)
+		}
+		return .gameCompatibility(launcherDiagnosticDescription(for: error))
 	}
 }

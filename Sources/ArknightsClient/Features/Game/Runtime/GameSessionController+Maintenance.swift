@@ -16,6 +16,7 @@ extension GameSessionController {
 
 	func forcePrefixMigration() {
 		guard lifecycle.activity == .idle else { return }
+		let operationID = UUID()
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: paths.winePrefix)
 			lifecycle.setStatus(
@@ -24,7 +25,11 @@ extension GameSessionController {
 				await log.info("Wine prefix migration state was reset on request")
 			}
 		} catch {
-			lifecycle.show(error)
+			presentRuntimeMaintenanceFailure(
+				error,
+				id: operationID,
+				operation: .prefixMigration
+			)
 		}
 	}
 
@@ -32,6 +37,7 @@ extension GameSessionController {
 		guard lifecycle.activity == .idle else { return }
 		let prefixDirectory = paths.winePrefix
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
+		let operationID = UUID()
 		lifecycle.activity = .maintaining(.deletingWinePrefix)
 		lifecycle.setStatus(
 			.custom(L10n.string(.Launcher.launcherStatusWinePrefixDeleting)))
@@ -47,9 +53,33 @@ extension GameSessionController {
 				await log.info("Wine prefix deleted on request")
 			} catch {
 				lifecycle.activity = .idle
-				lifecycle.show(error)
+				presentRuntimeMaintenanceFailure(
+					error,
+					id: operationID,
+					operation: .prefixDeletion
+				)
 			}
 		}
+	}
+
+	private func presentRuntimeMaintenanceFailure(
+		_ error: any Error,
+		id: UUID,
+		operation: SupportOperation
+	) {
+		let message =
+			(error as? any LocalizedError)?.errorDescription
+			?? error.localizedDescription
+		lifecycle.presentFailure(
+			LauncherFailurePresentation(
+				id: id,
+				message: message,
+				code: .sepia,
+				context: SupportContext(operation: operation, region: nil),
+				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem]
+			),
+			diagnostic: launcherDiagnosticDescription(for: error)
+		)
 	}
 
 	func discoverRuntime() throws -> WineRuntime {

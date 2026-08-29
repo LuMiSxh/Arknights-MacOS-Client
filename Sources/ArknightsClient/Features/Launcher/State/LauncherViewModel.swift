@@ -205,7 +205,7 @@ final class LauncherViewModel {
 			}
 			if launchOnStart {
 				gameSession.launch()
-			} else if installOnLaunch {
+			} else if installOnLaunch, installation.canInstall {
 				installation.startInstallation(
 					launchAfterCompletion: launchAfterInstall)
 			}

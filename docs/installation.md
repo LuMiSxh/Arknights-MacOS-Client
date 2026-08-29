@@ -151,7 +151,7 @@ Automatic checks only look for changes. They do not silently download game data.
 
 ## Support boundary
 
-Use the launcher's **Report a Problem…** action for launcher, installation, Wine, graphics, embedded-browser, or runtime failures. It opens a pre-filled GitHub issue with the app version, macOS version, chip name, and memory size; it does not attach logs automatically.
+Use the actions beside a launcher failure for installation, Wine, graphics, embedded-browser, or runtime problems. **Troubleshooting** opens the page for the displayed error code. **Report a Problem…** opens a pre-filled GitHub issue with the code, operation, selected region, app version, macOS version, chip name, and memory size when available; it does not attach the error message or logs automatically.
 
 > [!WARNING]
 > GitHub issues are public. Review the pre-filled metadata and remove private paths, URLs, account details, tokens, and unrelated log content before submitting the report.

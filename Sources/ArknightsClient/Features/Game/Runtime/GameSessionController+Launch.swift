@@ -5,11 +5,18 @@ import Foundation
 extension GameSessionController {
 	func launch() {
 		guard lifecycle.activity == .idle else { return }
+		let launchID = UUID()
+		let requestedRegion = installation.region
 		let executable = installation.installDirectory.appending(
 			path: installation.configuration?.executableName ?? "Arknights.exe"
 		)
 		guard FileManager.default.fileExists(atPath: executable.path) else {
-			lifecycle.show(LauncherError.gameNotInstalled(executable))
+			presentRuntimeFailure(
+				LauncherError.gameNotInstalled(executable),
+				id: launchID,
+				operation: .launch,
+				region: requestedRegion
+			)
 			return
 		}
 		let runtime: WineRuntime
@@ -17,16 +24,26 @@ extension GameSessionController {
 			runtime = try discoverRuntime()
 		} catch {
 			refreshRuntime()
-			lifecycle.show(error, context: "Game launch runtime discovery failed")
+			presentRuntimeFailure(
+				error,
+				id: launchID,
+				operation: .runtimeDiscovery,
+				region: requestedRegion
+			)
 			return
 		}
 		guard lifecycle.intelTranslationState.allowsWine else {
-			lifecycle.show(intelTranslation.launchError)
+			presentRuntimeFailure(
+				intelTranslation.launchError,
+				id: launchID,
+				operation: .launch,
+				region: requestedRegion
+			)
 			return
 		}
 
 		let hasPendingMigration = runtime.hasPendingMigration(prefixDirectory: paths.winePrefix)
-		let gameSessionID = UUID()
+		let gameSessionID = launchID
 		if hasPendingMigration {
 			lifecycle.activity = .preparingGame(sessionID: gameSessionID)
 			lifecycle.setStatus(.preparingWine)
@@ -47,7 +64,6 @@ extension GameSessionController {
 			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
 			forceDisabled: preferences.forceDisableRetina()
 		)
-		let requestedRegion = installation.region
 		Task { [log] in
 			await log.info(
 				Self.launchDiagnostics(
@@ -115,9 +131,19 @@ extension GameSessionController {
 				disableActiveGameMode()
 				if RosettaAvailability.isBadCPUType(error) {
 					lifecycle.intelTranslationState = .unavailable
-					lifecycle.show(LauncherError.intelTranslationUnavailable)
+					presentRuntimeFailure(
+						LauncherError.intelTranslationUnavailable,
+						id: gameSessionID,
+						operation: .launch,
+						region: requestedRegion
+					)
 				} else {
-					lifecycle.show(error, context: "Game launch failed")
+					presentRuntimeFailure(
+						error,
+						id: gameSessionID,
+						operation: .launch,
+						region: requestedRegion
+					)
 				}
 			}
 		}
@@ -134,6 +160,11 @@ extension GameSessionController {
 				"Failed to stop Wine after window readiness timed out: \(error.localizedDescription)"
 			)
 		}
-		lifecycle.show(LauncherError.runtimeWindowTimeout)
+		presentRuntimeFailure(
+			LauncherError.runtimeWindowTimeout,
+			id: sessionID,
+			operation: .launch,
+			region: installation.region
+		)
 	}
 }

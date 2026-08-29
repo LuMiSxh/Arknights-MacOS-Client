@@ -11,7 +11,12 @@ extension GameSessionController {
 		do {
 			runtime = try discoverRuntime()
 		} catch {
-			lifecycle.show(error, context: "Game stop runtime discovery failed")
+			presentRuntimeFailure(
+				error,
+				id: sessionID,
+				operation: .runtimeStop,
+				region: installation.region
+			)
 			return
 		}
 		lifecycle.activity = .stoppingGame(
@@ -34,7 +39,12 @@ extension GameSessionController {
 						processIdentifier: processIdentifier
 					)
 				}
-				lifecycle.show(error, context: "Game stop failed")
+				presentRuntimeFailure(
+					error,
+					id: sessionID,
+					operation: .runtimeStop,
+					region: installation.region
+				)
 			}
 		}
 	}
@@ -78,7 +88,13 @@ extension GameSessionController {
 					Self.exitDiagnostics(exit, since: since, logURL: logURL)
 				}.value
 				await log.error("Game process exited unexpectedly; \(diagnostics)")
-				lifecycle.show(LauncherError.runtimeExited(status: exit.status, log: logURL))
+				presentRuntimeFailure(
+					LauncherError.runtimeExited(status: exit.status, log: logURL),
+					id: sessionID,
+					operation: .runtimeExit,
+					region: installation.region,
+					blocksGameLaunch: true
+				)
 			case .gameExited:
 				let since = gameRunningSince
 				gameRunningSince = nil
@@ -102,6 +118,14 @@ extension GameSessionController {
 					)
 				}
 				await finishGameSession(sessionID)
+				if exit.status != 0 || exit.reason != .exit {
+					presentRuntimeFailure(
+						LauncherError.runtimeExited(status: exit.status, log: logURL),
+						id: sessionID,
+						operation: .runtimeExit,
+						region: installation.region
+					)
+				}
 			}
 		}
 	}

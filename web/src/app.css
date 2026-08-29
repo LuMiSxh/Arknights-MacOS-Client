@@ -91,6 +91,7 @@ body {
 	gap: 1.5rem;
 	border-right: 1px solid var(--site-line);
 	padding: 1.5rem 1rem 1.25rem;
+	overflow: hidden;
 }
 
 .site-mark {
@@ -142,6 +143,14 @@ body {
 	text-transform: uppercase;
 }
 
+.rail-navigation {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-gutter: stable;
+}
+
 .site-nav {
 	display: grid;
 	gap: 0.25rem;
@@ -160,11 +169,13 @@ body {
 }
 
 .site-nav a:hover,
+.site-nav a[data-current='true'],
 .site-nav a[aria-current='page'] {
 	background: var(--color-anasthasia-panel);
 	color: var(--color-anasthasia-text);
 }
 
+.site-nav a[data-current='true'],
 .site-nav a[aria-current='page'] {
 	border-left-color: var(--color-anasthasia-accent);
 	font-weight: 700;
@@ -486,17 +497,19 @@ body {
 }
 
 .content-copy a {
-	color: inherit;
-	font-weight: 600;
+	color: var(--color-anasthasia-accent);
+	font-weight: inherit;
+	text-decoration-line: underline;
 	text-decoration-color: color-mix(
 		in srgb,
-		var(--color-anasthasia-text) 45%,
+		var(--color-anasthasia-accent) 55%,
 		transparent
 	);
 	text-underline-offset: 0.16em;
 }
 
-.content-copy a:hover {
+.content-copy a:hover,
+.content-copy a:focus-visible {
 	text-decoration-color: currentColor;
 }
 
@@ -543,6 +556,26 @@ body {
 .content-copy ul,
 .content-copy ol {
 	padding-left: 1.35rem;
+}
+
+.content-copy ul {
+	list-style-type: disc;
+}
+
+.content-copy ol {
+	list-style-type: decimal;
+}
+
+.content-copy ul ul {
+	list-style-type: circle;
+}
+
+.content-copy ol ol {
+	list-style-type: lower-alpha;
+}
+
+.content-copy li::marker {
+	color: var(--color-anasthasia-muted);
 }
 
 .content-copy li + li {

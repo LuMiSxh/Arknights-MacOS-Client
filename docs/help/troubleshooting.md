@@ -19,6 +19,18 @@ Use the symptom that matches what you see. Keep the recovery order conservative:
 > [!IMPORTANT]
 > Do not delete the Wine prefix or game directory as a first response. Deleting the prefix signs you out of every embedded-browser account and removes runtime caches; deleting a game directory removes the regional installation. See [Storage](storage.md) before using either destructive action.
 
+## If the launcher shows an error code
+
+A short uppercase word such as `PEBBLE` identifies a documented failure path. Choose **Troubleshooting** beside the message to open the matching page, or find the word in [Error codes](errors/README.md).
+
+- **Retry** repeats the failed operation for the same region only while that failure is still current.
+- **Show Logs** opens the local diagnostic files without uploading them.
+- **Repair** appears only when verifying installed game files is a relevant next step and always asks for confirmation.
+- **Report Problem** pre-fills the code, operation, region, launcher version, and coarse Mac environment. It does not include the displayed message, paths, URLs, or logs.
+
+> [!NOTE]
+> A code is a starting point, not a complete diagnosis. Keep the word with the report, then add what you did and what happened in your own words.
+
 ## Log locations
 
 The launcher writes its own diagnostics to one central macOS log directory. **Settings → Storage → Show Logs** prepares that directory and selects the available launcher, Wine, Unity, and Chromium files in Finder. macOS crash reports live separately and are not selected by this action.
@@ -143,6 +155,8 @@ Automatic checks only identify a changed game version. Start the update from the
 
 Repair verifies every manifest file, restores launcher-owned compatibility files before downloading, and downloads only missing or mismatched files. It does not delete the shared Wine prefix or other region's game directory.
 
+If the launcher shows `ANEMONE`, the failure belongs to the Vuplex or Notices compatibility helpers rather than the Wine prefix. Use **Repair** first, then retry the failed install, update, repair, or launch. Do not manually replace helper backups or launcher-owned DLL and bridge files.
+
 > [!TIP]
 > If the game was moved outside the launcher, use **Locate Existing Installation…** first. If it was copied without its state file, repair or reinstall is more reliable than manually recreating `.arknights-client-state.json`.
 
@@ -222,7 +236,7 @@ Use **Report a Problem…** in the setup assistant or **Settings → About → R
 - relevant excerpts from `launcher.log`, `wine.log`, `unity.log`, or `chromium.log`
 - a recent crash report when the process terminated unexpectedly
 
-The launcher pre-fills environment metadata (version, macOS release, chip name, and memory size) but never attaches logs automatically. GitHub issues are public: review that metadata and remove private paths, URLs, account data, tokens, cookies, passwords, payment details, and unrelated log lines before attaching anything.
+The launcher pre-fills the error code, failed operation, selected region, and environment metadata (version, macOS release, chip name, and memory size) when available, but never attaches the displayed error or logs automatically. GitHub issues are public: review that metadata and remove private paths, URLs, account data, tokens, cookies, passwords, payment details, and unrelated log lines before attaching anything.
 
 > [!IMPORTANT]
 > If the problem concerns account access, payment, billing, server availability, or in-game data, contact [Yostar Support](https://account.yo-star.com/contact) instead of opening a launcher issue.

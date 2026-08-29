@@ -20,6 +20,7 @@ final class IntelTranslationController {
 	@ObservationIgnored private var checkTask: Task<IntelTranslationCheck, Never>?
 	@ObservationIgnored private var installationTask:
 		Task<IntelTranslationProcessResult, any Error>?
+	@ObservationIgnored private var installationID: UUID?
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -84,6 +85,8 @@ final class IntelTranslationController {
 			return lifecycle.intelTranslationState
 		}
 
+		let operationID = installationID ?? UUID()
+		installationID = operationID
 		lifecycle.rosettaInstallationState = .installing
 		let task: Task<IntelTranslationProcessResult, any Error>
 		if let installationTask {
@@ -98,13 +101,18 @@ final class IntelTranslationController {
 		do {
 			let result = try await task.value
 			installationTask = nil
+			installationID = nil
 			let output = Self.boundedDiagnostics(result.output)
 			await log.info(
 				"Rosetta installation finished; status=\(result.status) output=\(output)")
 			guard result.status == 0 else {
-				lifecycle.rosettaInstallationState = .failed(
-					L10n.string(
-						.Launcher.launcherRosettaFailureInstallerExited(String(result.status)))
+				let message = L10n.string(
+					.Launcher.launcherRosettaFailureInstallerExited(String(result.status)))
+				lifecycle.rosettaInstallationState = .failed(message)
+				presentRosettaFailure(
+					message: message,
+					diagnostic: "Rosetta installer exited with status \(result.status): \(output)",
+					id: operationID
 				)
 				return lifecycle.intelTranslationState
 			}
@@ -112,15 +120,35 @@ final class IntelTranslationController {
 			return await refreshAvailability(force: true)
 		} catch is CancellationError {
 			installationTask = nil
+			installationID = nil
 			lifecycle.rosettaInstallationState = .idle
 			return lifecycle.intelTranslationState
 		} catch {
 			installationTask = nil
+			installationID = nil
 			let message = L10n.string(.Launcher.launcherRosettaFailureInstallerStart)
 			lifecycle.rosettaInstallationState = .failed(message)
 			await log.error("Rosetta installation failed: \(error.localizedDescription)")
+			presentRosettaFailure(
+				message: message,
+				diagnostic: error.localizedDescription,
+				id: operationID
+			)
 			return lifecycle.intelTranslationState
 		}
+	}
+
+	@discardableResult
+	func retryRosettaFailure(id: UUID) -> Bool {
+		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard failure.context.operation == .rosettaInstallation else { return false }
+		guard failure.actions.contains(.retry), canInstallRosetta else { return false }
+		guard lifecycle.consumeFailure(id: id) != nil else { return false }
+		Task { [weak self, log] in
+			await log.info("Recovery selected; action=retry operation=rosetta-installation")
+			_ = await self?.installRosetta()
+		}
+		return true
 	}
 
 	var statusTitle: String? {
@@ -182,6 +210,15 @@ final class IntelTranslationController {
 			&& !lifecycle.rosettaInstallationState.isInstalling
 	}
 
+	var supportCode: SupportCode? {
+		switch lifecycle.intelTranslationState {
+		case .rosettaMissing, .gameTestModeEnabled, .unavailable, .unsupportedOS:
+			.limpet
+		case .waitingForLauncherCheck, .checking, .available:
+			nil
+		}
+	}
+
 	var installationActionTitle: String {
 		lifecycle.rosettaInstallationState.failureMessage == nil
 			? L10n.string(.Launcher.launcherRosettaActionInstallEllipsis)
@@ -205,5 +242,19 @@ final class IntelTranslationController {
 		let normalized = output.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard !normalized.isEmpty else { return "empty" }
 		return String(normalized.prefix(AppConstants.IO.processDiagnosticMaximumCharacters))
+	}
+
+	private func presentRosettaFailure(message: String, diagnostic: String, id: UUID) {
+		lifecycle.presentFailure(
+			LauncherFailurePresentation(
+				id: id,
+				message: message,
+				code: .limpet,
+				context: SupportContext(operation: .rosettaInstallation, region: nil),
+				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem],
+				blocksGameLaunch: true
+			),
+			diagnostic: diagnostic
+		)
 	}
 }

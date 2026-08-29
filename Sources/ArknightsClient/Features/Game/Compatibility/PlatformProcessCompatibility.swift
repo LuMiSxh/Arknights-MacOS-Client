@@ -56,7 +56,7 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 		)
 		let officialHelper = helperIsShim ? original : helper
 		if helperIsShim, !fileManager.fileExists(atPath: original.path) {
-			throw LauncherError.runtimeConfiguration(
+			throw LauncherError.gameCompatibility(
 				"The official PlatformProcess helper is missing. Repair the game before launching."
 			)
 		}
@@ -71,7 +71,7 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 				maximumSize: Self.maximumAssetSize
 			)
 		{
-			throw LauncherError.runtimeConfiguration(
+			throw LauncherError.gameCompatibility(
 				"The game directory contains an unknown PlatformProcess window bridge."
 			)
 		}

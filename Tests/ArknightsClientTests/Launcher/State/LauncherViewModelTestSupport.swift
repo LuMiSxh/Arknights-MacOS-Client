@@ -85,35 +85,6 @@ private final class TestArtworkURLProtocol: URLProtocol, @unchecked Sendable {
 	override func stopLoading() {}
 }
 
-actor TranslationCheckSequence {
-	private var states: [IntelTranslationState]
-	private(set) var count = 0
-
-	init(states: [IntelTranslationState]) {
-		self.states = states
-	}
-
-	func next() -> IntelTranslationCheck {
-		count += 1
-		let state = states.isEmpty ? .unavailable : states.removeFirst()
-		return IntelTranslationCheck(state: state, diagnostics: "test-\(count)")
-	}
-}
-
-actor RosettaInstallationRecorder {
-	private let status: Int32
-	private(set) var count = 0
-
-	init(status: Int32) {
-		self.status = status
-	}
-
-	func install() -> IntelTranslationProcessResult {
-		count += 1
-		return IntelTranslationProcessResult(status: status, output: "test")
-	}
-}
-
 actor BlockingBrandingAPI: LauncherAPIProviding {
 	private var brandingRequestCount = 0
 	private var brandingRequestWaiters:
@@ -188,6 +159,8 @@ actor BlockingBrandingAPI: LauncherAPIProviding {
 
 actor ControllableInstaller: GameInstalling {
 	private var count = 0
+	private var regions: [GameRegion] = []
+	private var verificationModes: [Bool] = []
 	private var installationStarted = false
 	private var cancellationRequested = false
 	private var installationStartWaiters: [CheckedContinuation<Void, Never>] = []
@@ -203,6 +176,8 @@ actor ControllableInstaller: GameInstalling {
 		progress: @escaping @Sendable (DownloadProgress) async -> Void
 	) async throws -> InstallResult {
 		count += 1
+		regions.append(region)
+		verificationModes.append(verifyAllExistingFiles)
 		self.progress = progress
 		return try await withTaskCancellationHandler {
 			try await withCheckedThrowingContinuation { continuation in
@@ -219,6 +194,8 @@ actor ControllableInstaller: GameInstalling {
 	}
 
 	func installationCount() -> Int { count }
+	func requestedRegions() -> [GameRegion] { regions }
+	func requestedVerificationModes() -> [Bool] { verificationModes }
 
 	func waitForInstallationStart() async {
 		guard !installationStarted else { return }
