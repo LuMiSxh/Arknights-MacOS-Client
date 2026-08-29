@@ -74,7 +74,7 @@ struct SupportFailureMappingTests {
 				isInstalled: true,
 				operation: .update
 			)
-				== [.retry, .showLogs, .openTroubleshooting, .repair, .reportProblem]
+				== [.retry, .openTroubleshooting, .repair, .reportProblem]
 		)
 		#expect(
 			InstallationController.recoveryActions(
@@ -82,7 +82,7 @@ struct SupportFailureMappingTests {
 				isInstalled: true,
 				operation: .repair
 			)
-				== [.retry, .showLogs, .openTroubleshooting, .reportProblem]
+				== [.retry, .openTroubleshooting, .reportProblem]
 		)
 		#expect(
 			InstallationController.recoveryActions(
@@ -91,7 +91,7 @@ struct SupportFailureMappingTests {
 				operation: .install,
 				allowsRetry: false
 			)
-				== [.showLogs, .openTroubleshooting, .reportProblem]
+				== [.openTroubleshooting, .reportProblem]
 		)
 		#expect(
 			GameSessionController.recoveryActions(
@@ -99,7 +99,7 @@ struct SupportFailureMappingTests {
 				isInstalled: true,
 				operation: .runtimeStop
 			)
-				== [.retry, .showLogs, .openTroubleshooting, .reportProblem]
+				== [.retry, .openTroubleshooting, .reportProblem]
 		)
 		#expect(
 			GameSessionController.recoveryActions(
@@ -107,7 +107,7 @@ struct SupportFailureMappingTests {
 				isInstalled: true,
 				operation: .launch
 			)
-				== [.retry, .showLogs, .openTroubleshooting, .repair, .reportProblem]
+				== [.retry, .openTroubleshooting, .repair, .reportProblem]
 		)
 	}
 }

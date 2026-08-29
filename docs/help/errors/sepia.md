@@ -15,14 +15,13 @@ The runtime was found, but Wine prefix migration, registry setup, DXMT installat
 
 1. Quit other Wine-based tools that may be using the same prefix.
 2. Choose **Retry** once.
-3. Open **Show Logs** and identify whether the failure mentions migration, registry, or DXMT.
-4. Follow the matching step in [Runtime compatibility](../runtime-compatibility.md).
+3. If Retry fails, follow the Wine, prefix, and DXMT recovery steps in [Runtime compatibility](../runtime-compatibility.md).
 
 > [!CAUTION]
 > Deleting the Wine prefix signs the embedded browser out and rebuilds Windows-side settings. Do it only through the launcher's confirmed maintenance action after less destructive steps fail.
 
 Repair checks game files and normally does not fix prefix configuration. If the message concerns Vuplex, PlatformProcess, userenv, or restoring an official game helper, use [ANEMONE](anemone.md) instead.
 
-## Logs and reports
+## Report this problem
 
-Use **Show Logs** to identify whether launch, Force Migration, or Delete Wine Prefix failed. Report the code and operation, whether another Wine process was open, and the last migration or registry stage. Review paths before sharing excerpts.
+Report the code and operation, whether another Wine process was open, and which recovery step failed.

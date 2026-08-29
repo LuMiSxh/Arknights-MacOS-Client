@@ -76,7 +76,7 @@ extension GameSessionController {
 				message: message,
 				code: .sepia,
 				context: SupportContext(operation: operation, region: nil),
-				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem]
+				actions: [.retry, .openTroubleshooting, .reportProblem]
 			),
 			diagnostic: launcherDiagnosticDescription(for: error)
 		)

@@ -113,7 +113,7 @@ extension GameSessionController {
 		isInstalled: Bool,
 		operation: SupportOperation
 	) -> [RecoveryAction] {
-		var actions: [RecoveryAction] = [.retry, .showLogs]
+		var actions: [RecoveryAction] = [.retry]
 		if code != nil { actions.append(.openTroubleshooting) }
 		if code == .pebble || code == .anemone || code == .narwhal || code == .crux,
 			isInstalled, operation != .runtimeStop

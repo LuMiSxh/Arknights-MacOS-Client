@@ -23,6 +23,6 @@ The launcher found a symbolic link, unsafe temporary file, permission failure, o
 
 Repair is useful only after an installation location itself is safe. It cannot fix filesystem permissions, clear a file held open by another process, or replace a symbolic-link destination.
 
-## Logs and reports
+## Report this problem
 
-Use **Show Logs** to find the operation that was refused. Remove your account name and private path components before sharing an excerpt. Report the code, operation, region, volume type, and whether a fresh local folder works.
+Report the code, operation, region, volume type, and whether a fresh local folder works.

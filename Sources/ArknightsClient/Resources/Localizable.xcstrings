@@ -740,19 +740,19 @@
       }
     },
     "home.recovery.openTroubleshooting": {
-      "comment": "Open the documentation page for a launcher error code",
+      "comment": "Open the website version of the troubleshooting page for a launcher error code",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fehlerbehebung"
+            "value": "Auf Website öffnen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Troubleshooting"
+            "value": "Open on Website"
           }
         }
       }
@@ -843,24 +843,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retry"
-          }
-        }
-      }
-    },
-    "home.recovery.showLogs": {
-      "comment": "Reveal launcher and runtime logs in Finder",
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logs anzeigen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show Logs"
           }
         }
       }

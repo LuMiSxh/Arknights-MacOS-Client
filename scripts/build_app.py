@@ -178,6 +178,7 @@ def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path
     entries = [
         (project / "Resources" / icon_filename, Path(icon_filename)),
         (project / "Resources/Assets.car", Path("Assets.car")),
+        (project / "docs/help/errors", Path("SupportArticles")),
         *(
             (
                 project / f"Resources/{language}.lproj/InfoPlist.strings",

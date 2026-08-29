@@ -20,7 +20,7 @@ Use this section after [Installation](../installation.md) when the launcher, a r
 | Look up a word shown with a launcher failure                         | [Error codes](errors/README.md)                   |
 
 > [!TIP]
-> Start with the least destructive step that matches the symptom. Reopen the launcher, check the selected region, and use **Settings → Storage → Show Logs** before deleting a prefix or reinstalling game files.
+> Start with the least destructive step that matches the symptom. Reopen the launcher and check the selected region before deleting a prefix or reinstalling game files.
 
 ## What this project can support
 
@@ -31,6 +31,6 @@ The launcher owns its download, manifest verification, runtime setup, display in
 
 ## Before opening a report
 
-Record the selected region, Mac model, macOS version, launcher version, and the step that failed. Then collect the relevant log excerpts from [Troubleshooting](troubleshooting.md#log-locations). Remove account data, private paths, tokens, and unrelated URLs before sharing logs.
+Record the selected region, Mac model, macOS version, launcher version, and the step that failed.
 
-The **Report a Problem…** action in the launcher opens a pre-filled public GitHub issue with basic environment metadata. When a failed operation has an error code, the report also includes that code, operation, and selected region. Logs and error messages are never attached automatically; you choose what to review and attach.
+The **Report a Problem…** action in the launcher opens a pre-filled public GitHub issue with basic environment metadata. When a failed operation has an error code, the report also includes that code, operation, and selected region. Log files are not needed for the initial report. If a maintainer later asks for a specific file, open **Settings → Storage** and choose **Show Logs**.

@@ -76,7 +76,6 @@ extension InstallationController {
 	) -> [RecoveryAction] {
 		var actions: [RecoveryAction] = []
 		if allowsRetry { actions.append(.retry) }
-		actions.append(.showLogs)
 		if code != nil { actions.append(.openTroubleshooting) }
 		if code == .pebble || code == .anemone, isInstalled, operation != .repair {
 			actions.append(.repair)

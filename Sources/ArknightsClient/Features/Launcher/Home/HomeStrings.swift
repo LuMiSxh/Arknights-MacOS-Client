@@ -11,7 +11,6 @@ enum HomeStrings {
 	static let recoveryActions = LocalizedStringResource.homeRecoveryActions
 	static let recoveryDetails = LocalizedStringResource.homeRecoveryDetails
 	static let retry = LocalizedStringResource.homeRecoveryRetry
-	static let showLogs = LocalizedStringResource.homeRecoveryShowLogs
 	static let openTroubleshooting = LocalizedStringResource.homeRecoveryOpenTroubleshooting
 	static let repair = LocalizedStringResource.homeRecoveryRepair
 	static let repairConfirmationTitle = LocalizedStringResource.homeRecoveryRepairTitle

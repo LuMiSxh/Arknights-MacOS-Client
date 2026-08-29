@@ -78,7 +78,7 @@
 						operation: .runtimeExit,
 						region: installation.region.supportRegion
 					),
-					actions: [.retry, .showLogs, .openTroubleshooting, .repair, .reportProblem],
+					actions: [.retry, .openTroubleshooting, .repair, .reportProblem],
 					blocksGameLaunch: true
 				)
 			case .accessibility:

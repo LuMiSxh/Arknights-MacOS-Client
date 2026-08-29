@@ -122,7 +122,7 @@ final class LauncherLifecycleStore {
 		let failure = LauncherFailurePresentation(
 			id: UUID(), message: message, code: nil,
 			context: SupportContext(operation: .launcher, region: nil),
-			actions: [.showLogs, .reportProblem]
+			actions: [.reportProblem]
 		)
 		let diagnostic = launcherDiagnosticDescription(for: error)
 		let logMessage = context.map { "\($0): \(diagnostic)" } ?? diagnostic

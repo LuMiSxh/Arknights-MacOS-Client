@@ -24,7 +24,7 @@ struct LauncherRefreshRecoveryTests {
 		#expect(failure.context.region == region.supportRegion)
 		#expect(failure.blocksGameLaunch)
 		#expect(
-			failure.actions == [.retry, .showLogs, .openTroubleshooting, .reportProblem]
+			failure.actions == [.retry, .openTroubleshooting, .reportProblem]
 		)
 
 		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .completed)

@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - A static project website built from the repository documentation and deployed with releases through GitHub Pages (#56).
-- Stable word-based error codes with direct troubleshooting links, safe report context, and guarded Retry, Repair, and log actions (#57).
+- Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
 - Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
 - Weekly live-contract monitoring for every supported Yostar region (#39).
 - Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, archive verification (#47).
@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Made launcher modals adapt to the current window size while preserving outer padding and scrollable content.
 - Refactor root model by extracting launcher features into dedicated controllers (#52).
 - Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).
 - Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.

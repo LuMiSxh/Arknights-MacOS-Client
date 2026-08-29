@@ -251,7 +251,7 @@ final class IntelTranslationController {
 				message: message,
 				code: .limpet,
 				context: SupportContext(operation: .rosettaInstallation, region: nil),
-				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem],
+				actions: [.retry, .openTroubleshooting, .reportProblem],
 				blocksGameLaunch: true
 			),
 			diagnostic: diagnostic

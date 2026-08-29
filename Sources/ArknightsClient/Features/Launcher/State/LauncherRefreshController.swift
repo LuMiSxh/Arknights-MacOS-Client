@@ -230,7 +230,7 @@ final class LauncherRefreshController {
 					operation: .configurationRefresh,
 					region: region.supportRegion
 				),
-				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem],
+				actions: [.retry, .openTroubleshooting, .reportProblem],
 				blocksGameLaunch: !installation.isInstalled
 			),
 			diagnostic: launcherDiagnosticDescription(for: error)

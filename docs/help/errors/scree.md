@@ -23,6 +23,6 @@ The selected install volume has less free space than the current operation requi
 
 Repair may need close to the full installation requirement because every file is checked and some files may be replaced.
 
-## Logs and reports
+## Report this problem
 
 A report is only useful when Finder shows enough free space but the same code remains. Include the code, operation, region, volume format, and the free-space values shown by Finder and the launcher. Do not attach a full disk inventory.

@@ -91,6 +91,6 @@ private func testFailure(id: UUID, message: String) -> LauncherFailurePresentati
 		message: message,
 		code: .virga,
 		context: SupportContext(operation: .launcher, region: nil),
-		actions: [.showLogs, .openTroubleshooting, .reportProblem]
+		actions: [.openTroubleshooting, .reportProblem]
 	)
 }

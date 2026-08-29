@@ -6,15 +6,14 @@ order: 20
 
 # Troubleshooting
 
-Use the symptom that matches what you see. Keep the recovery order conservative: most problems can be diagnosed from a log or repaired from the launcher without deleting game files or the shared Wine prefix.
+Use the symptom that matches what you see. Keep the recovery order conservative: most problems can be retried or repaired from the launcher without deleting game files or the shared Wine prefix.
 
 ## Start here
 
 1. Quit Arknights and wait for the launcher to return to an idle state.
 2. Confirm the intended region is selected in **Settings → Installation**.
 3. Check the available storage for the selected game and the shared Wine prefix.
-4. Open **Settings → Storage → Show Logs** and note the time of the failed action.
-5. Retry once. If the same symptom returns, follow the matching section below before removing anything.
+4. Retry once. If the same symptom returns, follow the matching section below before removing anything.
 
 > [!IMPORTANT]
 > Do not delete the Wine prefix or game directory as a first response. Deleting the prefix signs you out of every embedded-browser account and removes runtime caches; deleting a game directory removes the regional installation. See [Storage](storage.md) before using either destructive action.
@@ -24,7 +23,6 @@ Use the symptom that matches what you see. Keep the recovery order conservative:
 A short uppercase word such as `PEBBLE` identifies a documented failure path. Choose **Troubleshooting** beside the message to open the matching page, or find the word in [Error codes](errors/README.md).
 
 - **Retry** repeats the failed operation for the same region only while that failure is still current.
-- **Show Logs** opens the local diagnostic files without uploading them.
 - **Repair** appears only when verifying installed game files is a relevant next step and always asks for confirmation.
 - **Report Problem** pre-fills the code, operation, region, launcher version, and coarse Mac environment. It does not include the displayed message, paths, URLs, or logs.
 
@@ -33,7 +31,7 @@ A short uppercase word such as `PEBBLE` identifies a documented failure path. Ch
 
 ## Log locations
 
-The launcher writes its own diagnostics to one central macOS log directory. **Settings → Storage → Show Logs** prepares that directory and selects the available launcher, Wine, Unity, and Chromium files in Finder. macOS crash reports live separately and are not selected by this action.
+You do not need log files for an initial report. This reference is for follow-up when a maintainer asks for a specific file. **Settings → Storage → Show Logs** prepares the central log directory and selects the available launcher, Wine, Unity, and Chromium files in Finder. macOS crash reports live separately; if a maintainer needs one, they will provide separate steps for the named report.
 
 | File                  | Path                                                                | Useful for                                                                                        |
 | --------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -47,11 +45,11 @@ The launcher writes its own diagnostics to one central macOS log directory. **Se
 The selected region's game folder also contains `.arknights-client-state.json`, which records the verified manifest state. The shared prefix contains `.arknights-runtime-migrations.json`, which records completed Wine and DXMT setup steps. These are state files, not replacement logs.
 
 > [!TIP]
-> Capture the launcher log and Wine log immediately after reproducing a failure. Include a small time-adjacent excerpt rather than a complete log when possible; logs may contain private paths, URLs, or account-related data.
+> Attach only the file a maintainer names. Logs may contain private paths, URLs, or account-related data, and you can decline to share one publicly.
 
 ## Diagnostic launch options
 
-These options are useful when a normal log is not enough. They are temporary command-line options; close the app and launch it normally again when finished.
+These options are for a documented recovery step or maintainer-guided follow-up. They are temporary command-line options; close the app and launch it normally again when finished.
 
 For an installed release:
 
@@ -81,7 +79,7 @@ defaults write com.lumisxh.arknights-client forceDisableRetina -bool NO
 > [!WARNING]
 > **“Arknights Client is damaged and can't be opened.”** Release builds are ad-hoc signed and not notarized. Download the DMG again from [GitHub Releases](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), copy the app to **Applications**, then right-click it in Finder and choose **Open**. Do not use a random re-signed copy or bypass Gatekeeper without understanding what it changes.
 
-If the app still does not open, check `~/Library/Logs/DiagnosticReports/` for a recent launcher crash report and use **Report…** in **Settings → About** from a working installation. A missing runtime inside a manually copied or incomplete app bundle is a packaging problem; use a complete release DMG.
+If the app still does not open, report where the app came from, what macOS displayed, and whether right-clicking **Open** changed the result. A maintainer may ask for a specific macOS crash report as a follow-up and will explain how to find it. A missing runtime inside a manually copied or incomplete app bundle is a packaging problem; use a complete release DMG.
 
 ## Setup or installation will not start
 
@@ -97,7 +95,7 @@ Return to the launcher and choose **Check Again**. The launcher tests an actual 
 
 ### Rosetta appears installed but the check fails
 
-Restart the Mac and choose **Check Again**. If the result remains unavailable, attach `launcher.log` and the macOS version to a launcher report. Do not delete the game directory for this symptom.
+Restart the Mac and choose **Check Again**. If the result remains unavailable, report the macOS version and what the compatibility check displays. Do not delete the game directory for this symptom.
 
 ### Legacy Game Test Mode is active
 
@@ -169,24 +167,23 @@ Check the status shown for the selected region:
 - **Not installed** or **Paused**: finish or resume the regional download
 - **Update available**: update the region before launching
 - Rosetta or Intel compatibility warning: follow [the Rosetta steps](#rosetta-2-is-missing)
-- runtime error: use a complete release app bundle and inspect `wine.log`
+- runtime error: use a complete release app bundle and follow [Runtime compatibility](runtime-compatibility.md)
 
 ### No game window appears
 
 The launcher waits up to 90 seconds for the Wine game window. If it times out:
 
-1. Open `wine.log` and look around the most recent **Play** attempt for Rosetta, Metal, DXMT, or process errors.
-2. Confirm that Rosetta passes the launcher's Intel compatibility check.
-3. Retry once after quitting any leftover Arknights or Wine process.
-4. If the log shows a pending or failed Wine setup, choose **Settings → Installation → Wine Setup → Force Migration…**, confirm it, and launch again. This reruns Wine initialization, DXMT installation, and registry setup without touching game files or saves.
-5. If the same error returns, report the launcher and Wine logs.
+1. Confirm that Rosetta passes the launcher's Intel compatibility check.
+2. Retry once after quitting any leftover Arknights or Wine process.
+3. If the launcher shows `SEPIA`, follow its recovery page before trying **Force Migration…**.
+4. If the same error returns, choose **Report Problem** and say whether any game window appeared.
 
 > [!IMPORTANT]
 > **Delete Wine Prefix** is a last-resort recovery step, not the same as Force Migration. It removes the shared Wine environment and saved sign-ins for every region; game files remain untouched and the environment is rebuilt on the next launch. Use it only after reviewing [Storage](storage.md#remove-or-reset-data).
 
 ### The game exits immediately
 
-Check `wine.log`, `unity.log`, and `~/Library/Logs/DiagnosticReports/` for the same timestamp. If the failure follows a runtime update, let the next launch complete its migration before retrying. If only one region fails, select another installed region to determine whether the problem follows the shared runtime or that region's files.
+If the failure follows a runtime update, let the next launch complete its migration before retrying. If only one region fails, select another installed region to determine whether the problem follows the shared runtime or that region's files. If it still exits immediately, choose **Report Problem** and say whether a window appeared first.
 
 ## Game cannot connect after Local Network access was denied
 
@@ -200,10 +197,10 @@ Yostar, Google, Apple, and Facebook sign-in and the separate Notices window use 
 2. Check the network and system date/time, then retry the provider once.
 3. If the page is blank or stale, close the game and choose **Settings → Storage → Clear Caches**. This clears DXMT and embedded-browser caches, not game files or saved settings.
 4. Start the game again and allow another cold-start minute while the caches rebuild.
-5. If sign-in or Notices still fails, collect `chromium.log` and `wine.log` and report the launcher problem.
+5. If sign-in or Notices still fails, report the launcher problem and name the affected provider or window.
 
 > [!WARNING]
-> Never attach passwords, session cookies, access tokens, payment details, or an unreviewed full browser log to a GitHub issue. The launcher report form does not upload logs for you; review every excerpt first.
+> Never post passwords, session cookies, access tokens, or payment details to a GitHub issue. Log files are not needed for the initial report.
 
 For account ownership, a locked account, provider policy, or a missing in-game entitlement, contact [Yostar Support](https://account.yo-star.com/contact).
 
@@ -215,7 +212,7 @@ The launcher can either leave display settings to Arknights or provide them on e
 2. On a Retina or scaled display, turn off **High-Resolution Mode** in **Settings → General** and launch again.
 3. If the window is too large, incorrectly proportioned, or expensive to render, use a lower resolution or switch between Windowed and Borderless.
 4. Use `--no-retina` for one diagnostic launch if the window still has the wrong backing size.
-5. Use `--graphics-diagnostics` and inspect `wine.log` when the issue involves a blank window, Metal, DXMT, or a rendering failure.
+5. If the issue remains, report the display setup and what the window looks like. A maintainer may ask you to use `--graphics-diagnostics` for a follow-up launch.
 
 Higher resolution increases work for both Wine and DXMT. Arknights draws its own cursor inside the game frame; with VSync enabled, the software cursor can trail the macOS pointer on some systems. Disabling VSync in the game can reduce the delay but may introduce tearing.
 
@@ -233,10 +230,8 @@ Use **Report a Problem…** in the setup assistant or **Settings → About → R
 - launcher version, Mac model, and macOS version
 - selected region and whether the game is installed, updating, or repairing
 - the exact action that failed and approximate time
-- relevant excerpts from `launcher.log`, `wine.log`, `unity.log`, or `chromium.log`
-- a recent crash report when the process terminated unexpectedly
 
-The launcher pre-fills the error code, failed operation, selected region, and environment metadata (version, macOS release, chip name, and memory size) when available, but never attaches the displayed error or logs automatically. GitHub issues are public: review that metadata and remove private paths, URLs, account data, tokens, cookies, passwords, payment details, and unrelated log lines before attaching anything.
+The launcher pre-fills the error code, failed operation, selected region, and environment metadata (version, macOS release, chip name, and memory size) when available. Log files are not needed for the initial report. If a maintainer later asks for one, open **Settings → Storage → Show Logs** and attach only the file they name. GitHub issues are public, and you can decline to share a file that contains private information.
 
 > [!IMPORTANT]
 > If the problem concerns account access, payment, billing, server availability, or in-game data, contact [Yostar Support](https://account.yo-star.com/contact) instead of opening a launcher issue.

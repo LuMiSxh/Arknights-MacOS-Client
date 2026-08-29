@@ -14,7 +14,7 @@ Arknights Client shows a short word when a failed operation has a specific troub
 Open the page whose title matches the code in the launcher. Follow the steps in order and stop once the operation works again.
 
 > [!TIP]
-> Use **Show Logs** before changing files. Logs are kept on your Mac and are never attached to a report automatically.
+> You do not need log files for an initial report. If a maintainer later asks for a specific file, open **Settings → Storage** and choose **Show Logs**.
 
 > [!CAUTION]
 > Do not delete the shared Wine prefix, game files, or partial downloads unless the matching page asks you to. Retry and Repair preserve more useful state than manual cleanup.

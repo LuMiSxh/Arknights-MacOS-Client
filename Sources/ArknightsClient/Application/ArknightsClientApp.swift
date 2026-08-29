@@ -120,10 +120,13 @@ struct ArknightsClientApp: App {
 
 	var body: some Scene {
 		WindowGroup("Arknights Client") {
-			ContentView(
-				model: model,
-				registerOpenSettings: { appDelegate.openSettings = $0 }
-			)
+			GeometryReader { geometry in
+				ContentView(
+					model: model,
+					registerOpenSettings: { appDelegate.openSettings = $0 }
+				)
+				.environment(\.launcherWindowSize, geometry.size)
+			}
 			.environment(\.locale, model.settings.appLanguage.locale ?? .autoupdatingCurrent)
 			.frame(minWidth: 880, minHeight: 560)
 			.onAppear {

@@ -13,7 +13,7 @@ Every user-initiated failure opens the shared detail modal once. A snapshot mark
 
 ## Ownership
 
-- `Shared/Support` owns the closed public code registry, safe report context, and documentation URLs.
+- `Shared/Support` owns the closed public code registry, safe report context, bundled troubleshooting lookup, and documentation URLs.
 - Configuration refresh, installation, compatibility, Rosetta, and runtime features map their typed errors to codes and recovery actions.
 - `LauncherLifecycleStore` owns the current presentation and rejects stale or duplicate updates.
 - `LauncherViewModel+Recovery` dispatches selected actions to the feature that owns the failed operation.
@@ -28,7 +28,7 @@ Every user-initiated failure opens the shared detail modal once. A snapshot mark
 
 **Repair** is offered only for installed-file failures where a full manifest verification can help. The user must confirm it, and the model revalidates the failure ID, region, installation state, and exclusive-operation gate after confirmation.
 
-**Show Logs** reveals local files. **Troubleshooting** opens the code's fixed GitHub Pages route. **Report Problem** sends only the code, operation, region, launcher version, and coarse environment through fields declared in the GitHub issue form.
+The failure modal renders the matching English Markdown page bundled from `docs/help/errors` during packaging. It keeps **Open on Website** available for the current, shareable GitHub Pages version. **Report Problem** sends only the code, operation, region, launcher version, and coarse environment through fields declared in the GitHub issue form. Logs remain available through **Settings → Storage** for maintainer-requested follow-up instead of appearing as an initial failure action.
 
 > [!CAUTION]
 > Never place localized error text, paths, URLs, response bodies, log excerpts, account data, or tokens in an automatically prepared public report.

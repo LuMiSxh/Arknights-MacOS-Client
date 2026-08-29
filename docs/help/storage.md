@@ -40,7 +40,7 @@ The Storage screen measures these buckets independently:
 Missing locations appear as **Not present**. A refresh measures the current directories again; it does not download or delete anything.
 
 > [!TIP]
-> Use **Settings → Storage → Show Logs** when reporting a problem. It prepares the log directory if necessary and selects the launcher, Wine, Unity, and Chromium log files in Finder.
+> You do not need logs for an initial report. If a maintainer asks for a specific file, **Settings → Storage → Show Logs** prepares the log directory and selects the available files in Finder.
 
 ## Caches and partial downloads
 

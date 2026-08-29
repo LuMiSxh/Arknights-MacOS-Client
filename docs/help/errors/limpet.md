@@ -23,6 +23,6 @@ The bundled Intel Wine runtime cannot start because Rosetta is missing, its inst
 
 Repair only checks game files and cannot fix Rosetta.
 
-## Logs and reports
+## Report this problem
 
-Use **Show Logs** for the launcher-side preflight result. Report the code, macOS version, whether installation was offered, and whether Apple Silicon translation still works for other Intel apps. Review paths before sharing excerpts.
+Report the code, macOS version, whether installation was offered, and whether Apple Silicon translation still works for other Intel apps.

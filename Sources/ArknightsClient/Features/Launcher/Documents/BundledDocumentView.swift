@@ -76,6 +76,7 @@ struct MarkdownDocument: View {
 				MarkdownBlockView(block: blocks[index], accentColor: accentColor)
 			}
 		}
+		.tint(accentColor)
 	}
 }
 
@@ -99,6 +100,14 @@ private struct MarkdownBlockView: View {
 				Circle()
 					.fill(accentColor)
 					.frame(width: 5, height: 5)
+				Text(markdownInline(source))
+			}
+			.padding(.leading, 6)
+		case .numbered(let number, let source):
+			HStack(alignment: .firstTextBaseline, spacing: 9) {
+				Text("\(number).")
+					.foregroundStyle(accentColor)
+					.monospacedDigit()
 				Text(markdownInline(source))
 			}
 			.padding(.leading, 6)

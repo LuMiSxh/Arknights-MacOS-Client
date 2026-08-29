@@ -23,6 +23,6 @@ The launcher could not find a complete compatible Wine and DXMT runtime in the a
 
 Repair checks Yostar game files, not the launcher bundle, so it does not resolve this code.
 
-## Logs and reports
+## Report this problem
 
 Report the code, launcher version, and whether the app came from a release DMG or a local build. Do not attach the runtime binaries.

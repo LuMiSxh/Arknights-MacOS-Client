@@ -94,7 +94,7 @@ The launcher configures Retina mode from the current display and **High-Resoluti
 1. turn off High-Resolution Mode in **Settings → General**
 2. try a lower resolution or a different window mode
 3. run one launch with `--no-retina`
-4. use `--graphics-diagnostics` when the issue appears to involve Metal, DXMT, or the window backing size
+4. if a maintainer asks for additional graphics details, run one launch with `--graphics-diagnostics`
 
 See [Graphics, window, and performance problems](troubleshooting.md#graphics-window-and-performance-problems) for the commands and recovery order.
 
@@ -124,7 +124,7 @@ Use [Troubleshooting](troubleshooting.md) when:
 - the browser or Notices helper is blank
 - the window has incorrect Retina sizing or rendering artifacts
 
-Collect `launcher.log` and `wine.log` around one reproduction. The launcher report form supplies basic environment metadata but never attaches logs automatically. GitHub issues are public; remove private paths, URLs, account information, and tokens before sharing excerpts.
+The launcher report form supplies the error code and basic environment metadata when available. Log files are not needed for the initial report. If a maintainer later asks for a specific file, open **Settings → Storage → Show Logs** and attach only the file they name.
 
 ## Runtime provenance
 

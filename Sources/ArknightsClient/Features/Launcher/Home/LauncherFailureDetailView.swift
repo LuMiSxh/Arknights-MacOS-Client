@@ -7,15 +7,30 @@ struct LauncherFailureDetailView: View {
 	let accentColor: Color
 	let hudTintColor: Color
 	let perform: (RecoveryAction, UUID) -> Void
+	private let troubleshootingMarkdown: String?
 	@Environment(\.dismiss) private var dismiss
+
+	init(
+		failure: LauncherFailurePresentation,
+		accentColor: Color,
+		hudTintColor: Color,
+		perform: @escaping (RecoveryAction, UUID) -> Void
+	) {
+		self.failure = failure
+		self.accentColor = accentColor
+		self.hudTintColor = hudTintColor
+		self.perform = perform
+		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
+	}
 
 	var body: some View {
 		ThemedModalView(
 			title: L10n.string(HomeStrings.needsAttention),
 			accentColor: accentColor,
 			hudTintColor: hudTintColor,
-			width: 620,
-			height: 430
+			width: failure.code == nil ? 620 : 820,
+			height: failure.code == nil ? 430 : 600,
+			minimumHeight: 430
 		) {
 			VStack(alignment: .leading, spacing: 20) {
 				if let code = failure.code {
@@ -26,9 +41,12 @@ struct LauncherFailureDetailView: View {
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 
-				if hasSupportActions {
+				if let troubleshootingMarkdown {
 					Divider()
-					supportActions
+					MarkdownDocument(
+						source: troubleshootingMarkdown,
+						accentColor: accentColor
+					)
 				}
 			}
 			.textSelection(.enabled)
@@ -40,43 +58,45 @@ struct LauncherFailureDetailView: View {
 
 	@ViewBuilder
 	private var footerActions: some View {
-		if failure.actions.contains(.retry) {
-			CapsuleActionButton(
-				title: L10n.string(HomeStrings.retry),
-				systemImage: "arrow.clockwise",
-				tone: .neutral
-			) {
-				perform(.retry, failure.id)
+		HStack(spacing: 8) {
+			if hasSupportActions {
+				supportActions
+				Divider()
+					.frame(height: 24)
+					.padding(.horizontal, 2)
+			}
+			if failure.actions.contains(.retry) {
+				CapsuleActionButton(
+					title: L10n.string(HomeStrings.retry),
+					systemImage: "arrow.clockwise",
+					tone: .neutral
+				) {
+					perform(.retry, failure.id)
+				}
+			}
+			if failure.actions.contains(.repair) {
+				CapsuleActionButton(
+					title: L10n.string(HomeStrings.repair),
+					systemImage: "wrench.and.screwdriver",
+					tone: .neutral
+				) {
+					perform(.repair, failure.id)
+				}
+			}
+			FloatingDoneButton(accentColor: accentColor) {
+				dismiss()
 			}
 		}
-		if failure.actions.contains(.repair) {
-			CapsuleActionButton(
-				title: L10n.string(HomeStrings.repair),
-				systemImage: "wrench.and.screwdriver",
-				tone: .neutral
-			) {
-				perform(.repair, failure.id)
-			}
-		}
-		FloatingDoneButton(accentColor: accentColor) {
-			dismiss()
-		}
+		.controlSize(.large)
 	}
 
 	private var supportActions: some View {
-		HStack(spacing: 10) {
-			if failure.actions.contains(.showLogs) {
-				supportAction(
-					.showLogs,
-					title: L10n.string(HomeStrings.showLogs),
-					systemImage: "doc.text.magnifyingglass"
-				)
-			}
+		HStack(spacing: 8) {
 			if failure.actions.contains(.openTroubleshooting) {
 				supportAction(
 					.openTroubleshooting,
 					title: L10n.string(HomeStrings.openTroubleshooting),
-					systemImage: "book.pages"
+					systemImage: "arrow.up.right.square"
 				)
 			}
 			if failure.actions.contains(.reportProblem) {
@@ -104,8 +124,7 @@ struct LauncherFailureDetailView: View {
 	}
 
 	private var hasSupportActions: Bool {
-		failure.actions.contains(.showLogs)
-			|| failure.actions.contains(.openTroubleshooting)
+		failure.actions.contains(.openTroubleshooting)
 			|| failure.actions.contains(.reportProblem)
 	}
 }

@@ -51,10 +51,6 @@ extension LauncherViewModel {
 				return .ignored
 			}
 			return .completed
-		case .showLogs:
-			storage.revealLogs()
-			logRecovery(action: action, result: "opened")
-			return .completed
 		case .openTroubleshooting:
 			guard let code = failure.code else {
 				logRecovery(action: action, result: "ignored-no-code")

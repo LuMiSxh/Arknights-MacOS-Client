@@ -21,8 +21,8 @@ The launcher could not obtain valid configuration or service data from Yostar. T
 > [!NOTE]
 > Retry repeats the same operation for the same selected region. It does not delete an existing installation or partial download.
 
-## Logs and reports
+## Report this problem
 
-Choose **Show Logs** and inspect `launcher.log` for the failed request time. When reporting the launcher problem, include the code, selected region, and whether another network behaved differently. Do not post response bodies, account details, or private URLs.
+When reporting the launcher problem, include the code, selected region, and whether another network behaved differently. Do not post response bodies, account details, or private URLs.
 
 If Yostar's official client or account website is also unavailable, wait for the service to recover or contact [Yostar Support](https://account.yo-star.com/contact).

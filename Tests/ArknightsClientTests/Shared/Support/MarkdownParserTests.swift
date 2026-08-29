@@ -87,3 +87,23 @@ func markdownParserRemovesGitHubAlertMarkers() {
 		]
 	)
 }
+
+@Test
+func markdownParserPreservesNumberedRecoverySteps() {
+	let blocks = MarkdownParser(
+		source: """
+			## Try this
+
+			1. Choose **Retry** once.
+			2. Choose **Retry** again after closing the game.
+			"""
+	).blocks
+
+	#expect(
+		blocks == [
+			.heading(level: 2, source: "Try this"),
+			.numbered(1, "Choose **Retry** once."),
+			.numbered(2, "Choose **Retry** again after closing the game."),
+		]
+	)
+}

@@ -106,7 +106,7 @@ final class StorageMaintenanceController {
 				message: message,
 				code: .basalt,
 				context: SupportContext(operation: .cacheClearing, region: nil),
-				actions: [.retry, .showLogs, .openTroubleshooting, .reportProblem]
+				actions: [.retry, .openTroubleshooting, .reportProblem]
 			),
 			diagnostic: launcherDiagnosticDescription(for: error)
 		)

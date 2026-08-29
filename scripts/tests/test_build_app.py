@@ -48,6 +48,9 @@ def test_app_resources_follow_project_configuration(
 ) -> None:
     resources = dict(build_app.app_resources(configuration))
 
+    assert resources[configuration.project_directory / "docs/help/errors"] == Path(
+        "SupportArticles"
+    )
     for source in configuration.copied_resource_source_paths:
         assert resources[source] == Path(source.name)
     for language in configuration.product.localizations:
