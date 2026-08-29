@@ -70,6 +70,10 @@ final class LauncherRefreshController {
 		brandingRequestID = UUID()
 	}
 
+	func waitForCurrentRefresh() async {
+		await refreshTask?.value
+	}
+
 	/// Stops metadata work because installation has exclusive ownership of the network and
 	/// lifecycle state. The current region's already-started branding task remains valid and
 	/// may finish applying its assets before the next normal refresh replaces it.

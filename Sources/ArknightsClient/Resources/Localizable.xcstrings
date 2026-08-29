@@ -1,6 +1,42 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "application.dock.play": {
+      "comment": "Dock menu action for starting an installed regional client; the argument is the localized region name",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ spielen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play %@"
+          }
+        }
+      }
+    },
+    "application.dock.settings": {
+      "comment": "Dock menu action that opens launcher Settings",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
+          }
+        }
+      }
+    },
     "audio.controls.hide": {
       "comment": "Music HUD collapse help",
       "extractionState": "manual",

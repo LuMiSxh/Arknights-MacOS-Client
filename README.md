@@ -38,6 +38,7 @@ The project is community-maintained, currently in beta, and is not affiliated wi
 - Follow a resumable setup assistant while the game downloads in the background
 - Personalize the launcher with custom artwork, a preset gallery, and dynamic theme colors
 - Customize launcher and game icons with normalized macOS Dock sizing
+- Start any installed region or open Settings from the app's Dock menu
 - Show optional game-version, server-time, and daily-reset indicators
 - Play optional YouTube background music with playlist and volume controls
 - Use native Settings, update notices, diagnostics, and support actions

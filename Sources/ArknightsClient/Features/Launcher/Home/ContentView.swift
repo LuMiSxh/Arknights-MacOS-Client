@@ -4,14 +4,19 @@ import SwiftUI
 
 struct ContentView: View {
 	let model: LauncherViewModel
+	let registerOpenSettings: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var settingsPresented = false
 	@State private var launcherUpdateCheckAfterSettingsDismiss = false
 	@State private var confirmsRosettaInstallation = false
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
-	init(model: LauncherViewModel) {
+	init(
+		model: LauncherViewModel,
+		registerOpenSettings: @escaping (@escaping () -> Void) -> Void
+	) {
 		self.model = model
+		self.registerOpenSettings = registerOpenSettings
 		_onboarding = State(
 			initialValue: OnboardingCoordinator(
 				store: OnboardingProgressStore(defaults: model.preferences.defaults)
@@ -100,6 +105,9 @@ struct ContentView: View {
 			isPresented: $confirmsRosettaInstallation,
 			install: installRosetta
 		)
+		.onAppear {
+			registerOpenSettings(presentSettings)
+		}
 		.task {
 			await startOnboardingIfNeeded()
 		}

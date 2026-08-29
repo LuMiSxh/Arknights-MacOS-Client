@@ -37,6 +37,12 @@ The launcher should feel like a current macOS app first and an Arknights launche
 - Link the author and repository directly from About.
 - About links to the project's Ko-fi page as an optional way to support development.
 
+## Dock menu
+
+- Offer Play only for installed regions and disable every Play entry during refreshes or while another launcher or game operation is active.
+- Route Dock launches through the normal region refresh and game-launch guards. Open the main window when an update, Rosetta, or another recovery step needs user attention.
+- Keep Settings available as a native keyboard-accessible menu action.
+
 ## First-run setup
 
 - Present setup as an operation briefing inside the launcher window: a persistent route on the left, one focused task on the right, and the active installation status inside the relevant step.

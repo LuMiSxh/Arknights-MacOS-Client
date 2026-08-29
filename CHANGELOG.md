@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
 - Storage overview in Settings with independent regional installations, shared runtime data, recreatable caches, and diagnostic logs, plus targeted cleanup actions (#43).
 - Donate button for people who want to support the project.
+- Dock shortcuts for starting an installed regional client or opening Settings (#46).
 
 ### Changed
 
