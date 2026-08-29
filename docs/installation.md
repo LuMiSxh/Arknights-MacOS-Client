@@ -131,7 +131,7 @@ After the selected region is installed:
 3. Sign in through the official game client. The Yostar, Google, Apple, and Facebook flows use the embedded browser inside the Wine environment.
 4. If the game opens correctly, configure any remaining display options from the game or from **Settings → General**.
 
-The first embedded-browser sign-in can take longer than a normal web page while Wine and its browser helper start. If it stays blank, see [Sign-in and embedded browser problems](help/troubleshooting.md#sign-in-and-embedded-browser-problems).
+The first embedded-browser sign-in can take longer than a normal web page while Wine and its browser helper start. If it stays blank, see [Sign-in, Notices, and embedded browser problems](help/troubleshooting.md#sign-in-notices-and-embedded-browser-problems).
 
 > [!IMPORTANT]
 > The launcher applies its game compatibility files before a launch and restores the official files before an update or repair. Do not replace those files manually while the launcher is running.

@@ -105,6 +105,12 @@ The current runtime is blocked when macOS does not provide general Intel transla
 
 Check that the Mac can reach GitHub and Yostar services, then use **Try Again**. The assistant can continue after an unavailable launcher update check, but install the newer launcher before starting setup when an update is reported.
 
+## Launcher update waits or fails
+
+A launcher update waits while the game, an installation, an update, or a repair is active. Let the current operation finish or stop the game normally; Sparkle continues the launcher update when the launcher returns to idle.
+
+If the download itself fails, confirm that the Mac can reach GitHub Releases, then use **Settings → Updates → Launcher → Check** to try again. Cancelling or retrying a launcher update does not remove regional game files or cancel a separate game download.
+
 ## Download is paused, stuck, or fails
 
 The installer downloads several manifest files concurrently, retries a failed file against a backup CDN, and writes incomplete data to a `.part` file. A pause or closed launcher does not invalidate completed files.
@@ -115,16 +121,21 @@ The installer downloads several manifest files concurrently, retries a failed fi
 4. If one file repeatedly fails, wait and retry later; the failure may be a temporary Yostar/CDN response.
 5. If the files exist but the launcher still cannot finish, use **Repair…** after the download is idle.
 
+> [!NOTE]
+> After some terminal download failures, the main action may return to **Install** instead of **Resume Download**. Starting the installation again still validates completed files and reuses valid `.part` data. Do not delete the partial files first.
+
 > [!CAUTION]
 > Do not rename, move, or manually replace `.part` files. Do not change the installation location while an install, update, or repair is active. The launcher validates paths and checksums and may discard a partial file that no longer matches the manifest.
 
-If the launcher reports insufficient disk space, free space on the volume containing the selected installation. The check uses the current server-reported install requirement and does not guarantee room for unrelated macOS or user files.
+If the launcher reports insufficient disk space, free space on the volume containing the selected installation. The conservative preflight compares available capacity with the current full server-reported install requirement, not only the bytes that appear to remain after an existing or partial download. It does not guarantee room for unrelated macOS or user files.
 
 ## A region is shown as “Not installed”
 
 Select the region in **Settings → Installation**, then use **Installation Location → Locate Existing Installation…**. Choose the folder that directly contains the configured game executable, normally `Arknights.exe`.
 
 The launcher also requires `.arknights-client-state.json`, its own verified manifest state. A folder copied from another launcher or from a partial backup may contain `Arknights.exe` but still be reported as **Not installed**. In that case, start the launcher's install or repair flow so it can verify the files and write fresh state.
+
+**Choose New Location…** points the selected region at a new destination; it does not move files from the previous location. If the game already exists elsewhere, use **Locate Existing Installation…** and select the folder that contains those files.
 
 ## Update or repair does not finish
 
@@ -163,15 +174,19 @@ The launcher waits up to 90 seconds for the Wine game window. If it times out:
 
 Check `wine.log`, `unity.log`, and `~/Library/Logs/DiagnosticReports/` for the same timestamp. If the failure follows a runtime update, let the next launch complete its migration before retrying. If only one region fails, select another installed region to determine whether the problem follows the shared runtime or that region's files.
 
-## Sign-in and embedded browser problems
+## Game cannot connect after Local Network access was denied
 
-Yostar, Google, Apple, and Facebook sign-in use the embedded browser helper launched through Wine. The first browser start can take longer than the game window itself.
+Quit the game, open **System Settings → Privacy & Security → Local Network**, and allow **Arknights Client**. Start the game again after changing the permission. The launcher cannot repair an account restriction, Yostar outage, or other service-side failure; use [Yostar Support](https://account.yo-star.com/contact) when the same account or service also fails outside the launcher.
 
-1. Wait for the browser helper to finish starting; do not repeatedly press the provider button.
+## Sign-in, Notices, and embedded browser problems
+
+Yostar, Google, Apple, and Facebook sign-in and the separate Notices window use browser helpers launched through Wine. Their first start or first start after an update, runtime change, or cache cleanup is a cold start. It can take up to about one minute; later warm starts should be faster.
+
+1. Allow up to one minute for the helper to finish starting; do not repeatedly press the provider button or reopen Notices.
 2. Check the network and system date/time, then retry the provider once.
 3. If the page is blank or stale, close the game and choose **Settings → Storage → Clear Caches**. This clears DXMT and embedded-browser caches, not game files or saved settings.
-4. Retry the sign-in.
-5. If OAuth still fails, collect `chromium.log` and `wine.log` and report the launcher problem.
+4. Start the game again and allow another cold-start minute while the caches rebuild.
+5. If sign-in or Notices still fails, collect `chromium.log` and `wine.log` and report the launcher problem.
 
 > [!WARNING]
 > Never attach passwords, session cookies, access tokens, payment details, or an unreviewed full browser log to a GitHub issue. The launcher report form does not upload logs for you; review every excerpt first.

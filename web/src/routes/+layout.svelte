@@ -36,6 +36,11 @@
 			? routePath === resolve('/')
 			: routePath.startsWith(resolve(route as `/${string}`));
 	}
+
+	function isExact(route: string): boolean {
+		const current = page.url.pathname.replace(/\/$/, '');
+		return current === resolve(route as `/${string}`).replace(/\/$/, '');
+	}
 </script>
 
 <svelte:head>
@@ -87,14 +92,45 @@
 					aria-current={isCurrent('/') ? 'page' : undefined}>Home</a
 				>
 				{#each navigation as entry (entry.route)}
-					<a
-						href={resolve(entry.route as `/${string}`)}
-						aria-current={isCurrent(entry.route)
-							? 'page'
-							: undefined}
-					>
-						<span>{entry.title}</span>
-					</a>
+					{#if entry.children.length}
+						<details
+							class="site-nav-group"
+							open={isCurrent(entry.route)}
+						>
+							<summary
+								data-current={isCurrent(entry.route)
+									? 'true'
+									: undefined}>{entry.title}</summary
+							>
+							<div class="site-nav-children">
+								<a
+									href={resolve(entry.route as `/${string}`)}
+									aria-current={isExact(entry.route)
+										? 'page'
+										: undefined}>Overview</a
+								>
+								{#each entry.children as child (child.route)}
+									<a
+										href={resolve(
+											child.route as `/${string}`
+										)}
+										aria-current={isExact(child.route)
+											? 'page'
+											: undefined}>{child.title}</a
+									>
+								{/each}
+							</div>
+						</details>
+					{:else}
+						<a
+							href={resolve(entry.route as `/${string}`)}
+							aria-current={isCurrent(entry.route)
+								? 'page'
+								: undefined}
+						>
+							<span>{entry.title}</span>
+						</a>
+					{/if}
 				{/each}
 				<a
 					href={resolve('/changelog/')}
