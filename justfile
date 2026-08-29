@@ -69,3 +69,8 @@ release version:
 [group('Owner')]
 stats:
     uv run scripts/release_statistics.py
+
+# Scan Yostar's wallpaper gallery for untagged artwork and file tagging issues. Requires GitHub CLI access.
+[group('Owner')]
+wallpaper-scan *args:
+    uv run scripts/scan_untagged_wallpapers.py {{ args }}

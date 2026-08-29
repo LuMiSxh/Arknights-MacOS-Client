@@ -94,9 +94,13 @@ extension PresetCatalogService {
 						title = "Wallpaper \(wallpapers.count + 1)"
 					}
 					let thumbnailURL = row.smallImage.flatMap(Self.validatedRemoteAssetURL(from:))
+					// Prefix with the source so future additional gallery sources (e.g. a JP
+					// Fankit feed) can't collide with Global's numbering, and so the ID stays
+					// stable across refreshes for the tag manifest workflow to key off of.
+					let stableID = row.id.map { "global-\($0)" } ?? "wp_\(page)_\(wallpapers.count)"
 					wallpapers.append(
 						PresetWallpaper(
-							id: "wp_\(page)_\(wallpapers.count)",
+							id: stableID,
 							title: title,
 							url: url,
 							thumbnailURL: thumbnailURL

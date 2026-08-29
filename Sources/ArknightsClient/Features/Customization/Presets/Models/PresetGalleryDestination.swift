@@ -26,7 +26,7 @@ enum PresetGalleryDestination: String, Identifiable {
 
 	var searchPlaceholder: String {
 		switch self {
-		case .artwork: "Search artwork…"
+		case .artwork: "Search by title, operator, or event…"
 		case .operatorIcons: "Search operators…"
 		}
 	}

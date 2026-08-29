@@ -1,0 +1,43 @@
+name: Apply wallpaper tags
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apply:
+    if: >-
+      !github.event.issue.pull_request &&
+      contains(github.event.issue.labels.*.name, 'wallpaper-tagging') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: macos-26
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
+
+      - name: Write issue and comment bodies
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          printf '%s' "$ISSUE_BODY" > "$RUNNER_TEMP/issue-body.md"
+          printf '%s' "$COMMENT_BODY" > "$RUNNER_TEMP/comment-body.md"
+
+      - name: Apply tags from comment
+        run: |
+          uv run scripts/apply_wallpaper_tags.py \
+            --issue-number "${{ github.event.issue.number }}" \
+            --issue-body-file "$RUNNER_TEMP/issue-body.md" \
+            --comment-body-file "$RUNNER_TEMP/comment-body.md" \
+            --comment-author-association "${{ github.event.comment.author_association }}"

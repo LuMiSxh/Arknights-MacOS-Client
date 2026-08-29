@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Matched wallpaper search against maintainer-curated tags in addition to titles, and added a scheduled workflow that files a tagging issue for every newly discovered official wallpaper.
+
 ### Fixed
 
 - Recovered official wallpapers whose Fankit gallery entries wrap the image URL in a single-element array instead of a plain string, restoring most of the official wallpaper catalog instead of only the newest entries.

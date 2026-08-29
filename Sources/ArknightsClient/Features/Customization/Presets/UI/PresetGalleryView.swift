@@ -144,7 +144,12 @@ struct PresetGalleryView: View {
 	private var filteredWallpapers: [PresetWallpaper] {
 		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		if query.isEmpty { return wallpapers }
-		return wallpapers.filter { $0.title.localizedStandardContains(query) }
+		return wallpapers.filter { wallpaper in
+			wallpaper.title.localizedStandardContains(query)
+				|| WallpaperTagCatalog.tags(for: wallpaper.id).contains {
+					$0.localizedStandardContains(query)
+				}
+		}
 	}
 
 	private var avatarsGrid: some View {

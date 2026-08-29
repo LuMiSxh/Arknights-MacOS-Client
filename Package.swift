@@ -24,6 +24,7 @@ let package = Package(
 			resources: [
 				.copy("Resources/GameIconBackground.png"),
 				.copy("Resources/OperatorIconFrame.svg"),
+				.copy("Resources/WallpaperTags.json"),
 			]
 		),
 		.testTarget(

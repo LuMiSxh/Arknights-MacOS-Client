@@ -25,6 +25,34 @@ struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	let thumbnailURL: URL?
 }
 
+/// A community/maintainer-curated set of search tags for a wallpaper, keyed by its stable
+/// Fankit gallery ID (see `WallpaperTags.json`). Populated separately from the untagged-wallpaper
+/// GitHub issue workflow, so it is intentionally decoupled from `PresetWallpaper`'s cached wire format.
+struct WallpaperTagManifest: Decodable, Sendable {
+	let schemaVersion: Int
+	let tags: [String: [String]]
+}
+
+/// Looks up curated search tags (operator names, factions, events, …) for wallpapers by their
+/// stable gallery ID. Falls back to an empty catalog if the bundled manifest is missing or malformed.
+enum WallpaperTagCatalog {
+	static let shared: [String: [String]] = load()
+
+	static func tags(for wallpaperID: String) -> [String] {
+		shared[wallpaperID] ?? []
+	}
+
+	private static func load() -> [String: [String]] {
+		guard
+			let url = Bundle.module.url(
+				forResource: "WallpaperTags", withExtension: "json"),
+			let data = try? Data(contentsOf: url),
+			let manifest = try? JSONDecoder().decode(WallpaperTagManifest.self, from: data)
+		else { return [:] }
+		return manifest.tags
+	}
+}
+
 /// Decodes identity fields from `character_table.json`.
 struct RawCharacterEntry: Decodable {
 	let name: String
@@ -43,11 +71,13 @@ struct YostarGalleryData: Decodable {
 }
 
 struct YostarGalleryRow: Decodable {
+	let id: Int?
 	let title: String?
 	let image1: String?
 	let smallImage: String?
 
 	enum CodingKeys: String, CodingKey {
+		case id
 		case title
 		case image1
 		case smallImage
@@ -57,6 +87,7 @@ struct YostarGalleryRow: Decodable {
 
 	init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
+		id = try? container.decodeIfPresent(Int.self, forKey: .id)
 		title = try? container.decodeIfPresent(String.self, forKey: .title)
 		let image1FromImage1 = decodeStringOrInt(from: container, forKey: .image1)
 		let image1FromImage = decodeStringOrInt(from: container, forKey: .image)
