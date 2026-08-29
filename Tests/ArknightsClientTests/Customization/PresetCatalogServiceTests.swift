@@ -8,6 +8,14 @@ import Testing
 @Suite(.serialized)
 struct PresetCatalogServiceTests {
 	@Test
+	func galleryRowsDecodeArrayWrappedImageURLs() throws {
+		let data = Data(#"{"image1":["https://webusstatic.yo-star.com/wallpaper.jpg"]}"#.utf8)
+		let row = try JSONDecoder().decode(YostarGalleryRow.self, from: data)
+
+		#expect(row.image1 == "https://webusstatic.yo-star.com/wallpaper.jpg")
+	}
+
+	@Test
 	func avatarIdentifiersAllowOnlyBoundedASCIIKeys() {
 		#expect(PresetCatalogService.isValidAvatarIdentifier("char_002_amiya"))
 		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_../../escape"))

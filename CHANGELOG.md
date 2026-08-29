@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
 - Refreshed the main window's Play control, Settings sidebar, and status pill immediately when the app language changes instead of waiting for an unrelated state change to redraw them.
 - Removed the decorative three-part line below the regional wordmark and kept late branding responses from replacing the selected region's logo (#37).

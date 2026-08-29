@@ -84,5 +84,10 @@ private func decodeStringOrInt(
 	if let value = try? container.decodeIfPresent(Int.self, forKey: key) {
 		return String(value)
 	}
+	// Older Fankit gallery entries wrap the image URL in a single-element array
+	// instead of returning it as a plain string.
+	if let values = try? container.decodeIfPresent([String].self, forKey: key) {
+		return values.first
+	}
 	return nil
 }
