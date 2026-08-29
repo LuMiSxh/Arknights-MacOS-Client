@@ -9,7 +9,7 @@ struct PresetGalleryEmptyView: View {
 	var body: some View {
 		ContentUnavailableView {
 			Label {
-				Text(text)
+				Text(L10n.string(text))
 			} icon: {
 				Image(systemName: systemImage)
 			}

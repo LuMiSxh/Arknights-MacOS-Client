@@ -208,8 +208,12 @@ struct PresetGalleryView: View {
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(avatar.name)
-				.accessibilityHint(CustomizationStrings.operatorApplyHelp(avatar.name))
-				.accessibilityValue(isApplying ? Text(CustomizationStrings.applying) : Text(""))
+				.accessibilityHint(
+					L10n.string(CustomizationStrings.operatorApplyHelp(avatar.name))
+				)
+				.accessibilityValue(
+					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
+				)
 			}
 		}
 	}
@@ -242,7 +246,7 @@ struct PresetGalleryView: View {
 										ProgressView()
 											.controlSize(.regular)
 											.tint(customization.accentColor)
-										Text(CustomizationStrings.applying)
+										Text(L10n.string(CustomizationStrings.applying))
 											.font(.caption2.bold())
 											.foregroundStyle(.white)
 									}
@@ -285,8 +289,12 @@ struct PresetGalleryView: View {
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(wp.title)
-				.accessibilityHint(CustomizationStrings.wallpaperApplyHelp(wp.title))
-				.accessibilityValue(isApplying ? Text(CustomizationStrings.applying) : Text(""))
+				.accessibilityHint(
+					L10n.string(CustomizationStrings.wallpaperApplyHelp(wp.title))
+				)
+				.accessibilityValue(
+					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
+				)
 			}
 		}
 	}

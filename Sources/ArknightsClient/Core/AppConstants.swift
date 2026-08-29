@@ -82,10 +82,12 @@ enum AppConstants {
 	}
 
 	enum Presets {
+		static let cacheGenerationFilename = ".launcher-version"
 		static let characterCatalogMaximumBytes = 32 * 1_024 * 1_024
 		static let wallpaperCatalogMaximumBytes = 4 * 1_024 * 1_024
 		static let imageMaximumBytes = 24 * 1_024 * 1_024
 		static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
+		static let imageDownloadAttempts = 2
 		static let imageMaximumDimension = 8_192
 		static let imageMaximumPixels = 36_000_000
 		static let avatarIdentifierMaximumLength = 96

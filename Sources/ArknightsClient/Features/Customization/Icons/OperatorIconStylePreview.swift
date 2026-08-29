@@ -12,9 +12,9 @@ struct OperatorIconStylePreview: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
 			VStack(alignment: .leading, spacing: 3) {
-				Text(CustomizationStrings.iconPreviewTitle)
+				Text(L10n.string(CustomizationStrings.iconPreviewTitle))
 					.font(.headline)
-				Text(CustomizationStrings.iconPreviewSubtitle)
+				Text(L10n.string(CustomizationStrings.iconPreviewSubtitle))
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
@@ -37,7 +37,7 @@ struct OperatorIconStylePreview: View {
 					)
 				}
 			} else {
-				ProgressView(CustomizationStrings.iconPreviewLoading)
+				ProgressView(L10n.string(CustomizationStrings.iconPreviewLoading))
 					.frame(maxWidth: .infinity, minHeight: 82)
 			}
 		}
@@ -51,9 +51,9 @@ struct OperatorIconStylePreview: View {
 		-> some View
 	{
 		VStack(spacing: 2) {
-			Text(title)
+			Text(L10n.string(title))
 				.font(.caption.bold())
-			Text(detail)
+			Text(L10n.string(detail))
 				.font(.caption)
 				.foregroundStyle(.secondary)
 				.multilineTextAlignment(.center)

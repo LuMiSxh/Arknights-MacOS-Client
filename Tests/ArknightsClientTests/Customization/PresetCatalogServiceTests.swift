@@ -8,6 +8,26 @@ import Testing
 @Suite(.serialized)
 struct PresetCatalogServiceTests {
 	@Test
+	func galleryCacheIsClearedWhenTheLauncherVersionChanges() throws {
+		let fileManager = FileManager.default
+		let root = fileManager.temporaryDirectory.appending(
+			path: "PresetCatalogVersionTests-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		defer { try? fileManager.removeItem(at: root) }
+		let log = LauncherLog(fileURL: root.appending(path: "launcher.log"))
+		_ = PresetCatalogService(cacheDirectory: root, log: log, cacheGeneration: "1")
+		let staleFile = root.appending(path: "stale.cache")
+		try Data("stale".utf8).write(to: staleFile)
+
+		_ = PresetCatalogService(cacheDirectory: root, log: log, cacheGeneration: "2")
+
+		#expect(!fileManager.fileExists(atPath: staleFile.path))
+		let marker = root.appending(path: AppConstants.Presets.cacheGenerationFilename)
+		#expect(try String(contentsOf: marker, encoding: .utf8) == "2")
+	}
+
+	@Test
 	func galleryRowsDecodeArrayWrappedImageURLs() throws {
 		let data = Data(#"{"image1":["https://webusstatic.yo-star.com/wallpaper.jpg"]}"#.utf8)
 		let row = try JSONDecoder().decode(YostarGalleryRow.self, from: data)
@@ -75,6 +95,10 @@ struct PresetCatalogServiceTests {
 			directoryHint: .isDirectory
 		)
 		defer { try? fileManager.removeItem(at: root) }
+		let service = PresetCatalogService(
+			cacheDirectory: root,
+			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
+		)
 		try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
 		let older = root.appending(path: "older.cache")
 		let newer = root.appending(path: "newer.cache")
@@ -92,11 +116,6 @@ struct PresetCatalogServiceTests {
 			[.modificationDate: Date(timeIntervalSince1970: 2)],
 			ofItemAtPath: newer.path
 		)
-		let service = PresetCatalogService(
-			cacheDirectory: root,
-			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
-		)
-
 		await service.enforceImageCacheLimitIfNeeded()
 
 		#expect(!fileManager.fileExists(atPath: older.path))
@@ -126,6 +145,25 @@ struct PresetCatalogServiceTests {
 			data,
 			source: URL(string: "https://cdn.jsdelivr.net/image.png")!
 		)
+	}
+
+	@Test
+	func truncatedJPEGFailsImageValidation() throws {
+		let encoded =
+			"/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9sAQwACAgICAgIDAgIDBQMDAwUGBQUFBQYIBgYGBgYICggICAgICAoKCgoKCgoKDAwMDAwMDg4ODg4PDw8PDw8PDw8P/9sAQwECAgIEBAQHBAQHEAsJCxAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ/90ABAAB/9oADAMBAAIRAxEAPwD9/KKKKAP/2Q=="
+		var data = try #require(Data(base64Encoded: encoded))
+		try PresetCatalogService.validateImageData(
+			data,
+			source: URL(string: "https://webusstatic.yo-star.com/image.jpg")!
+		)
+		data.removeLast(2)
+
+		#expect(throws: LauncherError.self) {
+			try PresetCatalogService.validateImageData(
+				data,
+				source: URL(string: "https://webusstatic.yo-star.com/image.jpg")!
+			)
+		}
 	}
 
 	@Test

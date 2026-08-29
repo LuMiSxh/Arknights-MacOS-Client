@@ -9,7 +9,7 @@ struct PresetGalleryLoadingView: View {
 		VStack(spacing: 12) {
 			ProgressView()
 				.controlSize(.regular)
-			Text(text)
+			Text(L10n.string(text))
 				.font(.caption)
 				.foregroundStyle(.secondary)
 		}

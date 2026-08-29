@@ -48,12 +48,15 @@ extension PresetCatalogService {
 
 		var lastError: (any Error)?
 		for candidate in candidates {
-			do {
-				let data = try await fetchImageData(from: candidate)
-				await cacheImageData(data, at: cachedFile)
-				return data
-			} catch {
-				lastError = error
+			for _ in 0..<AppConstants.Presets.imageDownloadAttempts {
+				do {
+					let data = try await fetchImageData(from: candidate)
+					await cacheImageData(data, at: cachedFile)
+					return data
+				} catch {
+					if Task.isCancelled { throw CancellationError() }
+					lastError = error
+				}
 			}
 		}
 		let finalError = lastError ?? LauncherError.invalidPresetImage(url)
@@ -82,6 +85,7 @@ extension PresetCatalogService {
 		}
 		var request = URLRequest(
 			url: url,
+			cachePolicy: .reloadIgnoringLocalCacheData,
 			timeoutInterval: AppConstants.Presets.requestTimeout
 		)
 		request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
@@ -184,6 +188,7 @@ extension PresetCatalogService {
 	static func validateImageData(_ data: Data, source: URL) throws {
 		guard !data.isEmpty,
 			data.count <= AppConstants.Presets.imageMaximumBytes,
+			hasCompleteFileMarker(data),
 			let imageSource = CGImageSourceCreateWithData(data as CFData, nil),
 			CGImageSourceGetCount(imageSource) == 1,
 			let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil)
@@ -198,5 +203,17 @@ extension PresetCatalogService {
 		else {
 			throw LauncherError.invalidPresetImage(source)
 		}
+	}
+
+	private static func hasCompleteFileMarker(_ data: Data) -> Bool {
+		if data.starts(with: [0xFF, 0xD8, 0xFF]) {
+			return data.suffix(2).elementsEqual([0xFF, 0xD9])
+		}
+		if data.starts(with: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+			return data.suffix(12).elementsEqual([
+				0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+			])
+		}
+		return true
 	}
 }

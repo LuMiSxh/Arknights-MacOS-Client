@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Refreshed gallery caches after launcher updates, rejected incomplete wallpaper downloads instead of displaying partially decoded images, and kept gallery text in the selected app language.
 - Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
 - Refreshed the main window's Play control, Settings sidebar, and status pill immediately when the app language changes instead of waiting for an unrelated state change to redraw them.

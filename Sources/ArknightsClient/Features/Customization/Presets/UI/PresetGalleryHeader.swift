@@ -13,9 +13,9 @@ struct PresetGalleryHeader: View {
 	var body: some View {
 		HStack {
 			VStack(alignment: .leading, spacing: 3) {
-				Text(destination.title)
+				Text(L10n.string(destination.title))
 					.font(.title3.bold())
-				Text(destination.subtitle)
+				Text(L10n.string(destination.subtitle))
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}

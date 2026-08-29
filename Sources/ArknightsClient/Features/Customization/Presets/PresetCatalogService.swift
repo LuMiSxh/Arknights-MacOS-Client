@@ -11,6 +11,7 @@ actor PresetCatalogService {
 	let cacheDirectory: URL
 	let cachedAvatarsFile: URL
 	let cachedWallpapersFile: URL
+	let cacheGeneration: String
 	let loader: BoundedHTTPDataLoader
 	let log: LauncherLog
 	var memoryCachedAvatars: [PresetAvatar]?
@@ -20,10 +21,12 @@ actor PresetCatalogService {
 	init(
 		cacheDirectory: URL,
 		session: URLSession = .shared,
-		log: LauncherLog
+		log: LauncherLog,
+		cacheGeneration: String = IssueReportURL.appVersion
 	) {
 		self.log = log
 		self.cacheDirectory = cacheDirectory
+		self.cacheGeneration = cacheGeneration
 		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index_v1.json")
 		cachedWallpapersFile = cacheDirectory.appending(path: "wallpapers_index_v1.json")
 		loader = BoundedHTTPDataLoader(
@@ -32,10 +35,7 @@ actor PresetCatalogService {
 		)
 
 		do {
-			try FileManager.default.createDirectory(
-				at: cacheDirectory,
-				withIntermediateDirectories: true
-			)
+			try Self.prepareCacheDirectory(cacheDirectory, generation: cacheGeneration)
 		} catch {
 			Task {
 				await log.error(
@@ -97,16 +97,30 @@ actor PresetCatalogService {
 			if FileManager.default.fileExists(atPath: cacheDirectory.path) {
 				try FileManager.default.removeItem(at: cacheDirectory)
 			}
-			try FileManager.default.createDirectory(
-				at: cacheDirectory,
-				withIntermediateDirectories: true
-			)
+			try Self.prepareCacheDirectory(cacheDirectory, generation: cacheGeneration)
 		} catch {
 			await log.error(
 				"Failed to clear preset catalog caches at \(cacheDirectory.path): \(error.localizedDescription)"
 			)
 			throw error
 		}
+	}
+
+	private static func prepareCacheDirectory(_ directory: URL, generation: String) throws {
+		let fileManager = FileManager.default
+		let marker = directory.appending(path: AppConstants.Presets.cacheGenerationFilename)
+		if fileManager.fileExists(atPath: directory.path) {
+			let storedGeneration: String?
+			do {
+				storedGeneration = try String(contentsOf: marker, encoding: .utf8)
+			} catch {
+				storedGeneration = nil
+			}
+			if storedGeneration == generation { return }
+			try fileManager.removeItem(at: directory)
+		}
+		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+		try Data(generation.utf8).write(to: marker, options: .atomic)
 	}
 
 	func cacheSizeText() async -> String {
