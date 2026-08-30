@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from lib.console import error, styled
+from lib.console import child_output, error, styled
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = PROJECT_DIR / ".build"
@@ -57,6 +57,22 @@ def run(
 ) -> subprocess.CompletedProcess[str]:
     arguments = [str(value) for value in command]
     try:
+        if not capture:
+            process = subprocess.Popen(
+                arguments,
+                cwd=cwd,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                env=environment,
+            )
+            assert process.stdout is not None
+            for line in process.stdout:
+                child_output(line.rstrip("\r\n"))
+            returncode = process.wait()
+            if returncode != 0:
+                fail(f"command failed ({returncode}): {' '.join(arguments)}")
+            return subprocess.CompletedProcess(arguments, returncode)
         return subprocess.run(
             arguments,
             cwd=cwd,

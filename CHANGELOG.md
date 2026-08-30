@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Indented subprocess output under its owning repository-script status line.
 - Made launcher modals adapt to the current window size while preserving outer padding and scrollable content.
 - Refactor root model by extracting launcher features into dedicated controllers (#52).
 - Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).

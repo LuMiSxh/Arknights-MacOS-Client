@@ -29,11 +29,18 @@ USE_ANIMATION = _IS_TTY and os.environ.get("CI") is None
 
 _SYMBOLS = {
     "info": ("→", "->"),
+    "child": ("↳", "->"),
     "success": ("✓", "OK"),
     "warning": ("!", "!!"),
     "error": ("✗", "XX"),
 }
-_CODES = {"info": "36;1", "success": "32;1", "warning": "33;1", "error": "31;1"}
+_CODES = {
+    "info": "36;1",
+    "child": "90",
+    "success": "32;1",
+    "warning": "33;1",
+    "error": "31;1",
+}
 _SPINNER_FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏" if USE_UNICODE else "|/-\\"
 _BAR_FULL = "█" if USE_UNICODE else "#"
 _BAR_EMPTY = "░" if USE_UNICODE else "-"
@@ -54,6 +61,10 @@ def _line(kind: str, message: str) -> None:
 
 def info(message: str) -> None:
     _line("info", message)
+
+
+def child_output(message: str) -> None:
+    print(f"  {styled(_symbol('child'), _CODES['child'])} {message}", file=sys.stderr)
 
 
 def success(message: str) -> None:
