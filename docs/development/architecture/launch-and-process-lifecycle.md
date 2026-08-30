@@ -43,8 +43,10 @@ sequenceDiagram
 	Runtime->>Game: Start Arknights.exe with allowlisted environment
 	Runtime-->>Session: Direct Wine process handle
 	Session->>Session: Wait for a visible game window
+	Session->>Session: Start local monotonic playtime measurement
 	Session-->>UI: Publish Running state
 	Game-->>Session: Direct process exits
+	Session->>Session: Persist the session once
 	Session->>Runtime: Stop prefix-wide wineserver
 	Runtime-->>Session: Prefix stopped
 	Session-->>UI: Publish Ready or failure state
@@ -111,6 +113,8 @@ Here, an “expected signature” is a bounded byte marker already present in th
 ## Process lifecycle
 
 The launcher remains in **Starting** until Wine exposes a visible game window. It monitors both the direct Wine process and the prefix-wide `wineserver`. Closing the game triggers prefix-scoped cleanup so browser and Yostar helpers do not keep the launcher in **Running**. **Stop** and launcher termination use the same prefix-scoped shutdown.
+
+Local playtime follows the same boundary. A failed launch or visible-window timeout records nothing. Once the window is visible, the controller keeps the wall-clock start only for the daily bucket and measures elapsed time from monotonic system uptime. Direct-process and prefix callbacks converge on the same session UUID, so whichever terminal path arrives first records the duration and the other becomes a no-op. Application termination flushes the active duration before synchronous Wine shutdown. A stale marker after an unclean launcher termination is cleared without inventing an end time.
 
 The meaningful state transitions are:
 

@@ -35,6 +35,7 @@ final class GameSessionController {
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
 	let gameCompatibilityManager: GameCompatibilityManager
+	let playtimeStatistics: PlaytimeStatisticsController
 	let graphicsDiagnosticsEnabled: Bool
 	@ObservationIgnored var customGameIconURL: () -> URL? = { nil }
 	@ObservationIgnored var launchTask: Task<Void, Never>?
@@ -52,6 +53,7 @@ final class GameSessionController {
 		preferences: LauncherPreferencesStore,
 		log: LauncherLog,
 		gameCompatibilityManager: GameCompatibilityManager,
+		playtimeStatistics: PlaytimeStatisticsController,
 		graphicsDiagnosticsEnabled: Bool
 	) {
 		self.lifecycle = lifecycle
@@ -62,6 +64,7 @@ final class GameSessionController {
 		self.preferences = preferences
 		self.log = log
 		self.gameCompatibilityManager = gameCompatibilityManager
+		self.playtimeStatistics = playtimeStatistics
 		self.graphicsDiagnosticsEnabled = graphicsDiagnosticsEnabled
 	}
 

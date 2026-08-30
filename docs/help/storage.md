@@ -17,6 +17,7 @@ Arknights Client keeps regional game files separate from one shared Wine environ
 | Korea game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Korea`          | Until **Uninstall Game** or manual removal                                    |
 | Shared Wine prefix             | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` | Persistent runtime state shared by all regions                                |
 | Custom launcher and game icons | `~/Library/Application Support/com.lumisxh.arknights-client/Artwork/Custom`                 | Until reset or app-data removal                                               |
+| Local playtime statistics      | `~/Library/Application Support/com.lumisxh.arknights-client/playtime-v1.json`               | Until **Reset Statistics** or manual app-data removal                         |
 | Bundled compatibility runtime  | Inside the app at `Contents/Resources/Runtime`                                              | Read-only; replaced by a launcher release                                     |
 | Downloaded official artwork    | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                          | Recreated when missing                                                        |
 | Preset gallery cache           | `~/Library/Caches/com.lumisxh.arknights-client/PresetGallery`                               | Recreated automatically; cleared by **Clear Gallery Cache**                   |
@@ -24,6 +25,11 @@ Arknights Client keeps regional game files separate from one shared Wine environ
 | Preferences                    | macOS `UserDefaults` for the bundle identifier                                              | Small launcher settings; locations are kept when settings are reset           |
 
 The Wine prefix directory keeps its historical `Arknights-Global` name for storage compatibility. It is shared even when Japan or Korea is selected. The launcher repoints Wine's `G:` drive to the selected region immediately before launch.
+
+Playtime statistics contain only local durations, regional totals, recent daily aggregates, and the latest session. They are not associated with an account, synchronized, included in reports, or sent over the network. Collection begins with the launcher version that adds the feature; the launcher does not infer earlier playtime from game files or logs.
+
+> [!NOTE]
+> A session starts only after a game window becomes visible and ends when the tracked process exits. Menus, pauses, and idle time count because the launcher cannot distinguish them from active play. View or reset the values under **Settings → Playtime**.
 
 > [!NOTE]
 > If you selected a custom location, the game files are not under the default `Games/` path. Use **Settings → Installation → Show** to reveal the active folder instead of guessing from the default path.
@@ -91,6 +97,8 @@ Windows-side settings or other local state stored only inside that prefix are re
 ### Reset launcher settings
 
 **Settings → Installation → Launcher Settings → Reset All Settings…** returns toggles and launch options to their defaults. It deliberately keeps the selected region and all installation locations, so it does not move or remove game files.
+
+Playtime is separate from launcher preferences and remains after **Reset All Settings**. Use **Settings → Playtime → Reset Statistics…** to remove all totals and recent daily data. If the game is running, measurement restarts at the moment of reset.
 
 ### Remove the launcher
 

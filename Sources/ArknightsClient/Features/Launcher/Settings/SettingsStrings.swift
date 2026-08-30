@@ -11,6 +11,7 @@ enum SettingsStrings {
 	static let navigationInstallation = LocalizedStringResource.Settings
 		.settingsNavigationInstallation
 	static let navigationStorage = LocalizedStringResource.Settings.settingsNavigationStorage
+	static let navigationStatistics = LocalizedStringResource.Settings.settingsNavigationStatistics
 	static let navigationAbout = LocalizedStringResource.Settings.settingsNavigationAbout
 	static let navigationDeveloper = LocalizedStringResource.Settings.settingsNavigationDeveloper
 	static let dangerZone = LocalizedStringResource.Settings.settingsCommonDangerZone

@@ -51,6 +51,9 @@ extension GameSessionController {
 
 	func stopGameForApplicationTermination() {
 		guard isGameActive else { return }
+		if let activeGameSessionID {
+			playtimeStatistics.finish(sessionID: activeGameSessionID)
+		}
 		disableActiveGameMode()
 		let runtime: WineRuntime
 		do {
@@ -147,6 +150,7 @@ extension GameSessionController {
 
 	func finishGameSession(_ sessionID: UUID) async {
 		guard activeGameSessionID == sessionID else { return }
+		playtimeStatistics.finish(sessionID: sessionID)
 		lifecycle.activity = .idle
 		launchTask?.cancel()
 		disableActiveGameMode()

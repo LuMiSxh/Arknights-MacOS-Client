@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
 - A static project website built from the repository documentation and deployed with releases through GitHub Pages (#56).
 - Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
 - Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).

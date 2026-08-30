@@ -26,6 +26,7 @@ the other locations remain app-owned.
 | Bundled runtime             | `Contents/Resources/Runtime` inside the app bundle                                                | Packaging and `WineRuntime`                | Read-only at runtime; replaced with a launcher update                                      |
 | Downloaded official artwork | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                                | `CustomizationController` / `ArtworkCache` | Recreated when missing; never required for game files                                      |
 | Preset gallery cache        | `~/Library/Caches/com.lumisxh.arknights-client/PresetGallery`                                     | `PresetCatalogService`                     | Targeted cleanup from Settings; recreated on demand                                        |
+| Playtime statistics         | `~/Library/Application Support/com.lumisxh.arknights-client/playtime-v1.json`                     | `PlaytimeStatisticsController`             | Versioned local totals plus 31 daily buckets; removed only by its confirmed reset          |
 | DXMT and browser caches     | `<prefix>/home/.cache/dxmt` and `<prefix>/drive_c/users/<profile>/AppData/Local/cache`            | `StorageMaintenanceController`             | Targeted cleanup across real Wine profiles; symlinks are not followed                      |
 | Launcher and runtime logs   | `~/Library/Logs/com.lumisxh.arknights-client`                                                     | `LauncherLog` and runtime process output   | `launcher.log`, `wine.log`, `unity.log`, and `chromium.log`; **Show Logs** prepares them   |
 | Preferences                 | `UserDefaults`                                                                                    | `LauncherPreferencesStore`                 | Small settings and selected paths only; no game files or downloaded payloads               |
@@ -69,6 +70,8 @@ The installer and runtime use small files to make long-running work restartable:
    `.arknights-runtime-migrations.json` with an atomic write. A runtime archive checksum or
    `prefixRevision` change invalidates the relevant plan and is reconciled on the next launch.
 
+Playtime uses a separate versioned JSON document. All-time regional totals remain exact while daily aggregates are capped at 31 entries. An active-session marker is written when a game window first becomes visible; the completed duration uses monotonic uptime rather than wall-clock subtraction. After an unclean launcher exit, that marker is discarded without adding guessed time. Every normal terminal path writes the completed session atomically before returning the launcher to idle.
+
 > [!CAUTION]
 > Do not treat a `.part` file, an old migration marker, or an executable's presence as proof that
 > an installation is usable. The launcher requires the final manifest state and executable, and it
@@ -88,6 +91,8 @@ targeted:
   copies of selected artwork/icon sources, generated icons, or the user's original files.
 - **Delete Wine prefix** removes shared Windows runtime state for all regions. The next launch
   recreates it and reruns Wine initialization, DXMT installation, and registry configuration.
+- **Reset Statistics** removes local playtime totals, the latest session, and recent daily
+  aggregates. It does not change game files, preferences, logs, or network behavior.
 - Removing the app from Finder does not automatically remove Application Support, Caches, Logs, or
   UserDefaults. Users can remove those separately after the app is no longer running.
 

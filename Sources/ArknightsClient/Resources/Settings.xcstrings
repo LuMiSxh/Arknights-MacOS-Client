@@ -2863,6 +2863,24 @@
         }
       }
     },
+    "settings.navigation.statistics": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playtime"
+          }
+        }
+      }
+    },
     "settings.navigation.updates": {
       "comment": "Settings navigation item",
       "extractionState": "manual",
@@ -2877,6 +2895,366 @@
           "stringUnit": {
             "state": "translated",
             "value": "Updates"
+          }
+        }
+      }
+    },
+    "settings.statistics.about": {
+      "comment": "Playtime explanation panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über die Spielzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About playtime"
+          }
+        }
+      }
+    },
+    "settings.statistics.latest": {
+      "comment": "Latest recorded playtime session label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Sitzung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest session"
+          }
+        }
+      }
+    },
+    "settings.statistics.lessThanMinute": {
+      "comment": "Duration below one minute",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "< 1 Min."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "< 1 min"
+          }
+        }
+      }
+    },
+    "settings.statistics.measurement": {
+      "comment": "Playtime measurement explanation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was zählt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What counts"
+          }
+        }
+      }
+    },
+    "settings.statistics.measurementDetail": {
+      "comment": "Explanation of the playtime measurement boundary",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Zeit beginnt, sobald das Spielfenster sichtbar ist, und endet mit dem Spielprozess. Menüs, Pausen und Leerlauf werden mitgezählt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time starts when the game window becomes visible and ends with the game process. Menus, pauses, and idle time are included."
+          }
+        }
+      }
+    },
+    "settings.statistics.noSessions": {
+      "comment": "Empty state before the first playtime session",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine abgeschlossene Sitzung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No completed session yet"
+          }
+        }
+      }
+    },
+    "settings.statistics.overview": {
+      "comment": "Playtime overview panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übersicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overview"
+          }
+        }
+      }
+    },
+    "settings.statistics.privacy": {
+      "comment": "Local playtime privacy explanation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur lokal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local only"
+          }
+        }
+      }
+    },
+    "settings.statistics.privacyDetail": {
+      "comment": "Local playtime privacy explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Statistik bleibt auf diesem Mac. Sie ist keinem Konto zugeordnet und wird weder synchronisiert noch übertragen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics stay on this Mac. They are not associated with an account, synced, or sent anywhere."
+          }
+        }
+      }
+    },
+    "settings.statistics.regions": {
+      "comment": "Per-region playtime panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regions"
+          }
+        }
+      }
+    },
+    "settings.statistics.reset": {
+      "comment": "Reset playtime statistics row title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeitstatistik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playtime statistics"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetAction": {
+      "comment": "Reset playtime statistics action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistik zurücksetzen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Statistics…"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetConfirmation": {
+      "comment": "Reset playtime statistics confirmation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeitstatistik zurücksetzen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset playtime statistics?"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetConfirm": {
+      "comment": "Destructive reset playtime statistics confirmation action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistik zurücksetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Statistics"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetDetail": {
+      "comment": "Reset playtime statistics explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löscht alle lokalen Gesamtwerte und Tagesdaten. Diese Aktion kann nicht rückgängig gemacht werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletes all local totals and daily data. This cannot be undone."
+          }
+        }
+      }
+    },
+    "settings.statistics.sevenDays": {
+      "comment": "Seven-day playtime summary label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 Tage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 days"
+          }
+        }
+      }
+    },
+    "settings.statistics.subtitle": {
+      "comment": "Playtime settings page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie lange das Spiel auf diesem Mac ausgeführt wurde"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How long the game has been running on this Mac"
+          }
+        }
+      }
+    },
+    "settings.statistics.thirtyDays": {
+      "comment": "Thirty-day playtime summary label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 Tage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 days"
+          }
+        }
+      }
+    },
+    "settings.statistics.title": {
+      "comment": "Playtime settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playtime"
+          }
+        }
+      }
+    },
+    "settings.statistics.total": {
+      "comment": "All-time playtime summary label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesamt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All time"
           }
         }
       }

@@ -187,4 +187,8 @@ struct AppPaths: Sendable {
 		applicationSupportRoot.appending(path: "Artwork/Custom/operator-avatar-source")
 	}
 
+	var playtimeStatistics: URL {
+		applicationSupportRoot.appending(path: AppConstants.Playtime.statisticsFilename)
+	}
+
 }

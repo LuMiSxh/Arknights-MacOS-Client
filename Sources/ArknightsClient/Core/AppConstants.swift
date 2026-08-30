@@ -109,6 +109,13 @@ enum AppConstants {
 		static let crashReportSearchWindow: TimeInterval = 120
 	}
 
+	enum Playtime {
+		static let schemaVersion = 1
+		static let statisticsFilename = "playtime-v1.json"
+		static let statisticsMaximumBytes = 64 * 1_024
+		static let dailyHistoryLimit = 31
+	}
+
 	enum Artwork {
 		static let launcherMaximumBytes = 25 * 1_024 * 1_024
 		static let officialLogoMaximumBytes = 2 * 1_024 * 1_024

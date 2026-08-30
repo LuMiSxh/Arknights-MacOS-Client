@@ -76,6 +76,11 @@ struct LauncherSettingsView: View {
 							),
 							accentColor: model.customization.accentColor
 						)
+					case .statistics:
+						PlaytimeStatisticsPage(
+							controller: model.playtimeStatistics,
+							accentColor: model.customization.accentColor
+						)
 					case .about:
 						AboutSettingsPage(
 							accentColor: model.customization.accentColor,
@@ -269,6 +274,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	case updates
 	case installation
 	case storage
+	case statistics
 	case about
 	#if DEBUG
 		case developer
@@ -283,6 +289,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 		case .updates: L10n.string(SettingsStrings.navigationUpdates)
 		case .installation: L10n.string(SettingsStrings.navigationInstallation)
 		case .storage: L10n.string(SettingsStrings.navigationStorage)
+		case .statistics: L10n.string(SettingsStrings.navigationStatistics)
 		case .about: L10n.string(SettingsStrings.navigationAbout)
 		#if DEBUG
 			case .developer: L10n.string(SettingsStrings.navigationDeveloper)
@@ -297,6 +304,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 		case .updates: "arrow.trianglehead.2.clockwise"
 		case .installation: "externaldrive"
 		case .storage: "internaldrive"
+		case .statistics: "chart.bar.xaxis"
 		case .about: "info.circle"
 		#if DEBUG
 			case .developer: "hammer"

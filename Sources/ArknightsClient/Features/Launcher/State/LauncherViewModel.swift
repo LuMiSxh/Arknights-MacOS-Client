@@ -17,6 +17,7 @@ final class LauncherViewModel {
 	let refreshController: LauncherRefreshController
 	let storage: StorageMaintenanceController
 	let storageOverview: StorageOverviewController
+	let playtimeStatistics: PlaytimeStatisticsController
 
 	let presetCatalog: PresetCatalogService
 	let preferences: LauncherPreferencesStore
@@ -60,6 +61,11 @@ final class LauncherViewModel {
 
 		let launcherLog = LauncherLog(fileURL: paths.launcherLogFile)
 		log = launcherLog
+		let playtimeStatistics = PlaytimeStatisticsController(
+			fileURL: paths.playtimeStatistics,
+			log: launcherLog
+		)
+		self.playtimeStatistics = playtimeStatistics
 		let lifecycle = LauncherLifecycleStore(log: launcherLog)
 		self.lifecycle = lifecycle
 		let settings = LauncherPreferencesController(store: preferences)
@@ -147,6 +153,7 @@ final class LauncherViewModel {
 			preferences: preferences,
 			log: launcherLog,
 			gameCompatibilityManager: gameCompatibilityManager,
+			playtimeStatistics: playtimeStatistics,
 			graphicsDiagnosticsEnabled: arguments.contains("--graphics-diagnostics")
 		)
 		self.gameSession = gameSession

@@ -113,6 +113,10 @@ extension GameSessionController {
 				)
 				lifecycle.setStatus(.running)
 				gameRunningSince = .now
+				playtimeStatistics.start(
+					sessionID: gameSessionID,
+					region: requestedRegion
+				)
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
 				await log.info(
 					"Game window became visible; session=\(gameSessionID.uuidString); elapsed=\(Self.launchDuration(since: launchRequestedAt))"

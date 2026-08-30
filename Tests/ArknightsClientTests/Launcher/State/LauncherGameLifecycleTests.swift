@@ -51,6 +51,28 @@ struct LauncherGameLifecycleTests {
 	}
 
 	@Test
+	func terminalLifecycleRecordsAVisibleSessionExactlyOnce() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let sessionID = UUID()
+		model.lifecycle.activity = .runningGame(
+			sessionID: sessionID,
+			processIdentifier: 42
+		)
+		model.playtimeStatistics.start(sessionID: sessionID, region: .japan)
+
+		await model.gameSession.finishGameSession(sessionID)
+		let recordedTotal = model.playtimeStatistics.totalDuration
+		await model.gameSession.finishGameSession(sessionID)
+
+		#expect(model.playtimeStatistics.statistics.latestSession?.region == .japan)
+		#expect(model.playtimeStatistics.totalDuration == recordedTotal)
+		#expect(model.playtimeStatistics.statistics.activeSession == nil)
+		await api.resolveBranding()
+	}
+
+	@Test
 	func exitDiagnosticsOmitsCrashDetailsWhenNoLogIsAvailable() {
 		let summary = GameSessionController.exitDiagnostics(
 			WineProcessExit(status: 0, reason: .exit),
