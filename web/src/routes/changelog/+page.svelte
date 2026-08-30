@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import ChangelogView from '$lib/components/ChangelogView.svelte';
+	import ContentView from '$lib/components/ContentView.svelte';
 
 	let { data }: PageProps = $props();
 </script>
 
-<ChangelogView content={data.content} />
+<ContentView content={data.content} />

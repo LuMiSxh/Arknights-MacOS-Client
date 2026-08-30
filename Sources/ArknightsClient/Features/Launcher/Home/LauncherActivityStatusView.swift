@@ -9,6 +9,7 @@ struct LauncherActivityStatusView: View {
 	let accentColor: Color
 	let requestRosettaInstallation: () -> Void
 	let retryIntelTranslationCheck: () -> Void
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	@ViewBuilder
 	var body: some View {
@@ -17,16 +18,9 @@ struct LauncherActivityStatusView: View {
 				HStack(alignment: .firstTextBaseline, spacing: 10) {
 					Text(statusTitle)
 						.font(.system(size: 14, weight: .semibold))
-						.contentTransition(.numericText())
-					if let detail = statusDetail {
-						if installation.isDownloading {
-							downloadProgressDetail
-						} else {
-							Text(detail)
-								.font(.caption)
-								.foregroundStyle(.secondary)
-								.lineLimit(1)
-						}
+						.contentTransition(reduceMotion ? .identity : .numericText())
+					if statusDetail != nil {
+						downloadProgressDetail
 					}
 					transferDetails
 				}
@@ -35,7 +29,9 @@ struct LauncherActivityStatusView: View {
 					.progressViewStyle(.linear)
 					.tint(accentColor)
 					.animation(
-						.linear(duration: 0.2), value: installation.progress?.fraction ?? 0)
+						reduceMotion ? nil : .linear(duration: 0.2),
+						value: installation.progress?.fraction ?? 0
+					)
 			}
 			.accessibilityElement(children: .ignore)
 			.accessibilityLabel(Text(statusTitle))

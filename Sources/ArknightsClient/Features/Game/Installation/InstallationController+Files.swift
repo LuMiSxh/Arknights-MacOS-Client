@@ -35,12 +35,22 @@ extension InstallationController {
 		if panel.runModal() == .OK, let selected = panel.url {
 			installDirectory = selected
 			preferences.setInstallDirectory(selected, for: region)
-			updateInstalledState()
-			lifecycle.setStatus(
-				isInstalled
-					? .ready
-					: .custom(L10n.string(.Launcher.launcherStatusGameNotFound))
-			)
+			let requestedRegion = region
+			let refreshTask = updateInstalledState()
+			Task { [weak self] in
+				await refreshTask.value
+				guard
+					let self,
+					self.region == requestedRegion,
+					self.installDirectory == selected,
+					self.lifecycle.activity == .idle
+				else { return }
+				self.lifecycle.setStatus(
+					self.isInstalled
+						? .ready
+						: .custom(L10n.string(.Launcher.launcherStatusGameNotFound))
+				)
+			}
 		}
 	}
 
@@ -72,6 +82,7 @@ extension InstallationController {
 					)
 				} else {
 					self.isInstalled = false
+					self.setRegionInstalled(requestedRegion, false)
 					self.hasPartialDownload = false
 					self.installedVersion = nil
 					self.isGameUpdateAvailable = false

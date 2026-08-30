@@ -39,7 +39,7 @@ struct LauncherRefreshRecoveryTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await model.waitForStartup()
 		try writeInstalledState(for: model.installation)
-		model.installation.updateInstalledState()
+		await model.installation.updateInstalledState().value
 		#expect(model.installation.isInstalled)
 
 		await model.refreshController.startRefresh().value

@@ -7,9 +7,13 @@ import Observation
 @MainActor
 @Observable
 final class InstallationController {
+	typealias StateLoader =
+		@Sendable (InstallationStateRequest) async throws -> InstallationStateSnapshot
+
 	var region: GameRegion
 	var installDirectory: URL
 	var progress: DownloadProgress?
+	private(set) var installedRegions: [GameRegion] = []
 	@ObservationIgnored var progressSequence: UInt64 = 0
 
 	var configuration: GameConfiguration? {
@@ -44,9 +48,12 @@ final class InstallationController {
 	let paths: AppPaths
 	let preferences: LauncherPreferencesStore
 	let log: LauncherLog
+	private let stateLoader: StateLoader
 	@ObservationIgnored var onLaunchRequested: (() -> Void)?
 	@ObservationIgnored var onMetadataRefreshCancellationRequested: (() -> Void)?
 	@ObservationIgnored var installationTask: Task<Void, Never>?
+	@ObservationIgnored private var stateRefreshTask: Task<Void, Never>?
+	@ObservationIgnored private var stateRefreshID: UUID?
 	var installationGate = ExclusiveOperationGate()
 
 	init(
@@ -55,13 +62,25 @@ final class InstallationController {
 		paths: AppPaths,
 		preferences: LauncherPreferencesStore,
 		log: LauncherLog,
-		region: GameRegion? = nil
+		region: GameRegion? = nil,
+		stateLoader: StateLoader? = nil
 	) {
 		self.lifecycle = lifecycle
 		self.installer = installer
 		self.paths = paths
 		self.preferences = preferences
 		self.log = log
+		self.stateLoader =
+			stateLoader ?? { request in
+				let task = Task.detached(priority: .utility) {
+					try InstallationStateReader.load(request)
+				}
+				return try await withTaskCancellationHandler {
+					try await task.value
+				} onCancel: {
+					task.cancel()
+				}
+			}
 		let selectedRegion = region ?? preferences.selectedRegion()
 		self.region = selectedRegion
 		installDirectory = preferences.installDirectory(
@@ -72,10 +91,12 @@ final class InstallationController {
 
 	deinit {
 		installationTask?.cancel()
+		stateRefreshTask?.cancel()
 	}
 
 	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
+		cancelInstalledStateRefresh()
 		lifecycle.clearFailure()
 		region = newRegion
 		preferences.setSelectedRegion(newRegion)
@@ -101,68 +122,94 @@ final class InstallationController {
 		isGameUpdateAvailable = installedVersion.map { $0 != latest } ?? true
 	}
 
-	func updateInstalledState() {
-		let hasExecutable = FileManager.default.fileExists(
-			atPath: installDirectory.appending(path: "Arknights.exe").path
+	@discardableResult
+	func updateInstalledState() -> Task<Void, Never> {
+		cancelInstalledStateRefresh()
+		let request = InstallationStateRequest(
+			selectedRegion: region,
+			selectedDirectory: installDirectory,
+			regionDirectories: Dictionary(
+				uniqueKeysWithValues: GameRegion.allCases.map { candidate in
+					(
+						candidate,
+						preferences.installDirectory(
+							for: candidate,
+							default: paths.gameInstall(for: candidate)
+						)
+					)
+				}
+			)
 		)
-		let installedState = loadInstalledState()
-		isInstalled = hasExecutable && installedState != nil
-		hasPartialDownload =
-			!isInstalled && Self.containsPartialDownload(in: installDirectory)
-		installedVersion = installedState?.version
-	}
-
-	func loadInstalledState() -> InstalledState? {
-		let url = installDirectory.appending(path: AppConstants.Game.installedStateFileName)
-		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-		do {
-			let data = try Data(contentsOf: url)
-			let decoder = JSONDecoder()
-			decoder.dateDecodingStrategy = .iso8601
-			return try decoder.decode(InstalledState.self, from: data)
-		} catch {
-			Task { [log, region] in
+		let refreshID = UUID()
+		stateRefreshID = refreshID
+		let stateLoader = self.stateLoader
+		let task = Task { [weak self, log] in
+			do {
+				let snapshot = try await stateLoader(request)
+				guard let self, self.ownsStateRefresh(refreshID, request: request) else {
+					return
+				}
+				self.isInstalled = snapshot.isInstalled
+				self.hasPartialDownload = snapshot.hasPartialDownload
+				self.installedVersion = snapshot.installedVersion
+				self.installedRegions = snapshot.installedRegions
+				self.finishStateRefresh(refreshID)
+				if let diagnostic = snapshot.diagnostic {
+					await log.error(diagnostic)
+				}
+			} catch is CancellationError {
+				self?.finishStateRefresh(refreshID)
+			} catch {
+				guard let self, self.ownsStateRefresh(refreshID, request: request) else {
+					return
+				}
+				self.finishStateRefresh(refreshID)
 				await log.error(
-					"Installed state for \(region.displayName) is unreadable at \(url.path): \(error.localizedDescription)"
+					"Failed to inspect installation state for \(request.selectedRegion.displayName): \(error.localizedDescription)"
 				)
 			}
-			return nil
+		}
+		stateRefreshTask = task
+		return task
+	}
+
+	func cancelInstalledStateRefresh() {
+		stateRefreshTask?.cancel()
+		stateRefreshTask = nil
+		stateRefreshID = nil
+	}
+
+	func setRegionInstalled(_ candidate: GameRegion, _ installed: Bool) {
+		if installed {
+			if !installedRegions.contains(candidate) {
+				installedRegions.append(candidate)
+				installedRegions.sort { $0.rawValue < $1.rawValue }
+			}
+		} else {
+			installedRegions.removeAll { $0 == candidate }
 		}
 	}
 
 	func isRegionInstalled(_ candidate: GameRegion) -> Bool {
-		guard candidate != region else { return isInstalled }
-		let directory = preferences.installDirectory(
-			for: candidate,
-			default: paths.gameInstall(for: candidate)
-		)
-		let fileManager = FileManager.default
-		guard fileManager.fileExists(atPath: directory.appending(path: "Arknights.exe").path)
-		else { return false }
-		return fileManager.fileExists(
-			atPath: directory.appending(path: AppConstants.Game.installedStateFileName).path
-		)
+		installedRegions.contains(candidate)
 	}
 
 	func waitForCurrentInstallation() async {
 		await installationTask?.value
 	}
 
-	var installedRegions: [GameRegion] {
-		GameRegion.allCases.filter(isRegionInstalled)
+	private func ownsStateRefresh(
+		_ id: UUID,
+		request: InstallationStateRequest
+	) -> Bool {
+		stateRefreshID == id && !Task.isCancelled
+			&& region == request.selectedRegion
+			&& installDirectory == request.selectedDirectory
 	}
 
-	private static func containsPartialDownload(in directory: URL) -> Bool {
-		guard
-			let enumerator = FileManager.default.enumerator(
-				at: directory,
-				includingPropertiesForKeys: nil,
-				options: [.skipsPackageDescendants]
-			)
-		else { return false }
-		for case let file as URL in enumerator where file.pathExtension == "part" {
-			return true
-		}
-		return false
+	private func finishStateRefresh(_ id: UUID) {
+		guard stateRefreshID == id else { return }
+		stateRefreshID = nil
+		stateRefreshTask = nil
 	}
 }

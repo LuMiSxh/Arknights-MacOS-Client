@@ -8,8 +8,6 @@ import Foundation
 struct ExclusiveOperationGate: Sendable {
 	private var activeToken: UUID?
 
-	var isActive: Bool { activeToken != nil }
-
 	mutating func begin() -> UUID? {
 		guard activeToken == nil else { return nil }
 		let token = UUID()

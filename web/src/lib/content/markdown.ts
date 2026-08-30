@@ -17,7 +17,8 @@ export interface RenderedMarkdown {
 	headings: Heading[];
 }
 
-const SAFE_EXTERNAL = /^(?:https?:|mailto:)/i;
+const SAFE_EXTERNAL_LINK = /^(?:https:|mailto:)/i;
+const SAFE_EXTERNAL_IMAGE = /^https:/i;
 const ALERT_MARKER = /^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\r?\n)?/;
 const ALERT_LABELS = {
 	NOTE: 'Note',
@@ -39,10 +40,17 @@ function escapeHtml(value: string): string {
 		.replaceAll("'", '&#39;');
 }
 
-function safeExternalHref(href: string): string | undefined {
-	if (SAFE_EXTERNAL.test(href)) return href;
+function safeExternalHref(href: string, pattern: RegExp): string | undefined {
+	if (pattern.test(href)) return href;
 	if (href.startsWith('#')) return href;
 	return undefined;
+}
+
+function isUnsupportedHref(href: string, allowedScheme: RegExp): boolean {
+	return (
+		href.startsWith('//') ||
+		(/^[a-z][a-z\d+.-]*:/i.test(href) && !allowedScheme.test(href))
+	);
 }
 
 function renderInline(
@@ -57,18 +65,19 @@ function renderLink(
 	token: Tokens.Link,
 	context: MarkdownLinkContext
 ): string {
-	const href =
-		context.resolve(token.href, context.source) ??
-		safeExternalHref(token.href);
+	const href = isUnsupportedHref(token.href, SAFE_EXTERNAL_LINK)
+		? undefined
+		: (context.resolve(token.href, context.source) ??
+			safeExternalHref(token.href, SAFE_EXTERNAL_LINK));
 	const label = renderInline(this, token.tokens);
 	if (!href) return label;
 
-	const isExternal = SAFE_EXTERNAL.test(href);
+	const isExternal = SAFE_EXTERNAL_LINK.test(href);
 	const attributes = [
 		`href="${escapeHtml(href)}"`,
 		token.title ? `title="${escapeHtml(token.title)}"` : '',
 		isExternal ? 'target="_blank"' : '',
-		isExternal ? 'rel="noreferrer"' : ''
+		isExternal ? 'rel="noopener noreferrer"' : ''
 	]
 		.filter(Boolean)
 		.join(' ');
@@ -79,9 +88,10 @@ function renderImage(
 	token: Tokens.Image,
 	context: MarkdownLinkContext
 ): string {
-	const href =
-		context.resolve(token.href, context.source) ??
-		safeExternalHref(token.href);
+	const href = isUnsupportedHref(token.href, SAFE_EXTERNAL_IMAGE)
+		? undefined
+		: (context.resolve(token.href, context.source) ??
+			safeExternalHref(token.href, SAFE_EXTERNAL_IMAGE));
 	if (!href) return escapeHtml(token.text);
 	const title = token.title ? ` title="${escapeHtml(token.title)}"` : '';
 	return `<img src="${escapeHtml(href)}" alt="${escapeHtml(token.text)}"${title} loading="lazy">`;

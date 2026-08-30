@@ -71,6 +71,22 @@ struct LauncherAPITests {
 	}
 
 	@Test
+	func transportFailureUsesTheLocalizedLauncherError() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [FailingLauncherAPIURLProtocol.self]
+		let api = LauncherAPI(session: URLSession(configuration: configuration))
+
+		do {
+			let _: GameConfiguration = try await api.gameConfiguration(region: .global)
+			Issue.record("Expected the API request to fail")
+		} catch {
+			#expect(
+				error.localizedDescription == LauncherError.invalidResponse.localizedDescription
+			)
+		}
+	}
+
+	@Test
 	func configuredResponseLimitRejectsManifestBeforeDecoding() async throws {
 		let session = makeSession()
 		LauncherAPIURLProtocol.handler = { request in
@@ -94,6 +110,13 @@ struct LauncherAPITests {
 			)
 			Issue.record("Expected the manifest response to exceed its configured limit")
 		} catch {
+			#expect(
+				error.localizedDescription
+					== LauncherError.remoteContentTooLarge(
+						URL(string: "https://fixtures.invalid/manifest.json")!,
+						maximumBytes: 8
+					).localizedDescription
+			)
 			let diagnostic = launcherDiagnosticDescription(for: error)
 			#expect(diagnostic.contains("operation=manifest download"))
 			#expect(diagnostic.contains("response exceeded 8 bytes"))
@@ -105,6 +128,17 @@ struct LauncherAPITests {
 		configuration.protocolClasses = [LauncherAPIURLProtocol.self]
 		return URLSession(configuration: configuration)
 	}
+}
+
+private final class FailingLauncherAPIURLProtocol: URLProtocol, @unchecked Sendable {
+	override class func canInit(with request: URLRequest) -> Bool { true }
+	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+	override func startLoading() {
+		client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+	}
+
+	override func stopLoading() {}
 }
 
 private final class LauncherAPIURLProtocol: URLProtocol, @unchecked Sendable {

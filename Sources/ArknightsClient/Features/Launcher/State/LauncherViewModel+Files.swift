@@ -21,7 +21,6 @@ extension LauncherViewModel {
 		guard settings.resetToDefaults(canModifyLaunchOptions: !gameSession.isGameActive) else {
 			return
 		}
-		lifecycle.setStatus(.custom(L10n.string(.Launcher.launcherStatusSettingsReset)))
 		Task { [log] in await log.info("Launcher settings reset to default") }
 	}
 

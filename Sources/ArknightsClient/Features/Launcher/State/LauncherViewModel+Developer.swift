@@ -85,16 +85,14 @@
 				settings.showsPlayingMusic = true
 				settings.showsGameVersion = true
 				settings.showsServerResetCountdown = true
-				currentMusicTitle =
+				developerAccessibilityMusicTitle =
 					"A very long Arknights soundtrack title for Dynamic Type and keyboard layout checks"
 			case .onboardingRosetta:
 				installation.isInstalled = false
 				installation.hasPartialDownload = false
 				installation.installedVersion = nil
 				lifecycle.setStatus(.install)
-				if scenario == .onboardingRosetta {
-					lifecycle.intelTranslationState = .rosettaMissing
-				}
+				lifecycle.intelTranslationState = .rosettaMissing
 			}
 		}
 

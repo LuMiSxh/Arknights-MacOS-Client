@@ -271,6 +271,24 @@
         }
       }
     },
+    "customization.gallery.wallpaper.fallbackTitle": {
+      "comment": "Fallback title for an official wallpaper without a supplied title; argument is its one-based position",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hintergrundbild %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wallpaper %lld"
+          }
+        }
+      }
+    },
     "customization.iconPreview.game.detail": {
       "comment": "Game icon style explanation",
       "extractionState": "manual",

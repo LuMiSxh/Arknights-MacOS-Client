@@ -9,8 +9,9 @@ extension InstallationController {
 		operation: SupportOperation,
 		region: GameRegion
 	) {
+		let presentedError = Self.mapTransportError(error)
 		let code: SupportCode? =
-			operation == .uninstall ? .basalt : Self.supportCode(for: error)
+			operation == .uninstall ? .basalt : Self.supportCode(for: presentedError)
 		let actions = Self.recoveryActions(
 			for: code,
 			isInstalled: isInstalled,
@@ -18,8 +19,8 @@ extension InstallationController {
 			allowsRetry: !Self.isMissingConfiguration(error)
 		)
 		let message =
-			(error as? any LocalizedError)?.errorDescription
-			?? error.localizedDescription
+			(presentedError as? any LocalizedError)?.errorDescription
+			?? presentedError.localizedDescription
 		lifecycle.presentFailure(
 			LauncherFailurePresentation(
 				id: id,
@@ -33,8 +34,13 @@ extension InstallationController {
 				blocksGameLaunch: operation == .install || operation == .update
 					|| operation == .repair
 			),
-			diagnostic: launcherDiagnosticDescription(for: error)
+			diagnostic: launcherDiagnosticDescription(for: presentedError)
 		)
+	}
+
+	private static func mapTransportError(_ error: any Error) -> any Error {
+		guard let transportError = error as? HTTPTransportError else { return error }
+		return GameInstaller.launcherError(for: transportError)
 	}
 
 	static func supportCode(for error: any Error) -> SupportCode? {
@@ -50,9 +56,12 @@ extension InstallationController {
 		case LauncherError.insufficientDiskSpace:
 			.scree
 		case LauncherError.invalidResponse,
+			LauncherError.invalidRemoteAsset,
+			LauncherError.remoteContentTooLarge,
 			LauncherError.invalidDownloadResponse,
 			LauncherError.downloadedSizeMismatch,
 			LauncherError.checksumMismatch,
+			is HTTPTransportError,
 			is URLError:
 			.pebble
 		case LauncherError.server,

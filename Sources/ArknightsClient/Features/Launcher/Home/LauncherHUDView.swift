@@ -3,10 +3,23 @@
 import SwiftUI
 
 struct LauncherHUDView: View {
-	let model: LauncherViewModel
+	let lifecycle: LauncherLifecycleStore
+	let settings: LauncherPreferencesController
+	let installation: InstallationController
+	let gameSession: GameSessionController
+	let intelTranslation: IntelTranslationController
+	let communication: LauncherCommunicationController
+	let canSwitchRegion: Bool
 	let accentColor: Color
 	let hudTintColor: Color
 	let musicController: BackgroundMusicController
+	let openLauncherUpdate: () -> Void
+	let checkGameUpdates: () -> Void
+	let selectRegion: (GameRegion) -> Void
+	let installOrUpdate: () -> Void
+	let cancelDownload: () -> Void
+	let launch: () -> Void
+	let stopGame: () -> Void
 	let requestRosettaInstallation: () -> Void
 	let retryIntelTranslationCheck: () -> Void
 	let showFailureDetails: () -> Void
@@ -23,31 +36,31 @@ struct LauncherHUDView: View {
 	private var controlBar: some View {
 		HStack(spacing: 16) {
 			LauncherActivityStatusView(
-				lifecycle: model.lifecycle,
-				installation: model.installation,
-				intelTranslation: model.intelTranslation,
+				lifecycle: lifecycle,
+				installation: installation,
+				intelTranslation: intelTranslation,
 				accentColor: accentColor,
 				requestRosettaInstallation: requestRosettaInstallation,
 				retryIntelTranslationCheck: retryIntelTranslationCheck
 			)
-			.id(model.installation.isDownloading ? "download-progress" : "launcher-status")
+			.id(installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)
 			.frame(maxWidth: .infinity, alignment: .leading)
 
 			HStack(spacing: 8) {
-				if model.communication.shouldShowLauncherUpdateButton {
+				if communication.shouldShowLauncherUpdateButton {
 					CapsuleActionButton(
 						title: L10n.string(HomeStrings.launcherUpdate),
 						systemImage: "arrow.down.app",
 						tone: .accent(accentColor),
-						action: model.communication.openLauncherUpdate
+						action: openLauncherUpdate
 					)
-					.disabled(!model.communication.canOpenLauncherUpdate)
+					.disabled(!communication.canOpenLauncherUpdate)
 					.transition(.opacity)
 					.help(L10n.string(HomeStrings.launcherUpdateHelp))
 				}
 
-				if model.lifecycle.failure?.blocksGameLaunch == true {
+				if lifecycle.failure?.blocksGameLaunch == true {
 					CapsuleActionButton(
 						title: L10n.string(HomeStrings.recoveryDetails),
 						systemImage: "info.circle",
@@ -59,25 +72,25 @@ struct LauncherHUDView: View {
 				}
 
 				LauncherPrimaryActionView(
-					installation: model.installation,
-					gameSession: model.gameSession,
-					intelTranslation: model.intelTranslation,
+					installation: installation,
+					gameSession: gameSession,
+					intelTranslation: intelTranslation,
 					accentColor: accentColor,
-					installOrUpdate: model.installOrUpdate,
-					cancelDownload: model.cancelDownload,
-					launch: model.launch,
-					stopGame: model.stopGame
+					installOrUpdate: installOrUpdate,
+					cancelDownload: cancelDownload,
+					launch: launch,
+					stopGame: stopGame
 				)
-				.disabled(model.lifecycle.failure?.blocksGameLaunch == true)
+				.disabled(lifecycle.failure?.blocksGameLaunch == true)
 				.transition(primaryActionTransition)
 			}
 		}
 		.padding(16)
 		.adaptiveGlassEffect(tint: hudTintColor, in: Capsule())
-		.animation(stateAnimation, value: model.installation.isDownloading)
+		.animation(stateAnimation, value: installation.isDownloading)
 		.animation(stateAnimation, value: primaryActionIdentity)
-		.animation(stateAnimation, value: model.communication.shouldShowLauncherUpdateButton)
-		.animation(stateAnimation, value: model.lifecycle.failure?.id)
+		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
+		.animation(stateAnimation, value: lifecycle.failure?.id)
 	}
 
 	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill
@@ -90,35 +103,34 @@ struct LauncherHUDView: View {
 				HStack(alignment: .bottom, spacing: 8) {
 					if hasMusicPill {
 						MusicHUDPill(
-							settings: model.settings,
-							gameSession: model.gameSession,
-							musicTitle: model.currentMusicTitle,
+							settings: settings,
+							musicTitle: musicController.currentMusicTitle,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							openCurrentMusicURL: model.openCurrentMusicURL,
+							openCurrentMusicURL: musicController.openCurrentMusicURL,
 							controller: musicController
 						)
 						.transition(hudPillTransition)
 					}
 					if hasVersionPill {
 						VersionHUDPill(
-							lifecycle: model.lifecycle,
-							installation: model.installation,
-							gameSession: model.gameSession,
+							lifecycle: lifecycle,
+							installation: installation,
+							gameSession: gameSession,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							checkGameUpdates: model.checkGameUpdates
+							checkGameUpdates: checkGameUpdates
 						)
 						.transition(hudPillTransition)
 					}
 					if hasStatusPill {
 						StatusHUDPill(
-							settings: model.settings,
-							installation: model.installation,
-							canSwitchRegion: model.refreshController.canSwitchRegion,
+							settings: settings,
+							installation: installation,
+							canSwitchRegion: canSwitchRegion,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							selectRegion: { model.selectRegion($0) }
+							selectRegion: selectRegion
 						)
 						.transition(hudPillTransition)
 					}
@@ -133,32 +145,32 @@ struct LauncherHUDView: View {
 	}
 
 	private var hasMusicPill: Bool {
-		model.settings.showsPlayingMusic && model.currentMusicTitle != nil
+		settings.showsPlayingMusic && musicController.currentMusicTitle != nil
 	}
 
 	private var hasVersionPill: Bool {
-		model.settings.showsGameVersion && versionText != "—"
+		settings.showsGameVersion && versionText != "—"
 	}
 
 	private var hasStatusPill: Bool {
-		model.settings.resetCountdownText != nil
-			|| model.installation.installedRegions.count > 1
-			|| model.installation.region != .global
+		settings.resetCountdownText != nil
+			|| installation.installedRegions.count >= 2
+			|| installation.region != .global
 	}
 
 	private var primaryActionIdentity: String {
-		if model.gameSession.isGameActive { return "stop" }
-		if model.installation.isDownloading { return "pause" }
-		if !model.installation.isInstalled {
-			return model.installation.hasPartialDownload ? "resume" : "install"
+		if gameSession.isGameActive { return "stop" }
+		if installation.isDownloading { return "pause" }
+		if !installation.isInstalled {
+			return installation.hasPartialDownload ? "resume" : "install"
 		}
-		if model.installation.isGameUpdateAvailable { return "update" }
+		if installation.isGameUpdateAvailable { return "update" }
 		return "play"
 	}
 
 	private var versionText: String {
-		model.installation.installedVersion
-			?? model.installation.configuration?.gameLatestVersion
+		installation.installedVersion
+			?? installation.configuration?.gameLatestVersion
 			?? "—"
 	}
 

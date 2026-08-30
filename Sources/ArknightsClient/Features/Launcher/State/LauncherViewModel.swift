@@ -27,8 +27,9 @@ final class LauncherViewModel {
 		let api: any LauncherAPIProviding
 	#endif
 
-	var currentMusicTitle: String?
-	var currentMusicVideoID: String?
+	#if DEBUG
+		var developerAccessibilityMusicTitle: String?
+	#endif
 	@ObservationIgnored private var startupTask: Task<Void, Never>?
 	#if DEBUG
 		var developerScenario: DeveloperScenario?
@@ -179,7 +180,6 @@ final class LauncherViewModel {
 			customization?.hasCustomGameIcon == true ? paths.customGameIcon : nil
 		}
 
-		customization.restoreInitialArtwork(for: installation.region)
 		settings.start()
 		customization.updateThemeColor()
 
@@ -203,6 +203,7 @@ final class LauncherViewModel {
 		let launchAfterInstall = arguments.contains("--install-and-launch")
 		let launchOnStart = arguments.contains("--launch")
 		startupTask = Task {
+			await customization.restoreInitialArtwork(for: installation.region)
 			_ = await customization.loadCustomAppIcon()
 			_ = await intelTranslation.refreshAvailability()
 			let refreshTask = refreshController.startRefresh()

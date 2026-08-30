@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { SiteRoute } from '$lib/content/types.js';
 
-	let { route }: { route: string } = $props();
+	let { route }: { route: SiteRoute } = $props();
 
 	onMount(() => {
 		let cancelled = false;
 		let sequence = 0;
+		let requestedGeneration = 0;
+		let renderQueue = Promise.resolve();
 		const sources = new Map<
 			HTMLElement,
 			{ source: string; fallback: string }
@@ -43,7 +46,7 @@
 			button?.focus();
 		}
 
-		async function renderDiagrams() {
+		async function renderDiagrams(generation: number) {
 			const blocks = [
 				...document.querySelectorAll<HTMLElement>(
 					'.mermaid-shell[data-mermaid]'
@@ -52,7 +55,7 @@
 			if (!blocks.length) return;
 
 			const { default: mermaid } = await import('mermaid');
-			if (cancelled) return;
+			if (cancelled || generation !== requestedGeneration) return;
 			const dark = document.documentElement.classList.contains('dark');
 			for (const block of blocks)
 				block.classList.remove('diagram-expanded');
@@ -100,7 +103,7 @@
 				try {
 					const id = `diagram-${sequence++}-${index}-${route.replace(/[^a-z0-9]/gi, '-')}`;
 					const result = await mermaid.render(id, saved.source);
-					if (cancelled) return;
+					if (cancelled || generation !== requestedGeneration) return;
 					block.innerHTML = `<button class="diagram-rendered" type="button" aria-expanded="false" aria-label="Expand diagram">${result.svg}<span class="diagram-hint" aria-hidden="true">Expand</span></button>`;
 					result.bindFunctions?.(block);
 					delete block.dataset.diagramError;
@@ -111,14 +114,21 @@
 			}
 		}
 
-		const observer = new MutationObserver(() => void renderDiagrams());
+		function requestRender() {
+			const generation = ++requestedGeneration;
+			renderQueue = renderQueue
+				.then(() => renderDiagrams(generation))
+				.catch(() => undefined);
+		}
+
+		const observer = new MutationObserver(requestRender);
 		observer.observe(document.documentElement, {
 			attributes: true,
 			attributeFilter: ['class']
 		});
 		document.addEventListener('click', toggleDiagram);
 		document.addEventListener('keydown', closeDiagram);
-		void renderDiagrams();
+		requestRender();
 
 		return () => {
 			cancelled = true;

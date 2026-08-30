@@ -44,6 +44,7 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(environment["LANG"] == "en_US.UTF-8")
 	#expect(environment["SSH_AUTH_SOCK"] == nil)
 	#expect(environment["AWS_SECRET_ACCESS_KEY"] == nil)
+	#expect(environment["PATH"] == "/runtime/bin:/usr/bin:/bin")
 }
 
 @Test
@@ -77,6 +78,33 @@ func runtimeProvidesOnlyPrivateUnixUserDirectoriesToWineboot() throws {
 	#expect(configuration.contains("XDG_DOWNLOAD_DIR=\"$HOME/Downloads\""))
 	for name in WineRuntime.isolatedUserDirectoryNames {
 		#expect(fileManager.fileExists(atPath: root.appending(path: "home/\(name)").path))
+	}
+}
+
+@Test(arguments: ["oversized", "malformed"])
+func runtimeRejectsInvalidUserDirectoryConfiguration(_ kind: String) throws {
+	let fileManager = FileManager.default
+	let root = fileManager.temporaryDirectory.appending(
+		path: "wine-environment-\(kind)-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: root) }
+	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
+	try fileManager.createDirectory(
+		at: configurationURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+	let data =
+		kind == "oversized"
+		? Data(repeating: 0x41, count: AppConstants.Game.userDirectoryConfigurationMaximumBytes + 1)
+		: Data([0xC3, 0x28])
+	try data.write(to: configurationURL)
+	if kind == "oversized" {
+		#expect(throws: BoundedFileReadError.self) {
+			try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+		}
+	} else {
+		#expect(throws: Error.self) {
+			try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+		}
 	}
 }
 
@@ -174,7 +202,7 @@ func hasPendingMigrationReflectsSavedStateForTheCurrentRevision() throws {
 		compatibilityManager: GameCompatibilityManager()
 	)
 
-	#expect(runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
+	#expect(try runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
 
 	try RuntimeMigrationStore(fileManager: fileManager).save(
 		RuntimeMigrationState(
@@ -182,7 +210,7 @@ func hasPendingMigrationReflectsSavedStateForTheCurrentRevision() throws {
 		to: fixture.prefix
 	)
 
-	#expect(!runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
+	#expect(try !runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
 }
 
 @Test

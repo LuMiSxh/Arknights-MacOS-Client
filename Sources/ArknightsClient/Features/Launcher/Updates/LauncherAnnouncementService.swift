@@ -59,10 +59,19 @@ struct LauncherAnnouncementService: Sendable {
 		request.cachePolicy = .reloadRevalidatingCacheData
 		request.setValue("application/vnd.github.raw+json", forHTTPHeaderField: "Accept")
 		request.setValue("ArknightsClient", forHTTPHeaderField: "User-Agent")
-		let (data, response) = try await loader.data(
-			for: request,
-			maximumBytes: AppConstants.Network.announcementFeedMaximumBytes
-		)
+		let data: Data
+		let response: HTTPURLResponse
+		do {
+			(data, response) = try await loader.data(
+				for: request,
+				maximumBytes: AppConstants.Network.announcementFeedMaximumBytes
+			)
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch let error as HTTPTransportError {
+			if Task.isCancelled { throw CancellationError() }
+			throw Self.mapTransportError(error)
+		}
 		if response.statusCode == 404 { return [] }
 		guard response.statusCode == 200 else {
 			throw LauncherError.invalidResponse
@@ -75,5 +84,14 @@ struct LauncherAnnouncementService: Sendable {
 			throw LauncherError.invalidResponse
 		}
 		return feed.announcements
+	}
+
+	private static func mapTransportError(_ error: HTTPTransportError) -> LauncherError {
+		switch error {
+		case .responseTooLarge(let url, let maximumBytes):
+			.remoteContentTooLarge(url, maximumBytes: maximumBytes)
+		case .invalidResponse, .redirectRejected:
+			.invalidResponse
+		}
 	}
 }

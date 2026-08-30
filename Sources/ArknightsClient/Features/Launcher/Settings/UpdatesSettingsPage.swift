@@ -23,7 +23,7 @@ struct UpdatesSettingsPage: View {
 				systemImage: "arrow.trianglehead.2.clockwise"
 			) {
 				UpdateSettingsRow(
-					title: "Launcher",
+					title: L10n.string(SettingsStrings.launcher),
 					status: launcherStatusText,
 					isEnabled: $settings.automaticallyChecksLauncherUpdates,
 					isChecking: communication.isCheckingLauncherUpdates,
@@ -34,11 +34,11 @@ struct UpdatesSettingsPage: View {
 				SettingsHairline()
 				UpdateSettingsRow(
 					title: "Arknights",
-					status: installation.isGameUpdateAvailable
-						? L10n.string(SettingsStrings.updateAvailable) : versionText,
+					status: gameStatusText,
 					isEnabled: $settings.automaticallyChecksGameUpdates,
-					isChecking: installation.isDownloading,
-					isDisabled: !lifecycle.canBeginExclusiveActivity,
+					isChecking: lifecycle.refresh.isChecking,
+					isDisabled: lifecycle.refresh.isChecking
+						|| !lifecycle.canBeginExclusiveActivity,
 					accentColor: accentColor,
 					check: checkGameUpdates
 				)
@@ -62,7 +62,9 @@ struct UpdatesSettingsPage: View {
 	}
 
 	private var launcherStatusText: String {
-		if communication.isCheckingLauncherUpdates { return L10n.string(SettingsStrings.checking) }
+		if communication.isCheckingLauncherUpdates {
+			return L10n.string(SettingsStrings.checking)
+		}
 		if communication.launcherUpdateVersion != nil {
 			return L10n.string(SettingsStrings.updateAvailable)
 		}
@@ -71,5 +73,15 @@ struct UpdatesSettingsPage: View {
 
 	private var versionText: String {
 		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
+	}
+
+	private var gameStatusText: String {
+		if lifecycle.refresh.isChecking {
+			return L10n.string(SettingsStrings.checking)
+		}
+		if installation.isGameUpdateAvailable {
+			return L10n.string(SettingsStrings.updateAvailable)
+		}
+		return versionText
 	}
 }

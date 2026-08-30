@@ -9,7 +9,7 @@ import argparse
 import tarfile
 from pathlib import Path, PurePosixPath
 
-from lib.common import fail, run_main
+from lib.common import fail, remove_path, run_main
 
 
 def stays_within_root(path: PurePosixPath) -> bool:
@@ -70,7 +70,11 @@ def extract(archive: Path, destination: Path) -> Path:
             fail("runtime archive must contain exactly one top-level directory")
 
         destination.mkdir()
-        contents.extractall(destination, members=members, filter="data")
+        try:
+            contents.extractall(destination, members=members, filter="data")
+        except BaseException:
+            remove_path(destination)
+            raise
 
     runtime_root = destination / next(iter(top_levels))
     if not runtime_root.is_dir():

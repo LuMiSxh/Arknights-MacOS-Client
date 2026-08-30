@@ -80,7 +80,11 @@ cd web
 BASE_PATH=/Arknights-MacOS-Client pnpm build
 ```
 
-That build reads `docs/` and `CHANGELOG.md` at prerender time and validates frontmatter, routes, local links, heading anchors, error-code uniqueness, and Mermaid rendering hooks. A documentation-only edit does not trigger Pages automatically. Pages is built from `main` alongside a manually triggered release or through **Actions → Publish website → Run workflow**, defined in `.github/workflows/pages.yml`.
+That build reads `docs/` and `CHANGELOG.md` at prerender time and fails unless frontmatter, routes,
+links, heading anchors, canonical/social URLs, navigation visibility, accessibility metadata, and
+deployment-base paths are valid. A documentation-only edit does not trigger Pages automatically.
+Pages is built from `main` alongside a manually triggered release or through **Actions → Publish
+website → Run workflow**, defined in `.github/workflows/pages.yml`.
 
 > [!IMPORTANT]
 > Run the manual Pages workflow from `main`. Other branches fail before deployment, and documentation changes never dispatch it automatically.

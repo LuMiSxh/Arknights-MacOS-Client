@@ -3,9 +3,8 @@
 import Darwin
 import Foundation
 
-/// Downloads a region's game manifest against the local install, resuming partial `.part`
-/// files and reusing unchanged files by checksum, so both a fresh install and a repair run
-/// through the same path.
+/// Installs or repairs a region from its manifest, resuming partial downloads and reusing
+/// unchanged files by checksum.
 struct GameInstaller: Sendable {
 	typealias ProgressHandler = @Sendable (DownloadProgress) async -> Void
 
@@ -36,9 +35,12 @@ struct GameInstaller: Sendable {
 		verifyAllExistingFiles: Bool = false,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
-		let (manifest, cdn) = try await (
-			api.manifest(for: configuration, region: region), api.cdnConfiguration(region: region)
-		)
+		let (manifest, cdn) = try await Self.fetchRemoteResources {
+			try await (
+				api.manifest(for: configuration, region: region),
+				api.cdnConfiguration(region: region)
+			)
+		}
 		try validateManifest(manifest, inside: installDirectory)
 		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
 		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
@@ -50,7 +52,6 @@ struct GameInstaller: Sendable {
 			)
 		}
 		try compatibilityManager.restoreForUpdate(in: installDirectory)
-
 		let previousState: InstalledState?
 		do {
 			previousState = try loadState(from: installDirectory)
@@ -68,13 +69,13 @@ struct GameInstaller: Sendable {
 			try assertNoSymbolicLinks(from: installDirectory, through: destination)
 			return try Self.needsDownload(
 				item,
-				destinationSize: fileSize(at: destination),
+				destinationSize: try fileSize(at: destination),
 				previousFile: previousFiles?[item.path],
 				verifyAllExistingFiles: verifyAllExistingFiles,
 				checksum: { try CRC64.checksum(of: destination) }
 			)
 		}
-		let downloadedBytes = pendingFiles.reduce(Int64(0)) { $0 + $1.byteCount }
+		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)
 		await log?.debug(
 			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
 				+ "(\(downloadedBytes) bytes); repair=\(verifyAllExistingFiles)"
@@ -85,7 +86,7 @@ struct GameInstaller: Sendable {
 			isIncompleteInstallation: previousFiles == nil
 		) { item in
 			let destination = try destinationURL(for: item, inside: installDirectory)
-			return fileSize(at: destination.appendingPathExtension("part")) ?? 0
+			return try fileSize(at: destination.appendingPathExtension("part")) ?? 0
 		}
 		let counter = ProgressCounter(
 			totalBytes: progressBaseline.totalBytes,
@@ -93,7 +94,6 @@ struct GameInstaller: Sendable {
 			downloadedBytes: progressBaseline.downloadedBytes,
 			completedFiles: progressBaseline.completedFiles
 		)
-
 		if pendingFiles.isEmpty {
 			try Task.checkCancellation()
 			try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
@@ -102,7 +102,6 @@ struct GameInstaller: Sendable {
 				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
 		}
 		await progress(await counter.current(file: pendingFiles[0].path))
-
 		try await withThrowingTaskGroup(of: Int64.self) { group in
 			var nextIndex = 0
 			let initialCount = min(concurrentDownloads, pendingFiles.count)
@@ -174,7 +173,7 @@ struct GameInstaller: Sendable {
 		try assertNoSymbolicLinks(from: installDirectory, through: partial)
 		try assertSafeExistingPartialFile(at: partial)
 
-		var existingBytes = fileSize(at: partial) ?? 0
+		var existingBytes = try fileSize(at: partial) ?? 0
 		if existingBytes > item.byteCount {
 			try fileManager.removeItem(at: partial)
 			existingBytes = 0
@@ -319,6 +318,10 @@ struct GameInstaller: Sendable {
 		} catch {
 			progressMonitor.cancel()
 			await progressMonitor.value
+			if Task.isCancelled { throw CancellationError() }
+			if let transportError = error as? HTTPTransportError {
+				throw Self.launcherError(for: transportError)
+			}
 			throw error
 		}
 		progressMonitor.cancel()
@@ -327,7 +330,6 @@ struct GameInstaller: Sendable {
 		try handle.synchronize()
 		try handle.close()
 		handleIsClosed = true
-
 		try Task.checkCancellation()
 		try await finishDownload(
 			item,
@@ -344,5 +346,4 @@ struct GameInstaller: Sendable {
 		}
 		return newlyDownloaded
 	}
-
 }

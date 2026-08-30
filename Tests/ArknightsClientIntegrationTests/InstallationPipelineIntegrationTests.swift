@@ -124,7 +124,7 @@ struct InstallationPipelineIntegrationTests {
 		)
 		#expect(secondResult.downloadedFiles == 0)
 		#expect(secondResult.downloadedBytes == 0)
-		model.installation.updateInstalledState()
+		await model.installation.updateInstalledState().value
 		#expect(
 			model.installation.isInstalled,
 			"The persisted installation must be discoverable after refresh"

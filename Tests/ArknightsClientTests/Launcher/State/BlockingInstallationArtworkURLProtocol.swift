@@ -7,6 +7,7 @@ final class BlockingInstallationArtworkURLProtocol: URLProtocol, @unchecked Send
 		base64Encoded:
 			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
 	)!
+	private static let lock = NSLock()
 	nonisolated(unsafe) static var artworkRequestStarted = false
 	nonisolated(unsafe) static var artworkGate = DispatchSemaphore(value: 0)
 
@@ -15,8 +16,11 @@ final class BlockingInstallationArtworkURLProtocol: URLProtocol, @unchecked Send
 
 	override func startLoading() {
 		if request.url?.host == "example.com" {
-			Self.artworkRequestStarted = true
-			Self.artworkGate.wait()
+			let gate = Self.lock.withLock {
+				Self.artworkRequestStarted = true
+				return Self.artworkGate
+			}
+			gate.wait()
 		}
 		let response = HTTPURLResponse(
 			url: request.url!,
@@ -32,11 +36,18 @@ final class BlockingInstallationArtworkURLProtocol: URLProtocol, @unchecked Send
 	override func stopLoading() {}
 
 	static func releaseArtwork() {
-		artworkGate.signal()
+		lock.withLock { artworkGate.signal() }
 	}
 
 	static func reset() {
-		artworkRequestStarted = false
-		artworkGate = DispatchSemaphore(value: 0)
+		let gate = lock.withLock {
+			artworkRequestStarted = false
+			return artworkGate
+		}
+		while gate.wait(timeout: .now()) == .success {}
+	}
+
+	static var isArtworkRequestStarted: Bool {
+		lock.withLock { artworkRequestStarted }
 	}
 }

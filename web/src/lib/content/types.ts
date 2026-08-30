@@ -1,4 +1,5 @@
 export type ContentAudience = 'all' | 'developers' | 'users';
+export type SiteRoute = `/${string}`;
 
 export interface DocumentMetadata {
 	title: string;
@@ -20,7 +21,7 @@ export interface Heading {
 
 export interface ContentSummary {
 	kind: 'document' | 'directory';
-	route: string;
+	route: SiteRoute;
 	title: string;
 	description: string;
 	order: number;
@@ -33,7 +34,6 @@ export interface ContentDocument extends ContentSummary {
 	kind: 'document';
 	html: string;
 	headings: Heading[];
-	source: string;
 	toc: boolean;
 }
 
@@ -42,7 +42,6 @@ export interface ContentDirectory extends ContentSummary {
 	html: string;
 	headings: Heading[];
 	children: ContentSummary[];
-	introSource?: string;
 	toc: boolean;
 }
 
@@ -55,9 +54,7 @@ export interface ContentNeighbors {
 
 export interface ContentIndex {
 	root: ContentDirectory;
-	documents: ContentDocument[];
 	directories: ContentDirectory[];
 	byRoute: Map<string, ContentNode>;
-	bySource: Map<string, ContentDocument>;
 	changelog: ContentDocument;
 }

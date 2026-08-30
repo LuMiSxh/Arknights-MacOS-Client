@@ -2,83 +2,62 @@
 
 ## Scope
 
-- Build only for Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs through `AdaptiveGlass.swift` fallbacks.
-- Support only Yostar's official Global, Japan, and Korea PC clients. Do not add CN behavior; its Hypergryph infrastructure and Tencent ACE anti-cheat are incompatible.
-- Keep source code, documentation, commits, tests, localization keys, and translator comments in English. Maintain reviewed English and German UI copy through the String Catalogs.
+- Target Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs through `AdaptiveGlass.swift` fallbacks.
+- Support only Yostar's official Global, Japan, and Korea PC clients; never add CN behavior.
+- Keep source, docs, tests, localization keys, translator comments, and commits in English. Ship complete reviewed English and German UI copy.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
-- Keep the static SvelteKit website in `web/`; follow `docs/development/README.md#documentation-website` and do not add Vitest.
-- Do not commit game/runtime binaries, downloaded artwork, or files from `dist/`. Commit the tracked shipping icon assets only when regenerated with `just icon`.
+- Keep the static SvelteKit site in `web/`; follow `docs/development/README.md#documentation-website` and do not add Vitest.
+- Never commit game/runtime binaries, downloaded artwork, or `dist/`; regenerate tracked shipping icons only with `just icon`.
 
 ## Commands
 
-| Task                     | Command                    |
-| ------------------------ | -------------------------- |
-| Source checks            | `just check`               |
-| Integration tests        | `just integration`         |
-| Live service contracts   | `just live-contracts`      |
-| Runtime source monitor   | `just runtime-monitor`     |
-| Format sources           | `just format`              |
-| Regenerate localizations | `just format localization` |
-| Full CI                  | `just ci`                  |
-| Website checks           | `just check web`           |
-| Format website           | `just format web`          |
-| Website dev server       | `just dev web`             |
-| UI preview               | `just preview`             |
-| App bundle               | `just app`                 |
-| Dev runtime              | `just runtime`             |
-| App + runtime            | `just dev`                 |
-| App + runtime, run       | `just dev app run`         |
-| DMG + runtime            | `just dev dmg`             |
-| App icon                 | `just icon`                |
+| Task | Command |
+| --- | --- |
+| Focused native checks | `just check` |
+| Native CI | `just ci` |
+| Integration tests | `just integration` |
+| Website checks | `just check web` |
+| Production website | `cd web && BASE_PATH=/Arknights-MacOS-Client pnpm build` |
+| Other tasks | `just --list` |
 
 ## Architecture and Swift
 
-- Organize production code by feature. Keep app composition in `Application`, cross-feature primitives in `Shared`, and feature-independent I/O helpers in `Infrastructure`.
-- Keep views, state/actions, models, and external work together inside their owning feature; do not recreate top-level technical layer folders.
-- Keep components feature-local by default. Promote them to `Shared/UI/Components` only when multiple features use the same presentation contract.
-- Consolidate identical chrome and controls; do not merge controls that only look similar but differ in semantics, spacing, accessibility, or state.
-- Keep handwritten Swift files below 350 lines. Split by cohesive responsibility, not merely into extensions that preserve the same oversized dependency surface. Exceed the limit only for declarations Swift cannot move into an extension, such as an `@Observable` type's stored properties; flag that exception instead of forcing an artificial split.
-- Use tabs with width four in Swift and follow `.swift-format`.
-- Keep UI state on `@MainActor`; move long synchronous network, hashing, extraction, and file work off it.
-- Use Swift 5.9+ `@Observable`. Keep the root launcher model as composition state, while feature controllers use narrow dependencies rather than implicit singletons or the whole root model.
-- Treat installation as exclusive; preserve resumable `.part` files and validate every manifest path before writing.
-- Keep every region's installation/state independent while sharing one Wine prefix whose `G:` drive is repointed on launch.
-- Define persisted locations only through `AppPaths`; preserve existing paths, keys, and serialized formats unless migration is explicitly required.
-- Follow `docs/development/design.md`; use the existing shared action/control families instead of per-call styling.
-- Follow `docs/development/localization.md`; edit only the String Catalog sources, never generated localization symbols.
-- Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add concise DocC for public APIs and complex domain models.
-- Centralize fixed keys, limits, retries, and timeouts in `AppConstants.swift`; avoid silent `try?` for filesystem, process, and network work.
-- Test behavior according to regression impact. Preserve installer safety, persistence, parsing, migration, runtime isolation, and concurrency coverage; do not require tests for file moves, view composition, trivial accessors, or wrappers.
-- Share test fixtures and parameterize equivalent cases. Apply the 350-line limit to test files too.
-- Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python files.
+- Use Swift 6.2. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
+- Never import feature-owned types from `Shared` or `Infrastructure`; map infrastructure errors at the owning feature boundary.
+- Keep components feature-local unless multiple features share the same presentation contract.
+- Keep handwritten production Swift and Swift tests below 350 lines. Generated localization symbols, native C/Objective-C shims, and scripts are exempt.
+- Use tabs with width four and follow `.swift-format`.
+- Keep observable/UI/AppKit state on `@MainActor`; move synchronous network, hashing, extraction, and file work off it.
+- Use `@Observable`; keep `LauncherViewModel` at composition and inject narrow dependencies into features and views.
+- After suspension, revalidate request/session/generation ownership before publishing UI state or committing identity-sensitive file/process state.
+- Increment a cache/request epoch before clearing or replacing state so suspended work cannot republish stale results.
+- Keep the shared Wine prefix owned until prefix-wide shutdown completes; direct game-process exit alone never means Idle.
+- Treat installation as exclusive, preserve resumable `.part` files, and validate every manifest path before writing.
+- Define persisted locations through `AppPaths`; preserve paths, keys, and serialized formats unless a migration is explicit.
+- Centralize application-owned fixed keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.
+- Put every user-facing string in the owning String Catalog with a namespaced lower-camel key, translator comment, and complete English/German values; never edit generated symbols.
+- Follow `docs/development/design.md`; reuse controls only when semantics, spacing, accessibility, and state match.
+- Avoid silent `try?` for filesystem, process, and network work. Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
+- Test behavior by regression impact; share fixtures and parameterize equivalent cases without deleting path, persistence, migration, isolation, cancellation, or concurrency contracts.
 
 ## Verification and Safety
 
-- Run focused checks while iterating and `just ci` before completion.
-- Keep unit and integration tests fixture-backed and offline; follow `docs/development/testing.md` for level ownership and live-contract gates.
-- For UI refactors, compare the affected isolated developer scenarios; do not launch previews or apps unless the user authorizes it.
-- Unless explicitly requested, do not install, launch, download, uninstall, or alter the user's local game or runtime.
-- Regenerate `Resources/AppIcon.icns` and `Resources/Assets.car` only with `just icon`.
-- Run scripts from the root `pyproject.toml` and `uv.lock` with `uv run --locked`; keep packaging-only dependencies in the `packaging` group, reuse `scripts/lib`, and cover changed behavior in `scripts/tests/test_*.py`.
-- Derive script product and package metadata through `scripts/lib/project_config.py`; keep runtime layout in `runtime.json` instead of duplicating either contract in Python.
+- Run focused checks while iterating, `just check web` plus the production build for website changes, and `just ci` before completion.
+- Keep unit/integration tests offline and fixture-backed; live contracts run only through `just live-contracts`.
+- Do not launch previews or the app for UI work unless the user authorizes it.
+- Do not install, launch, download, uninstall, or alter the user's game/runtime unless explicitly requested.
+- Run Python through the root `pyproject.toml`/`uv.lock` with `uv run --locked`; reuse `scripts/lib` and test changed behavior.
+- Derive product/package metadata through `scripts/lib/project_config.py` and runtime layout through `runtime.json`.
 - Record user-visible changes in `CHANGELOG.md`; follow `docs/development/releases-and-updates.md` for releases.
-
-## Commit Rules
-
-- Follow the existing commit style. Do not mention agent/model vendors; push only with explicit user consent.
+- Follow existing commit style, never mention agent/model vendors, and push only with explicit consent.
 
 ## References
 
-| Need                    | File                                       |
-| ----------------------- | ------------------------------------------ |
-| Setup and contribution  | `README.md`                                |
-| Architecture            | `docs/development/architecture/README.md`  |
-| Testing                 | `docs/development/testing.md`              |
-| Interface               | `docs/development/design.md`               |
-| Localization            | `docs/development/localization.md`         |
-| Storage                 | `docs/help/storage.md`                     |
-| Runtime contract        | `docs/help/runtime-compatibility.md`       |
-| Troubleshooting         | `docs/help/troubleshooting.md`             |
-| Error recovery          | `docs/development/error-recovery.md`       |
-| Releases                | `docs/development/releases-and-updates.md` |
-| Third-party obligations | `docs/legal/third-party-notices.md`        |
+| Need | File |
+| --- | --- |
+| Architecture | `docs/development/architecture/README.md` |
+| Testing | `docs/development/testing.md` |
+| Localization | `docs/development/localization.md` |
+| Storage/runtime | `docs/help/storage.md`, `docs/help/runtime-compatibility.md` |
+| Recovery/releases | `docs/development/error-recovery.md`, `docs/development/releases-and-updates.md` |
+| Legal | `docs/legal/third-party-notices.md` |

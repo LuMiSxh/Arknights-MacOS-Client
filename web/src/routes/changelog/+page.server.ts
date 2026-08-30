@@ -1,4 +1,4 @@
-import { getContent } from '$lib/content/loader.js';
+import { getContent } from '$lib/content/loader/index.js';
 
 export const prerender = true;
 

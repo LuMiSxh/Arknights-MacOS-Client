@@ -11,22 +11,20 @@ actor PresetCatalogService {
 	let cacheDirectory: URL
 	let cachedAvatarsFile: URL
 	let cachedWallpapersFile: URL
-	let cacheGeneration: String
 	let loader: BoundedHTTPDataLoader
 	let log: LauncherLog
 	var memoryCachedAvatars: [PresetAvatar]?
 	var memoryCachedWallpapers: [PresetWallpaper]?
 	var hasEnforcedImageCacheLimit = false
+	var cacheEpoch: UInt64 = 0
 
 	init(
 		cacheDirectory: URL,
 		session: URLSession = .shared,
-		log: LauncherLog,
-		cacheGeneration: String = IssueReportURL.appVersion
+		log: LauncherLog
 	) {
 		self.log = log
 		self.cacheDirectory = cacheDirectory
-		self.cacheGeneration = cacheGeneration
 		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index_v1.json")
 		cachedWallpapersFile = cacheDirectory.appending(path: "wallpapers_index_v1.json")
 		loader = BoundedHTTPDataLoader(
@@ -35,7 +33,10 @@ actor PresetCatalogService {
 		)
 
 		do {
-			try Self.prepareCacheDirectory(cacheDirectory, generation: cacheGeneration)
+			try FileManager.default.createDirectory(
+				at: cacheDirectory,
+				withIntermediateDirectories: true
+			)
 		} catch {
 			Task {
 				await log.error(
@@ -47,6 +48,7 @@ actor PresetCatalogService {
 
 	func fetchAvatars() async -> [PresetAvatar] {
 		await enforceImageCacheLimitIfNeeded()
+		let epoch = cacheEpoch
 		if let memoryCachedAvatars, !memoryCachedAvatars.isEmpty {
 			return memoryCachedAvatars
 		}
@@ -55,6 +57,7 @@ actor PresetCatalogService {
 			from: cachedAvatarsFile,
 			maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
 		) {
+			guard cacheEpoch == epoch else { return fallbackCuratedAvatars }
 			let validated = cached.filter(Self.isValidAvatar)
 			if !validated.isEmpty {
 				memoryCachedAvatars = validated
@@ -64,11 +67,13 @@ actor PresetCatalogService {
 		}
 
 		let remote = await refreshAvatarsFromRemote()
+		guard cacheEpoch == epoch else { return fallbackCuratedAvatars }
 		return !remote.isEmpty ? remote : fallbackCuratedAvatars
 	}
 
 	func fetchWallpapers() async -> [PresetWallpaper] {
 		await enforceImageCacheLimitIfNeeded()
+		let epoch = cacheEpoch
 		if let memoryCachedWallpapers, !memoryCachedWallpapers.isEmpty {
 			return memoryCachedWallpapers
 		}
@@ -77,6 +82,7 @@ actor PresetCatalogService {
 			from: cachedWallpapersFile,
 			maximumBytes: AppConstants.Presets.wallpaperCatalogMaximumBytes
 		) {
+			guard cacheEpoch == epoch else { return fallbackWallpapers }
 			let validated = cached.filter(Self.isValidWallpaper)
 			if !validated.isEmpty {
 				memoryCachedWallpapers = validated
@@ -86,10 +92,12 @@ actor PresetCatalogService {
 		}
 
 		let remote = await refreshWallpapersFromRemote()
+		guard cacheEpoch == epoch else { return fallbackWallpapers }
 		return !remote.isEmpty ? remote : fallbackWallpapers
 	}
 
 	func clearCaches() async throws {
+		cacheEpoch &+= 1
 		memoryCachedAvatars = nil
 		memoryCachedWallpapers = nil
 		hasEnforcedImageCacheLimit = true
@@ -97,43 +105,15 @@ actor PresetCatalogService {
 			if FileManager.default.fileExists(atPath: cacheDirectory.path) {
 				try FileManager.default.removeItem(at: cacheDirectory)
 			}
-			try Self.prepareCacheDirectory(cacheDirectory, generation: cacheGeneration)
+			try FileManager.default.createDirectory(
+				at: cacheDirectory,
+				withIntermediateDirectories: true
+			)
 		} catch {
 			await log.error(
 				"Failed to clear preset catalog caches at \(cacheDirectory.path): \(error.localizedDescription)"
 			)
 			throw error
-		}
-	}
-
-	private static func prepareCacheDirectory(_ directory: URL, generation: String) throws {
-		let fileManager = FileManager.default
-		let marker = directory.appending(path: AppConstants.Presets.cacheGenerationFilename)
-		if fileManager.fileExists(atPath: directory.path) {
-			let storedGeneration: String?
-			do {
-				storedGeneration = try String(contentsOf: marker, encoding: .utf8)
-			} catch {
-				storedGeneration = nil
-			}
-			if storedGeneration == generation { return }
-			try fileManager.removeItem(at: directory)
-		}
-		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-		try Data(generation.utf8).write(to: marker, options: .atomic)
-	}
-
-	func cacheSizeText() async -> String {
-		do {
-			let bytes = try await Task.detached(priority: .utility) { [cacheDirectory] in
-				try Self.directorySize(at: cacheDirectory)
-			}.value
-			return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-		} catch {
-			await log.error(
-				"Failed to measure preset cache at \(cacheDirectory.path): \(error.localizedDescription)"
-			)
-			return ByteCountFormatter.string(fromByteCount: 0, countStyle: .file)
 		}
 	}
 
@@ -162,8 +142,10 @@ actor PresetCatalogService {
 	func writeJSONCache<Value: Encodable>(
 		_ value: Value,
 		to url: URL,
-		maximumBytes: Int
+		maximumBytes: Int,
+		epoch: UInt64
 	) async {
+		guard cacheEpoch == epoch else { return }
 		do {
 			let data = try JSONEncoder().encode(value)
 			guard data.count <= maximumBytes else {
@@ -175,26 +157,10 @@ actor PresetCatalogService {
 			)
 			try data.write(to: url, options: .atomic)
 		} catch {
+			guard cacheEpoch == epoch else { return }
 			await log.error(
 				"Failed to write preset index at \(url.path): \(error.localizedDescription)")
 		}
-	}
-
-	private static func directorySize(
-		at url: URL,
-		fileManager: FileManager = .default
-	) throws -> Int64 {
-		guard
-			let enumerator = fileManager.enumerator(
-				at: url,
-				includingPropertiesForKeys: [.fileSizeKey]
-			)
-		else { return 0 }
-		var total: Int64 = 0
-		for case let fileURL as URL in enumerator {
-			total += Int64(try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
-		}
-		return total
 	}
 
 	static func readBoundedFile(at url: URL, maximumBytes: Int) throws -> Data {
@@ -229,6 +195,7 @@ actor PresetCatalogService {
 			.init(
 				id: "crossing",
 				title: "Crossing",
+				fallbackOrdinal: nil,
 				url: URL(
 					string:
 						"https://webusstatic.yo-star.com/web-cms-test/upload/content/2026/08/17/PAMcBwUl.png"
@@ -238,6 +205,7 @@ actor PresetCatalogService {
 			.init(
 				id: "x-460k",
 				title: "X 460k Followers",
+				fallbackOrdinal: nil,
 				url: URL(
 					string:
 						"https://webusstatic.yo-star.com/web-cms-test/upload/content/2026/08/13/SlOn1_p6.png"

@@ -77,7 +77,12 @@ cd web
 BASE_PATH=/Arknights-MacOS-Client pnpm build
 ```
 
-The build discovers Markdown files from `docs/` and `CHANGELOG.md`, so it catches missing frontmatter, duplicate routes or error codes, invalid local links and heading fragments, rejected `index.md` files, and broken prerendered routes. For a UI or Mermaid change, open representative light, dark, desktop, and mobile pages with `just dev web`; check navigation, active table-of-contents state, diagram fallback, and no horizontal overflow.
+The build discovers Markdown files from `docs/` and `CHANGELOG.md`, then checks frontmatter,
+duplicate routes or error codes, links and fragments, exact canonical/social URLs, hidden navigation,
+active-page accessibility metadata, external-link safety, and every prerendered route under the
+deployment base path. For a UI or Mermaid change, open representative light, dark, desktop, and
+mobile pages with `just dev web`; check navigation, active table-of-contents state, diagram fallback,
+and no horizontal overflow.
 
 > [!NOTE]
 > The website has no Vitest requirement. Type checking, Prettier, the static production build, and targeted browser checks are the current validation boundary.

@@ -47,6 +47,13 @@ class PackageMetadata:
     excluded_paths: tuple[Path, ...]
     copy_resource_paths: tuple[Path, ...]
     processed_resource_paths: tuple[Path, ...]
+    exact_dependency_versions: tuple[tuple[str, str], ...]
+
+    def exact_dependency_version(self, identity: str) -> str:
+        versions = dict(self.exact_dependency_versions)
+        if identity not in versions:
+            fail(f"package dependency {identity} must use an exact version")
+        return versions[identity]
 
 
 @dataclass(frozen=True)
@@ -210,7 +217,38 @@ def _package_metadata(dump: Mapping[str, Any]) -> PackageMetadata:
         ),
         copy_resource_paths=copy_resources,
         processed_resource_paths=processed_resources,
+        exact_dependency_versions=_exact_dependency_versions(dump),
     )
+
+
+def _exact_dependency_versions(
+    dump: Mapping[str, Any],
+) -> tuple[tuple[str, str], ...]:
+    versions: list[tuple[str, str]] = []
+    for dependency in _objects(dump, "dependencies"):
+        if "sourceControl" not in dependency:
+            continue
+        source_controls = dependency["sourceControl"]
+        if not isinstance(source_controls, list) or len(source_controls) != 1:
+            fail("source-control dependency metadata must contain one entry")
+        source = source_controls[0]
+        if not isinstance(source, Mapping):
+            fail("source-control dependency metadata must be a dictionary")
+        requirement = _object(source, "requirement")
+        if "exact" not in requirement:
+            continue
+        exact = requirement["exact"]
+        if (
+            not isinstance(exact, list)
+            or len(exact) != 1
+            or not isinstance(exact[0], str)
+            or not exact[0]
+        ):
+            fail("exact package dependency version metadata is invalid")
+        versions.append((_string(source, "identity"), exact[0]))
+    if len({identity for identity, _ in versions}) != len(versions):
+        fail("package contains duplicate exact dependency identities")
+    return tuple(versions)
 
 
 def _validate_agreement(product: ProductMetadata, package: PackageMetadata) -> None:

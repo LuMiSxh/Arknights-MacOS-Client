@@ -18,7 +18,29 @@ export interface ParsedMarkdown {
 
 const FRONTMATTER = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 const ERROR_CODE = /^[A-Z]+$/;
-const AUDIENCES = new Set(['all', 'developers', 'users']);
+const AUDIENCES = new Set<DocumentMetadata['audience']>([
+	'all',
+	'developers',
+	'users'
+]);
+const FRONTMATTER_KEYS = new Set<keyof DocumentMetadata>([
+	'title',
+	'description',
+	'order',
+	'hidden',
+	'draft',
+	'audience',
+	'toc',
+	'code',
+	'domain'
+]);
+
+function isAudience(value: unknown): value is DocumentMetadata['audience'] {
+	return (
+		typeof value === 'string' &&
+		AUDIENCES.has(value as DocumentMetadata['audience'])
+	);
+}
 
 function requiredString(value: unknown, key: string, source: string): string {
 	if (typeof value !== 'string' || value.trim() === '') {
@@ -59,6 +81,15 @@ function optionalNumber(
 	return value;
 }
 
+function optionalString(
+	value: unknown,
+	key: string,
+	source: string
+): string | undefined {
+	if (value === undefined) return undefined;
+	return requiredString(value, key, source);
+}
+
 export function parseFrontmatter(
 	source: string,
 	input: string
@@ -90,28 +121,28 @@ export function parseFrontmatter(
 	}
 
 	const values = parsed as Record<string, unknown>;
+	for (const key of Object.keys(values)) {
+		if (!FRONTMATTER_KEYS.has(key as keyof DocumentMetadata)) {
+			throw new ContentError(source, `unknown frontmatter key: ${key}`);
+		}
+	}
 	const audience = values.audience ?? 'all';
-	if (typeof audience !== 'string' || !AUDIENCES.has(audience)) {
+	if (!isAudience(audience)) {
 		throw new ContentError(
 			source,
 			'frontmatter.audience must be all, developers, or users'
 		);
 	}
 
-	const code = values.code;
-	if (
-		code !== undefined &&
-		(typeof code !== 'string' || !ERROR_CODE.test(code))
-	) {
+	const code = optionalString(values.code, 'code', source);
+	const domain = optionalString(values.domain, 'domain', source);
+	if (code !== undefined && !ERROR_CODE.test(code)) {
 		throw new ContentError(
 			source,
 			'frontmatter.code must be one uppercase English word'
 		);
 	}
-	if (
-		code !== undefined &&
-		(typeof values.domain !== 'string' || values.domain.trim() === '')
-	) {
+	if (code !== undefined && domain === undefined) {
 		throw new ContentError(
 			source,
 			'frontmatter.domain is required for error pages'
@@ -129,12 +160,10 @@ export function parseFrontmatter(
 			order: optionalNumber(values.order, 'order', source, 1000),
 			hidden: optionalBoolean(values.hidden, 'hidden', source, false),
 			draft: optionalBoolean(values.draft, 'draft', source, false),
-			audience: audience as DocumentMetadata['audience'],
+			audience,
 			toc: optionalBoolean(values.toc, 'toc', source, true),
 			...(code === undefined ? {} : { code }),
-			...(values.domain === undefined
-				? {}
-				: { domain: values.domain as string })
+			...(domain === undefined ? {} : { domain })
 		},
 		body: input.slice(match[0].length)
 	};

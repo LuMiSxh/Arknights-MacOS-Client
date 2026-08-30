@@ -3457,24 +3457,6 @@
         }
       }
     },
-    "settings.storage.category.winePrefix": {
-      "comment": "Shared Wine prefix category",
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wine-Prefix"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wine Prefix"
-          }
-        }
-      }
-    },
     "settings.storage.category.winePrefix.detail": {
       "comment": "Shared Wine prefix description; argument is formatted storage size",
       "extractionState": "manual",

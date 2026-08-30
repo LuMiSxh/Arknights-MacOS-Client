@@ -73,12 +73,12 @@ struct LauncherInitialArtworkTests {
 			arguments: []
 		)
 
+		await api.waitForBrandingRequest()
 		let initialArtwork = try #require(model.customization.heroArtwork)
 		#expect(model.customization.activeThemeCacheKey == themeKey)
 		#expect(model.customization.dynamicThemeHue == accent.hue)
 		#expect(model.customization.officialLogo != nil)
 
-		await api.waitForBrandingRequest()
 		await api.resolveBranding(branding)
 		await model.waitForStartup()
 

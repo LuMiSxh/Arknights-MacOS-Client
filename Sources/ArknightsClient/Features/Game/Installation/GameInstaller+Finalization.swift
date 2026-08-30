@@ -15,7 +15,7 @@ extension GameInstaller {
 	) async throws {
 		try assertNoSymbolicLinks(from: installDirectory, through: partial)
 		try assertNoSymbolicLinks(from: installDirectory, through: destination)
-		let actualSize = fileSize(at: partial) ?? 0
+		let actualSize = try fileSize(at: partial) ?? 0
 		guard actualSize == item.byteCount else {
 			throw LauncherError.downloadedSizeMismatch(
 				path: item.path,
@@ -42,12 +42,16 @@ extension GameInstaller {
 		try fileManager.moveItem(at: partial, to: destination)
 	}
 
-	func fileSize(at url: URL) -> Int64? {
-		guard let attributes = try? fileManager.attributesOfItem(atPath: url.path),
-			let number = attributes[.size] as? NSNumber
-		else {
+	func fileSize(at url: URL) throws -> Int64? {
+		do {
+			let attributes = try fileManager.attributesOfItem(atPath: url.path)
+			return (attributes[.size] as? NSNumber)?.int64Value
+		} catch let error as CocoaError
+			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
+		{
+			return nil
+		} catch let error as POSIXError where error.code == .ENOENT {
 			return nil
 		}
-		return number.int64Value
 	}
 }

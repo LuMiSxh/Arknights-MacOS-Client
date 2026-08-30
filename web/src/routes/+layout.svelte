@@ -1,19 +1,23 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
+	import { base, resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { SegmentedControl, theme, type ThemeMode } from 'anasthasia';
 	import '../app.css';
 	import type { LayoutProps } from './$types';
-	import { repositoryUrl } from '$lib/site.js';
-	import appIconUrl from '../../../Resources/AppIcon.png?url';
+	import { normalizeBasePath, repositoryUrl } from '$lib/site.js';
 
 	let { data, children }: LayoutProps = $props();
 
 	const navigation = $derived(data.navigation);
+	const currentPath = $derived(data.pathname);
+	const appIconUrl = resolve('/AppIcon-128.png');
+	const configuredBasePath = normalizeBasePath(
+		typeof process !== 'undefined' && process.env.BASE_PATH
+			? process.env.BASE_PATH
+			: base
+	);
 	let themeMode = $state<ThemeMode>('system');
 	let mobileMenuOpen = $state(false);
-	let mobileMenu = $state<HTMLDetailsElement>();
 	const themeOptions = [
 		{ value: 'light' as const, label: 'Light' },
 		{ value: 'system' as const, label: 'Auto' },
@@ -32,37 +36,39 @@
 	}
 
 	function isCurrent(route: string): boolean {
-		const current = page.url.pathname;
-		const routePath = current.endsWith('/') ? current : `${current}/`;
+		const current = normalizePath(currentPath);
+		const target = routePath(route);
 		return route === '/'
-			? routePath === resolve('/')
-			: routePath.startsWith(resolve(route as `/${string}`));
+			? current === target
+			: current === target || current.startsWith(`${target}/`);
 	}
 
 	function isExact(route: string): boolean {
-		const current = page.url.pathname.replace(/\/$/, '');
-		return current === resolve(route as `/${string}`).replace(/\/$/, '');
+		return normalizePath(currentPath) === routePath(route);
+	}
+
+	function currentValue(route: string): 'page' | 'location' | undefined {
+		if (isExact(route)) return 'page';
+		return isCurrent(route) ? 'location' : undefined;
+	}
+
+	function normalizePath(path: string): string {
+		const trimmed = path
+			.replace(/\/index\.html$/i, '')
+			.replace(/^\/+|\/+$/g, '');
+		return trimmed ? `/${trimmed}` : '/';
+	}
+
+	function routePath(route: string): string {
+		return normalizePath(`${configuredBasePath}${route}`);
 	}
 
 	function closeMobileMenu() {
 		mobileMenuOpen = false;
 	}
-
-	function closeMobileMenuFromOutside(event: MouseEvent) {
-		if (!(event.target instanceof Node)) return;
-		if (mobileMenuOpen && !mobileMenu?.contains(event.target)) {
-			closeMobileMenu();
-		}
-	}
 </script>
 
-<svelte:document onclick={closeMobileMenuFromOutside} />
-
 <svelte:head>
-	<meta
-		name="description"
-		content="Run the official Global, Japan, and Korea Arknights PC clients on Apple Silicon Macs."
-	/>
 	<meta name="color-scheme" content="light dark" />
 	<meta
 		name="theme-color"
@@ -74,7 +80,7 @@
 		media="(prefers-color-scheme: dark)"
 		content="#090b0d"
 	/>
-	<link rel="icon" type="image/png" sizes="512x512" href={appIconUrl} />
+	<link rel="icon" type="image/png" sizes="128x128" href={appIconUrl} />
 	<link rel="apple-touch-icon" href={appIconUrl} />
 </svelte:head>
 
@@ -102,10 +108,7 @@
 		<div class="rail-navigation">
 			<p class="site-rail-label">Navigation</p>
 			<nav class="site-nav" aria-label="Primary">
-				<a
-					href={resolve('/')}
-					aria-current={isCurrent('/') ? 'page' : undefined}>Home</a
-				>
+				<a href={resolve('/')} aria-current={currentValue('/')}>Home</a>
 				{#each navigation as entry (entry.route)}
 					{#if entry.children.length}
 						<details
@@ -119,32 +122,26 @@
 							>
 							<div class="site-nav-children">
 								<a
-									href={resolve(entry.route as `/${string}`)}
-									aria-current={isExact(entry.route)
-										? 'page'
-										: undefined}>Overview</a
+									href={resolve(entry.route)}
+									aria-current={currentValue(entry.route)}
+									>Overview</a
 								>
 								{#each entry.children as child (child.route)}
 									<a
-										href={resolve(
-											child.route as `/${string}`
-										)}
+										href={resolve(child.route)}
 										data-current={isCurrent(child.route)
 											? 'true'
 											: undefined}
-										aria-current={isExact(child.route)
-											? 'page'
-											: undefined}>{child.title}</a
+										aria-current={currentValue(child.route)}
+										>{child.title}</a
 									>
 								{/each}
 							</div>
 						</details>
 					{:else}
 						<a
-							href={resolve(entry.route as `/${string}`)}
-							aria-current={isCurrent(entry.route)
-								? 'page'
-								: undefined}
+							href={resolve(entry.route)}
+							aria-current={currentValue(entry.route)}
 						>
 							<span>{entry.title}</span>
 						</a>
@@ -152,7 +149,7 @@
 				{/each}
 				<a
 					href={resolve('/changelog/')}
-					aria-current={isCurrent('/changelog/') ? 'page' : undefined}
+					aria-current={currentValue('/changelog/')}
 				>
 					Changelog
 				</a>
@@ -175,23 +172,20 @@
 			<img class="site-mark-icon" src={appIconUrl} alt="" />
 			<span>Arknights Client</span>
 		</a>
-		<details bind:this={mobileMenu} bind:open={mobileMenuOpen}>
+		<details bind:open={mobileMenuOpen}>
 			<summary>Menu</summary>
 			<div class="mobile-menu">
 				<nav aria-label="Mobile primary">
 					<a
 						href={resolve('/')}
 						onclick={closeMobileMenu}
-						aria-current={isCurrent('/') ? 'page' : undefined}
-						>Home</a
+						aria-current={currentValue('/')}>Home</a
 					>
 					{#each navigation as entry (entry.route)}
 						<a
-							href={resolve(entry.route as `/${string}`)}
+							href={resolve(entry.route)}
 							onclick={closeMobileMenu}
-							aria-current={isCurrent(entry.route)
-								? 'page'
-								: undefined}
+							aria-current={currentValue(entry.route)}
 						>
 							{entry.title}
 						</a>
@@ -199,9 +193,7 @@
 					<a
 						href={resolve('/changelog/')}
 						onclick={closeMobileMenu}
-						aria-current={isCurrent('/changelog/')
-							? 'page'
-							: undefined}
+						aria-current={currentValue('/changelog/')}
 					>
 						Changelog
 					</a>

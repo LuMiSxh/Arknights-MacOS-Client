@@ -8,6 +8,8 @@ extension LauncherViewModel {
 	}
 
 	func launchFromDock(region: GameRegion) async -> Bool {
+		guard canRequestDockLaunch else { return false }
+		await installation.updateInstalledState().value
 		guard canRequestDockLaunch, installation.isRegionInstalled(region) else { return false }
 		if installation.region != region {
 			guard refreshController.selectRegion(region) else { return false }

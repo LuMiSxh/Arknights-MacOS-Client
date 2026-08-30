@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 import Testing
 
@@ -138,6 +139,51 @@ struct IntelTranslationControllerTests {
 		#expect(!controller.retryRosettaFailure(id: failureID))
 		await installer.waitForInstallations(2)
 		#expect(await installer.count == 2)
+	}
+
+	@Test
+	func translationProcessCancellationWaitsForChildExit() async throws {
+		let clock = ContinuousClock()
+		let started = clock.now
+		let pidFile = FileManager.default.temporaryDirectory.appending(
+			path: "intel-process-\(UUID().uuidString).pid")
+		defer { try? FileManager.default.removeItem(at: pidFile) }
+		let task = Task {
+			try await IntelTranslationProcess.run(
+				executable: URL(filePath: "/bin/sh"),
+				arguments: [
+					"-c", "trap '' TERM; echo $$ > '\(pidFile.path)'; while :; do :; done",
+				])
+		}
+		let deadline = clock.now.advanced(by: .seconds(1))
+		while !FileManager.default.fileExists(atPath: pidFile.path), clock.now < deadline {
+			await Task.yield()
+		}
+		try #require(FileManager.default.fileExists(atPath: pidFile.path))
+		task.cancel()
+		await #expect(throws: CancellationError.self) { _ = try await task.value }
+		#expect(started.duration(to: clock.now) < .seconds(2))
+		let pid = try #require(
+			Int32(
+				try String(contentsOf: pidFile, encoding: .utf8)
+					.trimmingCharacters(in: .whitespacesAndNewlines)
+			)
+		)
+		#expect(Darwin.kill(pid, 0) == -1)
+		#expect(errno == ESRCH)
+	}
+
+	@Test
+	func translationProcessDrainsAndBoundsLargeOutput() async throws {
+		let result = try await IntelTranslationProcess.run(
+			executable: URL(filePath: "/bin/sh"),
+			arguments: [
+				"-c", "yes 0123456789abcdef | head -c 262144; printf 'FINAL-SUFFIX'",
+			])
+		#expect(result.status == 0)
+		#expect(!result.output.isEmpty)
+		#expect(result.output.utf8.count <= AppConstants.IO.processDiagnosticMaximumBytes)
+		#expect(result.output.hasSuffix("FINAL-SUFFIX"))
 	}
 }
 

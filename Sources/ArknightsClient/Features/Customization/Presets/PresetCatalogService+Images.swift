@@ -22,11 +22,13 @@ extension PresetCatalogService {
 
 	func imageData(for url: URL, cacheKey: String) async throws -> Data {
 		await enforceImageCacheLimitIfNeeded()
+		let epoch = cacheEpoch
 		guard Self.isAllowedRemoteAssetURL(url) else {
 			throw LauncherError.invalidRemoteAsset(url)
 		}
 		let cachedFile = cacheFileURL(for: cacheKey)
-		if let data = await cachedImageData(from: cachedFile) {
+		if let data = await cachedImageData(from: cachedFile, epoch: epoch) {
+			guard cacheEpoch == epoch else { throw CancellationError() }
 			return data
 		}
 
@@ -51,18 +53,23 @@ extension PresetCatalogService {
 			for _ in 0..<AppConstants.Presets.imageDownloadAttempts {
 				do {
 					let data = try await fetchImageData(from: candidate)
-					await cacheImageData(data, at: cachedFile)
+					guard cacheEpoch == epoch else { throw CancellationError() }
+					await cacheImageData(data, at: cachedFile, epoch: epoch)
+					guard cacheEpoch == epoch else { throw CancellationError() }
 					return data
 				} catch {
+					guard cacheEpoch == epoch else { throw CancellationError() }
 					if Task.isCancelled { throw CancellationError() }
 					lastError = error
 				}
 			}
 		}
 		let finalError = lastError ?? LauncherError.invalidPresetImage(url)
+		guard cacheEpoch == epoch else { throw CancellationError() }
 		await log.error(
 			"Failed to load preset image from \(url.absoluteString): \(finalError.localizedDescription)"
 		)
+		guard cacheEpoch == epoch else { throw CancellationError() }
 		throw finalError
 	}
 
@@ -100,13 +107,14 @@ extension PresetCatalogService {
 		return data
 	}
 
-	private func cachedImageData(from url: URL) async -> Data? {
+	private func cachedImageData(from url: URL, epoch: UInt64) async -> Data? {
 		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 		do {
 			let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
 			guard attributes[.type] as? FileAttributeType == .typeRegular else {
 				try FileManager.default.removeItem(at: url)
 				await log.error("Removed non-regular preset cache entry at \(url.path)")
+				guard cacheEpoch == epoch else { return nil }
 				return nil
 			}
 			let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
@@ -114,6 +122,7 @@ extension PresetCatalogService {
 				try FileManager.default.removeItem(at: url)
 				await log.error(
 					"Removed oversized preset cache entry at \(url.path) (\(size) bytes)")
+				guard cacheEpoch == epoch else { return nil }
 				return nil
 			}
 			let data = try Self.readBoundedFile(
@@ -135,14 +144,17 @@ extension PresetCatalogService {
 				await log.error(
 					"Failed to remove invalid preset cache entry at \(url.path): \(error.localizedDescription)"
 				)
+				guard cacheEpoch == epoch else { return nil }
 			}
 			await log.error(
 				"Rejected preset cache entry at \(url.path): \(error.localizedDescription)")
+			guard cacheEpoch == epoch else { return nil }
 			return nil
 		}
 	}
 
-	private func cacheImageData(_ data: Data, at url: URL) async {
+	private func cacheImageData(_ data: Data, at url: URL, epoch: UInt64) async {
+		guard cacheEpoch == epoch else { return }
 		do {
 			try FileManager.default.createDirectory(
 				at: cacheDirectory,
@@ -151,8 +163,10 @@ extension PresetCatalogService {
 			try pruneImageCache(incomingBytes: Int64(data.count), preserving: url)
 			try data.write(to: url, options: .atomic)
 		} catch {
+			guard cacheEpoch == epoch else { return }
 			await log.error(
 				"Failed to cache preset image at \(url.path): \(error.localizedDescription)")
+			guard cacheEpoch == epoch else { return }
 		}
 	}
 

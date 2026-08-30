@@ -175,6 +175,7 @@ struct GameInstallerStreamingTests {
 		relativePath: String = "bin/game.dat",
 		protocolClass: URLProtocol.Type = StreamingURLProtocol.self
 	) throws -> InstallerFixture {
+		let baseURL = URL(string: "https://download.test")!
 		let directory = FileManager.default.temporaryDirectory.appending(
 			path: "GameInstallerStreamingTests-\(UUID().uuidString)",
 			directoryHint: .isDirectory
@@ -197,7 +198,6 @@ struct GameInstallerStreamingTests {
 			gameUninstallScript: "uninstall.exe",
 			decompressionSize: "1 MB"
 		)
-		let baseURL = URL(string: "https://download.test/")!
 		let item = ManifestFile(
 			path: relativePath,
 			hash: checksum.decimalString,

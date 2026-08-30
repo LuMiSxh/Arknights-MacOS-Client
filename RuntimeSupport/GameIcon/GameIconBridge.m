@@ -64,6 +64,7 @@ static const struct timespec appkit_poll_interval = { .tv_sec = 0, .tv_nsec = 10
 static const int appkit_poll_limit = 10000;
 
 static SetApplicationIconImageIMP original_set_application_icon_image;
+static pthread_mutex_t icon_setter_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *custom_game_icon_path;
 static id custom_game_icon;
 
@@ -163,25 +164,33 @@ static id normalized_game_icon(id source) {
  * precedence; a missing or unreadable one falls back to the normalized executable icon.
  * Calling the saved IMP preserves AppKit's normal Dock and application-icon side effects. */
 static void set_application_icon_image(id application, SEL selector, id image) {
+	SetApplicationIconImageIMP original;
 	id resolved = load_custom_game_icon();
 	if (resolved == nil) resolved = normalized_game_icon(image);
-	original_set_application_icon_image(application, selector, resolved);
+	pthread_mutex_lock(&icon_setter_lock);
+	original = original_set_application_icon_image;
+	pthread_mutex_unlock(&icon_setter_lock);
+	if (original != NULL) original(application, selector, resolved);
 }
 
-/* Installs the hook only after NSApplication exists. method_setImplementation returns the
- * previous implementation atomically, giving the replacement a direct, recursion-free
- * path to AppKit's real setter. Only the single polling thread calls this function. */
+/* Installs the hook only after NSApplication exists. Holding the same mutex the replacement
+ * uses while method_setImplementation publishes it prevents another AppKit caller from
+ * observing the hook before its original target has been stored. */
 static bool install_icon_setter(void) {
 	Class application_class = objc_getClass("NSApplication");
+	SetApplicationIconImageIMP original;
 	if (application_class == Nil) return false;
 
 	SEL selector = sel_registerName("setApplicationIconImage:");
 	Method method = class_getInstanceMethod(application_class, selector);
 	if (method == NULL) return false;
 
-	original_set_application_icon_image = (SetApplicationIconImageIMP)method_setImplementation(
+	pthread_mutex_lock(&icon_setter_lock);
+	original = (SetApplicationIconImageIMP)method_setImplementation(
 		method, (IMP)set_application_icon_image);
-	return original_set_application_icon_image != NULL;
+	original_set_application_icon_image = original;
+	pthread_mutex_unlock(&icon_setter_lock);
+	return original != NULL;
 }
 
 /* Background entry point used solely to observe AppKit availability and install the hook.

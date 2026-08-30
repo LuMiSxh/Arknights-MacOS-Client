@@ -235,6 +235,24 @@
         }
       }
     },
+    "audio.status.playlistTrack": {
+      "comment": "Fallback title for a playlist item whose metadata did not load; argument is the one-based track number",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playlist-Titel %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playlist track %lld"
+          }
+        }
+      }
+    },
     "audio.volume.label": {
       "comment": "Music volume slider accessibility label",
       "extractionState": "manual",
@@ -1185,24 +1203,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Install Rosetta 2…"
-          }
-        }
-      }
-    },
-    "onboarding.action.open": {
-      "comment": "Open a local image selection action",
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Öffnen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open"
           }
         }
       }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MPL-2.0
+
 /// Tolerant enough to compare both this repo's release tags and Yostar's own version
 /// strings, including an optional leading "v" and dot-separated prerelease identifiers.
 struct SemanticVersion: Comparable {

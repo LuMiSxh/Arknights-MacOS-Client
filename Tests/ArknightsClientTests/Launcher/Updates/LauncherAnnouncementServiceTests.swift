@@ -35,7 +35,7 @@ struct LauncherAnnouncementServiceTests {
 		let endpoint = URL(string: "https://api.github.test/repos/example/contents/feed.json")!
 		let session = makeMockSession()
 		let receivedRequest = LockedValue<URLRequest?>(nil)
-		MockURLProtocol.handler = { request in
+		MockURLProtocol.setHandler { request in
 			receivedRequest.set(request)
 			return .success(
 				(
@@ -48,7 +48,7 @@ struct LauncherAnnouncementServiceTests {
 				)
 			)
 		}
-		defer { MockURLProtocol.handler = nil }
+		defer { MockURLProtocol.reset() }
 
 		let announcements = try await LauncherAnnouncementService(session: session)
 			.announcements(from: endpoint)
@@ -58,6 +58,35 @@ struct LauncherAnnouncementServiceTests {
 			receivedRequest.value?.value(forHTTPHeaderField: "Accept")
 				== "application/vnd.github.raw+json"
 		)
+	}
+
+	@Test
+	func oversizedFeedMapsToFeatureError() async {
+		let endpoint = URL(string: "https://api.github.test/repos/example/contents/feed.json")!
+		let session = makeMockSession()
+		MockURLProtocol.setHandler { request in
+			.success(
+				(
+					HTTPURLResponse(
+						url: endpoint, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+					Data(repeating: 0, count: AppConstants.Network.announcementFeedMaximumBytes + 1)
+				)
+			)
+		}
+		defer { MockURLProtocol.reset() }
+
+		do {
+			_ = try await LauncherAnnouncementService(session: session)
+				.announcements(from: endpoint)
+			Issue.record("Expected oversized feed to fail")
+		} catch let error as LauncherError {
+			guard case .remoteContentTooLarge(endpoint, _) = error else {
+				Issue.record("Unexpected launcher error: \(error)")
+				return
+			}
+		} catch {
+			Issue.record("Unexpected error: \(error)")
+		}
 	}
 
 	@Test
@@ -98,13 +127,14 @@ private func makeMockSession() -> URLSession {
 private final class MockURLProtocol: URLProtocol, @unchecked Sendable {
 	typealias Result = Swift.Result<(HTTPURLResponse, Data), Error>
 
+	private static let lock = NSLock()
 	nonisolated(unsafe) static var handler: ((URLRequest) -> Result)?
 
 	override class func canInit(with request: URLRequest) -> Bool { true }
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
-		guard let handler = Self.handler else {
+		guard let handler = Self.lock.withLock({ Self.handler }) else {
 			client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
 			return
 		}
@@ -120,6 +150,14 @@ private final class MockURLProtocol: URLProtocol, @unchecked Sendable {
 	}
 
 	override func stopLoading() {}
+
+	static func setHandler(_ handler: @escaping (URLRequest) -> Result) {
+		lock.withLock { Self.handler = handler }
+	}
+
+	static func reset() {
+		lock.withLock { handler = nil }
+	}
 }
 
 private final class LockedValue<Value>: @unchecked Sendable {

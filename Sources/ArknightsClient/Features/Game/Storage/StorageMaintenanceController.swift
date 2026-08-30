@@ -37,7 +37,6 @@ final class StorageMaintenanceController {
 					try GameCacheCleaner.clear(winePrefix: winePrefix)
 				}.value
 				lifecycle.activity = .idle
-				lifecycle.setStatus(.custom(L10n.string(.Launcher.launcherStatusCacheCleared)))
 				onStorageOverviewChanged?()
 				await log.info("Shader and browser caches cleared")
 			} catch {
@@ -69,8 +68,6 @@ final class StorageMaintenanceController {
 			do {
 				try await presetCatalog.clearCaches()
 				lifecycle.activity = .idle
-				lifecycle.setStatus(
-					.custom(L10n.string(.Launcher.launcherStatusGalleryCacheCleared)))
 				onStorageOverviewChanged?()
 				await log.info("Preset gallery caches cleared")
 			} catch {

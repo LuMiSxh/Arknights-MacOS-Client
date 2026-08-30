@@ -7,7 +7,6 @@ import YouTubePlayerKit
 struct BackgroundMusicView: View {
 	let lifecycle: LauncherLifecycleStore
 	let settings: LauncherPreferencesController
-	let gameSession: GameSessionController
 	let controller: BackgroundMusicController
 
 	var body: some View {
@@ -45,8 +44,8 @@ struct BackgroundMusicView: View {
 		.onChange(of: settings.launcherMusicVolume) { _, newVolume in
 			controller.volumeDidChange(to: newVolume)
 		}
-		.onChange(of: gameSession.isGameProcessRunning) { _, isRunning in
-			controller.gameRunningDidChange(to: isRunning)
+		.onChange(of: lifecycle.activity) { _, activity in
+			controller.gameRunningDidChange(to: activity.isGameProcessRunning)
 		}
 		.onDisappear {
 			controller.stop()

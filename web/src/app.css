@@ -491,7 +491,7 @@ body {
 
 .content-copy {
 	width: 100%;
-	max-width: none;
+	max-width: 75ch;
 	font-size: 0.92rem;
 	line-height: 1.62;
 }
@@ -844,6 +844,11 @@ body:has(.diagram-expanded) {
 	}
 
 	.mobile-header summary {
+		display: inline-flex;
+		min-width: 44px;
+		min-height: 44px;
+		align-items: center;
+		justify-content: center;
 		cursor: pointer;
 		list-style: none;
 		color: var(--color-anasthasia-text);
@@ -876,6 +881,9 @@ body:has(.diagram-expanded) {
 	}
 
 	.mobile-header nav a {
+		display: flex;
+		min-height: 44px;
+		align-items: center;
 		padding: 0.55rem;
 		color: var(--color-anasthasia-muted);
 		font-size: 0.82rem;

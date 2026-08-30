@@ -141,6 +141,60 @@ struct InstallationRecoveryTests {
 		model.confirmRepair(failureID: changedStateID)
 		#expect(await installer.installationCount() == 0)
 	}
+
+	@Test
+	func invalidConfigurationCannotSkipInstallationDiskPreflight() {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.configuration = GameConfiguration(
+			gameLowestVersion: "1", gameLatestVersion: "1", gameLatestFilePath: "manifest",
+			gameStartExeName: "Arknights.exe", gameStartParams: [], gameUninstallScript: "",
+			decompressionSize: "not a size")
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		#expect(fixture.controller.lifecycle.activity == .idle)
+		#expect(fixture.controller.lifecycle.failure != nil)
+	}
+
+	@Test
+	func staleSnapshotCannotOverwriteARegionReplacement() async throws {
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "InstallationStateSnapshotTests.\(UUID().uuidString)", directoryHint: .isDirectory
+		)
+		let paths = AppPaths(
+			applicationSupportDirectory: root.appending(path: "Support"),
+			cachesDirectory: root.appending(path: "Caches"),
+			libraryDirectory: root.appending(path: "Library"),
+			resourceDirectory: root.appending(path: "Resources"))
+		let defaults = try #require(
+			UserDefaults(suiteName: "InstallationStateSnapshotTests.\(UUID().uuidString)"))
+		let gate = ControlledRequestGate<InstallationStateSnapshot, InstallationStateRequest>()
+		let log = LauncherLog(fileURL: paths.launcherLogFile)
+		let controller = InstallationController(
+			lifecycle: LauncherLifecycleStore(log: log), installer: ControllableInstaller(),
+			paths: paths, preferences: LauncherPreferencesStore(defaults: defaults), log: log,
+			region: .global, stateLoader: gate.next)
+
+		let first = controller.updateInstalledState()
+		await gate.waitForRequestCount(1)
+		#expect(controller.selectRegion(.japan))
+		let second = controller.updateInstalledState()
+		await gate.waitForRequestCount(2)
+		await gate.resolve(
+			1,
+			with: InstallationStateSnapshot(
+				isInstalled: true, hasPartialDownload: false, installedVersion: "2.0.0",
+				installedRegions: [.japan], diagnostic: nil))
+		await second.value
+		await gate.resolve(
+			0,
+			with: InstallationStateSnapshot(
+				isInstalled: false, hasPartialDownload: false, installedVersion: "stale",
+				installedRegions: [], diagnostic: nil))
+		await first.value
+		#expect(controller.region == .japan)
+		#expect(controller.isInstalled)
+		#expect(controller.installedVersion == "2.0.0")
+		#expect(controller.installedRegions == [.japan])
+	}
 }
 
 @MainActor

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import PageMetadata from '$lib/components/PageMetadata.svelte';
 
 	const status = $derived(page.status);
 	const error = $derived(page.error);
@@ -25,9 +26,12 @@
 	);
 </script>
 
-<svelte:head>
-	<title>{status} · {errorTitle} · Arknights Client</title>
-</svelte:head>
+<PageMetadata
+	title={`${status} · ${errorTitle} · Arknights Client`}
+	description={fallbackMessage}
+	path={page.url.pathname}
+	robots="noindex"
+/>
 
 <section class="error-page" aria-labelledby="error-title">
 	<div class="eyebrow">Error {status}</div>

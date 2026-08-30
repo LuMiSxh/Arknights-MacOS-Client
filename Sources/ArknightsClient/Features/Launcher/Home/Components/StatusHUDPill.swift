@@ -18,11 +18,11 @@ struct StatusHUDPill: View {
 			HStack(spacing: 6) {
 				if let countdown = settings.resetCountdownText {
 					Image(systemName: "clock")
-						.font(.system(size: 10, weight: .semibold))
+						.font(.caption.weight(.semibold))
 						.foregroundStyle(accentColor)
 						.accessibilityHidden(true)
 					Text(countdown)
-						.font(.system(size: 11, weight: .medium, design: .monospaced))
+						.font(.caption.monospaced().weight(.medium))
 						.foregroundStyle(.secondary)
 						.lineLimit(2)
 						.truncationMode(.tail)
@@ -43,7 +43,7 @@ struct StatusHUDPill: View {
 
 	private var hasContent: Bool {
 		settings.resetCountdownText != nil
-			|| installation.installedRegions.count > 1
+			|| installation.installedRegions.count >= 2
 			|| installation.region != .global
 	}
 
@@ -52,7 +52,7 @@ struct StatusHUDPill: View {
 	/// carry region chrome nobody can use yet.
 	@ViewBuilder
 	private var regionIndicator: some View {
-		if installation.installedRegions.count > 1 {
+		if installation.installedRegions.count >= 2 {
 			Menu {
 				ForEach(installation.installedRegions) { region in
 					Button {

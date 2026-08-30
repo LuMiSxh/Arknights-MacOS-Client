@@ -3,8 +3,14 @@
 import SwiftUI
 
 struct OnboardingView: View {
-	let model: LauncherViewModel
+	let preferences: LauncherPreferencesController
+	let customization: CustomizationController
+	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let presetCatalog: PresetCatalogService
+	let canSwitchRegion: Bool
 	@Bindable var coordinator: OnboardingCoordinator
+	let actions: OnboardingActions
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var presentedGallery: PresetGalleryDestination?
 
@@ -14,7 +20,7 @@ struct OnboardingView: View {
 		HStack(spacing: 0) {
 			OnboardingProgressRail(
 				currentStep: coordinator.step,
-				accentColor: model.customization.accentColor,
+				accentColor: customization.accentColor,
 				appVersion: IssueReportURL.appVersion
 			)
 
@@ -27,50 +33,50 @@ struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
-								preferences: model.settings,
-								accentColor: model.customization.accentColor,
+								preferences: preferences,
+								accentColor: customization.accentColor,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
-								rosettaInstallationState: model.lifecycle.rosettaInstallationState,
+								rosettaInstallationState: lifecycle.rosettaInstallationState,
 								retry: retryUpdateCheck,
 								retryIntelTranslation: retryIntelTranslation,
 								installRosetta: installRosetta
 							)
 						case .installation:
 							OnboardingInstallationView(
-								installation: model.installation,
-								accentColor: model.customization.accentColor,
-								canSwitchRegion: model.refreshController.canSwitchRegion,
-								selectRegion: model.selectRegion
+								installation: installation,
+								accentColor: customization.accentColor,
+								canSwitchRegion: canSwitchRegion,
+								selectRegion: actions.selectRegion
 							)
 						case .game:
 							OnboardingGameSettingsView(
-								preferences: model.settings,
-								accentColor: model.customization.accentColor
+								preferences: preferences,
+								accentColor: customization.accentColor
 							)
 						case .personalization:
 							OnboardingPersonalizationView(
-								customization: model.customization,
-								preferences: model.settings,
-								resetArtwork: model.resetArtwork,
+								customization: customization,
+								preferences: preferences,
+								resetArtwork: actions.resetArtwork,
 								browseArtwork: { presentedGallery = .artwork }
 							)
 						case .icons:
 							OnboardingIconsView(
-								customization: model.customization,
+								customization: customization,
 								browseOperators: { presentedGallery = .operatorIcons }
 							)
 						case .extras:
 							OnboardingExtrasView(
-								preferences: model.settings,
-								accentColor: model.customization.accentColor
+								preferences: preferences,
+								accentColor: customization.accentColor
 							)
 						case .finish:
 							OnboardingFinishView(
-								installation: model.installation,
-								lifecycle: model.lifecycle,
-								accentColor: model.customization.accentColor,
-								install: model.installOrUpdate
+								installation: installation,
+								lifecycle: lifecycle,
+								accentColor: customization.accentColor,
+								install: actions.installOrUpdate
 							)
 						}
 					}
@@ -89,7 +95,7 @@ struct OnboardingView: View {
 
 				FloatingActionFooterFade(height: 76)
 
-				FloatingActionBar(tint: model.customization.hudTintColor) {
+				FloatingActionBar(tint: customization.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
 						Button(action: coordinator.skip) {
 							Label(OnboardingStrings.skipForNow, systemImage: "forward.end")
@@ -108,7 +114,7 @@ struct OnboardingView: View {
 					CapsuleActionButton(
 						title: L10n.string(primaryTitle),
 						systemImage: primarySystemImage,
-						tone: .accent(model.customization.accentColor),
+						tone: .accent(customization.accentColor),
 						action: performPrimaryAction
 					)
 					.controlSize(.large)
@@ -123,22 +129,22 @@ struct OnboardingView: View {
 		.background {
 			ZStack {
 				LauncherVisuals.modalBackground
-				model.customization.hudTintColor
+				customization.hudTintColor
 			}
 			.ignoresSafeArea(.container, edges: .top)
 		}
-		.tint(model.customization.accentColor)
+		.tint(customization.accentColor)
 		.preferredColorScheme(.dark)
 		.animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: coordinator.step)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
-			value: model.customization.dynamicThemeHue
+			value: customization.dynamicThemeHue
 		)
 		.sheet(item: $presentedGallery) { destination in
 			PresetGalleryView(
-				catalog: model.presetCatalog,
-				customization: model.customization,
-				lifecycle: model.lifecycle,
+				catalog: presetCatalog,
+				customization: customization,
+				lifecycle: lifecycle,
 				destination: destination
 			)
 		}
@@ -155,10 +161,10 @@ struct OnboardingView: View {
 			}
 		}
 		if coordinator.step == .installation {
-			if model.installation.isInstalled || model.installation.isDownloading {
+			if installation.isInstalled || installation.isDownloading {
 				return OnboardingStrings.continueSetup
 			}
-			return model.installation.hasPartialDownload
+			return installation.hasPartialDownload
 				? OnboardingStrings.resumeAndContinue : OnboardingStrings.installAndContinue
 		}
 		if coordinator.step == .finish { return OnboardingStrings.finishSetup }
@@ -178,8 +184,8 @@ struct OnboardingView: View {
 			}
 		}
 		if coordinator.step == .installation {
-			return model.installation.isInstalled || model.installation.isDownloading
-				|| model.installation.canInstall
+			return installation.isInstalled || installation.isDownloading
+				|| installation.canInstall
 		}
 		return true
 	}
@@ -188,10 +194,10 @@ struct OnboardingView: View {
 		if coordinator.step == .welcome, case .updateRequired = coordinator.updateState {
 			return "arrow.down.app"
 		}
-		if coordinator.step == .installation && !model.installation.isInstalled
-			&& !model.installation.isDownloading
+		if coordinator.step == .installation && !installation.isInstalled
+			&& !installation.isDownloading
 		{
-			return model.installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
+			return installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
 		}
 		if coordinator.step == .finish { return "checkmark" }
 		return "chevron.forward"
@@ -201,13 +207,13 @@ struct OnboardingView: View {
 		if coordinator.step == .welcome,
 			case .updateRequired = coordinator.updateState
 		{
-			model.communication.openLauncherUpdate()
+			actions.openLauncherUpdate()
 			return
 		}
-		if coordinator.step == .installation && !model.installation.isInstalled
-			&& !model.installation.isDownloading
+		if coordinator.step == .installation && !installation.isInstalled
+			&& !installation.isDownloading
 		{
-			model.installOrUpdate()
+			actions.installOrUpdate()
 		}
 		coordinator.advance()
 	}
@@ -215,14 +221,14 @@ struct OnboardingView: View {
 	private func retryIntelTranslation() {
 		Task {
 			await coordinator.refreshIntelTranslationAvailability {
-				await model.intelTranslation.refreshAvailability(force: true)
+				await actions.retryIntelTranslation()
 			}
 		}
 	}
 
 	private func installRosetta() {
 		Task {
-			let state = await model.installRosetta()
+			let state = await actions.installRosetta()
 			await coordinator.refreshIntelTranslationAvailability { state }
 		}
 	}

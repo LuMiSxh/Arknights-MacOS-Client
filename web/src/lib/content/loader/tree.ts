@@ -6,7 +6,7 @@ import type {
 	ContentSummary
 } from '../types.js';
 import type { DirectoryDraft } from './model.js';
-import { humanize, slugify, sourceName } from './routes.js';
+import { humanize, siteRoute, slugify, sourceName } from './routes.js';
 
 export function createDirectory(path: string): DirectoryDraft {
 	return { path, documents: [], children: [] };
@@ -41,14 +41,17 @@ function sortSummaries(items: ContentSummary[]): ContentSummary[] {
 	);
 }
 
-function summaryFor(node: ContentNode): ContentSummary {
+function summaryFor(
+	node: ContentNode,
+	inheritedHidden = false
+): ContentSummary {
 	return {
 		kind: node.kind,
 		route: node.route,
 		title: node.title,
 		description: node.description,
 		order: node.order,
-		hidden: node.hidden,
+		hidden: inheritedHidden || node.hidden,
 		audience: node.audience,
 		...(node.code ? { code: node.code } : {})
 	};
@@ -57,7 +60,8 @@ function summaryFor(node: ContentNode): ContentSummary {
 export function buildDirectory(
 	draft: DirectoryDraft,
 	renderedBySource: Map<string, ContentDocument>,
-	byRoute: Map<string, ContentNode>
+	byRoute: Map<string, ContentNode>,
+	inheritedHidden = false
 ): ContentDirectory {
 	const readme = draft.readme;
 	const sectionName = humanize(draft.path.split('/').at(-1) ?? draft.path);
@@ -72,33 +76,39 @@ export function buildDirectory(
 		audience: 'all',
 		toc: true
 	};
-	const route = draft.path
-		? `/${draft.path.split('/').map(slugify).join('/')}/`
-		: '/';
+	const hiddenByMetadata = inheritedHidden || metadata.hidden;
+	const route = siteRoute(
+		draft.path ? `/${draft.path.split('/').map(slugify).join('/')}/` : '/'
+	);
 	const intro = readme ? renderedBySource.get(readme.relative) : undefined;
 	const childDirectories = draft.children
-		.map((child) => buildDirectory(child, renderedBySource, byRoute))
+		.map((child) =>
+			buildDirectory(child, renderedBySource, byRoute, hiddenByMetadata)
+		)
 		.filter((child) => child.children.length || child.html);
 	const childDocuments = draft.documents
 		.filter((document) => !document.isReadme)
 		.map((document) => renderedBySource.get(document.relative))
 		.filter((document): document is ContentDocument => Boolean(document));
+	const hasVisibleChild =
+		childDirectories.some((child) => !child.hidden) ||
+		childDocuments.some((document) => !document.hidden);
+	const hidden = hiddenByMetadata || (!readme && !hasVisibleChild);
 	const directory: ContentDirectory = {
 		kind: 'directory',
 		route,
 		title: metadata.title,
 		description: metadata.description,
 		order: metadata.order,
-		hidden: metadata.hidden,
+		hidden,
 		audience: metadata.audience,
 		html: intro?.html ?? '',
 		headings: intro?.headings ?? [],
 		children: sortSummaries([
-			...childDirectories.map(summaryFor),
-			...childDocuments.map(summaryFor)
+			...childDirectories.map((child) => summaryFor(child, hidden)),
+			...childDocuments.map((document) => summaryFor(document, hidden))
 		]),
-		toc: metadata.toc,
-		...(readme ? { introSource: readme.source } : {})
+		toc: metadata.toc
 	};
 	if (route !== '/') {
 		if (byRoute.has(route)) {

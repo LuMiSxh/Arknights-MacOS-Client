@@ -17,6 +17,7 @@ from lib.common import fail, run_main
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+MAXIMUM_RUNTIME_ARCHIVE_BYTES = 600 * 1_024 * 1_024
 
 
 @dataclass(frozen=True)
@@ -71,15 +72,32 @@ class RuntimeConfiguration:
 
 
 def runtime_is_valid(directory: Path, layout: RuntimeLayout) -> bool:
-    if not all(
-        (directory / path).is_file() and os.access(directory / path, os.X_OK)
-        for path in layout.executables
-    ):
+    try:
+        root = directory.resolve(strict=True)
+        if not all(
+            _contained_file(root, directory / path)
+            and os.access(directory / path, os.X_OK)
+            for path in layout.executables
+        ):
+            return False
+        if not all(
+            not (directory / path).is_symlink()
+            and _contained_file(root, directory / path)
+            for path in layout.required_regular_files
+        ):
+            return False
+        launcher = directory / layout.launcher.path
+        return (
+            launcher.is_symlink()
+            and launcher.readlink() == Path(layout.launcher.target)
+            and launcher.resolve(strict=True).is_relative_to(root)
+        )
+    except OSError:
         return False
-    if not all((directory / path).is_file() for path in layout.required_regular_files):
-        return False
-    launcher = directory / layout.launcher.path
-    return launcher.is_symlink() and launcher.readlink() == Path(layout.launcher.target)
+
+
+def _contained_file(root: Path, path: Path) -> bool:
+    return path.is_file() and path.resolve(strict=True).is_relative_to(root)
 
 
 def read_config(config: Path) -> dict[str, Any]:

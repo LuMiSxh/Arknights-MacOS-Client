@@ -22,4 +22,8 @@ enum AudioStrings {
 	static func volumePercent(_ percent: Int) -> LocalizedStringResource {
 		.audioVolumePercent(percent)
 	}
+
+	static func playlistTrack(_ number: Int) -> LocalizedStringResource {
+		.audioStatusPlaylistTrack(number)
+	}
 }

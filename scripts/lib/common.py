@@ -103,6 +103,18 @@ def remove_path(path: Path) -> None:
         shutil.rmtree(path)
 
 
+def safe_relative_path(value: object, error_message: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) > 240
+        or value.startswith("/")
+        or any(component in {"", ".", ".."} for component in value.split("/"))
+        or re.fullmatch(r"[A-Za-z0-9._/+\-]+", value) is None
+    ):
+        raise ValueError(error_message)
+    return value
+
+
 def run_main[T](main: Callable[[], T]) -> None:
     try:
         main()

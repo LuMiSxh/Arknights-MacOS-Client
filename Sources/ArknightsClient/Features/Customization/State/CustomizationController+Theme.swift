@@ -7,48 +7,55 @@ extension CustomizationController {
 	/// Keeps Dynamic Theme state aligned with the current artwork and the region supplied by the
 	/// caller, while rejecting a delayed extraction for artwork that is no longer visible.
 	func updateThemeColor() {
+		let themeOperationID = UUID()
+		self.themeOperationID = themeOperationID
 		guard usesDynamicTheme(), let heroArtwork else {
 			dynamicThemeHue = nil
 			accentColor = LauncherVisuals.cyan
 			hudTintColor = LauncherVisuals.hudGlassTint
 			updateDynamicAppIcon(hue: nil)
-			Task { [weak self] in await self?.refreshOperatorPresetIconsForTheme(hue: nil) }
+			_ = startOperatorPresetIconRefresh(hue: nil)
 			return
 		}
 		let themeCacheKey = activeThemeCacheKey
 		let artworkRegion = region()
-		if let themeCacheKey, let cached = preferences.dynamicThemeAccent(for: themeCacheKey) {
-			applyThemeAccent(
+		let cachedAccent =
+			themeCacheKey
+			.flatMap { preferences.dynamicThemeAccent(for: $0) }
+			.map {
 				ExtractedAccent(
-					hue: cached.hue,
-					saturation: cached.saturation,
-					brightness: cached.brightness
+					hue: $0.hue,
+					saturation: $0.saturation,
+					brightness: $0.brightness
 				)
-			)
+			}
+		if let cachedAccent {
+			applyThemeAccent(cachedAccent)
 		}
 
+		let accentExtractor = self.accentExtractor
 		Task { [weak self] in
 			guard let self else { return }
-			let extracted = await WallpaperColorExtractor.extractAccent(from: heroArtwork)
-			guard self.heroArtwork === heroArtwork,
+			let extracted = await accentExtractor(heroArtwork)
+			guard self.themeOperationID == themeOperationID,
+				self.heroArtwork === heroArtwork,
 				self.activeThemeCacheKey == themeCacheKey,
 				self.region() == artworkRegion
 			else { return }
-			if let themeCacheKey {
+			if let themeCacheKey, let extracted {
 				self.preferences.setDynamicThemeAccent(
-					extracted.map {
-						ThemeAccentSnapshot(
-							hue: $0.hue,
-							saturation: $0.saturation,
-							brightness: $0.brightness
-						)
-					},
+					ThemeAccentSnapshot(
+						hue: extracted.hue,
+						saturation: extracted.saturation,
+						brightness: extracted.brightness
+					),
 					for: themeCacheKey
 				)
 			}
-			self.applyThemeAccent(extracted)
-			self.updateDynamicAppIcon(hue: extracted?.hue)
-			await self.refreshOperatorPresetIconsForTheme(hue: extracted?.hue)
+			let resolvedAccent = extracted ?? cachedAccent
+			self.applyThemeAccent(resolvedAccent)
+			self.updateDynamicAppIcon(hue: resolvedAccent?.hue)
+			await self.startOperatorPresetIconRefresh(hue: resolvedAccent?.hue).value
 		}
 	}
 

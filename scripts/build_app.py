@@ -58,7 +58,6 @@ REQUIRED_LICENSES = (
     "sparkle.txt",
 )
 SPARKLE_FRAMEWORK_NAME = "Sparkle.framework"
-SPARKLE_FRAMEWORK_VERSION = "2.9.6"
 SPARKLE_PUBLIC_KEY_BYTES = 32
 
 
@@ -77,8 +76,10 @@ def copy_resource(source: Path, destination: Path) -> None:
         fail(f"required resource not found: {source}")
 
 
-def sparkle_framework(binary_dir: Path, project: Path) -> Path:
+def sparkle_framework(binary_dir: Path, configuration: ProjectConfiguration) -> Path:
     """Find the validated Sparkle artifact emitted by SwiftPM."""
+    project = configuration.project_directory
+    expected_version = configuration.package.exact_dependency_version("sparkle")
     roots = (
         binary_dir,
         project / BUILD_DIR.relative_to(PROJECT_DIR) / "artifacts/sparkle",
@@ -96,8 +97,8 @@ def sparkle_framework(binary_dir: Path, project: Path) -> Path:
                     metadata = plistlib.load(file)
             except (OSError, plistlib.InvalidFileException) as error:
                 fail(f"could not read Sparkle framework metadata: {error}")
-            if metadata.get("CFBundleShortVersionString") != SPARKLE_FRAMEWORK_VERSION:
-                fail(f"expected Sparkle {SPARKLE_FRAMEWORK_VERSION}, found {metadata}")
+            if metadata.get("CFBundleShortVersionString") != expected_version:
+                fail(f"expected Sparkle {expected_version}, found {metadata}")
             for service in ("Downloader.xpc", "Installer.xpc"):
                 if not (version / "XPCServices" / service).is_dir():
                     fail(f"Sparkle framework is missing {service}")
@@ -250,6 +251,7 @@ _FAT_MAGIC = 0xCAFEBABE
 _FAT_MAGIC_64 = 0xCAFEBABF
 _CPU_TYPE_X86_64 = 0x01000007
 _CPU_TYPE_ARM64 = 0x0100000C
+_MAXIMUM_FAT_ARCHITECTURES = 64
 
 
 def _fat_cpu_types(path: Path) -> set[int]:
@@ -267,11 +269,17 @@ def _fat_cpu_types(path: Path) -> set[int]:
             entry_size, entry_format = 32, ">ii"
         else:
             return set()
+        if (
+            count > _MAXIMUM_FAT_ARCHITECTURES
+            or count * entry_size > path.stat().st_size - len(header)
+        ):
+            return set()
         body = handle.read(count * entry_size)
+        if len(body) != count * entry_size:
+            return set()
     return {
         struct.unpack_from(entry_format, body, index * entry_size)[0]
         for index in range(count)
-        if len(body) >= (index + 1) * entry_size
     }
 
 
@@ -425,7 +433,7 @@ def build(
         if runtime is not None:
             embed_runtime(runtime, resources, runtime_configuration)
         framework = copy_sparkle_framework(
-            sparkle_framework(binary_dir, project),
+            sparkle_framework(binary_dir, project_configuration),
             staged_app / "Contents/Frameworks/Sparkle.framework",
         )
         ensure_framework_rpath(macos / project_configuration.product.executable_name)
@@ -444,12 +452,13 @@ def build(
             ["codesign", "--force", "--sign", "-", "--timestamp=none", staged_app],
             capture=True,
         )
-        run(
-            ["codesign", "--verify", "--deep", "--strict", "--verbose=2", staged_app],
-            capture=True,
-        )
         remove_path(app_bundle)
         staged_app.replace(app_bundle)
+        run(["xattr", "-c", app_bundle])
+        run(
+            ["codesign", "--verify", "--deep", "--strict", "--verbose=2", app_bundle],
+            capture=True,
+        )
     success(f"Built {app_bundle.relative_to(project)}")
     return app_bundle
 

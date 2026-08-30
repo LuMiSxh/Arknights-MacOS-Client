@@ -58,7 +58,10 @@ actor ProgressCounter {
 		}
 
 		let now = estimatorClockNow
-		guard force || lastEmission.duration(to: now) >= .milliseconds(100) else {
+		guard
+			force
+				|| lastEmission.duration(to: now) >= AppConstants.Network.progressEmissionInterval
+		else {
 			return nil
 		}
 		lastEmission = now

@@ -45,10 +45,7 @@ extension GameSessionController {
 			guard failure.context.region == nil, lifecycle.activity == .idle else { return false }
 		case .runtimeStop:
 			guard failure.context.region == installation.region.supportRegion else { return false }
-			guard
-				case .runningGame(let sessionID, _) = lifecycle.activity,
-				sessionID == failure.id
-			else { return false }
+			guard lifecycle.activity.activeGameSessionID == failure.id else { return false }
 		case .launch, .runtimeExit, .runtimeDiscovery:
 			guard failure.context.region == installation.region.supportRegion else { return false }
 			guard lifecycle.activity == .idle else { return false }

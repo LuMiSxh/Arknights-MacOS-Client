@@ -4,15 +4,15 @@ import { dirname } from 'node:path';
 import { ContentError, parseFrontmatter } from '../frontmatter.js';
 import type {
 	ContentDirectory,
-	ContentDocument,
 	ContentIndex,
 	ContentNeighbors,
-	ContentNode
+	ContentNode,
+	SiteRoute
 } from '../types.js';
 import { renderSourceDocuments, validateLinks } from './links.js';
 import type { SourceDocument } from './model.js';
 import { changelogPath } from './paths.js';
-import { slugify } from './routes.js';
+import { siteRoute, slugify } from './routes.js';
 import { readSources } from './sources.js';
 import { buildDirectory, createDirectory, directoryFor } from './tree.js';
 
@@ -39,7 +39,7 @@ function loadIndex(): ContentIndex {
 	};
 
 	const root = createDirectory('');
-	const sourceRoutes = new Map<string, string>();
+	const sourceRoutes = new Map<string, SiteRoute>();
 	for (const document of documents) {
 		sourceRoutes.set(document.relative, document.route);
 		const parentPath =
@@ -47,9 +47,11 @@ function loadIndex(): ContentIndex {
 				? ''
 				: dirname(document.relative);
 		const parent = directoryFor(root, parentPath);
-		const parentRoute = parentPath
-			? `/${parentPath.split('/').map(slugify).join('/')}/`
-			: '/';
+		const parentRoute = siteRoute(
+			parentPath
+				? `/${parentPath.split('/').map(slugify).join('/')}/`
+				: '/'
+		);
 		sourceRoutes.set(parentPath, parentRoute);
 		sourceRoutes.set(`${parentPath}/`, parentRoute);
 		if (document.isReadme) {
@@ -96,22 +98,18 @@ function loadIndex(): ContentIndex {
 	const directories = [...byRoute.values()].filter(
 		(node): node is ContentDirectory => node.kind === 'directory'
 	);
-	const publicDocuments = [...byRoute.values()].filter(
-		(node): node is ContentDocument =>
-			node.kind === 'document' && node.route !== '/changelog/'
-	);
 
 	return {
 		root: rootDirectory,
-		documents: publicDocuments,
 		directories,
 		byRoute,
-		bySource: renderedBySource,
 		changelog
 	};
 }
 
 export function getContent(): ContentIndex {
+	if (typeof process === 'undefined' || process.env.NODE_ENV !== 'production')
+		return loadIndex();
 	return (cached ??= loadIndex());
 }
 

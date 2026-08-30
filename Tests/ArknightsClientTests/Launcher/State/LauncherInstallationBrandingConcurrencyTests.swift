@@ -47,7 +47,7 @@ struct LauncherInstallationBrandingConcurrencyTests {
 
 		#expect(
 			await waitForCondition {
-				BlockingInstallationArtworkURLProtocol.artworkRequestStarted
+				BlockingInstallationArtworkURLProtocol.isArtworkRequestStarted
 			})
 		try #require(await waitForCondition { model.installation.configuration != nil })
 

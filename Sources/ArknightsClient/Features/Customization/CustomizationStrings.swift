@@ -51,4 +51,8 @@ enum CustomizationStrings {
 	static func wallpaperApplyHelp(_ title: String) -> LocalizedStringResource {
 		.Customization.customizationGalleryWallpaperApplyHelp(title)
 	}
+
+	static func wallpaperFallbackTitle(_ number: Int) -> LocalizedStringResource {
+		.Customization.customizationGalleryWallpaperFallbackTitle(number)
+	}
 }

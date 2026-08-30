@@ -21,6 +21,7 @@ extension BackgroundMusicController {
 				try await targetPlayer.setLoopPlaylist(enabled: true)
 				guard isCurrent(operation) else { return }
 				try await targetPlayer.setShufflePlaylist(enabled: true)
+				guard isCurrent(operation) else { return }
 				try await Task.sleep(for: AppConstants.Music.playlistShuffleDelay)
 				guard isCurrent(operation) else { return }
 				let changed = try await selectTrack(
@@ -30,17 +31,19 @@ extension BackgroundMusicController {
 					expectsPlayback: true
 				)
 				if changed {
-					await context.log.info(
+					await lifecycle.log.info(
 						"Background music playlist shuffled and started a random track"
 					)
+					guard isCurrent(operation) else { return }
 				} else {
-					await context.log.error(
+					await lifecycle.log.error(
 						"Background music playlist shuffled, but the selected track did not start"
 					)
+					guard isCurrent(operation) else { return }
 				}
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await context.log.error(
+				await lifecycle.log.error(
 					"Background music failed to shuffle the playlist: \(error.localizedDescription)"
 				)
 			}
@@ -62,11 +65,11 @@ extension BackgroundMusicController {
 				guard isCurrent(operation) else { return }
 				try await player.pause()
 				guard isCurrent(operation) else { return }
-				await context.log.info("Background music paused by user")
+				await lifecycle.log.info("Background music paused by user")
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				clearPlaybackExpectation(expectation)
-				await context.log.error(
+				await lifecycle.log.error(
 					"Background music failed to pause: \(error.localizedDescription)"
 				)
 			}
@@ -78,7 +81,7 @@ extension BackgroundMusicController {
 
 	func changeTrack(direction: TrackDirection) {
 		guard canNavigatePlaylist, !controlsAreDisabled, let player else { return }
-		let previousVideoID = context.currentMusicVideoID
+		let previousVideoID = currentMusicVideoID
 		let expectsPlayback = !isManuallyPaused
 		let operation = beginOperation(.trackChange, on: player)
 		controlTask = Task { [weak self] in
@@ -92,17 +95,17 @@ extension BackgroundMusicController {
 					expectsPlayback: expectsPlayback
 				)
 				if changed {
-					await context.log.info(
+					await lifecycle.log.info(
 						"Background music started the \(direction.logName) track"
 					)
 				} else {
-					await context.log.error(
+					await lifecycle.log.error(
 						"Background music did not start the \(direction.logName) track"
 					)
 				}
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await context.log.error(
+				await lifecycle.log.error(
 					"Background music failed to select the \(direction.logName) track: \(error.localizedDescription)"
 				)
 			}
@@ -121,9 +124,11 @@ extension BackgroundMusicController {
 	) async throws -> Bool {
 		guard isCurrent(operation) else { return false }
 		guard let playlist = try await targetPlayer.getPlaylist(), !playlist.isEmpty else {
-			await context.log.error("Background music playlist is empty or unavailable")
+			guard isCurrent(operation) else { return false }
+			await lifecycle.log.error("Background music playlist is empty or unavailable")
 			return false
 		}
+		guard isCurrent(operation) else { return false }
 		let currentIndex = try await targetPlayer.getPlaylistIndex()
 		guard isCurrent(operation) else { return false }
 		guard
@@ -132,7 +137,7 @@ extension BackgroundMusicController {
 				currentIndex: currentIndex
 			)
 		else {
-			await context.log.error(
+			await lifecycle.log.error(
 				"Background music playlist has no different playable track; count=\(playlist.count) index=\(currentIndex)"
 			)
 			return false
@@ -197,6 +202,7 @@ extension BackgroundMusicController {
 					: playbackState == .paused
 				if reachedTarget, !expectsPlayback, !pausedChangedTrack {
 					try await targetPlayer.pause()
+					guard isCurrent(operation) else { return false }
 					pausedChangedTrack = true
 					continue
 				}
@@ -217,10 +223,10 @@ extension BackgroundMusicController {
 					previousVideoID == nil || $0 != previousVideoID ? $0 : targetVideoID
 				}
 				?? targetVideoID
-			context.currentMusicVideoID = resolvedVideoID
+			currentMusicVideoID = resolvedVideoID
 			if lastObservedVideoID != resolvedVideoID {
-				let fallbackTitle = "Playlist track \(targetIndex + 1)"
-				context.currentMusicTitle = fallbackTitle
+				let fallbackTitle = L10n.string(AudioStrings.playlistTrack(targetIndex + 1))
+				currentMusicTitle = fallbackTitle
 				nowPlaying.updateTrack(title: fallbackTitle, artist: nil)
 			}
 		}
@@ -229,7 +235,7 @@ extension BackgroundMusicController {
 		let observedVideoID = lastVideoID ?? "unknown"
 		let observedState = lastState.map(String.init(describing:)) ?? "unknown"
 		let errorDetail = lastError.map { " error=\($0)" } ?? ""
-		await context.log.error(
+		await lifecycle.log.error(
 			"Background music timed out waiting for target; previous=\(previous) targetIndex=\(targetIndex) targetVideo=\(targetVideoID) observedIndex=\(observedIndex) observedVideo=\(observedVideoID) state=\(observedState)\(errorDetail)"
 		)
 		return false
@@ -269,14 +275,14 @@ extension BackgroundMusicController {
 			return false
 		}
 
-		context.currentMusicVideoID = metadata.videoId
+		currentMusicVideoID = metadata.videoId
 		nowPlaying.updateTrack(title: title, artist: metadata.author)
 		let changed = title != lastObservedTitle || metadata.videoId != lastObservedVideoID
 		lastObservedTitle = title
 		lastObservedVideoID = metadata.videoId
-		context.currentMusicTitle = title
+		currentMusicTitle = title
 		guard changed else { return true }
-		Task { [log = context.log] in
+		Task { [log = lifecycle.log] in
 			await log.info("Background music now playing: \(title)")
 		}
 		return true

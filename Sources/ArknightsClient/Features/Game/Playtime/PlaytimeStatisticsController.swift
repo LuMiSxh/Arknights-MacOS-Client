@@ -115,13 +115,18 @@ final class PlaytimeStatisticsController {
 
 	private static func load(from fileURL: URL) throws -> PlaytimeStatistics {
 		guard FileManager.default.fileExists(atPath: fileURL.path) else { return .empty }
-		let values = try fileURL.resourceValues(forKeys: [.fileSizeKey])
-		guard (values.fileSize ?? 0) <= AppConstants.Playtime.statisticsMaximumBytes else {
+		let data: Data
+		do {
+			data = try BoundedFileReader.readRegularFile(
+				at: fileURL,
+				maximumBytes: AppConstants.Playtime.statisticsMaximumBytes
+			)
+		} catch BoundedFileReadError.tooLarge {
 			throw PlaytimeStatisticsError.fileTooLarge
 		}
 		let decoder = JSONDecoder()
 		decoder.dateDecodingStrategy = .iso8601
-		return try decoder.decode(PlaytimeStatistics.self, from: Data(contentsOf: fileURL))
+		return try decoder.decode(PlaytimeStatistics.self, from: data)
 			.validated()
 	}
 

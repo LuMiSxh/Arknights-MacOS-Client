@@ -6,11 +6,11 @@ import Testing
 
 struct DownloadProgressBaselineTests {
 	@Test
-	func incompleteInstallationCountsFinishedAndPartialFiles() {
+	func incompleteInstallationCountsFinishedAndPartialFiles() throws {
 		let complete = manifestFile(path: "complete", size: 300)
 		let partial = manifestFile(path: "partial", size: 700)
 
-		let baseline = DownloadProgressBaseline(
+		let baseline = try DownloadProgressBaseline(
 			manifestFiles: [complete, partial],
 			pendingFiles: [partial],
 			isIncompleteInstallation: true,
@@ -24,11 +24,11 @@ struct DownloadProgressBaselineTests {
 	}
 
 	@Test
-	func updateMeasuresOnlyChangedFiles() {
+	func updateMeasuresOnlyChangedFiles() throws {
 		let unchanged = manifestFile(path: "unchanged", size: 300)
 		let changed = manifestFile(path: "changed", size: 700)
 
-		let baseline = DownloadProgressBaseline(
+		let baseline = try DownloadProgressBaseline(
 			manifestFiles: [unchanged, changed],
 			pendingFiles: [changed],
 			isIncompleteInstallation: false,

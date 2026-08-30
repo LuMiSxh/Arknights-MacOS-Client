@@ -3,6 +3,13 @@
 import Darwin
 import Foundation
 
+protocol WineRuntimeSessionControlling: Sendable {
+	func waitUntilStopped(prefixDirectory: URL) async throws
+	func stop(prefixDirectory: URL) async throws
+}
+
+extension WineRuntime: WineRuntimeSessionControlling {}
+
 extension WineRuntime {
 	func waitUntilStopped(prefixDirectory: URL) async throws {
 		guard let wineserverURL else {

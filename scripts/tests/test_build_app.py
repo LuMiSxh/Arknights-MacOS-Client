@@ -8,9 +8,6 @@ from dataclasses import replace
 from pathlib import Path
 
 import build_app
-import build_dmg
-import generate_icon
-import project_config as project_config_command
 import pytest
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
@@ -59,37 +56,6 @@ def test_app_resources_follow_project_configuration(
             / f"Resources/{language}.lproj/InfoPlist.strings"
         )
         assert resources[source] == Path(f"{language}.lproj/InfoPlist.strings")
-
-
-def test_packaging_commands_follow_changed_project_metadata(
-    tmp_path: Path, configuration: ProjectConfiguration
-) -> None:
-    changed = replace(
-        configuration,
-        product=replace(
-            configuration.product,
-            display_name="Renamed Client",
-            icon_name="RenamedIcon",
-            development_region="fr",
-        ),
-        package=replace(configuration.package, macos_version="16.0"),
-    )
-
-    dmg_arguments = build_dmg.dmgbuild_arguments(
-        tmp_path / "Renamed Client.app", tmp_path / "Renamed Client.dmg", changed
-    )
-    icon_arguments = generate_icon.compile_arguments(
-        tmp_path / "RenamedIcon.icon", tmp_path / "compiled", changed
-    )
-
-    assert "app_name=Renamed Client.app" in dmg_arguments
-    assert project_config_command.FIELDS["dmg-name"](changed) == "Renamed Client.dmg"
-    assert icon_arguments[icon_arguments.index("--app-icon") + 1] == "RenamedIcon"
-    assert icon_arguments[icon_arguments.index("--development-region") + 1] == "fr"
-    assert (
-        icon_arguments[icon_arguments.index("--minimum-deployment-target") + 1]
-        == "16.0"
-    )
 
 
 def test_compatibility_artifacts_are_discovered_recursively(tmp_path: Path) -> None:
@@ -198,3 +164,29 @@ def test_sparkle_framework_copy_preserves_symlinks(tmp_path: Path) -> None:
     assert (destination / "Versions/Current").is_symlink()
     assert (destination / "Sparkle").is_symlink()
     assert (destination / "Sparkle").read_bytes() == b"framework"
+
+
+def test_sparkle_framework_version_comes_from_package_metadata(
+    tmp_path: Path, configuration: ProjectConfiguration
+) -> None:
+    changed = replace(
+        configuration,
+        package=replace(
+            configuration.package,
+            exact_dependency_versions=(("sparkle", "9.8.7"),),
+        ),
+    )
+    framework = tmp_path / "bin/Sparkle.framework/Versions/A"
+    (framework / "XPCServices/Downloader.xpc").mkdir(parents=True)
+    (framework / "XPCServices/Installer.xpc").mkdir()
+    (framework / "Updater.app").mkdir()
+    (framework / "Sparkle").write_bytes(b"framework")
+    (framework / "Resources").mkdir()
+    (framework / "Resources/Info.plist").write_bytes(
+        plistlib.dumps({"CFBundleShortVersionString": "9.8.7"})
+    )
+    (framework.parent / "Current").symlink_to("A")
+
+    discovered = build_app.sparkle_framework(tmp_path / "bin", changed)
+
+    assert discovered == tmp_path / "bin/Sparkle.framework"

@@ -12,9 +12,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from runtime_config import load_runtime_config
+from runtime_config import MAXIMUM_RUNTIME_ARCHIVE_BYTES, load_runtime_config
 
-from lib.common import ScriptError, fail
+from lib.common import ScriptError, fail, safe_relative_path
 from lib.runtime_monitor import (
     COMMIT_PATTERN,
     RuntimeCandidate,
@@ -29,7 +29,6 @@ from lib.runtime_monitor import (
 MIRROR_REPOSITORY = "dappermint/Whisky"
 RECIPE_REPOSITORY = "dappermint/winecx-gptk"
 MAXIMUM_SOURCE_ARCHIVE_BYTES = 32 * 1_024 * 1_024
-MAXIMUM_RUNTIME_BYTES = 600 * 1_024 * 1_024
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 PINNED_RUNTIME_URL_PATTERN = re.compile(
     r"^https://github\.com/dappermint/Whisky/releases/download/v([0-9]+\.[0-9]+\.[0-9]+)/Libraries\.tar\.gz$"
@@ -129,7 +128,9 @@ class RuntimeProbe:
         if verify_archive:
             try:
                 if (
-                    self.client.hash_download(runtime_url, MAXIMUM_RUNTIME_BYTES)
+                    self.client.hash_download(
+                        runtime_url, MAXIMUM_RUNTIME_ARCHIVE_BYTES
+                    )
                     != pinned_digest
                 ):
                     raise ValueError(
@@ -261,7 +262,8 @@ class RuntimeProbe:
         for release in (mirror, recipe):
             checksum = required_asset(release, "Libraries.tar.gz.sha256")
             contents = self.client.download(checksum.url, 1_024).decode("ascii")
-            if contents.split()[0] != metadata.archive_sha256:
+            fields = contents.split()
+            if not fields or fields[0] != metadata.archive_sha256:
                 raise ValueError("published checksum file disagrees with asset digest")
 
     def _verify_source_commits(self, provenance) -> list[RuntimeIncident]:
@@ -331,10 +333,14 @@ class RuntimeProbe:
                     "candidate comparison contains an empty commit message"
                 )
             summaries.append(sanitize_summary(message))
+        if not all(isinstance(item, dict) for item in files):
+            raise TypeError("candidate comparison contains invalid file metadata")
         changed_files = tuple(
-            safe_changed_path(_string(item, "filename"))
+            safe_relative_path(
+                _string(item, "filename"),
+                "candidate comparison contains an unsafe file path",
+            )
             for item in files[:50]
-            if isinstance(item, dict)
         )
         return tuple(summaries), changed_files
 
@@ -377,11 +383,18 @@ def required_asset(release: RuntimeRelease, name: str):
     return asset
 
 
-def classify_change_areas(pinned, candidate, changed_files, *, wine_gecko_changed):
+def classify_change_areas(
+    pinned,
+    candidate,
+    changed_files,
+    *,
+    wine_gecko_changed,
+):
     def pin_status(name: str) -> str:
         return "changed" if pinned[name] != candidate[name] else "unchanged"
 
     nixpkgs_changed = pin_status("NIXPKGS_REV") == "changed"
+
     workflow_changed = ".github/workflows/build.yml" in changed_files
     return (
         ("WineCX", pin_status("WINECX_COMMIT")),
@@ -394,14 +407,14 @@ def classify_change_areas(pinned, candidate, changed_files, *, wine_gecko_change
         (
             "Patches",
             "changed"
-            if any(p.startswith("patches/") for p in changed_files)
+            if any(path.startswith("patches/") for path in changed_files)
             else "unchanged",
         ),
         ("Packaging", "review" if workflow_changed else "unchanged"),
         (
             "GPTK video path",
             "changed"
-            if any(p.startswith("gptk-video/") for p in changed_files)
+            if any(path.startswith("gptk-video/") for path in changed_files)
             else "unchanged",
         ),
     )
@@ -432,17 +445,6 @@ def sanitize_summary(value: str) -> str:
     first_line = value.splitlines()[0] if value else "unexpected monitor failure"
     sanitized = re.sub(r"[^A-Za-z0-9 .,_:/()'&+\-]", "", first_line)
     return sanitized[:240].strip() or "unexpected monitor failure"
-
-
-def safe_changed_path(value: str) -> str:
-    if (
-        len(value) > 240
-        or value.startswith("/")
-        or any(component in {"", ".", ".."} for component in value.split("/"))
-        or re.fullmatch(r"[A-Za-z0-9._/+\-]+", value) is None
-    ):
-        raise ValueError("candidate comparison contains an unsafe file path")
-    return value
 
 
 def _mapping(value: dict[str, Any], key: str) -> dict[str, Any]:

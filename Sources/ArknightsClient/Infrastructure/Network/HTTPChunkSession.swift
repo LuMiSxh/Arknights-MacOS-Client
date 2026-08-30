@@ -2,6 +2,12 @@
 
 import Foundation
 
+enum HTTPTransportError: Error, Sendable {
+	case invalidResponse(URL?)
+	case responseTooLarge(URL, maximumBytes: Int)
+	case redirectRejected(URL)
+}
+
 enum HTTPChunkEvent: Sendable {
 	case response(HTTPURLResponse)
 	case data(Data)
@@ -30,7 +36,6 @@ struct HTTPChunkStream: Sendable {
 final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Sendable {
 	private typealias Continuation = AsyncThrowingStream<HTTPChunkEvent, any Error>.Continuation
 
-	private let configuration: URLSessionConfiguration
 	private let redirectValidator: (@Sendable (URL) -> Bool)?
 	private let delegateQueue: OperationQueue
 	private let lock = NSLock()
@@ -41,7 +46,6 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		configuration: URLSessionConfiguration,
 		redirectValidator: (@Sendable (URL) -> Bool)? = nil
 	) {
-		self.configuration = configuration
 		self.redirectValidator = redirectValidator
 		delegateQueue = OperationQueue()
 		delegateQueue.maxConcurrentOperationCount = 1
@@ -76,7 +80,10 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 	) {
 		guard let response = response as? HTTPURLResponse else {
 			completionHandler(.cancel)
-			finish(taskIdentifier: dataTask.taskIdentifier, throwing: LauncherError.invalidResponse)
+			finish(
+				taskIdentifier: dataTask.taskIdentifier,
+				throwing: HTTPTransportError.invalidResponse(dataTask.currentRequest?.url)
+			)
 			return
 		}
 		continuation(for: dataTask.taskIdentifier)?.yield(.response(response))
@@ -94,7 +101,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 			completionHandler(nil)
 			finish(
 				taskIdentifier: task.taskIdentifier,
-				throwing: LauncherError.invalidRemoteAsset(
+				throwing: HTTPTransportError.redirectRejected(
 					request.url ?? URL(filePath: "/invalid-redirect")
 				)
 			)

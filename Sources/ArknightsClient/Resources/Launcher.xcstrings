@@ -163,6 +163,24 @@
       },
       "extractionState": "manual"
     },
+    "launcher.error.diskCapacityUnavailable": {
+      "comment": "Installation preflight cannot determine available disk capacity",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der verfügbare Speicherplatz konnte vor der Installation nicht ermittelt werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available disk space could not be determined before installation."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
     "launcher.error.checksumMismatch": {
       "comment": "CRC check failed; file, actual checksum, expected checksum follow",
       "localizations": {
@@ -1711,24 +1729,6 @@
       },
       "extractionState": "manual"
     },
-    "launcher.status.cacheCleared": {
-      "comment": "Cache cleanup success status",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cache geleert"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cache cleared"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
     "launcher.status.checking": {
       "comment": "Generic checking status",
       "localizations": {
@@ -1760,42 +1760,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Downloading…"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
-    "launcher.status.gameIconUpdated": {
-      "comment": "Game icon success status",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spiel-Symbol wird beim nächsten Start verwendet"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Game icon updated for the next launch"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
-    "launcher.status.gameIconRestored": {
-      "comment": "Game icon reset success status",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Standard-Spiel-Symbol wird beim nächsten Start verwendet"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Default game icon restored for the next launch"
           }
         }
       },
@@ -1963,24 +1927,6 @@
       },
       "extractionState": "manual"
     },
-    "launcher.status.settingsReset": {
-      "comment": "Settings reset success status",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Einstellungen auf Standard zurückgesetzt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Settings reset to default"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
     "launcher.status.starting": {
       "comment": "Game starting status",
       "localizations": {
@@ -2138,60 +2084,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deleting Wine prefix…"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
-    "launcher.status.galleryCacheCleared": {
-      "comment": "Preset gallery cache cleanup success status",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Galerie-Caches geleert"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Asset gallery caches cleared"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
-    "launcher.status.iconsRestored": {
-      "comment": "Launcher and game icons reset success status",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Standard-Symbole für Launcher und Spiel wiederhergestellt"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Default launcher and game icons restored"
-          }
-        }
-      },
-      "extractionState": "manual"
-    },
-    "launcher.status.iconsUpdated": {
-      "comment": "Launcher and game icon update success status",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Launcher- und Spielsymbole aktualisiert"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Launcher and game icons updated"
           }
         }
       },

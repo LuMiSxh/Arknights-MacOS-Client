@@ -173,7 +173,13 @@ struct WineRuntime: Sendable {
 		var mutablePrefixDirectory = prefixDirectory
 		var prefixValues = URLResourceValues()
 		prefixValues.isExcludedFromBackup = true
-		try? mutablePrefixDirectory.setResourceValues(prefixValues)
+		do {
+			try mutablePrefixDirectory.setResourceValues(prefixValues)
+		} catch {
+			await log?.error(
+				"Failed to exclude the Wine prefix from backups: \(error.localizedDescription)"
+			)
+		}
 
 		let logURL =
 			logURL ?? prefixDirectory.deletingLastPathComponent().appending(path: "wine.log")
@@ -189,23 +195,23 @@ struct WineRuntime: Sendable {
 		let logHandle = try FileHandle(forWritingTo: logURL)
 		defer { logHandle.closeFile() }
 		try logHandle.seekToEnd()
-		RuntimePerformanceLog.write(stage: "filesystem", since: launchStarted, to: logHandle)
+		RuntimePerformanceLog.write(
+			stage: "filesystem", since: launchStarted, to: logHandle)
 		let compatibilityChanges = try compatibilityManager.prepareForLaunch(
 			in: gameExecutable.deletingLastPathComponent()
 		)
-		RuntimePerformanceLog.write(stage: "compatibility", since: launchStarted, to: logHandle)
+		RuntimePerformanceLog.write(
+			stage: "compatibility", since: launchStarted, to: logHandle)
 		for identifier in compatibilityChanges.installed {
 			try? logHandle.write(
 				contentsOf: Data(
-					"Arknights Client: enabled compatibility component \(identifier).\n".utf8
-				))
+					"Arknights Client: enabled compatibility component \(identifier).\n".utf8))
 		}
 		for identifier in compatibilityChanges.removed {
 			try? logHandle.write(
 				contentsOf: Data(
 					"Arknights Client: removed retired compatibility component \(identifier).\n"
-						.utf8
-				))
+						.utf8))
 		}
 
 		var environment = runtimeEnvironment(
@@ -222,7 +228,8 @@ struct WineRuntime: Sendable {
 			logHandle: logHandle,
 			log: log
 		)
-		RuntimePerformanceLog.write(stage: "prefix", since: launchStarted, to: logHandle)
+		RuntimePerformanceLog.write(
+			stage: "prefix", since: launchStarted, to: logHandle)
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
 		try await applyDisplayConfiguration(
 			displayConfiguration,
@@ -230,7 +237,8 @@ struct WineRuntime: Sendable {
 			environment: environment,
 			logHandle: logHandle
 		)
-		RuntimePerformanceLog.write(stage: "display", since: launchStarted, to: logHandle)
+		RuntimePerformanceLog.write(
+			stage: "display", since: launchStarted, to: logHandle)
 		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
 			displayConfiguration.browserScaleFactor
 		)
@@ -260,7 +268,8 @@ struct WineRuntime: Sendable {
 			terminationContinuation.finish()
 		}
 		try process.run()
-		RuntimePerformanceLog.write(stage: "process", since: launchStarted, to: logHandle)
+		RuntimePerformanceLog.write(
+			stage: "process", since: launchStarted, to: logHandle)
 
 		let terminationTask = Task {
 			for await exit in terminationStatuses { return exit }

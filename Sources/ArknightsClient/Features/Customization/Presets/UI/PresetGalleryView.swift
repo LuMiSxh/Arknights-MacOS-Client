@@ -16,7 +16,6 @@ struct PresetGalleryView: View {
 	@State private var isLoading = true
 	@State private var applyingItemID: String?
 	@State private var showsIconStylePreview = false
-
 	private let avatarColumns = [
 		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
 	]
@@ -25,7 +24,6 @@ struct PresetGalleryView: View {
 		GridItem(.flexible(), spacing: 14),
 		GridItem(.flexible(), spacing: 14),
 	]
-
 	init(
 		catalog: PresetCatalogService,
 		customization: CustomizationController,
@@ -37,7 +35,6 @@ struct PresetGalleryView: View {
 		self.lifecycle = lifecycle
 		self.destination = destination
 	}
-
 	var body: some View {
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {
@@ -49,11 +46,9 @@ struct PresetGalleryView: View {
 					showsIconStylePreview: $showsIconStylePreview
 				)
 				Divider().overlay(Color.white.opacity(0.08))
-
 				searchBar
 					.padding(.horizontal, 24)
 					.padding(.vertical, 14)
-
 				ScrollView {
 					Group {
 						if isLoading {
@@ -81,9 +76,7 @@ struct PresetGalleryView: View {
 				.contentMargins(.top, 8, for: .scrollIndicators)
 				.contentMargins(.bottom, 24, for: .scrollIndicators)
 			}
-
 			FloatingActionFooterFade(height: 56)
-
 			FloatingActionBar(tint: customization.hudTintColor) {
 				FloatingDoneButton(accentColor: customization.accentColor) {
 					dismiss()
@@ -106,15 +99,17 @@ struct PresetGalleryView: View {
 		)
 		.onExitCommand(perform: dismiss.callAsFunction)
 		.task(id: destination) {
+			isLoading = true
+			let taskDestination = destination
 			if destination == .artwork {
 				wallpapers = await catalog.fetchWallpapers()
 			} else {
 				avatars = await catalog.fetchAvatars()
 			}
+			guard !Task.isCancelled, taskDestination == destination else { return }
 			isLoading = false
 		}
 	}
-
 	private var searchBar: some View {
 		ThemedTextField(
 			L10n.string(CustomizationStrings.searchLabel),
@@ -124,19 +119,16 @@ struct PresetGalleryView: View {
 			accentColor: customization.accentColor
 		)
 	}
-
 	private var filteredAvatars: [PresetAvatar] {
 		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		if query.isEmpty { return avatars }
 		return avatars.filter { $0.name.localizedStandardContains(query) }
 	}
-
 	private var filteredWallpapers: [PresetWallpaper] {
 		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		if query.isEmpty { return wallpapers }
-		return wallpapers.filter { $0.title.localizedStandardContains(query) }
+		return wallpapers.filter { $0.displayTitle.localizedStandardContains(query) }
 	}
-
 	private var avatarsGrid: some View {
 		LazyVGrid(columns: avatarColumns, spacing: 18) {
 			ForEach(filteredAvatars) { avatar in
@@ -165,7 +157,6 @@ struct PresetGalleryView: View {
 								)
 							)
 							.clipShape(RoundedRectangle(cornerRadius: 22))
-
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.65)
@@ -217,7 +208,6 @@ struct PresetGalleryView: View {
 			}
 		}
 	}
-
 	private var wallpapersGrid: some View {
 		LazyVGrid(columns: wallpaperColumns, spacing: 14) {
 			ForEach(filteredWallpapers) { wp in
@@ -238,7 +228,6 @@ struct PresetGalleryView: View {
 							.frame(height: 105)
 							.clipped()
 							.clipShape(RoundedRectangle(cornerRadius: 10))
-
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.68)
@@ -256,8 +245,7 @@ struct PresetGalleryView: View {
 						}
 						.frame(height: 105)
 						.background(Color.white.opacity(0.05), in: .rect(cornerRadius: 10))
-
-						Text(wp.title)
+						Text(wp.displayTitle)
 							.font(.caption.weight(isApplying ? .bold : .medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
@@ -288,9 +276,9 @@ struct PresetGalleryView: View {
 				.buttonStyle(.plain)
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
 				.disabled(applyingItemID != nil)
-				.accessibilityLabel(wp.title)
+				.accessibilityLabel(wp.displayTitle)
 				.accessibilityHint(
-					L10n.string(CustomizationStrings.wallpaperApplyHelp(wp.title))
+					L10n.string(CustomizationStrings.wallpaperApplyHelp(wp.displayTitle))
 				)
 				.accessibilityValue(
 					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
@@ -298,35 +286,61 @@ struct PresetGalleryView: View {
 			}
 		}
 	}
-
 	private func applyAvatar(_ avatar: PresetAvatar) {
 		guard applyingItemID == nil else { return }
 		applyingItemID = avatar.id
+		let taskDestination = destination
 		Task {
 			do {
-				let data = try await catalog.imageData(
-					for: avatar.url, cacheKey: avatar.id
-				)
-				customization.applyPresetAvatar(data: data)
+				let data = try await catalog.imageData(for: avatar.url, cacheKey: avatar.id)
+				guard
+					!Task.isCancelled,
+					destination == taskDestination,
+					applyingItemID == avatar.id
+				else { return }
+				await customization.applyPresetAvatar(data: data)
+				guard
+					!Task.isCancelled,
+					destination == taskDestination,
+					applyingItemID == avatar.id
+				else { return }
 				dismiss()
 			} catch {
+				guard
+					!Task.isCancelled,
+					destination == taskDestination,
+					applyingItemID == avatar.id
+				else { return }
 				applyingItemID = nil
 				lifecycle.show(error)
 			}
 		}
 	}
-
 	private func applyWallpaper(_ wp: PresetWallpaper) {
 		guard applyingItemID == nil else { return }
 		applyingItemID = wp.id
+		let taskDestination = destination
 		Task {
 			do {
-				let data = try await catalog.imageData(
-					for: wp.url, cacheKey: wp.id
-				)
+				let data = try await catalog.imageData(for: wp.url, cacheKey: wp.id)
+				guard
+					!Task.isCancelled,
+					destination == taskDestination,
+					applyingItemID == wp.id
+				else { return }
 				await customization.applyDirectCustomArtwork(data: data)
+				guard
+					!Task.isCancelled,
+					destination == taskDestination,
+					applyingItemID == wp.id
+				else { return }
 				dismiss()
 			} catch {
+				guard
+					!Task.isCancelled,
+					destination == taskDestination,
+					applyingItemID == wp.id
+				else { return }
 				applyingItemID = nil
 				lifecycle.show(error)
 			}

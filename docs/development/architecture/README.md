@@ -62,10 +62,9 @@ example, `InstallationController` can update lifecycle state, but a view should 
 | Folder           | Responsibility                                                                                  |
 | ---------------- | ----------------------------------------------------------------------------------------------- |
 | `Application`    | App entry point, dependency composition, and macOS lifecycle                                    |
-| `Core`           | Small application-wide declarations such as fixed limits and keys                               |
 | `Features`       | Feature-owned UI, state, domain models, services, and external work                             |
 | `Infrastructure` | Feature-independent network and system I/O primitives                                           |
-| `Shared`         | Persisted paths and preferences, diagnostics, support utilities, and cross-feature UI contracts |
+| `Shared`         | Cross-feature domain/configuration, persistence, diagnostics, support, and shared UI contracts  |
 | `Resources`      | SwiftPM resources copied into the application bundle                                            |
 
 `Features` is organized around behavior rather than technical layers:
@@ -81,7 +80,9 @@ Feature-specific components remain with their feature. `Shared/UI/Components` co
 
 `Infrastructure` contains feature-independent I/O such as bounded HTTP loading and chunked
 transfer support. It does not decide whether a response is a valid game manifest or how a
-controller presents an error. That policy remains in the owning feature.
+controller presents an error. That policy remains in the owning feature. Neither `Infrastructure`
+nor `Shared` imports feature-owned types; features map transport and storage errors at their
+boundary.
 
 User-facing launcher copy lives in Apple String Catalogs with stable, feature-namespaced keys. Generated Foundation symbols make catalog references type-safe, while small feature-local `…Strings` namespaces keep ownership with the UI that uses the copy. English is the source language and deterministic fallback; the launcher follows macOS by default and persists an explicit in-app language override when selected. The catalog workflow is documented in [Localization](../localization.md).
 
@@ -91,7 +92,7 @@ Tests follow separate unit, deterministic integration, and live-contract boundar
 
 `LauncherViewModel` is the application composition root. It constructs feature controllers, wires the
 few transitions that cross feature boundaries, and provides the application shell used by developer
-scenarios and background music. It does not implement network, filesystem, installation, Wine,
+scenarios. It does not implement network, filesystem, installation, Wine, audio,
 customization, or update work itself. Feature-local views receive their owning controller or explicit
 values and actions instead of the complete root model. New work should follow the same direction:
 put policy beside the feature that owns it and add only the smallest callback needed at composition
@@ -107,6 +108,7 @@ Long-lived state and asynchronous work have one feature owner:
 | `IntelTranslationController`      | Rosetta preflight, installation, recovery state, and launch eligibility                                   |
 | `LauncherRefreshController`       | Concurrent Yostar configuration and branding refreshes, stale-result rejection, and region transitions    |
 | `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, and preset application                                   |
+| `BackgroundMusicController`        | Playlist parsing, playback, Now Playing metadata, fades, and music-link presentation                       |
 | `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, and popup ordering                                      |
 | `LauncherPreferencesController`   | Persisted user-facing settings and the region-aware server-reset timer                                    |
 | `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                         |

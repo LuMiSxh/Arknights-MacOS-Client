@@ -27,7 +27,11 @@ from lib.project_config import ProjectConfiguration, load_project_configuration
 LICENSE_HEADER = "// SPDX-License-Identifier: MPL-2.0\n\n"
 FINGERPRINT_PREFIX = "// Localization catalog fingerprint: "
 GENERATOR_SOURCE = Path(__file__).read_bytes()
-KEY_PATTERN = re.compile(r"^[a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)+$")
+KEY_PATTERN = re.compile(r"^[a-z][A-Za-z0-9]*(?:\.[a-z][A-Za-z0-9]*)+$")
+GENERATED_SYMBOL_PATTERN = re.compile(
+    r"Localized string for key “(?P<key>[^”]+)”[\s\S]*?\n\s*"
+    r"static (?:var|func) (?P<symbol>[A-Za-z_][A-Za-z0-9_]*)\b"
+)
 SWIFT_PACKAGE_BUNDLE_DECLARATION = (
     "private nonisolated let resourceBundle = Foundation.Bundle.module"
 )
@@ -124,6 +128,44 @@ def _string_units(value: object) -> list[dict[str, str]]:
     if isinstance(value, list):
         return [unit for nested in value for unit in _string_units(nested)]
     return []
+
+
+def validate_catalog_usage(
+    layout: LocalizationLayout, *, source_directory: Path
+) -> None:
+    """Reject catalog entries whose generated Swift symbol has no production reference."""
+    source = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in source_directory.rglob("*.swift")
+        if not path.name.startswith("GeneratedStringSymbols_")
+    )
+    orphaned: list[str] = []
+    for catalog in layout.catalogs:
+        strings = json.loads(catalog.read_text(encoding="utf-8")).get("strings", {})
+        generated_path = (
+            layout.generated_directory / f"GeneratedStringSymbols_{catalog.stem}.swift"
+        )
+        generated = generated_path.read_text(encoding="utf-8")
+        symbols = {
+            match.group("key"): match.group("symbol")
+            for match in GENERATED_SYMBOL_PATTERN.finditer(generated)
+        }
+        missing_symbols = sorted(set(strings) - set(symbols))
+        if missing_symbols:
+            raise ScriptError(
+                "generated localization symbols are incomplete: "
+                + ", ".join(missing_symbols)
+            )
+        orphaned.extend(
+            key
+            for key, symbol in symbols.items()
+            if re.search(rf"\b{re.escape(symbol)}\b", source) is None
+            and f'"{key}"' not in source
+        )
+    if orphaned:
+        raise ScriptError(
+            "localization keys have no Swift reference: " + ", ".join(sorted(orphaned))
+        )
 
 
 def use_app_resource_bundle(generated_symbols: str) -> str:
@@ -277,6 +319,7 @@ def prepare_localization(
         layout.generated_directory.glob("GeneratedStringSymbols_*.swift")
     ) - set(expected)
     if not stale and not obsolete:
+        validate_catalog_usage(layout, source_directory=configuration.target_directory)
         return False
 
     if stale:
@@ -294,6 +337,7 @@ def prepare_localization(
                 destination.write_bytes(generated[catalog.stem].read_bytes())
     for path in obsolete:
         path.unlink()
+    validate_catalog_usage(layout, source_directory=configuration.target_directory)
     return True
 
 

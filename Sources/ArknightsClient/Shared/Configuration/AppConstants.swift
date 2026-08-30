@@ -5,6 +5,11 @@ import Foundation
 enum AppConstants {
 	enum Game {
 		static let installedStateFileName = ".arknights-client-state.json"
+		static let installedStateMaximumBytes = 1 * 1_024 * 1_024
+		static let runtimeMigrationStateMaximumBytes = 64 * 1_024
+		static let userDirectoryConfigurationMaximumBytes = 64 * 1_024
+		static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
+		static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
 	}
 
 	enum Icon {
@@ -68,6 +73,7 @@ enum AppConstants {
 		/// converted into a rate. This keeps individual HTTP chunks from making the
 		/// displayed speed oscillate.
 		static let transferRateSampleInterval: Duration = .milliseconds(250)
+		static let progressEmissionInterval: Duration = .milliseconds(100)
 		/// No useful rate can be inferred after this much time without network data.
 		/// This deliberately exceeds a normal file/stream hand-off gap.
 		static let transferRateStallTimeout: Duration = .seconds(5)
@@ -75,14 +81,12 @@ enum AppConstants {
 		static let transferRateMonitorInterval: Duration = .seconds(1)
 		/// Weight of the newest sample in the smoothed transfer rate.
 		static let transferRateSmoothingFactor = 0.35
-		static let launcherReleaseMaximumBytes = 1 * 1_024 * 1_024
 		static let announcementFeedMaximumBytes = 128 * 1_024
 		static let yostarAPIResponseMaximumBytes = 4 * 1_024 * 1_024
 		static let yostarManifestMaximumBytes = 32 * 1_024 * 1_024
 	}
 
 	enum Presets {
-		static let cacheGenerationFilename = ".launcher-version"
 		static let characterCatalogMaximumBytes = 32 * 1_024 * 1_024
 		static let wallpaperCatalogMaximumBytes = 4 * 1_024 * 1_024
 		static let imageMaximumBytes = 24 * 1_024 * 1_024
@@ -98,6 +102,7 @@ enum AppConstants {
 
 	enum IO {
 		static let checksumBufferSize = 4 * 1024 * 1024
+		static let processDiagnosticMaximumBytes = 16 * 1_024
 		static let processDiagnosticMaximumCharacters = 4_096
 	}
 
@@ -119,6 +124,8 @@ enum AppConstants {
 	enum Artwork {
 		static let launcherMaximumBytes = 25 * 1_024 * 1_024
 		static let officialLogoMaximumBytes = 2 * 1_024 * 1_024
+		static let maximumDimension = 8_192
+		static let maximumPixels = 36_000_000
 	}
 
 	enum Timeouts {

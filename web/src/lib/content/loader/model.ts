@@ -1,6 +1,6 @@
 import type { ParsedMarkdown } from '../frontmatter.js';
 import type { RenderedMarkdown } from '../markdown.js';
-import type { DocumentMetadata } from '../types.js';
+import type { DocumentMetadata, SiteRoute } from '../types.js';
 
 export interface SupportCodeRegistryEntry {
 	code: string;
@@ -11,7 +11,7 @@ export interface SourceDocument extends ParsedMarkdown {
 	relative: string;
 	source: string;
 	isReadme: boolean;
-	route: string;
+	route: SiteRoute;
 	rendered?: RenderedMarkdown;
 }
 

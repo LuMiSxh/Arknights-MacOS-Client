@@ -21,8 +21,14 @@ struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	let id: String
 	let title: String
+	let fallbackOrdinal: Int?
 	let url: URL
 	let thumbnailURL: URL?
+
+	var displayTitle: String {
+		fallbackOrdinal.map { L10n.string(CustomizationStrings.wallpaperFallbackTitle($0)) }
+			?? title
+	}
 }
 
 /// Decodes identity fields from `character_table.json`.

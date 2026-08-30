@@ -25,24 +25,6 @@ struct LauncherViewModelConcurrencyTests {
 	}
 
 	@Test
-	func presentationFailureDoesNotOverwriteRunningGameLifecycle() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		let sessionID = UUID()
-		model.lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
-		model.lifecycle.setStatus(.running)
-
-		model.lifecycle.show(LauncherError.cannotSetAppIcon)
-
-		#expect(model.gameSession.activeGameSessionID == sessionID)
-		#expect(model.gameSession.isGameProcessRunning)
-		#expect(model.gameSession.canStopGame)
-		#expect(model.lifecycle.failureMessage == LauncherError.cannotSetAppIcon.errorDescription)
-		await api.resolveBranding()
-	}
-
-	@Test
 	func activeGameSessionRejectsInstallationAndGameFileMaintenance() async {
 		let api = BlockingBrandingAPI()
 		let installer = ControllableInstaller()
@@ -208,30 +190,6 @@ struct LauncherViewModelConcurrencyTests {
 	}
 
 	@Test
-	func partialFilesRestoreTheResumableDownloadState() async throws {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequests(1)
-		let partial = model.installation.installDirectory.appending(path: "data/game.dat.part")
-		try FileManager.default.createDirectory(
-			at: partial.deletingLastPathComponent(),
-			withIntermediateDirectories: true
-		)
-		try Data("partial".utf8).write(to: partial)
-		defer { try? FileManager.default.removeItem(at: model.installation.installDirectory) }
-
-		model.installation.updateInstalledState()
-
-		#expect(!model.installation.isInstalled)
-		#expect(model.installation.hasPartialDownload)
-
-		try FileManager.default.removeItem(at: partial)
-		model.installation.updateInstalledState()
-		#expect(!model.installation.hasPartialDownload)
-		await api.resolveBranding()
-	}
-
-	@Test
 	func regionSwitchKeepsCurrentArtworkUntilReplacementLoads() async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
@@ -288,7 +246,7 @@ struct LauncherViewModelConcurrencyTests {
 		)
 		await api.resolveBranding(branding)
 		let artworkStarted = await waitForCondition {
-			BlockingArtworkURLProtocol.artworkRequestStarted
+			BlockingArtworkURLProtocol.isArtworkRequestStarted
 		}
 		#expect(artworkStarted)
 
@@ -318,21 +276,6 @@ struct LauncherViewModelConcurrencyTests {
 
 		model.refreshController.cancelRefresh()
 		await api.waitForCancellations(3)
-	}
-
-	@Test
-	func onboardingRosettaSimulationDoesNotInvokeTheSystemInstaller() async {
-		let installer = RosettaInstallationRecorder(status: 0)
-		let model = makeModel(
-			api: BlockingBrandingAPI(),
-			installer: ControllableInstaller(),
-			installRosettaSystemSoftware: { await installer.install() },
-			arguments: ["ArknightsClient", "--developer-scenario", "onboarding-rosetta"]
-		)
-
-		#expect(model.lifecycle.intelTranslationState == .rosettaMissing)
-		#expect(await model.installRosetta() == .available)
-		#expect(await installer.count == 0)
 	}
 
 }

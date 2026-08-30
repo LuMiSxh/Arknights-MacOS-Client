@@ -9,6 +9,10 @@ import SwiftUI
 @MainActor
 @Observable
 final class CustomizationController {
+	typealias DataLoader = @Sendable (URL) async throws -> Data
+	typealias DataStager = @Sendable (Data, URL) async throws -> Void
+	typealias AccentExtractor = @MainActor @Sendable (NSImage) async -> ExtractedAccent?
+
 	let lifecycle: LauncherLifecycleStore
 	let paths: AppPaths
 	let preferences: LauncherPreferencesStore
@@ -22,6 +26,8 @@ final class CustomizationController {
 		didSet { updateThemeColor() }
 	}
 	var officialLogo: NSImage?
+	private(set) var hasCustomAppIcon = false
+	private(set) var hasCustomGameIcon = false
 	var dynamicThemeHue: Double?
 	var accentColor: Color = LauncherVisuals.cyan
 	var hudTintColor: Color = LauncherVisuals.hudGlassTint
@@ -30,12 +36,35 @@ final class CustomizationController {
 	/// generation to reject an official image that was already in flight when the user chose a
 	/// custom image.
 	private(set) var customArtworkGeneration: UInt64 = 0
-	var hasPersistedCustomArtwork: Bool {
-		FileManager.default.fileExists(atPath: paths.customArtwork.path)
-	}
+	private(set) var hasPersistedCustomArtwork = false
+	let dataLoader: DataLoader
+	let dataStager: DataStager
+	let accentExtractor: AccentExtractor
+	@ObservationIgnored var artworkOperationID: UUID?
+	@ObservationIgnored var passiveArtworkOperationID: UUID?
+	@ObservationIgnored var artworkMutationInFlight = false
+	@ObservationIgnored var themeOperationID: UUID?
+	@ObservationIgnored var operatorIconOperationID: UUID?
+	@ObservationIgnored var passiveOperatorIconOperationID: UUID?
+	@ObservationIgnored var iconMutationGeneration: UInt64 = 0
+	@ObservationIgnored var iconMutationInFlight = false
+	@ObservationIgnored var iconRestoreOperationID: UUID?
+	@ObservationIgnored var officialLogoOperationID: UUID?
 
 	func customArtworkDidChange() {
 		customArtworkGeneration &+= 1
+	}
+
+	func setHasPersistedCustomArtwork(_ value: Bool) {
+		hasPersistedCustomArtwork = value
+	}
+
+	func setHasCustomAppIcon(_ value: Bool) {
+		hasCustomAppIcon = value
+	}
+
+	func setHasCustomGameIcon(_ value: Bool) {
+		hasCustomGameIcon = value
 	}
 
 	init(
@@ -46,7 +75,10 @@ final class CustomizationController {
 		artworkCache: ArtworkCache? = nil,
 		launcherIconManager: LauncherIconManager,
 		region: @escaping @MainActor () -> GameRegion,
-		usesDynamicTheme: @escaping @MainActor () -> Bool
+		usesDynamicTheme: @escaping @MainActor () -> Bool,
+		dataLoader: DataLoader? = nil,
+		dataStager: DataStager? = nil,
+		accentExtractor: AccentExtractor? = nil
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
@@ -56,6 +88,9 @@ final class CustomizationController {
 		self.launcherIconManager = launcherIconManager
 		self.region = region
 		self.usesDynamicTheme = usesDynamicTheme
+		self.dataLoader = dataLoader ?? CustomizationImageIO.load
+		self.dataStager = dataStager ?? CustomizationImageIO.stage
+		self.accentExtractor = accentExtractor ?? WallpaperColorExtractor.extractAccent
 	}
 
 	static func officialThemeCacheKey(for region: GameRegion, artworkCacheKey: String) -> String {

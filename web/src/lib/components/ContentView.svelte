@@ -3,7 +3,12 @@
 	import { onMount } from 'svelte';
 	import { SectionLabel } from 'anasthasia';
 	import MermaidEnhancer from './MermaidEnhancer.svelte';
-	import type { ContentNeighbors, ContentNode } from '$lib/content/types.js';
+	import PageMetadata from './PageMetadata.svelte';
+	import type {
+		ContentNeighbors,
+		ContentNode,
+		SiteRoute
+	} from '$lib/content/types.js';
 
 	interface Props {
 		content: ContentNode;
@@ -15,6 +20,7 @@
 	let tocNavigation = $state<HTMLElement>();
 	let copyStatus = $state('');
 	let copyStatusTimer: number | undefined;
+	let headingScanFrame: number | undefined;
 	const visibleChildren = $derived(
 		content.kind === 'directory'
 			? content.children.filter((entry) => !entry.hidden)
@@ -25,20 +31,23 @@
 			? content.headings.filter((heading) => heading.level > 1)
 			: []
 	);
-	const breadcrumbs = $derived.by(() => {
-		const segments = content.route.split('/').filter(Boolean);
-		return segments.map((segment, index) => ({
-			title:
-				index === segments.length - 1
-					? content.title
-					: segment
-							.replaceAll('-', ' ')
-							.replace(/\b\w/g, (character) =>
-								character.toUpperCase()
-							),
-			route: `/${segments.slice(0, index + 1).join('/')}/`
-		}));
-	});
+	const hasMermaid = $derived(content.html.includes('data-mermaid'));
+	const breadcrumbs = $derived.by(
+		(): Array<{ title: string; route: SiteRoute }> => {
+			const segments = content.route.split('/').filter(Boolean);
+			return segments.map((segment, index) => ({
+				title:
+					index === segments.length - 1
+						? content.title
+						: segment
+								.replaceAll('-', ' ')
+								.replace(/\b\w/g, (character) =>
+									character.toUpperCase()
+								),
+				route: `/${segments.slice(0, index + 1).join('/')}/`
+			}));
+		}
+	);
 
 	function syncActiveHeading() {
 		const offset = window.innerHeight * 0.2;
@@ -54,6 +63,14 @@
 			tocNavigation
 				?.querySelector('[aria-current="location"]')
 				?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		});
+	}
+
+	function scheduleActiveHeadingSync() {
+		if (headingScanFrame !== undefined) return;
+		headingScanFrame = requestAnimationFrame(() => {
+			headingScanFrame = undefined;
+			syncActiveHeading();
 		});
 	}
 
@@ -83,18 +100,26 @@
 	}
 
 	onMount(() => {
-		syncActiveHeading();
-		return () => window.clearTimeout(copyStatusTimer);
+		scheduleActiveHeadingSync();
+		return () => {
+			window.clearTimeout(copyStatusTimer);
+			if (headingScanFrame !== undefined)
+				cancelAnimationFrame(headingScanFrame);
+		};
 	});
 </script>
 
-<svelte:window onscroll={syncActiveHeading} onresize={syncActiveHeading} />
+<svelte:window
+	onscroll={scheduleActiveHeadingSync}
+	onresize={scheduleActiveHeadingSync}
+/>
 <svelte:document onclick={copyHeadingLink} />
 
-<svelte:head>
-	<title>{content.title} · Arknights Client</title>
-	<meta name="description" content={content.description} />
-</svelte:head>
+<PageMetadata
+	title={`${content.title} · Arknights Client`}
+	description={content.description}
+	path={content.route}
+/>
 
 <header class="content-header">
 	<nav class="breadcrumbs" aria-label="Breadcrumb">
@@ -104,7 +129,7 @@
 			{#if index === breadcrumbs.length - 1}
 				<span aria-current="page">{crumb.title}</span>
 			{:else}
-				<a href={resolve(crumb.route as `/${string}`)}>{crumb.title}</a>
+				<a href={resolve(crumb.route)}>{crumb.title}</a>
 			{/if}
 		{/each}
 	</nav>
@@ -121,7 +146,24 @@
 	</div>
 </header>
 
-<div class:with-toc={toc.length > 0} class="content-layout">
+<div class={`content-layout${toc.length > 0 ? ' with-toc' : ''}`}>
+	{#if toc.length > 0}
+		<aside class="content-toc" aria-label="On this page">
+			<SectionLabel>On this page</SectionLabel>
+			<nav bind:this={tocNavigation}>
+				{#each toc as heading (heading.id)}
+					<a
+						class={heading.level > 2 ? 'toc-nested' : undefined}
+						href={`#${heading.id}`}
+						aria-current={activeHeading === heading.id
+							? 'location'
+							: undefined}>{heading.text}</a
+					>
+				{/each}
+			</nav>
+		</aside>
+	{/if}
+
 	<article class="content-copy">
 		<p class="copy-status" aria-live="polite">{copyStatus}</p>
 		{#if content.html}
@@ -140,7 +182,7 @@
 				</div>
 				<nav class="directory-list" aria-label="Pages in this section">
 					{#each visibleChildren as entry (entry.route)}
-						<a href={resolve(entry.route as `/${string}`)}>
+						<a href={resolve(entry.route)}>
 							<span>
 								<strong>{entry.title}</strong>
 								<small>{entry.description}</small>
@@ -152,38 +194,18 @@
 			</section>
 		{/if}
 	</article>
-
-	{#if toc.length > 0}
-		<aside class="content-toc" aria-label="On this page">
-			<SectionLabel>On this page</SectionLabel>
-			<nav bind:this={tocNavigation}>
-				{#each toc as heading (heading.id)}
-					<a
-						class={heading.level > 2 ? 'toc-nested' : undefined}
-						href={`#${heading.id}`}
-						aria-current={activeHeading === heading.id
-							? 'location'
-							: undefined}>{heading.text}</a
-					>
-				{/each}
-			</nav>
-		</aside>
-	{/if}
 </div>
 
 {#if neighbors.previous || neighbors.next}
 	<nav class="page-neighbors" aria-label="Adjacent documentation pages">
 		{#if neighbors.previous}
-			<a href={resolve(neighbors.previous.route as `/${string}`)}>
+			<a href={resolve(neighbors.previous.route)}>
 				<small>Previous</small>
 				<strong>← {neighbors.previous.title}</strong>
 			</a>
 		{:else}<span></span>{/if}
 		{#if neighbors.next}
-			<a
-				class="next-page"
-				href={resolve(neighbors.next.route as `/${string}`)}
-			>
+			<a class="next-page" href={resolve(neighbors.next.route)}>
 				<small>Next</small>
 				<strong>{neighbors.next.title} →</strong>
 			</a>
@@ -191,9 +213,11 @@
 	</nav>
 {/if}
 
-{#key content.route}
-	<MermaidEnhancer route={content.route} />
-{/key}
+{#if hasMermaid}
+	{#key content.route}
+		<MermaidEnhancer route={content.route} />
+	{/key}
+{/if}
 
 <style>
 	.content-header {
@@ -251,10 +275,12 @@
 	.content-layout.with-toc {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) 11rem;
+		grid-template-areas: 'copy toc';
 		gap: 1.5rem;
 	}
 
 	.content-copy {
+		grid-area: copy;
 		min-width: 0;
 	}
 
@@ -271,8 +297,8 @@
 
 	.content-copy :global(.heading-link) {
 		display: inline-grid;
-		width: 1em;
-		height: 1em;
+		min-width: 2.75rem;
+		min-height: 2.75rem;
 		place-items: center;
 		margin-left: 0.4em;
 		color: var(--color-anasthasia-muted);
@@ -294,6 +320,12 @@
 		opacity: 1;
 	}
 
+	@media (hover: none), (pointer: coarse) {
+		.content-copy :global(.heading-link) {
+			opacity: 1;
+		}
+	}
+
 	.content-copy :global(.heading-link:hover),
 	.content-copy :global(.heading-link:focus-visible) {
 		color: var(--color-anasthasia-accent);
@@ -309,6 +341,7 @@
 	}
 
 	.content-toc {
+		grid-area: toc;
 		position: sticky;
 		top: 1.25rem;
 		align-self: start;
@@ -437,7 +470,9 @@
 
 	@media (max-width: 1100px) {
 		.content-layout.with-toc {
-			display: block;
+			display: grid;
+			grid-template-columns: 1fr;
+			grid-template-areas: 'toc' 'copy';
 		}
 
 		.content-toc {

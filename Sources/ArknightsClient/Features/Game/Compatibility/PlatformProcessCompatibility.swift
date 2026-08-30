@@ -15,7 +15,6 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 	static let launcherBridgeMarker = Data(
 		"Arknights Client PlatformProcess window bridge".utf8)
 	private static let officialHelperMarker = Data("PlatformProcess.exe".utf8)
-	private static let maximumAssetSize = 4 * 1_048_576
 	private static let temporaryPrefix = ".arknights-client-platform-process-"
 
 	private let shimURL: URL?
@@ -52,7 +51,7 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 		let helperIsShim = try GameShimIO.containsMarker(
 			at: helper,
 			marker: Self.launcherShimMarker,
-			maximumSize: Self.maximumAssetSize
+			maximumSize: AppConstants.Game.platformProcessAssetMaximumBytes
 		)
 		let officialHelper = helperIsShim ? original : helper
 		if helperIsShim, !fileManager.fileExists(atPath: original.path) {
@@ -60,7 +59,12 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 				"The official PlatformProcess helper is missing. Repair the game before launching."
 			)
 		}
-		guard try GameShimIO.containsMarker(at: officialHelper, marker: Self.officialHelperMarker)
+		guard
+			try GameShimIO.containsMarker(
+				at: officialHelper,
+				marker: Self.officialHelperMarker,
+				maximumSize: AppConstants.Game.platformProcessAssetMaximumBytes
+			)
 		else {
 			return false
 		}
@@ -68,7 +72,7 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 			try !GameShimIO.containsMarker(
 				at: installedBridge,
 				marker: Self.launcherBridgeMarker,
-				maximumSize: Self.maximumAssetSize
+				maximumSize: AppConstants.Game.platformProcessAssetMaximumBytes
 			)
 		{
 			throw LauncherError.gameCompatibility(
@@ -116,7 +120,7 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 				try GameShimIO.containsMarker(
 					at: helper,
 					marker: Self.launcherShimMarker,
-					maximumSize: Self.maximumAssetSize
+					maximumSize: AppConstants.Game.platformProcessAssetMaximumBytes
 				)
 			{
 				try fileManager.removeItem(at: helper)
@@ -130,7 +134,7 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 			try GameShimIO.containsMarker(
 				at: installedBridge,
 				marker: Self.launcherBridgeMarker,
-				maximumSize: Self.maximumAssetSize
+				maximumSize: AppConstants.Game.platformProcessAssetMaximumBytes
 			)
 		{
 			try fileManager.removeItem(at: installedBridge)
@@ -154,7 +158,9 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 	private func removeTemporaryFiles(in directory: URL, fileManager: FileManager) throws {
 		try GameShimIO.removeStaleTemporaryFiles(
 			in: directory,
-			matchingPrefixes: [Self.temporaryPrefix],
+			matchingPrefixes: ["bridge-", "shim-", "previous-"].map {
+				Self.temporaryPrefix + $0
+			},
 			fileManager: fileManager
 		)
 	}

@@ -9,9 +9,10 @@
 	"packageManager": "pnpm@11.23.0",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "svelte-kit sync && vite build",
+		"build": "svelte-kit sync && vite build && node scripts/postbuild.mjs",
 		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "pnpm test:content && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"test:content": "tsc --noCheck --outDir .svelte-kit/content-tests --rootDir src/lib --module nodenext --moduleResolution nodenext --target es2022 src/lib/site.ts src/lib/content/types.ts src/lib/content/frontmatter.ts src/lib/content/markdown.ts src/lib/content/loader/routes.ts src/lib/content/loader/links.ts && node --test scripts/content.test.mjs",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."
 	},

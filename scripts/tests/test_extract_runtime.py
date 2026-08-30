@@ -59,3 +59,19 @@ def test_rejects_escaping_symbolic_link(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError):
         extract_runtime.extract(archive_path, tmp_path / "output")
+
+
+def test_failed_extraction_removes_partial_destination(tmp_path: Path) -> None:
+    archive_path = tmp_path / "runtime.tar.gz"
+    destination = tmp_path / "output"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        add_file(archive, "runtime/bin/wine64", b"runtime")
+        link = tarfile.TarInfo("runtime/bin/missing-link")
+        link.type = tarfile.LNKTYPE
+        link.linkname = "runtime/bin/missing-target"
+        archive.addfile(link)
+
+    with pytest.raises((KeyError, tarfile.ExtractError)):
+        extract_runtime.extract(archive_path, destination)
+
+    assert not destination.exists()

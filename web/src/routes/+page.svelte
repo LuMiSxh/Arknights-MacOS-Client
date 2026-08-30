@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { Badge, SectionLabel } from 'anasthasia';
+	import PageMetadata from '$lib/components/PageMetadata.svelte';
 	import { releaseUrl, repositoryUrl } from '$lib/site.js';
 	import type { PageProps } from './$types';
 
@@ -11,18 +12,11 @@
 	const guides = $derived(data.navigation);
 </script>
 
-<svelte:head>
-	<title>Arknights Client · macOS launcher</title>
-	<meta
-		name="description"
-		content="A native macOS launcher for the official Global, Japan, and Korea Arknights PC clients."
-	/>
-	<meta property="og:title" content="Arknights Client · macOS launcher" />
-	<meta
-		property="og:description"
-		content="Run the official Arknights PC clients on Apple Silicon Macs through a native SwiftUI launcher."
-	/>
-</svelte:head>
+<PageMetadata
+	title="Arknights Client · macOS launcher"
+	description="A native macOS launcher for the official Global, Japan, and Korea Arknights PC clients."
+	path="/"
+/>
 
 <section class="home-hero" aria-labelledby="home-title">
 	<div class="hero-copy">
@@ -83,7 +77,7 @@
 	</div>
 	<nav class="guide-list" aria-label="Documentation sections">
 		{#each guides as guide (guide.route)}
-			<a href={resolve(guide.route as `/${string}`)}>
+			<a href={resolve(guide.route)}>
 				<span>
 					<strong>{guide.title}</strong>
 					<small>

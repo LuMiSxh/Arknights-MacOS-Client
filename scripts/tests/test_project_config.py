@@ -34,6 +34,7 @@ def package_dump(
     resources: list[dict[str, object]] | None = None,
 ) -> dict[str, object]:
     return {
+        "dependencies": [],
         "name": name,
         "defaultLocalization": "en",
         "platforms": [{"platformName": "macos", "version": "15.0"}],

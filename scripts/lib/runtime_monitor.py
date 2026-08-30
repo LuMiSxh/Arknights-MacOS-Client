@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import Protocol
 from urllib.parse import urlparse
 
+from lib.common import safe_relative_path
+
 REPORT_SCHEMA_VERSION = 1
 RUNTIME_TAG_PATTERN = re.compile(r"^v([0-9]+)\.([0-9]+)\.([0-9]+)$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
@@ -574,7 +576,10 @@ def _parse_candidate(value: object) -> RuntimeCandidate:
         commit_summaries=tuple(
             _safe_text(item, "commit summary") for item in commits_value
         ),
-        changed_files=tuple(_safe_path(item) for item in files_value),
+        changed_files=tuple(
+            safe_relative_path(item, "changed file must be a safe relative path")
+            for item in files_value
+        ),
     )
 
 
@@ -592,18 +597,6 @@ def _safe_text(value: object, name: str) -> str:
         or SAFE_TEXT_PATTERN.fullmatch(value) is None
     ):
         raise ValueError(f"{name} must be short safe text")
-    return value
-
-
-def _safe_path(value: object) -> str:
-    if not isinstance(value, str) or len(value) > 240:
-        raise ValueError("changed file must be a short path")
-    if value.startswith("/") or any(
-        component in {"", ".", ".."} for component in value.split("/")
-    ):
-        raise ValueError("changed file must be a safe relative path")
-    if re.fullmatch(r"[A-Za-z0-9._/+\-]+", value) is None:
-        raise ValueError("changed file contains unsafe characters")
     return value
 
 

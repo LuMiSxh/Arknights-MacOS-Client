@@ -34,10 +34,11 @@ extension BackgroundMusicController {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				try await player.pause()
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await context.log.info("Background music faded out and paused")
+				await lifecycle.log.info("Background music faded out and paused")
+				guard !Task.isCancelled, isCurrent(operation) else { return }
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await context.log.error(
+				await lifecycle.log.error(
 					"Background music failed to pause after fading out: \(error.localizedDescription)"
 				)
 			}
@@ -70,7 +71,8 @@ extension BackgroundMusicController {
 				if let userPlaybackOperation {
 					finishOperation(userPlaybackOperation)
 				}
-				await context.log.info("Background music resuming with fade-in")
+				await lifecycle.log.info("Background music resuming with fade-in")
+				guard !Task.isCancelled, isCurrent(operation) else { return }
 				shuffleInitialPlaylistIfNeeded(on: target)
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
@@ -78,7 +80,7 @@ extension BackgroundMusicController {
 					finishOperation(userPlaybackOperation)
 				}
 				clearPlaybackExpectation(expectation)
-				await context.log.error(
+				await lifecycle.log.error(
 					"Background music failed to resume: \(error.localizedDescription)"
 				)
 				finishFade(operation)
@@ -116,11 +118,11 @@ extension BackgroundMusicController {
 		playbackExpectation = nil
 		lastObservedTitle = nil
 		lastObservedVideoID = nil
-		context.currentMusicTitle = nil
-		context.currentMusicVideoID = nil
+		currentMusicTitle = nil
+		currentMusicVideoID = nil
 		nowPlaying.clear()
 
-		Task { [log = context.log] in
+		Task { [log = lifecycle.log] in
 			do {
 				try await playerToStop?.pause()
 				await log.info("Background music stopped")
@@ -144,7 +146,7 @@ extension BackgroundMusicController {
 			)
 		} catch {
 			guard !Task.isCancelled, isCurrent(playerToUse, generation: generation) else { return }
-			await context.log.debug(
+			await lifecycle.log.debug(
 				"Background music volume update was not applied: \(error.localizedDescription)"
 			)
 		}

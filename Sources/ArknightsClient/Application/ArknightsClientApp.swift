@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import SwiftUI
 
 @MainActor
@@ -123,6 +124,8 @@ struct ArknightsClientApp: App {
 			GeometryReader { geometry in
 				ContentView(
 					model: model,
+					initialMusicTitle: developerMusicTitle,
+					openMusicURL: { _ = NSWorkspace.shared.open($0) },
 					registerOpenSettings: { appDelegate.openSettings = $0 }
 				)
 				.environment(\.launcherWindowSize, geometry.size)
@@ -138,4 +141,12 @@ struct ArknightsClientApp: App {
 		.windowStyle(.hiddenTitleBar)
 		.defaultSize(width: 1040, height: 680)
 	}
+
+	#if DEBUG
+		private var developerMusicTitle: String? {
+			model.developerAccessibilityMusicTitle
+		}
+	#else
+		private var developerMusicTitle: String? { nil }
+	#endif
 }

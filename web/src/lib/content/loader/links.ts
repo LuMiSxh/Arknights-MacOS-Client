@@ -3,14 +3,16 @@ import { posix } from 'node:path';
 import { repositoryUrl } from '../../site.js';
 import { ContentError } from '../frontmatter.js';
 import { collectMarkdownLinks, renderMarkdown, siteHref } from '../markdown.js';
-import type { ContentDocument } from '../types.js';
+import type { ContentDocument, SiteRoute } from '../types.js';
 import type { SourceDocument } from './model.js';
+import { siteRoute } from './routes.js';
 
 interface LinkTarget {
 	key?: string;
-	route?: string;
+	route?: SiteRoute;
 	fragment?: string;
 	external?: string;
+	unsafe?: string;
 }
 
 function splitHref(href: string): { path: string; fragment?: string } {
@@ -28,16 +30,24 @@ function decodePath(value: string): string {
 }
 
 function isExternal(href: string): boolean {
-	return /^(?:https?:|mailto:)/i.test(href);
+	return /^(?:https:|mailto:)/i.test(href);
+}
+
+function isUnsupportedScheme(href: string): boolean {
+	return href.startsWith('//') || /^[a-z][a-z\d+.-]*:/i.test(href);
 }
 
 function linkTarget(source: string, href: string): LinkTarget {
 	const { path, fragment } = splitHref(href);
-	if (isExternal(href) || href.startsWith('//')) return { external: href };
+	if (isExternal(href)) return { external: href };
+	if (isUnsupportedScheme(href)) return { unsafe: href };
 	if (!path) return { key: source, fragment };
 	if (path.startsWith('/')) {
 		const route = path.replace(/\/{2,}/g, '/');
-		return { route: route.endsWith('/') ? route : `${route}/`, fragment };
+		return {
+			route: siteRoute(route.endsWith('/') ? route : `${route}/`),
+			fragment
+		};
 	}
 
 	const sourceRepositoryPath =
@@ -70,7 +80,7 @@ function linkTarget(source: string, href: string): LinkTarget {
 function resolvedHref(
 	source: string,
 	href: string,
-	sourceRoutes: Map<string, string>
+	sourceRoutes: Map<string, SiteRoute>
 ): string | undefined {
 	const target = linkTarget(source, href);
 	if (target.external) return target.external;
@@ -85,7 +95,7 @@ function resolvedHref(
 
 export function renderSourceDocuments(
 	documents: SourceDocument[],
-	sourceRoutes: Map<string, string>
+	sourceRoutes: Map<string, SiteRoute>
 ): Map<string, ContentDocument> {
 	const rendered = new Map<string, ContentDocument>();
 	for (const document of documents) {
@@ -110,7 +120,6 @@ export function renderSourceDocuments(
 			audience: document.metadata.audience,
 			html: document.rendered.html,
 			headings: document.rendered.headings,
-			source: document.source,
 			toc: document.metadata.toc,
 			...(document.metadata.code ? { code: document.metadata.code } : {})
 		});
@@ -120,7 +129,7 @@ export function renderSourceDocuments(
 
 export function validateLinks(
 	document: SourceDocument,
-	sourceRoutes: Map<string, string>,
+	sourceRoutes: Map<string, SiteRoute>,
 	renderedBySource: Map<string, ContentDocument>
 ): void {
 	for (const href of collectMarkdownLinks(document.body)) {
@@ -138,6 +147,12 @@ export function validateLinks(
 			href
 		);
 		if (target.external) continue;
+		if (target.unsafe) {
+			throw new ContentError(
+				document.source,
+				`unsafe link scheme is not allowed: ${target.unsafe}`
+			);
+		}
 		if (target.route) {
 			if (
 				target.route !== '/changelog/' &&
@@ -148,6 +163,19 @@ export function validateLinks(
 					document.source,
 					`link target does not exist: ${href}`
 				);
+			}
+			if (target.fragment && target.fragment !== 'top') {
+				const heading = [...renderedBySource.values()]
+					.find((candidate) => candidate.route === target.route)
+					?.headings.some(
+						(candidate) => candidate.id === target.fragment
+					);
+				if (!heading) {
+					throw new ContentError(
+						document.source,
+						`heading anchor does not exist: ${href}`
+					);
+				}
 			}
 		} else if (target.key) {
 			const route = sourceRoutes.get(target.key);

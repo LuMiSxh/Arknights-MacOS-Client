@@ -69,6 +69,7 @@ struct LauncherBranding: Decodable, Sendable {
 actor ArtworkCache {
 	private let loader: BoundedHTTPDataLoader
 	private nonisolated let directory: URL
+	private var activeImageRequestIDs: [GameRegion: UUID] = [:]
 
 	init(
 		session: URLSession = .shared,
@@ -76,11 +77,6 @@ actor ArtworkCache {
 	) {
 		loader = BoundedHTTPDataLoader(session: session)
 		self.directory = directory
-	}
-
-	nonisolated func cachedActiveImage(for region: GameRegion) throws -> NSImage? {
-		guard let cacheKey = try cachedActiveCacheKey(for: region) else { return nil }
-		return NSImage(contentsOf: cachedImageURL(for: cacheKey))
 	}
 
 	nonisolated func cachedActiveImageData(for region: GameRegion) throws -> (String, Data)? {
@@ -104,10 +100,6 @@ actor ArtworkCache {
 		return cacheKey.isEmpty ? nil : cacheKey
 	}
 
-	nonisolated func cachedOfficialLogo(for region: GameRegion) -> NSImage? {
-		NSImage(contentsOf: officialLogoCacheURL(for: region))
-	}
-
 	nonisolated func cachedOfficialLogoData(for region: GameRegion) throws -> Data? {
 		let cacheURL = officialLogoCacheURL(for: region)
 		guard FileManager.default.fileExists(atPath: cacheURL.path) else { return nil }
@@ -116,6 +108,8 @@ actor ArtworkCache {
 	}
 
 	func imageData(for branding: LauncherBranding, region: GameRegion) async throws -> Data? {
+		let requestID = UUID()
+		activeImageRequestIDs[region] = requestID
 		guard let sourceURL = branding.launcherBackgroundImage else {
 			try removeActiveCacheKey(for: region)
 			return nil
@@ -127,6 +121,7 @@ actor ArtworkCache {
 		do {
 			let data = try Data(contentsOf: cachedURL, options: .mappedIfSafe)
 			if !data.isEmpty, NSImage(data: data) != nil {
+				guard isCurrentImageRequest(requestID, region: region) else { return nil }
 				try persistActiveCacheKey(safeKey, for: region)
 				return data
 			}
@@ -139,11 +134,16 @@ actor ArtworkCache {
 			from: sourceURL,
 			maximumBytes: AppConstants.Artwork.launcherMaximumBytes
 		)
+		guard isCurrentImageRequest(requestID, region: region) else { return nil }
 
 		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 		try data.write(to: cachedURL, options: .atomic)
 		try persistActiveCacheKey(safeKey, for: region)
 		return data
+	}
+
+	private func isCurrentImageRequest(_ requestID: UUID, region: GameRegion) -> Bool {
+		activeImageRequestIDs[region] == requestID
 	}
 
 	func officialLogoData(for region: GameRegion) async throws -> Data {

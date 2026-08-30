@@ -11,7 +11,7 @@ import tempfile
 from pathlib import Path
 
 from build_app import build
-from lib.common import remove_path, run, run_main
+from lib.common import run, run_main
 from lib.console import info, success
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
@@ -52,7 +52,6 @@ def build_dmg(
         run(dmgbuild_arguments(app, staged, configuration), cwd=project)
         info("Verifying the disk image")
         run(["hdiutil", "verify", staged])
-        remove_path(destination)
         staged.replace(destination)
     success(f"Built {destination.relative_to(project)}")
     return destination

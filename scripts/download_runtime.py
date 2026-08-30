@@ -7,9 +7,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
+import os
+import re
 import shutil
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -23,7 +27,14 @@ from lib.common import (
 from lib.console import Progress, info, spinner, success
 from lib.extract_runtime import extract
 from lib.project_config import load_project_configuration
-from runtime_config import RuntimeLayout, load_runtime_config, runtime_is_valid
+from runtime_config import (
+    MAXIMUM_RUNTIME_ARCHIVE_BYTES,
+    RuntimeLayout,
+    load_runtime_config,
+    runtime_is_valid,
+)
+
+CONTENT_RANGE_PATTERN = re.compile(r"^bytes ([0-9]+)-([0-9]+)/([0-9]+)$")
 
 
 def sha256(path: Path) -> str:
@@ -40,35 +51,135 @@ def download(url: str, output: Path, expected_sha256: str, user_agent: str) -> N
         return
 
     partial = output.with_suffix(output.suffix + ".part")
-    partial.unlink(missing_ok=True)
-    request = urllib.request.Request(url, headers={"User-Agent": user_agent})
+    metadata_path = Path(f"{partial}.json")
+    offset, etag = _resume_state(partial, metadata_path, url)
+    headers = {"User-Agent": user_agent}
+    if offset:
+        headers.update({"Range": f"bytes={offset}-", "If-Range": etag})
+    request = urllib.request.Request(url, headers=headers)
     try:
-        with (
-            urllib.request.urlopen(request, timeout=60) as response,
-            partial.open("wb") as file,
-        ):
-            if not response.geturl().startswith("https://"):
+        with urllib.request.urlopen(request, timeout=60) as response:
+            redirected = urllib.parse.urlparse(response.geturl())
+            if redirected.scheme != "https" or not redirected.hostname:
                 fail("runtime download redirected to a non-HTTPS URL")
-            total = int(response.headers.get("Content-Length", "0"))
-            received = 0
-            progress = Progress("Downloading the pinned Wine + DXMT runtime", total)
-            while chunk := response.read(1024 * 1024):
-                file.write(chunk)
-                received += len(chunk)
-                progress.update(received)
+            status = getattr(response, "status", 200)
+            response_etag = _strong_etag(response.headers.get("ETag"))
+            if offset and status == 206:
+                total = _validated_content_range(
+                    response.headers.get("Content-Range"), offset
+                )
+                if response_etag != etag:
+                    fail("runtime download resume ETag changed")
+                mode = "ab"
+            elif status == 200:
+                offset = 0
+                total = None
+                mode = "wb"
+            else:
+                fail(f"runtime download returned unexpected HTTP status {status}")
+
+            content_length = _content_length(response.headers.get("Content-Length"))
+            if content_length is not None:
+                if content_length > MAXIMUM_RUNTIME_ARCHIVE_BYTES - offset:
+                    fail("runtime archive exceeds the download size limit")
+                expected_total = offset + content_length
+                if total is not None and expected_total != total:
+                    fail("runtime download Content-Length and Content-Range disagree")
+                total = expected_total
+            if total is not None and total > MAXIMUM_RUNTIME_ARCHIVE_BYTES:
+                fail("runtime archive exceeds the download size limit")
+
+            if response_etag is None:
+                metadata_path.unlink(missing_ok=True)
+            else:
+                metadata_path.write_text(
+                    json.dumps({"url": url, "etag": response_etag}), encoding="utf-8"
+                )
+            received = offset
+            progress = Progress(
+                "Downloading the pinned Wine + DXMT runtime", total or 0
+            )
+            with partial.open(mode) as file:
+                while chunk := response.read(1024 * 1024):
+                    if len(chunk) > MAXIMUM_RUNTIME_ARCHIVE_BYTES - received:
+                        fail("runtime archive exceeds the download size limit")
+                    file.write(chunk)
+                    received += len(chunk)
+                    progress.update(received)
+                file.flush()
+                os.fsync(file.fileno())
             progress.finish()
     except (OSError, urllib.error.URLError) as download_error:
-        partial.unlink(missing_ok=True)
         fail(f"unable to download the runtime: {download_error}")
 
     actual_sha256 = sha256(partial)
     if actual_sha256 != expected_sha256:
         partial.unlink(missing_ok=True)
+        metadata_path.unlink(missing_ok=True)
         fail(
             "downloaded runtime failed SHA-256 verification "
             f"(expected {expected_sha256}, got {actual_sha256})"
         )
     partial.replace(output)
+    metadata_path.unlink(missing_ok=True)
+
+
+def _resume_state(partial: Path, metadata_path: Path, url: str) -> tuple[int, str]:
+    metadata: object = None
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        etag = _strong_etag(
+            metadata.get("etag") if isinstance(metadata, dict) else None
+        )
+    except (OSError, json.JSONDecodeError):
+        etag = None
+    if (
+        isinstance(metadata, dict)
+        and metadata.get("url") == url
+        and etag is not None
+        and partial.is_file()
+        and not partial.is_symlink()
+        and 0 < partial.stat().st_size <= MAXIMUM_RUNTIME_ARCHIVE_BYTES
+    ):
+        return partial.stat().st_size, etag
+    partial.unlink(missing_ok=True)
+    metadata_path.unlink(missing_ok=True)
+    return 0, ""
+
+
+def _strong_etag(value: object) -> str | None:
+    if not isinstance(value, str) or len(value) < 2 or value.startswith("W/"):
+        return None
+    if (
+        value[0] != '"'
+        or value[-1] != '"'
+        or any(ord(character) < 0x20 or character == '"' for character in value[1:-1])
+    ):
+        return None
+    return value
+
+
+def _content_length(value: object) -> int | None:
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or len(value) > 20
+        or not value.isascii()
+        or not value.isdecimal()
+    ):
+        fail("runtime download returned an invalid Content-Length")
+    return int(value)
+
+
+def _validated_content_range(value: object, offset: int) -> int:
+    match = CONTENT_RANGE_PATTERN.fullmatch(value) if isinstance(value, str) else None
+    if match is None or any(len(component) > 20 for component in match.groups()):
+        fail("runtime download returned an invalid Content-Range")
+    start, end, total = (int(component) for component in match.groups())
+    if start != offset or end < start or end >= total:
+        fail("runtime download returned an invalid Content-Range")
+    return total
 
 
 def prepare_runtime(

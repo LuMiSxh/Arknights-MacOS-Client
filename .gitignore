@@ -2,6 +2,7 @@
 /dist/
 /.swiftpm/
 /.ruff_cache/
+/.tmp/
 __pycache__/
 *.dmg
 *.log

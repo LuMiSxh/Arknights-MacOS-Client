@@ -19,11 +19,11 @@ struct VersionHUDPill: View {
 			Button(action: toggleExpansion) {
 				HStack(spacing: 5) {
 					Image(systemName: "number")
-						.font(.system(size: 10, weight: .semibold))
+						.font(.caption.weight(.semibold))
 						.foregroundStyle(accentColor)
 						.accessibilityHidden(true)
 					Text(versionText)
-						.font(.system(size: 11, weight: .medium, design: .monospaced))
+						.font(.caption.monospaced().weight(.medium))
 						.foregroundStyle(isHovering ? .primary : .secondary)
 						.lineLimit(1)
 						.truncationMode(.tail)

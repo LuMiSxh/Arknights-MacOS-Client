@@ -39,6 +39,8 @@ struct CachedPresetOperatorPair: View {
 			L10n.string(CustomizationStrings.iconPreviewPairAccessibilityLabel)
 		)
 		.task(id: renderIdentifier) {
+			let taskIdentifier = renderIdentifier
+			guard !Task.isCancelled else { return }
 			icons = nil
 			hasFailed = false
 			do {
@@ -46,14 +48,17 @@ struct CachedPresetOperatorPair: View {
 					for: url,
 					cacheKey: cacheKey
 				)
-				guard !Task.isCancelled,
+				guard !Task.isCancelled, renderIdentifier == taskIdentifier,
 					let rendered = AppIconRenderer.createPresetIconPair(
 						from: data,
 						accentHue: accentHue
 					)
 				else { return }
 				icons = rendered
+			} catch is CancellationError {
+				return
 			} catch {
+				guard !Task.isCancelled, renderIdentifier == taskIdentifier else { return }
 				hasFailed = true
 			}
 		}
@@ -68,6 +73,6 @@ struct CachedPresetOperatorPair: View {
 	}
 
 	private var renderIdentifier: String {
-		"\(url.absoluteString)|\(accentHue ?? -1)"
+		"\(url.absoluteString)|\(cacheKey)|\(accentHue ?? -1)"
 	}
 }

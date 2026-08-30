@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 
 /// Shared low-level file operations behind `GameCompatibilityComponent` implementations.
@@ -7,9 +8,23 @@ import Foundation
 /// rules; only the mechanical parts that are byte-for-byte identical across components live
 /// here, so the two never drift out of sync on the same primitive.
 enum GameShimIO {
-	static func containsMarker(at url: URL, marker: Data, maximumSize: Int? = nil) throws -> Bool {
-		let data = try Data(contentsOf: url, options: .mappedIfSafe)
-		if let maximumSize, data.count > maximumSize { return false }
+	static func containsMarker(at url: URL, marker: Data, maximumSize: Int) throws -> Bool {
+		guard maximumSize >= 0, maximumSize < Int.max else { return false }
+		let descriptor = open(url.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+		guard descriptor >= 0 else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
+		defer { _ = close(descriptor) }
+		var status = stat()
+		guard fstat(descriptor, &status) == 0 else {
+			throw POSIXError(.init(rawValue: errno) ?? .EIO)
+		}
+		guard status.st_mode & S_IFMT == S_IFREG,
+			status.st_nlink == 1,
+			status.st_uid == geteuid()
+		else { return false }
+		guard status.st_size >= 0, status.st_size <= Int64(maximumSize) else { return false }
+		let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: false)
+		let data = try handle.read(upToCount: maximumSize + 1) ?? Data()
+		guard data.count <= maximumSize else { return false }
 		return data.range(of: marker) != nil
 	}
 

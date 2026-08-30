@@ -3,7 +3,7 @@ import {
 	contentAtRoute,
 	contentEntries,
 	contentNeighbors
-} from '$lib/content/loader.js';
+} from '$lib/content/loader/index.js';
 
 export const prerender = true;
 

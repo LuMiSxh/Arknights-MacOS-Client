@@ -5,13 +5,16 @@ import SwiftUI
 /// Morphs the now-playing HUD into an in-place controller without covering the launcher.
 struct MusicHUDPill: View {
 	@Bindable var settings: LauncherPreferencesController
-	let gameSession: GameSessionController
 	let musicTitle: String?
 	let accentColor: Color
 	let hudTintColor: Color
 	let openCurrentMusicURL: () -> Void
 	let controller: BackgroundMusicController
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@ScaledMetric(relativeTo: .caption) private var titleLineHeight =
+		AppConstants.Music.titleLineHeight
+	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
+		AppConstants.Music.collapsedPlayerHeight
 	@State private var isExpanded = false
 	@State private var isHovering = false
 
@@ -21,15 +24,15 @@ struct MusicHUDPill: View {
 				Button(action: toggleExpansion) {
 					HStack(spacing: 5) {
 						Image(systemName: "music.note")
-							.font(.system(size: 10, weight: .semibold))
+							.font(.caption2.weight(.semibold))
 							.foregroundStyle(accentColor)
 							.accessibilityHidden(true)
 						VStack(alignment: .leading, spacing: 1) {
 							OverflowingMusicTitle(title: musicTitle)
-								.font(.system(size: 11, weight: .medium, design: .monospaced))
+								.font(.caption.monospaced().weight(.medium))
 								.foregroundStyle(isHovering ? .primary : .secondary)
 								.frame(
-									height: AppConstants.Music.titleLineHeight,
+									height: titleLineHeight,
 									alignment: .leading
 								)
 								.frame(
@@ -132,7 +135,7 @@ struct MusicHUDPill: View {
 			.frame(
 				minHeight: isExpanded
 					? AppConstants.Music.expandedPlayerHeight
-					: AppConstants.Music.collapsedPlayerHeight,
+					: collapsedPlayerHeight,
 				alignment: isExpanded ? .topLeading : .center
 			)
 			.frame(
@@ -153,7 +156,7 @@ struct MusicHUDPill: View {
 	}
 
 	private var playbackStatus: String {
-		if gameSession.isGameProcessRunning { return L10n.string(AudioStrings.pausedForGame) }
+		if controller.isGameProcessRunning { return L10n.string(AudioStrings.pausedForGame) }
 		if controller.isChangingTrack { return L10n.string(AudioStrings.changingTrack) }
 		return L10n.string(controller.isPlaying ? AudioStrings.playing : AudioStrings.paused)
 	}

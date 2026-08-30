@@ -54,6 +54,7 @@ def validate_pe(path: Path, *, dll: bool) -> None:
         and data[header_offset : header_offset + 4] == b"PE\0\0"
         and struct.unpack_from("<H", data, header_offset + 4)[0] == 0x8664
         and struct.unpack_from("<H", data, header_offset + 24)[0] == 0x20B
+        and bool(struct.unpack_from("<H", data, header_offset + 22)[0] & 0x2000) is dll
     )
     if not valid:
         kind = "DLL" if dll else "executable"

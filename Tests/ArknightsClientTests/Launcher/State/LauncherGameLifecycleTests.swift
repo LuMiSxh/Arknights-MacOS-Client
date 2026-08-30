@@ -62,9 +62,9 @@ struct LauncherGameLifecycleTests {
 		)
 		model.playtimeStatistics.start(sessionID: sessionID, region: .japan)
 
-		await model.gameSession.finishGameSession(sessionID)
+		model.gameSession.finishGameSession(sessionID)
 		let recordedTotal = model.playtimeStatistics.totalDuration
-		await model.gameSession.finishGameSession(sessionID)
+		model.gameSession.finishGameSession(sessionID)
 
 		#expect(model.playtimeStatistics.statistics.latestSession?.region == .japan)
 		#expect(model.playtimeStatistics.totalDuration == recordedTotal)

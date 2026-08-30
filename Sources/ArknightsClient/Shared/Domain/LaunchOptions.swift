@@ -76,13 +76,8 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	)
 
 	private enum CodingKeys: String, CodingKey {
-		case displayMode
-		case resolution
-		case usesGameSettings
-		case usesHighResolutionMode
-		case usesMetalPerformanceHUD
-		case usesGameMode
-		case synchronizationMode
+		case displayMode, resolution, usesGameSettings, usesHighResolutionMode
+		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode
 	}
 
 	init(
@@ -108,30 +103,15 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		displayMode = try container.decode(GameDisplayMode.self, forKey: .displayMode)
 		resolution = try container.decode(GameResolution.self, forKey: .resolution)
 		usesGameSettings =
-			try container.decodeIfPresent(
-				Bool.self,
-				forKey: .usesGameSettings
-			) ?? true
+			try container.decodeIfPresent(Bool.self, forKey: .usesGameSettings) ?? true
 		usesHighResolutionMode =
-			try container.decodeIfPresent(
-				Bool.self,
-				forKey: .usesHighResolutionMode
-			) ?? true
+			try container.decodeIfPresent(Bool.self, forKey: .usesHighResolutionMode) ?? true
 		usesMetalPerformanceHUD =
-			try container.decodeIfPresent(
-				Bool.self,
-				forKey: .usesMetalPerformanceHUD
-			) ?? false
-		usesGameMode =
-			try container.decodeIfPresent(
-				Bool.self,
-				forKey: .usesGameMode
-			) ?? false
+			try container.decodeIfPresent(Bool.self, forKey: .usesMetalPerformanceHUD) ?? false
+		usesGameMode = try container.decodeIfPresent(Bool.self, forKey: .usesGameMode) ?? false
 		synchronizationMode =
 			try container.decodeIfPresent(
-				WineSynchronizationMode.self,
-				forKey: .synchronizationMode
-			) ?? .msync
+				WineSynchronizationMode.self, forKey: .synchronizationMode) ?? .msync
 	}
 
 	/// Unity standalone-player arguments supported by the Windows client.
@@ -142,11 +122,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 			"-screen-width", String(resolution.width),
 			"-screen-height", String(resolution.height),
 		]
-
-		if displayMode == .borderlessWindow {
-			arguments.append("-popupwindow")
-		}
-
+		if displayMode == .borderlessWindow { arguments.append("-popupwindow") }
 		return arguments
 	}
 }

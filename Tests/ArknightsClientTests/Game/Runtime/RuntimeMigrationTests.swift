@@ -96,7 +96,25 @@ func migrationStoreRoundTripsState() throws {
 
 	try store.save(state, to: prefix)
 
-	#expect(store.load(from: prefix) == state)
+	#expect(try store.load(from: prefix) == state)
+}
+
+@Test
+func migrationStoreSurfacesCorruptPersistedState() throws {
+	let fileManager = FileManager.default
+	let prefix = fileManager.temporaryDirectory.appending(
+		path: "runtime-migration-corrupt-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: prefix) }
+	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
+	try Data("not-json".utf8).write(
+		to: prefix.appending(path: RuntimeMigrationStore.stateFileName)
+	)
+
+	#expect(throws: Error.self) {
+		_ = try RuntimeMigrationStore(fileManager: fileManager).load(from: prefix)
+	}
 }
 
 @Test
@@ -119,7 +137,7 @@ func migrationStoreResetDiscardsStateSoEverythingReplays() throws {
 
 	try store.reset(prefixDirectory: prefix)
 
-	#expect(store.load(from: prefix) == nil)
+	#expect(try store.load(from: prefix) == nil)
 }
 
 @Test
@@ -144,7 +162,7 @@ func migrationStoreImportsAndRemovesVersionZeroOneMarkers() throws {
 	}
 	let store = RuntimeMigrationStore(fileManager: fileManager)
 
-	let imported = store.loadLegacy(
+	let imported = try store.loadLegacy(
 		from: prefix,
 		expectedRevision: revision,
 		hasSystemRegistry: true

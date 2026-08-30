@@ -11,12 +11,10 @@ func exclusiveOperationRejectsASecondStartUntilTheFirstFinishes() throws {
 	let firstToken = gate.begin()
 	let first = try #require(firstToken)
 
-	#expect(gate.isActive)
 	#expect(gate.begin() == nil)
 
 	gate.finish(first)
 
-	#expect(!gate.isActive)
 	#expect(gate.begin() != nil)
 }
 
@@ -28,6 +26,5 @@ func staleOperationCannotFinishTheActiveOperation() throws {
 
 	gate.finish(UUID())
 
-	#expect(gate.isActive)
 	#expect(gate.owns(active))
 }

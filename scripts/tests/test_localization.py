@@ -94,6 +94,58 @@ def test_shipping_languages_come_from_the_layout(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "key",
+    ("home.Settings", "home.2fa", "Home.settings"),
+)
+def test_rejects_catalog_keys_without_lower_camel_case_segments(
+    tmp_path: Path, key: str
+) -> None:
+    catalog = tmp_path / "Localizable.xcstrings"
+    translations = {
+        language: {"stringUnit": {"state": "translated", "value": "Settings"}}
+        for language in ("en", "de")
+    }
+    catalog.write_text(
+        json.dumps(
+            {
+                "sourceLanguage": "en",
+                "strings": {
+                    key: {"comment": "Settings button", "localizations": translations}
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ScriptError, match="not feature-namespaced"):
+        localization.validate_catalog(catalog, layout(catalog.parent))
+
+
+def test_rejects_catalog_keys_without_a_swift_reference(tmp_path: Path) -> None:
+    catalog = tmp_path / "Localizable.xcstrings"
+    catalog.write_text(
+        json.dumps({"strings": {"home.used": {}, "home.orphaned": {}}}),
+        encoding="utf-8",
+    )
+    generated = tmp_path / "Generated"
+    generated.mkdir()
+    (generated / "GeneratedStringSymbols_Localizable.swift").write_text(
+        "/** Localized string for key “home.used” in table “Localizable.xcstrings”. */\nstatic var homeUsed: LocalizedStringResource { fatalError() }\n/** Localized string for key “home.orphaned” in table “Localizable.xcstrings”. */\nstatic var homeOrphaned: LocalizedStringResource { fatalError() }\n",
+        encoding="utf-8",
+    )
+    source = tmp_path / "Sources"
+    source.mkdir()
+    (source / "Home.swift").write_text(
+        "let title = LocalizedStringResource.homeUsed\n", encoding="utf-8"
+    )
+
+    with pytest.raises(ScriptError, match="home.orphaned"):
+        localization.validate_catalog_usage(
+            layout(tmp_path, catalogs=(catalog,)), source_directory=source
+        )
+
+
 def test_catalog_fingerprint_invalidates_symbols_after_copy_changes(
     tmp_path: Path,
 ) -> None:

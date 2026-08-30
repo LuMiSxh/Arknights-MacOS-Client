@@ -142,6 +142,20 @@ struct PlaytimeStatisticsTests {
 			.write(to: oversized.statisticsURL)
 		#expect(oversized.controller().statistics == .empty)
 	}
+
+	@Test
+	func symlinkedStatisticsStartWithAnEmptyState() throws {
+		let fixture = try Fixture()
+		let target = fixture.root.appending(path: "outside.json")
+		let data = try JSONEncoder().encode(PlaytimeStatistics.empty)
+		try data.write(to: target)
+		try FileManager.default.createSymbolicLink(
+			at: fixture.statisticsURL,
+			withDestinationURL: target
+		)
+
+		#expect(fixture.controller().statistics == .empty)
+	}
 }
 
 @MainActor

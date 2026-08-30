@@ -13,8 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Resumable, size-bounded runtime archive downloads that retain partial files only while a strong ETag still matches.
 - Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
-- A static project website built from the repository documentation and deployed with releases through GitHub Pages (#56).
+- A static project website built from the repository documentation, with safe Markdown rendering, base-path-aware navigation, canonical and social metadata, and GitHub Pages release deployment (#56).
 - Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
 - Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
 - Weekly live-contract monitoring for every supported Yostar region (#39).
@@ -30,9 +31,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Refactored the root launcher model into feature controllers with explicit, narrow dependencies and shared game-domain and configuration contracts (#52).
+- Moved expensive artwork processing and installation-state inspection behind bounded background operations with explicit request ownership.
+- Hardened game configuration and manifest parsing, runtime metadata, compatibility markers, symlink handling, executable names, byte totals, disk-capacity checks, HTTP redirects, and Wine's executable search path without changing supported regions or persisted formats.
+- Unified launcher presentations through one sheet and overlay arbiter, improved Reduce Transparency and Dynamic Type behavior, and kept new native UI copy translated in English and German.
+- Limited the main activity status to game and runtime operations instead of replacing it with customization, cache, or Settings success messages.
 - Indented subprocess output under its owning repository-script status line.
 - Made launcher modals adapt to the current window size while preserving outer padding and scrollable content.
-- Refactor root model by extracting launcher features into dedicated controllers (#52).
 - Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).
 - Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
 - Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
@@ -40,7 +45,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Refreshed gallery caches after launcher updates, rejected incomplete wallpaper downloads instead of displaying partially decoded images, and kept gallery text in the selected app language.
+- Prevented stale artwork, logo, icon, preset-cache, metadata, and theme work from overwriting a newer region or user selection.
+- Kept the shared Wine prefix owned until prefix-wide shutdown, preserved the originating region and failure across retries, and made stop, cancellation, and early process-exit cleanup deterministic.
+- Kept music and Now Playing state isolated from stale player callbacks and private MediaPlayer queues.
+- Prevented Settings, onboarding, popup, failure, and Rosetta presentations from masking one another.
+- Rejected incomplete wallpaper downloads instead of displaying partially decoded images.
 - Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
 - Refreshed the main window's Play control, Settings sidebar, and status pill immediately when the app language changes instead of waiting for an unrelated state change to redraw them.

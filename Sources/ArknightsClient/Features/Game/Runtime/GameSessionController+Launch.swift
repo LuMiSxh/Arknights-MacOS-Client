@@ -42,8 +42,21 @@ extension GameSessionController {
 			return
 		}
 
-		let hasPendingMigration = runtime.hasPendingMigration(prefixDirectory: paths.winePrefix)
+		let hasPendingMigration: Bool
+		do {
+			hasPendingMigration = try runtime.hasPendingMigration(prefixDirectory: paths.winePrefix)
+		} catch {
+			presentRuntimeFailure(
+				error,
+				id: launchID,
+				operation: .runtimeDiscovery,
+				region: requestedRegion
+			)
+			return
+		}
 		let gameSessionID = launchID
+		activeGameRegion = requestedRegion
+		resetTerminalFailure()
 		if hasPendingMigration {
 			lifecycle.activity = .preparingGame(sessionID: gameSessionID)
 			lifecycle.setStatus(.preparingWine)
@@ -123,52 +136,63 @@ extension GameSessionController {
 				)
 			} catch is CancellationError {
 				guard activeGameSessionID == gameSessionID else { return }
-				lifecycle.activity = .idle
-				disableActiveGameMode()
-				lifecycle.setStatus(
-					installation.isGameUpdateAvailable ? .updateAvailable : .ready)
+				if case .stoppingGame(let sessionID, _) = lifecycle.activity,
+					sessionID == gameSessionID
+				{
+					return
+				}
+				await stopAndFinishGameSession(
+					using: runtime,
+					sessionID: gameSessionID,
+					processIdentifier: lifecycle.activity.gameProcessIdentifier,
+					region: requestedRegion
+				)
 			} catch LauncherError.runtimeWindowTimeout {
-				await handleWindowTimeout(runtime: runtime, sessionID: gameSessionID)
+				await handleWindowTimeout(
+					runtime: runtime,
+					sessionID: gameSessionID,
+					region: requestedRegion
+				)
 			} catch {
 				guard activeGameSessionID == gameSessionID else { return }
-				lifecycle.activity = .idle
-				disableActiveGameMode()
+				let launchError: any Error
 				if RosettaAvailability.isBadCPUType(error) {
 					lifecycle.intelTranslationState = .unavailable
-					presentRuntimeFailure(
-						LauncherError.intelTranslationUnavailable,
-						id: gameSessionID,
-						operation: .launch,
-						region: requestedRegion
-					)
+					launchError = LauncherError.intelTranslationUnavailable
 				} else {
-					presentRuntimeFailure(
-						error,
-						id: gameSessionID,
-						operation: .launch,
-						region: requestedRegion
-					)
+					launchError = error
 				}
+				await stopAndFinishGameSession(
+					using: runtime,
+					sessionID: gameSessionID,
+					processIdentifier: lifecycle.activity.gameProcessIdentifier,
+					region: requestedRegion,
+					terminalFailure: GameSessionTerminalFailure(
+						error: launchError,
+						operation: .launch,
+						blocksGameLaunch: true
+					)
+				)
 			}
 		}
 	}
 
-	private func handleWindowTimeout(runtime: WineRuntime, sessionID: UUID) async {
+	func handleWindowTimeout(
+		runtime: WineRuntime,
+		sessionID: UUID,
+		region: GameRegion
+	) async {
 		guard activeGameSessionID == sessionID else { return }
-		lifecycle.activity = .idle
-		disableActiveGameMode()
-		do {
-			try await runtime.stop(prefixDirectory: paths.winePrefix)
-		} catch {
-			await log.error(
-				"Failed to stop Wine after window readiness timed out: \(error.localizedDescription)"
+		await stopAndFinishGameSession(
+			using: runtime,
+			sessionID: sessionID,
+			processIdentifier: lifecycle.activity.gameProcessIdentifier,
+			region: region,
+			terminalFailure: GameSessionTerminalFailure(
+				error: LauncherError.runtimeWindowTimeout,
+				operation: .launch,
+				blocksGameLaunch: true
 			)
-		}
-		presentRuntimeFailure(
-			LauncherError.runtimeWindowTimeout,
-			id: sessionID,
-			operation: .launch,
-			region: installation.region
 		)
 	}
 }

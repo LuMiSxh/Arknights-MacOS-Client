@@ -45,9 +45,20 @@ extension WineRuntime {
 			at: configurationURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
-		if (try? String(contentsOf: configurationURL, encoding: .utf8))
-			== isolatedUserDirectoryConfiguration
-		{
+		let existingConfiguration: String?
+		do {
+			let data = try BoundedFileReader.readRegularFile(
+				at: configurationURL,
+				maximumBytes: AppConstants.Game.userDirectoryConfigurationMaximumBytes
+			)
+			guard let decoded = String(data: data, encoding: .utf8) else {
+				throw CocoaError(.fileReadCorruptFile)
+			}
+			existingConfiguration = decoded
+		} catch let error as POSIXError where error.code == .ENOENT {
+			existingConfiguration = nil
+		}
+		if existingConfiguration == isolatedUserDirectoryConfiguration {
 			return
 		}
 		try isolatedUserDirectoryConfiguration.write(
@@ -96,7 +107,7 @@ extension WineRuntime {
 			environment[name] = value
 		}
 		environment["PATH"] = [
-			executableDirectory.path, "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin",
+			executableDirectory.path, "/usr/bin", "/bin",
 		].joined(separator: ":")
 		environment["DYLD_FALLBACK_LIBRARY_PATH"] =
 			executableDirectory.deletingLastPathComponent().appending(path: "lib").path

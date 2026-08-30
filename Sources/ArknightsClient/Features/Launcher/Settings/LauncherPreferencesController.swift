@@ -124,7 +124,7 @@ final class LauncherPreferencesController {
 		refreshResetCountdown()
 		resetCountdownTask = Task { [weak self] in
 			while !Task.isCancelled {
-				try? await Task.sleep(for: .seconds(30))
+				try? await Task.sleep(for: AppConstants.Timeouts.resetCountdownPollInterval)
 				guard !Task.isCancelled, let self else { return }
 				refreshResetCountdown()
 			}

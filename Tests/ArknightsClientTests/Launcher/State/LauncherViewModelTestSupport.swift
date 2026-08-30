@@ -85,77 +85,7 @@ private final class TestArtworkURLProtocol: URLProtocol, @unchecked Sendable {
 	override func stopLoading() {}
 }
 
-actor BlockingBrandingAPI: LauncherAPIProviding {
-	private var brandingRequestCount = 0
-	private var brandingRequestWaiters:
-		[(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
-	private var brandingResponses: [CheckedContinuation<LauncherBranding, Never>] = []
-
-	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		GameConfiguration(
-			gameLowestVersion: "1.0.0",
-			gameLatestVersion: "2.0.0",
-			gameLatestFilePath: "game.zip",
-			gameStartExeName: "Arknights",
-			gameStartParams: [],
-			gameUninstallScript: "uninstall.exe",
-			decompressionSize: "1 GB"
-		)
-	}
-
-	func branding(region: GameRegion) async throws -> LauncherBranding {
-		brandingRequestCount += 1
-		let readyWaiters = brandingRequestWaiters.filter {
-			$0.count <= brandingRequestCount
-		}
-		brandingRequestWaiters.removeAll { $0.count <= brandingRequestCount }
-		for waiter in readyWaiters {
-			waiter.continuation.resume()
-		}
-		return await withCheckedContinuation { brandingResponses.append($0) }
-	}
-
-	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		throw CancellationError()
-	}
-
-	func manifest(
-		for configuration: GameConfiguration,
-		region: GameRegion
-	) async throws -> GameManifest {
-		throw CancellationError()
-	}
-
-	func waitForBrandingRequest() async {
-		await waitForBrandingRequests(1)
-	}
-
-	func waitForBrandingRequests(_ count: Int) async {
-		guard brandingRequestCount < count else { return }
-		await withCheckedContinuation {
-			brandingRequestWaiters.append((count: count, continuation: $0))
-		}
-	}
-
-	func resolveBranding(_ branding: LauncherBranding? = nil) {
-		let resolvedBranding =
-			branding
-			?? LauncherBranding(
-				launcherBackgroundImage: nil,
-				launcherBackgroundImageCRC64: nil,
-				copyrightInformation: nil,
-				privacyPolicy: nil,
-				userAgreement: nil,
-				noticePopOpen: nil,
-				noticeContent: nil
-			)
-		let responses = brandingResponses
-		brandingResponses.removeAll()
-		for response in responses {
-			response.resume(returning: resolvedBranding)
-		}
-	}
-}
+typealias BlockingBrandingAPI = CancellableBrandingAPI
 
 actor ControllableInstaller: GameInstalling {
 	private var count = 0
@@ -167,7 +97,6 @@ actor ControllableInstaller: GameInstalling {
 	private var cancellationRequestWaiters: [CheckedContinuation<Void, Never>] = []
 	private var installationResponse: CheckedContinuation<InstallResult, Error>?
 	private var progress: (@Sendable (DownloadProgress) async -> Void)?
-
 	func install(
 		configuration: GameConfiguration,
 		region: GameRegion,
@@ -181,6 +110,10 @@ actor ControllableInstaller: GameInstalling {
 		self.progress = progress
 		return try await withTaskCancellationHandler {
 			try await withCheckedThrowingContinuation { continuation in
+				if cancellationRequested {
+					continuation.resume(throwing: CancellationError())
+					return
+				}
 				installationResponse = continuation
 				installationStarted = true
 				for waiter in installationStartWaiters {
@@ -192,21 +125,17 @@ actor ControllableInstaller: GameInstalling {
 			Task { await self.recordCancellationRequest() }
 		}
 	}
-
 	func installationCount() -> Int { count }
 	func requestedRegions() -> [GameRegion] { regions }
 	func requestedVerificationModes() -> [Bool] { verificationModes }
-
 	func waitForInstallationStart() async {
 		guard !installationStarted else { return }
 		await withCheckedContinuation { installationStartWaiters.append($0) }
 	}
-
 	func waitForCancellationRequest() async {
 		guard !cancellationRequested else { return }
 		await withCheckedContinuation { cancellationRequestWaiters.append($0) }
 	}
-
 	func sendProgress() async {
 		await progress?(
 			DownloadProgress(
@@ -217,12 +146,10 @@ actor ControllableInstaller: GameInstalling {
 				currentFile: "game.zip"
 			))
 	}
-
 	func acknowledgeCancellation() {
 		installationResponse?.resume(throwing: CancellationError())
 		installationResponse = nil
 	}
-
 	func completeSuccessfully() {
 		installationResponse?.resume(
 			returning: InstallResult(
@@ -233,13 +160,15 @@ actor ControllableInstaller: GameInstalling {
 		)
 		installationResponse = nil
 	}
-
 	private func recordCancellationRequest() {
 		cancellationRequested = true
 		for waiter in cancellationRequestWaiters {
 			waiter.resume()
 		}
 		cancellationRequestWaiters.removeAll()
+		let response = installationResponse
+		installationResponse = nil
+		response?.resume(throwing: CancellationError())
 	}
 }
 
@@ -297,6 +226,18 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 	func waitForBrandingRequests(_ count: Int) async {
 		guard brandingRequests < count else { return }
 		await withCheckedContinuation { requestWaiters.append((count, $0)) }
+	}
+	func waitForBrandingRequest() async { await waitForBrandingRequests(1) }
+	func resolveBranding(_ branding: LauncherBranding? = nil) {
+		let value =
+			branding
+			?? LauncherBranding(
+				launcherBackgroundImage: nil, launcherBackgroundImageCRC64: nil,
+				copyrightInformation: nil, privacyPolicy: nil, userAgreement: nil,
+				noticePopOpen: nil, noticeContent: nil)
+		let pending = brandingContinuations
+		brandingContinuations.removeAll()
+		for (_, continuation) in pending { continuation.resume(returning: value) }
 	}
 	func waitForCancellations(_ count: Int) async {
 		guard cancellations < count else { return }

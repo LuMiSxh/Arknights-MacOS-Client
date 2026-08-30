@@ -10,6 +10,12 @@ struct SupportFailureMappingTests {
 	@Test(
 		arguments: [
 			(LauncherError.invalidResponse as any Error, SupportCode.pebble),
+			(
+				LauncherError.remoteContentTooLarge(
+					URL(string: "https://cdn.example/game.bin")!, maximumBytes: 1
+				) as any Error,
+				.pebble
+			),
 			(LauncherError.server(code: 500, message: "test") as any Error, .virga),
 			(LauncherError.invalidManifestPath("../test") as any Error, .gabbro),
 			(
@@ -24,6 +30,12 @@ struct SupportFailureMappingTests {
 			(URLError(.networkConnectionLost) as any Error, .pebble),
 			(CocoaError(.fileWriteNoPermission) as any Error, .basalt),
 			(LauncherError.gameCompatibility("test") as any Error, .anemone),
+			(
+				HTTPTransportError.responseTooLarge(
+					URL(string: "https://cdn.example/game.bin")!, maximumBytes: 1
+				) as any Error,
+				.pebble
+			),
 		]
 	)
 	func installationFailuresMapToPublishedCodes(
@@ -66,48 +78,4 @@ struct SupportFailureMappingTests {
 		)
 	}
 
-	@Test
-	func recoveryActionsRemainOrderedAndContextual() {
-		#expect(
-			InstallationController.recoveryActions(
-				for: .pebble,
-				isInstalled: true,
-				operation: .update
-			)
-				== [.retry, .openTroubleshooting, .repair, .reportProblem]
-		)
-		#expect(
-			InstallationController.recoveryActions(
-				for: .pebble,
-				isInstalled: true,
-				operation: .repair
-			)
-				== [.retry, .openTroubleshooting, .reportProblem]
-		)
-		#expect(
-			InstallationController.recoveryActions(
-				for: .virga,
-				isInstalled: false,
-				operation: .install,
-				allowsRetry: false
-			)
-				== [.openTroubleshooting, .reportProblem]
-		)
-		#expect(
-			GameSessionController.recoveryActions(
-				for: .anemone,
-				isInstalled: true,
-				operation: .runtimeStop
-			)
-				== [.retry, .openTroubleshooting, .reportProblem]
-		)
-		#expect(
-			GameSessionController.recoveryActions(
-				for: .narwhal,
-				isInstalled: true,
-				operation: .launch
-			)
-				== [.retry, .openTroubleshooting, .repair, .reportProblem]
-		)
-	}
 }

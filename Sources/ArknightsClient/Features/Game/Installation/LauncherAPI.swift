@@ -81,11 +81,12 @@ actor LauncherAPI {
 				reason: "could not construct the request URL"
 			)
 		}
-		return try await request(
+		let location: ManifestLocation = try await request(
 			region: region,
 			url: locationURL,
 			operation: "manifest location"
 		)
+		return location
 	}
 
 	func manifestPayload(
@@ -210,14 +211,27 @@ actor LauncherAPI {
 			return try await loader.data(for: request, maximumBytes: maximumBytes)
 		} catch is CancellationError {
 			throw CancellationError()
-		} catch let error as LauncherError {
+		} catch let error as HTTPTransportError {
+			if Task.isCancelled { throw CancellationError() }
 			switch error {
-			case .remoteContentTooLarge:
+			case .redirectRejected(let rejectedURL):
 				throw requestError(
 					operation: operation,
 					region: region,
 					url: url,
-					reason: "response exceeded \(maximumBytes) bytes"
+					reason: "redirect refused unsupported origin "
+						+ (rejectedURL.host ?? "unknown"),
+					userMessage: LauncherError.invalidResponse.localizedDescription
+				)
+			case .responseTooLarge(let responseURL, let limit):
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "response exceeded \(limit) bytes",
+					userMessage: LauncherError.remoteContentTooLarge(
+						responseURL, maximumBytes: limit
+					).localizedDescription
 				)
 			case .invalidResponse:
 				throw requestError(
@@ -226,22 +240,13 @@ actor LauncherAPI {
 					url: url,
 					reason: "response was not HTTP"
 				)
-			default:
-				throw requestError(
-					operation: operation,
-					region: region,
-					url: url,
-					reason: "transport error: \(error.localizedDescription)",
-					userMessage: error.localizedDescription
-				)
 			}
 		} catch {
 			throw requestError(
 				operation: operation,
 				region: region,
 				url: url,
-				reason: "transport error: \(error.localizedDescription)",
-				userMessage: error.localizedDescription
+				reason: "transport error: \(error.localizedDescription)"
 			)
 		}
 	}

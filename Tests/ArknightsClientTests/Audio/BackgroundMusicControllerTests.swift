@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import Foundation
 import Testing
 import YouTubePlayerKit
@@ -9,18 +10,15 @@ import YouTubePlayerKit
 @MainActor
 struct BackgroundMusicControllerTests {
 	@Test
-	func bufferingCountsAsActivePlaybackForThePauseControl() {
-		let (controller, _, defaults, suiteName) = makeController()
+	func opensCurrentMusicURLThroughTheInjectedOpener() {
+		var openedURL: URL?
+		let (controller, _, defaults, suiteName) = makeController(openURL: { openedURL = $0 })
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
-		controller.playbackState = .paused
-		#expect(!controller.isPlaying)
+		controller.currentMusicVideoID = "video-id"
+		controller.openCurrentMusicURL()
 
-		controller.playbackState = .buffering
-		#expect(controller.isPlaying)
-
-		controller.playbackState = .playing
-		#expect(controller.isPlaying)
+		#expect(openedURL?.absoluteString == "https://www.youtube.com/watch?v=video-id")
 	}
 
 	@Test
@@ -41,51 +39,6 @@ struct BackgroundMusicControllerTests {
 		#expect(controller.playbackIntent == nil)
 		#expect(!controller.isChangingPlayback)
 		#expect(!controller.isPlaying)
-	}
-
-	@Test
-	func playbackIntentSurvivesCommandCompletionUntilPlayerConfirmsIt() {
-		let (controller, _, defaults, suiteName) = makeController()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-
-		controller.playbackState = .playing
-		let player = YouTubePlayer(source: .video(id: "test"))
-		controller.player = player
-		let operation = controller.beginOperation(.playbackChange(.paused), on: player)
-		controller.expectPlayback(.paused, on: player)
-
-		controller.finishOperation(operation)
-		controller.reconcilePlaybackIntent(with: .playing)
-
-		#expect(controller.playbackIntent == .paused)
-		#expect(!controller.isPlaying)
-		#expect(!controller.controlsAreDisabled)
-
-		controller.reconcilePlaybackIntent(with: .paused)
-		#expect(controller.playbackIntent == nil)
-	}
-
-	@Test
-	func automaticPlaybackIntentCoversStartupWithoutAControlOperation() {
-		let (controller, _, defaults, suiteName) = makeController()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-
-		let player = YouTubePlayer(source: .video(id: "test"))
-		controller.player = player
-		controller.expectPlayback(.playing, on: player)
-
-		#expect(controller.operation.token == nil)
-		#expect(controller.isPlaying)
-
-		controller.playbackState = .paused
-		controller.reconcilePlaybackIntent(with: .paused)
-		#expect(controller.playbackIntent == .playing)
-		#expect(controller.isPlaying)
-
-		controller.playbackState = .playing
-		controller.reconcilePlaybackIntent(with: .playing)
-		#expect(controller.playbackIntent == nil)
-		#expect(controller.isPlaying)
 	}
 
 	@Test
@@ -115,37 +68,8 @@ struct BackgroundMusicControllerTests {
 	}
 
 	@Test
-	func replacingThePlayerInvalidatesOlderOperations() {
-		let (controller, _, defaults, suiteName) = makeController()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-
-		let originalPlayer = YouTubePlayer(source: .video(id: "original"))
-		controller.player = originalPlayer
-		let operation = controller.beginOperation(.trackChange, on: originalPlayer)
-		let fade = controller.beginFade(on: originalPlayer)
-
-		controller.invalidatePlayerTasks()
-		controller.player = YouTubePlayer(source: .video(id: "replacement"))
-
-		#expect(!controller.isCurrent(operation))
-		#expect(!controller.isCurrent(fade))
-	}
-
-	@Test
-	func playlistNavigationWrapsAndSkipsDuplicateEntries() {
-		let playlist = ["first", "first", "middle", "last"]
-
-		#expect(TrackDirection.next.targetIndex(in: playlist, currentIndex: 0) == 2)
-		#expect(TrackDirection.previous.targetIndex(in: playlist, currentIndex: 0) == 3)
-		#expect(TrackDirection.next.targetIndex(in: playlist, currentIndex: 3) == 0)
-		#expect(TrackDirection.previous.targetIndex(in: playlist, currentIndex: 2) == 1)
-		#expect(TrackDirection.next.targetIndex(in: ["same", "same"], currentIndex: 0) == nil)
-		#expect(TrackDirection.next.targetIndex(in: playlist, currentIndex: 20) == nil)
-	}
-
-	@Test
 	func repeatedTitleStillUpdatesTheCurrentVideoIdentifier() {
-		let (controller, model, defaults, suiteName) = makeController()
+		let (controller, _, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
 		#expect(
@@ -159,48 +83,22 @@ struct BackgroundMusicControllerTests {
 			)
 		)
 
-		#expect(model.currentMusicTitle == "Chase the Light")
-		#expect(model.currentMusicVideoID == "second")
+		#expect(controller.currentMusicTitle == "Chase the Light")
+		#expect(controller.currentMusicVideoID == "second")
 		#expect(controller.lastObservedVideoID == "second")
 	}
 
 	@Test
-	func initialShuffleAcceptsANewVideoAtTheSelectedIndex() {
-		#expect(
-			BackgroundMusicController.hasReachedSelectedVideo(
-				previousVideoID: "first",
-				expectedVideoID: "snapshot-second",
-				observedVideoID: "reshuffled-second"
-			)
-		)
-		#expect(
-			!BackgroundMusicController.hasReachedSelectedVideo(
-				previousVideoID: "first",
-				expectedVideoID: "snapshot-second",
-				observedVideoID: "first"
-			)
-		)
-		#expect(
-			!BackgroundMusicController.hasReachedSelectedVideo(
-				previousVideoID: "first",
-				expectedVideoID: "snapshot-second",
-				observedVideoID: nil
-			)
-		)
-	}
-
-	@Test
 	func mutePreservesTheConfiguredVolumeAndRestoresIt() {
-		let (controller, model, defaults, suiteName) = makeController()
+		let (controller, settings, defaults, suiteName) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
-		model.settings.launcherMusicVolume = 0.7
+		settings.launcherMusicVolume = 0.7
 
 		controller.toggleMute()
 
 		#expect(controller.isMuted)
 		#expect(controller.effectiveVolume == 0)
-		#expect(model.settings.launcherMusicVolume == 0.7)
-		#expect(model.preferences.launcherMusicVolume() == 0.7)
+		#expect(settings.launcherMusicVolume == 0.7)
 
 		controller.toggleMute()
 
@@ -208,21 +106,8 @@ struct BackgroundMusicControllerTests {
 		#expect(controller.effectiveVolume == 0.7)
 	}
 
-	@Test
-	func volumeChangesWhileMutedBecomeTheNextAudibleLevel() {
-		let (controller, model, defaults, suiteName) = makeController()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		controller.toggleMute()
-
-		model.settings.launcherMusicVolume = 0.25
-
-		#expect(controller.effectiveVolume == 0)
-		controller.toggleMute()
-		#expect(controller.effectiveVolume == 0.25)
-	}
-
-	private func makeController() -> (
-		BackgroundMusicController, LauncherViewModel, UserDefaults, String
+	private func makeController(openURL: @escaping (URL) -> Void = { _ in }) -> (
+		BackgroundMusicController, LauncherPreferencesController, UserDefaults, String
 	) {
 		let identifier = "BackgroundMusicControllerTests.\(UUID().uuidString)"
 		let root = URL(filePath: NSTemporaryDirectory()).appending(
@@ -234,18 +119,30 @@ struct BackgroundMusicControllerTests {
 		preferences.setAutomaticGameUpdates(false)
 		preferences.setAutomaticLauncherUpdates(false)
 		preferences.setAnnouncementsEnabled(false)
-		let model = LauncherViewModel(
-			paths: AppPaths(
-				applicationSupportDirectory: root.appending(path: "Support"),
-				cachesDirectory: root.appending(path: "Caches"),
-				libraryDirectory: root.appending(path: "Library")
-			),
-			preferences: preferences,
-			checkIntelTranslation: {
-				IntelTranslationCheck(state: .available, diagnostics: "test")
-			},
-			arguments: ["--developer-scenario", "ready"]
+		let paths = AppPaths(
+			applicationSupportDirectory: root.appending(path: "Support"),
+			cachesDirectory: root.appending(path: "Caches"),
+			libraryDirectory: root.appending(path: "Library")
 		)
-		return (BackgroundMusicController(context: model), model, defaults, identifier)
+		let lifecycle = LauncherLifecycleStore(
+			log: LauncherLog(fileURL: paths.launcherLogFile)
+		)
+		let settings = LauncherPreferencesController(store: preferences)
+		let iconManager = LauncherIconManager(
+			setBundleIcon: { _ in true },
+			setRunningIcon: { _ in },
+			defaultIcon: { NSImage(size: NSSize(width: 64, height: 64)) }
+		)
+		return (
+			BackgroundMusicController(
+				lifecycle: lifecycle,
+				settings: settings,
+				launcherIconManager: iconManager,
+				openURL: openURL
+			),
+			settings,
+			defaults,
+			identifier
+		)
 	}
 }

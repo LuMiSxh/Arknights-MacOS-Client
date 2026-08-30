@@ -18,6 +18,7 @@ extension InstallationController {
 	) {
 		guard lifecycle.activity == .idle else { return }
 		guard let installationID = installationGate.begin() else { return }
+		cancelInstalledStateRefresh()
 		let requestedRegion = region
 		let operation: SupportOperation =
 			operationOverride
@@ -33,13 +34,32 @@ extension InstallationController {
 			return
 		}
 		let targetDirectory = installDirectory
-		if let required = configuration.requiredInstallBytes,
-			let available = GameInstaller.availableCapacityBytes(at: targetDirectory),
-			available < required
-		{
+		guard let required = configuration.requiredInstallBytes else {
 			installationGate.finish(installationID)
 			presentInstallationFailure(
-				LauncherError.insufficientDiskSpace(required: required, available: available),
+				LauncherError.invalidResponse,
+				id: installationID,
+				operation: operation,
+				region: requestedRegion
+			)
+			return
+		}
+		do {
+			let available = try GameInstaller.availableCapacityBytes(at: targetDirectory)
+			if available < required {
+				installationGate.finish(installationID)
+				presentInstallationFailure(
+					LauncherError.insufficientDiskSpace(required: required, available: available),
+					id: installationID,
+					operation: operation,
+					region: requestedRegion
+				)
+				return
+			}
+		} catch {
+			installationGate.finish(installationID)
+			presentInstallationFailure(
+				error,
 				id: installationID,
 				operation: operation,
 				region: requestedRegion
@@ -91,6 +111,7 @@ extension InstallationController {
 				}
 				guard finishInstallation(installationID) else { return }
 				isInstalled = true
+				setRegionInstalled(requestedRegion, true)
 				hasPartialDownload = false
 				installedVersion = configuration.gameLatestVersion
 				isGameUpdateAvailable = false
@@ -100,8 +121,8 @@ extension InstallationController {
 				)
 				if launchAfterCompletion { onLaunchRequested?() }
 			} catch is CancellationError {
+				await updateInstalledState().value
 				guard finishInstallation(installationID) else { return }
-				updateInstalledState()
 				lifecycle.setStatus(.paused)
 				await log.info("Installation paused")
 			} catch {

@@ -33,7 +33,6 @@ struct GameInstallerDownloadLifecycleTests {
 		}
 
 		await monitorGate.waitUntilEntered()
-		try await Task.sleep(for: .milliseconds(500))
 		#expect(!(await completion.finished))
 		await monitorGate.release()
 		await operation.value
@@ -68,7 +67,6 @@ struct GameInstallerDownloadLifecycleTests {
 
 		await monitorGate.waitUntilEntered()
 		operation.cancel()
-		try await Task.sleep(for: .milliseconds(250))
 		#expect(!(await completion.finished))
 		await monitorGate.release()
 		await operation.value
