@@ -15,11 +15,13 @@ private struct ThemedInputSurfaceModifier: ViewModifier {
 					in: .rect(cornerRadius: 10)
 				)
 				.overlay { focusBorder }
+				.contentShape(inputShape)
 		} else {
 			content
 				.background(accentColor.opacity(isFocused ? 0.12 : 0.06), in: inputShape)
 				.background(.ultraThinMaterial, in: inputShape)
 				.overlay { focusBorder }
+				.contentShape(inputShape)
 		}
 	}
 
