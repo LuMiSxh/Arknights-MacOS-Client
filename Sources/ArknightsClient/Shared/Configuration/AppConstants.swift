@@ -97,6 +97,7 @@ enum AppConstants {
 		static let avatarIdentifierMaximumLength = 96
 		static let wallpaperPageSize = 50
 		static let wallpaperPageLimit = 5
+		static let gallerySuggestionLimit = 6
 		static let requestTimeout: TimeInterval = 8
 	}
 

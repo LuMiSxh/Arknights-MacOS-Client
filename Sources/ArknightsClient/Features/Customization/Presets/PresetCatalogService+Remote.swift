@@ -32,7 +32,14 @@ extension PresetCatalogService {
 						id: characterID,
 						name: name,
 						filename: "\(characterID).png",
-						rarity: rarity
+						rarity: rarity,
+						appellation: entry.appellation,
+						profession: entry.profession,
+						subProfessionID: entry.subProfessionID,
+						nationID: entry.nationID,
+						groupID: entry.groupID,
+						teamID: entry.teamID,
+						tagList: entry.tagList
 					)
 				}.sorted(by: Self.avatarSortOrder)
 			}.value
@@ -92,30 +99,13 @@ extension PresetCatalogService {
 				guard !rows.isEmpty else { break }
 
 				for row in rows.prefix(AppConstants.Presets.wallpaperPageSize) {
-					guard let rawURL = row.image1 ?? row.smallImage,
-						let url = Self.validatedRemoteAssetURL(from: rawURL)
-					else { continue }
-
-					let trimmedTitle = row.title?.trimmingCharacters(in: .whitespacesAndNewlines)
-					let title: String
-					let fallbackOrdinal: Int?
-					if let trimmedTitle, !trimmedTitle.isEmpty {
-						title = String(trimmedTitle.prefix(160))
-						fallbackOrdinal = nil
-					} else {
-						title = ""
-						fallbackOrdinal = wallpapers.count + 1
+					if let wallpaper = Self.wallpaper(
+						from: row,
+						page: page,
+						ordinal: wallpapers.count + 1
+					) {
+						wallpapers.append(wallpaper)
 					}
-					let thumbnailURL = row.smallImage.flatMap(Self.validatedRemoteAssetURL(from:))
-					wallpapers.append(
-						PresetWallpaper(
-							id: "wp_\(page)_\(wallpapers.count)",
-							title: title,
-							fallbackOrdinal: fallbackOrdinal,
-							url: url,
-							thumbnailURL: thumbnailURL
-						)
-					)
 				}
 
 				if rows.count < AppConstants.Presets.wallpaperPageSize { break }
@@ -142,6 +132,27 @@ extension PresetCatalogService {
 			guard cacheEpoch == epoch else { return [] }
 			return []
 		}
+	}
+
+	static func wallpaper(
+		from row: YostarGalleryRow,
+		page: Int,
+		ordinal: Int
+	) -> PresetWallpaper? {
+		guard let rawURL = row.image1 ?? row.smallImage,
+			let url = validatedRemoteAssetURL(from: rawURL)
+		else { return nil }
+
+		let title = row.title.map { String($0.prefix(160)) } ?? ""
+		return PresetWallpaper(
+			id: row.id.map { "wp_\($0)" } ?? "wp_\(page)_\(ordinal - 1)",
+			title: title,
+			fallbackOrdinal: title.isEmpty ? ordinal : nil,
+			url: url,
+			thumbnailURL: row.smallImage.flatMap(validatedRemoteAssetURL(from:)),
+			author: row.author,
+			description: row.description
+		)
 	}
 
 	static func isValidAvatar(_ avatar: PresetAvatar) -> Bool {

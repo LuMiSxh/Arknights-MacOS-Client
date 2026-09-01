@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-
 import SwiftUI
 
 struct PresetGalleryView: View {
@@ -9,7 +8,6 @@ struct PresetGalleryView: View {
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-
 	@State private var searchText = ""
 	@State private var avatars: [PresetAvatar] = []
 	@State private var wallpapers: [PresetWallpaper] = []
@@ -36,6 +34,10 @@ struct PresetGalleryView: View {
 		self.destination = destination
 	}
 	var body: some View {
+		let hasSearchQuery = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+		let filteredAvatars = PresetCatalogSearch.avatars(matching: searchText, in: avatars)
+		let filteredWallpapers = PresetCatalogSearch.wallpapers(
+			matching: searchText, in: wallpapers)
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {
 				PresetGalleryHeader(
@@ -49,6 +51,14 @@ struct PresetGalleryView: View {
 				searchBar
 					.padding(.horizontal, 24)
 					.padding(.vertical, 14)
+				PresetGallerySuggestions(
+					destination: destination,
+					avatars: hasSearchQuery ? filteredAvatars : [],
+					wallpapers: hasSearchQuery ? filteredWallpapers : []
+				) { selection in
+					searchText = selection
+				}
+				.padding(.horizontal, 24)
 				ScrollView {
 					Group {
 						if isLoading {
@@ -58,7 +68,7 @@ struct PresetGalleryView: View {
 								PresetGalleryEmptyView(
 									text: destination.emptyText, systemImage: "photo")
 							} else {
-								wallpapersGrid
+								wallpapersGrid(filteredWallpapers)
 							}
 						} else {
 							if filteredAvatars.isEmpty {
@@ -66,7 +76,7 @@ struct PresetGalleryView: View {
 									text: destination.emptyText, systemImage: "person.crop.square"
 								)
 							} else {
-								avatarsGrid
+								avatarsGrid(filteredAvatars)
 							}
 						}
 					}
@@ -119,17 +129,7 @@ struct PresetGalleryView: View {
 			accentColor: customization.accentColor
 		)
 	}
-	private var filteredAvatars: [PresetAvatar] {
-		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-		if query.isEmpty { return avatars }
-		return avatars.filter { $0.name.localizedStandardContains(query) }
-	}
-	private var filteredWallpapers: [PresetWallpaper] {
-		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-		if query.isEmpty { return wallpapers }
-		return wallpapers.filter { $0.displayTitle.localizedStandardContains(query) }
-	}
-	private var avatarsGrid: some View {
+	private func avatarsGrid(_ filteredAvatars: [PresetAvatar]) -> some View {
 		LazyVGrid(columns: avatarColumns, spacing: 18) {
 			ForEach(filteredAvatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
@@ -183,7 +183,6 @@ struct PresetGalleryView: View {
 							x: 0,
 							y: 3
 						)
-
 						Text(avatar.name)
 							.font(.caption.weight(isApplying ? .bold : .medium))
 							.lineLimit(2)
@@ -208,7 +207,7 @@ struct PresetGalleryView: View {
 			}
 		}
 	}
-	private var wallpapersGrid: some View {
+	private func wallpapersGrid(_ filteredWallpapers: [PresetWallpaper]) -> some View {
 		LazyVGrid(columns: wallpaperColumns, spacing: 14) {
 			ForEach(filteredWallpapers) { wp in
 				let isApplying = applyingItemID == wp.id

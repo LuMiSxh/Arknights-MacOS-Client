@@ -8,6 +8,47 @@ struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 	let name: String
 	let filename: String
 	let rarity: String?
+	let appellation: String?
+	let profession: String?
+	let subProfessionID: String?
+	let nationID: String?
+	let groupID: String?
+	let teamID: String?
+	let tagList: [String]
+
+	init(
+		id: String,
+		name: String,
+		filename: String,
+		rarity: String?,
+		appellation: String? = nil,
+		profession: String? = nil,
+		subProfessionID: String? = nil,
+		nationID: String? = nil,
+		groupID: String? = nil,
+		teamID: String? = nil,
+		tagList: [String] = []
+	) {
+		self.id = id
+		self.name = name
+		self.filename = filename
+		self.rarity = rarity
+		self.appellation = appellation
+		self.profession = profession
+		self.subProfessionID = subProfessionID
+		self.nationID = nationID
+		self.groupID = groupID
+		self.teamID = teamID
+		self.tagList = tagList
+	}
+
+	/// Search input includes stable upstream metadata, while the identifier stays presentation-free.
+	var searchableValues: [String] {
+		[
+			id, name, appellation, profession, subProfessionID, nationID, groupID, teamID, rarity,
+		]
+		.compactMap { $0 } + tagList
+	}
 
 	var url: URL {
 		URL(
@@ -24,6 +65,26 @@ struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	let fallbackOrdinal: Int?
 	let url: URL
 	let thumbnailURL: URL?
+	let author: String?
+	let description: String?
+
+	init(
+		id: String,
+		title: String,
+		fallbackOrdinal: Int?,
+		url: URL,
+		thumbnailURL: URL?,
+		author: String? = nil,
+		description: String? = nil
+	) {
+		self.id = id
+		self.title = title
+		self.fallbackOrdinal = fallbackOrdinal
+		self.url = url
+		self.thumbnailURL = thumbnailURL
+		self.author = author
+		self.description = description
+	}
 
 	var displayTitle: String {
 		fallbackOrdinal.map { L10n.string(CustomizationStrings.wallpaperFallbackTitle($0)) }
@@ -36,6 +97,39 @@ struct RawCharacterEntry: Decodable {
 	let name: String
 	let isNotObtainable: Bool?
 	let rarity: String?
+	let appellation: String?
+	let profession: String?
+	let subProfessionID: String?
+	let nationID: String?
+	let groupID: String?
+	let teamID: String?
+	let tagList: [String]
+
+	init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		name = try container.decode(String.self, forKey: .name)
+		isNotObtainable = try container.decodeIfPresent(Bool.self, forKey: .isNotObtainable)
+		if let numericRarity = try? container.decode(Int.self, forKey: .rarity) {
+			rarity = "TIER_\(numericRarity + 1)"
+		} else {
+			rarity = try container.decodeIfPresent(String.self, forKey: .rarity)
+		}
+		appellation = try container.decodeIfPresent(String.self, forKey: .appellation)
+		profession = try container.decodeIfPresent(String.self, forKey: .profession)
+		subProfessionID = try container.decodeIfPresent(String.self, forKey: .subProfessionID)
+		nationID = try container.decodeIfPresent(String.self, forKey: .nationID)
+		groupID = try container.decodeIfPresent(String.self, forKey: .groupID)
+		teamID = try container.decodeIfPresent(String.self, forKey: .teamID)
+		tagList = try container.decodeIfPresent([String].self, forKey: .tagList) ?? []
+	}
+
+	private enum CodingKeys: String, CodingKey {
+		case name, isNotObtainable, rarity, appellation, profession, tagList
+		case subProfessionID = "subProfessionId"
+		case nationID = "nationId"
+		case groupID = "groupId"
+		case teamID = "teamId"
+	}
 }
 
 /// Tolerant decoders for Yostar's Fan Kit gallery API (handles mixed String/Int types and key variants).
@@ -49,12 +143,18 @@ struct YostarGalleryData: Decodable {
 }
 
 struct YostarGalleryRow: Decodable {
+	let id: Int?
 	let title: String?
+	let author: String?
+	let description: String?
 	let image1: String?
 	let smallImage: String?
 
 	enum CodingKeys: String, CodingKey {
+		case id
 		case title
+		case author
+		case description
 		case image1
 		case smallImage
 		case smallImageSnakeCase = "small_image"
@@ -63,7 +163,16 @@ struct YostarGalleryRow: Decodable {
 
 	init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
-		title = try? container.decodeIfPresent(String.self, forKey: .title)
+		if let numericID = try? container.decode(Int.self, forKey: .id) {
+			id = numericID
+		} else if let stringID = try? container.decode(String.self, forKey: .id) {
+			id = Int(stringID.trimmingCharacters(in: .whitespacesAndNewlines))
+		} else {
+			id = nil
+		}
+		title = Self.trimmed(decodeStringOrInt(from: container, forKey: .title))
+		author = Self.trimmed(decodeStringOrInt(from: container, forKey: .author))
+		description = Self.trimmed(decodeStringOrInt(from: container, forKey: .description))
 		let image1FromImage1 = decodeStringOrInt(from: container, forKey: .image1)
 		let image1FromImage = decodeStringOrInt(from: container, forKey: .image)
 		image1 = image1FromImage1 ?? image1FromImage
@@ -77,6 +186,12 @@ struct YostarGalleryRow: Decodable {
 			forKey: .smallImageSnakeCase
 		)
 		smallImage = smallImageFromSmallImage ?? smallImageFromSnakeCase ?? image1
+	}
+
+	private static func trimmed(_ value: String?) -> String? {
+		guard let value else { return nil }
+		let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+		return trimmed.isEmpty ? nil : trimmed
 	}
 }
 

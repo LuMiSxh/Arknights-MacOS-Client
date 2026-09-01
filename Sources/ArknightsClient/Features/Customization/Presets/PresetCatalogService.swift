@@ -25,7 +25,7 @@ actor PresetCatalogService {
 	) {
 		self.log = log
 		self.cacheDirectory = cacheDirectory
-		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index_v1.json")
+		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index_v2.json")
 		cachedWallpapersFile = cacheDirectory.appending(path: "wallpapers_index_v1.json")
 		loader = BoundedHTTPDataLoader(
 			session: session,

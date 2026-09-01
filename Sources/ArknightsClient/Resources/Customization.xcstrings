@@ -253,6 +253,24 @@
         }
       }
     },
+    "customization.gallery.search.suggestionSelect": {
+      "comment": "Accessibility hint for a gallery search suggestion button that fills the exact item title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auswählen und Suchtext übernehmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select and use this exact title in the search"
+          }
+        }
+      }
+    },
     "customization.gallery.wallpaper.applyHelp": {
       "comment": "Accessibility help for applying a wallpaper; wallpaper title is supplied content",
       "extractionState": "manual",

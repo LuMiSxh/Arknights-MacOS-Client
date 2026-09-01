@@ -25,6 +25,8 @@ enum CustomizationStrings {
 	static let operatorTitle = LocalizedStringResource.Customization
 		.customizationGalleryOperatorTitle
 	static let searchLabel = LocalizedStringResource.Customization.customizationGallerySearchLabel
+	static let searchSuggestionSelect = LocalizedStringResource.Customization
+		.customizationGallerySearchSuggestionSelect
 	static let gameStyleDetail = LocalizedStringResource.Customization
 		.customizationIconPreviewGameDetail
 	static let gameStyleTitle = LocalizedStringResource.Customization
