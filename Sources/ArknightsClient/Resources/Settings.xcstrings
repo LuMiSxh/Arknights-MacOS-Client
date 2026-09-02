@@ -1747,6 +1747,42 @@
         }
       }
     },
+    "settings.installation.canaryFeatures": {
+      "comment": "Canary features master toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canary-Funktionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canary Features"
+          }
+        }
+      }
+    },
+    "settings.installation.canaryFeatures.detail": {
+      "comment": "Canary features master toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ermöglicht den Zugriff auf unfertige Funktionen, die sich ändern, Probleme verursachen oder wieder entfernt werden können."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enables access to unfinished features that may change, cause problems, or be removed again."
+          }
+        }
+      }
+    },
     "settings.installation.chooseNewLocation": {
       "comment": "Choose new install location action",
       "extractionState": "manual",

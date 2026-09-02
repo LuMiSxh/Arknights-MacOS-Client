@@ -56,6 +56,9 @@ final class LauncherPreferencesController {
 			onDynamicThemeChanged?()
 		}
 	}
+	var canaryFeaturesEnabled: Bool {
+		didSet { store.setCanaryFeaturesEnabled(canaryFeaturesEnabled) }
+	}
 	var appLanguage: AppLanguage {
 		didSet {
 			store.setAppLanguage(appLanguage)
@@ -85,6 +88,7 @@ final class LauncherPreferencesController {
 		showsPlayingMusic = store.showsPlayingMusic()
 		launcherMusicVolume = store.launcherMusicVolume()
 		usesDynamicTheme = store.usesDynamicTheme()
+		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
 		appLanguage = store.appLanguage()
 		L10n.useAppLanguage(appLanguage)
 	}
@@ -115,6 +119,7 @@ final class LauncherPreferencesController {
 		showsPlayingMusic = false
 		launcherMusicVolume = 0.5
 		usesDynamicTheme = true
+		canaryFeaturesEnabled = false
 		appLanguage = .system
 		return true
 	}

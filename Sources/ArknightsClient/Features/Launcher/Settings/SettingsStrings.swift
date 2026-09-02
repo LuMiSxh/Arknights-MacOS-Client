@@ -129,6 +129,10 @@ enum SettingsStrings {
 	static let locateExisting = LocalizedStringResource.Settings.settingsInstallationLocateExisting
 	static let maintenance = LocalizedStringResource.Settings.settingsInstallationMaintenance
 	static let compatibility = LocalizedStringResource.Settings.settingsInstallationCompatibility
+	static let canaryFeatures = LocalizedStringResource.Settings
+		.settingsInstallationCanaryFeatures
+	static let canaryFeaturesDetail = LocalizedStringResource.Settings
+		.settingsInstallationCanaryFeaturesDetail
 	static let repair = LocalizedStringResource.Settings.settingsInstallationRepair
 	static let repairAction = LocalizedStringResource.Settings.settingsInstallationRepairAction
 	static let repairDetail = LocalizedStringResource.Settings.settingsInstallationRepairDetail

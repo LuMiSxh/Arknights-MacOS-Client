@@ -21,6 +21,7 @@ struct LauncherPreferencesStore {
 		static let gameLaunchOptions = "gameLaunchOptions"
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
+		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let forceDisableRetina = "forceDisableRetina"
@@ -147,6 +148,14 @@ struct LauncherPreferencesStore {
 
 	func setSelectedRegion(_ region: GameRegion) {
 		defaults.set(region.rawValue, forKey: Key.selectedRegion)
+	}
+
+	func canaryFeaturesEnabled() -> Bool {
+		bool(for: Key.canaryFeaturesEnabled, defaultValue: false)
+	}
+
+	func setCanaryFeaturesEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
 	}
 
 	func usesDynamicTheme() -> Bool {

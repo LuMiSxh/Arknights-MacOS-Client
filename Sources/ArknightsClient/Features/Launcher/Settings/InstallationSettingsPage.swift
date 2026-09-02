@@ -159,6 +159,18 @@ struct InstallationSettingsPage: View {
 
 			DangerZonePanel {
 				SettingsActionRow(
+					title: L10n.string(SettingsStrings.canaryFeatures),
+					detail: L10n.string(SettingsStrings.canaryFeaturesDetail)
+				) {
+					SettingsToggle(
+						L10n.string(SettingsStrings.canaryFeatures),
+						isOn: $settings.canaryFeaturesEnabled,
+						accentColor: accentColor
+					)
+					.disabled(gameSession.isGameActive)
+				}
+				SettingsHairline()
+				SettingsActionRow(
 					title: L10n.string(SettingsStrings.wineSetup),
 					detail: L10n.string(SettingsStrings.forceMigrationDetail)
 				) {

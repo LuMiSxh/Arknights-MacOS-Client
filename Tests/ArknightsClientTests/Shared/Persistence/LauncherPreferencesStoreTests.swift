@@ -23,6 +23,7 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicURL() == AppConstants.Music.defaultLauncherMusicURL)
 		#expect(store.launcherMusicVolume() == 0.5)
 		#expect(store.usesDynamicTheme())
+		#expect(!store.canaryFeaturesEnabled())
 		#expect(store.selectedRegion() == .global)
 		#expect(store.appLanguage() == .system)
 		#expect(!store.forceDisableRetina())
@@ -37,6 +38,7 @@ struct LauncherPreferencesStoreTests {
 		store.setLauncherMusicURL("https://youtube.com/playlist?list=123")
 		store.setLauncherMusicVolume(0.8)
 		store.setUsesDynamicTheme(false)
+		store.setCanaryFeaturesEnabled(true)
 		store.setSelectedRegion(.korea)
 		store.setAppLanguage(.german)
 
@@ -50,6 +52,7 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicURL() == "https://youtube.com/playlist?list=123")
 		#expect(store.launcherMusicVolume() == 0.8)
 		#expect(!store.usesDynamicTheme())
+		#expect(store.canaryFeaturesEnabled())
 		#expect(store.selectedRegion() == .korea)
 		#expect(store.appLanguage() == .german)
 	}
