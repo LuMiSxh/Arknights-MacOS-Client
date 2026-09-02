@@ -101,7 +101,7 @@ For each binary release, compare:
 4. The license and notice files in the app bundle against the repository's `licenses/` directory.
 5. The source and notice package supplied for every bundled runtime component.
 
-The runtime monitor can report unavailable pinned artifacts and provenance mismatches, but it does
-not decide whether a component is ready for public redistribution. Keep a release in draft while a
-notice or corresponding-source review is incomplete; see [Source code](source-code.md) and [Releases
-and updates](../development/releases-and-updates.md).
+The runtime repository validates its source pins and release inventory, but the client release still
+requires a review of the exact packaged archive. Keep a release in draft while a notice or
+corresponding-source review is incomplete; see [Source code](source-code.md) and [Releases and
+updates](../development/releases-and-updates.md).

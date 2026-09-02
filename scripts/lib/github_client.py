@@ -176,7 +176,7 @@ class GitHubClient:
             fail("remote URL must use HTTPS")
         headers = {
             "Accept": accept,
-            "User-Agent": "arknights-runtime-monitor",
+            "User-Agent": "arknights-client-contract-monitor",
             "X-GitHub-Api-Version": API_VERSION,
         }
         if authenticated and self.token:

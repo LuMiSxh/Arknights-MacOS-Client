@@ -35,7 +35,7 @@ Choose the smallest level that proves the changed contract:
 | A parser, state transition, path rule, persistence value, renderer, or controller decision | A focused test in `ArknightsClientTests` using local values and fixtures                                  |
 | A flow crossing onboarding, API decoding, installation, progress, or persisted state       | `ArknightsClientIntegrationTests` with an isolated `IntegrationTestEnvironment` and `LocalFixtureNetwork` |
 | A current Yostar endpoint, response shape, manifest, or signing contract                   | A live probe plus a deterministic fixture/regression test when the decoder changes                        |
-| `runtime.json`, runtime provenance, or a candidate upstream runtime                        | `just check`, `just runtime-monitor`, and the scheduled/manual runtime workflow as applicable             |
+| `runtime.json` or a new packaged runtime release                                           | `just check`, `just runtime`, and the manual compatibility matrix                                         |
 | Website Markdown, Svelte UI, routes, or Mermaid                                            | `just check web` plus a production build; use a browser smoke check for visible behavior                  |
 
 The Swift suites use the Swift Testing API (`import Testing`) rather than XCTest. Keep tests offline and fixture-backed unless the test is explicitly in the live-contract target. Do not add a second test runner for the website; it currently has no Vitest suite.
@@ -109,16 +109,20 @@ The probe writes a schema-versioned report containing only contract names, healt
 
 Failures indicate that an external schema or endpoint may have changed. They do not automatically rewrite fixtures or production code. Review the sanitized report and upstream change, then update production decoding and recorded fixtures together.
 
-## Runtime monitoring
+## Runtime ownership
 
 > [!IMPORTANT]
-> Runtime monitoring reads `runtime.json` as the pinned source of truth and never changes it. The dedicated workflow performs a metadata and provenance check every Wednesday at 05:37 UTC. A second schedule on the first day of each month downloads and independently hashes the pinned runtime archive; manual dispatch can request the same full verification. `just runtime-monitor` runs the metadata check locally, while `just runtime-monitor true` also verifies the approximately 460 MB archive.
+> The Arknights macOS Runtime repository owns upstream source monitoring, source pins, patch
+> application, and runtime release construction. This repository owns the client-selected runtime
+> release and validates its archive contract through `runtime.json`.
 
-The monitor ignores dappermint application-preview releases and selects the newest numeric Whisky release that actually contains `Libraries.tar.gz`. It requires an exact matching winecx-gptk recipe release, equal GitHub asset and checksum-file digests, a matching recipe tag and build commit, an explicit mirror-to-recipe link, and available pinned recipe and component commits. The small pinned build-recipe archive is downloaded and checked every run. Candidate comparisons summarize changed recipe pins, commits, and files without downloading the candidate runtime.
+Runtime source checks therefore do not run in client CI and never rewrite `runtime.json`. When a
+runtime release is promoted, update the URL, checksum, versions, source provenance, required layout,
+and prefix revision as one reviewed change. `just runtime` then downloads and independently hashes
+the selected archive before safely extracting and validating its executable and DXMT layout.
 
-Scheduled runs maintain at most one open runtime-candidate issue and one source-availability issue, both carrying the `automated` label and private ownership markers. A newer candidate updates and reopens the existing candidate issue; the workflow never closes it without a maintainer decision. Availability incidents update their existing issue and close only after two healthy scheduled reports. Manual runs never mutate issues.
-
-The normal probe job has read-only repository access. Issue writes are isolated in the reconciliation job, and the monitor persists only bounded, validated release metadata and sanitized summaries. It never publishes a release, edits the runtime pin, or treats a higher version number as approved.
+The client release workflow packages only that selected runtime. It does not choose among runtime
+channels or combine independently updated Wine and DXMT components.
 
 ## Manual compatibility matrix
 

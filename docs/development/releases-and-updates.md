@@ -56,13 +56,23 @@ The archive checksum is also part of the effective runtime revision. Changing th
 
 Release automation does not use repository variables for these values. A runtime update is a reviewed `runtime.json` change, so local and GitHub builds cannot silently select different binaries.
 
-The runtime monitor reports newer mirrored dappermint builds for review and checks that pinned artifacts, source commits, recipe metadata, and checksums remain available. It never edits `runtime.json` or opens an update pull request. Candidate issues remain open or closed according to a maintainer decision; availability incidents recover automatically only after two healthy scheduled checks.
+The [Arknights macOS Runtime](https://github.com/LuMiSxh/Arknights-MacOS-Runtime) repository owns
+upstream source monitoring, reproducible runtime builds, and runtime releases. This repository owns
+the one runtime selected for the client: `runtime.json` pins the reviewed release archive and its
+consumer-facing layout.
 
 ### Updating the pinned runtime
 
-Treat a runtime refresh as a compatibility change, not as a dependency bump. Update the reviewed metadata and checksums in [`runtime.json`](../../runtime.json), run `uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json`, and use `just runtime-monitor true` when the archive itself must be downloaded and hashed. Compare the candidate's Wine, DXMT, browser, and build-recipe provenance with the current pin before changing it. Then test a fresh prefix and an existing prefix through install/update, web login, game start, and clean exit. Add or update prefix migrations when the runtime state contract requires them.
+Treat a runtime refresh as a compatibility change, not as a dependency bump. Start from a published,
+checksum-verified Arknights macOS Runtime release, update the reviewed metadata and checksums in
+[`runtime.json`](../../runtime.json), and run
+`uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json`. Then run `just runtime`
+to download, hash, extract, and validate the exact pinned archive. Test a fresh prefix and an existing
+prefix through install/update, web login, game start, and clean exit. Add or update prefix migrations
+when the runtime state contract requires them.
 
-Do not approve a candidate only because its version is higher. The monitor reports candidates for maintainer review; it never changes the pin or publishes a runtime.
+Do not approve a runtime only because its version is higher. A runtime release never changes the
+client pin automatically; promotion remains a reviewed `runtime.json` change.
 
 ## Local packaging
 
