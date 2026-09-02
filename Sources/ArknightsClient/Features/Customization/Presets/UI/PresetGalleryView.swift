@@ -9,6 +9,7 @@ struct PresetGalleryView: View {
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var searchText = ""
+	@State private var selectedCategory: WallpaperCategory?
 	@State private var avatars: [PresetAvatar] = []
 	@State private var wallpapers: [PresetWallpaper] = []
 	@State private var isLoading = true
@@ -37,7 +38,12 @@ struct PresetGalleryView: View {
 		let hasSearchQuery = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 		let filteredAvatars = PresetCatalogSearch.avatars(matching: searchText, in: avatars)
 		let filteredWallpapers = PresetCatalogSearch.wallpapers(
-			matching: searchText, in: wallpapers)
+			matching: searchText, category: selectedCategory, in: wallpapers)
+		let categoryWallpapers = wallpapers.filter {
+			selectedCategory == nil || $0.category == selectedCategory
+		}
+		let wallpaperTerms = PresetCatalogSearch.wallpaperSuggestions(
+			matching: searchText, in: categoryWallpapers)
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {
 				PresetGalleryHeader(
@@ -48,15 +54,27 @@ struct PresetGalleryView: View {
 					showsIconStylePreview: $showsIconStylePreview
 				)
 				Divider().overlay(Color.white.opacity(0.08))
-				searchBar
-					.padding(.horizontal, 24)
-					.padding(.vertical, 14)
+				HStack(spacing: 10) {
+					searchBar
+					if destination == .artwork {
+						WallpaperCategoryFilter(
+							selection: $selectedCategory,
+							accentColor: customization.accentColor
+						)
+					}
+				}
+				.padding(.horizontal, 24)
+				.padding(.vertical, 14)
 				PresetGallerySuggestions(
 					destination: destination,
 					avatars: hasSearchQuery ? filteredAvatars : [],
-					wallpapers: hasSearchQuery ? filteredWallpapers : []
+					wallpapers: hasSearchQuery ? filteredWallpapers : [],
+					wallpaperTerms: hasSearchQuery ? wallpaperTerms : []
 				) { selection in
-					searchText = selection
+					searchText =
+						destination == .artwork
+						? WallpaperSearch.applyingSuggestion(selection, to: searchText)
+						: selection
 				}
 				.padding(.horizontal, 24)
 				ScrollView {
@@ -282,67 +300,47 @@ struct PresetGalleryView: View {
 				.accessibilityValue(
 					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
 				)
+				.help(WallpaperTagCatalog.tags(for: wp.id).joined(separator: ", "))
 			}
 		}
 	}
 	private func applyAvatar(_ avatar: PresetAvatar) {
+		applyPreset(id: avatar.id, url: avatar.url) { data in
+			await customization.applyPresetAvatar(data: data)
+		}
+	}
+	private func applyWallpaper(_ wp: PresetWallpaper) {
+		applyPreset(id: wp.id, url: wp.url) { data in
+			await customization.applyDirectCustomArtwork(data: data)
+		}
+	}
+
+	private func applyPreset(
+		id: String,
+		url: URL,
+		apply: @escaping @MainActor (Data) async -> Void
+	) {
 		guard applyingItemID == nil else { return }
-		applyingItemID = avatar.id
+		applyingItemID = id
 		let taskDestination = destination
 		Task {
 			do {
-				let data = try await catalog.imageData(for: avatar.url, cacheKey: avatar.id)
-				guard
-					!Task.isCancelled,
-					destination == taskDestination,
-					applyingItemID == avatar.id
-				else { return }
-				await customization.applyPresetAvatar(data: data)
-				guard
-					!Task.isCancelled,
-					destination == taskDestination,
-					applyingItemID == avatar.id
-				else { return }
+				let data = try await catalog.imageData(for: url, cacheKey: id)
+				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
+				await apply(data)
+				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
 				dismiss()
 			} catch {
-				guard
-					!Task.isCancelled,
-					destination == taskDestination,
-					applyingItemID == avatar.id
-				else { return }
+				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
 				applyingItemID = nil
 				lifecycle.show(error)
 			}
 		}
 	}
-	private func applyWallpaper(_ wp: PresetWallpaper) {
-		guard applyingItemID == nil else { return }
-		applyingItemID = wp.id
-		let taskDestination = destination
-		Task {
-			do {
-				let data = try await catalog.imageData(for: wp.url, cacheKey: wp.id)
-				guard
-					!Task.isCancelled,
-					destination == taskDestination,
-					applyingItemID == wp.id
-				else { return }
-				await customization.applyDirectCustomArtwork(data: data)
-				guard
-					!Task.isCancelled,
-					destination == taskDestination,
-					applyingItemID == wp.id
-				else { return }
-				dismiss()
-			} catch {
-				guard
-					!Task.isCancelled,
-					destination == taskDestination,
-					applyingItemID == wp.id
-				else { return }
-				applyingItemID = nil
-				lifecycle.show(error)
-			}
-		}
+
+	private func isCurrentApplication(id: String, destination expected: PresetGalleryDestination)
+		-> Bool
+	{
+		!Task.isCancelled && destination == expected && applyingItemID == id
 	}
 }

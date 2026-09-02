@@ -32,6 +32,7 @@ let package = Package(
 			resources: [
 				.copy("Resources/GameIconBackground.png"),
 				.copy("Resources/OperatorIconFrame.svg"),
+				.copy("Resources/WallpaperTags.json"),
 				.process("Resources/Customization.xcstrings"),
 				.process("Resources/Launcher.xcstrings"),
 				.process("Resources/Localizable.xcstrings"),

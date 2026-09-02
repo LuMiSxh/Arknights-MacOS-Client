@@ -144,15 +144,30 @@ extension PresetCatalogService {
 		else { return nil }
 
 		let title = row.title.map { String($0.prefix(160)) } ?? ""
+		let providedThumbnail = row.smallImage.flatMap(validatedRemoteAssetURL(from:))
 		return PresetWallpaper(
 			id: row.id.map { "wp_\($0)" } ?? "wp_\(page)_\(ordinal - 1)",
 			title: title,
 			fallbackOrdinal: title.isEmpty ? ordinal : nil,
 			url: url,
-			thumbnailURL: row.smallImage.flatMap(validatedRemoteAssetURL(from:)),
+			thumbnailURL: providedThumbnail != url
+				? providedThumbnail : syntheticThumbnailURL(for: url),
 			author: row.author,
 			description: row.description
 		)
+	}
+
+	static func syntheticThumbnailURL(for url: URL) -> URL? {
+		guard url.path.contains("/ark_us_web/assets/"),
+			var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+		else { return nil }
+		components.queryItems = [
+			URLQueryItem(
+				name: "x-oss-process",
+				value: "image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
+			)
+		]
+		return components.url
 	}
 
 	static func isValidAvatar(_ avatar: PresetAvatar) -> Bool {

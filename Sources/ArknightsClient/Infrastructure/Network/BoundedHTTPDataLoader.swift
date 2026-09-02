@@ -73,6 +73,15 @@ struct BoundedHTTPDataLoader: Sendable {
 			guard let response else {
 				throw HTTPTransportError.invalidResponse(sourceURL)
 			}
+			if response.expectedContentLength >= 0,
+				Int64(accumulated.count) != response.expectedContentLength
+			{
+				throw HTTPTransportError.responseSizeMismatch(
+					sourceURL,
+					expected: response.expectedContentLength,
+					actual: Int64(accumulated.count)
+				)
+			}
 			return (accumulated, response)
 		} onCancel: {
 			stream.cancel()

@@ -5,11 +5,13 @@ import SwiftUI
 private enum PresetGallerySuggestion: Identifiable {
 	case avatar(PresetAvatar)
 	case wallpaper(PresetWallpaper)
+	case wallpaperTerm(String)
 
 	var id: String {
 		switch self {
 		case .avatar(let avatar): "avatar_\(avatar.id)"
 		case .wallpaper(let wallpaper): "wallpaper_\(wallpaper.id)"
+		case .wallpaperTerm(let term): "wallpaper_term_\(term)"
 		}
 	}
 
@@ -17,12 +19,13 @@ private enum PresetGallerySuggestion: Identifiable {
 		switch self {
 		case .avatar(let avatar): avatar.name
 		case .wallpaper(let wallpaper): wallpaper.displayTitle
+		case .wallpaperTerm(let term): term
 		}
 	}
 
 	var subtitle: String? {
 		switch self {
-		case .avatar: return nil
+		case .avatar, .wallpaperTerm: return nil
 		case .wallpaper(let wallpaper): return wallpaper.author
 		}
 	}
@@ -40,11 +43,13 @@ struct PresetGallerySuggestions: View {
 	let destination: PresetGalleryDestination
 	let avatars: [PresetAvatar]
 	let wallpapers: [PresetWallpaper]
+	let wallpaperTerms: [String]
 	let onSelect: (String) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	private var suggestions: [PresetGallerySuggestion] {
 		if destination == .artwork {
+			if !wallpaperTerms.isEmpty { return wallpaperTerms.map { .wallpaperTerm($0) } }
 			return wallpapers.prefix(AppConstants.Presets.gallerySuggestionLimit).map {
 				.wallpaper($0)
 			}
@@ -93,8 +98,10 @@ private struct PresetGallerySuggestionChip: View {
 			onSelect(suggestion.title)
 		} label: {
 			HStack(spacing: 5) {
-				Image(systemName: destination == .artwork ? "photo" : "person.crop.square")
-					.foregroundStyle(.secondary)
+				Image(
+					systemName: destination == .artwork ? "tag" : "person.crop.square"
+				)
+				.foregroundStyle(.secondary)
 				Text(suggestion.compactTitle)
 					.font(.caption.weight(.medium))
 					.lineLimit(1)

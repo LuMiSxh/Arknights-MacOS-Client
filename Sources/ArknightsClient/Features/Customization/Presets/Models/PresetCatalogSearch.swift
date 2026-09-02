@@ -3,16 +3,60 @@
 import Foundation
 
 enum PresetCatalogSearch {
+	private static let knownWallpaperTags = Set(
+		WallpaperTagCatalog.shared.values.flatMap { $0 }.map(WallpaperSearch.normalized)
+	)
+
 	static func avatars(matching query: String, in avatars: [PresetAvatar]) -> [PresetAvatar] {
 		ranked(avatars, matching: query) { $0.searchableValues }
 	}
 
-	static func wallpapers(matching query: String, in wallpapers: [PresetWallpaper])
+	static func wallpapers(
+		matching query: String,
+		category: WallpaperCategory? = nil,
+		in wallpapers: [PresetWallpaper]
+	)
 		-> [PresetWallpaper]
 	{
-		ranked(wallpapers, matching: query) {
-			[$0.displayTitle, $0.author, $0.description].compactMap { $0 }
+		let directMatches = wallpapers.filter { wallpaper in
+			let prose = [wallpaper.displayTitle, wallpaper.author, wallpaper.description]
+				.compactMap { $0 }
+				.joined(separator: " ")
+			return WallpaperSearch.matches(
+				title: prose,
+				tags: WallpaperTagCatalog.tags(for: wallpaper.id),
+				category: wallpaper.category,
+				query: query.trimmingCharacters(in: .whitespacesAndNewlines),
+				selectedCategory: category,
+				knownTags: knownWallpaperTags
+			)
 		}
+		let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard trimmedQuery.count >= 3, !trimmedQuery.contains(where: \.isWhitespace) else {
+			return directMatches
+		}
+		let directIDs = Set(directMatches.map(\.id))
+		let fuzzyMatches = ranked(
+			wallpapers.filter { category == nil || $0.category == category },
+			matching: trimmedQuery
+		) {
+			[$0.displayTitle, $0.author, $0.description].compactMap { $0 }
+				+ WallpaperTagCatalog.tags(for: $0.id)
+		}.filter { !directIDs.contains($0.id) }
+		return directMatches + fuzzyMatches
+	}
+
+	static func wallpaperSuggestions(matching query: String, in wallpapers: [PresetWallpaper])
+		-> [String]
+	{
+		return WallpaperSearch.suggestions(
+			for: query,
+			wallpapers: wallpapers.map {
+				(title: $0.displayTitle, tags: WallpaperTagCatalog.tags(for: $0.id))
+			},
+			knownTags: knownWallpaperTags,
+			limit: AppConstants.Presets.gallerySuggestionLimit
+		)
 	}
 
 	private static func ranked<Item>(

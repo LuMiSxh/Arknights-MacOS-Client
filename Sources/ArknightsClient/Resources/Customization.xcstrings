@@ -307,6 +307,54 @@
         }
       }
     },
+    "customization.gallery.wallpaper.filter.all": {
+      "comment": "Wallpaper category filter choice that shows every wallpaper",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Alle Arten" } },
+        "en": { "stringUnit": { "state": "translated", "value": "All Types" } }
+      }
+    },
+    "customization.gallery.wallpaper.filter.label": {
+      "comment": "Accessibility label for the wallpaper category filter",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Hintergrundart" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Wallpaper type" } }
+      }
+    },
+    "customization.gallery.wallpaper.type.celebration": {
+      "comment": "Wallpaper category for anniversaries, celebrations, and livestreams",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Feier" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Celebration" } }
+      }
+    },
+    "customization.gallery.wallpaper.type.commemorative": {
+      "comment": "Wallpaper category for follower and other commemorative artwork",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Gedenken" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Commemorative" } }
+      }
+    },
+    "customization.gallery.wallpaper.type.holiday": {
+      "comment": "Wallpaper category for seasonal holidays",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Feiertag" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Holiday" } }
+      }
+    },
+    "customization.gallery.wallpaper.type.story": {
+      "comment": "Wallpaper category for story and uncategorized artwork",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Story" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Story" } }
+      }
+    },
     "customization.iconPreview.game.detail": {
       "comment": "Game icon style explanation",
       "extractionState": "manual",

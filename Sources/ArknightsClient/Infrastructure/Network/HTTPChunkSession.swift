@@ -5,6 +5,7 @@ import Foundation
 enum HTTPTransportError: Error, Sendable {
 	case invalidResponse(URL?)
 	case responseTooLarge(URL, maximumBytes: Int)
+	case responseSizeMismatch(URL, expected: Int64, actual: Int64)
 	case redirectRejected(URL)
 }
 

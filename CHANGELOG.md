@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Donate button for people who want to support the project.
 - Dock shortcuts for starting an installed regional client or opening Settings (#46).
 - Typo-tolerant preset gallery search with compact suggestions and searchable operator and official-wallpaper metadata.
+- Wallpaper type filters and curated tag and title-word suggestions for official artwork presets, plus a daily workflow that files newly untagged wallpapers (Thanks to @darkwebdev, #61).
 
 ### Changed
 
@@ -46,6 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
 - Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
 - Consolidated repository scripts into one locked uv project, isolated packaging-only tools in their own dependency group, and removed single-use helpers and low-value wrapper tests.
+- Loaded smaller CDN-generated gallery thumbnails when an official wallpaper has no dedicated preview image.
 
 ### Fixed
 
@@ -55,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Kept music and Now Playing state isolated from stale player callbacks and private MediaPlayer queues.
 - Prevented Settings, onboarding, popup, failure, and Rosetta presentations from masking one another.
 - Rejected incomplete wallpaper downloads instead of displaying partially decoded images.
+- Accepted unusually large official wallpapers while preserving bounded image validation.
 - Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
 - Refreshed the main window's Play control, Settings sidebar, and status pill immediately when the app language changes instead of waiting for an unrelated state change to redraw them.

@@ -27,6 +27,10 @@ enum CustomizationStrings {
 	static let searchLabel = LocalizedStringResource.Customization.customizationGallerySearchLabel
 	static let searchSuggestionSelect = LocalizedStringResource.Customization
 		.customizationGallerySearchSuggestionSelect
+	static let wallpaperFilterAll = LocalizedStringResource.Customization
+		.customizationGalleryWallpaperFilterAll
+	static let wallpaperFilterLabel = LocalizedStringResource.Customization
+		.customizationGalleryWallpaperFilterLabel
 	static let gameStyleDetail = LocalizedStringResource.Customization
 		.customizationIconPreviewGameDetail
 	static let gameStyleTitle = LocalizedStringResource.Customization
@@ -56,5 +60,14 @@ enum CustomizationStrings {
 
 	static func wallpaperFallbackTitle(_ number: Int) -> LocalizedStringResource {
 		.Customization.customizationGalleryWallpaperFallbackTitle(number)
+	}
+
+	static func wallpaperCategory(_ category: WallpaperCategory) -> LocalizedStringResource {
+		switch category {
+		case .story: .Customization.customizationGalleryWallpaperTypeStory
+		case .commemorative: .Customization.customizationGalleryWallpaperTypeCommemorative
+		case .celebration: .Customization.customizationGalleryWallpaperTypeCelebration
+		case .holiday: .Customization.customizationGalleryWallpaperTypeHoliday
+		}
 	}
 }

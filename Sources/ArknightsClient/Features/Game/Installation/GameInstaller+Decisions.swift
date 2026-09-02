@@ -20,6 +20,8 @@ extension GameInstaller {
 		switch transportError {
 		case .responseTooLarge(let url, let maximumBytes):
 			.remoteContentTooLarge(url, maximumBytes: maximumBytes)
+		case .responseSizeMismatch(let url, let expected, let actual):
+			.downloadedSizeMismatch(path: url.absoluteString, expected: expected, actual: actual)
 		case .invalidResponse, .redirectRejected:
 			.invalidResponse
 		}

@@ -90,6 +90,60 @@ struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 		fallbackOrdinal.map { L10n.string(CustomizationStrings.wallpaperFallbackTitle($0)) }
 			?? title
 	}
+
+	var category: WallpaperCategory { WallpaperCategory(title: title) }
+}
+
+enum WallpaperCategory: String, CaseIterable, Identifiable, Sendable {
+	case story
+	case commemorative
+	case celebration
+	case holiday
+
+	var id: Self { self }
+
+	init(title: String) {
+		if Self.holidayKeywords.contains(where: title.localizedStandardContains) {
+			self = .holiday
+		} else if Self.celebrationKeywords.contains(where: title.localizedStandardContains) {
+			self = .celebration
+		} else if title.localizedStandardContains("Commemorative Wallpaper") {
+			self = .commemorative
+		} else {
+			self = .story
+		}
+	}
+
+	private static let celebrationKeywords = ["Anniver", "Celebration", "Livestream"]
+	private static let holidayKeywords = [
+		"Christmas", "Halloween", "Thanksgiving", "Valentine's Day", "Easter",
+		"Chinese New Year", "April Fool's Day", "Children's Day", "New Year",
+	]
+}
+
+struct WallpaperTagManifest: Decodable, Sendable {
+	let schemaVersion: Int
+	let tags: [String: [String]]
+}
+
+enum WallpaperTagCatalog {
+	static let shared: [String: [String]] = load()
+
+	static func tags(for wallpaperID: String) -> [String] {
+		if let tags = shared[wallpaperID] { return tags }
+		guard wallpaperID.hasPrefix("wp_") else { return [] }
+		return shared["global-" + String(wallpaperID.dropFirst(3))] ?? []
+	}
+
+	private static func load() -> [String: [String]] {
+		guard
+			let url = Bundle.module.url(forResource: "WallpaperTags", withExtension: "json"),
+			let data = try? Data(contentsOf: url),
+			let manifest = try? JSONDecoder().decode(WallpaperTagManifest.self, from: data),
+			manifest.schemaVersion == 1
+		else { return [:] }
+		return manifest.tags
+	}
 }
 
 /// Decodes identity fields from `character_table.json`.

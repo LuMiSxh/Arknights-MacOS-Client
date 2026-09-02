@@ -243,6 +243,13 @@ actor LauncherAPI {
 						responseURL, maximumBytes: limit
 					).localizedDescription
 				)
+			case .responseSizeMismatch(_, let expected, let actual):
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "response size was \(actual) bytes; expected \(expected)"
+				)
 			case .invalidResponse:
 				throw requestError(
 					operation: operation,
