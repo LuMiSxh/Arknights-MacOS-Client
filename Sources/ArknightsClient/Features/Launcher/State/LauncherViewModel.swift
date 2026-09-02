@@ -132,14 +132,16 @@ final class LauncherViewModel {
 			lifecycle: lifecycle,
 			paths: paths,
 			presetCatalog: catalog,
-			log: launcherLog
+			log: launcherLog,
+			regionProvider: { [weak installation] in installation?.region ?? .global }
 		)
 		self.storage = storage
 		let storageOverview = StorageOverviewController(
 			lifecycle: lifecycle,
 			paths: paths,
 			preferences: preferences,
-			log: launcherLog
+			log: launcherLog,
+			regionProvider: { [weak installation] in installation?.region ?? .global }
 		)
 		self.storageOverview = storageOverview
 		storage.onStorageOverviewChanged = { [weak storageOverview] in
@@ -171,6 +173,10 @@ final class LauncherViewModel {
 		}
 		settings.onDynamicThemeChanged = { [weak customization] in
 			customization?.updateThemeColor()
+		}
+		settings.onCanaryFeaturesChanged = { [weak installation, weak refreshController] enabled in
+			guard !enabled, installation?.region == .china else { return }
+			_ = refreshController?.selectRegion(.global)
 		}
 		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in
 			refreshController?.cancelForInstallationStart()

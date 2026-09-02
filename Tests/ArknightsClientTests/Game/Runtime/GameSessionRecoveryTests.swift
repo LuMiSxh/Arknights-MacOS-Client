@@ -7,7 +7,7 @@ import Testing
 
 @MainActor
 struct GameSessionRecoveryTests {
-	@Test(arguments: GameRegion.allCases)
+	@Test(arguments: GameRegion.yostarCases)
 	func runtimeRetryKeepsTheOriginalRegionAndRejectsDuplicates(
 		region: GameRegion
 	) async {

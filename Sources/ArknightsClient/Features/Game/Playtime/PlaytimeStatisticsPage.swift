@@ -4,6 +4,7 @@ import SwiftUI
 
 struct PlaytimeStatisticsPage: View {
 	let controller: PlaytimeStatisticsController
+	let regions: [GameRegion]
 	let accentColor: Color
 	@State private var confirmsReset = false
 
@@ -41,7 +42,7 @@ struct PlaytimeStatisticsPage: View {
 				title: L10n.string(PlaytimeStrings.regions),
 				systemImage: "globe"
 			) {
-				ForEach(Array(GameRegion.allCases.enumerated()), id: \.element.id) {
+				ForEach(Array(regions.enumerated()), id: \.element.id) {
 					index, region in
 					if index > 0 { SettingsHairline() }
 					HStack {

@@ -20,7 +20,7 @@ struct OnboardingInstallationView: View {
 			) {
 				AdaptiveSegmentedControl(
 					selection: regionBinding,
-					options: GameRegion.allCases,
+					options: GameRegion.yostarCases,
 					accentColor: accentColor
 				) { region in
 					Text(region.localizedDisplayName)

@@ -63,6 +63,7 @@ enum HomeStrings {
 		case .global: .homeWordmarkFallbackGlobal
 		case .japan: .homeWordmarkFallbackJapan
 		case .korea: .homeWordmarkFallbackKorea
+		case .china: .sharedRegionChina
 		}
 	}
 

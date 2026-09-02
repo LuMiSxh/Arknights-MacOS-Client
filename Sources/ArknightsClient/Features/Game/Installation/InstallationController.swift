@@ -96,6 +96,7 @@ final class InstallationController {
 
 	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
+		guard newRegion != .china || preferences.canaryFeaturesEnabled() else { return false }
 		cancelInstalledStateRefresh()
 		lifecycle.clearFailure()
 		region = newRegion
@@ -129,7 +130,9 @@ final class InstallationController {
 			selectedRegion: region,
 			selectedDirectory: installDirectory,
 			regionDirectories: Dictionary(
-				uniqueKeysWithValues: GameRegion.allCases.map { candidate in
+				uniqueKeysWithValues: GameRegion.selectableCases(
+					canaryEnabled: preferences.canaryFeaturesEnabled()
+				).map { candidate in
 					(
 						candidate,
 						preferences.installDirectory(

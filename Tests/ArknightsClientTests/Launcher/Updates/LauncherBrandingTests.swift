@@ -110,15 +110,15 @@ private func testBranding(host: String, key: String) -> LauncherBranding {
 @Test
 func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
 	#expect(
-		ArtworkCache.officialLogoURL(for: .global).absoluteString
+		ArtworkCache.officialLogoURL(for: .global)?.absoluteString
 			== "https://webusstatic.yo-star.com/arknights-us/arknights-us-website/main/h5/assets/logo-4f95ced5.png"
 	)
 	#expect(
-		ArtworkCache.officialLogoURL(for: .japan).absoluteString
+		ArtworkCache.officialLogoURL(for: .japan)?.absoluteString
 			== "https://webusstatic.yo-star.com/arknights-jp/arknights-jp-website/main/arknights-jp-website/assets/logo-0bd0cb04.png"
 	)
 	#expect(
-		ArtworkCache.officialLogoURL(for: .korea).absoluteString
+		ArtworkCache.officialLogoURL(for: .korea)?.absoluteString
 			== "https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
 	)
 
@@ -159,16 +159,17 @@ func japanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {
 				"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
 		)
 	)
+	let logoURL = try #require(ArtworkCache.officialLogoURL(for: .japan))
 	RegionalLogoURLProtocol.configureJapan(
 		responses: [
 			HTTPURLResponse(
-				url: ArtworkCache.officialLogoURL(for: .japan),
+				url: logoURL,
 				statusCode: 200,
 				httpVersion: nil,
 				headerFields: nil
 			)!,
 			HTTPURLResponse(
-				url: ArtworkCache.officialLogoURL(for: .japan),
+				url: logoURL,
 				statusCode: 200,
 				httpVersion: nil,
 				headerFields: nil

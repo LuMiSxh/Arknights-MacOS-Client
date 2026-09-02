@@ -25,7 +25,7 @@ struct YostarContractProbe {
 
 	func run(environment: [String: String]) async -> LiveContractReport {
 		var checks: [LiveContractCheck] = []
-		for region in GameRegion.allCases {
+		for region in GameRegion.yostarCases {
 			checks.append(await brandingCheck(region))
 			let configuration = await configurationCheck(region)
 			checks.append(configuration.check)
@@ -202,6 +202,7 @@ struct YostarContractProbe {
 			case .global: ["www.arknights.global"]
 			case .japan: ["arknights.jp", "www.arknights.jp"]
 			case .korea: ["arknights.kr", "www.arknights.kr"]
+			case .china: []
 			}
 		return websiteHosts.union(downloadHosts(for: region))
 	}
@@ -214,6 +215,8 @@ struct YostarContractProbe {
 			["launcher-pkg-ark-jp.yo-star.com", "launcher-pkg-ark-jp-bk.yo-star.com"]
 		case .korea:
 			["launcher-pkg-ark-kr.yo-star.com", "launcher-pkg-ark-kr-bk.yo-star.com"]
+		case .china:
+			[]
 		}
 	}
 

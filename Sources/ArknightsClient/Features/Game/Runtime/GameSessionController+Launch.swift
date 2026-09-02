@@ -7,6 +7,7 @@ extension GameSessionController {
 		guard lifecycle.activity == .idle else { return }
 		let launchID = UUID()
 		let requestedRegion = installation.region
+		let isChina = requestedRegion == .china
 		let executable = installation.installDirectory.appending(
 			path: installation.configuration?.executableName ?? "Arknights.exe"
 		)
@@ -42,9 +43,10 @@ extension GameSessionController {
 			return
 		}
 
+		let prefixDirectory = paths.winePrefix(for: requestedRegion)
 		let hasPendingMigration: Bool
 		do {
-			hasPendingMigration = try runtime.hasPendingMigration(prefixDirectory: paths.winePrefix)
+			hasPendingMigration = try runtime.hasPendingMigration(prefixDirectory: prefixDirectory)
 		} catch {
 			presentRuntimeFailure(
 				error,
@@ -93,7 +95,7 @@ extension GameSessionController {
 			do {
 				let launch = try await runtime.launch(
 					gameExecutable: executable,
-					prefixDirectory: paths.winePrefix,
+					prefixDirectory: prefixDirectory,
 					gameArguments: ["-logFile", AppPaths.windowsUnityLogPath]
 						+ (installation.configuration?.gameStartParams ?? [])
 						+ requestedLaunchOptions.playerArguments,
@@ -101,8 +103,11 @@ extension GameSessionController {
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,
 					synchronizationMode: requestedLaunchOptions.synchronizationMode,
+					runtimeEnvironmentOverrides: [
+						"ARKNIGHTS_RUNTIME_CN_COMPAT": isChina ? "1" : "0"
+					],
 					gameIconURL: customGameIconURL(),
-					logURL: paths.logFile,
+					logURL: paths.wineLogFile(for: requestedRegion),
 					log: log
 				)
 				await log.info(

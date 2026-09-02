@@ -146,7 +146,7 @@ actor ArtworkCache {
 		activeImageRequestIDs[region] == requestID
 	}
 
-	func officialLogoData(for region: GameRegion) async throws -> Data {
+	func officialLogoData(for region: GameRegion) async throws -> Data? {
 		let cachedURL = officialLogoCacheURL(for: region)
 		do {
 			let data = try Data(contentsOf: cachedURL, options: .mappedIfSafe)
@@ -159,8 +159,9 @@ actor ArtworkCache {
 			// never pin the regional wordmark to the text fallback.
 		}
 
+		guard let sourceURL = Self.officialLogoURL(for: region) else { return nil }
 		let data = try await downloadData(
-			from: Self.officialLogoURL(for: region),
+			from: sourceURL,
 			maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes
 		)
 
@@ -227,7 +228,7 @@ actor ArtworkCache {
 		)
 	}
 
-	nonisolated static func officialLogoURL(for region: GameRegion) -> URL {
+	nonisolated static func officialLogoURL(for region: GameRegion) -> URL? {
 		switch region {
 		case .global:
 			URL(
@@ -244,6 +245,8 @@ actor ArtworkCache {
 				string:
 					"https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
 			)!
+		case .china:
+			nil
 		}
 	}
 }

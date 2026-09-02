@@ -57,7 +57,10 @@ final class LauncherPreferencesController {
 		}
 	}
 	var canaryFeaturesEnabled: Bool {
-		didSet { store.setCanaryFeaturesEnabled(canaryFeaturesEnabled) }
+		didSet {
+			store.setCanaryFeaturesEnabled(canaryFeaturesEnabled)
+			onCanaryFeaturesChanged?(canaryFeaturesEnabled)
+		}
 	}
 	var appLanguage: AppLanguage {
 		didSet {
@@ -70,6 +73,7 @@ final class LauncherPreferencesController {
 	@ObservationIgnored var onGameUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onAnnouncementCheckRequested: (() -> Void)?
 	@ObservationIgnored var onDynamicThemeChanged: (() -> Void)?
+	@ObservationIgnored var onCanaryFeaturesChanged: ((Bool) -> Void)?
 	@ObservationIgnored var regionProvider: () -> GameRegion = { .global }
 
 	private let store: LauncherPreferencesStore
@@ -143,7 +147,10 @@ final class LauncherPreferencesController {
 	}
 
 	private func refreshResetCountdown() {
-		guard showsServerResetCountdown else { return }
+		guard showsServerResetCountdown else {
+			resetCountdownText = nil
+			return
+		}
 		resetCountdownText = ServerReset.countdownText(for: regionProvider())
 	}
 }

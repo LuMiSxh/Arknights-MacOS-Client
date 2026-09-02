@@ -152,6 +152,7 @@ struct WineRuntime: Sendable {
 		graphicsDiagnostics: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
+		runtimeEnvironmentOverrides: [String: String] = [:],
 		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
 		log: LauncherLog? = nil
@@ -200,8 +201,6 @@ struct WineRuntime: Sendable {
 		let compatibilityChanges = try compatibilityManager.prepareForLaunch(
 			in: gameExecutable.deletingLastPathComponent()
 		)
-		RuntimePerformanceLog.write(
-			stage: "compatibility", since: launchStarted, to: logHandle)
 		for identifier in compatibilityChanges.installed {
 			try? logHandle.write(
 				contentsOf: Data(
@@ -213,12 +212,15 @@ struct WineRuntime: Sendable {
 					"Arknights Client: removed retired compatibility component \(identifier).\n"
 						.utf8))
 		}
+		RuntimePerformanceLog.write(
+			stage: "compatibility", since: launchStarted, to: logHandle)
 
 		var environment = runtimeEnvironment(
 			prefixDirectory: prefixDirectory,
 			graphicsDiagnostics: graphicsDiagnostics,
 			synchronizationMode: synchronizationMode
 		)
+		environment.merge(runtimeEnvironmentOverrides) { _, value in value }
 		environment["WINEDLLOVERRIDES"] = Self.dllOverrides
 		try await preparePrefixIfNeeded(
 			at: prefixDirectory,

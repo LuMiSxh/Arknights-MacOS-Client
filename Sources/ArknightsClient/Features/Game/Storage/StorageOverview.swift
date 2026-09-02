@@ -44,9 +44,12 @@ enum StorageOverviewResolver {
 	static func locations(
 		paths: AppPaths,
 		preferences: LauncherPreferencesStore,
+		region: GameRegion = .global,
 		fileManager: FileManager = .default
 	) -> [StorageLocation] {
-		let games = GameRegion.allCases.map { region in
+		let games = GameRegion.selectableCases(
+			canaryEnabled: preferences.canaryFeaturesEnabled()
+		).map { region in
 			StorageLocation(
 				category: .game(region),
 				urls: [
@@ -55,15 +58,15 @@ enum StorageOverviewResolver {
 				]
 			)
 		}
-		let browserCaches = paths.browserCacheDirectories(fileManager: fileManager)
+		let browserCaches = paths.browserCacheDirectories(for: region, fileManager: fileManager)
 
 		return games + [
-			StorageLocation(category: .winePrefix, urls: [paths.winePrefix]),
+			StorageLocation(category: .winePrefix, urls: [paths.winePrefix(for: region)]),
 			StorageLocation(
 				category: .compatibilityRuntime,
 				urls: paths.bundledRuntimeDirectory.map { [$0] } ?? []
 			),
-			StorageLocation(category: .dxmtCache, urls: [paths.dxmtCache]),
+			StorageLocation(category: .dxmtCache, urls: [paths.dxmtCache(for: region)]),
 			StorageLocation(category: .browserCache, urls: browserCaches),
 			StorageLocation(category: .galleryCache, urls: [paths.presetGalleryCache]),
 			StorageLocation(category: .logs, urls: [paths.logsDirectory]),
