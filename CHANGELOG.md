@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Matched the clickable areas of themed text fields and compact version and music HUD pills to their visible surfaces (Thanks to @darkwebdev, #60).
 - Prevented stale artwork, logo, icon, preset-cache, metadata, and theme work from overwriting a newer region or user selection.
 - Kept the shared Wine prefix owned until prefix-wide shutdown, preserved the originating region and failure across retries, and made stop, cancellation, and early process-exit cleanup deterministic.
 - Kept music and Now Playing state isolated from stale player callbacks and private MediaPlayer queues.

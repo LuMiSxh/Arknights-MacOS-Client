@@ -41,6 +41,8 @@ struct VersionHUDPill: View {
 							.accessibilityHidden(true)
 					}
 				}
+				.padding(.horizontal, isExpanded ? 14 : 12)
+				.frame(minHeight: isExpanded ? nil : AppConstants.Music.collapsedPlayerHeight)
 				.contentShape(Rectangle())
 			}
 			.buttonStyle(.plain)
@@ -77,10 +79,10 @@ struct VersionHUDPill: View {
 					)
 					.disabled(cannotCheck)
 				}
+				.padding(.horizontal, 14)
 				.transition(expandedContentTransition)
 			}
 		}
-		.padding(.horizontal, isExpanded ? 14 : 12)
 		.padding(.vertical, isExpanded ? 11 : 0)
 		.frame(width: isExpanded ? AppConstants.HUD.expandedVersionWidth : nil)
 		.frame(

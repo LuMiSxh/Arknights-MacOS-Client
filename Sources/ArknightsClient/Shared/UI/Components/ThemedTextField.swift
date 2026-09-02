@@ -56,6 +56,7 @@ struct ThemedTextField: View {
 				)
 				.allowsHitTesting(false)
 		}
+		.contentShape(RoundedRectangle(cornerRadius: 10))
 		.focusEffectDisabled(true)
 		.keyboardFocusIndicator(isFocused: isFocused, in: RoundedRectangle(cornerRadius: 8))
 	}
