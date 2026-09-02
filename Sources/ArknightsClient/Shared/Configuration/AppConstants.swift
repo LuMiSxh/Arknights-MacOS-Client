@@ -5,7 +5,7 @@ import Foundation
 enum AppConstants {
 	enum Game {
 		static let installedStateFileName = ".arknights-client-state.json"
-		static let installedStateMaximumBytes = 1 * 1_024 * 1_024
+		static let installedStateMaximumBytes = 8 * 1_024 * 1_024
 		static let runtimeMigrationStateMaximumBytes = 64 * 1_024
 		static let userDirectoryConfigurationMaximumBytes = 64 * 1_024
 		static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024

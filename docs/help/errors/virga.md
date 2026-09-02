@@ -9,12 +9,12 @@ domain: service
 
 # VIRGA
 
-The launcher could not obtain valid configuration or service data from Yostar. This includes the required first configuration refresh and a manually requested game-update check. Optional automatic checks remain in the log when an installed game can still be used.
+The launcher could not obtain valid configuration or service data for the selected region. This includes the required first configuration refresh and a manually requested game-update check. Optional automatic checks remain in the log when an installed game can still be used.
 
 ## Try this
 
 1. Check that the Mac can open ordinary websites.
-2. Wait a few minutes if Yostar is in maintenance, then choose **Retry**.
+2. Wait a few minutes if the game service is in maintenance, then choose **Retry**.
 3. Disable a VPN, proxy, DNS filter, or network security tool temporarily and retry.
 4. Try another trusted network.
 
@@ -25,4 +25,4 @@ The launcher could not obtain valid configuration or service data from Yostar. T
 
 When reporting the launcher problem, include the code, selected region, and whether another network behaved differently. Do not post response bodies, account details, or private URLs.
 
-If Yostar's official client or account website is also unavailable, wait for the service to recover or contact [Yostar Support](https://account.yo-star.com/contact).
+If the selected region's official client or account service is also unavailable, wait for the service to recover or contact the publisher's official support.

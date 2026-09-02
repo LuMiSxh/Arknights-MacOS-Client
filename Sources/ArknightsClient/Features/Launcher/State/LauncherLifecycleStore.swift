@@ -118,7 +118,7 @@ final class LauncherLifecycleStore {
 		_ error: any Error,
 		context: String? = nil
 	) {
-		let message = (error as? any LocalizedError)?.errorDescription ?? error.localizedDescription
+		let message = launcherUserMessage(for: error)
 		let failure = LauncherFailurePresentation(
 			id: UUID(), message: message, code: nil,
 			context: SupportContext(operation: .launcher, region: nil),

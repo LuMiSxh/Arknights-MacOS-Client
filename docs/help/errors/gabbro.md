@@ -13,7 +13,7 @@ The published manifest contains a path that escapes the selected install directo
 
 ## Try this
 
-1. Choose **Retry** once in case Yostar replaced a temporary manifest.
+1. Choose **Retry** once in case the publisher replaced a temporary manifest.
 2. Check whether the official client is currently updating or under maintenance.
 3. If the code returns, choose **Report Problem**.
 
@@ -24,4 +24,4 @@ The published manifest contains a path that escapes the selected install directo
 
 Include the code, operation, and region.
 
-This is usually a launcher/manifest compatibility problem. Contact [Yostar Support](https://account.yo-star.com/contact) only if their official launcher rejects the same release.
+This is usually a launcher/manifest compatibility problem. Contact the publisher's official support only if its official client rejects the same release.

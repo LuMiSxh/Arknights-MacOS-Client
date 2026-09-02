@@ -24,4 +24,4 @@ A downloaded game file did not match the size or checksum published in the manif
 
 A report only needs the code, operation, region, and whether Retry or Repair failed.
 
-Contact [Yostar Support](https://account.yo-star.com/contact) when the same official payload is unavailable in Yostar's own launcher.
+Contact the publisher's official support when the same payload is also unavailable through the selected region's official client.

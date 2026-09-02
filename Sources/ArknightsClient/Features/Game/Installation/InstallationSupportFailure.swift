@@ -18,9 +18,7 @@ extension InstallationController {
 			operation: operation,
 			allowsRetry: !Self.isMissingConfiguration(error)
 		)
-		let message =
-			(presentedError as? any LocalizedError)?.errorDescription
-			?? presentedError.localizedDescription
+		let message = launcherUserMessage(for: presentedError)
 		lifecycle.presentFailure(
 			LauncherFailurePresentation(
 				id: id,

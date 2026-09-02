@@ -36,6 +36,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Runtime is now pinned to a custom WineCX and DXMT build from [this repo](https://github.com/LuMiSxh/Arknights-MacOS-Runtime).
+- Accepted the runtime-owned launcher alias and Wine 11 audio-driver layout when preparing the pinned runtime.
+- Allowed larger official manifests within the bounded installation state, and kept shared game-service and fallback errors provider-neutral and in the selected app language.
 - Refactored the root launcher model into feature controllers with explicit, narrow dependencies and shared game-domain and configuration contracts (#52).
 - Moved expensive artwork processing and installation-state inspection behind bounded background operations with explicit request ownership.
 - Hardened game configuration and manifest parsing, runtime metadata, compatibility markers, symlink handling, executable names, byte totals, disk-capacity checks, HTTP redirects, and Wine's executable search path without changing supported regions or persisted formats.
@@ -48,8 +51,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
 - Consolidated repository scripts into one locked uv project, isolated packaging-only tools in their own dependency group, and removed single-use helpers and low-value wrapper tests.
 - Loaded smaller CDN-generated gallery thumbnails when an official wallpaper has no dedicated preview image.
-- Restored the preset gallery's normal search-field focus appearance and standard option-picker style.
-- Made "Use Default" remove custom launcher artwork immediately, including while a game download prevents metadata refreshes.
 
 ### Fixed
 

@@ -68,9 +68,7 @@ extension GameSessionController {
 		id: UUID,
 		operation: SupportOperation
 	) {
-		let message =
-			(error as? any LocalizedError)?.errorDescription
-			?? error.localizedDescription
+		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
 			LauncherFailurePresentation(
 				id: id,

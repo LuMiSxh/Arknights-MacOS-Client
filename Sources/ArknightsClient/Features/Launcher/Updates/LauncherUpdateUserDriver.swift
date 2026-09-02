@@ -129,7 +129,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
 		phase = .noUpdate
-		message = error.localizedDescription
+		message = L10n.string(LauncherStrings.updateErrorDetail)
 		noUpdateAcknowledgement = acknowledgement
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
@@ -275,7 +275,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showError(_ error: Error) {
 		cancelAutomaticTerminationRetry()
 		phase = .failed
-		message = error.localizedDescription
+		message = L10n.string(LauncherStrings.updateErrorDetail)
 		if errorAcknowledgement == nil {
 			errorAcknowledgement = {}
 		}
@@ -302,7 +302,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	}
 	func recordNoUpdate(_ error: Error) {
 		if phase == .hidden || phase == .checking { phase = .noUpdate }
-		message = error.localizedDescription
+		message = L10n.string(LauncherStrings.updateErrorDetail)
 	}
 	func recordAvailabilityError(_ error: Error) {
 		if phase == .hidden || phase == .checking { showError(error) }

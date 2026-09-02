@@ -17,7 +17,7 @@
     },
     "executables": ["bin/wine64", "bin/wineserver"],
     "requiredFiles": [
-      "lib/wine/x86_64-unix/coreaudio.so",
+      "lib/wine/x86_64-unix/winecoreaudio.so",
       "lib/wine/x86_64-windows/winemetal.dll"
     ],
     "macDriver": "lib/wine/x86_64-unix/winemac.so",

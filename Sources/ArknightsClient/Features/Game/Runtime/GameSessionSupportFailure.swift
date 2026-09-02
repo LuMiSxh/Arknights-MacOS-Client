@@ -16,9 +16,7 @@ extension GameSessionController {
 			isInstalled: installation.isInstalled,
 			operation: operation
 		)
-		let message =
-			(error as? any LocalizedError)?.errorDescription
-			?? error.localizedDescription
+		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
 			LauncherFailurePresentation(
 				id: id,

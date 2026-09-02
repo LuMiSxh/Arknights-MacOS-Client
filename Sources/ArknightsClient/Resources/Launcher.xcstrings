@@ -416,18 +416,36 @@
       "extractionState": "manual"
     },
     "launcher.error.invalidResponse": {
-      "comment": "Yostar server sent invalid response",
+      "comment": "The selected region's game service sent an invalid response",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Der Yostar-Server hat eine ungültige Antwort zurückgegeben."
+            "value": "Der Spieledienst hat eine ungültige Antwort zurückgegeben."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Yostar's server returned an invalid response."
+            "value": "The game service returned an invalid response."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.network": {
+      "comment": "A launcher operation failed because of a network connection problem",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Netzwerkfehler ist aufgetreten. Prüfe deine Verbindung und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A network error occurred. Check your connection and try again."
           }
         }
       },
@@ -626,6 +644,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "The installer refused a non-regular or multiply linked temporary file: %@"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.error.unexpected": {
+      "comment": "Fallback for an unexpected launcher operation failure",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Vorgang konnte wegen eines unerwarteten Fehlers nicht abgeschlossen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operation could not be completed because of an unexpected error."
           }
         }
       },

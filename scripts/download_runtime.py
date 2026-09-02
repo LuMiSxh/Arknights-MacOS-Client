@@ -24,7 +24,7 @@ from lib.common import (
     remove_path,
     run_main,
 )
-from lib.console import Progress, info, spinner, success
+from lib.console import Progress, info, spinner, success, warning
 from lib.extract_runtime import extract
 from lib.project_config import load_project_configuration
 from runtime_config import (
@@ -222,7 +222,9 @@ def prepare_runtime(
         shutil.move(dxmt, dxmt_destination)
         launcher = runtime / layout.launcher.path
         launcher.parent.mkdir(parents=True, exist_ok=True)
-        launcher.symlink_to(layout.launcher.target)
+        if not launcher.exists() and not launcher.is_symlink():
+            warning("Runtime archive is missing the launcher alias; adding it")
+            launcher.symlink_to(layout.launcher.target)
         if not runtime_is_valid(runtime, layout):
             fail("runtime archive is incomplete")
         (runtime / ".arknights-runtime-archive-sha256").write_text(

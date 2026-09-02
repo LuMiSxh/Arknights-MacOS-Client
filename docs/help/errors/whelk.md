@@ -21,7 +21,7 @@ The launcher could not find a complete compatible Wine and DXMT runtime in the a
 > [!WARNING]
 > A source build without an embedded runtime can manage documentation and settings but cannot launch the game. Do not download Wine or DXMT from an unverified third-party package to fill the bundle manually.
 
-Repair checks Yostar game files, not the launcher bundle, so it does not resolve this code.
+Repair checks official game files, not the launcher bundle, so it does not resolve this code.
 
 ## Report this problem
 

@@ -2,7 +2,7 @@
 
 import Foundation
 
-enum DiskCapacityError: LocalizedError, Sendable {
+enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 	case noExistingAncestor(URL)
 	case resourceValuesUnavailable(URL)
 	case resourceValuesReadFailed(URL, String)
@@ -14,6 +14,17 @@ enum DiskCapacityError: LocalizedError, Sendable {
 				table: "Launcher"
 			)
 		)
+	}
+
+	var diagnosticDescription: String {
+		switch self {
+		case .noExistingAncestor(let url):
+			"No existing directory was found for disk-capacity inspection: \(url.path)"
+		case .resourceValuesUnavailable(let url):
+			"Disk-capacity resource values were unavailable at \(url.path)"
+		case .resourceValuesReadFailed(let url, let reason):
+			"Disk-capacity resource values could not be read at \(url.path): \(reason)"
+		}
 	}
 }
 

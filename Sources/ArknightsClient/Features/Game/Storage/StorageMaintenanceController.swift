@@ -98,9 +98,7 @@ final class StorageMaintenanceController {
 	}
 
 	private func presentCacheFailure(_ error: any Error, id: UUID) {
-		let message =
-			(error as? any LocalizedError)?.errorDescription
-			?? error.localizedDescription
+		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
 			LauncherFailurePresentation(
 				id: id,

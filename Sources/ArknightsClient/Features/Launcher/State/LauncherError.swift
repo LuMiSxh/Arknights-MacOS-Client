@@ -2,7 +2,7 @@
 
 import Foundation
 
-protocol LauncherDiagnosticError: Error {
+protocol LauncherDiagnosticError: LocalizedError {
 	var diagnosticDescription: String { get }
 }
 
@@ -17,6 +17,16 @@ struct ContextualLauncherError: LocalizedError, LauncherDiagnosticError, Sendabl
 func launcherDiagnosticDescription(for error: any Error) -> String {
 	(error as? any LauncherDiagnosticError)?.diagnosticDescription
 		?? error.localizedDescription
+}
+
+func launcherUserMessage(for error: any Error) -> String {
+	if error is URLError {
+		return L10n.string(.Launcher.launcherErrorNetwork)
+	}
+	if let description = (error as? any LauncherDiagnosticError)?.errorDescription {
+		return description
+	}
+	return L10n.string(.Launcher.launcherErrorUnexpected)
 }
 
 enum LauncherError: LocalizedError, LauncherDiagnosticError {
@@ -126,7 +136,7 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 
 	var diagnosticDescription: String {
 		switch self {
-		case .invalidResponse: "Yostar's server returned an invalid response."
+		case .invalidResponse: "The game service returned an invalid response."
 		case .server(let code, let message): "Yostar API error \(code): \(message)"
 		case .invalidManifestPath(let path): "Unsafe path in game manifest: \(path)"
 		case .duplicateManifestPath(let path): "Duplicate path in game manifest: \(path)"
