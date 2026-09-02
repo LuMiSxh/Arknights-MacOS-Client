@@ -202,7 +202,7 @@ struct YostarContractProbe {
 			case .global: ["www.arknights.global"]
 			case .japan: ["arknights.jp", "www.arknights.jp"]
 			case .korea: ["arknights.kr", "www.arknights.kr"]
-			case .china: []
+			case .china, .chinaBilibili: []
 			}
 		return websiteHosts.union(downloadHosts(for: region))
 	}
@@ -215,7 +215,7 @@ struct YostarContractProbe {
 			["launcher-pkg-ark-jp.yo-star.com", "launcher-pkg-ark-jp-bk.yo-star.com"]
 		case .korea:
 			["launcher-pkg-ark-kr.yo-star.com", "launcher-pkg-ark-kr-bk.yo-star.com"]
-		case .china:
+		case .china, .chinaBilibili:
 			[]
 		}
 	}

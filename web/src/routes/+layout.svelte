@@ -217,7 +217,7 @@
 				<span>
 					Copyright © 2026
 					<a href="https://github.com/LuMiSxh">LuMiSxh</a> · Community-maintained
-					· unofficial Yostar client companion
+					· unofficial Yostar/Hypergryph client companion
 				</span>
 				<span
 					><a href={`${repositoryUrl}/blob/main/LICENSE`}>MPL-2.0</a>

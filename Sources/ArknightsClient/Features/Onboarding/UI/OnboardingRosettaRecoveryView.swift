@@ -25,17 +25,20 @@ struct OnboardingRosettaRecoveryView: View {
 			case .installing:
 				HStack(spacing: 12) {
 					ProgressView()
-					Text(OnboardingStrings.rosettaInstalling)
+					Text(L10n.string(OnboardingStrings.rosettaInstalling))
 						.foregroundStyle(.secondary)
 				}
 			case .failed(let message):
 				recoveryIntroduction
-				Label(OnboardingStrings.rosettaFailed, systemImage: "exclamationmark.triangle.fill")
-					.foregroundStyle(.orange)
+				Label(
+					L10n.string(OnboardingStrings.rosettaFailed),
+					systemImage: "exclamationmark.triangle.fill"
+				)
+				.foregroundStyle(.orange)
 				Text(message)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
-				Text(OnboardingStrings.rosettaManualInstall)
+				Text(L10n.string(OnboardingStrings.rosettaManualInstall))
 					.foregroundStyle(.secondary)
 				Text("softwareupdate --install-rosetta --agree-to-license")
 					.font(.callout.monospaced())
@@ -63,7 +66,7 @@ struct OnboardingRosettaRecoveryView: View {
 	}
 
 	private var recoveryIntroduction: some View {
-		Text(OnboardingStrings.rosettaIntroduction)
+		Text(L10n.string(OnboardingStrings.rosettaIntroduction))
 			.foregroundStyle(.secondary)
 			.fixedSize(horizontal: false, vertical: true)
 	}

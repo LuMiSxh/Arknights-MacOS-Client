@@ -9,20 +9,20 @@ order: 10
 ## Which Arknights clients are supported?
 
 > [!NOTE]
-> The launcher supports Yostar's official Global, Japan, and Korea PC clients. CN is not supported: its separate Hypergryph infrastructure and Tencent ACE anti-cheat are incompatible with this Wine-based runtime.
+> The launcher supports Yostar's Global, Japan, and Korea PC clients. The China and China — Bilibili clients are available when Canary Features are enabled.
 
-Choose the region that matches the Yostar service and account you already use. Regional installations, versions, and installed states are kept separate.
+Choose the region that matches the service and account you already use. Regional installations, versions, and installed states are kept separate.
 
 ## Is this an official Yostar or Hypergryph launcher?
 
 > [!IMPORTANT]
-> No. Arknights Client is a community-maintained macOS launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar. It downloads the official PC-client files from Yostar after you select a region; it does not ship the game in the DMG.
+> No. Arknights Client is a community-maintained macOS launcher. It is not affiliated with, endorsed by, or supported by Hypergryph, Yostar, or Bilibili. It downloads the selected publisher's official PC-client files; it does not ship the game in the DMG.
 
-The project cannot guarantee how Yostar will treat any third-party launcher or compatibility environment. Yostar alone defines its account and enforcement policies. Do not rely on the project for assurances about account standing.
+The project cannot guarantee how a publisher will treat any third-party launcher or compatibility environment. The selected service alone defines its account and enforcement policies. Do not rely on the project for assurances about account standing.
 
 ## Does the download include Arknights game files?
 
-No. The DMG contains the launcher, the tested Wine + DXMT runtime, required licenses, and an Applications shortcut. After you choose a region, the launcher fetches that region's official PC client directly from Yostar.
+No. The DMG contains the launcher, the tested Wine + DXMT runtime, required licenses, and an Applications shortcut. After you choose a region, the launcher fetches that region's official PC client directly from its publisher.
 
 ## Which Macs and macOS versions can run it?
 
@@ -38,17 +38,17 @@ The Windows game uses local networking while it runs through Wine. The permissio
 
 ## How much storage do I need?
 
-The launcher reads the current install size from Yostar for the selected region and checks the destination's available capacity before starting. Keep additional free space for temporary download files, future updates, repair operations, and caches. The value shown by the assistant is server-provided and can change over time.
+The launcher reads the current install size from the selected region's service and checks the destination's available capacity before starting. Keep additional free space for temporary download files, future updates, repair operations, and caches. The server-provided value can change over time.
 
 See [Storage](storage.md) for the locations measured by **Settings → Storage** and the cleanup actions that are safe to use.
 
 ## Do I need an internet connection?
 
-Yes for setup, installation, updates, sign-in, and normal access to Yostar's game services. The launcher downloads configuration and official client files rather than bundling them. It does not promise offline gameplay; server availability and account access remain controlled by Yostar.
+Yes for setup, installation, updates, sign-in, and normal access to the selected game service. The launcher downloads configuration and official client files rather than bundling them. It does not promise offline gameplay; server availability and account access remain controlled by the service operator.
 
 ## Can I install more than one region?
 
-Yes. Each supported region has its own game directory and manifest state. The Wine prefix and its embedded-browser data are shared, while the selected region is mapped as Wine's `G:` drive for a launch. Switching regions does not move or convert the other region's files.
+Yes. Each supported region has its own game directory and manifest state. Yostar regions share one Wine prefix; the two Hypergryph regions share another. The selected region is mapped as Wine's `G:` drive for a launch. Switching regions does not move or convert the other region's files.
 
 ## Can I use an existing installation?
 
@@ -58,7 +58,7 @@ Use **Settings → Installation → Installation Location → Locate Existing In
 
 ## Does the launcher update the game automatically?
 
-No. **Check for Game Updates** compares the selected installation with Yostar's current configuration and marks an update when the version differs. It does not download game data by itself; you start the update from the main action.
+No. **Check for Game Updates** compares the selected installation with its publisher's current configuration and marks an update when the version differs. It does not download game data by itself; you start the update from the main action.
 
 Launcher updates use Sparkle and are also controlled separately. Both automatic checks can be disabled in **Settings → Updates**. Enabling a check may trigger a check immediately; it still does not silently install the result.
 
@@ -112,12 +112,12 @@ Game files are separate per region. The Wine prefix, compatibility runtime, brow
 
 - **Clear Caches** removes recreatable DXMT and embedded-browser caches. It keeps game files, saved sign-ins, and launcher settings; the next start may be slower.
 - **Force Migration…** removes nothing. It forces Wine, DXMT, and registry setup to run again on the next launch while keeping game files, the Wine prefix, and saved sign-ins.
-- **Delete Wine Prefix…** removes the shared Windows environment, including browser sessions, registry state, DXMT cache, and migration data. It keeps every regional game installation and launcher setting.
+- **Delete Wine Prefix…** removes the selected publisher family's shared Windows environment, including browser sessions, registry state, DXMT cache, and migration data. It keeps every regional game installation and launcher setting.
 - **Reset All Settings…** resets launcher preferences and launch options. It keeps the selected region, installation locations, and game files.
 - **Uninstall Game…** moves the selected region's game directory to the Trash. It keeps other regions, the launcher, shared Wine prefix, and custom art.
 - Moving **Arknights Client.app** to the Trash removes only the app bundle. Game files, the Wine prefix, caches, logs, preferences, and artwork remain.
 
-Deleting the Wine prefix signs every embedded-browser provider out across all regions. For a complete uninstall, use the targeted removal steps in [Storage](storage.md#remove-or-reset-data) before moving the app itself to the Trash.
+Deleting a Wine prefix signs embedded-browser providers out across that client family. For a complete uninstall, use the targeted removal steps in [Storage](storage.md#remove-or-reset-data) before moving the app itself to the Trash.
 
 ## Does “Report a Problem…” upload my logs?
 

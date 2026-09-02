@@ -4,7 +4,7 @@
 
 # Arknights Client
 
-**Run the official Global, Japan, and Korea Arknights PC clients on Apple Silicon Macs through a native SwiftUI launcher.**
+**Run official Arknights PC clients on Apple Silicon Macs through a native SwiftUI launcher.**
 
 [![Version](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
 [![macOS](https://img.shields.io/badge/macOS-15%2B-black.svg)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest)
@@ -19,19 +19,20 @@
 
 ## Overview
 
-Arknights Client downloads the official PC game directly from Yostar and runs it through a bundled, tested Wine and DXMT environment. The native launcher manages game installation, updates, display options, artwork, icons, compatibility fixes, and diagnostics.
+Arknights Client downloads official PC game files directly from the selected publisher and runs them through a bundled, tested Wine and DXMT environment. The native launcher manages game installation, updates, display options, artwork, icons, compatibility fixes, and diagnostics.
 
 > [!TIP]
 > Use the [project website](https://lumisxh.github.io/Arknights-MacOS-Client/) for installation instructions, compatibility information, troubleshooting, and release history.
 
 > [!NOTE]
-> Arknights Client is an unofficial community project. It downloads official PC-client files from Yostar, but the project is not affiliated with Hypergryph or Yostar and does not include game files or downloaded artwork in release builds.
+> Arknights Client is an unofficial community project. It is not affiliated with Hypergryph, Yostar, or Bilibili and does not include game files or downloaded artwork in release builds.
 
 ## Features
 
 ### Install and play
 
-- Install, resume, update, repair, and remove the Global, Japan, or Korea PC client
+- Install, resume, update, repair, and remove regional PC clients
+- Enable the China or China — Bilibili client through Canary Features
 - Keep each region in its own game directory and switch between installed regions
 - Run in windowed, borderless, or fullscreen mode at a selected resolution
 - Enable HiDPI rendering for the game and its embedded login browser
@@ -57,7 +58,7 @@ Arknights Client downloads the official PC game directly from Yostar and runs it
 
 ## Installation and support
 
-Use the website's [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) for requirements, Gatekeeper and Rosetta guidance, region setup, and first launch. The [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) covers troubleshooting, storage, runtime compatibility, and the boundary between launcher support and Yostar support.
+Use the website's [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) for requirements, Gatekeeper and Rosetta guidance, region setup, and first launch. The [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) covers troubleshooting, storage, runtime compatibility, and the boundary between launcher support and publisher support.
 
 ## Development
 

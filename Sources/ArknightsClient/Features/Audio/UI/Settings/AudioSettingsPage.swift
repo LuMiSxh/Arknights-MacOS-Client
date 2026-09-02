@@ -60,18 +60,20 @@ struct AudioSettingsPage: View {
 							.accessibilityLabel(L10n.string(SettingsStrings.audioVolume))
 							.accessibilityValue(
 								Text(
-									SettingsStrings.audioVolumePercent(
-										Int(settings.launcherMusicVolume * 100)
-									)
+									L10n.string(
+										SettingsStrings.audioVolumePercent(
+											Int(settings.launcherMusicVolume * 100)
+										))
 								)
 							)
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
 							Text(
-								SettingsStrings.audioVolumePercent(
-									Int(settings.launcherMusicVolume * 100)
-								)
+								L10n.string(
+									SettingsStrings.audioVolumePercent(
+										Int(settings.launcherMusicVolume * 100)
+									))
 							)
 							.font(.caption.monospacedDigit())
 							.foregroundStyle(.secondary)

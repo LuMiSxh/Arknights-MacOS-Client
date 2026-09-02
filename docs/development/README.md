@@ -6,7 +6,7 @@ order: 30
 
 # Development
 
-These documents describe how Arknights Client is organized, tested, localized, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer and supports Yostar's official Global, Japan, and Korea PC clients.
+These documents describe how Arknights Client is organized, tested, localized, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients by default and gates the China and China — Bilibili clients behind Canary Features.
 
 Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md), [Design](design.md), and [Localization](localization.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
 

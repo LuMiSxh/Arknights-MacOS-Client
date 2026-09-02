@@ -198,6 +198,7 @@ enum OnboardingStrings {
 		case .japan: .onboardingInstallationRegionDetailJapan
 		case .korea: .onboardingInstallationRegionDetailKorea
 		case .china: .sharedRegionChina
+		case .chinaBilibili: .sharedRegionChinaBilibili
 		}
 	}
 

@@ -7,14 +7,45 @@
 
 	let { data }: PageProps = $props();
 
-	const regions = [{ name: 'Global' }, { name: 'Japan' }, { name: 'Korea' }];
+	const regions = [
+		{
+			name: 'Global',
+			publisher: 'Yostar',
+			status: 'Supported',
+			variant: 'success'
+		},
+		{
+			name: 'Japan',
+			publisher: 'Yostar',
+			status: 'Supported',
+			variant: 'success'
+		},
+		{
+			name: 'Korea',
+			publisher: 'Yostar',
+			status: 'Supported',
+			variant: 'success'
+		},
+		{
+			name: 'China',
+			publisher: 'Hypergryph',
+			status: 'Canary',
+			variant: 'warning'
+		},
+		{
+			name: 'China — Bilibili',
+			publisher: 'Hypergryph',
+			status: 'Canary',
+			variant: 'warning'
+		}
+	] as const;
 
 	const guides = $derived(data.navigation);
 </script>
 
 <PageMetadata
 	title="Arknights Client · macOS launcher"
-	description="A native macOS launcher for the official Global, Japan, and Korea Arknights PC clients."
+	description="A native macOS launcher for official regional Arknights PC clients."
 	path="/"
 />
 
@@ -23,9 +54,9 @@
 		<SectionLabel>Unofficial macOS launcher</SectionLabel>
 		<h1 class="display-title" id="home-title">Arknights on macOS</h1>
 		<p class="lead">
-			Run Yostar's official Global, Japan, and Korea PC clients on Apple
-			Silicon. The launcher installs the game, keeps it updated, and
-			collects the logs needed when something goes wrong.
+			Run official regional Arknights PC clients on Apple Silicon. The
+			launcher installs the game, keeps it updated, and collects the logs
+			needed when something goes wrong.
 		</p>
 		<div class="hero-actions">
 			<a
@@ -40,7 +71,7 @@
 			<li>Apple Silicon</li>
 			<li>Rosetta 2</li>
 			<li>Wine + DXMT</li>
-			<li>Yostar PC client</li>
+			<li>Official PC client</li>
 		</ol>
 	</div>
 
@@ -54,18 +85,11 @@
 				<div class="region-row">
 					<div>
 						<strong>{region.name}</strong>
-						<span>Yostar</span>
+						<span>{region.publisher}</span>
 					</div>
-					<Badge variant="success">Supported</Badge>
+					<Badge variant={region.variant}>{region.status}</Badge>
 				</div>
 			{/each}
-			<div class="region-row">
-				<div>
-					<strong>China</strong>
-					<span>Hypergryph</span>
-				</div>
-				<Badge variant="danger">Unsupported</Badge>
-			</div>
 		</div>
 	</section>
 </section>
@@ -112,7 +136,9 @@
 </section>
 
 <aside class="project-notice">
-	<strong>Community project, not affiliated with Yostar or Hypergryph</strong>
+	<strong
+		>Community project, not affiliated with Yostar, Hypergryph, or Bilibili</strong
+	>
 	<span>Game files are never bundled</span>
 	<a href={`${repositoryUrl}/releases`}>View releases ↗</a>
 </aside>

@@ -203,7 +203,7 @@ private struct SettingsNavigationRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text(SettingsStrings.navigationLabel)
+			Text(L10n.string(SettingsStrings.navigationLabel))
 				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)

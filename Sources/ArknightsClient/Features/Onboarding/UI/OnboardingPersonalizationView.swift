@@ -23,7 +23,9 @@ struct OnboardingPersonalizationView: View {
 						Image(nsImage: artwork)
 							.resizable()
 							.scaledToFill()
-							.accessibilityLabel(OnboardingStrings.currentArtworkAccessibility)
+							.accessibilityLabel(
+								L10n.string(OnboardingStrings.currentArtworkAccessibility)
+							)
 					} else {
 						ZStack {
 							Color.black.opacity(0.35)

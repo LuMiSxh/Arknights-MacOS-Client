@@ -140,7 +140,7 @@ struct InstallationSettingsPage: View {
 						isPresented: $showsGameModeUnavailableAlert
 					) {
 					} message: {
-						Text(SettingsStrings.gameModeAlertDetail)
+						Text(L10n.string(SettingsStrings.gameModeAlertDetail))
 					}
 				}
 				SettingsHairline()
@@ -198,9 +198,7 @@ struct InstallationSettingsPage: View {
 						)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text(
-							SettingsStrings.forceMigrationDetail
-						)
+						Text(L10n.string(SettingsStrings.forceMigrationDetail))
 					}
 				}
 				SettingsHairline()
@@ -227,7 +225,7 @@ struct InstallationSettingsPage: View {
 						)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text(SettingsStrings.resetSettingsDetail)
+						Text(L10n.string(SettingsStrings.resetSettingsDetail))
 					}
 				}
 				SettingsHairline()
@@ -254,7 +252,7 @@ struct InstallationSettingsPage: View {
 						)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text(SettingsStrings.deleteWinePrefixDetail)
+						Text(L10n.string(SettingsStrings.deleteWinePrefixDetail))
 					}
 				}
 				SettingsHairline()
@@ -280,7 +278,7 @@ struct InstallationSettingsPage: View {
 							action: uninstallGame)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text(SettingsStrings.uninstallDetail)
+						Text(L10n.string(SettingsStrings.uninstallDetail))
 					}
 				}
 			}

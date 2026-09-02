@@ -16,7 +16,7 @@ struct OnboardingFinishView: View {
 			accentColor: accentColor
 		) {
 			SettingsPanel(title: L10n.string(gameStatusTitle), systemImage: gameStatusImage) {
-				Text(gameStatusDetail)
+				Text(L10n.string(gameStatusDetail))
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 
@@ -40,9 +40,9 @@ struct OnboardingFinishView: View {
 			SettingsPanel(
 				title: L10n.string(OnboardingStrings.communityTitle), systemImage: "person.3"
 			) {
-				Text(OnboardingStrings.communityDetail)
+				Text(L10n.string(OnboardingStrings.communityDetail))
 					.fixedSize(horizontal: false, vertical: true)
-				Text(OnboardingStrings.issueDetail)
+				Text(L10n.string(OnboardingStrings.issueDetail))
 					.font(.callout)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
@@ -53,7 +53,7 @@ struct OnboardingFinishView: View {
 
 				SettingsHairline()
 
-				Text(OnboardingStrings.communitySupport)
+				Text(L10n.string(OnboardingStrings.communitySupport))
 					.font(.callout)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)

@@ -21,7 +21,7 @@ struct ArknightsWordmark: View {
 					.id(wordmarkIdentity)
 					.transition(wordmarkTransition)
 			} else {
-				Text(HomeStrings.wordmarkFallback(region: region))
+				Text(L10n.string(HomeStrings.wordmarkFallback(region: region)))
 					.font(.system(.title, design: .serif))
 					.minimumScaleFactor(0.7)
 					.lineLimit(1)

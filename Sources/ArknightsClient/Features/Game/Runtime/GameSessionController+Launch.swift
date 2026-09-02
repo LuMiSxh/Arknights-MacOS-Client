@@ -7,7 +7,7 @@ extension GameSessionController {
 		guard lifecycle.activity == .idle else { return }
 		let launchID = UUID()
 		let requestedRegion = installation.region
-		let isChina = requestedRegion == .china
+		let isChina = requestedRegion.isChinaClient
 		let executable = installation.installDirectory.appending(
 			path: installation.configuration?.executableName ?? "Arknights.exe"
 		)

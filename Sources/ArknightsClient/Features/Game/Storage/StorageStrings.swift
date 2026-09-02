@@ -48,16 +48,17 @@ enum StorageStrings {
 		}
 	}
 
-	private static func categoryDetail(_ category: StorageCategory, _ size: String) -> String {
+	private static func categoryDetail(_ category: StorageCategory) -> String {
 		switch category {
-		case .game: L10n.string(.Settings.settingsStorageCategoryGameDetail(size))
-		case .winePrefix: L10n.string(.Settings.settingsStorageCategoryWinePrefixDetail(size))
+		case .game: L10n.string(.Settings.settingsStorageCategoryGameDetail)
+		case .winePrefix: L10n.string(.Settings.settingsStorageCategoryWinePrefixDetail)
 		case .compatibilityRuntime:
-			L10n.string(.Settings.settingsStorageCategoryCompatibilityRuntimeDetail(size))
-		case .dxmtCache: L10n.string(.Settings.settingsStorageCategoryDxmtCacheDetail(size))
-		case .browserCache: L10n.string(.Settings.settingsStorageCategoryBrowserCacheDetail(size))
-		case .galleryCache: L10n.string(SettingsStrings.cacheGalleryDetail(size))
-		case .logs: L10n.string(.Settings.settingsStorageCategoryLogsDetail(size))
+			L10n.string(.Settings.settingsStorageCategoryCompatibilityRuntimeDetail)
+		case .dxmtCache: L10n.string(.Settings.settingsStorageCategoryDxmtCacheDetail)
+		case .browserCache: L10n.string(.Settings.settingsStorageCategoryBrowserCacheDetail)
+		case .galleryCache:
+			L10n.string(.Settings.settingsStorageCategoryGalleryCacheDetail)
+		case .logs: L10n.string(.Settings.settingsStorageCategoryLogsDetail)
 		}
 	}
 }

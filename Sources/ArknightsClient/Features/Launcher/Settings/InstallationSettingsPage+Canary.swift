@@ -29,7 +29,7 @@ extension InstallationSettingsPage {
 					accentColor: LauncherVisuals.danger,
 					width: 120
 				)
-				.accessibilityLabel(SettingsStrings.frameLatency)
+				.accessibilityLabel(L10n.string(SettingsStrings.frameLatency))
 				.accessibilityValue(settings.maximumFrameLatency.formatted())
 				Text(settings.maximumFrameLatency.formatted())
 					.monospacedDigit()

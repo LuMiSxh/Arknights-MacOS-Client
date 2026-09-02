@@ -103,3 +103,19 @@ func appPathsUseStandardInjectedDirectories() {
 			)
 	)
 }
+
+@Test
+func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
+	let region = try JSONDecoder().decode(
+		GameRegion.self,
+		from: Data(#""chinaBilibili""#.utf8)
+	)
+	let paths = AppPaths(
+		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
+		cachesDirectory: URL(filePath: "/tmp/Caches"),
+		libraryDirectory: URL(filePath: "/tmp/Library")
+	)
+
+	#expect(paths.gameInstall(for: region).lastPathComponent == "Arknights-China-Bilibili")
+	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: .china))
+}

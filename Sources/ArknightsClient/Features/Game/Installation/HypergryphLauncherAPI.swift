@@ -12,14 +12,13 @@ actor HypergryphLauncherAPI {
 		string: "https://launcher.hypergryph.com/api/proxy/web/batch_proxy"
 	)!
 	private static let gameAppCode = "GzD1CpaWgmSq1wew"
-	private static let launcherAppCode = "abYeZZ16BPluCFyT"
-	private static let channel = "1"
+	private static let officialLauncherAppCode = "abYeZZ16BPluCFyT"
 	private static let sequence = "5"
 
 	private let loader: BoundedHTTPDataLoader
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
-	private var latestPackage: HypergryphPackage?
+	private var latestPackages: [String: HypergryphPackage] = [:]
 
 	init(
 		session: URLSession,
@@ -34,9 +33,9 @@ actor HypergryphLauncherAPI {
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 	}
 
-	func gameConfiguration() async throws -> GameConfiguration {
-		let latest = try await latestGame()
-		latestPackage = latest.package
+	func gameConfiguration(channel: String) async throws -> GameConfiguration {
+		let latest = try await latestGame(channel: channel)
+		latestPackages[channel] = latest.package
 		guard let totalBytes = Int64(latest.package.totalSize), totalBytes >= 0 else {
 			throw LauncherError.invalidResponse
 		}
@@ -52,7 +51,7 @@ actor HypergryphLauncherAPI {
 		)
 	}
 
-	func branding() async throws -> LauncherBranding {
+	func branding(channel: String) async throws -> LauncherBranding {
 		let payload = HypergryphBatchRequest(
 			sequence: Self.sequence,
 			requests: [
@@ -61,8 +60,8 @@ actor HypergryphLauncherAPI {
 					latestGame: nil,
 					mainBackground: HypergryphCommonRequest(
 						appCode: Self.gameAppCode,
-						channel: Self.channel,
-						subChannel: Self.channel,
+						channel: channel,
+						subChannel: channel,
 						language: "zh-cn"
 					)
 				)
@@ -87,8 +86,8 @@ actor HypergryphLauncherAPI {
 		)
 	}
 
-	func cdnConfiguration() async throws -> CDNConfiguration {
-		let package = try await package()
+	func cdnConfiguration(channel: String) async throws -> CDNConfiguration {
+		let package = try await package(channel: channel)
 		let baseURL = try Self.cdnOrigin(for: package.filePath)
 		return CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
 	}
@@ -127,14 +126,14 @@ actor HypergryphLauncherAPI {
 		return GameManifest(source: source, file: files)
 	}
 
-	private func package() async throws -> HypergryphPackage {
-		if let latestPackage { return latestPackage }
-		let latest = try await latestGame()
-		latestPackage = latest.package
+	private func package(channel: String) async throws -> HypergryphPackage {
+		if let latestPackage = latestPackages[channel] { return latestPackage }
+		let latest = try await latestGame(channel: channel)
+		latestPackages[channel] = latest.package
 		return latest.package
 	}
 
-	private func latestGame() async throws -> HypergryphLatestGame {
+	private func latestGame(channel: String) async throws -> HypergryphLatestGame {
 		let payload = HypergryphBatchRequest(
 			sequence: Self.sequence,
 			requests: [
@@ -142,10 +141,10 @@ actor HypergryphLauncherAPI {
 					kind: "get_latest_game",
 					latestGame: HypergryphLatestGameRequest(
 						appCode: Self.gameAppCode,
-						channel: Self.channel,
-						subChannel: Self.channel,
+						channel: channel,
+						subChannel: channel,
 						version: "",
-						launcherAppCode: Self.launcherAppCode
+						launcherAppCode: channel == "1" ? Self.officialLauncherAppCode : ""
 					),
 					mainBackground: nil
 				)
@@ -202,6 +201,16 @@ actor HypergryphLauncherAPI {
 		_ = try cdnOrigin(for: url)
 		guard url.query == nil, url.fragment == nil else { throw LauncherError.invalidResponse }
 		return try GameInstaller.safeRelativePath(url.path)
+	}
+}
+
+extension GameRegion {
+	var hypergryphChannel: String? {
+		switch self {
+		case .china: "1"
+		case .chinaBilibili: "2"
+		case .global, .japan, .korea: nil
+		}
 	}
 }
 

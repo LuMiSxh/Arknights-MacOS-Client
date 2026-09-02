@@ -101,7 +101,7 @@ struct PlaytimeStatisticsPage: View {
 						)
 						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
 					} message: {
-						Text(PlaytimeStrings.resetDetail)
+						Text(L10n.string(PlaytimeStrings.resetDetail))
 					}
 				}
 			}

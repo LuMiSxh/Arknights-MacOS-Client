@@ -8,14 +8,14 @@ struct RosettaInstallationConfirmationModifier: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content.confirmationDialog(
-			LauncherStrings.rosettaConfirmationTitle,
+			L10n.string(LauncherStrings.rosettaConfirmationTitle),
 			isPresented: $isPresented,
 			titleVisibility: .visible
 		) {
-			Button(LauncherStrings.rosettaInstall, action: install)
-			Button(LauncherStrings.rosettaCancel, role: .cancel) {}
+			Button(L10n.string(LauncherStrings.rosettaInstall), action: install)
+			Button(L10n.string(LauncherStrings.rosettaCancel), role: .cancel) {}
 		} message: {
-			Text(LauncherStrings.rosettaConfirmationMessage)
+			Text(L10n.string(LauncherStrings.rosettaConfirmationMessage))
 		}
 	}
 }

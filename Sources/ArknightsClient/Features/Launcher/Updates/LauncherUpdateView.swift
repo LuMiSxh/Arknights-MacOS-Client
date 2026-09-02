@@ -53,7 +53,7 @@ struct LauncherUpdateView: View {
 			ProgressView()
 				.controlSize(.large)
 				.frame(maxWidth: .infinity, alignment: .center)
-				.accessibilityLabel(Text(LauncherStrings.updateChecking))
+				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateChecking)))
 		case .available:
 			availableContent
 		case .downloading:
@@ -61,19 +61,21 @@ struct LauncherUpdateView: View {
 		case .extracting:
 			extractionContent
 		case .readyToInstall:
-			Text(LauncherStrings.updateReadyDetail)
+			Text(L10n.string(LauncherStrings.updateReadyDetail))
 				.foregroundStyle(.secondary)
 		case .installing:
 			installingContent
 		case .installed:
 			Text(
-				driver.relaunched
-					? LauncherStrings.updateRelaunchDetail
-					: LauncherStrings.updateInstalledDetail
+				L10n.string(
+					driver.relaunched
+						? LauncherStrings.updateRelaunchDetail
+						: LauncherStrings.updateInstalledDetail
+				)
 			)
 			.foregroundStyle(.secondary)
 		case .noUpdate:
-			Text(LauncherStrings.updateNoUpdateDetail)
+			Text(L10n.string(LauncherStrings.updateNoUpdateDetail))
 				.foregroundStyle(.secondary)
 		case .failed:
 			Text(driver.message ?? L10n.string(LauncherStrings.updateErrorDetail))
@@ -92,11 +94,11 @@ struct LauncherUpdateView: View {
 						.textSelection(.enabled)
 				}
 			} else {
-				Text(LauncherStrings.updateReleaseNotesUnavailable)
+				Text(L10n.string(LauncherStrings.updateReleaseNotesUnavailable))
 					.foregroundStyle(.secondary)
 			}
 			if driver.informationOnly {
-				Text(LauncherStrings.updateInformationOnlyDetail)
+				Text(L10n.string(LauncherStrings.updateInformationOnlyDetail))
 					.foregroundStyle(.secondary)
 			}
 		}
@@ -106,7 +108,7 @@ struct LauncherUpdateView: View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView(value: downloadProgress)
 				.tint(accentColor)
-				.accessibilityLabel(Text(LauncherStrings.updateDownloading))
+				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateDownloading)))
 				.accessibilityValue(Text(downloadProgressText))
 			Text(downloadProgressText)
 				.font(.caption.monospacedDigit())
@@ -118,7 +120,7 @@ struct LauncherUpdateView: View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView(value: driver.extractionProgress)
 				.tint(accentColor)
-				.accessibilityLabel(Text(LauncherStrings.updateExtracting))
+				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateExtracting)))
 				.accessibilityValue(Text(percentageText))
 			Text(percentageText)
 				.font(.caption.monospacedDigit())
@@ -129,7 +131,7 @@ struct LauncherUpdateView: View {
 	private var installingContent: some View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView()
-				.accessibilityLabel(Text(LauncherStrings.updateInstalling))
+				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateInstalling)))
 			Text(
 				driver.message
 					?? (driver.gameIsRunning

@@ -36,7 +36,9 @@ actor LauncherAPI {
 	}
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		if region == .china { return try await hypergryph.gameConfiguration() }
+		if let channel = region.hypergryphChannel {
+			return try await hypergryph.gameConfiguration(channel: channel)
+		}
 		return try await request(
 			region: region,
 			path: "/api/launcher/game/config",
@@ -45,7 +47,9 @@ actor LauncherAPI {
 	}
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
-		if region == .china { return try await hypergryph.branding() }
+		if let channel = region.hypergryphChannel {
+			return try await hypergryph.branding(channel: channel)
+		}
 		return try await request(
 			region: region,
 			path: "/api/launcher/base/config",
@@ -54,7 +58,9 @@ actor LauncherAPI {
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		if region == .china { return try await hypergryph.cdnConfiguration() }
+		if let channel = region.hypergryphChannel {
+			return try await hypergryph.cdnConfiguration(channel: channel)
+		}
 		return try await request(
 			region: region,
 			path: "/api/launcher/advanced/game/download/cdn",
@@ -66,7 +72,9 @@ actor LauncherAPI {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> GameManifest {
-		if region == .china { return try await hypergryph.manifest(for: configuration) }
+		if region.hypergryphChannel != nil {
+			return try await hypergryph.manifest(for: configuration)
+		}
 		let location = try await manifestLocation(for: configuration, region: region)
 		return try await manifestPayload(at: location.url, region: region).manifest
 	}

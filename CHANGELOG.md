@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - An opt-in Canary Features gate in Settings for containing unfinished functionality without changing the default launcher experience.
-- The China client behind Canary Features, with the same native install, update, repair, storage, playtime, and launch flow as other regions.
+- The China and China — Bilibili clients behind Canary Features, with separate installations and the same native install, update, repair, storage, playtime, and launch flow as other regions.
 - Canary controls for following macOS audio-output changes during play and selecting DXMT's one-to-three-frame latency limit.
 - Resumable, size-bounded runtime archive downloads that retain partial files only while a strong ETag still matches.
 - Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
@@ -28,7 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
 - Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, and localized text fallbacks (#37).
 - Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
-- Storage overview in Settings with independent regional installations, shared runtime data, recreatable caches, and diagnostic logs, plus targeted cleanup actions (#43).
+- Storage overview in Settings with independent installed-region rows, right-aligned usage values, shared runtime data, recreatable caches, diagnostic logs, and targeted cleanup actions (#43).
 - Donate button for people who want to support the project.
 - Dock shortcuts for starting an installed regional client or opening Settings (#46).
 - Typo-tolerant preset gallery search with compact suggestions and searchable operator and official-wallpaper metadata.
@@ -63,7 +63,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Accepted unusually large official wallpapers while preserving bounded image validation.
 - Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
-- Refreshed the main window's Play control, Settings sidebar, and status pill immediately when the app language changes instead of waiting for an unrelated state change to redraw them.
+- Made all native UI copy, dialogs, status text, and accessibility labels consistently follow the selected app language, including immediate redraws of the main window and Settings.
 - Removed the decorative three-part line below the regional wordmark and kept late branding responses from replacing the selected region's logo (#37).
 
 ## [0.4.1]

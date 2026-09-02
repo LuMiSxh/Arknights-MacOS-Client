@@ -16,7 +16,7 @@ struct StorageOverviewCopy {
 	let clearGalleryCache: String
 	let showLogs: String
 	let categoryTitle: (StorageCategory) -> String
-	let categoryDetail: (StorageCategory, String) -> String
+	let categoryDetail: (StorageCategory) -> String
 }
 
 /// Targeted actions for the storage buckets. No generic path deletion is exposed.
@@ -34,9 +34,11 @@ struct StorageOverviewPage: View {
 
 	var body: some View {
 		SettingsPage(title: copy.title, subtitle: copy.subtitle, accentColor: accentColor) {
-			SettingsPanel(title: copy.installationsTitle, systemImage: "square.stack.3d.up") {
-				ForEach(gameUsages) { usage in
-					usageRow(usage)
+			if !gameUsages.isEmpty {
+				SettingsPanel(title: copy.installationsTitle, systemImage: "square.stack.3d.up") {
+					ForEach(gameUsages) { usage in
+						usageRow(usage)
+					}
 				}
 			}
 
@@ -83,7 +85,10 @@ struct StorageOverviewPage: View {
 	}
 
 	private var gameUsages: [StorageUsage] {
-		usages(where: { if case .game = $0.location.category { true } else { false } })
+		usages(where: {
+			guard case .game = $0.location.category else { return false }
+			return $0.exists
+		})
 	}
 
 	private var sharedUsages: [StorageUsage] {
@@ -112,16 +117,23 @@ struct StorageOverviewPage: View {
 	private func usageRow(_ usage: StorageUsage, action: (() -> Void)? = nil) -> some View {
 		SettingsActionRow(
 			title: copy.categoryTitle(usage.location.category),
-			detail: copy.categoryDetail(usage.location.category, sizeText(for: usage))
+			detail: copy.categoryDetail(usage.location.category)
 		) {
-			if let action {
-				CapsuleActionButton(
-					title: copy.showLogs,
-					systemImage: "doc.text.magnifyingglass",
-					tone: .accent(accentColor),
-					presentation: .compact,
-					action: action
-				)
+			HStack(spacing: 12) {
+				Text(sizeText(for: usage))
+					.font(.callout.monospacedDigit().weight(.semibold))
+					.multilineTextAlignment(.trailing)
+					.fixedSize(horizontal: true, vertical: false)
+
+				if let action {
+					CapsuleActionButton(
+						title: copy.showLogs,
+						systemImage: "doc.text.magnifyingglass",
+						tone: .accent(accentColor),
+						presentation: .compact,
+						action: action
+					)
+				}
 			}
 		}
 	}
@@ -131,6 +143,8 @@ struct StorageOverviewPage: View {
 			return controller.isMeasuring ? copy.calculating : copy.unavailable
 		}
 		guard usage.exists else { return copy.unavailable }
-		return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
+		let formatter = ByteCountFormatter()
+		formatter.countStyle = .file
+		return formatter.string(fromByteCount: byteCount)
 	}
 }

@@ -13,10 +13,11 @@ struct LauncherSupportCodeLabel: View {
 			.textSelection(.enabled)
 			.accessibilityLabel(
 				Text(
-					HomeStrings.errorCodeAccessibility(
-						code: code.rawValue,
-						spelling: code.rawValue.map(String.init).joined(separator: " ")
-					)
+					L10n.string(
+						HomeStrings.errorCodeAccessibility(
+							code: code.rawValue,
+							spelling: code.rawValue.map(String.init).joined(separator: " ")
+						))
 				)
 			)
 	}

@@ -6,10 +6,10 @@ order: 10
 
 # Installation
 
-Arknights Client installs the official Global, Japan, or Korea PC client and starts it through a bundled Wine + DXMT runtime. The launcher and the game download are separate: the DMG does not contain Arknights game files.
+Arknights Client installs the selected official PC client and starts it through a bundled Wine + DXMT runtime. The launcher and the game download are separate: the DMG does not contain Arknights game files.
 
 > [!NOTE]
-> This is an unofficial community launcher. It supports Yostar's official Global, Japan, and Korea PC clients only. The CN client is not supported.
+> This is an unofficial community launcher. Yostar's Global, Japan, and Korea clients are available by default. The China and China — Bilibili clients require Canary Features.
 
 ## Before you download
 
@@ -61,7 +61,7 @@ If Apple's installer or the manual command fails, keep the exact error text, res
 
 ### 2. Select a region
 
-Choose the region that matches the service and Yostar account you intend to use:
+During setup, choose the Yostar service and account you intend to use:
 
 | Region     | Use it for                                      |
 | ---------- | ----------------------------------------------- |
@@ -69,14 +69,14 @@ Choose the region that matches the service and Yostar account you intend to use:
 | **Japan**  | The Japanese PC client and Japan service        |
 | **Korea**  | The Korean PC client and Korea service          |
 
-Each region has its own game files, version, and installed state. All supported regions share one Wine prefix for the runtime and embedded browser. You can install another region later from **Settings → Installation**.
+Each region has its own game files, version, and installed state. The three Yostar regions share one Wine prefix. You can install another region later from **Settings → Installation**; enabling Canary Features there also exposes the China and China — Bilibili clients, which share a separate Hypergryph prefix.
 
 > [!IMPORTANT]
 > Selecting a different region does not move or convert an existing installation. It changes which regional installation the launcher refreshes and starts.
 
 ### 3. Start the official client download
 
-The assistant shows the current region and the install size returned by Yostar. Choose **Install & Continue** to start. The launcher downloads the official files directly from Yostar, verifies each file against the manifest, and writes the completed file only after its size and CRC64 checksum match.
+The assistant shows the current region and the install size returned by its publisher. Choose **Install & Continue** to start. The launcher downloads the official files directly from the publisher, verifies each file against the manifest, and writes the completed file only after its size and CRC64 checksum match.
 
 The download can continue while you finish the remaining assistant pages. Closing the launcher pauses the operation safely. A later **Resume Download** continues existing `.part` files and verifies them when each file is complete; it does not restart the whole client.
 

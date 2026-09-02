@@ -83,7 +83,7 @@ struct LocalizationTests {
 			locale: Locale(identifier: "de")
 		)
 
-		#expect(germanMessage == "Der Yostar-Server hat eine ungültige Antwort zurückgegeben.")
-		#expect(error.diagnosticDescription == "Yostar's server returned an invalid response.")
+		#expect(germanMessage == "Der Spieledienst hat eine ungültige Antwort zurückgegeben.")
+		#expect(error.diagnosticDescription == "The game service returned an invalid response.")
 	}
 }

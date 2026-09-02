@@ -6,13 +6,14 @@ order: 20
 
 # Installation architecture
 
-The installation feature turns one region's Yostar configuration into a verified game directory.
+The installation feature turns one region's publisher configuration into a verified game directory.
 [`InstallationController`](../../../Sources/ArknightsClient/Features/Game/Installation/InstallationController.swift)
 owns the selected region, user-selected directory, readiness projection, progress, and task
 lifecycle. [`GameInstaller`](../../../Sources/ArknightsClient/Features/Game/Installation/GameInstaller.swift)
 performs the filesystem and transfer work. `LauncherAPI` obtains the current version, manifest, and
-CDN URLs for a `GameRegion` (Global, Japan, or Korea — the same Yostar API shape and signature
-algorithm, with a different base URL and `game_tag`).
+CDN URLs for a `GameRegion`. Global, Japan, and Korea use the same Yostar API shape and signature
+algorithm with different base URLs and `game_tag` values. The Canary-gated China clients use
+Hypergryph's batch metadata endpoint with their respective distribution channels.
 
 ## Inputs and ownership
 
@@ -31,7 +32,7 @@ is usable. Those decisions remain with the controller and the lifecycle store.
 > [!IMPORTANT]
 > A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
 >
-> Each region has its own install directory and installed-state file, so regions install and update independently. They share one Wine prefix: `WinePrefixConfigurator` re-points the `G:` drive to the active region's directory on every launch, so a second prefix per region isn't needed.
+> Each region has its own install directory and installed-state file, so regions install and update independently. Yostar regions share one Wine prefix; both Hypergryph regions share another. `WinePrefixConfigurator` re-points the selected family's `G:` drive to the active region's directory on every launch.
 
 ## Operation flow
 

@@ -59,10 +59,8 @@ import SwiftUI
 					title: L10n.string(SettingsStrings.developerIsolation),
 					systemImage: "lock.shield"
 				) {
-					Text(
-						SettingsStrings.developerIsolationDetail
-					)
-					.foregroundStyle(.secondary)
+					Text(L10n.string(SettingsStrings.developerIsolationDetail))
+						.foregroundStyle(.secondary)
 				}
 			}
 		}

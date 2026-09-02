@@ -86,6 +86,40 @@ struct LauncherAPITests {
 	}
 
 	@Test
+	func bilibiliUsesItsHypergryphGameChannelWithoutASeparateLauncher() async throws {
+		let session = makeSession()
+		var requestBody: Data?
+		LauncherAPIURLProtocol.handler = { request in
+			requestBody = bodyData(for: request)
+			let response = HTTPURLResponse(
+				url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+			return (
+				response,
+				Data(
+					#"{"proxy_rsps":[{"kind":"get_latest_game","get_latest_game_rsp":{"version":"76.0.0","pkg":{"file_path":"https://ak.hycdn.cn/GzD1CpaWgmSq1wew/76.0/update/2/2/Windows/files","total_size":"1"}}}]}"#
+						.utf8
+				)
+			)
+		}
+		defer { LauncherAPIURLProtocol.handler = nil }
+		let region = try JSONDecoder().decode(
+			GameRegion.self,
+			from: Data(#""chinaBilibili""#.utf8)
+		)
+
+		_ = try await LauncherAPI(session: session).gameConfiguration(region: region)
+
+		let body = try #require(requestBody)
+		let root = try #require(
+			JSONSerialization.jsonObject(with: body) as? [String: Any])
+		let requests = try #require(root["proxy_reqs"] as? [[String: Any]])
+		let latest = try #require(requests.first?["get_latest_game_req"] as? [String: Any])
+		#expect(latest["channel"] as? String == "2")
+		#expect(latest["sub_channel"] as? String == "2")
+		#expect(latest["launcher_appcode"] as? String == "")
+	}
+
+	@Test
 	func configuredResponseLimitRejectsManifestBeforeDecoding() async throws {
 		let session = makeSession()
 		LauncherAPIURLProtocol.handler = { request in
@@ -122,6 +156,22 @@ struct LauncherAPITests {
 		configuration.protocolClasses = [LauncherAPIURLProtocol.self]
 		return URLSession(configuration: configuration)
 	}
+}
+
+private func bodyData(for request: URLRequest) -> Data? {
+	if let body = request.httpBody { return body }
+	guard let stream = request.httpBodyStream else { return nil }
+	stream.open()
+	defer { stream.close() }
+	var data = Data()
+	var buffer = [UInt8](repeating: 0, count: 1_024)
+	while stream.hasBytesAvailable {
+		let count = stream.read(&buffer, maxLength: buffer.count)
+		guard count >= 0 else { return nil }
+		if count == 0 { break }
+		data.append(contentsOf: buffer.prefix(count))
+	}
+	return data
 }
 
 private final class FailingLauncherAPIURLProtocol: URLProtocol, @unchecked Sendable {

@@ -41,26 +41,26 @@ struct OnboardingWelcomeView: View {
 				case .checking:
 					HStack(spacing: 12) {
 						ProgressView()
-						Text(OnboardingStrings.checking)
+						Text(L10n.string(OnboardingStrings.checking))
 							.foregroundStyle(.secondary)
 					}
 				case .current:
 					Label(
-						OnboardingStrings.launcherCurrent,
+						L10n.string(OnboardingStrings.launcherCurrent),
 						systemImage: "checkmark.circle.fill"
 					)
 					.foregroundStyle(accentColor)
 				case .updateRequired(let version):
 					VStack(alignment: .leading, spacing: 8) {
-						Text(OnboardingStrings.versionAvailable(version))
+						Text(L10n.string(OnboardingStrings.versionAvailable(version)))
 							.bold()
-						Text(OnboardingStrings.updateDetail)
+						Text(L10n.string(OnboardingStrings.updateDetail))
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
 					}
 				case .checkFailed:
 					VStack(alignment: .leading, spacing: 10) {
-						Text(OnboardingStrings.updateCheckFailedDetail)
+						Text(L10n.string(OnboardingStrings.updateCheckFailedDetail))
 							.foregroundStyle(.secondary)
 						CapsuleActionButton(
 							title: L10n.string(OnboardingStrings.tryAgain),
@@ -78,17 +78,17 @@ struct OnboardingWelcomeView: View {
 				) {
 					switch intelTranslationState {
 					case .waitingForLauncherCheck:
-						Text(OnboardingStrings.compatibilityWaiting)
+						Text(L10n.string(OnboardingStrings.compatibilityWaiting))
 							.foregroundStyle(.secondary)
 					case .checking:
 						HStack(spacing: 12) {
 							ProgressView()
-							Text(OnboardingStrings.compatibilityChecking)
+							Text(L10n.string(OnboardingStrings.compatibilityChecking))
 								.foregroundStyle(.secondary)
 						}
 					case .available:
 						Label(
-							OnboardingStrings.compatibilityAvailable,
+							L10n.string(OnboardingStrings.compatibilityAvailable),
 							systemImage: "checkmark.circle.fill"
 						)
 						.foregroundStyle(accentColor)
@@ -101,7 +101,7 @@ struct OnboardingWelcomeView: View {
 						)
 					case .gameTestModeEnabled:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(OnboardingStrings.compatibilityGameTestMode)
+							Text(L10n.string(OnboardingStrings.compatibilityGameTestMode))
 								.foregroundStyle(.secondary)
 								.fixedSize(horizontal: false, vertical: true)
 							Text("sudo game-test-tool disable")
@@ -116,7 +116,7 @@ struct OnboardingWelcomeView: View {
 						}
 					case .unavailable:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(OnboardingStrings.compatibilityUnavailable)
+							Text(L10n.string(OnboardingStrings.compatibilityUnavailable))
 								.foregroundStyle(.secondary)
 								.fixedSize(horizontal: false, vertical: true)
 							CapsuleActionButton(
@@ -127,7 +127,7 @@ struct OnboardingWelcomeView: View {
 							)
 						}
 					case .unsupportedOS:
-						Text(OnboardingStrings.compatibilityUnsupported)
+						Text(L10n.string(OnboardingStrings.compatibilityUnsupported))
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
 					}
@@ -138,7 +138,7 @@ struct OnboardingWelcomeView: View {
 				title: L10n.string(OnboardingStrings.nextTitle),
 				systemImage: "point.forward.to.point.capsulepath"
 			) {
-				Text(OnboardingStrings.nextDetail)
+				Text(L10n.string(OnboardingStrings.nextDetail))
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}

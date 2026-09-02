@@ -26,7 +26,7 @@ struct OnboardingInstallationView: View {
 					Text(region.localizedDisplayName)
 				}
 				.disabled(!canSwitchRegion)
-				Text(regionDetail)
+				Text(L10n.string(regionDetail))
 					.font(.callout)
 					.foregroundStyle(.secondary)
 			}
@@ -36,9 +36,9 @@ struct OnboardingInstallationView: View {
 			) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
-						Text(installationTitle)
+						Text(L10n.string(installationTitle))
 							.bold()
-						Text(installationDetail)
+						Text(L10n.string(installationDetail))
 							.font(.callout)
 							.foregroundStyle(.secondary)
 					}
@@ -63,7 +63,7 @@ struct OnboardingInstallationView: View {
 				}
 
 				if !installation.isInstalled && !installation.isDownloading {
-					Text(OnboardingStrings.installDownloadDetail)
+					Text(L10n.string(OnboardingStrings.installDownloadDetail))
 						.font(.callout)
 						.foregroundStyle(.secondary)
 				}

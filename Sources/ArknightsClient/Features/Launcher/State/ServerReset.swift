@@ -10,7 +10,7 @@ enum ServerReset {
 		switch region {
 		case .global: -7 * 3600
 		case .japan, .korea: 9 * 3600
-		case .china: 0
+		case .china, .chinaBilibili: 0
 		}
 	}
 

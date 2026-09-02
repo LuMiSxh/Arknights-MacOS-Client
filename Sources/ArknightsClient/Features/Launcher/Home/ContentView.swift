@@ -127,7 +127,7 @@ struct ContentView: View {
 			Button(L10n.string(HomeStrings.repairConfirmationAction), action: confirmRepair)
 			Button(L10n.string(LauncherStrings.cancel), role: .cancel, action: cancelRepair)
 		} message: {
-			Text(HomeStrings.repairConfirmationDetail)
+			Text(L10n.string(HomeStrings.repairConfirmationDetail))
 		}
 		.onAppear { registerOpenSettings(requestSettings) }
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }

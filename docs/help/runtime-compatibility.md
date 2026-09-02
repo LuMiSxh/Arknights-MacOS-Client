@@ -59,12 +59,12 @@ Global, Japan, and Korea use one prefix:
 ~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global
 ```
 
-The historical `Arknights-Global` name is kept for storage compatibility. The prefix contains Wine registry state, the embedded-browser profiles and sessions, DXMT shader data, and runtime migration state. Regional game files remain in separate directories; only the active region is mapped as `G:` for a launch. The Canary-gated China client uses a separate `Arknights-China` prefix.
+The historical `Arknights-Global` name is kept for storage compatibility. The prefix contains Wine registry state, the embedded-browser profiles and sessions, DXMT shader data, and runtime migration state. Regional game files remain in separate directories; only the active region is mapped as `G:` for a launch. The Canary-gated China and China — Bilibili clients share a separate `Arknights-China` prefix.
 
 The launcher also maps the central macOS log directory as `L:` so Unity and browser logs can be collected alongside `wine.log`. Wine's default `Z:` mapping to the macOS file-system root is removed before each start, and its shell folders are kept inside the prefix.
 
 > [!CAUTION]
-> **Delete Wine Prefix** removes this shared environment for every region, including saved Yostar, Google, Apple, and Facebook browser sessions. Game files are untouched, and the prefix is rebuilt on the next launch. Use [Force Migration](troubleshooting.md#no-game-window-appears) or targeted cache cleanup first.
+> **Delete Wine Prefix** removes the selected client family's shared environment, including saved browser sessions. Game files are untouched, and the prefix is rebuilt on the next launch. Use [Force Migration](troubleshooting.md#no-game-window-appears) or targeted cache cleanup first.
 
 ## The pinned runtime
 
@@ -93,7 +93,7 @@ The default Wine synchronization mode is **MSYNC**. It uses macOS Mach synchroni
 
 - **Follow Default Audio Output** lets a running game follow the current macOS output when you switch between speakers, headphones, displays, or AirPlay devices. It is off by default.
 - **Frame Latency** sets DXMT's maximum queued frames from 1 to 3. The default is 3. A lower value may make the rendered cursor feel more responsive, but can reduce frame rate or make presentation less smooth.
-- **China (Canary)** appears in the Region menu and uses the same native installation and launch controls as the other regions. Its files and Wine prefix remain separate.
+- **China (Canary)** and **China — Bilibili (Canary)** appear in the Region menu and use the same native installation and launch controls as the other regions. Their game files remain separate, while both share the isolated Hypergryph Wine prefix.
 
 Canary behavior may change as testing continues. If an option causes a regression, restore its default or turn Canary Features off before the next launch and include the selected setting in a bug report.
 

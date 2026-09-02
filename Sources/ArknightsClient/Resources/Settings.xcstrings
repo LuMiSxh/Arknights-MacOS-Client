@@ -1772,13 +1772,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiviert Canary-Funktionen und den China-Client."
+            "value": "Aktiviert Canary-Funktionen und die China-Clients."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enables Canary features and the China client."
+            "value": "Enables Canary features and the China clients."
           }
         }
       }
@@ -3440,19 +3440,19 @@
       }
     },
     "settings.storage.category.browserCache.detail": {
-      "comment": "Embedded browser cache description; argument is formatted storage size",
+      "comment": "Embedded browser cache description",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird automatisch neu erstellt und kann mit der Cache-Bereinigung gelöscht werden. Belegt derzeit %@."
+            "value": "Wird automatisch neu erstellt und kann mit der Cache-Bereinigung gelöscht werden."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recreated automatically and removed by the cache cleanup action. Currently uses %@."
+            "value": "Recreated automatically and removed by the cache cleanup action."
           }
         }
       }
@@ -3476,19 +3476,19 @@
       }
     },
     "settings.storage.category.compatibilityRuntime.detail": {
-      "comment": "Bundled compatibility runtime description; argument is formatted storage size",
+      "comment": "Bundled compatibility runtime description",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gebündelte Wine- und DXMT-Komponenten; schreibgeschützt. Belegen derzeit %@."
+            "value": "Gebündelte Wine- und DXMT-Komponenten; schreibgeschützt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bundled Wine and DXMT components; read-only. Currently use %@."
+            "value": "Bundled Wine and DXMT components; read-only."
           }
         }
       }
@@ -3512,73 +3512,91 @@
       }
     },
     "settings.storage.category.dxmtCache.detail": {
-      "comment": "DXMT shader cache description; argument is formatted storage size",
+      "comment": "DXMT shader cache description",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird automatisch neu erstellt und kann mit der Cache-Bereinigung gelöscht werden. Belegt derzeit %@."
+            "value": "Wird automatisch neu erstellt und kann mit der Cache-Bereinigung gelöscht werden."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recreated automatically and removed by the cache cleanup action. Currently uses %@."
+            "value": "Recreated automatically and removed by the cache cleanup action."
+          }
+        }
+      }
+    },
+    "settings.storage.category.galleryCache.detail": {
+      "comment": "Preset gallery cache description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löscht zwischengespeicherte Vorlagen-Metadaten und alle geladenen Galerie-Dateien (Avatare und Hintergrundbilder)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers)."
           }
         }
       }
     },
     "settings.storage.category.game.detail": {
-      "comment": "Game installation description; argument is formatted storage size",
+      "comment": "Game installation description",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spieldateien, die eine Reparatur oder Neuinstallation erfordern können. Belegen derzeit %@."
+            "value": "Spieldateien, die eine Reparatur oder Neuinstallation erfordern können."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Game files that may require repair or reinstall. Currently use %@."
+            "value": "Game files that may require repair or reinstall."
           }
         }
       }
     },
     "settings.storage.category.logs.detail": {
-      "comment": "Launcher and game logs description; argument is formatted storage size",
+      "comment": "Launcher and game logs description",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Launcher- und Spieldiagnosen; im Finder anzeigen. Belegen derzeit %@."
+            "value": "Launcher- und Spieldiagnosen; im Finder anzeigen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Launcher and game diagnostics; reveal them in Finder. Currently use %@."
+            "value": "Launcher and game diagnostics; reveal them in Finder."
           }
         }
       }
     },
     "settings.storage.category.winePrefix.detail": {
-      "comment": "Shared Wine prefix description; argument is formatted storage size",
+      "comment": "Shared Wine prefix description",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gemeinsam für alle Regionen; enthält Laufzeitdaten und Anmeldungen. Belegt derzeit %@."
+            "value": "Gemeinsam für die ausgewählte Client-Familie; enthält Laufzeitdaten und Anmeldungen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shared by all regions; contains runtime data and logins. Currently uses %@."
+            "value": "Shared by the selected client family; contains runtime data and logins."
           }
         }
       }
@@ -3644,13 +3662,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gemeinsam genutzt"
+            "value": "Gemeinsame Laufzeitdaten"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shared by All Regions"
+            "value": "Shared Runtime Data"
           }
         }
       }

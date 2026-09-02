@@ -95,7 +95,7 @@ applied.
 
 ## Boundaries
 
-- Only the official Yostar-published PC distributions (Global, Japan, Korea) are supported; CN uses separate Hypergryph infrastructure and Tencent ACE anti-cheat, which are incompatible with this Wine-based runtime.
+- Yostar's Global, Japan, and Korea clients use the Yostar launcher API. The Canary-gated China and China — Bilibili clients use Hypergryph's separate metadata and payload infrastructure.
 - Game files come from first-party HTTPS endpoints and are never included in a release.
 - Manifest paths cannot escape the selected game directory; see [Installation architecture](installation.md#manifest-and-path-safety).
 - Wine receives private home, cache, configuration, runtime, and temporary directories.

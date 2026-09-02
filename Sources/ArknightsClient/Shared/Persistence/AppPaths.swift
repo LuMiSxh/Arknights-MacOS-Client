@@ -65,7 +65,7 @@ struct AppPaths: Sendable {
 	}
 
 	func winePrefix(for region: GameRegion) -> URL {
-		region == .china ? chinaWinePrefix : winePrefix
+		region.isChinaClient ? chinaWinePrefix : winePrefix
 	}
 
 	var logsDirectory: URL { logRoot }
@@ -79,7 +79,7 @@ struct AppPaths: Sendable {
 	}
 
 	func wineLogFile(for region: GameRegion) -> URL {
-		region == .china ? logsDirectory.appending(path: "wine-cn.log") : logFile
+		region.isChinaClient ? logsDirectory.appending(path: "wine-cn.log") : logFile
 	}
 
 	var unityLogFile: URL {

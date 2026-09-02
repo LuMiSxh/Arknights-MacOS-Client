@@ -175,7 +175,7 @@ final class LauncherViewModel {
 			customization?.updateThemeColor()
 		}
 		settings.onCanaryFeaturesChanged = { [weak installation, weak refreshController] enabled in
-			guard !enabled, installation?.region == .china else { return }
+			guard !enabled, installation?.region.isChinaClient == true else { return }
 			_ = refreshController?.selectRegion(.global)
 		}
 		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in

@@ -6,7 +6,7 @@ order: 30
 
 # Storage
 
-Arknights Client keeps regional game files separate from one shared Wine environment. The launcher computes its standard locations below from the bundle identifier `com.lumisxh.arknights-client`; a custom game location replaces only that region's default game path.
+Arknights Client keeps regional game files separate. Yostar clients share one Wine prefix, while the two Hypergryph clients share another. The launcher computes its standard locations below from the bundle identifier `com.lumisxh.arknights-client`; a custom game location replaces only that region's default game path.
 
 ## Locations at a glance
 
@@ -15,7 +15,10 @@ Arknights Client keeps regional game files separate from one shared Wine environ
 | Global game files              | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global`         | Until **Uninstall Game** or manual removal                                    |
 | Japan game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Japan`          | Until **Uninstall Game** or manual removal                                    |
 | Korea game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Korea`          | Until **Uninstall Game** or manual removal                                    |
-| Shared Wine prefix             | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` | Persistent runtime state shared by all regions                                |
+| China game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-China`          | Until **Uninstall Game** or manual removal                                    |
+| China — Bilibili game files    | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-China-Bilibili` | Until **Uninstall Game** or manual removal                                    |
+| Yostar Wine prefix             | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` | Persistent runtime state shared by Global, Japan, and Korea                   |
+| Hypergryph Wine prefix         | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-China`  | Persistent runtime state shared by China and China — Bilibili                 |
 | Custom launcher and game icons | `~/Library/Application Support/com.lumisxh.arknights-client/Artwork/Custom`                 | Until reset or app-data removal                                               |
 | Local playtime statistics      | `~/Library/Application Support/com.lumisxh.arknights-client/playtime-v1.json`               | Until **Reset Statistics** or manual app-data removal                         |
 | Bundled compatibility runtime  | Inside the app at `Contents/Resources/Runtime`                                              | Read-only; replaced by a launcher release                                     |
@@ -24,7 +27,7 @@ Arknights Client keeps regional game files separate from one shared Wine environ
 | Launcher and Wine logs         | `~/Library/Logs/com.lumisxh.arknights-client/`                                              | Rotating diagnostics; see [Troubleshooting](troubleshooting.md#log-locations) |
 | Preferences                    | macOS `UserDefaults` for the bundle identifier                                              | Small launcher settings; locations are kept when settings are reset           |
 
-The Wine prefix directory keeps its historical `Arknights-Global` name for storage compatibility. It is shared even when Japan or Korea is selected. The launcher repoints Wine's `G:` drive to the selected region immediately before launch.
+The Yostar Wine prefix keeps its historical `Arknights-Global` name for storage compatibility. The launcher repoints the selected prefix's `G:` drive to the active region immediately before launch.
 
 Playtime statistics contain only local durations, regional totals, recent daily aggregates, and the latest session. They are not associated with an account, synchronized, included in reports, or sent over the network. Collection begins with the launcher version that adds the feature; the launcher does not infer earlier playtime from game files or logs.
 
@@ -38,8 +41,8 @@ Playtime statistics contain only local durations, regional totals, recent daily 
 
 The Storage screen measures these buckets independently:
 
-- **Game Installations**: one row for Global, Japan, and Korea
-- **Shared by All Regions**: the Wine prefix and bundled compatibility runtime
+- **Game Installations**: one row for every available region
+- **Shared Runtime Data**: the selected publisher family's Wine prefix and the bundled compatibility runtime
 - **Recreatable Caches**: DXMT shader data, embedded-browser data, and the preset gallery cache
 - **Logs**: the central launcher, Wine, Unity, and Chromium diagnostic files
 
@@ -66,7 +69,7 @@ Before Wine initializes, the launcher gives it a private Unix home, XDG director
 > [!WARNING]
 > This is application-level isolation, not a macOS security sandbox. A custom game folder is intentionally visible to the Windows client through `G:`. Choose a dedicated folder rather than a directory that contains personal documents.
 
-The shared prefix stores embedded-browser data, saved provider sessions, Wine registry state, DXMT cache data, and runtime migration state. The launcher applies compatibility settings there when the runtime revision changes; it does not use the prefix to merge the game files of different regions.
+Each family prefix stores embedded-browser data, saved provider sessions, Wine registry state, DXMT cache data, and runtime migration state. The launcher applies compatibility settings there when the runtime revision changes; it does not use a prefix to merge the game files of different regions.
 
 ## Backups
 
@@ -83,16 +86,16 @@ The installer marks each game directory as excluded from macOS backups, and the 
 2. Confirm that no game, update, repair, or download is running.
 3. Choose **Uninstall Game…** and confirm **Move Game to Trash**.
 
-The launcher moves only the selected game directory to the macOS Trash. It does not remove the launcher, another region, the shared Wine prefix, or custom artwork. Empty the Trash separately if you want the space back.
+The launcher moves only the selected game directory to the macOS Trash. It does not remove the launcher, another region, its Wine prefix, or custom artwork. Empty the Trash separately if you want the space back.
 
-### Reset the shared Wine environment
+### Reset a shared Wine environment
 
-Choose **Settings → Installation → Wine Prefix → Delete Wine Prefix…** only when troubleshooting specifically points to persistent Wine state. This removes the shared prefix, including saved Yostar, Google, Apple, and Facebook browser sessions, registry settings, DXMT cache, and migration state. All regional game files remain untouched. The prefix is initialized again on the next launch.
+Choose **Settings → Installation → Wine Prefix → Delete Wine Prefix…** only when troubleshooting specifically points to persistent Wine state. This removes the selected client family's prefix, including saved browser sessions, registry settings, DXMT cache, and migration state. All regional game files remain untouched. The prefix is initialized again on the next launch.
 
 Windows-side settings or other local state stored only inside that prefix are removed with it. The launcher preferences, custom artwork, central logs, gallery cache, and every regional game directory live outside the prefix and remain in place.
 
 > [!WARNING]
-> Deleting the prefix signs you out of every provider in every region. Try [Force Migration](troubleshooting.md#no-game-window-appears) or targeted cache cleanup first when those actions match the symptom.
+> Deleting the prefix signs you out of every provider in the selected client family. Try [Force Migration](troubleshooting.md#no-game-window-appears) or targeted cache cleanup first when those actions match the symptom.
 
 ### Reset launcher settings
 

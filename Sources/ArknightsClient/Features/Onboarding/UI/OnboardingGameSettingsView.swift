@@ -34,7 +34,7 @@ struct OnboardingGameSettingsView: View {
 					options: GameDisplayMode.allCases,
 					accentColor: accentColor
 				) { mode in
-					Text(shortTitle(for: mode))
+					Text(L10n.string(shortTitle(for: mode)))
 				}
 				.disabled(preferences.launchOptions.usesGameSettings)
 
@@ -47,7 +47,7 @@ struct OnboardingGameSettingsView: View {
 						isDisabled: preferences.launchOptions.usesGameSettings
 					)
 				}
-				Text(OnboardingStrings.higherResolutionDetail)
+				Text(L10n.string(OnboardingStrings.higherResolutionDetail))
 					.font(.callout)
 					.foregroundStyle(.secondary)
 			}

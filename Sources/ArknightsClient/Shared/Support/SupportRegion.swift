@@ -7,4 +7,5 @@ enum SupportRegion: String, Codable, Sendable {
 	case japan
 	case korea
 	case china
+	case chinaBilibili
 }

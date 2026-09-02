@@ -7,8 +7,9 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	case japan
 	case korea
 	case china
+	case chinaBilibili
 
-	static let allCases: [GameRegion] = [.global, .japan, .korea, .china]
+	static let allCases: [GameRegion] = [.global, .japan, .korea, .china, .chinaBilibili]
 	static let yostarCases: [GameRegion] = [.global, .japan, .korea]
 
 	static func selectableCases(canaryEnabled: Bool) -> [GameRegion] {
@@ -23,8 +24,11 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		case .japan: "Japan"
 		case .korea: "Korea"
 		case .china: "China (Canary)"
+		case .chinaBilibili: "China — Bilibili (Canary)"
 		}
 	}
+
+	var isChinaClient: Bool { self == .china || self == .chinaBilibili }
 
 	var localizedDisplayName: String {
 		L10n.string(SharedStrings.region(self))
@@ -38,6 +42,7 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		case .japan: "Arknights_JP"
 		case .korea: "Arknights_KR"
 		case .china: "Arknights_CN"
+		case .chinaBilibili: "Arknights_CN_Bilibili"
 		}
 	}
 
@@ -46,7 +51,8 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		case .global: URL(string: "https://api-launcher-en.yo-star.com")!
 		case .japan: URL(string: "https://api-launcher-jp.yo-star.com")!
 		case .korea: URL(string: "https://api-launcher-kr.yo-star.com")!
-		case .china: preconditionFailure("China has no Yostar launcher API")
+		case .china, .chinaBilibili:
+			preconditionFailure("China has no Yostar launcher API")
 		}
 	}
 
@@ -56,6 +62,7 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		case .japan: "Arknights-Japan"
 		case .korea: "Arknights-Korea"
 		case .china: "Arknights-China"
+		case .chinaBilibili: "Arknights-China-Bilibili"
 		}
 	}
 }

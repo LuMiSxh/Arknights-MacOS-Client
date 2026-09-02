@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// A user-visible storage bucket. The runtime, prefix, and caches are shared by all regions.
+/// A user-visible storage bucket. The runtime is global; prefix storage is shared by publisher family.
 enum StorageCategory: Hashable, Identifiable, Sendable {
 	case game(GameRegion)
 	case winePrefix

@@ -98,7 +98,10 @@ struct OnboardingView: View {
 				FloatingActionBar(tint: customization.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
 						Button(action: coordinator.skip) {
-							Label(OnboardingStrings.skipForNow, systemImage: "forward.end")
+							Label(
+								L10n.string(OnboardingStrings.skipForNow),
+								systemImage: "forward.end"
+							)
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
@@ -106,7 +109,10 @@ struct OnboardingView: View {
 					Spacer()
 					if coordinator.step != .welcome {
 						Button(action: coordinator.goBack) {
-							Label(OnboardingStrings.back, systemImage: "chevron.backward")
+							Label(
+								L10n.string(OnboardingStrings.back),
+								systemImage: "chevron.backward"
+							)
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)

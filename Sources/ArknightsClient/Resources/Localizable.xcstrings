@@ -3708,6 +3708,24 @@
           }
         }
       }
+    },
+    "shared.region.chinaBilibili": {
+      "comment": "Display name for the Bilibili China game client while Canary Features are enabled",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "China — Bilibili (Canary)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "China — Bilibili (Canary)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

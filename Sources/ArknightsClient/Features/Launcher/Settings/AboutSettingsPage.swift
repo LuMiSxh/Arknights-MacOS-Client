@@ -22,9 +22,9 @@ struct AboutSettingsPage: View {
 					.frame(width: 76, height: 76)
 					.accessibilityHidden(true)
 				VStack(alignment: .leading, spacing: 5) {
-					Text(SettingsStrings.application)
+					Text(L10n.string(SettingsStrings.application))
 						.font(.title2.bold())
-					Text(SettingsStrings.unofficialLauncher)
+					Text(L10n.string(SettingsStrings.unofficialLauncher))
 						.foregroundStyle(.secondary)
 					AccentLink(
 						title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
@@ -133,7 +133,7 @@ struct AboutSettingsPage: View {
 							)
 						}
 					}
-					Text(SettingsStrings.notAffiliated)
+					Text(L10n.string(SettingsStrings.notAffiliated))
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}

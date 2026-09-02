@@ -111,7 +111,7 @@
 
 		func loadDeveloperArtwork() async {
 			let region = installation.region
-			guard region != .china else { return }
+			guard !region.isChinaClient else { return }
 			if await customization.loadCustomArtwork() { return }
 			let artworkCache = customization.artworkCache
 			do {
