@@ -6,8 +6,9 @@
 # SPDX-License-Identifier: MPL-2.0
 
 """Find official wallpapers missing from the curated tag manifest and file a
-GitHub issue for each one so a maintainer can reply with tags in the format
-this script's companion, `apply_wallpaper_tags.py`, understands.
+GitHub issue for each one so it doesn't get lost. Tagging happens separately,
+by hand; a PR updating `WallpaperTags.json` that references the issue is what
+closes it.
 """
 
 from __future__ import annotations
@@ -15,81 +16,28 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import urllib.request
-from dataclasses import dataclass
 from pathlib import Path
 
 from lib.common import PROJECT_DIR, fail, output, require_command, run, run_main
 from lib.console import info, success
+from lib.wallpapers import GalleryWallpaper, fetch_gallery_wallpapers, parse_image_field
 
-GALLERY_API_URL = "https://www.arknights.global/api/resource/gallery/list"
-PAGE_SIZE = 50
-MAX_PAGES = 10
+# GalleryWallpaper and parse_image_field are re-exported for
+# scripts/tests/test_scan_untagged_wallpapers.py, which predates lib.wallpapers.
+__all__ = [
+    "GalleryWallpaper",
+    "fetch_gallery_wallpapers",
+    "main",
+    "parse_image_field",
+]
+
 TAGS_MANIFEST_PATH = (
     PROJECT_DIR / "Sources/ArknightsClient/Resources/WallpaperTags.json"
 )
 TAGGING_LABEL = "wallpaper-tagging"
 TAGGING_LABEL_COLOR = "d4c5f9"
-TAGGING_LABEL_DESCRIPTION = "Needs curated search tags (see apply_wallpaper_tags.py)"
+TAGGING_LABEL_DESCRIPTION = "Needs curated search tags (see docs/wallpaper-tagging.md)"
 WALLPAPER_ID_MARKER = re.compile(r"<!--\s*wallpaper-id:\s*(\S+?)\s*-->")
-
-
-@dataclass(frozen=True)
-class GalleryWallpaper:
-    id: str
-    title: str
-    image_url: str
-
-
-def parse_image_field(value: object) -> str | None:
-    """Mirrors the Swift client's tolerant decoding of image1/smallImage, which
-    Yostar returns as a plain string for newer entries and a single-element
-    array for older ones.
-    """
-    if isinstance(value, str) and value:
-        return value
-    if isinstance(value, list) and value and isinstance(value[0], str):
-        return value[0]
-    if isinstance(value, int):
-        return str(value)
-    return None
-
-
-def fetch_gallery_wallpapers() -> list[GalleryWallpaper]:
-    wallpapers: list[GalleryWallpaper] = []
-    for page in range(1, MAX_PAGES + 1):
-        request = urllib.request.Request(
-            f"{GALLERY_API_URL}?index={page}&size={PAGE_SIZE}",
-            headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-                "Accept": "application/json",
-            },
-        )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = json.load(response)
-        rows = (
-            (payload.get("data") or {}).get("rows")
-            or (payload.get("data") or {}).get("list")
-            or []
-        )
-        if not rows:
-            break
-        for row in rows:
-            gallery_id = row.get("id")
-            image_url = parse_image_field(row.get("image1")) or parse_image_field(
-                row.get("smallImage")
-            )
-            if gallery_id is None or not image_url:
-                continue
-            title = (row.get("title") or "").strip() or f"Wallpaper {gallery_id}"
-            wallpapers.append(
-                GalleryWallpaper(
-                    id=f"global-{gallery_id}", title=title, image_url=image_url
-                )
-            )
-        if len(rows) < PAGE_SIZE:
-            break
-    return wallpapers
 
 
 def load_tagged_ids(manifest_path: Path) -> set[str]:
@@ -155,12 +103,10 @@ def issue_body(wallpaper: GalleryWallpaper) -> str:
         f"**Wallpaper ID:** `{wallpaper.id}`\n"
         f"**Title:** {wallpaper.title}\n"
         f"**Source:** {wallpaper.image_url}\n\n"
-        "A maintainer or the repository owner can reply with search tags for this "
-        "wallpaper (operator codenames, factions, event names) using this exact format:\n\n"
-        "```\n"
-        "tags: tag-one, tag-two, tag-three\n"
-        "```\n\n"
-        "Replying with that format automatically records the tags and closes this issue."
+        "Tag this wallpaper by hand (operator codenames, factions, event "
+        "names) in `WallpaperTags.json`, then open a PR against it that "
+        f'closes this issue (e.g. "Fixes #<this issue\'s number>" in the '
+        "PR description)."
     )
 
 

@@ -55,6 +55,19 @@ struct BoundedHTTPDataLoader: Sendable {
 			}
 
 			guard let response else { throw LauncherError.invalidResponse }
+			// A dropped connection can end the stream without the delegate ever
+			// reporting an error, leaving `accumulated` silently short of what the
+			// server promised — verify it before treating the transfer as complete,
+			// so a truncated image is never cached and rendered as a corrupt file.
+			if response.expectedContentLength >= 0,
+				accumulated.count != response.expectedContentLength
+			{
+				throw LauncherError.downloadedSizeMismatch(
+					path: sourceURL.absoluteString,
+					expected: response.expectedContentLength,
+					actual: Int64(accumulated.count)
+				)
+			}
 			return (accumulated, response)
 		} onCancel: {
 			stream.cancel()

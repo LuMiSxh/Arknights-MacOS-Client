@@ -8,11 +8,25 @@ struct PresetGalleryView: View {
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-	@State private var searchText = ""
-	@State private var avatars: [PresetAvatar] = []
-	@State private var wallpapers: [PresetWallpaper] = []
-	@State private var isLoading = true
-	@State private var applyingItemID: String?
+	@State var searchText = ""
+	// Committed exact-tag filters shown as removable pills to the left of the search field —
+	// promoted either by picking a tag suggestion or by typing a complete tag name followed by
+	// a space. Kept separate from free-text `searchText` so an exact tag (e.g. the single-letter
+	// "w" operator) never gets diluted by the prefix/substring matching free text uses. See
+	// PresetGalleryView+Search.swift.
+	@State var committedTags: [String] = []
+	// Set to `searchText` right after a suggestion chip is picked, and compared against it in
+	// `searchSuggestions` to hide the row immediately — otherwise the just-picked word (now
+	// followed only by a trailing space) still looks like something worth suggesting itself.
+	// Typing anything further changes `searchText` away from this snapshot, which naturally
+	// restores normal suggestions.
+	@State var lastAppliedSuggestionText: String?
+	@FocusState var isSearchFieldFocused: Bool
+	@State var selectedCategory: WallpaperCategory?
+	@State var avatars: [PresetAvatar] = []
+	@State var wallpapers: [PresetWallpaper] = []
+	@State var isLoading = true
+	@State var applyingItemID: String?
 	@State private var showsIconStylePreview = false
 
 	private let avatarColumns = [
@@ -30,9 +44,21 @@ struct PresetGalleryView: View {
 				header
 				Divider().overlay(Color.white.opacity(0.08))
 
-				searchBar
-					.padding(.horizontal, 24)
-					.padding(.vertical, 14)
+				HStack(spacing: 10) {
+					searchBar
+					if destination == .artwork {
+						categoryFilter
+					}
+				}
+				.padding(.horizontal, 24)
+				.padding(.top, 14)
+				.padding(.bottom, destination == .artwork ? 8 : 14)
+
+				if destination == .artwork, !searchSuggestions.isEmpty {
+					searchSuggestionsRow
+						.padding(.horizontal, 24)
+						.padding(.bottom, 14)
+				}
 
 				ScrollView {
 					Group {
@@ -125,31 +151,10 @@ struct PresetGalleryView: View {
 		.padding(.vertical, 16)
 	}
 
-	private var searchBar: some View {
-		ThemedTextField(
-			"Search gallery",
-			prompt: destination.searchPlaceholder,
-			text: $searchText,
-			systemImage: "magnifyingglass",
-			accentColor: model.accentColor
-		)
-	}
-
 	private var filteredAvatars: [PresetAvatar] {
 		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 		if query.isEmpty { return avatars }
 		return avatars.filter { $0.name.localizedStandardContains(query) }
-	}
-
-	private var filteredWallpapers: [PresetWallpaper] {
-		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-		if query.isEmpty { return wallpapers }
-		return wallpapers.filter { wallpaper in
-			wallpaper.title.localizedStandardContains(query)
-				|| WallpaperTagCatalog.tags(for: wallpaper.id).contains {
-					$0.localizedStandardContains(query)
-				}
-		}
 	}
 
 	private var avatarsGrid: some View {
@@ -288,11 +293,17 @@ struct PresetGalleryView: View {
 						x: 0,
 						y: 2
 					)
+					.contentShape(RoundedRectangle(cornerRadius: 12))
 				}
 				.buttonStyle(.plain)
 				.disabled(applyingItemID != nil)
+				.help(tagsTooltip(for: wp))
 			}
 		}
+	}
+
+	private func tagsTooltip(for wallpaper: PresetWallpaper) -> String {
+		WallpaperTagCatalog.tags(for: wallpaper.id).joined(separator: ", ")
 	}
 
 	private func applyAvatar(_ avatar: PresetAvatar) {

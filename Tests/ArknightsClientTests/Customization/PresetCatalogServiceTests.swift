@@ -39,6 +39,31 @@ struct PresetCatalogServiceTests {
 	}
 
 	@Test
+	func validatedRemoteAssetURLStripsQueryAndFragment() {
+		let url = PresetCatalogService.validatedRemoteAssetURL(
+			from: "https://webusstatic.yo-star.com/image.png?token=secret#frag")
+		#expect(url?.absoluteString == "https://webusstatic.yo-star.com/image.png")
+	}
+
+	@Test
+	func syntheticThumbnailAddsResizeQueryOnlyForTheOlderGalleryCDNPath() {
+		let olderPathURL = URL(
+			string:
+				"https://webusstatic.yo-star.com/ark_us_web/assets/1/a.jpg"
+		)!
+		let thumbnail = PresetCatalogService.syntheticThumbnailURL(for: olderPathURL)
+		#expect(
+			thumbnail?.absoluteString
+				== "https://webusstatic.yo-star.com/ark_us_web/assets/1/a.jpg"
+				+ "?x-oss-process=image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
+		)
+
+		let newerPathURL = URL(
+			string: "https://webusstatic.yo-star.com/web-cms-prod/upload/content/a.png")!
+		#expect(PresetCatalogService.syntheticThumbnailURL(for: newerPathURL) == nil)
+	}
+
+	@Test
 	func cacheKeysAreHashedIntoSinglePathComponents() async {
 		let root = FileManager.default.temporaryDirectory.appending(
 			path: "PresetCatalogServiceTests-\(UUID().uuidString)",

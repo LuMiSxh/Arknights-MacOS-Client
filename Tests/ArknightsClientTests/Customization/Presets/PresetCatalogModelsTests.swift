@@ -82,4 +82,25 @@ struct PresetCatalogModelsTests {
 		#expect(manifest.schemaVersion == 1)
 		#expect(manifest.tags["global-4431"] == ["amiya", "closer", "rhodes-island"])
 	}
+
+	@Test(
+		"classifies wallpaper titles into categories",
+		arguments: [
+			("Episode 6: Partial Necrosis Opening", WallpaperCategory.story),
+			("Twitter 110k Followers Commemorative Wallpaper", WallpaperCategory.commemorative),
+			("2019 Christmas", WallpaperCategory.holiday),
+			("4th Anniversary Celebration", WallpaperCategory.celebration),
+			("3rd Anniverary Celebration", WallpaperCategory.celebration),
+		]
+	)
+	func classifiesTitles(title: String, expected: WallpaperCategory) {
+		#expect(WallpaperCategory(title: title) == expected)
+	}
+
+	@Test("anniversary livestream wallpapers count as celebration, not commemorative")
+	func livestreamAnniversaryIsCelebration() {
+		#expect(
+			WallpaperCategory(title: "5.5th Livestream Commemorative Wallpaper")
+				== .celebration)
+	}
 }

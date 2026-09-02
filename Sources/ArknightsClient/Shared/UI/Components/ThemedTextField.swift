@@ -39,6 +39,22 @@ struct ThemedTextField: View {
 				.textFieldStyle(.plain)
 				.focused($isFocused)
 				.accessibilityLabel(title)
+
+			if !text.isEmpty {
+				Button {
+					text = ""
+				} label: {
+					Image(systemName: "xmark.circle.fill")
+						.font(.caption)
+						.foregroundStyle(.secondary)
+						// Enlarges the tap target without enlarging the icon's own layout
+						// size — padding here would make the row visibly grow the moment
+						// this button appears (i.e. the instant there's text to clear).
+						.contentShape(Rectangle().inset(by: -6))
+				}
+				.buttonStyle(.plain)
+				.accessibilityLabel("Clear \(title)")
+			}
 		}
 		.font(.callout)
 		.padding(.horizontal, 10)

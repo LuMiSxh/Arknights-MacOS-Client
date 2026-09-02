@@ -62,13 +62,14 @@ class ScanUntaggedWallpapersTests(unittest.TestCase):
         )
         self.assertEqual([wallpaper.id for wallpaper in untagged], ["global-3"])
 
-    def test_issue_body_contains_marker_and_format_hint(self) -> None:
+    def test_issue_body_contains_marker_and_pr_hint(self) -> None:
         wallpaper = scan.GalleryWallpaper(
             id="global-4431", title="Crossing", image_url="https://example.com/a.png"
         )
         body = scan.issue_body(wallpaper)
         self.assertIn("<!-- wallpaper-id: global-4431 -->", body)
-        self.assertIn("tags: tag-one, tag-two, tag-three", body)
+        self.assertIn("Tag this wallpaper by hand", body)
+        self.assertIn("WallpaperTags.json", body)
         self.assertIn("https://example.com/a.png", body)
 
 

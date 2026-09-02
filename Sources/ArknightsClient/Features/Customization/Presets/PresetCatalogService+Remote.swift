@@ -93,7 +93,12 @@ extension PresetCatalogService {
 					} else {
 						title = "Wallpaper \(wallpapers.count + 1)"
 					}
-					let thumbnailURL = row.smallImage.flatMap(Self.validatedRemoteAssetURL(from:))
+					let providedThumbnailURL = row.smallImage.flatMap(
+						Self.validatedRemoteAssetURL(from:))
+					let thumbnailURL =
+						providedThumbnailURL != url
+						? providedThumbnailURL
+						: Self.syntheticThumbnailURL(for: url)
 					// Prefix with the source so future additional gallery sources (e.g. a JP
 					// Fankit feed) can't collide with Global's numbering, and so the ID stays
 					// stable across refreshes for the tag manifest workflow to key off of.
@@ -147,6 +152,25 @@ extension PresetCatalogService {
 	static func isValidWallpaper(_ wallpaper: PresetWallpaper) -> Bool {
 		isAllowedRemoteAssetURL(wallpaper.url)
 			&& wallpaper.thumbnailURL.map(isAllowedRemoteAssetURL) != false
+	}
+
+	// Yostar's older "ark_us_web/assets" gallery CDN path is an Alibaba OSS bucket that
+	// honors an on-the-fly percentage resize via this query parameter (verified directly:
+	// `?x-oss-process=image/resize,p_N` returns a proportionally smaller, genuinely
+	// re-encoded image). Their newer "web-cms-*" upload path ignores the same parameter —
+	// but it always ships a real, separate, already-small `smallImage` anyway, so it's
+	// never routed through here. Falls back to nil (the full-size URL) for anything else.
+	static func syntheticThumbnailURL(for url: URL) -> URL? {
+		guard url.path.contains("/ark_us_web/assets/"),
+			var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+		else { return nil }
+		components.queryItems = [
+			URLQueryItem(
+				name: "x-oss-process",
+				value: "image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
+			)
+		]
+		return components.url
 	}
 
 	static func validatedRemoteAssetURL(from raw: String) -> URL? {

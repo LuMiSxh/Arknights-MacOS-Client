@@ -23,6 +23,47 @@ struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	let title: String
 	let url: URL
 	let thumbnailURL: URL?
+
+	var category: WallpaperCategory { WallpaperCategory(title: title) }
+}
+
+/// Broad grouping for the gallery's type filter, derived entirely from a wallpaper's
+/// official title rather than curated data — Yostar's own titles already follow
+/// stable conventions ("X Followers Commemorative Wallpaper", "20XX Christmas",
+/// "Nth Anniversary Celebration") that are reliable enough to classify by.
+enum WallpaperCategory: String, CaseIterable, Identifiable, Hashable, Sendable {
+	case story = "Story"
+	case commemorative = "Commemorative"
+	case celebration = "Celebration"
+	case holiday = "Holiday"
+
+	var id: String { rawValue }
+
+	init(title: String) {
+		if Self.holidayKeywords.contains(where: { title.localizedStandardContains($0) }) {
+			self = .holiday
+		} else if Self.celebrationKeywords.contains(where: {
+			title.localizedStandardContains($0)
+		}) {
+			self = .celebration
+		} else if title.localizedStandardContains("Commemorative Wallpaper") {
+			self = .commemorative
+		} else {
+			self = .story
+		}
+	}
+
+	// Checked before "Commemorative Wallpaper" since a few titles (e.g. "5.5th
+	// Livestream Commemorative Wallpaper") contain both — those are anniversary
+	// content first, not a follower/subscriber milestone.
+	private static let celebrationKeywords = [
+		// Matches "Anniversary" and Yostar's own "Anniverary" typo alike.
+		"Anniver", "Celebration", "Livestream",
+	]
+	private static let holidayKeywords = [
+		"Christmas", "Halloween", "Thanksgiving", "Valentine's Day", "Easter",
+		"Chinese New Year", "April Fool's Day", "Children's Day", "New Year",
+	]
 }
 
 /// A community/maintainer-curated set of search tags for a wallpaper, keyed by its stable

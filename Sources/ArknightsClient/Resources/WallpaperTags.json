@@ -1,4 +1,1175 @@
 {
 	"schemaVersion": 1,
-	"tags": {}
+	"tags": {
+		"global-1324": [
+			"myrtle",
+			"goldenglow",
+			"saileach",
+			"coral coast"
+		],
+		"global-1327": [
+			"yan-sui",
+			"chongyue",
+			"nian",
+			"shu",
+			"yu",
+			"ling",
+			"dusk"
+		],
+		"global-1526": [
+			"entelechia",
+			"nowell"
+		],
+		"global-1571": [
+			"eblana",
+			"necrass",
+			"reed",
+			"tara"
+		],
+		"global-1623": [
+			"lunacub",
+			"ceobe",
+			"matterhorn"
+		],
+		"global-1643": [
+			"mon3tr",
+			"amiya",
+			"kal'tsit",
+			"rhodes island",
+			"doctah"
+		],
+		"global-1696": [
+			"silence",
+			"ifrit",
+			"saria",
+			"rhine lab"
+		],
+		"global-1771": [
+			"exusiai",
+			"lemuen",
+			"andoain",
+			"laterano"
+		],
+		"global-1927": [
+			"blaze",
+			"degenbrecher",
+			"bassline"
+		],
+		"global-2027": [
+			"tragodia",
+			"tippi",
+			"miss.christine"
+		],
+		"global-2053": [
+			"suzuran",
+			"vulpisfoglia",
+			"siracusa"
+		],
+		"global-2123": [
+			"leizi",
+			"record keeper",
+			"yan"
+		],
+		"global-2212": [
+			"zuo le",
+			"shu",
+			"leizi",
+			"yan",
+			"is6"
+		],
+		"global-2251": [
+			"amiya",
+			"zuo le",
+			"rosmontis"
+		],
+		"global-2265": [
+			"exusiai",
+			"laterano",
+			"lemuen"
+		],
+		"global-2407": [
+			"ascalon",
+			"scavenger",
+			"projekt red"
+		],
+		"global-2484": [
+			"hoshiguma",
+			"mio",
+			"haruka"
+		],
+		"global-2674": [
+			"tragodia",
+			"miss.christine"
+		],
+		"global-2675": [
+			"ave mujica"
+		],
+		"global-2681": [
+			"yan-sui",
+			"nian",
+			"yu",
+			"shu",
+			"wang"
+		],
+		"global-2740": [
+			"mudrock"
+		],
+		"global-2829": [
+			"u-official",
+			"nian",
+			"silverash",
+			"muelsyse",
+			"gavial",
+			"lappland"
+		],
+		"global-2843": [
+			"mantra",
+			"damazti",
+			"vetochki",
+			"ursus"
+		],
+		"global-2882": [
+			"wiš'adel",
+			"młynar"
+		],
+		"global-3399": [
+			"silverash",
+			"kjerag",
+			"pramanix",
+			"astgenne",
+			"karlan trade co., ltd",
+			"enya"
+		],
+		"global-3442": [
+			"beanstalk",
+			"muelsyse"
+		],
+		"global-3559": [
+			"nasti",
+			"væla"
+		],
+		"global-3631": [
+			"titi",
+			"papyrus",
+			"pepe",
+			"sargon"
+		],
+		"global-3800": [
+			"titi",
+			"pallas",
+			"minos",
+			"varkáris"
+		],
+		"global-3920": [
+			"ch'en",
+			"wang",
+			"yan-sui"
+		],
+		"global-4015": [
+			"wang",
+			"yan-sui",
+			"ch'en",
+			"ji"
+		],
+		"global-4351": [
+			"exusiai",
+			"thorns",
+			"elysium"
+		],
+		"global-4431": [
+			"bellone",
+			"siracusa"
+		],
+		"global-449": [
+			"nearl",
+			"blemishine",
+			"whislash",
+			"kazimierz"
+		],
+		"global-450": [
+			"thorns",
+			"iberia"
+		],
+		"global-451": [
+			"amiya",
+			"mizuki",
+			"kirara"
+		],
+		"global-452": [
+			"siracusa",
+			"lappland",
+			"texas",
+			"vulpisfoglia"
+		],
+		"global-453": [
+			"victoria",
+			"siege",
+			"vina victoria",
+			"dagda",
+			"indra",
+			"morgan",
+			"glasgow",
+			"baird"
+		],
+		"global-454": [
+			"nymph",
+			"mitm",
+			"qalaiša"
+		],
+		"global-455": [
+			"cannot"
+		],
+		"global-456": [
+			"chilchuck",
+			"laios",
+			"senshi",
+			"marcille",
+			"ceobe",
+			"crossover"
+		],
+		"global-457": [
+			"nymph",
+			"civilight eterna",
+			"theresa",
+			"tin man",
+			"is5"
+		],
+		"global-458": [
+			"goldenglow",
+			"amiya",
+			"closure",
+			"doctah"
+		],
+		"global-459": [
+			"penance",
+			"vigil",
+			"siracusa"
+		],
+		"global-460": [
+			"nian",
+			"dusk",
+			"shu",
+			"yan-sui"
+		],
+		"global-461": [
+			"pepe",
+			"narantuya",
+			"papyrus",
+			"sargon"
+		],
+		"global-462": [
+			"saria",
+			"rosmontis",
+			"muelsyse",
+			"ifrit",
+			"rhine lab"
+		],
+		"global-463": [
+			"silverash",
+			"gnosis",
+			"degenbrecher",
+			"cliffheart",
+			"pramanix",
+			"kjera",
+			"kjerag",
+			"karlan trade co., ltd"
+		],
+		"global-464": [
+			"lumen",
+			"gladiia",
+			"ulpianus",
+			"abyssal hunters",
+			"aegir"
+		],
+		"global-465": [
+			"reed",
+			"harmonie",
+			"tara"
+		],
+		"global-466": [
+			"nightingale",
+			"nearl",
+			"shining"
+		],
+		"global-467": [
+			"logos",
+			"rhodes island",
+			"blaze",
+			"closure"
+		],
+		"global-468": [
+			"suzuran",
+			"perfumer"
+		],
+		"global-469": [
+			"w",
+			"civilight eterna",
+			"theresa",
+			"amiya",
+			"logos",
+			"kazdel"
+		],
+		"global-470": [
+			"fiammetta",
+			"whisperain",
+			"dorothy"
+		],
+		"global-471": [
+			"amiya",
+			"theresa",
+			"theresis",
+			"kal'tsit",
+			"doctah"
+		],
+		"global-472": [
+			"crossover",
+			"ela",
+			"catapult",
+			"doc",
+			"warfarin",
+			"ash",
+			"team rainbow"
+		],
+		"global-473": [
+			"grain buds",
+			"shu",
+			"wanqing",
+			"zuo le",
+			"yan"
+		],
+		"global-474": [
+			"shu",
+			"zuo le",
+			"ji",
+			"yan-sui"
+		],
+		"global-475": [
+			"blue poison",
+			"feater"
+		],
+		"global-476": [
+			"skyfire",
+			"mousse",
+			"mint"
+		],
+		"global-477": [
+			"ray",
+			"warmy",
+			"alanna",
+			"rim billiton"
+		],
+		"global-478": [
+			"silverash",
+			"gnosis",
+			"degenbrecher",
+			"kjerag",
+			"karlan trade co., ltd"
+		],
+		"global-479": [
+			"tequila",
+			"windflit"
+		],
+		"global-480": [
+			"virtuosa",
+			"ebenholz",
+			"lessing",
+			"viviana",
+			"leithanien",
+			"executor"
+		],
+		"global-481": [
+			"logos",
+			"laqeramaline"
+		],
+		"global-482": [
+			"frostnova",
+			"patriot",
+			"ursus"
+		],
+		"global-483": [
+			"wild mane"
+		],
+		"global-484": [
+			"u-official",
+			"eureka",
+			"kirara"
+		],
+		"global-485": [
+			"leone",
+			"jessica",
+			"woodrow bianchi",
+			"coldshot",
+			"columbia"
+		],
+		"global-486": [
+			"pramanix",
+			"typhon",
+			"magallan",
+			"is4"
+		],
+		"global-487": [
+			"typhon",
+			"magallan"
+		],
+		"global-488": [
+			"ines",
+			"w",
+			"hoederer",
+			"kazdel"
+		],
+		"global-489": [
+			"swire",
+			"schwarz",
+			"ceylon",
+			"snowsant"
+		],
+		"global-490": [
+			"eyjafjalla",
+			"swire"
+		],
+		"global-491": [
+			"mr. nothing",
+			"amiya",
+			"kal'tsit"
+		],
+		"global-492": [
+			"executor",
+			"laterano"
+		],
+		"global-493": [
+			"aosta",
+			"broca",
+			"chiave",
+			"siracusa"
+		],
+		"global-494": [
+			"pozëmka",
+			"dorothy",
+			"heidi",
+			"goldenglow",
+			"reed"
+		],
+		"global-495": [
+			"exusiai",
+			"lemuen",
+			"mostima",
+			"laterano"
+		],
+		"global-496": [
+			"click",
+			"exusiai",
+			"texas",
+			"croissant",
+			"penguin logistics"
+		],
+		"global-497": [
+			"saria",
+			"silence",
+			"ptilopsis",
+			"muelsyse",
+			"ifrit",
+			"ho'olheyak",
+			"kristen wright",
+			"dorothy franks",
+			"ferdinand clooney",
+			"rhine lab"
+		],
+		"global-498": [
+			"phantom",
+			"kroos",
+			"iris"
+		],
+		"global-499": [
+			"ines",
+			"hoederer",
+			"w",
+			"babel",
+			"kazdel"
+		],
+		"global-500": [
+			"la pluma",
+			"schwarz",
+			"frostleaf",
+			"meteorite"
+		],
+		"global-501": [
+			"saga"
+		],
+		"global-502": [
+			"qiubai",
+			"yan"
+		],
+		"global-503": [
+			"shining",
+			"nightingale",
+			"fartooth",
+			"kazimierz"
+		],
+		"global-504": [
+			"chongyue",
+			"yan"
+		],
+		"global-505": [
+			"nian",
+			"ling",
+			"dusk",
+			"yan-sui"
+		],
+		"global-506": [
+			"reed the flame shadow",
+			"chiave",
+			"mizuki",
+			"mostima",
+			"chongyue",
+			"amiya",
+			"highmore",
+			"lappland",
+			"texas the omertosa",
+			"blemishine",
+			"młynar",
+			"nearl the radiant knight",
+			"penance",
+			"dorothy",
+			"vigil"
+		],
+		"global-507": [
+			"angelina",
+			"ceobe"
+		],
+		"global-508": [
+			"reed the flame shadow",
+			"eblana",
+			"tara"
+		],
+		"global-509": [
+			"vigil",
+			"texas the omertosa",
+			"lappland",
+			"bernardo bellone",
+			"lavinia falcone",
+			"alberto saluzzo"
+		],
+		"global-510": [
+			"amiya",
+			"siege",
+			"kal'tsit",
+			"stainless",
+			"victoria"
+		],
+		"global-511": [
+			"mizuki",
+			"is3",
+			"integrated strategies"
+		],
+		"global-512": [
+			"młynar",
+			"kazimierz"
+		],
+		"global-513": [
+			"pallas",
+			"erato",
+			"minos"
+		],
+		"global-514": [
+			"nearl",
+			"blemishine",
+			"goldenglow",
+			"mizuki",
+			"hoshiguma",
+			"sussurro",
+			"mostima",
+			"whislash",
+			"platinum",
+			"kal'tsit",
+			"amiya",
+			"ch'en",
+			"swire",
+			"exusiai",
+			"flametail",
+			"blaze",
+			"nian",
+			"cuora",
+			"saga",
+			"skadi",
+			"specter",
+			"gladiia",
+			"texas",
+			"lappland",
+			"gavial",
+			"ling",
+			"młynar"
+		],
+		"global-515": [
+			"amiya",
+			"nearl",
+			"kal'tsit",
+			"kroos",
+			"bagpipe",
+			"goldenglow",
+			"suzuran"
+		],
+		"global-516": [
+			"flametail",
+			"closure",
+			"aosta",
+			"kirara"
+		],
+		"global-517": [
+			"dorothy",
+			"rhine lab"
+		],
+		"global-518": [
+			"silence",
+			"ifrit",
+			"saria",
+			"ptilopsis",
+			"rhine lab"
+		],
+		"global-519": [
+			"hung",
+			"aak",
+			"waai fu",
+			"lee"
+		],
+		"global-520": [
+			"gavial the invincible",
+			"tomimi",
+			"minimalist",
+			"eunectes",
+			"gavial",
+			"pozëmka",
+			"sargon"
+		],
+		"global-521": [
+			"ebenholz",
+			"kreide",
+			"czerny",
+			"hibiscus the purifier",
+			"leithanien"
+		],
+		"global-522": [
+			"myrtle",
+			"durin",
+			"pozëmka",
+			"minimalist"
+		],
+		"global-523": [
+			"weedy",
+			"ceobe",
+			"blaze",
+			"leonhardt"
+		],
+		"global-524": [
+			"matterhorn",
+			"goldenglow",
+			"ceobe",
+			"lee",
+			"gavial"
+		],
+		"global-525": [
+			"goldenglow",
+			"haze",
+			"quercus",
+			"grani",
+			"victoria"
+		],
+		"global-526": [
+			"exusiai",
+			"mostima",
+			"texas",
+			"archetto",
+			"fiammetta",
+			"laterano"
+		],
+		"global-527": [
+			"gladiia",
+			"specter",
+			"skadi",
+			"abyssal hunters"
+		],
+		"global-528": [
+			"theresis",
+			"theresa",
+			"amiya",
+			"victoria"
+		],
+		"global-529": [
+			"indra",
+			"siege",
+			"glasgow"
+		],
+		"global-530": [
+			"click",
+			"shamare",
+			"blemishine",
+			"snowsant"
+		],
+		"global-531": [
+			"amiya",
+			"nian",
+			"dusk",
+			"click",
+			"lancet-2",
+			"doctah",
+			"rhodes island"
+		],
+		"global-532": [
+			"fiammetta",
+			"patrizion",
+			"laterano",
+			"andoain"
+		],
+		"global-533": [
+			"flametail",
+			"ashlock",
+			"fartooth",
+			"wild mane",
+			"pinus sylvestris"
+		],
+		"global-534": [
+			"phantom",
+			"is2",
+			"integrated strategies"
+		],
+		"global-535": [
+			"lava",
+			"fang",
+			"beagle",
+			"kroos"
+		],
+		"global-536": [
+			"ling",
+			"yan"
+		],
+		"global-537": [
+			"projekt red",
+			"provence",
+			"matterhorn",
+			"silverash",
+			"courier"
+		],
+		"global-538": [
+			"pramanix",
+			"kjerag",
+			"cliffheart",
+			"aurora"
+		],
+		"global-539": [
+			"swire",
+			"hoshiguma",
+			"myrtle"
+		],
+		"global-540": [
+			"carnelian",
+			"beeswax"
+		],
+		"global-541": [
+			"popukar",
+			"mr. nothing",
+			"suzuran",
+			"shamare"
+		],
+		"global-542": [
+			"roberta",
+			"saileach"
+		],
+		"global-543": [
+			"nearl",
+			"blood night",
+			"kazimierz"
+		],
+		"global-544": [
+			"hellagur",
+			"ursus",
+			"patriot"
+		],
+		"global-545": [
+			"greyy",
+			"perfumer"
+		],
+		"global-546": [
+			"thorns",
+			"kal'tsit",
+			"amiya",
+			"closure",
+			"rhodes island"
+		],
+		"global-547": [
+			"emperor",
+			"rat king",
+			"yan-lungmen"
+		],
+		"global-548": [
+			"aciddrop",
+			"tequila"
+		],
+		"global-549": [
+			"ch'en",
+			"dusk",
+			"nian",
+			"yan-sui"
+		],
+		"global-550": [
+			"swire",
+			"ch'en",
+			"hoshiguma",
+			"lin",
+			"yan-lungmen"
+		],
+		"global-551": [
+			"ch'en",
+			"hoshiguma",
+			"swire",
+			"lungmen guard department"
+		],
+		"global-552": [
+			"amiya",
+			"rosmontis",
+			"magallan",
+			"surtr"
+		],
+		"global-553": [
+			"suzuran",
+			"popukar",
+			"hellagur"
+		],
+		"global-554": [
+			"saga",
+			"ceobe",
+			"gummy"
+		],
+		"global-555": [
+			"skadi the corrupting heart",
+			"abyssal hunters",
+			"aegir"
+		],
+		"global-556": [
+			"bagpipe",
+			"ch'en",
+			"hoshiguma",
+			"grani"
+		],
+		"global-557": [
+			"mayer",
+			"phantom",
+			"shaw"
+		],
+		"global-558": [
+			"kal'tsit",
+			"passenger",
+			"sargon"
+		],
+		"global-559": [
+			"feater",
+			"purestream"
+		],
+		"global-560": [
+			"beeswax"
+		],
+		"global-561": [
+			"schwarz",
+			"liskarm",
+			"team rainbow",
+			"crossover"
+		],
+		"global-562": [
+			"click"
+		],
+		"global-563": [
+			"dusk",
+			"yan",
+			"mr. nothing",
+			"kroos",
+			"saga"
+		],
+		"global-564": [
+			"ayerscarpe",
+			"leonhardt"
+		],
+		"global-565": [
+			"mudrock",
+			"cc4"
+		],
+		"global-566": [
+			"archetto",
+			"laterano"
+		],
+		"global-567": [
+			"mountain",
+			"columbia",
+			"robin",
+			"kafka"
+		],
+		"global-568": [
+			"bagpipe",
+			"cc3",
+			"scene"
+		],
+		"global-569": [
+			"cardigan",
+			"popukar",
+			"dur-nar"
+		],
+		"global-570": [
+			"talulah",
+			"amiya",
+			"kal'tsit",
+			"rosmontis",
+			"ch'en",
+			"ursus"
+		],
+		"global-571": [
+			"thorns",
+			"weedy",
+			"rhodes island"
+		],
+		"global-572": [
+			"blemishine",
+			"whislash",
+			"kazimierz",
+			"nearl"
+		],
+		"global-573": [
+			"amiya",
+			"savage",
+			"kroos",
+			"april"
+		],
+		"global-574": [
+			"conviction"
+		],
+		"global-575": [
+			"surtr"
+		],
+		"global-576": [
+			"myrtle",
+			"durin"
+		],
+		"global-577": [
+			"ceobe",
+			"lancet-2",
+			"tomimi",
+			"gavial",
+			"eunectes",
+			"utage"
+		],
+		"global-578": [
+			"silverash"
+		],
+		"global-579": [
+			"blue poison",
+			"cliffheart",
+			"platinum"
+		],
+		"global-580": [
+			"amiya",
+			"rosmontis",
+			"blaze"
+		],
+		"global-581": [
+			"phantom",
+			"cc2"
+		],
+		"global-582": [
+			"amiya",
+			"pramanix",
+			"ch'en",
+			"kal'tsit",
+			"angelina",
+			"doctah"
+		],
+		"global-583": [
+			"patriot"
+		],
+		"global-584": [
+			"glaucus",
+			"weedy"
+		],
+		"global-585": [
+			"amiya",
+			"cardigan",
+			"durin",
+			"shamare"
+		],
+		"global-586": [
+			"w"
+		],
+		"global-587": [
+			"myrtle",
+			"manticore",
+			"platinum"
+		],
+		"global-588": [
+			"vigna"
+		],
+		"global-589": [
+			"magallan",
+			"asbestos"
+		],
+		"global-590": [
+			"blaze"
+		],
+		"global-591": [
+			"suzuran"
+		],
+		"global-592": [
+			"warfarin",
+			"kroos",
+			"closure"
+		],
+		"global-593": [
+			"absinthe",
+			"gummy",
+			"istina",
+			"rosa",
+			"zima",
+			"ursus"
+		],
+		"global-594": [
+			"ansel"
+		],
+		"global-595": [
+			"bibeak"
+		],
+		"global-596": [
+			"bagpipe"
+		],
+		"global-597": [
+			"ceobe",
+			"vulcan"
+		],
+		"global-598": [
+			"skadi",
+			"specter",
+			"ægir",
+			"abyssal hunters"
+		],
+		"global-599": [
+			"nian",
+			"ch'en",
+			"swire",
+			"jessica",
+			"liskarm",
+			"yan"
+		],
+		"global-600": [
+			"amiya",
+			"ch'en",
+			"kal'tsit",
+			"doctah",
+			"rhodes island"
+		],
+		"global-601": [
+			"gitano"
+		],
+		"global-602": [
+			"lava",
+			"hibiscus"
+		],
+		"global-603": [
+			"greythroat",
+			"blaze",
+			"amiya",
+			"frostnova",
+			"doctah",
+			"ursus"
+		],
+		"global-604": [
+			"feater"
+		],
+		"global-605": [
+			"liskarm",
+			"franka",
+			"jessica",
+			"blacksteel worldwide"
+		],
+		"global-606": [
+			"mostima",
+			"exusiai",
+			"penguin logistics"
+		],
+		"global-607": [
+			"melantha",
+			"perfumer"
+		],
+		"global-608": [
+			"the emperor",
+			"frost",
+			"d.d.d.",
+			"aya",
+			"alty",
+			"siesta"
+		],
+		"global-609": [
+			"amiya",
+			"ch'en",
+			"ifrit",
+			"shining",
+			"vigna",
+			"castle-3"
+		],
+		"global-610": [
+			"orchid",
+			"sora",
+			"amiya",
+			"exusiai",
+			"texas",
+			"penguin logistics"
+		],
+		"global-611": [
+			"schwarz",
+			"ceylon",
+			"siesta"
+		],
+		"global-612": [
+			"magallan"
+		],
+		"global-613": [
+			"cuora"
+		],
+		"global-614": [
+			"ch'en",
+			"hoshiguma",
+			"swire",
+			"lungmen guard department"
+		],
+		"global-615": [
+			"gummy",
+			"amiya",
+			"angelina"
+		],
+		"global-616": [
+			"shaw",
+			"skyfire"
+		],
+		"global-617": [
+			"skadi",
+			"grani",
+			"kazimierz"
+		],
+		"global-618": [
+			"eyjafjalla"
+		],
+		"global-619": [
+			"amiya",
+			"doctah"
+		],
+		"global-620": [
+			"amiya",
+			"kroos",
+			"closure",
+			"lava",
+			"hibiscus",
+			"croissant",
+			"fang"
+		],
+		"global-621": [
+			"courier",
+			"matterhorn",
+			"pramanix",
+			"silverash",
+			"cliffheart",
+			"kjerag"
+		]
+	}
 }

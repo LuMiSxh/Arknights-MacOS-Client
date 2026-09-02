@@ -70,8 +70,20 @@ enum AppConstants {
 		static let wallpaperCatalogMaximumBytes = 4 * 1_024 * 1_024
 		static let imageMaximumBytes = 24 * 1_024 * 1_024
 		static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
-		static let imageMaximumDimension = 8_192
-		static let imageMaximumPixels = 36_000_000
+		// A few of Yostar's own gallery wallpapers exceed typical dimensions — e.g. "The
+		// Masses' Travels" is 13280×7470 (99.2MP) and "Exodus from the Pale Sea" is
+		// 10000×5626 (56.3MP), both verified directly against the live gallery API. These
+		// caps stay well above those so legitimate art isn't rejected as unsafe.
+		static let imageMaximumDimension = 16_384
+		static let imageMaximumPixels = 120_000_000
+		// Percentage-scale factor for the synthetic thumbnail Yostar's older gallery CDN
+		// path can generate on the fly (see `syntheticThumbnailURL` in
+		// PresetCatalogService+Remote.swift) for the ~85% of wallpapers whose API entry has
+		// no separate `smallImage`. Verified directly: this path only honors percentage-based
+		// resize (`p_N`), not absolute pixel sizes. 20% produced visibly soft thumbnails for
+		// typical ~1920–2000px-wide sources once stretched to fill a grid cell on a Retina
+		// display (well under the ~450–500px needed there); raised for headroom.
+		static let thumbnailResizePercent = 35
 		static let avatarIdentifierMaximumLength = 96
 		static let wallpaperPageSize = 50
 		static let wallpaperPageLimit = 5

@@ -9,10 +9,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Matched wallpaper search against maintainer-curated tags in addition to titles, and added a scheduled workflow that files a tagging issue for every newly discovered official wallpaper.
+- Filtered the wallpaper gallery by type (Story, Commemorative, Celebration, Holiday), autocompleted tag and title-word search terms, and let a completed tag be pinned as a removable pill for an exact match instead of a broader prefix search.
+- Showed a wallpaper's curated tags in a hover tooltip in the gallery grid.
+
+### Changed
+
+- Matched multi-word wallpaper searches by requiring every word to appear somewhere (title or tags), instead of the full phrase appearing as one literal substring.
 
 ### Fixed
 
 - Recovered official wallpapers whose Fankit gallery entries wrap the image URL in a single-element array instead of a plain string, restoring most of the official wallpaper catalog instead of only the newest entries.
+- Stopped rejecting a handful of legitimately oversized official wallpapers (up to 13280×7470) as unsafe images.
+- Rejected a wallpaper download that was silently truncated by a dropped connection instead of caching and displaying the corrupt result.
+- Generated a smaller synthetic thumbnail for official wallpapers whose Fankit entry has no dedicated small image, instead of downloading the full-resolution original just to show a gallery thumbnail.
 
 ## [0.4.1]
 

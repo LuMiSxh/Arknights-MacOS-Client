@@ -46,6 +46,8 @@ struct MusicHUDPill: View {
 							.contentTransition(.symbolEffect(.replace))
 							.accessibilityHidden(true)
 					}
+					.padding(.horizontal, isExpanded ? 14 : 12)
+					.frame(height: isExpanded ? nil : AppConstants.Music.collapsedPlayerHeight)
 					.contentShape(Rectangle())
 				}
 				.buttonStyle(.plain)
@@ -101,11 +103,11 @@ struct MusicHUDPill: View {
 							action: model.openCurrentMusicURL
 						)
 					}
+					.padding(.horizontal, 14)
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.transition(expandedContentTransition)
 				}
 			}
-			.padding(.horizontal, isExpanded ? 14 : 12)
 			.padding(.vertical, isExpanded ? 11 : 0)
 			.frame(
 				width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil,
