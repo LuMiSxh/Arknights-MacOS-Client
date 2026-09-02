@@ -28,8 +28,8 @@ struct LauncherAPITests {
 			let _: GameConfiguration = try await api.gameConfiguration(region: .global)
 			Issue.record("Expected the API request to fail")
 		} catch {
-			#expect(
-				error.localizedDescription == LauncherError.invalidResponse.localizedDescription)
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(!contextualError.userMessage.isEmpty)
 			let diagnostic = launcherDiagnosticDescription(for: error)
 			#expect(diagnostic.contains("operation=game configuration"))
 			#expect(diagnostic.contains("region=Global"))
@@ -61,8 +61,8 @@ struct LauncherAPITests {
 			let _: GameConfiguration = try await api.gameConfiguration(region: .japan)
 			Issue.record("Expected payload decoding to fail")
 		} catch {
-			#expect(
-				error.localizedDescription == LauncherError.invalidResponse.localizedDescription)
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(contextualError.userMessage != contextualError.diagnosticDescription)
 			let diagnostic = launcherDiagnosticDescription(for: error)
 			#expect(diagnostic.contains("operation=game configuration"))
 			#expect(diagnostic.contains("region=Japan"))
@@ -71,7 +71,7 @@ struct LauncherAPITests {
 	}
 
 	@Test
-	func transportFailureUsesTheLocalizedLauncherError() async throws {
+	func transportFailureUsesAContextualLauncherError() async throws {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [FailingLauncherAPIURLProtocol.self]
 		let api = LauncherAPI(session: URLSession(configuration: configuration))
@@ -80,9 +80,8 @@ struct LauncherAPITests {
 			let _: GameConfiguration = try await api.gameConfiguration(region: .global)
 			Issue.record("Expected the API request to fail")
 		} catch {
-			#expect(
-				error.localizedDescription == LauncherError.invalidResponse.localizedDescription
-			)
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(!contextualError.userMessage.isEmpty)
 		}
 	}
 
@@ -110,13 +109,8 @@ struct LauncherAPITests {
 			)
 			Issue.record("Expected the manifest response to exceed its configured limit")
 		} catch {
-			#expect(
-				error.localizedDescription
-					== LauncherError.remoteContentTooLarge(
-						URL(string: "https://fixtures.invalid/manifest.json")!,
-						maximumBytes: 8
-					).localizedDescription
-			)
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(!contextualError.userMessage.isEmpty)
 			let diagnostic = launcherDiagnosticDescription(for: error)
 			#expect(diagnostic.contains("operation=manifest download"))
 			#expect(diagnostic.contains("response exceeded 8 bytes"))

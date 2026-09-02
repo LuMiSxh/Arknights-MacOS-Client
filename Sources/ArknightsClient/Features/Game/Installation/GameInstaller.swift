@@ -72,7 +72,7 @@ struct GameInstaller: Sendable {
 				destinationSize: try fileSize(at: destination),
 				previousFile: previousFiles?[item.path],
 				verifyAllExistingFiles: verifyAllExistingFiles,
-				checksum: { try CRC64.checksum(of: destination) }
+				checksum: { try ManifestChecksum.checksum(of: destination, expected: item.hash) }
 			)
 		}
 		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)

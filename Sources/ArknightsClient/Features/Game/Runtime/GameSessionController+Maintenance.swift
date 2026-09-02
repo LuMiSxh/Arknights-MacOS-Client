@@ -17,8 +17,9 @@ extension GameSessionController {
 	func forcePrefixMigration() {
 		guard lifecycle.activity == .idle else { return }
 		let operationID = UUID()
+		let prefixDirectory = paths.winePrefix(for: installation.region)
 		do {
-			try RuntimeMigrationStore().reset(prefixDirectory: paths.winePrefix)
+			try RuntimeMigrationStore().reset(prefixDirectory: prefixDirectory)
 			lifecycle.setStatus(
 				.custom(L10n.string(.Launcher.launcherStatusWineMigrationPending)))
 			Task { [log] in
@@ -35,7 +36,7 @@ extension GameSessionController {
 
 	func deleteWinePrefix() {
 		guard lifecycle.activity == .idle else { return }
-		let prefixDirectory = paths.winePrefix
+		let prefixDirectory = paths.winePrefix(for: installation.region)
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
 		let operationID = UUID()
 		lifecycle.activity = .maintaining(.deletingWinePrefix)

@@ -362,7 +362,7 @@
       }
     },
     "home.action.install.help": {
-      "comment": "Install game action help; region is Global, Japan, or Korea",
+      "comment": "Install game action help; argument is the selected region name",
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -3687,6 +3687,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Korea"
+          }
+        }
+      }
+    },
+    "shared.region.china": {
+      "comment": "Display name for the China game region while Canary Features are enabled",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "China (Canary)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "China (Canary)"
           }
         }
       }

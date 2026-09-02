@@ -15,18 +15,21 @@ final class StorageOverviewController {
 	private let paths: AppPaths
 	private let preferences: LauncherPreferencesStore
 	private let log: LauncherLog
+	private let regionProvider: @MainActor () -> GameRegion
 	@ObservationIgnored private var measurementTask: Task<Void, Never>?
 
 	init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,
 		preferences: LauncherPreferencesStore,
-		log: LauncherLog
+		log: LauncherLog,
+		regionProvider: @escaping @MainActor () -> GameRegion = { .global }
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
 		self.preferences = preferences
 		self.log = log
+		self.regionProvider = regionProvider
 		usages = []
 	}
 
@@ -42,7 +45,8 @@ final class StorageOverviewController {
 		measurementTask?.cancel()
 		let resolvedLocations = StorageOverviewResolver.locations(
 			paths: paths,
-			preferences: preferences
+			preferences: preferences,
+			region: regionProvider()
 		)
 		usages = resolvedLocations.map {
 			StorageUsage(location: $0, byteCount: nil, exists: false)

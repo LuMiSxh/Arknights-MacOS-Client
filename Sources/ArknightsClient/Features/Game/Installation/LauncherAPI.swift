@@ -16,6 +16,7 @@ actor LauncherAPI {
 	private let decoder: JSONDecoder
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
+	private let hypergryph: HypergryphLauncherAPI
 
 	init(
 		session: URLSession = .shared,
@@ -25,12 +26,18 @@ actor LauncherAPI {
 		loader = BoundedHTTPDataLoader(session: session)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
+		hypergryph = HypergryphLauncherAPI(
+			session: session,
+			maximumAPIResponseBytes: maximumAPIResponseBytes,
+			maximumManifestResponseBytes: maximumManifestResponseBytes
+		)
 		decoder = JSONDecoder()
 		decoder.keyDecodingStrategy = .convertFromSnakeCase
 	}
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		try await request(
+		if region == .china { return try await hypergryph.gameConfiguration() }
+		return try await request(
 			region: region,
 			path: "/api/launcher/game/config",
 			operation: "game configuration"
@@ -38,7 +45,8 @@ actor LauncherAPI {
 	}
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
-		try await request(
+		if region == .china { return try await hypergryph.branding() }
+		return try await request(
 			region: region,
 			path: "/api/launcher/base/config",
 			operation: "launcher branding"
@@ -46,7 +54,8 @@ actor LauncherAPI {
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		try await request(
+		if region == .china { return try await hypergryph.cdnConfiguration() }
+		return try await request(
 			region: region,
 			path: "/api/launcher/advanced/game/download/cdn",
 			operation: "CDN configuration"
@@ -57,6 +66,7 @@ actor LauncherAPI {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> GameManifest {
+		if region == .china { return try await hypergryph.manifest(for: configuration) }
 		let location = try await manifestLocation(for: configuration, region: region)
 		return try await manifestPayload(at: location.url, region: region).manifest
 	}

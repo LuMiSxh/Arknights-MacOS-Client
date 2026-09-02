@@ -110,9 +110,10 @@
 		}
 
 		func loadDeveloperArtwork() async {
+			let region = installation.region
+			guard region != .china else { return }
 			if await customization.loadCustomArtwork() { return }
 			let artworkCache = customization.artworkCache
-			let region = installation.region
 			do {
 				let currentBranding = try await api.branding(region: region)
 				guard isDeveloperMode, installation.region == region else { return }
@@ -122,7 +123,7 @@
 						for: region
 					)
 					guard installation.region == region else { return }
-					customization.officialLogo = NSImage(data: logoData)
+					customization.officialLogo = logoData.flatMap(NSImage.init(data:))
 				} catch {
 					await log.error(
 						"Failed to load developer logo: \(error.localizedDescription)"

@@ -11,6 +11,7 @@ struct AppPaths: Sendable {
 	let cacheRoot: URL
 	let logRoot: URL
 	let winePrefix: URL
+	let chinaWinePrefix: URL
 	let bundledRuntimeDirectory: URL?
 
 	init(
@@ -46,6 +47,10 @@ struct AppPaths: Sendable {
 			path: "Wine/Prefixes/Arknights-Global",
 			directoryHint: .isDirectory
 		)
+		chinaWinePrefix = applicationSupportRoot.appending(
+			path: "Wine/Prefixes/Arknights-China",
+			directoryHint: .isDirectory
+		)
 		bundledRuntimeDirectory = resourceDirectory?.appending(
 			path: "Runtime",
 			directoryHint: .isDirectory
@@ -59,6 +64,10 @@ struct AppPaths: Sendable {
 		)
 	}
 
+	func winePrefix(for region: GameRegion) -> URL {
+		region == .china ? chinaWinePrefix : winePrefix
+	}
+
 	var logsDirectory: URL { logRoot }
 
 	var logFile: URL {
@@ -67,6 +76,10 @@ struct AppPaths: Sendable {
 
 	var launcherLogFile: URL {
 		logsDirectory.appending(path: "launcher.log")
+	}
+
+	func wineLogFile(for region: GameRegion) -> URL {
+		region == .china ? logsDirectory.appending(path: "wine-cn.log") : logFile
 	}
 
 	var unityLogFile: URL {
@@ -88,12 +101,23 @@ struct AppPaths: Sendable {
 	}
 
 	var dxmtCache: URL {
-		winePrefix.appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
+		dxmtCache(for: .global)
+	}
+
+	func dxmtCache(for region: GameRegion) -> URL {
+		winePrefix(for: region).appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
 	}
 
 	func browserCacheDirectories(fileManager: FileManager = .default) -> [URL] {
-		Self.gameCacheDirectories(winePrefix: winePrefix, fileManager: fileManager)
-			.filter { $0 != dxmtCache }
+		browserCacheDirectories(for: .global, fileManager: fileManager)
+	}
+
+	func browserCacheDirectories(
+		for region: GameRegion,
+		fileManager: FileManager = .default
+	) -> [URL] {
+		Self.gameCacheDirectories(winePrefix: winePrefix(for: region), fileManager: fileManager)
+			.filter { $0 != dxmtCache(for: region) }
 	}
 
 	static func gameCacheDirectories(

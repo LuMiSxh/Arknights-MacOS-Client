@@ -17,9 +17,14 @@ let package = Package(
 		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0")
 	],
 	targets: [
+		.systemLibrary(
+			name: "CCommonCrypto",
+			path: "RuntimeSupport/CommonCrypto"
+		),
 		.executableTarget(
 			name: "ArknightsClient",
 			dependencies: [
+				"CCommonCrypto",
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
 				.product(name: "Sparkle", package: "Sparkle")
 			],

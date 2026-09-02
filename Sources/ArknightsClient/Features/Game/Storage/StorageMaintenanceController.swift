@@ -12,24 +12,27 @@ final class StorageMaintenanceController {
 	private let paths: AppPaths
 	private let presetCatalog: PresetCatalogService
 	private let log: LauncherLog
+	private let regionProvider: @MainActor () -> GameRegion
 
 	init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,
 		presetCatalog: PresetCatalogService,
-		log: LauncherLog
+		log: LauncherLog,
+		regionProvider: @escaping @MainActor () -> GameRegion = { .global }
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
 		self.presetCatalog = presetCatalog
 		self.log = log
+		self.regionProvider = regionProvider
 	}
 
 	func clearGameCache() {
 		guard lifecycle.activity == .idle else { return }
 		let operationID = UUID()
 		lifecycle.activity = .maintaining(.clearingCache)
-		let winePrefix = paths.winePrefix
+		let winePrefix = paths.winePrefix(for: regionProvider())
 		Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -87,6 +90,7 @@ final class StorageMaintenanceController {
 			NSWorkspace.shared.activateFileViewerSelecting([
 				paths.launcherLogFile,
 				paths.logFile,
+				paths.wineLogFile(for: .china),
 				paths.unityLogFile,
 				paths.chromiumLogFile,
 			])

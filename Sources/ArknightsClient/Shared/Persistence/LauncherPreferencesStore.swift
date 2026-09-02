@@ -143,7 +143,9 @@ struct LauncherPreferencesStore {
 	}
 
 	func selectedRegion() -> GameRegion {
-		defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:)) ?? .global
+		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
+		if region == .china, !canaryFeaturesEnabled() { return .global }
+		return region ?? .global
 	}
 
 	func setSelectedRegion(_ region: GameRegion) {

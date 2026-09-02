@@ -1772,13 +1772,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ermöglicht den Zugriff auf unfertige Funktionen, die sich ändern, Probleme verursachen oder wieder entfernt werden können."
+            "value": "Aktiviert Canary-Funktionen und den China-Client."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enables access to unfinished features that may change, cause problems, or be removed again."
+            "value": "Enables Canary features and the China client."
           }
         }
       }
@@ -2222,13 +2222,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Global, Japan und Korea werden unabhängig installiert, aktualisiert und gestartet."
+            "value": "Jede Region wird unabhängig installiert, aktualisiert und gestartet."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Global, Japan, and Korea install, update, and launch independently."
+            "value": "Each region installs, updates, and launches independently."
           }
         }
       }

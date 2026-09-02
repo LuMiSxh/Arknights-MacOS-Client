@@ -10,6 +10,7 @@ enum SharedStrings {
 		case .global: .sharedRegionGlobal
 		case .japan: .sharedRegionJapan
 		case .korea: .sharedRegionKorea
+		case .china: .sharedRegionChina
 		}
 	}
 }

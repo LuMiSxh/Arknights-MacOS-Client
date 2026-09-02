@@ -33,7 +33,9 @@ struct InstallationSettingsPage: View {
 				) {
 					GlassMenuPicker(
 						selection: regionBinding,
-						options: GameRegion.allCases.map { ($0, $0.localizedDisplayName) },
+						options: GameRegion.selectableCases(
+							canaryEnabled: settings.canaryFeaturesEnabled
+						).map { ($0, $0.localizedDisplayName) },
 						accentColor: accentColor,
 						isDisabled: lifecycle.activity != .idle
 					)
@@ -165,9 +167,9 @@ struct InstallationSettingsPage: View {
 					SettingsToggle(
 						L10n.string(SettingsStrings.canaryFeatures),
 						isOn: $settings.canaryFeaturesEnabled,
-						accentColor: accentColor
+						accentColor: LauncherVisuals.danger
 					)
-					.disabled(gameSession.isGameActive)
+					.disabled(lifecycle.activity != .idle)
 				}
 				SettingsHairline()
 				SettingsActionRow(

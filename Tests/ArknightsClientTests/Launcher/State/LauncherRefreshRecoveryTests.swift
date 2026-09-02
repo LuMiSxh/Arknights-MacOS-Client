@@ -7,7 +7,7 @@ import Testing
 
 @MainActor
 struct LauncherRefreshRecoveryTests {
-	@Test(arguments: GameRegion.allCases)
+	@Test(arguments: GameRegion.yostarCases)
 	func requiredConfigurationFailureRetriesTheCurrentRegion(region: GameRegion) async throws {
 		let api = ConfigurationRefreshAPI(
 			outcomes: region == .global ? [.failure, .success] : [.success, .failure, .success]

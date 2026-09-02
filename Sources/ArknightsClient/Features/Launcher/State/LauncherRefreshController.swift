@@ -212,7 +212,6 @@ final class LauncherRefreshController {
 				)
 			}
 			brandingAssetTask = assetTask
-			await assetTask.value
 		}
 
 		guard isCurrentRefresh(refreshID) else { return }

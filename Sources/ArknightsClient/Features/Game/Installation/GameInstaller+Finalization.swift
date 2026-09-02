@@ -23,8 +23,8 @@ extension GameInstaller {
 				actual: actualSize
 			)
 		}
-		let checksum = try CRC64.checksum(of: partial)
-		guard checksum == item.hash else {
+		let checksum = try ManifestChecksum.checksum(of: partial, expected: item.hash)
+		guard ManifestChecksum.matches(checksum, expected: item.hash) else {
 			try fileManager.removeItem(at: partial)
 			await progress(
 				await counter.remove(

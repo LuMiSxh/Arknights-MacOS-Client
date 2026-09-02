@@ -58,7 +58,10 @@ extension GameSessionController {
 			}
 			return
 		}
-		runtime.stopSynchronously(prefixDirectory: paths.winePrefix, log: log)
+		runtime.stopSynchronously(
+			prefixDirectory: paths.winePrefix(for: activeGameRegion ?? installation.region),
+			log: log
+		)
 	}
 
 	func monitorGame(
@@ -68,7 +71,7 @@ extension GameSessionController {
 	) {
 		gameMonitorTask?.cancel()
 		gameProcessMonitorTask?.cancel()
-		let logURL = paths.logFile
+		let logURL = paths.wineLogFile(for: activeGameRegion ?? installation.region)
 		gameProcessMonitorTask = Task { [weak self, log, logURL] in
 			let exit = await launch.waitUntilExit()
 			guard let self, !Task.isCancelled else { return }
@@ -142,7 +145,7 @@ extension GameSessionController {
 		sessionID: UUID
 	) {
 		gameMonitorTask?.cancel()
-		let prefixDirectory = paths.winePrefix
+		let prefixDirectory = paths.winePrefix(for: activeGameRegion ?? installation.region)
 		gameMonitorTask = Task { [weak self, log, prefixDirectory] in
 			do {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
@@ -178,7 +181,7 @@ extension GameSessionController {
 		rememberTerminalFailure(terminalFailure, for: sessionID)
 		markGameSessionStopping(sessionID, processIdentifier: processIdentifier)
 		do {
-			try await runtime.stop(prefixDirectory: paths.winePrefix)
+			try await runtime.stop(prefixDirectory: paths.winePrefix(for: region))
 		} catch {
 			guard activeGameSessionID == sessionID else { return }
 			await log.error("Runtime cleanup failed: \(error.localizedDescription)")
