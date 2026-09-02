@@ -32,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Donate button for people who want to support the project.
 - Dock shortcuts for starting an installed regional client or opening Settings (#46).
 - Typo-tolerant preset gallery search with compact suggestions and searchable operator and official-wallpaper metadata.
-- Wallpaper type filters and curated tag and title-word suggestions for official artwork presets, plus a daily workflow that files newly untagged wallpapers (Thanks to @darkwebdev, #61).
+- Wallpaper type filters and curated tag and title-word suggestions for official artwork presets, plus a monthly workflow that files newly untagged wallpapers (Thanks to @darkwebdev, #61).
 
 ### Changed
 
@@ -48,6 +48,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
 - Consolidated repository scripts into one locked uv project, isolated packaging-only tools in their own dependency group, and removed single-use helpers and low-value wrapper tests.
 - Loaded smaller CDN-generated gallery thumbnails when an official wallpaper has no dedicated preview image.
+- Restored the preset gallery's normal search-field focus appearance and standard option-picker style.
+- Made "Use Default" remove custom launcher artwork immediately, including while a game download prevents metadata refreshes.
 
 ### Fixed
 

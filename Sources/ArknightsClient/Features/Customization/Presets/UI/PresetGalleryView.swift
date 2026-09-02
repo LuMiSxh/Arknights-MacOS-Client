@@ -56,6 +56,7 @@ struct PresetGalleryView: View {
 				Divider().overlay(Color.white.opacity(0.08))
 				HStack(spacing: 10) {
 					searchBar
+						.frame(maxWidth: .infinity)
 					if destination == .artwork {
 						WallpaperCategoryFilter(
 							selection: $selectedCategory,

@@ -2,7 +2,7 @@ name: Scan for untagged wallpapers
 
 on:
   schedule:
-    - cron: "0 6 * * *"
+    - cron: "0 6 1 * *"
   workflow_dispatch:
 
 permissions:

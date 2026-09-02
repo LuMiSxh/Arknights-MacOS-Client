@@ -60,6 +60,7 @@ extension CustomizationController {
 		artworkMutationInFlight = false
 		setHasPersistedCustomArtwork(false)
 		customArtworkDidChange()
+		setHeroArtwork(nil, themeCacheKey: nil)
 		guard !isDownloading else { return }
 		lifecycle.refresh = .idle
 		restartRefresh()
