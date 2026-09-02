@@ -74,6 +74,7 @@ struct LauncherPopupView: View {
 	let hudTintColor: Color
 	let dismiss: () -> Void
 	let openAction: () -> Void
+	@State private var contentHeight: CGFloat = 0
 
 	var body: some View {
 		ThemedModalView(
@@ -81,7 +82,7 @@ struct LauncherPopupView: View {
 			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: 620,
-			height: 430
+			height: popupHeight
 		) {
 			Group {
 				switch popup.content {
@@ -92,6 +93,11 @@ struct LauncherPopupView: View {
 				}
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
+			.onGeometryChange(for: CGFloat.self) { proxy in
+				proxy.size.height
+			} action: { newHeight in
+				contentHeight = newHeight
+			}
 			.textSelection(.enabled)
 		} actions: {
 			if let actionTitle = popup.actionTitle {
@@ -111,5 +117,10 @@ struct LauncherPopupView: View {
 				)
 			}
 		}
+	}
+
+	private var popupHeight: CGFloat {
+		guard contentHeight > 0 else { return 430 }
+		return min(max(contentHeight + 160, 320), 600)
 	}
 }
