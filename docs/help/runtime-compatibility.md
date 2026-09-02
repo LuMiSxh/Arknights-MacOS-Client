@@ -68,22 +68,9 @@ The launcher also maps the central macOS log directory as `L:` so Unity and brow
 
 ## The pinned runtime
 
-The release currently pins the following compatibility unit in [`runtime.json`](../../runtime.json):
+[`runtime.json`](../../runtime.json) is the source of truth for the exact artifact, component versions, source revisions, checksums, prefix revision, and required archive layout shipped by the client. The runtime is built and published from the separate [Arknights macOS Runtime](https://github.com/LuMiSxh/Arknights-MacOS-Runtime) repository, whose release contains the matching source archive, provenance, component inventory, and third-party notices.
 
-| Component        | Pinned version           |
-| ---------------- | ------------------------ |
-| WineCX           | 11.15                    |
-| DXMT             | 0.80                     |
-| Runtime artifact | dappermint build 4.5.118 |
-| Wine Gecko       | 2.47.4                   |
-| GStreamer        | 1.26.3                   |
-| FFmpeg           | 7.1.1                    |
-| MoltenVK         | 1.4.2                    |
-
-Wine, DXMT, Gecko, and the media libraries are selected and tested together. Installing another Wine distribution beside the launcher does not replace its bundled runtime and is not a supported way to change this compatibility unit.
-
-> [!NOTE]
-> `runtime.json` also records archive checksums, source revisions, the prefix revision, and the expected files and directories. This lets release builds verify that the runtime used for packaging is the runtime the launcher expects.
+Wine, DXMT, Gecko, and the media libraries are selected and tested as one compatibility unit. Installing another Wine distribution beside the launcher does not replace its bundled runtime and is not a supported way to change that unit.
 
 ## Graphics and display behavior
 
@@ -135,7 +122,3 @@ Use [Troubleshooting](troubleshooting.md) when:
 - the window has incorrect Retina sizing or rendering artifacts
 
 The launcher report form supplies the error code and basic environment metadata when available. Log files are not needed for the initial report. If a maintainer later asks for a specific file, open **Settings → Storage → Show Logs** and attach only the file they name.
-
-## Runtime provenance
-
-The pinned artifact is published by the maintained [dappermint/Whisky fork](https://github.com/dappermint/Whisky) and built from the pinned [winecx-gptk recipe](https://github.com/dappermint/winecx-gptk). Component repositories, exact commits, and checksums are kept in [`runtime.json`](../../runtime.json). The release process treats Wine and DXMT as one runtime unit; users should not mix independently downloaded component versions.

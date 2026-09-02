@@ -10,6 +10,8 @@ These documents describe how Arknights Client is organized, tested, localized, p
 
 Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md), [Design](design.md), and [Localization](localization.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
 
+[Wine prefix architecture](architecture/wine-prefix.md) is the developer reference for prefix topology, isolation, migrations, drive mappings, persistent state, and process ownership.
+
 [Wallpaper tagging and search](wallpaper-tagging.md) documents the curated metadata and maintenance workflow for official artwork presets.
 
 Proposals are retained under `proposals/` for project history and are hidden from the primary development index until accepted. They are not implementation or support commitments.

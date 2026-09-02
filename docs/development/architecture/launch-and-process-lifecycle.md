@@ -12,6 +12,9 @@ running game: launch remains in **Starting** until a visible game window is obse
 continues until the prefix-wide `wineserver` has stopped. This distinction keeps browser helpers and
 Wine child processes from being mistaken for a ready or fully stopped game.
 
+See [Wine prefix architecture](wine-prefix.md) for the prefix topology, environment, drive mappings,
+migration state, persistent data, and maintenance contract used by this lifecycle.
+
 ## Launch process
 
 > [!IMPORTANT]

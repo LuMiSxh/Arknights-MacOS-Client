@@ -17,6 +17,8 @@ the map below, then follow the flow that matches the change you are making:
   resumable downloads, and per-region state.
 - [Launch and process lifecycle](launch-and-process-lifecycle.md) covers Rosetta, Wine prefixes,
   compatibility components, process monitoring, and shutdown.
+- [Wine prefix architecture](wine-prefix.md) covers prefix topology, environment isolation, drive
+  mappings, migrations, persistent state, and maintenance boundaries.
 - [Communication and boundaries](communication-and-boundaries.md) covers Yostar requests,
   announcements, notices, update checks, and stale-result handling.
 - [Data and persistence](data-and-persistence.md) maps `AppPaths`, `UserDefaults`, caches, logs,
