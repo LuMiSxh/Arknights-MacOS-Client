@@ -6,20 +6,27 @@ import SwiftUI
 /// Renders nothing when neither has content, matching the single-region/no-extras default
 /// the landing page starts from.
 struct StatusHUDPill: View {
-	var model: LauncherViewModel
+	let settings: LauncherPreferencesController
+	let installation: InstallationController
+	let canSwitchRegion: Bool
+	let accentColor: Color
+	let hudTintColor: Color
+	let selectRegion: (GameRegion) -> Void
 
 	var body: some View {
 		if hasContent {
 			HStack(spacing: 6) {
-				if let countdown = model.resetCountdownText {
+				if let countdown = settings.resetCountdownText {
 					Image(systemName: "clock")
-						.font(.system(size: 10, weight: .semibold))
-						.foregroundStyle(model.accentColor)
+						.font(.caption.weight(.semibold))
+						.foregroundStyle(accentColor)
+						.accessibilityHidden(true)
 					Text(countdown)
-						.font(.system(size: 11, weight: .medium, design: .monospaced))
+						.font(.caption.monospaced().weight(.medium))
 						.foregroundStyle(.secondary)
-						.lineLimit(1)
+						.lineLimit(2)
 						.truncationMode(.tail)
+						.fixedSize(horizontal: false, vertical: true)
 						.frame(
 							maxWidth: AppConstants.HUD.collapsedStatusTitleMaxWidth
 						)
@@ -30,14 +37,14 @@ struct StatusHUDPill: View {
 			.padding(.vertical, 7)
 			.frame(maxWidth: AppConstants.HUD.collapsedStatusMaxWidth)
 			.fixedSize(horizontal: true, vertical: false)
-			.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
+			.adaptiveGlassEffect(tint: hudTintColor, in: Capsule())
 		}
 	}
 
 	private var hasContent: Bool {
-		model.resetCountdownText != nil
-			|| model.installedRegions.count > 1
-			|| model.region != .global
+		settings.resetCountdownText != nil
+			|| installation.installedRegions.count >= 2
+			|| installation.region != .global
 	}
 
 	/// Stays invisible for the common single-region case; only becomes an interactive
@@ -45,32 +52,36 @@ struct StatusHUDPill: View {
 	/// carry region chrome nobody can use yet.
 	@ViewBuilder
 	private var regionIndicator: some View {
-		if model.installedRegions.count > 1 {
+		if installation.installedRegions.count >= 2 {
 			Menu {
-				ForEach(model.installedRegions) { region in
+				ForEach(installation.installedRegions) { region in
 					Button {
-						model.selectRegion(region)
+						selectRegion(region)
 					} label: {
-						if region == model.region {
-							Label(region.displayName, systemImage: "checkmark")
+						if region == installation.region {
+							Label(region.localizedDisplayName, systemImage: "checkmark")
 						} else {
-							Text(region.displayName)
+							Text(region.localizedDisplayName)
 						}
 					}
 				}
 			} label: {
 				HUDMenuLabel(
-					title: model.region.displayName,
-					accentColor: model.accentColor,
+					title: installation.region.localizedDisplayName,
+					accentColor: accentColor,
 					showsMenuIndicator: true
 				)
 			}
 			.menuStyle(.button)
 			.buttonStyle(.plain)
-			.disabled(!model.canSwitchRegion)
-			.help("Switch between installed regions")
-		} else if model.region != .global {
-			HUDMenuLabel(title: model.region.displayName, accentColor: model.accentColor)
+			.keyboardFocusIndicator(in: Capsule())
+			.disabled(!canSwitchRegion)
+			.help(L10n.string(HomeStrings.switchRegionHelp))
+		} else if installation.region != .global {
+			HUDMenuLabel(
+				title: installation.region.localizedDisplayName,
+				accentColor: accentColor
+			)
 		}
 	}
 }

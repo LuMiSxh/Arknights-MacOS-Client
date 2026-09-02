@@ -13,7 +13,6 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 	static let compatibilityArgument = "vx-accelerated-paint-disabled"
 	static let userenvName = "userenv.dll"
 	static let launcherShimMarker = Data("Arknights Client Vuplex compatibility".utf8)
-	private static let maximumShimSize = 1_048_576
 	private static let shimTemporaryPrefix = ".arknights-client-vuplex-shim-"
 	private static let previousShimTemporaryPrefix = ".arknights-client-vuplex-previous-"
 	private static let userenvTemporaryPrefix = ".arknights-client-userenv-"
@@ -70,14 +69,15 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		if helperIsInstalledShim,
 			!fileManager.fileExists(atPath: officialHelperURL.path)
 		{
-			throw LauncherError.runtimeConfiguration(
+			throw LauncherError.gameCompatibility(
 				"The official Vuplex helper is missing. Repair the game before launching."
 			)
 		}
 		guard
 			try GameShimIO.containsMarker(
 				at: officialHelperURL,
-				marker: Data(Self.compatibilityArgument.utf8)
+				marker: Data(Self.compatibilityArgument.utf8),
+				maximumSize: AppConstants.Game.vuplexShimMaximumBytes
 			)
 		else {
 			return false
@@ -152,8 +152,15 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 	) throws -> Bool {
 		let markerURL = helperURL.deletingLastPathComponent().appending(
 			path: Self.retiredSoftwareFallbackName)
-		let values = try? markerURL.resourceValues(forKeys: [.isRegularFileKey])
-		guard values?.isRegularFile == true else { return false }
+		let values: URLResourceValues
+		do {
+			values = try markerURL.resourceValues(forKeys: [.isRegularFileKey])
+		} catch let error as CocoaError
+			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
+		{
+			return false
+		}
+		guard values.isRegularFile == true else { return false }
 		try fileManager.removeItem(at: markerURL)
 		return true
 	}
@@ -175,10 +182,10 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 				try GameShimIO.containsMarker(
 					at: destinationURL,
 					marker: Self.userenvMarker,
-					maximumSize: Self.maximumShimSize
+					maximumSize: AppConstants.Game.vuplexShimMaximumBytes
 				)
 			else {
-				throw LauncherError.runtimeConfiguration(
+				throw LauncherError.gameCompatibility(
 					"The Vuplex folder contains an unknown userenv.dll. Repair the game before launching."
 				)
 			}
@@ -212,7 +219,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 				|| GameShimIO.containsMarker(
 					at: destinationURL,
 					marker: Self.userenvMarker,
-					maximumSize: Self.maximumShimSize
+					maximumSize: AppConstants.Game.vuplexShimMaximumBytes
 				)
 		else {
 			return false
@@ -234,11 +241,11 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		} else if try GameShimIO.containsMarker(
 			at: backupURL,
 			marker: Self.userenvMarker,
-			maximumSize: Self.maximumShimSize
+			maximumSize: AppConstants.Game.vuplexShimMaximumBytes
 		) {
 			try fileManager.removeItem(at: backupURL)
 		} else {
-			throw LauncherError.runtimeConfiguration(
+			throw LauncherError.gameCompatibility(
 				"The Vuplex folder contains an unknown compatibility backup. Repair the game before launching."
 			)
 		}
@@ -263,7 +270,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		if try GameShimIO.containsMarker(
 			at: url,
 			marker: Self.launcherShimMarker,
-			maximumSize: Self.maximumShimSize
+			maximumSize: AppConstants.Game.vuplexShimMaximumBytes
 		) {
 			return true
 		}
@@ -274,7 +281,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 		return try GameShimIO.containsMarker(
 			at: url,
 			marker: legacySignature,
-			maximumSize: Self.maximumShimSize
+			maximumSize: AppConstants.Game.vuplexShimMaximumBytes
 		)
 	}
 }

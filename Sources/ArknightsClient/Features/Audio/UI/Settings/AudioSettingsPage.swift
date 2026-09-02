@@ -3,83 +3,97 @@
 import SwiftUI
 
 struct AudioSettingsPage: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var settings: LauncherPreferencesController
+	let accentColor: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		SettingsPage(
-			title: "Audio", subtitle: "Background music playback",
-			accentColor: model.accentColor
+			title: L10n.string(SettingsStrings.audioTitle),
+			subtitle: L10n.string(SettingsStrings.audioSubtitle),
+			accentColor: accentColor
 		) {
-			SettingsPanel(title: "Music", systemImage: "music.note") {
+			SettingsPanel(title: L10n.string(SettingsStrings.audioMusic), systemImage: "music.note")
+			{
 				SettingsActionRow(
-					title: "Play Background Music",
-					detail: "Plays music while the launcher is open and the game is not running."
+					title: L10n.string(SettingsStrings.audioBackgroundMusic),
+					detail: L10n.string(SettingsStrings.audioBackgroundMusicDetail)
 				) {
-					Toggle(
-						"Play Background Music",
-						isOn: $model.playsLauncherMusic
+					SettingsToggle(
+						L10n.string(SettingsStrings.audioBackgroundMusic),
+						isOn: $settings.playsLauncherMusic,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(model.accentColor)
 				}
 
-				if model.playsLauncherMusic {
+				if settings.playsLauncherMusic {
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Music URL",
-						detail: "YouTube video or playlist link."
+						title: L10n.string(SettingsStrings.audioURL),
+						detail: L10n.string(SettingsStrings.audioURLDetail)
 					) {
 						ThemedTextField(
-							"Music URL",
-							prompt: "https://www.youtube.com/playlist?...",
-							text: $model.launcherMusicURL,
+							L10n.string(SettingsStrings.audioURL),
+							prompt: L10n.string(SettingsStrings.audioURLPrompt),
+							text: $settings.launcherMusicURL,
 							systemImage: "link",
-							accentColor: model.accentColor
+							accentColor: accentColor
 						)
 						.frame(width: 250)
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Volume",
-						detail: "Sets the launcher music playback level."
+						title: L10n.string(SettingsStrings.audioVolume),
+						detail: L10n.string(SettingsStrings.audioVolumeDetail)
 					) {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
-							Slider(value: $model.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(model.accentColor)
-								.frame(width: 140)
+							SettingsSlider(
+								value: $settings.launcherMusicVolume,
+								range: 0...1,
+								step: 0.05,
+								accentColor: accentColor,
+								width: 140
+							)
+							.accessibilityLabel(L10n.string(SettingsStrings.audioVolume))
+							.accessibilityValue(
+								Text(
+									SettingsStrings.audioVolumePercent(
+										Int(settings.launcherMusicVolume * 100)
+									)
+								)
+							)
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
-							Text("\(Int(model.launcherMusicVolume * 100))%")
-								.font(.caption.monospacedDigit())
-								.foregroundStyle(.secondary)
-								.frame(width: 36, alignment: .trailing)
+							Text(
+								SettingsStrings.audioVolumePercent(
+									Int(settings.launcherMusicVolume * 100)
+								)
+							)
+							.font(.caption.monospacedDigit())
+							.foregroundStyle(.secondary)
+							.frame(width: 36, alignment: .trailing)
 						}
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Show Currently Playing",
-						detail:
-							"Shows the current track and expandable playback controls above the launcher controls."
+						title: L10n.string(SettingsStrings.audioCurrentlyPlaying),
+						detail: L10n.string(SettingsStrings.audioCurrentlyPlayingDetail)
 					) {
-						Toggle(
-							"Show Currently Playing",
-							isOn: $model.showsPlayingMusic
+						SettingsToggle(
+							L10n.string(SettingsStrings.audioCurrentlyPlaying),
+							isOn: $settings.showsPlayingMusic,
+							accentColor: accentColor
 						)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(model.accentColor)
 					}
 				}
 			}
 			.animation(
 				reduceMotion ? nil : .easeInOut(duration: 0.2),
-				value: model.playsLauncherMusic
+				value: settings.playsLauncherMusic
 			)
 		}
 	}

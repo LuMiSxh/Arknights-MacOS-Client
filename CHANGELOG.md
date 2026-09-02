@@ -1,3 +1,8 @@
+---
+title: Changelog
+description: Release history for Arknights Client
+---
+
 # Changelog
 
 All notable changes to this project are documented here.
@@ -8,20 +13,55 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Matched wallpaper search against maintainer-curated tags in addition to titles, and added a scheduled workflow that files a tagging issue for every newly discovered official wallpaper.
-- Filtered the wallpaper gallery by type (Story, Commemorative, Celebration, Holiday), autocompleted tag and title-word search terms, and let a completed tag be pinned as a removable pill for an exact match instead of a broader prefix search.
-- Showed a wallpaper's curated tags in a hover tooltip in the gallery grid.
+- An opt-in Canary Features gate in Settings for containing unfinished functionality without changing the default launcher experience.
+- The China client behind Canary Features, with the same native install, update, repair, storage, playtime, and launch flow as other regions.
+- Canary controls for following macOS audio-output changes during play and selecting DXMT's one-to-three-frame latency limit.
+- Resumable, size-bounded runtime archive downloads that retain partial files only while a strong ETag still matches.
+- Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
+- A static project website built from the repository documentation, with safe Markdown rendering, base-path-aware navigation, canonical and social metadata, and GitHub Pages release deployment (#56).
+- Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
+- Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
+- Weekly live-contract monitoring for every supported Yostar region (#39).
+- Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, archive verification (#47).
+- Language switchers to onboarding and Settings for the system default, English, and German.
+- A reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
+- A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
+- Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, and localized text fallbacks (#37).
+- Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
+- Storage overview in Settings with independent regional installations, shared runtime data, recreatable caches, and diagnostic logs, plus targeted cleanup actions (#43).
+- Donate button for people who want to support the project.
+- Dock shortcuts for starting an installed regional client or opening Settings (#46).
+- Typo-tolerant preset gallery search with compact suggestions and searchable operator and official-wallpaper metadata.
+- Wallpaper type filters and curated tag and title-word suggestions for official artwork presets, plus a daily workflow that files newly untagged wallpapers (Thanks to @darkwebdev, #61).
 
 ### Changed
 
-- Matched multi-word wallpaper searches by requiring every word to appear somewhere (title or tags), instead of the full phrase appearing as one literal substring.
+- Refactored the root launcher model into feature controllers with explicit, narrow dependencies and shared game-domain and configuration contracts (#52).
+- Moved expensive artwork processing and installation-state inspection behind bounded background operations with explicit request ownership.
+- Hardened game configuration and manifest parsing, runtime metadata, compatibility markers, symlink handling, executable names, byte totals, disk-capacity checks, HTTP redirects, and Wine's executable search path without changing supported regions or persisted formats.
+- Unified launcher presentations through one sheet and overlay arbiter, improved Reduce Transparency and Dynamic Type behavior, and kept new native UI copy translated in English and German.
+- Limited the main activity status to game and runtime operations instead of replacing it with customization, cache, or Settings success messages.
+- Indented subprocess output under its owning repository-script status line.
+- Made launcher modals adapt to the current window size and announcement popups fit their content, while preserving outer padding and scrolling for long messages.
+- Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).
+- Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
+- Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
+- Consolidated repository scripts into one locked uv project, isolated packaging-only tools in their own dependency group, and removed single-use helpers and low-value wrapper tests.
+- Loaded smaller CDN-generated gallery thumbnails when an official wallpaper has no dedicated preview image.
 
 ### Fixed
 
-- Recovered official wallpapers whose Fankit gallery entries wrap the image URL in a single-element array instead of a plain string, restoring most of the official wallpaper catalog instead of only the newest entries.
-- Stopped rejecting a handful of legitimately oversized official wallpapers (up to 13280×7470) as unsafe images.
-- Rejected a wallpaper download that was silently truncated by a dropped connection instead of caching and displaying the corrupt result.
-- Generated a smaller synthetic thumbnail for official wallpapers whose Fankit entry has no dedicated small image, instead of downloading the full-resolution original just to show a gallery thumbnail.
+- Matched the clickable areas of themed text fields and compact version and music HUD pills to their visible surfaces (Thanks to @darkwebdev, #60).
+- Prevented stale artwork, logo, icon, preset-cache, metadata, and theme work from overwriting a newer region or user selection.
+- Kept the shared Wine prefix owned until prefix-wide shutdown, preserved the originating region and failure across retries, and made stop, cancellation, and early process-exit cleanup deterministic.
+- Kept music and Now Playing state isolated from stale player callbacks and private MediaPlayer queues.
+- Prevented Settings, onboarding, popup, failure, and Rosetta presentations from masking one another.
+- Rejected incomplete wallpaper downloads instead of displaying partially decoded images.
+- Accepted unusually large official wallpapers while preserving bounded image validation.
+- Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
+- Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
+- Refreshed the main window's Play control, Settings sidebar, and status pill immediately when the app language changes instead of waiting for an unrelated state change to redraw them.
+- Removed the decorative three-part line below the regional wordmark and kept late branding responses from replacing the selected region's logo (#37).
 
 ## [0.4.1]
 

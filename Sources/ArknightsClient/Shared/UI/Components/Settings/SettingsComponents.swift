@@ -1,6 +1,24 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Observation
 import SwiftUI
+
+@MainActor
+@Observable
+final class SettingsFocusCoordinator {
+	var focusedID: AnyHashable?
+}
+
+private struct SettingsFocusCoordinatorKey: EnvironmentKey {
+	static let defaultValue: SettingsFocusCoordinator? = nil
+}
+
+extension EnvironmentValues {
+	var settingsFocusCoordinator: SettingsFocusCoordinator? {
+		get { self[SettingsFocusCoordinatorKey.self] }
+		set { self[SettingsFocusCoordinatorKey.self] = newValue }
+	}
+}
 
 struct SectionPageHeader: View {
 	let title: String
@@ -31,20 +49,35 @@ struct SettingsPage<Content: View>: View {
 	let subtitle: String
 	let accentColor: Color
 	@ViewBuilder let content: Content
+	@State private var focusCoordinator = SettingsFocusCoordinator()
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
-		ScrollView {
-			VStack(alignment: .leading, spacing: 18) {
-				SectionPageHeader(title: title, subtitle: subtitle, accentColor: accentColor)
-				content
+		ScrollViewReader { proxy in
+			ScrollView {
+				VStack(alignment: .leading, spacing: 18) {
+					SectionPageHeader(title: title, subtitle: subtitle, accentColor: accentColor)
+					content
+				}
+				.padding(.horizontal, 26)
+				.padding(.top, 26)
+				.padding(.bottom, 72)
+				.environment(\.settingsFocusCoordinator, focusCoordinator)
 			}
-			.padding(.horizontal, 26)
-			.padding(.top, 26)
-			.padding(.bottom, 72)
+			.contentMargins(.top, 26, for: .scrollIndicators)
+			.contentMargins(.bottom, 22, for: .scrollIndicators)
+			.scrollIndicators(.automatic)
+			.onChange(of: focusCoordinator.focusedID) { _, focusedID in
+				guard let focusedID else { return }
+				if reduceMotion {
+					proxy.scrollTo(focusedID, anchor: .center)
+				} else {
+					withAnimation(.easeInOut(duration: 0.15)) {
+						proxy.scrollTo(focusedID, anchor: .center)
+					}
+				}
+			}
 		}
-		.contentMargins(.top, 26, for: .scrollIndicators)
-		.contentMargins(.bottom, 22, for: .scrollIndicators)
-		.scrollIndicators(.automatic)
 	}
 }
 
@@ -80,16 +113,18 @@ struct SettingsPanel<Content: View>: View {
 	}
 }
 
-/// Same shape as `SettingsPanel`, tinted red for actions that are destructive or
-/// depend on undocumented system behavior (see the panel's own contents for which).
+/// Same shape as `SettingsPanel`, tinted red for risky compatibility and destructive actions.
 struct DangerZonePanel<Content: View>: View {
 	@ViewBuilder let content: Content
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
-			Label("Danger Zone", systemImage: "exclamationmark.triangle.fill")
-				.font(.headline)
-				.foregroundStyle(LauncherVisuals.danger)
+			Label(
+				L10n.string(SettingsStrings.dangerZone),
+				systemImage: "exclamationmark.triangle.fill"
+			)
+			.font(.headline)
+			.foregroundStyle(LauncherVisuals.danger)
 			content
 		}
 		.padding(18)
@@ -107,6 +142,7 @@ struct UpdateSettingsRow: View {
 	let status: String
 	@Binding var isEnabled: Bool
 	let isChecking: Bool
+	var isDisabled = false
 	let accentColor: Color
 	let check: () -> Void
 
@@ -117,19 +153,18 @@ struct UpdateSettingsRow: View {
 				Text(status)
 					.font(.caption)
 					.foregroundStyle(.secondary)
-					.lineLimit(1)
+					.fixedSize(horizontal: false, vertical: true)
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
 			Spacer()
-			Toggle(title, isOn: $isEnabled)
-				.labelsHidden()
-				.toggleStyle(.switch)
-				.tint(accentColor)
+			SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
+				.disabled(isDisabled)
 			CapsuleActionButton(
-				title: "Check Now", tone: .accent(accentColor), presentation: .compact,
+				title: L10n.string(SettingsStrings.checkNow), tone: .accent(accentColor),
+				presentation: .compact,
 				action: check
 			)
-			.disabled(isChecking)
+			.disabled(isChecking || isDisabled)
 		}
 	}
 }
@@ -146,6 +181,7 @@ struct SettingsActionRow<Actions: View>: View {
 				Text(detail)
 					.font(.caption)
 					.foregroundStyle(.secondary)
+					.fixedSize(horizontal: false, vertical: true)
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
 			.layoutPriority(1)
@@ -188,6 +224,7 @@ struct GlassMenuPicker<Value: Hashable>: View {
 		}
 		.menuStyle(.button)
 		.buttonStyle(.plain)
+		.keyboardFocusIndicator(in: Capsule())
 		.disabled(isDisabled)
 	}
 
@@ -220,6 +257,7 @@ struct GlassActionMenu<Content: View>: View {
 		}
 		.menuStyle(.button)
 		.buttonStyle(.plain)
+		.keyboardFocusIndicator(in: Capsule())
 		.disabled(isDisabled)
 	}
 }
@@ -250,6 +288,7 @@ struct AccentActionLink: View {
 	var body: some View {
 		Button(title, action: action)
 			.buttonStyle(.plain)
+			.keyboardFocusIndicator(in: Capsule())
 			.foregroundStyle(accentColor)
 			.underline(isHovering)
 			.onHover { isHovering = $0 }
@@ -271,9 +310,10 @@ struct DocumentLinkRow: View {
 				Image(systemName: "chevron.right")
 					.font(.caption.weight(.semibold))
 					.foregroundStyle(.tertiary)
+					.accessibilityHidden(true)
 			}
 			.foregroundStyle(isHovering ? accentColor : .primary)
-			.padding(.vertical, 4)
+			.padding(.vertical, 10)
 			.padding(.horizontal, 6)
 			.background(
 				isHovering ? accentColor.opacity(0.08) : .clear,
@@ -282,6 +322,7 @@ struct DocumentLinkRow: View {
 			.contentShape(.rect)
 		}
 		.buttonStyle(.plain)
+		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 8))
 		.onHover { isHovering = $0 }
 	}
 }

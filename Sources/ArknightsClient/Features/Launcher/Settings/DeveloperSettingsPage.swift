@@ -4,30 +4,41 @@ import SwiftUI
 
 #if DEBUG
 	struct DeveloperSettingsPage: View {
-		var model: LauncherViewModel
-		@State private var customPopupTitle = "Custom popup"
+		@Binding var scenario: DeveloperScenario
+		let accentColor: Color
+		let applyCustomPopup: (String, String) -> Void
+		@State private var customPopupTitle = L10n.string(SettingsStrings.developerCustomPopup)
 		@State private var customPopupMarkdown = ""
 
 		var body: some View {
 			SettingsPage(
-				title: "Developer", subtitle: "Preview launcher states safely",
-				accentColor: model.accentColor
+				title: L10n.string(SettingsStrings.developerTitle),
+				subtitle: L10n.string(SettingsStrings.developerSubtitle),
+				accentColor: accentColor
 			) {
-				SettingsPanel(title: "Scenario", systemImage: "switch.2") {
+				SettingsPanel(
+					title: L10n.string(SettingsStrings.developerScenario), systemImage: "switch.2"
+				) {
 					GlassMenuPicker(
-						selection: scenarioBinding,
+						selection: $scenario,
 						options: DeveloperScenario.allCases.map { ($0, $0.title) },
-						accentColor: model.accentColor
+						accentColor: accentColor
 					)
 					SettingsHairline()
-					Text(scenarioBinding.wrappedValue.detail)
+					Text(scenario.detail)
 						.foregroundStyle(.secondary)
 				}
 
-				if scenarioBinding.wrappedValue == .customPopup {
-					SettingsPanel(title: "Custom Popup", systemImage: "text.bubble") {
-						TextField("Title", text: $customPopupTitle)
-							.textFieldStyle(.roundedBorder)
+				if scenario == .customPopup {
+					SettingsPanel(
+						title: L10n.string(SettingsStrings.developerCustomPopup),
+						systemImage: "text.bubble"
+					) {
+						TextField(
+							L10n.string(SettingsStrings.developerCustomPopupTitle),
+							text: $customPopupTitle
+						)
+						.textFieldStyle(.roundedBorder)
 						TextEditor(text: $customPopupMarkdown)
 							.font(.system(.body, design: .monospaced))
 							.scrollContentBackground(.hidden)
@@ -35,31 +46,25 @@ import SwiftUI
 							.frame(height: 140)
 							.background(.black.opacity(0.2), in: .rect(cornerRadius: 8))
 						CapsuleActionButton(
-							title: "Show Popup", tone: .accent(model.accentColor)
+							title: L10n.string(SettingsStrings.developerShowPopup),
+							tone: .accent(accentColor)
 						) {
-							model.applyDeveloperCustomPopup(
-								title: customPopupTitle,
-								markdown: customPopupMarkdown
-							)
+							applyCustomPopup(customPopupTitle, customPopupMarkdown)
 						}
 						.disabled(customPopupMarkdown.isEmpty)
 					}
 				}
 
-				SettingsPanel(title: "Isolation", systemImage: "lock.shield") {
+				SettingsPanel(
+					title: L10n.string(SettingsStrings.developerIsolation),
+					systemImage: "lock.shield"
+				) {
 					Text(
-						"Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
+						SettingsStrings.developerIsolationDetail
 					)
 					.foregroundStyle(.secondary)
 				}
 			}
-		}
-
-		private var scenarioBinding: Binding<DeveloperScenario> {
-			Binding(
-				get: { model.developerScenario ?? .ready },
-				set: { scenario in model.applyDeveloperScenario(scenario) }
-			)
 		}
 	}
 #endif

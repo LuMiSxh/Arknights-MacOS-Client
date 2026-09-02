@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Validate and trigger the manual GitHub draft-release workflow."""
@@ -15,22 +11,22 @@ from lib.common import (
     PROJECT_DIR,
     ScriptError,
     fail,
-    info,
     output,
     require_commands,
     run,
     run_main,
-    success,
 )
-from lib.console import spinner
+from lib.console import info, spinner, success
+from lib.project_config import load_project_configuration
 from release_validation import validate_release
 
 
 def trigger(version: str) -> None:
+    configuration = load_project_configuration()
     validate_release(
         version,
         PROJECT_DIR / "CHANGELOG.md",
-        PROJECT_DIR / "Resources/Info.plist",
+        configuration.product.marketing_version,
     )
     require_commands(("gh", "git"))
     if output(["git", "status", "--porcelain"], cwd=PROJECT_DIR):

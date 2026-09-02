@@ -12,9 +12,9 @@ struct OperatorIconStylePreview: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
 			VStack(alignment: .leading, spacing: 3) {
-				Text("Generated Icon Styles")
+				Text(L10n.string(CustomizationStrings.iconPreviewTitle))
 					.font(.headline)
-				Text("Your operator is applied to both icons.")
+				Text(L10n.string(CustomizationStrings.iconPreviewSubtitle))
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
@@ -27,31 +27,39 @@ struct OperatorIconStylePreview: View {
 					accentHue: accentHue
 				)
 				HStack(spacing: 16) {
-					styleLabel("Launcher", detail: "Launcher style")
-					styleLabel("Game", detail: "Original Arknights style")
+					styleLabel(
+						CustomizationStrings.launcherStyleTitle,
+						detail: CustomizationStrings.launcherStyleDetail
+					)
+					styleLabel(
+						CustomizationStrings.gameStyleTitle,
+						detail: CustomizationStrings.gameStyleDetail
+					)
 				}
 			} else {
-				ProgressView("Loading preview…")
+				ProgressView(L10n.string(CustomizationStrings.iconPreviewLoading))
 					.frame(maxWidth: .infinity, minHeight: 82)
 			}
 		}
 		.padding(18)
-		.frame(width: 282)
+		.frame(minWidth: 282, maxWidth: 360)
 		.background(accentColor.opacity(0.06))
 		.preferredColorScheme(.dark)
 	}
 
-	private func styleLabel(_ title: String, detail: String) -> some View {
+	private func styleLabel(_ title: LocalizedStringResource, detail: LocalizedStringResource)
+		-> some View
+	{
 		VStack(spacing: 2) {
-			Text(title)
+			Text(L10n.string(title))
 				.font(.caption.bold())
-			Text(detail)
+			Text(L10n.string(detail))
 				.font(.caption)
 				.foregroundStyle(.secondary)
 				.multilineTextAlignment(.center)
 				.lineLimit(2)
 				.fixedSize(horizontal: false, vertical: true)
 		}
-		.frame(width: 104)
+		.frame(maxWidth: .infinity)
 	}
 }

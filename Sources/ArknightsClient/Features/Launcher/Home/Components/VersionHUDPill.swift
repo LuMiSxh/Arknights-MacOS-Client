@@ -4,7 +4,12 @@ import SwiftUI
 
 /// Expands the installed game version into an independent manual update check.
 struct VersionHUDPill: View {
-	@Bindable var model: LauncherViewModel
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
+	let gameSession: GameSessionController
+	let accentColor: Color
+	let hudTintColor: Color
+	let checkGameUpdates: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isExpanded = false
 	@State private var isHovering = false
@@ -14,10 +19,11 @@ struct VersionHUDPill: View {
 			Button(action: toggleExpansion) {
 				HStack(spacing: 5) {
 					Image(systemName: "number")
-						.font(.system(size: 10, weight: .semibold))
-						.foregroundStyle(model.accentColor)
-					Text(model.versionText)
-						.font(.system(size: 11, weight: .medium, design: .monospaced))
+						.font(.caption.weight(.semibold))
+						.foregroundStyle(accentColor)
+						.accessibilityHidden(true)
+					Text(versionText)
+						.font(.caption.monospaced().weight(.medium))
 						.foregroundStyle(isHovering ? .primary : .secondary)
 						.lineLimit(1)
 						.truncationMode(.tail)
@@ -31,31 +37,45 @@ struct VersionHUDPill: View {
 					if isExpanded {
 						Image(systemName: "chevron.down")
 							.font(.caption.bold())
-							.foregroundStyle(model.accentColor.opacity(isHovering ? 1 : 0.65))
+							.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
 							.accessibilityHidden(true)
 					}
 				}
 				.padding(.horizontal, isExpanded ? 14 : 12)
-				.frame(height: isExpanded ? nil : AppConstants.Music.collapsedPlayerHeight)
+				.frame(minHeight: isExpanded ? nil : AppConstants.Music.collapsedPlayerHeight)
 				.contentShape(Rectangle())
 			}
 			.buttonStyle(.plain)
+			.keyboardFocusIndicator(
+				in: RoundedRectangle(cornerRadius: 8)
+			)
 			.onHover { isHovering = $0 }
-			.help(isExpanded ? "Hide version details" : "Show version details")
+			.accessibilityLabel(
+				L10n.string(
+					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+				)
+			)
+			.accessibilityValue(Text(versionText))
+			.help(
+				L10n.string(
+					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+				)
+			)
 
 			if isExpanded {
 				HStack(spacing: 10) {
 					Label(updateStatus, systemImage: updateStatusIcon)
 						.font(.caption)
 						.foregroundStyle(
-							model.isGameUpdateAvailable ? model.accentColor : .secondary
+							installation.isGameUpdateAvailable ? accentColor : .secondary
 						)
-						.lineLimit(1)
+						.fixedSize(horizontal: false, vertical: true)
 					Spacer()
 					CapsuleActionButton(
-						"Check Now", systemImage: "arrow.clockwise",
-						tone: .accent(model.accentColor), presentation: .hud,
-						action: model.checkGameUpdates
+						title: L10n.string(HomeStrings.versionCheckNow),
+						systemImage: "arrow.clockwise",
+						tone: .accent(accentColor), presentation: .hud,
+						action: checkGameUpdates
 					)
 					.disabled(cannotCheck)
 				}
@@ -64,9 +84,9 @@ struct VersionHUDPill: View {
 			}
 		}
 		.padding(.vertical, isExpanded ? 11 : 0)
+		.frame(width: isExpanded ? AppConstants.HUD.expandedVersionWidth : nil)
 		.frame(
-			width: isExpanded ? AppConstants.HUD.expandedVersionWidth : nil,
-			height: isExpanded
+			minHeight: isExpanded
 				? AppConstants.HUD.expandedVersionHeight
 				: AppConstants.Music.collapsedPlayerHeight,
 			alignment: isExpanded ? .topLeading : .center
@@ -77,9 +97,8 @@ struct VersionHUDPill: View {
 				: AppConstants.HUD.collapsedVersionMaxWidth
 		)
 		.fixedSize(horizontal: !isExpanded, vertical: false)
-		.clipped()
 		.adaptiveGlassEffect(
-			tint: model.hudTintColor,
+			tint: hudTintColor,
 			in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)
 		)
 		.shadow(
@@ -91,22 +110,29 @@ struct VersionHUDPill: View {
 	}
 
 	private var cannotCheck: Bool {
-		model.phase == .checking || model.isDownloading || model.isGameActive
+		!lifecycle.canBeginExclusiveActivity
+			|| lifecycle.refresh.isChecking
+			|| installation.isDownloading
+			|| gameSession.isGameActive
+	}
+
+	private var versionText: String {
+		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
 	}
 
 	private var updateStatus: String {
-		if model.phase == .checking { return "Checking…" }
-		if model.isGameUpdateAvailable,
-			let latest = model.configuration?.gameLatestVersion
+		if lifecycle.refresh.isChecking { return L10n.string(HomeStrings.versionChecking) }
+		if installation.isGameUpdateAvailable,
+			let latest = installation.configuration?.gameLatestVersion
 		{
-			return "\(latest) available"
+			return L10n.string(HomeStrings.versionAvailable(latest))
 		}
-		return "Up to date"
+		return L10n.string(HomeStrings.versionUpToDate)
 	}
 
 	private var updateStatusIcon: String {
-		if model.phase == .checking { return "arrow.trianglehead.2.clockwise" }
-		return model.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
+		if lifecycle.refresh.isChecking { return "arrow.trianglehead.2.clockwise" }
+		return installation.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
 	}
 
 	private var expandedContentTransition: AnyTransition {

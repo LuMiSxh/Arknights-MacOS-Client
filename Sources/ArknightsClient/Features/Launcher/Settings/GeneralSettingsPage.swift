@@ -8,231 +8,242 @@ private func isImageURL(_ url: URL) -> Bool {
 }
 
 struct GeneralSettingsPage: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var settings: LauncherPreferencesController
+	let customization: CustomizationController
+	let gameSession: GameSessionController
+	let lifecycle: LauncherLifecycleStore
+	let presetCatalog: PresetCatalogService
+	let accentColor: Color
+	let resetArtwork: () -> Void
 	let restartOnboarding: () -> Void
 	@State private var presentedGallery: PresetGalleryDestination?
 
 	var body: some View {
 		SettingsPage(
-			title: "General", subtitle: "Display and personalization",
-			accentColor: model.accentColor
+			title: L10n.string(SettingsStrings.generalTitle),
+			subtitle: L10n.string(SettingsStrings.generalSubtitle),
+			accentColor: accentColor
 		) {
-			SettingsPanel(title: "Display & Controls", systemImage: "display") {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.displayControls), systemImage: "display"
+			) {
 				SettingsActionRow(
-					title: "High-Resolution Mode",
-					detail:
-						"Uses the display's full pixel density without enlarging the game window."
+					title: L10n.string(SettingsStrings.highResolution),
+					detail: L10n.string(SettingsStrings.highResolutionDetail)
 				) {
-					Toggle(
-						"High-Resolution Mode",
-						isOn: $model.launchOptions.usesHighResolutionMode
+					SettingsToggle(
+						L10n.string(SettingsStrings.highResolution),
+						isOn: $settings.launchOptions.usesHighResolutionMode,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(model.accentColor)
-					.disabled(!model.canModifyLaunchOptions)
+					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Use In-Game Display Settings",
-					detail: "Lets changes made inside Arknights persist between launches."
+					title: L10n.string(SettingsStrings.gameDisplaySettings),
+					detail: L10n.string(SettingsStrings.gameDisplaySettingsDetail)
 				) {
-					Toggle(
-						"Use In-Game Display Settings",
-						isOn: $model.launchOptions.usesGameSettings
+					SettingsToggle(
+						L10n.string(SettingsStrings.gameDisplaySettings),
+						isOn: $settings.launchOptions.usesGameSettings,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(model.accentColor)
-					.disabled(!model.canModifyLaunchOptions)
+					.disabled(gameSession.isGameActive)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Window Mode",
-					detail: "Overrides the game window style the next time it starts."
+					title: L10n.string(SettingsStrings.windowMode),
+					detail: L10n.string(SettingsStrings.windowModeDetail)
 				) {
 					GlassMenuPicker(
-						selection: $model.launchOptions.displayMode,
-						options: GameDisplayMode.allCases.map { ($0, $0.displayName) },
-						accentColor: model.accentColor,
-						isDisabled: model.launchOptions.usesGameSettings
-							|| !model.canModifyLaunchOptions
+						selection: $settings.launchOptions.displayMode,
+						options: GameDisplayMode.allCases.map {
+							($0, L10n.string(SettingsStrings.displayMode($0)))
+						},
+						accentColor: accentColor,
+						isDisabled: settings.launchOptions.usesGameSettings
+							|| gameSession.isGameActive
 					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Resolution",
-					detail: "Overrides the game resolution the next time it starts."
+					title: L10n.string(SettingsStrings.resolution),
+					detail: L10n.string(SettingsStrings.resolutionDetail)
 				) {
 					GlassMenuPicker(
-						selection: $model.launchOptions.resolution,
+						selection: $settings.launchOptions.resolution,
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
-						accentColor: model.accentColor,
-						isDisabled: model.launchOptions.usesGameSettings
-							|| !model.canModifyLaunchOptions
+						accentColor: accentColor,
+						isDisabled: settings.launchOptions.usesGameSettings
+							|| gameSession.isGameActive
 					)
 				}
 			}
 
-			SettingsPanel(title: "Launcher", systemImage: "sparkles") {
+			SettingsPanel(title: L10n.string(SettingsStrings.launcher), systemImage: "sparkles") {
 				SettingsActionRow(
-					title: "Show Game Version",
-					detail:
-						"Shows the installed Arknights version and a manual update check above the Play controls."
+					title: L10n.string(SettingsStrings.showGameVersion),
+					detail: L10n.string(SettingsStrings.showGameVersionDetail)
 				) {
-					Toggle("Show Game Version", isOn: $model.showsGameVersion)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(model.accentColor)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: "Server Time & Reset Countdown",
-					detail: "Shows the active server time and time until its next daily reset."
-				) {
-					Toggle(
-						"Server Time & Reset Countdown",
-						isOn: $model.showsServerResetCountdown
+					SettingsToggle(
+						L10n.string(SettingsStrings.showGameVersion),
+						isOn: $settings.showsGameVersion,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(model.accentColor)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Metal Performance HUD",
-					detail: "Shows Apple's native FPS and GPU overlay during the next game launch."
+					title: L10n.string(SettingsStrings.serverTime),
+					detail: L10n.string(SettingsStrings.serverTimeDetail)
 				) {
-					Toggle(
-						"Metal Performance HUD",
-						isOn: $model.launchOptions.usesMetalPerformanceHUD
+					SettingsToggle(
+						L10n.string(SettingsStrings.serverTime),
+						isOn: $settings.showsServerResetCountdown,
+						accentColor: accentColor
 					)
-					.labelsHidden()
-					.toggleStyle(.switch)
-					.tint(model.accentColor)
-					.disabled(!model.canModifyLaunchOptions)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Setup Assistant",
-					detail: "Run the guided region, display, and personalization setup again."
+					title: L10n.string(SettingsStrings.setupAssistant),
+					detail: L10n.string(SettingsStrings.setupAssistantDetail)
 				) {
 					CapsuleActionButton(
-						title: "Run Again…", systemImage: "wand.and.stars",
-						tone: .accent(model.accentColor), presentation: .compact,
+						title: L10n.string(SettingsStrings.runAgain), systemImage: "wand.and.stars",
+						tone: .accent(accentColor), presentation: .compact,
 						action: restartOnboarding
 					)
-					.disabled(!model.canModifyLaunchOptions)
+					.disabled(gameSession.isGameActive)
 				}
 			}
 
-			SettingsPanel(title: "Personalization", systemImage: "paintbrush") {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.personalization), systemImage: "paintbrush"
+			) {
 				SettingsActionRow(
-					title: "Artwork",
-					detail: "Background shown behind the launcher controls."
+					title: L10n.string(SettingsStrings.language),
+					detail: L10n.string(SettingsStrings.languageDetail)
+				) {
+					GlassMenuPicker(
+						selection: $settings.appLanguage,
+						options: AppLanguage.allCases.map {
+							($0, L10n.string(SettingsStrings.appLanguage($0)))
+						},
+						accentColor: accentColor
+					)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: L10n.string(SettingsStrings.artwork),
+					detail: L10n.string(SettingsStrings.artworkDetail)
 				) {
 					CapsuleActionButton(
-						title: "Presets…", systemImage: "photo.on.rectangle",
-						tone: .accent(model.accentColor), presentation: .compact
+						title: L10n.string(SettingsStrings.presets),
+						systemImage: "photo.on.rectangle",
+						tone: .accent(accentColor), presentation: .compact
 					) {
 						presentedGallery = .artwork
 					}
 					CapsuleActionButton(
-						title: "Choose…", systemImage: "folder",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.chooseCustomArtwork
+						title: L10n.string(SettingsStrings.choose), systemImage: "folder",
+						tone: .accent(accentColor), presentation: .compact,
+						action: customization.chooseCustomArtwork
 					)
 					CapsuleActionButton(
-						"Use Default",
+						title: L10n.string(SettingsStrings.useDefault),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
-						action: model.resetArtwork
+						action: resetArtwork
 					)
 				}
 				.dropDestination(for: URL.self) { urls, _ in
 					guard let url = urls.first, isImageURL(url) else { return false }
-					model.applyCustomArtwork(from: url)
+					customization.applyCustomArtwork(from: url)
 					return true
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Operator Icons",
-					detail:
-						"Use one operator for the Launcher and for a Game icon in the original Arknights style."
+					title: L10n.string(SettingsStrings.operatorIcons),
+					detail: L10n.string(SettingsStrings.operatorIconsDetail)
 				) {
 					CapsuleActionButton(
-						title: "Choose Operator…",
+						title: L10n.string(SettingsStrings.chooseOperator),
 						systemImage: "person.2.crop.square.stack",
-						tone: .accent(model.accentColor),
+						tone: .accent(accentColor),
 						presentation: .compact
 					) {
 						presentedGallery = .operatorIcons
 					}
 					CapsuleActionButton(
-						"Use Defaults",
+						title: L10n.string(SettingsStrings.useDefaults),
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
-						action: model.resetOperatorIcons
+						action: customization.resetOperatorIcons
 					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Custom Icon Overrides",
-					detail:
-						"Use separate local images instead of the generated operator pair."
+					title: L10n.string(SettingsStrings.customIconOverrides),
+					detail: L10n.string(SettingsStrings.customIconOverridesDetail)
 				) {
 					GlassActionMenu(
-						title: "Launcher",
+						title: L10n.string(SettingsStrings.launcher),
 						systemImage: "macwindow",
-						accentColor: model.accentColor
+						accentColor: accentColor
 					) {
 						Button(
-							"Choose Image…", systemImage: "folder",
-							action: model.chooseCustomAppIcon)
+							L10n.string(SettingsStrings.chooseImage), systemImage: "folder",
+							action: customization.chooseCustomAppIcon)
 						Button(
-							"Use Default", systemImage: "arrow.counterclockwise",
-							action: model.resetAppIcon)
+							L10n.string(SettingsStrings.useDefault),
+							systemImage: "arrow.counterclockwise",
+							action: customization.resetAppIcon)
 					}
 					.dropDestination(for: URL.self) { urls, _ in
 						guard let url = urls.first, isImageURL(url) else { return false }
-						model.applyCustomAppIcon(from: url)
+						customization.applyCustomAppIcon(from: url)
 						return true
 					}
 					GlassActionMenu(
-						title: "Game",
+						title: L10n.string(SettingsStrings.game),
 						systemImage: "gamecontroller",
-						accentColor: model.accentColor
+						accentColor: accentColor
 					) {
 						Button(
-							"Choose Image…", systemImage: "folder",
-							action: model.chooseCustomGameIcon)
+							L10n.string(SettingsStrings.chooseImage), systemImage: "folder",
+							action: customization.chooseCustomGameIcon)
 						Button(
-							"Use Default", systemImage: "arrow.counterclockwise",
-							action: model.resetGameIcon)
+							L10n.string(SettingsStrings.useDefault),
+							systemImage: "arrow.counterclockwise",
+							action: customization.resetGameIcon)
 					}
 					.dropDestination(for: URL.self) { urls, _ in
 						guard let url = urls.first, isImageURL(url) else { return false }
-						model.applyCustomGameIcon(from: url)
+						customization.applyCustomGameIcon(from: url)
 						return true
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Dynamic Theme",
-					detail:
-						"Automatically changes the launcher colors and generated operator icon pair to match the selected background."
+					title: L10n.string(SettingsStrings.dynamicTheme),
+					detail: L10n.string(SettingsStrings.dynamicThemeDetail)
 				) {
-					Toggle("Dynamic Theme", isOn: $model.usesDynamicTheme)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(model.accentColor)
+					SettingsToggle(
+						L10n.string(SettingsStrings.dynamicTheme),
+						isOn: $settings.usesDynamicTheme,
+						accentColor: accentColor
+					)
 				}
 			}
 		}
 		.sheet(item: $presentedGallery) { destination in
-			PresetGalleryView(model: model, destination: destination)
+			PresetGalleryView(
+				catalog: presetCatalog,
+				customization: customization,
+				lifecycle: lifecycle,
+				destination: destination
+			)
 		}
 	}
 }

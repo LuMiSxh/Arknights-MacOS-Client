@@ -8,18 +8,55 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Source and integration tests
     runs-on: macos-26
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Set up just
         uses: extractions/setup-just@v4
 
       - name: Check source
         run: just ci
+
+  package:
+    name: App packaging smoke
+    if: github.event_name == 'push'
+    needs: test
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+
+      - name: Build app bundle without runtime
+        run: just app

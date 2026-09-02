@@ -7,16 +7,9 @@ import Testing
 
 @Test
 func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
-	try FileManager.default.createDirectory(
-		at: helper.deletingLastPathComponent(),
-		withIntermediateDirectories: true
-	)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	let officialData = Data("official-vx-accelerated-paint-disabled".utf8)
 	try officialData.write(to: helper)
 	let shim = root.appending(path: "shim.exe")
@@ -41,16 +34,9 @@ func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal() throws {
 
 @Test
 func vuplexShimLeavesUnknownHelpersUntouched() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
-	try FileManager.default.createDirectory(
-		at: helper.deletingLastPathComponent(),
-		withIntermediateDirectories: true
-	)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	let officialData = Data("unknown-helper".utf8)
 	try officialData.write(to: helper)
 	let shim = root.appending(path: "shim.exe")
@@ -63,16 +49,9 @@ func vuplexShimLeavesUnknownHelpersUntouched() throws {
 
 @Test
 func vuplexShimDoesNotReplaceAnUnknownUserenvDLL() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
-	try FileManager.default.createDirectory(
-		at: helper.deletingLastPathComponent(),
-		withIntermediateDirectories: true
-	)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	let officialData = Data("official-vx-accelerated-paint-disabled".utf8)
 	try officialData.write(to: helper)
 	let unknownUserenv = helper.deletingLastPathComponent().appending(
@@ -92,16 +71,9 @@ func vuplexShimDoesNotReplaceAnUnknownUserenvDLL() throws {
 
 @Test
 func vuplexRestoreKeepsAnUpdaterReplacement() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
-	try FileManager.default.createDirectory(
-		at: helper.deletingLastPathComponent(),
-		withIntermediateDirectories: true
-	)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	let updatedData = Data("updated-vx-accelerated-paint-disabled".utf8)
 	try updatedData.write(to: helper)
 	let original = helper.deletingLastPathComponent().appending(
@@ -118,16 +90,9 @@ func vuplexRestoreKeepsAnUpdaterReplacement() throws {
 
 @Test
 func vuplexShimUpgradePreservesTheOfficialHelper() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
-	try FileManager.default.createDirectory(
-		at: helper.deletingLastPathComponent(),
-		withIntermediateDirectories: true
-	)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	try installedShimData().write(to: helper)
 	let original = helper.deletingLastPathComponent().appending(
 		path: VuplexCompatibility.originalHelperName)
@@ -145,16 +110,9 @@ func vuplexShimUpgradePreservesTheOfficialHelper() throws {
 
 @Test
 func vuplexShimUpgradeRejectsAMissingOfficialHelper() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
-	try FileManager.default.createDirectory(
-		at: helper.deletingLastPathComponent(),
-		withIntermediateDirectories: true
-	)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	try installedShimData().write(to: helper)
 	let newShim = root.appending(path: "new-shim.exe")
 	try Data("new-launcher-shim".utf8).write(to: newShim)
@@ -167,16 +125,9 @@ func vuplexShimUpgradeRejectsAMissingOfficialHelper() throws {
 
 @Test
 func vuplexRestoreWorksWithoutBundledCompatibilityAssets() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
-	try FileManager.default.createDirectory(
-		at: helper.deletingLastPathComponent(),
-		withIntermediateDirectories: true
-	)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	try VuplexCompatibility.launcherShimMarker.write(to: helper)
 	let original = helper.deletingLastPathComponent().appending(
 		path: VuplexCompatibility.originalHelperName)
@@ -199,14 +150,10 @@ func vuplexRestoreWorksWithoutBundledCompatibilityAssets() throws {
 
 @Test
 func vuplexReconciliationRemovesAbandonedTemporaryFiles() throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: UUID().uuidString,
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let helper = root.appending(path: VuplexCompatibility.helperRelativePath)
+	let fixture = try VuplexFixture()
+	defer { fixture.remove() }
+	let (root, helper) = (fixture.root, fixture.helper)
 	let directory = helper.deletingLastPathComponent()
-	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 	let temporaryFiles = [
 		".arknights-client-vuplex-shim-old",
 		".arknights-client-vuplex-previous-old",
@@ -235,6 +182,27 @@ private func installedShimData() -> Data {
 		}
 	}
 	return data
+}
+
+private struct VuplexFixture {
+	let root: URL
+	let helper: URL
+
+	init() throws {
+		root = FileManager.default.temporaryDirectory.appending(
+			path: UUID().uuidString,
+			directoryHint: .isDirectory
+		)
+		helper = root.appending(path: VuplexCompatibility.helperRelativePath)
+		try FileManager.default.createDirectory(
+			at: helper.deletingLastPathComponent(),
+			withIntermediateDirectories: true
+		)
+	}
+
+	func remove() {
+		try? FileManager.default.removeItem(at: root)
+	}
 }
 
 private func testCompatibility(shimURL: URL, root: URL) throws -> VuplexCompatibility {

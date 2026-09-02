@@ -4,32 +4,67 @@ import SwiftUI
 
 struct ArknightsWordmark: View {
 	let logo: NSImage?
-	let cyan: Color
+	let region: GameRegion
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 9) {
-			Group {
-				if let logo {
-					Image(nsImage: logo)
-						.resizable()
-						.scaledToFit()
-				} else {
-					Text("ARKNIGHTS")
-						.font(.system(size: 32, weight: .regular, design: .serif))
-				}
-			}
-			.frame(width: 245, height: 69, alignment: .leading)
-			.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
+		ZStack(alignment: .leading) {
+			// Keep official wallpaper logos from competing with the launcher wordmark
+			// without introducing another card or glass surface.
+			wordmarkBacking
 
-			HStack(spacing: 10) {
-				Rectangle().fill(cyan).frame(width: 66, height: 3)
-				Rectangle().fill(.white.opacity(0.34)).frame(width: 66, height: 3)
-				Rectangle().fill(.white.opacity(0.16)).frame(width: 66, height: 3)
+			if let logo {
+				Image(nsImage: logo)
+					.resizable()
+					.scaledToFit()
+					.id(wordmarkIdentity)
+					.transition(wordmarkTransition)
+			} else {
+				Text(HomeStrings.wordmarkFallback(region: region))
+					.font(.system(.title, design: .serif))
+					.minimumScaleFactor(0.7)
+					.lineLimit(1)
+					.id(wordmarkIdentity)
+					.transition(wordmarkTransition)
 			}
 		}
+		.frame(width: 245, height: 69, alignment: .leading)
+		.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
 		.padding(.trailing, 24)
+		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
-		.accessibilityLabel("Arknights Global macOS client")
+		.accessibilityLabel(
+			L10n.string(HomeStrings.wordmarkAccessibility(region: region.localizedDisplayName))
+		)
+	}
+
+	private var wordmarkIdentity: String {
+		"\(region.rawValue).\(logo == nil ? "fallback" : "official")"
+	}
+
+	private var wordmarkAnimation: Animation? {
+		reduceMotion ? nil : .easeInOut(duration: 0.28)
+	}
+
+	@ViewBuilder
+	private var wordmarkBacking: some View {
+		if reduceTransparency {
+			Ellipse()
+				.fill(.black.opacity(0.62))
+				.frame(width: 292, height: 88)
+				.offset(x: -12, y: 3)
+		} else {
+			Ellipse()
+				.fill(.black.opacity(0.34))
+				.frame(width: 292, height: 88)
+				.blur(radius: 17)
+				.offset(x: -12, y: 3)
+		}
+	}
+
+	private var wordmarkTransition: AnyTransition {
+		reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98))
 	}
 }
 
@@ -39,6 +74,7 @@ struct LauncherPopupView: View {
 	let hudTintColor: Color
 	let dismiss: () -> Void
 	let openAction: () -> Void
+	@State private var contentHeight: CGFloat = 0
 
 	var body: some View {
 		ThemedModalView(
@@ -46,7 +82,7 @@ struct LauncherPopupView: View {
 			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: 620,
-			height: 430
+			height: popupHeight
 		) {
 			Group {
 				switch popup.content {
@@ -57,6 +93,11 @@ struct LauncherPopupView: View {
 				}
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
+			.onGeometryChange(for: CGFloat.self) { proxy in
+				proxy.size.height
+			} action: { newHeight in
+				contentHeight = newHeight
+			}
 			.textSelection(.enabled)
 		} actions: {
 			if let actionTitle = popup.actionTitle {
@@ -69,15 +110,17 @@ struct LauncherPopupView: View {
 					title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
 				)
 			} else {
-				if popup.dismissTitle == "Done" {
-					FloatingDoneButton(accentColor: accentColor, action: dismiss)
-				} else {
-					CapsuleActionButton(
-						title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
-					)
-					.keyboardShortcut(.defaultAction)
-				}
+				FloatingDoneButton(
+					title: popup.dismissTitle,
+					accentColor: accentColor,
+					action: dismiss
+				)
 			}
 		}
+	}
+
+	private var popupHeight: CGFloat {
+		guard contentHeight > 0 else { return 430 }
+		return min(max(contentHeight + 160, 320), 600)
 	}
 }

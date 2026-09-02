@@ -5,6 +5,7 @@ import Foundation
 extension PresetCatalogService {
 	@discardableResult
 	func refreshAvatarsFromRemote() async -> [PresetAvatar] {
+		let epoch = cacheEpoch
 		do {
 			await log.info("Fetching remote character table from GameData…")
 			let request = URLRequest(url: Self.characterTableURL)
@@ -12,6 +13,7 @@ extension PresetCatalogService {
 				for: request,
 				maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
 			)
+			guard cacheEpoch == epoch else { return [] }
 			guard response.statusCode == 200 else { throw URLError(.badServerResponse) }
 
 			let parsed = try await Task.detached(priority: .utility) { () -> [PresetAvatar] in
@@ -30,28 +32,42 @@ extension PresetCatalogService {
 						id: characterID,
 						name: name,
 						filename: "\(characterID).png",
-						rarity: rarity
+						rarity: rarity,
+						appellation: entry.appellation,
+						profession: entry.profession,
+						subProfessionID: entry.subProfessionID,
+						nationID: entry.nationID,
+						groupID: entry.groupID,
+						teamID: entry.teamID,
+						tagList: entry.tagList
 					)
 				}.sorted(by: Self.avatarSortOrder)
 			}.value
 
+			guard cacheEpoch == epoch else { return [] }
 			guard !parsed.isEmpty else { return [] }
 			memoryCachedAvatars = parsed
 			await writeJSONCache(
 				parsed,
 				to: cachedAvatarsFile,
-				maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
+				maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes,
+				epoch: epoch
 			)
+			guard cacheEpoch == epoch else { return [] }
 			await log.info("Successfully indexed \(parsed.count) operators into local cache")
+			guard cacheEpoch == epoch else { return [] }
 			return parsed
 		} catch {
+			guard cacheEpoch == epoch else { return [] }
 			await log.error("Failed to fetch remote character table: \(error.localizedDescription)")
+			guard cacheEpoch == epoch else { return [] }
 			return []
 		}
 	}
 
 	@discardableResult
 	func refreshWallpapersFromRemote() async -> [PresetWallpaper] {
+		let epoch = cacheEpoch
 		do {
 			await log.info("Fetching official wallpapers from Yostar Fankit API…")
 			var wallpapers: [PresetWallpaper] = []
@@ -74,6 +90,7 @@ extension PresetCatalogService {
 					for: request,
 					maximumBytes: AppConstants.Presets.wallpaperCatalogMaximumBytes
 				)
+				guard cacheEpoch == epoch else { return [] }
 				guard response.statusCode == 200 else { break }
 
 				let responseObject = try JSONDecoder().decode(
@@ -82,55 +99,75 @@ extension PresetCatalogService {
 				guard !rows.isEmpty else { break }
 
 				for row in rows.prefix(AppConstants.Presets.wallpaperPageSize) {
-					guard let rawURL = row.image1 ?? row.smallImage,
-						let url = Self.validatedRemoteAssetURL(from: rawURL)
-					else { continue }
-
-					let trimmedTitle = row.title?.trimmingCharacters(in: .whitespacesAndNewlines)
-					let title: String
-					if let trimmedTitle, !trimmedTitle.isEmpty {
-						title = String(trimmedTitle.prefix(160))
-					} else {
-						title = "Wallpaper \(wallpapers.count + 1)"
+					if let wallpaper = Self.wallpaper(
+						from: row,
+						page: page,
+						ordinal: wallpapers.count + 1
+					) {
+						wallpapers.append(wallpaper)
 					}
-					let providedThumbnailURL = row.smallImage.flatMap(
-						Self.validatedRemoteAssetURL(from:))
-					let thumbnailURL =
-						providedThumbnailURL != url
-						? providedThumbnailURL
-						: Self.syntheticThumbnailURL(for: url)
-					// Prefix with the source so future additional gallery sources (e.g. a JP
-					// Fankit feed) can't collide with Global's numbering, and so the ID stays
-					// stable across refreshes for the tag manifest workflow to key off of.
-					let stableID = row.id.map { "global-\($0)" } ?? "wp_\(page)_\(wallpapers.count)"
-					wallpapers.append(
-						PresetWallpaper(
-							id: stableID,
-							title: title,
-							url: url,
-							thumbnailURL: thumbnailURL
-						)
-					)
 				}
 
 				if rows.count < AppConstants.Presets.wallpaperPageSize { break }
 			}
 
 			guard !wallpapers.isEmpty else { return [] }
+			guard cacheEpoch == epoch else { return [] }
 			memoryCachedWallpapers = wallpapers
 			await writeJSONCache(
 				wallpapers,
 				to: cachedWallpapersFile,
-				maximumBytes: AppConstants.Presets.wallpaperCatalogMaximumBytes
+				maximumBytes: AppConstants.Presets.wallpaperCatalogMaximumBytes,
+				epoch: epoch
 			)
+			guard cacheEpoch == epoch else { return [] }
 			await log.info(
 				"Successfully loaded \(wallpapers.count) official wallpapers from Yostar"
 			)
+			guard cacheEpoch == epoch else { return [] }
 			return wallpapers
 		} catch {
+			guard cacheEpoch == epoch else { return [] }
 			await log.error("Failed to fetch official wallpapers: \(error.localizedDescription)")
+			guard cacheEpoch == epoch else { return [] }
 			return []
 		}
+	}
+
+	static func wallpaper(
+		from row: YostarGalleryRow,
+		page: Int,
+		ordinal: Int
+	) -> PresetWallpaper? {
+		guard let rawURL = row.image1 ?? row.smallImage,
+			let url = validatedRemoteAssetURL(from: rawURL)
+		else { return nil }
+
+		let title = row.title.map { String($0.prefix(160)) } ?? ""
+		let providedThumbnail = row.smallImage.flatMap(validatedRemoteAssetURL(from:))
+		return PresetWallpaper(
+			id: row.id.map { "wp_\($0)" } ?? "wp_\(page)_\(ordinal - 1)",
+			title: title,
+			fallbackOrdinal: title.isEmpty ? ordinal : nil,
+			url: url,
+			thumbnailURL: providedThumbnail != url
+				? providedThumbnail : syntheticThumbnailURL(for: url),
+			author: row.author,
+			description: row.description
+		)
+	}
+
+	static func syntheticThumbnailURL(for url: URL) -> URL? {
+		guard url.path.contains("/ark_us_web/assets/"),
+			var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+		else { return nil }
+		components.queryItems = [
+			URLQueryItem(
+				name: "x-oss-process",
+				value: "image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
+			)
+		]
+		return components.url
 	}
 
 	static func isValidAvatar(_ avatar: PresetAvatar) -> Bool {
@@ -152,25 +189,6 @@ extension PresetCatalogService {
 	static func isValidWallpaper(_ wallpaper: PresetWallpaper) -> Bool {
 		isAllowedRemoteAssetURL(wallpaper.url)
 			&& wallpaper.thumbnailURL.map(isAllowedRemoteAssetURL) != false
-	}
-
-	// Yostar's older "ark_us_web/assets" gallery CDN path is an Alibaba OSS bucket that
-	// honors an on-the-fly percentage resize via this query parameter (verified directly:
-	// `?x-oss-process=image/resize,p_N` returns a proportionally smaller, genuinely
-	// re-encoded image). Their newer "web-cms-*" upload path ignores the same parameter —
-	// but it always ships a real, separate, already-small `smallImage` anyway, so it's
-	// never routed through here. Falls back to nil (the full-size URL) for anything else.
-	static func syntheticThumbnailURL(for url: URL) -> URL? {
-		guard url.path.contains("/ark_us_web/assets/"),
-			var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-		else { return nil }
-		components.queryItems = [
-			URLQueryItem(
-				name: "x-oss-process",
-				value: "image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
-			)
-		]
-		return components.url
 	}
 
 	static func validatedRemoteAssetURL(from raw: String) -> URL? {

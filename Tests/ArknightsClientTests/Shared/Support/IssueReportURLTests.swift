@@ -13,7 +13,6 @@ func issueReportURLAlwaysTargetsTheBugReportTemplate() {
 	#expect(components.host == "github.com")
 	#expect(components.path == "/LuMiSxh/Arknights-MacOS-Client/issues/new")
 	#expect(components.queryItems?.first { $0.name == "template" }?.value == "bug-report.yml")
-	#expect(components.queryItems?.contains { $0.name == "problem" } == false)
 	#expect(components.queryItems?.contains { $0.name == "logs" } == false)
 	#expect(
 		Set(components.queryItems?.map(\.name) ?? []) == ["template", "version", "environment"]
@@ -21,11 +20,19 @@ func issueReportURLAlwaysTargetsTheBugReportTemplate() {
 }
 
 @Test
-func issueReportURLPercentEncodesTheProblemDescription() {
-	let message = "Download failed: 50% complete & timed out\nretrying"
-	let url = IssueReportURL.build(problem: message)
+func issueReportURLIncludesOnlyApprovedFailureContext() {
+	let url = IssueReportURL.build(
+		code: .pebble,
+		context: SupportContext(operation: .repair, region: .japan)
+	)
 	let components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
 
-	#expect(components.queryItems?.first { $0.name == "problem" }?.value == message)
-	#expect(components.queryItems?.contains { $0.name == "logs" } == false)
+	#expect(components.queryItems?.first { $0.name == "code" }?.value == "PEBBLE")
+	#expect(components.queryItems?.first { $0.name == "operation" }?.value == "repair")
+	#expect(components.queryItems?.first { $0.name == "region" }?.value == "japan")
+	#expect(
+		Set(components.queryItems?.map(\.name) ?? []) == [
+			"template", "version", "environment", "code", "operation", "region",
+		]
+	)
 }

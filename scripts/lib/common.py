@@ -1,11 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 
-"""Shared paths, diagnostics, and process helpers for repository scripts.
-
-Output rendering (color, unicode symbols, spinners, progress bars) lives in
-`lib.console`; `info`/`success`/`warning` are re-exported here so scripts only need one
-import for both process and output helpers.
-"""
+"""Shared paths, diagnostics, and process helpers for repository scripts."""
 
 from __future__ import annotations
 
@@ -15,37 +10,15 @@ import subprocess
 import sys
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
-from typing import NoReturn, TypeVar
+from typing import NoReturn
 
-from lib.console import error, info, styled, success, warning
-
-__all__ = [
-    "BUILD_DIR",
-    "DIST_DIR",
-    "PROJECT_DIR",
-    "VERSION_PATTERN",
-    "ScriptError",
-    "fail",
-    "info",
-    "output",
-    "remove_path",
-    "require_command",
-    "require_commands",
-    "require_directory",
-    "require_file",
-    "run",
-    "run_main",
-    "success",
-    "warning",
-]
+from lib.console import child_output, error, styled
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = PROJECT_DIR / ".build"
 DIST_DIR = PROJECT_DIR / "dist"
 
 VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
-
-_T = TypeVar("_T")
 
 
 class ScriptError(RuntimeError):
@@ -84,6 +57,22 @@ def run(
 ) -> subprocess.CompletedProcess[str]:
     arguments = [str(value) for value in command]
     try:
+        if not capture:
+            process = subprocess.Popen(
+                arguments,
+                cwd=cwd,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                env=environment,
+            )
+            assert process.stdout is not None
+            for line in process.stdout:
+                child_output(line.rstrip("\r\n"))
+            returncode = process.wait()
+            if returncode != 0:
+                fail(f"command failed ({returncode}): {' '.join(arguments)}")
+            return subprocess.CompletedProcess(arguments, returncode)
         return subprocess.run(
             arguments,
             cwd=cwd,
@@ -95,8 +84,11 @@ def run(
     except FileNotFoundError:
         fail(f"required command not found: {arguments[0]}")
     except subprocess.CalledProcessError as process_error:
-        if capture and process_error.stderr:
-            print(process_error.stderr.rstrip(), file=sys.stderr)
+        if capture:
+            if process_error.stdout:
+                print(process_error.stdout.rstrip())
+            if process_error.stderr:
+                print(process_error.stderr.rstrip(), file=sys.stderr)
         fail(f"command failed ({process_error.returncode}): {' '.join(arguments)}")
 
 
@@ -111,7 +103,19 @@ def remove_path(path: Path) -> None:
         shutil.rmtree(path)
 
 
-def run_main(main: Callable[[], _T]) -> None:
+def safe_relative_path(value: object, error_message: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) > 240
+        or value.startswith("/")
+        or any(component in {"", ".", ".."} for component in value.split("/"))
+        or re.fullmatch(r"[A-Za-z0-9._/+\-]+", value) is None
+    ):
+        raise ValueError(error_message)
+    return value
+
+
+def run_main[T](main: Callable[[], T]) -> None:
     try:
         main()
     except ScriptError as script_error:

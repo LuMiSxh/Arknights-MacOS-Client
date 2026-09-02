@@ -197,14 +197,4 @@ struct WallpaperSearchTests {
 			))
 	}
 
-	@Test("tagsContain requires an exact tag, not a prefix or substring")
-	func tagsContainRequiresExactMatch() {
-		#expect(WallpaperSearch.tagsContain(["w", "amiya"], exactly: "w"))
-		#expect(!WallpaperSearch.tagsContain(["warfarin"], exactly: "w"))
-	}
-
-	@Test("tagsContain folds diacritics the same way matches(...) does")
-	func tagsContainFoldsDiacritics() {
-		#expect(WallpaperSearch.tagsContain(["młynar"], exactly: "mlynar"))
-	}
 }

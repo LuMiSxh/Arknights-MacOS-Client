@@ -11,15 +11,4 @@ enum LauncherPhase: Equatable, Sendable {
 	case migrating
 	case launching
 	case running(processIdentifier: Int32)
-
-	var title: String {
-		switch self {
-		case .checking: "Checking version"
-		case .ready: "Ready"
-		case .downloading: "Downloading game files"
-		case .migrating: "Preparing Wine runtime"
-		case .launching: "Starting Windows runtime"
-		case .running: "Game started"
-		}
-	}
 }

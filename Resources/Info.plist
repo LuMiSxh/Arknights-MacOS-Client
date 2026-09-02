@@ -14,6 +14,11 @@
     <string>AppIcon</string>
     <key>CFBundleIconName</key>
     <string>AppIcon</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+	</array>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -30,10 +35,20 @@
     <array>
         <string>arm64</string>
     </array>
-    <key>LauncherUpdatesURL</key>
-    <string>https://api.github.com/repos/LuMiSxh/Arknights-MacOS-Client/releases/latest</string>
 	<key>LauncherAnnouncementsURL</key>
 	<string>https://api.github.com/repos/LuMiSxh/Arknights-MacOS-Client/contents/announcements.json?ref=main</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest/download/appcast.xml</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false />
+	<key>SUAutomaticallyUpdate</key>
+	<false />
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true />
+	<key>SURequireSignedFeed</key>
+	<true />
+	<key>SUPublicEDKey</key>
+	<string>xblrBLbNbRHwXraU1llonp/H/7dLeZXLXI8jtfG6PaE=</string>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 LuMiSxh. Arknights belongs to Hypergryph and Yostar.</string>
     <key>NSHighResolutionCapable</key>

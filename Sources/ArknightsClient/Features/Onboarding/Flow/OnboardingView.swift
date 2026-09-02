@@ -3,8 +3,14 @@
 import SwiftUI
 
 struct OnboardingView: View {
-	@Bindable var model: LauncherViewModel
+	let preferences: LauncherPreferencesController
+	let customization: CustomizationController
+	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let presetCatalog: PresetCatalogService
+	let canSwitchRegion: Bool
 	@Bindable var coordinator: OnboardingCoordinator
+	let actions: OnboardingActions
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var presentedGallery: PresetGalleryDestination?
 
@@ -14,8 +20,8 @@ struct OnboardingView: View {
 		HStack(spacing: 0) {
 			OnboardingProgressRail(
 				currentStep: coordinator.step,
-				accentColor: model.accentColor,
-				appVersion: model.appVersion
+				accentColor: customization.accentColor,
+				appVersion: IssueReportURL.appVersion
 			)
 
 			Divider()
@@ -27,32 +33,51 @@ struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
+								preferences: preferences,
+								accentColor: customization.accentColor,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
-								rosettaInstallationState: model.rosettaInstallationState,
-								accentColor: model.accentColor,
+								rosettaInstallationState: lifecycle.rosettaInstallationState,
 								retry: retryUpdateCheck,
 								retryIntelTranslation: retryIntelTranslation,
 								installRosetta: installRosetta
 							)
 						case .installation:
-							OnboardingInstallationView(model: model)
+							OnboardingInstallationView(
+								installation: installation,
+								accentColor: customization.accentColor,
+								canSwitchRegion: canSwitchRegion,
+								selectRegion: actions.selectRegion
+							)
 						case .game:
-							OnboardingGameSettingsView(model: model)
+							OnboardingGameSettingsView(
+								preferences: preferences,
+								accentColor: customization.accentColor
+							)
 						case .personalization:
 							OnboardingPersonalizationView(
-								model: model,
+								customization: customization,
+								preferences: preferences,
+								resetArtwork: actions.resetArtwork,
 								browseArtwork: { presentedGallery = .artwork }
 							)
 						case .icons:
 							OnboardingIconsView(
-								model: model,
+								customization: customization,
 								browseOperators: { presentedGallery = .operatorIcons }
 							)
 						case .extras:
-							OnboardingExtrasView(model: model)
+							OnboardingExtrasView(
+								preferences: preferences,
+								accentColor: customization.accentColor
+							)
 						case .finish:
-							OnboardingFinishView(model: model)
+							OnboardingFinishView(
+								installation: installation,
+								lifecycle: lifecycle,
+								accentColor: customization.accentColor,
+								install: actions.installOrUpdate
+							)
 						}
 					}
 					.id(coordinator.step)
@@ -68,19 +93,12 @@ struct OnboardingView: View {
 				.scrollIndicators(.automatic)
 				.id(coordinator.step)
 
-				LinearGradient(
-					colors: [.clear, Color.black.opacity(0.45)],
-					startPoint: .top,
-					endPoint: .bottom
-				)
-				.frame(height: 76)
-				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-				.allowsHitTesting(false)
+				FloatingActionFooterFade(height: 76)
 
-				FloatingActionBar(tint: model.hudTintColor) {
+				FloatingActionBar(tint: customization.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
 						Button(action: coordinator.skip) {
-							Label("Skip for Now", systemImage: "forward.end")
+							Label(OnboardingStrings.skipForNow, systemImage: "forward.end")
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
@@ -88,15 +106,15 @@ struct OnboardingView: View {
 					Spacer()
 					if coordinator.step != .welcome {
 						Button(action: coordinator.goBack) {
-							Label("Back", systemImage: "chevron.backward")
+							Label(OnboardingStrings.back, systemImage: "chevron.backward")
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
 					}
 					CapsuleActionButton(
-						title: primaryTitle,
+						title: L10n.string(primaryTitle),
 						systemImage: primarySystemImage,
-						tone: .accent(model.accentColor),
+						tone: .accent(customization.accentColor),
 						action: performPrimaryAction
 					)
 					.controlSize(.large)
@@ -110,35 +128,47 @@ struct OnboardingView: View {
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background {
 			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
-				model.hudTintColor
+				LauncherVisuals.modalBackground
+				customization.hudTintColor
 			}
 			.ignoresSafeArea(.container, edges: .top)
 		}
-		.tint(model.accentColor)
+		.tint(customization.accentColor)
 		.preferredColorScheme(.dark)
 		.animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: coordinator.step)
-		.animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: model.dynamicThemeHue)
+		.animation(
+			reduceMotion ? nil : .easeInOut(duration: 0.3),
+			value: customization.dynamicThemeHue
+		)
 		.sheet(item: $presentedGallery) { destination in
-			PresetGalleryView(model: model, destination: destination)
+			PresetGalleryView(
+				catalog: presetCatalog,
+				customization: customization,
+				lifecycle: lifecycle,
+				destination: destination
+			)
 		}
 	}
 
-	private var primaryTitle: String {
+	private var primaryTitle: LocalizedStringResource {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
-			case .checking: "Checking…"
+			case .checking: OnboardingStrings.checking
 			case .current, .checkFailed:
-				coordinator.intelTranslationState == .checking ? "Checking…" : "Continue"
-			case .updateRequired(let release): "View Version \(release.version)"
+				coordinator.intelTranslationState == .checking
+					? OnboardingStrings.checking : OnboardingStrings.continue
+			case .updateRequired(let version): OnboardingStrings.installUpdate(version)
 			}
 		}
 		if coordinator.step == .installation {
-			if model.isInstalled || model.isDownloading { return "Continue Setup" }
-			return model.hasPartialDownload ? "Resume & Continue" : "Install & Continue"
+			if installation.isInstalled || installation.isDownloading {
+				return OnboardingStrings.continueSetup
+			}
+			return installation.hasPartialDownload
+				? OnboardingStrings.resumeAndContinue : OnboardingStrings.installAndContinue
 		}
-		if coordinator.step == .finish { return "Finish Setup" }
-		return "Continue"
+		if coordinator.step == .finish { return OnboardingStrings.finishSetup }
+		return OnboardingStrings.continue
 	}
 
 	private var canPerformPrimaryAction: Bool {
@@ -154,17 +184,20 @@ struct OnboardingView: View {
 			}
 		}
 		if coordinator.step == .installation {
-			return model.isInstalled || model.isDownloading || model.canInstall
+			return installation.isInstalled || installation.isDownloading
+				|| installation.canInstall
 		}
 		return true
 	}
 
 	private var primarySystemImage: String {
 		if coordinator.step == .welcome, case .updateRequired = coordinator.updateState {
-			return "arrow.up.right"
+			return "arrow.down.app"
 		}
-		if coordinator.step == .installation && !model.isInstalled && !model.isDownloading {
-			return model.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
+		if coordinator.step == .installation && !installation.isInstalled
+			&& !installation.isDownloading
+		{
+			return installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
 		}
 		if coordinator.step == .finish { return "checkmark" }
 		return "chevron.forward"
@@ -174,11 +207,13 @@ struct OnboardingView: View {
 		if coordinator.step == .welcome,
 			case .updateRequired = coordinator.updateState
 		{
-			model.openLauncherUpdate()
+			actions.openLauncherUpdate()
 			return
 		}
-		if coordinator.step == .installation && !model.isInstalled && !model.isDownloading {
-			model.installOrUpdate()
+		if coordinator.step == .installation && !installation.isInstalled
+			&& !installation.isDownloading
+		{
+			actions.installOrUpdate()
 		}
 		coordinator.advance()
 	}
@@ -186,14 +221,14 @@ struct OnboardingView: View {
 	private func retryIntelTranslation() {
 		Task {
 			await coordinator.refreshIntelTranslationAvailability {
-				await model.refreshIntelTranslationAvailability(force: true)
+				await actions.retryIntelTranslation()
 			}
 		}
 	}
 
 	private func installRosetta() {
 		Task {
-			let state = await model.installRosetta()
+			let state = await actions.installRosetta()
 			await coordinator.refreshIntelTranslationAvailability { state }
 		}
 	}

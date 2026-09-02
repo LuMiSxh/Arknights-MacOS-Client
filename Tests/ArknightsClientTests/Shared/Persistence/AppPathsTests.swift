@@ -96,4 +96,10 @@ func appPathsUseStandardInjectedDirectories() {
 			== support.appending(
 				path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/operator-avatar-source")
 	)
+	#expect(
+		paths.playtimeStatistics
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/\(AppConstants.Playtime.statisticsFilename)"
+			)
+	)
 }

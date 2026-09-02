@@ -8,16 +8,14 @@ struct RosettaInstallationConfirmationModifier: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content.confirmationDialog(
-			"Install Rosetta 2?",
+			LauncherStrings.rosettaConfirmationTitle,
 			isPresented: $isPresented,
 			titleVisibility: .visible
 		) {
-			Button("Install Rosetta 2", action: install)
-			Button("Cancel", role: .cancel) {}
+			Button(LauncherStrings.rosettaInstall, action: install)
+			Button(LauncherStrings.rosettaCancel, role: .cancel) {}
 		} message: {
-			Text(
-				"Rosetta 2 is Apple system software that lets this Apple silicon Mac run the bundled Intel-based Wine runtime. Continuing runs Apple’s software update tool and accepts Apple’s Rosetta license."
-			)
+			Text(LauncherStrings.rosettaConfirmationMessage)
 		}
 	}
 }

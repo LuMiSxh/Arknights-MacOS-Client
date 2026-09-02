@@ -3,51 +3,85 @@
 import SwiftUI
 
 struct UpdatesSettingsPage: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var settings: LauncherPreferencesController
+	let communication: LauncherCommunicationController
+	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let accentColor: Color
+	let appVersion: String
+	let checkLauncherUpdates: () -> Void
+	let checkGameUpdates: () -> Void
 
 	var body: some View {
 		SettingsPage(
-			title: "Updates", subtitle: "Keep the launcher and game current",
-			accentColor: model.accentColor
+			title: L10n.string(SettingsStrings.updatesTitle),
+			subtitle: L10n.string(SettingsStrings.updatesSubtitle),
+			accentColor: accentColor
 		) {
-			SettingsPanel(title: "Automatic Checks", systemImage: "arrow.trianglehead.2.clockwise")
-			{
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.automaticChecks),
+				systemImage: "arrow.trianglehead.2.clockwise"
+			) {
 				UpdateSettingsRow(
-					title: "Launcher",
+					title: L10n.string(SettingsStrings.launcher),
 					status: launcherStatusText,
-					isEnabled: $model.automaticallyChecksLauncherUpdates,
-					isChecking: model.isCheckingLauncherUpdates,
-					accentColor: model.accentColor,
-					check: model.checkLauncherUpdates
+					isEnabled: $settings.automaticallyChecksLauncherUpdates,
+					isChecking: communication.isCheckingLauncherUpdates,
+					isDisabled: !communication.canOpenLauncherUpdate,
+					accentColor: accentColor,
+					check: checkLauncherUpdates
 				)
 				SettingsHairline()
 				UpdateSettingsRow(
 					title: "Arknights",
-					status: model.isGameUpdateAvailable ? "Update available" : model.versionText,
-					isEnabled: $model.automaticallyChecksGameUpdates,
-					isChecking: model.isDownloading,
-					accentColor: model.accentColor,
-					check: model.checkGameUpdates
+					status: gameStatusText,
+					isEnabled: $settings.automaticallyChecksGameUpdates,
+					isChecking: lifecycle.refresh.isChecking,
+					isDisabled: lifecycle.refresh.isChecking
+						|| !lifecycle.canBeginExclusiveActivity,
+					accentColor: accentColor,
+					check: checkGameUpdates
 				)
 			}
 
-			SettingsPanel(title: "Announcements", systemImage: "megaphone") {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.announcements), systemImage: "megaphone"
+			) {
 				SettingsActionRow(
-					title: "Announcements",
-					detail: "Show occasional project messages once per announcement."
+					title: L10n.string(SettingsStrings.announcements),
+					detail: L10n.string(SettingsStrings.announcementsDetail)
 				) {
-					Toggle("Announcements", isOn: $model.announcementsEnabled)
-						.labelsHidden()
-						.toggleStyle(.switch)
-						.tint(model.accentColor)
+					SettingsToggle(
+						L10n.string(SettingsStrings.announcements),
+						isOn: $settings.announcementsEnabled,
+						accentColor: accentColor
+					)
 				}
 			}
 		}
 	}
 
 	private var launcherStatusText: String {
-		if model.isCheckingLauncherUpdates { return "Checking…" }
-		if model.launcherUpdate != nil { return "Update available" }
-		return "v\(model.appVersion)"
+		if communication.isCheckingLauncherUpdates {
+			return L10n.string(SettingsStrings.checking)
+		}
+		if communication.launcherUpdateVersion != nil {
+			return L10n.string(SettingsStrings.updateAvailable)
+		}
+		return "v\(appVersion)"
+	}
+
+	private var versionText: String {
+		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
+	}
+
+	private var gameStatusText: String {
+		if lifecycle.refresh.isChecking {
+			return L10n.string(SettingsStrings.checking)
+		}
+		if installation.isGameUpdateAvailable {
+			return L10n.string(SettingsStrings.updateAvailable)
+		}
+		return versionText
 	}
 }

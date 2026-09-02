@@ -3,29 +3,34 @@
 import SwiftUI
 
 struct OnboardingPersonalizationView: View {
-	@Bindable var model: LauncherViewModel
+	let customization: CustomizationController
+	@Bindable var preferences: LauncherPreferencesController
+	let resetArtwork: () -> Void
 	let browseArtwork: () -> Void
 
 	var body: some View {
 		OnboardingPage(
-			title: "Make the launcher yours",
-			subtitle:
-				"Artwork fills the launcher window. Dynamic Theme samples that image and carries its color into controls and compatible icon styles.",
-			accentColor: model.accentColor
+			title: L10n.string(OnboardingStrings.personalizationTitle),
+			subtitle: L10n.string(OnboardingStrings.personalizationSubtitle),
+			accentColor: customization.accentColor
 		) {
-			SettingsPanel(title: "Launcher artwork", systemImage: "photo.on.rectangle.angled") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.artwork),
+				systemImage: "photo.on.rectangle.angled"
+			) {
 				Group {
-					if let artwork = model.heroArtwork {
+					if let artwork = customization.heroArtwork {
 						Image(nsImage: artwork)
 							.resizable()
 							.scaledToFill()
-							.accessibilityLabel("Current launcher artwork")
+							.accessibilityLabel(OnboardingStrings.currentArtworkAccessibility)
 					} else {
 						ZStack {
 							Color.black.opacity(0.35)
 							Image(systemName: "photo")
 								.font(.largeTitle)
 								.foregroundStyle(.tertiary)
+								.accessibilityHidden(true)
 						}
 					}
 				}
@@ -40,47 +45,49 @@ struct OnboardingPersonalizationView: View {
 
 				HStack {
 					CapsuleActionButton(
-						title: "Browse Presets…", systemImage: "square.grid.2x2",
-						tone: .accent(model.accentColor), presentation: .compact,
+						title: L10n.string(OnboardingStrings.browsePresets),
+						systemImage: "square.grid.2x2",
+						tone: .accent(customization.accentColor), presentation: .compact,
 						action: browseArtwork
 					)
 					CapsuleActionButton(
-						"Choose Image…", systemImage: "photo.badge.plus",
-						tone: .accent(model.accentColor), presentation: .compact,
-						action: model.chooseCustomArtwork
+						title: L10n.string(OnboardingStrings.chooseImage),
+						systemImage: "photo.badge.plus",
+						tone: .accent(customization.accentColor), presentation: .compact,
+						action: customization.chooseCustomArtwork
 					)
 					Spacer()
 					CapsuleActionButton(
-						"Use Default", systemImage: "arrow.counterclockwise",
+						title: L10n.string(OnboardingStrings.useDefault),
+						systemImage: "arrow.counterclockwise",
 						tone: .neutral, presentation: .compact,
-						action: model.resetArtwork
+						action: resetArtwork
 					)
 				}
 			}
 
-			SettingsPanel(title: "Theme & launcher status", systemImage: "paintpalette") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.themeStatusPanel), systemImage: "paintpalette"
+			) {
 				OnboardingToggleRow(
-					title: "Dynamic Theme",
-					detail:
-						"Matches the launcher accent, glass tint, and compatible icon styles to the selected artwork.",
-					isOn: $model.usesDynamicTheme,
-					accentColor: model.accentColor
+					title: L10n.string(OnboardingStrings.dynamicTheme),
+					detail: L10n.string(OnboardingStrings.dynamicThemeDetail),
+					isOn: $preferences.usesDynamicTheme,
+					accentColor: customization.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: "Show Game Version",
-					detail:
-						"Adds the installed Arknights version and a manual update check above the Play controls.",
-					isOn: $model.showsGameVersion,
-					accentColor: model.accentColor
+					title: L10n.string(OnboardingStrings.gameVersion),
+					detail: L10n.string(OnboardingStrings.gameVersionDetail),
+					isOn: $preferences.showsGameVersion,
+					accentColor: customization.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: "Server Time & Reset Countdown",
-					detail:
-						"Shows the active region and time remaining until that server's next daily reset.",
-					isOn: $model.showsServerResetCountdown,
-					accentColor: model.accentColor
+					title: L10n.string(OnboardingStrings.resetCountdown),
+					detail: L10n.string(OnboardingStrings.resetCountdownDetail),
+					isOn: $preferences.showsServerResetCountdown,
+					accentColor: customization.accentColor
 				)
 			}
 		}

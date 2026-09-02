@@ -6,23 +6,27 @@ enum MarkdownBlock: Equatable {
 	case heading(level: Int, source: String)
 	case paragraph(String)
 	case bullet(String)
+	case numbered(Int, String)
 	case table([[String]])
 	case code(String)
 	case divider
 }
 
-/// A small hand-rolled block parser (headings, paragraphs, bullets, tables, code, dividers)
-/// for changelog and license text bundled with the app — not general-purpose Markdown.
+/// A small hand-rolled block parser for the Markdown constructs used by bundled documents.
 struct MarkdownParser {
 	let source: String
 
 	var blocks: [MarkdownBlock] {
-		let lines = source.components(separatedBy: .newlines)
+		let lines = contentLines
 		var result: [MarkdownBlock] = []
 		var index = 0
 
 		while index < lines.count {
 			let line = lines[index]
+			if line.hasPrefix(">") {
+				result.append(contentsOf: parseQuote(lines: lines, index: &index))
+				continue
+			}
 			if line.trimmingCharacters(in: .whitespaces).isEmpty || isLinkDefinition(line) {
 				index += 1
 				continue
@@ -59,12 +63,45 @@ struct MarkdownParser {
 				index += 1
 				continue
 			}
+			if let numbered = parseNumberedBullet(line) {
+				result.append(numbered)
+				index += 1
+				continue
+			}
 
 			let paragraph = parseParagraph(lines: lines, start: index)
 			result.append(.paragraph(paragraph.source))
 			index = paragraph.nextIndex
 		}
 		return result
+	}
+
+	private func parseQuote(lines: [String], index: inout Int) -> [MarkdownBlock] {
+		var quoted: [String] = []
+		while index < lines.count, lines[index].hasPrefix(">") {
+			var line = String(lines[index].dropFirst())
+			if line.hasPrefix(" ") { line.removeFirst() }
+			quoted.append(line)
+			index += 1
+		}
+		if let marker = quoted.first,
+			marker.hasPrefix("[!"), marker.hasSuffix("]")
+		{
+			let label = marker.dropFirst(2).dropLast().lowercased().capitalized
+			quoted[0] = "**\(label)**"
+			quoted.insert("", at: 1)
+		}
+		return MarkdownParser(source: quoted.joined(separator: "\n")).blocks
+	}
+
+	private var contentLines: [String] {
+		let lines = source.components(separatedBy: .newlines)
+		guard lines.first == "---",
+			let closingDelimiter = lines.dropFirst().firstIndex(of: "---")
+		else {
+			return lines
+		}
+		return Array(lines[lines.index(after: closingDelimiter)...])
 	}
 
 	private func parseHeading(_ line: String) -> MarkdownBlock? {
@@ -75,6 +112,17 @@ struct MarkdownParser {
 			}
 		}
 		return nil
+	}
+
+	private func parseNumberedBullet(_ line: String) -> MarkdownBlock? {
+		guard let delimiter = line.firstIndex(of: "."),
+			line.index(after: delimiter) < line.endIndex,
+			line[line.index(after: delimiter)] == " ",
+			let number = Int(line[..<delimiter])
+		else {
+			return nil
+		}
+		return .numbered(number, String(line[line.index(delimiter, offsetBy: 2)...]))
 	}
 
 	private func parseTable(lines: [String], start: Int) -> (rows: [[String]], nextIndex: Int) {
@@ -119,8 +167,8 @@ struct MarkdownParser {
 	}
 
 	private func isSpecialLine(_ line: String) -> Bool {
-		line == "---" || line.hasPrefix("# ") || line.hasPrefix("## ")
-			|| line.hasPrefix("### ") || line.hasPrefix("- ") || line.hasPrefix("```")
+		line == "---" || parseHeading(line) != nil || line.hasPrefix("- ") || line.hasPrefix("```")
+			|| line.hasPrefix(">") || parseNumberedBullet(line) != nil
 			|| isLinkDefinition(line)
 	}
 

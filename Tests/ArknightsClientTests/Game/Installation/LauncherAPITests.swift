@@ -28,8 +28,8 @@ struct LauncherAPITests {
 			let _: GameConfiguration = try await api.gameConfiguration(region: .global)
 			Issue.record("Expected the API request to fail")
 		} catch {
-			#expect(
-				error.localizedDescription == LauncherError.invalidResponse.localizedDescription)
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(!contextualError.userMessage.isEmpty)
 			let diagnostic = launcherDiagnosticDescription(for: error)
 			#expect(diagnostic.contains("operation=game configuration"))
 			#expect(diagnostic.contains("region=Global"))
@@ -61,12 +61,59 @@ struct LauncherAPITests {
 			let _: GameConfiguration = try await api.gameConfiguration(region: .japan)
 			Issue.record("Expected payload decoding to fail")
 		} catch {
-			#expect(
-				error.localizedDescription == LauncherError.invalidResponse.localizedDescription)
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(contextualError.userMessage != contextualError.diagnosticDescription)
 			let diagnostic = launcherDiagnosticDescription(for: error)
 			#expect(diagnostic.contains("operation=game configuration"))
 			#expect(diagnostic.contains("region=Japan"))
 			#expect(diagnostic.contains("decoding failed"))
+		}
+	}
+
+	@Test
+	func transportFailureUsesAContextualLauncherError() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [FailingLauncherAPIURLProtocol.self]
+		let api = LauncherAPI(session: URLSession(configuration: configuration))
+
+		do {
+			let _: GameConfiguration = try await api.gameConfiguration(region: .global)
+			Issue.record("Expected the API request to fail")
+		} catch {
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(!contextualError.userMessage.isEmpty)
+		}
+	}
+
+	@Test
+	func configuredResponseLimitRejectsManifestBeforeDecoding() async throws {
+		let session = makeSession()
+		LauncherAPIURLProtocol.handler = { request in
+			guard let url = request.url,
+				let response = HTTPURLResponse(
+					url: url,
+					statusCode: 200,
+					httpVersion: nil,
+					headerFields: nil
+				)
+			else { fatalError("URLProtocol received an invalid HTTP request") }
+			return (response, Data(repeating: 0x41, count: 9))
+		}
+		defer { LauncherAPIURLProtocol.handler = nil }
+		let api = LauncherAPI(session: session, maximumManifestResponseBytes: 8)
+
+		do {
+			_ = try await api.manifestPayload(
+				at: URL(string: "https://fixtures.invalid/manifest.json")!,
+				region: .global
+			)
+			Issue.record("Expected the manifest response to exceed its configured limit")
+		} catch {
+			let contextualError = try #require(error as? ContextualLauncherError)
+			#expect(!contextualError.userMessage.isEmpty)
+			let diagnostic = launcherDiagnosticDescription(for: error)
+			#expect(diagnostic.contains("operation=manifest download"))
+			#expect(diagnostic.contains("response exceeded 8 bytes"))
 		}
 	}
 
@@ -75,6 +122,17 @@ struct LauncherAPITests {
 		configuration.protocolClasses = [LauncherAPIURLProtocol.self]
 		return URLSession(configuration: configuration)
 	}
+}
+
+private final class FailingLauncherAPIURLProtocol: URLProtocol, @unchecked Sendable {
+	override class func canInit(with request: URLRequest) -> Bool { true }
+	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+	override func startLoading() {
+		client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+	}
+
+	override func stopLoading() {}
 }
 
 private final class LauncherAPIURLProtocol: URLProtocol, @unchecked Sendable {

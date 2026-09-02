@@ -10,6 +10,7 @@ enum ServerReset {
 		switch region {
 		case .global: -7 * 3600
 		case .japan, .korea: 9 * 3600
+		case .china: 0
 		}
 	}
 
@@ -25,8 +26,18 @@ enum ServerReset {
 			? todayReset : calendar.date(byAdding: .day, value: 1, to: todayReset)!
 	}
 
-	static func countdownText(for region: GameRegion, now: Date = Date()) -> String {
+	static func countdownText(
+		for region: GameRegion,
+		now: Date = Date(),
+		locale: Locale? = nil
+	) -> String {
 		let remaining = max(0, Int(nextReset(for: region, after: now).timeIntervalSince(now)))
-		return String(format: "Reset in %dh %02dm", remaining / 3600, (remaining % 3600) / 60)
+		return L10n.string(
+			LauncherStrings.serverReset(
+				hours: remaining / 3600,
+				minutes: (remaining % 3600) / 60
+			),
+			locale: locale
+		)
 	}
 }

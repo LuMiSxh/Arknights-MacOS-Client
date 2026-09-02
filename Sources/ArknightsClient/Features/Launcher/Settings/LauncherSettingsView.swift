@@ -2,9 +2,37 @@
 
 import SwiftUI
 
+#if DEBUG
+	typealias DeveloperScenarioBinding = Binding<DeveloperScenario>
+#else
+	typealias DeveloperScenarioBinding = Never
+#endif
+
 struct LauncherSettingsView: View {
-	var model: LauncherViewModel
+	let settings: LauncherPreferencesController
+	let customization: CustomizationController
+	let communication: LauncherCommunicationController
+	let installation: InstallationController
+	let gameSession: GameSessionController
+	let lifecycle: LauncherLifecycleStore
+	let storage: StorageMaintenanceController
+	let storageOverview: StorageOverviewController
+	let playtimeStatistics: PlaytimeStatisticsController
+	let presetCatalog: PresetCatalogService
+	let launcherIconManager: LauncherIconManager
+	let branding: LauncherBranding?
+	let resetArtwork: () -> Void
+	let checkGameUpdates: () -> Void
+	let selectRegion: (GameRegion) -> Void
+	let chooseInstallDirectory: () -> Void
+	let locateExistingInstallation: () -> Void
+	let repairGame: () -> Void
+	let resetAllLauncherSettings: () -> Void
+	let uninstallGame: () -> Void
 	let restartOnboarding: () -> Void
+	let requestLauncherUpdateCheck: () -> Void
+	let developerScenario: DeveloperScenarioBinding?
+	let applyCustomPopup: ((String, String) -> Void)?
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var selectedSection = SettingsSection.general
@@ -14,8 +42,8 @@ struct LauncherSettingsView: View {
 		HStack(spacing: 0) {
 			SettingsNavigationRail(
 				selection: $selectedSection,
-				isDeveloperMode: model.isDeveloperMode,
-				accentColor: model.accentColor
+				isDeveloperMode: isDeveloperMode,
+				accentColor: customization.accentColor
 			)
 			Divider()
 				.overlay(Color.white.opacity(0.08))
@@ -25,20 +53,81 @@ struct LauncherSettingsView: View {
 					switch selectedSection {
 					case .general:
 						GeneralSettingsPage(
-							model: model,
+							settings: settings,
+							customization: customization,
+							gameSession: gameSession,
+							lifecycle: lifecycle,
+							presetCatalog: presetCatalog,
+							accentColor: customization.accentColor,
+							resetArtwork: resetArtwork,
 							restartOnboarding: restartOnboarding
 						)
 					case .audio:
-						AudioSettingsPage(model: model)
+						AudioSettingsPage(
+							settings: settings,
+							accentColor: customization.accentColor
+						)
 					case .updates:
-						UpdatesSettingsPage(model: model)
+						UpdatesSettingsPage(
+							settings: settings,
+							communication: communication,
+							installation: installation,
+							lifecycle: lifecycle,
+							accentColor: customization.accentColor,
+							appVersion: IssueReportURL.appVersion,
+							checkLauncherUpdates: requestLauncherUpdateCheck,
+							checkGameUpdates: checkGameUpdates
+						)
 					case .installation:
-						InstallationSettingsPage(model: model)
+						InstallationSettingsPage(
+							settings: settings,
+							installation: installation,
+							gameSession: gameSession,
+							lifecycle: lifecycle,
+							accentColor: customization.accentColor,
+							selectRegion: selectRegion,
+							chooseInstallDirectory: chooseInstallDirectory,
+							locateExistingInstallation: locateExistingInstallation,
+							repairGame: repairGame,
+							resetAllLauncherSettings: resetAllLauncherSettings,
+							uninstallGame: uninstallGame
+						)
+					case .storage:
+						StorageOverviewPage(
+							controller: storageOverview,
+							copy: StorageStrings.copy(),
+							actions: StorageOverviewActions(
+								clearGameCaches: storage.clearGameCache,
+								clearGalleryCache: storage.clearPresetGalleryCache,
+								revealLogs: storage.revealLogs
+							),
+							accentColor: customization.accentColor
+						)
+					case .statistics:
+						PlaytimeStatisticsPage(
+							controller: playtimeStatistics,
+							regions: GameRegion.selectableCases(
+								canaryEnabled: settings.canaryFeaturesEnabled
+							),
+							accentColor: customization.accentColor
+						)
 					case .about:
-						AboutSettingsPage(model: model, presentedDocument: $presentedDocument)
+						AboutSettingsPage(
+							accentColor: customization.accentColor,
+							launcherIconManager: launcherIconManager,
+							branding: branding,
+							revealApplication: storage.revealApplication,
+							presentedDocument: $presentedDocument
+						)
 					#if DEBUG
 						case .developer:
-							DeveloperSettingsPage(model: model)
+							if let developerScenario, let applyCustomPopup {
+								DeveloperSettingsPage(
+									scenario: developerScenario,
+									accentColor: customization.accentColor,
+									applyCustomPopup: applyCustomPopup
+								)
+							}
 					#endif
 					}
 				}
@@ -46,17 +135,20 @@ struct LauncherSettingsView: View {
 				.transition(.opacity)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
 
-				LinearGradient(
-					colors: [.clear, Color.black.opacity(0.45)],
-					startPoint: .top,
-					endPoint: .bottom
-				)
-				.frame(height: 60)
-				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-				.allowsHitTesting(false)
+				FloatingActionFooterFade(height: 60)
 
-				FloatingActionBar(tint: model.hudTintColor) {
-					FloatingDoneButton(accentColor: model.accentColor) {
+				FloatingActionBar(tint: customization.hudTintColor) {
+					if selectedSection == .storage {
+						CapsuleActionButton(
+							title: L10n.string(StorageStrings.refresh),
+							systemImage: "arrow.clockwise",
+							tone: .neutral,
+							action: storageOverview.refresh
+						)
+						.controlSize(.large)
+						.disabled(storageOverview.isMeasuring)
+					}
+					FloatingDoneButton(accentColor: customization.accentColor) {
 						dismiss()
 					}
 				}
@@ -69,26 +161,38 @@ struct LauncherSettingsView: View {
 				value: selectedSection
 			)
 		}
-		.tint(model.accentColor)
+		// See ContentView: L10n reads a plain mutex, not an Observable value, so a
+		// language change here needs an explicit re-key to redraw immediately.
+		.id(settings.appLanguage)
+		.tint(customization.accentColor)
 		.background(
 			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
-				model.hudTintColor
+				LauncherVisuals.modalBackground
+				customization.hudTintColor
 			}
 		)
 		.preferredColorScheme(.dark)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
-			value: model.dynamicThemeHue
+			value: customization.dynamicThemeHue
 		)
+		.onExitCommand(perform: dismiss.callAsFunction)
 		.frame(width: 820, height: 570)
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
 				document: document,
-				accentColor: model.accentColor,
-				hudTintColor: model.hudTintColor
+				accentColor: customization.accentColor,
+				hudTintColor: customization.hudTintColor
 			)
 		}
+	}
+
+	private var isDeveloperMode: Bool {
+		#if DEBUG
+			developerScenario != nil
+		#else
+			false
+		#endif
 	}
 }
 
@@ -99,8 +203,8 @@ private struct SettingsNavigationRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETTINGS")
-				.font(.caption2.monospaced().weight(.semibold))
+			Text(SettingsStrings.navigationLabel)
+				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
 				.padding(.horizontal, 18)
@@ -135,7 +239,7 @@ private struct SettingsNavigationRail: View {
 		.frame(width: 178)
 		.background(
 			ZStack {
-				Color.black.opacity(0.28)
+				LauncherVisuals.navigationRailBackground
 				accentColor.opacity(0.03)
 			}
 		)
@@ -163,9 +267,11 @@ private struct SettingsNavigationButton: View {
 				RoundedRectangle(cornerRadius: 1)
 					.fill(isSelected ? accentColor : .clear)
 					.frame(width: 2, height: 20)
+					.accessibilityHidden(true)
 				Image(systemName: section.systemImage)
 					.frame(width: 17)
 					.symbolRenderingMode(.monochrome)
+					.accessibilityHidden(true)
 				Text(section.title)
 					.fontWeight(isSelected ? .semibold : .regular)
 				Spacer(minLength: 0)
@@ -175,9 +281,14 @@ private struct SettingsNavigationButton: View {
 			.padding(.trailing, 12)
 			.background(backgroundFill, in: .rect(cornerRadius: 8))
 			.contentShape(.rect)
+			.frame(minHeight: 44)
 		}
 		.buttonStyle(.plain)
+		.keyboardFocusIndicator(
+			in: RoundedRectangle(cornerRadius: 8)
+		)
 		.onHover { isHovering = $0 }
+		.accessibilityLabel(section.title)
 		.accessibilityAddTraits(isSelected ? .isSelected : [])
 	}
 
@@ -193,6 +304,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 	case audio
 	case updates
 	case installation
+	case storage
+	case statistics
 	case about
 	#if DEBUG
 		case developer
@@ -202,13 +315,15 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var title: String {
 		switch self {
-		case .general: "General"
-		case .audio: "Audio"
-		case .updates: "Updates"
-		case .installation: "Installation"
-		case .about: "About"
+		case .general: L10n.string(SettingsStrings.navigationGeneral)
+		case .audio: L10n.string(SettingsStrings.navigationAudio)
+		case .updates: L10n.string(SettingsStrings.navigationUpdates)
+		case .installation: L10n.string(SettingsStrings.navigationInstallation)
+		case .storage: L10n.string(SettingsStrings.navigationStorage)
+		case .statistics: L10n.string(SettingsStrings.navigationStatistics)
+		case .about: L10n.string(SettingsStrings.navigationAbout)
 		#if DEBUG
-			case .developer: "Developer"
+			case .developer: L10n.string(SettingsStrings.navigationDeveloper)
 		#endif
 		}
 	}
@@ -219,6 +334,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 		case .audio: "music.note"
 		case .updates: "arrow.trianglehead.2.clockwise"
 		case .installation: "externaldrive"
+		case .storage: "internaldrive"
+		case .statistics: "chart.bar.xaxis"
 		case .about: "info.circle"
 		#if DEBUG
 			case .developer: "hammer"

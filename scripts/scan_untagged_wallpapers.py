@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Find official wallpapers missing from the curated tag manifest and file a
@@ -36,7 +32,9 @@ TAGS_MANIFEST_PATH = (
 )
 TAGGING_LABEL = "wallpaper-tagging"
 TAGGING_LABEL_COLOR = "d4c5f9"
-TAGGING_LABEL_DESCRIPTION = "Needs curated search tags (see docs/wallpaper-tagging.md)"
+TAGGING_LABEL_DESCRIPTION = (
+    "Needs curated search tags (see docs/development/wallpaper-tagging.md)"
+)
 WALLPAPER_ID_MARKER = re.compile(r"<!--\s*wallpaper-id:\s*(\S+?)\s*-->")
 
 

@@ -8,26 +8,40 @@ enum PresetGalleryDestination: String, Identifiable {
 
 	var id: String { rawValue }
 
-	var title: String {
+	var title: LocalizedStringResource {
 		switch self {
-		case .artwork: "Artwork Gallery"
-		case .operatorIcons: "Choose an Operator"
+		case .artwork: CustomizationStrings.artworkTitle
+		case .operatorIcons: CustomizationStrings.operatorTitle
 		}
 	}
 
-	var subtitle: String {
+	var subtitle: LocalizedStringResource {
 		switch self {
 		case .artwork:
-			"Choose a background for the launcher."
+			CustomizationStrings.artworkSubtitle
 		case .operatorIcons:
-			"Choose one operator for both Dock icons."
+			CustomizationStrings.operatorSubtitle
 		}
 	}
 
-	var searchPlaceholder: String {
+	var searchPlaceholder: LocalizedStringResource {
 		switch self {
-		case .artwork: "Search by title, operator, or event…"
-		case .operatorIcons: "Search operators…"
+		case .artwork: CustomizationStrings.artworkSearchPlaceholder
+		case .operatorIcons: CustomizationStrings.operatorSearchPlaceholder
+		}
+	}
+
+	var loadingText: LocalizedStringResource {
+		switch self {
+		case .artwork: CustomizationStrings.artworkLoading
+		case .operatorIcons: CustomizationStrings.operatorLoading
+		}
+	}
+
+	var emptyText: LocalizedStringResource {
+		switch self {
+		case .artwork: CustomizationStrings.artworkEmpty
+		case .operatorIcons: CustomizationStrings.operatorEmpty
 		}
 	}
 }

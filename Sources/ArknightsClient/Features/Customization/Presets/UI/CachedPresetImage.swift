@@ -34,8 +34,12 @@ struct CachedPresetImage: View {
 				}
 			}
 		}
-		.task(id: url) {
-			guard image == nil else { return }
+		.accessibilityHidden(true)
+		.task(id: cacheIdentity) {
+			let taskIdentity = cacheIdentity
+			guard !Task.isCancelled else { return }
+			image = nil
+			hasFailed = false
 			do {
 				let data = try await catalog.imageData(
 					for: url,
@@ -44,11 +48,19 @@ struct CachedPresetImage: View {
 				guard let loadedImage = NSImage(data: data) else {
 					throw LauncherError.invalidPresetImage(url)
 				}
+				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
 				image = loadedImage
 				hasFailed = false
+			} catch is CancellationError {
+				return
 			} catch {
+				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
 				hasFailed = true
 			}
 		}
+	}
+
+	private var cacheIdentity: String {
+		"\(url.absoluteString)|\(cacheKey)"
 	}
 }

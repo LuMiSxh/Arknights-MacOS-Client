@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Show DMG download statistics for published GitHub releases."""
@@ -30,7 +26,7 @@ def parse_timestamp(value: object) -> datetime:
     if not isinstance(value, str):
         fail("GitHub returned a release without a publication date")
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return datetime.fromisoformat(value)
     except ValueError:
         fail(f"GitHub returned an invalid publication date: {value}")
 

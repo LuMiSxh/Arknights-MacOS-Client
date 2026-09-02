@@ -12,17 +12,32 @@ actor LauncherAPI {
 	static let launcherVersion = "1.8.1"
 
 	private let salt = "DE7108E9B2842FD460F4777702727869"
-	private let session: URLSession
+	private let loader: BoundedHTTPDataLoader
 	private let decoder: JSONDecoder
+	private let maximumAPIResponseBytes: Int
+	private let maximumManifestResponseBytes: Int
+	private let hypergryph: HypergryphLauncherAPI
 
-	init(session: URLSession = .shared) {
-		self.session = session
+	init(
+		session: URLSession = .shared,
+		maximumAPIResponseBytes: Int = AppConstants.Network.yostarAPIResponseMaximumBytes,
+		maximumManifestResponseBytes: Int = AppConstants.Network.yostarManifestMaximumBytes
+	) {
+		loader = BoundedHTTPDataLoader(session: session)
+		self.maximumAPIResponseBytes = maximumAPIResponseBytes
+		self.maximumManifestResponseBytes = maximumManifestResponseBytes
+		hypergryph = HypergryphLauncherAPI(
+			session: session,
+			maximumAPIResponseBytes: maximumAPIResponseBytes,
+			maximumManifestResponseBytes: maximumManifestResponseBytes
+		)
 		decoder = JSONDecoder()
 		decoder.keyDecodingStrategy = .convertFromSnakeCase
 	}
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		try await request(
+		if region == .china { return try await hypergryph.gameConfiguration() }
+		return try await request(
 			region: region,
 			path: "/api/launcher/game/config",
 			operation: "game configuration"
@@ -30,7 +45,8 @@ actor LauncherAPI {
 	}
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
-		try await request(
+		if region == .china { return try await hypergryph.branding() }
+		return try await request(
 			region: region,
 			path: "/api/launcher/base/config",
 			operation: "launcher branding"
@@ -38,7 +54,8 @@ actor LauncherAPI {
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		try await request(
+		if region == .china { return try await hypergryph.cdnConfiguration() }
+		return try await request(
 			region: region,
 			path: "/api/launcher/advanced/game/download/cdn",
 			operation: "CDN configuration"
@@ -49,6 +66,15 @@ actor LauncherAPI {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> GameManifest {
+		if region == .china { return try await hypergryph.manifest(for: configuration) }
+		let location = try await manifestLocation(for: configuration, region: region)
+		return try await manifestPayload(at: location.url, region: region).manifest
+	}
+
+	func manifestLocation(
+		for configuration: GameConfiguration,
+		region: GameRegion
+	) async throws -> ManifestLocation {
 		var components = URLComponents(
 			url: region.apiBaseURL.appending(path: "/api/launcher/game/config/json"),
 			resolvingAgainstBaseURL: false
@@ -70,49 +96,39 @@ actor LauncherAPI {
 			url: locationURL,
 			operation: "manifest location"
 		)
+		return location
+	}
 
-		var manifestRequest = URLRequest(url: location.url)
+	func manifestPayload(
+		at url: URL,
+		region: GameRegion
+	) async throws -> (manifest: GameManifest, byteCount: Int) {
+		var manifestRequest = URLRequest(url: url)
 		manifestRequest.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-		let data: Data
-		let response: URLResponse
-		do {
-			(data, response) = try await session.data(for: manifestRequest)
-		} catch is CancellationError {
-			throw CancellationError()
-		} catch {
+		let (data, response) = try await responseData(
+			for: manifestRequest,
+			maximumBytes: maximumManifestResponseBytes,
+			operation: "manifest download",
+			region: region,
+			url: url
+		)
+		guard response.statusCode == 200 else {
 			throw requestError(
 				operation: "manifest download",
 				region: region,
-				url: location.url,
-				reason: "transport error: \(error.localizedDescription)",
-				userMessage: error.localizedDescription
-			)
-		}
-		guard let http = response as? HTTPURLResponse else {
-			throw requestError(
-				operation: "manifest download",
-				region: region,
-				url: location.url,
-				reason: "response was not HTTP"
-			)
-		}
-		guard http.statusCode == 200 else {
-			throw requestError(
-				operation: "manifest download",
-				region: region,
-				url: location.url,
-				statusCode: http.statusCode,
+				url: url,
+				statusCode: response.statusCode,
 				reason: "unexpected HTTP status"
 			)
 		}
 		do {
-			return try decoder.decode(GameManifest.self, from: data)
+			return (try decoder.decode(GameManifest.self, from: data), data.count)
 		} catch {
 			throw requestError(
 				operation: "manifest download",
 				region: region,
-				url: location.url,
-				statusCode: http.statusCode,
+				url: url,
+				statusCode: response.statusCode,
 				reason: "decoding failed: \(error.localizedDescription)"
 			)
 		}
@@ -149,35 +165,19 @@ actor LauncherAPI {
 		var request = URLRequest(url: url)
 		request.setValue(authorizationHeader(region: region), forHTTPHeaderField: "Authorization")
 		request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
-		let data: Data
-		let response: URLResponse
-		do {
-			(data, response) = try await session.data(for: request)
-		} catch is CancellationError {
-			throw CancellationError()
-		} catch {
+		let (data, response) = try await responseData(
+			for: request,
+			maximumBytes: maximumAPIResponseBytes,
+			operation: operation,
+			region: region,
+			url: url
+		)
+		guard response.statusCode == 200 else {
 			throw requestError(
 				operation: operation,
 				region: region,
 				url: url,
-				reason: "transport error: \(error.localizedDescription)",
-				userMessage: error.localizedDescription
-			)
-		}
-		guard let http = response as? HTTPURLResponse else {
-			throw requestError(
-				operation: operation,
-				region: region,
-				url: url,
-				reason: "response was not HTTP"
-			)
-		}
-		guard http.statusCode == 200 else {
-			throw requestError(
-				operation: operation,
-				region: region,
-				url: url,
-				statusCode: http.statusCode,
+				statusCode: response.statusCode,
 				reason: "unexpected HTTP status"
 			)
 		}
@@ -189,7 +189,7 @@ actor LauncherAPI {
 				operation: operation,
 				region: region,
 				url: url,
-				statusCode: http.statusCode,
+				statusCode: response.statusCode,
 				reason: "decoding failed: \(error.localizedDescription)"
 			)
 		}
@@ -202,12 +202,70 @@ actor LauncherAPI {
 				operation: operation,
 				region: region,
 				url: url,
-				statusCode: http.statusCode,
+				statusCode: response.statusCode,
 				reason: "API envelope code \(envelope.code): \(envelope.msg ?? "Unknown error")",
 				userMessage: serverError.localizedDescription
 			)
 		}
 		return envelope.data
+	}
+
+	private func responseData(
+		for request: URLRequest,
+		maximumBytes: Int,
+		operation: String,
+		region: GameRegion,
+		url: URL
+	) async throws -> (Data, HTTPURLResponse) {
+		do {
+			return try await loader.data(for: request, maximumBytes: maximumBytes)
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch let error as HTTPTransportError {
+			if Task.isCancelled { throw CancellationError() }
+			switch error {
+			case .redirectRejected(let rejectedURL):
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "redirect refused unsupported origin "
+						+ (rejectedURL.host ?? "unknown"),
+					userMessage: LauncherError.invalidResponse.localizedDescription
+				)
+			case .responseTooLarge(let responseURL, let limit):
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "response exceeded \(limit) bytes",
+					userMessage: LauncherError.remoteContentTooLarge(
+						responseURL, maximumBytes: limit
+					).localizedDescription
+				)
+			case .responseSizeMismatch(_, let expected, let actual):
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "response size was \(actual) bytes; expected \(expected)"
+				)
+			case .invalidResponse:
+				throw requestError(
+					operation: operation,
+					region: region,
+					url: url,
+					reason: "response was not HTTP"
+				)
+			}
+		} catch {
+			throw requestError(
+				operation: operation,
+				region: region,
+				url: url,
+				reason: "transport error: \(error.localizedDescription)"
+			)
+		}
 	}
 
 	private func requestError(

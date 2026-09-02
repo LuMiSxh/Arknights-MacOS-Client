@@ -84,28 +84,31 @@ struct RuntimeMigrationStore {
 		self.fileManager = fileManager
 	}
 
-	func load(from prefixDirectory: URL) -> RuntimeMigrationState? {
+	func load(from prefixDirectory: URL) throws -> RuntimeMigrationState? {
 		let stateURL = prefixDirectory.appending(path: Self.stateFileName)
-		guard
-			let data = try? Data(contentsOf: stateURL),
-			let state = try? JSONDecoder().decode(RuntimeMigrationState.self, from: data)
-		else {
+		let data: Data
+		do {
+			data = try BoundedFileReader.readRegularFile(
+				at: stateURL,
+				maximumBytes: AppConstants.Game.runtimeMigrationStateMaximumBytes
+			)
+		} catch let error as POSIXError where error.code == .ENOENT {
 			return nil
 		}
-		return state
+		return try JSONDecoder().decode(RuntimeMigrationState.self, from: data)
 	}
 
 	func loadLegacy(
 		from prefixDirectory: URL,
 		expectedRevision: String,
 		hasSystemRegistry: Bool
-	) -> RuntimeMigrationState? {
+	) throws -> RuntimeMigrationState? {
 		guard hasSystemRegistry else { return nil }
-		let revision = readLegacyMarker(
+		let revision = try readLegacyMarker(
 			Self.legacyRevisionFileName,
 			from: prefixDirectory
 		)
-		let configuration = readLegacyMarker(
+		let configuration = try readLegacyMarker(
 			Self.legacyConfigurationFileName,
 			from: prefixDirectory
 		)
@@ -143,24 +146,42 @@ struct RuntimeMigrationStore {
 	/// user directories (saves, cookies, Documents).
 	func reset(prefixDirectory: URL) throws {
 		let stateURL = prefixDirectory.appending(path: Self.stateFileName)
-		if fileManager.fileExists(atPath: stateURL.path) {
-			try fileManager.removeItem(at: stateURL)
-		}
+		try removeIfPresent(at: stateURL)
 		try removeLegacyMarkers(from: prefixDirectory)
 	}
 
 	func removeLegacyMarkers(from prefixDirectory: URL) throws {
 		for name in [Self.legacyRevisionFileName, Self.legacyConfigurationFileName] {
 			let marker = prefixDirectory.appending(path: name)
-			guard fileManager.fileExists(atPath: marker.path) else { continue }
-			try fileManager.removeItem(at: marker)
+			try removeIfPresent(at: marker)
 		}
 	}
 
-	private func readLegacyMarker(_ name: String, from prefixDirectory: URL) -> String? {
-		try? String(
-			contentsOf: prefixDirectory.appending(path: name),
-			encoding: .utf8
-		)
+	private func removeIfPresent(at url: URL) throws {
+		do {
+			try fileManager.removeItem(at: url)
+		} catch let error as CocoaError
+			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
+		{
+			return
+		} catch let error as POSIXError where error.code == .ENOENT {
+			return
+		}
+	}
+
+	private func readLegacyMarker(_ name: String, from prefixDirectory: URL) throws -> String? {
+		let url = prefixDirectory.appending(path: name)
+		do {
+			let data = try BoundedFileReader.readRegularFile(
+				at: url,
+				maximumBytes: AppConstants.Game.runtimeMigrationStateMaximumBytes
+			)
+			guard let marker = String(data: data, encoding: .utf8) else {
+				throw CocoaError(.fileReadCorruptFile)
+			}
+			return marker
+		} catch let error as POSIXError where error.code == .ENOENT {
+			return nil
+		}
 	}
 }

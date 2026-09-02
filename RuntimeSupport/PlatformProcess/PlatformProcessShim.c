@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <shellapi.h>
+#include <limits.h>
 #include <stdio.h>
 #include <wchar.h>
 
@@ -36,7 +37,7 @@ struct window_search {
 struct game_window_search {
 	DWORD excluded_process_id;
 	HWND result;
-	LONG64 largest_area;
+	ULONGLONG largest_area;
 };
 
 /* Win32 gives no fixed upper bound for a module's own path, so this grows the buffer
@@ -130,12 +131,15 @@ static BOOL CALLBACK find_process_window(HWND window, LPARAM context_value) {
 	struct window_search *search = (struct window_search *)context_value;
 	DWORD process_id = 0;
 	RECT rectangle;
+	LONGLONG width;
+	LONGLONG height;
 
 	GetWindowThreadProcessId(window, &process_id);
 	if (process_id != search->process_id || !IsWindowVisible(window)) return TRUE;
 	if (!GetWindowRect(window, &rectangle)) return TRUE;
-	if (rectangle.right - rectangle.left < 400 || rectangle.bottom - rectangle.top < 300)
-		return TRUE;
+	width = (LONGLONG)rectangle.right - (LONGLONG)rectangle.left;
+	height = (LONGLONG)rectangle.bottom - (LONGLONG)rectangle.top;
+	if (width < 400 || height < 300) return TRUE;
 	search->result = window;
 	return FALSE;
 }
@@ -148,14 +152,19 @@ static BOOL CALLBACK find_game_window(HWND window, LPARAM context_value) {
 	DWORD process_id = 0;
 	wchar_t title[128];
 	RECT rectangle;
-	LONG64 area;
+	LONGLONG width;
+	LONGLONG height;
+	ULONGLONG area;
 
 	GetWindowThreadProcessId(window, &process_id);
 	if (process_id == search->excluded_process_id || !IsWindowVisible(window)) return TRUE;
 	if (GetWindowTextW(window, title, ARRAYSIZE(title)) == 0) return TRUE;
 	if (wcsncmp(title, L"Arknights", 9) != 0) return TRUE;
 	if (!GetWindowRect(window, &rectangle)) return TRUE;
-	area = (LONG64)(rectangle.right - rectangle.left) * (LONG64)(rectangle.bottom - rectangle.top);
+	width = (LONGLONG)rectangle.right - (LONGLONG)rectangle.left;
+	height = (LONGLONG)rectangle.bottom - (LONGLONG)rectangle.top;
+	if (width <= 0 || height <= 0) return TRUE;
+	area = (ULONGLONG)width * (ULONGLONG)height;
 	if (area <= search->largest_area) return TRUE;
 	search->largest_area = area;
 	search->result = window;
@@ -213,12 +222,19 @@ static HWND repair_notice_window(DWORD process_id) {
 static BOOL capture_notice_offset(HWND notice, HWND game, POINT *offset) {
 	RECT game_rectangle;
 	RECT notice_rectangle;
+	LONGLONG offset_x;
+	LONGLONG offset_y;
 
 	if (!GetWindowRect(game, &game_rectangle) || !GetWindowRect(notice, &notice_rectangle)) {
 		return FALSE;
 	}
-	offset->x = notice_rectangle.left - game_rectangle.left;
-	offset->y = notice_rectangle.top - game_rectangle.top;
+	offset_x = (LONGLONG)notice_rectangle.left - (LONGLONG)game_rectangle.left;
+	offset_y = (LONGLONG)notice_rectangle.top - (LONGLONG)game_rectangle.top;
+	if (offset_x < LONG_MIN || offset_x > LONG_MAX || offset_y < LONG_MIN || offset_y > LONG_MAX) {
+		return FALSE;
+	}
+	offset->x = (LONG)offset_x;
+	offset->y = (LONG)offset_y;
 	return TRUE;
 }
 
@@ -229,14 +245,21 @@ static BOOL capture_notice_offset(HWND notice, HWND game, POINT *offset) {
 static BOOL follow_game_window(HWND notice, HWND game, POINT offset) {
 	RECT game_rectangle;
 	RECT notice_rectangle;
+	LONGLONG widened_x;
+	LONGLONG widened_y;
 	int target_x;
 	int target_y;
 
 	if (!GetWindowRect(game, &game_rectangle) || !GetWindowRect(notice, &notice_rectangle)) {
 		return FALSE;
 	}
-	target_x = game_rectangle.left + offset.x;
-	target_y = game_rectangle.top + offset.y;
+	widened_x = (LONGLONG)game_rectangle.left + (LONGLONG)offset.x;
+	widened_y = (LONGLONG)game_rectangle.top + (LONGLONG)offset.y;
+	if (widened_x < INT_MIN || widened_x > INT_MAX || widened_y < INT_MIN || widened_y > INT_MAX) {
+		return FALSE;
+	}
+	target_x = (int)widened_x;
+	target_y = (int)widened_y;
 	if (notice_rectangle.left == target_x && notice_rectangle.top == target_y) return TRUE;
 	return SetWindowPos(
 		notice, NULL, target_x, target_y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);

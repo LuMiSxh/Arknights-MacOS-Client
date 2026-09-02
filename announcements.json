@@ -2,6 +2,18 @@
 	"schemaVersion": 1,
 	"announcements": [
 		{
+			"id": "canary-runtime-0-5",
+			"enabled": true,
+			"title": "Thank you for helping shape version 0.5",
+			"body": "Thank you for using Arknights Client — and an extra thank-you to everyone who took part in the settings survey. Your feedback helped shape version 0.5.\n\nVersion 0.5 adds optional **Canary Features**: new settings that are ready for wider testing. Find them under **Settings → Installation → Danger Zone**.\n\nDoes the in-game cursor feel delayed? Enable Canary Features and try a **Frame Latency** value from 1 to 3. Lower values may feel more responsive. If the game feels less smooth, switch back to 3.\n\nDo you often switch between speakers, headphones, displays, or AirPlay devices? Enable **Follow Default Audio Output** so the game can follow your Mac's current audio output without being restarted.\n\nChanges apply the next time you start the game. Canary settings may change while we test them, then move into the regular launcher in a later version.\n\nThe **China client** is also available through Canary Features. Once Canary is enabled, select **China (Canary)** under **Settings → Installation → Region**. It installs, updates, and launches through Arknights Client like the other regions.",
+			"actionTitle": "Read Canary details",
+			"actionURL": "https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/",
+			"minimumVersion": "0.5.0",
+			"maximumVersion": "0.5.2",
+			"startsAt": null,
+			"endsAt": null
+		},
+		{
 			"id": "settings-survey-2026-08",
 			"enabled": true,
 			"title": "Quick settings survey",

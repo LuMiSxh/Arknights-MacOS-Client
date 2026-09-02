@@ -3,9 +3,9 @@
 import Foundation
 
 @MainActor
-/// The single owner of every `UserDefaults`-backed launcher preference; `LauncherViewModel`
-/// reads and writes through here rather than touching `UserDefaults` directly, so
-/// `resetAllLauncherSettings` and tests have one place to reason about persisted state.
+/// The single owner of every `UserDefaults`-backed launcher preference. Feature controllers read
+/// and write through here rather than touching `UserDefaults` directly, so reset behavior and
+/// tests have one place to reason about persisted state.
 struct LauncherPreferencesStore {
 	private enum Key {
 		static let automaticLauncherUpdates = "automaticLauncherUpdates"
@@ -18,13 +18,16 @@ struct LauncherPreferencesStore {
 		static let showsPlayingMusic = "showsPlayingMusic"
 		static let launcherMusicVolume = "launcherMusicVolume"
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
-		static let presentedLauncherUpdate = "presentedLauncherUpdate"
 		static let gameLaunchOptions = "gameLaunchOptions"
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
+		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
+		static let followsDefaultAudioOutput = "followsDefaultAudioOutput"
+		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let forceDisableRetina = "forceDisableRetina"
+		static let appLanguage = "appLanguage"
 	}
 
 	let defaults: UserDefaults
@@ -117,14 +120,6 @@ struct LauncherPreferencesStore {
 		defaults.set(Array(ids.sorted().suffix(100)), forKey: Key.seenAnnouncementIDs)
 	}
 
-	func presentedLauncherUpdate() -> String? {
-		defaults.string(forKey: Key.presentedLauncherUpdate)
-	}
-
-	func markLauncherUpdatePresented(_ version: String) {
-		defaults.set(version, forKey: Key.presentedLauncherUpdate)
-	}
-
 	func launchOptions() -> GameLaunchOptions {
 		guard
 			let data = defaults.data(forKey: Key.gameLaunchOptions),
@@ -150,11 +145,38 @@ struct LauncherPreferencesStore {
 	}
 
 	func selectedRegion() -> GameRegion {
-		defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:)) ?? .global
+		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
+		if region == .china, !canaryFeaturesEnabled() { return .global }
+		return region ?? .global
 	}
 
 	func setSelectedRegion(_ region: GameRegion) {
 		defaults.set(region.rawValue, forKey: Key.selectedRegion)
+	}
+
+	func canaryFeaturesEnabled() -> Bool {
+		bool(for: Key.canaryFeaturesEnabled, defaultValue: false)
+	}
+
+	func setCanaryFeaturesEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
+	}
+
+	func followsDefaultAudioOutput() -> Bool {
+		bool(for: Key.followsDefaultAudioOutput, defaultValue: false)
+	}
+
+	func setFollowsDefaultAudioOutput(_ value: Bool) {
+		defaults.set(value, forKey: Key.followsDefaultAudioOutput)
+	}
+
+	func maximumFrameLatency() -> Int {
+		guard defaults.object(forKey: Key.maximumFrameLatency) != nil else { return 3 }
+		return min(max(defaults.integer(forKey: Key.maximumFrameLatency), 1), 3)
+	}
+
+	func setMaximumFrameLatency(_ value: Int) {
+		defaults.set(min(max(value, 1), 3), forKey: Key.maximumFrameLatency)
 	}
 
 	func usesDynamicTheme() -> Bool {
@@ -163,6 +185,14 @@ struct LauncherPreferencesStore {
 
 	func setUsesDynamicTheme(_ value: Bool) {
 		defaults.set(value, forKey: Key.usesDynamicTheme)
+	}
+
+	func appLanguage() -> AppLanguage {
+		defaults.string(forKey: Key.appLanguage).flatMap(AppLanguage.init(rawValue:)) ?? .system
+	}
+
+	func setAppLanguage(_ language: AppLanguage) {
+		defaults.set(language.rawValue, forKey: Key.appLanguage)
 	}
 
 	func forceDisableRetina() -> Bool {

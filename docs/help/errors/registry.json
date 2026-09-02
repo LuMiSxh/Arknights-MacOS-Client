@@ -1,0 +1,13 @@
+[
+	{ "code": "VIRGA", "domain": "service" },
+	{ "code": "PEBBLE", "domain": "installation" },
+	{ "code": "GABBRO", "domain": "installation" },
+	{ "code": "BASALT", "domain": "installation" },
+	{ "code": "SCREE", "domain": "installation" },
+	{ "code": "LIMPET", "domain": "runtime" },
+	{ "code": "WHELK", "domain": "runtime" },
+	{ "code": "SEPIA", "domain": "runtime" },
+	{ "code": "ANEMONE", "domain": "runtime" },
+	{ "code": "NARWHAL", "domain": "runtime" },
+	{ "code": "CRUX", "domain": "process" }
+]

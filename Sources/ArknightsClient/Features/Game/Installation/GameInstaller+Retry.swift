@@ -47,6 +47,7 @@ extension GameInstaller {
 				throw CancellationError()
 			} catch {
 				if attempt == maxAttempts { throw error }
+				await progress(await counter.resetRate(file: item.path))
 				await log?.debug(
 					"Retrying \(item.path) (attempt \(attempt + 1)/\(maxAttempts)) after: "
 						+ error.localizedDescription

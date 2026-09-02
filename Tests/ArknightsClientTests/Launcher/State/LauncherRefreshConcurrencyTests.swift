@@ -9,48 +9,12 @@ import Testing
 @Test
 func refreshStartsIndependentMetadataRequestsConcurrently() async {
 	let api = ConcurrentRefreshAPI()
-	let root = URL(filePath: NSTemporaryDirectory()).appending(
-		path: "LauncherRefreshConcurrencyTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	let paths = AppPaths(
-		applicationSupportDirectory: root.appending(path: "Support", directoryHint: .isDirectory),
-		cachesDirectory: root.appending(path: "Caches", directoryHint: .isDirectory),
-		libraryDirectory: root.appending(path: "Library", directoryHint: .isDirectory)
-	)
-	let suiteName = "LauncherRefreshConcurrencyTests.\(UUID().uuidString)"
-	let defaults = UserDefaults(suiteName: suiteName)!
-	defer {
-		defaults.removePersistentDomain(forName: suiteName)
-		do {
-			if FileManager.default.fileExists(atPath: root.path) {
-				try FileManager.default.removeItem(at: root)
-			}
-		} catch {
-			Issue.record("Failed to remove test directory: \(error)")
-		}
-	}
-	let preferences = LauncherPreferencesStore(defaults: defaults)
-	preferences.setAutomaticGameUpdates(false)
-	preferences.setAutomaticLauncherUpdates(false)
-	preferences.setAnnouncementsEnabled(false)
-	let model = LauncherViewModel(
-		api: api,
-		paths: paths,
-		preferences: preferences,
-		checkIntelTranslation: {
-			IntelTranslationCheck(state: .available, diagnostics: "test")
-		},
-		arguments: []
-	)
+	let model = makeModel(api: api, installer: ControllableInstaller())
 
 	await api.waitForBothRequests()
 	#expect(await api.requestedEndpoints() == [.configuration, .branding])
 	await api.resolveConfiguration()
-	for _ in 0..<100 where model.phase == .checking {
-		await Task.yield()
-	}
-	#expect(model.phase == .ready)
+	#expect(await waitForCondition { model.lifecycle.phase == .ready })
 }
 
 private actor ConcurrentRefreshAPI: LauncherAPIProviding {

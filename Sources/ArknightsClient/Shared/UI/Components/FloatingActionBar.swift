@@ -2,6 +2,29 @@
 
 import SwiftUI
 
+/// Shared fade behind floating footer controls so scroll content remains legible.
+struct FloatingActionFooterFade: View {
+	let height: CGFloat
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+	var body: some View {
+		Group {
+			if reduceTransparency {
+				Color.black.opacity(0.72)
+			} else {
+				LinearGradient(
+					colors: [.clear, Color.black.opacity(0.45)],
+					startPoint: .top,
+					endPoint: .bottom
+				)
+			}
+		}
+		.frame(height: height)
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+		.allowsHitTesting(false)
+	}
+}
+
 /// Shared floating glass container for modal and onboarding actions.
 struct FloatingActionBar<Content: View>: View {
 	let tint: Color
@@ -20,12 +43,16 @@ struct FloatingActionBar<Content: View>: View {
 
 /// Standard confirmation action used by floating modal footers.
 struct FloatingDoneButton: View {
+	var title = L10n.string(SharedStrings.done)
 	let accentColor: Color
 	let action: () -> Void
 
 	var body: some View {
 		CapsuleActionButton(
-			title: "Done", systemImage: "checkmark", tone: .accent(accentColor), action: action
+			title: title,
+			systemImage: "checkmark",
+			tone: .accent(accentColor),
+			action: action
 		)
 		.controlSize(.large)
 		.keyboardShortcut(.defaultAction)

@@ -3,39 +3,37 @@
 import SwiftUI
 
 struct OnboardingInstallationView: View {
-	@Bindable var model: LauncherViewModel
-	@State private var selectedRegion: GameRegion
-
-	init(model: LauncherViewModel) {
-		self.model = model
-		_selectedRegion = State(initialValue: model.region)
-	}
+	@Bindable var installation: InstallationController
+	let accentColor: Color
+	let canSwitchRegion: Bool
+	let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
 	var body: some View {
 		OnboardingPage(
-			title: "Choose where you play",
-			subtitle:
-				"Regions use separate game files and accounts. Pick the server you already use; you can install another region later from Settings.",
-			accentColor: model.accentColor
+			title: L10n.string(OnboardingStrings.installationTitle),
+			subtitle: L10n.string(OnboardingStrings.installationSubtitle),
+			accentColor: accentColor
 		) {
-			SettingsPanel(title: "Server region", systemImage: "globe.asia.australia") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.serverRegion),
+				systemImage: "globe.asia.australia"
+			) {
 				AdaptiveSegmentedControl(
-					selection: $selectedRegion,
-					options: GameRegion.allCases,
-					accentColor: model.accentColor
+					selection: regionBinding,
+					options: GameRegion.yostarCases,
+					accentColor: accentColor
 				) { region in
-					Text(region.displayName)
+					Text(region.localizedDisplayName)
 				}
-				.disabled(!model.canSwitchRegion)
-				.onChange(of: selectedRegion) { _, newRegion in
-					model.selectRegion(newRegion)
-				}
+				.disabled(!canSwitchRegion)
 				Text(regionDetail)
 					.font(.callout)
 					.foregroundStyle(.secondary)
 			}
 
-			SettingsPanel(title: "Official PC client", systemImage: installationImage) {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.officialClient), systemImage: installationImage
+			) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
 						Text(installationTitle)
@@ -45,17 +43,18 @@ struct OnboardingInstallationView: View {
 							.foregroundStyle(.secondary)
 					}
 					Spacer()
-					if model.phase == .checking {
+					if installation.lifecycle.refresh.isChecking {
 						ProgressView()
-					} else if model.isInstalled && !model.isDownloading {
+					} else if installation.isInstalled && !installation.isDownloading {
 						Image(systemName: "checkmark.circle.fill")
-							.foregroundStyle(model.accentColor)
+							.foregroundStyle(accentColor)
+							.accessibilityHidden(true)
 					}
 				}
 
-				if model.isDownloading, let progress = model.progress {
+				if installation.isDownloading, let progress = installation.progress {
 					ProgressView(value: progress.fraction)
-						.tint(model.accentColor)
+						.tint(accentColor)
 					Text(
 						"\(ByteCountFormatter.string(fromByteCount: progress.downloadedBytes, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: progress.totalBytes, countStyle: .file))"
 					)
@@ -63,47 +62,47 @@ struct OnboardingInstallationView: View {
 					.foregroundStyle(.secondary)
 				}
 
-				if !model.isInstalled && !model.isDownloading {
-					Text(
-						"Selecting Install & Continue starts a resumable download. Closing the launcher pauses it safely."
-					)
-					.font(.callout)
-					.foregroundStyle(.secondary)
+				if !installation.isInstalled && !installation.isDownloading {
+					Text(OnboardingStrings.installDownloadDetail)
+						.font(.callout)
+						.foregroundStyle(.secondary)
 				}
 			}
 		}
 	}
 
-	private var regionDetail: String {
-		switch selectedRegion {
-		case .global: "For the English Global client and Global Yostar accounts."
-		case .japan: "For the Japanese client and Japan-region Yostar accounts."
-		case .korea: "For the Korean client and Korea-region Yostar accounts."
-		}
+	private var regionDetail: LocalizedStringResource {
+		OnboardingStrings.regionDetail(installation.region)
 	}
 
 	private var installationImage: String {
-		if model.isDownloading { return "arrow.down.circle" }
-		if model.isInstalled { return "checkmark.circle" }
+		if installation.isDownloading { return "arrow.down.circle" }
+		if installation.isInstalled { return "checkmark.circle" }
 		return "externaldrive.badge.plus"
 	}
 
-	private var installationTitle: String {
-		if model.isDownloading { return "Downloading in the background" }
-		if model.isInstalled { return "Existing installation found" }
-		if model.hasPartialDownload { return "Paused download found" }
-		return "Ready to install \(selectedRegion.displayName)"
+	private var installationTitle: LocalizedStringResource {
+		if installation.isDownloading { return OnboardingStrings.downloadingTitle }
+		if installation.isInstalled { return OnboardingStrings.existingTitle }
+		if installation.hasPartialDownload { return OnboardingStrings.partialTitle }
+		return OnboardingStrings.readyToInstall(installation.region.localizedDisplayName)
 	}
 
-	private var installationDetail: String {
-		if model.isDownloading { return "You can continue setup while the game files download." }
-		if model.isInstalled {
-			return
-				"Arknights \(model.installedVersion ?? model.versionText) is ready in \(model.installDirectory.lastPathComponent)."
+	private var installationDetail: LocalizedStringResource {
+		if installation.isDownloading { return OnboardingStrings.downloadingDetail }
+		if installation.isInstalled {
+			return OnboardingStrings.installationExisting(
+				version: installation.installedVersion
+					?? installation.configuration?.gameLatestVersion ?? "—",
+				directory: installation.installDirectory.lastPathComponent
+			)
 		}
-		if model.hasPartialDownload {
-			return "The installer will continue from verified partial files."
-		}
-		return "Download size after extraction: \(model.installSizeText)."
+		if installation.hasPartialDownload { return OnboardingStrings.partialDetail }
+		return OnboardingStrings.installationSize(
+			installation.configuration?.decompressionSize ?? "—")
+	}
+
+	private var regionBinding: Binding<GameRegion> {
+		Binding(get: { installation.region }, set: { selectRegion($0) })
 	}
 }

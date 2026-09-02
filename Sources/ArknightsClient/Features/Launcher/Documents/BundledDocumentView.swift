@@ -11,9 +11,9 @@ enum BundledDocument: String, Identifiable {
 
 	var title: String {
 		switch self {
-		case .changelog: "Changelog"
-		case .projectLicense: "MPL-2.0 License"
-		case .thirdPartyNotices: "Third-Party Notices"
+		case .changelog: L10n.string(LauncherStrings.documentChangelog)
+		case .projectLicense: L10n.string(LauncherStrings.documentLicense)
+		case .thirdPartyNotices: L10n.string(LauncherStrings.documentNotices)
 		}
 	}
 
@@ -30,7 +30,7 @@ enum BundledDocument: String, Identifiable {
 		guard let url = bundle.url(forResource: resource.name, withExtension: resource.extension),
 			let contents = try? String(contentsOf: url, encoding: .utf8)
 		else {
-			return "This document is unavailable in the current build."
+			return L10n.string(LauncherStrings.documentUnavailable)
 		}
 		return contents
 	}
@@ -57,23 +57,26 @@ struct BundledDocumentView: View {
 				dismiss()
 			}
 		}
+		.onExitCommand(perform: dismiss.callAsFunction)
 	}
 }
 
 struct MarkdownDocument: View {
-	let source: String
 	let accentColor: Color
+	private let blocks: [MarkdownBlock]
+
+	init(source: String, accentColor: Color) {
+		self.accentColor = accentColor
+		blocks = MarkdownParser(source: source).blocks
+	}
 
 	var body: some View {
 		LazyVStack(alignment: .leading, spacing: 10) {
-			ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-				MarkdownBlockView(block: block, accentColor: accentColor)
+			ForEach(blocks.indices, id: \.self) { index in
+				MarkdownBlockView(block: blocks[index], accentColor: accentColor)
 			}
 		}
-	}
-
-	private var blocks: [MarkdownBlock] {
-		MarkdownParser(source: source).blocks
+		.tint(accentColor)
 	}
 }
 
@@ -85,11 +88,11 @@ private struct MarkdownBlockView: View {
 	var body: some View {
 		switch block {
 		case .heading(let level, let source):
-			Text(inline(source))
+			Text(markdownInline(source))
 				.font(headingFont(level: level))
 				.padding(.top, level == 1 ? 0 : 10)
 		case .paragraph(let source):
-			Text(inline(source))
+			Text(markdownInline(source))
 				.font(.body)
 				.lineSpacing(3)
 		case .bullet(let source):
@@ -97,7 +100,15 @@ private struct MarkdownBlockView: View {
 				Circle()
 					.fill(accentColor)
 					.frame(width: 5, height: 5)
-				Text(inline(source))
+				Text(markdownInline(source))
+			}
+			.padding(.leading, 6)
+		case .numbered(let number, let source):
+			HStack(alignment: .firstTextBaseline, spacing: 9) {
+				Text("\(number).")
+					.foregroundStyle(accentColor)
+					.monospacedDigit()
+				Text(markdownInline(source))
 			}
 			.padding(.leading, 6)
 		case .table(let rows):
@@ -121,14 +132,6 @@ private struct MarkdownBlockView: View {
 		default: .headline
 		}
 	}
-
-	private func inline(_ source: String) -> AttributedString {
-		let options = AttributedString.MarkdownParsingOptions(
-			interpretedSyntax: .inlineOnlyPreservingWhitespace
-		)
-		return (try? AttributedString(markdown: source, options: options))
-			?? AttributedString(source)
-	}
 }
 
 private struct MarkdownTable: View {
@@ -138,10 +141,11 @@ private struct MarkdownTable: View {
 	var body: some View {
 		ScrollView(.horizontal) {
 			VStack(alignment: .leading, spacing: 0) {
-				ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
+				ForEach(rows.indices, id: \.self) { rowIndex in
+					let row = rows[rowIndex]
 					HStack(alignment: .top, spacing: 0) {
-						ForEach(Array(row.enumerated()), id: \.offset) { columnIndex, cell in
-							Text(inline(cell))
+						ForEach(row.indices, id: \.self) { columnIndex in
+							Text(markdownInline(row[columnIndex]))
 								.font(rowIndex == 0 ? .callout.bold() : .callout)
 								.frame(
 									width: columnWidth(columnIndex: columnIndex, count: row.count),
@@ -172,12 +176,12 @@ private struct MarkdownTable: View {
 		}
 		return max(160, 680 / CGFloat(max(count, 1)))
 	}
+}
 
-	private func inline(_ source: String) -> AttributedString {
-		let options = AttributedString.MarkdownParsingOptions(
-			interpretedSyntax: .inlineOnlyPreservingWhitespace
-		)
-		return (try? AttributedString(markdown: source, options: options))
-			?? AttributedString(source)
-	}
+private func markdownInline(_ source: String) -> AttributedString {
+	let options = AttributedString.MarkdownParsingOptions(
+		interpretedSyntax: .inlineOnlyPreservingWhitespace
+	)
+	return (try? AttributedString(markdown: source, options: options))
+		?? AttributedString(source)
 }

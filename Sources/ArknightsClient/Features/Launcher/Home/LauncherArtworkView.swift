@@ -4,6 +4,7 @@ import SwiftUI
 
 struct LauncherArtworkView: View {
 	let image: NSImage?
+	let themeCacheKey: String?
 	let accentColor: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -14,21 +15,31 @@ struct LauncherArtworkView: View {
 					Image(nsImage: image)
 						.resizable()
 						.scaledToFill()
-						.id(ObjectIdentifier(image))
-						.transition(.opacity)
-						.accessibilityLabel("Arknights artwork")
+						.id(artworkIdentity)
+						.transition(artworkTransition)
+						.accessibilityLabel(LauncherStrings.artworkAccessibility)
 				} else {
 					fallbackArtwork
-						.transition(.opacity)
+						.id(artworkIdentity)
+						.transition(artworkTransition)
+						.accessibilityHidden(true)
 				}
 			}
 			.frame(width: proxy.size.width, height: proxy.size.height)
 			.clipped()
 			.animation(
 				reduceMotion ? nil : .easeInOut(duration: 0.36),
-				value: image.map(ObjectIdentifier.init)
+				value: artworkIdentity
 			)
 		}
+	}
+
+	private var artworkIdentity: String {
+		themeCacheKey ?? (image == nil ? "fallback" : "artwork")
+	}
+
+	private var artworkTransition: AnyTransition {
+		reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.015))
 	}
 
 	private var fallbackArtwork: some View {
