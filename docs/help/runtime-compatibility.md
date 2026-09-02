@@ -9,13 +9,13 @@ order: 40
 Arknights is a Windows PC client. On an Apple silicon Mac, Arknights Client connects the pieces required to run it:
 
 ```text
-Apple silicon Mac → Rosetta 2 → x86-64 Wine → DXMT → Metal → official Yostar PC client
+Apple silicon Mac → Rosetta 2 → x86-64 Wine → DXMT → Metal → official Windows client
 ```
 
 The launcher owns this chain as one tested runtime. It does not ask you to install Wine, DXMT, or a separate Windows copy.
 
 > [!IMPORTANT]
-> The DMG contains a pinned Wine + DXMT runtime, but it does not contain the game. The launcher downloads the selected official Yostar client and verifies its files against Yostar's manifest.
+> The DMG contains a pinned Wine + DXMT runtime, but it does not contain the game. The launcher downloads the selected official client and verifies its files against the publisher's manifest.
 
 ## macOS support
 
@@ -53,13 +53,13 @@ The central `wine.log` records these stages. A first launch after a runtime chan
 
 ## The shared Wine prefix
 
-All supported regions use one prefix:
+Global, Japan, and Korea use one prefix:
 
 ```text
 ~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global
 ```
 
-The historical `Arknights-Global` name is kept for storage compatibility. The prefix contains Wine registry state, the embedded-browser profiles and sessions, DXMT shader data, and runtime migration state. Regional game files remain in separate directories; only the active region is mapped as `G:` for a launch.
+The historical `Arknights-Global` name is kept for storage compatibility. The prefix contains Wine registry state, the embedded-browser profiles and sessions, DXMT shader data, and runtime migration state. Regional game files remain in separate directories; only the active region is mapped as `G:` for a launch. The Canary-gated China client uses a separate `Arknights-China` prefix.
 
 The launcher also maps the central macOS log directory as `L:` so Unity and browser logs can be collected alongside `wine.log`. Wine's default `Z:` mapping to the macOS file-system root is removed before each start, and its shell folders are kept inside the prefix.
 
@@ -99,6 +99,16 @@ The launcher configures Retina mode from the current display and **High-Resoluti
 See [Graphics, window, and performance problems](troubleshooting.md#graphics-window-and-performance-problems) for the commands and recovery order.
 
 The default Wine synchronization mode is **MSYNC**. It uses macOS Mach synchronization and is the mode tested for the current runtime. **ESYNC** remains available as an experimental compatibility fallback in **Settings → Installation → Compatibility**. Changing this setting applies on the next launch and does not delete or migrate the prefix.
+
+## Canary Features
+
+**Settings → Installation → Danger Zone → Canary Features** exposes optional runtime behavior for wider testing. Turning Canary Features off restores the regular launch behavior without deleting games or prefixes. Changes to the options below apply on the next game launch.
+
+- **Follow Default Audio Output** lets a running game follow the current macOS output when you switch between speakers, headphones, displays, or AirPlay devices. It is off by default.
+- **Frame Latency** sets DXMT's maximum queued frames from 1 to 3. The default is 3. A lower value may make the rendered cursor feel more responsive, but can reduce frame rate or make presentation less smooth.
+- **China (Canary)** appears in the Region menu and uses the same native installation and launch controls as the other regions. Its files and Wine prefix remain separate.
+
+Canary behavior may change as testing continues. If an option causes a regression, restore its default or turn Canary Features off before the next launch and include the selected setting in a bug report.
 
 ## Embedded browser and notices
 

@@ -22,6 +22,8 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
+		static let followsDefaultAudioOutput = "followsDefaultAudioOutput"
+		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let forceDisableRetina = "forceDisableRetina"
@@ -158,6 +160,23 @@ struct LauncherPreferencesStore {
 
 	func setCanaryFeaturesEnabled(_ value: Bool) {
 		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
+	}
+
+	func followsDefaultAudioOutput() -> Bool {
+		bool(for: Key.followsDefaultAudioOutput, defaultValue: false)
+	}
+
+	func setFollowsDefaultAudioOutput(_ value: Bool) {
+		defaults.set(value, forKey: Key.followsDefaultAudioOutput)
+	}
+
+	func maximumFrameLatency() -> Int {
+		guard defaults.object(forKey: Key.maximumFrameLatency) != nil else { return 3 }
+		return min(max(defaults.integer(forKey: Key.maximumFrameLatency), 1), 3)
+	}
+
+	func setMaximumFrameLatency(_ value: Int) {
+		defaults.set(min(max(value, 1), 3), forKey: Key.maximumFrameLatency)
 	}
 
 	func usesDynamicTheme() -> Bool {

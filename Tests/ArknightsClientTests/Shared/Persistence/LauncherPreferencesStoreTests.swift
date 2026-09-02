@@ -24,6 +24,8 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.5)
 		#expect(store.usesDynamicTheme())
 		#expect(!store.canaryFeaturesEnabled())
+		#expect(!store.followsDefaultAudioOutput())
+		#expect(store.maximumFrameLatency() == 3)
 		#expect(store.selectedRegion() == .global)
 		#expect(store.appLanguage() == .system)
 		#expect(!store.forceDisableRetina())
@@ -39,6 +41,8 @@ struct LauncherPreferencesStoreTests {
 		store.setLauncherMusicVolume(0.8)
 		store.setUsesDynamicTheme(false)
 		store.setCanaryFeaturesEnabled(true)
+		store.setFollowsDefaultAudioOutput(true)
+		store.setMaximumFrameLatency(1)
 		store.setSelectedRegion(.korea)
 		store.setAppLanguage(.german)
 
@@ -53,6 +57,8 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.8)
 		#expect(!store.usesDynamicTheme())
 		#expect(store.canaryFeaturesEnabled())
+		#expect(store.followsDefaultAudioOutput())
+		#expect(store.maximumFrameLatency() == 1)
 		#expect(store.selectedRegion() == .korea)
 		#expect(store.appLanguage() == .german)
 	}

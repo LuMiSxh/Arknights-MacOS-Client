@@ -133,6 +133,13 @@ enum SettingsStrings {
 		.settingsInstallationCanaryFeatures
 	static let canaryFeaturesDetail = LocalizedStringResource.Settings
 		.settingsInstallationCanaryFeaturesDetail
+	static let followsDefaultAudioOutput = LocalizedStringResource.Settings
+		.settingsInstallationFollowsDefaultAudioOutput
+	static let followsDefaultAudioOutputDetail = LocalizedStringResource.Settings
+		.settingsInstallationFollowsDefaultAudioOutputDetail
+	static let frameLatency = LocalizedStringResource.Settings.settingsInstallationFrameLatency
+	static let frameLatencyDetail = LocalizedStringResource.Settings
+		.settingsInstallationFrameLatencyDetail
 	static let repair = LocalizedStringResource.Settings.settingsInstallationRepair
 	static let repairAction = LocalizedStringResource.Settings.settingsInstallationRepairAction
 	static let repairDetail = LocalizedStringResource.Settings.settingsInstallationRepairDetail

@@ -1783,6 +1783,78 @@
         }
       }
     },
+    "settings.installation.followsDefaultAudioOutput": {
+      "comment": "Canary toggle for following the current macOS default audio output",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard-Audioausgabe folgen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow Default Audio Output"
+          }
+        }
+      }
+    },
+    "settings.installation.followsDefaultAudioOutput.detail": {
+      "comment": "Canary default-audio behavior and launch timing",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lässt das laufende Spiel dem aktuellen macOS-Ausgabegerät folgen. Gilt ab dem nächsten Spielstart."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lets the running game follow the current macOS output device. Applies on the next game launch."
+          }
+        }
+      }
+    },
+    "settings.installation.frameLatency": {
+      "comment": "Canary DXMT maximum frame latency control",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frame-Latenz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frame Latency"
+          }
+        }
+      }
+    },
+    "settings.installation.frameLatency.detail": {
+      "comment": "Canary DXMT frame queue explanation and launch timing",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begrenzt die DXMT-Warteschlange auf 1 bis 3 Frames. Niedrigere Werte können die Cursor-Latenz verringern, aber die Darstellung weniger flüssig machen. Gilt ab dem nächsten Spielstart."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limits the DXMT queue to 1–3 frames. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+          }
+        }
+      }
+    },
     "settings.installation.chooseNewLocation": {
       "comment": "Choose new install location action",
       "extractionState": "manual",

@@ -74,6 +74,15 @@ extension GameSessionController {
 		}
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
+		var runtimeEnvironment = [
+			"ARKNIGHTS_RUNTIME_CN_COMPAT": isChina ? "1" : "0"
+		]
+		if settings.canaryFeaturesEnabled {
+			runtimeEnvironment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] =
+				settings.followsDefaultAudioOutput ? "1" : "0"
+			runtimeEnvironment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] =
+				String(settings.maximumFrameLatency)
+		}
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let displayConfiguration = WineDisplayConfiguration.current(
 			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
@@ -103,9 +112,7 @@ extension GameSessionController {
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,
 					synchronizationMode: requestedLaunchOptions.synchronizationMode,
-					runtimeEnvironmentOverrides: [
-						"ARKNIGHTS_RUNTIME_CN_COMPAT": isChina ? "1" : "0"
-					],
+					runtimeEnvironmentOverrides: runtimeEnvironment,
 					gameIconURL: customGameIconURL(),
 					logURL: paths.wineLogFile(for: requestedRegion),
 					log: log

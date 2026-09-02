@@ -171,6 +171,9 @@ struct InstallationSettingsPage: View {
 					)
 					.disabled(lifecycle.activity != .idle)
 				}
+				if settings.canaryFeaturesEnabled {
+					canaryRuntimeSettings
+				}
 				SettingsHairline()
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.wineSetup),

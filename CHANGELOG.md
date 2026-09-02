@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - An opt-in Canary Features gate in Settings for containing unfinished functionality without changing the default launcher experience.
 - The China client behind Canary Features, with the same native install, update, repair, storage, playtime, and launch flow as other regions.
+- Canary controls for following macOS audio-output changes during play and selecting DXMT's one-to-three-frame latency limit.
 - Resumable, size-bounded runtime archive downloads that retain partial files only while a strong ETag still matches.
 - Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
 - A static project website built from the repository documentation, with safe Markdown rendering, base-path-aware navigation, canonical and social metadata, and GitHub Pages release deployment (#56).
