@@ -21,6 +21,25 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: code
+    attributes:
+      label: Error code
+      description: Keep the code shown by the launcher, if one was provided.
+      placeholder: PEBBLE
+
+  - type: input
+    id: operation
+    attributes:
+      label: Failed operation
+      description: The launcher fills this when the report starts from a recovery action.
+
+  - type: input
+    id: region
+    attributes:
+      label: Selected region
+      description: Global, Japan, or Korea when the failure belongs to a regional operation.
+
   - type: textarea
     id: problem
     attributes:
@@ -43,8 +62,8 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Logs
-      description: Drag launcher.log and wine.log here if available. Review them first because local paths may contain your macOS account name.
+      label: Log files (only when requested)
+      description: Leave this empty for the initial report. If a maintainer asks for a specific file, open Settings → Storage in the launcher, choose Show Logs, and attach only that file. Logs may contain private paths, URLs, or account-related data; say so if you do not want to share one publicly.
 
   - type: checkboxes
     id: checks

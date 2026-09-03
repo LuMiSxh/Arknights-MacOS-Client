@@ -7,40 +7,29 @@
 	extension LauncherViewModel {
 		func applyDeveloperScenario(_ scenario: DeveloperScenario) {
 			developerScenario = scenario
-			pendingPopups.removeAll()
-			popup = nil
-			configuration = Self.developerConfiguration
-			progress = nil
-			runtimeName = "Wine 11.15 + DXMT 0.80"
-			isInstalled = true
-			installedVersion = Self.developerConfiguration.gameLatestVersion
-			isGameUpdateAvailable = false
-			launcherUpdate = nil
-			launcherUpdateStatus = "Up to date"
-			isCheckingLauncherUpdates = false
-			intelTranslationState = .available
-			state.activity = .idle
-			state.refresh = .idle
-			setStatus(.ready)
+			communication.resetPopupQueueForDeveloper()
+			installation.configuration = Self.developerConfiguration
+			installation.progress = nil
+			gameSession.runtimeName = "Wine 11.16 + DXMT 0.80-199"
+			installation.isInstalled = true
+			installation.installedVersion = Self.developerConfiguration.gameLatestVersion
+			installation.isGameUpdateAvailable = false
+			communication.launcherUpdateVersion = nil
+			communication.launcherUpdateStatus = "Up to date"
+			communication.isCheckingLauncherUpdates = false
+			lifecycle.intelTranslationState = .available
+			lifecycle.activity = .idle
+			lifecycle.refresh = .idle
+			lifecycle.setStatus(.ready)
 
 			switch scenario {
 			case .ready:
 				break
 			case .launcherUpdate:
-				let release = LauncherRelease(
-					tagName: "v0.2.0",
-					htmlURL: URL(
-						string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/releases")!,
-					body:
-						"## What’s new\n\n- Faster game startup\n- Improved embedded browser rendering\n- More reliable runtime migrations",
-					isDraft: false,
-					isPrerelease: false
-				)
-				launcherUpdate = release
-				launcherUpdateStatus = "Version 0.2.0 available"
-				enqueuePopup(Self.developerUpdatePopup(release))
+				communication.launcherUpdateVersion = "0.2.0"
+				communication.launcherUpdateStatus = "Version 0.2.0 available"
 			case .announcement:
-				enqueuePopup(
+				communication.enqueuePopup(
 					LauncherPopup(
 						id: "developer-announcement",
 						title: "Help improve Arknights Client",
@@ -56,33 +45,16 @@
 				)
 			case .customPopup:
 				break
-			case .yostarNotice:
-				let notice = LauncherNoticeFormatter.notice(
-					fromHTML:
-						"<h2>Scheduled maintenance</h2><p>The game will be unavailable during maintenance.</p>"
-				)
-				if let notice {
-					enqueuePopup(
-						LauncherPopup(
-							id: "developer-yostar-notice",
-							title: "Notice",
-							content: .attributed(notice.content),
-							dismissTitle: "Done",
-							actionTitle: nil,
-							actionURL: nil
-						)
-					)
-				}
 			case .gameUpdate:
-				installedVersion = "041.2.0"
-				isGameUpdateAvailable = true
-				setStatus(.updateAvailable)
+				installation.installedVersion = "041.2.0"
+				installation.isGameUpdateAvailable = true
+				lifecycle.setStatus(.updateAvailable)
 			case .downloading:
-				installedVersion = "041.2.0"
-				isGameUpdateAvailable = true
-				state.activity = .installing(id: UUID(), stage: .downloading)
-				setStatus(.downloading)
-				progress = DownloadProgress(
+				installation.installedVersion = "041.2.0"
+				installation.isGameUpdateAvailable = true
+				lifecycle.activity = .installing(id: UUID(), stage: .downloading)
+				lifecycle.setStatus(.downloading)
+				installation.progress = DownloadProgress(
 					downloadedBytes: 1_731_000_000,
 					totalBytes: 4_026_000_000,
 					completedFiles: 128,
@@ -90,44 +62,42 @@
 					currentFile: "Arknights_Data/data.unity3d"
 				)
 			case .paused:
-				installedVersion = "041.2.0"
-				isGameUpdateAvailable = true
-				hasPartialDownload = true
-				setStatus(.paused)
-			case .migrating:
-				state.activity = .preparingGame(sessionID: UUID())
-				setStatus(.preparingWine)
+				installation.installedVersion = "041.2.0"
+				installation.isGameUpdateAvailable = true
+				installation.hasPartialDownload = true
+				lifecycle.setStatus(.paused)
 			case .launching:
-				state.activity = .launchingGame(sessionID: UUID(), processIdentifier: nil)
-				setStatus(.startingGame)
-			case .running:
-				state.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
-				setStatus(.running)
+				lifecycle.activity = .launchingGame(sessionID: UUID(), processIdentifier: nil)
+				lifecycle.setStatus(.startingGame)
 			case .failure:
-				state.presentation.failureMessage =
-					"The Windows runtime exited unexpectedly. Check the logs for details."
-			case .notInstalled:
-				isInstalled = false
-				hasPartialDownload = false
-				installedVersion = nil
-				setStatus(.install)
-			case .musicPlayer:
-				showsPlayingMusic = true
-				currentMusicTitle = "Arknights EP – Reforge"
-				currentMusicVideoID = "developer-preview"
-			case .onboarding, .onboardingRosetta:
-				isInstalled = false
-				hasPartialDownload = false
-				installedVersion = nil
-				setStatus(.install)
-				if scenario == .onboardingRosetta {
-					intelTranslationState = .rosettaMissing
-				}
+				lifecycle.presentation.failure = LauncherFailurePresentation(
+					id: UUID(),
+					message: "The Windows runtime exited with status 1. See wine.log.",
+					code: .crux,
+					context: SupportContext(
+						operation: .runtimeExit,
+						region: installation.region.supportRegion
+					),
+					actions: [.retry, .openTroubleshooting, .repair, .reportProblem],
+					blocksGameLaunch: true
+				)
+			case .accessibility:
+				settings.showsPlayingMusic = true
+				settings.showsGameVersion = true
+				settings.showsServerResetCountdown = true
+				developerAccessibilityMusicTitle =
+					"A very long Arknights soundtrack title for Dynamic Type and keyboard layout checks"
+			case .onboardingRosetta:
+				installation.isInstalled = false
+				installation.hasPartialDownload = false
+				installation.installedVersion = nil
+				lifecycle.setStatus(.install)
+				lifecycle.intelTranslationState = .rosettaMissing
 			}
 		}
 
 		func applyDeveloperCustomPopup(title: String, markdown: String) {
-			enqueuePopup(
+			communication.enqueuePopup(
 				LauncherPopup(
 					id: "developer-custom-popup",
 					title: title,
@@ -140,14 +110,20 @@
 		}
 
 		func loadDeveloperArtwork() async {
-			if await loadCustomArtwork() { return }
+			let region = installation.region
+			guard !region.isChinaClient else { return }
+			if await customization.loadCustomArtwork() { return }
+			let artworkCache = customization.artworkCache
 			do {
 				let currentBranding = try await api.branding(region: region)
-				guard isDeveloperMode else { return }
-				branding = currentBranding
+				guard isDeveloperMode, installation.region == region else { return }
+				refreshController.branding = currentBranding
 				do {
-					let logoData = try await artworkCache.officialLogoData()
-					officialLogo = NSImage(data: logoData)
+					let logoData = try await artworkCache.officialLogoData(
+						for: region
+					)
+					guard installation.region == region else { return }
+					customization.officialLogo = logoData.flatMap(NSImage.init(data:))
 				} catch {
 					await log.error(
 						"Failed to load developer logo: \(error.localizedDescription)"
@@ -160,9 +136,10 @@
 					), let image = NSImage(data: imageData),
 						let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
 					{
-						setHeroArtwork(
+						guard installation.region == region else { return }
+						customization.setHeroArtwork(
 							image,
-							themeCacheKey: Self.officialThemeCacheKey(
+							themeCacheKey: CustomizationController.officialThemeCacheKey(
 								for: region,
 								artworkCacheKey: artworkCacheKey
 							)
@@ -190,15 +167,5 @@
 			decompressionSize: "38 GB"
 		)
 
-		private static func developerUpdatePopup(_ release: LauncherRelease) -> LauncherPopup {
-			LauncherPopup(
-				id: "developer-launcher-update",
-				title: "Arknights Client \(release.version)",
-				content: .markdown(release.body ?? ""),
-				dismissTitle: "Later",
-				actionTitle: "View Release",
-				actionURL: release.htmlURL
-			)
-		}
 	}
 #endif

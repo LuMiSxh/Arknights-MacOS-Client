@@ -16,7 +16,8 @@ struct OnboardingRosettaRecoveryView: View {
 			case .idle:
 				recoveryIntroduction
 				CapsuleActionButton(
-					title: "Install Rosetta 2…", systemImage: "arrow.down.circle",
+					title: L10n.string(OnboardingStrings.installRosetta),
+					systemImage: "arrow.down.circle",
 					tone: .accent(accentColor)
 				) {
 					confirmsInstallation = true
@@ -24,30 +25,35 @@ struct OnboardingRosettaRecoveryView: View {
 			case .installing:
 				HStack(spacing: 12) {
 					ProgressView()
-					Text("Installing Rosetta 2 with Apple’s software update tool…")
+					Text(L10n.string(OnboardingStrings.rosettaInstalling))
 						.foregroundStyle(.secondary)
 				}
 			case .failed(let message):
 				recoveryIntroduction
-				Label("Installation failed", systemImage: "exclamationmark.triangle.fill")
-					.foregroundStyle(.orange)
+				Label(
+					L10n.string(OnboardingStrings.rosettaFailed),
+					systemImage: "exclamationmark.triangle.fill"
+				)
+				.foregroundStyle(.orange)
 				Text(message)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
-				Text("You can also install Rosetta manually in Terminal:")
+				Text(L10n.string(OnboardingStrings.rosettaManualInstall))
 					.foregroundStyle(.secondary)
 				Text("softwareupdate --install-rosetta --agree-to-license")
 					.font(.callout.monospaced())
 					.textSelection(.enabled)
 				HStack(spacing: 10) {
 					CapsuleActionButton(
-						title: "Try Installation Again…", systemImage: "arrow.clockwise",
+						title: L10n.string(OnboardingStrings.tryInstallationAgain),
+						systemImage: "arrow.clockwise",
 						tone: .accent(accentColor)
 					) {
 						confirmsInstallation = true
 					}
 					CapsuleActionButton(
-						"Check Again", systemImage: "checkmark.arrow.trianglehead.counterclockwise",
+						title: L10n.string(OnboardingStrings.checkAgain),
+						systemImage: "checkmark.arrow.trianglehead.counterclockwise",
 						tone: .accent(accentColor)
 					) {
 						checkAgain()
@@ -60,10 +66,8 @@ struct OnboardingRosettaRecoveryView: View {
 	}
 
 	private var recoveryIntroduction: some View {
-		Text(
-			"Rosetta 2 is missing. Install Apple’s compatibility layer so the bundled Wine runtime can start."
-		)
-		.foregroundStyle(.secondary)
-		.fixedSize(horizontal: false, vertical: true)
+		Text(L10n.string(OnboardingStrings.rosettaIntroduction))
+			.foregroundStyle(.secondary)
+			.fixedSize(horizontal: false, vertical: true)
 	}
 }

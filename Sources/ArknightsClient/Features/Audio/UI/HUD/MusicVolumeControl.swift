@@ -29,8 +29,12 @@ struct MusicVolumeControl: View {
 			}
 			.buttonStyle(ActionPressStyle())
 			.focused($focusedElement, equals: .speaker)
+			.focusEffectDisabled(true)
+			.keyboardFocusIndicator(isFocused: focusedElement == .speaker, in: Circle())
 			.disabled(isDisabled)
-			.accessibilityValue(isMuted ? "Muted" : volumeAccessibilityValue)
+			.accessibilityValue(
+				isMuted ? L10n.string(AudioStrings.muted) : volumeAccessibilityValue
+			)
 			.help(muteButtonTitle)
 
 			if isExpanded {
@@ -38,7 +42,12 @@ struct MusicVolumeControl: View {
 					.tint(accentColor)
 					.frame(width: AppConstants.Music.volumeSliderWidth)
 					.focused($focusedElement, equals: .slider)
-					.accessibilityLabel("Music volume")
+					.focusEffectDisabled(true)
+					.keyboardFocusIndicator(
+						isFocused: focusedElement == .slider,
+						in: Capsule()
+					)
+					.accessibilityLabel(L10n.string(AudioStrings.volume))
 					.accessibilityValue(volumeAccessibilityValue)
 					.disabled(isDisabled)
 					.transition(.opacity.combined(with: .move(edge: .leading)))
@@ -72,7 +81,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var muteButtonTitle: String {
-		isMuted ? "Unmute music" : "Mute music"
+		L10n.string(isMuted ? AudioStrings.unmute : AudioStrings.mute)
 	}
 
 	private var speakerSymbol: String {
@@ -86,7 +95,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var volumeAccessibilityValue: String {
-		"\(Int(volume * 100)) percent"
+		L10n.string(AudioStrings.volumePercent(Int(volume * 100)))
 	}
 
 	private enum FocusedElement: Hashable {

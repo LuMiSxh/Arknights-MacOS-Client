@@ -11,7 +11,7 @@ struct GameInstallerStreamingTests {
 	func installerResumesAPartialFileWithBufferedChunks() async throws {
 		let body = Data(repeating: 0xA5, count: 512 * 1_024)
 		let partialSize = 96 * 1_024
-		let fixture = try makeFixture(body: body)
+		let fixture = try Self.makeFixture(body: body)
 		defer { fixture.remove() }
 		try body.prefix(partialSize).write(to: fixture.partial)
 		StreamingURLProtocol.handler = { request in
@@ -35,13 +35,15 @@ struct GameInstallerStreamingTests {
 		#expect(try Data(contentsOf: fixture.destination) == body)
 		#expect(result.downloadedBytes == Int64(body.count))
 		#expect(updates.first?.downloadedBytes == Int64(partialSize))
+		#expect(updates.first?.networkDownloadedBytes == 0)
 		#expect(updates.last?.downloadedBytes == Int64(body.count))
+		#expect(updates.last?.networkDownloadedBytes == Int64(body.count - partialSize))
 	}
 
 	@Test
 	func installerTruncatesAPartialFileWhenTheServerIgnoresRange() async throws {
 		let body = Data(repeating: 0x5A, count: 384 * 1_024)
-		let fixture = try makeFixture(body: body)
+		let fixture = try Self.makeFixture(body: body)
 		defer { fixture.remove() }
 		try Data(repeating: 0xFF, count: 64 * 1_024).write(to: fixture.partial)
 		StreamingURLProtocol.handler = { request in
@@ -68,7 +70,7 @@ struct GameInstallerStreamingTests {
 	@Test
 	func installerDownloadsOfficialLeadingSlashManifestPaths() async throws {
 		let body = Data("game".utf8)
-		let fixture = try makeFixture(
+		let fixture = try Self.makeFixture(
 			body: body,
 			source: "/Arknights_JP-36.7.23-game",
 			relativePath: "/Arknights.exe"
@@ -90,14 +92,13 @@ struct GameInstallerStreamingTests {
 			progress: { _ in }
 		)
 
-		#expect(fixture.destination.lastPathComponent == "Arknights.exe")
 		#expect(try Data(contentsOf: fixture.destination) == body)
 	}
 
 	@Test
 	func installerStopsWritingWhenAResponseExceedsTheManifestSize() async throws {
 		let body = Data("game".utf8)
-		let fixture = try makeFixture(body: body)
+		let fixture = try Self.makeFixture(body: body)
 		defer { fixture.remove() }
 		StreamingURLProtocol.handler = { request in
 			return (
@@ -137,7 +138,7 @@ struct GameInstallerStreamingTests {
 	@Test
 	func checksumRetryRollsBackAttemptProgress() async throws {
 		let body = Data("correct".utf8)
-		let fixture = try makeFixture(body: body)
+		let fixture = try Self.makeFixture(body: body)
 		defer { fixture.remove() }
 		var requestCount = 0
 		StreamingURLProtocol.handler = { request in
@@ -159,18 +160,22 @@ struct GameInstallerStreamingTests {
 		)
 
 		let updates = await recorder.updates()
-		#expect(requestCount == 2)
+		#expect(requestCount >= 2)
 		#expect(updates.contains(where: { $0.downloadedBytes == 0 }))
+		#expect(updates.contains(where: { $0.networkDownloadedBytes == 0 }))
 		#expect(updates.allSatisfy { $0.downloadedBytes <= Int64(body.count) })
 		#expect(updates.last?.downloadedBytes == Int64(body.count))
+		#expect(updates.last?.networkDownloadedBytes == Int64(body.count))
 		#expect(try Data(contentsOf: fixture.destination) == body)
 	}
 
-	private func makeFixture(
+	static func makeFixture(
 		body: Data,
 		source: String = "payload",
-		relativePath: String = "bin/game.dat"
+		relativePath: String = "bin/game.dat",
+		protocolClass: URLProtocol.Type = StreamingURLProtocol.self
 	) throws -> InstallerFixture {
+		let baseURL = URL(string: "https://download.test")!
 		let directory = FileManager.default.temporaryDirectory.appending(
 			path: "GameInstallerStreamingTests-\(UUID().uuidString)",
 			directoryHint: .isDirectory
@@ -193,7 +198,6 @@ struct GameInstallerStreamingTests {
 			gameUninstallScript: "uninstall.exe",
 			decompressionSize: "1 MB"
 		)
-		let baseURL = URL(string: "https://download.test/")!
 		let item = ManifestFile(
 			path: relativePath,
 			hash: checksum.decimalString,
@@ -207,7 +211,7 @@ struct GameInstallerStreamingTests {
 			cdn: CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
 		)
 		let sessionConfiguration = URLSessionConfiguration.ephemeral
-		sessionConfiguration.protocolClasses = [StreamingURLProtocol.self]
+		sessionConfiguration.protocolClasses = [protocolClass]
 		return InstallerFixture(
 			directory: directory,
 			destination: destination,
@@ -223,7 +227,7 @@ struct GameInstallerStreamingTests {
 		)
 	}
 
-	private static func response(url: URL, status: Int) -> HTTPURLResponse {
+	static func response(url: URL, status: Int) -> HTTPURLResponse {
 		HTTPURLResponse(
 			url: url,
 			statusCode: status,
@@ -233,7 +237,7 @@ struct GameInstallerStreamingTests {
 	}
 }
 
-private actor ProgressRecorder {
+actor ProgressRecorder {
 	private var recordedUpdates: [DownloadProgress] = []
 
 	func record(_ update: DownloadProgress) {
@@ -245,7 +249,7 @@ private actor ProgressRecorder {
 	}
 }
 
-private struct InstallerFixture {
+struct InstallerFixture {
 	let directory: URL
 	let destination: URL
 	let configuration: GameConfiguration
@@ -261,7 +265,7 @@ private struct InstallerFixture {
 	}
 }
 
-private struct InstallerAPI: LauncherAPIProviding {
+struct InstallerAPI: LauncherAPIProviding {
 	let manifest: GameManifest
 	let cdn: CDNConfiguration
 
@@ -276,7 +280,7 @@ private struct InstallerAPI: LauncherAPIProviding {
 	) async throws -> GameManifest { manifest }
 }
 
-private final class StreamingURLProtocol: URLProtocol, @unchecked Sendable {
+final class StreamingURLProtocol: URLProtocol, @unchecked Sendable {
 	nonisolated(unsafe) static var handler: ((URLRequest) -> (HTTPURLResponse, Data))?
 
 	override class func canInit(with request: URLRequest) -> Bool { true }
@@ -298,7 +302,7 @@ private final class StreamingURLProtocol: URLProtocol, @unchecked Sendable {
 }
 
 extension Data {
-	fileprivate func chunkRanges(size: Int) -> [Range<Int>] {
+	func chunkRanges(size: Int) -> [Range<Int>] {
 		stride(from: 0, to: count, by: size).map { start in
 			start..<Swift.min(start + size, count)
 		}

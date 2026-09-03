@@ -1,10 +1,72 @@
+---
+title: Changelog
+description: Release history for Arknights Client
+---
+
 # Changelog
 
 All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-09-03
+
+### Added
+
+- An opt-in Canary Features gate in Settings for containing unfinished functionality without changing the default launcher experience.
+- The China and China — Bilibili clients behind Canary Features, with separate installations and the same native install, update, repair, storage, playtime, and launch flow as other regions.
+- Canary controls for following macOS audio-output changes during play and selecting DXMT's one-to-three-frame latency limit.
+- Smoothed game-download speed and remaining-time estimates that account for resumed files, retries, stalls, and checksum recovery (#48).
+- Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
+- A static project website built from the repository documentation, with safe Markdown rendering, base-path-aware navigation, canonical and social metadata, and GitHub Pages release deployment (#56).
+- Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
+- Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
+- Weekly live-contract monitoring for every supported Yostar region (#39).
+- Language switchers to onboarding and Settings for the system default, English, and German.
+- A reviewed German translation with English fallback, immediate language redraws, complete native UI coverage, and automatic support for macOS per-app language preferences (#38).
+- A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
+- Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, localized text fallbacks, and simplified presentation (#37).
+- Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
+- Storage overview in Settings with independent installed-region rows, right-aligned usage values, shared runtime data, recreatable caches, diagnostic logs, and targeted cleanup actions (#43).
+- Donate button for people who want to support the project.
+- Dock shortcuts for starting an installed regional client or opening Settings (#46).
+- Typo-tolerant preset gallery search with compact suggestions and searchable operator and official-wallpaper metadata.
+- Wallpaper type filters and curated tag and title-word suggestions for official artwork presets, plus a monthly workflow that files newly untagged wallpapers (Thanks to @darkwebdev, #61).
+
+### Changed
+
+- Moved standard game and Wine-prefix locations into publisher-based folders and added a resumable, start-blocking migration for existing default paths; custom locations remain unchanged.
+- Runtime is now pinned to a custom WineCX and DXMT build from [this repo](https://github.com/LuMiSxh/Arknights-MacOS-Runtime).
+- Moved runtime build, update, and provenance automation into the dedicated runtime repository (#47).
+- Made runtime archive downloads size-bounded and safely resumable only while their strong ETag still matches.
+- Accepted the runtime-owned launcher alias and Wine 11 audio-driver layout when preparing the pinned runtime.
+- Allowed larger official manifests within the bounded installation state, and kept shared game-service and fallback errors provider-neutral and in the selected app language.
+- Refactored the root launcher model into feature controllers with explicit, narrow dependencies and shared game-domain and configuration contracts (#52).
+- Moved expensive artwork processing and installation-state inspection behind bounded background operations with explicit request ownership.
+- Hardened game configuration and manifest parsing, runtime metadata, compatibility markers, symlink handling, executable names, byte totals, disk-capacity checks, HTTP redirects, and Wine's executable search path.
+- Unified launcher presentations through one sheet and overlay arbiter, improved Reduce Transparency and Dynamic Type behavior, and kept new native UI copy translated in English and German.
+- Limited the main activity status to game and runtime operations instead of replacing it with customization, cache, or Settings success messages.
+- Indented subprocess output under its owning repository-script status line.
+- Made launcher modals adapt to the current window size and announcement popups fit their content, while preserving outer padding and scrolling for long messages.
+- Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).
+- Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
+- Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
+- Consolidated repository scripts into one locked uv project, isolated packaging-only tools in their own dependency group, and removed single-use helpers and low-value wrapper tests.
+- Split release statistics into manual DMG and Sparkle update downloads, with combined per-release totals and rates.
+- Loaded smaller CDN-generated gallery thumbnails when an official wallpaper has no dedicated preview image.
+
+### Fixed
+
+- Matched the clickable areas of themed text fields and compact version and music HUD pills to their visible surfaces (Thanks to @darkwebdev, #60).
+- Prevented stale artwork, logo, icon, preset-cache, metadata, and theme work from overwriting a newer region or user selection.
+- Kept the shared Wine prefix owned until prefix-wide shutdown, preserved the originating region and failure across retries, and made stop, cancellation, and early process-exit cleanup deterministic.
+- Kept music and Now Playing state isolated from stale player callbacks and private MediaPlayer queues.
+- Prevented Settings, onboarding, popup, failure, and Rosetta presentations from masking one another.
+- Rejected incomplete wallpaper downloads instead of displaying partially decoded images.
+- Accepted unusually large official wallpapers while preserving bounded image validation.
+- Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
+- Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
+- Prevented late branding responses from replacing the selected region's logo (#37).
 
 ## [0.4.1]
 
@@ -145,7 +207,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[Unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.1...HEAD
+[0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0
 [0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.3.0

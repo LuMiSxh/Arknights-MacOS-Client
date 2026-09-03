@@ -5,15 +5,47 @@ import Testing
 
 @testable import ArknightsClient
 
-@Test
-func newPrefixRunsEveryDeclaredMigrationInOrder() {
+private let fullReplayCases: [(String, RuntimeMigrationState?, Bool)] = [
+	("new prefix", nil, false),
+	(
+		"incomplete earlier migration",
+		RuntimeMigrationState(
+			runtimeRevision: "runtime-prefix-2",
+			completed: [.installDXMT, .configureRegistry]
+		),
+		true
+	),
+	(
+		"changed runtime revision",
+		RuntimeMigrationState(
+			runtimeRevision: "runtime-prefix-1",
+			completed: RuntimeMigration.allCases
+		),
+		true
+	),
+	(
+		"missing system registry",
+		RuntimeMigrationState(
+			runtimeRevision: "runtime-prefix-2",
+			completed: RuntimeMigration.allCases
+		),
+		false
+	),
+]
+
+@Test(arguments: fullReplayCases)
+func invalidPrefixStateReplaysEveryMigration(
+	caseName: String,
+	installedState: RuntimeMigrationState?,
+	hasSystemRegistry: Bool
+) {
 	let plan = RuntimeMigrationPlan(
 		expectedRevision: "runtime-prefix-2",
-		installedState: nil,
-		hasSystemRegistry: false
+		installedState: installedState,
+		hasSystemRegistry: hasSystemRegistry
 	)
 
-	#expect(plan.pending == RuntimeMigration.allCases)
+	#expect(plan.pending == RuntimeMigration.allCases, Comment(rawValue: caseName))
 }
 
 @Test
@@ -29,51 +61,6 @@ func interruptedMigrationResumesAtTheFirstIncompleteStep() {
 	)
 
 	#expect(plan.pending == [.installDXMT, .configureRegistry])
-}
-
-@Test
-func incompleteEarlierMigrationReplaysDependentSteps() {
-	let state = RuntimeMigrationState(
-		runtimeRevision: "runtime-prefix-2",
-		completed: [.installDXMT, .configureRegistry]
-	)
-	let plan = RuntimeMigrationPlan(
-		expectedRevision: "runtime-prefix-2",
-		installedState: state,
-		hasSystemRegistry: true
-	)
-
-	#expect(plan.pending == RuntimeMigration.allCases)
-}
-
-@Test
-func changedRuntimeRevisionReplaysEveryMigration() {
-	let state = RuntimeMigrationState(
-		runtimeRevision: "runtime-prefix-1",
-		completed: RuntimeMigration.allCases
-	)
-	let plan = RuntimeMigrationPlan(
-		expectedRevision: "runtime-prefix-2",
-		installedState: state,
-		hasSystemRegistry: true
-	)
-
-	#expect(plan.pending == RuntimeMigration.allCases)
-}
-
-@Test
-func missingSystemRegistryReplaysEveryMigration() {
-	let state = RuntimeMigrationState(
-		runtimeRevision: "runtime-prefix-2",
-		completed: RuntimeMigration.allCases
-	)
-	let plan = RuntimeMigrationPlan(
-		expectedRevision: "runtime-prefix-2",
-		installedState: state,
-		hasSystemRegistry: false
-	)
-
-	#expect(plan.pending == RuntimeMigration.allCases)
 }
 
 @Test
@@ -109,7 +96,25 @@ func migrationStoreRoundTripsState() throws {
 
 	try store.save(state, to: prefix)
 
-	#expect(store.load(from: prefix) == state)
+	#expect(try store.load(from: prefix) == state)
+}
+
+@Test
+func migrationStoreSurfacesCorruptPersistedState() throws {
+	let fileManager = FileManager.default
+	let prefix = fileManager.temporaryDirectory.appending(
+		path: "runtime-migration-corrupt-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: prefix) }
+	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
+	try Data("not-json".utf8).write(
+		to: prefix.appending(path: RuntimeMigrationStore.stateFileName)
+	)
+
+	#expect(throws: Error.self) {
+		_ = try RuntimeMigrationStore(fileManager: fileManager).load(from: prefix)
+	}
 }
 
 @Test
@@ -132,7 +137,7 @@ func migrationStoreResetDiscardsStateSoEverythingReplays() throws {
 
 	try store.reset(prefixDirectory: prefix)
 
-	#expect(store.load(from: prefix) == nil)
+	#expect(try store.load(from: prefix) == nil)
 }
 
 @Test
@@ -157,7 +162,7 @@ func migrationStoreImportsAndRemovesVersionZeroOneMarkers() throws {
 	}
 	let store = RuntimeMigrationStore(fileManager: fileManager)
 
-	let imported = store.loadLegacy(
+	let imported = try store.loadLegacy(
 		from: prefix,
 		expectedRevision: revision,
 		hasSystemRegistry: true

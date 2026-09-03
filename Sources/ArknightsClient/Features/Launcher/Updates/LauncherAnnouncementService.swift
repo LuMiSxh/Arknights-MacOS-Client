@@ -48,10 +48,10 @@ struct LauncherAnnouncement: Decodable, Sendable, Equatable, Identifiable {
 /// Fetches this repository's `announcements.json` for one-time project messages, separate
 /// from Yostar's own in-game notices.
 struct LauncherAnnouncementService: Sendable {
-	private let session: URLSession
+	private let loader: BoundedHTTPDataLoader
 
 	init(session: URLSession = .shared) {
-		self.session = session
+		loader = BoundedHTTPDataLoader(session: session)
 	}
 
 	func announcements(from endpoint: URL) async throws -> [LauncherAnnouncement] {
@@ -59,12 +59,21 @@ struct LauncherAnnouncementService: Sendable {
 		request.cachePolicy = .reloadRevalidatingCacheData
 		request.setValue("application/vnd.github.raw+json", forHTTPHeaderField: "Accept")
 		request.setValue("ArknightsClient", forHTTPHeaderField: "User-Agent")
-		let (data, response) = try await session.data(for: request)
-		guard let http = response as? HTTPURLResponse else {
-			throw LauncherError.invalidResponse
+		let data: Data
+		let response: HTTPURLResponse
+		do {
+			(data, response) = try await loader.data(
+				for: request,
+				maximumBytes: AppConstants.Network.announcementFeedMaximumBytes
+			)
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch let error as HTTPTransportError {
+			if Task.isCancelled { throw CancellationError() }
+			throw Self.mapTransportError(error)
 		}
-		if http.statusCode == 404 { return [] }
-		guard http.statusCode == 200, data.count <= 128 * 1_024 else {
+		if response.statusCode == 404 { return [] }
+		guard response.statusCode == 200 else {
 			throw LauncherError.invalidResponse
 		}
 
@@ -75,5 +84,16 @@ struct LauncherAnnouncementService: Sendable {
 			throw LauncherError.invalidResponse
 		}
 		return feed.announcements
+	}
+
+	private static func mapTransportError(_ error: HTTPTransportError) -> LauncherError {
+		switch error {
+		case .responseTooLarge(let url, let maximumBytes):
+			.remoteContentTooLarge(url, maximumBytes: maximumBytes)
+		case .responseSizeMismatch(let url, let expected, let actual):
+			.downloadedSizeMismatch(path: url.absoluteString, expected: expected, actual: actual)
+		case .invalidResponse, .redirectRejected:
+			.invalidResponse
+		}
 	}
 }

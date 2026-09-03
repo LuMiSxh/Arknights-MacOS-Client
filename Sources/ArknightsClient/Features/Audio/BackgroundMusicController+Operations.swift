@@ -26,6 +26,7 @@ extension BackgroundMusicController {
 		on targetPlayer: YouTubePlayer
 	) -> BackgroundMusicOperationToken {
 		controlTask?.cancel()
+		playbackExpectation = nil
 		let token = BackgroundMusicOperationToken(
 			generation: playerGeneration,
 			player: targetPlayer
@@ -44,9 +45,25 @@ extension BackgroundMusicController {
 		operation = .idle
 	}
 
-	func clearPlaybackExpectation(for token: BackgroundMusicOperationToken) {
-		guard playbackExpectation?.token.id == token.id else { return }
+	@discardableResult
+	func expectPlayback(
+		_ intent: PlaybackIntent,
+		on targetPlayer: YouTubePlayer
+	) -> BackgroundMusicPlaybackExpectation {
+		let expectation = BackgroundMusicPlaybackExpectation(
+			generation: playerGeneration,
+			player: targetPlayer,
+			intent: intent
+		)
+		playbackExpectation = expectation
+		nowPlaying.updatePlayback(isPlaying: intent == .playing)
+		return expectation
+	}
+
+	func clearPlaybackExpectation(_ expectation: BackgroundMusicPlaybackExpectation) {
+		guard playbackExpectation?.id == expectation.id else { return }
 		playbackExpectation = nil
+		nowPlaying.updatePlayback(isPlaying: isPlaying)
 	}
 
 	func beginFade(on targetPlayer: YouTubePlayer) -> BackgroundMusicFadeOperation {
@@ -68,6 +85,12 @@ extension BackgroundMusicController {
 	func isCurrent(_ token: BackgroundMusicOperationToken) -> Bool {
 		guard playerGeneration == token.generation, player === token.player else { return false }
 		return operation.token?.id == token.id
+	}
+
+	func isCurrent(_ expectation: BackgroundMusicPlaybackExpectation) -> Bool {
+		guard playbackExpectation?.id == expectation.id else { return false }
+		return playerGeneration == expectation.generation
+			&& player === expectation.player
 	}
 
 	func isCurrent(_ operation: BackgroundMusicFadeOperation) -> Bool {

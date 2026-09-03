@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Download, verify, and prepare the runtime pinned in runtime.json."""
@@ -11,10 +7,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
+import re
 import shutil
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -22,32 +21,20 @@ from lib.common import (
     BUILD_DIR,
     PROJECT_DIR,
     fail,
-    info,
     remove_path,
     run_main,
-    success,
 )
-from lib.console import Progress, spinner
+from lib.console import Progress, info, spinner, success, warning
 from lib.extract_runtime import extract
-from runtime_config import read_config, validate_config
+from lib.project_config import load_project_configuration
+from runtime_config import (
+    MAXIMUM_RUNTIME_ARCHIVE_BYTES,
+    RuntimeLayout,
+    load_runtime_config,
+    runtime_is_valid,
+)
 
-RUNTIME_COMMANDS = ("bin/wine64", "bin/wineserver")
-DXMT_LIBRARIES = ("d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll")
-
-
-def runtime_is_valid(directory: Path) -> bool:
-    if not all(os.access(directory / command, os.X_OK) for command in RUNTIME_COMMANDS):
-        return False
-    if not (directory / "lib/wine/x86_64-windows/winemetal.dll").exists():
-        return False
-    if not all(
-        (directory / "DXMT" / architecture / library).is_file()
-        for architecture in ("x64", "x32")
-        for library in DXMT_LIBRARIES
-    ):
-        return False
-    launcher = directory / "bin/Arknights"
-    return launcher.is_symlink() and launcher.readlink() == Path("wine64")
+CONTENT_RANGE_PATTERN = re.compile(r"^bytes ([0-9]+)-([0-9]+)/([0-9]+)$")
 
 
 def sha256(path: Path) -> str:
@@ -58,52 +45,155 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def download(url: str, output: Path, expected_sha256: str) -> None:
+def download(url: str, output: Path, expected_sha256: str, user_agent: str) -> None:
     if output.is_file() and sha256(output) == expected_sha256:
         info("Using the verified runtime archive from the local cache")
         return
 
     partial = output.with_suffix(output.suffix + ".part")
-    partial.unlink(missing_ok=True)
-    request = urllib.request.Request(
-        url, headers={"User-Agent": "Arknights-Client-Build"}
-    )
+    metadata_path = Path(f"{partial}.json")
+    offset, etag = _resume_state(partial, metadata_path, url)
+    headers = {"User-Agent": user_agent}
+    if offset:
+        headers.update({"Range": f"bytes={offset}-", "If-Range": etag})
+    request = urllib.request.Request(url, headers=headers)
     try:
-        with (
-            urllib.request.urlopen(request, timeout=60) as response,
-            partial.open("wb") as file,
-        ):
-            if not response.geturl().startswith("https://"):
+        with urllib.request.urlopen(request, timeout=60) as response:
+            redirected = urllib.parse.urlparse(response.geturl())
+            if redirected.scheme != "https" or not redirected.hostname:
                 fail("runtime download redirected to a non-HTTPS URL")
-            total = int(response.headers.get("Content-Length", "0"))
-            received = 0
-            progress = Progress("Downloading the pinned Wine + DXMT runtime", total)
-            while chunk := response.read(1024 * 1024):
-                file.write(chunk)
-                received += len(chunk)
-                progress.update(received)
+            status = getattr(response, "status", 200)
+            response_etag = _strong_etag(response.headers.get("ETag"))
+            if offset and status == 206:
+                total = _validated_content_range(
+                    response.headers.get("Content-Range"), offset
+                )
+                if response_etag != etag:
+                    fail("runtime download resume ETag changed")
+                mode = "ab"
+            elif status == 200:
+                offset = 0
+                total = None
+                mode = "wb"
+            else:
+                fail(f"runtime download returned unexpected HTTP status {status}")
+
+            content_length = _content_length(response.headers.get("Content-Length"))
+            if content_length is not None:
+                if content_length > MAXIMUM_RUNTIME_ARCHIVE_BYTES - offset:
+                    fail("runtime archive exceeds the download size limit")
+                expected_total = offset + content_length
+                if total is not None and expected_total != total:
+                    fail("runtime download Content-Length and Content-Range disagree")
+                total = expected_total
+            if total is not None and total > MAXIMUM_RUNTIME_ARCHIVE_BYTES:
+                fail("runtime archive exceeds the download size limit")
+
+            if response_etag is None:
+                metadata_path.unlink(missing_ok=True)
+            else:
+                metadata_path.write_text(
+                    json.dumps({"url": url, "etag": response_etag}), encoding="utf-8"
+                )
+            received = offset
+            progress = Progress(
+                "Downloading the pinned Wine + DXMT runtime", total or 0
+            )
+            with partial.open(mode) as file:
+                while chunk := response.read(1024 * 1024):
+                    if len(chunk) > MAXIMUM_RUNTIME_ARCHIVE_BYTES - received:
+                        fail("runtime archive exceeds the download size limit")
+                    file.write(chunk)
+                    received += len(chunk)
+                    progress.update(received)
+                file.flush()
+                os.fsync(file.fileno())
             progress.finish()
     except (OSError, urllib.error.URLError) as download_error:
-        partial.unlink(missing_ok=True)
         fail(f"unable to download the runtime: {download_error}")
 
     actual_sha256 = sha256(partial)
     if actual_sha256 != expected_sha256:
         partial.unlink(missing_ok=True)
+        metadata_path.unlink(missing_ok=True)
         fail(
             "downloaded runtime failed SHA-256 verification "
             f"(expected {expected_sha256}, got {actual_sha256})"
         )
     partial.replace(output)
+    metadata_path.unlink(missing_ok=True)
 
 
-def prepare_runtime(url: str, checksum: str) -> Path:
+def _resume_state(partial: Path, metadata_path: Path, url: str) -> tuple[int, str]:
+    metadata: object = None
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        etag = _strong_etag(
+            metadata.get("etag") if isinstance(metadata, dict) else None
+        )
+    except (OSError, json.JSONDecodeError):
+        etag = None
+    if (
+        isinstance(metadata, dict)
+        and metadata.get("url") == url
+        and etag is not None
+        and partial.is_file()
+        and not partial.is_symlink()
+        and 0 < partial.stat().st_size <= MAXIMUM_RUNTIME_ARCHIVE_BYTES
+    ):
+        return partial.stat().st_size, etag
+    partial.unlink(missing_ok=True)
+    metadata_path.unlink(missing_ok=True)
+    return 0, ""
+
+
+def _strong_etag(value: object) -> str | None:
+    if not isinstance(value, str) or len(value) < 2 or value.startswith("W/"):
+        return None
+    if (
+        value[0] != '"'
+        or value[-1] != '"'
+        or any(ord(character) < 0x20 or character == '"' for character in value[1:-1])
+    ):
+        return None
+    return value
+
+
+def _content_length(value: object) -> int | None:
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or len(value) > 20
+        or not value.isascii()
+        or not value.isdecimal()
+    ):
+        fail("runtime download returned an invalid Content-Length")
+    return int(value)
+
+
+def _validated_content_range(value: object, offset: int) -> int:
+    match = CONTENT_RANGE_PATTERN.fullmatch(value) if isinstance(value, str) else None
+    if match is None or any(len(component) > 20 for component in match.groups()):
+        fail("runtime download returned an invalid Content-Range")
+    start, end, total = (int(component) for component in match.groups())
+    if start != offset or end < start or end >= total:
+        fail("runtime download returned an invalid Content-Range")
+    return total
+
+
+def prepare_runtime(
+    url: str,
+    checksum: str,
+    layout: RuntimeLayout,
+    user_agent: str,
+) -> Path:
     destination = BUILD_DIR / "runtime"
     revision_file = destination / ".arknights-runtime-archive-sha256"
     if (
         revision_file.is_file()
         and revision_file.read_text(encoding="utf-8").strip() == checksum
-        and runtime_is_valid(destination)
+        and runtime_is_valid(destination, layout)
     ):
         info("The prepared runtime is already current")
         return destination
@@ -111,7 +201,7 @@ def prepare_runtime(url: str, checksum: str) -> Path:
     cache_dir = BUILD_DIR / "runtime-downloads"
     cache_dir.mkdir(parents=True, exist_ok=True)
     archive = cache_dir / f"{checksum}.tar.gz"
-    download(url, archive, checksum)
+    download(url, archive, checksum, user_agent)
 
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
@@ -120,16 +210,22 @@ def prepare_runtime(url: str, checksum: str) -> Path:
         staging = Path(name)
         with spinner("Extracting the verified runtime"):
             libraries = extract(archive, staging / "runtime-archive")
-        wine = libraries / "Wine"
-        dxmt = libraries / "DXMT"
+        wine = libraries / layout.archive_wine_directory
+        dxmt = libraries / layout.archive_dxmt_directory
         if not wine.is_dir() or not dxmt.is_dir():
             fail("runtime archive does not contain Wine and DXMT")
 
         runtime = staging / "runtime"
         wine.replace(runtime)
-        shutil.move(dxmt, runtime / "DXMT")
-        (runtime / "bin/Arknights").symlink_to("wine64")
-        if not runtime_is_valid(runtime):
+        dxmt_destination = runtime / layout.dxmt.payload_directory
+        dxmt_destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(dxmt, dxmt_destination)
+        launcher = runtime / layout.launcher.path
+        launcher.parent.mkdir(parents=True, exist_ok=True)
+        if not launcher.exists() and not launcher.is_symlink():
+            warning("Runtime archive is missing the launcher alias; adding it")
+            launcher.symlink_to(layout.launcher.target)
+        if not runtime_is_valid(runtime, layout):
             fail("runtime archive is incomplete")
         (runtime / ".arknights-runtime-archive-sha256").write_text(
             f"{checksum}\n", encoding="utf-8"
@@ -141,14 +237,13 @@ def prepare_runtime(url: str, checksum: str) -> Path:
 
 
 def main() -> None:
+    project_configuration = load_project_configuration()
     config_path = PROJECT_DIR / "runtime.json"
-    validate_config(config_path)
-    config = read_config(config_path)
-    runtime = config["runtime"]
+    config = load_runtime_config(config_path)
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default=runtime["url"])
-    parser.add_argument("--sha256", default=runtime["sha256"])
+    parser.add_argument("--url", default=config.runtime_url)
+    parser.add_argument("--sha256", default=config.runtime_sha256)
     arguments = parser.parse_args()
     if not arguments.url.startswith("https://"):
         fail("runtime URL must use HTTPS")
@@ -156,7 +251,14 @@ def main() -> None:
         character not in "0123456789abcdefABCDEF" for character in arguments.sha256
     ):
         fail("runtime checksum must be a 64-character SHA-256 value")
-    print(prepare_runtime(arguments.url, arguments.sha256.lower()))
+    print(
+        prepare_runtime(
+            arguments.url,
+            arguments.sha256.lower(),
+            config.layout,
+            f"{project_configuration.product.bundle_identifier}.build",
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,102 @@
+name: Runtime problem
+description: Report a problem with Wine, DXMT, audio, graphics, input, or game-process behavior.
+title: "[Runtime] "
+labels:
+  - bug
+  - runtime
+body:
+  - type: input
+    id: client-version
+    attributes:
+      label: Client version
+      placeholder: 0.5.0
+    validations:
+      required: true
+
+  - type: input
+    id: runtime-version
+    attributes:
+      label: Runtime version
+      description: Use the version shown by the client. Include the candidate commit when testing a development build.
+      placeholder: v0.5.0 or commit 87874ee
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Mac and macOS
+      description: Include the macOS version, Mac model or chip, and memory.
+      placeholder: macOS 26.0; MacBook Air (M2, 2022); 16 GB
+    validations:
+      required: true
+
+  - type: input
+    id: region
+    attributes:
+      label: Selected region
+      placeholder: Global, Japan, Korea, or China
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prefix-history
+    attributes:
+      label: Wine prefix
+      description: Select the state that best describes the prefix used for this run.
+      options:
+        - Existing prefix
+        - Fresh prefix
+        - Existing prefix after migration
+        - Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: runtime-settings
+    attributes:
+      label: Runtime settings
+      description: List non-default audio, cursor/frame-latency, synchronization, graphics, or Canary settings. Write "Defaults" when none were changed.
+      placeholder: Defaults
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start the game
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: comparison
+    attributes:
+      label: Comparison
+      description: If available, state whether another runtime version, a fresh prefix, or default settings change the result.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log files (only when requested)
+      description: Leave this empty initially. If a maintainer requests logs, attach only the named launcher, Wine, or Unity log. Review files first because they may contain private paths, URLs, or account-related data.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked that an existing issue does not already describe this runtime problem.
+          required: true
+        - label: I reproduced the problem after restarting the client and game.
+          required: true

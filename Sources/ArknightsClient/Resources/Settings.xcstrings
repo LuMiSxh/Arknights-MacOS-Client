@@ -1,0 +1,3840 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "settings.about.application": {
+      "comment": "Application name",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights Client"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights Client"
+          }
+        }
+      }
+    },
+    "settings.about.changelog": {
+      "comment": "Changelog document link",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Änderungsprotokoll"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changelog"
+          }
+        }
+      }
+    },
+    "settings.about.contactYostar": {
+      "comment": "Open Yostar support action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yostar kontaktieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Yostar…"
+          }
+        }
+      }
+    },
+    "settings.about.documents": {
+      "comment": "Documents panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumente"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents"
+          }
+        }
+      }
+    },
+    "settings.about.donate": {
+      "comment": "Open the project donation page",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donate"
+          }
+        }
+      }
+    },
+    "settings.about.donate.help": {
+      "comment": "Project donation action help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projekt über Ko-fi unterstützen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support the project on Ko-fi"
+          }
+        }
+      }
+    },
+    "settings.about.gameAccountIssues": {
+      "comment": "Game and account support row title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel- und Kontoprobleme"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game & Account Issues"
+          }
+        }
+      }
+    },
+    "settings.about.gameAccountIssues.detail": {
+      "comment": "Game and account support row description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei Konto-, Zahlungs- oder Spielservice-Problemen Yostar kontaktieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Yostar for account, payment, or game-service problems."
+          }
+        }
+      }
+    },
+    "settings.about.github": {
+      "comment": "Project repository action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub"
+          }
+        }
+      }
+    },
+    "settings.about.github.help": {
+      "comment": "Project repository action help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Projekt-Repository öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open project repository"
+          }
+        }
+      }
+    },
+    "settings.about.license": {
+      "comment": "Project license document link",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MPL-2.0-Lizenz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MPL-2.0 License"
+          }
+        }
+      }
+    },
+    "settings.about.notAffiliated": {
+      "comment": "Unofficial launcher disclaimer",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Launcher steht in keiner Verbindung zu Hypergryph oder Yostar."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This launcher is not affiliated with Hypergryph or Yostar."
+          }
+        }
+      }
+    },
+    "settings.about.openFinder": {
+      "comment": "Reveal launcher action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Finder zeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        }
+      }
+    },
+    "settings.about.openFinder.help": {
+      "comment": "Reveal launcher action help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-App im Finder anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reveal the launcher application in Finder"
+          }
+        }
+      }
+    },
+    "settings.about.report": {
+      "comment": "Report launcher issue action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melden…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report…"
+          }
+        }
+      }
+    },
+    "settings.about.support": {
+      "comment": "Support panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        }
+      }
+    },
+    "settings.about.thirdPartyNotices": {
+      "comment": "Third party notices document link",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweise zu Drittanbietern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Third-Party Notices"
+          }
+        }
+      }
+    },
+    "settings.about.title": {
+      "comment": "About settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "settings.about.unofficialLauncher": {
+      "comment": "Launcher description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inoffizieller macOS-Launcher"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unofficial macOS launcher"
+          }
+        }
+      }
+    },
+    "settings.about.userAgreement": {
+      "comment": "User agreement link",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzungsvereinbarung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "User Agreement"
+          }
+        }
+      }
+    },
+    "settings.about.privacyPolicy": {
+      "comment": "Privacy policy link",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutzerklärung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        }
+      }
+    },
+    "settings.about.launcherIssues": {
+      "comment": "Launcher issue support row title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-Probleme"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher Issues"
+          }
+        }
+      }
+    },
+    "settings.about.launcherIssues.detail": {
+      "comment": "Launcher issue support row description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-, Wine-Laufzeit- oder eingebettete Browserprobleme mit erzeugten Diagnosedaten melden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report launcher, Wine runtime, or embedded browser problems with generated diagnostics."
+          }
+        }
+      }
+    },
+    "settings.audio.backgroundMusic": {
+      "comment": "Enable background music setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hintergrundmusik abspielen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play Background Music"
+          }
+        }
+      }
+    },
+    "settings.audio.backgroundMusic.detail": {
+      "comment": "Enable background music setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielt Musik, während der Launcher geöffnet ist und das Spiel nicht läuft."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plays music while the launcher is open and the game is not running."
+          }
+        }
+      }
+    },
+    "settings.audio.currentlyPlaying": {
+      "comment": "Show music HUD setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuellen Titel anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Currently Playing"
+          }
+        }
+      }
+    },
+    "settings.audio.currentlyPlaying.detail": {
+      "comment": "Show music HUD setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt den aktuellen Titel und aufklappbare Wiedergabesteuerungen über den Launcher-Steuerelementen an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the current track and expandable playback controls above the launcher controls."
+          }
+        }
+      }
+    },
+    "settings.audio.music": {
+      "comment": "Music panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Music"
+          }
+        }
+      }
+    },
+    "settings.audio.title": {
+      "comment": "Audio settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio"
+          }
+        }
+      }
+    },
+    "settings.audio.subtitle": {
+      "comment": "Audio settings page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiedergabe der Hintergrundmusik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Background music playback"
+          }
+        }
+      }
+    },
+    "settings.audio.url": {
+      "comment": "Music URL setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik-URL"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Music URL"
+          }
+        }
+      }
+    },
+    "settings.audio.url.detail": {
+      "comment": "Music URL setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link zu einem YouTube-Video oder einer Playlist."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube video or playlist link."
+          }
+        }
+      }
+    },
+    "settings.audio.url.prompt": {
+      "comment": "Music URL placeholder",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://www.youtube.com/playlist?..."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "https://www.youtube.com/playlist?..."
+          }
+        }
+      }
+    },
+    "settings.audio.volume": {
+      "comment": "Music volume setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lautstärke"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume"
+          }
+        }
+      }
+    },
+    "settings.audio.volume.percent": {
+      "comment": "Visible music volume percentage; argument is an integer from 0 to 100",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld %%"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        }
+      }
+    },
+    "settings.audio.volume.detail": {
+      "comment": "Music volume setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legt die Wiedergabelautstärke der Launcher-Musik fest."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sets the launcher music playback level."
+          }
+        }
+      }
+    },
+    "settings.common.cancel": {
+      "comment": "Cancel destructive confirmation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "settings.common.checkNow": {
+      "comment": "Manual update check action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt prüfen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Now"
+          }
+        }
+      }
+    },
+    "settings.common.calculating": {
+      "comment": "Placeholder shown while a storage size is being calculated",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird berechnet…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculating…"
+          }
+        }
+      }
+    },
+    "settings.common.chooseImage": {
+      "comment": "Choose local image action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild auswählen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Image…"
+          }
+        }
+      }
+    },
+    "settings.common.choose": {
+      "comment": "Choose action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auswählen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose…"
+          }
+        }
+      }
+    },
+    "settings.common.dangerZone": {
+      "comment": "Destructive settings panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gefahrenbereich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger Zone"
+          }
+        }
+      }
+    },
+    "settings.common.game": {
+      "comment": "Game icon menu title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game"
+          }
+        }
+      }
+    },
+    "settings.common.useDefault": {
+      "comment": "Restore one default action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard verwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Default"
+          }
+        }
+      }
+    },
+    "settings.common.useDefaults": {
+      "comment": "Restore multiple defaults action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standards verwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Defaults"
+          }
+        }
+      }
+    },
+    "settings.common.change": {
+      "comment": "Change action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändern…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change…"
+          }
+        }
+      }
+    },
+    "settings.common.show": {
+      "comment": "Show action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show"
+          }
+        }
+      }
+    },
+    "settings.developer.customPopup": {
+      "comment": "Developer custom popup panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benutzerdefiniertes Pop-up"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom Popup"
+          }
+        }
+      }
+    },
+    "settings.developer.isolation": {
+      "comment": "Developer isolation panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isolierung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isolation"
+          }
+        }
+      }
+    },
+    "settings.developer.isolation.detail": {
+      "comment": "Developer isolation panel description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielaktionen wechseln nur zwischen simulierten Zuständen. Die Vorschau verwendet separate temporäre Pfade und Einstellungen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
+          }
+        }
+      }
+    },
+    "settings.developer.scenario": {
+      "comment": "Developer scenario panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Szenario"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scenario"
+          }
+        }
+      }
+    },
+    "settings.developer.showPopup": {
+      "comment": "Developer show popup action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pop-up anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Popup"
+          }
+        }
+      }
+    },
+    "settings.developer.subtitle": {
+      "comment": "Developer settings page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-Zustände gefahrlos testen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview launcher states safely"
+          }
+        }
+      }
+    },
+    "settings.developer.title": {
+      "comment": "Developer settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entwicklung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Developer"
+          }
+        }
+      }
+    },
+    "settings.developer.customPopupTitle": {
+      "comment": "Developer custom popup title field",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        }
+      }
+    },
+    "settings.general.artwork": {
+      "comment": "Artwork setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hintergrundbild"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Artwork"
+          }
+        }
+      }
+    },
+    "settings.general.artwork.detail": {
+      "comment": "Artwork setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hintergrund hinter den Launcher-Steuerelementen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Background shown behind the launcher controls."
+          }
+        }
+      }
+    },
+    "settings.general.customIconOverrides": {
+      "comment": "Custom icon override setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eigene Symbolüberschreibungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom Icon Overrides"
+          }
+        }
+      }
+    },
+    "settings.general.customIconOverrides.detail": {
+      "comment": "Custom icon override setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwendet separate lokale Bilder statt des erzeugten Operator-Paars."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use separate local images instead of the generated operator pair."
+          }
+        }
+      }
+    },
+    "settings.general.displayControls": {
+      "comment": "Display and controls panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anzeige und Steuerung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display & Controls"
+          }
+        }
+      }
+    },
+    "settings.general.dynamicTheme": {
+      "comment": "Dynamic theme setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamisches Farbschema"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamic Theme"
+          }
+        }
+      }
+    },
+    "settings.general.dynamicTheme.detail": {
+      "comment": "Dynamic theme setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passt Launcher-Farben und das erzeugte Operator-Symbolpaar automatisch an das gewählte Hintergrundbild an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically changes the launcher colors and generated operator icon pair to match the selected background."
+          }
+        }
+      }
+    },
+    "settings.general.gameDisplaySettings": {
+      "comment": "Use in-game display settings toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anzeigeeinstellungen im Spiel verwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use In-Game Display Settings"
+          }
+        }
+      }
+    },
+    "settings.general.gameDisplaySettings.detail": {
+      "comment": "Use in-game display settings toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behält Änderungen, die du in Arknights vornimmst, auch zwischen Starts bei."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lets changes made inside Arknights persist between launches."
+          }
+        }
+      }
+    },
+    "settings.general.displayMode.fullscreen": {
+      "comment": "Fullscreen display mode option",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vollbild"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullscreen"
+          }
+        }
+      }
+    },
+    "settings.general.displayMode.windowed": {
+      "comment": "Windowed display mode option",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenster"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windowed"
+          }
+        }
+      }
+    },
+    "settings.general.displayMode.borderlessWindow": {
+      "comment": "Recommended borderless display mode option",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Randloses Fenster (empfohlen)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Borderless Window (Recommended)"
+          }
+        }
+      }
+    },
+    "settings.general.highResolution": {
+      "comment": "High resolution mode toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hochauflösender Modus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High-Resolution Mode"
+          }
+        }
+      }
+    },
+    "settings.general.highResolution.detail": {
+      "comment": "High resolution mode toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nutzt die volle Pixeldichte des Displays, ohne das Spielfenster zu vergrößern."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses the display's full pixel density without enlarging the game window."
+          }
+        }
+      }
+    },
+    "settings.general.launcher": {
+      "comment": "Launcher panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher"
+          }
+        }
+      }
+    },
+    "settings.general.language": {
+      "comment": "Launcher interface language setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sprache"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        }
+      }
+    },
+    "settings.general.language.detail": {
+      "comment": "Launcher interface language setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle die Sprache für die Benutzeroberfläche des Launchers."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the language used by the launcher interface."
+          }
+        }
+      }
+    },
+    "settings.general.language.english": {
+      "comment": "English interface language option",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Englisch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        }
+      }
+    },
+    "settings.general.language.german": {
+      "comment": "German interface language option",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deutsch"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "German"
+          }
+        }
+      }
+    },
+    "settings.general.language.system": {
+      "comment": "Use the macOS preferred interface language option",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemstandard"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Default"
+          }
+        }
+      }
+    },
+    "settings.general.metalHUD": {
+      "comment": "Metal performance HUD setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal-Leistungsanzeige"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metal Performance HUD"
+          }
+        }
+      }
+    },
+    "settings.general.metalHUD.detail": {
+      "comment": "Metal performance HUD setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt beim nächsten Spielstart Apples native FPS- und GPU-Einblendung an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows Apple's native FPS and GPU overlay during the next game launch."
+          }
+        }
+      }
+    },
+    "settings.general.operatorIcons": {
+      "comment": "Operator icons setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operator-Symbole"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operator Icons"
+          }
+        }
+      }
+    },
+    "settings.general.operatorIcons.detail": {
+      "comment": "Operator icons setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verwendet einen Operator für den Launcher und ein Spielsymbol im ursprünglichen Arknights-Stil."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use one operator for the Launcher and for a Game icon in the original Arknights style."
+          }
+        }
+      }
+    },
+    "settings.general.personalization": {
+      "comment": "Personalization panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalisierung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personalization"
+          }
+        }
+      }
+    },
+    "settings.general.presets": {
+      "comment": "Open artwork presets action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlagen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets…"
+          }
+        }
+      }
+    },
+    "settings.general.chooseOperator": {
+      "comment": "Choose operator icon action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operator auswählen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Operator…"
+          }
+        }
+      }
+    },
+    "settings.general.resolution": {
+      "comment": "Resolution setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auflösung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolution"
+          }
+        }
+      }
+    },
+    "settings.general.resolution.detail": {
+      "comment": "Resolution setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überschreibt beim nächsten Start die Spielauflösung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overrides the game resolution the next time it starts."
+          }
+        }
+      }
+    },
+    "settings.general.runAgain": {
+      "comment": "Run setup assistant action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut ausführen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run Again…"
+          }
+        }
+      }
+    },
+    "settings.general.serverTime": {
+      "comment": "Server time and reset countdown toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serverzeit und Reset-Countdown"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server Time & Reset Countdown"
+          }
+        }
+      }
+    },
+    "settings.general.serverTime.detail": {
+      "comment": "Server time and reset countdown toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt die aktive Serverzeit und die Zeit bis zum nächsten täglichen Reset an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the active server time and time until its next daily reset."
+          }
+        }
+      }
+    },
+    "settings.general.setupAssistant": {
+      "comment": "Setup assistant setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einrichtungsassistent"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup Assistant"
+          }
+        }
+      }
+    },
+    "settings.general.setupAssistant.detail": {
+      "comment": "Setup assistant setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Führt die geführte Einrichtung von Region, Anzeige und Personalisierung erneut aus."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run the guided region, display, and personalization setup again."
+          }
+        }
+      }
+    },
+    "settings.general.showGameVersion": {
+      "comment": "Show game version toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielversion anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Game Version"
+          }
+        }
+      }
+    },
+    "settings.general.showGameVersion.detail": {
+      "comment": "Show game version toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt die installierte Arknights-Version und eine manuelle Update-Prüfung über den Spielsteuerungen an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shows the installed Arknights version and a manual update check above the Play controls."
+          }
+        }
+      }
+    },
+    "settings.general.subtitle": {
+      "comment": "General settings page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anzeige und Personalisierung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display and personalization"
+          }
+        }
+      }
+    },
+    "settings.general.title": {
+      "comment": "General settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allgemein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "settings.general.windowMode": {
+      "comment": "Window mode setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenstermodus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Mode"
+          }
+        }
+      }
+    },
+    "settings.general.windowMode.detail": {
+      "comment": "Window mode setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überschreibt beim nächsten Start den Stil des Spielfensters."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overrides the game window style the next time it starts."
+          }
+        }
+      }
+    },
+    "settings.installation.cacheGallery": {
+      "comment": "Preset gallery cache setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlagen-Galerie-Caches"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset Gallery Caches"
+          }
+        }
+      }
+    },
+    "settings.installation.cacheGallery.detail": {
+      "comment": "Preset gallery cache description; argument is formatted storage size",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löscht zwischengespeicherte Vorlagen-Metadaten und alle geladenen Galerie-Dateien (Avatare und Hintergrundbilder). Sie belegen derzeit %1$@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers). They currently use %1$@."
+          }
+        }
+      }
+    },
+    "settings.installation.canaryFeatures": {
+      "comment": "Canary features master toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canary-Funktionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canary Features"
+          }
+        }
+      }
+    },
+    "settings.installation.canaryFeatures.detail": {
+      "comment": "Canary features master toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiviert Canary-Funktionen und die China-Clients."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enables Canary features and the China clients."
+          }
+        }
+      }
+    },
+    "settings.installation.followsDefaultAudioOutput": {
+      "comment": "Canary toggle for following the current macOS default audio output",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard-Audioausgabe folgen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow Default Audio Output"
+          }
+        }
+      }
+    },
+    "settings.installation.followsDefaultAudioOutput.detail": {
+      "comment": "Canary default-audio behavior and launch timing",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lässt das laufende Spiel dem aktuellen macOS-Ausgabegerät folgen. Gilt ab dem nächsten Spielstart."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lets the running game follow the current macOS output device. Applies on the next game launch."
+          }
+        }
+      }
+    },
+    "settings.installation.frameLatency": {
+      "comment": "Canary DXMT maximum frame latency control",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frame-Latenz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frame Latency"
+          }
+        }
+      }
+    },
+    "settings.installation.frameLatency.detail": {
+      "comment": "Canary DXMT frame queue explanation and launch timing",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begrenzt die DXMT-Warteschlange auf 1 bis 3 Frames. Niedrigere Werte können die Cursor-Latenz verringern, aber die Darstellung weniger flüssig machen. Gilt ab dem nächsten Spielstart."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limits the DXMT queue to 1–3 frames. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+          }
+        }
+      }
+    },
+    "settings.installation.chooseNewLocation": {
+      "comment": "Choose new install location action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuen Ort auswählen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose New Location…"
+          }
+        }
+      }
+    },
+    "settings.installation.compatibility": {
+      "comment": "Compatibility settings panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kompatibilität"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compatibility"
+          }
+        }
+      }
+    },
+    "settings.installation.forceMigration": {
+      "comment": "Confirm redo Wine setup action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migration erzwingen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Force Migration"
+          }
+        }
+      }
+    },
+    "settings.installation.forceMigration.action": {
+      "comment": "Open redo Wine setup confirmation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migration erzwingen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Force Migration…"
+          }
+        }
+      }
+    },
+    "settings.installation.forceMigration.confirmation": {
+      "comment": "Redo Wine setup confirmation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Einrichtung erneut ausführen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Force Wine Setup to Run Again?"
+          }
+        }
+      }
+    },
+    "settings.installation.forceMigration.detail": {
+      "comment": "Redo Wine setup description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Führt Wine-Initialisierung, DXMT-Installation und Registry-Overrides beim nächsten Start erneut aus. Spieldateien und Spielstände bleiben unverändert; nur der nächste Start dauert länger."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redo Wine initialization, DXMT installation, and registry overrides on the next launch. Game files and saves are untouched; only the next launch takes longer."
+          }
+        }
+      }
+    },
+    "settings.installation.folder": {
+      "comment": "Installation folder setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder"
+          }
+        }
+      }
+    },
+    "settings.installation.gameFiles": {
+      "comment": "Game files destructive setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spieldateien"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game files"
+          }
+        }
+      }
+    },
+    "settings.installation.gameFiles.detail": {
+      "comment": "Game files destructive setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verschiebt die Installation der gewählten Region in den Papierkorb."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move the selected game installation to the Trash."
+          }
+        }
+      }
+    },
+    "settings.installation.gameMode": {
+      "comment": "Experimental Game Mode setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game Mode (experimentell)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game Mode (Experimental)"
+          }
+        }
+      }
+    },
+    "settings.installation.gameMode.detail": {
+      "comment": "Experimental Game Mode description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fordert macOS auf, das Spiel während der Laufzeit zu priorisieren. Dafür muss die vollständige Xcode-App installiert sein, denn nur Xcode liefert das benötigte Werkzeug."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
+          }
+        }
+      }
+    },
+    "settings.installation.gameMode.alert": {
+      "comment": "Game Mode unavailable alert title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game Mode benötigt Xcode"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game Mode Needs Xcode"
+          }
+        }
+      }
+    },
+    "settings.installation.gameMode.alert.detail": {
+      "comment": "Game Mode unavailable alert description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dafür wird Apples Werkzeug gamepolicyctl benötigt. Es ist nur in der vollständigen Xcode-App enthalten, nicht in den Command Line Tools. Installiere Xcode aus dem App Store, um es zu verwenden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
+          }
+        }
+      }
+    },
+    "settings.installation.installed": {
+      "comment": "Installed game status",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed"
+          }
+        }
+      }
+    },
+    "settings.installation.installationLocation": {
+      "comment": "Install location setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installationsort"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation Location"
+          }
+        }
+      }
+    },
+    "settings.installation.installationLocation.detail": {
+      "comment": "Install location setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle einen neuen Ordner oder übernimm eine bestehende Spielinstallation."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a new folder or adopt an existing game installation."
+          }
+        }
+      }
+    },
+    "settings.installation.location": {
+      "comment": "Install location panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speicherort"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location"
+          }
+        }
+      }
+    },
+    "settings.installation.locateExisting": {
+      "comment": "Locate existing installation action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorhandene Installation suchen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locate Existing Installation…"
+          }
+        }
+      }
+    },
+    "settings.installation.logs": {
+      "comment": "Logs setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protokolle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logs"
+          }
+        }
+      }
+    },
+    "settings.installation.maintenance": {
+      "comment": "Maintenance panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maintenance"
+          }
+        }
+      }
+    },
+    "settings.installation.notInstalled": {
+      "comment": "Not installed game status",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht installiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not installed"
+          }
+        }
+      }
+    },
+    "settings.installation.paused": {
+      "comment": "Paused download status",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        }
+      }
+    },
+    "settings.installation.preparingDownload": {
+      "comment": "Preparing download status",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download wird vorbereitet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing download"
+          }
+        }
+      }
+    },
+    "settings.installation.region": {
+      "comment": "Region setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Region"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Region"
+          }
+        }
+      }
+    },
+    "settings.installation.region.detail": {
+      "comment": "Region setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jede Region wird unabhängig installiert, aktualisiert und gestartet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each region installs, updates, and launches independently."
+          }
+        }
+      }
+    },
+    "settings.installation.repair": {
+      "comment": "Repair game setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reparieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair"
+          }
+        }
+      }
+    },
+    "settings.installation.repair.action": {
+      "comment": "Start game repair action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reparieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair…"
+          }
+        }
+      }
+    },
+    "settings.installation.repair.detail": {
+      "comment": "Repair game setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prüft jede Spieldatei und lädt fehlende oder beschädigte Dateien erneut herunter."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check every game file and download missing or damaged files again."
+          }
+        }
+      }
+    },
+    "settings.installation.launcherSettings": {
+      "comment": "Launcher settings destructive row title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher-Einstellungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher Settings"
+          }
+        }
+      }
+    },
+    "settings.installation.resetSettings": {
+      "comment": "Confirm reset launcher settings action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen zurücksetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Settings"
+          }
+        }
+      }
+    },
+    "settings.installation.resetSettings.action": {
+      "comment": "Open reset launcher settings confirmation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Einstellungen zurücksetzen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset All Settings…"
+          }
+        }
+      }
+    },
+    "settings.installation.resetSettings.confirmation": {
+      "comment": "Reset launcher settings confirmation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Launcher-Einstellungen zurücksetzen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset All Launcher Settings?"
+          }
+        }
+      }
+    },
+    "settings.installation.resetSettings.detail": {
+      "comment": "Reset launcher settings description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setzt jeden Schalter und jede Option auf diesem Bildschirm zurück. Installationsort und gewählte Region bleiben unverändert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset every toggle and option on this screen to default. The install location and selected region are untouched."
+          }
+        }
+      }
+    },
+    "settings.installation.showGameFiles.help": {
+      "comment": "Reveal game files action help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spieldateien im Finder anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show game files in Finder"
+          }
+        }
+      }
+    },
+    "settings.installation.showLogs": {
+      "comment": "Reveal logs action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protokolle anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Logs"
+          }
+        }
+      }
+    },
+    "settings.installation.status": {
+      "comment": "Installation status setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        }
+      }
+    },
+    "settings.installation.status.detail": {
+      "comment": "Installation status setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zustand der Spielinstallation für die gewählte Region."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "State of the selected region's game installation."
+          }
+        }
+      }
+    },
+    "settings.installation.subtitle": {
+      "comment": "Installation settings page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateien, Reparatur und Entfernen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files, repair, and removal"
+          }
+        }
+      }
+    },
+    "settings.installation.title": {
+      "comment": "Installation settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation"
+          }
+        }
+      }
+    },
+    "settings.installation.uninstall": {
+      "comment": "Uninstall game action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel deinstallieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uninstall Game…"
+          }
+        }
+      }
+    },
+    "settings.installation.uninstall.confirmation": {
+      "comment": "Uninstall game confirmation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arknights deinstallieren?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uninstall Arknights?"
+          }
+        }
+      }
+    },
+    "settings.installation.uninstall.detail": {
+      "comment": "Uninstall game confirmation description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Launcher bleibt installiert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The launcher stays installed."
+          }
+        }
+      }
+    },
+    "settings.installation.uninstall.moveToTrash": {
+      "comment": "Move game to trash action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel in den Papierkorb legen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Game to Trash"
+          }
+        }
+      }
+    },
+    "settings.installation.winePrefix": {
+      "comment": "Wine prefix destructive setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Prefix"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine Prefix"
+          }
+        }
+      }
+    },
+    "settings.installation.winePrefix.delete": {
+      "comment": "Open delete Wine prefix confirmation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Prefix löschen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Wine Prefix…"
+          }
+        }
+      }
+    },
+    "settings.installation.winePrefix.delete.action": {
+      "comment": "Confirm delete Wine prefix action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Prefix löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Wine Prefix"
+          }
+        }
+      }
+    },
+    "settings.installation.winePrefix.delete.confirmation": {
+      "comment": "Delete Wine prefix confirmation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Prefix löschen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the Wine Prefix?"
+          }
+        }
+      }
+    },
+    "settings.installation.winePrefix.detail": {
+      "comment": "Wine prefix destructive setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löscht die gesamte Wine-Umgebung einschließlich gespeicherter Yostar-, Google-, Apple- und Facebook-Anmeldungen. Spieldateien bleiben unverändert; alles andere wird beim nächsten Start neu aufgebaut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the entire Wine environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else rebuilds on the next launch."
+          }
+        }
+      }
+    },
+    "settings.installation.winePrefix.delete.detail": {
+      "comment": "Delete Wine prefix confirmation description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dadurch wirst du von jeder im eingebetteten Browser gespeicherten Anmeldung abgemeldet. Spieldateien bleiben unverändert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This signs you out of every login saved in the embedded browser. Game files are untouched."
+          }
+        }
+      }
+    },
+    "settings.installation.wineSetup": {
+      "comment": "Wine setup destructive setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Einrichtung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine Setup"
+          }
+        }
+      }
+    },
+    "settings.installation.wineSynchronization": {
+      "comment": "Wine thread synchronization setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine-Thread-Synchronisierung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wine Thread Synchronization"
+          }
+        }
+      }
+    },
+    "settings.installation.wineSynchronization.detail": {
+      "comment": "Wine thread synchronization setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steuert, wie Wine auf Windows-Thread-Wartevorgänge abbildet. MSYNC verwendet die Mach-Synchronisierung von macOS und lieferte in unseren Tests gleichmäßigere Frame-Zeiten. ESYNC verwendet den älteren ereignisbasierten Wine-Pfad und bleibt der Kompatibilitäts-Fallback. Gilt ab dem nächsten Start."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback. Applies on the next launch."
+          }
+        }
+      }
+    },
+    "settings.installation.downloading": {
+      "comment": "Download progress status; argument is percent",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird heruntergeladen: %lld %%"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading %lld%%"
+          }
+        }
+      }
+    },
+    "settings.installation.downloadSpeed": {
+      "comment": "Current game download rate; argument is a localized byte rate",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        }
+      }
+    },
+    "settings.installation.downloadWaiting": {
+      "comment": "Download status while no useful transfer rate can be calculated",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warte auf Netzwerk…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for network…"
+          }
+        }
+      }
+    },
+    "settings.navigation.about": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "settings.navigation.audio": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio"
+          }
+        }
+      }
+    },
+    "settings.navigation.developer": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entwicklung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Developer"
+          }
+        }
+      }
+    },
+    "settings.navigation.general": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allgemein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "settings.navigation.installation": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation"
+          }
+        }
+      }
+    },
+    "settings.navigation.label": {
+      "comment": "Settings navigation heading",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EINSTELLUNGEN"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SETTINGS"
+          }
+        }
+      }
+    },
+    "settings.navigation.storage": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speicher"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        }
+      }
+    },
+    "settings.navigation.statistics": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playtime"
+          }
+        }
+      }
+    },
+    "settings.navigation.updates": {
+      "comment": "Settings navigation item",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        }
+      }
+    },
+    "settings.statistics.about": {
+      "comment": "Playtime explanation panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Über die Spielzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About playtime"
+          }
+        }
+      }
+    },
+    "settings.statistics.latest": {
+      "comment": "Latest recorded playtime session label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Sitzung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest session"
+          }
+        }
+      }
+    },
+    "settings.statistics.lessThanMinute": {
+      "comment": "Duration below one minute",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "< 1 Min."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "< 1 min"
+          }
+        }
+      }
+    },
+    "settings.statistics.measurement": {
+      "comment": "Playtime measurement explanation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was zählt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What counts"
+          }
+        }
+      }
+    },
+    "settings.statistics.measurementDetail": {
+      "comment": "Explanation of the playtime measurement boundary",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Zeit beginnt, sobald das Spielfenster sichtbar ist, und endet mit dem Spielprozess. Menüs, Pausen und Leerlauf werden mitgezählt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time starts when the game window becomes visible and ends with the game process. Menus, pauses, and idle time are included."
+          }
+        }
+      }
+    },
+    "settings.statistics.noSessions": {
+      "comment": "Empty state before the first playtime session",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine abgeschlossene Sitzung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No completed session yet"
+          }
+        }
+      }
+    },
+    "settings.statistics.overview": {
+      "comment": "Playtime overview panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übersicht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overview"
+          }
+        }
+      }
+    },
+    "settings.statistics.privacy": {
+      "comment": "Local playtime privacy explanation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur lokal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local only"
+          }
+        }
+      }
+    },
+    "settings.statistics.privacyDetail": {
+      "comment": "Local playtime privacy explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Statistik bleibt auf diesem Mac. Sie ist keinem Konto zugeordnet und wird weder synchronisiert noch übertragen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics stay on this Mac. They are not associated with an account, synced, or sent anywhere."
+          }
+        }
+      }
+    },
+    "settings.statistics.regions": {
+      "comment": "Per-region playtime panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regions"
+          }
+        }
+      }
+    },
+    "settings.statistics.reset": {
+      "comment": "Reset playtime statistics row title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeitstatistik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playtime statistics"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetAction": {
+      "comment": "Reset playtime statistics action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistik zurücksetzen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Statistics…"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetConfirmation": {
+      "comment": "Reset playtime statistics confirmation title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeitstatistik zurücksetzen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset playtime statistics?"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetConfirm": {
+      "comment": "Destructive reset playtime statistics confirmation action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistik zurücksetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Statistics"
+          }
+        }
+      }
+    },
+    "settings.statistics.resetDetail": {
+      "comment": "Reset playtime statistics explanation",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löscht alle lokalen Gesamtwerte und Tagesdaten. Diese Aktion kann nicht rückgängig gemacht werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletes all local totals and daily data. This cannot be undone."
+          }
+        }
+      }
+    },
+    "settings.statistics.sevenDays": {
+      "comment": "Seven-day playtime summary label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 Tage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 days"
+          }
+        }
+      }
+    },
+    "settings.statistics.subtitle": {
+      "comment": "Playtime settings page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wie lange das Spiel auf diesem Mac ausgeführt wurde"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How long the game has been running on this Mac"
+          }
+        }
+      }
+    },
+    "settings.statistics.thirtyDays": {
+      "comment": "Thirty-day playtime summary label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 Tage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 days"
+          }
+        }
+      }
+    },
+    "settings.statistics.title": {
+      "comment": "Playtime settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playtime"
+          }
+        }
+      }
+    },
+    "settings.statistics.total": {
+      "comment": "All-time playtime summary label",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesamt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All time"
+          }
+        }
+      }
+    },
+    "settings.storage.action.refresh": {
+      "comment": "Refresh storage measurements action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualisieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        }
+      }
+    },
+    "settings.storage.action.clearCaches": {
+      "comment": "Clear recreatable shader and browser caches action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caches leeren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear Caches"
+          }
+        }
+      }
+    },
+    "settings.storage.action.clearGalleryCache": {
+      "comment": "Clear preset gallery cache action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Galerie-Cache leeren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear Gallery Cache"
+          }
+        }
+      }
+    },
+    "settings.storage.category.browserCache": {
+      "comment": "Embedded browser cache category",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eingebettete Browserdaten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Embedded Browser Data"
+          }
+        }
+      }
+    },
+    "settings.storage.category.browserCache.detail": {
+      "comment": "Embedded browser cache description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird automatisch neu erstellt und kann mit der Cache-Bereinigung gelöscht werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recreated automatically and removed by the cache cleanup action."
+          }
+        }
+      }
+    },
+    "settings.storage.category.compatibilityRuntime": {
+      "comment": "Bundled compatibility runtime category",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kompatibilitätslaufzeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compatibility Runtime"
+          }
+        }
+      }
+    },
+    "settings.storage.category.compatibilityRuntime.detail": {
+      "comment": "Bundled compatibility runtime description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gebündelte Wine- und DXMT-Komponenten; schreibgeschützt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled Wine and DXMT components; read-only."
+          }
+        }
+      }
+    },
+    "settings.storage.category.dxmtCache": {
+      "comment": "DXMT shader cache category",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DXMT-Shader-Cache"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DXMT Shader Cache"
+          }
+        }
+      }
+    },
+    "settings.storage.category.dxmtCache.detail": {
+      "comment": "DXMT shader cache description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird automatisch neu erstellt und kann mit der Cache-Bereinigung gelöscht werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recreated automatically and removed by the cache cleanup action."
+          }
+        }
+      }
+    },
+    "settings.storage.category.galleryCache.detail": {
+      "comment": "Preset gallery cache description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löscht zwischengespeicherte Vorlagen-Metadaten und alle geladenen Galerie-Dateien (Avatare und Hintergrundbilder)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers)."
+          }
+        }
+      }
+    },
+    "settings.storage.category.game.detail": {
+      "comment": "Game installation description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spieldateien, die eine Reparatur oder Neuinstallation erfordern können."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game files that may require repair or reinstall."
+          }
+        }
+      }
+    },
+    "settings.storage.category.logs.detail": {
+      "comment": "Launcher and game logs description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher- und Spieldiagnosen; im Finder anzeigen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher and game diagnostics; reveal them in Finder."
+          }
+        }
+      }
+    },
+    "settings.storage.category.winePrefix.detail": {
+      "comment": "Shared Wine prefix description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemeinsam für die ausgewählte Client-Familie; enthält Laufzeitdaten und Anmeldungen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared by the selected client family; contains runtime data and logins."
+          }
+        }
+      }
+    },
+    "settings.storage.common.unavailable": {
+      "comment": "Storage category state when its directory is missing",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht vorhanden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not present"
+          }
+        }
+      }
+    },
+    "settings.storage.section.caches": {
+      "comment": "Storage overview cache section title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatisch erstellte Caches"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recreatable Caches"
+          }
+        }
+      }
+    },
+    "settings.storage.section.installations": {
+      "comment": "Storage overview game installation section title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielinstallationen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game Installations"
+          }
+        }
+      }
+    },
+    "settings.storage.section.shared": {
+      "comment": "Storage overview shared items section title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemeinsame Laufzeitdaten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared Runtime Data"
+          }
+        }
+      }
+    },
+    "settings.storage.subtitle": {
+      "comment": "Storage overview page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichernutzung und gezielte Bereinigung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disk usage and targeted cleanup"
+          }
+        }
+      }
+    },
+    "settings.storage.title": {
+      "comment": "Storage overview page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speicher"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        }
+      }
+    },
+    "settings.updates.announcements": {
+      "comment": "Announcements setting",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ankündigungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Announcements"
+          }
+        }
+      }
+    },
+    "settings.updates.announcements.detail": {
+      "comment": "Announcements setting description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt gelegentliche Projektmitteilungen jeweils einmal an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show occasional project messages once per announcement."
+          }
+        }
+      }
+    },
+    "settings.updates.automaticChecks": {
+      "comment": "Automatic update checks panel title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatische Prüfungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic Checks"
+          }
+        }
+      }
+    },
+    "settings.updates.checking": {
+      "comment": "Update checking status",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird geprüft…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "settings.updates.subtitle": {
+      "comment": "Updates settings page subtitle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launcher und Spiel aktuell halten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the launcher and game current"
+          }
+        }
+      }
+    },
+    "settings.updates.title": {
+      "comment": "Updates settings page title",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        }
+      }
+    },
+    "settings.updates.updateAvailable": {
+      "comment": "Update available status",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update available"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

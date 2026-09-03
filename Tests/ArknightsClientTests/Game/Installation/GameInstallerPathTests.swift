@@ -6,6 +6,23 @@ import Testing
 @testable import ArknightsClient
 
 struct GameInstallerPathTests {
+	@Test
+	func boundedReaderRejectsOversizedAndSymbolicLinkInputs() throws {
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "bounded-reader-\(UUID().uuidString)", directoryHint: .isDirectory)
+		let target = root.appending(path: "target")
+		let link = root.appending(path: "link")
+		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+		defer { try? FileManager.default.removeItem(at: root) }
+		try Data(repeating: 0, count: 16).write(to: target)
+		try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+		#expect(throws: Error.self) {
+			_ = try BoundedFileReader.readRegularFile(at: target, maximumBytes: 8)
+		}
+		#expect(throws: Error.self) {
+			_ = try BoundedFileReader.readRegularFile(at: link, maximumBytes: 32)
+		}
+	}
 	private let installer = GameInstaller(
 		api: PathTestAPI(),
 		compatibilityManager: GameCompatibilityManager()

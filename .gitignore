@@ -2,9 +2,11 @@
 /dist/
 /.swiftpm/
 /.ruff_cache/
+/.tmp/
 __pycache__/
 *.dmg
 *.log
 .DS_Store
 /issues
 docs/superpowers
+Sources/ArknightsClient/Shared/Localization/GeneratedStringSymbols_*.swift

@@ -5,6 +5,7 @@ import SwiftUI
 struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 	@Binding private var selection: Option
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 	private let options: [Option]
 	private let accentColor: Color
 	private let isDisabled: Bool
@@ -31,14 +32,22 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 				Button {
 					selection = option
 				} label: {
-					label(option)
-						.font(.caption.weight(.semibold))
-						.frame(maxWidth: .infinity)
-						.padding(.horizontal, 10)
-						.padding(.vertical, 5)
-						.contentShape(Capsule())
+					HStack(spacing: 4) {
+						label(option)
+						if differentiateWithoutColor && selection == option {
+							Image(systemName: "checkmark")
+								.font(.caption2.bold())
+								.accessibilityHidden(true)
+						}
+					}
+					.font(.caption.weight(.semibold))
+					.frame(maxWidth: .infinity)
+					.padding(.horizontal, 10)
+					.padding(.vertical, 5)
+					.contentShape(Capsule())
 				}
 				.buttonStyle(.plain)
+				.keyboardFocusIndicator(in: Capsule())
 				.foregroundStyle(
 					isDisabled
 						? Color.secondary.opacity(0.55)

@@ -13,11 +13,11 @@ struct HUDMenuLabel: View {
 			Text(title)
 			if showsMenuIndicator {
 				Image(systemName: "chevron.up.chevron.down")
-					.font(.system(size: 7, weight: .bold))
+					.font(.caption2.bold())
 					.accessibilityHidden(true)
 			}
 		}
-		.font(.system(size: 10, weight: .semibold))
+		.font(.caption.weight(.semibold))
 		.foregroundStyle(accentColor)
 		.padding(.horizontal, 6)
 		.padding(.vertical, 2)

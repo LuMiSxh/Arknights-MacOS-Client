@@ -3,69 +3,70 @@
 import SwiftUI
 
 struct OnboardingGameSettingsView: View {
-	@Bindable var model: LauncherViewModel
+	@Bindable var preferences: LauncherPreferencesController
+	let accentColor: Color
 
 	var body: some View {
 		OnboardingPage(
-			title: "Tune the game window",
-			subtitle:
-				"These choices affect the next launch. Start conservatively on base-model Macs; you can raise resolution after confirming smooth gameplay.",
-			accentColor: model.accentColor
+			title: L10n.string(OnboardingStrings.gameTitle),
+			subtitle: L10n.string(OnboardingStrings.gameSubtitle),
+			accentColor: accentColor
 		) {
-			SettingsPanel(title: "Who controls display settings?", systemImage: "switch.2") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.displaySettingsPanel), systemImage: "switch.2"
+			) {
 				OnboardingToggleRow(
-					title: "Use In-Game Display Settings",
-					detail: model.launchOptions.usesGameSettings
-						? "Changes made inside Arknights remain in control after the first successful launch."
-						: "The launcher overrides window mode and resolution every time the game starts.",
-					isOn: $model.launchOptions.usesGameSettings,
-					accentColor: model.accentColor
+					title: L10n.string(OnboardingStrings.useGameDisplaySettings),
+					detail: preferences.launchOptions.usesGameSettings
+						? L10n.string(OnboardingStrings.gameDisplaySettingsDetail)
+						: L10n.string(OnboardingStrings.launcherDisplaySettingsDetail),
+					isOn: $preferences.launchOptions.usesGameSettings,
+					accentColor: accentColor
 				)
 			}
 
-			SettingsPanel(title: "Window & resolution", systemImage: "rectangle.on.rectangle") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.windowResolutionPanel),
+				systemImage: "rectangle.on.rectangle"
+			) {
 				AdaptiveSegmentedControl(
-					selection: $model.launchOptions.displayMode,
+					selection: $preferences.launchOptions.displayMode,
 					options: GameDisplayMode.allCases,
-					accentColor: model.accentColor
+					accentColor: accentColor
 				) { mode in
-					Text(shortTitle(for: mode))
+					Text(L10n.string(shortTitle(for: mode)))
 				}
-				.disabled(model.launchOptions.usesGameSettings)
+				.disabled(preferences.launchOptions.usesGameSettings)
 
 				SettingsHairline()
-				LabeledContent("Resolution") {
+				LabeledContent(L10n.string(OnboardingStrings.resolution)) {
 					GlassMenuPicker(
-						selection: $model.launchOptions.resolution,
+						selection: $preferences.launchOptions.resolution,
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
-						accentColor: model.accentColor,
-						isDisabled: model.launchOptions.usesGameSettings
+						accentColor: accentColor,
+						isDisabled: preferences.launchOptions.usesGameSettings
 					)
 				}
-				Text(
-					"Higher resolutions increase the work done by both Wine and the graphics translator."
-				)
-				.font(.callout)
-				.foregroundStyle(.secondary)
+				Text(L10n.string(OnboardingStrings.higherResolutionDetail))
+					.font(.callout)
+					.foregroundStyle(.secondary)
 			}
 
-			SettingsPanel(title: "Pixel density", systemImage: "sparkles.rectangle.stack") {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.pixelDensityPanel),
+				systemImage: "sparkles.rectangle.stack"
+			) {
 				OnboardingToggleRow(
-					title: "High-Resolution Mode",
-					detail:
-						"Makes text sharper on Retina displays, but the larger backing surface can reduce performance. Turn it off first when the game feels uneven.",
-					isOn: $model.launchOptions.usesHighResolutionMode,
-					accentColor: model.accentColor
+					title: L10n.string(OnboardingStrings.highResolutionTitle),
+					detail: L10n.string(OnboardingStrings.highResolutionDetail),
+					isOn: $preferences.launchOptions.usesHighResolutionMode,
+					accentColor: accentColor
 				)
 			}
 		}
 	}
 
-	private func shortTitle(for mode: GameDisplayMode) -> String {
-		switch mode {
-		case .fullscreen: "Fullscreen"
-		case .windowed: "Windowed"
-		case .borderlessWindow: "Borderless"
-		}
+	private func shortTitle(for mode: GameDisplayMode) -> LocalizedStringResource {
+		OnboardingStrings.displayMode(mode)
 	}
 }

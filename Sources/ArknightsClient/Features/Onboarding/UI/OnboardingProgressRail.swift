@@ -9,8 +9,8 @@ struct OnboardingProgressRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETUP ASSISTANT")
-				.font(.caption2.monospaced().weight(.semibold))
+			Text(L10n.string(OnboardingStrings.setupAssistant))
+				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
 				.padding(.horizontal, 18)
@@ -23,10 +23,12 @@ struct OnboardingProgressRail: View {
 						RoundedRectangle(cornerRadius: 1)
 							.fill(currentStep == step ? accentColor : .clear)
 							.frame(width: 2, height: 20)
+							.accessibilityHidden(true)
 						Image(systemName: markerImage(for: step))
 							.frame(width: 17)
 							.symbolRenderingMode(.monochrome)
-						Text(step.title)
+							.accessibilityHidden(true)
+						Text(L10n.string(OnboardingStrings.stepTitle(step)))
 							.fontWeight(currentStep == step ? .semibold : .regular)
 						Spacer(minLength: 0)
 					}
@@ -34,7 +36,9 @@ struct OnboardingProgressRail: View {
 					.padding(.vertical, 9)
 					.padding(.trailing, 12)
 					.background(backgroundFill(for: step), in: .rect(cornerRadius: 8))
+					.frame(minHeight: 44)
 					.accessibilityElement(children: .combine)
+					.accessibilityLabel(L10n.string(OnboardingStrings.stepTitle(step)))
 					.accessibilityAddTraits(currentStep == step ? .isSelected : [])
 				}
 			}
@@ -46,7 +50,7 @@ struct OnboardingProgressRail: View {
 				Rectangle()
 					.fill(accentColor)
 					.frame(width: 28, height: 2)
-				Text("Launcher v\(appVersion)")
+				Text(L10n.string(OnboardingStrings.progressVersion(appVersion)))
 					.font(.caption.monospaced())
 					.foregroundStyle(.tertiary)
 			}
@@ -55,7 +59,7 @@ struct OnboardingProgressRail: View {
 		.frame(width: 205)
 		.background {
 			ZStack {
-				Color.black.opacity(0.28)
+				LauncherVisuals.navigationRailBackground
 				accentColor.opacity(0.03)
 			}
 		}

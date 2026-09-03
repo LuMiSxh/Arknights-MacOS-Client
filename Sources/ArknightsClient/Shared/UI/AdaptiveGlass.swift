@@ -10,20 +10,7 @@ extension View {
 		tint: Color? = nil,
 		in shape: some Shape = Rectangle()
 	) -> some View {
-		if #available(macOS 26, *) {
-			if let tint {
-				self.glassEffect(.regular.tint(tint), in: shape)
-			} else {
-				self.glassEffect(.regular, in: shape)
-			}
-		} else {
-			if let tint {
-				self.background(tint, in: shape)
-					.background(.ultraThinMaterial, in: shape)
-			} else {
-				self.background(.regularMaterial, in: shape)
-			}
-		}
+		modifier(AdaptiveGlassEffectModifier(tint: tint, shape: shape))
 	}
 
 	/// Applies neutral Liquid Glass to compact icon controls, with a bordered fallback.
@@ -60,17 +47,45 @@ extension View {
 		tint: Color = LauncherVisuals.controlTint,
 		in shape: ControlShape
 	) -> some View {
-		self.foregroundStyle(tint)
-			.background(tint.opacity(0.12), in: shape)
-			.overlay {
-				shape.strokeBorder(tint.opacity(0.18)).allowsHitTesting(false)
+		modifier(HUDSecondaryControlSurfaceModifier(tint: tint, shape: shape))
+	}
+}
+
+private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
+	let tint: Color?
+	let shape: ShapeType
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+	@ViewBuilder
+	func body(content: Content) -> some View {
+		if reduceTransparency {
+			content
+				.background(Color.black.opacity(0.92), in: shape)
+				.overlay {
+					shape
+						.stroke((tint ?? Color.white).opacity(0.42), lineWidth: 1)
+						.allowsHitTesting(false)
+				}
+		} else if #available(macOS 26, *) {
+			if let tint {
+				content.glassEffect(.regular.tint(tint), in: shape)
+			} else {
+				content.glassEffect(.regular, in: shape)
 			}
+		} else if let tint {
+			content
+				.background(tint, in: shape)
+				.background(.ultraThinMaterial, in: shape)
+		} else {
+			content.background(.regularMaterial, in: shape)
+		}
 	}
 }
 
 private struct SettingsControlCapsuleModifier: ViewModifier {
 	let tint: Color
 	let isDisabled: Bool
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
 	private var foreground: Color {
 		isDisabled ? LauncherVisuals.controlTint.opacity(0.65) : tint
@@ -82,9 +97,22 @@ private struct SettingsControlCapsuleModifier: ViewModifier {
 
 	@ViewBuilder
 	func body(content: Content) -> some View {
-		if #available(macOS 26, *) {
+		if reduceTransparency {
 			content
-				.font(.system(size: 12, weight: .semibold))
+				.font(.caption.weight(.semibold))
+				.foregroundStyle(foreground)
+				.padding(.horizontal, 10)
+				.padding(.vertical, 5)
+				.background(Color.black.opacity(0.92), in: Capsule())
+				.overlay {
+					Capsule()
+						.stroke(foreground.opacity(0.42), lineWidth: 1)
+						.allowsHitTesting(false)
+				}
+				.contentShape(Capsule())
+		} else if #available(macOS 26, *) {
+			content
+				.font(.caption.weight(.semibold))
 				.foregroundStyle(foreground)
 				.padding(.horizontal, 10)
 				.padding(.vertical, 5)
@@ -92,7 +120,7 @@ private struct SettingsControlCapsuleModifier: ViewModifier {
 				.contentShape(Capsule())
 		} else {
 			content
-				.font(.system(size: 12, weight: .semibold))
+				.font(.caption.weight(.semibold))
 				.foregroundStyle(foreground)
 				.padding(.horizontal, 10)
 				.padding(.vertical, 5)
@@ -103,6 +131,28 @@ private struct SettingsControlCapsuleModifier: ViewModifier {
 				}
 				.contentShape(Capsule())
 		}
+	}
+}
+
+private struct HUDSecondaryControlSurfaceModifier<ShapeType: InsettableShape>: ViewModifier {
+	let tint: Color
+	let shape: ShapeType
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+	func body(content: Content) -> some View {
+		content
+			.foregroundStyle(tint)
+			.background(
+				reduceTransparency ? Color.black.opacity(0.92) : tint.opacity(0.12),
+				in: shape
+			)
+			.overlay {
+				shape
+					.strokeBorder(
+						reduceTransparency ? tint.opacity(0.42) : tint.opacity(0.18)
+					)
+					.allowsHitTesting(false)
+			}
 	}
 }
 

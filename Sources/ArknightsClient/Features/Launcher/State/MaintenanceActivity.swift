@@ -6,4 +6,6 @@ enum MaintenanceActivity: Equatable, Sendable {
 	case clearingCache
 	case deletingWinePrefix
 	case uninstalling
+	case updatingLauncher
+	case migratingStorage
 }

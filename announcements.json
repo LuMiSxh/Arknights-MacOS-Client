@@ -2,28 +2,16 @@
 	"schemaVersion": 1,
 	"announcements": [
 		{
-			"id": "settings-survey-2026-08",
+			"id": "canary-runtime-0-5",
 			"enabled": true,
-			"title": "Quick settings survey",
-			"body": "Sorry for the recent stream of updates and announcements.\n\nWe are preparing recommended settings for different Macs and would appreciate a quick look at what you use. If you have a moment, please fill out this short settings survey. It should take about two minutes and is open until September 2.\n\nThank you for using Arknights Client and for bearing with the recent changes.",
-			"actionTitle": "Open survey",
-			"actionURL": "https://arknights-settings-survey.b71f1f.workers.dev",
-			"minimumVersion": "0.3.0",
-			"maximumVersion": "0.4.1",
-			"startsAt": "2026-08-22T22:00:00Z",
-			"endsAt": "2026-09-02T21:59:59Z"
-		},
-		{
-			"id": "thanks-0-3-0-2026-08",
-			"enabled": true,
-			"title": "Thanks for using 0.3.0",
-			"body": "Thanks for actually using Arknights Client — this is a small side project, so it means a lot that people are running it at all. A few of you have already sent in bug reports and feature ideas, and that feedback has genuinely made the launcher better, so thank you for that too.\n\nI'm off work this week and using the time to finish version 0.4.0, the first beta. **It's expected to go live Thursday morning around 10am German time (~08:00 UTC).**\n\nIf you've got a bug or feature request you'd like looked at before then, now's a good time to send it my way — I'm still actively working on it. Open an issue on GitHub, or find me on Reddit as u/Drageast if you'd rather just chat about it.\n\nThanks again for sticking around.",
-			"actionTitle": "Open GitHub Issues",
-			"actionURL": "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new/choose",
-			"minimumVersion": "0.3.0",
-			"maximumVersion": "0.3.0",
-			"startsAt": "2026-08-18T00:00:00Z",
-			"endsAt": "2026-08-20T08:00:00Z"
+			"title": "Thank you for helping shape version 0.5",
+			"body": "Thank you for using Arknights Client — and an extra thank-you to everyone who took part in the settings survey. Your feedback helped shape version 0.5.\n\nVersion 0.5 adds optional **Canary Features**: new settings that are ready for wider testing. Find them under **Settings → Installation → Danger Zone**.\n\nDoes the in-game cursor feel delayed? Enable Canary Features and try a **Frame Latency** value from 1 to 3. Lower values may feel more responsive. If the game feels less smooth, switch back to 3.\n\nDo you often switch between speakers, headphones, displays, or AirPlay devices? Enable **Follow Default Audio Output** so the game can follow your Mac's current audio output without being restarted.\n\nChanges apply the next time you start the game. Canary settings may change while we test them, then move into the regular launcher in a later version.\n\nThe **China and China — Bilibili clients** are also available through Canary Features. Once Canary is enabled, select either client under **Settings → Installation → Region**. They install, update, and launch through Arknights Client like the other regions.",
+			"actionTitle": "Read Canary details",
+			"actionURL": "https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/",
+			"minimumVersion": "0.5.0",
+			"maximumVersion": "0.5.2",
+			"startsAt": null,
+			"endsAt": null
 		}
 	]
 }

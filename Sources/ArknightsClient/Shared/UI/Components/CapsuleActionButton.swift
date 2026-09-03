@@ -36,7 +36,7 @@ struct CapsuleActionButton: View {
 	@Environment(\.isEnabled) private var isEnabled
 
 	init(
-		_ title: String,
+		title: String,
 		systemImage: String? = nil,
 		tone: CapsuleActionTone,
 		presentation: CapsuleActionPresentation = .standard,
@@ -51,26 +51,6 @@ struct CapsuleActionButton: View {
 		self.role = role
 		self.showsTitle = showsTitle
 		self.action = action
-	}
-
-	init(
-		title: String,
-		systemImage: String? = nil,
-		tone: CapsuleActionTone,
-		presentation: CapsuleActionPresentation = .standard,
-		role: ButtonRole? = nil,
-		showsTitle: Bool = true,
-		action: @escaping () -> Void
-	) {
-		self.init(
-			title,
-			systemImage: systemImage,
-			tone: tone,
-			presentation: presentation,
-			role: role,
-			showsTitle: showsTitle,
-			action: action
-		)
 	}
 
 	var body: some View {
@@ -95,6 +75,7 @@ struct CapsuleActionButton: View {
 			)
 		}
 		.buttonStyle(ActionPressStyle())
+		.keyboardFocusIndicator(in: Capsule())
 		.opacity(isEnabled ? 1 : 0.55)
 	}
 }
@@ -113,12 +94,12 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 			compactSurface(content)
 		case .hud:
 			content
-				.font(.system(size: 12, weight: .semibold))
+				.font(.caption.weight(.semibold))
 				.foregroundStyle(tint)
 				.padding(.horizontal, 11)
 				.padding(.vertical, 6)
 				.contentShape(Capsule())
-				.background(tint.opacity(0.12), in: Capsule())
+				.adaptiveGlassEffect(tint: tint.opacity(0.12), in: Capsule())
 				.overlay {
 					Capsule().strokeBorder(tint.opacity(0.18)).allowsHitTesting(false)
 				}
@@ -133,29 +114,17 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 			.adaptiveActionSurface(tint: tint, in: Capsule())
 	}
 
-	@ViewBuilder
 	private func compactSurface(_ content: Content) -> some View {
-		if #available(macOS 26, *) {
-			content
-				.font(.system(size: 12, weight: .semibold))
-				.foregroundStyle(tint)
-				.padding(.horizontal, 10)
-				.padding(.vertical, 5)
-				.contentShape(Capsule())
-				.glassEffect(.regular.tint(tint.opacity(0.13)), in: .capsule)
-		} else {
-			content
-				.font(.system(size: 12, weight: .semibold))
-				.foregroundStyle(tint)
-				.padding(.horizontal, 10)
-				.padding(.vertical, 5)
-				.contentShape(Capsule())
-				.background(tint.opacity(0.13), in: Capsule())
-				.background(.ultraThinMaterial, in: Capsule())
-				.overlay {
-					Capsule().strokeBorder(tint.opacity(0.18)).allowsHitTesting(false)
-				}
-		}
+		content
+			.font(.caption.weight(.semibold))
+			.foregroundStyle(tint)
+			.padding(.horizontal, 10)
+			.padding(.vertical, 5)
+			.contentShape(Capsule())
+			.adaptiveGlassEffect(tint: tint.opacity(0.13), in: Capsule())
+			.overlay {
+				Capsule().strokeBorder(tint.opacity(0.18)).allowsHitTesting(false)
+			}
 	}
 
 	private var standardHorizontalPadding: CGFloat {

@@ -43,6 +43,20 @@ struct ThemedTextField: View {
 		.font(.callout)
 		.padding(.horizontal, 10)
 		.padding(.vertical, 7)
-		.themedInputSurface(accentColor: accentColor, isFocused: isFocused)
+		.adaptiveGlassEffect(
+			tint: accentColor.opacity(isFocused ? 0.16 : 0.08),
+			in: RoundedRectangle(cornerRadius: 10)
+		)
+		.overlay {
+			RoundedRectangle(cornerRadius: 10)
+				.strokeBorder(
+					isFocused
+						? accentColor.opacity(0.72) : LauncherVisuals.controlTint.opacity(0.16),
+					lineWidth: isFocused ? 1.5 : 1
+				)
+				.allowsHitTesting(false)
+		}
+		.contentShape(RoundedRectangle(cornerRadius: 10))
+		.focusEffectDisabled(true)
 	}
 }

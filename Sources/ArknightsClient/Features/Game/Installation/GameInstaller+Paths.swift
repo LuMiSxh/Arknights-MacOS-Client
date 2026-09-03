@@ -5,6 +5,7 @@ import Foundation
 extension GameInstaller {
 	func validateManifest(_ manifest: GameManifest, inside installDirectory: URL) throws {
 		_ = try Self.safeRelativePath(manifest.source)
+		_ = try Self.totalByteCount(of: manifest.file)
 		let paths = try manifest.file.map { try Self.safeRelativePath($0.path) }
 		var originalPathByKey: [String: String] = [:]
 
@@ -54,6 +55,22 @@ extension GameInstaller {
 			)
 			try assertSafeExistingPartialFile(at: destination.appendingPathExtension("part"))
 		}
+	}
+
+	static func totalByteCount(of files: [ManifestFile]) throws -> Int64 {
+		var total: Int64 = 0
+		for item in files {
+			guard item.byteCount <= GameManifest.maximumFileByteCount else {
+				throw LauncherError.invalidResponse
+			}
+			let (sum, overflow) = total.addingReportingOverflow(item.byteCount)
+			guard !overflow else { throw LauncherError.invalidResponse }
+			total = sum
+			guard total <= GameManifest.maximumTotalByteCount else {
+				throw LauncherError.invalidResponse
+			}
+		}
+		return total
 	}
 
 	func destinationURL(for item: ManifestFile, inside installDirectory: URL) throws -> URL {

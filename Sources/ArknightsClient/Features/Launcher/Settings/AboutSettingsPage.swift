@@ -4,38 +4,43 @@ import AppKit
 import SwiftUI
 
 struct AboutSettingsPage: View {
-	var model: LauncherViewModel
+	let accentColor: Color
+	let launcherIconManager: LauncherIconManager
+	let branding: LauncherBranding?
+	let revealApplication: () -> Void
 	@Binding var presentedDocument: BundledDocument?
 
 	var body: some View {
 		SettingsPage(
-			title: "About", subtitle: "Arknights Client \(appVersion)",
-			accentColor: model.accentColor
+			title: L10n.string(SettingsStrings.aboutTitle),
+			subtitle: "\(L10n.string(SettingsStrings.application)) \(appVersion)",
+			accentColor: accentColor
 		) {
 			HStack(alignment: .center, spacing: 18) {
-				Image(nsImage: model.launcherIconManager.currentIcon)
+				Image(nsImage: launcherIconManager.currentIcon)
 					.resizable()
 					.frame(width: 76, height: 76)
+					.accessibilityHidden(true)
 				VStack(alignment: .leading, spacing: 5) {
-					Text("Arknights Client")
+					Text(L10n.string(SettingsStrings.application))
 						.font(.title2.bold())
-					Text("Unofficial macOS launcher")
+					Text(L10n.string(SettingsStrings.unofficialLauncher))
 						.foregroundStyle(.secondary)
 					AccentLink(
 						title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
-						accentColor: model.accentColor
+						accentColor: accentColor
 					)
 					.font(.callout.weight(.medium))
 				}
 				Spacer()
 				CapsuleActionButton(
-					title: "Show in Finder", systemImage: "folder",
-					tone: .accent(model.accentColor), showsTitle: false,
-					action: model.revealApplication
+					title: L10n.string(SettingsStrings.openFinder), systemImage: "folder",
+					tone: .accent(accentColor), showsTitle: false,
+					action: revealApplication
 				)
-				.help("Reveal the launcher application in Finder")
+				.help(L10n.string(SettingsStrings.openFinderHelp))
 				CapsuleActionButton(
-					title: "GitHub Repository", tone: .accent(model.accentColor)
+					title: L10n.string(SettingsStrings.github), tone: .accent(accentColor)
 				) {
 					NSWorkspace.shared.open(
 						URL(
@@ -43,43 +48,54 @@ struct AboutSettingsPage: View {
 						)!
 					)
 				}
-				.help("Open project repository")
+				.help(L10n.string(SettingsStrings.githubHelp))
+				CapsuleActionButton(
+					title: L10n.string(SettingsStrings.donate),
+					systemImage: "heart.fill",
+					tone: .accent(accentColor)
+				) {
+					NSWorkspace.shared.open(SupportLinks.donate)
+				}
+				.help(L10n.string(SettingsStrings.donateHelp))
 			}
 			.padding(20)
 			.adaptiveGlassEffect(in: .rect(cornerRadius: 20))
 
-			SettingsPanel(title: "Documents", systemImage: "doc.text") {
+			SettingsPanel(title: L10n.string(SettingsStrings.documents), systemImage: "doc.text") {
 				DocumentLinkRow(
-					title: "Changelog", systemImage: "clock.arrow.circlepath",
-					accentColor: model.accentColor
+					title: L10n.string(SettingsStrings.changelog),
+					systemImage: "clock.arrow.circlepath",
+					accentColor: accentColor
 				) {
 					presentedDocument = .changelog
 				}
 				SettingsHairline()
 				DocumentLinkRow(
-					title: "MPL-2.0 License", systemImage: "checkmark.seal",
-					accentColor: model.accentColor
+					title: L10n.string(SettingsStrings.license), systemImage: "checkmark.seal",
+					accentColor: accentColor
 				) {
 					presentedDocument = .projectLicense
 				}
 				SettingsHairline()
 				DocumentLinkRow(
-					title: "Third-Party Notices", systemImage: "shippingbox",
-					accentColor: model.accentColor
+					title: L10n.string(SettingsStrings.thirdPartyNotices),
+					systemImage: "shippingbox",
+					accentColor: accentColor
 				) {
 					presentedDocument = .thirdPartyNotices
 				}
 			}
 
-			SettingsPanel(title: "Support", systemImage: "questionmark.circle") {
+			SettingsPanel(
+				title: L10n.string(SettingsStrings.support), systemImage: "questionmark.circle"
+			) {
 				SettingsActionRow(
-					title: "Launcher Issues",
-					detail:
-						"Report launcher, Wine runtime, or embedded browser problems with generated diagnostics."
+					title: L10n.string(SettingsStrings.launcherIssues),
+					detail: L10n.string(SettingsStrings.launcherIssuesDetail)
 				) {
 					CapsuleActionButton(
-						"Report…", systemImage: "ladybug",
-						tone: .accent(model.accentColor), presentation: .compact,
+						title: L10n.string(SettingsStrings.report), systemImage: "ladybug",
+						tone: .accent(accentColor), presentation: .compact,
 						action: reportLauncherProblem
 					)
 				}
@@ -87,33 +103,37 @@ struct AboutSettingsPage: View {
 				SettingsHairline()
 
 				SettingsActionRow(
-					title: "Game & Account Issues",
-					detail: "Contact Yostar for account, payment, or game-service problems."
+					title: L10n.string(SettingsStrings.gameAccountIssues),
+					detail: L10n.string(SettingsStrings.gameAccountIssuesDetail)
 				) {
 					CapsuleActionButton(
-						"Contact Yostar…", systemImage: "arrow.up.right.square",
-						tone: .accent(model.accentColor), presentation: .compact,
+						title: L10n.string(SettingsStrings.contactYostar),
+						systemImage: "arrow.up.right.square",
+						tone: .accent(accentColor), presentation: .compact,
 						action: contactYostar
 					)
 				}
 			}
 
 			SettingsPanel(title: "Arknights", systemImage: "link") {
-				HStack(spacing: 18) {
-					if let agreement = model.branding?.userAgreement {
-						AccentLink(
-							title: "User Agreement", destination: agreement,
-							accentColor: model.accentColor
-						)
+				VStack(alignment: .leading, spacing: 8) {
+					HStack(spacing: 18) {
+						if let agreement = branding?.userAgreement {
+							AccentLink(
+								title: L10n.string(SettingsStrings.userAgreement),
+								destination: agreement,
+								accentColor: accentColor
+							)
+						}
+						if let privacy = branding?.privacyPolicy {
+							AccentLink(
+								title: L10n.string(SettingsStrings.privacyPolicy),
+								destination: privacy,
+								accentColor: accentColor
+							)
+						}
 					}
-					if let privacy = model.branding?.privacyPolicy {
-						AccentLink(
-							title: "Privacy Policy", destination: privacy,
-							accentColor: model.accentColor
-						)
-					}
-					Spacer()
-					Text("This launcher is not affiliated with Hypergryph or Yostar.")
+					Text(L10n.string(SettingsStrings.notAffiliated))
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}

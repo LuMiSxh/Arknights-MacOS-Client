@@ -11,48 +11,70 @@ struct LauncherGameLifecycleTests {
 	func stopIsEnabledOnlyForRunningGameActivity() {
 		let sessionID = UUID()
 		#expect(
-			!LauncherViewModel.canStopGame(
+			!GameSessionController.canStopGame(
 				for: .launchingGame(sessionID: sessionID, processIdentifier: nil)
 			))
 		#expect(
-			LauncherViewModel.canStopGame(
+			GameSessionController.canStopGame(
 				for: .runningGame(sessionID: sessionID, processIdentifier: 42)
 			))
 		#expect(
-			!LauncherViewModel.canStopGame(
+			!GameSessionController.canStopGame(
 				for: .stoppingGame(sessionID: sessionID, processIdentifier: 42)
 			))
-		#expect(!LauncherViewModel.canStopGame(for: .idle))
+		#expect(!GameSessionController.canStopGame(for: .idle))
 	}
 
 	@Test
 	func directWineProcessExitTracksStartupAndRunningSessions() {
 		let sessionID = UUID()
 		#expect(
-			LauncherViewModel.directWineProcessExitAction(
+			GameSessionController.directWineProcessExitAction(
 				activity: .launchingGame(sessionID: sessionID, processIdentifier: nil),
 				sessionID: sessionID
 			) == .startupFailure)
 		#expect(
-			LauncherViewModel.directWineProcessExitAction(
+			GameSessionController.directWineProcessExitAction(
 				activity: .launchingGame(sessionID: sessionID, processIdentifier: 42),
 				sessionID: sessionID
 			) == .startupFailure)
 		#expect(
-			LauncherViewModel.directWineProcessExitAction(
+			GameSessionController.directWineProcessExitAction(
 				activity: .runningGame(sessionID: sessionID, processIdentifier: 42),
 				sessionID: sessionID
 			) == .gameExited)
 		#expect(
-			LauncherViewModel.directWineProcessExitAction(
+			GameSessionController.directWineProcessExitAction(
 				activity: .launchingGame(sessionID: UUID(), processIdentifier: nil),
 				sessionID: sessionID
 			) == .ignore)
 	}
 
 	@Test
+	func terminalLifecycleRecordsAVisibleSessionExactlyOnce() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let sessionID = UUID()
+		model.lifecycle.activity = .runningGame(
+			sessionID: sessionID,
+			processIdentifier: 42
+		)
+		model.playtimeStatistics.start(sessionID: sessionID, region: .japan)
+
+		model.gameSession.finishGameSession(sessionID)
+		let recordedTotal = model.playtimeStatistics.totalDuration
+		model.gameSession.finishGameSession(sessionID)
+
+		#expect(model.playtimeStatistics.statistics.latestSession?.region == .japan)
+		#expect(model.playtimeStatistics.totalDuration == recordedTotal)
+		#expect(model.playtimeStatistics.statistics.activeSession == nil)
+		await api.resolveBranding()
+	}
+
+	@Test
 	func exitDiagnosticsOmitsCrashDetailsWhenNoLogIsAvailable() {
-		let summary = LauncherViewModel.exitDiagnostics(
+		let summary = GameSessionController.exitDiagnostics(
 			WineProcessExit(status: 0, reason: .exit),
 			since: nil,
 			logURL: nil
@@ -68,7 +90,7 @@ struct LauncherGameLifecycleTests {
 		defer { try? fileManager.removeItem(at: logURL) }
 		try "err: something exploded".write(to: logURL, atomically: true, encoding: .utf8)
 
-		let summary = LauncherViewModel.exitDiagnostics(
+		let summary = GameSessionController.exitDiagnostics(
 			WineProcessExit(status: 134, reason: .uncaughtSignal),
 			since: Date(timeIntervalSinceNow: -90),
 			logURL: logURL
@@ -95,7 +117,7 @@ struct LauncherGameLifecycleTests {
 		let crashDate = Date()
 
 		#expect(
-			LauncherViewModel.recentCrashReportPath(
+			GameSessionController.recentCrashReportPath(
 				near: crashDate,
 				in: directory,
 				window: 120,
@@ -103,7 +125,7 @@ struct LauncherGameLifecycleTests {
 			)?.hasSuffix(matching.lastPathComponent) == true
 		)
 		#expect(
-			LauncherViewModel.recentCrashReportPath(
+			GameSessionController.recentCrashReportPath(
 				near: crashDate.addingTimeInterval(600),
 				in: directory,
 				window: 120,

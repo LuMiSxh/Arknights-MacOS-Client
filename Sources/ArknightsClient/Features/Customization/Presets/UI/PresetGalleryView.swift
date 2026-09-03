@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MPL-2.0
-
 import SwiftUI
 
 struct PresetGalleryView: View {
-	@Bindable var model: LauncherViewModel
+	let catalog: PresetCatalogService
+	let customization: CustomizationController
+	let lifecycle: LauncherLifecycleStore
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-
 	@State private var searchText = ""
+	@State private var selectedCategory: WallpaperCategory?
 	@State private var avatars: [PresetAvatar] = []
 	@State private var wallpapers: [PresetWallpaper] = []
 	@State private var isLoading = true
 	@State private var applyingItemID: String?
 	@State private var showsIconStylePreview = false
-
 	private let avatarColumns = [
 		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
 	]
@@ -23,28 +23,80 @@ struct PresetGalleryView: View {
 		GridItem(.flexible(), spacing: 14),
 		GridItem(.flexible(), spacing: 14),
 	]
-
+	init(
+		catalog: PresetCatalogService,
+		customization: CustomizationController,
+		lifecycle: LauncherLifecycleStore,
+		destination: PresetGalleryDestination
+	) {
+		self.catalog = catalog
+		self.customization = customization
+		self.lifecycle = lifecycle
+		self.destination = destination
+	}
 	var body: some View {
+		let hasSearchQuery = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+		let filteredAvatars = PresetCatalogSearch.avatars(matching: searchText, in: avatars)
+		let filteredWallpapers = PresetCatalogSearch.wallpapers(
+			matching: searchText, category: selectedCategory, in: wallpapers)
+		let categoryWallpapers = wallpapers.filter {
+			selectedCategory == nil || $0.category == selectedCategory
+		}
+		let wallpaperTerms = PresetCatalogSearch.wallpaperSuggestions(
+			matching: searchText, in: categoryWallpapers)
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {
-				header
+				PresetGalleryHeader(
+					destination: destination,
+					catalog: catalog,
+					customization: customization,
+					avatars: avatars,
+					showsIconStylePreview: $showsIconStylePreview
+				)
 				Divider().overlay(Color.white.opacity(0.08))
-
-				searchBar
-					.padding(.horizontal, 24)
-					.padding(.vertical, 14)
-
+				HStack(spacing: 10) {
+					searchBar
+						.frame(maxWidth: .infinity)
+					if destination == .artwork {
+						WallpaperCategoryFilter(
+							selection: $selectedCategory,
+							accentColor: customization.accentColor
+						)
+					}
+				}
+				.padding(.horizontal, 24)
+				.padding(.vertical, 14)
+				PresetGallerySuggestions(
+					destination: destination,
+					avatars: hasSearchQuery ? filteredAvatars : [],
+					wallpapers: hasSearchQuery ? filteredWallpapers : [],
+					wallpaperTerms: hasSearchQuery ? wallpaperTerms : []
+				) { selection in
+					searchText =
+						destination == .artwork
+						? WallpaperSearch.applyingSuggestion(selection, to: searchText)
+						: selection
+				}
+				.padding(.horizontal, 24)
 				ScrollView {
 					Group {
 						if isLoading {
-							PresetGalleryLoadingView(
-								text: destination == .artwork
-									? "Loading official wallpapers…" : "Loading operators…"
-							)
+							PresetGalleryLoadingView(text: destination.loadingText)
 						} else if destination == .artwork {
-							wallpapersGrid
+							if filteredWallpapers.isEmpty {
+								PresetGalleryEmptyView(
+									text: destination.emptyText, systemImage: "photo")
+							} else {
+								wallpapersGrid(filteredWallpapers)
+							}
 						} else {
-							avatarsGrid
+							if filteredAvatars.isEmpty {
+								PresetGalleryEmptyView(
+									text: destination.emptyText, systemImage: "person.crop.square"
+								)
+							} else {
+								avatarsGrid(filteredAvatars)
+							}
 						}
 					}
 					.padding(.horizontal, 24)
@@ -53,18 +105,9 @@ struct PresetGalleryView: View {
 				.contentMargins(.top, 8, for: .scrollIndicators)
 				.contentMargins(.bottom, 24, for: .scrollIndicators)
 			}
-
-			LinearGradient(
-				colors: [.clear, Color.black.opacity(0.45)],
-				startPoint: .top,
-				endPoint: .bottom
-			)
-			.frame(height: 56)
-			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-			.allowsHitTesting(false)
-
-			FloatingActionBar(tint: model.hudTintColor) {
-				FloatingDoneButton(accentColor: model.accentColor) {
+			FloatingActionFooterFade(height: 56)
+			FloatingActionBar(tint: customization.hudTintColor) {
+				FloatingDoneButton(accentColor: customization.accentColor) {
 					dismiss()
 				}
 			}
@@ -74,80 +117,38 @@ struct PresetGalleryView: View {
 		.frame(width: 760, height: 570)
 		.background(
 			ZStack {
-				Color(red: 0.07, green: 0.07, blue: 0.08)
-				model.hudTintColor
+				LauncherVisuals.modalBackground
+				customization.hudTintColor
 			}
 		)
 		.preferredColorScheme(.dark)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
-			value: model.dynamicThemeHue
+			value: customization.dynamicThemeHue
 		)
+		.onExitCommand(perform: dismiss.callAsFunction)
 		.task(id: destination) {
+			isLoading = true
+			let taskDestination = destination
 			if destination == .artwork {
-				wallpapers = await model.presetCatalog.fetchWallpapers()
+				wallpapers = await catalog.fetchWallpapers()
 			} else {
-				avatars = await model.presetCatalog.fetchAvatars()
+				avatars = await catalog.fetchAvatars()
 			}
+			guard !Task.isCancelled, taskDestination == destination else { return }
 			isLoading = false
 		}
 	}
-
-	private var header: some View {
-		HStack {
-			VStack(alignment: .leading, spacing: 3) {
-				Text(destination.title)
-					.font(.title3.bold())
-				Text(destination.subtitle)
-					.font(.caption)
-					.foregroundStyle(.secondary)
-			}
-			Spacer()
-			if destination == .operatorIcons {
-				CapsuleActionButton(
-					title: "Preview Styles", systemImage: "dock.rectangle",
-					tone: .accent(model.accentColor)
-				) {
-					showsIconStylePreview = true
-				}
-				.controlSize(.small)
-				.popover(isPresented: $showsIconStylePreview, arrowEdge: .top) {
-					OperatorIconStylePreview(
-						catalog: model.presetCatalog,
-						avatar: avatars.first,
-						accentHue: model.dynamicThemeHue,
-						accentColor: model.accentColor
-					)
-				}
-			}
-		}
-		.padding(.horizontal, 24)
-		.padding(.vertical, 16)
-	}
-
 	private var searchBar: some View {
 		ThemedTextField(
-			"Search gallery",
-			prompt: destination.searchPlaceholder,
+			L10n.string(CustomizationStrings.searchLabel),
+			prompt: L10n.string(destination.searchPlaceholder),
 			text: $searchText,
 			systemImage: "magnifyingglass",
-			accentColor: model.accentColor
+			accentColor: customization.accentColor
 		)
 	}
-
-	private var filteredAvatars: [PresetAvatar] {
-		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-		if query.isEmpty { return avatars }
-		return avatars.filter { $0.name.localizedStandardContains(query) }
-	}
-
-	private var filteredWallpapers: [PresetWallpaper] {
-		let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-		if query.isEmpty { return wallpapers }
-		return wallpapers.filter { $0.title.localizedStandardContains(query) }
-	}
-
-	private var avatarsGrid: some View {
+	private func avatarsGrid(_ filteredAvatars: [PresetAvatar]) -> some View {
 		LazyVGrid(columns: avatarColumns, spacing: 18) {
 			ForEach(filteredAvatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
@@ -157,7 +158,7 @@ struct PresetGalleryView: View {
 					VStack(spacing: 6) {
 						ZStack {
 							CachedPresetImage(
-								catalog: model.presetCatalog,
+								catalog: catalog,
 								url: avatar.url,
 								cacheKey: avatar.id,
 								contentMode: .fit,
@@ -175,13 +176,12 @@ struct PresetGalleryView: View {
 								)
 							)
 							.clipShape(RoundedRectangle(cornerRadius: 22))
-
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.65)
 									ProgressView()
 										.controlSize(.small)
-										.tint(model.accentColor)
+										.tint(customization.accentColor)
 								}
 								.clipShape(RoundedRectangle(cornerRadius: 22))
 							}
@@ -190,23 +190,23 @@ struct PresetGalleryView: View {
 						.overlay {
 							RoundedRectangle(cornerRadius: 22)
 								.strokeBorder(
-									isApplying ? model.accentColor : Color.white.opacity(0.14),
+									isApplying
+										? customization.accentColor : Color.white.opacity(0.14),
 									lineWidth: isApplying ? 2.5 : 1.5
 								)
 						}
 						.shadow(
 							color: isApplying
-								? model.accentColor.opacity(0.5) : Color.black.opacity(0.4),
+								? customization.accentColor.opacity(0.5) : Color.black.opacity(0.4),
 							radius: isApplying ? 8 : 5,
 							x: 0,
 							y: 3
 						)
-
 						Text(avatar.name)
 							.font(.caption.weight(isApplying ? .bold : .medium))
-							.lineLimit(1)
+							.lineLimit(2)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? model.accentColor : .primary)
+							.foregroundStyle(isApplying ? customization.accentColor : .primary)
 							.frame(maxWidth: 130)
 					}
 					.padding(.vertical, 4)
@@ -214,12 +214,19 @@ struct PresetGalleryView: View {
 					.contentShape(Rectangle())
 				}
 				.buttonStyle(.plain)
+				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
 				.disabled(applyingItemID != nil)
+				.accessibilityLabel(avatar.name)
+				.accessibilityHint(
+					L10n.string(CustomizationStrings.operatorApplyHelp(avatar.name))
+				)
+				.accessibilityValue(
+					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
+				)
 			}
 		}
 	}
-
-	private var wallpapersGrid: some View {
+	private func wallpapersGrid(_ filteredWallpapers: [PresetWallpaper]) -> some View {
 		LazyVGrid(columns: wallpaperColumns, spacing: 14) {
 			ForEach(filteredWallpapers) { wp in
 				let isApplying = applyingItemID == wp.id
@@ -229,7 +236,7 @@ struct PresetGalleryView: View {
 					VStack(alignment: .leading, spacing: 6) {
 						ZStack {
 							CachedPresetImage(
-								catalog: model.presetCatalog,
+								catalog: catalog,
 								url: wp.thumbnailURL ?? wp.url,
 								cacheKey: "thumb_\(wp.id)",
 								contentMode: .fill,
@@ -239,15 +246,14 @@ struct PresetGalleryView: View {
 							.frame(height: 105)
 							.clipped()
 							.clipShape(RoundedRectangle(cornerRadius: 10))
-
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.68)
 									VStack(spacing: 6) {
 										ProgressView()
 											.controlSize(.regular)
-											.tint(model.accentColor)
-										Text("Applying…")
+											.tint(customization.accentColor)
+										Text(L10n.string(CustomizationStrings.applying))
 											.font(.caption2.bold())
 											.foregroundStyle(.white)
 									}
@@ -257,70 +263,85 @@ struct PresetGalleryView: View {
 						}
 						.frame(height: 105)
 						.background(Color.white.opacity(0.05), in: .rect(cornerRadius: 10))
-
-						Text(wp.title)
+						Text(wp.displayTitle)
 							.font(.caption.weight(isApplying ? .bold : .medium))
-							.lineLimit(1)
+							.lineLimit(2)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? model.accentColor : .primary)
+							.foregroundStyle(isApplying ? customization.accentColor : .primary)
 					}
 					.padding(8)
 					.frame(maxWidth: .infinity)
 					.background(
-						isApplying ? model.accentColor.opacity(0.12) : Color.white.opacity(0.03),
+						isApplying
+							? customization.accentColor.opacity(0.12) : Color.white.opacity(0.03),
 						in: .rect(cornerRadius: 12)
 					)
 					.overlay {
 						RoundedRectangle(cornerRadius: 12)
 							.strokeBorder(
-								isApplying ? model.accentColor : Color.white.opacity(0.07),
+								isApplying
+									? customization.accentColor : Color.white.opacity(0.07),
 								lineWidth: isApplying ? 2 : 1
 							)
 					}
 					.shadow(
-						color: isApplying ? model.accentColor.opacity(0.4) : .clear,
+						color: isApplying ? customization.accentColor.opacity(0.4) : .clear,
 						radius: 8,
 						x: 0,
 						y: 2
 					)
 				}
 				.buttonStyle(.plain)
+				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
 				.disabled(applyingItemID != nil)
+				.accessibilityLabel(wp.displayTitle)
+				.accessibilityHint(
+					L10n.string(CustomizationStrings.wallpaperApplyHelp(wp.displayTitle))
+				)
+				.accessibilityValue(
+					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
+				)
+				.help(WallpaperTagCatalog.tags(for: wp.id).joined(separator: ", "))
 			}
 		}
 	}
-
 	private func applyAvatar(_ avatar: PresetAvatar) {
+		applyPreset(id: avatar.id, url: avatar.url) { data in
+			await customization.applyPresetAvatar(data: data)
+		}
+	}
+	private func applyWallpaper(_ wp: PresetWallpaper) {
+		applyPreset(id: wp.id, url: wp.url) { data in
+			await customization.applyDirectCustomArtwork(data: data)
+		}
+	}
+
+	private func applyPreset(
+		id: String,
+		url: URL,
+		apply: @escaping @MainActor (Data) async -> Void
+	) {
 		guard applyingItemID == nil else { return }
-		applyingItemID = avatar.id
+		applyingItemID = id
+		let taskDestination = destination
 		Task {
 			do {
-				let data = try await model.presetCatalog.imageData(
-					for: avatar.url, cacheKey: avatar.id
-				)
-				model.applyPresetAvatar(data: data)
+				let data = try await catalog.imageData(for: url, cacheKey: id)
+				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
+				await apply(data)
+				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
 				dismiss()
 			} catch {
+				guard isCurrentApplication(id: id, destination: taskDestination) else { return }
 				applyingItemID = nil
-				model.show(error)
+				lifecycle.show(error)
 			}
 		}
 	}
 
-	private func applyWallpaper(_ wp: PresetWallpaper) {
-		guard applyingItemID == nil else { return }
-		applyingItemID = wp.id
-		Task {
-			do {
-				let data = try await model.presetCatalog.imageData(
-					for: wp.url, cacheKey: wp.id
-				)
-				await model.applyDirectCustomArtwork(data: data)
-				dismiss()
-			} catch {
-				applyingItemID = nil
-				model.show(error)
-			}
-		}
+	private func isCurrentApplication(id: String, destination expected: PresetGalleryDestination)
+		-> Bool
+	{
+		!Task.isCancelled && destination == expected && applyingItemID == id
 	}
 }

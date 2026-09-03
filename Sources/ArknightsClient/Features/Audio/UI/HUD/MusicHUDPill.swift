@@ -4,26 +4,35 @@ import SwiftUI
 
 /// Morphs the now-playing HUD into an in-place controller without covering the launcher.
 struct MusicHUDPill: View {
-	@Bindable var model: LauncherViewModel
-	var controller: BackgroundMusicController
+	@Bindable var settings: LauncherPreferencesController
+	let musicTitle: String?
+	let accentColor: Color
+	let hudTintColor: Color
+	let openCurrentMusicURL: () -> Void
+	let controller: BackgroundMusicController
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@ScaledMetric(relativeTo: .caption) private var titleLineHeight =
+		AppConstants.Music.titleLineHeight
+	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
+		AppConstants.Music.collapsedPlayerHeight
 	@State private var isExpanded = false
 	@State private var isHovering = false
 
 	var body: some View {
-		if let musicTitle = model.currentMusicTitle {
+		if let musicTitle {
 			VStack(alignment: .leading, spacing: isExpanded ? 9 : 0) {
 				Button(action: toggleExpansion) {
 					HStack(spacing: 5) {
 						Image(systemName: "music.note")
-							.font(.system(size: 10, weight: .semibold))
-							.foregroundStyle(model.accentColor)
+							.font(.caption2.weight(.semibold))
+							.foregroundStyle(accentColor)
+							.accessibilityHidden(true)
 						VStack(alignment: .leading, spacing: 1) {
 							OverflowingMusicTitle(title: musicTitle)
-								.font(.system(size: 11, weight: .medium, design: .monospaced))
+								.font(.caption.monospaced().weight(.medium))
 								.foregroundStyle(isHovering ? .primary : .secondary)
 								.frame(
-									height: AppConstants.Music.titleLineHeight,
+									height: titleLineHeight,
 									alignment: .leading
 								)
 								.frame(
@@ -35,39 +44,56 @@ struct MusicHUDPill: View {
 							if isExpanded {
 								Text(playbackStatus)
 									.font(.caption)
-									.foregroundStyle(model.accentColor)
+									.foregroundStyle(accentColor)
 									.transition(.opacity)
 							}
 						}
 						Spacer(minLength: 6)
 						Image(systemName: isExpanded ? "chevron.down" : "slider.horizontal.3")
 							.font(.caption.bold())
-							.foregroundStyle(model.accentColor.opacity(isHovering ? 1 : 0.65))
-							.contentTransition(.symbolEffect(.replace))
+							.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
+							.contentTransition(
+								reduceMotion ? .identity : .symbolEffect(.replace)
+							)
 							.accessibilityHidden(true)
 					}
+					.padding(.horizontal, isExpanded ? 14 : 12)
+					.frame(minHeight: isExpanded ? nil : collapsedPlayerHeight)
 					.contentShape(Rectangle())
 				}
 				.buttonStyle(.plain)
+				.keyboardFocusIndicator(
+					in: RoundedRectangle(cornerRadius: 8)
+				)
 				.onHover { isHovering = $0 }
-				.help(isExpanded ? "Hide music controls" : "Show music controls")
+				.accessibilityLabel(
+					L10n.string(isExpanded ? AudioStrings.hideControls : AudioStrings.showControls)
+				)
+				.accessibilityValue(Text(musicTitle))
+				.help(
+					L10n.string(
+						isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
+					)
+				)
 
 				if isExpanded {
 					HStack(spacing: 6) {
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: "Previous Track",
+								title: L10n.string(AudioStrings.previousTrack),
 								systemImage: "backward.end.fill",
-								accentColor: model.accentColor,
+								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
 								action: controller.playPreviousTrack
 							)
 						}
 
 						MusicPlayerControlButton(
-							title: controller.isPlaying ? "Pause" : "Play",
+							title: L10n.string(
+								controller.isPlaying ? AudioStrings.pause : AudioStrings.play
+							),
 							systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
-							accentColor: model.accentColor,
+							accentColor: accentColor,
 							isProminent: true,
 							isDisabled: controller.controlsAreDisabled,
 							action: controller.togglePlayback
@@ -75,17 +101,17 @@ struct MusicHUDPill: View {
 
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: "Next Track",
+								title: L10n.string(AudioStrings.nextTrack),
 								systemImage: "forward.end.fill",
-								accentColor: model.accentColor,
+								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
 								action: controller.playNextTrack
 							)
 						}
 
 						MusicVolumeControl(
-							volume: $model.launcherMusicVolume,
-							accentColor: model.accentColor,
+							volume: $settings.launcherMusicVolume,
+							accentColor: accentColor,
 							isMuted: controller.isMuted,
 							isDisabled: controller.controlsAreDisabled,
 							toggleMute: controller.toggleMute
@@ -94,35 +120,32 @@ struct MusicHUDPill: View {
 						Spacer(minLength: 0)
 
 						MusicPlayerControlButton(
-							title: "Open on YouTube",
+							title: L10n.string(AudioStrings.openYouTube),
 							systemImage: "arrow.up.right.square",
-							accentColor: model.accentColor,
+							accentColor: accentColor,
 							isDisabled: controller.controlsAreDisabled,
-							action: model.openCurrentMusicURL
+							action: openCurrentMusicURL
 						)
 					}
+					.padding(.horizontal, 14)
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.transition(expandedContentTransition)
 				}
 			}
-			.padding(.horizontal, isExpanded ? 14 : 12)
 			.padding(.vertical, isExpanded ? 11 : 0)
+			.frame(width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil)
 			.frame(
-				width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil,
-				height: isExpanded
+				minHeight: isExpanded
 					? AppConstants.Music.expandedPlayerHeight
-					: AppConstants.Music.collapsedPlayerHeight,
+					: collapsedPlayerHeight,
 				alignment: isExpanded ? .topLeading : .center
 			)
 			.frame(
-				maxWidth: isExpanded
-					? AppConstants.Music.expandedPlayerWidth
-					: AppConstants.Music.collapsedPlayerMaxWidth
+				maxWidth: AppConstants.Music.expandedPlayerWidth
 			)
 			.fixedSize(horizontal: !isExpanded, vertical: false)
-			.clipped()
 			.adaptiveGlassEffect(
-				tint: model.hudTintColor,
+				tint: hudTintColor,
 				in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)
 			)
 			.shadow(
@@ -135,9 +158,9 @@ struct MusicHUDPill: View {
 	}
 
 	private var playbackStatus: String {
-		if model.isGameProcessRunning { return "Paused while the game is running" }
-		if controller.isChangingTrack { return "Changing track…" }
-		return controller.isPlaying ? "Playing" : "Paused"
+		if controller.isGameProcessRunning { return L10n.string(AudioStrings.pausedForGame) }
+		if controller.isChangingTrack { return L10n.string(AudioStrings.changingTrack) }
+		return L10n.string(controller.isPlaying ? AudioStrings.playing : AudioStrings.paused)
 	}
 
 	private var expandedContentTransition: AnyTransition {

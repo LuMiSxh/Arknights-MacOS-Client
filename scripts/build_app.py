@@ -1,28 +1,27 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.13"
-# dependencies = []
-# ///
+#!/usr/bin/env -S uv run --locked --no-dev --group packaging
 # SPDX-License-Identifier: MPL-2.0
 
-"""Build and ad-hoc sign the native Arknights Client application bundle."""
+"""Build and ad-hoc sign the native application bundle."""
 
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import os
+import plistlib
 import shutil
 import stat
 import struct
 import tempfile
 from pathlib import Path
 
+from build_compatibility import build as build_compatibility
 from lib.common import (
     BUILD_DIR,
     DIST_DIR,
     PROJECT_DIR,
     fail,
-    info,
     output,
     remove_path,
     require_commands,
@@ -30,15 +29,17 @@ from lib.common import (
     require_file,
     run,
     run_main,
-    success,
 )
-from lib.console import spinner
+from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
-from runtime_config import validate_config
+from lib.project_config import ProjectConfiguration, load_project_configuration
+from localization import compile_swift_localizations, prepare_localization
+from runtime_config import (
+    RuntimeConfiguration,
+    load_runtime_config,
+    runtime_is_valid,
+)
 
-APP_NAME = "Arknights Client"
-EXECUTABLE_NAME = "ArknightsClient"
-APP_BUNDLE = DIST_DIR / f"{APP_NAME}.app"
 LEGAL_FILES = {
     "docs/legal/third-party-notices.md": "THIRD_PARTY_NOTICES.md",
     "LICENSE": "LICENSE",
@@ -54,39 +55,179 @@ REQUIRED_LICENSES = (
     "lgpl-2.1.txt",
     "lgpl-3.0.txt",
     "mit-dxmt.txt",
+    "sparkle.txt",
 )
-COMPATIBILITY_HELPERS = (
-    ("Vuplex/Vuplex WebView.vuplex", "Vuplex/Vuplex WebView.vuplex"),
-    ("Vuplex/userenv.dll", "Vuplex/userenv.dll"),
-    ("PlatformProcess/PlatformProcess.exe", "PlatformProcess/PlatformProcess.exe"),
-    (
-        "PlatformProcess/PlatformProcessWindowBridge.dylib",
-        "PlatformProcess/PlatformProcessWindowBridge.dylib",
-    ),
-    ("GameIcon/GameIconBridge.dylib", "GameIcon/GameIconBridge.dylib"),
-)
-SIGNED_COMPATIBILITY_HELPERS = (
-    "PlatformProcess/PlatformProcessWindowBridge.dylib",
-    "GameIcon/GameIconBridge.dylib",
-)
-APP_RESOURCES = (
-    ("Resources/AppIcon.icns", "AppIcon.icns"),
-    ("Resources/Assets.car", "Assets.car"),
-    (
-        "Sources/ArknightsClient/Resources/GameIconBackground.png",
-        "GameIconBackground.png",
-    ),
-    (
-        "Sources/ArknightsClient/Resources/OperatorIconFrame.svg",
-        "OperatorIconFrame.svg",
-    ),
-)
+SPARKLE_FRAMEWORK_NAME = "Sparkle.framework"
+SPARKLE_PUBLIC_KEY_BYTES = 32
 
 
 def copy_file(source: Path, destination: Path, mode: int = 0o644) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source, destination)
     destination.chmod(mode)
+
+
+def copy_resource(source: Path, destination: Path) -> None:
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    elif source.is_file():
+        copy_file(source, destination)
+    else:
+        fail(f"required resource not found: {source}")
+
+
+def sparkle_framework(binary_dir: Path, configuration: ProjectConfiguration) -> Path:
+    """Find the validated Sparkle artifact emitted by SwiftPM."""
+    project = configuration.project_directory
+    expected_version = configuration.package.exact_dependency_version("sparkle")
+    roots = (
+        binary_dir,
+        project / BUILD_DIR.relative_to(PROJECT_DIR) / "artifacts/sparkle",
+    )
+    for root in roots:
+        for candidate in sorted(root.rglob(SPARKLE_FRAMEWORK_NAME)):
+            if not candidate.is_dir():
+                continue
+            version = candidate / "Versions/Current"
+            binary = version / "Sparkle"
+            if not binary.is_file() or not (version / "Updater.app").is_dir():
+                continue
+            try:
+                with (version / "Resources/Info.plist").open("rb") as file:
+                    metadata = plistlib.load(file)
+            except (OSError, plistlib.InvalidFileException) as error:
+                fail(f"could not read Sparkle framework metadata: {error}")
+            if metadata.get("CFBundleShortVersionString") != expected_version:
+                fail(f"expected Sparkle {expected_version}, found {metadata}")
+            for service in ("Downloader.xpc", "Installer.xpc"):
+                if not (version / "XPCServices" / service).is_dir():
+                    fail(f"Sparkle framework is missing {service}")
+            return candidate
+    fail("SwiftPM did not produce a validated Sparkle.framework artifact")
+
+
+def copy_sparkle_framework(source: Path, destination: Path) -> Path:
+    """Copy Sparkle while retaining framework symlinks and executable modes."""
+    remove_path(destination)
+    shutil.copytree(source, destination, symlinks=True)
+    return destination
+
+
+def configure_info_plist(source: Path, destination: Path) -> None:
+    try:
+        with source.open("rb") as file:
+            metadata = plistlib.load(file)
+    except (OSError, plistlib.InvalidFileException) as error:
+        fail(f"could not read application Info.plist: {error}")
+
+    validate_sparkle_public_key(metadata)
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("wb") as file:
+        plistlib.dump(metadata, file, fmt=plistlib.FMT_XML, sort_keys=False)
+    destination.chmod(0o644)
+
+
+def validate_sparkle_public_key(metadata: dict[str, object]) -> None:
+    public_key = metadata.get("SUPublicEDKey")
+    if not isinstance(public_key, str) or not public_key:
+        fail("SUPublicEDKey must be configured in the source Info.plist")
+    if any(character.isspace() for character in public_key):
+        fail("SUPublicEDKey must not contain whitespace")
+    try:
+        decoded = base64.b64decode(public_key, validate=True)
+    except (ValueError, binascii.Error) as error:
+        fail(f"SUPublicEDKey must be valid base64: {error}")
+    if len(decoded) != SPARKLE_PUBLIC_KEY_BYTES:
+        fail("SUPublicEDKey must decode to 32 bytes")
+
+
+def sign_code(path: Path) -> None:
+    run(
+        ["codesign", "--force", "--sign", "-", "--timestamp=none", path],
+        capture=True,
+    )
+
+
+def sign_sparkle_framework(framework: Path) -> None:
+    version = (framework / "Versions/Current").resolve()
+    sign_code(version / "Autoupdate")
+    for service in sorted((version / "XPCServices").glob("*.xpc")):
+        executable = service / "Contents/MacOS" / service.stem
+        require_file(executable)
+        sign_code(executable)
+        sign_code(service)
+    updater = version / "Updater.app"
+    updater_executable = updater / "Contents/MacOS/Updater"
+    require_file(updater_executable)
+    sign_code(updater_executable)
+    sign_code(updater)
+    sign_code(version / "Sparkle")
+    sign_code(framework)
+
+
+def ensure_framework_rpath(binary: Path) -> None:
+    rpath = "@executable_path/../Frameworks"
+    if rpath not in output(["otool", "-l", binary]):
+        run(["install_name_tool", "-add_rpath", rpath, binary])
+
+
+def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
+    project = configuration.project_directory
+    icon_file = configuration.product.icon_file
+    icon_filename = icon_file if Path(icon_file).suffix else f"{icon_file}.icns"
+    entries = [
+        (project / "Resources" / icon_filename, Path(icon_filename)),
+        (project / "Resources/Assets.car", Path("Assets.car")),
+        (project / "docs/help/errors", Path("SupportArticles")),
+        *(
+            (
+                project / f"Resources/{language}.lproj/InfoPlist.strings",
+                Path(f"{language}.lproj/InfoPlist.strings"),
+            )
+            for language in configuration.product.localizations
+        ),
+        *(
+            (source, Path(source.name))
+            for source in configuration.copied_resource_source_paths
+        ),
+    ]
+    destinations = [destination for _, destination in entries]
+    if len(destinations) != len(set(destinations)):
+        fail("application resources contain duplicate destinations")
+    return tuple(entries)
+
+
+def copy_swift_localizations(
+    binary_dir: Path,
+    resources: Path,
+    configuration: ProjectConfiguration,
+) -> None:
+    source = require_directory(binary_dir / configuration.swift_resource_bundle_name)
+    localizations = sorted(source.glob("*.lproj/*.strings"))
+    if not localizations:
+        fail("Swift resource bundle does not contain localizations")
+    discovered = {path.parent.name.removesuffix(".lproj") for path in localizations}
+    expected = set(configuration.product.localizations)
+    if discovered != expected:
+        fail(
+            "Swift resource bundle localizations do not match CFBundleLocalizations "
+            f"(found {sorted(discovered)}, expected {sorted(expected)})"
+        )
+    for localization in localizations:
+        copy_file(localization, resources / localization.relative_to(source))
+
+
+def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, ...]:
+    files = sorted(path for path in source.rglob("*") if path.is_file())
+    if not files:
+        fail("compatibility build produced no artifacts")
+    copied = []
+    for artifact in files:
+        packaged = destination / artifact.relative_to(source)
+        copy_file(artifact, packaged)
+        copied.append(packaged)
+    return tuple(copied)
 
 
 def copy_runtime(source: Path, destination: Path) -> None:
@@ -110,6 +251,7 @@ _FAT_MAGIC = 0xCAFEBABE
 _FAT_MAGIC_64 = 0xCAFEBABF
 _CPU_TYPE_X86_64 = 0x01000007
 _CPU_TYPE_ARM64 = 0x0100000C
+_MAXIMUM_FAT_ARCHITECTURES = 64
 
 
 def _fat_cpu_types(path: Path) -> set[int]:
@@ -127,11 +269,17 @@ def _fat_cpu_types(path: Path) -> set[int]:
             entry_size, entry_format = 32, ">ii"
         else:
             return set()
+        if (
+            count > _MAXIMUM_FAT_ARCHITECTURES
+            or count * entry_size > path.stat().st_size - len(header)
+        ):
+            return set()
         body = handle.read(count * entry_size)
+        if len(body) != count * entry_size:
+            return set()
     return {
         struct.unpack_from(entry_format, body, index * entry_size)[0]
         for index in range(count)
-        if len(body) >= (index + 1) * entry_size
     }
 
 
@@ -152,30 +300,36 @@ def thin_universal_files(runtime: Path) -> int:
     return count
 
 
-def validate_inputs(runtime: Path | None) -> None:
-    require_commands(("codesign", "lipo", "plutil", "swift", "uv"))
-    for relative in (
-        "Resources/Info.plist",
-        "Resources/AppIcon.icns",
-        "Resources/Assets.car",
-        *LEGAL_FILES,
-    ):
-        require_file(PROJECT_DIR / relative)
-    licenses = require_directory(PROJECT_DIR / "docs/legal/licenses")
+def validate_inputs(
+    runtime: Path | None,
+    configuration: ProjectConfiguration,
+    runtime_configuration: RuntimeConfiguration,
+) -> None:
+    require_commands(
+        ("codesign", "install_name_tool", "lipo", "otool", "plutil", "swift")
+    )
+    project = configuration.project_directory
+    require_file(project / "Resources/Info.plist")
+    for source, _ in app_resources(configuration):
+        if not source.exists():
+            fail(f"required resource not found: {source}")
+    for relative in LEGAL_FILES:
+        require_file(project / relative)
+    licenses = require_directory(project / "docs/legal/licenses")
     for name in REQUIRED_LICENSES:
         require_file(licenses / name)
-    validate_config(PROJECT_DIR / "runtime.json")
     if runtime is not None:
         require_directory(runtime)
+        if not runtime_is_valid(runtime, runtime_configuration.layout):
+            fail("runtime directory does not satisfy runtime.json interface")
 
 
-def embed_runtime(runtime: Path, resources: Path) -> None:
-    for relative in ("bin/wine64", "bin/wineserver"):
-        if not os.access(runtime / relative, os.X_OK):
-            fail(f"runtime executable not found: {runtime / relative}")
-    if not (runtime / "DXMT/x64").is_dir():
-        fail(f"runtime DXMT payload not found: {runtime / 'DXMT/x64'}")
-
+def embed_runtime(
+    runtime: Path,
+    resources: Path,
+    runtime_configuration: RuntimeConfiguration,
+) -> None:
+    layout = runtime_configuration.layout
     destination = resources / "Runtime"
     with spinner("Embedding the Wine + DXMT runtime"):
         copy_runtime(runtime, destination)
@@ -184,23 +338,42 @@ def embed_runtime(runtime: Path, resources: Path) -> None:
     if count:
         info(f"Thinned {count} universal runtime files")
 
-    driver = destination / "lib/wine/x86_64-unix/winemac.so"
+    driver = destination / layout.mac_driver
     require_file(driver)
     info("Applying the native Command-Q integration patch")
     patch_file(driver)
-    run(["codesign", "--force", "--sign", "-", "--timestamp=none", driver])
-    launcher = destination / "bin/Arknights"
-    remove_path(launcher)
-    launcher.symlink_to("wine64")
-
-
-def build(runtime: Path | None, configuration: str = "release") -> Path:
-    runtime = runtime.resolve() if runtime is not None else None
-    validate_inputs(runtime)
-    info(f"Building the Apple Silicon {configuration} executable")
     run(
-        ["swift", "build", "--configuration", configuration, "--arch", "arm64"],
-        cwd=PROJECT_DIR,
+        ["codesign", "--force", "--sign", "-", "--timestamp=none", driver],
+        capture=True,
+    )
+    launcher = destination / layout.launcher.path
+    remove_path(launcher)
+    launcher.symlink_to(layout.launcher.target)
+    if not runtime_is_valid(destination, layout):
+        fail("packaged runtime does not satisfy runtime.json interface")
+
+
+def build(
+    runtime: Path | None,
+    configuration: str = "release",
+    project_configuration: ProjectConfiguration | None = None,
+) -> Path:
+    project_configuration = project_configuration or load_project_configuration()
+    prepare_localization(configuration=project_configuration)
+    project = project_configuration.project_directory
+    runtime_configuration = load_runtime_config(project / "runtime.json")
+    runtime = runtime.resolve() if runtime is not None else None
+    validate_inputs(runtime, project_configuration, runtime_configuration)
+    architectures = project_configuration.product.architecture_priority
+    architecture_arguments = [
+        argument
+        for architecture in architectures
+        for argument in ("--arch", architecture)
+    ]
+    info(f"Building the {configuration} executable for {', '.join(architectures)}")
+    run(
+        ["swift", "build", "--configuration", configuration, *architecture_arguments],
+        cwd=project,
     )
     binary_dir = Path(
         output(
@@ -209,46 +382,41 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
                 "build",
                 "--configuration",
                 configuration,
-                "--arch",
-                "arm64",
+                *architecture_arguments,
                 "--show-bin-path",
             ],
-            cwd=PROJECT_DIR,
+            cwd=project,
         )
     )
-    binary = binary_dir / EXECUTABLE_NAME
+    compile_swift_localizations(binary_dir, project_configuration)
+    binary = binary_dir / project_configuration.product.executable_name
     if not os.access(binary, os.X_OK):
         fail(f"{configuration} executable not found: {binary}")
 
-    DIST_DIR.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".app-build.", dir=DIST_DIR) as name:
-        staged_app = Path(name) / f"{APP_NAME}.app"
+    dist = project / DIST_DIR.relative_to(PROJECT_DIR)
+    app_bundle = dist / project_configuration.app_bundle_name
+    dist.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".app-build.", dir=dist) as name:
+        staged_app = Path(name) / project_configuration.app_bundle_name
         macos = staged_app / "Contents/MacOS"
         resources = staged_app / "Contents/Resources"
         macos.mkdir(parents=True)
         resources.mkdir(parents=True)
-        copy_file(binary, macos / EXECUTABLE_NAME, 0o755)
-        copy_file(
-            PROJECT_DIR / "Resources/Info.plist", staged_app / "Contents/Info.plist"
+        copy_file(binary, macos / project_configuration.product.executable_name, 0o755)
+        copy_swift_localizations(binary_dir, resources, project_configuration)
+        configure_info_plist(
+            project / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )
-        for source, destination in APP_RESOURCES:
-            copy_file(PROJECT_DIR / source, resources / destination)
+        for source, destination in app_resources(project_configuration):
+            copy_resource(source, resources / destination)
 
-        helper_root = BUILD_DIR / "helpers"
+        helper_root = project / BUILD_DIR.relative_to(PROJECT_DIR) / "helpers"
+        remove_path(helper_root)
         info("Building the game compatibility components")
-        run(
-            [
-                "uv",
-                "run",
-                PROJECT_DIR / "scripts/build_compatibility.py",
-                "--output",
-                helper_root,
-            ]
-        )
+        build_compatibility(helper_root)
         compatibility = resources / "Compatibility"
-        for source, destination in COMPATIBILITY_HELPERS:
-            copy_file(helper_root / source, compatibility / destination)
-        for helper in SIGNED_COMPATIBILITY_HELPERS:
+        helpers = copy_compatibility_helpers(helper_root, compatibility)
+        for helper in (path for path in helpers if path.suffix == ".dylib"):
             run(
                 [
                     "codesign",
@@ -256,29 +424,43 @@ def build(runtime: Path | None, configuration: str = "release") -> Path:
                     "--sign",
                     "-",
                     "--timestamp=none",
-                    compatibility / helper,
-                ]
+                    helper,
+                ],
+                capture=True,
             )
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:
-            embed_runtime(runtime, resources)
+            embed_runtime(runtime, resources, runtime_configuration)
+        framework = copy_sparkle_framework(
+            sparkle_framework(binary_dir, project_configuration),
+            staged_app / "Contents/Frameworks/Sparkle.framework",
+        )
+        ensure_framework_rpath(macos / project_configuration.product.executable_name)
+        sign_sparkle_framework(framework)
         for source, destination in LEGAL_FILES.items():
-            copy_file(PROJECT_DIR / source, resources / destination)
+            copy_file(project / source, resources / destination)
         licenses = resources / "ThirdPartyLicenses"
-        license_files = sorted((PROJECT_DIR / "docs/legal/licenses").glob("*.txt"))
+        license_files = sorted((project / "docs/legal/licenses").glob("*.txt"))
         if not license_files:
             fail("no third-party license files found")
         for license_file in license_files:
             copy_file(license_file, licenses / license_file.name)
 
         info("Ad-hoc signing the application bundle")
-        run(["codesign", "--force", "--sign", "-", "--timestamp=none", staged_app])
-        run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", staged_app])
-        remove_path(APP_BUNDLE)
-        staged_app.replace(APP_BUNDLE)
-    success(f"Built {APP_BUNDLE.relative_to(PROJECT_DIR)}")
-    return APP_BUNDLE
+        run(
+            ["codesign", "--force", "--sign", "-", "--timestamp=none", staged_app],
+            capture=True,
+        )
+        remove_path(app_bundle)
+        staged_app.replace(app_bundle)
+        run(["xattr", "-c", app_bundle])
+        run(
+            ["codesign", "--verify", "--deep", "--strict", "--verbose=2", app_bundle],
+            capture=True,
+        )
+    success(f"Built {app_bundle.relative_to(project)}")
+    return app_bundle
 
 
 def main() -> None:

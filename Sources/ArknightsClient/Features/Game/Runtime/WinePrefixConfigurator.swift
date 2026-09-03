@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 
 /// Points the prefix's `G:` drive at the active region's game directory and isolates
@@ -21,20 +22,18 @@ struct WinePrefixConfigurator {
 	) throws {
 		let dosDevices = prefixDirectory.appending(path: "dosdevices", directoryHint: .isDirectory)
 		try fileManager.createDirectory(at: logsDirectory, withIntermediateDirectories: true)
-
 		for device in try fileManager.contentsOfDirectory(
-			at: dosDevices,
-			includingPropertiesForKeys: nil
+			at: dosDevices, includingPropertiesForKeys: nil
 		) {
 			let name = device.lastPathComponent.lowercased()
 			guard name != "c:" else { continue }
 			if name == "g:",
-				symbolicLink(at: device, pointsTo: gameDirectory, fileManager: fileManager)
+				try symbolicLink(at: device, pointsTo: gameDirectory, fileManager: fileManager)
 			{
 				continue
 			}
 			if name == "l:",
-				symbolicLink(at: device, pointsTo: logsDirectory, fileManager: fileManager)
+				try symbolicLink(at: device, pointsTo: logsDirectory, fileManager: fileManager)
 			{
 				continue
 			}
@@ -42,13 +41,13 @@ struct WinePrefixConfigurator {
 		}
 
 		let gameDrive = dosDevices.appending(path: "g:")
-		if !symbolicLink(at: gameDrive, pointsTo: gameDirectory, fileManager: fileManager) {
+		if try !symbolicLink(at: gameDrive, pointsTo: gameDirectory, fileManager: fileManager) {
 			try removeItemIfPresent(at: gameDrive, fileManager: fileManager)
 			try fileManager.createSymbolicLink(at: gameDrive, withDestinationURL: gameDirectory)
 		}
 
 		let logDrive = dosDevices.appending(path: "l:")
-		if !symbolicLink(at: logDrive, pointsTo: logsDirectory, fileManager: fileManager) {
+		if try !symbolicLink(at: logDrive, pointsTo: logsDirectory, fileManager: fileManager) {
 			try removeItemIfPresent(at: logDrive, fileManager: fileManager)
 			try fileManager.createSymbolicLink(at: logDrive, withDestinationURL: logsDirectory)
 		}
@@ -69,8 +68,12 @@ struct WinePrefixConfigurator {
 					path: folderName,
 					directoryHint: .isDirectory
 				)
-				if (try? fileManager.destinationOfSymbolicLink(atPath: folder.path)) != nil {
+				do {
+					_ = try fileManager.destinationOfSymbolicLink(atPath: folder.path)
 					try fileManager.removeItem(at: folder)
+				} catch {
+					guard Self.isMissingOrNotSymbolicLink(error) else { throw error }
+					// The folder is absent or already a regular directory.
 				}
 				if !fileManager.fileExists(atPath: folder.path) {
 					try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -83,8 +86,12 @@ struct WinePrefixConfigurator {
 		at link: URL,
 		pointsTo destination: URL,
 		fileManager: FileManager
-	) -> Bool {
-		guard let current = try? fileManager.destinationOfSymbolicLink(atPath: link.path) else {
+	) throws -> Bool {
+		let current: String
+		do {
+			current = try fileManager.destinationOfSymbolicLink(atPath: link.path)
+		} catch {
+			guard Self.isMissingOrNotSymbolicLink(error) else { throw error }
 			return false
 		}
 		let currentURL =
@@ -103,5 +110,21 @@ struct WinePrefixConfigurator {
 		{
 			return
 		}
+	}
+
+	private static func isMissingOrNotSymbolicLink(_ error: any Error) -> Bool {
+		var current: NSError? = error as NSError
+		while let candidate = current {
+			let posix =
+				candidate.domain == NSPOSIXErrorDomain
+				&& (candidate.code == Int(EINVAL) || candidate.code == Int(ENOENT))
+			let cocoa =
+				candidate.domain == NSCocoaErrorDomain
+				&& (candidate.code == CocoaError.fileNoSuchFile.rawValue
+					|| candidate.code == CocoaError.fileReadNoSuchFile.rawValue)
+			if posix || cocoa { return true }
+			current = candidate.userInfo[NSUnderlyingErrorKey] as? NSError
+		}
+		return false
 	}
 }

@@ -5,7 +5,7 @@ import SwiftUI
 
 /// The dominant hue extracted from hero artwork, rendered two ways: a legible signal color
 /// for controls/text, and the same hue desaturated and darkened for tinting neutral chrome.
-struct ExtractedAccent {
+struct ExtractedAccent: Sendable {
 	let hue: Double
 	let saturation: Double
 	let brightness: Double

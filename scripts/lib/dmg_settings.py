@@ -3,7 +3,7 @@
 """Compact Finder presentation for the release disk image."""
 
 app_bundle = globals()["defines"]["app_bundle"]
-app_name = "Arknights Client.app"
+app_name = globals()["defines"]["app_name"]
 
 format = "UDZO"
 files = [app_bundle]

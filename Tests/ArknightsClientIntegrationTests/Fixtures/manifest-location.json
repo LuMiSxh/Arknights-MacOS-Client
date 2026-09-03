@@ -1,0 +1,7 @@
+{
+  "code": 200,
+  "data": {
+    "url": "https://fixtures.invalid/manifest.json"
+  },
+  "msg": "ok"
+}

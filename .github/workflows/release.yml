@@ -10,39 +10,58 @@ on:
 
 permissions:
   contents: write
+  attestations: write
+  id-token: write
 
 concurrency:
   group: release-${{ inputs.version }}
   cancel-in-progress: false
 
 jobs:
+  # Keep this independent from packaging: a Pages failure must fail the run,
+  # but must not prevent the package job from creating its draft release.
+  pages:
+    name: Publish website
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
+
   package:
     runs-on: macos-26
     timeout-minutes: 90
     environment: release
     env:
-      GH_TOKEN: ${{ github.token }}
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Validate runtime configuration
-        run: uv run scripts/runtime_config.py --validate runtime.json
+        run: uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json
 
       - name: Set up just
         uses: extractions/setup-just@v4
 
       - name: Validate release inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$GITHUB_REF_NAME" != "main" ]]; then
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
             echo "Releases must be triggered from main after the release branch is merged." >&2
             exit 1
           fi
-          uv run scripts/release_validation.py "$RELEASE_VERSION"
+          uv run --locked --no-dev scripts/release_validation.py "$RELEASE_VERSION"
           release_tag="v$RELEASE_VERSION"
           set +e
           git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null
@@ -70,18 +89,18 @@ jobs:
           fi
 
       - name: Test source
-        run: just check
+        run: just ci
 
       - name: Prepare release notes
-        run: uv run scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
+        run: uv run --locked --no-dev scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
 
       - name: Download runtime and build recipe
         run: |
           mkdir -p dist
           build_recipe="$RUNNER_TEMP/Runtime-Build-Recipe.tar.gz"
-          build_recipe_url="$(uv run scripts/runtime_config.py runtime.json buildRecipe.url)"
-          build_recipe_sha256="$(uv run scripts/runtime_config.py runtime.json buildRecipe.sha256)"
-          uv run scripts/download_runtime.py
+          build_recipe_url="$(uv run --locked --no-dev scripts/runtime_config.py runtime.json buildRecipe.url)"
+          build_recipe_sha256="$(uv run --locked --no-dev scripts/runtime_config.py runtime.json buildRecipe.sha256)"
+          uv run --locked --no-dev scripts/download_runtime.py
           curl --fail --location --proto '=https' --tlsv1.2 "$build_recipe_url" --output "$build_recipe"
           echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
           mv "$build_recipe" "dist/Runtime-Build-Recipe.tar.gz"
@@ -93,16 +112,68 @@ jobs:
       - name: Build DMG
         run: |
           just dmg "$GITHUB_WORKSPACE/.build/runtime"
-          shasum -a 256 "dist/Arknights Client.dmg" dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
+
+      - name: Create and sign Sparkle update
+        env:
+          SPARKLE_ED25519_PRIVATE_KEY: ${{ secrets.SPARKLE_ED25519_PRIVATE_KEY }}
+        run: |
+          display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
+          app_name="$(uv run --locked --no-dev scripts/project_config.py app-bundle-name)"
+          update_directory="$RUNNER_TEMP/sparkle-updates"
+          mkdir -p "$update_directory"
+          ditto -c -k --sequesterRsrc --keepParent "dist/$app_name" \
+            "$update_directory/$display_name $RELEASE_VERSION.zip"
+          cp "$RUNNER_TEMP/release-notes.md" \
+            "$update_directory/$display_name $RELEASE_VERSION.md"
+          generate_appcast="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
+            -type f -path '*/Sparkle/bin/generate_appcast' -perm -111 -print -quit)"
+          if [[ -z "$generate_appcast" ]]; then
+            echo "Sparkle generate_appcast tool not found." >&2
+            exit 1
+          fi
+          release_prefix="https://github.com/$GITHUB_REPOSITORY/releases/download/v$RELEASE_VERSION/"
+          printf '%s' "$SPARKLE_ED25519_PRIVATE_KEY" | "$generate_appcast" \
+            --ed-key-file - \
+            --download-url-prefix "$release_prefix" \
+            --embed-release-notes \
+            "$update_directory"
+          uv run --locked --no-dev scripts/validate_sparkle_keys.py \
+            --plist "dist/$app_name/Contents/Info.plist" \
+            --appcast "$update_directory/appcast.xml"
+          cp "$update_directory/$display_name $RELEASE_VERSION.zip" "dist/$display_name $RELEASE_VERSION.zip"
+          cp "$update_directory/appcast.xml" dist/appcast.xml
+          dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
+          shasum -a 256 "dist/$dmg_name" \
+            "dist/$display_name $RELEASE_VERSION.zip" \
+            dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
+
+      - name: Attest release provenance
+        uses: actions/attest-build-provenance@v4.2.2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          subject-path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/appcast.xml
+            dist/Runtime-Build-Recipe.tar.gz
+            dist/SHA256SUMS
 
       - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           release_tag="v$RELEASE_VERSION"
+          display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
+          dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
+          update_name="$display_name $RELEASE_VERSION.zip"
           gh release create "$release_tag" \
-            "dist/Arknights Client.dmg" \
+            "dist/$dmg_name" \
+            "dist/$update_name" \
+            dist/appcast.xml \
             dist/Runtime-Build-Recipe.tar.gz \
             dist/SHA256SUMS \
             --draft \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             --target "$GITHUB_SHA" \
-            --title "Arknights Client $release_tag"
+            --title "$display_name $release_tag"

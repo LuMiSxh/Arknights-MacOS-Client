@@ -11,12 +11,15 @@ struct AppPaths: Sendable {
 	let cacheRoot: URL
 	let logRoot: URL
 	let winePrefix: URL
+	let chinaWinePrefix: URL
+	let bundledRuntimeDirectory: URL?
 
 	init(
 		fileManager: FileManager = .default,
 		applicationSupportDirectory: URL? = nil,
 		cachesDirectory: URL? = nil,
-		libraryDirectory: URL? = nil
+		libraryDirectory: URL? = nil,
+		resourceDirectory: URL? = Bundle.main.resourceURL
 	) {
 		let supportDirectory =
 			applicationSupportDirectory
@@ -41,16 +44,35 @@ struct AppPaths: Sendable {
 			.appending(path: "Logs", directoryHint: .isDirectory)
 			.appending(path: Self.bundleIdentifier, directoryHint: .isDirectory)
 		winePrefix = applicationSupportRoot.appending(
-			path: "Wine/Prefixes/Arknights-Global",
+			path: "Yostar/Prefix",
+			directoryHint: .isDirectory
+		)
+		chinaWinePrefix = applicationSupportRoot.appending(
+			path: "Hypergryph/Prefix",
+			directoryHint: .isDirectory
+		)
+		bundledRuntimeDirectory = resourceDirectory?.appending(
+			path: "Runtime",
 			directoryHint: .isDirectory
 		)
 	}
 
 	func gameInstall(for region: GameRegion) -> URL {
-		applicationSupportRoot.appending(
-			path: "Games/\(region.installDirectoryName)",
-			directoryHint: .isDirectory
-		)
+		let publisher = region.isChinaClient ? "Hypergryph" : "Yostar"
+		let regionName =
+			switch region {
+			case .global: "Global"
+			case .japan: "Japan"
+			case .korea: "Korea"
+			case .china: "China"
+			case .chinaBilibili: "China-Bilibili"
+			}
+		return applicationSupportRoot.appending(
+			path: "\(publisher)/\(regionName)", directoryHint: .isDirectory)
+	}
+
+	func winePrefix(for region: GameRegion) -> URL {
+		region.isChinaClient ? chinaWinePrefix : winePrefix
 	}
 
 	var logsDirectory: URL { logRoot }
@@ -63,6 +85,10 @@ struct AppPaths: Sendable {
 		logsDirectory.appending(path: "launcher.log")
 	}
 
+	func wineLogFile(for region: GameRegion) -> URL {
+		region.isChinaClient ? logsDirectory.appending(path: "wine-cn.log") : logFile
+	}
+
 	var unityLogFile: URL {
 		logsDirectory.appending(path: "unity.log")
 	}
@@ -73,34 +99,85 @@ struct AppPaths: Sendable {
 
 	static let windowsUnityLogPath = "L:\\unity.log"
 
-	/// Unity writes its own log independently of the launcher's `wine.log`, into the
-	/// Windows user profile Wine creates for `NSUserName()` (see `WinePrefixConfigurator`).
-	func unityLogFile(for region: GameRegion, userName: String = NSUserName()) -> URL {
-		winePrefix.appending(
-			path: "drive_c/users/\(userName)/AppData/LocalLow/Yostar/\(region.gameTag)/unity.log"
-		)
-	}
-
-	/// The Vuplex/Chromium helper is region-agnostic since only one region's prefix is
-	/// active at a time, so its log lives directly under the shared Yostar folder.
-	func chromiumLogFile(userName: String = NSUserName()) -> URL {
-		winePrefix.appending(
-			path: "drive_c/users/\(userName)/AppData/LocalLow/Yostar/chromium.log"
-		)
-	}
-
-	static func windowsUnityLogPath(for region: GameRegion, userName: String = NSUserName())
-		-> String
-	{
-		"C:\\users\\\(userName)\\AppData\\LocalLow\\Yostar\\\(region.gameTag)\\unity.log"
-	}
-
 	var artworkCache: URL {
 		cacheRoot.appending(path: "Artwork/Downloaded", directoryHint: .isDirectory)
 	}
 
 	var presetGalleryCache: URL {
 		cacheRoot.appending(path: "PresetGallery", directoryHint: .isDirectory)
+	}
+
+	var dxmtCache: URL {
+		dxmtCache(for: .global)
+	}
+
+	func dxmtCache(for region: GameRegion) -> URL {
+		winePrefix(for: region).appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
+	}
+
+	func browserCacheDirectories(fileManager: FileManager = .default) -> [URL] {
+		browserCacheDirectories(for: .global, fileManager: fileManager)
+	}
+
+	func browserCacheDirectories(
+		for region: GameRegion,
+		fileManager: FileManager = .default
+	) -> [URL] {
+		Self.gameCacheDirectories(winePrefix: winePrefix(for: region), fileManager: fileManager)
+			.filter { $0 != dxmtCache(for: region) }
+	}
+
+	static func gameCacheDirectories(
+		winePrefix: URL,
+		fileManager: FileManager = .default
+	) -> [URL] {
+		let prefix = winePrefix.resolvingSymlinksInPath().standardizedFileURL
+		let dxmt = winePrefix.appending(
+			path: "home/.cache/dxmt", directoryHint: .isDirectory)
+		var directories =
+			isSafeCacheDirectory(
+				dxmt, inside: prefix, fileManager: fileManager) ? [dxmt] : []
+		let usersDirectory = winePrefix.appending(
+			path: "drive_c/users", directoryHint: .isDirectory)
+		guard
+			let entries = try? fileManager.contentsOfDirectory(
+				at: usersDirectory,
+				includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey]
+			)
+		else { return directories }
+
+		for entry in entries {
+			guard
+				let values = try? entry.resourceValues(forKeys: [
+					.isDirectoryKey, .isSymbolicLinkKey,
+				]),
+				values.isDirectory == true,
+				values.isSymbolicLink != true
+			else { continue }
+			let cache = entry.appending(
+				path: "AppData/Local/cache", directoryHint: .isDirectory)
+			if isSafeCacheDirectory(cache, inside: prefix, fileManager: fileManager) {
+				directories.append(cache)
+			}
+		}
+		return directories
+	}
+
+	static func isSafeCacheDirectory(
+		_ url: URL,
+		inside prefix: URL,
+		fileManager: FileManager = .default
+	) -> Bool {
+		guard
+			fileManager.fileExists(atPath: url.path),
+			let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+			values.isDirectory == true,
+			values.isSymbolicLink != true
+		else { return false }
+
+		let canonicalURL = url.resolvingSymlinksInPath().standardizedFileURL
+		let prefixComponents = prefix.pathComponents
+		return canonicalURL.pathComponents.starts(with: prefixComponents)
 	}
 
 	var customArtwork: URL {
@@ -117,6 +194,10 @@ struct AppPaths: Sendable {
 
 	var operatorPresetAvatar: URL {
 		applicationSupportRoot.appending(path: "Artwork/Custom/operator-avatar-source")
+	}
+
+	var playtimeStatistics: URL {
+		applicationSupportRoot.appending(path: AppConstants.Playtime.statisticsFilename)
 	}
 
 }

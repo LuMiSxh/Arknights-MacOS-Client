@@ -79,23 +79,26 @@ extension WineRuntime {
 
 	/// Whether the next launch would replay any prefix migration, so callers can
 	/// show a "Migrating" state instead of the generic launch status.
-	func hasPendingMigration(prefixDirectory: URL) -> Bool {
-		!migrationPlan(prefixDirectory: prefixDirectory).pending.isEmpty
+	func hasPendingMigration(prefixDirectory: URL) throws -> Bool {
+		try !migrationPlan(prefixDirectory: prefixDirectory).pending.isEmpty
 	}
 
-	private func migrationPlan(prefixDirectory: URL) -> RuntimeMigrationPlan {
+	private func migrationPlan(prefixDirectory: URL) throws -> RuntimeMigrationPlan {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
 		let hasSystemRegistry = fileManager.fileExists(atPath: systemRegistry.path)
 		let store = RuntimeMigrationStore(fileManager: fileManager)
-		let persistedState = store.load(from: prefixDirectory)
-		let installedState =
-			persistedState
-			?? store.loadLegacy(
+		let persistedState = try store.load(from: prefixDirectory)
+		let installedState: RuntimeMigrationState?
+		if let persistedState {
+			installedState = persistedState
+		} else {
+			installedState = try store.loadLegacy(
 				from: prefixDirectory,
 				expectedRevision: revision,
 				hasSystemRegistry: hasSystemRegistry
 			)
+		}
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
 		let invalidatedMigrations: Set<RuntimeMigration> =
@@ -123,7 +126,7 @@ extension WineRuntime {
 	) async throws {
 		let fileManager = FileManager.default
 		let store = RuntimeMigrationStore(fileManager: fileManager)
-		let persistedState = store.load(from: prefixDirectory)
+		let persistedState = try store.load(from: prefixDirectory)
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
 		let dxmtCurrent = Self.dxmtIsCurrent(
@@ -131,7 +134,7 @@ extension WineRuntime {
 			in: prefixDirectory,
 			fileManager: fileManager
 		)
-		var plan = migrationPlan(prefixDirectory: prefixDirectory)
+		var plan = try migrationPlan(prefixDirectory: prefixDirectory)
 		if !plan.pending.isEmpty {
 			await log?.info(
 				"Prefix migration plan: \(plan.pending); runtimeRevision=\(revision); "

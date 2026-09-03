@@ -62,7 +62,10 @@ extension AppIconRenderer {
 			return NSImage(contentsOf: url)
 		}
 		guard
-			let url = Bundle.module.url(forResource: "GameIconBackground", withExtension: "png")
+			let url = AppResourceBundle.bundle.url(
+				forResource: "GameIconBackground",
+				withExtension: "png"
+			)
 		else { return nil }
 		return NSImage(contentsOf: url)
 	}
@@ -72,7 +75,10 @@ extension AppIconRenderer {
 			return NSImage(contentsOf: url)
 		}
 		guard
-			let url = Bundle.module.url(forResource: "OperatorIconFrame", withExtension: "svg")
+			let url = AppResourceBundle.bundle.url(
+				forResource: "OperatorIconFrame",
+				withExtension: "svg"
+			)
 		else { return nil }
 		return NSImage(contentsOf: url)
 	}

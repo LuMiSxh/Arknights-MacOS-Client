@@ -7,16 +7,14 @@ import Testing
 
 @MainActor
 func waitForDownloadToStop(_ model: LauncherViewModel) async {
-	for _ in 0..<100 where model.isDownloading {
-		await Task.yield()
-	}
-	#expect(!model.isDownloading)
+	#expect(await waitForCondition { !model.installation.isDownloading })
 }
 
 @MainActor
 func makeModel(
 	api: some LauncherAPIProviding,
 	installer: some GameInstalling,
+	artworkCache: ArtworkCache? = nil,
 	checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 		IntelTranslationCheck(state: .available, diagnostics: "test")
 	},
@@ -24,7 +22,9 @@ func makeModel(
 		@escaping @Sendable () async throws
 		-> IntelTranslationProcessResult = {
 			IntelTranslationProcessResult(status: 0, output: "test")
-		}
+		},
+	arguments: [String] = [],
+	prepareStorage: ((AppPaths) -> Void)? = nil
 ) -> LauncherViewModel {
 	let root = URL(filePath: NSTemporaryDirectory())
 		.appending(
@@ -36,55 +36,152 @@ func makeModel(
 		cachesDirectory: root.appending(path: "Caches", directoryHint: .isDirectory),
 		libraryDirectory: root.appending(path: "Library", directoryHint: .isDirectory)
 	)
+	prepareStorage?(paths)
 	let defaults = UserDefaults(suiteName: "LauncherViewModelTests.\(UUID().uuidString)")!
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	preferences.setAutomaticGameUpdates(false)
 	preferences.setAutomaticLauncherUpdates(false)
+	preferences.setAnnouncementsEnabled(false)
+	let resolvedArtworkCache =
+		artworkCache
+		?? ArtworkCache(session: testArtworkSession(), directory: paths.artworkCache)
 	return LauncherViewModel(
 		api: api,
 		installer: installer,
 		paths: paths,
+		artworkCache: resolvedArtworkCache,
 		preferences: preferences,
 		checkIntelTranslation: checkIntelTranslation,
 		installRosettaSystemSoftware: installRosettaSystemSoftware,
-		arguments: []
+		arguments: arguments
 	)
 }
 
-actor TranslationCheckSequence {
-	private var states: [IntelTranslationState]
-	private(set) var count = 0
+private func testArtworkSession() -> URLSession {
+	let configuration = URLSessionConfiguration.ephemeral
+	configuration.protocolClasses = [TestArtworkURLProtocol.self]
+	return URLSession(configuration: configuration)
+}
 
-	init(states: [IntelTranslationState]) {
-		self.states = states
+private final class TestArtworkURLProtocol: URLProtocol, @unchecked Sendable {
+	static let imageData = Data(
+		base64Encoded:
+			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
+	)!
+
+	override class func canInit(with request: URLRequest) -> Bool { true }
+	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+	override func startLoading() {
+		let response = HTTPURLResponse(
+			url: request.url!,
+			statusCode: 200,
+			httpVersion: nil,
+			headerFields: nil
+		)!
+		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+		client?.urlProtocol(self, didLoad: Self.imageData)
+		client?.urlProtocolDidFinishLoading(self)
 	}
 
-	func next() -> IntelTranslationCheck {
+	override func stopLoading() {}
+}
+
+typealias BlockingBrandingAPI = CancellableBrandingAPI
+
+actor ControllableInstaller: GameInstalling {
+	private var count = 0
+	private var regions: [GameRegion] = []
+	private var verificationModes: [Bool] = []
+	private var installationStarted = false
+	private var cancellationRequested = false
+	private var installationStartWaiters: [CheckedContinuation<Void, Never>] = []
+	private var cancellationRequestWaiters: [CheckedContinuation<Void, Never>] = []
+	private var installationResponse: CheckedContinuation<InstallResult, Error>?
+	private var progress: (@Sendable (DownloadProgress) async -> Void)?
+	func install(
+		configuration: GameConfiguration,
+		region: GameRegion,
+		into installDirectory: URL,
+		verifyAllExistingFiles: Bool,
+		progress: @escaping @Sendable (DownloadProgress) async -> Void
+	) async throws -> InstallResult {
 		count += 1
-		let state = states.isEmpty ? .unavailable : states.removeFirst()
-		return IntelTranslationCheck(state: state, diagnostics: "test-\(count)")
+		regions.append(region)
+		verificationModes.append(verifyAllExistingFiles)
+		self.progress = progress
+		return try await withTaskCancellationHandler {
+			try await withCheckedThrowingContinuation { continuation in
+				if cancellationRequested {
+					continuation.resume(throwing: CancellationError())
+					return
+				}
+				installationResponse = continuation
+				installationStarted = true
+				for waiter in installationStartWaiters {
+					waiter.resume()
+				}
+				installationStartWaiters.removeAll()
+			}
+		} onCancel: {
+			Task { await self.recordCancellationRequest() }
+		}
+	}
+	func installationCount() -> Int { count }
+	func requestedRegions() -> [GameRegion] { regions }
+	func requestedVerificationModes() -> [Bool] { verificationModes }
+	func waitForInstallationStart() async {
+		guard !installationStarted else { return }
+		await withCheckedContinuation { installationStartWaiters.append($0) }
+	}
+	func waitForCancellationRequest() async {
+		guard !cancellationRequested else { return }
+		await withCheckedContinuation { cancellationRequestWaiters.append($0) }
+	}
+	func sendProgress() async {
+		await progress?(
+			DownloadProgress(
+				downloadedBytes: 50,
+				totalBytes: 100,
+				completedFiles: 1,
+				totalFiles: 2,
+				currentFile: "game.zip"
+			))
+	}
+	func acknowledgeCancellation() {
+		installationResponse?.resume(throwing: CancellationError())
+		installationResponse = nil
+	}
+	func completeSuccessfully() {
+		installationResponse?.resume(
+			returning: InstallResult(
+				downloadedFiles: 1,
+				downloadedBytes: 100,
+				installDirectory: URL(filePath: "/tmp/Arknights-Global")
+			)
+		)
+		installationResponse = nil
+	}
+	private func recordCancellationRequest() {
+		cancellationRequested = true
+		for waiter in cancellationRequestWaiters {
+			waiter.resume()
+		}
+		cancellationRequestWaiters.removeAll()
+		let response = installationResponse
+		installationResponse = nil
+		response?.resume(throwing: CancellationError())
 	}
 }
 
-actor RosettaInstallationRecorder {
-	private let status: Int32
-	private(set) var count = 0
-
-	init(status: Int32) {
-		self.status = status
-	}
-
-	func install() -> IntelTranslationProcessResult {
-		count += 1
-		return IntelTranslationProcessResult(status: status, output: "test")
-	}
-}
-
-actor BlockingBrandingAPI: LauncherAPIProviding {
-	private var brandingRequestCount = 0
-	private var brandingRequestWaiters:
-		[(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
-	private var brandingResponses: [CheckedContinuation<LauncherBranding, Never>] = []
+actor CancellableBrandingAPI: LauncherAPIProviding {
+	private var brandingRequests = 0
+	private var cancellations = 0
+	private var requestWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
+	private var cancellationWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
+	private var brandingContinuations:
+		[(id: Int, continuation: CheckedContinuation<LauncherBranding, Error>)] = []
+	private var cancelledBrandingRequestIDs: Set<Int> = []
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		GameConfiguration(
@@ -99,15 +196,22 @@ actor BlockingBrandingAPI: LauncherAPIProviding {
 	}
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
-		brandingRequestCount += 1
-		let readyWaiters = brandingRequestWaiters.filter {
-			$0.count <= brandingRequestCount
+		brandingRequests += 1
+		let requestID = brandingRequests
+		resumeReadyWaiters()
+		return try await withTaskCancellationHandler {
+			try await withCheckedThrowingContinuation { continuation in
+				if cancelledBrandingRequestIDs.remove(requestID) != nil {
+					cancellations += 1
+					resumeReadyWaiters()
+					continuation.resume(throwing: CancellationError())
+				} else {
+					brandingContinuations.append((id: requestID, continuation: continuation))
+				}
+			}
+		} onCancel: {
+			Task { await self.cancelBrandingRequest(id: requestID) }
 		}
-		brandingRequestWaiters.removeAll { $0.count <= brandingRequestCount }
-		for waiter in readyWaiters {
-			waiter.continuation.resume()
-		}
-		return await withCheckedContinuation { brandingResponses.append($0) }
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
@@ -121,113 +225,45 @@ actor BlockingBrandingAPI: LauncherAPIProviding {
 		throw CancellationError()
 	}
 
-	func waitForBrandingRequest() async {
-		await waitForBrandingRequests(1)
-	}
-
 	func waitForBrandingRequests(_ count: Int) async {
-		guard brandingRequestCount < count else { return }
-		await withCheckedContinuation {
-			brandingRequestWaiters.append((count: count, continuation: $0))
-		}
+		guard brandingRequests < count else { return }
+		await withCheckedContinuation { requestWaiters.append((count, $0)) }
 	}
-
+	func waitForBrandingRequest() async { await waitForBrandingRequests(1) }
 	func resolveBranding(_ branding: LauncherBranding? = nil) {
-		let resolvedBranding =
+		let value =
 			branding
 			?? LauncherBranding(
-				launcherBackgroundImage: nil,
-				launcherBackgroundImageCRC64: nil,
-				copyrightInformation: nil,
-				privacyPolicy: nil,
-				userAgreement: nil,
-				noticePopOpen: nil,
-				noticeContent: nil
-			)
-		let responses = brandingResponses
-		brandingResponses.removeAll()
-		for response in responses {
-			response.resume(returning: resolvedBranding)
+				launcherBackgroundImage: nil, launcherBackgroundImageCRC64: nil,
+				copyrightInformation: nil, privacyPolicy: nil, userAgreement: nil,
+				noticePopOpen: nil, noticeContent: nil)
+		let pending = brandingContinuations
+		brandingContinuations.removeAll()
+		for (_, continuation) in pending { continuation.resume(returning: value) }
+	}
+	func waitForCancellations(_ count: Int) async {
+		guard cancellations < count else { return }
+		await withCheckedContinuation { cancellationWaiters.append((count, $0)) }
+	}
+
+	private func cancelBrandingRequest(id: Int) {
+		guard let index = brandingContinuations.firstIndex(where: { $0.id == id }) else {
+			cancelledBrandingRequestIDs.insert(id)
+			return
 		}
-	}
-}
-
-actor ControllableInstaller: GameInstalling {
-	private var count = 0
-	private var installationStarted = false
-	private var cancellationRequested = false
-	private var installationStartWaiters: [CheckedContinuation<Void, Never>] = []
-	private var cancellationRequestWaiters: [CheckedContinuation<Void, Never>] = []
-	private var installationResponse: CheckedContinuation<InstallResult, Error>?
-	private var progress: (@Sendable (DownloadProgress) async -> Void)?
-
-	func install(
-		configuration: GameConfiguration,
-		region: GameRegion,
-		into installDirectory: URL,
-		verifyAllExistingFiles: Bool,
-		progress: @escaping @Sendable (DownloadProgress) async -> Void
-	) async throws -> InstallResult {
-		count += 1
-		self.progress = progress
-		return try await withTaskCancellationHandler {
-			try await withCheckedThrowingContinuation { continuation in
-				installationResponse = continuation
-				installationStarted = true
-				for waiter in installationStartWaiters {
-					waiter.resume()
-				}
-				installationStartWaiters.removeAll()
-			}
-		} onCancel: {
-			Task { await self.recordCancellationRequest() }
-		}
+		let continuation = brandingContinuations.remove(at: index).continuation
+		cancellations += 1
+		resumeReadyWaiters()
+		continuation.resume(throwing: CancellationError())
 	}
 
-	func installationCount() -> Int { count }
+	private func resumeReadyWaiters() {
+		let readyRequests = requestWaiters.filter { $0.0 <= brandingRequests }
+		requestWaiters.removeAll { $0.0 <= brandingRequests }
+		for (_, continuation) in readyRequests { continuation.resume() }
 
-	func waitForInstallationStart() async {
-		guard !installationStarted else { return }
-		await withCheckedContinuation { installationStartWaiters.append($0) }
-	}
-
-	func waitForCancellationRequest() async {
-		guard !cancellationRequested else { return }
-		await withCheckedContinuation { cancellationRequestWaiters.append($0) }
-	}
-
-	func sendProgress() async {
-		await progress?(
-			DownloadProgress(
-				downloadedBytes: 50,
-				totalBytes: 100,
-				completedFiles: 1,
-				totalFiles: 2,
-				currentFile: "game.zip"
-			))
-	}
-
-	func acknowledgeCancellation() {
-		installationResponse?.resume(throwing: CancellationError())
-		installationResponse = nil
-	}
-
-	func completeSuccessfully() {
-		installationResponse?.resume(
-			returning: InstallResult(
-				downloadedFiles: 1,
-				downloadedBytes: 100,
-				installDirectory: URL(filePath: "/tmp/Arknights-Global")
-			)
-		)
-		installationResponse = nil
-	}
-
-	private func recordCancellationRequest() {
-		cancellationRequested = true
-		for waiter in cancellationRequestWaiters {
-			waiter.resume()
-		}
-		cancellationRequestWaiters.removeAll()
+		let readyCancellations = cancellationWaiters.filter { $0.0 <= cancellations }
+		cancellationWaiters.removeAll { $0.0 <= cancellations }
+		for (_, continuation) in readyCancellations { continuation.resume() }
 	}
 }

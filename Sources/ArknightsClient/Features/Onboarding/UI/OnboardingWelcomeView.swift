@@ -3,53 +3,68 @@
 import SwiftUI
 
 struct OnboardingWelcomeView: View {
+	@Bindable var preferences: LauncherPreferencesController
+	let accentColor: Color
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
 	let rosettaInstallationState: RosettaInstallationState
-	let accentColor: Color
 	let retry: () -> Void
 	let retryIntelTranslation: () -> Void
 	let installRosetta: () -> Void
 
 	var body: some View {
 		OnboardingPage(
-			title: "Welcome to Arknights Client",
-			subtitle:
-				"We’ll check the launcher first, then configure the game and the parts you see every day. Your choices apply immediately.",
+			title: L10n.string(OnboardingStrings.welcomeTitle),
+			subtitle: L10n.string(OnboardingStrings.welcomeSubtitle),
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: statusTitle, systemImage: statusImage) {
+			SettingsPanel(
+				title: L10n.string(OnboardingStrings.languagePanel),
+				systemImage: "globe"
+			) {
+				SettingsActionRow(
+					title: L10n.string(OnboardingStrings.language),
+					detail: L10n.string(OnboardingStrings.languageDetail)
+				) {
+					GlassMenuPicker(
+						selection: $preferences.appLanguage,
+						options: AppLanguage.allCases.map {
+							($0, L10n.string(OnboardingStrings.appLanguage($0)))
+						},
+						accentColor: accentColor
+					)
+				}
+			}
+
+			SettingsPanel(title: L10n.string(statusTitle), systemImage: statusImage) {
 				switch updateState {
 				case .checking:
 					HStack(spacing: 12) {
 						ProgressView()
-						Text("Checking GitHub Releases before setup starts…")
+						Text(L10n.string(OnboardingStrings.checking))
 							.foregroundStyle(.secondary)
 					}
 				case .current:
 					Label(
-						"This launcher is current. Setup can continue.",
+						L10n.string(OnboardingStrings.launcherCurrent),
 						systemImage: "checkmark.circle.fill"
 					)
 					.foregroundStyle(accentColor)
-				case .updateRequired(let release):
+				case .updateRequired(let version):
 					VStack(alignment: .leading, spacing: 8) {
-						Text("Version \(release.version) is available.")
+						Text(L10n.string(OnboardingStrings.versionAvailable(version)))
 							.bold()
-						Text(
-							"Install the newer launcher and open it again. Setup stays pending so instructions always match the version you are using."
-						)
-						.foregroundStyle(.secondary)
-						.fixedSize(horizontal: false, vertical: true)
+						Text(L10n.string(OnboardingStrings.updateDetail))
+							.foregroundStyle(.secondary)
+							.fixedSize(horizontal: false, vertical: true)
 					}
 				case .checkFailed:
 					VStack(alignment: .leading, spacing: 10) {
-						Text(
-							"The launcher could not reach the update source. You can continue now; automatic checks will try again later."
-						)
-						.foregroundStyle(.secondary)
+						Text(L10n.string(OnboardingStrings.updateCheckFailedDetail))
+							.foregroundStyle(.secondary)
 						CapsuleActionButton(
-							title: "Try Again", systemImage: "arrow.clockwise",
+							title: L10n.string(OnboardingStrings.tryAgain),
+							systemImage: "arrow.clockwise",
 							tone: .accent(accentColor), action: retry
 						)
 					}
@@ -57,20 +72,23 @@ struct OnboardingWelcomeView: View {
 			}
 
 			if updateState.allowsSetup {
-				SettingsPanel(title: "Intel compatibility", systemImage: translationImage) {
+				SettingsPanel(
+					title: L10n.string(OnboardingStrings.compatibilityPanel),
+					systemImage: translationImage
+				) {
 					switch intelTranslationState {
 					case .waitingForLauncherCheck:
-						Text("Intel compatibility will be checked after the launcher update check.")
+						Text(L10n.string(OnboardingStrings.compatibilityWaiting))
 							.foregroundStyle(.secondary)
 					case .checking:
 						HStack(spacing: 12) {
 							ProgressView()
-							Text("Checking whether the bundled Wine runtime can start…")
+							Text(L10n.string(OnboardingStrings.compatibilityChecking))
 								.foregroundStyle(.secondary)
 						}
 					case .available:
 						Label(
-							"Compatibility verified. The bundled Wine runtime can start.",
+							L10n.string(OnboardingStrings.compatibilityAvailable),
 							systemImage: "checkmark.circle.fill"
 						)
 						.foregroundStyle(accentColor)
@@ -83,62 +101,52 @@ struct OnboardingWelcomeView: View {
 						)
 					case .gameTestModeEnabled:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(
-								"macOS Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:"
-							)
-							.foregroundStyle(.secondary)
-							.fixedSize(horizontal: false, vertical: true)
+							Text(L10n.string(OnboardingStrings.compatibilityGameTestMode))
+								.foregroundStyle(.secondary)
+								.fixedSize(horizontal: false, vertical: true)
 							Text("sudo game-test-tool disable")
 								.font(.callout.monospaced())
 								.textSelection(.enabled)
 							CapsuleActionButton(
-								"Check Again", systemImage: "arrow.clockwise",
+								title: L10n.string(OnboardingStrings.checkAgain),
+								systemImage: "arrow.clockwise",
 								tone: .accent(accentColor),
 								action: retryIntelTranslation
 							)
 						}
 					case .unavailable:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(
-								"macOS could not start an Intel test process. Restart your Mac, then check again. If the problem remains, include the launcher log in a bug report."
-							)
-							.foregroundStyle(.secondary)
-							.fixedSize(horizontal: false, vertical: true)
+							Text(L10n.string(OnboardingStrings.compatibilityUnavailable))
+								.foregroundStyle(.secondary)
+								.fixedSize(horizontal: false, vertical: true)
 							CapsuleActionButton(
-								"Check Again", systemImage: "arrow.clockwise",
+								title: L10n.string(OnboardingStrings.checkAgain),
+								systemImage: "arrow.clockwise",
 								tone: .accent(accentColor),
 								action: retryIntelTranslation
 							)
 						}
 					case .unsupportedOS:
-						Text(
-							"This macOS version no longer provides the general Intel translation required by the bundled Wine runtime."
-						)
-						.foregroundStyle(.secondary)
-						.fixedSize(horizontal: false, vertical: true)
+						Text(L10n.string(OnboardingStrings.compatibilityUnsupported))
+							.foregroundStyle(.secondary)
+							.fixedSize(horizontal: false, vertical: true)
 					}
 				}
 			}
 
 			SettingsPanel(
-				title: "What happens next", systemImage: "point.forward.to.point.capsulepath"
+				title: L10n.string(OnboardingStrings.nextTitle),
+				systemImage: "point.forward.to.point.capsulepath"
 			) {
-				Text(
-					"Choose a server region, begin the official PC-client download, tune display settings, and personalize the launcher. The download keeps running while you continue."
-				)
-				.foregroundStyle(.secondary)
-				.fixedSize(horizontal: false, vertical: true)
+				Text(L10n.string(OnboardingStrings.nextDetail))
+					.foregroundStyle(.secondary)
+					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
 	}
 
-	private var statusTitle: String {
-		switch updateState {
-		case .checking: "Checking for launcher updates"
-		case .current: "Ready for setup"
-		case .updateRequired: "Update before setup"
-		case .checkFailed: "Update check unavailable"
-		}
+	private var statusTitle: LocalizedStringResource {
+		OnboardingStrings.statusTitle(updateState)
 	}
 
 	private var statusImage: String {

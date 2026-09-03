@@ -1,30 +1,54 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "WineCX 11.15 + DXMT 0.80 (dappermint build 4.5.118)",
-    "url": "https://github.com/dappermint/Whisky/releases/download/v4.5.118/Libraries.tar.gz",
-    "sha256": "e6fbb5b1da5c50bd4d5c87ec4fbd43ef40eb90b03fd5d219cfe9050a98f27cde"
+    "name": "Arknights macOS Runtime 0.5.0",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.5.0/Arknights-MacOS-Runtime-v0.5.0.tar.gz",
+    "sha256": "b27dde5173c0aac07041af1a4b1d390a5e53521bb5d758062e0d1281d7ec780e"
   },
   "buildRecipe": {
-    "url": "https://github.com/dappermint/winecx-gptk/archive/fbae959a44194788873fc33a8fa990653d0820ce.tar.gz",
-    "sha256": "4f70e1cf3c281f7add3526bb5166c3c63d5cfbd30eeba1e4141f7b375182eb5f"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.5.0/Arknights-MacOS-Runtime-v0.5.0-source.tar.gz",
+    "sha256": "45ee60316db0edf199a692310baa568f4cbb59929346b700b1d1c2d7551652f2"
+  },
+  "interface": {
+    "archive": {
+      "wineDirectory": "Wine",
+      "dxmtDirectory": "DXMT"
+    },
+    "executables": ["bin/wine64", "bin/wineserver"],
+    "requiredFiles": [
+      "lib/wine/x86_64-unix/winecoreaudio.so",
+      "lib/wine/x86_64-windows/winemetal.dll"
+    ],
+    "macDriver": "lib/wine/x86_64-unix/winemac.so",
+    "launcher": {
+      "path": "bin/Arknights",
+      "target": "wine64"
+    },
+    "dxmt": {
+      "payloadDirectory": "DXMT",
+      "destinations": {
+        "x64": "system32",
+        "x32": "syswow64"
+      },
+      "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
+    }
   },
   "components": {
-    "wine": "11.15",
-    "dxmt": "0.80",
+    "wine": "11.16",
+    "dxmt": "0.80-199-g19e24ee",
     "gstreamer": "1.26.3",
     "ffmpeg": "7.1.1",
     "moltenvk": "1.4.2",
     "wineGecko": "2.47.4"
   },
   "provenance": {
-    "buildRepository": "https://github.com/dappermint/winecx-gptk",
-    "buildCommit": "fbae959a44194788873fc33a8fa990653d0820ce",
+    "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
+    "buildCommit": "5e975231f4ad1969fde199ac5fc1fe7366fc4bfb",
     "wineRepository": "https://github.com/dappermint/winecx",
-    "wineCommit": "51e3854751e51ed25af4cd3af367f92f421ed0c8",
+    "wineCommit": "7dbc5b5322a6ef3fb04bdc643c64b188fd641149",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
-    "dxmtCommit": "589adb780354b461645b29999cefaf533594ee99",
+    "dxmtCommit": "19e24ee068a44a747e556965730482038c5bb068",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "gstreamerRepository": "https://github.com/GStreamer/gstreamer",

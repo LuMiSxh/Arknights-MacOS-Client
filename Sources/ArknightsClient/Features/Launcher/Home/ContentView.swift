@@ -3,345 +3,331 @@
 import SwiftUI
 
 struct ContentView: View {
-	var model: LauncherViewModel
+	let model: LauncherViewModel
+	let initialMusicTitle: String?
+	let openMusicURL: (URL) -> Void
+	let registerOpenSettings: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var settingsPresented = false
-	@State private var confirmsRosettaInstallation = false
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@State private var presentation = LauncherPresentationArbiter()
+	@State private var confirmation: LauncherConfirmation?
+	@State private var repairFailureID: UUID?
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
 
-	init(model: LauncherViewModel) {
+	init(
+		model: LauncherViewModel,
+		initialMusicTitle: String?,
+		openMusicURL: @escaping (URL) -> Void,
+		registerOpenSettings: @escaping (@escaping () -> Void) -> Void
+	) {
 		self.model = model
+		self.initialMusicTitle = initialMusicTitle
+		self.openMusicURL = openMusicURL
+		self.registerOpenSettings = registerOpenSettings
 		_onboarding = State(
 			initialValue: OnboardingCoordinator(
-				store: OnboardingProgressStore(defaults: model.preferences.defaults)
-			)
-		)
-		_musicController = State(initialValue: BackgroundMusicController(context: model))
+				store: OnboardingProgressStore(defaults: model.preferences.defaults)))
+		_musicController = State(
+			initialValue: BackgroundMusicController(
+				lifecycle: model.lifecycle,
+				settings: model.settings,
+				launcherIconManager: model.launcherIconManager,
+				initialMusicTitle: initialMusicTitle,
+				openURL: openMusicURL))
 	}
-
-	private var accentColor: Color { model.accentColor }
 
 	var body: some View {
 		ZStack {
-			BackgroundMusicView(model: model, controller: musicController)
-
-			LauncherArtworkView(image: model.heroArtwork, accentColor: accentColor)
-				.ignoresSafeArea(.container, edges: .top)
-
-			LinearGradient(
-				colors: [
-					Color.black.opacity(0.62),
-					Color.black.opacity(0.32),
-					Color.clear,
-				],
-				startPoint: .topLeading,
-				endPoint: .init(x: 0.38, y: 0.28)
+			BackgroundMusicView(
+				lifecycle: model.lifecycle, settings: model.settings, controller: musicController)
+			LauncherArtworkView(
+				image: model.customization.heroArtwork,
+				themeCacheKey: model.customization.activeThemeCacheKey,
+				accentColor: model.customization.accentColor
 			)
 			.ignoresSafeArea(.container, edges: .top)
-			.allowsHitTesting(false)
-
+			LauncherReadabilityField().ignoresSafeArea(.container, edges: .top).allowsHitTesting(
+				false)
 			VStack(spacing: 0) {
 				topBar
 				Spacer()
-				VStack(spacing: 10) {
-					hudPillRow
-					controlBar
-				}
-				.padding(20)
+				LauncherHUDView(
+					lifecycle: model.lifecycle,
+					settings: model.settings,
+					installation: model.installation,
+					gameSession: model.gameSession,
+					intelTranslation: model.intelTranslation,
+					communication: model.communication,
+					canSwitchRegion: model.refreshController.canSwitchRegion,
+					accentColor: model.customization.accentColor,
+					hudTintColor: model.customization.hudTintColor,
+					musicController: musicController,
+					openLauncherUpdate: model.communication.openLauncherUpdate,
+					checkGameUpdates: model.checkGameUpdates,
+					selectRegion: { model.selectRegion($0) },
+					installOrUpdate: model.installOrUpdate,
+					cancelDownload: model.cancelDownload,
+					launch: model.launch,
+					stopGame: model.stopGame,
+					requestRosettaInstallation: { confirmation = .rosetta },
+					retryIntelTranslationCheck: retryIntelTranslationCheck,
+					showFailureDetails: showFailureDetails)
 			}
+			.id(model.settings.appLanguage)
 		}
 		.background(Color.black)
 		.preferredColorScheme(.dark)
-		.animation(themeAnimation, value: model.dynamicThemeHue)
+		.animation(themeAnimation, value: model.customization.dynamicThemeHue)
 		.overlay {
-			if onboarding.isPresented {
+			if onboardingIsPresentable {
 				OnboardingView(
-					model: model,
+					preferences: model.settings,
+					customization: model.customization,
+					installation: model.installation,
+					lifecycle: model.lifecycle,
+					presetCatalog: model.presetCatalog,
+					canSwitchRegion: model.refreshController.canSwitchRegion,
 					coordinator: onboarding,
-					retryUpdateCheck: retryOnboardingUpdateCheck
-				)
+					actions: OnboardingActions(
+						selectRegion: model.selectRegion,
+						resetArtwork: model.resetArtwork,
+						installOrUpdate: model.installOrUpdate,
+						openLauncherUpdate: model.communication.openLauncherUpdate,
+						retryIntelTranslation: {
+							await model.intelTranslation.refreshAvailability(force: true)
+						},
+						installRosetta: model.installRosetta),
+					retryUpdateCheck: retryOnboardingUpdateCheck)
 			}
 		}
-		.sheet(isPresented: $settingsPresented) {
-			LauncherSettingsView(model: model, restartOnboarding: restartOnboarding)
-		}
-		.sheet(item: popupBinding) { popup in
-			LauncherPopupView(
-				popup: popup,
-				accentColor: accentColor,
-				hudTintColor: model.hudTintColor,
-				dismiss: model.dismissPopup,
-				openAction: model.openPopupAction
-			)
+		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) { sheetContent(for: $0) }
+		.overlay {
+			if presentation.current == .update,
+				model.communication.launcherUpdateUserDriver.isPresented
+			{
+				ZStack {
+					(reduceTransparency ? Color.black : Color.black.opacity(0.55)).ignoresSafeArea()
+					LauncherUpdateView(
+						driver: model.communication.launcherUpdateUserDriver,
+						accentColor: model.customization.accentColor,
+						hudTintColor: model.customization.hudTintColor,
+						checkForUpdates: model.communication.openLauncherUpdate)
+				}
+			}
 		}
 		.confirmsRosettaInstallation(
-			isPresented: $confirmsRosettaInstallation,
-			install: installRosetta
+			isPresented: rosettaConfirmationBinding, install: installRosetta
 		)
-		.task {
-			await startOnboardingIfNeeded()
+		.confirmationDialog(
+			L10n.string(HomeStrings.repairConfirmationTitle),
+			isPresented: repairConfirmationBinding,
+			titleVisibility: .visible
+		) {
+			Button(L10n.string(HomeStrings.repairConfirmationAction), action: confirmRepair)
+			Button(L10n.string(LauncherStrings.cancel), role: .cancel, action: cancelRepair)
+		} message: {
+			Text(L10n.string(HomeStrings.repairConfirmationDetail))
 		}
+		.onAppear { registerOpenSettings(requestSettings) }
+		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
+		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
+			if !isPresented { presentationDidDismiss() }
+		}
+		.task { await startOnboardingIfNeeded() }
 	}
 
-	private var popupBinding: Binding<LauncherPopup?> {
+	private var sheetPresentation: Binding<LauncherPresentationDestination?> {
 		Binding(
-			get: { onboarding.isPresented ? nil : model.popup },
-			set: { popup in
-				if popup == nil { model.dismissPopup() }
+			get: {
+				if let current = presentation.current, current.isSheet { return current }
+				guard presentation.current == nil, !onboarding.isPresented,
+					!model.communication.launcherUpdateUserDriver.isPresented,
+					model.communication.popup != nil
+				else { return nil }
+				return .popup
+			},
+			set: { destination in
+				guard destination == nil else { return }
+				if presentation.current == nil, model.communication.popup != nil {
+					model.communication.dismissPopup()
+				} else {
+					presentation.dismissCurrent()
+				}
+			})
+	}
+
+	private var rosettaConfirmationBinding: Binding<Bool> {
+		Binding(get: { confirmation == .rosetta }, set: { if !$0 { confirmation = nil } })
+	}
+	private var repairConfirmationBinding: Binding<Bool> {
+		Binding(
+			get: { if case .repair = confirmation { true } else { false } },
+			set: { if !$0 { confirmation = nil } })
+	}
+	private var onboardingIsPresentable: Bool {
+		onboarding.isPresented && presentation.current == nil && model.communication.popup == nil
+	}
+
+	@ViewBuilder
+	private func sheetContent(for destination: LauncherPresentationDestination) -> some View {
+		switch destination {
+		case .settings:
+			LauncherSettingsView(
+				settings: model.settings, customization: model.customization,
+				communication: model.communication,
+				installation: model.installation, gameSession: model.gameSession,
+				lifecycle: model.lifecycle,
+				storage: model.storage, storageOverview: model.storageOverview,
+				playtimeStatistics: model.playtimeStatistics, presetCatalog: model.presetCatalog,
+				launcherIconManager: model.launcherIconManager,
+				branding: model.refreshController.branding,
+				resetArtwork: model.resetArtwork, checkGameUpdates: model.checkGameUpdates,
+				selectRegion: { model.selectRegion($0) },
+				chooseInstallDirectory: model.chooseInstallDirectory,
+				locateExistingInstallation: model.locateExistingInstallation,
+				repairGame: model.repairGame,
+				resetAllLauncherSettings: model.resetAllLauncherSettings,
+				uninstallGame: model.uninstallGame,
+				restartOnboarding: restartOnboarding,
+				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
+				developerScenario: developerScenarioBinding, applyCustomPopup: developerPopup)
+		case .failure(let failure):
+			LauncherFailureDetailView(
+				failure: failure, accentColor: model.customization.accentColor,
+				hudTintColor: model.customization.hudTintColor, perform: performRecoveryAction
+			)
+			.onDisappear(perform: failureDetailsDidDismiss)
+		case .popup:
+			if let popup = model.communication.popup {
+				LauncherPopupView(
+					popup: popup, accentColor: model.customization.accentColor,
+					hudTintColor: model.customization.hudTintColor,
+					dismiss: model.communication.dismissPopup,
+					openAction: model.communication.openPopupAction)
+			} else {
+				EmptyView()
 			}
-		)
+		case .update: EmptyView()
+		}
 	}
 
 	private var topBar: some View {
 		HStack(alignment: .top) {
-			ArknightsWordmark(logo: model.officialLogo, cyan: accentColor)
-				.padding(.top, 34)
+			ArknightsWordmark(
+				logo: model.customization.officialLogo, region: model.installation.region
+			).padding(.top, 34)
 			Spacer()
-			Button("Settings", systemImage: "gearshape", action: presentSettings)
-				.labelStyle(.iconOnly)
-				.font(.system(size: 23, weight: .medium))
-				.frame(width: 30, height: 30)
-				.adaptiveGlassButton()
-				.buttonBorderShape(.circle)
-				.controlSize(.extraLarge)
-				.keyboardShortcut(",", modifiers: .command)
-				.help("Open launcher settings")
+			Button(
+				L10n.string(HomeStrings.settings), systemImage: "gearshape", action: requestSettings
+			)
+			.labelStyle(.iconOnly).font(.title2.weight(.medium)).frame(minWidth: 44, minHeight: 44)
+			.adaptiveGlassButton().buttonBorderShape(.circle).controlSize(.extraLarge)
+			.keyboardShortcut(",", modifiers: .command).help(L10n.string(HomeStrings.settingsHelp))
 		}
-		.padding(.top, 8)
-		.padding(.horizontal, 14)
-		.ignoresSafeArea(.container, edges: .top)
+		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
 	}
 
-	private func presentSettings() {
-		settingsPresented = true
+	private func requestSettings() {
+		guard !onboarding.isPresented, !model.communication.launcherUpdateUserDriver.isPresented,
+			model.communication.popup == nil, presentation.current == nil
+		else { return }
+		presentation.request(.settings)
 	}
-
+	private func requestLauncherUpdateCheck() { presentation.request(.update) }
+	private func presentationDidDismiss() {
+		presentation.didDismiss()
+		if presentation.current == .update { model.communication.openLauncherUpdate() }
+	}
+	private func presentFailure(_ failure: LauncherFailurePresentation?) {
+		guard let failure else {
+			presentation.removeFailures()
+			return
+		}
+		let previous = presentation.current
+		presentation.request(.failure(failure))
+		if previous == .update { model.communication.launcherUpdateUserDriver.dismissFromUser() }
+	}
 	private func startOnboardingIfNeeded() async {
-		model.updateInstalledState()
+		guard await model.waitForStartup() else { return }
+		if model.isDeveloperMode, !model.isOnboardingPreview { return }
+		await model.installation.updateInstalledState().value
 		await onboarding.startIfNeeded(
 			isDeveloperMode: model.isDeveloperMode,
 			isOnboardingPreview: model.isOnboardingPreview,
-			gameIsInstalled: model.isInstalled,
+			gameIsInstalled: model.installation.isInstalled,
 			checkForUpdates: model.launcherUpdateCheckForOnboarding,
-			checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
-		)
+			checkIntelTranslation: { await model.intelTranslation.refreshAvailability() })
 	}
-
 	private func retryOnboardingUpdateCheck() {
 		Task {
 			await onboarding.retryUpdateCheck(
 				model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
-			)
+				checkIntelTranslation: { await model.intelTranslation.refreshAvailability() })
 		}
 	}
-
 	private func restartOnboarding() {
-		settingsPresented = false
-		model.updateInstalledState()
+		guard model.lifecycle.activity != .maintaining(.migratingStorage) else { return }
+		presentation.dismissCurrent()
 		Task {
+			await model.installation.updateInstalledState().value
 			await onboarding.restart(
-				gameIsInstalled: model.isInstalled,
+				gameIsInstalled: model.installation.isInstalled,
 				checkForUpdates: model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.refreshIntelTranslationAvailability() }
-			)
+				checkIntelTranslation: { await model.intelTranslation.refreshAvailability() })
 		}
 	}
-
 	private func retryIntelTranslationCheck() {
-		Task {
-			await model.refreshIntelTranslationAvailability(force: true)
-		}
+		Task { await model.intelTranslation.refreshAvailability(force: true) }
 	}
-
 	private func installRosetta() {
-		Task { await model.installRosetta() }
+		confirmation = nil
+		Task { _ = await model.installRosetta() }
+	}
+	private func performRecoveryAction(_ action: RecoveryAction, _ failureID: UUID) {
+		if model.performRecoveryAction(action, failureID: failureID) == .repairConfirmationRequired
+		{
+			presentation.dismissCurrent()
+			repairFailureID = failureID
+			confirmation = .repair(failureID)
+		}
+	}
+	private func showFailureDetails() {
+		if let failure = model.lifecycle.failure { presentation.request(.failure(failure)) }
+	}
+	private func failureDetailsDidDismiss() {
+		guard repairFailureID == nil else { return }
+		if model.lifecycle.failure?.blocksGameLaunch == false { model.lifecycle.clearFailure() }
+	}
+	private func cancelRepair() {
+		confirmation = nil
+		repairFailureID = nil
+		if model.lifecycle.failure?.blocksGameLaunch == false { model.lifecycle.clearFailure() }
+	}
+	private func confirmRepair() {
+		guard let id = repairFailureID else { return }
+		confirmation = nil
+		repairFailureID = nil
+		model.confirmRepair(failureID: id)
 	}
 
-	private var controlBar: some View {
-		HStack(spacing: 16) {
-			controlBarLeadingRegion
-				.id(model.isDownloading ? "download-progress" : "launcher-status")
-				.transition(.opacity)
-				.frame(maxWidth: .infinity, alignment: .leading)
-
-			HStack(spacing: 8) {
-				if model.launcherUpdate != nil {
-					CapsuleActionButton(
-						"Launcher Update", systemImage: "arrow.down.app",
-						tone: .accent(model.accentColor),
-						action: model.openLauncherUpdate
-					)
-					.transition(.opacity)
-					.help("Open the latest launcher release in your browser")
-				}
-
-				LauncherPrimaryActionView(model: model)
-					.id(primaryActionIdentity)
-					.transition(primaryActionTransition)
+	#if DEBUG
+		private var developerScenarioBinding: DeveloperScenarioBinding? {
+			guard model.isDeveloperMode else { return nil }
+			return Binding(
+				get: { model.developerScenario ?? .ready },
+				set: { model.applyDeveloperScenario($0) })
+		}
+		private var developerPopup: ((String, String) -> Void)? {
+			guard model.isDeveloperMode else { return nil }
+			return { title, message in
+				model.applyDeveloperCustomPopup(title: title, markdown: message)
 			}
 		}
-		.padding(16)
-		.adaptiveGlassEffect(tint: model.hudTintColor, in: Capsule())
-		.animation(stateAnimation, value: model.isDownloading)
-		.animation(stateAnimation, value: primaryActionIdentity)
-		.animation(stateAnimation, value: model.launcherUpdate != nil)
-	}
+	#else
+		private var developerScenarioBinding: DeveloperScenarioBinding? { nil }
+		private var developerPopup: ((String, String) -> Void)? { nil }
+	#endif
 
-	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill
-	/// has content — mirrors the visibility checks inside `MusicHUDPill`/`VersionHUDPill`/
-	/// `StatusHUDPill` so the common case (no music, single region) doesn't leave a stray gap.
-	@ViewBuilder
-	private var hudPillRow: some View {
-		if hasMusicPill || hasVersionPill || hasStatusPill {
-			HStack {
-				Spacer(minLength: 16)
-				HStack(alignment: .bottom, spacing: 8) {
-					if hasMusicPill {
-						MusicHUDPill(model: model, controller: musicController)
-							.transition(hudPillTransition)
-					}
-					if hasVersionPill {
-						VersionHUDPill(model: model)
-							.transition(hudPillTransition)
-					}
-					if hasStatusPill {
-						StatusHUDPill(model: model)
-							.transition(hudPillTransition)
-					}
-				}
-			}
-			.padding(.trailing, AppConstants.HUD.pillRowTrailingInset)
-			.transition(hudPillTransition)
-			.animation(stateAnimation, value: hasMusicPill)
-			.animation(stateAnimation, value: hasVersionPill)
-			.animation(stateAnimation, value: hasStatusPill)
-		}
-	}
-
-	private var hasMusicPill: Bool {
-		model.showsPlayingMusic && model.currentMusicTitle != nil
-	}
-
-	private var hasVersionPill: Bool {
-		model.showsGameVersion && model.versionText != "—"
-	}
-
-	private var hasStatusPill: Bool {
-		model.resetCountdownText != nil
-			|| model.installedRegions.count > 1
-			|| model.region != .global
-	}
-
-	@ViewBuilder
-	private var controlBarLeadingRegion: some View {
-		if model.isDownloading {
-			VStack(alignment: .leading, spacing: 7) {
-				HStack(alignment: .firstTextBaseline, spacing: 10) {
-					Text(statusTitle)
-						.font(.system(size: 14, weight: .semibold))
-						.contentTransition(.numericText())
-					if let detail = statusDetail {
-						Text(detail)
-							.font(.caption)
-							.foregroundStyle(.secondary)
-							.lineLimit(1)
-					}
-				}
-
-				ProgressView(value: model.progress?.fraction ?? 0)
-					.progressViewStyle(.linear)
-					.tint(accentColor)
-					.animation(.linear(duration: 0.2), value: model.progress?.fraction ?? 0)
-			}
-		} else {
-			VStack(alignment: .leading, spacing: 2) {
-				Text(statusTitle)
-					.font(.system(size: 14, weight: .semibold))
-					.contentTransition(.opacity)
-				if let detail = statusDetail {
-					Text(detail)
-						.font(.caption)
-						.foregroundStyle(.secondary)
-						.lineLimit(1)
-					if isFailed {
-						AccentActionLink(title: "Report Problem", accentColor: accentColor) {
-							NSWorkspace.shared.open(IssueReportURL.build(problem: detail))
-						}
-						.font(.caption)
-					} else if model.isInstalled && model.canInstallRosetta {
-						AccentActionLink(
-							title: model.rosettaInstallationActionTitle,
-							accentColor: accentColor,
-							action: { confirmsRosettaInstallation = true }
-						)
-						.font(.caption)
-					} else if model.isInstalled && model.canRetryIntelTranslationCheck {
-						AccentActionLink(
-							title: "Check Again",
-							accentColor: accentColor,
-							action: retryIntelTranslationCheck
-						)
-						.font(.caption)
-					}
-				}
-			}
-		}
-	}
-
-	private var statusTitle: String {
-		if model.state.presentation.status == .pausing {
-			return model.activityMessage
-		}
-		if model.isDownloading, let progress = model.progress {
-			return "\(Int(progress.fraction * 100))%"
-		}
-		if model.failureMessage != nil { return "Needs attention" }
-		if model.isInstalled, let title = model.intelTranslationStatusTitle { return title }
-		return model.activityMessage
-	}
-
-	private var statusDetail: String? {
-		if model.isDownloading, let progress = model.progress {
-			let downloaded = ByteCountFormatter.string(
-				fromByteCount: progress.downloadedBytes,
-				countStyle: .file
-			)
-			let total = ByteCountFormatter.string(
-				fromByteCount: progress.totalBytes, countStyle: .file)
-			return "\(downloaded) of \(total)"
-		}
-		if let failureMessage = model.failureMessage { return failureMessage }
-		if model.isInstalled { return model.intelTranslationStatusDetail }
-		return nil
-	}
-
-	private var isFailed: Bool {
-		model.failureMessage != nil
-	}
-
-	private var primaryActionIdentity: String {
-		if model.isGameRunning { return "stop" }
-		if model.isDownloading { return "pause" }
-		if !model.isInstalled { return model.hasPartialDownload ? "resume" : "install" }
-		if model.isGameUpdateAvailable { return "update" }
-		return "play"
-	}
-
-	private var stateAnimation: Animation? {
-		reduceMotion ? nil : .easeInOut(duration: 0.2)
-	}
-
-	private var themeAnimation: Animation? {
-		reduceMotion ? nil : .easeInOut(duration: 0.3)
-	}
-
-	private var primaryActionTransition: AnyTransition {
-		reduceMotion ? .opacity : .scale(scale: 0.94).combined(with: .opacity)
-	}
-
-	private var hudPillTransition: AnyTransition {
-		reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
-	}
+	private var themeAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
 }

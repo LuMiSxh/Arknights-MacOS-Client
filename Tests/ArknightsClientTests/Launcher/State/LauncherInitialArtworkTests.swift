@@ -49,9 +49,12 @@ struct LauncherInitialArtworkTests {
 			withIntermediateDirectories: true
 		)
 		try imageData.write(to: paths.artworkCache.appending(path: "\(cacheKey).jpg"))
+		try imageData.write(
+			to: paths.artworkCache.appending(path: "official-arknights-logo-global.png")
+		)
 		let cache = ArtworkCache(directory: paths.artworkCache)
 		_ = try await cache.imageData(for: branding, region: .global)
-		let themeKey = LauncherViewModel.officialThemeCacheKey(
+		let themeKey = CustomizationController.officialThemeCacheKey(
 			for: .global,
 			artworkCacheKey: cacheKey
 		)
@@ -70,14 +73,15 @@ struct LauncherInitialArtworkTests {
 			arguments: []
 		)
 
-		let initialArtwork = try #require(model.heroArtwork)
-		#expect(model.activeThemeCacheKey == themeKey)
-		#expect(model.dynamicThemeHue == accent.hue)
-
 		await api.waitForBrandingRequest()
-		await api.resolveBranding(branding)
-		await model.refreshTask?.value
+		let initialArtwork = try #require(model.customization.heroArtwork)
+		#expect(model.customization.activeThemeCacheKey == themeKey)
+		#expect(model.customization.dynamicThemeHue == accent.hue)
+		#expect(model.customization.officialLogo != nil)
 
-		#expect(model.heroArtwork === initialArtwork)
+		await api.resolveBranding(branding)
+		_ = await model.waitForStartup()
+
+		#expect(model.customization.heroArtwork === initialArtwork)
 	}
 }
