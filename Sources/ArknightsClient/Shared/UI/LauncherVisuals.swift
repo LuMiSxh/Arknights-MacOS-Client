@@ -11,4 +11,5 @@ enum LauncherVisuals {
 	static let hudGlassTint = Color.black.opacity(0.52)
 	static let modalBackground = Color(red: 0.07, green: 0.07, blue: 0.08)
 	static let navigationRailBackground = Color.black.opacity(0.28)
+	static let modalCornerRadius: CGFloat = 24
 }

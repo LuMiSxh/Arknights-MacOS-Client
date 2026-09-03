@@ -63,7 +63,7 @@ struct ContentView: View {
 					accentColor: model.customization.accentColor,
 					hudTintColor: model.customization.hudTintColor,
 					musicController: musicController,
-					openLauncherUpdate: model.communication.openLauncherUpdate,
+					openLauncherUpdate: requestLauncherUpdateCheck,
 					checkGameUpdates: model.checkGameUpdates,
 					selectRegion: { model.selectRegion($0) },
 					installOrUpdate: model.installOrUpdate,
@@ -132,7 +132,11 @@ struct ContentView: View {
 		.onAppear { registerOpenSettings(requestSettings) }
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
-			if !isPresented { presentationDidDismiss() }
+			if isPresented {
+				presentation.request(.update)
+			} else {
+				launcherUpdateDidDismiss()
+			}
 		}
 		.task { await startOnboardingIfNeeded() }
 	}
@@ -234,9 +238,19 @@ struct ContentView: View {
 		else { return }
 		presentation.request(.settings)
 	}
-	private func requestLauncherUpdateCheck() { presentation.request(.update) }
+	private func requestLauncherUpdateCheck() {
+		let hadCurrentPresentation = presentation.current != nil
+		presentation.request(.update)
+		if !hadCurrentPresentation, presentation.current == .update {
+			model.communication.openLauncherUpdate()
+		}
+	}
 	private func presentationDidDismiss() {
 		presentation.didDismiss()
+		if presentation.current == .update { model.communication.openLauncherUpdate() }
+	}
+	private func launcherUpdateDidDismiss() {
+		presentation.didDismiss(.update)
 		if presentation.current == .update { model.communication.openLauncherUpdate() }
 	}
 	private func presentFailure(_ failure: LauncherFailurePresentation?) {

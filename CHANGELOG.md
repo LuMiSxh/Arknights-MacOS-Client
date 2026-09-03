@@ -47,7 +47,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Unified launcher presentations through one sheet and overlay arbiter, improved Reduce Transparency and Dynamic Type behavior, and kept new native UI copy translated in English and German.
 - Limited the main activity status to game and runtime operations instead of replacing it with customization, cache, or Settings success messages.
 - Indented subprocess output under its owning repository-script status line.
-- Made launcher modals adapt to the current window size and announcement popups fit their content, while preserving outer padding and scrolling for long messages.
+- Made launcher modals consistently rounded and responsive to the current window size, and let announcement and launcher-update popups fit their content while preserving scrolling for long messages.
 - Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).
 - Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
 - Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.

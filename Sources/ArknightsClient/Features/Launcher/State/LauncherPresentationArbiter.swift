@@ -68,6 +68,12 @@ struct LauncherPresentationArbiter {
 		queued = nil
 	}
 
+	mutating func didDismiss(_ destination: LauncherPresentationDestination) {
+		guard current == destination || current == nil else { return }
+		if current == destination { current = nil }
+		didDismiss()
+	}
+
 	mutating func removeFailures() {
 		if case .failure = current { current = nil }
 		if case .failure = queued { queued = nil }

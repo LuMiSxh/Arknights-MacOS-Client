@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 
 from lib.common import fail, output, require_command, run_main
 from lib.console import spinner
-from lib.project_config import load_project_configuration
+from lib.project_config import github_asset_stem, load_project_configuration
 
 
 @dataclass(frozen=True)
@@ -66,8 +66,9 @@ def release_downloads(payload: object, *, display_name: str) -> list[ReleaseDown
             if not isinstance(tag, str) or not isinstance(assets, list):
                 fail("GitHub returned incomplete release metadata")
             version = tag.removeprefix("v")
-            dmg_name = f"{display_name}.dmg".lower()
-            sparkle_name = f"{display_name} {version}.zip".lower()
+            asset_stem = github_asset_stem(display_name).lower()
+            dmg_name = f"{asset_stem}.dmg"
+            sparkle_names = {f"{asset_stem}.zip", f"{asset_stem}.{version}.zip"}
             releases.append(
                 ReleaseDownloads(
                     version=version,
@@ -76,7 +77,7 @@ def release_downloads(payload: object, *, display_name: str) -> list[ReleaseDown
                         assets, lambda name, expected=dmg_name: name == expected
                     ),
                     sparkle_downloads=_asset_downloads(
-                        assets, lambda name, expected=sparkle_name: name == expected
+                        assets, lambda name, expected=sparkle_names: name in expected
                     ),
                     recipe_downloads=_asset_downloads(
                         assets,

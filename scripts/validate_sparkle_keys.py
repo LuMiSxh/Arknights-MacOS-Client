@@ -14,6 +14,7 @@ import plistlib
 import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 from lib.common import fail, require_command, run_main
 from lib.console import success
@@ -136,7 +137,7 @@ def validate_feed_signature(data: bytes) -> None:
         fail("generated Sparkle appcast signing block has an incorrect content length")
 
 
-def validate_appcast(path: Path) -> None:
+def validate_appcast(path: Path, expected_update_name: str | None = None) -> None:
     """Reject generated appcasts without Sparkle feed or enclosure signatures."""
     try:
         data = path.read_bytes()
@@ -161,6 +162,30 @@ def validate_appcast(path: Path) -> None:
         not enclosure.get(signature_attribute, "").strip() for enclosure in enclosures
     ):
         fail("every Sparkle appcast enclosure must contain an Ed25519 signature")
+    if expected_update_name is not None:
+        for enclosure in enclosures:
+            url = enclosure.get("url", "")
+            filename = Path(unquote(urlparse(url).path)).name
+            if filename != expected_update_name:
+                fail(
+                    "Sparkle appcast enclosure does not match expected update asset "
+                    f"{expected_update_name!r}: {filename!r}"
+                )
+    items = [
+        element
+        for element in root.iter()
+        if isinstance(element.tag, str) and element.tag.rsplit("}", 1)[-1] == "item"
+    ]
+    if any(
+        not any(
+            isinstance(child.tag, str)
+            and child.tag.rsplit("}", 1)[-1] == "description"
+            and "".join(child.itertext()).strip()
+            for child in item
+        )
+        for item in items
+    ):
+        fail("generated Sparkle appcast contains no release notes")
 
 
 def main() -> None:
@@ -176,6 +201,10 @@ def main() -> None:
         type=Path,
         help="also require every generated appcast enclosure to be signed",
     )
+    parser.add_argument(
+        "--update-name",
+        help="also require every appcast enclosure to use this release ZIP name",
+    )
     arguments = parser.parse_args()
     public_key = public_key_from_plist(arguments.plist)
     private_key = os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", "")
@@ -183,7 +212,7 @@ def main() -> None:
         fail("SPARKLE_ED25519_PRIVATE_KEY is required")
     validate_keys(public_key, private_key)
     if arguments.appcast:
-        validate_appcast(arguments.appcast)
+        validate_appcast(arguments.appcast, arguments.update_name)
     success("Sparkle Ed25519 key pair validated")
 
 

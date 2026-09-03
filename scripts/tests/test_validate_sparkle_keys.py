@@ -86,7 +86,8 @@ def test_accepts_signed_appcast(tmp_path: Path) -> None:
         '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">\n'
         "  <channel>\n"
         "    <item>\n"
-        f'      <enclosure url="https://example.invalid/update.zip" length="1" '
+        "      <description><![CDATA[Release notes]]></description>\n"
+        f'      <enclosure url="https://example.invalid/Example.Client.zip" length="1" '
         f'type="application/octet-stream" sparkle:edSignature="{enclosure_signature}" />\n'
         "    </item>\n"
         "  </channel>\n"
@@ -101,7 +102,56 @@ def test_accepts_signed_appcast(tmp_path: Path) -> None:
     ).encode()
     appcast.write_bytes(content + signing_block)
 
-    validate_sparkle_keys.validate_appcast(appcast)
+    validate_sparkle_keys.validate_appcast(
+        appcast, expected_update_name="Example.Client.zip"
+    )
+
+
+def test_rejects_appcast_with_wrong_update_name(tmp_path: Path) -> None:
+    appcast = tmp_path / "appcast.xml"
+    enclosure_signature = encoded(b"E" * 64)
+    content = (
+        '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">'
+        "<channel><item>"
+        "<description>Release notes</description>"
+        f'<enclosure url="https://example.invalid/Other.zip" length="1" '
+        f'type="application/octet-stream" sparkle:edSignature="{enclosure_signature}" />'
+        "</item></channel></rss>\n"
+    ).encode()
+    signing_block = (
+        "<!-- sparkle-signatures:\n"
+        f"edSignature: {encoded(b'S' * 64)}\n"
+        f"length: {len(content)}\n"
+        "-->\n"
+    ).encode()
+    appcast.write_bytes(content + signing_block)
+
+    with pytest.raises(RuntimeError, match="does not match expected update asset"):
+        validate_sparkle_keys.validate_appcast(
+            appcast, expected_update_name="Example.Client.zip"
+        )
+
+
+def test_rejects_appcast_without_release_notes(tmp_path: Path) -> None:
+    appcast = tmp_path / "appcast.xml"
+    enclosure_signature = encoded(b"E" * 64)
+    content = (
+        '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">'
+        "<channel><item>"
+        f'<enclosure url="https://example.invalid/Example.Client.zip" length="1" '
+        f'type="application/octet-stream" sparkle:edSignature="{enclosure_signature}" />'
+        "</item></channel></rss>\n"
+    ).encode()
+    signing_block = (
+        "<!-- sparkle-signatures:\n"
+        f"edSignature: {encoded(b'S' * 64)}\n"
+        f"length: {len(content)}\n"
+        "-->\n"
+    ).encode()
+    appcast.write_bytes(content + signing_block)
+
+    with pytest.raises(RuntimeError, match="contains no release notes"):
+        validate_sparkle_keys.validate_appcast(appcast)
 
 
 def test_rejects_unsigned_appcast(tmp_path: Path) -> None:

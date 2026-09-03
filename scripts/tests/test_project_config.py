@@ -71,7 +71,9 @@ def test_derives_paths_from_manifest_and_plist(tmp_path: Path) -> None:
     configuration = load_configuration(tmp_path, plist(), package_dump())
 
     assert configuration.app_bundle_name == "Example Client.app"
-    assert configuration.dmg_name == "Example Client.dmg"
+    assert configuration.release_asset_stem == "Example.Client"
+    assert configuration.dmg_name == "Example.Client.dmg"
+    assert configuration.sparkle_update_name == "Example.Client.zip"
     assert configuration.target_directory == configuration.project_directory / (
         "Sources/Client"
     )

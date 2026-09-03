@@ -97,6 +97,11 @@ function assertPages(pages, routes) {
 			assert.equal(matches.length, 1, `${page}: ${key}=${value}`);
 			if (expected) assert.equal(attribute(matches[0], attributeName ?? 'content'), expected, `${page}: ${value}`);
 		}
+		assert.equal(
+			elements(html, 'link').filter((element) => attribute(element, 'rel') === 'icon').length,
+			1,
+			`${page}: favicon is missing or duplicated`
+		);
 		assert.match(html, /<title>[^<]+<\/title>/i, page);
 		assert.match(html, /<h1\b/i, page);
 		for (const anchor of elements(html, 'a')) {
@@ -126,8 +131,8 @@ function writeDiscoveryFiles() {
 	const locations = [...routes].sort().map((route) => `  <url><loc>${siteUrl}${route.slice(basePath.length)}</loc></url>`).join('\n');
 	writeFileSync(resolve(build, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${siteUrl}/sitemap.xml\n`, 'utf8');
 	writeFileSync(resolve(build, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${locations}\n</urlset>\n`, 'utf8');
-	const home = `${basePath}/`, canonical = `${siteUrl}/404.html`, description = 'The requested Arknights Client documentation page could not be found.', icon = `${siteUrl}/AppIcon-128.png`;
-	const notFound = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>404 · Page not found · Arknights Client</title><meta name="description" content="${description}"><meta name="robots" content="noindex"><link rel="canonical" href="${canonical}"><meta property="og:type" content="website"><meta property="og:title" content="Page not found · Arknights Client"><meta property="og:description" content="${description}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${icon}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Page not found · Arknights Client"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${icon}"><style>body{max-width:42rem;margin:10vh auto;padding:1.5rem;font:1rem/1.6 system-ui,sans-serif;color:#f5f7f8;background:#090b0d}a{color:#78d7ff}</style></head><body><main><p>Error 404</p><h1>Page not found</h1><p>The page may have moved, or the link may be stale.</p><a href="${home}">Return home</a></main></body></html>\n`;
+	const home = `${basePath}/`, canonical = `${siteUrl}/404.html`, description = 'The requested Arknights Client documentation page could not be found.', icon = `${siteUrl}/AppIcon-128.png`, favicon = `${basePath}/favicon.ico`;
+	const notFound = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>404 · Page not found · Arknights Client</title><meta name="description" content="${description}"><meta name="robots" content="noindex"><link rel="icon" type="image/x-icon" sizes="any" href="${favicon}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="website"><meta property="og:title" content="Page not found · Arknights Client"><meta property="og:description" content="${description}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${icon}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Page not found · Arknights Client"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${icon}"><style>body{max-width:42rem;margin:10vh auto;padding:1.5rem;font:1rem/1.6 system-ui,sans-serif;color:#f5f7f8;background:#090b0d}a{color:#78d7ff}</style></head><body><main><p>Error 404</p><h1>Page not found</h1><p>The page may have moved, or the link may be stale.</p><a href="${home}">Return home</a></main></body></html>\n`;
 	writeFileSync(resolve(build, '404.html'), notFound, 'utf8');
 }
 
@@ -147,6 +152,12 @@ function assertBuildOutput() {
 	const webIcon = resolve(build, 'AppIcon-128.png');
 	assert.ok(existsSync(webIcon));
 	assert.ok(statSync(webIcon).size <= 32 * 1024, 'web icon exceeds 32 KiB');
+	const webFavicon = resolve(build, 'favicon.ico');
+	assert.ok(existsSync(webFavicon));
+	assert.ok(
+		statSync(webFavicon).size <= 32 * 1024,
+		'web favicon exceeds 32 KiB'
+	);
 	const robots = readFileSync(resolve(build, 'robots.txt'), 'utf8');
 	const sitemap = readFileSync(resolve(build, 'sitemap.xml'), 'utf8');
 	assert.match(robots, new RegExp(`Sitemap: ${siteUrl}/sitemap\\.xml`));

@@ -16,6 +16,8 @@ FIELDS: dict[str, Callable[[ProjectConfiguration], str]] = {
     "display-name": lambda configuration: configuration.product.display_name,
     "dmg-name": lambda configuration: configuration.dmg_name,
     "executable-name": lambda configuration: configuration.product.executable_name,
+    "release-asset-stem": lambda configuration: configuration.release_asset_stem,
+    "sparkle-update-name": lambda configuration: configuration.sparkle_update_name,
     "marketing-version": lambda configuration: configuration.product.marketing_version,
     "swift-architecture-arguments": lambda configuration: " ".join(
         f"--arch {architecture}"

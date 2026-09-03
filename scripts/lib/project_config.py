@@ -17,6 +17,14 @@ from lib.common import PROJECT_DIR, fail, output, require_file
 ARCHITECTURE_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 
 
+def github_asset_stem(display_name: str) -> str:
+    """Return the dotted filename stem GitHub uses for release assets."""
+    stem = re.sub(r"[^A-Za-z0-9]+", ".", display_name).strip(".")
+    if not stem:
+        fail("display name must contain a GitHub-safe asset component")
+    return stem
+
+
 @dataclass(frozen=True)
 class ProductMetadata:
     """Product properties declared by the app's Info.plist."""
@@ -69,8 +77,16 @@ class ProjectConfiguration:
         return f"{self.product.display_name}.app"
 
     @property
+    def release_asset_stem(self) -> str:
+        return github_asset_stem(self.product.display_name)
+
+    @property
     def dmg_name(self) -> str:
-        return f"{self.product.display_name}.dmg"
+        return f"{self.release_asset_stem}.dmg"
+
+    @property
+    def sparkle_update_name(self) -> str:
+        return f"{self.release_asset_stem}.zip"
 
     @property
     def target_directory(self) -> Path:

@@ -15,8 +15,8 @@ def test_counts_manual_and_sparkle_assets_without_counting_arbitrary_zips() -> N
                 "published_at": "2026-08-16T10:00:00Z",
                 "draft": False,
                 "assets": [
-                    {"name": "Arknights Client.dmg", "download_count": 12},
-                    {"name": "Arknights Client 0.2.0.zip", "download_count": 9},
+                    {"name": "Arknights.Client.dmg", "download_count": 12},
+                    {"name": "Arknights.Client.zip", "download_count": 9},
                     {"name": "Other.dmg", "download_count": 1},
                     {"name": "Other 0.2.0.zip", "download_count": 400},
                     {"name": "unrelated-tool.zip", "download_count": 500},
@@ -28,7 +28,7 @@ def test_counts_manual_and_sparkle_assets_without_counting_arbitrary_zips() -> N
                 "tag_name": "v0.3.0",
                 "published_at": "2026-08-17T10:00:00Z",
                 "draft": True,
-                "assets": [{"name": "Arknights Client.dmg", "download_count": 99}],
+                "assets": [{"name": "Arknights.Client.dmg", "download_count": 99}],
             },
         ]
     ]
@@ -52,8 +52,8 @@ def test_renders_totals_rates_and_latest_share() -> None:
                     "published_at": "2026-08-14T12:00:00Z",
                     "draft": False,
                     "assets": [
-                        {"name": "Arknights Client.dmg", "download_count": 30},
-                        {"name": "Arknights Client 0.1.0.zip", "download_count": 5},
+                        {"name": "Arknights.Client.dmg", "download_count": 30},
+                        {"name": "Arknights.Client.zip", "download_count": 5},
                     ],
                 },
                 {
@@ -61,8 +61,8 @@ def test_renders_totals_rates_and_latest_share() -> None:
                     "published_at": "2026-08-16T12:00:00Z",
                     "draft": False,
                     "assets": [
-                        {"name": "Arknights Client.dmg", "download_count": 10},
-                        {"name": "Arknights Client 0.2.0.zip", "download_count": 20},
+                        {"name": "Arknights.Client.dmg", "download_count": 10},
+                        {"name": "Arknights.Client.zip", "download_count": 20},
                     ],
                 },
             ]
@@ -78,3 +78,26 @@ def test_renders_totals_rates_and_latest_share() -> None:
     assert "Total recipe downloads: 0" in output
     assert "Latest-version delivery share (0.2.0 vs 0.1.0): 46.2%" in output
     assert "GitHub counts asset downloads" in output
+
+
+def test_counts_legacy_versioned_sparkle_asset() -> None:
+    releases = release_downloads(
+        [
+            [
+                {
+                    "tag_name": "v0.1.0",
+                    "published_at": "2026-08-14T12:00:00Z",
+                    "draft": False,
+                    "assets": [
+                        {
+                            "name": "Arknights.Client.0.1.0.zip",
+                            "download_count": 5,
+                        }
+                    ],
+                }
+            ]
+        ],
+        display_name="Arknights Client",
+    )
+
+    assert releases[0].sparkle_downloads == 5

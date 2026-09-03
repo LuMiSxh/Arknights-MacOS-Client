@@ -30,7 +30,7 @@ On supported systems, macOS 26 and 27 can use the launcher's Liquid Glass presen
 
 ## Download and open the launcher
 
-1. Download the latest `Arknights Client.dmg` from [GitHub Releases](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest).
+1. Download the latest `Arknights.Client.dmg` from [GitHub Releases](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest).
 2. Open the DMG and drag **Arknights Client** to **Applications**.
 3. Eject the DMG. Keep the application in **Applications** so later launcher updates can replace the expected bundle.
 4. In Finder, right-click the app and choose **Open** the first time.

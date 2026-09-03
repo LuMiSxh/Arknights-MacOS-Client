@@ -83,6 +83,12 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 				hudTintColor
 			}
 		}
+		.clipShape(.rect(cornerRadius: LauncherVisuals.modalCornerRadius))
+		.overlay {
+			RoundedRectangle(cornerRadius: LauncherVisuals.modalCornerRadius)
+				.strokeBorder(LauncherVisuals.hairline)
+		}
+		.shadow(color: .black.opacity(0.45), radius: 24, y: 10)
 		.preferredColorScheme(.dark)
 	}
 

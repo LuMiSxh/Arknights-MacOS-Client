@@ -34,3 +34,14 @@ func presentationArbiterQueuesAndPromotesHigherPriorityDestinations() {
 	arbiter.didDismiss()
 	#expect(arbiter.current == .update)
 }
+
+@Test
+func endingUpdatePresentationAllowsSettingsToOpen() {
+	var arbiter = LauncherPresentationArbiter()
+	arbiter.request(.update)
+
+	arbiter.didDismiss(.update)
+	arbiter.request(.settings)
+
+	#expect(arbiter.current == .settings)
+}

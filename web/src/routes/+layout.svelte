@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { base, resolve } from '$app/paths';
+	import { asset, base, resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { SegmentedControl, theme, type ThemeMode } from 'anasthasia';
 	import '../app.css';
@@ -10,7 +10,8 @@
 
 	const navigation = $derived(data.navigation);
 	const currentPath = $derived(data.pathname);
-	const appIconUrl = resolve('/AppIcon-128.png');
+	const appIconUrl = asset('/AppIcon-128.png');
+	const faviconUrl = asset('/favicon.ico');
 	const configuredBasePath = normalizeBasePath(
 		typeof process !== 'undefined' && process.env.BASE_PATH
 			? process.env.BASE_PATH
@@ -80,7 +81,7 @@
 		media="(prefers-color-scheme: dark)"
 		content="#090b0d"
 	/>
-	<link rel="icon" type="image/png" sizes="128x128" href={appIconUrl} />
+	<link rel="icon" href={faviconUrl} sizes="any" />
 	<link rel="apple-touch-icon" href={appIconUrl} />
 </svelte:head>
 

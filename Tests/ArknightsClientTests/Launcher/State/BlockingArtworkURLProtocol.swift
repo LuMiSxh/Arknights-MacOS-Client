@@ -36,7 +36,7 @@ final class BlockingArtworkURLProtocol: URLProtocol, @unchecked Sendable {
 	override func stopLoading() {}
 
 	static func releaseArtwork() {
-		lock.withLock { artworkGate.signal() }
+		lock.withLock { _ = artworkGate.signal() }
 	}
 
 	static func reset() {

@@ -117,14 +117,14 @@ jobs:
         env:
           SPARKLE_ED25519_PRIVATE_KEY: ${{ secrets.SPARKLE_ED25519_PRIVATE_KEY }}
         run: |
-          display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
           app_name="$(uv run --locked --no-dev scripts/project_config.py app-bundle-name)"
+          update_name="$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
           update_directory="$RUNNER_TEMP/sparkle-updates"
           mkdir -p "$update_directory"
           ditto -c -k --sequesterRsrc --keepParent "dist/$app_name" \
-            "$update_directory/$display_name $RELEASE_VERSION.zip"
+            "$update_directory/$update_name"
           cp "$RUNNER_TEMP/release-notes.md" \
-            "$update_directory/$display_name $RELEASE_VERSION.md"
+            "$update_directory/${update_name%.zip}.md"
           generate_appcast="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
             -type f -path '*/Sparkle/bin/generate_appcast' -perm -111 -print -quit)"
           if [[ -z "$generate_appcast" ]]; then
@@ -139,12 +139,13 @@ jobs:
             "$update_directory"
           uv run --locked --no-dev scripts/validate_sparkle_keys.py \
             --plist "dist/$app_name/Contents/Info.plist" \
-            --appcast "$update_directory/appcast.xml"
-          cp "$update_directory/$display_name $RELEASE_VERSION.zip" "dist/$display_name $RELEASE_VERSION.zip"
+            --appcast "$update_directory/appcast.xml" \
+            --update-name "$update_name"
+          cp "$update_directory/$update_name" "dist/$update_name"
           cp "$update_directory/appcast.xml" dist/appcast.xml
           dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
           shasum -a 256 "dist/$dmg_name" \
-            "dist/$display_name $RELEASE_VERSION.zip" \
+            "dist/$update_name" \
             dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
 
       - name: Attest release provenance
@@ -166,7 +167,7 @@ jobs:
           release_tag="v$RELEASE_VERSION"
           display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
           dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
-          update_name="$display_name $RELEASE_VERSION.zip"
+          update_name="$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
           gh release create "$release_tag" \
             "dist/$dmg_name" \
             "dist/$update_name" \

@@ -9,18 +9,24 @@ struct LauncherUpdateView: View {
 	let hudTintColor: Color
 	let checkForUpdates: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var contentHeight: CGFloat = 0
 
 	var body: some View {
 		ThemedModalView(
 			title: L10n.string(LauncherStrings.updateTitle),
 			accentColor: accentColor,
 			hudTintColor: hudTintColor,
-			width: 700,
-			height: 520
+			width: modalWidth,
+			height: modalHeight
 		) {
 			VStack(alignment: .leading, spacing: 16) {
 				statusHeader
 				content
+			}
+			.onGeometryChange(for: CGFloat.self) { proxy in
+				proxy.size.height
+			} action: { newHeight in
+				contentHeight = newHeight
 			}
 		} actions: {
 			actions
@@ -279,6 +285,15 @@ struct LauncherUpdateView: View {
 
 	private var percentageText: String {
 		"\(Int(driver.extractionProgress * 100))%"
+	}
+
+	private var modalWidth: CGFloat {
+		driver.phase == .available ? 700 : 620
+	}
+
+	private var modalHeight: CGFloat {
+		guard contentHeight > 0 else { return driver.phase == .available ? 520 : 320 }
+		return min(max(contentHeight + 160, 320), driver.phase == .available ? 600 : 430)
 	}
 
 	private func retryUpdate() {

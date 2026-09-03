@@ -144,7 +144,6 @@ struct IntelTranslationControllerTests {
 	@Test
 	func translationProcessCancellationWaitsForChildExit() async throws {
 		let clock = ContinuousClock()
-		let started = clock.now
 		let pidFile = FileManager.default.temporaryDirectory.appending(
 			path: "intel-process-\(UUID().uuidString).pid")
 		defer { try? FileManager.default.removeItem(at: pidFile) }
@@ -155,14 +154,14 @@ struct IntelTranslationControllerTests {
 					"-c", "trap '' TERM; echo $$ > '\(pidFile.path)'; while :; do :; done",
 				])
 		}
-		let deadline = clock.now.advanced(by: .seconds(1))
-		while !FileManager.default.fileExists(atPath: pidFile.path), clock.now < deadline {
-			await Task.yield()
+		let processStarted = await waitForCondition(timeout: .seconds(5)) {
+			FileManager.default.fileExists(atPath: pidFile.path)
 		}
-		try #require(FileManager.default.fileExists(atPath: pidFile.path))
+		try #require(processStarted)
+		let cancellationStarted = clock.now
 		task.cancel()
 		await #expect(throws: CancellationError.self) { _ = try await task.value }
-		#expect(started.duration(to: clock.now) < .seconds(2))
+		#expect(cancellationStarted.duration(to: clock.now) < .seconds(2))
 		let pid = try #require(
 			Int32(
 				try String(contentsOf: pidFile, encoding: .utf8)
