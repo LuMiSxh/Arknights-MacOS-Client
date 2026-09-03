@@ -10,7 +10,7 @@
 			communication.resetPopupQueueForDeveloper()
 			installation.configuration = Self.developerConfiguration
 			installation.progress = nil
-			gameSession.runtimeName = "Wine 11.15 + DXMT 0.80"
+			gameSession.runtimeName = "Wine 11.16 + DXMT 0.80-199"
 			installation.isInstalled = true
 			installation.installedVersion = Self.developerConfiguration.gameLatestVersion
 			installation.isGameUpdateAvailable = false

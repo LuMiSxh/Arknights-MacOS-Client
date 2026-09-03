@@ -33,8 +33,8 @@ decision.
 
 | Component     | Version or revision                                    | License                                                                                             | Exact provenance source                                                                                                |
 | ------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| WineCX / Wine | Wine 11.15, `51e3854751e51ed25af4cd3af367f92f421ed0c8` | LGPL-2.1-or-later and bundled third-party terms                                                     | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/51e3854751e51ed25af4cd3af367f92f421ed0c8)         |
-| DXMT          | 0.80, `589adb780354b461645b29999cefaf533594ee99`       | MIT and bundled third-party terms                                                                   | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/589adb780354b461645b29999cefaf533594ee99)                     |
+| WineCX / Wine | Wine 11.16, `7dbc5b5322a6ef3fb04bdc643c64b188fd641149` | LGPL-2.1-or-later and bundled third-party terms                                                     | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/7dbc5b5322a6ef3fb04bdc643c64b188fd641149)         |
+| DXMT          | 0.80-199-g19e24ee, `19e24ee068a44a747e556965730482038c5bb068` | MIT and bundled third-party terms                                                             | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/19e24ee068a44a747e556965730482038c5bb068)                     |
 | MoltenVK      | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf`      | Apache-2.0 and bundled third-party terms                                                            | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
 | Wine Gecko    | 2.47.4, `557ea0c2e9f9ebd621323b3dbfbdd18c2528759c`     | MPL/GPL/LGPL terms and Mozilla notices                                                              | [Wine Gecko commit](https://gitlab.winehq.org/wine/wine-gecko/-/tree/557ea0c2e9f9ebd621323b3dbfbdd18c2528759c)         |
 | GStreamer     | 1.26.3, including base, good, bad, and libav plugins   | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer commit](https://github.com/GStreamer/gstreamer/tree/87bc0c6e949e3dcc440658f78ef52aa8088cb62f)               |
@@ -55,7 +55,7 @@ The packaging script copies the following canonical text files from `docs/legal/
 | [`gpl-3.0.txt`](licenses/gpl-3.0.txt)       | FFmpeg's GPL-3.0-or-later configuration terms                       |
 | [`lgpl-2.1.txt`](licenses/lgpl-2.1.txt)     | Wine and LGPL-2.1-or-later runtime terms                            |
 | [`lgpl-3.0.txt`](licenses/lgpl-3.0.txt)     | LGPL-3.0 runtime terms present in the runtime inventory             |
-| [`mit-dxmt.txt`](licenses/mit-dxmt.txt)     | DXMT 0.80 MIT license                                               |
+| [`mit-dxmt.txt`](licenses/mit-dxmt.txt)     | DXMT MIT license                                                    |
 | [`fdk-aac.txt`](licenses/fdk-aac.txt)       | Fraunhofer FDK-AAC notice                                           |
 | [`sparkle.txt`](licenses/sparkle.txt)       | Sparkle and its listed bundled notices                              |
 
