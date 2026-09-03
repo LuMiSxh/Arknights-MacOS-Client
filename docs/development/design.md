@@ -37,7 +37,7 @@ The home screen exposes one primary operation at a time. Its action is derived f
 
 Installation, update, repair, prefix preparation, and game launch share one exclusive activity gate. A refresh may report state in the background, but it must not start a second file operation, launch a game during installation, or replace the active region's state with a stale request. Update checks may discover a new version; they never download game data without the user selecting the update action.
 
-Each region owns its game directory and installed manifest. The active region is the only one shown in the home action and status capsule. All regions may share the configured Wine prefix, but launching a region must repoint its `G:` drive first. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md) for the implementation boundary.
+Each region owns its game directory and installed manifest. The active region is the only one shown in the home action and status capsule. Regions share the configured Wine prefix only within their publisher family, and launching a region must repoint that family's `G:` drive first. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md) for the implementation boundary.
 
 Report failures in the same status area as the operation that failed. Keep the message actionable, expose **Report a Problem** when diagnostic context is available, and leave recovery actions such as **Check Again**, **Repair**, or Rosetta installation next to the relevant state. Do not turn a transient check failure into an install or play action.
 

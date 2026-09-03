@@ -115,6 +115,13 @@ final class InstallationController {
 		return true
 	}
 
+	func reloadInstallDirectory() {
+		installDirectory = preferences.installDirectory(
+			for: region,
+			default: paths.gameInstall(for: region)
+		)
+	}
+
 	func updateGameAvailability() {
 		guard isInstalled, let latest = configuration?.gameLatestVersion else {
 			isGameUpdateAvailable = false

@@ -59,6 +59,7 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 	case runtimeConfiguration(String)
 	case gameCompatibility(String)
 	case runtimeExited(status: Int32, log: URL)
+	case storageMigrationFailed(String)
 
 	var errorDescription: String? {
 		switch self {
@@ -131,6 +132,8 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 			L10n.string(.Launcher.launcherErrorGameCompatibility)
 		case .runtimeExited(let status, let log):
 			L10n.string(.Launcher.launcherErrorRuntimeExited(String(status), log.path))
+		case .storageMigrationFailed:
+			L10n.string(.Launcher.launcherErrorStorageMigrationFailed)
 		}
 	}
 
@@ -184,6 +187,8 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 			"Game compatibility setup could not be completed: \(message)"
 		case .runtimeExited(let status, let log):
 			"The Windows runtime exited with status \(status). See \(log.path)."
+		case .storageMigrationFailed(let diagnostic):
+			"Application storage migration failed: \(diagnostic)"
 		}
 	}
 }

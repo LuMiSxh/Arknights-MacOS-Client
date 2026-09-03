@@ -4,6 +4,7 @@ import Foundation
 
 extension LauncherViewModel {
 	func checkGameUpdates() {
+		guard lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		#if DEBUG
 			if isDeveloperMode {
 				applyDeveloperScenario(.gameUpdate)
@@ -14,6 +15,7 @@ extension LauncherViewModel {
 	}
 
 	func checkLauncherUpdates() {
+		guard lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		#if DEBUG
 			if isDeveloperMode {
 				applyDeveloperScenario(.launcherUpdate)
@@ -24,6 +26,7 @@ extension LauncherViewModel {
 	}
 
 	func checkAnnouncements() {
+		guard lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		#if DEBUG
 			if isDeveloperMode {
 				applyDeveloperScenario(.announcement)
@@ -34,7 +37,7 @@ extension LauncherViewModel {
 	}
 
 	func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
-		await waitForStartup()
+		guard await waitForStartup() else { return .failed }
 		#if DEBUG
 			if isOnboardingPreview { return .current }
 		#endif

@@ -140,6 +140,33 @@ struct LauncherPreferencesStore {
 		return URL(filePath: path, directoryHint: .isDirectory)
 	}
 
+	func persistedInstallDirectories() -> [GameRegion: URL] {
+		Dictionary(
+			uniqueKeysWithValues: GameRegion.allCases.compactMap { region in
+				guard let path = defaults.string(forKey: "\(Key.installPath).\(region.rawValue)")
+				else {
+					return nil
+				}
+				return (region, URL(filePath: path, directoryHint: .isDirectory))
+			})
+	}
+
+	func updateInstallDirectories(
+		_ updates: [GameRegion: URL],
+		replacing expected: [GameRegion: URL]
+	) {
+		let current = persistedInstallDirectories()
+		for (region, directory) in updates {
+			guard
+				let expectedDirectory = expected[region],
+				let currentDirectory = current[region],
+				currentDirectory.standardizedFileURL.path
+					== expectedDirectory.standardizedFileURL.path
+			else { continue }
+			setInstallDirectory(directory, for: region)
+		}
+	}
+
 	func setInstallDirectory(_ url: URL, for region: GameRegion) {
 		defaults.set(url.path, forKey: "\(Key.installPath).\(region.rawValue)")
 	}

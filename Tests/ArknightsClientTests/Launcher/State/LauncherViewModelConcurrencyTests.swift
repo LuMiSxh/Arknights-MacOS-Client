@@ -9,6 +9,28 @@ import Testing
 @MainActor
 struct LauncherViewModelConcurrencyTests {
 	@Test
+	func storageMigrationFailureBlocksNormalStartup() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			prepareStorage: { paths in
+				let fileManager = FileManager.default
+				let legacy = paths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
+				try! fileManager.createDirectory(at: legacy, withIntermediateDirectories: true)
+				try! fileManager.createDirectory(
+					at: paths.gameInstall(for: .global), withIntermediateDirectories: true)
+			}
+		)
+
+		#expect(!(await model.waitForStartup()))
+		#expect(model.lifecycle.failure?.blocksGameLaunch == true)
+		#expect(model.lifecycle.activity != .idle)
+		#expect(model.lifecycle.refresh == .checking(requestID: nil))
+		#expect(model.installation.configuration == nil)
+	}
+
+	@Test
 	func onboardingProbeWaitsForInitialRefreshToReachIdle() async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())

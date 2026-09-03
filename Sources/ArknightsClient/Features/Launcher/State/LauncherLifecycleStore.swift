@@ -116,13 +116,15 @@ final class LauncherLifecycleStore {
 
 	func show(
 		_ error: any Error,
-		context: String? = nil
+		context: String? = nil,
+		blocksGameLaunch: Bool = false
 	) {
 		let message = launcherUserMessage(for: error)
 		let failure = LauncherFailurePresentation(
 			id: UUID(), message: message, code: nil,
 			context: SupportContext(operation: .launcher, region: nil),
-			actions: [.reportProblem]
+			actions: [.reportProblem],
+			blocksGameLaunch: blocksGameLaunch
 		)
 		let diagnostic = launcherDiagnosticDescription(for: error)
 		let logMessage = context.map { "\($0): \(diagnostic)" } ?? diagnostic

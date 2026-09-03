@@ -15,6 +15,22 @@ Wine child processes from being mistaken for a ready or fully stopped game.
 See [Wine prefix architecture](wine-prefix.md) for the prefix topology, environment, drive mappings,
 migration state, persistent data, and maintenance contract used by this lifecycle.
 
+## Startup path migration
+
+When a launcher update changes its standard Application Support layout, the app runs its path
+migration before publishing normal readiness. Installation, maintenance, and **Play** remain blocked
+until the migration has either completed or presented a blocking recovery message. It checks only the
+known old default game and prefix paths, updates an exact persisted old-default game path, and leaves
+custom game locations untouched.
+
+The migration is idempotent and resumable. Each source folder is moved to its publisher-based
+destination with a same-volume metadata rename; it is never copied, merged, or overwritten. A
+completed move is skipped on later starts, and an interruption resumes from the remaining entries.
+If both source and destination exist, or an expected path is a symbolic link or another unsafe node,
+the app does not guess which data to keep: normal startup stays blocked until the conflict is resolved
+or reported. This migration is separate from the per-prefix Wine/DXMT migration that runs before a
+game launch.
+
 ## Launch process
 
 > [!IMPORTANT]
@@ -115,7 +131,7 @@ Here, an “expected signature” is a bounded byte marker already present in th
 
 ## Process lifecycle
 
-The launcher remains in **Starting** until Wine exposes a visible game window. It monitors both the direct Wine process and the prefix-wide `wineserver`. Closing the game triggers prefix-scoped cleanup so browser and Yostar helpers do not keep the launcher in **Running**. **Stop** and launcher termination use the same prefix-scoped shutdown.
+The launcher remains in **Starting** until Wine exposes a visible game window. It monitors both the direct Wine process and the prefix-wide `wineserver`. Closing the game triggers prefix-scoped cleanup so browser and publisher helpers do not keep the launcher in **Running**. **Stop** and launcher termination use the same prefix-scoped shutdown.
 
 Local playtime follows the same boundary. A failed launch or visible-window timeout records nothing. Once the window is visible, the controller keeps the wall-clock start only for the daily bucket and measures elapsed time from monotonic system uptime. Direct-process and prefix callbacks converge on the same session UUID, so whichever terminal path arrives first records the duration and the other becomes a no-op. Application termination flushes the active duration before synchronous Wine shutdown. A stale marker after an unclean launcher termination is cleared without inventing an end time.
 

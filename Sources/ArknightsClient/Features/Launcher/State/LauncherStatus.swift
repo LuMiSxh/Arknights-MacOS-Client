@@ -19,6 +19,7 @@ enum LauncherStatus: Equatable, Sendable {
 	case stoppingGame
 	case movingToTrash
 	case uninstalled
+	case migratingStorage
 	case custom(String)
 
 	var message: String {
@@ -39,6 +40,7 @@ enum LauncherStatus: Equatable, Sendable {
 		case .stoppingGame: L10n.string(.Launcher.launcherStatusStopping)
 		case .movingToTrash: L10n.string(.Launcher.launcherStatusMovingToTrash)
 		case .uninstalled: L10n.string(.Launcher.launcherStatusUninstalled)
+		case .migratingStorage: L10n.string(.Launcher.launcherStatusMigratingStorage)
 		case .custom(let message): message
 		}
 	}

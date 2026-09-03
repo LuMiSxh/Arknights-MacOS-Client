@@ -106,7 +106,7 @@ Payment pages run inside the compatibility environment. Verify every charge with
 
 ## Where are files and logs stored?
 
-Game files are separate per region. The Wine prefix, compatibility runtime, browser data, caches, and central logs have different lifetimes. See [Storage](storage.md) for the complete path table and the consequences of each cleanup action.
+Game files are separate per region. The Wine prefix, compatibility runtime, browser data, caches, and central logs have different lifetimes. Standard game and prefix folders are grouped by publisher; after an update that introduces this layout, the launcher migrates exact old default paths before normal startup. See [Storage](storage.md) for the complete path table and the consequences of each cleanup action.
 
 ## What do the cleanup, reset, and uninstall actions remove?
 
@@ -114,7 +114,7 @@ Game files are separate per region. The Wine prefix, compatibility runtime, brow
 - **Force Migration…** removes nothing. It forces Wine, DXMT, and registry setup to run again on the next launch while keeping game files, the Wine prefix, and saved sign-ins.
 - **Delete Wine Prefix…** removes the selected publisher family's shared Windows environment, including browser sessions, registry state, DXMT cache, and migration data. It keeps every regional game installation and launcher setting.
 - **Reset All Settings…** resets launcher preferences and launch options. It keeps the selected region, installation locations, and game files.
-- **Uninstall Game…** moves the selected region's game directory to the Trash. It keeps other regions, the launcher, shared Wine prefix, and custom art.
+- **Uninstall Game…** moves the selected region's game directory to the Trash. It keeps other regions, the launcher, the selected publisher family's shared Wine prefix, and custom art.
 - Moving **Arknights Client.app** to the Trash removes only the app bundle. Game files, the Wine prefix, caches, logs, preferences, and artwork remain.
 
 Deleting a Wine prefix signs embedded-browser providers out across that client family. For a complete uninstall, use the targeted removal steps in [Storage](storage.md#remove-or-reset-data) before moving the app itself to the Trash.

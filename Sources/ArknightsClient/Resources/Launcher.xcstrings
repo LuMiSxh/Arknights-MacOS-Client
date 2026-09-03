@@ -667,6 +667,24 @@
       },
       "extractionState": "manual"
     },
+	"launcher.error.storageMigrationFailed": {
+	  "comment": "Launcher cannot start because application storage migration failed",
+	  "localizations": {
+		"de": {
+		  "stringUnit": {
+			"state": "translated",
+			"value": "Die Launcher-Daten konnten nicht aktualisiert werden. Prüfe die Protokolle und versuche es erneut."
+		  }
+		},
+		"en": {
+		  "stringUnit": {
+			"state": "translated",
+			"value": "Launcher data could not be updated. Check the logs and try again."
+		  }
+		}
+	  },
+	  "extractionState": "manual"
+	},
     "launcher.error.wineRuntimeMissing": {
       "comment": "Compatible Wine runtime is missing",
       "localizations": {
@@ -1855,6 +1873,24 @@
       },
       "extractionState": "manual"
     },
+	"launcher.status.migratingStorage": {
+	  "comment": "Startup status while application storage directories are migrated",
+	  "localizations": {
+		"de": {
+		  "stringUnit": {
+			"state": "translated",
+			"value": "Launcher-Daten werden aktualisiert…"
+		  }
+		},
+		"en": {
+		  "stringUnit": {
+			"state": "translated",
+			"value": "Updating launcher data…"
+		  }
+		}
+	  },
+	  "extractionState": "manual"
+	},
     "launcher.status.paused": {
       "comment": "Download paused status",
       "localizations": {

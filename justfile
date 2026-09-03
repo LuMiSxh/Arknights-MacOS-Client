@@ -79,7 +79,7 @@ announcement mode id title='' body_file='' action_title='' action_url='' min_ver
 release version:
     {{ uv }} scripts/trigger_release.py {{ quote(version) }}
 
-# Show DMG download statistics for all published releases. Requires GitHub CLI access.
+# Show manual and Sparkle app-download statistics for published releases. Requires GitHub CLI access.
 [group('Owner')]
 stats:
     {{ uv }} scripts/release_statistics.py

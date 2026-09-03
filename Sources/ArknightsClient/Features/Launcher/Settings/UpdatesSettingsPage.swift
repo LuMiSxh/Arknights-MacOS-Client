@@ -56,6 +56,7 @@ struct UpdatesSettingsPage: View {
 						isOn: $settings.announcementsEnabled,
 						accentColor: accentColor
 					)
+					.disabled(lifecycle.activity == .maintaining(.migratingStorage))
 				}
 			}
 		}

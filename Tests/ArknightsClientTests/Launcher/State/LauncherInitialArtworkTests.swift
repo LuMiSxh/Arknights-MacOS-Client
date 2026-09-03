@@ -80,7 +80,7 @@ struct LauncherInitialArtworkTests {
 		#expect(model.customization.officialLogo != nil)
 
 		await api.resolveBranding(branding)
-		await model.waitForStartup()
+		_ = await model.waitForStartup()
 
 		#expect(model.customization.heroArtwork === initialArtwork)
 	}

@@ -23,7 +23,8 @@ func makeModel(
 		-> IntelTranslationProcessResult = {
 			IntelTranslationProcessResult(status: 0, output: "test")
 		},
-	arguments: [String] = []
+	arguments: [String] = [],
+	prepareStorage: ((AppPaths) -> Void)? = nil
 ) -> LauncherViewModel {
 	let root = URL(filePath: NSTemporaryDirectory())
 		.appending(
@@ -35,6 +36,7 @@ func makeModel(
 		cachesDirectory: root.appending(path: "Caches", directoryHint: .isDirectory),
 		libraryDirectory: root.appending(path: "Library", directoryHint: .isDirectory)
 	)
+	prepareStorage?(paths)
 	let defaults = UserDefaults(suiteName: "LauncherViewModelTests.\(UUID().uuidString)")!
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	preferences.setAutomaticGameUpdates(false)

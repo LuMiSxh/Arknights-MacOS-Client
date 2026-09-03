@@ -13,7 +13,7 @@ struct LauncherDockLaunchTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
 		await api.resolveBranding()
-		await model.waitForStartup()
+		_ = await model.waitForStartup()
 
 		let japanDirectory = model.preferences.installDirectory(
 			for: .japan,

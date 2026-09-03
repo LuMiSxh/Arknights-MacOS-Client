@@ -19,9 +19,9 @@ the other locations remain app-owned.
 
 | Data                        | Default location                                                                                  | Owner                                      | Removal or update behavior                                                                 |
 | --------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Regional game files         | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-{Global,Japan,Korea,China,China-Bilibili}` | `InstallationController` / `GameInstaller` | Updated by the manifest; **Uninstall Game** moves only the selected directory to the Trash |
+| Regional game files         | `~/Library/Application Support/com.lumisxh.arknights-client/{Yostar/{Global,Japan,Korea},Hypergryph/{China,China-Bilibili}}` | `InstallationController` / `GameInstaller` | Updated by the manifest; **Uninstall Game** moves only the selected directory to the Trash |
 | Installed manifest state    | `.arknights-client-state.json` inside that regional directory                                     | `GameInstaller`                            | Written atomically after all files pass validation and checksum verification               |
-| Wine prefixes               | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-{Global,China}` | `GameSessionController` / `WineRuntime`    | Shared within the Yostar or Hypergryph family; deleting one reruns its migration plan       |
+| Wine prefixes               | `~/Library/Application Support/com.lumisxh.arknights-client/{Yostar,Hypergryph}/Prefix` | `GameSessionController` / `WineRuntime`    | Shared within the publisher family; deleting one reruns its migration plan                   |
 | Runtime migration state     | `.arknights-runtime-migrations.json` inside the Wine prefix                                       | `RuntimeMigrationStore`                    | Records runtime revision and completed setup steps; it is not game-save data               |
 | Bundled runtime             | `Contents/Resources/Runtime` inside the app bundle                                                | Packaging and `WineRuntime`                | Read-only at runtime; replaced with a launcher update                                      |
 | Downloaded official artwork | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                                | `CustomizationController` / `ArtworkCache` | Recreated when missing; never required for game files                                      |
@@ -35,6 +35,34 @@ The path table mirrors [`AppPaths.swift`](../../../Sources/ArknightsClient/Share
 and [`StorageOverviewResolver`](../../../Sources/ArknightsClient/Features/Game/Storage/StorageOverview.swift).
 If the implementation changes, update the user-facing [Storage](../../help/storage.md) guide in the
 same change.
+
+## Application Support layout migration
+
+The publisher-based layout is a persisted path contract. On the first start after the launcher
+version that introduces it, a startup migration runs before normal readiness and blocks installation,
+maintenance, and game launch until the check completes. It considers only these exact old defaults:
+
+```text
+Games/Arknights-Global          → Yostar/Global
+Games/Arknights-Japan           → Yostar/Japan
+Games/Arknights-Korea           → Yostar/Korea
+Games/Arknights-China           → Hypergryph/China
+Games/Arknights-China-Bilibili  → Hypergryph/China-Bilibili
+Wine/Prefixes/Arknights-Global  → Yostar/Prefix
+Wine/Prefixes/Arknights-China   → Hypergryph/Prefix
+```
+
+The migrator also rewrites a persisted regional install path only when its value exactly equals one
+of the old default game paths. Custom paths are outside this migration contract and remain untouched.
+No contents are merged and no destination is overwritten. A source is moved only when it is the
+expected directory, and a destination is accepted only when it is absent or already represents the
+completed move. A collision, symbolic link, or other unexpected node is a blocking error requiring
+the user to resolve or report it.
+
+Each move is a same-volume metadata rename rather than a file copy. The migration is idempotent:
+completed entries are skipped, and a process interruption leaves partial progress to resume on the
+next start. The migrator must finish before the app publishes normal readiness, so no installer or
+Wine operation can observe a half-migrated standard path set.
 
 > [!IMPORTANT]
 > Keep path construction centralized. A new feature must receive `AppPaths` or a narrower URL
@@ -89,8 +117,8 @@ targeted:
   the prefix. It does not remove saves, installed game files, or the prefix itself.
 - **Clear gallery cache** removes preset catalog/image cache data. It does not remove app-owned
   copies of selected artwork/icon sources, generated icons, or the user's original files.
-- **Delete Wine prefix** removes shared Windows runtime state for all regions. The next launch
-  recreates it and reruns Wine initialization, DXMT installation, and registry configuration.
+- **Delete Wine prefix** removes shared Windows runtime state for the selected publisher family. The
+  next launch recreates it and reruns Wine initialization, DXMT installation, and registry configuration.
 - **Reset Statistics** removes local playtime totals, the latest session, and recent daily
   aggregates. It does not change game files, preferences, logs, or network behavior.
 - Removing the app from Finder does not automatically remove Application Support, Caches, Logs, or

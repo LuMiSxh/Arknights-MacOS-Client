@@ -56,10 +56,22 @@ The central `wine.log` records these stages. A first launch after a runtime chan
 Global, Japan, and Korea use one prefix:
 
 ```text
-~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global
+~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix
 ```
 
-The historical `Arknights-Global` name is kept for storage compatibility. The prefix contains Wine registry state, the embedded-browser profiles and sessions, DXMT shader data, and runtime migration state. Regional game files remain in separate directories; only the active region is mapped as `G:` for a launch. The Canary-gated China and China — Bilibili clients share a separate `Arknights-China` prefix.
+The prefix contains Wine registry state, the embedded-browser profiles and sessions, DXMT shader data,
+and runtime migration state. Regional game files remain in separate publisher folders; only the active
+region is mapped as `G:` for a launch. The Canary-gated China and China — Bilibili clients share a
+separate Hypergryph prefix:
+
+```text
+~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix
+```
+
+After a launcher update that changes these locations, the first startup can be temporarily blocked
+while existing exact-match default folders are moved. The migration does not touch custom game paths,
+does not merge or overwrite folders, and resumes after an interruption. A conflict or unsafe folder
+blocks normal startup until it is resolved; see [Storage](storage.md#after-a-launcher-update).
 
 The launcher also maps the central macOS log directory as `L:` so Unity and browser logs can be collected alongside `wine.log`. Wine's default `Z:` mapping to the macOS file-system root is removed before each start, and its shell folders are kept inside the prefix.
 

@@ -30,7 +30,7 @@ final class LauncherViewModel {
 	#if DEBUG
 		var developerAccessibilityMusicTitle: String?
 	#endif
-	@ObservationIgnored private var startupTask: Task<Void, Never>?
+	@ObservationIgnored private var startupTask: Task<Bool, Never>?
 	#if DEBUG
 		var developerScenario: DeveloperScenario?
 	#endif
@@ -203,12 +203,37 @@ final class LauncherViewModel {
 			}
 		#endif
 
-		gameSession.refreshRuntime()
 		let installOnLaunch =
 			arguments.contains("--install") || arguments.contains("--install-and-launch")
 		let launchAfterInstall = arguments.contains("--install-and-launch")
 		let launchOnStart = arguments.contains("--launch")
+		let persistedInstallDirectories = preferences.persistedInstallDirectories()
+		lifecycle.activity = .maintaining(.migratingStorage)
+		lifecycle.setStatus(.migratingStorage)
 		startupTask = Task {
+			do {
+				let migration = try await Task.detached(priority: .utility) {
+					try AppStorageMigrator.migrate(
+						paths: paths,
+						persistedInstallDirectories: persistedInstallDirectories
+					)
+				}.value
+				preferences.updateInstallDirectories(
+					migration.installDirectoriesToUpdate,
+					replacing: persistedInstallDirectories
+				)
+				installation.reloadInstallDirectory()
+				lifecycle.activity = .idle
+				gameSession.refreshRuntime()
+			} catch {
+				let diagnostic = launcherDiagnosticDescription(for: error)
+				lifecycle.show(
+					LauncherError.storageMigrationFailed(diagnostic),
+					context: "Application storage migration",
+					blocksGameLaunch: true
+				)
+				return false
+			}
 			await customization.restoreInitialArtwork(for: installation.region)
 			_ = await customization.loadCustomAppIcon()
 			_ = await intelTranslation.refreshAvailability()
@@ -217,15 +242,16 @@ final class LauncherViewModel {
 			if settings.automaticallyChecksLauncherUpdates {
 				_ = await communication.checkLauncherUpdates(presentUpdate: true).value
 			}
+			if settings.announcementsEnabled {
+				communication.checkAnnouncements(isEnabled: true)
+			}
 			if launchOnStart {
 				gameSession.launch()
 			} else if installOnLaunch, installation.canInstall {
 				installation.startInstallation(
 					launchAfterCompletion: launchAfterInstall)
 			}
-		}
-		if settings.announcementsEnabled {
-			communication.checkAnnouncements(isEnabled: true)
+			return true
 		}
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
@@ -236,7 +262,7 @@ final class LauncherViewModel {
 		startupTask?.cancel()
 	}
 
-	func waitForStartup() async {
-		await startupTask?.value
+	func waitForStartup() async -> Bool {
+		await startupTask?.value ?? true
 	}
 }

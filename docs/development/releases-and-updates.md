@@ -35,7 +35,7 @@ Before triggering the workflow, check the inputs that affect the published files
 
 The `pages` and `package` jobs run independently from the same release commit. Pages checks out that commit, requires `main`, installs the website lockfile, runs `pnpm check`, and builds with `BASE_PATH=/Arknights-MacOS-Client`. A Pages failure does not stop the package job from creating its draft, but it keeps the workflow red until the website is repaired. Documentation changes alone never dispatch Pages.
 
-Repository owners can inspect published DMG download counts with `just stats`. GitHub reports asset downloads rather than unique users or installations, so the derived totals and latest-version share are directional metrics only.
+Repository owners can inspect published DMG and Sparkle update-archive download counts with `just stats`. The command separates manual packages from in-app updates and reports their combined release totals and rates. GitHub reports asset downloads rather than unique users or installations, so every derived total and latest-version share remains a directional metric only.
 
 ```mermaid
 flowchart LR

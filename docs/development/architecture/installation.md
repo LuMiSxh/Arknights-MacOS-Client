@@ -70,8 +70,8 @@ that repairs a missing state file without downloading the game again.
 
 ```mermaid
 flowchart LR
-	API[Yostar launcher API] --> Manifest[Version and manifest]
-	CDN[Yostar CDN] --> Installer[GameInstaller]
+	API[Publisher launcher API] --> Manifest[Version and manifest]
+	CDN[Publisher CDN] --> Installer[GameInstaller]
 	Manifest --> Installer
 	State[Installed manifest] --> Installer
 	Installer --> Files[Game directory]
@@ -121,13 +121,14 @@ checksum failure removes the partial file instead of retrying corrupted bytes.
 
 ## Final state and region boundaries
 
-The installed-state file contains the Yostar-reported game version and file basis, the manifest
+The installed-state file contains the publisher-reported game version and file basis, the manifest
 source, installation timestamp, and the manifest entries used for the successful operation. The
 controller considers a region installed only when both `Arknights.exe` and this state file exist and
 decode successfully. It does not consider a directory with a few game files or a `.part` file to be
 installed.
 
-The three supported regions persist independent paths and states:
+Each supported region persists an independent path and state. Regions share a Wine prefix only within
+their publisher family:
 
 ```mermaid
 flowchart TB
@@ -135,16 +136,21 @@ flowchart TB
 	Controller --> Global[Global path + state]
 	Controller --> Japan[Japan path + state]
 	Controller --> Korea[Korea path + state]
-	Global --> Prefix[Shared Wine prefix]
-	Japan --> Prefix
-	Korea --> Prefix
-	Prefix --> Active[Selected region mounted as G:]
+	Controller --> China[China path + state]
+	Controller --> Bilibili[China — Bilibili path + state]
+	Global --> YostarPrefix[Yostar prefix]
+	Japan --> YostarPrefix
+	Korea --> YostarPrefix
+	China --> HypergryphPrefix[Hypergryph prefix]
+	Bilibili --> HypergryphPrefix
+	YostarPrefix --> Active[Selected region mounted as G:]
+	HypergryphPrefix --> Active
 ```
 
 Selecting another region is blocked during an exclusive activity. When it succeeds, the controller
 clears only the selected region's in-memory readiness and resolves that region's persisted path;
-it does not move, delete, or rewrite another region's files. The shared prefix is repointed only at
-launch, after the selected game directory has passed the normal readiness checks.
+it does not move, delete, or rewrite another region's files. The selected publisher family's prefix
+is repointed only at launch, after the selected game directory has passed the normal readiness checks.
 
 ## Compatibility and update hand-off
 

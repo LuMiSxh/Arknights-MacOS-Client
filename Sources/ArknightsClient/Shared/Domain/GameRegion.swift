@@ -34,8 +34,7 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		L10n.string(SharedStrings.region(self))
 	}
 
-	/// Matches the `game_tag` the Yostar launcher API expects and, by convention in this
-	/// codebase, the install directory name the official client uses for the region.
+	/// Matches the `game_tag` the Yostar launcher API expects.
 	var gameTag: String {
 		switch self {
 		case .global: "Arknights_EN"
@@ -56,13 +55,4 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		}
 	}
 
-	var installDirectoryName: String {
-		switch self {
-		case .global: "Arknights-Global"
-		case .japan: "Arknights-Japan"
-		case .korea: "Arknights-Korea"
-		case .china: "Arknights-China"
-		case .chinaBilibili: "Arknights-China-Bilibili"
-		}
-	}
 }

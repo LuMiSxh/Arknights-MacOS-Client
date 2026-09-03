@@ -52,7 +52,7 @@ flowchart TB
 	Customization --> Assets[Artwork and icon stores]
 	Settings --> Defaults[UserDefaults]
 	Install --> GameFiles[Regional game directories]
-	Game --> Prefix[Shared Wine prefix]
+	Game --> Prefix[Publisher-family Wine prefix]
 ```
 
 The arrows represent ownership or an explicit callback, not arbitrary bidirectional access. For

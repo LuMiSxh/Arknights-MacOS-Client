@@ -109,6 +109,28 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
+	func migrationUpdatesOnlyInstallDirectoriesThatHaveNotChanged() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+		let legacyGlobal = URL(filePath: "/tmp/Legacy-Global")
+		let legacyJapan = URL(filePath: "/tmp/Legacy-Japan")
+		let customJapan = URL(filePath: "/tmp/Custom-Japan", directoryHint: .isDirectory)
+		let currentGlobal = URL(filePath: "/tmp/Yostar/Global", directoryHint: .isDirectory)
+		let currentJapan = URL(filePath: "/tmp/Yostar/Japan", directoryHint: .isDirectory)
+		store.setInstallDirectory(legacyGlobal, for: .global)
+		store.setInstallDirectory(legacyJapan, for: .japan)
+		let snapshot = store.persistedInstallDirectories()
+		store.setInstallDirectory(customJapan, for: .japan)
+
+		store.updateInstallDirectories(
+			[.global: currentGlobal, .japan: currentJapan], replacing: snapshot)
+
+		#expect(store.installDirectory(for: .global, default: legacyGlobal) == currentGlobal)
+		#expect(store.installDirectory(for: .japan, default: legacyJapan) == customJapan)
+	}
+
+	@Test
 	func dynamicThemeAccentsPersistPerArtworkSource() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }

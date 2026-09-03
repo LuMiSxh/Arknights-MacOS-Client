@@ -49,7 +49,7 @@ struct InstallationPipelineIntegrationTests {
 			},
 			arguments: []
 		)
-		await model.waitForStartup()
+		_ = await model.waitForStartup()
 		let configuration = try #require(model.installation.configuration)
 
 		let onboardingStore = OnboardingProgressStore(defaults: environment.defaults)

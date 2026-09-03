@@ -35,28 +35,49 @@ func appPathsUseStandardInjectedDirectories() {
 	#expect(
 		paths.gameInstall(for: .global)
 			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Games/Arknights-Global",
+				path: "\(AppPaths.bundleIdentifier)/Yostar/Global",
 				directoryHint: .isDirectory
 			)
 	)
 	#expect(
 		paths.gameInstall(for: .japan)
 			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Games/Arknights-Japan",
+				path: "\(AppPaths.bundleIdentifier)/Yostar/Japan",
 				directoryHint: .isDirectory
 			)
 	)
 	#expect(
 		paths.gameInstall(for: .korea)
 			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Games/Arknights-Korea",
+				path: "\(AppPaths.bundleIdentifier)/Yostar/Korea",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
+		paths.gameInstall(for: .china)
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Hypergryph/China",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
+		paths.gameInstall(for: .chinaBilibili)
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Hypergryph/China-Bilibili",
 				directoryHint: .isDirectory
 			)
 	)
 	#expect(
 		paths.winePrefix
 			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Wine/Prefixes/Arknights-Global",
+				path: "\(AppPaths.bundleIdentifier)/Yostar/Prefix",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
+		paths.chinaWinePrefix
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Hypergryph/Prefix",
 				directoryHint: .isDirectory
 			)
 	)
@@ -116,6 +137,6 @@ func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
 		libraryDirectory: URL(filePath: "/tmp/Library")
 	)
 
-	#expect(paths.gameInstall(for: region).lastPathComponent == "Arknights-China-Bilibili")
+	#expect(paths.gameInstall(for: region).lastPathComponent == "China-Bilibili")
 	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: .china))
 }

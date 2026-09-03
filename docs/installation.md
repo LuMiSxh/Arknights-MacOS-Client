@@ -124,6 +124,11 @@ To place a new installation elsewhere, choose **Choose New Location…** while n
 
 ## First launch
 
+After a launcher update that changes its standard storage layout, the first app start may briefly
+block the normal controls while existing default folders are moved into their publisher folders.
+This does not copy or redownload game files, and it never changes a custom game location. See
+[Storage](help/storage.md#after-a-launcher-update) if the migration reports a conflict.
+
 After the selected region is installed:
 
 1. Let the launcher finish any pending Wine or DXMT setup shown before **Play**.

@@ -26,13 +26,12 @@ processes cannot mix with the Yostar regions.
 
 | Region family              | Default prefix                                                                              |
 | -------------------------- | ------------------------------------------------------------------------------------------- |
-| Global, Japan, and Korea   | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` |
-| China and China — Bilibili | `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-China`  |
+| Global, Japan, and Korea   | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix`     |
+| China and China — Bilibili | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix` |
 
-`Arknights-Global` remains the shared Yostar path for storage compatibility; its name does not mean
-that Japan or Korea receives another prefix. Code must resolve the active path through
-`AppPaths.winePrefix(for:)` instead of selecting a directory name itself. Tests and the isolated
-preview inject temporary `AppPaths` roots and must use the same resolver.
+Code must resolve the active path through `AppPaths.winePrefix(for:)` instead of selecting a directory
+name itself. Tests and the isolated preview inject temporary `AppPaths` roots and must use the same
+resolver.
 
 The launcher permits only one install, maintenance operation, or Wine-backed session at a time.
 Changing the selected region cannot transfer an active session to another prefix. The session keeps
@@ -44,7 +43,7 @@ Wine creates most of the prefix contents. The launcher owns the following additi
 mappings:
 
 ```text
-Arknights-{Global,China}/
+{Yostar,Hypergryph}/Prefix/
 ├── .arknights-runtime-migrations.json
 ├── dosdevices/
 │   ├── c: -> ../drive_c
@@ -142,7 +141,7 @@ written only when their current registry values differ from the selected launch 
 | DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                            | Recreatable through targeted cache cleanup        |
 | Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`                 | Recreatable through targeted cache cleanup        |
 | Migration state               | `<prefix>/.arknights-runtime-migrations.json`                          | Reset by **Force Migration**; recreated on launch |
-| Regional game files           | Outside the prefix under `Games/` or a selected custom path            | Owned by installation, not prefix maintenance     |
+| Regional game files           | Outside the prefix under the publisher folder or a selected custom path | Owned by installation, not prefix maintenance     |
 | Runtime binaries              | Outside the prefix in the app bundle                                   | Replaced only with the launcher application       |
 | Runtime and game logs         | Outside the prefix under `~/Library/Logs/com.lumisxh.arknights-client` | Shared diagnostic destination mapped as `L:`      |
 
@@ -184,7 +183,7 @@ sessions, registry data unrelated to those settings, and game files.
 
 **Delete Wine Prefix** removes the selected region family's complete prefix on a background task.
 For Global, Japan, or Korea, that means the shared Yostar prefix and all browser sessions stored in
-it. For either China client, it means the shared `Arknights-China` prefix. Game installations,
+it. For either China client, it means the shared Hypergryph prefix. Game installations,
 launcher preferences, artwork, and central logs remain outside either prefix.
 
 Both operations require an idle lifecycle. Do not add a direct filesystem deletion path in UI code;
@@ -195,7 +194,7 @@ remain intact.
 
 When changing the prefix contract:
 
-1. Keep locations in `AppPaths` and preserve existing paths unless a migration is explicit.
+1. Keep locations in `AppPaths`; when a path contract changes, define and test an explicit migration.
 2. Decide whether the change is a recorded migration, per-launch reconciliation, or a launch-scoped
    environment option. Do not use migration state for volatile configuration.
 3. Preserve the migration order and atomic state write. Add a new migration identifier when only

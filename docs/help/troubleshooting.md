@@ -121,6 +121,18 @@ A launcher update waits while the game, an installation, an update, or a repair 
 
 If the download itself fails, confirm that the Mac can reach GitHub Releases, then use **Settings → Updates → Launcher → Check** to try again. Cancelling or retrying a launcher update does not remove regional game files or cancel a separate game download.
 
+### The launcher is updating storage locations
+
+After an update that changes the standard folder layout, the launcher may block its normal controls
+while it moves existing default game and prefix folders into publisher-based locations. Allow the
+startup migration to finish; it is a same-volume rename and does not redownload game files. Custom
+game locations are not included.
+
+If the launcher reports a collision or an unsafe folder, do not delete or merge either location. Check
+which folder contains the installation or prefix state, then resolve the conflict or [report the
+problem](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues) with the displayed details. See
+[Storage](storage.md#after-a-launcher-update) for the complete move list and recovery rules.
+
 ## Download is paused, stuck, or fails
 
 The installer downloads several manifest files concurrently, retries a failed file against a backup CDN, and writes incomplete data to a `.part` file. A pause or closed launcher does not invalidate completed files.
@@ -179,7 +191,7 @@ The launcher waits up to 90 seconds for the Wine game window. If it times out:
 4. If the same error returns, choose **Report Problem** and say whether any game window appeared.
 
 > [!IMPORTANT]
-> **Delete Wine Prefix** is a last-resort recovery step, not the same as Force Migration. It removes the shared Wine environment and saved sign-ins for every region; game files remain untouched and the environment is rebuilt on the next launch. Use it only after reviewing [Storage](storage.md#remove-or-reset-data).
+> **Delete Wine Prefix** is a last-resort recovery step, not the same as Force Migration. It removes the selected publisher family's shared Wine environment and saved sign-ins; game files remain untouched and the environment is rebuilt on the next launch. Use it only after reviewing [Storage](storage.md#remove-or-reset-data).
 
 ### The game exits immediately
 

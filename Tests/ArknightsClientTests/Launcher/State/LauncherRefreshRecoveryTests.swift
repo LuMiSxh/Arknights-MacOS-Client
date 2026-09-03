@@ -14,7 +14,7 @@ struct LauncherRefreshRecoveryTests {
 		)
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		if region != .global {
-			await model.waitForStartup()
+			_ = await model.waitForStartup()
 			model.selectRegion(region)
 		}
 
@@ -37,7 +37,7 @@ struct LauncherRefreshRecoveryTests {
 	func installedAutomaticFailureStaysInLogsButManualCheckPresentsVirga() async throws {
 		let api = ConfigurationRefreshAPI(outcomes: [.success, .failure, .failure])
 		let model = makeModel(api: api, installer: ControllableInstaller())
-		await model.waitForStartup()
+		_ = await model.waitForStartup()
 		try writeInstalledState(for: model.installation)
 		await model.installation.updateInstalledState().value
 		#expect(model.installation.isInstalled)

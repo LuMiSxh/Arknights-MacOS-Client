@@ -53,6 +53,7 @@ Arknights Client downloads official PC game files directly from the selected pub
 - Launch through a pinned Wine and DXMT runtime tested as one compatibility unit
 - Apply game-specific browser, window, input, and Command-Q integrations automatically
 - Check launcher and game versions independently; automatic checks can be disabled
+- Move existing default installations into publisher-based folders after a launcher update without touching custom locations
 - Clear DXMT shader, browser, and downloaded gallery caches from Settings
 - Keep launcher, Wine, game, and embedded-browser logs available for troubleshooting
 

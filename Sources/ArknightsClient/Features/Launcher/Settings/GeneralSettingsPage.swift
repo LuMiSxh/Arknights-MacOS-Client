@@ -36,7 +36,10 @@ struct GeneralSettingsPage: View {
 						isOn: $settings.launchOptions.usesHighResolutionMode,
 						accentColor: accentColor
 					)
-					.disabled(gameSession.isGameActive)
+					.disabled(
+						gameSession.isGameActive
+							|| lifecycle.activity == .maintaining(.migratingStorage)
+					)
 				}
 				SettingsHairline()
 				SettingsActionRow(

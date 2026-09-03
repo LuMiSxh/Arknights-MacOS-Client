@@ -88,7 +88,7 @@ struct InstallationRecoveryTests {
 		let model = makeModel(api: api, installer: installer)
 		await api.waitForBrandingRequest()
 		await api.resolveBranding()
-		await model.waitForStartup()
+		_ = await model.waitForStartup()
 		model.installation.isInstalled = true
 		let failureID = UUID()
 		model.installation.presentInstallationFailure(
@@ -118,7 +118,7 @@ struct InstallationRecoveryTests {
 		let model = makeModel(api: api, installer: installer)
 		await api.waitForBrandingRequest()
 		await api.resolveBranding()
-		await model.waitForStartup()
+		_ = await model.waitForStartup()
 		model.installation.isInstalled = true
 		let wrongRegionID = UUID()
 		model.installation.presentInstallationFailure(

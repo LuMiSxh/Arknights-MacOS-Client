@@ -44,11 +44,11 @@ struct AppPaths: Sendable {
 			.appending(path: "Logs", directoryHint: .isDirectory)
 			.appending(path: Self.bundleIdentifier, directoryHint: .isDirectory)
 		winePrefix = applicationSupportRoot.appending(
-			path: "Wine/Prefixes/Arknights-Global",
+			path: "Yostar/Prefix",
 			directoryHint: .isDirectory
 		)
 		chinaWinePrefix = applicationSupportRoot.appending(
-			path: "Wine/Prefixes/Arknights-China",
+			path: "Hypergryph/Prefix",
 			directoryHint: .isDirectory
 		)
 		bundledRuntimeDirectory = resourceDirectory?.appending(
@@ -58,10 +58,17 @@ struct AppPaths: Sendable {
 	}
 
 	func gameInstall(for region: GameRegion) -> URL {
-		applicationSupportRoot.appending(
-			path: "Games/\(region.installDirectoryName)",
-			directoryHint: .isDirectory
-		)
+		let publisher = region.isChinaClient ? "Hypergryph" : "Yostar"
+		let regionName =
+			switch region {
+			case .global: "Global"
+			case .japan: "Japan"
+			case .korea: "Korea"
+			case .china: "China"
+			case .chinaBilibili: "China-Bilibili"
+			}
+		return applicationSupportRoot.appending(
+			path: "\(publisher)/\(regionName)", directoryHint: .isDirectory)
 	}
 
 	func winePrefix(for region: GameRegion) -> URL {

@@ -249,7 +249,7 @@ struct ContentView: View {
 		if previous == .update { model.communication.launcherUpdateUserDriver.dismissFromUser() }
 	}
 	private func startOnboardingIfNeeded() async {
-		await model.waitForStartup()
+		guard await model.waitForStartup() else { return }
 		if model.isDeveloperMode, !model.isOnboardingPreview { return }
 		await model.installation.updateInstalledState().value
 		await onboarding.startIfNeeded(
@@ -267,6 +267,7 @@ struct ContentView: View {
 		}
 	}
 	private func restartOnboarding() {
+		guard model.lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		presentation.dismissCurrent()
 		Task {
 			await model.installation.updateInstalledState().value
