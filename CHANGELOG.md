@@ -9,24 +9,23 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-09-03
 
 ### Added
 
 - An opt-in Canary Features gate in Settings for containing unfinished functionality without changing the default launcher experience.
 - The China and China — Bilibili clients behind Canary Features, with separate installations and the same native install, update, repair, storage, playtime, and launch flow as other regions.
 - Canary controls for following macOS audio-output changes during play and selecting DXMT's one-to-three-frame latency limit.
-- Resumable, size-bounded runtime archive downloads that retain partial files only while a strong ETag still matches.
+- Smoothed game-download speed and remaining-time estimates that account for resumed files, retries, stalls, and checksum recovery (#48).
 - Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
 - A static project website built from the repository documentation, with safe Markdown rendering, base-path-aware navigation, canonical and social metadata, and GitHub Pages release deployment (#56).
 - Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
 - Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
 - Weekly live-contract monitoring for every supported Yostar region (#39).
-- Weekly runtime update and provenance monitoring with candidate summaries, pinned-source availability checks, archive verification (#47).
 - Language switchers to onboarding and Settings for the system default, English, and German.
-- A reviewed German translation for the native launcher, with English fallback and automatic support for macOS per-app language preferences (#38).
+- A reviewed German translation with English fallback, immediate language redraws, complete native UI coverage, and automatic support for macOS per-app language preferences (#38).
 - A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
-- Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, and localized text fallbacks (#37).
+- Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, localized text fallbacks, and simplified presentation (#37).
 - Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
 - Storage overview in Settings with independent installed-region rows, right-aligned usage values, shared runtime data, recreatable caches, diagnostic logs, and targeted cleanup actions (#43).
 - Donate button for people who want to support the project.
@@ -38,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Moved standard game and Wine-prefix locations into publisher-based folders and added a resumable, start-blocking migration for existing default paths; custom locations remain unchanged.
 - Runtime is now pinned to a custom WineCX and DXMT build from [this repo](https://github.com/LuMiSxh/Arknights-MacOS-Runtime).
+- Moved runtime build, update, and provenance automation into the dedicated runtime repository (#47).
+- Made runtime archive downloads size-bounded and safely resumable only while their strong ETag still matches.
 - Accepted the runtime-owned launcher alias and Wine 11 audio-driver layout when preparing the pinned runtime.
 - Allowed larger official manifests within the bounded installation state, and kept shared game-service and fallback errors provider-neutral and in the selected app language.
 - Refactored the root launcher model into feature controllers with explicit, narrow dependencies and shared game-domain and configuration contracts (#52).
@@ -65,8 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Accepted unusually large official wallpapers while preserving bounded image validation.
 - Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
-- Made all native UI copy, dialogs, status text, and accessibility labels consistently follow the selected app language, including immediate redraws of the main window and Settings.
-- Removed the decorative three-part line below the regional wordmark and kept late branding responses from replacing the selected region's logo (#37).
+- Prevented late branding responses from replacing the selected region's logo (#37).
 
 ## [0.4.1]
 
@@ -207,7 +207,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[Unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.1...HEAD
+[0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0
 [0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.3.0
