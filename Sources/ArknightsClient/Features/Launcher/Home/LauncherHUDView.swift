@@ -154,8 +154,6 @@ struct LauncherHUDView: View {
 
 	private var hasStatusPill: Bool {
 		settings.resetCountdownText != nil
-			|| installation.installedRegions.count >= 2
-			|| installation.region != .global
 	}
 
 	private var primaryActionIdentity: String {

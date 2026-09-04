@@ -721,6 +721,42 @@
         }
       }
     },
+    "home.reset.hideDetails": {
+      "comment": "Daily reset HUD collapse help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset-Details ausblenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide reset details"
+          }
+        }
+      }
+    },
+    "home.reset.showDetails": {
+      "comment": "Daily reset HUD expansion help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset-Details anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show reset details"
+          }
+        }
+      }
+    },
     "home.recovery.actions": {
       "comment": "Compact menu containing the available failure recovery actions",
       "extractionState": "manual",

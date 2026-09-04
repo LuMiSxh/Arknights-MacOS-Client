@@ -9,6 +9,12 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Made the daily reset pill show the selected client's reset at a glance and expand to list and switch between every installed client's reset time.
+
 ## [0.5.0] - 2026-09-03
 
 ### Added

@@ -30,6 +30,8 @@ enum HomeStrings {
 	static let actionPlay = LocalizedStringResource.homeActionPlay
 	static let actionPlayHelp = LocalizedStringResource.homeActionPlayHelp
 	static let switchRegionHelp = LocalizedStringResource.homeRegionSwitchHelp
+	static let resetHideDetails = LocalizedStringResource.homeResetHideDetails
+	static let resetShowDetails = LocalizedStringResource.homeResetShowDetails
 	static let versionHideDetails = LocalizedStringResource.homeVersionHideDetails
 	static let versionShowDetails = LocalizedStringResource.homeVersionShowDetails
 	static let versionCheckNow = LocalizedStringResource.homeVersionCheckNow
