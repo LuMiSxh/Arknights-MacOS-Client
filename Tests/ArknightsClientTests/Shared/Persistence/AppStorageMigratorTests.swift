@@ -98,6 +98,45 @@ func appStorageMigratorRejectsSymbolicLinkSources() throws {
 }
 
 @Test
+func appStorageMigratorFollowsASymbolicLinkAncestorToTheActualLegacyDirectory() throws {
+	// Mirrors relocating "Games" to external storage behind a symlink to save disk space: the
+	// symlink is an ancestor of the legacy path, not the migration endpoint itself, and should
+	// be followed rather than rejected outright.
+	let root = FileManager.default.temporaryDirectory
+		.appending(
+			path: "AppStorageMigratorSymlinkAncestorTests.\(UUID().uuidString)",
+			directoryHint: .isDirectory)
+	defer { try? FileManager.default.removeItem(at: root) }
+	let paths = AppPaths(
+		applicationSupportDirectory: root.appending(path: "Support"),
+		cachesDirectory: root.appending(path: "Caches"),
+		libraryDirectory: root.appending(path: "Library")
+	)
+	let fileManager = FileManager.default
+	let relocatedGames = root.appending(path: "Relocated-Games", directoryHint: .isDirectory)
+	let relocatedLegacyGame = relocatedGames.appending(path: "Arknights-Global")
+	try fileManager.createDirectory(at: relocatedLegacyGame, withIntermediateDirectories: true)
+	try Data("game".utf8).write(to: relocatedLegacyGame.appending(path: "marker"))
+
+	let games = paths.applicationSupportRoot.appending(path: "Games")
+	try fileManager.createDirectory(
+		at: paths.applicationSupportRoot, withIntermediateDirectories: true)
+	try fileManager.createSymbolicLink(at: games, withDestinationURL: relocatedGames)
+
+	let legacyGame = games.appending(path: "Arknights-Global")
+	let result = try AppStorageMigrator.migrate(
+		paths: paths,
+		persistedInstallDirectories: [.global: legacyGame],
+		fileManager: fileManager
+	)
+
+	#expect(
+		fileManager.fileExists(
+			atPath: paths.gameInstall(for: .global).appending(path: "marker").path))
+	#expect(result.installDirectoriesToUpdate[.global] == paths.gameInstall(for: .global))
+}
+
+@Test
 func appStorageMigratorRejectsConflictsWithoutChangingEitherDirectory() throws {
 	let root = FileManager.default.temporaryDirectory
 		.appending(

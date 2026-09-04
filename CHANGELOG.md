@@ -9,6 +9,12 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Followed symbolic-link ancestors (for example, a `Games` folder relocated to external storage) during app storage migration instead of failing launcher startup outright, while still rejecting a symlinked migration endpoint itself.
+
 ## [0.5.0] - 2026-09-03
 
 ### Added

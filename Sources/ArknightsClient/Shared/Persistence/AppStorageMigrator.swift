@@ -15,7 +15,8 @@ enum AppStorageMigrationError: Error, Equatable, Sendable, CustomStringConvertib
 
 	var description: String {
 		switch self {
-		case .unsafeNode(let url): "Unsafe non-directory or symbolic-link node: \(url.path)"
+		case .unsafeNode(let url):
+			"Unsafe node: not a directory, or a broken or non-directory symbolic link: \(url.path)"
 		case .conflictingDirectories(let old, let new):
 			"Both legacy and current directories exist: \(old.path) and \(new.path)"
 		case .cannotInspect(let url, let error):
@@ -129,11 +130,14 @@ enum AppStorageMigrator {
 		]
 	}
 
-	private static func nodeState(at url: URL) throws -> NodeState {
+	private static func nodeState(at url: URL, followSymbolicLinks: Bool = false) throws
+		-> NodeState
+	{
 		var status = stat()
 		let result = url.withUnsafeFileSystemRepresentation { representation -> Int32 in
 			guard let representation else { return -1 }
-			return lstat(representation, &status)
+			return followSymbolicLinks
+				? stat(representation, &status) : lstat(representation, &status)
 		}
 		guard result == 0 else {
 			let error = errno
@@ -146,21 +150,27 @@ enum AppStorageMigrator {
 		return .directory
 	}
 
+	// Walks down to `url` component by component. Every ancestor may be a symbolic link that
+	// resolves to a real directory — for example, a legacy folder relocated to external
+	// storage behind a symlink to save disk space — but `url` itself, the actual migration
+	// endpoint, must be a genuine directory so `moveItem` never operates through an
+	// unexpected indirection at the boundary we're about to touch.
 	private static func validatePathComponents(of url: URL, under root: URL) throws {
 		let root = root.standardizedFileURL
 		let target = url.standardizedFileURL
 		guard target.pathComponents.starts(with: root.pathComponents) else {
 			throw AppStorageMigrationError.unsafeNode(target)
 		}
-		switch try nodeState(at: root) {
+		switch try nodeState(at: root, followSymbolicLinks: true) {
 		case .absent: return
 		case .directory: break
 		}
-		let relativeComponents = target.pathComponents.dropFirst(root.pathComponents.count)
+		let relativeComponents = Array(target.pathComponents.dropFirst(root.pathComponents.count))
 		var component = root
-		for name in relativeComponents {
+		for (index, name) in relativeComponents.enumerated() {
 			component.append(path: name)
-			switch try nodeState(at: component) {
+			let isFinalComponent = index == relativeComponents.count - 1
+			switch try nodeState(at: component, followSymbolicLinks: !isFinalComponent) {
 			case .absent: return
 			case .directory: continue
 			}
