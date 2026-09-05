@@ -14,7 +14,6 @@ struct StatusHUDPill: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isExpanded = false
 	@State private var isHovering = false
-	@State private var hoveringRegion: GameRegion?
 
 	var body: some View {
 		if hasContent {
@@ -26,7 +25,6 @@ struct StatusHUDPill: View {
 				}
 			}
 			.padding(.vertical, isExpanded && canExpand ? 11 : 0)
-			.frame(width: isExpanded && canExpand ? AppConstants.HUD.expandedStatusWidth : nil)
 			.frame(
 				minHeight: isExpanded && canExpand
 					? nil
@@ -34,11 +32,14 @@ struct StatusHUDPill: View {
 				alignment: isExpanded && canExpand ? .topLeading : .center
 			)
 			.frame(
+				minWidth: isExpanded && canExpand
+					? AppConstants.HUD.expandedStatusMinWidth
+					: nil,
 				maxWidth: isExpanded && canExpand
 					? AppConstants.HUD.expandedStatusWidth
 					: AppConstants.HUD.collapsedStatusMaxWidth
 			)
-			.fixedSize(horizontal: !(isExpanded && canExpand), vertical: false)
+			.fixedSize(horizontal: true, vertical: false)
 			.adaptiveGlassEffect(
 				tint: hudTintColor,
 				in: RoundedRectangle(cornerRadius: isExpanded && canExpand ? 20 : 40)
@@ -99,7 +100,7 @@ struct StatusHUDPill: View {
 				.fixedSize(horizontal: false, vertical: true)
 				.frame(
 					maxWidth: isExpanded && canExpand
-						? .infinity
+						? nil
 						: AppConstants.HUD.collapsedStatusTitleMaxWidth,
 					alignment: .leading
 				)
@@ -137,7 +138,6 @@ struct StatusHUDPill: View {
 								region == installation.region ? accentColor : .primary
 							)
 							.lineLimit(1)
-							.frame(maxWidth: .infinity, alignment: .leading)
 						Text(countdown)
 							.font(.caption.monospaced().weight(.medium))
 							.foregroundStyle(.secondary)
@@ -154,21 +154,12 @@ struct StatusHUDPill: View {
 								.accessibilityHidden(true)
 						}
 					}
-					.frame(maxWidth: .infinity, alignment: .leading)
 					.padding(.horizontal, 14)
 					.padding(.vertical, 3)
-					.foregroundStyle(hoveringRegion == region ? .primary : .secondary)
-					.background(
-						hoveringRegion == region ? accentColor.opacity(0.08) : .clear,
-						in: .rect(cornerRadius: 8)
-					)
 					.contentShape(Rectangle())
 				}
 				.buttonStyle(.plain)
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 8))
-				.onHover { isHovering in
-					hoveringRegion = isHovering ? region : nil
-				}
 				.disabled(!canSwitchRegion)
 				.accessibilityElement(children: .combine)
 				.accessibilityValue(Text(countdown))

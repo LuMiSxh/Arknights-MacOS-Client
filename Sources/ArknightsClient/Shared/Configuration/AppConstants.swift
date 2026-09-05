@@ -57,6 +57,7 @@ enum AppConstants {
 		static let collapsedVersionTitleMaxWidth: Double = 100
 		static let collapsedStatusMaxWidth: Double = 280
 		static let collapsedStatusTitleMaxWidth: Double = 210
+		static let expandedStatusMinWidth: Double = 240
 		static let expandedStatusWidth: Double = 360
 		static let downloadProgressDetailMinWidth: Double = 132
 		static let downloadSpeedDetailMinWidth: Double = 84
