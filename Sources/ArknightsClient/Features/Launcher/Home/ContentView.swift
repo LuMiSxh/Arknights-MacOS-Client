@@ -7,6 +7,7 @@ struct ContentView: View {
 	let initialMusicTitle: String?
 	let openMusicURL: (URL) -> Void
 	let registerOpenSettings: (@escaping () -> Void) -> Void
+	let registerQuitDismissalQuery: (@escaping () -> Bool) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State private var presentation = LauncherPresentationArbiter()
@@ -19,12 +20,14 @@ struct ContentView: View {
 		model: LauncherViewModel,
 		initialMusicTitle: String?,
 		openMusicURL: @escaping (URL) -> Void,
-		registerOpenSettings: @escaping (@escaping () -> Void) -> Void
+		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
+		registerQuitDismissalQuery: @escaping (@escaping () -> Bool) -> Void
 	) {
 		self.model = model
 		self.initialMusicTitle = initialMusicTitle
 		self.openMusicURL = openMusicURL
 		self.registerOpenSettings = registerOpenSettings
+		self.registerQuitDismissalQuery = registerQuitDismissalQuery
 		_onboarding = State(
 			initialValue: OnboardingCoordinator(
 				store: OnboardingProgressStore(defaults: model.preferences.defaults)))
@@ -129,7 +132,14 @@ struct ContentView: View {
 		} message: {
 			Text(L10n.string(HomeStrings.repairConfirmationDetail))
 		}
-		.onAppear { registerOpenSettings(requestSettings) }
+		.onAppear {
+			registerOpenSettings(requestSettings)
+			// Only Settings is safe to close out from under the user to let a Dock-icon or
+			// external quit through — the update, failure, and popup destinations that share
+			// this same sheet slot carry information (an in-progress update, an error, an
+			// announcement) that shouldn't be silently discarded just to unblock quitting.
+			registerQuitDismissalQuery { presentation.current == .settings }
+		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
 			if isPresented {

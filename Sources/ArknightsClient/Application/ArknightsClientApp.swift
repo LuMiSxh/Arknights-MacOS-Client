@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	weak var model: LauncherViewModel?
 	var stopGame: (() -> Void)?
 	var openSettings: (() -> Void)?
+	var isShowingOnlySettings: (() -> Bool)?
 
 	// `swift run` (used by `just preview`) launches the executable directly rather than
 	// through LaunchServices: without a bundle, the process's activation policy isn't
@@ -44,8 +45,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	// item and any external `tell application ... to quit` actually send — refuses the
 	// request outright with a user-canceled error while a sheet is attached to the key
 	// window, without ever calling applicationShouldTerminate(_:). Installing our own handler
-	// for the same event lets us end any attached sheet first and terminate directly,
-	// bypassing that built-in refusal instead of trying to work around it after the fact.
+	// for the same event lets us end the sheet first and terminate directly, bypassing that
+	// built-in refusal instead of trying to work around it after the fact.
 	private func installQuitEventHandler() {
 		NSAppleEventManager.shared().setEventHandler(
 			self,
@@ -55,12 +56,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		)
 	}
 
+	// Settings is the only sheet safe to close out from under the user just to let quitting
+	// through — the launcher's update, failure, and popup presentations share the same sheet
+	// slot but carry information (an in-progress update, an error, an announcement) that
+	// shouldn't be silently discarded. If Settings itself has something presented on top of it
+	// (a bundled document, a preset gallery), that inner sheet is left alone too, and quit
+	// falls back to the normal refusal until the user closes it.
 	@objc private func handleQuitEvent(
 		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
 	) {
-		for window in NSApp.windows {
-			if let sheet = window.attachedSheet {
-				window.endSheet(sheet)
+		if isShowingOnlySettings?() == true {
+			for window in NSApp.windows {
+				if let sheet = window.attachedSheet, sheet.attachedSheet == nil {
+					window.endSheet(sheet)
+				}
 			}
 		}
 		NSApp.terminate(nil)
@@ -169,7 +178,8 @@ struct ArknightsClientApp: App {
 					model: model,
 					initialMusicTitle: developerMusicTitle,
 					openMusicURL: { _ = NSWorkspace.shared.open($0) },
-					registerOpenSettings: { appDelegate.openSettings = $0 }
+					registerOpenSettings: { appDelegate.openSettings = $0 },
+					registerQuitDismissalQuery: { appDelegate.isShowingOnlySettings = $0 }
 				)
 				.environment(\.launcherWindowSize, geometry.size)
 			}
