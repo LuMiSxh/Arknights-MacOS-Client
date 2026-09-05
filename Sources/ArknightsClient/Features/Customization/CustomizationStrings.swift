@@ -25,6 +25,7 @@ enum CustomizationStrings {
 	static let operatorTitle = LocalizedStringResource.Customization
 		.customizationGalleryOperatorTitle
 	static let searchLabel = LocalizedStringResource.Customization.customizationGallerySearchLabel
+	static let searchClear = LocalizedStringResource.Customization.customizationGallerySearchClear
 	static let searchSuggestionSelect = LocalizedStringResource.Customization
 		.customizationGallerySearchSuggestionSelect
 	static let wallpaperFilterAll = LocalizedStringResource.Customization
@@ -56,6 +57,10 @@ enum CustomizationStrings {
 
 	static func wallpaperApplyHelp(_ title: String) -> LocalizedStringResource {
 		.Customization.customizationGalleryWallpaperApplyHelp(title)
+	}
+
+	static func searchRemoveTag(_ tag: String) -> LocalizedStringResource {
+		.Customization.customizationGallerySearchRemoveTag(tag)
 	}
 
 	static func wallpaperFallbackTitle(_ number: Int) -> LocalizedStringResource {
