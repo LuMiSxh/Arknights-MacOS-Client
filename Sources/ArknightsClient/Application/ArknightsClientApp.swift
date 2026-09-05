@@ -58,14 +58,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	// Installing this handler replaces AppKit's own default handling for the quit event
 	// entirely, including whatever refusal it would otherwise apply — so every case other than
-	// "nothing presented" or "Settings, and only Settings" must explicitly decline to
-	// terminate here, or it would silently start quitting through dialogs that used to (or, for
-	// the update prompt, always should have) blocked it. The update/failure/popup presentations
-	// share this same sheet slot but carry information (an in-progress update, an error, an
-	// announcement) that shouldn't be discarded just to unblock quitting — only Settings has no
-	// such state. If Settings itself has something presented on top of it (a bundled document,
-	// a preset gallery), that inner sheet is left alone too, and quit is declined until the user
-	// closes it.
+	// "nothing presented" or "Settings" must explicitly decline to terminate here, or it would
+	// silently start quitting through dialogs that used to (or, for the update prompt, always
+	// should have) blocked it. The update/failure/popup presentations share this same sheet
+	// slot but carry information (an in-progress update, an error, an announcement) that
+	// shouldn't be discarded just to unblock quitting — Settings and everything reachable from
+	// it (a bundled document, the preset gallery) have no such state, so the whole chain of
+	// sheets nested on top of it is closed before quitting.
 	@objc private func handleQuitEvent(
 		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
 	) {
@@ -75,11 +74,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 		guard
 			presentation == .settings,
-			let window = NSApp.windows.first(where: { $0.attachedSheet != nil }),
-			let sheet = window.attachedSheet,
-			sheet.attachedSheet == nil
+			let window = NSApp.windows.first(where: { $0.attachedSheet != nil })
 		else { return }
-		window.endSheet(sheet)
+		var sheetsToEnd: [(parent: NSWindow, sheet: NSWindow)] = []
+		var parent = window
+		while let sheet = parent.attachedSheet {
+			sheetsToEnd.append((parent, sheet))
+			parent = sheet
+		}
+		for (parent, sheet) in sheetsToEnd.reversed() {
+			parent.endSheet(sheet)
+		}
 		NSApp.terminate(nil)
 	}
 
