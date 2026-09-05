@@ -44,9 +44,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	// AppKit's own handler for the standard Quit Apple Event — what the Dock icon's own Quit
 	// item and any external `tell application ... to quit` actually send — refuses the
 	// request outright with a user-canceled error while a sheet is attached to the key
-	// window, without ever calling applicationShouldTerminate(_:). Installing our own handler
-	// for the same event lets us end the sheet first and terminate directly, bypassing that
-	// built-in refusal instead of trying to work around it after the fact.
+	// window, without ever calling applicationShouldTerminate(_:) at all. Installing our own
+	// handler for the same event and calling `-terminate:` directly bypasses that built-in
+	// refusal, letting the normal applicationShouldTerminate(_:) gate below decide instead —
+	// the same gate Command-Q and the menu bar's Quit already go through.
 	private func installQuitEventHandler() {
 		NSAppleEventManager.shared().setEventHandler(
 			self,
@@ -56,31 +57,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		)
 	}
 
-	// Installing this handler replaces AppKit's own default handling for the quit event
-	// entirely, including whatever refusal it would otherwise apply — so every case other than
-	// "nothing presented" or "Settings" must explicitly decline to terminate here, or it would
-	// silently start quitting through dialogs that used to (or, for the update prompt, always
-	// should have) blocked it. The update/failure/popup presentations share this same sheet
-	// slot but carry information (an in-progress update, an error, an announcement) that
-	// shouldn't be discarded just to unblock quitting — Settings and everything reachable from
-	// it (a bundled document, the preset gallery) have no such state.
-	//
-	// `-terminate:` itself was never actually refused by an attached sheet — only the default
-	// Apple Event handler this replaces was. Command-Q and the menu bar's Quit already call
-	// `-terminate:` directly with Settings open and always worked once fixQuitMenuItemTarget()
-	// pointed them at NSApp, with no sheet-closing logic at all. So there's no need to close
-	// any sheet here either: doing that with endSheet(_:) bypasses SwiftUI's own state, which
-	// still thinks the sheet should be showing, and its next redraw reopens it — sometimes
-	// winning the race against the process actually exiting. Terminating directly lets AppKit
-	// tear the sheet down as a normal side effect of quitting, the same way Command-Q does.
 	@objc private func handleQuitEvent(
 		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
 	) {
+		NSApp.terminate(nil)
+	}
+
+	// The single gate every quit path funnels through: Command-Q and the menu bar's Quit call
+	// `-terminate:` directly via the menu item's action, and handleQuitEvent(_:withReplyEvent:)
+	// above calls it explicitly for the Dock icon and external requests — `-terminate:` itself
+	// always consults this method before proceeding, regardless of which of those triggered it.
+	// The update/failure/popup presentations share one sheet slot with Settings but carry
+	// information (an in-progress update, an error, an announcement) that shouldn't be
+	// discarded just to unblock quitting; Settings and everything reachable from it (a bundled
+	// document, the preset gallery) have no such state, so quitting through those is fine.
+	func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
 		switch currentBlockingPresentation?() {
 		case .none, .settings:
-			NSApp.terminate(nil)
+			.terminateNow
 		case .update, .failure, .popup:
-			break
+			.terminateCancel
 		}
 	}
 
