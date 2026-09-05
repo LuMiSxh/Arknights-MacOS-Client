@@ -63,29 +63,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	// should have) blocked it. The update/failure/popup presentations share this same sheet
 	// slot but carry information (an in-progress update, an error, an announcement) that
 	// shouldn't be discarded just to unblock quitting — Settings and everything reachable from
-	// it (a bundled document, the preset gallery) have no such state, so the whole chain of
-	// sheets nested on top of it is closed before quitting.
+	// it (a bundled document, the preset gallery) have no such state.
+	//
+	// `-terminate:` itself was never actually refused by an attached sheet — only the default
+	// Apple Event handler this replaces was. Command-Q and the menu bar's Quit already call
+	// `-terminate:` directly with Settings open and always worked once fixQuitMenuItemTarget()
+	// pointed them at NSApp, with no sheet-closing logic at all. So there's no need to close
+	// any sheet here either: doing that with endSheet(_:) bypasses SwiftUI's own state, which
+	// still thinks the sheet should be showing, and its next redraw reopens it — sometimes
+	// winning the race against the process actually exiting. Terminating directly lets AppKit
+	// tear the sheet down as a normal side effect of quitting, the same way Command-Q does.
 	@objc private func handleQuitEvent(
 		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
 	) {
-		guard let presentation = currentBlockingPresentation?() else {
+		switch currentBlockingPresentation?() {
+		case .none, .settings:
 			NSApp.terminate(nil)
-			return
+		case .update, .failure, .popup:
+			break
 		}
-		guard
-			presentation == .settings,
-			let window = NSApp.windows.first(where: { $0.attachedSheet != nil })
-		else { return }
-		var sheetsToEnd: [(parent: NSWindow, sheet: NSWindow)] = []
-		var parent = window
-		while let sheet = parent.attachedSheet {
-			sheetsToEnd.append((parent, sheet))
-			parent = sheet
-		}
-		for (parent, sheet) in sheetsToEnd.reversed() {
-			parent.endSheet(sheet)
-		}
-		NSApp.terminate(nil)
 	}
 
 	func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
