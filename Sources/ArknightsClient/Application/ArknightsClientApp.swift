@@ -17,10 +17,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		NSApp.setActivationPolicy(.regular)
 		NSApp.activate(ignoringOtherApps: true)
+		fixQuitMenuItemTarget()
+		installQuitEventHandler()
+	}
+
+	// The main menu's Quit item ships with a nil target, which AppKit resolves by walking
+	// the responder chain from the key window. While Settings (or any other sheet) is key,
+	// that walk doesn't reliably reach NSApp, so Command-Q and clicking Quit in the menu bar
+	// appear to do nothing until the sheet is dismissed. Pointing the item straight at NSApp
+	// makes both work regardless of which window is key. The Dock icon's own Quit item and
+	// external quit requests go through a different path entirely — see
+	// installQuitEventHandler() below.
+	private func fixQuitMenuItemTarget() {
+		guard
+			let item = NSApp.mainMenu?.items.lazy.compactMap({ $0.submenu }).flatMap(\.items)
+				.first(where: { $0.action == #selector(NSApplication.terminate(_:)) })
+		else { return }
+		item.target = NSApp
 	}
 
 	func applicationWillTerminate(_ notification: Notification) {
 		stopGame?()
+	}
+
+	// AppKit's own handler for the standard Quit Apple Event — what the Dock icon's own Quit
+	// item and any external `tell application ... to quit` actually send — refuses the
+	// request outright with a user-canceled error while a sheet is attached to the key
+	// window, without ever calling applicationShouldTerminate(_:). Installing our own handler
+	// for the same event lets us end any attached sheet first and terminate directly,
+	// bypassing that built-in refusal instead of trying to work around it after the fact.
+	private func installQuitEventHandler() {
+		NSAppleEventManager.shared().setEventHandler(
+			self,
+			andSelector: #selector(handleQuitEvent(_:withReplyEvent:)),
+			forEventClass: AEEventClass(kCoreEventClass),
+			andEventID: AEEventID(kAEQuitApplication)
+		)
+	}
+
+	@objc private func handleQuitEvent(
+		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
+	) {
+		for window in NSApp.windows {
+			if let sheet = window.attachedSheet {
+				window.endSheet(sheet)
+			}
+		}
+		NSApp.terminate(nil)
 	}
 
 	func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
