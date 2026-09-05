@@ -8,12 +8,25 @@ struct PresetGalleryView: View {
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var searchText = ""
-	@State private var selectedCategory: WallpaperCategory?
-	@State private var avatars: [PresetAvatar] = []
-	@State private var wallpapers: [PresetWallpaper] = []
-	@State private var isLoading = true
-	@State private var applyingItemID: String?
+	@State var searchText = ""
+	// Committed exact-tag filters shown as removable pills in the search field — promoted
+	// either by picking a tag suggestion or by typing a complete tag name followed by a
+	// space. Kept separate from free-text `searchText` so an exact tag (e.g. the single-letter
+	// "w" operator) never gets diluted by the prefix/substring matching free text uses. See
+	// PresetGalleryView+Search.swift.
+	@State var committedTags: [String] = []
+	// Set to `searchText` right after a suggestion chip is picked, and compared against it in
+	// `searchSuggestions` to hide the row immediately — otherwise the just-picked word (now
+	// followed only by a trailing space) still looks like something worth suggesting itself.
+	// Typing anything further changes `searchText` away from this snapshot, which naturally
+	// restores normal suggestions.
+	@State var lastAppliedSuggestionText: String?
+	@FocusState var isSearchFieldFocused: Bool
+	@State var selectedCategory: WallpaperCategory?
+	@State var avatars: [PresetAvatar] = []
+	@State var wallpapers: [PresetWallpaper] = []
+	@State var isLoading = true
+	@State var applyingItemID: String?
 	@State private var showsIconStylePreview = false
 	private let avatarColumns = [
 		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
@@ -37,13 +50,6 @@ struct PresetGalleryView: View {
 	var body: some View {
 		let hasSearchQuery = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 		let filteredAvatars = PresetCatalogSearch.avatars(matching: searchText, in: avatars)
-		let filteredWallpapers = PresetCatalogSearch.wallpapers(
-			matching: searchText, category: selectedCategory, in: wallpapers)
-		let categoryWallpapers = wallpapers.filter {
-			selectedCategory == nil || $0.category == selectedCategory
-		}
-		let wallpaperTerms = PresetCatalogSearch.wallpaperSuggestions(
-			matching: searchText, in: categoryWallpapers)
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {
 				PresetGalleryHeader(
@@ -138,15 +144,6 @@ struct PresetGalleryView: View {
 			guard !Task.isCancelled, taskDestination == destination else { return }
 			isLoading = false
 		}
-	}
-	private var searchBar: some View {
-		ThemedTextField(
-			L10n.string(CustomizationStrings.searchLabel),
-			prompt: L10n.string(destination.searchPlaceholder),
-			text: $searchText,
-			systemImage: "magnifyingglass",
-			accentColor: customization.accentColor
-		)
 	}
 	private func avatarsGrid(_ filteredAvatars: [PresetAvatar]) -> some View {
 		LazyVGrid(columns: avatarColumns, spacing: 18) {

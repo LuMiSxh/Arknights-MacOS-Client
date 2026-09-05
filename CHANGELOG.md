@@ -9,6 +9,12 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Restored the wallpaper search field's committed-tag pills (typing or picking a complete tag promotes it out of free text into a removable pill), which #61 implemented and described but lost during a merge conflict before release.
+
 ## [0.5.0] - 2026-09-03
 
 ### Added

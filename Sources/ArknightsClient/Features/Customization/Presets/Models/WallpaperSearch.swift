@@ -137,6 +137,40 @@ enum WallpaperSearch {
 		return terms.joined(separator: " ") + " "
 	}
 
+	/// Finds the longest trailing run of words in `query` that together spell out a complete
+	/// known tag — checking only the single last word would never recognize a multi-word tag
+	/// like "blue poison" (splitting on whitespace breaks it into "blue" and "poison" before
+	/// any lookup happens), so this tries the whole trailing phrase first and shrinks by one
+	/// word at a time until a match is found.
+	///
+	/// Returns the matched canonical tag and `query` with that trailing phrase removed (with a
+	/// trailing space preserved if anything remains before it), or `nil` if nothing matches.
+	static func trailingKnownTag(
+		in query: String, canonicalTagsByNormalizedForm: [String: String]
+	) -> (tag: String, remainingQuery: String)? {
+		let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
+		guard !terms.isEmpty else { return nil }
+
+		for wordCount in stride(from: terms.count, through: 1, by: -1) {
+			let phrase = terms.suffix(wordCount).joined(separator: " ")
+			guard let canonical = canonicalTagsByNormalizedForm[normalized(phrase)] else {
+				continue
+			}
+			let remainder = terms.dropLast(wordCount)
+			let remainingQuery = remainder.isEmpty ? "" : remainder.joined(separator: " ") + " "
+			return (canonical, remainingQuery)
+		}
+		return nil
+	}
+
+	/// Whether `tags` contains `tag` exactly (case/diacritic-insensitive) — committed tag
+	/// pills require an exact match by design, since a prefix match is what free-text terms
+	/// are for; a pill exists specifically to pin down one exact tag.
+	static func tagsContain(_ tags: [String], exactly tag: String) -> Bool {
+		let normalizedTag = normalized(tag)
+		return tags.contains { normalized($0) == normalizedTag }
+	}
+
 	/// Case- and diacritic-folded form of `value`, used for every comparison in this type.
 	///
 	/// Foundation's `.diacriticInsensitive` string options don't fold every accented letter —
