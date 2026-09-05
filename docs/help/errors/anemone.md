@@ -9,7 +9,7 @@ domain: runtime
 
 # ANEMONE
 
-The launcher could not safely apply, update, or restore one of its game-file compatibility helpers. These helpers make the embedded sign-in browser and Notices window work correctly through Wine. The launcher stops instead of overwriting an unknown file or leaving an official helper without a recoverable backup.
+The launcher could not safely apply, update, or restore one of its game-file compatibility helpers. These helpers make the embedded sign-in browser and Notices window work correctly through Wine for clients that provide those windows. China — Bilibili uses its own client login flow; the embedded login-window guidance does not apply to that client. The launcher stops instead of overwriting an unknown file or leaving an official helper without a recoverable backup.
 
 ## Try this
 

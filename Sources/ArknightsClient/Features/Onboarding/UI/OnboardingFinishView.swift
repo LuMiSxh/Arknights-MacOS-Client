@@ -53,15 +53,17 @@ struct OnboardingFinishView: View {
 
 				SettingsHairline()
 
-				Text(L10n.string(OnboardingStrings.communitySupport))
+				Text(L10n.string(OnboardingStrings.communitySupport(region: installation.region)))
 					.font(.callout)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					title: L10n.string(OnboardingStrings.contactSupport),
+					title: L10n.string(
+						OnboardingStrings.contactSupport(region: installation.region)
+					),
 					systemImage: "arrow.up.right.square",
 					tone: .accent(accentColor),
-					action: contactYostar
+					action: contactPublisher
 				)
 			}
 		}
@@ -92,7 +94,7 @@ struct OnboardingFinishView: View {
 		NSWorkspace.shared.open(IssueReportURL.build())
 	}
 
-	private func contactYostar() {
-		NSWorkspace.shared.open(SupportLinks.yostarContact)
+	private func contactPublisher() {
+		NSWorkspace.shared.open(SupportLinks.contact(for: installation.region))
 	}
 }

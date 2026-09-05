@@ -20,3 +20,10 @@ Open the page whose title matches the code in the launcher. Follow the steps in 
 > Do not delete the shared Wine prefix, game files, or partial downloads unless the matching page asks you to. Retry and Repair preserve more useful state than manual cleanup.
 
 If no code is shown, use [Troubleshooting](../troubleshooting.md) and include the action that failed when opening a report.
+
+## Publisher support
+
+Account, payment, billing, server, and in-game service problems are handled by the selected
+publisher and payment provider, not by a launcher error code. Use the [publisher support routing
+table](../README.md#publisher-support-routing): Yostar handles Global, Japan, and Korea; Hypergryph
+handles China and China — Bilibili.

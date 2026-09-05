@@ -89,7 +89,13 @@ export function buildDirectory(
 	const childDocuments = draft.documents
 		.filter((document) => !document.isReadme)
 		.map((document) => renderedBySource.get(document.relative))
-		.filter((document): document is ContentDocument => Boolean(document));
+		.filter((document): document is ContentDocument => Boolean(document))
+		.map((document) => {
+			if (!hiddenByMetadata) return document;
+			const hiddenDocument = { ...document, hidden: true };
+			byRoute.set(hiddenDocument.route, hiddenDocument);
+			return hiddenDocument;
+		});
 	const hasVisibleChild =
 		childDirectories.some((child) => !child.hidden) ||
 		childDocuments.some((document) => !document.hidden);

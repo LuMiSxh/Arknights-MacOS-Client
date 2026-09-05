@@ -23,3 +23,17 @@ func globalRegionPreservesThePreExistingPreferencesKey() {
 	// existing users' custom install-directory preference on upgrade.
 	#expect(GameRegion.global.rawValue == "global")
 }
+
+@Test(arguments: [
+	(GameRegion.global, "https://account.yo-star.com/contact"),
+	(GameRegion.japan, "https://account.yo-star.com/contact"),
+	(GameRegion.korea, "https://account.yo-star.com/contact"),
+	(GameRegion.china, "https://user.hypergryph.com/support"),
+	(GameRegion.chinaBilibili, "https://user.hypergryph.com/support"),
+])
+func regionsUseTheOfficialPublisherSupportDestination(
+	region: GameRegion,
+	expectedURL: String
+) {
+	#expect(SupportLinks.contact(for: region) == URL(string: expectedURL))
+}

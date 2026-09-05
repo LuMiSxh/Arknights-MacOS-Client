@@ -1,10 +1,17 @@
 <script lang="ts">
 	import { asset, base, resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { SegmentedControl, theme, type ThemeMode } from 'anasthasia';
+	import {
+		Button,
+		SegmentedControl,
+		theme,
+		type ThemeMode
+	} from 'anasthasia';
+	import { Kbd } from 'anasthasia/keyboard';
 	import '../app.css';
 	import type { LayoutProps } from './$types';
 	import { normalizeBasePath, repositoryUrl } from '$lib/site.js';
+	import SearchDialog from '$lib/components/SearchDialog.svelte';
 
 	let { data, children }: LayoutProps = $props();
 
@@ -19,6 +26,7 @@
 	);
 	let themeMode = $state<ThemeMode>('system');
 	let mobileMenuOpen = $state(false);
+	let searchOpen = $state(false);
 	const themeOptions = [
 		{ value: 'light' as const, label: 'Light' },
 		{ value: 'system' as const, label: 'Auto' },
@@ -69,6 +77,21 @@
 	}
 </script>
 
+{#snippet searchTrigger(compact: boolean)}
+	<Button
+		class={compact ? 'shrink-0 px-2 text-xs' : 'w-full justify-between'}
+		variant="secondary"
+		type="button"
+		aria-haspopup="dialog"
+		aria-expanded={searchOpen}
+		aria-keyshortcuts="Control+K Meta+K"
+		onclick={() => (searchOpen = true)}
+	>
+		<span>{compact ? 'Search' : 'Search docs'}</span>
+		{#if !compact}<Kbd>⌘K</Kbd>{/if}
+	</Button>
+{/snippet}
+
 <svelte:head>
 	<meta name="color-scheme" content="light dark" />
 	<meta
@@ -105,6 +128,9 @@
 				onchange={setTheme}
 			/>
 		</div>
+		<div class="shrink-0">
+			{@render searchTrigger(false)}
+		</div>
 
 		<div class="rail-navigation">
 			<p class="site-rail-label">Navigation</p>
@@ -119,6 +145,9 @@
 							<summary
 								data-current={isCurrent(entry.route)
 									? 'true'
+									: undefined}
+								aria-current={isCurrent(entry.route)
+									? 'location'
 									: undefined}>{entry.title}</summary
 							>
 							<div class="site-nav-children">
@@ -173,6 +202,7 @@
 			<img class="site-mark-icon" src={appIconUrl} alt="" />
 			<span>Arknights Client</span>
 		</a>
+		{@render searchTrigger(true)}
 		<details bind:open={mobileMenuOpen}>
 			<summary>Menu</summary>
 			<div class="mobile-menu">
@@ -210,6 +240,8 @@
 			</div>
 		</details>
 	</header>
+
+	<SearchDialog bind:open={searchOpen} />
 
 	<main class="site-main" id="main-content">
 		<div class="site-main-inner">

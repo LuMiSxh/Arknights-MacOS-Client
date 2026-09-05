@@ -4,6 +4,7 @@ import AppKit
 import SwiftUI
 
 struct AboutSettingsPage: View {
+	let region: GameRegion
 	let accentColor: Color
 	let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
@@ -104,13 +105,13 @@ struct AboutSettingsPage: View {
 
 				SettingsActionRow(
 					title: L10n.string(SettingsStrings.gameAccountIssues),
-					detail: L10n.string(SettingsStrings.gameAccountIssuesDetail)
+					detail: L10n.string(SettingsStrings.gameAccountIssuesDetail(region: region))
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.contactYostar),
+						title: L10n.string(SettingsStrings.contactPublisherTitle(region: region)),
 						systemImage: "arrow.up.right.square",
 						tone: .accent(accentColor), presentation: .compact,
-						action: contactYostar
+						action: contactPublisher
 					)
 				}
 			}
@@ -147,7 +148,7 @@ struct AboutSettingsPage: View {
 		NSWorkspace.shared.open(IssueReportURL.build())
 	}
 
-	private func contactYostar() {
-		NSWorkspace.shared.open(SupportLinks.yostarContact)
+	private func contactPublisher() {
+		NSWorkspace.shared.open(SupportLinks.contact(for: region))
 	}
 }

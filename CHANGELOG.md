@@ -11,9 +11,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added fuzzy full-text search across project documentation with direct links to matching pages and sections.
+- Added Hypergryph support actions for China and China — Bilibili account, payment, and game-service issues.
+
 ### Changed
 
 - Made the daily reset pill show the selected client's reset at a glance and expand to list and switch between every installed client's reset time.
+- Clarified publisher-region ownership, publisher-neutral payment routing, and client-specific embedded login-window guidance.
+- Widened the documentation layout to improve search-result and support-content readability.
 
 ## [0.5.0] - 2026-09-03
 

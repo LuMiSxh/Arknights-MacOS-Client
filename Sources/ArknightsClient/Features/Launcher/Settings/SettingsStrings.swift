@@ -223,6 +223,18 @@ enum SettingsStrings {
 	static let gameAccountIssuesDetail = LocalizedStringResource.Settings
 		.settingsAboutGameAccountIssuesDetail
 	static let contactYostar = LocalizedStringResource.Settings.settingsAboutContactYostar
+	static func contactPublisherTitle(region: GameRegion) -> LocalizedStringResource {
+		if region.isChinaClient {
+			return .Settings.settingsAboutContactHypergryph
+		}
+		return contactYostar
+	}
+	static func gameAccountIssuesDetail(region: GameRegion) -> LocalizedStringResource {
+		if region.isChinaClient {
+			return .Settings.settingsAboutGameAccountIssuesHypergryphDetail
+		}
+		return gameAccountIssuesDetail
+	}
 	static let userAgreement = LocalizedStringResource.Settings.settingsAboutUserAgreement
 	static let privacyPolicy = LocalizedStringResource.Settings.settingsAboutPrivacyPolicy
 	static let notAffiliated = LocalizedStringResource.Settings.settingsAboutNotAffiliated

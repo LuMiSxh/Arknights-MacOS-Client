@@ -1729,6 +1729,24 @@
         }
       }
     },
+    "onboarding.finish.community.support.hypergryph": {
+      "comment": "Hypergryph support guidance for a China client",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wende dich bei Problemen mit Konto, Zahlung oder Spieldienst stattdessen an den Hypergryph-Support."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For account, payment, or game-service issues, contact Hypergryph support instead."
+          }
+        }
+      }
+    },
     "onboarding.finish.community.title": {
       "comment": "Community project panel title",
       "extractionState": "manual",
@@ -1761,6 +1779,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Contact Yostar Support…"
+          }
+        }
+      }
+    },
+    "onboarding.finish.contactHypergryph": {
+      "comment": "Open Hypergryph support action for a China client",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypergryph-Support kontaktieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Hypergryph Support…"
           }
         }
       }

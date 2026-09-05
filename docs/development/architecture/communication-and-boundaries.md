@@ -6,22 +6,24 @@ order: 40
 
 # Communication and boundaries
 
-The launcher has no project-owned application server. Its remote inputs are the official Yostar
-launcher APIs, the repository-hosted announcements feed, the official branding response, and
-Sparkle's signed appcast. Each source has a separate owner, validation policy, and failure path.
+The launcher has no project-owned application server. Its remote inputs are the official publisher
+launcher APIs (Yostar for Global, Japan, and Korea; Hypergryph for China and China — Bilibili), the
+repository-hosted announcements feed, the official branding response, and Sparkle's signed appcast.
+Each source has a separate owner, validation policy, and failure path.
 Keep those channels separate when adding a new message or update surface.
 
 ## Launcher communication
 
-Three read-only sources feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Announcements and Yostar notices can enqueue a popup; launcher updates use status state and the themed Sparkle UI.
+Four read-only channels feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Announcements and Yostar notices can enqueue a popup; launcher updates use status state and the themed Sparkle UI.
 
 | Channel                  | Owner                         | Payload                                                   | User-visible result                                                |
 | ------------------------ | ----------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
-| Yostar game/config API   | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, region notice, or an actionable launcher error |
-| Repository announcements | `LauncherAnnouncementService` | Bounded JSON feed from `main`                             | Once-only Markdown popup with an optional HTTPS action             |
-| Sparkle appcast          | `LauncherUpdaterController`   | Signed launcher update metadata and archive               | Update status, then Sparkle's themed update UI on request          |
+| Yostar game/config API (Global, Japan, Korea) | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, region notice, or an actionable launcher error |
+| Hypergryph metadata/payload API (China clients) | `LauncherAPI`              | Region configuration, branding, CDN and manifest location | Readiness, artwork, or an actionable launcher error                |
+| Repository announcements                       | `LauncherAnnouncementService` | Bounded JSON feed from `main`                             | Once-only Markdown popup with an optional HTTPS action             |
+| Sparkle appcast                                 | `LauncherUpdaterController`   | Signed launcher update metadata and archive               | Update status, then Sparkle's themed update UI on request          |
 
-Yostar's `noticeContent` travels inside the branding response and is not a fourth independent
+Yostar's `noticeContent` travels inside the branding response and is not an additional independent
 network service. It is formatted as native attributed text before it enters the popup queue.
 
 - **Sparkle appcast** (`SUFeedURL`), checked silently when automatic launcher-update checks are on and before onboarding. Sparkle validates the signed feed and compares its update item against the running version. A newer version becomes launcher status state and enables the update action; an automatic startup discovery and manual actions open the launcher's themed Sparkle UI.
@@ -129,7 +131,7 @@ state model and the user-facing recovery contract. For request limits and feed f
 
 ## Privacy and support boundary
 
-The launcher sends the region and signed request metadata required by Yostar's API, fetches
+The launcher sends the region and signed request metadata required by the selected publisher's API, fetches
 repository announcements when enabled, and performs Sparkle update checks according to Settings.
 It does not collect project telemetry. The embedded browser remains an official game helper; the
 compatibility wrappers adjust process behavior but do not inspect login, payment, or page contents.
@@ -137,5 +139,4 @@ compatibility wrappers adjust process behavior but do not inspect login, payment
 Logs are local app-owned files. Diagnostics may include endpoint hosts, versions, process IDs,
 termination status, and bounded runtime output. Before sharing a log, remove account identifiers,
 local paths, or any content that is not needed for the report. Route account, payment, and service
-issues to official Yostar support; route launcher, runtime, and packaging issues to the repository
-issue form.
+issues to the selected publisher's official support using the [publisher support routing table](../../help/README.md#publisher-support-routing); route launcher, runtime, and packaging issues to the repository issue form.

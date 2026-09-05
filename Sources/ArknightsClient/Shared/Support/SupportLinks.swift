@@ -8,5 +8,10 @@ enum SupportLinks {
 		string: "https://lumisxh.github.io/Arknights-MacOS-Client/"
 	)!
 	static let yostarContact = URL(string: "https://account.yo-star.com/contact")!
+	static let hypergryphContact = URL(string: "https://user.hypergryph.com/support")!
 	static let donate = URL(string: "https://ko-fi.com/lumisxh")!
+
+	static func contact(for region: GameRegion) -> URL {
+		region.isChinaClient ? hypergryphContact : yostarContact
+	}
 }

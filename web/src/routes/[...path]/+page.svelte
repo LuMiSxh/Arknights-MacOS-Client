@@ -5,4 +5,8 @@
 	let { data }: PageProps = $props();
 </script>
 
-<ContentView content={data.content} neighbors={data.neighbors} />
+<ContentView
+	content={data.content}
+	neighbors={data.neighbors}
+	breadcrumbs={data.breadcrumbs}
+/>

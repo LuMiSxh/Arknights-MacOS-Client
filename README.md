@@ -35,8 +35,8 @@ Arknights Client downloads official PC game files directly from the selected pub
 - Enable the China or China — Bilibili client through Canary Features
 - Keep each region in its own game directory and switch between installed regions
 - Run in windowed, borderless, or fullscreen mode at a selected resolution
-- Enable HiDPI rendering for the game and its embedded login browser
-- Use Yostar, Apple, Google, and Facebook login flows through Wine compatibility helpers
+- Enable HiDPI rendering for the game and any embedded login browser the selected client provides
+- Use each supported client's official sign-in providers through Wine compatibility helpers where that client provides an embedded login window
 
 ### Native macOS experience
 
@@ -60,6 +60,11 @@ Arknights Client downloads official PC game files directly from the selected pub
 ## Installation and support
 
 Use the website's [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) for requirements, Gatekeeper and Rosetta guidance, region setup, and first launch. The [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) covers troubleshooting, storage, runtime compatibility, and the boundary between launcher support and publisher support.
+
+Publisher support follows the selected region: Yostar supports Global, Japan, and Korea; Hypergryph
+supports China and China — Bilibili. Account, payment, billing, server, and in-game issues belong
+to the publisher and payment provider. The embedded login-window guidance applies to Global, Japan,
+Korea, and China; it does not apply to China — Bilibili. See the [publisher support routing table](https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing).
 
 ## Development
 
