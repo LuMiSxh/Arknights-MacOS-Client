@@ -32,6 +32,15 @@ struct LauncherUpdateView: View {
 			actions
 		}
 		.onExitCommand(perform: driver.dismissFromUser)
+		.background {
+			// This modal is a plain `.overlay` on the main window, not a `.sheet`, so
+			// `onExitCommand` alone doesn't reliably receive Escape — a hidden button with
+			// `.cancelAction` registers Escape as a real keyboard shortcut regardless of
+			// presentation style.
+			Button("", action: driver.dismissFromUser)
+				.keyboardShortcut(.cancelAction)
+				.hidden()
+		}
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.18),
 			value: driver.phase

@@ -252,7 +252,11 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		retryTermination()
 	}
 	func dismissFromUser() {
-		if phase == .installing || phase == .readyToInstall {
+		// Installing has no Later button to mimic, and hiding rather than cancelling avoids
+		// interrupting an in-progress install from a stray Escape press, while letting the
+		// launcher's update indicator reopen this exact presentation later. Every other phase
+		// (including readyToInstall) falls through below to reply exactly as Later would.
+		if phase == .installing {
 			isPresentationHidden = true
 			return
 		}

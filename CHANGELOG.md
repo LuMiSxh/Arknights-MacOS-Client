@@ -22,6 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Clarified publisher-region ownership, publisher-neutral payment routing, and client-specific embedded login-window guidance.
 - Widened the documentation layout to improve search-result and support-content readability.
 
+### Fixed
+
+- Pressing Escape on the "ready to install" launcher update prompt now declines it the same way clicking Later does, instead of only hiding it. Escape also didn't do anything at all on the update prompt before this — it's presented as a plain overlay rather than a real sheet, so the standard SwiftUI Escape handling never reached it; a dedicated keyboard shortcut fixes that regardless of how the prompt is shown.
+
 ## [0.5.0] - 2026-09-03
 
 ### Added
