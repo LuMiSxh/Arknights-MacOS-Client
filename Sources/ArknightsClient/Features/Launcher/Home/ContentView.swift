@@ -7,7 +7,7 @@ struct ContentView: View {
 	let initialMusicTitle: String?
 	let openMusicURL: (URL) -> Void
 	let registerOpenSettings: (@escaping () -> Void) -> Void
-	let registerQuitDismissalQuery: (@escaping () -> Bool) -> Void
+	let registerQuitDismissalQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State private var presentation = LauncherPresentationArbiter()
@@ -21,7 +21,8 @@ struct ContentView: View {
 		initialMusicTitle: String?,
 		openMusicURL: @escaping (URL) -> Void,
 		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
-		registerQuitDismissalQuery: @escaping (@escaping () -> Bool) -> Void
+		registerQuitDismissalQuery:
+			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void
 	) {
 		self.model = model
 		self.initialMusicTitle = initialMusicTitle
@@ -134,11 +135,11 @@ struct ContentView: View {
 		}
 		.onAppear {
 			registerOpenSettings(requestSettings)
-			// Only Settings is safe to close out from under the user to let a Dock-icon or
-			// external quit through — the update, failure, and popup destinations that share
-			// this same sheet slot carry information (an in-progress update, an error, an
-			// announcement) that shouldn't be silently discarded just to unblock quitting.
-			registerQuitDismissalQuery { presentation.current == .settings }
+			// Reports which of the shared sheet slot's destinations (if any) is currently
+			// shown, so a Dock-icon or external quit can tell Settings — safe to close out
+			// from under the user — apart from update/failure/popup, which carry information
+			// that shouldn't be silently discarded just to unblock quitting.
+			registerQuitDismissalQuery { presentation.current }
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in

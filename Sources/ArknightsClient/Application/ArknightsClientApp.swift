@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	weak var model: LauncherViewModel?
 	var stopGame: (() -> Void)?
 	var openSettings: (() -> Void)?
-	var isShowingOnlySettings: (() -> Bool)?
+	var currentBlockingPresentation: (() -> LauncherPresentationDestination?)?
 
 	// `swift run` (used by `just preview`) launches the executable directly rather than
 	// through LaunchServices: without a bundle, the process's activation policy isn't
@@ -56,22 +56,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		)
 	}
 
-	// Settings is the only sheet safe to close out from under the user just to let quitting
-	// through — the launcher's update, failure, and popup presentations share the same sheet
-	// slot but carry information (an in-progress update, an error, an announcement) that
-	// shouldn't be silently discarded. If Settings itself has something presented on top of it
-	// (a bundled document, a preset gallery), that inner sheet is left alone too, and quit
-	// falls back to the normal refusal until the user closes it.
+	// Installing this handler replaces AppKit's own default handling for the quit event
+	// entirely, including whatever refusal it would otherwise apply — so every case other than
+	// "nothing presented" or "Settings, and only Settings" must explicitly decline to
+	// terminate here, or it would silently start quitting through dialogs that used to (or, for
+	// the update prompt, always should have) blocked it. The update/failure/popup presentations
+	// share this same sheet slot but carry information (an in-progress update, an error, an
+	// announcement) that shouldn't be discarded just to unblock quitting — only Settings has no
+	// such state. If Settings itself has something presented on top of it (a bundled document,
+	// a preset gallery), that inner sheet is left alone too, and quit is declined until the user
+	// closes it.
 	@objc private func handleQuitEvent(
 		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
 	) {
-		if isShowingOnlySettings?() == true {
-			for window in NSApp.windows {
-				if let sheet = window.attachedSheet, sheet.attachedSheet == nil {
-					window.endSheet(sheet)
-				}
-			}
+		guard let presentation = currentBlockingPresentation?() else {
+			NSApp.terminate(nil)
+			return
 		}
+		guard
+			presentation == .settings,
+			let window = NSApp.windows.first(where: { $0.attachedSheet != nil }),
+			let sheet = window.attachedSheet,
+			sheet.attachedSheet == nil
+		else { return }
+		window.endSheet(sheet)
 		NSApp.terminate(nil)
 	}
 
@@ -179,7 +187,7 @@ struct ArknightsClientApp: App {
 					initialMusicTitle: developerMusicTitle,
 					openMusicURL: { _ = NSWorkspace.shared.open($0) },
 					registerOpenSettings: { appDelegate.openSettings = $0 },
-					registerQuitDismissalQuery: { appDelegate.isShowingOnlySettings = $0 }
+					registerQuitDismissalQuery: { appDelegate.currentBlockingPresentation = $0 }
 				)
 				.environment(\.launcherWindowSize, geometry.size)
 			}
