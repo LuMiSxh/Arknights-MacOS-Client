@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Pressing Escape on the "ready to install" launcher update prompt now declines it the same way clicking Later does, instead of only hiding it. Escape also didn't do anything at all on the update prompt before this — it's presented as a plain overlay rather than a real sheet, so the standard SwiftUI Escape handling never reached it; a dedicated keyboard shortcut fixes that regardless of how the prompt is shown.
 - Decoded gallery thumbnails to a bounded pixel size instead of their full native resolution, cutting peak memory for official wallpapers that have no distinct small image from Yostar.
 - Matched the synthetic thumbnail request to the exact resize query the live Fankit gallery page itself uses, landing on the same already-cached smaller response instead of the multi-megabyte original for wallpapers with no distinct small image from Yostar.
 

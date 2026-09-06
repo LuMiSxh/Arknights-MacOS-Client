@@ -109,7 +109,7 @@ struct LauncherCommunicationControllerTests {
 			preferences: preferences,
 			log: log
 		)
-		controller.launcherUpdateUserDriver.showReady { _ in }
+		controller.launcherUpdateUserDriver.showInstallingUpdate(withApplicationTerminated: true) {}
 		controller.launcherUpdateUserDriver.dismissFromUser()
 
 		#expect(controller.launcherUpdateVersion == nil)

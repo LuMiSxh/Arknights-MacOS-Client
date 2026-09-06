@@ -71,6 +71,19 @@ struct LauncherUpdateUserDriverTests {
 	}
 
 	@Test
+	func dismissFromUserWhenReadyToInstallRepliesTheSameAsLater() {
+		let driver = LauncherUpdateUserDriver()
+		var choices: [SPUUserUpdateChoice] = []
+		driver.showReady { choices.append($0) }
+
+		driver.dismissFromUser()
+
+		#expect(choices == [.dismiss])
+		#expect(driver.phase == .hidden)
+		#expect(!driver.isPresented)
+	}
+
+	@Test
 	func errorAcknowledgementClearsTheCustomPresentation() {
 		let driver = LauncherUpdateUserDriver()
 		var acknowledgementCount = 0

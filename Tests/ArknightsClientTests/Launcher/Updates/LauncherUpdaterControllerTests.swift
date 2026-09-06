@@ -55,6 +55,8 @@ struct LauncherUpdaterControllerTests {
 
 	@Test
 	func hiddenActiveUpdateRemainsOpenableWhileLifecycleGateIsHeld() {
+		// Installing has no Later button, so dismissFromUser still only hides it (unlike
+		// readyToInstall, where dismissFromUser now fully declines, same as Later).
 		let lifecycle = makeLifecycleStore()
 		lifecycle.beginLauncherUpdate()
 		var activationCount = 0
@@ -63,7 +65,7 @@ struct LauncherUpdaterControllerTests {
 			log: lifecycle.log,
 			activateApplication: { activationCount += 1 }
 		)
-		subject.userDriver.showReady { _ in }
+		subject.userDriver.showInstallingUpdate(withApplicationTerminated: true) {}
 		subject.userDriver.dismissFromUser()
 
 		#expect(subject.canOpenUpdate)
@@ -74,7 +76,7 @@ struct LauncherUpdaterControllerTests {
 	}
 
 	@Test
-	func hiddenUpdateActionRefocusesReadyAndInstallingPhases() {
+	func hiddenInstallingUpdateRefocusesOnCheckForUpdates() {
 		let lifecycle = makeLifecycleStore()
 		var activationCount = 0
 		let subject = LauncherUpdaterController(
@@ -83,24 +85,16 @@ struct LauncherUpdaterControllerTests {
 			activateApplication: { activationCount += 1 }
 		)
 
-		subject.userDriver.showReady { _ in }
+		subject.userDriver.showInstallingUpdate(withApplicationTerminated: true) {}
 		subject.userDriver.dismissFromUser()
-		#expect(subject.userDriver.phase == .readyToInstall)
+		#expect(subject.userDriver.phase == .installing)
 		#expect(!subject.userDriver.isPresented)
 
 		subject.checkForUpdates()
 
-		#expect(subject.userDriver.isPresented)
-		#expect(activationCount == 1)
-
-		subject.userDriver.dismissUpdateInstallation()
-		subject.userDriver.showInstallingUpdate(withApplicationTerminated: true) {}
-		subject.userDriver.dismissFromUser()
-		subject.checkForUpdates()
-
 		#expect(subject.userDriver.phase == .installing)
 		#expect(subject.userDriver.isPresented)
-		#expect(activationCount == 2)
+		#expect(activationCount == 1)
 	}
 
 	@Test
