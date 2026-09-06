@@ -4,7 +4,8 @@ export const prerender = true;
 export const trailingSlash = 'always';
 
 export function load({ url }: { url: URL }) {
-	const { byRoute, root } = getContent();
+	const content = getContent();
+	const { byRoute, root } = content;
 	return {
 		pathname: url.pathname,
 		navigation: root.children

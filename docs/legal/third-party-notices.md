@@ -79,7 +79,7 @@ and upstream source distributions remain authoritative for the complete notice s
 | Project compatibility wrappers and bridges | Yes                             | `RuntimeSupport/` source at the matching tag; MPL-2.0 SPDX markers           |
 | WineCX + DXMT runtime                      | Yes, as a prebuilt runtime unit | [`runtime.json`](../../runtime.json), `RUNTIME.json`, and this page          |
 | Sparkle framework                          | Yes                             | `ThirdPartyLicenses/sparkle.txt` and the Sparkle project                     |
-| Arknights game files                       | No                              | Downloaded from official Yostar endpoints after the user starts installation |
+| Arknights game files                       | No                              | Downloaded from first-party publisher endpoints after the user starts installation: Yostar for Global, Japan, and Korea; Hypergryph for China and China — Bilibili |
 | Wine Mono                                  | No                              | Explicitly excluded by packaging                                             |
 | DXVK                                       | No                              | Not copied into the app bundle                                               |
 | Apple Game Porting Toolkit                 | No                              | Not copied into the app bundle                                               |

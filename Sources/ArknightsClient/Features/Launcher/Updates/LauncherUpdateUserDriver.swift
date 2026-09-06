@@ -252,7 +252,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		retryTermination()
 	}
 	func dismissFromUser() {
-		if phase == .installing || phase == .readyToInstall {
+		if phase == .installing {
 			isPresentationHidden = true
 			return
 		}

@@ -137,6 +137,30 @@ enum WallpaperSearch {
 		return terms.joined(separator: " ") + " "
 	}
 
+	/// Prefers the longest match so multi-word tags become one filter.
+	static func trailingKnownTag(
+		in query: String, canonicalTagsByNormalizedForm: [String: String]
+	) -> (tag: String, remainingQuery: String)? {
+		let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
+		guard !terms.isEmpty else { return nil }
+
+		for wordCount in stride(from: terms.count, through: 1, by: -1) {
+			let phrase = terms.suffix(wordCount).joined(separator: " ")
+			guard let canonical = canonicalTagsByNormalizedForm[normalized(phrase)] else {
+				continue
+			}
+			let remainder = terms.dropLast(wordCount)
+			let remainingQuery = remainder.isEmpty ? "" : remainder.joined(separator: " ") + " "
+			return (canonical, remainingQuery)
+		}
+		return nil
+	}
+
+	static func tagsContain(_ tags: [String], exactly tag: String) -> Bool {
+		let normalizedTag = normalized(tag)
+		return tags.contains { normalized($0) == normalizedTag }
+	}
+
 	/// Case- and diacritic-folded form of `value`, used for every comparison in this type.
 	///
 	/// Foundation's `.diacriticInsensitive` string options don't fold every accented letter —

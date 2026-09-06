@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Foundation
 import Testing
 
 @testable import ArknightsClient
@@ -197,4 +198,39 @@ struct WallpaperSearchTests {
 			))
 	}
 
+	@Test("tagsContain requires an exact tag, not a prefix or substring")
+	func tagsContainRequiresExactMatch() {
+		#expect(WallpaperSearch.tagsContain(["w", "amiya"], exactly: "w"))
+		#expect(!WallpaperSearch.tagsContain(["warfarin"], exactly: "w"))
+	}
+
+	@Test("tagsContain folds diacritics the same way matches(...) does")
+	func tagsContainFoldsDiacritics() {
+		#expect(WallpaperSearch.tagsContain(["młynar"], exactly: "mlynar"))
+	}
+
+	@Test("committed tags filter exact catalog tags")
+	func committedTagsFilterExactly() {
+		let exact = wallpaper(id: "global-586")
+		let prefixOnly = wallpaper(id: "global-592")
+
+		let matches = PresetGallerySearch.wallpapers(
+			matching: "",
+			committedTags: ["w"],
+			category: nil,
+			in: [exact, prefixOnly]
+		)
+
+		#expect(matches == [exact])
+	}
+
+	private func wallpaper(id: String) -> PresetWallpaper {
+		PresetWallpaper(
+			id: id,
+			title: "Untitled",
+			fallbackOrdinal: nil,
+			url: URL(string: "https://example.com/wallpaper.png")!,
+			thumbnailURL: nil
+		)
+	}
 }

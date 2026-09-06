@@ -14,7 +14,7 @@ Related issue: [#55 — Collect anonymous telemetry](https://github.com/LuMiSxh/
 
 Arknights Client may offer optional telemetry to learn which launcher features and compatibility
 settings matter, which operations fail, and which languages would benefit users. Collection must be
-explicitly enabled, remain independent from Yostar services, and avoid identifiers or per-installation
+explicitly enabled, remain independent from publisher services, and avoid identifiers or per-installation
 profiles.
 
 The initial design should favor occasional, one-shot campaigns over continuous event collection. A
@@ -120,7 +120,7 @@ Values must be fixed enums or coarse buckets, for example:
 The client and Worker must reject:
 
 - stable installation IDs, device IDs, serial numbers, advertising IDs, and cross-campaign tokens;
-- usernames, account identifiers, login data, payment data, and Yostar credentials;
+- usernames, account identifiers, login data, payment data, and publisher credentials;
 - home, installation, cache, Wine-prefix, or log paths;
 - URLs, request or response bodies, process lists, and installed-application lists;
 - logs, crash reports, exception messages, Wine output, Chromium output, and arbitrary text;

@@ -11,13 +11,13 @@ order: 50
 Each release contains a complete Apple Silicon DMG with the launcher, Wine, DXMT, licenses, and an Applications shortcut. Arknights game files are never part of the DMG.
 
 > [!IMPORTANT]
-> Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary latest versions: the browser and graphics fixes must match the Wine build. The current unit is published by [Arknights macOS Runtime](https://github.com/LuMiSxh/Arknights-MacOS-Runtime) and pinned with its exact components, source revisions, and checksums in [`runtime.json`](../../runtime.json). A runtime change requires a fresh-prefix and existing-prefix game launch, web login, and clean exit test before release.
+> Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary latest versions: the browser and graphics fixes must match the Wine build. The current unit is published by [Arknights macOS Runtime](https://github.com/LuMiSxh/Arknights-MacOS-Runtime) and pinned with its exact components, source revisions, and checksums in [`runtime.json`](../../runtime.json). A runtime change requires a fresh-prefix and existing-prefix game launch, each supported client's login path where provided, and a clean exit test before release.
 
 The launcher performs a silent Sparkle feed check when it opens. If a newer launcher version exists, the launcher invokes its themed Sparkle update UI for the signed update archive. Installation remains manual because the app is not Developer-ID signed or notarized. The check can be disabled in Settings.
 
 The first check that discovers a new version records it in the launcher's status capsule and Settings. Selecting the update action opens the launcher's accessible Sparkle UI, which presents embedded release notes while Sparkle owns the download, verification, and installation flow; release pages remain available through GitHub.
 
-Game updates are checked separately against Yostar. The check can also be disabled. A check never downloads game data by itself; the user starts the update.
+Game updates are checked separately against the selected publisher. The check can also be disabled. A check never downloads game data by itself; the user starts the update.
 
 ## Creating a release
 
@@ -68,7 +68,7 @@ checksum-verified Arknights macOS Runtime release, update the reviewed metadata 
 [`runtime.json`](../../runtime.json), and run
 `uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json`. Then run `just runtime`
 to download, hash, extract, and validate the exact pinned archive. Test a fresh prefix and an existing
-prefix through install/update, web login, game start, and clean exit. Add or update prefix migrations
+prefix through install/update, each supported client's web-login path where provided, game start, and clean exit. Add or update prefix migrations
 when the runtime state contract requires them.
 
 Do not approve a runtime only because its version is higher. A runtime release never changes the

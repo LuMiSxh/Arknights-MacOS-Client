@@ -75,23 +75,28 @@
 		</ol>
 	</div>
 
-	<section class="region-manifest" aria-labelledby="regions-title">
-		<div class="manifest-heading">
-			<span>Client manifest</span>
-			<h2 id="regions-title">Supported regions</h2>
-		</div>
-		<div>
+	<table class="region-manifest">
+		<caption id="regions-title">Supported regions</caption>
+		<thead>
+			<tr>
+				<th scope="col">Client</th>
+				<th scope="col">Manifest</th>
+				<th scope="col">Status</th>
+			</tr>
+		</thead>
+		<tbody>
 			{#each regions as region (region.name)}
-				<div class="region-row">
-					<div>
-						<strong>{region.name}</strong>
-						<span>{region.publisher}</span>
-					</div>
-					<Badge variant={region.variant}>{region.status}</Badge>
-				</div>
+				<tr>
+					<th scope="row">{region.name}</th>
+					<td>{region.publisher}</td>
+					<td
+						><Badge variant={region.variant}>{region.status}</Badge
+						></td
+					>
+				</tr>
 			{/each}
-		</div>
-	</section>
+		</tbody>
+	</table>
 </section>
 
 <section class="home-section" aria-labelledby="guides-title">

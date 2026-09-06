@@ -157,10 +157,17 @@ extension PresetCatalogService {
 		)
 	}
 
+	// The CDN doesn't process this resize parameter on demand for a URL it hasn't already
+	// cached a response for — appending it to a wallpaper nobody has requested this way
+	// before returns the untouched original, no smaller than not appending it at all. But
+	// the live Fankit gallery page requests every wallpaper it displays with this exact
+	// parameter, which keeps a materially smaller cached response warm for anything
+	// currently shown there; matching that convention lets this app's own requests land on
+	// those same cached responses instead of the multi-megabyte originals.
 	static func syntheticThumbnailURL(for url: URL) -> URL? {
-		guard url.path.contains("/ark_us_web/assets/"),
-			var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-		else { return nil }
+		guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+			return nil
+		}
 		components.queryItems = [
 			URLQueryItem(
 				name: "x-oss-process",

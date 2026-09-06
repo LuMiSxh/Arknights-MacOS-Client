@@ -25,4 +25,4 @@ The launcher could not obtain valid configuration or service data for the select
 
 When reporting the launcher problem, include the code, selected region, and whether another network behaved differently. Do not post response bodies, account details, or private URLs.
 
-If the selected region's official client or account service is also unavailable, wait for the service to recover or contact the publisher's official support.
+If the selected region's official client or account service is also unavailable, wait for the service to recover or use the [publisher support routing table](../README.md#publisher-support-routing) to contact the correct official support.

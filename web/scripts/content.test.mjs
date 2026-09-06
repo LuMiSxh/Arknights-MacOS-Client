@@ -12,6 +12,15 @@ import {
 import { renderMarkdown } from '../.svelte-kit/content-tests/content/markdown.js';
 import { validateLinks } from '../.svelte-kit/content-tests/content/loader/links.js';
 import { siteRoute } from '../.svelte-kit/content-tests/content/loader/routes.js';
+import {
+	buildDirectory,
+	createDirectory
+} from '../.svelte-kit/content-tests/content/loader/tree.js';
+import {
+	highlightSearchText,
+	searchContent
+} from '../.svelte-kit/content-tests/content/search.js';
+import { scrollDeltaFor } from '../.svelte-kit/content-tests/scroll.js';
 
 function markdown(body, resolve = () => undefined) {
 	return renderMarkdown('fixture.md', body, {
@@ -60,4 +69,179 @@ test('absolute route fragments must resolve to a documented heading', () => {
 test('external Markdown links isolate the opener and referrer', () => {
 	const html = markdown('[safe](https://example.com)');
 	assert.match(html, /<a href="https:\/\/example\.com" target="_blank" rel="noopener noreferrer">safe<\/a>/);
+});
+
+test('Markdown wraps tables for constrained-width scrolling', () => {
+	const html = markdown(
+		'| Name | Value |\n| --- | --- |\n| prefix | portable |'
+	);
+	assert.match(
+		html,
+		/<div class="markdown-table-scroll"><table>[\s\S]*<\/table>\s*<\/div>/
+	);
+});
+
+test('hidden sections hide descendants from the content index', () => {
+	const root = createDirectory('');
+	const hiddenSection = createDirectory('private');
+	const hiddenMetadata = {
+		title: 'Private',
+		description: 'Hidden content.',
+		order: 1,
+		hidden: true,
+		draft: false,
+		audience: 'all',
+		toc: true
+	};
+	hiddenSection.readme = {
+		isReadme: true,
+		relative: 'private/README.md',
+		metadata: hiddenMetadata
+	};
+	const source = { isReadme: false, relative: 'private/page.md' };
+	hiddenSection.documents.push(source);
+	root.children.push(hiddenSection);
+	const page = {
+		kind: 'document',
+		route: '/private/page/',
+		title: 'Private page',
+		description: 'Hidden page.',
+		order: 1,
+		hidden: false,
+		audience: 'all',
+		html: 'secret',
+		headings: [],
+		toc: true
+	};
+	const byRoute = new Map([['/private/page/', page]]);
+
+	const renderedReadme = {
+		kind: 'document',
+		route: '/private/',
+		title: 'Private',
+		description: 'Hidden content.',
+		order: 1,
+		hidden: true,
+		audience: 'all',
+		html: '',
+		headings: [],
+		toc: true
+	};
+	buildDirectory(
+		root,
+		new Map([
+			['private/README.md', renderedReadme],
+			['private/page.md', page]
+		]),
+		byRoute
+	);
+
+	assert.equal(byRoute.get('/private/page/').hidden, true);
+});
+
+test('fuzzy search finds body text and links a heading match directly', () => {
+	const results = searchContent(
+		[
+			{
+				route: '/installation/',
+				title: 'Installation guide',
+				description: 'Install and update the launcher.',
+				headings: [
+					{
+						level: 2,
+						text: 'Wine prefix setup',
+						id: 'wine-prefix-setup'
+					}
+				],
+				body: 'Create a portable Wine prefix before launching the game.'
+			},
+			{
+				route: '/troubleshooting/',
+				title: 'Troubleshooting',
+				description: 'Recover from common errors.',
+				headings: [],
+				body: 'Review the launcher log when a service request fails.'
+			}
+		],
+		'portable wine perfix'
+	);
+
+	assert.equal(results[0]?.route, '/installation/');
+	assert.equal(results[0]?.heading?.id, 'wine-prefix-setup');
+
+	const typoOnly = searchContent(
+		[
+			{
+				route: '/installation/',
+				title: 'Installation guide',
+				description: 'Install and update the launcher.',
+				headings: [],
+				body: 'Create a portable Wine prefix before launching the game.'
+			}
+		],
+		'perfix'
+	);
+	assert.match(typoOnly[0]?.excerpt ?? '', /prefix/);
+});
+
+test('search keeps page destination when the title is the strongest match', () => {
+	const results = searchContent(
+		[
+			{
+				route: '/installation/',
+				title: 'Wine prefix',
+				description: 'Set up the launcher.',
+				headings: [
+					{ level: 2, text: 'Wine prefix details', id: 'details' }
+				],
+				body: 'Create the prefix and launch the game.'
+			}
+		],
+		'wine prefix'
+	);
+
+	assert.equal(results[0]?.route, '/installation/');
+	assert.equal(results[0]?.heading, undefined);
+});
+
+test('search rejects gibberish and short unrelated candidates', () => {
+	const entries = [
+		{
+			route: '/short/',
+			title: 'P',
+			description: 'Q',
+			headings: [],
+			body: 'X'
+		},
+		{
+			route: '/keyboard/',
+			title: 'Qwerty',
+			description: 'Keyboard layout',
+			headings: [],
+			body: 'Keys'
+		}
+	];
+
+	assert.deepEqual(searchContent(entries, 'zzzzzz'), []);
+	assert.deepEqual(searchContent(entries, 'qwertyuiop'), []);
+	assert.deepEqual(searchContent(entries, 'prefix'), []);
+});
+
+test('search highlighting preserves text and marks exact and fuzzy words', () => {
+	assert.deepEqual(highlightSearchText('Wine prefix', 'wine perfix'), [
+		{ text: 'Wine', matched: true },
+		{ text: ' ', matched: false },
+		{ text: 'prefix', matched: true }
+	]);
+
+	assert.deepEqual(highlightSearchText('The guide', 'the'), [
+		{ text: 'The guide', matched: false }
+	]);
+});
+
+test('search result scrolling follows only the local list edges', () => {
+	const list = { top: 100, bottom: 300 };
+	assert.equal(scrollDeltaFor(list, { top: 130, bottom: 260 }), 0);
+	assert.equal(scrollDeltaFor(list, { top: 230, bottom: 340 }), 40);
+	assert.equal(scrollDeltaFor(list, { top: 60, bottom: 170 }), -40);
 });

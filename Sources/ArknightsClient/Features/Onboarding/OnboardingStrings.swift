@@ -96,6 +96,18 @@ enum OnboardingStrings {
 	static let issueDetail = LocalizedStringResource.onboardingFinishIssueDetail
 	static let communitySupport = LocalizedStringResource.onboardingFinishCommunitySupport
 	static let contactSupport = LocalizedStringResource.onboardingFinishContactSupport
+	static func communitySupport(region: GameRegion) -> LocalizedStringResource {
+		if region.isChinaClient {
+			return .onboardingFinishCommunitySupportHypergryph
+		}
+		return communitySupport
+	}
+	static func contactSupport(region: GameRegion) -> LocalizedStringResource {
+		if region.isChinaClient {
+			return .onboardingFinishContactHypergryph
+		}
+		return contactSupport
+	}
 	static let finishStatusRunning = LocalizedStringResource.onboardingFinishStatusRunning
 	static let finishStatusDownloading = LocalizedStringResource.onboardingFinishStatusDownloading
 	static let finishStatusInstalled = LocalizedStringResource.onboardingFinishStatusInstalled

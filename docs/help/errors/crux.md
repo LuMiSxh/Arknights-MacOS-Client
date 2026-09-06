@@ -22,4 +22,4 @@ The Wine or game process ended before launch completed, or exited abnormally aft
 
 ## Report this problem
 
-Include the code, operation, region, whether a window appeared, and what happened immediately before the exit. Account, payment, and in-game service failures belong to the selected region's official support.
+Include the code, operation, region, whether a window appeared, and what happened immediately before the exit. Account, payment, and in-game service failures belong to the selected region's official support; use the [publisher support routing table](../README.md#publisher-support-routing) for the correct contact.

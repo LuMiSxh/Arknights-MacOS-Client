@@ -721,6 +721,42 @@
         }
       }
     },
+    "home.reset.hideDetails": {
+      "comment": "Daily reset HUD collapse help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset-Details ausblenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide reset details"
+          }
+        }
+      }
+    },
+    "home.reset.showDetails": {
+      "comment": "Daily reset HUD expansion help",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset-Details anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show reset details"
+          }
+        }
+      }
+    },
     "home.recovery.actions": {
       "comment": "Compact menu containing the available failure recovery actions",
       "extractionState": "manual",
@@ -1693,6 +1729,24 @@
         }
       }
     },
+    "onboarding.finish.community.support.hypergryph": {
+      "comment": "Hypergryph support guidance for a China client",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wende dich bei Problemen mit Konto, Zahlung oder Spieldienst stattdessen an den Hypergryph-Support."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For account, payment, or game-service issues, contact Hypergryph support instead."
+          }
+        }
+      }
+    },
     "onboarding.finish.community.title": {
       "comment": "Community project panel title",
       "extractionState": "manual",
@@ -1725,6 +1779,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Contact Yostar Support…"
+          }
+        }
+      }
+    },
+    "onboarding.finish.contactHypergryph": {
+      "comment": "Open Hypergryph support action for a China client",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hypergryph-Support kontaktieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Hypergryph Support…"
           }
         }
       }

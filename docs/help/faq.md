@@ -9,7 +9,8 @@ order: 10
 ## Which Arknights clients are supported?
 
 > [!NOTE]
-> The launcher supports Yostar's Global, Japan, and Korea PC clients. The China and China — Bilibili clients are available when Canary Features are enabled.
+> The launcher supports Yostar's Global, Japan, and Korea PC clients. The China and China — Bilibili
+> clients are available when Canary Features are enabled and are operated by Hypergryph.
 
 Choose the region that matches the service and account you already use. Regional installations, versions, and installed states are kept separate.
 
@@ -30,7 +31,7 @@ Apple silicon Macs (M1 or newer) running macOS 15 through macOS 27 are in scope.
 
 The launcher tests whether an Intel process can actually start instead of trusting an installed-file marker. The current runtime supports macOS 15 through macOS 27; macOS 27 requires Legacy Game Test Mode to be disabled, and macOS 28 is blocked. See [Runtime compatibility](runtime-compatibility.md#macos-support) before upgrading macOS.
 
-The Arknights Client app itself is native Apple silicon software. Rosetta is needed for the x86-64 parts of Wine that run Yostar's Windows game; it does not turn the SwiftUI launcher into an Intel app.
+The Arknights Client app itself is native Apple silicon software. Rosetta is needed for the x86-64 parts of Wine that run the selected publisher's Windows game; it does not turn the SwiftUI launcher into an Intel app.
 
 ## Why does macOS ask for Local Network access?
 
@@ -48,7 +49,10 @@ Yes for setup, installation, updates, sign-in, and normal access to the selected
 
 ## Can I install more than one region?
 
-Yes. Each supported region has its own game directory and manifest state. Yostar regions share one Wine prefix; the two Hypergryph regions share another. The selected region is mapped as Wine's `G:` drive for a launch. Switching regions does not move or convert the other region's files.
+Yes. Each supported region has its own game directory and manifest state. Global, Japan, and Korea
+are Yostar clients and share one Wine prefix; China and China — Bilibili are Hypergryph clients and
+share another. The selected region is mapped as Wine's `G:` drive for a launch. Switching regions
+does not move or convert the other region's files.
 
 ## Can I use an existing installation?
 
@@ -86,7 +90,9 @@ No. Quitting Arknights Client stops its shared Wine server and the running game.
 
 ## Why is sign-in or the Notices window blank or slow?
 
-Yostar, Google, Apple, and Facebook sign-in and the separate Notices window use browser helpers that start inside Wine.
+Global, Japan, Korea, and China clients use browser helpers inside Wine for their official sign-in
+window and separate Notices window. China — Bilibili uses its own client login flow; the embedded
+login-window guidance in this answer does not apply to that client.
 
 > [!NOTE]
 > After the first launch or an update, a cold start of either helper can take up to about one minute while the runtime initializes and its caches warm up. Later starts should be noticeably faster. Wait for that first minute before treating a blank window as a failure.
@@ -95,14 +101,21 @@ If the page remains blank after that, try the steps in [Sign-in, Notices, and em
 
 ## Why can a notice still appear when announcements are disabled?
 
-The setting controls project announcements such as launcher news and maintenance information. Official Yostar branding notices use a separate game-service feed and may still appear. Disabling project announcements does not disable those Yostar notices.
+The setting controls project announcements such as launcher news and maintenance information.
+Official publisher notices use a separate game-service feed and may still appear. For Yostar
+regions, branding notices come from Yostar's game-service feed; disabling project announcements
+does not disable those notices.
 
 ## Who handles accounts, payments, and game-service problems?
 
 > [!WARNING]
-> Contact [Yostar Support](https://account.yo-star.com/contact) for account access, login ownership, payment, billing, server availability, or in-game service issues. Contact the launcher project for installation, runtime, graphics, window, or embedded-browser failures.
+> Contact [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, and Korea account access, login ownership, payment, billing, server availability, or in-game service issues.
+> Contact [Hypergryph Support](https://user.hypergryph.com/support) for the same issues with China or China — Bilibili.
+> Contact the launcher project for installation, runtime, graphics, window, or launcher-owned embedded-browser failures.
 
-Payment pages run inside the compatibility environment. Verify every charge with the payment provider and Yostar; a successful browser flow does not make the launcher a payment-support channel.
+Payment pages run inside the compatibility environment when the selected client provides them.
+Transactions remain official publisher/payment-provider matters: verify every charge with the
+payment provider, then route the publisher question by region using the [support routing](README.md#publisher-support-routing) table. A successful browser flow does not make the launcher a payment-support channel.
 
 ## Where are files and logs stored?
 
@@ -117,7 +130,8 @@ Game files are separate per region. The Wine prefix, compatibility runtime, brow
 - **Uninstall Game…** moves the selected region's game directory to the Trash. It keeps other regions, the launcher, the selected publisher family's shared Wine prefix, and custom art.
 - Moving **Arknights Client.app** to the Trash removes only the app bundle. Game files, the Wine prefix, caches, logs, preferences, and artwork remain.
 
-Deleting a Wine prefix signs embedded-browser providers out across that client family. For a complete uninstall, use the targeted removal steps in [Storage](storage.md#remove-or-reset-data) before moving the app itself to the Trash.
+Deleting a Wine prefix signs embedded-browser providers out across that client family when those
+providers are used. For a complete uninstall, use the targeted removal steps in [Storage](storage.md#remove-or-reset-data) before moving the app itself to the Trash.
 
 ## Does “Report a Problem…” upload my logs?
 

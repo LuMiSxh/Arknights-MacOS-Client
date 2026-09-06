@@ -335,59 +335,69 @@ body {
 }
 
 .region-manifest {
+	width: 100%;
 	border-block: 1px solid var(--site-line);
+	border-collapse: collapse;
 }
 
-.manifest-heading {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 1rem;
-	border-bottom: 1px solid var(--site-line);
+.region-manifest caption {
 	padding: 0.75rem 0;
+	font-size: 0.9rem;
+	font-weight: 700;
+	text-align: left;
 }
 
-.manifest-heading span {
+.region-manifest thead {
+	border-bottom: 1px solid var(--site-line);
+}
+
+.region-manifest thead th {
+	padding: 0.65rem 0;
 	color: var(--color-anasthasia-muted);
 	font-family: var(--font-anasthasia-mono);
 	font-size: 0.6rem;
+	font-weight: 400;
 	letter-spacing: 0.1em;
+	text-align: left;
 	text-transform: uppercase;
 }
 
-.manifest-heading h2 {
-	margin: 0;
-	font-size: 0.9rem;
-}
-
-.region-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 1rem;
+.region-manifest tbody tr {
 	border-bottom: 1px solid var(--site-line);
-	padding: 0.75rem 0;
 }
 
-.region-row:last-child {
+.region-manifest tbody tr:last-child {
 	border-bottom: 0;
 }
 
-.region-row div {
-	display: flex;
-	align-items: baseline;
-	gap: 0.6rem;
+.region-manifest tbody th,
+.region-manifest tbody td {
+	padding: 0.75rem 0;
+	text-align: left;
+	vertical-align: middle;
 }
 
-.region-row strong {
+.region-manifest tbody th {
+	width: 45%;
 	font-size: 0.84rem;
 }
 
-.region-row div span {
+.region-manifest tbody td:nth-child(2) {
 	color: var(--color-anasthasia-muted);
 	font-family: var(--font-anasthasia-mono);
 	font-size: 0.6rem;
 	text-transform: uppercase;
+}
+
+.region-manifest th + th,
+.region-manifest th + td,
+.region-manifest td + td {
+	padding-left: 0.75rem;
+}
+
+.region-manifest th:last-child,
+.region-manifest td:last-child {
+	text-align: right;
 }
 
 .home-section {
@@ -491,7 +501,6 @@ body {
 
 .content-copy {
 	width: 100%;
-	max-width: 75ch;
 	font-size: 0.92rem;
 	line-height: 1.62;
 }
@@ -548,7 +557,6 @@ body {
 .content-copy p,
 .content-copy ul,
 .content-copy ol,
-.content-copy table,
 .content-copy blockquote {
 	margin: 0.85rem 0;
 }
@@ -681,6 +689,16 @@ body {
 	color: var(--color-anasthasia-text);
 	font-size: 0.78rem;
 	line-height: 1.6;
+}
+
+.content-copy .markdown-table-scroll {
+	max-width: 100%;
+	margin: 0.85rem 0;
+	overflow-x: auto;
+}
+
+.content-copy .markdown-table-scroll table {
+	margin: 0;
 }
 
 .content-copy table {
@@ -904,11 +922,6 @@ body:has(.diagram-expanded) {
 
 	.site-main {
 		padding: 1rem 1rem 2rem;
-	}
-
-	.content-copy table {
-		display: block;
-		overflow-x: auto;
 	}
 
 	.display-title {

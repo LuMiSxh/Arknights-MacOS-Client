@@ -4,9 +4,9 @@ import SwiftUI
 
 struct ContentView: View {
 	let model: LauncherViewModel
-	let initialMusicTitle: String?
-	let openMusicURL: (URL) -> Void
 	let registerOpenSettings: (@escaping () -> Void) -> Void
+	let registerQuitPresentationQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
+	let registerQuitDismissal: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State private var presentation = LauncherPresentationArbiter()
@@ -19,12 +19,15 @@ struct ContentView: View {
 		model: LauncherViewModel,
 		initialMusicTitle: String?,
 		openMusicURL: @escaping (URL) -> Void,
-		registerOpenSettings: @escaping (@escaping () -> Void) -> Void
+		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
+		registerQuitPresentationQuery:
+			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void,
+		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void
 	) {
 		self.model = model
-		self.initialMusicTitle = initialMusicTitle
-		self.openMusicURL = openMusicURL
 		self.registerOpenSettings = registerOpenSettings
+		self.registerQuitPresentationQuery = registerQuitPresentationQuery
+		self.registerQuitDismissal = registerQuitDismissal
 		_onboarding = State(
 			initialValue: OnboardingCoordinator(
 				store: OnboardingProgressStore(defaults: model.preferences.defaults)))
@@ -129,7 +132,14 @@ struct ContentView: View {
 		} message: {
 			Text(L10n.string(HomeStrings.repairConfirmationDetail))
 		}
-		.onAppear { registerOpenSettings(requestSettings) }
+		.onAppear {
+			registerOpenSettings(requestSettings)
+			registerQuitPresentationQuery {
+				presentation.blockingDestination(
+					hasPendingPopup: model.communication.popup != nil)
+			}
+			registerQuitDismissal { presentation.dismissCurrent() }
+		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
 			if isPresented {
@@ -324,24 +334,6 @@ struct ContentView: View {
 		repairFailureID = nil
 		model.confirmRepair(failureID: id)
 	}
-
-	#if DEBUG
-		private var developerScenarioBinding: DeveloperScenarioBinding? {
-			guard model.isDeveloperMode else { return nil }
-			return Binding(
-				get: { model.developerScenario ?? .ready },
-				set: { model.applyDeveloperScenario($0) })
-		}
-		private var developerPopup: ((String, String) -> Void)? {
-			guard model.isDeveloperMode else { return nil }
-			return { title, message in
-				model.applyDeveloperCustomPopup(title: title, markdown: message)
-			}
-		}
-	#else
-		private var developerScenarioBinding: DeveloperScenarioBinding? { nil }
-		private var developerPopup: ((String, String) -> Void)? { nil }
-	#endif
 
 	private var themeAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
 }

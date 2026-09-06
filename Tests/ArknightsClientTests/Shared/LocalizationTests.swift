@@ -86,4 +86,45 @@ struct LocalizationTests {
 		#expect(germanMessage == "Der Spieledienst hat eine ungültige Antwort zurückgegeben.")
 		#expect(error.diagnosticDescription == "The game service returned an invalid response.")
 	}
+
+	@Test
+	func publisherSupportCopyFollowsTheActiveRegion() {
+		#expect(
+			L10n.string(
+				SettingsStrings.contactPublisherTitle(region: .global),
+				locale: Locale(identifier: "en")
+			) == "Contact Yostar…"
+		)
+		#expect(
+			L10n.string(
+				SettingsStrings.contactPublisherTitle(region: .china),
+				locale: Locale(identifier: "en")
+			) == "Contact Hypergryph…"
+		)
+		#expect(
+			L10n.string(
+				SettingsStrings.gameAccountIssuesDetail(region: .china),
+				locale: Locale(identifier: "en")
+			) == "Contact Hypergryph for account, payment, or game-service problems."
+		)
+		#expect(
+			L10n.string(
+				OnboardingStrings.communitySupport(region: .chinaBilibili),
+				locale: Locale(identifier: "de")
+			)
+				== "Wende dich bei Problemen mit Konto, Zahlung oder Spieldienst stattdessen an den Hypergryph-Support."
+		)
+		#expect(
+			L10n.string(
+				OnboardingStrings.contactSupport(region: .global),
+				locale: Locale(identifier: "de")
+			) == "Yostar-Support kontaktieren…"
+		)
+		#expect(
+			L10n.string(
+				OnboardingStrings.contactSupport(region: .china),
+				locale: Locale(identifier: "en")
+			) == "Contact Hypergryph Support…"
+		)
+	}
 }

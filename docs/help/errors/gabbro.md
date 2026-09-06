@@ -24,4 +24,4 @@ The published manifest contains a path that escapes the selected install directo
 
 Include the code, operation, and region.
 
-This is usually a launcher/manifest compatibility problem. Contact the publisher's official support only if its official client rejects the same release.
+This is usually a launcher/manifest compatibility problem. Contact the selected publisher's official support only if its official client rejects the same release; use the [publisher support routing table](../README.md#publisher-support-routing) for the correct contact.

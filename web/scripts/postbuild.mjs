@@ -82,6 +82,42 @@ function publicPages() {
 	return buildFiles('html').filter((path) => !path.endsWith('/spa.html'));
 }
 
+function assertSearchIndex() {
+	const indexPath = resolve(build, 'search-index.json');
+	assert.ok(existsSync(indexPath), 'search index asset is missing');
+	assert.equal(
+		routeFor(indexPath),
+		`${basePath}/search-index.json`,
+		'search index asset is not base-path safe'
+	);
+	const index = JSON.parse(readFileSync(indexPath, 'utf8'));
+	assert.ok(
+		Array.isArray(index) && index.length > 0,
+		'search index is empty'
+	);
+	const pages = publicPages();
+	for (const path of pages) {
+		assert.doesNotMatch(
+			readFileSync(path, 'utf8'),
+			/["']?search["']?\s*:\s*\[/i,
+			`${relative(build, path)} serializes the full search index`
+		);
+	}
+	const clientSource = buildFiles('js')
+		.map((path) => readFileSync(path, 'utf8'))
+		.join('\n');
+	assert.match(
+		clientSource,
+		/search-index\.json/,
+		'search index is not lazy-loaded'
+	);
+	if (basePath)
+		assert.ok(
+			clientSource.includes(basePath),
+			'client bundle is missing the configured base path'
+		);
+}
+
 // prettier-ignore
 function assertPages(pages, routes) {
 	for (const path of pages) {
@@ -142,6 +178,7 @@ function assertBuildOutput() {
 		pages.filter((path) => !path.endsWith('/404.html')).map(routeFor)
 	);
 	assertPages(pages, routes);
+	assertSearchIndex();
 
 	const development = readFileSync(
 		resolve(build, 'development/index.html'),

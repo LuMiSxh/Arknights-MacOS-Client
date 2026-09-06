@@ -24,4 +24,4 @@ A downloaded game file did not match the size or checksum published in the manif
 
 A report only needs the code, operation, region, and whether Retry or Repair failed.
 
-Contact the publisher's official support when the same payload is also unavailable through the selected region's official client.
+Contact the selected publisher's official support when the same payload is also unavailable through the selected region's official client; use the [publisher support routing table](../README.md#publisher-support-routing) for the correct contact.

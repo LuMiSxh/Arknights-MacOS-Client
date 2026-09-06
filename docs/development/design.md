@@ -80,7 +80,7 @@ For a UI change, exercise the affected state through the debug scenario where po
 - Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 upgrade and Legacy Game Test Mode recovery before the first game launch.
 - Let the official game download continue while the user configures display, artwork, theme, icons, updates, and audio. Do not duplicate installer progress or cancellation state inside the setup module.
 - Apply choices immediately through the same actions used in Settings. A skipped or completed assistant can be opened again from Settings → General.
-- End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form; route account, payment, and game-service issues to official Yostar support.
+- End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form; route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).
 
 ## Artwork
 

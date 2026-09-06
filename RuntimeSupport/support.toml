@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: MPL-2.0
+
+[[components]]
+name = "vuplex"
+directory = "Vuplex"
+artifacts = [
+  { source = "VuplexShim.c", output = "Vuplex WebView.vuplex", kind = "windows-executable", arguments = ["-Wl,/subsystem:windows", "-lshell32"] },
+  { source = "UserenvCompat.c", output = "userenv.dll", kind = "windows-library", arguments = ["-ladvapi32"] },
+]
+
+[[components]]
+name = "platform-process"
+directory = "PlatformProcess"
+artifacts = [
+  { source = "PlatformProcessShim.c", output = "PlatformProcess.exe", kind = "windows-executable", arguments = ["-municode", "-Wl,/subsystem:windows", "-lshell32"] },
+  { source = "PlatformProcessWindowBridge.m", output = "PlatformProcessWindowBridge.dylib", kind = "macos-library", arguments = ["-fobjc-arc"], frameworks = ["AppKit", "QuartzCore"] },
+]
+
+[[components]]
+name = "game-icon"
+directory = "GameIcon"
+artifacts = [
+  { source = "GameIconBridge.m", output = "GameIconBridge.dylib", kind = "macos-library", arguments = ["-lobjc"] },
+]

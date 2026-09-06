@@ -16,7 +16,7 @@ Use the symptom that matches what you see. Keep the recovery order conservative:
 4. Retry once. If the same symptom returns, follow the matching section below before removing anything.
 
 > [!IMPORTANT]
-> Do not delete the Wine prefix or game directory as a first response. Deleting the prefix signs you out of every embedded-browser account and removes runtime caches; deleting a game directory removes the regional installation. See [Storage](storage.md) before using either destructive action.
+> Do not delete the Wine prefix or game directory as a first response. Deleting the prefix signs you out of embedded-browser accounts for clients that use them and removes runtime caches; deleting a game directory removes the regional installation. See [Storage](storage.md) before using either destructive action.
 
 ## If the launcher shows an error code
 
@@ -113,7 +113,7 @@ The current runtime is blocked when macOS does not provide general Intel transla
 
 ### Setup update check failed
 
-Check that the Mac can reach GitHub and Yostar services, then use **Try Again**. The assistant can continue after an unavailable launcher update check, but install the newer launcher before starting setup when an update is reported.
+Check that the Mac can reach GitHub and the selected region's publisher services, then use **Try Again**. The assistant can continue after an unavailable launcher update check, but install the newer launcher before starting setup when an update is reported.
 
 ## Launcher update waits or fails
 
@@ -140,7 +140,7 @@ The installer downloads several manifest files concurrently, retries a failed fi
 1. Wait briefly if the status says **Preparing download** or **Waiting for network…**.
 2. Check the selected region and available storage.
 3. Close and reopen the launcher, then choose **Resume Download**.
-4. If one file repeatedly fails, wait and retry later; the failure may be a temporary Yostar/CDN response.
+4. If one file repeatedly fails, wait and retry later; the failure may be a temporary publisher/CDN response.
 5. If the files exist but the launcher still cannot finish, use **Repair…** after the download is idle.
 
 > [!NOTE]
@@ -199,22 +199,31 @@ If the failure follows a runtime update, let the next launch complete its migrat
 
 ## Game cannot connect after Local Network access was denied
 
-Quit the game, open **System Settings → Privacy & Security → Local Network**, and allow **Arknights Client**. Start the game again after changing the permission. The launcher cannot repair an account restriction, Yostar outage, or other service-side failure; use [Yostar Support](https://account.yo-star.com/contact) when the same account or service also fails outside the launcher.
+Quit the game, open **System Settings → Privacy & Security → Local Network**, and allow **Arknights Client**. Start the game again after changing the permission. The launcher cannot repair an account restriction, publisher outage, or other service-side failure; use the [publisher support routing](README.md#publisher-support-routing) table when the same account or service also fails outside the launcher.
 
 ## Sign-in, Notices, and embedded browser problems
 
-Yostar, Google, Apple, and Facebook sign-in and the separate Notices window use browser helpers launched through Wine. Their first start or first start after an update, runtime change, or cache cleanup is a cold start. It can take up to about one minute; later warm starts should be faster.
+Global, Japan, Korea, and China clients use browser helpers launched through Wine for their
+official sign-in window and separate Notices window. China — Bilibili uses its own client login
+flow; the embedded login-window guidance in this section does not apply to that client. For the
+clients that use these helpers, their first start or first start after an update, runtime change,
+or cache cleanup is a cold start. It can take up to about one minute; later warm starts should be
+faster.
 
 1. Allow up to one minute for the helper to finish starting; do not repeatedly press the provider button or reopen Notices.
 2. Check the network and system date/time, then retry the provider once.
 3. If the page is blank or stale, close the game and choose **Settings → Storage → Clear Caches**. This clears DXMT and embedded-browser caches, not game files or saved settings.
 4. Start the game again and allow another cold-start minute while the caches rebuild.
-5. If sign-in or Notices still fails, report the launcher problem and name the affected provider or window.
+5. If the helper window remains blank, stale, or fails to render after these steps, report the
+   launcher problem and name the affected provider or window. If the window renders but
+   authentication is rejected, the account is locked, or a provider policy blocks sign-in, use the
+   [publisher support routing](README.md#publisher-support-routing) table instead.
 
 > [!WARNING]
 > Never post passwords, session cookies, access tokens, or payment details to a GitHub issue. Log files are not needed for the initial report.
 
-For account ownership, a locked account, provider policy, or a missing in-game entitlement, contact [Yostar Support](https://account.yo-star.com/contact).
+For account ownership, a locked account, provider policy, or a missing in-game entitlement, use the
+[publisher support routing](README.md#publisher-support-routing) table.
 
 ## Graphics, window, and performance problems
 
@@ -233,7 +242,10 @@ Higher resolution increases work for both Wine and DXMT. Arknights draws its own
 
 ## Payment or service error
 
-Payment pages and notices run inside the game's embedded browser, but the transaction and service remain Yostar-controlled. Verify every charge with the payment provider and Yostar. Do not repeatedly retry a blocked payment challenge; contact [Yostar Support](https://account.yo-star.com/contact) if the account or transaction needs review.
+Payment pages and notices run inside the game's embedded browser when the selected client provides
+them, but transactions remain official publisher/payment-provider matters. Verify every charge with
+the payment provider, then use the [publisher support routing](README.md#publisher-support-routing)
+table for account or transaction review. Do not repeatedly retry a blocked payment challenge.
 
 ## Reporting a launcher problem
 
@@ -246,4 +258,4 @@ Use **Report a Problem…** in the setup assistant or **Settings → About → R
 The launcher pre-fills the error code, failed operation, selected region, and environment metadata (version, macOS release, chip name, and memory size) when available. Log files are not needed for the initial report. If a maintainer later asks for one, open **Settings → Storage → Show Logs** and attach only the file they name. GitHub issues are public, and you can decline to share a file that contains private information.
 
 > [!IMPORTANT]
-> If the problem concerns account access, payment, billing, server availability, or in-game data, contact [Yostar Support](https://account.yo-star.com/contact) instead of opening a launcher issue.
+> If the problem concerns account access, payment, billing, server availability, or in-game data, use the [publisher support routing](README.md#publisher-support-routing) table instead of opening a launcher issue.

@@ -13,9 +13,10 @@
 	interface Props {
 		content: ContentNode;
 		neighbors?: ContentNeighbors;
+		breadcrumbs?: Array<{ title: string; route: SiteRoute }>;
 	}
 
-	let { content, neighbors = {} }: Props = $props();
+	let { content, neighbors = {}, breadcrumbs = [] }: Props = $props();
 	let activeHeading = $state('');
 	let tocNavigation = $state<HTMLElement>();
 	let copyStatus = $state('');
@@ -32,8 +33,9 @@
 			: []
 	);
 	const hasMermaid = $derived(content.html.includes('data-mermaid'));
-	const breadcrumbs = $derived.by(
+	const breadcrumbTrail = $derived.by(
 		(): Array<{ title: string; route: SiteRoute }> => {
+			if (breadcrumbs.length) return breadcrumbs;
 			const segments = content.route.split('/').filter(Boolean);
 			return segments.map((segment, index) => ({
 				title:
@@ -124,9 +126,9 @@
 <header class="content-header">
 	<nav class="breadcrumbs" aria-label="Breadcrumb">
 		<a href={resolve('/')}>Home</a>
-		{#each breadcrumbs as crumb, index (crumb.route)}
+		{#each breadcrumbTrail as crumb, index (crumb.route)}
 			<span aria-hidden="true">/</span>
-			{#if index === breadcrumbs.length - 1}
+			{#if index === breadcrumbTrail.length - 1}
 				<span aria-current="page">{crumb.title}</span>
 			{:else}
 				<a href={resolve(crumb.route)}>{crumb.title}</a>

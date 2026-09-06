@@ -235,6 +235,24 @@
         }
       }
     },
+    "customization.gallery.search.clear": {
+      "comment": "Accessibility label for the button that clears the gallery search field and any committed tag filters",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche löschen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search"
+          }
+        }
+      }
+    },
     "customization.gallery.search.label": {
       "comment": "Accessibility label for the current gallery search field",
       "extractionState": "manual",
@@ -249,6 +267,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Search gallery"
+          }
+        }
+      }
+    },
+    "customization.gallery.search.removeTag": {
+      "comment": "Accessibility label for the button that removes one committed tag filter pill from the gallery search field; tag name is supplied content",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag „%1$@“ entfernen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %1$@ tag"
           }
         }
       }

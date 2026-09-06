@@ -18,7 +18,7 @@ Wine started the game process, but Arknights did not show a visible window withi
 3. If the launcher reports missing or corrupt game files, choose **Repair** and confirm the full verification before launching again.
 
 > [!NOTE]
-> Notices and sign-in pages can take up to a minute on a cold first start. If the game window is already visible and only embedded web content is blank, use the [FAQ](../faq.md#why-is-sign-in-or-the-notices-window-blank-or-slow) instead.
+> For Global, Japan, Korea, and China clients, Notices and sign-in pages can take up to a minute on a cold first start. China — Bilibili uses its own client login flow, so the embedded login-window guidance does not apply. If the game window is already visible and only embedded web content is blank, use the [FAQ](../faq.md#why-is-sign-in-or-the-notices-window-blank-or-slow) instead.
 
 ## Report this problem
 

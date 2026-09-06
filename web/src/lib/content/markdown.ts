@@ -60,6 +60,23 @@ function renderInline(
 	return renderer.parser.parseInline(tokens);
 }
 
+function renderTable(
+	this: { parser: { parseInline(tokens: Token[]): string } },
+	token: Tokens.Table
+): string {
+	const renderCell = (cell: Tokens.TableCell): string => {
+		const tag = cell.header ? 'th' : 'td';
+		const align = cell.align ? ` align="${cell.align}"` : '';
+		return `<${tag}${align}>${this.parser.parseInline(cell.tokens)}</${tag}>\n`;
+	};
+	const renderRow = (cells: Tokens.TableCell[]): string =>
+		`<tr>\n${cells.map(renderCell).join('')}</tr>\n`;
+	const header = renderRow(token.header);
+	const rows = token.rows.map(renderRow).join('');
+	const body = rows ? `<tbody>${rows}</tbody>` : '';
+	return `<div class="markdown-table-scroll"><table>\n<thead>\n${header}</thead>\n${body}</table>\n</div>\n`;
+}
+
 function renderLink(
 	this: { parser: { parseInline(tokens: Token[]): string } },
 	token: Tokens.Link,
@@ -112,6 +129,7 @@ export function renderMarkdown(
 ): RenderedMarkdown {
 	const renderer: RendererObject = {
 		html: ({ text }) => escapeHtml(text),
+		table: renderTable,
 		blockquote(token) {
 			const rendered = this.parser.parse(token.tokens);
 			const match = ALERT_MARKER.exec(rendered);

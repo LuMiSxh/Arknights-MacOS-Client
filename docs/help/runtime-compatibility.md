@@ -111,7 +111,10 @@ Canary behavior may change as testing continues. If an option causes a regressio
 
 ## Embedded browser and notices
 
-Sign-in and some game notices use separate Windows browser helpers. The launcher keeps the official helpers and applies only the compatibility components required for the tested Wine environment:
+Global, Japan, Korea, and China clients use separate Windows browser helpers for sign-in and some
+game notices. China — Bilibili uses its own client login flow; the embedded login-window guidance
+does not apply to that client. The launcher keeps the official helpers and applies only the
+compatibility components required for the tested Wine environment:
 
 - the sign-in helper uses a process-local configuration that disables the accelerated paint-sharing path that is unreliable under Wine while keeping Chromium's compositor available
 - a launcher-owned `userenv.dll` supplies the Windows AppContainer calls Chromium expects during sandbox startup
@@ -120,7 +123,8 @@ Sign-in and some game notices use separate Windows browser helpers. The launcher
 These changes do not replace the official pages, inspect credentials, or bypass provider challenges. The browser and game logs are separate so a blank sign-in page can be diagnosed without treating it as a graphics failure.
 
 > [!WARNING]
-> Payment flows run in the same embedded browser compatibility environment. Verify every transaction with Yostar and your payment provider. The launcher cannot resolve account, billing, or provider-side restrictions.
+> Payment flows run in the same embedded browser compatibility environment when the selected client provides them. Transactions are official publisher/payment-provider matters: verify every charge with the payment provider.
+> Use [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, or Korea, or [Hypergryph Support](https://user.hypergryph.com/support) for China or China — Bilibili. The launcher cannot resolve account, billing, or provider-side restrictions.
 
 ## Runtime failures
 

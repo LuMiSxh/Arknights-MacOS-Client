@@ -19,7 +19,7 @@ the map below, then follow the flow that matches the change you are making:
   compatibility components, process monitoring, and shutdown.
 - [Wine prefix architecture](wine-prefix.md) covers prefix topology, environment isolation, drive
   mappings, migrations, persistent state, and maintenance boundaries.
-- [Communication and boundaries](communication-and-boundaries.md) covers Yostar requests,
+- [Communication and boundaries](communication-and-boundaries.md) covers publisher requests,
   announcements, notices, update checks, and stale-result handling.
 - [Data and persistence](data-and-persistence.md) maps `AppPaths`, `UserDefaults`, caches, logs,
   and files that can be removed.
@@ -108,7 +108,7 @@ Long-lived state and asynchronous work have one feature owner:
 | `InstallationController`          | Region, install directory, installed state, resumable install/update/repair tasks, progress, and removal  |
 | `GameSessionController`           | Runtime discovery, prefix maintenance, launch options capture, Wine processes, Game Mode, and diagnostics |
 | `IntelTranslationController`      | Rosetta preflight, installation, recovery state, and launch eligibility                                   |
-| `LauncherRefreshController`       | Concurrent Yostar configuration and branding refreshes, stale-result rejection, and region transitions    |
+| `LauncherRefreshController`       | Concurrent publisher configuration and branding refreshes, stale-result rejection, and region transitions |
 | `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, and preset application                                   |
 | `BackgroundMusicController`        | Playlist parsing, playback, Now Playing metadata, fades, and music-link presentation                       |
 | `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, and popup ordering                                      |
@@ -127,7 +127,7 @@ The state tree has three deliberately separate concerns:
 | State branch              | Answers                                              | Examples                                                      |
 | ------------------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
 | `activity`                | What exclusive work owns the game/runtime right now? | install, migrate, launch, run, stop                           |
-| `refresh` and `readiness` | What metadata and prerequisites are currently known? | Yostar configuration, installed version, Rosetta availability |
+| `refresh` and `readiness` | What metadata and prerequisites are currently known? | Publisher configuration, installed version, Rosetta availability |
 | `presentation`            | What should the user see or act on?                  | status text, failure message, update prompt                   |
 
 Do not use a presentation message as a lifecycle lock, and do not clear an active lifecycle state
@@ -180,7 +180,7 @@ Before changing a behavior, identify its owner and its external contract:
 | Game files, manifests, install paths              | `Features/Game/Installation`                       | [Installation architecture](installation.md), installer tests                                                                 |
 | Wine startup, prefix, process or display behavior | `Features/Game/Runtime`                            | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Runtime compatibility](../../help/runtime-compatibility.md) |
 | Compatibility wrapper or bridge                   | `Features/Game/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
-| Yostar endpoint or refresh behavior               | `LauncherAPI` and `LauncherRefreshController`      | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
+| Publisher endpoint or refresh behavior            | `LauncherAPI` and `LauncherRefreshController`      | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting or app-owned path               | `LauncherPreferencesStore` or `AppPaths`           | [Data and persistence](data-and-persistence.md), storage tests                                                                |
 | User-facing copy                                  | owning feature's String Catalog                    | [Localization](../localization.md), English and German layout                                                                 |
 

@@ -9,6 +9,28 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-09-06
+
+### Added
+
+- Added fuzzy full-text search across project documentation with direct links to matching pages and sections.
+- Added Hypergryph support actions for China and China — Bilibili account, payment, and game-service issues.
+
+### Changed
+
+- Made the daily reset pill show the selected client's reset at a glance and expand to list and switch between every installed client's reset time.
+- Clarified publisher-region ownership, publisher-neutral payment routing, and client-specific embedded login-window guidance.
+- Widened the documentation layout to improve search-result and support-content readability.
+
+### Fixed
+
+- Made Escape dismiss the launcher update prompt consistently with its Later action (Thanks to @darkwebdev, #69).
+- Reduced wallpaper thumbnail memory and download usage with bounded decoding and the live Fankit CDN resize request (Thanks to @darkwebdev, #67).
+- Allowed quitting while Settings is open without dismissing active prompts (Thanks to @darkwebdev, #68).
+- Prevented Artwork gallery crashes in packaged builds by loading wallpaper tags from app resources (Thanks to @darkwebdev, #70).
+- Made the expanded daily reset pill fit its regional content and removed its inconsistent row-hover backgrounds.
+- Restored removable tag filters in Artwork gallery search (Thanks to @darkwebdev, #71).
+
 ## [0.5.0] - 2026-09-03
 
 ### Added
@@ -207,6 +229,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
+[0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0
 [0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.0

@@ -57,6 +57,8 @@ enum AppConstants {
 		static let collapsedVersionTitleMaxWidth: Double = 100
 		static let collapsedStatusMaxWidth: Double = 280
 		static let collapsedStatusTitleMaxWidth: Double = 210
+		static let expandedStatusMinWidth: Double = 240
+		static let expandedStatusWidth: Double = 360
 		static let downloadProgressDetailMinWidth: Double = 132
 		static let downloadSpeedDetailMinWidth: Double = 84
 		static let expandedVersionWidth: Double = 260
@@ -94,7 +96,10 @@ enum AppConstants {
 		static let imageDownloadAttempts = 2
 		static let imageMaximumDimension = 16_384
 		static let imageMaximumPixels = 120_000_000
-		static let thumbnailResizePercent = 35
+		// Matches the exact percentage the live Fankit gallery page itself requests, since
+		// the CDN only ever serves a resized response for a URL something has already
+		// requested with this precise query value — see syntheticThumbnailURL(for:).
+		static let thumbnailResizePercent = 50
 		static let avatarIdentifierMaximumLength = 96
 		static let wallpaperPageSize = 50
 		static let wallpaperPageLimit = 5
@@ -136,6 +141,8 @@ enum AppConstants {
 		static let windowReadiness: Duration = .seconds(90)
 		static let windowPollInterval: Duration = .milliseconds(250)
 		static let resetCountdownPollInterval: Duration = .seconds(30)
+		static let quitSheetDetachPollInterval: TimeInterval = 0.05
+		static let quitSheetDetachPollLimit = 20
 	}
 
 	enum Theme {

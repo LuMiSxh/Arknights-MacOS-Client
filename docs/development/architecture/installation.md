@@ -91,8 +91,8 @@ files must be regular files with one hard link; this keeps a resumed write from 
 modifying an unrelated inode.
 
 > [!CAUTION]
-> Never relax manifest path checks because a current Yostar manifest happens to contain only simple
-> names. The manifest is remote input. Path containment, symlink rejection, duplicate detection,
+> Never relax manifest path checks because a current Yostar or Hypergryph manifest happens to contain
+> only simple names. The manifest is remote input. Path containment, symlink rejection, duplicate detection,
 > and safe partial-file handling are installer invariants, not format niceties.
 
 The destination is still checked immediately before a download and immediately before finalization.

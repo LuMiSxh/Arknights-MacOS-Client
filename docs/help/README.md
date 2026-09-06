@@ -26,8 +26,26 @@ Use this section after [Installation](../installation.md) when the launcher, a r
 
 The launcher owns its download, manifest verification, runtime setup, display integration, settings, and diagnostics. It can resume partial downloads, repair a regional installation, clear recreatable caches, and reset the shared Wine prefix when necessary.
 
-> [!IMPORTANT]
-> Yostar owns the account, payment, and game-service endpoints. Contact [Yostar Support](https://account.yo-star.com/contact) for login ownership, purchases, billing, server availability, or in-game account data. Use the launcher's report flow for launcher, installation, runtime, graphics, or embedded-browser failures.
+## Publisher support routing
+
+Account access, payments, billing, server availability, and in-game data belong to the official
+publisher and payment provider, even when a page appears inside the game's embedded browser.
+Route publisher questions by the selected region:
+
+| Region or client        | Publisher  | Official support                                                       |
+| ----------------------- | ---------- | --------------------------------------------------------------------- |
+| Global, Japan, or Korea | Yostar     | [Yostar Support](https://account.yo-star.com/contact)                |
+| China                   | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support)             |
+| China — Bilibili        | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support)             |
+
+Verify charges with the payment provider shown by the transaction, then contact the publisher
+listed above for account, entitlement, billing, or game-service review. The launcher project
+handles installation, runtime, graphics, window, and launcher-owned embedded-browser failures.
+
+> [!NOTE]
+> Global, Japan, Korea, and China clients can use the embedded login-window path described in this
+> Help section. China — Bilibili uses its own client login flow; the embedded login-window guidance
+> does not apply to that client.
 
 ## Before opening a report
 
