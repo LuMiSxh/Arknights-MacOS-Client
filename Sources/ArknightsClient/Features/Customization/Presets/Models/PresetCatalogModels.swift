@@ -136,8 +136,10 @@ enum WallpaperTagCatalog {
 	}
 
 	private static func load() -> [String: [String]] {
+		// Packaged apps flatten copied resources into Bundle.main; SwiftPM uses its resource bundle.
 		guard
-			let url = Bundle.module.url(forResource: "WallpaperTags", withExtension: "json"),
+			let url = Bundle.main.url(forResource: "WallpaperTags", withExtension: "json")
+				?? AppResourceBundle.bundle.url(forResource: "WallpaperTags", withExtension: "json"),
 			let data = try? Data(contentsOf: url),
 			let manifest = try? JSONDecoder().decode(WallpaperTagManifest.self, from: data),
 			manifest.schemaVersion == 1

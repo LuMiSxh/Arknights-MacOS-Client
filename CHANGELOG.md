@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Made Escape dismiss the launcher update prompt consistently with its Later action (Thanks to @darkwebdev, #69).
 - Reduced wallpaper thumbnail memory and download usage with bounded decoding and the live Fankit CDN resize request (Thanks to @darkwebdev, #67).
 - Allowed quitting while Settings is open without dismissing active prompts (Thanks to @darkwebdev, #68).
+- Prevented Artwork gallery crashes in packaged builds by loading wallpaper tags from app resources (Thanks to @darkwebdev, #70).
 
 ## [0.5.0] - 2026-09-03
 
