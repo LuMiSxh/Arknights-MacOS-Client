@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Allowed quitting while Settings is open without dismissing active prompts (Thanks to @darkwebdev, #68).
 - Prevented Artwork gallery crashes in packaged builds by loading wallpaper tags from app resources (Thanks to @darkwebdev, #70).
 - Made the expanded daily reset pill fit its regional content and removed its inconsistent row-hover backgrounds.
+- Restored removable tag filters in Artwork gallery search (Thanks to @darkwebdev, #71).
 
 ## [0.5.0] - 2026-09-03
 
