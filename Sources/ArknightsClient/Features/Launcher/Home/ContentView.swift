@@ -4,10 +4,8 @@ import SwiftUI
 
 struct ContentView: View {
 	let model: LauncherViewModel
-	let initialMusicTitle: String?
-	let openMusicURL: (URL) -> Void
 	let registerOpenSettings: (@escaping () -> Void) -> Void
-	let registerQuitDismissalQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
+	let registerQuitPresentationQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -22,15 +20,13 @@ struct ContentView: View {
 		initialMusicTitle: String?,
 		openMusicURL: @escaping (URL) -> Void,
 		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
-		registerQuitDismissalQuery:
+		registerQuitPresentationQuery:
 			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void,
 		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void
 	) {
 		self.model = model
-		self.initialMusicTitle = initialMusicTitle
-		self.openMusicURL = openMusicURL
 		self.registerOpenSettings = registerOpenSettings
-		self.registerQuitDismissalQuery = registerQuitDismissalQuery
+		self.registerQuitPresentationQuery = registerQuitPresentationQuery
 		self.registerQuitDismissal = registerQuitDismissal
 		_onboarding = State(
 			initialValue: OnboardingCoordinator(
@@ -138,16 +134,10 @@ struct ContentView: View {
 		}
 		.onAppear {
 			registerOpenSettings(requestSettings)
-			// Reports which of the shared sheet slot's destinations (if any) is currently
-			// shown, so a Dock-icon or external quit can tell Settings — safe to close out
-			// from under the user — apart from update/failure/popup, which carry information
-			// that shouldn't be silently discarded just to unblock quitting.
-			registerQuitDismissalQuery { presentation.current }
-			// Dismisses Settings through the same @State a Close button would, rather than
-			// the AppDelegate ending the underlying AppKit sheet directly — that leaves this
-			// state believing a sheet should still be shown, which both re-presents it on the
-			// next redraw and leaves the SwiftUI-owned application delegate still refusing to
-			// quit.
+			registerQuitPresentationQuery {
+				presentation.blockingDestination(
+					hasPendingPopup: model.communication.popup != nil)
+			}
 			registerQuitDismissal { presentation.dismissCurrent() }
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
@@ -344,24 +334,6 @@ struct ContentView: View {
 		repairFailureID = nil
 		model.confirmRepair(failureID: id)
 	}
-
-	#if DEBUG
-		private var developerScenarioBinding: DeveloperScenarioBinding? {
-			guard model.isDeveloperMode else { return nil }
-			return Binding(
-				get: { model.developerScenario ?? .ready },
-				set: { model.applyDeveloperScenario($0) })
-		}
-		private var developerPopup: ((String, String) -> Void)? {
-			guard model.isDeveloperMode else { return nil }
-			return { title, message in
-				model.applyDeveloperCustomPopup(title: title, markdown: message)
-			}
-		}
-	#else
-		private var developerScenarioBinding: DeveloperScenarioBinding? { nil }
-		private var developerPopup: ((String, String) -> Void)? { nil }
-	#endif
 
 	private var themeAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
 }

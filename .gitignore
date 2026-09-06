@@ -3,6 +3,7 @@
 /.swiftpm/
 /.ruff_cache/
 /.tmp/
+/.worktree/
 __pycache__/
 *.dmg
 *.log

@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Made Escape dismiss the launcher update prompt consistently with its Later action (Thanks to @darkwebdev, #69).
 - Reduced wallpaper thumbnail memory and download usage with bounded decoding and the live Fankit CDN resize request (Thanks to @darkwebdev, #67).
-- Fixed quitting the launcher (Command-Q, the menu bar's Quit, or the Dock icon's own Quit item) silently doing nothing while Settings or any other dialog was open — it now quits normally regardless of which window is in front.
+- Allowed quitting while Settings is open without dismissing active prompts (Thanks to @darkwebdev, #68).
 
 ## [0.5.0] - 2026-09-03
 

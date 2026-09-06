@@ -45,3 +45,10 @@ func endingUpdatePresentationAllowsSettingsToOpen() {
 
 	#expect(arbiter.current == .settings)
 }
+
+@Test
+func pendingPopupBlocksApplicationQuit() {
+	let arbiter = LauncherPresentationArbiter()
+
+	#expect(arbiter.blockingDestination(hasPendingPopup: true) == .popup)
+}
