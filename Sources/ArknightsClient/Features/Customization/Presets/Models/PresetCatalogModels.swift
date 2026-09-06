@@ -136,9 +136,7 @@ enum WallpaperTagCatalog {
 	}
 
 	private static func load() -> [String: [String]] {
-		// `WallpaperTags.json` is a `.copy()` package resource, so the packaged app copies it
-		// flat into `Contents/Resources` rather than into the SwiftPM `Bundle.module` bundle —
-		// the same pattern `AppIconRenderer+Avatars` uses for its own `.copy()` resources.
+		// Packaged apps flatten copied resources into Bundle.main; SwiftPM uses its resource bundle.
 		guard
 			let url = Bundle.main.url(forResource: "WallpaperTags", withExtension: "json")
 				?? AppResourceBundle.bundle.url(forResource: "WallpaperTags", withExtension: "json"),
