@@ -8,6 +8,7 @@ struct ContentView: View {
 	let openMusicURL: (URL) -> Void
 	let registerOpenSettings: (@escaping () -> Void) -> Void
 	let registerQuitDismissalQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
+	let registerQuitDismissal: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State private var presentation = LauncherPresentationArbiter()
@@ -22,13 +23,15 @@ struct ContentView: View {
 		openMusicURL: @escaping (URL) -> Void,
 		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
 		registerQuitDismissalQuery:
-			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void
+			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void,
+		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void
 	) {
 		self.model = model
 		self.initialMusicTitle = initialMusicTitle
 		self.openMusicURL = openMusicURL
 		self.registerOpenSettings = registerOpenSettings
 		self.registerQuitDismissalQuery = registerQuitDismissalQuery
+		self.registerQuitDismissal = registerQuitDismissal
 		_onboarding = State(
 			initialValue: OnboardingCoordinator(
 				store: OnboardingProgressStore(defaults: model.preferences.defaults)))
@@ -140,6 +143,12 @@ struct ContentView: View {
 			// from under the user — apart from update/failure/popup, which carry information
 			// that shouldn't be silently discarded just to unblock quitting.
 			registerQuitDismissalQuery { presentation.current }
+			// Dismisses Settings through the same @State a Close button would, rather than
+			// the AppDelegate ending the underlying AppKit sheet directly — that leaves this
+			// state believing a sheet should still be shown, which both re-presents it on the
+			// next redraw and leaves the SwiftUI-owned application delegate still refusing to
+			// quit.
+			registerQuitDismissal { presentation.dismissCurrent() }
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in

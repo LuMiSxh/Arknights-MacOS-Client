@@ -9,6 +9,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	var stopGame: (() -> Void)?
 	var openSettings: (() -> Void)?
 	var currentBlockingPresentation: (() -> LauncherPresentationDestination?)?
+	var dismissForQuit: (() -> Void)?
+	private var quitKeyMonitor: Any?
 
 	// `swift run` (used by `just preview`) launches the executable directly rather than
 	// through LaunchServices: without a bundle, the process's activation policy isn't
@@ -19,22 +21,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		NSApp.setActivationPolicy(.regular)
 		NSApp.activate(ignoringOtherApps: true)
 		fixQuitMenuItemTarget()
+		installQuitKeyMonitor()
 		installQuitEventHandler()
 	}
 
-	// The main menu's Quit item ships with a nil target, which AppKit resolves by walking
-	// the responder chain from the key window. While Settings (or any other sheet) is key,
-	// that walk doesn't reliably reach NSApp, so Command-Q and clicking Quit in the menu bar
-	// appear to do nothing until the sheet is dismissed. Pointing the item straight at NSApp
-	// makes both work regardless of which window is key. The Dock icon's own Quit item and
-	// external quit requests go through a different path entirely — see
-	// installQuitEventHandler() below.
+	// The Quit item's default target and action call `-[NSApplication terminate:]` directly,
+	// as does Command-Q's key equivalent and the Dock icon's own Quit item (via the Apple
+	// Event handler below). All three turned out to be unreliable while Settings is open,
+	// each for a different reason: `-terminate:` always asks `NSApp.delegate` whether to
+	// proceed, but `@NSApplicationDelegateAdaptor` installs a SwiftUI-owned proxy object as
+	// that delegate — not this class directly — and while any SwiftUI `.sheet` is presented,
+	// that proxy answers the question itself instead of forwarding it to
+	// applicationShouldTerminate(_:) below, silently refusing to quit regardless of what this
+	// class would have said. So every quit path is retargeted at requestQuit() instead, which
+	// makes its own decision before ever calling `-terminate:`, rather than relying on being
+	// consulted once that call is already underway.
 	private func fixQuitMenuItemTarget() {
 		guard
 			let item = NSApp.mainMenu?.items.lazy.compactMap({ $0.submenu }).flatMap(\.items)
 				.first(where: { $0.action == #selector(NSApplication.terminate(_:)) })
 		else { return }
-		item.target = NSApp
+		item.target = self
+		item.action = #selector(requestQuit)
+	}
+
+	// A local event monitor sees every key event for this app regardless of which window (or
+	// sheet) is key, unlike the menu item's key-equivalent dispatch above — Command-Q reaching
+	// requestQuit() at all while Settings is key depends on this, not on the menu item.
+	private func installQuitKeyMonitor() {
+		quitKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+			guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+				event.charactersIgnoringModifiers?.lowercased() == "q"
+			else { return event }
+			self?.requestQuit()
+			return nil
+		}
 	}
 
 	func applicationWillTerminate(_ notification: Notification) {
@@ -45,9 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	// item and any external `tell application ... to quit` actually send — refuses the
 	// request outright with a user-canceled error while a sheet is attached to the key
 	// window, without ever calling applicationShouldTerminate(_:) at all. Installing our own
-	// handler for the same event and calling `-terminate:` directly bypasses that built-in
-	// refusal, letting the normal applicationShouldTerminate(_:) gate below decide instead —
-	// the same gate Command-Q and the menu bar's Quit already go through.
+	// handler for the same event routes it through requestQuit() like every other path,
+	// bypassing that built-in refusal.
 	private func installQuitEventHandler() {
 		NSAppleEventManager.shared().setEventHandler(
 			self,
@@ -60,24 +80,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	@objc private func handleQuitEvent(
 		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
 	) {
-		NSApp.terminate(nil)
+		requestQuit()
 	}
 
-	// The single gate every quit path funnels through: Command-Q and the menu bar's Quit call
-	// `-terminate:` directly via the menu item's action, and handleQuitEvent(_:withReplyEvent:)
-	// above calls it explicitly for the Dock icon and external requests — `-terminate:` itself
-	// always consults this method before proceeding, regardless of which of those triggered it.
-	// The update/failure/popup presentations share one sheet slot with Settings but carry
-	// information (an in-progress update, an error, an announcement) that shouldn't be
-	// discarded just to unblock quitting; Settings and everything reachable from it (a bundled
-	// document, the preset gallery) have no such state, so quitting through those is fine.
-	func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+	// The single point every quit path (the menu item, Command-Q, and the Apple Event handler
+	// above) funnels through. The update/failure/popup presentations share one sheet slot with
+	// Settings but carry information (an in-progress update, an error, an announcement) that
+	// shouldn't be discarded just to unblock quitting; Settings and everything reachable from
+	// it (a bundled document, the preset gallery) have no such state, so quitting through those
+	// is fine — but only once dismissForQuit() has actually taken effect on screen. Calling
+	// dismissForQuit() updates the SwiftUI @State immediately, but the AppKit sheet window it's
+	// bound to only actually detaches on the next render pass (closing with its usual short
+	// animation), and the SwiftUI-owned delegate proxy's refusal is tied to that real detachment,
+	// not the @State value — so this polls NSWindow.attachedSheet itself rather than the query,
+	// which would report "nothing presented" a beat before termination can actually proceed.
+	@objc private func requestQuit() {
 		switch currentBlockingPresentation?() {
-		case .none, .settings:
-			.terminateNow
+		case .none:
+			NSApp.terminate(nil)
+		case .settings:
+			dismissForQuit?()
+			terminateOnceSheetDetaches()
 		case .update, .failure, .popup:
-			.terminateCancel
+			break
 		}
+	}
+
+	private func terminateOnceSheetDetaches(attempt: Int = 0) {
+		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }), attempt < 20 else {
+			NSApp.terminate(nil)
+			return
+		}
+		let timer = Timer(timeInterval: 0.05, repeats: false) { [weak self] _ in
+			MainActor.assumeIsolated { self?.terminateOnceSheetDetaches(attempt: attempt + 1) }
+		}
+		RunLoop.main.add(timer, forMode: .common)
+	}
+
+	// requestQuit() only ever calls `-terminate:` once it has already decided quitting is safe,
+	// but `-terminate:` still asks the SwiftUI-owned delegate proxy that question again —
+	// without an answer from this class, its own default may not agree, even with nothing
+	// presented. Always confirming here is what actually lets termination complete once
+	// requestQuit()'s own check has already passed.
+	func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+		.terminateNow
 	}
 
 	func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
@@ -184,7 +230,8 @@ struct ArknightsClientApp: App {
 					initialMusicTitle: developerMusicTitle,
 					openMusicURL: { _ = NSWorkspace.shared.open($0) },
 					registerOpenSettings: { appDelegate.openSettings = $0 },
-					registerQuitDismissalQuery: { appDelegate.currentBlockingPresentation = $0 }
+					registerQuitDismissalQuery: { appDelegate.currentBlockingPresentation = $0 },
+					registerQuitDismissal: { appDelegate.dismissForQuit = $0 }
 				)
 				.environment(\.launcherWindowSize, geometry.size)
 			}
