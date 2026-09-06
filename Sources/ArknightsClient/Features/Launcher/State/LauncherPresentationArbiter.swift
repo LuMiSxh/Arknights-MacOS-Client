@@ -78,4 +78,8 @@ struct LauncherPresentationArbiter {
 		if case .failure = current { current = nil }
 		if case .failure = queued { queued = nil }
 	}
+
+	func blockingDestination(hasPendingPopup: Bool) -> LauncherPresentationDestination? {
+		current ?? (hasPendingPopup ? .popup : nil)
+	}
 }

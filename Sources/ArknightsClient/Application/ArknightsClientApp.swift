@@ -8,6 +8,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	weak var model: LauncherViewModel?
 	var stopGame: (() -> Void)?
 	var openSettings: (() -> Void)?
+	var blockingPresentationForQuit: (() -> LauncherPresentationDestination?)?
+	var dismissSettingsForQuit: (() -> Void)?
+	private var quitKeyMonitor: Any?
 
 	// `swift run` (used by `just preview`) launches the executable directly rather than
 	// through LaunchServices: without a bundle, the process's activation policy isn't
@@ -17,10 +20,84 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	func applicationDidFinishLaunching(_ notification: Notification) {
 		NSApp.setActivationPolicy(.regular)
 		NSApp.activate(ignoringOtherApps: true)
+		fixQuitMenuItemTarget()
+		installQuitKeyMonitor()
+		installQuitEventHandler()
+	}
+
+	// A key SwiftUI sheet can prevent the default nil target from reaching NSApp.
+	private func fixQuitMenuItemTarget() {
+		guard
+			let item = NSApp.mainMenu?.items.lazy.compactMap({ $0.submenu }).flatMap(\.items)
+				.first(where: { $0.action == #selector(NSApplication.terminate(_:)) })
+		else { return }
+		item.target = self
+		item.action = #selector(requestQuit)
+	}
+
+	// A key sheet can also bypass the menu item's Command-Q dispatch.
+	private func installQuitKeyMonitor() {
+		quitKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+			guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+				event.charactersIgnoringModifiers?.lowercased() == "q"
+			else { return event }
+			self?.requestQuit()
+			return nil
+		}
 	}
 
 	func applicationWillTerminate(_ notification: Notification) {
 		stopGame?()
+	}
+
+	// AppKit rejects quit Apple Events with an attached sheet before delegate policy runs.
+	private func installQuitEventHandler() {
+		NSAppleEventManager.shared().setEventHandler(
+			self,
+			andSelector: #selector(handleQuitEvent(_:withReplyEvent:)),
+			forEventClass: AEEventClass(kCoreEventClass),
+			andEventID: AEEventID(kAEQuitApplication)
+		)
+	}
+
+	@objc private func handleQuitEvent(
+		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
+	) {
+		requestQuit()
+	}
+
+	@objc private func requestQuit() {
+		switch blockingPresentationForQuit?() {
+		case .none:
+			NSApp.terminate(nil)
+		case .settings:
+			dismissSettingsForQuit?()
+			terminateOnceSheetDetaches()
+		case .update, .failure, .popup:
+			break
+		}
+	}
+
+	private func terminateOnceSheetDetaches(attempt: Int = 0) {
+		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }),
+			attempt < AppConstants.Timeouts.quitSheetDetachPollLimit
+		else {
+			NSApp.terminate(nil)
+			return
+		}
+		// SwiftUI clears presentation state before AppKit detaches the sheet.
+		let timer = Timer(
+			timeInterval: AppConstants.Timeouts.quitSheetDetachPollInterval,
+			repeats: false
+		) { [weak self] _ in
+			MainActor.assumeIsolated { self?.terminateOnceSheetDetaches(attempt: attempt + 1) }
+		}
+		RunLoop.main.add(timer, forMode: .common)
+	}
+
+	// requestQuit() applies presentation policy before asking AppKit to terminate.
+	func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+		.terminateNow
 	}
 
 	func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
@@ -126,7 +203,11 @@ struct ArknightsClientApp: App {
 					model: model,
 					initialMusicTitle: developerMusicTitle,
 					openMusicURL: { _ = NSWorkspace.shared.open($0) },
-					registerOpenSettings: { appDelegate.openSettings = $0 }
+					registerOpenSettings: { appDelegate.openSettings = $0 },
+					registerQuitPresentationQuery: {
+						appDelegate.blockingPresentationForQuit = $0
+					},
+					registerQuitDismissal: { appDelegate.dismissSettingsForQuit = $0 }
 				)
 				.environment(\.launcherWindowSize, geometry.size)
 			}
