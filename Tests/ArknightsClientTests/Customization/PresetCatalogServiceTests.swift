@@ -64,21 +64,24 @@ struct PresetCatalogServiceTests {
 	}
 
 	@Test
-	func syntheticThumbnailAddsResizeQueryOnlyForTheOlderGalleryCDNPath() {
-		let olderPathURL = URL(
-			string:
-				"https://webusstatic.yo-star.com/ark_us_web/assets/1/a.jpg"
-		)!
-		let thumbnail = PresetCatalogService.syntheticThumbnailURL(for: olderPathURL)
-		#expect(
-			thumbnail?.absoluteString
-				== "https://webusstatic.yo-star.com/ark_us_web/assets/1/a.jpg"
-				+ "?x-oss-process=image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
-		)
-
-		let newerPathURL = URL(
-			string: "https://webusstatic.yo-star.com/web-cms-prod/upload/content/a.png")!
-		#expect(PresetCatalogService.syntheticThumbnailURL(for: newerPathURL) == nil)
+	func syntheticThumbnailAddsTheResizeQueryTheLiveGalleryPageItselfUses() {
+		// The CDN only ever serves a resized response for a URL something has already
+		// requested with this exact query value, regardless of which upload path a wallpaper
+		// lives under — matching the live Fankit page's own convention, rather than gating on
+		// a specific path, is what actually lands on an already-warm cached response.
+		for path in [
+			"/ark_us_web/assets/1/a.jpg",
+			"/web-cms-prod/upload/content/a.png",
+			"/web-cms-test/upload/content/2026/08/17/a.png",
+		] {
+			let url = URL(string: "https://webusstatic.yo-star.com\(path)")!
+			let thumbnail = PresetCatalogService.syntheticThumbnailURL(for: url)
+			#expect(
+				thumbnail?.absoluteString
+					== "https://webusstatic.yo-star.com\(path)"
+					+ "?x-oss-process=image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
+			)
+		}
 	}
 
 	@Test

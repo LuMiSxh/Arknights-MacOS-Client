@@ -95,7 +95,10 @@ enum AppConstants {
 		static let imageDownloadAttempts = 2
 		static let imageMaximumDimension = 16_384
 		static let imageMaximumPixels = 120_000_000
-		static let thumbnailResizePercent = 35
+		// Matches the exact percentage the live Fankit gallery page itself requests, since
+		// the CDN only ever serves a resized response for a URL something has already
+		// requested with this precise query value — see syntheticThumbnailURL(for:).
+		static let thumbnailResizePercent = 50
 		static let avatarIdentifierMaximumLength = 96
 		static let wallpaperPageSize = 50
 		static let wallpaperPageLimit = 5

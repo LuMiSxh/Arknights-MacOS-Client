@@ -22,6 +22,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Clarified publisher-region ownership, publisher-neutral payment routing, and client-specific embedded login-window guidance.
 - Widened the documentation layout to improve search-result and support-content readability.
 
+### Fixed
+
+- Decoded gallery thumbnails to a bounded pixel size instead of their full native resolution, cutting peak memory for official wallpapers that have no distinct small image from Yostar.
+- Matched the synthetic thumbnail request to the exact resize query the live Fankit gallery page itself uses, landing on the same already-cached smaller response instead of the multi-megabyte original for wallpapers with no distinct small image from Yostar.
+
 ## [0.5.0] - 2026-09-03
 
 ### Added
