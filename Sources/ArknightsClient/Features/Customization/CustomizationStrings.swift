@@ -75,4 +75,19 @@ enum CustomizationStrings {
 		case .holiday: .Customization.customizationGalleryWallpaperTypeHoliday
 		}
 	}
+
+	static func wallpaperFilterOption(_ title: String, count: Int) -> LocalizedStringResource {
+		.Customization.customizationGalleryWallpaperFilterOptionWithCount(title, count)
+	}
+
+	static let wallpaperFilterOperators = LocalizedStringResource.Customization
+		.customizationGalleryWallpaperFilterOperators
+
+	static func wallpaperHoverArtist(_ name: String) -> LocalizedStringResource {
+		.Customization.customizationGalleryWallpaperHoverArtist(name)
+	}
+
+	static func wallpaperHoverTags(_ tags: String) -> LocalizedStringResource {
+		.Customization.customizationGalleryWallpaperHoverTags(tags)
+	}
 }
