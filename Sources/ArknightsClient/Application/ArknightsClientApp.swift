@@ -100,6 +100,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		.terminateNow
 	}
 
+	func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+		true
+	}
+
 	func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
 		let menu = NSMenu()
 		menu.autoenablesItems = false

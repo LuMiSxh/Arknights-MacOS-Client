@@ -9,6 +9,12 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.
+
 ## [0.5.1] - 2026-09-06
 
 ### Added
