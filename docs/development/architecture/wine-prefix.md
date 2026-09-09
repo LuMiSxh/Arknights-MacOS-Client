@@ -93,9 +93,9 @@ The constructed environment:
 - adds only launcher-owned synchronization, diagnostics, icon, audio, and frame-latency overrides
   for the current launch.
 
-Launch-scoped options are not prefix migrations. For example, selecting MSYNC or ESYNC, changing
-frame latency, or following the default audio output changes the next process environment without
-rewriting migration history.
+Launch-scoped options are not prefix migrations. For example, selecting MSYNC or ESYNC and changing
+frame latency alter the next process environment without rewriting migration history. Following the
+default macOS audio output is always enabled through that same launch environment.
 
 ## Preparation and migrations
 

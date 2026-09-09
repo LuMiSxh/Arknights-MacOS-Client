@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Made running games follow macOS audio-output changes by default and removed the Canary toggle.
 - Made the daily reset pill show the selected client's reset at a glance and expand to list and switch between every installed client's reset time.
 - Clarified publisher-region ownership, publisher-neutral payment routing, and client-specific embedded login-window guidance.
 - Widened the documentation layout to improve search-result and support-content readability.

@@ -22,7 +22,6 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
-		static let followsDefaultAudioOutput = "followsDefaultAudioOutput"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
@@ -187,14 +186,6 @@ struct LauncherPreferencesStore {
 
 	func setCanaryFeaturesEnabled(_ value: Bool) {
 		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
-	}
-
-	func followsDefaultAudioOutput() -> Bool {
-		bool(for: Key.followsDefaultAudioOutput, defaultValue: false)
-	}
-
-	func setFollowsDefaultAudioOutput(_ value: Bool) {
-		defaults.set(value, forKey: Key.followsDefaultAudioOutput)
 	}
 
 	func maximumFrameLatency() -> Int {

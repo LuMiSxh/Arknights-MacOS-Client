@@ -124,14 +124,16 @@ func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
 
 @Test
 @MainActor
-func bilibiliLaunchUsesOnlyTheSharedChinaCompatibilityGate() {
+func runtimeAlwaysFollowsTheDefaultAudioOutput() {
 	#expect(
 		GameSessionController.runtimeEnvironmentOverrides(
 			for: .chinaBilibili,
 			canaryFeaturesEnabled: false,
-			followsDefaultAudioOutput: false,
 			maximumFrameLatency: 3
-		) == ["ARKNIGHTS_RUNTIME_CN_COMPAT": "1"]
+		) == [
+			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1",
+			"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
+		]
 	)
 }
 
