@@ -33,6 +33,7 @@ struct GameCompatibilityManager: Sendable {
 		active = [
 			VuplexCompatibility(bundle: bundle),
 			PlatformProcessCompatibility(bundle: bundle),
+			BilibiliPlatformCompatibility(bundle: bundle),
 		]
 		retired = []
 	}

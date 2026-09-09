@@ -123,6 +123,19 @@ func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
 }
 
 @Test
+@MainActor
+func bilibiliLaunchUsesOnlyTheSharedChinaCompatibilityGate() {
+	#expect(
+		GameSessionController.runtimeEnvironmentOverrides(
+			for: .chinaBilibili,
+			canaryFeaturesEnabled: false,
+			followsDefaultAudioOutput: false,
+			maximumFrameLatency: 3
+		) == ["ARKNIGHTS_RUNTIME_CN_COMPAT": "1"]
+	)
+}
+
+@Test
 func graphicsDiagnosticsExposeMacDriverAndDXMTInformation() {
 	let runtime = WineRuntime(
 		executableURL: URL(filePath: "/runtime/bin/Arknights"),

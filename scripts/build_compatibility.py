@@ -121,6 +121,7 @@ def build_component(output_root: Path, component: dict[str, Any]) -> BuildResult
     directory = component["directory"]
     source_directory = PROJECT_DIR / "RuntimeSupport" / directory
     destination = output_root / directory
+    remove_path(destination)
     destination.mkdir(parents=True, exist_ok=True)
     built: list[Path] = []
     with tempfile.TemporaryDirectory(

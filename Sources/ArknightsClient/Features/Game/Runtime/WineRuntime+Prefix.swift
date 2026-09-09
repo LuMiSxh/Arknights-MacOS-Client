@@ -3,6 +3,28 @@
 import Foundation
 
 extension WineRuntime {
+	func applyBilibiliFontConfiguration(
+		environment: [String: String],
+		logHandle: FileHandle
+	) async throws {
+		let key = "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes"
+		for name in ["Microsoft YaHei", "Microsoft YaHei UI", "SimSun"] {
+			try await writeRegistryValue(
+				key: key,
+				name: name,
+				type: "REG_SZ",
+				value: "Hiragino Sans GB W3",
+				environment: environment,
+				logHandle: logHandle
+			)
+		}
+		try logHandle.write(
+			contentsOf: Data(
+				"Arknights Client: configured Bilibili Chinese font fallbacks.\n".utf8
+			)
+		)
+	}
+
 	func applyDisplayConfiguration(
 		_ configuration: WineDisplayConfiguration,
 		prefixDirectory: URL,

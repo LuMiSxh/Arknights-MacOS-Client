@@ -13,8 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in.
-- Added the artist and curated tags to a wallpaper's hover tooltip in the Artwork gallery.
+- Wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in (Thanks to @darkwebdev, #73).
+- The artist and curated tags to a wallpaper's hover tooltip in the Artwork gallery (Thanks to @darkwebdev, #73).
 
 ### Changed
 
@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Fixed China — Bilibili sign-in so its login and captcha windows render, accept input, and stay accessible above the game.
 - Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.
 
 ## [0.5.1] - 2026-09-06
@@ -106,7 +107,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
 - Prevented late branding responses from replacing the selected region's logo (#37).
 
-## [0.4.1]
+## [0.4.1] - 2026-08-22
 
 ### Changed
 
@@ -120,7 +121,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Rejected manifest collisions with installer-owned files and stopped oversized download responses before they can grow temporary files beyond their declared size (Thanks to @NemesisHoshiko, #36).
 - Kept installation progress accurate when a checksum failure removes a partial download before retrying.
 
-## [0.4.0]
+## [0.4.0] - 2026-08-21
 
 ### Added
 
@@ -182,7 +183,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Prevented a launch-time crash when macOS requests Now Playing artwork from its MediaPlayer queue.
 - Left-aligned the expanded version text consistently with the music HUD.
 
-## [0.3.0]
+## [0.3.0] - 2026-08-17
 
 ### Added
 
@@ -207,7 +208,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed a Chromium sandbox crash in the embedded browser by stubbing the full set of Windows AppContainer APIs it requires, instead of only the one used for OAuth popups (Thanks to @darkwebdev).
 - Fixed launcher background artwork and branding decoding failing when regional APIs (such as Japan or Korea) return empty URLs for privacy policies or user agreements.
 
-## [0.2.0]
+## [0.2.0] - 2026-08-16
 
 ### Added
 
@@ -232,7 +233,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Repeated Wine registry processes and no-op prefix writes from normal game launches.
 
-## [0.1.0]
+## [0.1.0] - 2026-08-15
 
 ### Added
 
@@ -245,9 +246,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/main...version-0.5.2
 [0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0
-[0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.0...v0.4.1
+[0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.1
 [0.4.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.2.0

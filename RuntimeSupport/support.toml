@@ -22,3 +22,10 @@ directory = "GameIcon"
 artifacts = [
   { source = "GameIconBridge.m", output = "GameIconBridge.dylib", kind = "macos-library", arguments = ["-lobjc"] },
 ]
+
+[[components]]
+name = "bilibili-platform"
+directory = "BilibiliPlatform"
+artifacts = [
+  { source = "BilibiliWindowController.c", output = "BilibiliWindowController.exe", kind = "windows-executable", arguments = ["-municode", "-Wl,/subsystem:windows", "-luser32"] },
+]

@@ -10,6 +10,7 @@ enum AppConstants {
 		static let userDirectoryConfigurationMaximumBytes = 64 * 1_024
 		static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
 		static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
+		static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
 	}
 
 	enum Icon {
