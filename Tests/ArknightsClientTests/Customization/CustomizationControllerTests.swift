@@ -22,6 +22,16 @@ struct CustomizationControllerTests {
 
 		#expect(fixture.controller.heroArtwork != nil)
 		#expect(fixture.controller.activeThemeCacheKey?.hasPrefix("custom.") == true)
+		#expect(fixture.controller.hasCompletedInitialArtworkLoad)
+	}
+	@Test
+	func initialRestoreCompletesEvenWithoutAnyArtworkToShow() async throws {
+		let fixture = makeCustomizationController()
+
+		await fixture.controller.restoreInitialArtwork(for: .global)
+
+		#expect(fixture.controller.heroArtwork == nil)
+		#expect(fixture.controller.hasCompletedInitialArtworkLoad)
 	}
 	@Test
 	func newerArtworkSelectionRejectsAnOlderDelayedRead() async throws {
@@ -91,7 +101,9 @@ struct CustomizationControllerTests {
 		try Data("official".utf8).write(
 			to: fixture.paths.artworkCache.appending(path: "active-global.txt"))
 
-		let restore = Task { await fixture.controller.restoreInitialArtwork(for: .global) }
+		let restore = Task {
+			await fixture.controller.restoreInitialArtwork(for: .global)
+		}
 		await loader.waitForRequestCount(1)
 		let mutation = Task {
 			await fixture.controller.applyDirectCustomArtwork(data: customData)

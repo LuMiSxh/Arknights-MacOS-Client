@@ -143,6 +143,7 @@ extension CustomizationController {
 			)
 		}
 		await restoreOfficialLogo(for: region).value
+		markInitialArtworkLoadComplete()
 	}
 
 	/// Clears any previous region's wordmark before a refresh can load the selected region's asset.

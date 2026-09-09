@@ -197,6 +197,9 @@ final class LauncherViewModel {
 					guard let self else { return }
 					_ = await customization.loadCustomAppIcon()
 					await loadDeveloperArtwork()
+					// The launch splash otherwise never dismisses in developer scenarios, since
+					// they bypass restoreInitialArtwork(for:) (the real startup path) entirely.
+					customization.markInitialArtworkLoadComplete()
 				}
 				Task { [log] in await log.info("Developer simulation started") }
 				return

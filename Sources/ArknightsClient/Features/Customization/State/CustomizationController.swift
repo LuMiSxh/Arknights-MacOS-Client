@@ -26,6 +26,9 @@ final class CustomizationController {
 		didSet { updateThemeColor() }
 	}
 	var officialLogo: NSImage?
+	/// Set once `restoreInitialArtwork(for:)` finishes, whether or not it actually found any
+	/// artwork to show — the launch splash stays up until this flips, then never again.
+	private(set) var hasCompletedInitialArtworkLoad = false
 	private(set) var hasCustomAppIcon = false
 	private(set) var hasCustomGameIcon = false
 	var dynamicThemeHue: Double?
@@ -57,6 +60,10 @@ final class CustomizationController {
 
 	func setHasPersistedCustomArtwork(_ value: Bool) {
 		hasPersistedCustomArtwork = value
+	}
+
+	func markInitialArtworkLoadComplete() {
+		hasCompletedInitialArtworkLoad = true
 	}
 
 	func setHasCustomAppIcon(_ value: Bool) {

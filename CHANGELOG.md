@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in (Thanks to @darkwebdev, #73).
 - The artist and curated tags to a wallpaper's hover tooltip in the Artwork gallery (Thanks to @darkwebdev, #73).
+- Added a brief launch animation — two progress bars closing in from each edge with a percentage readout — shown while the launcher's artwork loads, replacing an abrupt cut from a plain placeholder to the real artwork.
 
 ### Changed
 

@@ -78,10 +78,16 @@ struct ContentView: View {
 					showFailureDetails: showFailureDetails)
 			}
 			.id(model.settings.appLanguage)
+			// Kept in the hierarchy (just faded out) rather than removed via `if`, so it can
+			// actually observe `isComplete` flip instead of being torn down before it does.
+			LauncherSplashView(isComplete: model.customization.hasCompletedInitialArtworkLoad)
+				.opacity(model.customization.hasCompletedInitialArtworkLoad ? 0 : 1)
+				.allowsHitTesting(!model.customization.hasCompletedInitialArtworkLoad)
 		}
 		.background(Color.black)
 		.preferredColorScheme(.dark)
 		.animation(themeAnimation, value: model.customization.dynamicThemeHue)
+		.animation(splashAnimation, value: model.customization.hasCompletedInitialArtworkLoad)
 		.overlay {
 			if onboardingIsPresentable {
 				OnboardingView(
@@ -336,4 +342,8 @@ struct ContentView: View {
 	}
 
 	private var themeAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
+	private var splashAnimation: Animation? {
+		reduceMotion ? nil : .easeInOut(duration: splashFadeDuration)
+	}
+	private var splashFadeDuration: TimeInterval { reduceMotion ? 0 : 0.5 }
 }
