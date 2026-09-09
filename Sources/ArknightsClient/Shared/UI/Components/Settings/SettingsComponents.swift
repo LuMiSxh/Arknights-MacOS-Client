@@ -199,6 +199,13 @@ struct GlassMenuPicker<Value: Hashable>: View {
 	let options: [(value: Value, title: String)]
 	let accentColor: Color
 	var isDisabled = false
+	/// Overrides an option's displayed text inside the open menu only, leaving `title` as the
+	/// collapsed button's label — lets a caller show detail (e.g. a result count) that's only
+	/// worth the width once the list is actually open.
+	var listTitle: (Value) -> String? = { _ in nil }
+	/// Additional menu content appended after the plain option list — e.g. a submenu that
+	/// doesn't itself change `selection`. Defaults to nothing, so existing callers are unaffected.
+	var trailingMenuItems: () -> AnyView = { AnyView(EmptyView()) }
 
 	var body: some View {
 		Menu {
@@ -206,13 +213,15 @@ struct GlassMenuPicker<Value: Hashable>: View {
 				Button {
 					selection.wrappedValue = option.value
 				} label: {
+					let title = listTitle(option.value) ?? option.title
 					if option.value == selection.wrappedValue {
-						Label(option.title, systemImage: "checkmark")
+						Label(title, systemImage: "checkmark")
 					} else {
-						Text(option.title)
+						Text(title)
 					}
 				}
 			}
+			trailingMenuItems()
 		} label: {
 			HStack(spacing: 5) {
 				Text(currentTitle)

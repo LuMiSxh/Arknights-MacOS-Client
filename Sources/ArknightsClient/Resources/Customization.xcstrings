@@ -359,6 +359,38 @@
         "en": { "stringUnit": { "state": "translated", "value": "Wallpaper type" } }
       }
     },
+    "customization.gallery.wallpaper.filter.operators": {
+      "comment": "Wallpaper filter submenu title listing every operator who appears in an official wallpaper",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Operatoren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Operators" } }
+      }
+    },
+    "customization.gallery.wallpaper.filter.optionWithCount": {
+      "comment": "Wallpaper category filter choice with the number of wallpapers it matches; arguments are the category title and its count",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "%@ (%lld)" } },
+        "en": { "stringUnit": { "state": "translated", "value": "%@ (%lld)" } }
+      }
+    },
+    "customization.gallery.wallpaper.hoverArtist": {
+      "comment": "Wallpaper thumbnail hover tooltip line naming the artist; argument is their name",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Künstler: %@" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Artist: %@" } }
+      }
+    },
+    "customization.gallery.wallpaper.hoverTags": {
+      "comment": "Wallpaper thumbnail hover tooltip line listing its curated tags; argument is the comma-separated list",
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Tags: %@" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Tags: %@" } }
+      }
+    },
     "customization.gallery.wallpaper.type.celebration": {
       "comment": "Wallpaper category for anniversaries, celebrations, and livestreams",
       "extractionState": "manual",

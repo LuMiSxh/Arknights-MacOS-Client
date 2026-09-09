@@ -11,6 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in.
+- Added the artist and curated tags to a wallpaper's hover tooltip in the Artwork gallery.
+
+### Changed
+
+- Limited Artwork gallery search suggestions to tag/word completions, no longer suggesting whole wallpaper titles as chips.
+
 ### Fixed
 
 - Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.
