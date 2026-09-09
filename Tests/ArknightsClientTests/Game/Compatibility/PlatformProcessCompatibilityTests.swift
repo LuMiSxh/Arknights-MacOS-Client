@@ -6,6 +6,61 @@ import Testing
 @testable import ArknightsClient
 
 @Test
+func platformProcessNoticeWrapperUsesOneTimeCenteringCoarsePollingAndModalLock() throws {
+	let repositoryRoot = (0..<5).reduce(URL(filePath: #filePath)) { url, _ in
+		url.deletingLastPathComponent()
+	}
+	let sourceURL = repositoryRoot.appending(
+		path: "RuntimeSupport/PlatformProcess/PlatformProcessShim.c"
+	)
+	let source = try String(contentsOf: sourceURL, encoding: .utf8)
+
+	#expect(source.contains("center_notice_window"))
+	#expect(source.contains("GetClientRect(game"))
+	#expect(source.contains("ClientToScreen(game"))
+	#expect(source.contains("NOTICE_DISCOVERY_INTERVAL_MS = 50"))
+	#expect(source.contains("NOTICE_LIFECYCLE_INTERVAL_MS = 250"))
+	#expect(!source.contains("follow_game_window"))
+	#expect(!source.contains("wait_timeout = 8"))
+	#expect(source.contains("disable_game_window"))
+	#expect(source.contains("reassert_game_window"))
+	#expect(source.contains("EnableWindow(game, FALSE)"))
+	#expect(source.contains("EnableWindow(game, TRUE)"))
+	#expect(source.contains("IsWindowEnabled(game)"))
+	#expect(source.contains("if (!was_enabled || !game_identity_matches"))
+	#expect(!source.contains("else if (IsWindowEnabled(game))"))
+	#expect(source.contains("game_process_id"))
+	#expect(source.contains("game_thread_id"))
+	#expect(source.contains("GetWindowThreadProcessId(game"))
+	func branchContains(_ branch: String, _ token: String) -> Bool {
+		guard let start = source.range(of: branch) else { return false }
+		let body = source[start.upperBound...]
+		let end = body.range(of: "\n\t\tif (")?.lowerBound ?? body.endIndex
+		return body[..<end].contains(token)
+	}
+	#expect(branchContains("if (discovered_notice != notice) {", "restore_game_window"))
+	#expect(branchContains("if (discovered_game != game) {", "restore_game_window"))
+	#expect(source.contains("if (wait == WAIT_OBJECT_0) break;"))
+	#expect(source.contains("if (wait == WAIT_FAILED) {"))
+	#expect(source.contains("exit_code = GetLastError();"))
+	#expect(!source.contains("if (wait == WAIT_OBJECT_0 || wait == WAIT_FAILED) goto cleanup;"))
+	#expect(source.contains("cleanup:\n\tif (has_locked_game)\n\t\trestore_game_window"))
+	#expect(source.contains("} else if (!reassert_game_window("))
+
+	let bridgeURL = repositoryRoot.appending(
+		path: "RuntimeSupport/PlatformProcess/PlatformProcessWindowBridge.m"
+	)
+	let bridge = try String(contentsOf: bridgeURL, encoding: .utf8)
+	#expect(bridge.contains("NSApplicationActivationPolicyAccessory"))
+	#expect(bridge.contains("NSWindowCollectionBehaviorFullScreenAuxiliary"))
+	#expect(bridge.contains("CGShieldingWindowLevel() + 1"))
+	#expect(bridge.contains("NSColor.clearColor"))
+	#expect(bridge.contains("CGPathCreateWithRoundedRect"))
+	#expect(bridge.contains("acceptsFirstMouse"))
+	#expect(bridge.contains("ignoresMouseEvents = NO"))
+}
+
+@Test
 func platformProcessComponentInstallsAndRestoresOfficialHelper() throws {
 	let fixture = try PlatformProcessFixture()
 	defer { fixture.remove() }

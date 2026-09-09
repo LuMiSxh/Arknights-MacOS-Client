@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Made running games follow macOS audio-output changes by default and removed the Canary toggle.
+- Made the Notices companion modal while open, centering it once over the game and restoring the game's prior input state when it closes.
 - Matched the Artwork gallery search field to the type filter's capsule surface and focus treatment.
 - Limited Artwork gallery search suggestions to tag/word completions, no longer suggesting whole wallpaper titles as chips.
 
