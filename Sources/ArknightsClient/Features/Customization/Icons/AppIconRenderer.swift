@@ -31,8 +31,7 @@ enum AppIconRenderer {
 		return padded
 	}
 
-	/// Generates a dynamically tinted version of the bundled app icon by shifting the cyan signal layer
-	/// to match the target hue in YIQ color space, preserving all Liquid Glass reflections and Apple grid padding.
+	/// Generates a dynamically tinted version of the bundled app icon for the given hue.
 	static func tintedDefaultIcon(for targetHue: Double) -> NSImage? {
 		guard let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
 			let baseIcon = NSImage(contentsOf: iconURL),
@@ -40,20 +39,9 @@ enum AppIconRenderer {
 			let ciImage = CIImage(data: tiffData)
 		else { return nil }
 
-		let (targetR, targetG, targetB) = rgb(
-			hue: targetHue,
-			saturation: 1.0,
-			brightness: 1.0
-		)
-		let baseAngle = yiqChromaAngle(red: 0.094, green: 0.82, blue: 1.0)
-		let targetAngle = yiqChromaAngle(red: targetR, green: targetG, blue: targetB)
-		var deltaAngle = targetAngle - baseAngle
-		while deltaAngle > Double.pi { deltaAngle -= 2 * Double.pi }
-		while deltaAngle < -Double.pi { deltaAngle += 2 * Double.pi }
-
 		let filter = CIFilter(name: "CIHueAdjust")
 		filter?.setValue(ciImage, forKey: kCIInputImageKey)
-		filter?.setValue(deltaAngle, forKey: kCIInputAngleKey)
+		filter?.setValue(hueRotationAngle(to: targetHue), forKey: kCIInputAngleKey)
 
 		guard let outputCI = filter?.outputImage else { return nil }
 		let context = CIContext(options: [.useSoftwareRenderer: false])
@@ -68,29 +56,11 @@ enum AppIconRenderer {
 		return padToAppleGrid(image: rawTintedImage)
 	}
 
-	private static func yiqChromaAngle(red: Double, green: Double, blue: Double) -> Double {
-		let i = 0.596 * red - 0.274 * green - 0.322 * blue
-		let q = 0.211 * red - 0.523 * green + 0.312 * blue
-		return atan2(q, i)
-	}
-
-	private static func rgb(
-		hue: Double,
-		saturation: Double,
-		brightness: Double
-	) -> (Double, Double, Double) {
-		let c = brightness * saturation
-		let x = c * (1 - abs((hue * 6).truncatingRemainder(dividingBy: 2) - 1))
-		let m = brightness - c
-		let (r1, g1, b1): (Double, Double, Double)
-		switch hue * 6 {
-		case 0..<1: (r1, g1, b1) = (c, x, 0)
-		case 1..<2: (r1, g1, b1) = (x, c, 0)
-		case 2..<3: (r1, g1, b1) = (0, c, x)
-		case 3..<4: (r1, g1, b1) = (0, x, c)
-		case 4..<5: (r1, g1, b1) = (x, 0, c)
-		default: (r1, g1, b1) = (c, 0, x)
-		}
-		return (r1 + m, g1 + m, b1 + m)
+	/// `CIHueAdjust` rotates hue in `NSColor`'s HSB circle, not YIQ chroma-angle space.
+	static func hueRotationAngle(to targetHue: Double) -> Double {
+		var deltaAngle = (targetHue - AppConstants.Icon.baseCyanHue) * 2 * Double.pi
+		while deltaAngle > Double.pi { deltaAngle -= 2 * Double.pi }
+		while deltaAngle < -Double.pi { deltaAngle += 2 * Double.pi }
+		return deltaAngle
 	}
 }

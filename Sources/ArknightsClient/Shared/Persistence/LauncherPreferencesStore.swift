@@ -25,6 +25,7 @@ struct LauncherPreferencesStore {
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
+		static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
 		static let forceDisableRetina = "forceDisableRetina"
 		static let appLanguage = "appLanguage"
 	}
@@ -246,6 +247,19 @@ struct LauncherPreferencesStore {
 			],
 			forKey: key
 		)
+	}
+
+	/// The hue last persisted to the app bundle's icon via `NSWorkspace.setIcon`.
+	func lastAppliedDynamicIconHue() -> Double? {
+		defaults.object(forKey: Key.lastAppliedDynamicIconHue) as? Double
+	}
+
+	func setLastAppliedDynamicIconHue(_ hue: Double?) {
+		guard let hue else {
+			defaults.removeObject(forKey: Key.lastAppliedDynamicIconHue)
+			return
+		}
+		defaults.set(hue, forKey: Key.lastAppliedDynamicIconHue)
 	}
 
 	private func bool(for key: String, defaultValue: Bool) -> Bool {

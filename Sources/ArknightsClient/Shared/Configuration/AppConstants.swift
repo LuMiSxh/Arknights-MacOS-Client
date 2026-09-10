@@ -22,6 +22,8 @@ enum AppConstants {
 		/// Opacity of the dynamically tinted frame drawn over generated Game icons.
 		static let operatorFrameOpacity: CGFloat = 1.0
 		static let operatorFrameOutlineWidth: CGFloat = 1.5
+		/// Below this, a newly resolved hue is treated as unchanged from the persisted icon's.
+		static let dynamicIconHueChangeTolerance: Double = 0.02
 	}
 
 	enum Music {

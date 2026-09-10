@@ -28,6 +28,9 @@ final class CustomizationController {
 	var officialLogo: NSImage?
 	private(set) var hasCustomAppIcon = false
 	private(set) var hasCustomGameIcon = false
+	/// Flips once `restoreInitialArtwork(for:)` finishes, so the launcher window can stay
+	/// hidden until it has real wallpaper/logo to show instead of a placeholder.
+	private(set) var hasCompletedInitialArtworkLoad = false
 	var dynamicThemeHue: Double?
 	var accentColor: Color = LauncherVisuals.cyan
 	var hudTintColor: Color = LauncherVisuals.hudGlassTint
@@ -65,6 +68,10 @@ final class CustomizationController {
 
 	func setHasCustomGameIcon(_ value: Bool) {
 		hasCustomGameIcon = value
+	}
+
+	func markInitialArtworkLoadComplete() {
+		hasCompletedInitialArtworkLoad = true
 	}
 
 	init(

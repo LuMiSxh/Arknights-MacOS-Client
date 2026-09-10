@@ -187,7 +187,6 @@ final class LauncherViewModel {
 		}
 
 		settings.start()
-		customization.updateThemeColor()
 
 		#if DEBUG
 			developerScenario = DeveloperScenario(arguments: arguments)
@@ -197,6 +196,7 @@ final class LauncherViewModel {
 					guard let self else { return }
 					_ = await customization.loadCustomAppIcon()
 					await loadDeveloperArtwork()
+					customization.markInitialArtworkLoadComplete()
 				}
 				Task { [log] in await log.info("Developer simulation started") }
 				return
@@ -232,9 +232,11 @@ final class LauncherViewModel {
 					context: "Application storage migration",
 					blocksGameLaunch: true
 				)
+				customization.markInitialArtworkLoadComplete()
 				return false
 			}
 			await customization.restoreInitialArtwork(for: installation.region)
+			customization.markInitialArtworkLoadComplete()
 			_ = await customization.loadCustomAppIcon()
 			_ = await intelTranslation.refreshAvailability()
 			let refreshTask = refreshController.startRefresh()

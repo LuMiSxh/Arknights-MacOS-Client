@@ -62,12 +62,21 @@ extension CustomizationController {
 	func updateDynamicAppIcon(hue: Double?) {
 		guard !hasCustomAppIcon else { return }
 		if usesDynamicTheme(), let hue {
-			if let tinted = AppIconRenderer.tintedDefaultIcon(for: hue) {
-				applyDynamicLauncherIcon(tinted)
-			}
+			guard let tinted = AppIconRenderer.tintedDefaultIcon(for: hue) else { return }
+			let hueChanged = !Self.hueIsUnchanged(
+				hue, from: preferences.lastAppliedDynamicIconHue())
+			applyDynamicLauncherIcon(tinted, persistToBundle: hueChanged)
+			if hueChanged { preferences.setLastAppliedDynamicIconHue(hue) }
 		} else {
 			resetDynamicLauncherIcon()
+			preferences.setLastAppliedDynamicIconHue(nil)
 		}
+	}
+
+	private static func hueIsUnchanged(_ hue: Double, from previous: Double?) -> Bool {
+		guard let previous else { return false }
+		let delta = abs(hue - previous)
+		return min(delta, 1 - delta) < AppConstants.Icon.dynamicIconHueChangeTolerance
 	}
 
 	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
@@ -76,8 +85,8 @@ extension CustomizationController {
 		hudTintColor = extracted?.backgroundTint ?? LauncherVisuals.hudGlassTint
 	}
 
-	private func applyDynamicLauncherIcon(_ image: NSImage) {
-		guard !launcherIconManager.apply(image) else { return }
+	private func applyDynamicLauncherIcon(_ image: NSImage, persistToBundle: Bool) {
+		guard !launcherIconManager.apply(image, persistToBundle: persistToBundle) else { return }
 		Task { [log] in await log.error("Failed to persist the Dynamic Theme launcher icon") }
 	}
 
