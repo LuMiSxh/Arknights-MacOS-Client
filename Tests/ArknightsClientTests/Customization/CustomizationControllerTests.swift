@@ -124,6 +124,70 @@ struct CustomizationControllerTests {
 	}
 
 	@Test
+	func dynamicIconSkipsRenderingWhenPersistedHueIsUnchanged() {
+		var renderCount = 0
+		var runningIconApplyCount = 0
+		let fixture = makeCustomizationController(
+			usesDynamicTheme: true,
+			dynamicIconRenderer: { _ in
+				renderCount += 1
+				return solidImage(.systemPink)
+			},
+			setRunningIcon: { _ in runningIconApplyCount += 1 }
+		)
+		fixture.preferences.setLastAppliedDynamicIconHue(0.42)
+
+		fixture.controller.updateDynamicAppIcon(hue: 0.42)
+
+		#expect(renderCount == 0)
+		#expect(runningIconApplyCount == 1)
+	}
+
+	@Test
+	func dynamicIconRendersAgainAfterResettingTheAppIcon() {
+		var renderCount = 0
+		let fixture = makeCustomizationController(
+			usesDynamicTheme: true,
+			dynamicIconRenderer: { _ in
+				renderCount += 1
+				return solidImage(.systemPink)
+			}
+		)
+		let cacheKey = "official.global.cached"
+		fixture.preferences.setDynamicThemeAccent(
+			ThemeAccentSnapshot(hue: 0.42, saturation: 0.8, brightness: 0.9),
+			for: cacheKey
+		)
+		fixture.preferences.setLastAppliedDynamicIconHue(0.42)
+		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
+		fixture.controller.setHasCustomAppIcon(true)
+
+		fixture.controller.resetAppIcon()
+
+		#expect(renderCount == 1)
+	}
+
+	@Test
+	func cachedThemeAccentSkipsRedundantExtraction() async {
+		let extractor = ControlledRequestGate<ExtractedAccent?, NSImage>()
+		let fixture = makeCustomizationController(
+			usesDynamicTheme: true,
+			accentExtractor: { try? await extractor.next($0) }
+		)
+		let cacheKey = "official.global.cached"
+		fixture.preferences.setDynamicThemeAccent(
+			ThemeAccentSnapshot(hue: 0.42, saturation: 0.8, brightness: 0.9),
+			for: cacheKey
+		)
+
+		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
+		await Task.yield()
+
+		#expect(await extractor.requestCount() == 0)
+		#expect(fixture.controller.dynamicThemeHue == 0.42)
+	}
+
+	@Test
 	func newerThemeExtractionRejectsAnOlderDelayedResult() async throws {
 		let extractor = ControlledRequestGate<ExtractedAccent?, NSImage>()
 		let fixture = makeCustomizationController(
@@ -206,7 +270,9 @@ private func makeCustomizationController(
 	dataLoader: CustomizationController.DataLoader? = nil,
 	dataStager: CustomizationController.DataStager? = nil,
 	accentExtractor: CustomizationController.AccentExtractor? = nil,
-	setBundleIcon: @escaping (NSImage?) -> Bool = { _ in true }
+	dynamicIconRenderer: CustomizationController.DynamicIconRenderer? = nil,
+	setBundleIcon: @escaping (NSImage?) -> Bool = { _ in true },
+	setRunningIcon: @escaping (NSImage?) -> Void = { _ in }
 ) -> (
 	controller: CustomizationController,
 	paths: AppPaths,
@@ -226,7 +292,7 @@ private func makeCustomizationController(
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	let iconManager = LauncherIconManager(
 		setBundleIcon: setBundleIcon,
-		setRunningIcon: { _ in },
+		setRunningIcon: setRunningIcon,
 		defaultIcon: { solidImage(.systemBlue) }
 	)
 	let controller = CustomizationController(
@@ -238,7 +304,8 @@ private func makeCustomizationController(
 		usesDynamicTheme: { usesDynamicTheme },
 		dataLoader: dataLoader,
 		dataStager: dataStager,
-		accentExtractor: accentExtractor
+		accentExtractor: accentExtractor,
+		dynamicIconRenderer: dynamicIconRenderer
 	)
 	return (controller, paths, preferences)
 }

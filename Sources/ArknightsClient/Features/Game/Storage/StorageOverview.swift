@@ -39,37 +39,86 @@ struct StorageUsage: Equatable, Identifiable, Sendable {
 	var id: String { location.category.id }
 }
 
-@MainActor
+struct StorageOverviewContext: Equatable, Sendable {
+	let region: GameRegion
+	let canaryFeaturesEnabled: Bool
+	let persistedInstallDirectories: [GameRegion: URL]
+}
+
 enum StorageOverviewResolver {
+	@MainActor
+	static func context(
+		preferences: LauncherPreferencesStore,
+		region: GameRegion
+	) -> StorageOverviewContext {
+		StorageOverviewContext(
+			region: region,
+			canaryFeaturesEnabled: preferences.canaryFeaturesEnabled(),
+			persistedInstallDirectories: preferences.persistedInstallDirectories()
+		)
+	}
+
+	@MainActor
 	static func locations(
 		paths: AppPaths,
 		preferences: LauncherPreferencesStore,
 		region: GameRegion = .global,
 		fileManager: FileManager = .default
 	) -> [StorageLocation] {
+		locations(
+			paths: paths,
+			context: context(preferences: preferences, region: region),
+			fileManager: fileManager
+		)
+	}
+
+	static func locations(
+		paths: AppPaths,
+		context: StorageOverviewContext,
+		fileManager: FileManager = .default
+	) -> [StorageLocation] {
 		let games = GameRegion.selectableCases(
-			canaryEnabled: preferences.canaryFeaturesEnabled()
+			canaryEnabled: context.canaryFeaturesEnabled
 		).map { region in
 			StorageLocation(
 				category: .game(region),
 				urls: [
-					preferences.installDirectory(
-						for: region, default: paths.gameInstall(for: region))
+					context.persistedInstallDirectories[region] ?? paths.gameInstall(for: region)
 				]
 			)
 		}
-		let browserCaches = paths.browserCacheDirectories(for: region, fileManager: fileManager)
+		let browserCaches = paths.browserCacheDirectories(
+			for: context.region,
+			fileManager: fileManager
+		)
 
 		return games + [
-			StorageLocation(category: .winePrefix, urls: [paths.winePrefix(for: region)]),
+			StorageLocation(category: .winePrefix, urls: [paths.winePrefix(for: context.region)]),
 			StorageLocation(
 				category: .compatibilityRuntime,
 				urls: paths.bundledRuntimeDirectory.map { [$0] } ?? []
 			),
-			StorageLocation(category: .dxmtCache, urls: [paths.dxmtCache(for: region)]),
+			StorageLocation(
+				category: .dxmtCache,
+				urls: [paths.dxmtCache(for: context.region)]
+			),
 			StorageLocation(category: .browserCache, urls: browserCaches),
 			StorageLocation(category: .galleryCache, urls: [paths.presetGalleryCache]),
 			StorageLocation(category: .logs, urls: [paths.logsDirectory]),
+		]
+	}
+
+	static func placeholderLocations(context: StorageOverviewContext) -> [StorageLocation] {
+		let games = GameRegion.selectableCases(canaryEnabled: context.canaryFeaturesEnabled).map {
+			StorageLocation(category: .game($0), urls: [])
+		}
+		return games + [
+			StorageLocation(category: .winePrefix, urls: []),
+			StorageLocation(category: .compatibilityRuntime, urls: []),
+			StorageLocation(category: .dxmtCache, urls: []),
+			StorageLocation(category: .browserCache, urls: []),
+			StorageLocation(category: .galleryCache, urls: []),
+			StorageLocation(category: .logs, urls: []),
 		]
 	}
 }

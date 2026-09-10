@@ -144,7 +144,7 @@ struct LauncherSettingsView: View {
 							title: L10n.string(StorageStrings.refresh),
 							systemImage: "arrow.clockwise",
 							tone: .neutral,
-							action: storageOverview.refresh
+							action: storageOverview.refreshNow
 						)
 						.controlSize(.large)
 						.disabled(storageOverview.isMeasuring)

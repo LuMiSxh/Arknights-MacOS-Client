@@ -30,11 +30,16 @@ final class BackgroundMusicController {
 	@ObservationIgnored var loadingTask: Task<Void, Never>?
 	@ObservationIgnored var controlTask: Task<Void, Never>?
 	@ObservationIgnored var shuffleTask: Task<Void, Never>?
+	@ObservationIgnored var sourceChangeTask: Task<Void, Never>?
 	@ObservationIgnored var volumeTask: Task<Void, Never>?
 	@ObservationIgnored var playerGeneration = UUID()
 	@ObservationIgnored var fadeOperation: BackgroundMusicFadeOperation?
 	@ObservationIgnored var lastObservedTitle: String?
 	@ObservationIgnored var lastObservedVideoID: String?
+
+	deinit {
+		sourceChangeTask?.cancel()
+	}
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -98,7 +103,21 @@ final class BackgroundMusicController {
 
 	func sourceDidChange() {
 		guard settings.playsLauncherMusic, !lifecycle.activity.isGameProcessRunning else { return }
-		setupPlayer()
+		sourceChangeTask?.cancel()
+		sourceChangeTask = Task { [weak self] in
+			do {
+				try await Task.sleep(for: AppConstants.Music.sourceChangeDebounce)
+			} catch {
+				return
+			}
+			guard let self, !Task.isCancelled else { return }
+			sourceChangeTask = nil
+			guard settings.playsLauncherMusic, !lifecycle.activity.isGameProcessRunning else {
+				return
+			}
+			if let source = parsedYouTubeSource, player != nil, currentSource == source { return }
+			setupPlayer()
+		}
 	}
 
 	func enabledDidChange(to isEnabled: Bool) {

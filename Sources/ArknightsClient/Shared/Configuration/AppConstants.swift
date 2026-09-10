@@ -37,6 +37,7 @@ enum AppConstants {
 		static let fadeOutDuration: Double = 1.0
 		static let fadeSteps: Int = 15
 		static let playlistShuffleDelay: Duration = .milliseconds(200)
+		static let sourceChangeDebounce: Duration = .milliseconds(300)
 		static let trackChangePollInterval: Duration = .milliseconds(250)
 		static let trackChangePollLimit = 80
 		static let collapsedTitleMaxWidth: Double = 300
@@ -53,6 +54,12 @@ enum AppConstants {
 		static let volumeControlExpandedWidth: Double = 132
 		static let volumeSliderWidth: Double = 82
 		static let playerExpansionDuration: Double = 0.3
+	}
+
+	enum Storage {
+		/// Reuse a completed directory measurement briefly while Settings is reopened, while
+		/// allowing later installs, repairs, and external cache changes to become visible.
+		static let overviewCacheLifetime: TimeInterval = 30
 	}
 
 	enum HUD {

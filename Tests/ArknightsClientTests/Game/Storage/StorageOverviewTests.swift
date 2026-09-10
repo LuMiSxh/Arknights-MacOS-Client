@@ -83,6 +83,49 @@ func storageSizeCalculatorAggregatesExistingPathsAndIgnoresSymlinks() throws {
 
 @Test
 @MainActor
+func storageOverviewReusesCachedMeasurementUntilForcedRefresh() async throws {
+	let fileManager = FileManager.default
+	let root = temporaryStorageRoot()
+	defer { try? fileManager.removeItem(at: root) }
+	let paths = AppPaths(
+		applicationSupportDirectory: root.appending(path: "Support"),
+		cachesDirectory: root.appending(path: "Caches"),
+		libraryDirectory: root.appending(path: "Library"),
+		resourceDirectory: root.appending(path: "Resources")
+	)
+	try fileManager.createDirectory(at: paths.logsDirectory, withIntermediateDirectories: true)
+	let logFile = paths.logsDirectory.appending(path: "launcher.log")
+	try Data(repeating: 0, count: 4).write(to: logFile)
+
+	let suiteName = "StorageOverviewControllerTests.\(UUID().uuidString)"
+	let defaults = UserDefaults(suiteName: suiteName)!
+	defer { defaults.removePersistentDomain(forName: suiteName) }
+	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let log = LauncherLog(fileURL: paths.launcherLogFile)
+	let lifecycle = LauncherLifecycleStore(log: log)
+	let controller = StorageOverviewController(
+		lifecycle: lifecycle,
+		paths: paths,
+		preferences: preferences,
+		log: log
+	)
+
+	controller.refresh()
+	#expect(await waitForCondition { !controller.isMeasuring })
+	#expect(controller.usage(for: .logs)?.byteCount == 4)
+
+	try Data(repeating: 0, count: 10).write(to: logFile)
+	controller.refresh()
+	#expect(!controller.isMeasuring)
+	#expect(controller.usage(for: .logs)?.byteCount == 4)
+
+	controller.refreshNow()
+	#expect(await waitForCondition { !controller.isMeasuring })
+	#expect(controller.usage(for: .logs)?.byteCount == 10)
+}
+
+@Test
+@MainActor
 func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 	let root = temporaryStorageRoot()
 	defer { try? FileManager.default.removeItem(at: root) }

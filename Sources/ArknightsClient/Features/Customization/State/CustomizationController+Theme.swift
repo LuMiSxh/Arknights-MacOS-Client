@@ -31,6 +31,9 @@ extension CustomizationController {
 			}
 		if let cachedAccent {
 			applyThemeAccent(cachedAccent)
+			updateDynamicAppIcon(hue: cachedAccent.hue)
+			_ = startOperatorPresetIconRefresh(hue: cachedAccent.hue)
+			return
 		}
 
 		let accentExtractor = self.accentExtractor
@@ -62,9 +65,13 @@ extension CustomizationController {
 	func updateDynamicAppIcon(hue: Double?) {
 		guard !hasCustomAppIcon else { return }
 		if usesDynamicTheme(), let hue {
-			guard let tinted = AppIconRenderer.tintedDefaultIcon(for: hue) else { return }
 			let hueChanged = !Self.hueIsUnchanged(
 				hue, from: preferences.lastAppliedDynamicIconHue())
+			if !hueChanged {
+				launcherIconManager.apply(launcherIconManager.currentIcon, persistToBundle: false)
+				return
+			}
+			guard let tinted = dynamicIconRenderer(hue) else { return }
 			applyDynamicLauncherIcon(tinted, persistToBundle: hueChanged)
 			if hueChanged { preferences.setLastAppliedDynamicIconHue(hue) }
 		} else {

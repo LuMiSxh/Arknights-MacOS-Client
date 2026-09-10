@@ -145,7 +145,7 @@ final class LauncherViewModel {
 		)
 		self.storageOverview = storageOverview
 		storage.onStorageOverviewChanged = { [weak storageOverview] in
-			storageOverview?.refresh()
+			storageOverview?.refreshNow()
 		}
 		let gameSession = GameSessionController(
 			lifecycle: lifecycle,
