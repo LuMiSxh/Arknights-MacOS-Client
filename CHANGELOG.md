@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Replaced the Storage overview's "Calculating…" text and the gallery's loading spinner with a stable-sized neutral skeleton.
 - Reused recent Storage Settings measurements, skipped redundant Dynamic Theme accent/icon work, and debounced background-music URL reloads while editing.
 - Made running games follow macOS audio-output changes by default and removed the Canary toggle.
 - Made the Notices companion modal while open, centering it once over the game and restoring the game's prior input state when it closes.
