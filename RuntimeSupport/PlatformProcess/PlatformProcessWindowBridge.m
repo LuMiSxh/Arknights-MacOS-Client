@@ -23,6 +23,19 @@ static dispatch_source_t presentation_timer;
 static char notice_mask_key;
 static CGWindowID logged_game_window;
 static CGWindowID logged_notice_window;
+static BOOL (*original_set_activation_policy)(id, SEL, NSApplicationActivationPolicy);
+
+/* Wine starts with LSUIElement enabled, then requests Regular when showing its first
+ * window. Keep that request accessory-only before AppKit can publish a Dock tile;
+ * repairing the policy from the presentation timer is already too late. The bridge
+ * is injected only into the notice helper, so the game's own Dock policy is untouched. */
+static BOOL
+set_activation_policy(id application, SEL selector, NSApplicationActivationPolicy policy) {
+	if (policy == NSApplicationActivationPolicyRegular) {
+		policy = NSApplicationActivationPolicyAccessory;
+	}
+	return original_set_activation_policy(application, selector, policy);
+}
 
 struct game_window {
 	CGWindowID number;
@@ -201,9 +214,9 @@ static NSWindow *notice_window(void) {
 }
 
 /* Runs on every presentation timer tick: locates and reconfigures the notice window,
- * ensures the process has no Dock icon (accessory activation policy), and pins the window
+ * and pins the window
  * level just above the fullscreen shielding window so it stays visible over a fullscreen
- * game instead of behind it. Logs the accessory-policy switch and the first successful
+ * game instead of behind it. Logs the first successful
  * notice/game window pairing once each, not every tick. */
 static void maintain_presentation(void) {
 	NSWindow *window = notice_window();
@@ -211,15 +224,6 @@ static void maintain_presentation(void) {
 
 	if (window == nil) return;
 	configure_window(window);
-	if (NSApp.activationPolicy != NSApplicationActivationPolicyAccessory) {
-		[NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
-		fprintf(
-			stderr,
-			"platform-window-bridge: accessory policy pid=%d class=%s canKey=%d\n",
-			getpid(),
-			class_getName(window.class),
-			window.canBecomeKeyWindow);
-	}
 	game = game_window_info();
 
 	NSWindowLevel target_level = (NSWindowLevel)(CGShieldingWindowLevel() + 1);
@@ -246,6 +250,17 @@ static void maintain_presentation(void) {
  * dragging instead of visibly lagging behind it. */
 __attribute__((constructor)) static void install_platform_process_bridge(void) {
 	if (launcher_marker[0] == '\0') return;
+	/* AppKit is a dependency of this dylib. Install synchronously without creating
+	 * NSApplication or waiting for the main queue, before Wine starts presenting UI. */
+	Method method =
+		class_getInstanceMethod(objc_getClass("NSApplication"), @selector(setActivationPolicy:));
+	if (method == NULL) {
+		fprintf(stderr, "platform-window-bridge: activation policy method unavailable\n");
+		return;
+	}
+	original_set_activation_policy =
+		(BOOL (*)(id, SEL, NSApplicationActivationPolicy))method_getImplementation(method);
+	method_setImplementation(method, (IMP)set_activation_policy);
 	fprintf(
 		stderr,
 		"platform-window-bridge: loaded pid=%d process=%s\n",

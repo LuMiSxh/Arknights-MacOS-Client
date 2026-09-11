@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Prevented the Notices helper from briefly showing a separate Dock icon when opening.
 - Fixed China — Bilibili sign-in so its login and captcha windows render, accept input, and stay accessible above the game.
 - Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.
 - Fixed the launcher taking close to a second to show its cached wallpaper and logo on every launch, caused by an unnecessary app icon re-persist and a slow first-time font lookup blocking the main thread.
