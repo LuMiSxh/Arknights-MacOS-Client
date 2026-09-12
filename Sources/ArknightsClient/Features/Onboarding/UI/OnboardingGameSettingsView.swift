@@ -4,6 +4,7 @@ import SwiftUI
 
 struct OnboardingGameSettingsView: View {
 	@Bindable var preferences: LauncherPreferencesController
+	let lifecycle: LauncherLifecycleStore
 	let accentColor: Color
 
 	var body: some View {
@@ -63,10 +64,62 @@ struct OnboardingGameSettingsView: View {
 					accentColor: accentColor
 				)
 			}
+
+			if preferences.canaryFeaturesEnabled {
+				OnboardingCanaryPanel(
+					title: L10n.string(OnboardingStrings.runtimeOptimizations),
+				) {
+					OnboardingToggleRow(
+						title: L10n.string(OnboardingStrings.runtimeOptimizations),
+						detail: L10n.string(OnboardingStrings.runtimeOptimizationsDetail),
+						isOn: $preferences.runtimePerformanceEnabled,
+						accentColor: LauncherVisuals.danger
+					)
+					.disabled(lifecycle.activity.isGameActive)
+
+					SettingsHairline()
+
+					HStack(alignment: .top, spacing: 18) {
+						VStack(alignment: .leading, spacing: 3) {
+							Text(L10n.string(OnboardingStrings.maximumFrameLatency))
+							Text(L10n.string(OnboardingStrings.maximumFrameLatencyDetail))
+								.font(.caption)
+								.foregroundStyle(.secondary)
+								.fixedSize(horizontal: false, vertical: true)
+						}
+						Spacer(minLength: 18)
+						HStack(spacing: 10) {
+							SettingsSlider(
+								value: frameLatencyBinding,
+								range: 1...3,
+								step: 1,
+								accentColor: LauncherVisuals.danger,
+								width: 120
+							)
+							.accessibilityLabel(
+								L10n.string(OnboardingStrings.maximumFrameLatency)
+							)
+							.accessibilityValue(preferences.maximumFrameLatency.formatted())
+							Text(preferences.maximumFrameLatency.formatted())
+								.monospacedDigit()
+								.frame(width: 12)
+								.accessibilityHidden(true)
+						}
+					}
+					.disabled(lifecycle.activity.isGameActive)
+				}
+			}
 		}
 	}
 
 	private func shortTitle(for mode: GameDisplayMode) -> LocalizedStringResource {
 		OnboardingStrings.displayMode(mode)
+	}
+
+	private var frameLatencyBinding: Binding<Double> {
+		Binding(
+			get: { Double(preferences.maximumFrameLatency) },
+			set: { preferences.maximumFrameLatency = Int($0.rounded()) }
+		)
 	}
 }

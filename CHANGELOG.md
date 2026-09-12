@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Reorganized onboarding around a concise System Check, moved Canary controls into their relevant settings, added loading skeletons, and added confirmation before skipping setup.
 - Updated runtime build inputs to newer WineCX and DXMT revisions and the dappermint 4.6.8 base archive.
 - Replaced the Storage overview's "Calculating…" text and the gallery's loading spinner with a stable-sized neutral skeleton.
 - Reused recent Storage Settings measurements, skipped redundant Dynamic Theme accent/icon work, and debounced background-music URL reloads while editing.
@@ -29,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Fixed Canary client install sizes displaying as raw megabyte values and segmented controls using uneven pill heights when a label wraps.
 - Fixed embedded troubleshooting links to publisher support so they no longer point to the stale `/help/README/` route (#75).
 - Fixed a DXMT device-initialization bug in the local runtime candidate that could crash game startup or leave internal compute pipelines missing.
 - Prevented the Notices helper from briefly showing a separate Dock icon when opening.

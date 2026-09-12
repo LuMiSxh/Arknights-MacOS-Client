@@ -17,7 +17,8 @@ enum OnboardingStrings {
 	static let reportProblem = LocalizedStringResource.onboardingActionReportProblem
 	static let resumeAndContinue = LocalizedStringResource.onboardingActionResumeAndContinue
 	static let resumeDownload = LocalizedStringResource.onboardingActionResumeDownload
-	static let skipForNow = LocalizedStringResource.onboardingActionSkipForNow
+	static let skipSetup = LocalizedStringResource.onboardingActionSkipSetup
+	static let skipAnyway = LocalizedStringResource.onboardingActionSkipAnyway
 	static let tryAgain = LocalizedStringResource.onboardingActionTryAgain
 	static let tryInstallationAgain = LocalizedStringResource.onboardingActionTryInstallationAgain
 	static let useDefault = LocalizedStringResource.onboardingActionUseDefault
@@ -53,9 +54,18 @@ enum OnboardingStrings {
 	static let pixelDensityPanel = LocalizedStringResource.onboardingGamePixelDensityPanel
 	static let highResolutionTitle = LocalizedStringResource.onboardingGameHighResolutionTitle
 	static let highResolutionDetail = LocalizedStringResource.onboardingGameHighResolutionDetail
+	static let runtimeOptimizations = LocalizedStringResource.onboardingGameRuntimeOptimizations
+	static let runtimeOptimizationsDetail = LocalizedStringResource
+		.onboardingGameRuntimeOptimizationsDetail
+	static let maximumFrameLatency = LocalizedStringResource.onboardingGameMaximumFrameLatency
+	static let maximumFrameLatencyDetail = LocalizedStringResource
+		.onboardingGameMaximumFrameLatencyDetail
 
 	static let installationTitle = LocalizedStringResource.onboardingInstallationTitle
 	static let installationSubtitle = LocalizedStringResource.onboardingInstallationSubtitle
+	static let canaryFeatures = LocalizedStringResource.onboardingInstallationCanaryFeatures
+	static let canaryFeaturesDetail = LocalizedStringResource
+		.onboardingInstallationCanaryFeaturesDetail
 	static let serverRegion = LocalizedStringResource.onboardingInstallationRegionPanel
 	static let officialClient = LocalizedStringResource.onboardingInstallationOfficialClient
 	static let downloadingTitle = LocalizedStringResource.onboardingInstallationDownloadingTitle
@@ -145,8 +155,9 @@ enum OnboardingStrings {
 		.onboardingWelcomeCompatibilityUnavailable
 	static let compatibilityUnsupported = LocalizedStringResource
 		.onboardingWelcomeCompatibilityUnsupported
-	static let nextTitle = LocalizedStringResource.onboardingWelcomeNextTitle
-	static let nextDetail = LocalizedStringResource.onboardingWelcomeNextDetail
+	static let skipSetupConfirmationTitle = LocalizedStringResource.onboardingSkipConfirmationTitle
+	static let skipSetupConfirmationDetail = LocalizedStringResource
+		.onboardingSkipConfirmationDetail
 
 	static let setupAssistant = LocalizedStringResource.onboardingProgressAssistant
 

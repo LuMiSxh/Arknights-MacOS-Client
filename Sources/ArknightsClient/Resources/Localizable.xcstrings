@@ -1297,20 +1297,38 @@
         }
       }
     },
-    "onboarding.action.skipForNow": {
+    "onboarding.action.skipAnyway": {
+      "comment": "Confirm skipping onboarding action",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trotzdem überspringen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip Anyway"
+          }
+        }
+      }
+    },
+    "onboarding.action.skipSetup": {
       "comment": "Skip onboarding action",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jetzt überspringen"
+            "value": "Einrichtung überspringen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skip for Now"
+            "value": "Skip Setup"
           }
         }
       }
@@ -2161,6 +2179,78 @@
         }
       }
     },
+    "onboarding.game.maximumFrameLatency": {
+      "comment": "Canary DXMT maximum frame latency control",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximale Frame-Latenz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum Frame Latency"
+          }
+        }
+      }
+    },
+    "onboarding.game.maximumFrameLatency.detail": {
+      "comment": "Canary DXMT frame queue explanation and launch timing",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legt die maximale Länge der DXMT-Warteschlange auf 1 bis 3 Frames fest. Niedrigere Werte können die Cursor-Latenz verringern, aber die Darstellung weniger flüssig machen. Gilt ab dem nächsten Spielstart."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sets DXMT's maximum queued frames to 1–3. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+          }
+        }
+      }
+    },
+    "onboarding.game.runtimeOptimizations": {
+      "comment": "Experimental Wine and DXMT runtime performance toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runtime-Optimierungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runtime Optimizations"
+          }
+        }
+      }
+    },
+    "onboarding.game.runtimeOptimizations.detail": {
+      "comment": "Experimental Wine and DXMT runtime performance changes applied at the next game launch",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wendet beim nächsten Spielstart experimentelle Wine/DXMT-Leistungsänderungen an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies experimental Wine/DXMT performance changes at the next game launch."
+          }
+        }
+      }
+    },
     "onboarding.game.higherResolution.detail": {
       "comment": "Resolution performance guidance",
       "extractionState": "manual",
@@ -2409,6 +2499,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Selecting Install & Continue starts a resumable download. Closing the launcher pauses it safely."
+          }
+        }
+      }
+    },
+    "onboarding.installation.canaryFeatures": {
+      "comment": "Canary features master toggle during onboarding",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canary-Funktionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Canary Features"
+          }
+        }
+      }
+    },
+    "onboarding.installation.canaryFeatures.detail": {
+      "comment": "Canary features master toggle description that explains the China-client fallback",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiviert Canary-Funktionen und die China-Clients. Wenn ein China-Client ausgewählt ist, wird beim Deaktivieren zu Global gewechselt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enables Canary features and the China clients. Disabling it switches a selected China client to Global."
           }
         }
       }
@@ -2918,19 +3044,19 @@
       }
     },
     "onboarding.progress.step.game": {
-      "comment": "Game display step title",
+      "comment": "Game step title",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spielanzeige"
+            "value": "Spiel"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Game Display"
+            "value": "Game"
           }
         }
       }
@@ -2954,19 +3080,19 @@
       }
     },
     "onboarding.progress.step.installation": {
-      "comment": "Region and install step title",
+      "comment": "Client and installation step title",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Region und Installation"
+            "value": "Client und Installation"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Region & Install"
+            "value": "Client & Installation"
           }
         }
       }
@@ -2990,19 +3116,19 @@
       }
     },
     "onboarding.progress.step.welcome": {
-      "comment": "Preflight step title",
+      "comment": "System check step title",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vorabprüfung"
+            "value": "Systemprüfung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preflight"
+            "value": "System Check"
           }
         }
       }
@@ -3331,38 +3457,38 @@
         }
       }
     },
-    "onboarding.welcome.next.detail": {
-      "comment": "Onboarding next steps explanation",
+    "onboarding.skip.confirmation.detail": {
+      "comment": "Warning shown before onboarding is skipped",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wähle eine Serverregion, starte den offiziellen PC-Client-Download, passe Anzeigeeinstellungen an und personalisiere den Launcher. Der Download läuft weiter, während du fortfährst."
+            "value": "Die Einrichtung führt durch Client, Anzeige, Canary-Funktionen und wichtige Launcher-Einstellungen. Du kannst sie später unter Einstellungen → Allgemein erneut ausführen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose a server region, begin the official PC-client download, tune display settings, and personalize the launcher. The download keeps running while you continue."
+            "value": "Setup reviews your client, display, Canary Features, and important launcher settings. You can run it again from Settings → General."
           }
         }
       }
     },
-    "onboarding.welcome.next.title": {
-      "comment": "Onboarding next steps panel title",
+    "onboarding.skip.confirmation.title": {
+      "comment": "Title shown before onboarding is skipped",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "So geht es weiter"
+            "value": "Einrichtung überspringen?"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What happens next"
+            "value": "Skip setup?"
           }
         }
       }
