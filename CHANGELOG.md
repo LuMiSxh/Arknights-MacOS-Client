@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Fixed embedded troubleshooting links to publisher support so they no longer point to the stale `/help/README/` route (#75).
 - Prevented the Notices helper from briefly showing a separate Dock icon when opening.
 - Fixed China — Bilibili sign-in so its login and captcha windows render, accept input, and stay accessible above the game.
 - Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.

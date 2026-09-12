@@ -64,12 +64,18 @@ extension SupportCode {
 		)
 		guard let resolved = URL(string: target, relativeTo: articleRoot)?.absoluteURL.standardized,
 			var components = URLComponents(url: resolved, resolvingAgainstBaseURL: false),
-			components.path.hasSuffix(".md")
+			components.path.lowercased().hasSuffix(".md")
 		else {
 			return nil
 		}
-		components.path.removeLast(3)
-		components.path.append("/")
+		if components.path.lowercased().hasSuffix("/readme.md") {
+			components.path.removeLast("README.md".count)
+		} else {
+			components.path.removeLast(3)
+		}
+		if !components.path.hasSuffix("/") {
+			components.path.append("/")
+		}
 		return components.url
 	}
 }
