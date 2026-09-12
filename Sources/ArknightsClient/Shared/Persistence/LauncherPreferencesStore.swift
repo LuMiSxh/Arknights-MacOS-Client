@@ -22,6 +22,7 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
+		static let runtimePerformanceEnabled = "runtimePerformanceEnabled"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
@@ -187,6 +188,14 @@ struct LauncherPreferencesStore {
 
 	func setCanaryFeaturesEnabled(_ value: Bool) {
 		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
+	}
+
+	func runtimePerformanceEnabled() -> Bool {
+		bool(for: Key.runtimePerformanceEnabled, defaultValue: false)
+	}
+
+	func setRuntimePerformanceEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.runtimePerformanceEnabled)
 	}
 
 	func maximumFrameLatency() -> Int {

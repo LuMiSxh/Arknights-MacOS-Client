@@ -15,9 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in (Thanks to @darkwebdev, #73).
 - The artist and curated tags to a wallpaper's hover tooltip in the Artwork gallery (Thanks to @darkwebdev, #73).
+- An opt-in Canary toggle for experimental Wine/DXMT runtime performance changes at the next game launch.
 
 ### Changed
 
+- Updated runtime build inputs to newer WineCX and DXMT revisions and the dappermint 4.6.8 base archive.
 - Replaced the Storage overview's "Calculating…" text and the gallery's loading spinner with a stable-sized neutral skeleton.
 - Reused recent Storage Settings measurements, skipped redundant Dynamic Theme accent/icon work, and debounced background-music URL reloads while editing.
 - Made running games follow macOS audio-output changes by default and removed the Canary toggle.
@@ -28,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Fixed embedded troubleshooting links to publisher support so they no longer point to the stale `/help/README/` route (#75).
+- Fixed a DXMT device-initialization bug in the local runtime candidate that could crash game startup or leave internal compute pipelines missing.
 - Prevented the Notices helper from briefly showing a separate Dock icon when opening.
 - Fixed China — Bilibili sign-in so its login and captcha windows render, accept input, and stay accessible above the game.
 - Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.

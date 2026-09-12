@@ -6,11 +6,14 @@ extension GameSessionController {
 	static func runtimeEnvironmentOverrides(
 		for region: GameRegion,
 		canaryFeaturesEnabled: Bool,
+		runtimePerformanceEnabled: Bool,
 		maximumFrameLatency: Int
 	) -> [String: String] {
 		var environment = [
 			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1",
 			"ARKNIGHTS_RUNTIME_CN_COMPAT": region.isChinaClient ? "1" : "0",
+			"ARKNIGHTS_RUNTIME_PERFORMANCE":
+				canaryFeaturesEnabled && runtimePerformanceEnabled ? "1" : "0",
 		]
 		if canaryFeaturesEnabled {
 			environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] =
@@ -92,6 +95,7 @@ extension GameSessionController {
 		let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
 			for: requestedRegion,
 			canaryFeaturesEnabled: settings.canaryFeaturesEnabled,
+			runtimePerformanceEnabled: settings.runtimePerformanceEnabled,
 			maximumFrameLatency: settings.maximumFrameLatency
 		)
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode

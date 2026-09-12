@@ -6,6 +6,18 @@ extension InstallationSettingsPage {
 	@ViewBuilder var canaryRuntimeSettings: some View {
 		SettingsHairline()
 		SettingsActionRow(
+			title: L10n.string(SettingsStrings.runtimePerformance),
+			detail: L10n.string(SettingsStrings.runtimePerformanceDetail)
+		) {
+			SettingsToggle(
+				L10n.string(SettingsStrings.runtimePerformance),
+				isOn: $settings.runtimePerformanceEnabled,
+				accentColor: LauncherVisuals.danger
+			)
+		}
+		.disabled(gameSession.isGameActive)
+		SettingsHairline()
+		SettingsActionRow(
 			title: L10n.string(SettingsStrings.frameLatency),
 			detail: L10n.string(SettingsStrings.frameLatencyDetail)
 		) {

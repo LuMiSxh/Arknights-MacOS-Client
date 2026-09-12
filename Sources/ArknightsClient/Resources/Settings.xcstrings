@@ -1819,6 +1819,42 @@
         }
       }
     },
+    "settings.installation.runtimePerformance": {
+      "comment": "Experimental Wine and DXMT runtime performance toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimentelle Runtime-Optimierungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental runtime optimizations"
+          }
+        }
+      }
+    },
+    "settings.installation.runtimePerformance.detail": {
+      "comment": "Experimental Wine and DXMT runtime performance changes applied at the next game launch",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wendet beim nächsten Spielstart experimentelle Wine/DXMT-Leistungsänderungen an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies experimental Wine/DXMT performance changes at the next game launch."
+          }
+        }
+      }
+    },
     "settings.installation.frameLatency": {
       "comment": "Canary DXMT maximum frame latency control",
       "extractionState": "manual",

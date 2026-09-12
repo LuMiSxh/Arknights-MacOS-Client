@@ -133,6 +133,10 @@ enum SettingsStrings {
 		.settingsInstallationCanaryFeatures
 	static let canaryFeaturesDetail = LocalizedStringResource.Settings
 		.settingsInstallationCanaryFeaturesDetail
+	static let runtimePerformance = LocalizedStringResource.Settings
+		.settingsInstallationRuntimePerformance
+	static let runtimePerformanceDetail = LocalizedStringResource.Settings
+		.settingsInstallationRuntimePerformanceDetail
 	static let frameLatency = LocalizedStringResource.Settings.settingsInstallationFrameLatency
 	static let frameLatencyDetail = LocalizedStringResource.Settings
 		.settingsInstallationFrameLatencyDetail

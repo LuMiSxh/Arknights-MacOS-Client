@@ -122,18 +122,31 @@ func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
 	#expect(environment["WINEESYNC"] == "1")
 }
 
-@Test
+@Test(arguments: [
+	(false, false, "0"),
+	(false, true, "0"),
+	(true, false, "0"),
+	(true, true, "1"),
+])
 @MainActor
-func runtimeAlwaysFollowsTheDefaultAudioOutput() {
+func runtimePerformanceRequiresBothCanaryGates(
+	canaryFeaturesEnabled: Bool,
+	runtimePerformanceEnabled: Bool,
+	expectedPerformance: String
+) {
+	let environment = GameSessionController.runtimeEnvironmentOverrides(
+		for: .chinaBilibili,
+		canaryFeaturesEnabled: canaryFeaturesEnabled,
+		runtimePerformanceEnabled: runtimePerformanceEnabled,
+		maximumFrameLatency: 2
+	)
+
+	#expect(environment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == expectedPerformance)
 	#expect(
-		GameSessionController.runtimeEnvironmentOverrides(
-			for: .chinaBilibili,
-			canaryFeaturesEnabled: false,
-			maximumFrameLatency: 3
-		) == [
-			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1",
-			"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
-		]
+		environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"]
+			== (canaryFeaturesEnabled ? "2" : nil)
 	)
 }
 
