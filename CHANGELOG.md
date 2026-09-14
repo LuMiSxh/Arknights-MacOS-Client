@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-14
+
 ### Added
 
 - Wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in (Thanks to @darkwebdev, #73).
@@ -259,7 +261,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/main...version-0.5.2
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.2
 [0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0
 [0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.1
