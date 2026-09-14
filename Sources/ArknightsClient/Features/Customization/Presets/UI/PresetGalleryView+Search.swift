@@ -61,11 +61,11 @@ struct PresetGallerySearchBar: View {
 		.padding(.horizontal, 10)
 		.padding(.vertical, 7)
 		.adaptiveGlassEffect(
-			tint: accentColor.opacity(isFocused ? 0.16 : 0.08),
-			in: RoundedRectangle(cornerRadius: 10)
+			tint: accentColor.opacity(isFocused ? 0.16 : 0.13),
+			in: Capsule()
 		)
 		.overlay {
-			RoundedRectangle(cornerRadius: 10)
+			Capsule()
 				.strokeBorder(
 					isFocused
 						? accentColor.opacity(0.72)

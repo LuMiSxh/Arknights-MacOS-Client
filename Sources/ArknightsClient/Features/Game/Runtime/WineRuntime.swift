@@ -153,6 +153,7 @@ struct WineRuntime: Sendable {
 		metalPerformanceHUDEnabled: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
 		runtimeEnvironmentOverrides: [String: String] = [:],
+		bilibiliPlatformEnabled: Bool = false,
 		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
 		log: LauncherLog? = nil
@@ -221,6 +222,10 @@ struct WineRuntime: Sendable {
 			synchronizationMode: synchronizationMode
 		)
 		environment.merge(runtimeEnvironmentOverrides) { _, value in value }
+		if bilibiliPlatformEnabled {
+			environment["LANG"] = "zh_CN.UTF-8"
+			environment["LC_ALL"] = "zh_CN.UTF-8"
+		}
 		environment["WINEDLLOVERRIDES"] = Self.dllOverrides
 		try await preparePrefixIfNeeded(
 			at: prefixDirectory,
@@ -232,6 +237,12 @@ struct WineRuntime: Sendable {
 		)
 		RuntimePerformanceLog.write(
 			stage: "prefix", since: launchStarted, to: logHandle)
+		if bilibiliPlatformEnabled {
+			try await applyBilibiliFontConfiguration(
+				environment: environment,
+				logHandle: logHandle
+			)
+		}
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
 		try await applyDisplayConfiguration(
 			displayConfiguration,
@@ -250,7 +261,6 @@ struct WineRuntime: Sendable {
 		for (key, value) in gameIconEnvironment(customIconURL: gameIconURL) {
 			environment[key] = value
 		}
-
 		let process = Process()
 		process.executableURL = executableURL
 		process.arguments = [Self.windowsGamePath(for: gameExecutable)] + gameArguments
@@ -270,6 +280,29 @@ struct WineRuntime: Sendable {
 			terminationContinuation.finish()
 		}
 		try process.run()
+		if bilibiliPlatformEnabled {
+			let controller = Process()
+			controller.executableURL = executableURL
+			controller.arguments = [
+				"G:\\BLPlatform64\\\(BilibiliPlatformCompatibility.controllerName)"
+			]
+			controller.currentDirectoryURL = gameExecutable.deletingLastPathComponent()
+			var controllerEnvironment = environment
+			controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
+			controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
+			controller.environment = controllerEnvironment
+			controller.standardOutput = logHandle
+			controller.standardError = logHandle
+			do {
+				try controller.run()
+			} catch {
+				try? logHandle.write(
+					contentsOf: Data(
+						"Arknights Client: Bilibili window controller failed: \(error)\n".utf8
+					)
+				)
+			}
+		}
 		RuntimePerformanceLog.write(
 			stage: "process", since: launchStarted, to: logHandle)
 

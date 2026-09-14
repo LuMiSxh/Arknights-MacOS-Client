@@ -122,6 +122,34 @@ func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
 	#expect(environment["WINEESYNC"] == "1")
 }
 
+@Test(arguments: [
+	(false, false, "0"),
+	(false, true, "0"),
+	(true, false, "0"),
+	(true, true, "1"),
+])
+@MainActor
+func runtimePerformanceRequiresBothCanaryGates(
+	canaryFeaturesEnabled: Bool,
+	runtimePerformanceEnabled: Bool,
+	expectedPerformance: String
+) {
+	let environment = GameSessionController.runtimeEnvironmentOverrides(
+		for: .chinaBilibili,
+		canaryFeaturesEnabled: canaryFeaturesEnabled,
+		runtimePerformanceEnabled: runtimePerformanceEnabled,
+		maximumFrameLatency: 2
+	)
+
+	#expect(environment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == expectedPerformance)
+	#expect(
+		environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"]
+			== (canaryFeaturesEnabled ? "2" : nil)
+	)
+}
+
 @Test
 func graphicsDiagnosticsExposeMacDriverAndDXMTInformation() {
 	let runtime = WineRuntime(

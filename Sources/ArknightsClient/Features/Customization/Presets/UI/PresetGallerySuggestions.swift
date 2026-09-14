@@ -4,13 +4,11 @@ import SwiftUI
 
 private enum PresetGallerySuggestion: Identifiable {
 	case avatar(PresetAvatar)
-	case wallpaper(PresetWallpaper)
 	case wallpaperTerm(String)
 
 	var id: String {
 		switch self {
 		case .avatar(let avatar): "avatar_\(avatar.id)"
-		case .wallpaper(let wallpaper): "wallpaper_\(wallpaper.id)"
 		case .wallpaperTerm(let term): "wallpaper_term_\(term)"
 		}
 	}
@@ -18,41 +16,28 @@ private enum PresetGallerySuggestion: Identifiable {
 	var title: String {
 		switch self {
 		case .avatar(let avatar): avatar.name
-		case .wallpaper(let wallpaper): wallpaper.displayTitle
 		case .wallpaperTerm(let term): term
 		}
 	}
 
-	var subtitle: String? {
-		switch self {
-		case .avatar, .wallpaperTerm: return nil
-		case .wallpaper(let wallpaper): return wallpaper.author
-		}
-	}
+	var accessibilityTitle: String { title }
 
-	var accessibilityTitle: String {
-		[title, subtitle].compactMap { $0 }.joined(separator: ", ")
-	}
-
-	var compactTitle: String {
-		[title, subtitle].compactMap { $0 }.joined(separator: " · ")
-	}
+	var compactTitle: String { title }
 }
 
 struct PresetGallerySuggestions: View {
 	let destination: PresetGalleryDestination
 	let avatars: [PresetAvatar]
-	let wallpapers: [PresetWallpaper]
 	let wallpaperTerms: [String]
 	let onSelect: (String) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+	// Only ever offers tag/title-word completions for Artwork, never a whole matching
+	// wallpaper as a suggestion chip — the grid below already shows those results directly,
+	// so a chip here is worth showing only when it can actually complete what's being typed.
 	private var suggestions: [PresetGallerySuggestion] {
 		if destination == .artwork {
-			if !wallpaperTerms.isEmpty { return wallpaperTerms.map { .wallpaperTerm($0) } }
-			return wallpapers.prefix(AppConstants.Presets.gallerySuggestionLimit).map {
-				.wallpaper($0)
-			}
+			return wallpaperTerms.map { .wallpaperTerm($0) }
 		}
 		return avatars.prefix(AppConstants.Presets.gallerySuggestionLimit).map { .avatar($0) }
 	}

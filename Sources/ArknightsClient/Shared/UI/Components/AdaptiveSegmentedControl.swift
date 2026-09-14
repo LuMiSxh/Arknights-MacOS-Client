@@ -41,7 +41,7 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 						}
 					}
 					.font(.caption.weight(.semibold))
-					.frame(maxWidth: .infinity)
+					.frame(maxWidth: .infinity, maxHeight: .infinity)
 					.padding(.horizontal, 10)
 					.padding(.vertical, 5)
 					.contentShape(Capsule())

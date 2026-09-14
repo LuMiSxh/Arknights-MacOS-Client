@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.5.0",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.5.0/Arknights-MacOS-Runtime-v0.5.0.tar.gz",
-    "sha256": "b27dde5173c0aac07041af1a4b1d390a5e53521bb5d758062e0d1281d7ec780e"
+    "name": "Arknights macOS Runtime 0.5.2",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.5.2/Arknights-MacOS-Runtime-v0.5.2.tar.gz",
+    "sha256": "3d502d97d7ff972ddf6c2202f4565d38cbad1819140d4ac3866b0fbcc1a2e766"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.5.0/Arknights-MacOS-Runtime-v0.5.0-source.tar.gz",
-    "sha256": "45ee60316db0edf199a692310baa568f4cbb59929346b700b1d1c2d7551652f2"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.5.2/Arknights-MacOS-Runtime-v0.5.2-source.tar.gz",
+    "sha256": "b76bcf185eff996f900824fcf43587a77e88d2950e70bb5b84ec6f6627234919"
   },
   "interface": {
     "archive": {
@@ -36,7 +36,7 @@
   },
   "components": {
     "wine": "11.16",
-    "dxmt": "0.80-199-g19e24ee",
+    "dxmt": "0.80-213-g4ddb20e",
     "gstreamer": "1.26.3",
     "ffmpeg": "7.1.1",
     "moltenvk": "1.4.2",
@@ -44,11 +44,11 @@
   },
   "provenance": {
     "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "5e975231f4ad1969fde199ac5fc1fe7366fc4bfb",
+    "buildCommit": "b5610f7bea22038f4e020405b14252cc5123f2fa",
     "wineRepository": "https://github.com/dappermint/winecx",
-    "wineCommit": "7dbc5b5322a6ef3fb04bdc643c64b188fd641149",
+    "wineCommit": "e1b410a5fdd96a32722a5f2617b5068bd385b7db",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
-    "dxmtCommit": "19e24ee068a44a747e556965730482038c5bb068",
+    "dxmtCommit": "4ddb20e54672c0cb56115ce80d6db1beef94ae28",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "gstreamerRepository": "https://github.com/GStreamer/gstreamer",

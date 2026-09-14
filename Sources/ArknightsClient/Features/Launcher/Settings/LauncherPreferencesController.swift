@@ -62,8 +62,8 @@ final class LauncherPreferencesController {
 			onCanaryFeaturesChanged?(canaryFeaturesEnabled)
 		}
 	}
-	var followsDefaultAudioOutput: Bool {
-		didSet { store.setFollowsDefaultAudioOutput(followsDefaultAudioOutput) }
+	var runtimePerformanceEnabled: Bool {
+		didSet { store.setRuntimePerformanceEnabled(runtimePerformanceEnabled) }
 	}
 	var maximumFrameLatency: Int {
 		didSet { store.setMaximumFrameLatency(maximumFrameLatency) }
@@ -99,7 +99,7 @@ final class LauncherPreferencesController {
 		launcherMusicVolume = store.launcherMusicVolume()
 		usesDynamicTheme = store.usesDynamicTheme()
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
-		followsDefaultAudioOutput = store.followsDefaultAudioOutput()
+		runtimePerformanceEnabled = store.runtimePerformanceEnabled()
 		maximumFrameLatency = store.maximumFrameLatency()
 		appLanguage = store.appLanguage()
 		L10n.useAppLanguage(appLanguage)
@@ -132,7 +132,7 @@ final class LauncherPreferencesController {
 		launcherMusicVolume = 0.5
 		usesDynamicTheme = true
 		canaryFeaturesEnabled = false
-		followsDefaultAudioOutput = false
+		runtimePerformanceEnabled = false
 		maximumFrameLatency = 3
 		appLanguage = .system
 		return true

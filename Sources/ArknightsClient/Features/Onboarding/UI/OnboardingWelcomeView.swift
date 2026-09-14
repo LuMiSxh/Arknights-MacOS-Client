@@ -133,15 +133,6 @@ struct OnboardingWelcomeView: View {
 					}
 				}
 			}
-
-			SettingsPanel(
-				title: L10n.string(OnboardingStrings.nextTitle),
-				systemImage: "point.forward.to.point.capsulepath"
-			) {
-				Text(L10n.string(OnboardingStrings.nextDetail))
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
-			}
 		}
 	}
 

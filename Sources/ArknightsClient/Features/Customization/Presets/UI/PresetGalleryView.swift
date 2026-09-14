@@ -16,14 +16,6 @@ struct PresetGalleryView: View {
 	@State private var isLoading = true
 	@State private var applyingItemID: String?
 	@State private var showsIconStylePreview = false
-	private let avatarColumns = [
-		GridItem(.adaptive(minimum: 120, maximum: 140), spacing: 16)
-	]
-	private let wallpaperColumns = [
-		GridItem(.flexible(), spacing: 14),
-		GridItem(.flexible(), spacing: 14),
-		GridItem(.flexible(), spacing: 14),
-	]
 	init(
 		catalog: PresetCatalogService,
 		customization: CustomizationController,
@@ -71,7 +63,12 @@ struct PresetGalleryView: View {
 					if destination == .artwork {
 						WallpaperCategoryFilter(
 							selection: $selectedCategory,
-							accentColor: customization.accentColor
+							accentColor: customization.accentColor,
+							counts: wallpaperCategoryCounts,
+							operatorCounts: operatorArtCounts(among: filteredWallpapers),
+							onSelectOperator: { tag in
+								if !committedTags.contains(tag) { committedTags.append(tag) }
+							}
 						)
 					}
 				}
@@ -80,7 +77,6 @@ struct PresetGalleryView: View {
 				PresetGallerySuggestions(
 					destination: destination,
 					avatars: hasSearchQuery ? filteredAvatars : [],
-					wallpapers: hasSearchQuery ? filteredWallpapers : [],
 					wallpaperTerms: hasSearchQuery ? wallpaperTerms : []
 				) { selection in
 					searchText =
@@ -98,7 +94,13 @@ struct PresetGalleryView: View {
 								PresetGalleryEmptyView(
 									text: destination.emptyText, systemImage: "photo")
 							} else {
-								wallpapersGrid(filteredWallpapers)
+								PresetWallpaperGrid(
+									catalog: catalog,
+									accentColor: customization.accentColor,
+									wallpapers: filteredWallpapers,
+									applyingItemID: applyingItemID,
+									onSelect: applyWallpaper
+								)
 							}
 						} else {
 							if filteredAvatars.isEmpty {
@@ -106,7 +108,13 @@ struct PresetGalleryView: View {
 									text: destination.emptyText, systemImage: "person.crop.square"
 								)
 							} else {
-								avatarsGrid(filteredAvatars)
+								PresetAvatarGrid(
+									catalog: catalog,
+									accentColor: customization.accentColor,
+									avatars: filteredAvatars,
+									applyingItemID: applyingItemID,
+									onSelect: applyAvatar
+								)
 							}
 						}
 					}
@@ -149,162 +157,62 @@ struct PresetGalleryView: View {
 			guard !Task.isCancelled, taskDestination == destination else { return }
 			isLoading = false
 		}
-	}
-	private func avatarsGrid(_ filteredAvatars: [PresetAvatar]) -> some View {
-		LazyVGrid(columns: avatarColumns, spacing: 18) {
-			ForEach(filteredAvatars) { avatar in
-				let isApplying = applyingItemID == avatar.id
-				Button {
-					applyAvatar(avatar)
-				} label: {
-					VStack(spacing: 6) {
-						ZStack {
-							CachedPresetImage(
-								catalog: catalog,
-								url: avatar.url,
-								cacheKey: avatar.id,
-								contentMode: .fit,
-								placeholderIcon: "person.crop.square"
-							)
-							.frame(width: 104, height: 104)
-							.background(
-								LinearGradient(
-									colors: [
-										Color(red: 0.16, green: 0.17, blue: 0.19),
-										Color(red: 0.06, green: 0.06, blue: 0.07),
-									],
-									startPoint: .top,
-									endPoint: .bottom
-								)
-							)
-							.clipShape(RoundedRectangle(cornerRadius: 22))
-							if isApplying {
-								ZStack {
-									Color.black.opacity(0.65)
-									ProgressView()
-										.controlSize(.small)
-										.tint(customization.accentColor)
-								}
-								.clipShape(RoundedRectangle(cornerRadius: 22))
-							}
-						}
-						.frame(width: 104, height: 104)
-						.overlay {
-							RoundedRectangle(cornerRadius: 22)
-								.strokeBorder(
-									isApplying
-										? customization.accentColor : Color.white.opacity(0.14),
-									lineWidth: isApplying ? 2.5 : 1.5
-								)
-						}
-						.shadow(
-							color: isApplying
-								? customization.accentColor.opacity(0.5) : Color.black.opacity(0.4),
-							radius: isApplying ? 8 : 5,
-							x: 0,
-							y: 3
-						)
-						Text(avatar.name)
-							.font(.caption.weight(isApplying ? .bold : .medium))
-							.lineLimit(2)
-							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? customization.accentColor : .primary)
-							.frame(maxWidth: 130)
-					}
-					.padding(.vertical, 4)
-					.frame(maxWidth: .infinity)
-					.contentShape(Rectangle())
-				}
-				.buttonStyle(.plain)
-				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
-				.disabled(applyingItemID != nil)
-				.accessibilityLabel(avatar.name)
-				.accessibilityHint(
-					L10n.string(CustomizationStrings.operatorApplyHelp(avatar.name))
-				)
-				.accessibilityValue(
-					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
-				)
-			}
+		// Fetched separately from the wallpapers above so the operator roster (needed only to
+		// identify operators among wallpaper tags for the filter's submenu) never delays the
+		// Artwork grid itself from appearing.
+		.task(id: destination) {
+			guard destination == .artwork else { return }
+			let fetchedAvatars = await catalog.fetchAvatars()
+			guard !Task.isCancelled, destination == .artwork else { return }
+			avatars = fetchedAvatars
 		}
 	}
-	private func wallpapersGrid(_ filteredWallpapers: [PresetWallpaper]) -> some View {
-		LazyVGrid(columns: wallpaperColumns, spacing: 14) {
-			ForEach(filteredWallpapers) { wp in
-				let isApplying = applyingItemID == wp.id
-				Button {
-					applyWallpaper(wp)
-				} label: {
-					VStack(alignment: .leading, spacing: 6) {
-						ZStack {
-							CachedPresetImage(
-								catalog: catalog,
-								url: wp.thumbnailURL ?? wp.url,
-								cacheKey: "thumb_\(wp.id)",
-								contentMode: .fill,
-								placeholderIcon: "photo"
-							)
-							.frame(minWidth: 0, maxWidth: .infinity)
-							.frame(height: 105)
-							.clipped()
-							.clipShape(RoundedRectangle(cornerRadius: 10))
-							if isApplying {
-								ZStack {
-									Color.black.opacity(0.68)
-									VStack(spacing: 6) {
-										ProgressView()
-											.controlSize(.regular)
-											.tint(customization.accentColor)
-										Text(L10n.string(CustomizationStrings.applying))
-											.font(.caption2.bold())
-											.foregroundStyle(.white)
-									}
-								}
-								.clipShape(RoundedRectangle(cornerRadius: 10))
-							}
-						}
-						.frame(height: 105)
-						.background(Color.white.opacity(0.05), in: .rect(cornerRadius: 10))
-						Text(wp.displayTitle)
-							.font(.caption.weight(isApplying ? .bold : .medium))
-							.lineLimit(2)
-							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? customization.accentColor : .primary)
-					}
-					.padding(8)
-					.frame(maxWidth: .infinity)
-					.background(
-						isApplying
-							? customization.accentColor.opacity(0.12) : Color.white.opacity(0.03),
-						in: .rect(cornerRadius: 12)
-					)
-					.overlay {
-						RoundedRectangle(cornerRadius: 12)
-							.strokeBorder(
-								isApplying
-									? customization.accentColor : Color.white.opacity(0.07),
-								lineWidth: isApplying ? 2 : 1
-							)
-					}
-					.shadow(
-						color: isApplying ? customization.accentColor.opacity(0.4) : .clear,
-						radius: 8,
-						x: 0,
-						y: 2
-					)
-				}
-				.buttonStyle(.plain)
-				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
-				.disabled(applyingItemID != nil)
-				.accessibilityLabel(wp.displayTitle)
-				.accessibilityHint(
-					L10n.string(CustomizationStrings.wallpaperApplyHelp(wp.displayTitle))
+
+	// How many wallpapers each category filter option would show for the current search text
+	// and committed tag pills, regardless of which category (if any) is currently selected —
+	// so switching categories is an informed choice rather than a guess. `nil` is the "All
+	// Types" option's own total.
+	private var wallpaperCategoryCounts: [WallpaperCategory?: Int] {
+		Dictionary(
+			uniqueKeysWithValues: ([nil] + WallpaperCategory.allCases.map { $0 }).map { category in
+				(
+					category,
+					PresetGallerySearch.wallpapers(
+						matching: searchText, committedTags: committedTags, category: category,
+						in: wallpapers
+					).count
 				)
-				.accessibilityValue(
-					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
-				)
-				.help(WallpaperTagCatalog.tags(for: wp.id).joined(separator: ", "))
 			}
+		)
+	}
+
+	// Every operator identifiable among `visibleWallpapers`, with how many of them feature
+	// them — sorted most-featured first. A tag counts as an operator only if it matches a real
+	// operator's name from the character roster, so unrelated tags (locations, event names)
+	// never show up here.
+	private func operatorArtCounts(among visibleWallpapers: [PresetWallpaper]) -> [OperatorArtCount]
+	{
+		guard !avatars.isEmpty else { return [] }
+		let namesByNormalizedTag = Dictionary(
+			avatars.map { (WallpaperSearch.normalized($0.name), $0.name) },
+			uniquingKeysWith: { first, _ in first }
+		)
+		var counts: [String: Int] = [:]
+		for wallpaper in visibleWallpapers {
+			for tag in WallpaperTagCatalog.tags(for: wallpaper.id) {
+				guard namesByNormalizedTag[WallpaperSearch.normalized(tag)] != nil else { continue }
+				counts[tag, default: 0] += 1
+			}
+		}
+		return counts.compactMap { tag, count in
+			namesByNormalizedTag[WallpaperSearch.normalized(tag)].map {
+				OperatorArtCount(tag: tag, displayName: $0, count: count)
+			}
+		}
+		.sorted { lhs, rhs in
+			lhs.count != rhs.count
+				? lhs.count > rhs.count
+				: lhs.displayName.localizedStandardCompare(rhs.displayName) == .orderedAscending
 		}
 	}
 	private func applyAvatar(_ avatar: PresetAvatar) {

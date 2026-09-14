@@ -22,10 +22,11 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
-		static let followsDefaultAudioOutput = "followsDefaultAudioOutput"
+		static let runtimePerformanceEnabled = "runtimePerformanceEnabled"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
+		static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
 		static let forceDisableRetina = "forceDisableRetina"
 		static let appLanguage = "appLanguage"
 	}
@@ -189,12 +190,12 @@ struct LauncherPreferencesStore {
 		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
 	}
 
-	func followsDefaultAudioOutput() -> Bool {
-		bool(for: Key.followsDefaultAudioOutput, defaultValue: false)
+	func runtimePerformanceEnabled() -> Bool {
+		bool(for: Key.runtimePerformanceEnabled, defaultValue: false)
 	}
 
-	func setFollowsDefaultAudioOutput(_ value: Bool) {
-		defaults.set(value, forKey: Key.followsDefaultAudioOutput)
+	func setRuntimePerformanceEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.runtimePerformanceEnabled)
 	}
 
 	func maximumFrameLatency() -> Int {
@@ -255,6 +256,19 @@ struct LauncherPreferencesStore {
 			],
 			forKey: key
 		)
+	}
+
+	/// The hue last persisted to the app bundle's icon via `NSWorkspace.setIcon`.
+	func lastAppliedDynamicIconHue() -> Double? {
+		defaults.object(forKey: Key.lastAppliedDynamicIconHue) as? Double
+	}
+
+	func setLastAppliedDynamicIconHue(_ hue: Double?) {
+		guard let hue else {
+			defaults.removeObject(forKey: Key.lastAppliedDynamicIconHue)
+			return
+		}
+		defaults.set(hue, forKey: Key.lastAppliedDynamicIconHue)
 	}
 
 	private func bool(for key: String, defaultValue: Bool) -> Bool {

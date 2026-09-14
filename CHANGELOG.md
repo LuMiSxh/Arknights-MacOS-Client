@@ -9,6 +9,38 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.5.2] - 2026-09-14
+
+### Added
+
+- Wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in (Thanks to @darkwebdev, #73).
+- The artist and curated tags to a wallpaper's hover tooltip in the Artwork gallery (Thanks to @darkwebdev, #73).
+- An opt-in Canary toggle for experimental Wine/DXMT runtime performance changes at the next game launch.
+
+### Changed
+
+- Reorganized onboarding around a concise System Check, moved Canary controls into their relevant settings, added loading skeletons, and added confirmation before skipping setup.
+- Updated runtime build inputs to newer WineCX and DXMT revisions and the dappermint 4.6.8 base archive.
+- Replaced the Storage overview's "Calculating…" text and the gallery's loading spinner with a stable-sized neutral skeleton.
+- Reused recent Storage Settings measurements, skipped redundant Dynamic Theme accent/icon work, and debounced background-music URL reloads while editing.
+- Made running games follow macOS audio-output changes by default and removed the Canary toggle.
+- Made the Notices companion modal while open, centering it once over the game and restoring the game's prior input state when it closes.
+- Matched the Artwork gallery search field to the type filter's capsule surface and focus treatment.
+- Limited Artwork gallery search suggestions to tag/word completions, no longer suggesting whole wallpaper titles as chips.
+
+### Fixed
+
+- Fixed Canary client install sizes displaying as raw megabyte values and segmented controls using uneven pill heights when a label wraps.
+- Fixed embedded troubleshooting links to publisher support so they no longer point to the stale `/help/README/` route (#75).
+- Fixed a DXMT device-initialization bug in the local runtime candidate that could crash game startup or leave internal compute pipelines missing.
+- Prevented the Notices helper from briefly showing a separate Dock icon when opening.
+- Fixed China — Bilibili sign-in so its login and captcha windows render, accept input, and stay accessible above the game.
+- Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.
+- Fixed the launcher taking close to a second to show its cached wallpaper and logo on every launch, caused by an unnecessary app icon re-persist and a slow first-time font lookup blocking the main thread.
+- Fixed the Dynamic Theme launcher icon rendering the wrong hue (e.g. blue instead of green) from incorrect color-space math in the icon tinting.
+
 ## [0.5.1] - 2026-09-06
 
 ### Added
@@ -90,7 +122,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
 - Prevented late branding responses from replacing the selected region's logo (#37).
 
-## [0.4.1]
+## [0.4.1] - 2026-08-22
 
 ### Changed
 
@@ -104,7 +136,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Rejected manifest collisions with installer-owned files and stopped oversized download responses before they can grow temporary files beyond their declared size (Thanks to @NemesisHoshiko, #36).
 - Kept installation progress accurate when a checksum failure removes a partial download before retrying.
 
-## [0.4.0]
+## [0.4.0] - 2026-08-21
 
 ### Added
 
@@ -166,7 +198,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Prevented a launch-time crash when macOS requests Now Playing artwork from its MediaPlayer queue.
 - Left-aligned the expanded version text consistently with the music HUD.
 
-## [0.3.0]
+## [0.3.0] - 2026-08-17
 
 ### Added
 
@@ -191,7 +223,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed a Chromium sandbox crash in the embedded browser by stubbing the full set of Windows AppContainer APIs it requires, instead of only the one used for OAuth popups (Thanks to @darkwebdev).
 - Fixed launcher background artwork and branding decoding failing when regional APIs (such as Japan or Korea) return empty URLs for privacy policies or user agreements.
 
-## [0.2.0]
+## [0.2.0] - 2026-08-16
 
 ### Added
 
@@ -216,7 +248,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Repeated Wine registry processes and no-op prefix writes from normal game launches.
 
-## [0.1.0]
+## [0.1.0] - 2026-08-15
 
 ### Added
 
@@ -229,9 +261,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.2
 [0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0
-[0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.4.0...v0.4.1
+[0.4.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.1
 [0.4.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.4.0
 [0.3.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.2.0

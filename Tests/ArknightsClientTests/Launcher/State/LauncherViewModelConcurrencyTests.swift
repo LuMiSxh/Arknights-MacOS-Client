@@ -112,6 +112,7 @@ struct LauncherViewModelConcurrencyTests {
 		model.settings.showsPlayingMusic = true
 		model.settings.launcherMusicVolume = 0.1
 		model.settings.usesDynamicTheme = false
+		model.settings.runtimePerformanceEnabled = true
 		model.settings.launchOptions = GameLaunchOptions(
 			displayMode: .fullscreen,
 			resolution: .fullHD,
@@ -134,6 +135,7 @@ struct LauncherViewModelConcurrencyTests {
 		#expect(!model.settings.showsPlayingMusic)
 		#expect(model.settings.launcherMusicVolume == 0.5)
 		#expect(model.settings.usesDynamicTheme)
+		#expect(!model.settings.runtimePerformanceEnabled)
 		#expect(model.settings.launchOptions == .default)
 		await api.resolveBranding()
 	}

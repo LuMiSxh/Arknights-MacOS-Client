@@ -6,16 +6,16 @@ extension InstallationSettingsPage {
 	@ViewBuilder var canaryRuntimeSettings: some View {
 		SettingsHairline()
 		SettingsActionRow(
-			title: L10n.string(SettingsStrings.followsDefaultAudioOutput),
-			detail: L10n.string(SettingsStrings.followsDefaultAudioOutputDetail)
+			title: L10n.string(SettingsStrings.runtimePerformance),
+			detail: L10n.string(SettingsStrings.runtimePerformanceDetail)
 		) {
 			SettingsToggle(
-				L10n.string(SettingsStrings.followsDefaultAudioOutput),
-				isOn: $settings.followsDefaultAudioOutput,
+				L10n.string(SettingsStrings.runtimePerformance),
+				isOn: $settings.runtimePerformanceEnabled,
 				accentColor: LauncherVisuals.danger
 			)
-			.disabled(gameSession.isGameActive)
 		}
+		.disabled(gameSession.isGameActive)
 		SettingsHairline()
 		SettingsActionRow(
 			title: L10n.string(SettingsStrings.frameLatency),

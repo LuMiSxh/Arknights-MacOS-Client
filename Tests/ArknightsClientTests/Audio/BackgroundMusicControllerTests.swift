@@ -106,6 +106,27 @@ struct BackgroundMusicControllerTests {
 		#expect(controller.effectiveVolume == 0.7)
 	}
 
+	@Test
+	func sourceChangesWaitForEditingToSettleBeforeReloading() async {
+		let (controller, settings, defaults, suiteName) = makeController()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+
+		settings.playsLauncherMusic = true
+		settings.launcherMusicURL = "https://www.youtube.com/watch?v=first"
+		controller.enabledDidChange(to: true)
+		#expect(controller.currentSource == .video(id: "first"))
+
+		settings.launcherMusicURL = "https://www.youtube.com/watch?v=second"
+		controller.sourceDidChange()
+		#expect(controller.currentSource == .video(id: "first"))
+
+		#expect(
+			await waitForCondition {
+				controller.currentSource == .video(id: "second")
+			}
+		)
+	}
+
 	private func makeController(openURL: @escaping (URL) -> Void = { _ in }) -> (
 		BackgroundMusicController, LauncherPreferencesController, UserDefaults, String
 	) {

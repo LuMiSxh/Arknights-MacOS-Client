@@ -12,6 +12,7 @@ final class CustomizationController {
 	typealias DataLoader = @Sendable (URL) async throws -> Data
 	typealias DataStager = @Sendable (Data, URL) async throws -> Void
 	typealias AccentExtractor = @MainActor @Sendable (NSImage) async -> ExtractedAccent?
+	typealias DynamicIconRenderer = @MainActor (Double) -> NSImage?
 
 	let lifecycle: LauncherLifecycleStore
 	let paths: AppPaths
@@ -28,6 +29,9 @@ final class CustomizationController {
 	var officialLogo: NSImage?
 	private(set) var hasCustomAppIcon = false
 	private(set) var hasCustomGameIcon = false
+	/// Flips once `restoreInitialArtwork(for:)` finishes, so the launcher window can stay
+	/// hidden until it has real wallpaper/logo to show instead of a placeholder.
+	private(set) var hasCompletedInitialArtworkLoad = false
 	var dynamicThemeHue: Double?
 	var accentColor: Color = LauncherVisuals.cyan
 	var hudTintColor: Color = LauncherVisuals.hudGlassTint
@@ -40,6 +44,7 @@ final class CustomizationController {
 	let dataLoader: DataLoader
 	let dataStager: DataStager
 	let accentExtractor: AccentExtractor
+	let dynamicIconRenderer: DynamicIconRenderer
 	@ObservationIgnored var artworkOperationID: UUID?
 	@ObservationIgnored var passiveArtworkOperationID: UUID?
 	@ObservationIgnored var artworkMutationInFlight = false
@@ -67,6 +72,10 @@ final class CustomizationController {
 		hasCustomGameIcon = value
 	}
 
+	func markInitialArtworkLoadComplete() {
+		hasCompletedInitialArtworkLoad = true
+	}
+
 	init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,
@@ -78,7 +87,8 @@ final class CustomizationController {
 		usesDynamicTheme: @escaping @MainActor () -> Bool,
 		dataLoader: DataLoader? = nil,
 		dataStager: DataStager? = nil,
-		accentExtractor: AccentExtractor? = nil
+		accentExtractor: AccentExtractor? = nil,
+		dynamicIconRenderer: DynamicIconRenderer? = nil
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
@@ -91,6 +101,7 @@ final class CustomizationController {
 		self.dataLoader = dataLoader ?? CustomizationImageIO.load
 		self.dataStager = dataStager ?? CustomizationImageIO.stage
 		self.accentExtractor = accentExtractor ?? WallpaperColorExtractor.extractAccent
+		self.dynamicIconRenderer = dynamicIconRenderer ?? AppIconRenderer.tintedDefaultIcon
 	}
 
 	static func officialThemeCacheKey(for region: GameRegion, artworkCacheKey: String) -> String {

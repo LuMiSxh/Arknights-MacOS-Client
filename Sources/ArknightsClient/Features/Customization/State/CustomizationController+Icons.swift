@@ -41,6 +41,7 @@ extension CustomizationController {
 			try CustomizationImageIO.removeIfPresent(paths.operatorPresetAvatar)
 			guard launcherIconManager.reset() else { throw LauncherError.cannotSetAppIcon }
 			setHasCustomAppIcon(false)
+			preferences.setLastAppliedDynamicIconHue(nil)
 			updateThemeColor()
 		} catch {
 			lifecycle.show(error)
@@ -88,6 +89,7 @@ extension CustomizationController {
 			guard launcherIconManager.reset() else { throw LauncherError.cannotSetAppIcon }
 			setHasCustomAppIcon(false)
 			setHasCustomGameIcon(false)
+			preferences.setLastAppliedDynamicIconHue(nil)
 			updateThemeColor()
 		} catch {
 			lifecycle.show(error)

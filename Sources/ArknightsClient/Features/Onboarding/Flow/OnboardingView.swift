@@ -13,6 +13,7 @@ struct OnboardingView: View {
 	let actions: OnboardingActions
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var presentedGallery: PresetGalleryDestination?
+	@State private var isSkipConfirmationPresented = false
 
 	let retryUpdateCheck: () -> Void
 
@@ -44,7 +45,9 @@ struct OnboardingView: View {
 							)
 						case .installation:
 							OnboardingInstallationView(
+								preferences: preferences,
 								installation: installation,
+								lifecycle: lifecycle,
 								accentColor: customization.accentColor,
 								canSwitchRegion: canSwitchRegion,
 								selectRegion: actions.selectRegion
@@ -52,6 +55,7 @@ struct OnboardingView: View {
 						case .game:
 							OnboardingGameSettingsView(
 								preferences: preferences,
+								lifecycle: lifecycle,
 								accentColor: customization.accentColor
 							)
 						case .personalization:
@@ -97,14 +101,28 @@ struct OnboardingView: View {
 
 				FloatingActionBar(tint: customization.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
-						Button(action: coordinator.skip) {
+						Button {
+							isSkipConfirmationPresented = true
+						} label: {
 							Label(
-								L10n.string(OnboardingStrings.skipForNow),
+								L10n.string(OnboardingStrings.skipSetup),
 								systemImage: "forward.end"
 							)
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
+						.alert(
+							L10n.string(OnboardingStrings.skipSetupConfirmationTitle),
+							isPresented: $isSkipConfirmationPresented
+						) {
+							Button(L10n.string(OnboardingStrings.continueSetup), role: .cancel) {}
+								.keyboardShortcut(.defaultAction)
+							Button(L10n.string(OnboardingStrings.skipAnyway), role: .destructive) {
+								coordinator.skip()
+							}
+						} message: {
+							Text(L10n.string(OnboardingStrings.skipSetupConfirmationDetail))
+						}
 					}
 					Spacer()
 					if coordinator.step != .welcome {

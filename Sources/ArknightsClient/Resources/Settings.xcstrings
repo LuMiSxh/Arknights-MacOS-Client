@@ -1819,38 +1819,38 @@
         }
       }
     },
-    "settings.installation.followsDefaultAudioOutput": {
-      "comment": "Canary toggle for following the current macOS default audio output",
+    "settings.installation.runtimePerformance": {
+      "comment": "Experimental Wine and DXMT runtime performance toggle",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Standard-Audioausgabe folgen"
+            "value": "Experimentelle Runtime-Optimierungen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Follow Default Audio Output"
+            "value": "Experimental runtime optimizations"
           }
         }
       }
     },
-    "settings.installation.followsDefaultAudioOutput.detail": {
-      "comment": "Canary default-audio behavior and launch timing",
+    "settings.installation.runtimePerformance.detail": {
+      "comment": "Experimental Wine and DXMT runtime performance changes applied at the next game launch",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lässt das laufende Spiel dem aktuellen macOS-Ausgabegerät folgen. Gilt ab dem nächsten Spielstart."
+            "value": "Wendet beim nächsten Spielstart experimentelle Wine/DXMT-Leistungsänderungen an."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lets the running game follow the current macOS output device. Applies on the next game launch."
+            "value": "Applies experimental Wine/DXMT performance changes at the next game launch."
           }
         }
       }

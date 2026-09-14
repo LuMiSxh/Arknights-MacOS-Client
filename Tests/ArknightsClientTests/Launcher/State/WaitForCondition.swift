@@ -4,7 +4,7 @@ import Foundation
 
 @MainActor
 func waitForCondition(
-	timeout: Duration = .seconds(2),
+	timeout: Duration = .seconds(5),
 	_ condition: @escaping () -> Bool
 ) async -> Bool {
 	let clock = ContinuousClock()

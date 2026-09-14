@@ -10,6 +10,7 @@ enum AppConstants {
 		static let userDirectoryConfigurationMaximumBytes = 64 * 1_024
 		static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
 		static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
+		static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
 	}
 
 	enum Icon {
@@ -21,6 +22,8 @@ enum AppConstants {
 		/// Opacity of the dynamically tinted frame drawn over generated Game icons.
 		static let operatorFrameOpacity: CGFloat = 1.0
 		static let operatorFrameOutlineWidth: CGFloat = 1.5
+		/// Below this, a newly resolved hue is treated as unchanged from the persisted icon's.
+		static let dynamicIconHueChangeTolerance: Double = 0.02
 	}
 
 	enum Music {
@@ -34,6 +37,7 @@ enum AppConstants {
 		static let fadeOutDuration: Double = 1.0
 		static let fadeSteps: Int = 15
 		static let playlistShuffleDelay: Duration = .milliseconds(200)
+		static let sourceChangeDebounce: Duration = .milliseconds(300)
 		static let trackChangePollInterval: Duration = .milliseconds(250)
 		static let trackChangePollLimit = 80
 		static let collapsedTitleMaxWidth: Double = 300
@@ -50,6 +54,12 @@ enum AppConstants {
 		static let volumeControlExpandedWidth: Double = 132
 		static let volumeSliderWidth: Double = 82
 		static let playerExpansionDuration: Double = 0.3
+	}
+
+	enum Storage {
+		/// Reuse a completed directory measurement briefly while Settings is reopened, while
+		/// allowing later installs, repairs, and external cache changes to become visible.
+		static let overviewCacheLifetime: TimeInterval = 30
 	}
 
 	enum HUD {

@@ -148,6 +148,14 @@ enum WallpaperTagCatalog {
 	}
 }
 
+/// An operator identified among a set of wallpapers, with how many of them feature them.
+struct OperatorArtCount: Identifiable, Hashable {
+	var id: String { tag }
+	let tag: String
+	let displayName: String
+	let count: Int
+}
+
 /// Decodes identity fields from `character_table.json`.
 struct RawCharacterEntry: Decodable {
 	let name: String

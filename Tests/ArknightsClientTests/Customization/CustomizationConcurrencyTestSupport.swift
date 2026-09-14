@@ -39,6 +39,10 @@ actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 		return requests[index]?.payload
 	}
 
+	func requestCount() -> Int {
+		requests.compactMap(\.self).count
+	}
+
 	func resolve(_ index: Int, with value: Value) {
 		guard requests.indices.contains(index), let request = requests[index] else { return }
 		requests[index] = nil

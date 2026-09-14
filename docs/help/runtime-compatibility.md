@@ -101,9 +101,8 @@ The default Wine synchronization mode is **MSYNC**. It uses macOS Mach synchroni
 
 ## Canary Features
 
-**Settings → Installation → Danger Zone → Canary Features** exposes optional runtime behavior for wider testing. Turning Canary Features off restores the regular launch behavior without deleting games or prefixes. Changes to the options below apply on the next game launch.
+**Settings → Installation → Danger Zone → Canary Features** exposes optional runtime behavior for wider testing. Turning Canary Features off restores the regular launch behavior without deleting games or prefixes. Changes to the options below apply on the next game launch. The game always follows the current macOS default audio output when it changes during play.
 
-- **Follow Default Audio Output** lets a running game follow the current macOS output when you switch between speakers, headphones, displays, or AirPlay devices. It is off by default.
 - **Frame Latency** sets DXMT's maximum queued frames from 1 to 3. The default is 3. A lower value may make the rendered cursor feel more responsive, but can reduce frame rate or make presentation less smooth.
 - **China (Canary)** and **China — Bilibili (Canary)** appear in the Region menu and use the same native installation and launch controls as the other regions. Their game files remain separate, while both share the isolated Hypergryph Wine prefix.
 

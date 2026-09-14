@@ -109,6 +109,8 @@ extension BackgroundMusicController {
 
 	func stopAndClearPlayer() {
 		let playerToStop = player
+		sourceChangeTask?.cancel()
+		sourceChangeTask = nil
 		invalidatePlayerTasks()
 		cancellables.removeAll()
 		player = nil

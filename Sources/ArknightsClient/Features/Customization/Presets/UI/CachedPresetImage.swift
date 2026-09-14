@@ -35,11 +35,7 @@ struct CachedPresetImage: View {
 						.foregroundStyle(Color.white.opacity(0.15))
 				}
 			} else {
-				ZStack {
-					Color.white.opacity(0.04)
-					ProgressView()
-						.controlSize(.small)
-				}
+				SkeletonValue(cornerRadius: 0)
 			}
 		}
 		.accessibilityHidden(true)

@@ -3,11 +3,29 @@
 import Foundation
 
 extension GameSessionController {
+	static func runtimeEnvironmentOverrides(
+		for region: GameRegion,
+		canaryFeaturesEnabled: Bool,
+		runtimePerformanceEnabled: Bool,
+		maximumFrameLatency: Int
+	) -> [String: String] {
+		var environment = [
+			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1",
+			"ARKNIGHTS_RUNTIME_CN_COMPAT": region.isChinaClient ? "1" : "0",
+			"ARKNIGHTS_RUNTIME_PERFORMANCE":
+				canaryFeaturesEnabled && runtimePerformanceEnabled ? "1" : "0",
+		]
+		if canaryFeaturesEnabled {
+			environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] =
+				String(maximumFrameLatency)
+		}
+		return environment
+	}
+
 	func launch() {
 		guard lifecycle.activity == .idle else { return }
 		let launchID = UUID()
 		let requestedRegion = installation.region
-		let isChina = requestedRegion.isChinaClient
 		let executable = installation.installDirectory.appending(
 			path: installation.configuration?.executableName ?? "Arknights.exe"
 		)
@@ -74,15 +92,12 @@ extension GameSessionController {
 		}
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
-		var runtimeEnvironment = [
-			"ARKNIGHTS_RUNTIME_CN_COMPAT": isChina ? "1" : "0"
-		]
-		if settings.canaryFeaturesEnabled {
-			runtimeEnvironment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] =
-				settings.followsDefaultAudioOutput ? "1" : "0"
-			runtimeEnvironment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] =
-				String(settings.maximumFrameLatency)
-		}
+		let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
+			for: requestedRegion,
+			canaryFeaturesEnabled: settings.canaryFeaturesEnabled,
+			runtimePerformanceEnabled: settings.runtimePerformanceEnabled,
+			maximumFrameLatency: settings.maximumFrameLatency
+		)
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let displayConfiguration = WineDisplayConfiguration.current(
 			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
@@ -113,6 +128,7 @@ extension GameSessionController {
 					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,
 					synchronizationMode: requestedLaunchOptions.synchronizationMode,
 					runtimeEnvironmentOverrides: runtimeEnvironment,
+					bilibiliPlatformEnabled: requestedRegion == .chinaBilibili,
 					gameIconURL: customGameIconURL(),
 					logURL: paths.wineLogFile(for: requestedRegion),
 					log: log

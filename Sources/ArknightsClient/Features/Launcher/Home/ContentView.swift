@@ -149,6 +149,11 @@ struct ContentView: View {
 			}
 		}
 		.task { await startOnboardingIfNeeded() }
+		.overlay {
+			if !model.customization.hasCompletedInitialArtworkLoad {
+				Color.black.ignoresSafeArea()
+			}
+		}
 	}
 
 	private var sheetPresentation: Binding<LauncherPresentationDestination?> {
