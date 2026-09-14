@@ -111,7 +111,7 @@ func storageOverviewReusesCachedMeasurementUntilForcedRefresh() async throws {
 	)
 
 	controller.refresh()
-	#expect(await waitForCondition(timeout: .seconds(5)) { !controller.isMeasuring })
+	#expect(await waitForCondition { !controller.isMeasuring })
 	#expect(controller.usage(for: .logs)?.byteCount == 4)
 
 	try Data(repeating: 0, count: 10).write(to: logFile)
@@ -120,7 +120,7 @@ func storageOverviewReusesCachedMeasurementUntilForcedRefresh() async throws {
 	#expect(controller.usage(for: .logs)?.byteCount == 4)
 
 	controller.refreshNow()
-	#expect(await waitForCondition(timeout: .seconds(5)) { !controller.isMeasuring })
+	#expect(await waitForCondition { !controller.isMeasuring })
 	#expect(controller.usage(for: .logs)?.byteCount == 10)
 }
 
