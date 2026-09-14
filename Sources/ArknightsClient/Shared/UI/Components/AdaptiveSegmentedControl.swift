@@ -68,6 +68,7 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 				.accessibilityAddTraits(selection == option ? .isSelected : [])
 			}
 		}
+		.fixedSize(horizontal: false, vertical: true)
 		.padding(3)
 		.adaptiveGlassEffect(in: Capsule())
 		.opacity(isDisabled ? 0.6 : 1)
