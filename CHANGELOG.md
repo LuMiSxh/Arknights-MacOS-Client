@@ -32,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Fixed Canary client install sizes displaying as raw megabyte values and segmented controls using uneven pill heights when a label wraps.
+- Fixed Canary client install sizes displaying as raw megabyte values and segmented controls expanding to the full settings-row height or using uneven pills when a label wraps.
 - Fixed embedded troubleshooting links to publisher support so they no longer point to the stale `/help/README/` route (#75).
 - Fixed a DXMT device-initialization bug in the local runtime candidate that could crash game startup or leave internal compute pipelines missing.
 - Prevented the Notices helper from briefly showing a separate Dock icon when opening.
