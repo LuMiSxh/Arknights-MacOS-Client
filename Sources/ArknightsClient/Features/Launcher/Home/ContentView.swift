@@ -132,6 +132,7 @@ struct ContentView: View {
 		} message: {
 			Text(L10n.string(HomeStrings.repairConfirmationDetail))
 		}
+		.aceWarningConfirmation(model: model)
 		.onAppear {
 			registerOpenSettings(requestSettings)
 			registerQuitPresentationQuery {

@@ -6,6 +6,18 @@ extension InstallationSettingsPage {
 	@ViewBuilder var canaryRuntimeSettings: some View {
 		SettingsHairline()
 		SettingsActionRow(
+			title: L10n.string(SettingsStrings.chinaClients),
+			detail: L10n.string(SettingsStrings.chinaClientsDetail)
+		) {
+			SettingsToggle(
+				L10n.string(SettingsStrings.chinaClients),
+				isOn: $settings.chinaClientsEnabled,
+				accentColor: LauncherVisuals.danger
+			)
+		}
+		.disabled(lifecycle.activity != .idle)
+		SettingsHairline()
+		SettingsActionRow(
 			title: L10n.string(SettingsStrings.runtimePerformance),
 			detail: L10n.string(SettingsStrings.runtimePerformanceDetail)
 		) {

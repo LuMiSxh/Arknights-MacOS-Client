@@ -21,6 +21,9 @@ enum LauncherStrings {
 	static let pickerUseFolder = LocalizedStringResource.Launcher.launcherFilePickerUseFolder
 	static let popupDone = LocalizedStringResource.Launcher.launcherPopupDone
 	static let popupNotice = LocalizedStringResource.Launcher.launcherPopupNotice
+	static let aceWarningTitle = LocalizedStringResource.Launcher.launcherAceWarningTitle
+	static let aceWarningDetail = LocalizedStringResource.Launcher.launcherAceWarningDetail
+	static let aceWarningAction = LocalizedStringResource.Launcher.launcherAceWarningAction
 	static let updateTitle = LocalizedStringResource.Launcher.launcherUpdateTitle
 	static let updateChecking = LocalizedStringResource.Launcher.launcherUpdateChecking
 	static let updateAvailable = LocalizedStringResource.Launcher.launcherUpdateAvailable

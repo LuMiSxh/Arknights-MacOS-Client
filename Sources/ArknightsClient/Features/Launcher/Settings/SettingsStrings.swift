@@ -133,6 +133,10 @@ enum SettingsStrings {
 		.settingsInstallationCanaryFeatures
 	static let canaryFeaturesDetail = LocalizedStringResource.Settings
 		.settingsInstallationCanaryFeaturesDetail
+	static let chinaClients = LocalizedStringResource.Settings
+		.settingsInstallationChinaClients
+	static let chinaClientsDetail = LocalizedStringResource.Settings
+		.settingsInstallationChinaClientsDetail
 	static let runtimePerformance = LocalizedStringResource.Settings
 		.settingsInstallationRuntimePerformance
 	static let runtimePerformanceDetail = LocalizedStringResource.Settings

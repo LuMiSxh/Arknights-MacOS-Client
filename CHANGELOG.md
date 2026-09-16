@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added runtime-loaded CN and China — Bilibili wordmarks with cached startup restoration and high-contrast rendering on dark surfaces.
+- A separate Canary permission for exposing the China clients, plus a per-client ACE Anti-Cheat warning before the first launch through Wine.
 
 ### Changed
 

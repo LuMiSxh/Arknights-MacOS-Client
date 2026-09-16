@@ -26,6 +26,15 @@ struct OnboardingInstallationView: View {
 					accentColor: LauncherVisuals.danger
 				)
 				.disabled(lifecycle.activity != .idle)
+				if preferences.canaryFeaturesEnabled {
+					OnboardingToggleRow(
+						title: L10n.string(OnboardingStrings.chinaClients),
+						detail: L10n.string(OnboardingStrings.chinaClientsDetail),
+						isOn: $preferences.chinaClientsEnabled,
+						accentColor: LauncherVisuals.danger
+					)
+					.disabled(lifecycle.activity != .idle)
+				}
 			}
 
 			SettingsPanel(
@@ -35,7 +44,8 @@ struct OnboardingInstallationView: View {
 				AdaptiveSegmentedControl(
 					selection: regionBinding,
 					options: GameRegion.selectableCases(
-						canaryEnabled: preferences.canaryFeaturesEnabled
+						canaryEnabled: preferences.canaryFeaturesEnabled,
+						chinaClientsEnabled: preferences.chinaClientsEnabled
 					),
 					accentColor: accentColor
 				) { region in

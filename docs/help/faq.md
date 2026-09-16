@@ -10,7 +10,8 @@ order: 10
 
 > [!NOTE]
 > The launcher supports Yostar's Global, Japan, and Korea PC clients. The China and China — Bilibili
-> clients are available when Canary Features are enabled and are operated by Hypergryph.
+> clients are available when Canary Features and the separate China-client permission are enabled;
+> they are operated by Hypergryph.
 
 Choose the region that matches the service and account you already use. Regional installations, versions, and installed states are kept separate.
 

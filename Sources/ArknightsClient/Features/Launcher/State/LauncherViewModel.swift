@@ -30,6 +30,7 @@ final class LauncherViewModel {
 	#if DEBUG
 		var developerAccessibilityMusicTitle: String?
 	#endif
+	var pendingACEWarningRegion: GameRegion?
 	@ObservationIgnored private var startupTask: Task<Bool, Never>?
 	#if DEBUG
 		var developerScenario: DeveloperScenario?
@@ -175,6 +176,10 @@ final class LauncherViewModel {
 			customization?.updateThemeColor()
 		}
 		settings.onCanaryFeaturesChanged = { [weak installation, weak refreshController] enabled in
+			guard !enabled, installation?.region.isChinaClient == true else { return }
+			_ = refreshController?.selectRegion(.global)
+		}
+		settings.onChinaClientsChanged = { [weak installation, weak refreshController] enabled in
 			guard !enabled, installation?.region.isChinaClient == true else { return }
 			_ = refreshController?.selectRegion(.global)
 		}

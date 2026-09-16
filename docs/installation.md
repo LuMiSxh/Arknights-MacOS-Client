@@ -9,7 +9,7 @@ order: 10
 Arknights Client installs the selected official PC client and starts it through a bundled Wine + DXMT runtime. The launcher and the game download are separate: the DMG does not contain Arknights game files.
 
 > [!NOTE]
-> This is an unofficial community launcher. Yostar's Global, Japan, and Korea clients are available by default. Hypergryph's China and China — Bilibili clients require Canary Features.
+> This is an unofficial community launcher. Yostar's Global, Japan, and Korea clients are available by default. Hypergryph's China and China — Bilibili clients require Canary Features and the separate China-client permission.
 
 ## Before you download
 
@@ -62,17 +62,20 @@ If Apple's installer or the manual command fails, keep the exact error text, res
 ### 2. Select a region
 
 During setup, choose the service and account you intend to use. The default list contains the
-Yostar clients; enable Canary Features in Settings to expose the Hypergryph clients:
+Yostar clients; enable Canary Features and then **Allow China clients** to expose the Hypergryph clients:
 
 | Region               | Publisher  | Availability | Use it for                                      |
 | -------------------- | ---------- | ------------ | ----------------------------------------------- |
 | **Global**           | Yostar     | Default      | The English Global PC client and Global service |
 | **Japan**            | Yostar     | Default      | The Japanese PC client and Japan service        |
 | **Korea**            | Yostar     | Default      | The Korean PC client and Korea service          |
-| **China**            | Hypergryph | Canary       | The Chinese PC client and China service        |
-| **China — Bilibili** | Hypergryph | Canary       | The Bilibili-distributed Chinese client        |
+| **China**            | Hypergryph | Canary       | The Chinese PC client and China service         |
+| **China — Bilibili** | Hypergryph | Canary       | The Bilibili-distributed Chinese client         |
 
-Each region has its own game files, version, and installed state. The three Yostar regions share one Wine prefix. You can install another region later from **Settings → Installation**; enabling Canary Features there also exposes the China and China — Bilibili clients, which share a separate Hypergryph prefix.
+Each region has its own game files, version, and installed state. The three Yostar regions share one Wine prefix. You can install another region later from **Settings → Installation**; enabling Canary Features there reveals **Allow China clients**, which must also be enabled before the China and China — Bilibili clients appear. Those clients share a separate Hypergryph prefix.
+
+> [!CAUTION]
+> The China clients use ACE Anti-Cheat. Before the first launch of each one, the launcher asks you to acknowledge that running it through Wine is unofficial and at your own risk.
 
 > [!IMPORTANT]
 > Selecting a different region does not move or convert an existing installation. It changes which regional installation the launcher refreshes and starts.

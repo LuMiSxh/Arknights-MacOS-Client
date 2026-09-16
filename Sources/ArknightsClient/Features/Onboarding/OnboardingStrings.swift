@@ -66,6 +66,9 @@ enum OnboardingStrings {
 	static let canaryFeatures = LocalizedStringResource.onboardingInstallationCanaryFeatures
 	static let canaryFeaturesDetail = LocalizedStringResource
 		.onboardingInstallationCanaryFeaturesDetail
+	static let chinaClients = LocalizedStringResource.onboardingInstallationChinaClients
+	static let chinaClientsDetail = LocalizedStringResource
+		.onboardingInstallationChinaClientsDetail
 	static let serverRegion = LocalizedStringResource.onboardingInstallationRegionPanel
 	static let officialClient = LocalizedStringResource.onboardingInstallationOfficialClient
 	static let downloadingTitle = LocalizedStringResource.onboardingInstallationDownloadingTitle

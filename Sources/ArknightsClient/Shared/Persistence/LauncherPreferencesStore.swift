@@ -22,6 +22,8 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
+		static let chinaClientsEnabled = "chinaClientsEnabled"
+		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		static let runtimePerformanceEnabled = "runtimePerformanceEnabled"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
@@ -174,7 +176,11 @@ struct LauncherPreferencesStore {
 
 	func selectedRegion() -> GameRegion {
 		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
-		if region?.isChinaClient == true, !canaryFeaturesEnabled() { return .global }
+		if region?.isChinaClient == true,
+			!canaryFeaturesEnabled() || !chinaClientsEnabled()
+		{
+			return .global
+		}
 		return region ?? .global
 	}
 
@@ -188,6 +194,28 @@ struct LauncherPreferencesStore {
 
 	func setCanaryFeaturesEnabled(_ value: Bool) {
 		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
+	}
+
+	func chinaClientsEnabled() -> Bool {
+		bool(for: Key.chinaClientsEnabled, defaultValue: false)
+	}
+
+	func setChinaClientsEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.chinaClientsEnabled)
+	}
+
+	func hasAcknowledgedACEWarning(for region: GameRegion) -> Bool {
+		acknowledgedACEWarningRegions().contains(region.rawValue)
+	}
+
+	func markACEWarningAcknowledged(for region: GameRegion) {
+		var regions = acknowledgedACEWarningRegions()
+		regions.insert(region.rawValue)
+		defaults.set(Array(regions).sorted(), forKey: Key.acknowledgedACEWarningRegions)
+	}
+
+	func clearACEWarningAcknowledgements() {
+		defaults.removeObject(forKey: Key.acknowledgedACEWarningRegions)
 	}
 
 	func runtimePerformanceEnabled() -> Bool {
@@ -274,5 +302,9 @@ struct LauncherPreferencesStore {
 	private func bool(for key: String, defaultValue: Bool) -> Bool {
 		guard defaults.object(forKey: key) != nil else { return defaultValue }
 		return defaults.bool(forKey: key)
+	}
+
+	private func acknowledgedACEWarningRegions() -> Set<String> {
+		Set(defaults.stringArray(forKey: Key.acknowledgedACEWarningRegions) ?? [])
 	}
 }

@@ -101,10 +101,10 @@ The default Wine synchronization mode is **MSYNC**. It uses macOS Mach synchroni
 
 ## Canary Features
 
-**Settings → Installation → Danger Zone → Canary Features** exposes optional runtime behavior for wider testing. Turning Canary Features off restores the regular launch behavior without deleting games or prefixes. Changes to the options below apply on the next game launch. The game always follows the current macOS default audio output when it changes during play.
+**Settings → Installation → Danger Zone → Canary Features** exposes optional runtime behavior for wider testing. Turning Canary Features off restores the regular launch behavior without deleting games or prefixes. The separate **Allow China clients** permission appears below it and controls whether the Hypergryph clients are listed. Changes to the options below apply on the next game launch. The game always follows the current macOS default audio output when it changes during play.
 
 - **Frame Latency** sets DXMT's maximum queued frames from 1 to 3. The default is 3. A lower value may make the rendered cursor feel more responsive, but can reduce frame rate or make presentation less smooth.
-- **China (Canary)** and **China — Bilibili (Canary)** appear in the Region menu and use the same native installation and launch controls as the other regions. Their game files remain separate, while both share the isolated Hypergryph Wine prefix.
+- **China (Canary)** and **China — Bilibili (Canary)** appear in the Region menu after **Allow China clients** is enabled and use the same native installation and launch controls as the other regions. Their game files remain separate, while both share the isolated Hypergryph Wine prefix. Each client shows a one-time ACE Anti-Cheat warning before its first launch through Wine.
 
 Canary behavior may change as testing continues. If an option causes a regression, restore its default or turn Canary Features off before the next launch and include the selected setting in a bug report.
 

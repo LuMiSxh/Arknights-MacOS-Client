@@ -24,6 +24,7 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.5)
 		#expect(store.usesDynamicTheme())
 		#expect(!store.canaryFeaturesEnabled())
+		#expect(!store.chinaClientsEnabled())
 		#expect(!store.runtimePerformanceEnabled())
 		#expect(store.maximumFrameLatency() == 3)
 		#expect(store.selectedRegion() == .global)
@@ -41,6 +42,7 @@ struct LauncherPreferencesStoreTests {
 		store.setLauncherMusicVolume(0.8)
 		store.setUsesDynamicTheme(false)
 		store.setCanaryFeaturesEnabled(true)
+		store.setChinaClientsEnabled(true)
 		store.setRuntimePerformanceEnabled(true)
 		store.setMaximumFrameLatency(1)
 		store.setSelectedRegion(.korea)
@@ -57,10 +59,46 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.8)
 		#expect(!store.usesDynamicTheme())
 		#expect(store.canaryFeaturesEnabled())
+		#expect(store.chinaClientsEnabled())
 		#expect(store.runtimePerformanceEnabled())
 		#expect(store.maximumFrameLatency() == 1)
 		#expect(store.selectedRegion() == .korea)
 		#expect(store.appLanguage() == .german)
+	}
+
+	@Test
+	func chinaSelectionFallsBackWhenEitherPermissionIsDisabled() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setCanaryFeaturesEnabled(true)
+		store.setChinaClientsEnabled(true)
+		store.setSelectedRegion(.china)
+		#expect(store.selectedRegion() == .china)
+
+		store.setChinaClientsEnabled(false)
+		#expect(store.selectedRegion() == .global)
+
+		store.setChinaClientsEnabled(true)
+		store.setSelectedRegion(.china)
+		store.setCanaryFeaturesEnabled(false)
+		#expect(store.selectedRegion() == .global)
+	}
+
+	@Test
+	func aceWarningAcknowledgementsPersistPerRegion() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(!store.hasAcknowledgedACEWarning(for: .china))
+		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
+
+		store.markACEWarningAcknowledged(for: .china)
+
+		#expect(store.hasAcknowledgedACEWarning(for: .china))
+		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
 	}
 
 	@Test

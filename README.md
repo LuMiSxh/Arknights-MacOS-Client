@@ -32,7 +32,7 @@ Arknights Client downloads official PC game files directly from the selected pub
 ### Install and play
 
 - Install, resume, update, repair, and remove regional PC clients
-- Enable the China or China — Bilibili client through Canary Features
+- Enable the China or China — Bilibili client through Canary Features and its separate permission
 - Keep each region in its own game directory and switch between installed regions
 - Run in windowed, borderless, or fullscreen mode at a selected resolution
 - Enable HiDPI rendering for the game and any embedded login browser the selected client provides

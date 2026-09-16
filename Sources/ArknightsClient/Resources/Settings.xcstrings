@@ -1808,13 +1808,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiviert Canary-Funktionen und die China-Clients."
+            "value": "Aktiviert experimentelle Funktionen und zeigt die separate Freigabe für China-Clients."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enables Canary features and the China clients."
+            "value": "Enables experimental features and reveals the separate China-client permission."
+          }
+        }
+      }
+    },
+    "settings.installation.chinaClients": {
+      "comment": "China client permission toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "China-Clients erlauben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow China clients"
+          }
+        }
+      }
+    },
+    "settings.installation.chinaClients.detail": {
+      "comment": "China client permission toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Macht die China-Clients im Regionswähler verfügbar. Sie bleiben deaktiviert, bis du sie hier freigibst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exposes the China clients in the region picker. They stay disabled until you allow them here."
           }
         }
       }

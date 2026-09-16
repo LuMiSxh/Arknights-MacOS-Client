@@ -24,6 +24,31 @@ func globalRegionPreservesThePreExistingPreferencesKey() {
 	#expect(GameRegion.global.rawValue == "global")
 }
 
+@Test
+func canaryRegionSelectionRequiresExplicitChinaClientPermission() {
+	#expect(
+		GameRegion.selectableCases(canaryEnabled: false, chinaClientsEnabled: false)
+			== GameRegion.yostarCases)
+	#expect(
+		GameRegion.selectableCases(canaryEnabled: true, chinaClientsEnabled: false)
+			== GameRegion.yostarCases)
+	#expect(GameRegion.selectableCases(canaryEnabled: true) == GameRegion.yostarCases)
+	#expect(
+		GameRegion.selectableCases(canaryEnabled: false, chinaClientsEnabled: true)
+			== GameRegion.yostarCases)
+	#expect(
+		GameRegion.selectableCases(canaryEnabled: true, chinaClientsEnabled: true)
+			== GameRegion.allCases)
+}
+
+@Test
+func chinaClientsAreMarkedAsACEProtected() {
+	#expect(GameRegion.china.isACEProtectedClient)
+	#expect(GameRegion.chinaBilibili.isACEProtectedClient)
+	#expect(!GameRegion.global.isACEProtectedClient)
+	#expect(!GameRegion.japan.isACEProtectedClient)
+}
+
 @Test(arguments: [
 	(GameRegion.global, "https://account.yo-star.com/contact"),
 	(GameRegion.japan, "https://account.yo-star.com/contact"),

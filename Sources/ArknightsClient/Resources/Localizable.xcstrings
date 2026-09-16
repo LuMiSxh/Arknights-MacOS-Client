@@ -2528,13 +2528,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiviert Canary-Funktionen und die China-Clients. Wenn ein China-Client ausgewählt ist, wird beim Deaktivieren zu Global gewechselt."
+            "value": "Aktiviert experimentelle Funktionen und zeigt die separate Freigabe für China-Clients. Eine aktive China-Auswahl wechselt beim Deaktivieren zu Global."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enables Canary features and the China clients. Disabling it switches a selected China client to Global."
+            "value": "Enables experimental features and reveals the separate China-client permission. Disabling it switches a selected China client to Global."
+          }
+        }
+      }
+    },
+    "onboarding.installation.chinaClients": {
+      "comment": "China client permission toggle during onboarding",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "China-Clients erlauben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow China clients"
+          }
+        }
+      }
+    },
+    "onboarding.installation.chinaClients.detail": {
+      "comment": "China client permission toggle description during onboarding",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaubt die Auswahl der China-Clients zusätzlich zu den Canary-Funktionen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allows selecting the China clients in addition to Canary features."
           }
         }
       }

@@ -12,8 +12,11 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	static let allCases: [GameRegion] = [.global, .japan, .korea, .china, .chinaBilibili]
 	static let yostarCases: [GameRegion] = [.global, .japan, .korea]
 
-	static func selectableCases(canaryEnabled: Bool) -> [GameRegion] {
-		canaryEnabled ? allCases : yostarCases
+	static func selectableCases(
+		canaryEnabled: Bool,
+		chinaClientsEnabled: Bool = false
+	) -> [GameRegion] {
+		canaryEnabled && chinaClientsEnabled ? allCases : yostarCases
 	}
 
 	var id: String { rawValue }
@@ -29,6 +32,13 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	}
 
 	var isChinaClient: Bool { self == .china || self == .chinaBilibili }
+
+	var isACEProtectedClient: Bool {
+		switch self {
+		case .china, .chinaBilibili: true
+		case .global, .japan, .korea: false
+		}
+	}
 
 	var localizedDisplayName: String {
 		L10n.string(SharedStrings.region(self))

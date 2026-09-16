@@ -865,6 +865,60 @@
       },
       "extractionState": "manual"
     },
+    "launcher.aceWarning.title": {
+      "comment": "ACE Anti-Cheat warning title before the first client launch",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ACE Anti-Cheat-Client"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ACE Anti-Cheat client"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.aceWarning.detail": {
+      "comment": "ACE Anti-Cheat warning detail before the first client launch",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Client läuft mit ACE Anti-Cheat. Die Ausführung über Wine ist inoffiziell und kann zu Kompatibilitätsproblemen oder Folgen für dein Konto oder den Dienst führen. Wenn du fortfährst, spielst du auf eigene Verantwortung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This client uses ACE Anti-Cheat. Running it through Wine is unofficial and may cause compatibility issues or consequences for your account or the service. If you continue, you play at your own risk."
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "launcher.aceWarning.action": {
+      "comment": "ACE Anti-Cheat warning confirmation action before the first client launch",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf eigene Verantwortung spielen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play at my own risk"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
     "launcher.update.busy": {
       "comment": "Launcher update safety message while game or maintenance is active",
       "localizations": {
