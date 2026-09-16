@@ -4,6 +4,7 @@ import Foundation
 
 enum RecoveryAction: String, CaseIterable, Identifiable, Sendable {
 	case retry
+	case installRosetta
 	case openTroubleshooting
 	case reportProblem
 	case repair

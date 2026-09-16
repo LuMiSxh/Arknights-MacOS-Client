@@ -42,6 +42,8 @@ extension LauncherViewModel {
 				started = refreshController.retryConfigurationFailure(id: failureID)
 			case .rosettaInstallation:
 				started = intelTranslation.retryRosettaFailure(id: failureID)
+			case .intelTranslationPreflight:
+				started = intelTranslation.retryAvailabilityFailure(id: failureID)
 			case .launcher:
 				logRecovery(action: action, result: "ignored-no-retry-route")
 				return .ignored
@@ -67,6 +69,16 @@ extension LauncherViewModel {
 			return .completed
 		case .repair:
 			return .repairConfirmationRequired
+		case .installRosetta:
+			guard failure.context.operation == .intelTranslationPreflight,
+				lifecycle.intelTranslationState == .rosettaMissing,
+				intelTranslation.canInstallRosetta
+			else {
+				logRecovery(action: action, result: "ignored-ineligible")
+				return .ignored
+			}
+			logRecovery(action: action, result: "confirmation-required")
+			return .rosettaConfirmationRequired
 		}
 	}
 

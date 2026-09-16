@@ -11,6 +11,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-09-16
+
+### Changed
+
+- Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.
+
+### Fixed
+
+- Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs; ordinary HUD pills no longer receive an extra outer border (#78).
+- Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
+
 ## [0.5.2] - 2026-09-14
 
 ### Added
@@ -261,7 +272,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.5.2...HEAD
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.3
 [0.5.2]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.2
 [0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0

@@ -48,7 +48,7 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 				}
 				.buttonStyle(.plain)
 				.keyboardFocusIndicator(in: Capsule())
-				.foregroundStyle(
+				.adaptiveTintForeground(
 					isDisabled
 						? Color.secondary.opacity(0.55)
 						: (selection == option ? accentColor : .secondary)
@@ -58,7 +58,8 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 						Color.clear
 							.adaptiveGlassEffect(
 								tint: accentColor.opacity(0.28),
-								in: Capsule()
+								in: Capsule(),
+								showsBorder: true
 							)
 							.overlay {
 								Capsule().strokeBorder(accentColor.opacity(0.32))

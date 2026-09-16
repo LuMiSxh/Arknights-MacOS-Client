@@ -31,7 +31,7 @@ struct ThemedTextField: View {
 			if let systemImage {
 				Image(systemName: systemImage)
 					.font(.caption)
-					.foregroundStyle(isFocused ? accentColor : .secondary)
+					.adaptiveTintForeground(isFocused ? accentColor : .secondary)
 					.accessibilityHidden(true)
 			}
 
@@ -45,7 +45,8 @@ struct ThemedTextField: View {
 		.padding(.vertical, 7)
 		.adaptiveGlassEffect(
 			tint: accentColor.opacity(isFocused ? 0.16 : 0.08),
-			in: RoundedRectangle(cornerRadius: 10)
+			in: RoundedRectangle(cornerRadius: 10),
+			showsBorder: true
 		)
 		.overlay {
 			RoundedRectangle(cornerRadius: 10)

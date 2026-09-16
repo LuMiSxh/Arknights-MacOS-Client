@@ -33,6 +33,25 @@ struct LauncherLifecycleStoreTests {
 	}
 
 	@Test
+	func statusUpdatesKeepRosettaPreflightFailureUntilItsCheckSucceeds() {
+		let lifecycle = makeLifecycleStore()
+		let failure = LauncherFailurePresentation(
+			id: UUID(),
+			message: "Rosetta is unavailable",
+			code: .limpet,
+			context: SupportContext(operation: .intelTranslationPreflight, region: nil),
+			actions: [.retry],
+			blocksGameLaunch: true
+		)
+		lifecycle.presentFailure(failure, diagnostic: "preflight")
+
+		lifecycle.setStatus(.checking)
+		lifecycle.setStatus(.ready)
+
+		#expect(lifecycle.failure == failure)
+	}
+
+	@Test
 	func idleLifecycleAllowsLauncherUpdateActivity() {
 		let lifecycle = makeLifecycleStore()
 

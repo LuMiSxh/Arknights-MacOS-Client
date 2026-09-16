@@ -5,5 +5,6 @@ import Foundation
 enum RecoveryActionDisposition: Sendable {
 	case completed
 	case repairConfirmationRequired
+	case rosettaConfirmationRequired
 	case ignored
 }

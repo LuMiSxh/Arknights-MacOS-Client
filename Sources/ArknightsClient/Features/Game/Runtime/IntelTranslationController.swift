@@ -73,6 +73,7 @@ final class IntelTranslationController {
 		if check.state != .rosettaMissing {
 			lifecycle.rosettaInstallationState = .idle
 		}
+		updatePreflightFailure(for: check)
 		await log.info(
 			"Intel translation preflight; state=\(check.state.diagnosticName) \(check.diagnostics)"
 		)
@@ -147,6 +148,19 @@ final class IntelTranslationController {
 		Task { [weak self, log] in
 			await log.info("Recovery selected; action=retry operation=rosetta-installation")
 			_ = await self?.installRosetta()
+		}
+		return true
+	}
+
+	@discardableResult
+	func retryAvailabilityFailure(id: UUID) -> Bool {
+		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard failure.context.operation == .intelTranslationPreflight else { return false }
+		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
+		guard lifecycle.consumeFailure(id: id) != nil else { return false }
+		Task { [weak self, log] in
+			await log.info("Recovery selected; action=retry operation=intel-translation-preflight")
+			_ = await self?.refreshAvailability(force: true)
 		}
 		return true
 	}
@@ -242,6 +256,40 @@ final class IntelTranslationController {
 		let normalized = output.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard !normalized.isEmpty else { return "empty" }
 		return String(normalized.prefix(AppConstants.IO.processDiagnosticMaximumCharacters))
+	}
+
+	private func updatePreflightFailure(for check: IntelTranslationCheck) {
+		if check.state == .available {
+			if lifecycle.failure?.context.operation == .intelTranslationPreflight {
+				lifecycle.clearFailure()
+			}
+			return
+		}
+		guard lifecycle.readiness.isInstalled else { return }
+		guard check.state != .waitingForLauncherCheck, check.state != .checking else { return }
+		guard
+			lifecycle.failure == nil
+				|| lifecycle.failure?.context.operation == .intelTranslationPreflight
+		else { return }
+
+		let error = launchError
+		var actions: [RecoveryAction] = [.retry, .openTroubleshooting, .reportProblem]
+		if check.state == .rosettaMissing { actions.insert(.installRosetta, at: 0) }
+		let existingID =
+			lifecycle.failure?.message == error.errorDescription
+			? lifecycle.failure?.id
+			: nil
+		lifecycle.presentFailure(
+			LauncherFailurePresentation(
+				id: existingID ?? UUID(),
+				message: error.errorDescription ?? L10n.string(.Launcher.launcherErrorUnexpected),
+				code: .limpet,
+				context: SupportContext(operation: .intelTranslationPreflight, region: nil),
+				actions: actions,
+				blocksGameLaunch: true
+			),
+			diagnostic: check.diagnostics
+		)
 	}
 
 	private func presentRosettaFailure(message: String, diagnostic: String, id: UUID) {

@@ -21,7 +21,7 @@ struct PresetGallerySearchBar: View {
 		HStack(spacing: 6) {
 			Image(systemName: "magnifyingglass")
 				.font(.caption)
-				.foregroundStyle(isFocused ? accentColor : .secondary)
+				.adaptiveTintForeground(isFocused ? accentColor : .secondary)
 				.accessibilityHidden(true)
 
 			if destination == .artwork {
@@ -62,7 +62,8 @@ struct PresetGallerySearchBar: View {
 		.padding(.vertical, 7)
 		.adaptiveGlassEffect(
 			tint: accentColor.opacity(isFocused ? 0.16 : 0.13),
-			in: Capsule()
+			in: Capsule(),
+			showsBorder: true
 		)
 		.overlay {
 			Capsule()
@@ -84,9 +85,11 @@ struct PresetGallerySearchBar: View {
 			HStack(spacing: 4) {
 				Text(tag)
 					.font(.caption.weight(.semibold))
+					.adaptiveTintForeground(accentColor)
 					.lineLimit(1)
 				Image(systemName: "xmark")
 					.font(.system(size: 10, weight: .bold))
+					.adaptiveTintForeground(accentColor)
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
 			.padding(.leading, 8)
@@ -95,7 +98,11 @@ struct PresetGallerySearchBar: View {
 			.contentShape(Capsule())
 		}
 		.buttonStyle(.plain)
-		.background(accentColor.opacity(0.22), in: .capsule)
+		.adaptiveGlassEffect(
+			tint: accentColor.opacity(0.22),
+			in: Capsule(),
+			showsBorder: true
+		)
 		.overlay(Capsule().strokeBorder(accentColor.opacity(0.5), lineWidth: 1))
 		.frame(height: Self.contentHeight)
 		.accessibilityLabel(L10n.string(CustomizationStrings.searchRemoveTag(tag)))

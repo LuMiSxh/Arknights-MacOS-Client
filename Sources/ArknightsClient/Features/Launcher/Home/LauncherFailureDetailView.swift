@@ -59,6 +59,15 @@ struct LauncherFailureDetailView: View {
 	@ViewBuilder
 	private var footerActions: some View {
 		HStack(spacing: 8) {
+			if failure.actions.contains(.installRosetta) {
+				CapsuleActionButton(
+					title: L10n.string(LauncherStrings.rosettaInstall),
+					systemImage: "arrow.down.circle",
+					tone: .accent(accentColor)
+				) {
+					perform(.installRosetta, failure.id)
+				}
+			}
 			if hasSupportActions {
 				supportActions
 				Divider()

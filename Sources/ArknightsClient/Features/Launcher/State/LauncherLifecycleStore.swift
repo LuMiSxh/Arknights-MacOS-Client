@@ -88,7 +88,11 @@ final class LauncherLifecycleStore {
 
 	func setStatus(_ status: LauncherStatus, clearsFailure: Bool = true) {
 		state.presentation.status = status
-		if clearsFailure { state.presentation.failure = nil }
+		if clearsFailure,
+			state.presentation.failure?.context.operation != .intelTranslationPreflight
+		{
+			state.presentation.failure = nil
+		}
 	}
 
 	func clearFailure() {

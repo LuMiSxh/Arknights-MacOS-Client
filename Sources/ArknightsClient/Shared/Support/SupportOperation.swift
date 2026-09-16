@@ -10,6 +10,7 @@ enum SupportOperation: String, Codable, Sendable {
 	case repair
 	case uninstall
 	case cacheClearing = "cache-clearing"
+	case intelTranslationPreflight = "intel-translation-preflight"
 	case rosettaInstallation = "rosetta-installation"
 	case runtimeDiscovery = "runtime-discovery"
 	case prefixMigration = "prefix-migration"

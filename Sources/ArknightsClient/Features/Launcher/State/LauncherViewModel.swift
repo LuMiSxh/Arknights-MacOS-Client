@@ -238,6 +238,7 @@ final class LauncherViewModel {
 			await customization.restoreInitialArtwork(for: installation.region)
 			customization.markInitialArtworkLoadComplete()
 			_ = await customization.loadCustomAppIcon()
+			await installation.updateInstalledState().value
 			_ = await intelTranslation.refreshAvailability()
 			let refreshTask = refreshController.startRefresh()
 			await refreshTask.value

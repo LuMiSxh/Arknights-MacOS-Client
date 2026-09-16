@@ -9,9 +9,9 @@ struct ContentView: View {
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-	@State private var presentation = LauncherPresentationArbiter()
-	@State private var confirmation: LauncherConfirmation?
-	@State private var repairFailureID: UUID?
+	@State var presentation = LauncherPresentationArbiter()
+	@State var confirmation: LauncherConfirmation?
+	@State var repairFailureID: UUID?
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
 
@@ -141,6 +141,9 @@ struct ContentView: View {
 			registerQuitDismissal { presentation.dismissCurrent() }
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
+		.onChange(of: onboarding.isPresented) { _, isPresented in
+			onboardingPresentationDidChange(isPresented)
+		}
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
 			if isPresented {
 				presentation.request(.update)
@@ -269,6 +272,12 @@ struct ContentView: View {
 		if presentation.current == .update { model.communication.openLauncherUpdate() }
 	}
 	private func presentFailure(_ failure: LauncherFailurePresentation?) {
+		if onboarding.isPresented,
+			let operation = failure?.context.operation,
+			operation == .intelTranslationPreflight || operation == .rosettaInstallation
+		{
+			return
+		}
 		guard let failure else {
 			presentation.removeFailures()
 			return
@@ -287,6 +296,7 @@ struct ContentView: View {
 			gameIsInstalled: model.installation.isInstalled,
 			checkForUpdates: model.launcherUpdateCheckForOnboarding,
 			checkIntelTranslation: { await model.intelTranslation.refreshAvailability() })
+		if onboarding.isPresented { presentation.removeRosettaPreflightFailures() }
 	}
 	private func retryOnboardingUpdateCheck() {
 		Task {
@@ -312,14 +322,6 @@ struct ContentView: View {
 	private func installRosetta() {
 		confirmation = nil
 		Task { _ = await model.installRosetta() }
-	}
-	private func performRecoveryAction(_ action: RecoveryAction, _ failureID: UUID) {
-		if model.performRecoveryAction(action, failureID: failureID) == .repairConfirmationRequired
-		{
-			presentation.dismissCurrent()
-			repairFailureID = failureID
-			confirmation = .repair(failureID)
-		}
 	}
 	private func showFailureDetails() {
 		if let failure = model.lifecycle.failure { presentation.request(.failure(failure)) }

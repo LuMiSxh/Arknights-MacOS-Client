@@ -68,7 +68,8 @@ struct CapsuleActionButton: View {
 			.fontWeight(.semibold)
 			.modifier(
 				CapsuleActionLabelModifier(
-					tint: isEnabled ? tone.color : LauncherVisuals.controlTint.opacity(0.55),
+					foreground: foregroundTint,
+					surfaceTint: surfaceTint,
 					presentation: presentation,
 					controlSize: controlSize
 				)
@@ -76,12 +77,28 @@ struct CapsuleActionButton: View {
 		}
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())
-		.opacity(isEnabled ? 1 : 0.55)
+		.opacity(isEnabled ? 1 : 0.7)
+	}
+
+	private var foregroundTint: Color {
+		isEnabled ? effectiveToneColor : LauncherVisuals.controlTint
+	}
+
+	private var surfaceTint: Color {
+		isEnabled ? effectiveToneColor : LauncherVisuals.controlTint
+	}
+
+	private var effectiveToneColor: Color {
+		if case .neutral = tone, #available(macOS 27, *) {
+			return LauncherVisuals.macOS27NeutralControlTint
+		}
+		return tone.color
 	}
 }
 
 private struct CapsuleActionLabelModifier: ViewModifier {
-	let tint: Color
+	let foreground: Color
+	let surfaceTint: Color
 	let presentation: CapsuleActionPresentation
 	let controlSize: ControlSize
 
@@ -95,13 +112,17 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 		case .hud:
 			content
 				.font(.caption.weight(.semibold))
-				.foregroundStyle(tint)
+				.adaptiveTintForeground(foreground)
 				.padding(.horizontal, 11)
 				.padding(.vertical, 6)
 				.contentShape(Capsule())
-				.adaptiveGlassEffect(tint: tint.opacity(0.12), in: Capsule())
+				.adaptiveGlassEffect(
+					tint: surfaceTint.opacity(0.12),
+					in: Capsule(),
+					showsBorder: true
+				)
 				.overlay {
-					Capsule().strokeBorder(tint.opacity(0.18)).allowsHitTesting(false)
+					Capsule().strokeBorder(surfaceTint.opacity(0.18)).allowsHitTesting(false)
 				}
 		}
 	}
@@ -111,19 +132,27 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 			.padding(.horizontal, standardHorizontalPadding)
 			.padding(.vertical, standardVerticalPadding)
 			.contentShape(Capsule())
-			.adaptiveActionSurface(tint: tint, in: Capsule())
+			.adaptiveActionSurface(
+				tint: surfaceTint,
+				foreground: foreground,
+				in: Capsule()
+			)
 	}
 
 	private func compactSurface(_ content: Content) -> some View {
 		content
 			.font(.caption.weight(.semibold))
-			.foregroundStyle(tint)
+			.adaptiveTintForeground(foreground)
 			.padding(.horizontal, 10)
 			.padding(.vertical, 5)
 			.contentShape(Capsule())
-			.adaptiveGlassEffect(tint: tint.opacity(0.13), in: Capsule())
+			.adaptiveGlassEffect(
+				tint: surfaceTint.opacity(0.13),
+				in: Capsule(),
+				showsBorder: true
+			)
 			.overlay {
-				Capsule().strokeBorder(tint.opacity(0.18)).allowsHitTesting(false)
+				Capsule().strokeBorder(surfaceTint.opacity(0.18)).allowsHitTesting(false)
 			}
 	}
 
