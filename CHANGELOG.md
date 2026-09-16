@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [0.5.3] - 2026-09-16
 
+### Added
+
+- Added runtime-loaded CN and China — Bilibili wordmarks with cached startup restoration and high-contrast rendering on dark surfaces.
+
 ### Changed
 
 - Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.

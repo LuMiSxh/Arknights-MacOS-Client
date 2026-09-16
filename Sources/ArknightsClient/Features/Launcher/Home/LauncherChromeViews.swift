@@ -15,11 +15,20 @@ struct ArknightsWordmark: View {
 			wordmarkBacking
 
 			if let logo {
-				Image(nsImage: logo)
-					.resizable()
-					.scaledToFit()
-					.id(wordmarkIdentity)
-					.transition(wordmarkTransition)
+				if region.isChinaClient {
+					Image(nsImage: logo)
+						.resizable()
+						.scaledToFit()
+						.colorInvert()
+						.id(wordmarkIdentity)
+						.transition(wordmarkTransition)
+				} else {
+					Image(nsImage: logo)
+						.resizable()
+						.scaledToFit()
+						.id(wordmarkIdentity)
+						.transition(wordmarkTransition)
+				}
 			} else {
 				Text(L10n.string(HomeStrings.wordmarkFallback(region: region)))
 					.font(.system(.title, design: .serif))

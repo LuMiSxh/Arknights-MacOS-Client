@@ -151,7 +151,6 @@ extension CustomizationController {
 		let operationID = UUID()
 		officialLogoOperationID = operationID
 		officialLogo = nil
-		guard !region.isChinaClient else { return Task {} }
 		let artworkCache = self.artworkCache
 		return Task { [weak self, log] in
 			do {
