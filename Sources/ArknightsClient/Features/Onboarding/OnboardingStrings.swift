@@ -110,13 +110,13 @@ enum OnboardingStrings {
 	static let communitySupport = LocalizedStringResource.onboardingFinishCommunitySupport
 	static let contactSupport = LocalizedStringResource.onboardingFinishContactSupport
 	static func communitySupport(region: GameRegion) -> LocalizedStringResource {
-		if region.isChinaClient {
+		if region.publisher == .hypergryph {
 			return .onboardingFinishCommunitySupportHypergryph
 		}
 		return communitySupport
 	}
 	static func contactSupport(region: GameRegion) -> LocalizedStringResource {
-		if region.isChinaClient {
+		if region.publisher == .hypergryph {
 			return .onboardingFinishContactHypergryph
 		}
 		return contactSupport

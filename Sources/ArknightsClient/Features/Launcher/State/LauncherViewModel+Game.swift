@@ -4,7 +4,7 @@ import Foundation
 
 extension LauncherViewModel {
 	static func shouldPresentACEWarning(for region: GameRegion, acknowledged: Bool) -> Bool {
-		region.isACEProtectedClient && !acknowledged
+		region.requiresACEWarning && !acknowledged
 	}
 
 	func launch() {
@@ -27,7 +27,7 @@ extension LauncherViewModel {
 
 	func confirmACEWarningAndLaunch() {
 		guard let region = pendingACEWarningRegion else { return }
-		guard installation.region == region, region.isACEProtectedClient else {
+		guard installation.region == region, region.requiresACEWarning else {
 			pendingACEWarningRegion = nil
 			return
 		}

@@ -176,7 +176,7 @@ struct LauncherPreferencesStore {
 
 	func selectedRegion() -> GameRegion {
 		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
-		if region?.isChinaClient == true,
+		if region?.requiresCanaryPermission == true,
 			!canaryFeaturesEnabled() || !chinaClientsEnabled()
 		{
 			return .global

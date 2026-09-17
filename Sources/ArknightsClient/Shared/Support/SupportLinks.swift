@@ -12,6 +12,6 @@ enum SupportLinks {
 	static let donate = URL(string: "https://ko-fi.com/lumisxh")!
 
 	static func contact(for region: GameRegion) -> URL {
-		region.isChinaClient ? hypergryphContact : yostarContact
+		region.publisher == .hypergryph ? hypergryphContact : yostarContact
 	}
 }

@@ -176,11 +176,11 @@ final class LauncherViewModel {
 			customization?.updateThemeColor()
 		}
 		settings.onCanaryFeaturesChanged = { [weak installation, weak refreshController] enabled in
-			guard !enabled, installation?.region.isChinaClient == true else { return }
+			guard !enabled, installation?.region.requiresCanaryPermission == true else { return }
 			_ = refreshController?.selectRegion(.global)
 		}
 		settings.onChinaClientsChanged = { [weak installation, weak refreshController] enabled in
-			guard !enabled, installation?.region.isChinaClient == true else { return }
+			guard !enabled, installation?.region.requiresCanaryPermission == true else { return }
 			_ = refreshController?.selectRegion(.global)
 		}
 		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in

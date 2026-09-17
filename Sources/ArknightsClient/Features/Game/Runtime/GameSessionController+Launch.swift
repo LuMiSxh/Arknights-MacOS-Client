@@ -11,10 +11,10 @@ extension GameSessionController {
 	) -> [String: String] {
 		var environment = [
 			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1",
-			"ARKNIGHTS_RUNTIME_CN_COMPAT": region.isChinaClient ? "1" : "0",
 			"ARKNIGHTS_RUNTIME_PERFORMANCE":
 				canaryFeaturesEnabled && runtimePerformanceEnabled ? "1" : "0",
 		]
+		environment.merge(region.runtimeEnvironmentOverrides) { _, profileValue in profileValue }
 		if canaryFeaturesEnabled {
 			environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] =
 				String(maximumFrameLatency)
@@ -128,7 +128,7 @@ extension GameSessionController {
 					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,
 					synchronizationMode: requestedLaunchOptions.synchronizationMode,
 					runtimeEnvironmentOverrides: runtimeEnvironment,
-					bilibiliPlatformEnabled: requestedRegion == .chinaBilibili,
+					clientVariant: requestedRegion.clientVariant,
 					gameIconURL: customGameIconURL(),
 					logURL: paths.wineLogFile(for: requestedRegion),
 					log: log

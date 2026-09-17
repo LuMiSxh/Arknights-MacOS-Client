@@ -2,6 +2,31 @@
 
 import Foundation
 
+enum GamePublisher: String, Codable, Sendable {
+	case yostar
+	case hypergryph
+
+	var storageDirectoryName: String {
+		switch self {
+		case .yostar: "Yostar"
+		case .hypergryph: "Hypergryph"
+		}
+	}
+}
+
+enum GameClientVariant: String, Codable, Sendable {
+	case standard
+	case bilibili
+}
+
+struct GameClientProfile: Sendable {
+	let publisher: GamePublisher
+	let variant: GameClientVariant
+	let runtimeEnvironmentOverrides: [String: String]
+	let requiresCanaryPermission: Bool
+	let requiresACEWarning: Bool
+}
+
 enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	case global
 	case japan
@@ -31,14 +56,52 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		}
 	}
 
-	var isChinaClient: Bool { self == .china || self == .chinaBilibili }
-
-	var isACEProtectedClient: Bool {
+	var clientProfile: GameClientProfile {
 		switch self {
-		case .china, .chinaBilibili: true
-		case .global, .japan, .korea: false
+		case .global, .japan, .korea:
+			GameClientProfile(
+				publisher: .yostar,
+				variant: .standard,
+				runtimeEnvironmentOverrides: [:],
+				requiresCanaryPermission: false,
+				requiresACEWarning: false
+			)
+		case .china:
+			GameClientProfile(
+				publisher: .hypergryph,
+				variant: .standard,
+				runtimeEnvironmentOverrides: ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"],
+				requiresCanaryPermission: true,
+				requiresACEWarning: true
+			)
+		case .chinaBilibili:
+			GameClientProfile(
+				publisher: .hypergryph,
+				variant: .bilibili,
+				runtimeEnvironmentOverrides: [
+					"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
+					"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
+				],
+				requiresCanaryPermission: true,
+				requiresACEWarning: true
+			)
 		}
 	}
+
+	var publisher: GamePublisher { clientProfile.publisher }
+
+	var clientVariant: GameClientVariant { clientProfile.variant }
+
+	/// Whether the region is hidden until the corresponding canary permission is enabled.
+	var requiresCanaryPermission: Bool { clientProfile.requiresCanaryPermission }
+
+	/// Environment flags selected by this client profile when its game process launches.
+	var runtimeEnvironmentOverrides: [String: String] {
+		clientProfile.runtimeEnvironmentOverrides
+	}
+
+	/// Whether Play must show the ACE compatibility warning before launching.
+	var requiresACEWarning: Bool { clientProfile.requiresACEWarning }
 
 	var localizedDisplayName: String {
 		L10n.string(SharedStrings.region(self))

@@ -58,7 +58,6 @@ struct AppPaths: Sendable {
 	}
 
 	func gameInstall(for region: GameRegion) -> URL {
-		let publisher = region.isChinaClient ? "Hypergryph" : "Yostar"
 		let regionName =
 			switch region {
 			case .global: "Global"
@@ -68,11 +67,20 @@ struct AppPaths: Sendable {
 			case .chinaBilibili: "China-Bilibili"
 			}
 		return applicationSupportRoot.appending(
-			path: "\(publisher)/\(regionName)", directoryHint: .isDirectory)
+			path: "\(region.publisher.storageDirectoryName)/\(regionName)",
+			directoryHint: .isDirectory
+		)
 	}
 
 	func winePrefix(for region: GameRegion) -> URL {
-		region.isChinaClient ? chinaWinePrefix : winePrefix
+		winePrefix(for: region.publisher)
+	}
+
+	func winePrefix(for publisher: GamePublisher) -> URL {
+		switch publisher {
+		case .yostar: winePrefix
+		case .hypergryph: chinaWinePrefix
+		}
 	}
 
 	var logsDirectory: URL { logRoot }
@@ -86,7 +94,9 @@ struct AppPaths: Sendable {
 	}
 
 	func wineLogFile(for region: GameRegion) -> URL {
-		region.isChinaClient ? logsDirectory.appending(path: "wine-cn.log") : logFile
+		region.publisher == .hypergryph
+			? logsDirectory.appending(path: "wine-cn.log")
+			: logFile
 	}
 
 	var unityLogFile: URL {

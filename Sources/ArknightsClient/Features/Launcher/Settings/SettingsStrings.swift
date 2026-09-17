@@ -228,13 +228,13 @@ enum SettingsStrings {
 		.settingsAboutGameAccountIssuesDetail
 	static let contactYostar = LocalizedStringResource.Settings.settingsAboutContactYostar
 	static func contactPublisherTitle(region: GameRegion) -> LocalizedStringResource {
-		if region.isChinaClient {
+		if region.publisher == .hypergryph {
 			return .Settings.settingsAboutContactHypergryph
 		}
 		return contactYostar
 	}
 	static func gameAccountIssuesDetail(region: GameRegion) -> LocalizedStringResource {
-		if region.isChinaClient {
+		if region.publisher == .hypergryph {
 			return .Settings.settingsAboutGameAccountIssuesHypergryphDetail
 		}
 		return gameAccountIssuesDetail

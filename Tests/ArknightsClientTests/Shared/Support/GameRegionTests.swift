@@ -43,10 +43,47 @@ func canaryRegionSelectionRequiresExplicitChinaClientPermission() {
 
 @Test
 func chinaClientsAreMarkedAsACEProtected() {
-	#expect(GameRegion.china.isACEProtectedClient)
-	#expect(GameRegion.chinaBilibili.isACEProtectedClient)
-	#expect(!GameRegion.global.isACEProtectedClient)
-	#expect(!GameRegion.japan.isACEProtectedClient)
+	#expect(GameRegion.china.requiresACEWarning)
+	#expect(GameRegion.chinaBilibili.requiresACEWarning)
+	#expect(!GameRegion.global.requiresACEWarning)
+	#expect(!GameRegion.japan.requiresACEWarning)
+}
+
+@Test(arguments: [
+	(GameRegion.global, GamePublisher.yostar, GameClientVariant.standard, false, false),
+	(GameRegion.japan, GamePublisher.yostar, GameClientVariant.standard, false, false),
+	(GameRegion.korea, GamePublisher.yostar, GameClientVariant.standard, false, false),
+	(GameRegion.china, GamePublisher.hypergryph, GameClientVariant.standard, true, true),
+	(GameRegion.chinaBilibili, GamePublisher.hypergryph, GameClientVariant.bilibili, true, true),
+])
+func regionsExposeNeutralPublisherAndClientProfile(
+	region: GameRegion,
+	publisher: GamePublisher,
+	variant: GameClientVariant,
+	requiresCanaryPermission: Bool,
+	requiresACEWarning: Bool
+) {
+	#expect(region.publisher == publisher)
+	#expect(region.clientVariant == variant)
+	#expect(region.requiresCanaryPermission == requiresCanaryPermission)
+	#expect(region.clientProfile.requiresCanaryPermission == requiresCanaryPermission)
+	#expect(region.requiresACEWarning == requiresACEWarning)
+}
+
+@Test
+func clientProfilesOwnRuntimePatchEnvironment() {
+	#expect(GameRegion.global.runtimeEnvironmentOverrides.isEmpty)
+	#expect(
+		GameRegion.china.runtimeEnvironmentOverrides
+			== ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"]
+	)
+	#expect(
+		GameRegion.chinaBilibili.runtimeEnvironmentOverrides
+			== [
+				"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
+				"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
+			]
+	)
 }
 
 @Test(arguments: [

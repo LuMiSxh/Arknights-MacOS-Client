@@ -142,12 +142,41 @@ func runtimePerformanceRequiresBothCanaryGates(
 	)
 
 	#expect(environment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] == "1")
-	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
+	#expect(
+		environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
+			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
+	)
+	#expect(
+		environment["ARKNIGHTS_RUNTIME_CN_COMPAT"]
+			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CN_COMPAT"]
+	)
 	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == expectedPerformance)
 	#expect(
 		environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"]
 			== (canaryFeaturesEnabled ? "2" : nil)
 	)
+}
+
+@Test
+@MainActor
+func runtimeCompatibilityFlagsFollowClientProfiles() {
+	for region in [GameRegion.global, .china, .chinaBilibili] {
+		let environment = GameSessionController.runtimeEnvironmentOverrides(
+			for: region,
+			canaryFeaturesEnabled: false,
+			runtimePerformanceEnabled: false,
+			maximumFrameLatency: 2
+		)
+
+		#expect(
+			environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
+				== region.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
+		)
+		#expect(
+			environment["ARKNIGHTS_RUNTIME_CN_COMPAT"]
+				== region.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CN_COMPAT"]
+		)
+	}
 }
 
 @Test
