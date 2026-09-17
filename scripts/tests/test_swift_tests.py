@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import swift_tests
 
 
@@ -52,3 +53,16 @@ def test_test_count_requires_identifiers_from_the_selected_target() -> None:
 
     assert swift_tests.test_count(listing, "ArknightsClientIntegrationTests") == 1
     assert swift_tests.test_count(listing, "MissingTests") == 0
+
+
+def test_skips_swift_tests_when_the_sdk_generates_catalog_symbols(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(swift_tests, "toolchain_generates_symbols", lambda: True)
+    monkeypatch.setattr(
+        swift_tests,
+        "prepare_localization",
+        lambda **_: pytest.fail("Swift test preparation should be skipped"),
+    )
+
+    swift_tests.run_level("unit")

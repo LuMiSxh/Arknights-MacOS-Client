@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs; ordinary HUD pills no longer receive an extra outer border (#78).
 - Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
 - Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
+- Fixed macOS 27 SwiftPM String Catalog packaging so localized resources remain available in app and DMG builds.
 
 ## [0.5.2] - 2026-09-14
 

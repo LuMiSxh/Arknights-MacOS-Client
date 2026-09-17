@@ -40,6 +40,31 @@ def test_swift_localizations_are_copied_into_app_resources(
     ).exists()
 
 
+def test_toolchain_resource_bundle_is_embedded_for_packaged_symbols(
+    tmp_path: Path, configuration: ProjectConfiguration
+) -> None:
+    binary_dir = tmp_path / "bin"
+    bundle = binary_dir / configuration.swift_resource_bundle_name
+    swift_resources = bundle / "Contents/Resources"
+    for language in configuration.product.localizations:
+        (swift_resources / f"{language}.lproj").mkdir(parents=True)
+        (swift_resources / f"{language}.lproj/Localizable.strings").write_text(
+            '"home.settings" = "Settings";', encoding="utf-8"
+        )
+    resources = tmp_path / configuration.app_bundle_name / "Contents/Resources"
+
+    build_app.copy_swift_localizations(binary_dir, resources, configuration)
+
+    packaged_bundle = resources / configuration.swift_resource_bundle_name
+    for language in configuration.product.localizations:
+        assert (
+            packaged_bundle
+            / "Contents/Resources"
+            / f"{language}.lproj/Localizable.strings"
+        ).is_file()
+    assert not (resources / "en.lproj/Localizable.strings").exists()
+
+
 def test_app_resources_follow_project_configuration(
     configuration: ProjectConfiguration,
 ) -> None:

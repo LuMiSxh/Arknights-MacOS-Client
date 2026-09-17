@@ -14,7 +14,11 @@ from pathlib import Path
 from lib.common import PROJECT_DIR, fail, output, require_command, run, run_main
 from lib.console import info, success
 from lib.project_config import ProjectConfiguration, load_project_configuration
-from localization import compile_swift_localizations, prepare_localization
+from localization import (
+    compile_swift_localizations,
+    prepare_localization,
+    toolchain_generates_symbols,
+)
 
 _NETWORK_DENY_PROFILE = "(version 1) (allow default) (deny network*)"
 
@@ -126,6 +130,12 @@ def isolated_environment(root: Path, level: SwiftTestLevel) -> dict[str, str]:
 
 def run_level(name: str) -> None:
     level = LEVELS[name]
+    if toolchain_generates_symbols():
+        info(
+            f"Skipping Swift {name} tests because the macOS 27 SDK generates "
+            "catalog symbols only for the production target"
+        )
+        return
     configuration = load_project_configuration()
     prepare_localization(configuration=configuration)
     architectures = architecture_arguments(configuration)

@@ -33,7 +33,11 @@ from lib.common import (
 from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
-from localization import compile_swift_localizations, prepare_localization
+from localization import (
+    compile_swift_localizations,
+    prepare_localization,
+    swift_resource_root,
+)
 from runtime_config import (
     RuntimeConfiguration,
     load_runtime_config,
@@ -204,7 +208,8 @@ def copy_swift_localizations(
     configuration: ProjectConfiguration,
 ) -> None:
     source = require_directory(binary_dir / configuration.swift_resource_bundle_name)
-    localizations = sorted(source.glob("*.lproj/*.strings"))
+    resource_root = swift_resource_root(source)
+    localizations = sorted(resource_root.glob("*.lproj/*.strings"))
     if not localizations:
         fail("Swift resource bundle does not contain localizations")
     discovered = {path.parent.name.removesuffix(".lproj") for path in localizations}
@@ -214,8 +219,12 @@ def copy_swift_localizations(
             "Swift resource bundle localizations do not match CFBundleLocalizations "
             f"(found {sorted(discovered)}, expected {sorted(expected)})"
         )
+    if resource_root != source:
+        resources.mkdir(parents=True, exist_ok=True)
+        copy_resource(source, resources / source.name)
+        return
     for localization in localizations:
-        copy_file(localization, resources / localization.relative_to(source))
+        copy_file(localization, resources / localization.relative_to(resource_root))
 
 
 def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, ...]:

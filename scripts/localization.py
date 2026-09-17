@@ -17,6 +17,7 @@ from pathlib import Path
 from lib.common import (
     PROJECT_DIR,
     ScriptError,
+    output,
     require_directory,
     run,
     run_main,
@@ -38,6 +39,7 @@ SWIFT_PACKAGE_BUNDLE_DECLARATION = (
 APP_RESOURCE_BUNDLE_DECLARATION = (
     "private nonisolated let resourceBundle = AppResourceBundle.bundle"
 )
+TOOLCHAIN_SYMBOL_SDK_VERSION = 27
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,12 @@ class LocalizationLayout:
     source_language: str
     localizations: tuple[str, ...]
     catalogs: tuple[Path, ...]
+
+
+def swift_resource_root(bundle: Path) -> Path:
+    """Return the resource directory for either SwiftPM bundle layout."""
+    nested = bundle / "Contents/Resources"
+    return nested if nested.is_dir() else bundle
 
 
 def discover_layout(configuration: ProjectConfiguration) -> LocalizationLayout:
@@ -130,10 +138,33 @@ def _string_units(value: object) -> list[dict[str, str]]:
     return []
 
 
+def toolchain_generates_symbols() -> bool:
+    """Report whether the active SDK's build system emits the catalog symbols itself.
+
+    The macOS 27 SDK generates a ``GeneratedStringSymbols_<Catalog>.swift`` for every
+    String Catalog in the target.  Two build commands would then produce the same object
+    file, so this script must stop writing its own symbols there.  Earlier SDKs generate
+    nothing, and contributors on macOS 26 keep the symbols this script produces.
+    """
+    try:
+        version = output(["xcrun", "--sdk", "macosx", "--show-sdk-version"])
+    except (ScriptError, OSError):
+        return False
+    major, _, _ = version.partition(".")
+    return major.isdigit() and int(major) >= TOOLCHAIN_SYMBOL_SDK_VERSION
+
+
 def validate_catalog_usage(
-    layout: LocalizationLayout, *, source_directory: Path
+    layout: LocalizationLayout,
+    *,
+    source_directory: Path,
+    generated_symbols: dict[str, Path] | None = None,
 ) -> None:
-    """Reject catalog entries whose generated Swift symbol has no production reference."""
+    """Reject catalog entries whose generated Swift symbol has no production reference.
+
+    ``generated_symbols`` maps a catalog stem to a symbol file outside the target, used
+    when the build system owns the symbols and the target therefore holds none.
+    """
     source = "\n".join(
         path.read_text(encoding="utf-8")
         for path in source_directory.rglob("*.swift")
@@ -143,7 +174,10 @@ def validate_catalog_usage(
     for catalog in layout.catalogs:
         strings = json.loads(catalog.read_text(encoding="utf-8")).get("strings", {})
         generated_path = (
-            layout.generated_directory / f"GeneratedStringSymbols_{catalog.stem}.swift"
+            generated_symbols[catalog.stem]
+            if generated_symbols is not None
+            else layout.generated_directory
+            / f"GeneratedStringSymbols_{catalog.stem}.swift"
         )
         generated = generated_path.read_text(encoding="utf-8")
         symbols = {
@@ -249,22 +283,29 @@ def compile_swift_localizations(
 ) -> None:
     """Compile SwiftPM's raw catalogs into the resource bundle's .lproj files.
 
-    SwiftPM copies ``.xcstrings`` resources but does not currently invoke
-    Apple's catalog compiler for command-line macOS builds.  Foundation's
-    localized-string lookup therefore needs this explicit build step before
-    tests or app packaging consume the resource bundle.
+    SwiftPM either copies raw ``.xcstrings`` resources or, on newer SDKs,
+    emits a bundle whose catalogs are already compiled. Foundation's
+    localized-string lookup needs compiled ``.strings`` resources before tests
+    or app packaging consume the resource bundle.
     """
     configuration = configuration or load_project_configuration()
     bundle = require_directory(
         binary_directory / configuration.swift_resource_bundle_name
     )
-    catalogs = tuple(sorted(bundle.glob("*.xcstrings")))
-    if not catalogs:
-        raise ScriptError(
-            f"Swift resource bundle contains no String Catalogs: {bundle}"
-        )
-
+    resource_root = swift_resource_root(bundle)
+    catalogs = tuple(sorted(resource_root.glob("*.xcstrings")))
     languages = tuple(configuration.product.localizations)
+    if not catalogs:
+        localizations = tuple(sorted(resource_root.glob("*.lproj/*.strings")))
+        discovered = {path.parent.name.removesuffix(".lproj") for path in localizations}
+        expected = set(languages)
+        if discovered != expected:
+            raise ScriptError(
+                "Swift resource bundle contains neither raw String Catalogs nor "
+                f"all compiled localizations: {bundle}"
+            )
+        return
+
     language_arguments = [
         argument for language in languages for argument in ("--language", language)
     ]
@@ -276,14 +317,14 @@ def compile_swift_localizations(
                 "compile",
                 catalog,
                 "--output-directory",
-                bundle,
+                resource_root,
                 *language_arguments,
             ],
             cwd=PROJECT_DIR,
         )
 
     expected = {
-        bundle / f"{language}.lproj" / f"{catalog.stem}.strings"
+        resource_root / f"{language}.lproj" / f"{catalog.stem}.strings"
         for language in languages
         for catalog in catalogs
     }
@@ -291,8 +332,32 @@ def compile_swift_localizations(
     if missing:
         raise ScriptError(
             "xcstringstool did not produce all localized Swift resources: "
-            + ", ".join(str(path.relative_to(bundle)) for path in missing)
+            + ", ".join(str(path.relative_to(resource_root)) for path in missing)
         )
+
+
+def prepare_toolchain_symbols(
+    layout: LocalizationLayout, configuration: ProjectConfiguration
+) -> bool:
+    """Clear this script's symbols and validate key usage against a throwaway copy.
+
+    The build system writes its own symbols on this SDK, so anything left in the target
+    duplicates them.  Key-usage validation still needs the symbol names, and the generated
+    ones only exist inside the build's derived sources, so they are regenerated into a
+    temporary directory that never reaches the target.  The build system's symbols resolve
+    through ``Bundle.module``, which is why ``build_app.py`` packages the Swift resource
+    bundle whole instead of only flattening its localizations.
+    """
+    obsolete = sorted(layout.generated_directory.glob("GeneratedStringSymbols_*.swift"))
+    for path in obsolete:
+        path.unlink()
+    with tempfile.TemporaryDirectory() as directory:
+        validate_catalog_usage(
+            layout,
+            source_directory=configuration.target_directory,
+            generated_symbols=generate_localization(layout, Path(directory)),
+        )
+    return bool(obsolete)
 
 
 def prepare_localization(
@@ -302,6 +367,8 @@ def prepare_localization(
     layout = discover_layout(configuration)
     for catalog in layout.catalogs:
         validate_catalog(catalog, layout)
+    if toolchain_generates_symbols():
+        return prepare_toolchain_symbols(layout, configuration)
 
     expected = {
         layout.generated_directory / f"GeneratedStringSymbols_{catalog.stem}.swift": (

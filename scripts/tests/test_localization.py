@@ -205,3 +205,31 @@ def test_compiles_swift_resource_bundle_catalogs(
         assert all(
             language in command for language in configuration.product.localizations
         )
+
+
+def test_accepts_toolchain_compiled_swift_resource_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configuration = load_project_configuration()
+    binary_directory = tmp_path / "bin"
+    resources = (
+        binary_directory
+        / configuration.swift_resource_bundle_name
+        / "Contents/Resources"
+    )
+    for language in configuration.product.localizations:
+        (resources / f"{language}.lproj").mkdir(parents=True)
+        (resources / f"{language}.lproj/Localizable.strings").write_text(
+            '"home.settings" = "Settings";', encoding="utf-8"
+        )
+
+    commands: list[list[str | Path]] = []
+    monkeypatch.setattr(
+        localization,
+        "run",
+        lambda command, *, cwd: commands.append(command),
+    )
+
+    localization.compile_swift_localizations(binary_directory, configuration)
+
+    assert commands == []
