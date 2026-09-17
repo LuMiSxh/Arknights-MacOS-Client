@@ -245,7 +245,15 @@ survives each reset.
 
 ## Diagnostics
 
-The current launch directs Wine, Unity, and Chromium diagnostics to the central macOS log directory. Wine writes `wine.log` directly; the prefix maps that directory as `L:`, Unity receives `-logFile L:\unity.log`, and the Vuplex wrapper adds `--log-file=L:\chromium.log`. Their macOS paths are listed in [Troubleshooting](../../help/troubleshooting.md#log-locations). Launch diagnostics include the session ID, region, display and synchronization options, and whether graphics diagnostics were enabled. An unexpected exit adds the process status, termination reason, recent `Arknights-*.ips` crash report when available, and a bounded tail of `wine.log`.
+The current launch directs Wine, Unity, and Chromium diagnostics to the central macOS log directory.
+Wine writes the selected publisher runtime log directly: `arknights-yostar.log` for Yostar clients
+and `arknights-hypergryph.log` for Hypergryph clients. The prefix maps that directory as `L:`,
+Unity receives `-logFile L:\unity.log`, and the Vuplex wrapper adds
+`--log-file=L:\chromium.log`. Their macOS paths are listed in
+[Troubleshooting](../../help/troubleshooting.md#log-locations). Launch diagnostics include the
+session ID, region, display and synchronization options, and whether graphics diagnostics were
+enabled. An unexpected exit adds the process status, termination reason, recent `Arknights-*.ips`
+crash report when available, and a bounded tail of the selected publisher runtime log.
 
 Keep diagnostics bounded and avoid adding credentials, page contents, or arbitrary remote response
 bodies to logs. The app exposes the log directory through **Settings → Storage → Show Logs**; users

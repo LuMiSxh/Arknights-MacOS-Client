@@ -72,7 +72,8 @@
 			case .failure:
 				lifecycle.presentation.failure = LauncherFailurePresentation(
 					id: UUID(),
-					message: "The Windows runtime exited with status 1. See wine.log.",
+					message:
+						"The Windows runtime exited with status 1. See the selected publisher runtime log.",
 					code: .crux,
 					context: SupportContext(
 						operation: .runtimeExit,

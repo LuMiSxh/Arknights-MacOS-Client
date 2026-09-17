@@ -85,18 +85,20 @@ struct AppPaths: Sendable {
 
 	var logsDirectory: URL { logRoot }
 
-	var logFile: URL {
-		logsDirectory.appending(path: "wine.log")
+	var yostarLogFile: URL {
+		publisherLogFile(for: .yostar)
 	}
 
 	var launcherLogFile: URL {
 		logsDirectory.appending(path: "launcher.log")
 	}
 
-	func wineLogFile(for region: GameRegion) -> URL {
-		region.publisher == .hypergryph
-			? logsDirectory.appending(path: "wine-cn.log")
-			: logFile
+	func publisherLogFile(for publisher: GamePublisher) -> URL {
+		logsDirectory.appending(path: publisher.runtimeLogFileName)
+	}
+
+	func runtimeLogFile(for region: GameRegion) -> URL {
+		publisherLogFile(for: region.publisher)
 	}
 
 	var unityLogFile: URL {

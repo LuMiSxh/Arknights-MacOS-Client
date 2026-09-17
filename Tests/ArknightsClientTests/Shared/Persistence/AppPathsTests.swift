@@ -81,7 +81,18 @@ func appPathsUseStandardInjectedDirectories() {
 				directoryHint: .isDirectory
 			)
 	)
-	#expect(paths.logFile == library.appending(path: "Logs/\(AppPaths.bundleIdentifier)/wine.log"))
+	#expect(
+		paths.yostarLogFile
+			== library.appending(
+				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-yostar.log"
+			)
+	)
+	#expect(
+		paths.publisherLogFile(for: .hypergryph)
+			== library.appending(
+				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-hypergryph.log"
+			)
+	)
 	#expect(
 		paths.launcherLogFile
 			== library.appending(path: "Logs/\(AppPaths.bundleIdentifier)/launcher.log")

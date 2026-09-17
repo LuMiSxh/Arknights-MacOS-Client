@@ -33,14 +33,15 @@ A short uppercase word such as `PEBBLE` identifies a documented failure path. Ch
 
 You do not need log files for an initial report. This reference is for follow-up when a maintainer asks for a specific file. **Settings → Storage → Show Logs** prepares the central log directory and selects the available launcher, Wine, Unity, and Chromium files in Finder. macOS crash reports live separately; if a maintainer needs one, they will provide separate steps for the named report.
 
-| File                  | Path                                                                | Useful for                                                                                        |
-| --------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Launcher log          | `~/Library/Logs/com.lumisxh.arknights-client/launcher.log`          | Setup, region refresh, downloads, update checks, prefix migrations, and launcher errors           |
-| Previous launcher log | `~/Library/Logs/com.lumisxh.arknights-client/launcher.previous.log` | The previous rotated launcher log after `launcher.log` reaches 4 MB                               |
-| Wine and game log     | `~/Library/Logs/com.lumisxh.arknights-client/wine.log`              | Wine startup, DXMT, display setup, compatibility components, process output, and runtime failures |
-| Unity log             | `~/Library/Logs/com.lumisxh.arknights-client/unity.log`             | Unity exceptions, asset loading, and game-side diagnostics                                        |
-| Chromium log          | `~/Library/Logs/com.lumisxh.arknights-client/chromium.log`          | Embedded sign-in browser and CEF frame or JavaScript diagnostics                                  |
-| macOS crash reports   | `~/Library/Logs/DiagnosticReports/`                                 | Native `.crash` or `.ips` reports when the launcher, Wine, or Rosetta terminates unexpectedly     |
+| File                        | Path                                                                   | Useful for                                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Launcher log                | `~/Library/Logs/com.lumisxh.arknights-client/launcher.log`             | Setup, region refresh, downloads, update checks, prefix migrations, and launcher errors                                          |
+| Previous launcher log       | `~/Library/Logs/com.lumisxh.arknights-client/launcher.previous.log`    | The previous rotated launcher log after `launcher.log` reaches 4 MB                                                              |
+| Yostar runtime/game log     | `~/Library/Logs/com.lumisxh.arknights-client/arknights-yostar.log`     | Wine startup, DXMT, display setup, compatibility components, process output, and runtime failures for Global, Japan, and Korea   |
+| Hypergryph runtime/game log | `~/Library/Logs/com.lumisxh.arknights-client/arknights-hypergryph.log` | Wine startup, DXMT, display setup, compatibility components, process output, and runtime failures for China and China — Bilibili |
+| Unity log                   | `~/Library/Logs/com.lumisxh.arknights-client/unity.log`                | Unity exceptions, asset loading, and game-side diagnostics                                                                       |
+| Chromium log                | `~/Library/Logs/com.lumisxh.arknights-client/chromium.log`             | Embedded sign-in browser and CEF frame or JavaScript diagnostics                                                                 |
+| macOS crash reports         | `~/Library/Logs/DiagnosticReports/`                                    | Native `.crash` or `.ips` reports when the launcher, Wine, or Rosetta terminates unexpectedly                                    |
 
 The selected region's game folder also contains `.arknights-client-state.json`, which records the verified manifest state. The shared prefix contains `.arknights-runtime-migrations.json`, which records completed Wine and DXMT setup steps. These are state files, not replacement logs.
 
@@ -59,7 +60,7 @@ open "/Applications/Arknights Client.app" --args --graphics-diagnostics
 
 For a local app bundle, replace the path with the actual location of `Arknights Client.app`.
 
-- `--graphics-diagnostics` increases Wine Mac-driver and DXMT logging. Use it for display, Metal, window, or rendering failures; details are written to `wine.log`.
+- `--graphics-diagnostics` increases Wine Mac-driver and DXMT logging. Use it for display, Metal, window, or rendering failures; details are written to the selected publisher runtime log.
 - `--no-retina` forces a 1× Wine display configuration for that launch. Use it when a Retina or scaled display produces an incorrectly sized window.
 
 To keep the 1× setting across launches:

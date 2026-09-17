@@ -154,6 +154,7 @@ struct WineRuntime: Sendable {
 		synchronizationMode: WineSynchronizationMode = .msync,
 		runtimeEnvironmentOverrides: [String: String] = [:],
 		clientVariant: GameClientVariant = .standard,
+		publisher: GamePublisher = .yostar,
 		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
 		log: LauncherLog? = nil
@@ -184,7 +185,10 @@ struct WineRuntime: Sendable {
 		}
 
 		let logURL =
-			logURL ?? prefixDirectory.deletingLastPathComponent().appending(path: "wine.log")
+			logURL
+			?? prefixDirectory.deletingLastPathComponent().appending(
+				path: publisher.runtimeLogFileName
+			)
 		try fileManager.createDirectory(
 			at: logURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true

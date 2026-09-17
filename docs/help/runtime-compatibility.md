@@ -49,7 +49,9 @@ Restart the Mac and run the launcher check again. This mode disables the general
 5. Wine starts the official executable through the DXMT Direct3D 11-to-Metal path.
 6. The launcher waits up to 90 seconds for the game window, then monitors the game and Wine processes until exit.
 
-The central `wine.log` records these stages. A first launch after a runtime change can take longer while the prefix migration completes.
+The selected publisher runtime log records these stages: `arknights-yostar.log` for Global, Japan,
+and Korea, or `arknights-hypergryph.log` for China and China — Bilibili. A first launch after a
+runtime change can take longer while the prefix migration completes.
 
 ## The shared Wine prefix
 
@@ -73,7 +75,9 @@ while existing exact-match default folders are moved. The migration does not tou
 does not merge or overwrite folders, and resumes after an interruption. A conflict or unsafe folder
 blocks normal startup until it is resolved; see [Storage](storage.md#after-a-launcher-update).
 
-The launcher also maps the central macOS log directory as `L:` so Unity and browser logs can be collected alongside `wine.log`. Wine's default `Z:` mapping to the macOS file-system root is removed before each start, and its shell folders are kept inside the prefix.
+The launcher also maps the central macOS log directory as `L:` so Unity and browser logs can be
+collected alongside the selected publisher runtime log. Wine's default `Z:` mapping to the macOS
+file-system root is removed before each start, and its shell folders are kept inside the prefix.
 
 > [!CAUTION]
 > **Delete Wine Prefix** removes the selected client family's shared environment, including saved browser sessions. Game files are untouched, and the prefix is rebuilt on the next launch. Use [Force Migration](troubleshooting.md#no-game-window-appears) or targeted cache cleanup first.

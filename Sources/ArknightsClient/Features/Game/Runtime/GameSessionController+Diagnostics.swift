@@ -41,7 +41,7 @@ extension GameSessionController {
 			of: logURL,
 			maximumBytes: AppConstants.Logging.wineLogTailBytes
 		) {
-			parts.append("wine.log tail: \(tail)")
+			parts.append("\(logURL.lastPathComponent) tail: \(tail)")
 		}
 		return parts.joined(separator: " ")
 	}

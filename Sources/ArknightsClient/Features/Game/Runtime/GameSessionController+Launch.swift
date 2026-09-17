@@ -129,8 +129,9 @@ extension GameSessionController {
 					synchronizationMode: requestedLaunchOptions.synchronizationMode,
 					runtimeEnvironmentOverrides: runtimeEnvironment,
 					clientVariant: requestedRegion.clientVariant,
+					publisher: requestedRegion.publisher,
 					gameIconURL: customGameIconURL(),
-					logURL: paths.wineLogFile(for: requestedRegion),
+					logURL: paths.runtimeLogFile(for: requestedRegion),
 					log: log
 				)
 				await log.info(

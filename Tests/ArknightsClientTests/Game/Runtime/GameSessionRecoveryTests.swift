@@ -21,7 +21,7 @@ struct GameSessionRecoveryTests {
 		model.gameSession.presentRuntimeFailure(
 			LauncherError.runtimeExited(
 				status: 1,
-				log: model.installation.paths.logFile
+				log: model.installation.paths.runtimeLogFile(for: region)
 			),
 			id: failureID,
 			operation: .runtimeExit,

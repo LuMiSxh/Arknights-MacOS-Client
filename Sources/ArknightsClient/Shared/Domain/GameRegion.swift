@@ -12,6 +12,13 @@ enum GamePublisher: String, Codable, Sendable {
 		case .hypergryph: "Hypergryph"
 		}
 	}
+
+	var runtimeLogFileName: String {
+		switch self {
+		case .yostar: "arknights-yostar.log"
+		case .hypergryph: "arknights-hypergryph.log"
+		}
+	}
 }
 
 enum GameClientVariant: String, Codable, Sendable {

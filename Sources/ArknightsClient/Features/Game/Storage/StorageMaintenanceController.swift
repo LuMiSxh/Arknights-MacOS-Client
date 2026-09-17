@@ -89,8 +89,8 @@ final class StorageMaintenanceController {
 			await log.prepare()
 			NSWorkspace.shared.activateFileViewerSelecting([
 				paths.launcherLogFile,
-				paths.logFile,
-				paths.wineLogFile(for: .china),
+				paths.publisherLogFile(for: .yostar),
+				paths.publisherLogFile(for: .hypergryph),
 				paths.unityLogFile,
 				paths.chromiumLogFile,
 			])
