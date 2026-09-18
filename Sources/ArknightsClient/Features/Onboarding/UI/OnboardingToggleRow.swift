@@ -22,6 +22,7 @@ struct OnboardingToggleRow: View {
 			Toggle(title, isOn: $isOn)
 				.labelsHidden()
 				.toggleStyle(.switch)
+				.controlSize(.regular)
 				.tint(accentColor)
 		}
 	}

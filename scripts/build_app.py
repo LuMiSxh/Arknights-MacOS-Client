@@ -315,7 +315,15 @@ def validate_inputs(
     runtime_configuration: RuntimeConfiguration,
 ) -> None:
     require_commands(
-        ("codesign", "install_name_tool", "lipo", "otool", "plutil", "swift")
+        (
+            "codesign",
+            "install_name_tool",
+            "lipo",
+            "otool",
+            "plutil",
+            "swift",
+            "xcrun",
+        )
     )
     project = configuration.project_directory
     require_file(project / "Resources/Info.plist")
@@ -379,23 +387,40 @@ def build(
         for architecture in architectures
         for argument in ("--arch", architecture)
     ]
+    sdk_path = output(["xcrun", "--sdk", "macosx", "--show-sdk-path"])
+    sdk_version = output(["xcrun", "--sdk", "macosx", "--show-sdk-version"])
+    swift_environment = os.environ.copy()
+    swift_environment["SDKROOT"] = sdk_path
+    # SwiftPM otherwise copies the deployment platform into the Mach-O SDK field.
+    # Keep the macOS 15 minimum while recording the SDK that supplies the native UI.
+    swift_build_arguments = [
+        "swift",
+        "build",
+        "--configuration",
+        configuration,
+        *architecture_arguments,
+        "-Xlinker",
+        "-platform_version",
+        "-Xlinker",
+        "macos",
+        "-Xlinker",
+        project_configuration.package.macos_version,
+        "-Xlinker",
+        sdk_version,
+    ]
     info(f"Building the {configuration} executable for {', '.join(architectures)}")
     run(
-        ["swift", "build", "--configuration", configuration, *architecture_arguments],
+        swift_build_arguments,
         cwd=project,
+        environment=swift_environment,
     )
     binary_dir = Path(
-        output(
-            [
-                "swift",
-                "build",
-                "--configuration",
-                configuration,
-                *architecture_arguments,
-                "--show-bin-path",
-            ],
+        run(
+            [*swift_build_arguments, "--show-bin-path"],
             cwd=project,
-        )
+            capture=True,
+            environment=swift_environment,
+        ).stdout.strip()
     )
     compile_swift_localizations(binary_dir, project_configuration)
     binary = binary_dir / project_configuration.product.executable_name

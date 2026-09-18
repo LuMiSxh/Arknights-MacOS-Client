@@ -17,8 +17,8 @@ struct SettingsToggle: View {
 		Toggle(title, isOn: $isOn)
 			.labelsHidden()
 			.toggleStyle(.switch)
+			.controlSize(.regular)
 			.tint(accentColor)
-			.keyboardFocusIndicator(in: Capsule())
 	}
 }
 

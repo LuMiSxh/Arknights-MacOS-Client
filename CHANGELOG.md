@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed macOS 27 SwiftPM String Catalog packaging so localized resources remain available in app and DMG builds.
 - A download on a fast connection can no longer outpace a slow disk and grow in memory without limit.
 - Removed a leak and a per-frame window-server query from the helpers injected into the game and its notice window.
+- Keep native Settings and onboarding toggles on the current macOS geometry by linking app builds against the active SDK while retaining the macOS 15 deployment target.
 
 ## [0.5.2] - 2026-09-14
 
