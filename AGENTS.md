@@ -11,21 +11,21 @@
 
 ## Commands
 
-| Task | Command |
-| --- | --- |
-| Focused native checks | `just check` |
-| Native CI | `just ci` |
-| Integration tests | `just integration` |
-| Website checks | `just check web` |
-| Production website | `cd web && BASE_PATH=/Arknights-MacOS-Client pnpm build` |
-| Other tasks | `just --list` |
+| Task                  | Command                                                  |
+| --------------------- | -------------------------------------------------------- |
+| Focused native checks | `just check`                                             |
+| Native CI             | `just ci`                                                |
+| Integration tests     | `just integration`                                       |
+| Website checks        | `just check web`                                         |
+| Production website    | `cd web && BASE_PATH=/Arknights-MacOS-Client pnpm build` |
+| Other tasks           | `just --list`                                            |
 
 ## Architecture and Swift
 
 - Use Swift 6.2. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
 - Never import feature-owned types from `Shared` or `Infrastructure`; map infrastructure errors at the owning feature boundary.
 - Keep components feature-local unless multiple features share the same presentation contract.
-- Keep handwritten production Swift and Swift tests below 350 lines. Generated localization symbols, native C/Objective-C shims, and scripts are exempt.
+- Keep handwritten production Swift and Swift tests below 450 lines. Generated localization symbols, native C/Objective-C shims, and scripts are exempt.
 - Use tabs with width four and follow `.swift-format`.
 - Keep observable/UI/AppKit state on `@MainActor`; move synchronous network, hashing, extraction, and file work off it.
 - Use `@Observable`; keep `LauncherViewModel` at composition and inject narrow dependencies into features and views.
@@ -53,11 +53,11 @@
 
 ## References
 
-| Need | File |
-| --- | --- |
-| Architecture | `docs/development/architecture/README.md` |
-| Testing | `docs/development/testing.md` |
-| Localization | `docs/development/localization.md` |
-| Storage/runtime | `docs/help/storage.md`, `docs/help/runtime-compatibility.md` |
+| Need              | File                                                                             |
+| ----------------- | -------------------------------------------------------------------------------- |
+| Architecture      | `docs/development/architecture/README.md`                                        |
+| Testing           | `docs/development/testing.md`                                                    |
+| Localization      | `docs/development/localization.md`                                               |
+| Storage/runtime   | `docs/help/storage.md`, `docs/help/runtime-compatibility.md`                     |
 | Recovery/releases | `docs/development/error-recovery.md`, `docs/development/releases-and-updates.md` |
-| Legal | `docs/legal/third-party-notices.md` |
+| Legal             | `docs/legal/third-party-notices.md`                                              |
