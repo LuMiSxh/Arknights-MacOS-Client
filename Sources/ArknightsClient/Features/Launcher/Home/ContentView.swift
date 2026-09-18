@@ -66,16 +66,18 @@ struct ContentView: View {
 					accentColor: model.customization.accentColor,
 					hudTintColor: model.customization.hudTintColor,
 					musicController: musicController,
-					openLauncherUpdate: requestLauncherUpdateCheck,
-					checkGameUpdates: model.checkGameUpdates,
-					selectRegion: { model.selectRegion($0) },
-					installOrUpdate: model.installOrUpdate,
-					cancelDownload: model.cancelDownload,
-					launch: model.launch,
-					stopGame: model.stopGame,
-					requestRosettaInstallation: { confirmation = .rosetta },
-					retryIntelTranslationCheck: retryIntelTranslationCheck,
-					showFailureDetails: showFailureDetails)
+					actions: LauncherHUDActions(
+						openLauncherUpdate: requestLauncherUpdateCheck,
+						checkGameUpdates: model.checkGameUpdates,
+						selectRegion: { model.selectRegion($0) },
+						installOrUpdate: model.installOrUpdate,
+						cancelDownload: model.cancelDownload,
+						launch: model.launch,
+						stopGame: model.stopGame,
+						requestRosettaInstallation: { confirmation = .rosetta },
+						retryIntelTranslationCheck: retryIntelTranslationCheck,
+						showFailureDetails: showFailureDetails
+					))
 			}
 			.id(model.settings.appLanguage)
 		}

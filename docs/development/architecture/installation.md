@@ -63,6 +63,11 @@ sequenceDiagram
 	Controller->>Controller: Release token and publish readiness
 ```
 
+Each download streams to disk rather than buffering a whole file. A stream holds a bounded
+amount of received-but-unwritten data and suspends its transfer at that ceiling until the
+installer catches up, so a fast connection writing to a slow disk cannot grow in memory without
+limit.
+
 When the operation is cancelled, the current stream and task group are cancelled. Completed final
 files remain valid, while in-progress files keep their `.part` suffix so a later operation can send a
 range request. A successful operation saves state even when every manifest file was already present;

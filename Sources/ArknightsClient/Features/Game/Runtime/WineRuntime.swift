@@ -243,6 +243,7 @@ struct WineRuntime: Sendable {
 			stage: "prefix", since: launchStarted, to: logHandle)
 		if clientVariant == .bilibili {
 			try await applyBilibiliFontConfiguration(
+				prefixDirectory: prefixDirectory,
 				environment: environment,
 				logHandle: logHandle
 			)

@@ -183,11 +183,12 @@ enum StorageSizeCalculator {
 		var total: Int64 = 0
 		for case let fileURL as URL in enumerator {
 			try Task.checkCancellation()
-			if isSymbolicLink(fileURL, fileManager: fileManager) {
+			// One call, both prefetched keys: an installation holds tens of thousands of files.
+			let values = try fileURL.resourceValues(forKeys: [.fileSizeKey, .isSymbolicLinkKey])
+			if values.isSymbolicLink == true {
 				enumerator.skipDescendants()
 				continue
 			}
-			let values = try fileURL.resourceValues(forKeys: [.fileSizeKey])
 			total += Int64(values.fileSize ?? 0)
 		}
 		return total

@@ -93,6 +93,8 @@ enum AppConstants {
 		static let transferRateMonitorInterval: Duration = .seconds(1)
 		/// Weight of the newest sample in the smoothed transfer rate.
 		static let transferRateSmoothingFactor = 0.35
+		/// Unconsumed bytes one HTTP stream may hold before its transfer is suspended.
+		static let maximumBufferedStreamBytes = 8 * 1_024 * 1_024
 		static let announcementFeedMaximumBytes = 128 * 1_024
 		static let yostarAPIResponseMaximumBytes = 4 * 1_024 * 1_024
 		static let yostarManifestMaximumBytes = 32 * 1_024 * 1_024

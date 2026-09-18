@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [0.5.3] - 2026-09-16
+## [0.5.3] - 2026-XX-XX
 
 ### Added
 
@@ -20,16 +20,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Repair verifies installed files several times faster by hashing eight bytes per step instead of one.
+- Preparing a Wine prefix applies its registry settings in one step instead of one Windows process per value.
+- Searching the Artwork gallery filters the catalog once per keystroke instead of once per category filter.
+- Calculating storage sizes reads each file's size once instead of inspecting it repeatedly.
+- Consolidated the background-music value types, the per-file download path, and the launcher view model's actions into one file each.
 - Named runtime logs after Arknights and their publisher.
 - Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.
 - Split runtime compatibility controls into independent ACE Compact and Bilibili CN flags.
 
 ### Fixed
 
-- Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs; ordinary HUD pills no longer receive an extra outer border (#78).
+- Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).
 - Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
 - Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
 - Fixed macOS 27 SwiftPM String Catalog packaging so localized resources remain available in app and DMG builds.
+- A download on a fast connection can no longer outpace a slow disk and grow in memory without limit.
+- Removed a leak and a per-frame window-server query from the helpers injected into the game and its notice window.
 
 ## [0.5.2] - 2026-09-14
 

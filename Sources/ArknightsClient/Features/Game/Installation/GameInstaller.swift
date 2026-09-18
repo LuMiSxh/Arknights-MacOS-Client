@@ -304,6 +304,7 @@ struct GameInstaller: Sendable {
 								)
 							}
 							try handle.write(contentsOf: data)
+							stream.acknowledge(data.count)
 							newlyDownloaded += incomingBytes
 							if let update = await counter.add(bytes: incomingBytes, file: item.path)
 							{

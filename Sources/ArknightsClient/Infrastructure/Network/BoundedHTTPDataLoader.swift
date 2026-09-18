@@ -61,6 +61,7 @@ struct BoundedHTTPDataLoader: Sendable {
 							)
 						}
 						accumulated.append(chunk)
+						stream.acknowledge(chunk.count)
 					}
 				}
 			} catch let error as URLError where error.code == .cancelled && Task.isCancelled {

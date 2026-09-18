@@ -43,6 +43,36 @@ struct HTTPChunkSessionTests {
 		#expect(received == expected)
 	}
 
+	/// Reaching the ceiling must delay bytes, never drop them.
+	@Test
+	func chunkSessionDeliversEveryByteWhenTheBufferCeilingIsReached() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(configuration: configuration, maximumBufferedBytes: 4_096)
+		let url = URL(string: "https://download.test/game.bin")!
+		let expected = Data(repeating: 0x33, count: 64 * 1_024)
+		ChunkedURLProtocol.response = HTTPURLResponse(
+			url: url,
+			statusCode: 206,
+			httpVersion: "HTTP/1.1",
+			headerFields: ["Content-Length": String(expected.count)]
+		)!
+		ChunkedURLProtocol.chunks = stride(from: 0, to: expected.count, by: 4_096).map {
+			expected.subdata(in: $0..<min($0 + 4_096, expected.count))
+		}
+		defer { ChunkedURLProtocol.reset() }
+
+		let stream = session.stream(for: URLRequest(url: url))
+		var received = Data()
+		for try await event in stream.events {
+			guard case .data(let chunk) = event else { continue }
+			received.append(chunk)
+			stream.acknowledge(chunk.count)
+		}
+
+		#expect(received == expected)
+	}
+
 	@Test
 	func chunkSessionCreatesConcurrentStreamsWithoutRacingSessionSetup() async throws {
 		let configuration = URLSessionConfiguration.ephemeral

@@ -56,12 +56,12 @@ static const double icon_content_dimension = 412.0;
 static const long compositing_operation_copy = 1;
 static const long image_interpolation_high = 3;
 
-/* AppKit normally appears very early in Wine startup. Polling every millisecond for at
- * most ten seconds avoids blocking dyld's constructor thread while still installing the
- * hook before Wine publishes its executable icon. objc_getClass only observes runtime
- * state; it does not cause AppKit to load. */
-static const struct timespec appkit_poll_interval = { .tv_sec = 0, .tv_nsec = 1000000 };
-static const int appkit_poll_limit = 10000;
+/* AppKit normally appears very early in Wine startup. Polling every 50ms for at most ten
+ * seconds avoids blocking dyld's constructor thread while still installing the hook before
+ * Wine publishes its executable icon, without keeping the CPU out of its idle states.
+ * objc_getClass only observes runtime state; it does not cause AppKit to load. */
+static const struct timespec appkit_poll_interval = { .tv_sec = 0, .tv_nsec = 50000000 };
+static const int appkit_poll_limit = 200;
 
 static SetApplicationIconImageIMP original_set_application_icon_image;
 static pthread_mutex_t icon_setter_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -162,15 +162,19 @@ static id normalized_game_icon(id source) {
 
 /* Replacement IMP for NSApplication.setApplicationIconImage:. A valid custom image takes
  * precedence; a missing or unreadable one falls back to the normalized executable icon.
- * Calling the saved IMP preserves AppKit's normal Dock and application-icon side effects. */
+ * Calling the saved IMP preserves AppKit's normal Dock and application-icon side effects.
+ * The pool catches AppKit's autoreleased temporaries, which no Wine-owned pool is guaranteed
+ * to cover on the calling thread; both publishable icons are +1 and survive it. */
 static void set_application_icon_image(id application, SEL selector, id image) {
-	SetApplicationIconImageIMP original;
-	id resolved = load_custom_game_icon();
-	if (resolved == nil) resolved = normalized_game_icon(image);
-	pthread_mutex_lock(&icon_setter_lock);
-	original = original_set_application_icon_image;
-	pthread_mutex_unlock(&icon_setter_lock);
-	if (original != NULL) original(application, selector, resolved);
+	@autoreleasepool {
+		SetApplicationIconImageIMP original;
+		id resolved = load_custom_game_icon();
+		if (resolved == nil) resolved = normalized_game_icon(image);
+		pthread_mutex_lock(&icon_setter_lock);
+		original = original_set_application_icon_image;
+		pthread_mutex_unlock(&icon_setter_lock);
+		if (original != NULL) original(application, selector, resolved);
+	}
 }
 
 /* Installs the hook only after NSApplication exists. Holding the same mutex the replacement
@@ -199,7 +203,9 @@ static bool install_icon_setter(void) {
 static void *wait_for_appkit(void *context) {
 	(void)context;
 	for (int attempt = 0; attempt < appkit_poll_limit; attempt++) {
-		if (install_icon_setter()) return NULL;
+		@autoreleasepool {
+			if (install_icon_setter()) return NULL;
+		}
 		nanosleep(&appkit_poll_interval, NULL);
 	}
 	fprintf(stderr, "Arknights Client: game icon bridge timed out waiting for AppKit\n");

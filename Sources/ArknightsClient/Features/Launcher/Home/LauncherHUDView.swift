@@ -13,16 +13,7 @@ struct LauncherHUDView: View {
 	let accentColor: Color
 	let hudTintColor: Color
 	let musicController: BackgroundMusicController
-	let openLauncherUpdate: () -> Void
-	let checkGameUpdates: () -> Void
-	let selectRegion: (GameRegion) -> Void
-	let installOrUpdate: () -> Void
-	let cancelDownload: () -> Void
-	let launch: () -> Void
-	let stopGame: () -> Void
-	let requestRosettaInstallation: () -> Void
-	let retryIntelTranslationCheck: () -> Void
-	let showFailureDetails: () -> Void
+	let actions: LauncherHUDActions
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
@@ -40,8 +31,8 @@ struct LauncherHUDView: View {
 				installation: installation,
 				intelTranslation: intelTranslation,
 				accentColor: accentColor,
-				requestRosettaInstallation: requestRosettaInstallation,
-				retryIntelTranslationCheck: retryIntelTranslationCheck
+				requestRosettaInstallation: actions.requestRosettaInstallation,
+				retryIntelTranslationCheck: actions.retryIntelTranslationCheck
 			)
 			.id(installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)
@@ -53,7 +44,7 @@ struct LauncherHUDView: View {
 						title: L10n.string(HomeStrings.launcherUpdate),
 						systemImage: "arrow.down.app",
 						tone: .accent(accentColor),
-						action: openLauncherUpdate
+						action: actions.openLauncherUpdate
 					)
 					.disabled(!communication.canOpenLauncherUpdate)
 					.transition(.opacity)
@@ -65,7 +56,7 @@ struct LauncherHUDView: View {
 						title: L10n.string(HomeStrings.recoveryDetails),
 						systemImage: "info.circle",
 						tone: .accent(accentColor),
-						action: showFailureDetails
+						action: actions.showFailureDetails
 					)
 					.controlSize(.large)
 					.transition(primaryActionTransition)
@@ -76,10 +67,10 @@ struct LauncherHUDView: View {
 					gameSession: gameSession,
 					intelTranslation: intelTranslation,
 					accentColor: accentColor,
-					installOrUpdate: installOrUpdate,
-					cancelDownload: cancelDownload,
-					launch: launch,
-					stopGame: stopGame
+					installOrUpdate: actions.installOrUpdate,
+					cancelDownload: actions.cancelDownload,
+					launch: actions.launch,
+					stopGame: actions.stopGame
 				)
 				.disabled(lifecycle.failure?.blocksGameLaunch == true)
 				.transition(primaryActionTransition)
@@ -119,7 +110,7 @@ struct LauncherHUDView: View {
 							gameSession: gameSession,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							checkGameUpdates: checkGameUpdates
+							checkGameUpdates: actions.checkGameUpdates
 						)
 						.transition(hudPillTransition)
 					}
@@ -130,7 +121,7 @@ struct LauncherHUDView: View {
 							canSwitchRegion: canSwitchRegion,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							selectRegion: selectRegion
+							selectRegion: actions.selectRegion
 						)
 						.transition(hudPillTransition)
 					}

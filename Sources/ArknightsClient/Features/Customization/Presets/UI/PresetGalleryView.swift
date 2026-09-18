@@ -30,12 +30,18 @@ struct PresetGalleryView: View {
 	var body: some View {
 		let hasSearchQuery = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 		let filteredAvatars = PresetCatalogSearch.avatars(matching: searchText, in: avatars)
-		let filteredWallpapers = PresetGallerySearch.wallpapers(
+		// Matching is category-independent, so one search covers the grid and every filter count.
+		let matchedWallpapers = PresetGallerySearch.wallpapers(
 			matching: searchText,
 			committedTags: committedTags,
-			category: selectedCategory,
+			category: nil,
 			in: wallpapers
 		)
+		let filteredWallpapers =
+			selectedCategory.map { category in
+				matchedWallpapers.filter { $0.category == category }
+			} ?? matchedWallpapers
+		let wallpaperCategoryCounts = Self.categoryCounts(in: matchedWallpapers)
 		let wallpaperTerms = PresetGallerySearch.suggestions(
 			matching: searchText,
 			committedTags: committedTags,
@@ -172,18 +178,15 @@ struct PresetGalleryView: View {
 	// and committed tag pills, regardless of which category (if any) is currently selected —
 	// so switching categories is an informed choice rather than a guess. `nil` is the "All
 	// Types" option's own total.
-	private var wallpaperCategoryCounts: [WallpaperCategory?: Int] {
-		Dictionary(
-			uniqueKeysWithValues: ([nil] + WallpaperCategory.allCases.map { $0 }).map { category in
-				(
-					category,
-					PresetGallerySearch.wallpapers(
-						matching: searchText, committedTags: committedTags, category: category,
-						in: wallpapers
-					).count
-				)
-			}
-		)
+	private static func categoryCounts(in matches: [PresetWallpaper]) -> [WallpaperCategory?: Int] {
+		var counts: [WallpaperCategory?: Int] = [nil: matches.count]
+		for category in WallpaperCategory.allCases {
+			counts[category] = 0
+		}
+		for wallpaper in matches {
+			counts[wallpaper.category, default: 0] += 1
+		}
+		return counts
 	}
 
 	// Every operator identifiable among `visibleWallpapers`, with how many of them feature

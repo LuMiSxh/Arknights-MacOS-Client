@@ -24,8 +24,8 @@ The stable Yostar regions share one historical prefix. The China and China — B
 a separate Hypergryph prefix so their Windows-side state, login sessions, registry, and runtime
 processes cannot mix with the Yostar regions.
 
-| Region family              | Default prefix                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------- |
+| Region family              | Default prefix                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------ |
 | Global, Japan, and Korea   | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix`     |
 | China and China — Bilibili | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix` |
 
@@ -118,6 +118,10 @@ The current ordered migration identifiers are:
 3. `configure-registry` installs stable DLL overrides, disables Wine's crash dialog, and maps the
    Command keys to Control.
 
+Registry work is applied as a single generated `.reg` script run through one `regedit.exe`, not as
+one Windows process per value. The script is written into the prefix's Windows temp directory
+because `regedit.exe` accepts only Windows paths, and is removed once it has been applied.
+
 Each successful step is written atomically. An interruption resumes at the first incomplete step.
 A different runtime archive checksum or `prefixRevision` starts a complete plan for that runtime;
 missing or stale DXMT files invalidate `install-dxmt` and every later step. Legacy single-file
@@ -129,21 +133,22 @@ revision. Increment it only when unchanged runtime bytes must replay the entire 
 the launcher's prefix contract changed.
 
 Display settings are reconciled separately. Retina mode, `LogPixels`, and precise scrolling are
-written only when their current registry values differ from the selected launch configuration.
+written only when their current registry values differ from the selected launch configuration, and
+are applied through the same single-script path.
 
 ## Persistent and recreatable state
 
-| State                         | Location                                                               | Lifetime                                          |
-| ----------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------- |
-| Wine registry                 | `<prefix>/*.reg`                                                       | Persistent; removed only with the prefix          |
-| Browser profiles and sessions | `<prefix>/drive_c/users/<profile>`                                     | Persistent; deleting the prefix signs users out   |
-| DXMT libraries                | `<prefix>/drive_c/windows/{system32,syswow64}`                         | Reconciled from the bundled runtime               |
-| DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                            | Recreatable through targeted cache cleanup        |
-| Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`                 | Recreatable through targeted cache cleanup        |
-| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                          | Reset by **Force Migration**; recreated on launch |
+| State                         | Location                                                                | Lifetime                                          |
+| ----------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
+| Wine registry                 | `<prefix>/*.reg`                                                        | Persistent; removed only with the prefix          |
+| Browser profiles and sessions | `<prefix>/drive_c/users/<profile>`                                      | Persistent; deleting the prefix signs users out   |
+| DXMT libraries                | `<prefix>/drive_c/windows/{system32,syswow64}`                          | Reconciled from the bundled runtime               |
+| DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                             | Recreatable through targeted cache cleanup        |
+| Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`                  | Recreatable through targeted cache cleanup        |
+| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                           | Reset by **Force Migration**; recreated on launch |
 | Regional game files           | Outside the prefix under the publisher folder or a selected custom path | Owned by installation, not prefix maintenance     |
-| Runtime binaries              | Outside the prefix in the app bundle                                   | Replaced only with the launcher application       |
-| Runtime and game logs         | Outside the prefix under `~/Library/Logs/com.lumisxh.arknights-client` | Shared diagnostic destination mapped as `L:`      |
+| Runtime binaries              | Outside the prefix in the app bundle                                    | Replaced only with the launcher application       |
+| Runtime and game logs         | Outside the prefix under `~/Library/Logs/com.lumisxh.arknights-client`  | Shared diagnostic destination mapped as `L:`      |
 
 Cache discovery accepts only real directories contained by the resolved prefix and does not follow
 symbolic links. Prefix maintenance must preserve the same containment rule.

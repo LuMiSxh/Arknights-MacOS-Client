@@ -16,11 +16,11 @@ Keep those channels separate when adding a new message or update surface.
 
 Four read-only channels feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Announcements and Yostar notices can enqueue a popup; launcher updates use status state and the themed Sparkle UI.
 
-| Channel                  | Owner                         | Payload                                                   | User-visible result                                                |
-| ------------------------ | ----------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
-| Yostar game/config API (Global, Japan, Korea) | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, region notice, or an actionable launcher error |
-| Hypergryph metadata/payload API (China clients) | `LauncherAPI`              | Region configuration, branding, CDN and manifest location | Readiness, artwork, or an actionable launcher error                |
-| Repository announcements                       | `LauncherAnnouncementService` | Bounded JSON feed from `main`                             | Once-only Markdown popup with an optional HTTPS action             |
+| Channel                                         | Owner                         | Payload                                                   | User-visible result                                                |
+| ----------------------------------------------- | ----------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
+| Yostar game/config API (Global, Japan, Korea)   | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, region notice, or an actionable launcher error |
+| Hypergryph metadata/payload API (China clients) | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, or an actionable launcher error                |
+| Repository announcements                        | `LauncherAnnouncementService` | Bounded JSON feed from `main`                             | Once-only Markdown popup with an optional HTTPS action             |
 | Sparkle appcast                                 | `LauncherUpdaterController`   | Signed launcher update metadata and archive               | Update status, then Sparkle's themed update UI on request          |
 
 Yostar's `noticeContent` travels inside the branding response and is not an additional independent
