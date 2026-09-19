@@ -68,9 +68,6 @@ final class LauncherPreferencesController {
 			onChinaClientsChanged?(chinaClientsEnabled)
 		}
 	}
-	var runtimePerformanceEnabled: Bool {
-		didSet { store.setRuntimePerformanceEnabled(runtimePerformanceEnabled) }
-	}
 	var maximumFrameLatency: Int {
 		didSet { store.setMaximumFrameLatency(maximumFrameLatency) }
 	}
@@ -107,7 +104,6 @@ final class LauncherPreferencesController {
 		usesDynamicTheme = store.usesDynamicTheme()
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
 		chinaClientsEnabled = store.chinaClientsEnabled()
-		runtimePerformanceEnabled = store.runtimePerformanceEnabled()
 		maximumFrameLatency = store.maximumFrameLatency()
 		appLanguage = store.appLanguage()
 		L10n.useAppLanguage(appLanguage)
@@ -142,7 +138,6 @@ final class LauncherPreferencesController {
 		canaryFeaturesEnabled = false
 		chinaClientsEnabled = false
 		store.clearACEWarningAcknowledgements()
-		runtimePerformanceEnabled = false
 		maximumFrameLatency = 3
 		appLanguage = .system
 		return true

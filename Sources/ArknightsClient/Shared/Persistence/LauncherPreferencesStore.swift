@@ -24,7 +24,6 @@ struct LauncherPreferencesStore {
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
 		static let chinaClientsEnabled = "chinaClientsEnabled"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
-		static let runtimePerformanceEnabled = "runtimePerformanceEnabled"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
@@ -216,14 +215,6 @@ struct LauncherPreferencesStore {
 
 	func clearACEWarningAcknowledgements() {
 		defaults.removeObject(forKey: Key.acknowledgedACEWarningRegions)
-	}
-
-	func runtimePerformanceEnabled() -> Bool {
-		bool(for: Key.runtimePerformanceEnabled, defaultValue: false)
-	}
-
-	func setRuntimePerformanceEnabled(_ value: Bool) {
-		defaults.set(value, forKey: Key.runtimePerformanceEnabled)
 	}
 
 	func maximumFrameLatency() -> Int {

@@ -55,8 +55,6 @@ enum OnboardingStrings {
 	static let highResolutionTitle = LocalizedStringResource.onboardingGameHighResolutionTitle
 	static let highResolutionDetail = LocalizedStringResource.onboardingGameHighResolutionDetail
 	static let runtimeOptimizations = LocalizedStringResource.onboardingGameRuntimeOptimizations
-	static let runtimeOptimizationsDetail = LocalizedStringResource
-		.onboardingGameRuntimeOptimizationsDetail
 	static let maximumFrameLatency = LocalizedStringResource.onboardingGameMaximumFrameLatency
 	static let maximumFrameLatencyDetail = LocalizedStringResource
 		.onboardingGameMaximumFrameLatencyDetail

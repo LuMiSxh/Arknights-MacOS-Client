@@ -2216,7 +2216,7 @@
       }
     },
     "onboarding.game.runtimeOptimizations": {
-      "comment": "Experimental Wine and DXMT runtime performance toggle",
+      "comment": "Canary DXMT runtime controls section title",
       "extractionState": "manual",
       "localizations": {
         "de": {
@@ -2229,24 +2229,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Runtime Optimizations"
-          }
-        }
-      }
-    },
-    "onboarding.game.runtimeOptimizations.detail": {
-      "comment": "Experimental Wine and DXMT runtime performance changes applied at the next game launch",
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wendet beim nächsten Spielstart experimentelle Wine/DXMT-Leistungsänderungen an."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Applies experimental Wine/DXMT performance changes at the next game launch."
           }
         }
       }

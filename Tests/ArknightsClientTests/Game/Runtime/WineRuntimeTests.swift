@@ -122,22 +122,12 @@ func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
 	#expect(environment["WINEESYNC"] == "1")
 }
 
-@Test(arguments: [
-	(false, false, "0"),
-	(false, true, "0"),
-	(true, false, "0"),
-	(true, true, "1"),
-])
+@Test(arguments: [false, true])
 @MainActor
-func runtimePerformanceRequiresBothCanaryGates(
-	canaryFeaturesEnabled: Bool,
-	runtimePerformanceEnabled: Bool,
-	expectedPerformance: String
-) {
+func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled: Bool) {
 	let environment = GameSessionController.runtimeEnvironmentOverrides(
 		for: .chinaBilibili,
 		canaryFeaturesEnabled: canaryFeaturesEnabled,
-		runtimePerformanceEnabled: runtimePerformanceEnabled,
 		maximumFrameLatency: 2
 	)
 
@@ -150,7 +140,7 @@ func runtimePerformanceRequiresBothCanaryGates(
 		environment["ARKNIGHTS_RUNTIME_CN_COMPAT"]
 			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CN_COMPAT"]
 	)
-	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == expectedPerformance)
+	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == nil)
 	#expect(
 		environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"]
 			== (canaryFeaturesEnabled ? "2" : nil)
@@ -164,7 +154,6 @@ func runtimeCompatibilityFlagsFollowClientProfiles() {
 		let environment = GameSessionController.runtimeEnvironmentOverrides(
 			for: region,
 			canaryFeaturesEnabled: false,
-			runtimePerformanceEnabled: false,
 			maximumFrameLatency: 2
 		)
 

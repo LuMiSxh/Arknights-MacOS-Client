@@ -69,16 +69,6 @@ struct OnboardingGameSettingsView: View {
 				OnboardingCanaryPanel(
 					title: L10n.string(OnboardingStrings.runtimeOptimizations),
 				) {
-					OnboardingToggleRow(
-						title: L10n.string(OnboardingStrings.runtimeOptimizations),
-						detail: L10n.string(OnboardingStrings.runtimeOptimizationsDetail),
-						isOn: $preferences.runtimePerformanceEnabled,
-						accentColor: LauncherVisuals.danger
-					)
-					.disabled(lifecycle.activity.isGameActive)
-
-					SettingsHairline()
-
 					HStack(alignment: .top, spacing: 18) {
 						VStack(alignment: .leading, spacing: 3) {
 							Text(L10n.string(OnboardingStrings.maximumFrameLatency))
