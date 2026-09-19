@@ -96,6 +96,8 @@ extension GameSessionController {
 			.pebble
 		case LauncherError.cannotCreateFile:
 			.basalt
+		case is BoundedFileReadError:
+			.sepia
 		case is CocoaError, is POSIXError:
 			.sepia
 		default:

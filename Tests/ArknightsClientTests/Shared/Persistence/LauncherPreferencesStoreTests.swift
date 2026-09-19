@@ -28,7 +28,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(!store.taiwanClientEnabled())
 		#expect(store.maximumFrameLatency() == 3)
 		#expect(store.selectedRegion() == .global)
-		#expect(store.appLanguage() == .system)
 		#expect(!store.forceDisableRetina())
 
 		store.setAutomaticLauncherUpdates(false)
@@ -46,7 +45,6 @@ struct LauncherPreferencesStoreTests {
 		store.setTaiwanClientEnabled(true)
 		store.setMaximumFrameLatency(1)
 		store.setSelectedRegion(.korea)
-		store.setAppLanguage(.german)
 
 		#expect(!store.automaticLauncherUpdates())
 		#expect(!store.automaticGameUpdates())
@@ -63,7 +61,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.taiwanClientEnabled())
 		#expect(store.maximumFrameLatency() == 1)
 		#expect(store.selectedRegion() == .korea)
-		#expect(store.appLanguage() == .german)
 	}
 
 	@Test

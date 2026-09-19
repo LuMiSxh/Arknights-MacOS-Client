@@ -6,11 +6,11 @@ extension InstallationSettingsPage {
 	@ViewBuilder var canaryRuntimeSettings: some View {
 		SettingsHairline()
 		SettingsActionRow(
-			title: L10n.string(SettingsStrings.chinaClients),
-			detail: L10n.string(SettingsStrings.chinaClientsDetail)
+			title: SettingsStrings.chinaClients,
+			detail: SettingsStrings.chinaClientsDetail
 		) {
 			SettingsToggle(
-				L10n.string(SettingsStrings.chinaClients),
+				SettingsStrings.chinaClients,
 				isOn: $settings.chinaClientsEnabled,
 				accentColor: LauncherVisuals.danger
 			)
@@ -18,11 +18,11 @@ extension InstallationSettingsPage {
 		.disabled(lifecycle.activity != .idle)
 		SettingsHairline()
 		SettingsActionRow(
-			title: L10n.string(SettingsStrings.taiwanClient),
-			detail: L10n.string(SettingsStrings.taiwanClientDetail)
+			title: SettingsStrings.taiwanClient,
+			detail: SettingsStrings.taiwanClientDetail
 		) {
 			SettingsToggle(
-				L10n.string(SettingsStrings.taiwanClient),
+				SettingsStrings.taiwanClient,
 				isOn: $settings.taiwanClientEnabled,
 				accentColor: LauncherVisuals.danger
 			)
@@ -30,8 +30,8 @@ extension InstallationSettingsPage {
 		.disabled(lifecycle.activity != .idle)
 		SettingsHairline()
 		SettingsActionRow(
-			title: L10n.string(SettingsStrings.frameLatency),
-			detail: L10n.string(SettingsStrings.frameLatencyDetail)
+			title: SettingsStrings.frameLatency,
+			detail: SettingsStrings.frameLatencyDetail
 		) {
 			HStack(spacing: 10) {
 				SettingsSlider(
@@ -41,7 +41,7 @@ extension InstallationSettingsPage {
 					accentColor: LauncherVisuals.danger,
 					width: 120
 				)
-				.accessibilityLabel(L10n.string(SettingsStrings.frameLatency))
+				.accessibilityLabel(SettingsStrings.frameLatency)
 				.accessibilityValue(settings.maximumFrameLatency.formatted())
 				Text(settings.maximumFrameLatency.formatted())
 					.monospacedDigit()

@@ -8,7 +8,7 @@ enum DownloadProgressFormatting {
 			style: .file,
 			allowedUnits: .all,
 			includesActualByteCount: false
-		).locale(L10n.activeLocale ?? .current)
+		).locale(Locale(identifier: "en_US_POSIX"))
 	}
 
 	static func byteCount(_ bytes: Int64) -> String {

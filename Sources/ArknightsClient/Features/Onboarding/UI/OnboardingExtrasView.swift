@@ -8,56 +8,56 @@ struct OnboardingExtrasView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: L10n.string(OnboardingStrings.extrasTitle),
-			subtitle: L10n.string(OnboardingStrings.extrasSubtitle),
+			title: OnboardingStrings.extrasTitle,
+			subtitle: OnboardingStrings.extrasSubtitle,
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.updatesTitle),
+				title: OnboardingStrings.updatesTitle,
 				systemImage: "arrow.trianglehead.2.clockwise"
 			) {
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.launcherUpdateTitle),
-					detail: L10n.string(OnboardingStrings.launcherUpdateDetail),
+					title: OnboardingStrings.launcherUpdateTitle,
+					detail: OnboardingStrings.launcherUpdateDetail,
 					isOn: $preferences.automaticallyChecksLauncherUpdates,
 					accentColor: accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.gameUpdateTitle),
-					detail: L10n.string(OnboardingStrings.gameUpdateDetail),
+					title: OnboardingStrings.gameUpdateTitle,
+					detail: OnboardingStrings.gameUpdateDetail,
 					isOn: $preferences.automaticallyChecksGameUpdates,
 					accentColor: accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.announcementsTitle),
-					detail: L10n.string(OnboardingStrings.announcementsDetail),
+					title: OnboardingStrings.announcementsTitle,
+					detail: OnboardingStrings.announcementsDetail,
 					isOn: $preferences.announcementsEnabled,
 					accentColor: accentColor
 				)
 			}
 
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.musicTitle), systemImage: "music.note"
+				title: OnboardingStrings.musicTitle, systemImage: "music.note"
 			) {
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.backgroundMusicTitle),
-					detail: L10n.string(OnboardingStrings.backgroundMusicDetail),
+					title: OnboardingStrings.backgroundMusicTitle,
+					detail: OnboardingStrings.backgroundMusicDetail,
 					isOn: $preferences.playsLauncherMusic,
 					accentColor: accentColor
 				)
 
 				if preferences.playsLauncherMusic {
 					SettingsHairline()
-					LabeledContent(L10n.string(OnboardingStrings.volume)) {
+					LabeledContent(OnboardingStrings.volume) {
 						HStack(spacing: 10) {
 							Image(systemName: "speaker.fill")
 								.foregroundStyle(.secondary)
 								.accessibilityHidden(true)
 							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
 								.tint(accentColor)
-								.accessibilityLabel(L10n.string(OnboardingStrings.volume))
+								.accessibilityLabel(OnboardingStrings.volume)
 							Text(
 								preferences.launcherMusicVolume,
 								format: .percent.precision(.fractionLength(0))
@@ -70,8 +70,8 @@ struct OnboardingExtrasView: View {
 					}
 					SettingsHairline()
 					OnboardingToggleRow(
-						title: L10n.string(OnboardingStrings.nowPlayingTitle),
-						detail: L10n.string(OnboardingStrings.nowPlayingDetail),
+						title: OnboardingStrings.nowPlayingTitle,
+						detail: OnboardingStrings.nowPlayingDetail,
 						isOn: $preferences.showsPlayingMusic,
 						accentColor: accentColor
 					)

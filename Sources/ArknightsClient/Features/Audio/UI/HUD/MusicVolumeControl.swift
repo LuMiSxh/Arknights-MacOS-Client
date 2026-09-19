@@ -33,7 +33,7 @@ struct MusicVolumeControl: View {
 			.keyboardFocusIndicator(isFocused: focusedElement == .speaker, in: Circle())
 			.disabled(isDisabled)
 			.accessibilityValue(
-				isMuted ? L10n.string(AudioStrings.muted) : volumeAccessibilityValue
+				isMuted ? AudioStrings.muted : volumeAccessibilityValue
 			)
 			.help(muteButtonTitle)
 
@@ -47,7 +47,7 @@ struct MusicVolumeControl: View {
 						isFocused: focusedElement == .slider,
 						in: Capsule()
 					)
-					.accessibilityLabel(L10n.string(AudioStrings.volume))
+					.accessibilityLabel(AudioStrings.volume)
 					.accessibilityValue(volumeAccessibilityValue)
 					.disabled(isDisabled)
 					.transition(.opacity.combined(with: .move(edge: .leading)))
@@ -81,7 +81,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var muteButtonTitle: String {
-		L10n.string(isMuted ? AudioStrings.unmute : AudioStrings.mute)
+		isMuted ? AudioStrings.unmute : AudioStrings.mute
 	}
 
 	private var speakerSymbol: String {
@@ -95,7 +95,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var volumeAccessibilityValue: String {
-		L10n.string(AudioStrings.volumePercent(Int(volume * 100)))
+		AudioStrings.volumePercent(Int(volume * 100))
 	}
 
 	private enum FocusedElement: Hashable {

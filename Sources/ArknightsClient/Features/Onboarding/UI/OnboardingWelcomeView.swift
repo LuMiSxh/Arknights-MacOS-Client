@@ -3,7 +3,6 @@
 import SwiftUI
 
 struct OnboardingWelcomeView: View {
-	@Bindable var preferences: LauncherPreferencesController
 	let accentColor: Color
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
@@ -14,56 +13,38 @@ struct OnboardingWelcomeView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: L10n.string(OnboardingStrings.welcomeTitle),
-			subtitle: L10n.string(OnboardingStrings.welcomeSubtitle),
+			title: OnboardingStrings.welcomeTitle,
+			subtitle: OnboardingStrings.welcomeSubtitle,
 			accentColor: accentColor
 		) {
-			SettingsPanel(
-				title: L10n.string(OnboardingStrings.languagePanel),
-				systemImage: "globe"
-			) {
-				SettingsActionRow(
-					title: L10n.string(OnboardingStrings.language),
-					detail: L10n.string(OnboardingStrings.languageDetail)
-				) {
-					GlassMenuPicker(
-						selection: $preferences.appLanguage,
-						options: AppLanguage.allCases.map {
-							($0, L10n.string(OnboardingStrings.appLanguage($0)))
-						},
-						accentColor: accentColor
-					)
-				}
-			}
-
-			SettingsPanel(title: L10n.string(statusTitle), systemImage: statusImage) {
+			SettingsPanel(title: statusTitle, systemImage: statusImage) {
 				switch updateState {
 				case .checking:
 					HStack(spacing: 12) {
 						ProgressView()
-						Text(L10n.string(OnboardingStrings.checking))
+						Text(OnboardingStrings.checking)
 							.foregroundStyle(.secondary)
 					}
 				case .current:
 					Label(
-						L10n.string(OnboardingStrings.launcherCurrent),
+						OnboardingStrings.launcherCurrent,
 						systemImage: "checkmark.circle.fill"
 					)
 					.foregroundStyle(accentColor)
 				case .updateRequired(let version):
 					VStack(alignment: .leading, spacing: 8) {
-						Text(L10n.string(OnboardingStrings.versionAvailable(version)))
+						Text(OnboardingStrings.versionAvailable(version))
 							.bold()
-						Text(L10n.string(OnboardingStrings.updateDetail))
+						Text(OnboardingStrings.updateDetail)
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
 					}
 				case .checkFailed:
 					VStack(alignment: .leading, spacing: 10) {
-						Text(L10n.string(OnboardingStrings.updateCheckFailedDetail))
+						Text(OnboardingStrings.updateCheckFailedDetail)
 							.foregroundStyle(.secondary)
 						CapsuleActionButton(
-							title: L10n.string(OnboardingStrings.tryAgain),
+							title: OnboardingStrings.tryAgain,
 							systemImage: "arrow.clockwise",
 							tone: .accent(accentColor), action: retry
 						)
@@ -73,22 +54,22 @@ struct OnboardingWelcomeView: View {
 
 			if updateState.allowsSetup {
 				SettingsPanel(
-					title: L10n.string(OnboardingStrings.compatibilityPanel),
+					title: OnboardingStrings.compatibilityPanel,
 					systemImage: translationImage
 				) {
 					switch intelTranslationState {
 					case .waitingForLauncherCheck:
-						Text(L10n.string(OnboardingStrings.compatibilityWaiting))
+						Text(OnboardingStrings.compatibilityWaiting)
 							.foregroundStyle(.secondary)
 					case .checking:
 						HStack(spacing: 12) {
 							ProgressView()
-							Text(L10n.string(OnboardingStrings.compatibilityChecking))
+							Text(OnboardingStrings.compatibilityChecking)
 								.foregroundStyle(.secondary)
 						}
 					case .available:
 						Label(
-							L10n.string(OnboardingStrings.compatibilityAvailable),
+							OnboardingStrings.compatibilityAvailable,
 							systemImage: "checkmark.circle.fill"
 						)
 						.foregroundStyle(accentColor)
@@ -101,14 +82,14 @@ struct OnboardingWelcomeView: View {
 						)
 					case .gameTestModeEnabled:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(L10n.string(OnboardingStrings.compatibilityGameTestMode))
+							Text(OnboardingStrings.compatibilityGameTestMode)
 								.foregroundStyle(.secondary)
 								.fixedSize(horizontal: false, vertical: true)
 							Text("sudo game-test-tool disable")
 								.font(.callout.monospaced())
 								.textSelection(.enabled)
 							CapsuleActionButton(
-								title: L10n.string(OnboardingStrings.checkAgain),
+								title: OnboardingStrings.checkAgain,
 								systemImage: "arrow.clockwise",
 								tone: .accent(accentColor),
 								action: retryIntelTranslation
@@ -116,18 +97,18 @@ struct OnboardingWelcomeView: View {
 						}
 					case .unavailable:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(L10n.string(OnboardingStrings.compatibilityUnavailable))
+							Text(OnboardingStrings.compatibilityUnavailable)
 								.foregroundStyle(.secondary)
 								.fixedSize(horizontal: false, vertical: true)
 							CapsuleActionButton(
-								title: L10n.string(OnboardingStrings.checkAgain),
+								title: OnboardingStrings.checkAgain,
 								systemImage: "arrow.clockwise",
 								tone: .accent(accentColor),
 								action: retryIntelTranslation
 							)
 						}
 					case .unsupportedOS:
-						Text(L10n.string(OnboardingStrings.compatibilityUnsupported))
+						Text(OnboardingStrings.compatibilityUnsupported)
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
 					}
@@ -136,7 +117,7 @@ struct OnboardingWelcomeView: View {
 		}
 	}
 
-	private var statusTitle: LocalizedStringResource {
+	private var statusTitle: String {
 		OnboardingStrings.statusTitle(updateState)
 	}
 

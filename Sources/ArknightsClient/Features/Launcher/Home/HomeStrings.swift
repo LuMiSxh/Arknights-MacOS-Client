@@ -1,84 +1,83 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
-
 enum HomeStrings {
-	static let settings = LocalizedStringResource.homeSettings
-	static let settingsHelp = LocalizedStringResource.homeSettingsHelp
-	static let launcherUpdate = LocalizedStringResource.homeLauncherUpdate
-	static let launcherUpdateHelp = LocalizedStringResource.homeLauncherUpdateHelp
-	static let reportProblem = LocalizedStringResource.homeReportProblem
-	static let recoveryActions = LocalizedStringResource.homeRecoveryActions
-	static let recoveryDetails = LocalizedStringResource.homeRecoveryDetails
-	static let retry = LocalizedStringResource.homeRecoveryRetry
-	static let openTroubleshooting = LocalizedStringResource.homeRecoveryOpenTroubleshooting
-	static let repair = LocalizedStringResource.homeRecoveryRepair
-	static let repairConfirmationTitle = LocalizedStringResource.homeRecoveryRepairTitle
-	static let repairConfirmationDetail = LocalizedStringResource.homeRecoveryRepairDetail
-	static let repairConfirmationAction = LocalizedStringResource.homeRecoveryRepairConfirm
-	static let checkAgain = LocalizedStringResource.homeCheckAgain
-	static let needsAttention = LocalizedStringResource.homeStatusNeedsAttention
-	static let actionStop = LocalizedStringResource.homeActionStop
-	static let actionStopHelp = LocalizedStringResource.homeActionStopHelp
-	static let actionPause = LocalizedStringResource.homeActionPause
-	static let actionPauseHelp = LocalizedStringResource.homeActionPauseHelp
-	static let actionResume = LocalizedStringResource.homeActionResume
-	static let actionResumeHelp = LocalizedStringResource.homeActionResumeHelp
-	static let actionInstall = LocalizedStringResource.homeActionInstall
-	static let actionUpdate = LocalizedStringResource.homeActionUpdate
-	static let actionUpdateHelp = LocalizedStringResource.homeActionUpdateHelp
-	static let actionPlay = LocalizedStringResource.homeActionPlay
-	static let actionPlayHelp = LocalizedStringResource.homeActionPlayHelp
-	static let switchRegionHelp = LocalizedStringResource.homeRegionSwitchHelp
-	static let resetHideDetails = LocalizedStringResource.homeResetHideDetails
-	static let resetShowDetails = LocalizedStringResource.homeResetShowDetails
-	static let versionHideDetails = LocalizedStringResource.homeVersionHideDetails
-	static let versionShowDetails = LocalizedStringResource.homeVersionShowDetails
-	static let versionCheckNow = LocalizedStringResource.homeVersionCheckNow
-	static let versionChecking = LocalizedStringResource.homeVersionChecking
-	static let versionUpToDate = LocalizedStringResource.homeVersionUpToDate
+	static let settings = "Settings"
+	static let settingsHelp = "Open launcher settings"
+	static let launcherUpdate = "Install Update"
+	static let launcherUpdateHelp = "Install the latest launcher update"
+	static let reportProblem = "Report Problem"
+	static let recoveryActions = "Actions"
+	static let recoveryDetails = "Show Details"
+	static let retry = "Retry"
+	static let openTroubleshooting = "Open on Website"
+	static let repair = "Repair"
+	static let repairConfirmationTitle = "Repair game files?"
+	static let repairConfirmationDetail =
+		"Every game file for this region will be checked. Missing or damaged files will be downloaded again and may use substantial data. Launcher settings and the Wine prefix are preserved."
+	static let repairConfirmationAction = "Start Repair"
+	static let checkAgain = "Check Again"
+	static let needsAttention = "Needs attention"
+	static let actionStop = "Stop"
+	static let actionStopHelp = "Stop Arknights and its Windows runtime"
+	static let actionPause = "Pause"
+	static let actionPauseHelp = "Pause the download; it resumes from partial files later"
+	static let actionResume = "Resume"
+	static let actionResumeHelp = "Continue downloading from the partial files"
+	static let actionInstall = "Install"
+	static let actionUpdate = "Update"
+	static let actionUpdateHelp = "Download the changed game files"
+	static let actionPlay = "Play"
+	static let actionPlayHelp = "Start Arknights"
+	static let switchRegionHelp = "Switch between installed regions"
+	static let resetHideDetails = "Hide reset details"
+	static let resetShowDetails = "Show reset details"
+	static let versionHideDetails = "Hide version details"
+	static let versionShowDetails = "Show version details"
+	static let versionCheckNow = "Check Now"
+	static let versionChecking = "Checking…"
+	static let versionUpToDate = "Up to date"
 
-	static func downloadProgress(downloaded: String, total: String) -> LocalizedStringResource {
-		.homeDownloadProgress(downloaded, total)
+	static func downloadProgress(downloaded: String, total: String) -> String {
+		"\(downloaded) of \(total)"
 	}
 
-	static func downloadSpeed(_ speed: String) -> LocalizedStringResource {
-		.homeDownloadSpeed(speed)
+	static func downloadSpeed(_ speed: String) -> String {
+		"\(speed)"
 	}
 
-	static let downloadWaiting = LocalizedStringResource.homeDownloadWaiting
+	static let downloadWaiting = "Waiting for network…"
 
-	static func downloadPercentage(_ percentage: Int) -> LocalizedStringResource {
-		.homeDownloadPercentage(percentage)
+	static func downloadPercentage(_ percentage: Int) -> String {
+		"\(percentage)%"
 	}
 
-	static func actionInstallHelp(region: String) -> LocalizedStringResource {
-		.homeActionInstallHelp(region)
+	static func actionInstallHelp(region: String) -> String {
+		"Download and verify the official \(region) PC files"
 	}
 
-	static func wordmarkAccessibility(region: String) -> LocalizedStringResource {
-		.homeWordmarkAccessibility(region)
+	static func wordmarkAccessibility(region: String) -> String {
+		"Arknights \(region) macOS client"
 	}
 
-	static func wordmarkFallback(region: GameRegion) -> LocalizedStringResource {
+	static func wordmarkFallback(region: GameRegion) -> String {
 		switch region {
-		case .global: .homeWordmarkFallbackGlobal
-		case .japan: .homeWordmarkFallbackJapan
-		case .korea: .homeWordmarkFallbackKorea
-		case .taiwan: .homeWordmarkFallbackTaiwan
-		case .china: .sharedRegionChina
-		case .chinaBilibili: .sharedRegionChinaBilibili
+		case .global: "ARKNIGHTS · GLOBAL"
+		case .japan: "ARKNIGHTS · JAPAN"
+		case .korea: "ARKNIGHTS · KOREA"
+		case .taiwan: "ARKNIGHTS · TAIWAN"
+		case .china: "China (Canary)"
+		case .chinaBilibili: "China — Bilibili (Canary)"
 		}
 	}
 
-	static func versionAvailable(_ version: String) -> LocalizedStringResource {
-		.homeVersionAvailable(version)
+	static func versionAvailable(_ version: String) -> String {
+		"\(version) available"
 	}
 
 	static func errorCodeAccessibility(
 		code: String,
 		spelling: String
-	) -> LocalizedStringResource {
-		.homeErrorCodeAccessibility(code, spelling)
+	) -> String {
+		"Error code \(code), spelled \(spelling)"
 	}
 }

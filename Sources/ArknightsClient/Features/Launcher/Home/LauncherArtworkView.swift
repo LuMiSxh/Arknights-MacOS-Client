@@ -20,7 +20,7 @@ struct LauncherArtworkView: View {
 						.scaledToFill()
 						.id(artworkIdentity)
 						.transition(artworkTransition)
-						.accessibilityLabel(L10n.string(LauncherStrings.artworkAccessibility))
+						.accessibilityLabel(LauncherStrings.artworkAccessibility)
 				} else {
 					fallbackArtwork
 						.id(artworkIdentity)

@@ -61,13 +61,13 @@ example, `InstallationController` can update lifecycle state, but a view should 
 
 ## Source layout
 
-| Folder           | Responsibility                                                                                  |
-| ---------------- | ----------------------------------------------------------------------------------------------- |
-| `Application`    | App entry point, dependency composition, and macOS lifecycle                                    |
-| `Features`       | Feature-owned UI, state, domain models, services, and external work                             |
-| `Infrastructure` | Feature-independent network and system I/O primitives                                           |
-| `Shared`         | Cross-feature domain/configuration, persistence, diagnostics, support, and shared UI contracts  |
-| `Resources`      | SwiftPM resources copied into the application bundle                                            |
+| Folder           | Responsibility                                                                                 |
+| ---------------- | ---------------------------------------------------------------------------------------------- |
+| `Application`    | App entry point, dependency composition, and macOS lifecycle                                   |
+| `Features`       | Feature-owned UI, state, domain models, services, and external work                            |
+| `Infrastructure` | Feature-independent network and system I/O primitives                                          |
+| `Shared`         | Cross-feature domain/configuration, persistence, diagnostics, support, and shared UI contracts |
+| `Resources`      | SwiftPM resources copied into the application bundle                                           |
 
 `Features` is organized around behavior rather than technical layers:
 
@@ -86,9 +86,9 @@ controller presents an error. That policy remains in the owning feature. Neither
 nor `Shared` imports feature-owned types; features map transport and storage errors at their
 boundary.
 
-User-facing launcher copy lives in Apple String Catalogs with stable, feature-namespaced keys. Generated Foundation symbols make catalog references type-safe, while small feature-local `…Strings` namespaces keep ownership with the UI that uses the copy. English is the source language and deterministic fallback; the launcher follows macOS by default and persists an explicit in-app language override when selected. The catalog workflow is documented in [Localization](../localization.md).
+User-facing launcher copy is kept as English literals in small feature-local `…Strings` namespaces, so ownership stays with the UI that uses the copy and there is no runtime language-selection layer.
 
-Repository scripts derive shipping product metadata from `Resources/Info.plist`, target and resource layout from SwiftPM's evaluated `Package.swift`, and runtime layout from `runtime.json`. `scripts/lib/project_config.py` cross-validates the first two before builds and checks. Scripts must not maintain separate app-name, executable, platform, architecture, language, or package-resource lists.
+Repository scripts derive shipping product metadata from `Resources/Info.plist`, target and resource layout from SwiftPM's evaluated `Package.swift`, and runtime layout from `runtime.json`. `scripts/lib/project_config.py` cross-validates the first two before builds and checks. Scripts must not maintain separate app-name, executable, platform, architecture, or package-resource lists.
 
 Tests follow separate unit, deterministic integration, and live-contract boundaries. Their target ownership, network and filesystem isolation, fixtures, CI cadence, and manual Wine/game matrix are documented in [Testing architecture](../testing.md).
 
@@ -110,7 +110,7 @@ Long-lived state and asynchronous work have one feature owner:
 | `IntelTranslationController`      | Rosetta preflight, installation, recovery state, and launch eligibility                                   |
 | `LauncherRefreshController`       | Concurrent publisher configuration and branding refreshes, stale-result rejection, and region transitions |
 | `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, and preset application                                   |
-| `BackgroundMusicController`        | Playlist parsing, playback, Now Playing metadata, fades, and music-link presentation                       |
+| `BackgroundMusicController`       | Playlist parsing, playback, Now Playing metadata, fades, and music-link presentation                      |
 | `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, and popup ordering                                      |
 | `LauncherPreferencesController`   | Persisted user-facing settings and the region-aware server-reset timer                                    |
 | `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                         |
@@ -124,11 +124,11 @@ composition root; they never depend on `LauncherViewModel` or implicit singleton
 
 The state tree has three deliberately separate concerns:
 
-| State branch              | Answers                                              | Examples                                                      |
-| ------------------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
-| `activity`                | What exclusive work owns the game/runtime right now? | install, migrate, launch, run, stop                           |
+| State branch              | Answers                                              | Examples                                                         |
+| ------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
+| `activity`                | What exclusive work owns the game/runtime right now? | install, migrate, launch, run, stop                              |
 | `refresh` and `readiness` | What metadata and prerequisites are currently known? | Publisher configuration, installed version, Rosetta availability |
-| `presentation`            | What should the user see or act on?                  | status text, failure message, update prompt                   |
+| `presentation`            | What should the user see or act on?                  | status text, failure message, update prompt                      |
 
 Do not use a presentation message as a lifecycle lock, and do not clear an active lifecycle state
 just because a refresh failed. `LauncherLifecycleStore` is the single gate for mutually exclusive
@@ -182,7 +182,7 @@ Before changing a behavior, identify its owner and its external contract:
 | Compatibility wrapper or bridge                   | `Features/Game/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
 | Publisher endpoint or refresh behavior            | `LauncherAPI` and `LauncherRefreshController`      | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting or app-owned path               | `LauncherPreferencesStore` or `AppPaths`           | [Data and persistence](data-and-persistence.md), storage tests                                                                |
-| User-facing copy                                  | owning feature's String Catalog                    | [Localization](../localization.md), English and German layout                                                                 |
+| User-facing copy                                  | owning feature's `…Strings` namespace              | English literals and accessibility review                                                                                     |
 
 Run the focused checks while iterating and [Testing architecture](../testing.md) before a full
 release validation. A runtime layout, prefix migration, or installer safety change is not complete

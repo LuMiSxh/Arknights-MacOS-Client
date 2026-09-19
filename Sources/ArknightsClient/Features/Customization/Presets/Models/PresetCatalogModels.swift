@@ -87,7 +87,7 @@ struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	}
 
 	var displayTitle: String {
-		fallbackOrdinal.map { L10n.string(CustomizationStrings.wallpaperFallbackTitle($0)) }
+		fallbackOrdinal.map { CustomizationStrings.wallpaperFallbackTitle($0) }
 			?? title
 	}
 

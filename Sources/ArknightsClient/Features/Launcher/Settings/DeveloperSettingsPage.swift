@@ -7,17 +7,17 @@ import SwiftUI
 		@Binding var scenario: DeveloperScenario
 		let accentColor: Color
 		let applyCustomPopup: (String, String) -> Void
-		@State private var customPopupTitle = L10n.string(SettingsStrings.developerCustomPopup)
+		@State private var customPopupTitle = SettingsStrings.developerCustomPopup
 		@State private var customPopupMarkdown = ""
 
 		var body: some View {
 			SettingsPage(
-				title: L10n.string(SettingsStrings.developerTitle),
-				subtitle: L10n.string(SettingsStrings.developerSubtitle),
+				title: SettingsStrings.developerTitle,
+				subtitle: SettingsStrings.developerSubtitle,
 				accentColor: accentColor
 			) {
 				SettingsPanel(
-					title: L10n.string(SettingsStrings.developerScenario), systemImage: "switch.2"
+					title: SettingsStrings.developerScenario, systemImage: "switch.2"
 				) {
 					GlassMenuPicker(
 						selection: $scenario,
@@ -31,11 +31,11 @@ import SwiftUI
 
 				if scenario == .customPopup {
 					SettingsPanel(
-						title: L10n.string(SettingsStrings.developerCustomPopup),
+						title: SettingsStrings.developerCustomPopup,
 						systemImage: "text.bubble"
 					) {
 						TextField(
-							L10n.string(SettingsStrings.developerCustomPopupTitle),
+							SettingsStrings.developerCustomPopupTitle,
 							text: $customPopupTitle
 						)
 						.textFieldStyle(.roundedBorder)
@@ -46,7 +46,7 @@ import SwiftUI
 							.frame(height: 140)
 							.background(.black.opacity(0.2), in: .rect(cornerRadius: 8))
 						CapsuleActionButton(
-							title: L10n.string(SettingsStrings.developerShowPopup),
+							title: SettingsStrings.developerShowPopup,
 							tone: .accent(accentColor)
 						) {
 							applyCustomPopup(customPopupTitle, customPopupMarkdown)
@@ -56,10 +56,10 @@ import SwiftUI
 				}
 
 				SettingsPanel(
-					title: L10n.string(SettingsStrings.developerIsolation),
+					title: SettingsStrings.developerIsolation,
 					systemImage: "lock.shield"
 				) {
-					Text(L10n.string(SettingsStrings.developerIsolationDetail))
+					Text(SettingsStrings.developerIsolationDetail)
 						.foregroundStyle(.secondary)
 				}
 			}

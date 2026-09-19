@@ -14,16 +14,16 @@ struct UpdatesSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: L10n.string(SettingsStrings.updatesTitle),
-			subtitle: L10n.string(SettingsStrings.updatesSubtitle),
+			title: SettingsStrings.updatesTitle,
+			subtitle: SettingsStrings.updatesSubtitle,
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: L10n.string(SettingsStrings.automaticChecks),
+				title: SettingsStrings.automaticChecks,
 				systemImage: "arrow.trianglehead.2.clockwise"
 			) {
 				UpdateSettingsRow(
-					title: L10n.string(SettingsStrings.launcher),
+					title: SettingsStrings.launcher,
 					status: launcherStatusText,
 					isEnabled: $settings.automaticallyChecksLauncherUpdates,
 					isChecking: communication.isCheckingLauncherUpdates,
@@ -45,14 +45,14 @@ struct UpdatesSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(SettingsStrings.announcements), systemImage: "megaphone"
+				title: SettingsStrings.announcements, systemImage: "megaphone"
 			) {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.announcements),
-					detail: L10n.string(SettingsStrings.announcementsDetail)
+					title: SettingsStrings.announcements,
+					detail: SettingsStrings.announcementsDetail
 				) {
 					SettingsToggle(
-						L10n.string(SettingsStrings.announcements),
+						SettingsStrings.announcements,
 						isOn: $settings.announcementsEnabled,
 						accentColor: accentColor
 					)
@@ -64,10 +64,10 @@ struct UpdatesSettingsPage: View {
 
 	private var launcherStatusText: String {
 		if communication.isCheckingLauncherUpdates {
-			return L10n.string(SettingsStrings.checking)
+			return SettingsStrings.checking
 		}
 		if communication.launcherUpdateVersion != nil {
-			return L10n.string(SettingsStrings.updateAvailable)
+			return SettingsStrings.updateAvailable
 		}
 		return "v\(appVersion)"
 	}
@@ -78,10 +78,10 @@ struct UpdatesSettingsPage: View {
 
 	private var gameStatusText: String {
 		if lifecycle.refresh.isChecking {
-			return L10n.string(SettingsStrings.checking)
+			return SettingsStrings.checking
 		}
 		if installation.isGameUpdateAvailable {
-			return L10n.string(SettingsStrings.updateAvailable)
+			return SettingsStrings.updateAvailable
 		}
 		return versionText
 	}

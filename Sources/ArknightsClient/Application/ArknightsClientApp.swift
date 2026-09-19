@@ -111,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			let installedRegions = model.installation.installedRegions
 			for region in installedRegions {
 				let item = NSMenuItem(
-					title: L10n.string(ApplicationStrings.play(region.localizedDisplayName)),
+					title: ApplicationStrings.play(region.displayName),
 					action: #selector(playRegion(_:)),
 					keyEquivalent: ""
 				)
@@ -126,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 
 		let settingsItem = NSMenuItem(
-			title: L10n.string(ApplicationStrings.settings),
+			title: ApplicationStrings.settings,
 			action: #selector(showSettings),
 			keyEquivalent: ","
 		)
@@ -215,7 +215,6 @@ struct ArknightsClientApp: App {
 				)
 				.environment(\.launcherWindowSize, geometry.size)
 			}
-			.environment(\.locale, model.settings.appLanguage.locale ?? .autoupdatingCurrent)
 			.frame(minWidth: 880, minHeight: 560)
 			.onAppear {
 				appDelegate.model = model

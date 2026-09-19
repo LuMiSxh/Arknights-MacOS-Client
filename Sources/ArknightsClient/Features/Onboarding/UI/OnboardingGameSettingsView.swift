@@ -9,25 +9,25 @@ struct OnboardingGameSettingsView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: L10n.string(OnboardingStrings.gameTitle),
-			subtitle: L10n.string(OnboardingStrings.gameSubtitle),
+			title: OnboardingStrings.gameTitle,
+			subtitle: OnboardingStrings.gameSubtitle,
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.displaySettingsPanel), systemImage: "switch.2"
+				title: OnboardingStrings.displaySettingsPanel, systemImage: "switch.2"
 			) {
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.useGameDisplaySettings),
+					title: OnboardingStrings.useGameDisplaySettings,
 					detail: preferences.launchOptions.usesGameSettings
-						? L10n.string(OnboardingStrings.gameDisplaySettingsDetail)
-						: L10n.string(OnboardingStrings.launcherDisplaySettingsDetail),
+						? OnboardingStrings.gameDisplaySettingsDetail
+						: OnboardingStrings.launcherDisplaySettingsDetail,
 					isOn: $preferences.launchOptions.usesGameSettings,
 					accentColor: accentColor
 				)
 			}
 
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.windowResolutionPanel),
+				title: OnboardingStrings.windowResolutionPanel,
 				systemImage: "rectangle.on.rectangle"
 			) {
 				AdaptiveSegmentedControl(
@@ -35,12 +35,12 @@ struct OnboardingGameSettingsView: View {
 					options: GameDisplayMode.allCases,
 					accentColor: accentColor
 				) { mode in
-					Text(L10n.string(shortTitle(for: mode)))
+					Text(shortTitle(for: mode))
 				}
 				.disabled(preferences.launchOptions.usesGameSettings)
 
 				SettingsHairline()
-				LabeledContent(L10n.string(OnboardingStrings.resolution)) {
+				LabeledContent(OnboardingStrings.resolution) {
 					GlassMenuPicker(
 						selection: $preferences.launchOptions.resolution,
 						options: GameResolution.allCases.map { ($0, $0.displayName) },
@@ -48,18 +48,18 @@ struct OnboardingGameSettingsView: View {
 						isDisabled: preferences.launchOptions.usesGameSettings
 					)
 				}
-				Text(L10n.string(OnboardingStrings.higherResolutionDetail))
+				Text(OnboardingStrings.higherResolutionDetail)
 					.font(.callout)
 					.foregroundStyle(.secondary)
 			}
 
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.pixelDensityPanel),
+				title: OnboardingStrings.pixelDensityPanel,
 				systemImage: "sparkles.rectangle.stack"
 			) {
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.highResolutionTitle),
-					detail: L10n.string(OnboardingStrings.highResolutionDetail),
+					title: OnboardingStrings.highResolutionTitle,
+					detail: OnboardingStrings.highResolutionDetail,
 					isOn: $preferences.launchOptions.usesHighResolutionMode,
 					accentColor: accentColor
 				)
@@ -67,12 +67,12 @@ struct OnboardingGameSettingsView: View {
 
 			if preferences.canaryFeaturesEnabled {
 				OnboardingCanaryPanel(
-					title: L10n.string(OnboardingStrings.runtimeOptimizations),
+					title: OnboardingStrings.runtimeOptimizations,
 				) {
 					HStack(alignment: .top, spacing: 18) {
 						VStack(alignment: .leading, spacing: 3) {
-							Text(L10n.string(OnboardingStrings.maximumFrameLatency))
-							Text(L10n.string(OnboardingStrings.maximumFrameLatencyDetail))
+							Text(OnboardingStrings.maximumFrameLatency)
+							Text(OnboardingStrings.maximumFrameLatencyDetail)
 								.font(.caption)
 								.foregroundStyle(.secondary)
 								.fixedSize(horizontal: false, vertical: true)
@@ -87,7 +87,7 @@ struct OnboardingGameSettingsView: View {
 								width: 120
 							)
 							.accessibilityLabel(
-								L10n.string(OnboardingStrings.maximumFrameLatency)
+								OnboardingStrings.maximumFrameLatency
 							)
 							.accessibilityValue(preferences.maximumFrameLatency.formatted())
 							Text(preferences.maximumFrameLatency.formatted())
@@ -102,7 +102,7 @@ struct OnboardingGameSettingsView: View {
 		}
 	}
 
-	private func shortTitle(for mode: GameDisplayMode) -> LocalizedStringResource {
+	private func shortTitle(for mode: GameDisplayMode) -> String {
 		OnboardingStrings.displayMode(mode)
 	}
 

@@ -1,93 +1,69 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
-
 enum CustomizationStrings {
-	static let previewStyles = LocalizedStringResource.Customization
-		.customizationGalleryActionPreviewStyles
-	static let applying = LocalizedStringResource.Customization.customizationGalleryApplying
-	static let artworkEmpty = LocalizedStringResource.Customization.customizationGalleryArtworkEmpty
-	static let artworkLoading = LocalizedStringResource.Customization
-		.customizationGalleryArtworkLoading
-	static let artworkSearchPlaceholder = LocalizedStringResource.Customization
-		.customizationGalleryArtworkSearchPlaceholder
-	static let artworkSubtitle = LocalizedStringResource.Customization
-		.customizationGalleryArtworkSubtitle
-	static let artworkTitle = LocalizedStringResource.Customization.customizationGalleryArtworkTitle
-	static let operatorEmpty = LocalizedStringResource.Customization
-		.customizationGalleryOperatorEmpty
-	static let operatorLoading = LocalizedStringResource.Customization
-		.customizationGalleryOperatorLoading
-	static let operatorSearchPlaceholder = LocalizedStringResource.Customization
-		.customizationGalleryOperatorSearchPlaceholder
-	static let operatorSubtitle = LocalizedStringResource.Customization
-		.customizationGalleryOperatorSubtitle
-	static let operatorTitle = LocalizedStringResource.Customization
-		.customizationGalleryOperatorTitle
-	static let searchLabel = LocalizedStringResource.Customization.customizationGallerySearchLabel
-	static let searchClear = LocalizedStringResource.Customization.customizationGallerySearchClear
-	static let searchSuggestionSelect = LocalizedStringResource.Customization
-		.customizationGallerySearchSuggestionSelect
-	static let wallpaperFilterAll = LocalizedStringResource.Customization
-		.customizationGalleryWallpaperFilterAll
-	static let wallpaperFilterLabel = LocalizedStringResource.Customization
-		.customizationGalleryWallpaperFilterLabel
-	static let gameStyleDetail = LocalizedStringResource.Customization
-		.customizationIconPreviewGameDetail
-	static let gameStyleTitle = LocalizedStringResource.Customization
-		.customizationIconPreviewGameTitle
-	static let launcherStyleDetail = LocalizedStringResource.Customization
-		.customizationIconPreviewLauncherDetail
-	static let launcherStyleTitle = LocalizedStringResource.Customization
-		.customizationIconPreviewLauncherTitle
-	static let iconPreviewLoading = LocalizedStringResource.Customization
-		.customizationIconPreviewLoading
-	static let iconPreviewPairAccessibilityLabel = LocalizedStringResource.Customization
-		.customizationIconPreviewPairAccessibilityLabel
-	static let iconPreviewUnavailable = LocalizedStringResource.Customization
-		.customizationIconPreviewPairUnavailable
-	static let iconPreviewSubtitle = LocalizedStringResource.Customization
-		.customizationIconPreviewSubtitle
-	static let iconPreviewTitle = LocalizedStringResource.Customization
-		.customizationIconPreviewTitle
+	static let previewStyles = "Preview Styles"
+	static let applying = "Applying…"
+	static let artworkEmpty = "No matching artwork"
+	static let artworkLoading = "Loading official wallpapers…"
+	static let artworkSearchPlaceholder = "Search artwork…"
+	static let artworkSubtitle = "Choose a background for the launcher."
+	static let artworkTitle = "Artwork Gallery"
+	static let operatorEmpty = "No matching operators"
+	static let operatorLoading = "Loading operators…"
+	static let operatorSearchPlaceholder = "Search operators…"
+	static let operatorSubtitle = "Choose one operator for both Dock icons."
+	static let operatorTitle = "Choose an Operator"
+	static let searchLabel = "Search gallery"
+	static let searchClear = "Clear search"
+	static let searchSuggestionSelect = "Select and use this exact title in the search"
+	static let wallpaperFilterAll = "All Types"
+	static let wallpaperFilterLabel = "Wallpaper type"
+	static let gameStyleDetail = "Original Arknights style"
+	static let gameStyleTitle = "Game"
+	static let launcherStyleDetail = "Launcher style"
+	static let launcherStyleTitle = "Launcher"
+	static let iconPreviewLoading = "Loading preview…"
+	static let iconPreviewPairAccessibilityLabel = "Launcher and game icon previews"
+	static let iconPreviewUnavailable = "Icon previews unavailable"
+	static let iconPreviewSubtitle = "Your operator is applied to both icons."
+	static let iconPreviewTitle = "Generated Icon Styles"
 
-	static func operatorApplyHelp(_ name: String) -> LocalizedStringResource {
-		.Customization.customizationGalleryOperatorApplyHelp(name)
+	static func operatorApplyHelp(_ name: String) -> String {
+		"Use \(name) for both Dock icons"
 	}
 
-	static func wallpaperApplyHelp(_ title: String) -> LocalizedStringResource {
-		.Customization.customizationGalleryWallpaperApplyHelp(title)
+	static func wallpaperApplyHelp(_ title: String) -> String {
+		"Use \(title) as the launcher background"
 	}
 
-	static func searchRemoveTag(_ tag: String) -> LocalizedStringResource {
-		.Customization.customizationGallerySearchRemoveTag(tag)
+	static func searchRemoveTag(_ tag: String) -> String {
+		"Remove \(tag) tag"
 	}
 
-	static func wallpaperFallbackTitle(_ number: Int) -> LocalizedStringResource {
-		.Customization.customizationGalleryWallpaperFallbackTitle(number)
+	static func wallpaperFallbackTitle(_ number: Int) -> String {
+		"Wallpaper \(number)"
 	}
 
-	static func wallpaperCategory(_ category: WallpaperCategory) -> LocalizedStringResource {
+	static func wallpaperCategory(_ category: WallpaperCategory) -> String {
 		switch category {
-		case .story: .Customization.customizationGalleryWallpaperTypeStory
-		case .commemorative: .Customization.customizationGalleryWallpaperTypeCommemorative
-		case .celebration: .Customization.customizationGalleryWallpaperTypeCelebration
-		case .holiday: .Customization.customizationGalleryWallpaperTypeHoliday
+		case .story: "Story"
+		case .commemorative: "Commemorative"
+		case .celebration: "Celebration"
+		case .holiday: "Holiday"
 		}
 	}
 
-	static func wallpaperFilterOption(_ title: String, count: Int) -> LocalizedStringResource {
-		.Customization.customizationGalleryWallpaperFilterOptionWithCount(title, count)
+	static func wallpaperFilterOption(_ title: String, count: Int) -> String {
+		"\(title) (\(count))"
 	}
 
-	static let wallpaperFilterOperators = LocalizedStringResource.Customization
-		.customizationGalleryWallpaperFilterOperators
+	static let wallpaperFilterOperators = "Operators"
 
-	static func wallpaperHoverArtist(_ name: String) -> LocalizedStringResource {
-		.Customization.customizationGalleryWallpaperHoverArtist(name)
+	static func wallpaperHoverArtist(_ name: String) -> String {
+		"Artist: \(name)"
 	}
 
-	static func wallpaperHoverTags(_ tags: String) -> LocalizedStringResource {
-		.Customization.customizationGalleryWallpaperHoverTags(tags)
+	static func wallpaperHoverTags(_ tags: String) -> String {
+		"Tags: \(tags)"
 	}
 }

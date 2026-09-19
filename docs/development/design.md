@@ -47,13 +47,13 @@ Report failures in the same status area as the operation that failed. Keep the m
 - Keep all settings, gallery items, document links, and modal Done actions keyboard reachable. A focused primary action must remain the focused control when its title changes between Install, Pause, Resume, Play, and Stop.
 - Use semantic controls instead of gesture-only or hover-only actions. Never make Return or Space trigger Play or Install from an unrelated focused control.
 - Respect Reduce Motion, Reduce Transparency, Differentiate Without Color, VoiceOver, Full Keyboard Access, and the largest practical text size. A state change must remain understandable without animation, color, or precise pointer input.
-- Keep German and other future translations free to wrap. Avoid fixed-width labels and truncation that hides the operation or error name. The [localization workflow](localization.md) contains the source and review rules.
+- Keep English labels free to wrap. Avoid fixed-width labels and truncation that hides the operation or error name.
 
 ## Feedback and review
 
 Use native controls and the shared action families in `Shared/UI/Components` before adding a feature-local variant. A custom control is justified only when the interaction contract differs, not merely because its padding or tint is different. Keep primary emphasis on the current game action; secondary links, settings, diagnostics, and legal text should remain quiet.
 
-For a UI change, exercise the affected state through the debug scenario where possible, then check both an empty and an installed region, an active operation, and a failure/recovery path. Repeat with German, keyboard navigation, VoiceOver, Reduce Motion, and both normal and large text before release. The detailed release matrix lives in [Testing architecture](testing.md#manual-compatibility-matrix).
+For a UI change, exercise the affected state through the debug scenario where possible, then check both an empty and an installed region, an active operation, and a failure/recovery path. Repeat with keyboard navigation, VoiceOver, Reduce Motion, and both normal and large text before release. The detailed release matrix lives in [Testing architecture](testing.md#manual-compatibility-matrix).
 
 ## Settings and documents
 

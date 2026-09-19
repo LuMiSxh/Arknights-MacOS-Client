@@ -1,29 +1,27 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
-
 enum AudioStrings {
-	static let hideControls = LocalizedStringResource.audioControlsHide
-	static let showControls = LocalizedStringResource.audioControlsShow
-	static let previousTrack = LocalizedStringResource.audioControlsPrevious
-	static let pause = LocalizedStringResource.audioControlsPause
-	static let play = LocalizedStringResource.audioControlsPlay
-	static let nextTrack = LocalizedStringResource.audioControlsNext
-	static let openYouTube = LocalizedStringResource.audioControlsOpenYouTube
-	static let pausedForGame = LocalizedStringResource.audioStatusPausedForGame
-	static let changingTrack = LocalizedStringResource.audioStatusChangingTrack
-	static let playing = LocalizedStringResource.audioStatusPlaying
-	static let paused = LocalizedStringResource.audioStatusPaused
-	static let muted = LocalizedStringResource.audioVolumeMuted
-	static let volume = LocalizedStringResource.audioVolumeLabel
-	static let unmute = LocalizedStringResource.audioVolumeUnmute
-	static let mute = LocalizedStringResource.audioVolumeMute
+	static let hideControls = "Hide music controls"
+	static let showControls = "Show music controls"
+	static let previousTrack = "Previous Track"
+	static let pause = "Pause"
+	static let play = "Play"
+	static let nextTrack = "Next Track"
+	static let openYouTube = "Open on YouTube"
+	static let pausedForGame = "Paused while the game is running"
+	static let changingTrack = "Changing track…"
+	static let playing = "Playing"
+	static let paused = "Paused"
+	static let muted = "Muted"
+	static let volume = "Music volume"
+	static let unmute = "Unmute music"
+	static let mute = "Mute music"
 
-	static func volumePercent(_ percent: Int) -> LocalizedStringResource {
-		.audioVolumePercent(percent)
+	static func volumePercent(_ percent: Int) -> String {
+		"\(percent) percent"
 	}
 
-	static func playlistTrack(_ number: Int) -> LocalizedStringResource {
-		.audioStatusPlaylistTrack(number)
+	static func playlistTrack(_ number: Int) -> String {
+		"Playlist track \(number)"
 	}
 }

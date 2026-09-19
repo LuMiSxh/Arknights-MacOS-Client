@@ -145,10 +145,6 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	/// Whether Play must show the ACE compatibility warning before launching.
 	var requiresACEWarning: Bool { clientProfile.requiresACEWarning }
 
-	var localizedDisplayName: String {
-		L10n.string(SharedStrings.region(self))
-	}
-
 	/// Matches the publisher's client identifier where the launcher contract defines one.
 	var gameTag: String {
 		switch self {

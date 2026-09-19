@@ -5,21 +5,7 @@ import Testing
 
 @testable import ArknightsClient
 
-@Suite(.serialized)
 struct TransferRateEstimatorTests {
-	@Test
-	func formatsRateAndByteCountUsingTheActiveAppLanguage() {
-		defer { L10n.useAppLanguage(.system) }
-
-		L10n.useAppLanguage(.english)
-		#expect(DownloadProgressFormatting.byteRate(1_234_567) == "1.2 MB/s")
-		#expect(DownloadProgressFormatting.byteCount(1_234_567) == "1.2 MB")
-
-		L10n.useAppLanguage(.german)
-		#expect(DownloadProgressFormatting.byteRate(1_234_567) == "1,2 MB/s")
-		#expect(DownloadProgressFormatting.byteCount(1_234_567) == "1,2 MB")
-	}
-
 	@Test
 	func smoothsConsecutiveRateSamples() {
 		let clock = TestDownloadClock()

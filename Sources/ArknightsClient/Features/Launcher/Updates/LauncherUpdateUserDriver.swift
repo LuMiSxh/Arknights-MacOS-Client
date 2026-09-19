@@ -124,12 +124,12 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		releaseNotesFormat = downloadData.mimeType == "text/plain" ? "plain-text" : "html"
 	}
 	func showUpdateReleaseNotesFailedToDownloadWithError(_ error: Error) {
-		message = L10n.string(LauncherStrings.updateReleaseNotesUnavailable)
+		message = LauncherStrings.updateReleaseNotesUnavailable
 	}
 	func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
 		phase = .noUpdate
-		message = L10n.string(LauncherStrings.updateErrorDetail)
+		message = LauncherStrings.updateErrorDetail
 		noUpdateAcknowledgement = acknowledgement
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
@@ -275,7 +275,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showError(_ error: Error) {
 		cancelAutomaticTerminationRetry()
 		phase = .failed
-		message = L10n.string(LauncherStrings.updateErrorDetail)
+		message = LauncherStrings.updateErrorDetail
 		if errorAcknowledgement == nil {
 			errorAcknowledgement = {}
 		}
@@ -302,7 +302,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	}
 	func recordNoUpdate(_ error: Error) {
 		if phase == .hidden || phase == .checking { phase = .noUpdate }
-		message = L10n.string(LauncherStrings.updateErrorDetail)
+		message = LauncherStrings.updateErrorDetail
 	}
 	func recordAvailabilityError(_ error: Error) {
 		if phase == .hidden || phase == .checking { showError(error) }

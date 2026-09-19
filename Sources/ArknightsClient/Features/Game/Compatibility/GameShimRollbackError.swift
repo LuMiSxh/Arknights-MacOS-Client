@@ -7,7 +7,7 @@ struct GameShimRollbackError: LocalizedError, LauncherDiagnosticError, Sendable 
 	let rollbackDescriptions: [String]
 
 	var errorDescription: String? {
-		L10n.string(.Launcher.launcherErrorGameCompatibility)
+		"Game-file compatibility setup could not be completed. Repair the game files and try again."
 	}
 
 	var diagnosticDescription: String {

@@ -143,7 +143,7 @@ struct LauncherSettingsView: View {
 				FloatingActionBar(tint: customization.hudTintColor) {
 					if selectedSection == .storage {
 						CapsuleActionButton(
-							title: L10n.string(StorageStrings.refresh),
+							title: StorageStrings.refresh,
 							systemImage: "arrow.clockwise",
 							tone: .neutral,
 							action: storageOverview.refreshNow
@@ -164,9 +164,6 @@ struct LauncherSettingsView: View {
 				value: selectedSection
 			)
 		}
-		// See ContentView: L10n reads a plain mutex, not an Observable value, so a
-		// language change here needs an explicit re-key to redraw immediately.
-		.id(settings.appLanguage)
 		.tint(customization.accentColor)
 		.background(
 			ZStack {
@@ -206,7 +203,7 @@ private struct SettingsNavigationRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text(L10n.string(SettingsStrings.navigationLabel))
+			Text(SettingsStrings.navigationLabel)
 				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
@@ -318,15 +315,15 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var title: String {
 		switch self {
-		case .general: L10n.string(SettingsStrings.navigationGeneral)
-		case .audio: L10n.string(SettingsStrings.navigationAudio)
-		case .updates: L10n.string(SettingsStrings.navigationUpdates)
-		case .installation: L10n.string(SettingsStrings.navigationInstallation)
-		case .storage: L10n.string(SettingsStrings.navigationStorage)
-		case .statistics: L10n.string(SettingsStrings.navigationStatistics)
-		case .about: L10n.string(SettingsStrings.navigationAbout)
+		case .general: SettingsStrings.navigationGeneral
+		case .audio: SettingsStrings.navigationAudio
+		case .updates: SettingsStrings.navigationUpdates
+		case .installation: SettingsStrings.navigationInstallation
+		case .storage: SettingsStrings.navigationStorage
+		case .statistics: SettingsStrings.navigationStatistics
+		case .about: SettingsStrings.navigationAbout
 		#if DEBUG
-			case .developer: L10n.string(SettingsStrings.navigationDeveloper)
+			case .developer: SettingsStrings.navigationDeveloper
 		#endif
 		}
 	}

@@ -9,11 +9,11 @@ extension InstallationSettingsPage {
 			VStack(alignment: .trailing, spacing: 1) {
 				if let rate = progress.transferRateBytesPerSecond {
 					Text(
-						L10n.string(
-							SettingsStrings.downloadSpeed(
-								DownloadProgressFormatting.byteRate(rate)
-							)
+
+						SettingsStrings.downloadSpeed(
+							DownloadProgressFormatting.byteRate(rate)
 						)
+
 					)
 					.monospacedDigit()
 					.frame(
@@ -21,7 +21,7 @@ extension InstallationSettingsPage {
 						alignment: .trailing
 					)
 				} else if progress.isTransferStalled {
-					Text(L10n.string(SettingsStrings.downloadWaiting))
+					Text(SettingsStrings.downloadWaiting)
 						.frame(
 							minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
 							alignment: .trailing

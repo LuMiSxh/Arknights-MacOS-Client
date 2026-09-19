@@ -109,7 +109,7 @@ final class LauncherCommunicationController {
 						id: "announcement-\(announcement.id)",
 						title: announcement.title,
 						content: .markdown(announcement.body),
-						dismissTitle: L10n.string(LauncherStrings.popupDone),
+						dismissTitle: LauncherStrings.popupDone,
 						actionTitle: announcement.actionTitle,
 						actionURL: announcement.actionURL
 					)
@@ -134,9 +134,9 @@ final class LauncherCommunicationController {
 		enqueuePopup(
 			LauncherPopup(
 				id: "yostar-notice-\(formattedNotice.id.uuidString)",
-				title: L10n.string(LauncherStrings.popupNotice),
+				title: LauncherStrings.popupNotice,
 				content: .attributed(formattedNotice.content),
-				dismissTitle: L10n.string(LauncherStrings.popupDone),
+				dismissTitle: LauncherStrings.popupDone,
 				actionTitle: nil,
 				actionURL: nil
 			)
@@ -183,7 +183,7 @@ final class LauncherCommunicationController {
 		}
 
 		isCheckingLauncherUpdates = true
-		launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusChecking)
+		launcherUpdateStatus = "Checking…"
 		let task = Task<LauncherUpdateCheckOutcome, Never> { [weak self] in
 			guard let self else { return .failed }
 			let outcome = await withCheckedContinuation {
@@ -204,15 +204,15 @@ final class LauncherCommunicationController {
 		switch outcome {
 		case .current:
 			launcherUpdateVersion = nil
-			launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusUpToDate)
+			launcherUpdateStatus = "Up to date"
 		case .updateAvailable(let version):
 			launcherUpdateVersion = version
-			launcherUpdateStatus = L10n.string(
-				.Launcher.launcherUpdateStatusVersionAvailable(version)
-			)
+			launcherUpdateStatus =
+				"Version \(version) available"
+
 		case .failed:
 			launcherUpdateVersion = nil
-			launcherUpdateStatus = L10n.string(.Launcher.launcherUpdateStatusFailed)
+			launcherUpdateStatus = "Couldn’t check for updates"
 		}
 	}
 

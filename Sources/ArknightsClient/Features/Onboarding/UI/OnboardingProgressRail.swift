@@ -9,7 +9,7 @@ struct OnboardingProgressRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text(L10n.string(OnboardingStrings.setupAssistant))
+			Text(OnboardingStrings.setupAssistant)
 				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
@@ -28,7 +28,7 @@ struct OnboardingProgressRail: View {
 							.frame(width: 17)
 							.symbolRenderingMode(.monochrome)
 							.accessibilityHidden(true)
-						Text(L10n.string(OnboardingStrings.stepTitle(step)))
+						Text(OnboardingStrings.stepTitle(step))
 							.fontWeight(currentStep == step ? .semibold : .regular)
 						Spacer(minLength: 0)
 					}
@@ -38,7 +38,7 @@ struct OnboardingProgressRail: View {
 					.background(backgroundFill(for: step), in: .rect(cornerRadius: 8))
 					.frame(minHeight: 44)
 					.accessibilityElement(children: .combine)
-					.accessibilityLabel(L10n.string(OnboardingStrings.stepTitle(step)))
+					.accessibilityLabel(OnboardingStrings.stepTitle(step))
 					.accessibilityAddTraits(currentStep == step ? .isSelected : [])
 				}
 			}
@@ -50,7 +50,7 @@ struct OnboardingProgressRail: View {
 				Rectangle()
 					.fill(accentColor)
 					.frame(width: 28, height: 2)
-				Text(L10n.string(OnboardingStrings.progressVersion(appVersion)))
+				Text(OnboardingStrings.progressVersion(appVersion))
 					.font(.caption.monospaced())
 					.foregroundStyle(.tertiary)
 			}

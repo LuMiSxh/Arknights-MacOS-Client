@@ -13,7 +13,7 @@ private struct ACEWarningConfirmationModifier: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content.confirmationDialog(
-			L10n.string(LauncherStrings.aceWarningTitle),
+			LauncherStrings.aceWarningTitle,
 			isPresented: Binding(
 				get: { model.pendingACEWarningRegion != nil },
 				set: { isPresented in
@@ -22,14 +22,14 @@ private struct ACEWarningConfirmationModifier: ViewModifier {
 			),
 			titleVisibility: .visible
 		) {
-			Button(L10n.string(LauncherStrings.aceWarningAction), role: .destructive) {
+			Button(LauncherStrings.aceWarningAction, role: .destructive) {
 				model.confirmACEWarningAndLaunch()
 			}
-			Button(L10n.string(LauncherStrings.cancel), role: .cancel) {
+			Button(LauncherStrings.cancel, role: .cancel) {
 				model.cancelACEWarning()
 			}
 		} message: {
-			Text(L10n.string(LauncherStrings.aceWarningDetail))
+			Text(LauncherStrings.aceWarningDetail)
 		}
 	}
 }

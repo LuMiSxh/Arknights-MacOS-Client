@@ -41,19 +41,19 @@ struct LauncherHUDView: View {
 			HStack(spacing: 8) {
 				if communication.shouldShowLauncherUpdateButton {
 					CapsuleActionButton(
-						title: L10n.string(HomeStrings.launcherUpdate),
+						title: HomeStrings.launcherUpdate,
 						systemImage: "arrow.down.app",
 						tone: .accent(accentColor),
 						action: actions.openLauncherUpdate
 					)
 					.disabled(!communication.canOpenLauncherUpdate)
 					.transition(.opacity)
-					.help(L10n.string(HomeStrings.launcherUpdateHelp))
+					.help(HomeStrings.launcherUpdateHelp)
 				}
 
 				if lifecycle.failure?.blocksGameLaunch == true {
 					CapsuleActionButton(
-						title: L10n.string(HomeStrings.recoveryDetails),
+						title: HomeStrings.recoveryDetails,
 						systemImage: "info.circle",
 						tone: .accent(accentColor),
 						action: actions.showFailureDetails

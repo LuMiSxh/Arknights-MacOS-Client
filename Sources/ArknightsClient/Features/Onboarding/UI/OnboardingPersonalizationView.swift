@@ -10,12 +10,12 @@ struct OnboardingPersonalizationView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: L10n.string(OnboardingStrings.personalizationTitle),
-			subtitle: L10n.string(OnboardingStrings.personalizationSubtitle),
+			title: OnboardingStrings.personalizationTitle,
+			subtitle: OnboardingStrings.personalizationSubtitle,
 			accentColor: customization.accentColor
 		) {
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.artwork),
+				title: OnboardingStrings.artwork,
 				systemImage: "photo.on.rectangle.angled"
 			) {
 				Group {
@@ -24,7 +24,7 @@ struct OnboardingPersonalizationView: View {
 							.resizable()
 							.scaledToFill()
 							.accessibilityLabel(
-								L10n.string(OnboardingStrings.currentArtworkAccessibility)
+								OnboardingStrings.currentArtworkAccessibility
 							)
 					} else {
 						ZStack {
@@ -47,20 +47,20 @@ struct OnboardingPersonalizationView: View {
 
 				HStack {
 					CapsuleActionButton(
-						title: L10n.string(OnboardingStrings.browsePresets),
+						title: OnboardingStrings.browsePresets,
 						systemImage: "square.grid.2x2",
 						tone: .accent(customization.accentColor), presentation: .compact,
 						action: browseArtwork
 					)
 					CapsuleActionButton(
-						title: L10n.string(OnboardingStrings.chooseImage),
+						title: OnboardingStrings.chooseImage,
 						systemImage: "photo.badge.plus",
 						tone: .accent(customization.accentColor), presentation: .compact,
 						action: customization.chooseCustomArtwork
 					)
 					Spacer()
 					CapsuleActionButton(
-						title: L10n.string(OnboardingStrings.useDefault),
+						title: OnboardingStrings.useDefault,
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral, presentation: .compact,
 						action: resetArtwork
@@ -69,25 +69,25 @@ struct OnboardingPersonalizationView: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.themeStatusPanel), systemImage: "paintpalette"
+				title: OnboardingStrings.themeStatusPanel, systemImage: "paintpalette"
 			) {
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.dynamicTheme),
-					detail: L10n.string(OnboardingStrings.dynamicThemeDetail),
+					title: OnboardingStrings.dynamicTheme,
+					detail: OnboardingStrings.dynamicThemeDetail,
 					isOn: $preferences.usesDynamicTheme,
 					accentColor: customization.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.gameVersion),
-					detail: L10n.string(OnboardingStrings.gameVersionDetail),
+					title: OnboardingStrings.gameVersion,
+					detail: OnboardingStrings.gameVersionDetail,
 					isOn: $preferences.showsGameVersion,
 					accentColor: customization.accentColor
 				)
 				SettingsHairline()
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.resetCountdown),
-					detail: L10n.string(OnboardingStrings.resetCountdownDetail),
+					title: OnboardingStrings.resetCountdown,
+					detail: OnboardingStrings.resetCountdownDetail,
 					isOn: $preferences.showsServerResetCountdown,
 					accentColor: customization.accentColor
 				)

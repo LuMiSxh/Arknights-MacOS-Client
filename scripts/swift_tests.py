@@ -11,14 +11,9 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from lib.common import PROJECT_DIR, fail, output, require_command, run, run_main
+from lib.common import PROJECT_DIR, fail, require_command, run, run_main
 from lib.console import info, success
 from lib.project_config import ProjectConfiguration, load_project_configuration
-from localization import (
-    SWIFT_TEST_RESOURCE_ENV,
-    compile_swift_localizations,
-    prepare_localization,
-)
 
 _NETWORK_DENY_PROFILE = "(version 1) (allow default) (deny network*)"
 
@@ -130,9 +125,7 @@ def isolated_environment(root: Path, level: SwiftTestLevel) -> dict[str, str]:
 
 def run_level(name: str) -> None:
     level = LEVELS[name]
-    os.environ[SWIFT_TEST_RESOURCE_ENV] = "1"
     configuration = load_project_configuration()
-    prepare_localization(configuration=configuration)
     architectures = architecture_arguments(configuration)
     require_command("swift")
     if not level.allows_network:
@@ -140,18 +133,6 @@ def run_level(name: str) -> None:
 
     info(f"Building the Swift {name} test target")
     run(build_command(architectures), cwd=PROJECT_DIR)
-    binary_directory = Path(
-        output(
-            [
-                "swift",
-                "build",
-                "--show-bin-path",
-                *architectures,
-            ],
-            cwd=PROJECT_DIR,
-        )
-    )
-    compile_swift_localizations(binary_directory, configuration)
     listed_tests = run(
         list_command(architectures), cwd=PROJECT_DIR, capture=True
     ).stdout

@@ -12,31 +12,31 @@ struct OnboardingInstallationView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: L10n.string(OnboardingStrings.installationTitle),
-			subtitle: L10n.string(OnboardingStrings.installationSubtitle),
+			title: OnboardingStrings.installationTitle,
+			subtitle: OnboardingStrings.installationSubtitle,
 			accentColor: accentColor
 		) {
 			OnboardingCanaryPanel(
-				title: L10n.string(OnboardingStrings.canaryFeatures),
+				title: OnboardingStrings.canaryFeatures,
 			) {
 				OnboardingToggleRow(
-					title: L10n.string(OnboardingStrings.canaryFeatures),
-					detail: L10n.string(OnboardingStrings.canaryFeaturesDetail),
+					title: OnboardingStrings.canaryFeatures,
+					detail: OnboardingStrings.canaryFeaturesDetail,
 					isOn: $preferences.canaryFeaturesEnabled,
 					accentColor: LauncherVisuals.danger
 				)
 				.disabled(lifecycle.activity != .idle)
 				if preferences.canaryFeaturesEnabled {
 					OnboardingToggleRow(
-						title: L10n.string(OnboardingStrings.chinaClients),
-						detail: L10n.string(OnboardingStrings.chinaClientsDetail),
+						title: OnboardingStrings.chinaClients,
+						detail: OnboardingStrings.chinaClientsDetail,
 						isOn: $preferences.chinaClientsEnabled,
 						accentColor: LauncherVisuals.danger
 					)
 					.disabled(lifecycle.activity != .idle)
 					OnboardingToggleRow(
-						title: L10n.string(OnboardingStrings.taiwanClient),
-						detail: L10n.string(OnboardingStrings.taiwanClientDetail),
+						title: OnboardingStrings.taiwanClient,
+						detail: OnboardingStrings.taiwanClientDetail,
 						isOn: $preferences.taiwanClientEnabled,
 						accentColor: LauncherVisuals.danger
 					)
@@ -45,7 +45,7 @@ struct OnboardingInstallationView: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.serverRegion),
+				title: OnboardingStrings.serverRegion,
 				systemImage: "globe.asia.australia"
 			) {
 				AdaptiveSegmentedControl(
@@ -57,16 +57,16 @@ struct OnboardingInstallationView: View {
 					),
 					accentColor: accentColor
 				) { region in
-					Text(region.localizedDisplayName)
+					Text(region.displayName)
 				}
 				.disabled(!canSwitchRegion)
-				Text(L10n.string(regionDetail))
+				Text(regionDetail)
 					.font(.callout)
 					.foregroundStyle(.secondary)
 			}
 
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.officialClient), systemImage: installationImage
+				title: OnboardingStrings.officialClient, systemImage: installationImage
 			) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
@@ -74,9 +74,9 @@ struct OnboardingInstallationView: View {
 							SkeletonValue(width: 160, height: 17, pulses: true)
 							SkeletonValue(width: 216, height: 15, pulses: true)
 						} else {
-							Text(L10n.string(installationTitle))
+							Text(installationTitle)
 								.bold()
-							Text(L10n.string(installationDetail))
+							Text(installationDetail)
 								.font(.callout)
 								.foregroundStyle(.secondary)
 						}
@@ -102,7 +102,7 @@ struct OnboardingInstallationView: View {
 				}
 
 				if !installation.isInstalled && !installation.isDownloading {
-					Text(L10n.string(OnboardingStrings.installDownloadDetail))
+					Text(OnboardingStrings.installDownloadDetail)
 						.font(.callout)
 						.foregroundStyle(.secondary)
 				}
@@ -110,7 +110,7 @@ struct OnboardingInstallationView: View {
 		}
 	}
 
-	private var regionDetail: LocalizedStringResource {
+	private var regionDetail: String {
 		OnboardingStrings.regionDetail(installation.region)
 	}
 
@@ -120,14 +120,14 @@ struct OnboardingInstallationView: View {
 		return "externaldrive.badge.plus"
 	}
 
-	private var installationTitle: LocalizedStringResource {
+	private var installationTitle: String {
 		if installation.isDownloading { return OnboardingStrings.downloadingTitle }
 		if installation.isInstalled { return OnboardingStrings.existingTitle }
 		if installation.hasPartialDownload { return OnboardingStrings.partialTitle }
-		return OnboardingStrings.readyToInstall(installation.region.localizedDisplayName)
+		return OnboardingStrings.readyToInstall(installation.region.displayName)
 	}
 
-	private var installationDetail: LocalizedStringResource {
+	private var installationDetail: String {
 		if installation.isDownloading { return OnboardingStrings.downloadingDetail }
 		if installation.isInstalled {
 			return OnboardingStrings.installationExisting(

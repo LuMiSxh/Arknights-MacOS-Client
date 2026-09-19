@@ -25,7 +25,7 @@ struct LauncherFailureDetailView: View {
 
 	var body: some View {
 		ThemedModalView(
-			title: L10n.string(HomeStrings.needsAttention),
+			title: HomeStrings.needsAttention,
 			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: failure.code == nil ? 620 : 820,
@@ -61,7 +61,7 @@ struct LauncherFailureDetailView: View {
 		HStack(spacing: 8) {
 			if failure.actions.contains(.installRosetta) {
 				CapsuleActionButton(
-					title: L10n.string(LauncherStrings.rosettaInstall),
+					title: LauncherStrings.rosettaInstall,
 					systemImage: "arrow.down.circle",
 					tone: .accent(accentColor)
 				) {
@@ -76,7 +76,7 @@ struct LauncherFailureDetailView: View {
 			}
 			if failure.actions.contains(.retry) {
 				CapsuleActionButton(
-					title: L10n.string(HomeStrings.retry),
+					title: HomeStrings.retry,
 					systemImage: "arrow.clockwise",
 					tone: .neutral
 				) {
@@ -85,7 +85,7 @@ struct LauncherFailureDetailView: View {
 			}
 			if failure.actions.contains(.repair) {
 				CapsuleActionButton(
-					title: L10n.string(HomeStrings.repair),
+					title: HomeStrings.repair,
 					systemImage: "wrench.and.screwdriver",
 					tone: .neutral
 				) {
@@ -104,14 +104,14 @@ struct LauncherFailureDetailView: View {
 			if failure.actions.contains(.openTroubleshooting) {
 				supportAction(
 					.openTroubleshooting,
-					title: L10n.string(HomeStrings.openTroubleshooting),
+					title: HomeStrings.openTroubleshooting,
 					systemImage: "arrow.up.right.square"
 				)
 			}
 			if failure.actions.contains(.reportProblem) {
 				supportAction(
 					.reportProblem,
-					title: L10n.string(HomeStrings.reportProblem),
+					title: HomeStrings.reportProblem,
 					systemImage: "ladybug"
 				)
 			}

@@ -1,285 +1,243 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
-
-/// Localized text owned by the launcher settings experience.
+/// English text owned by the launcher settings experience.
 enum SettingsStrings {
-	static let navigationLabel = LocalizedStringResource.Settings.settingsNavigationLabel
-	static let navigationGeneral = LocalizedStringResource.Settings.settingsNavigationGeneral
-	static let navigationAudio = LocalizedStringResource.Settings.settingsNavigationAudio
-	static let navigationUpdates = LocalizedStringResource.Settings.settingsNavigationUpdates
-	static let navigationInstallation = LocalizedStringResource.Settings
-		.settingsNavigationInstallation
-	static let navigationStorage = LocalizedStringResource.Settings.settingsNavigationStorage
-	static let navigationStatistics = LocalizedStringResource.Settings.settingsNavigationStatistics
-	static let navigationAbout = LocalizedStringResource.Settings.settingsNavigationAbout
-	static let navigationDeveloper = LocalizedStringResource.Settings.settingsNavigationDeveloper
-	static let dangerZone = LocalizedStringResource.Settings.settingsCommonDangerZone
-	static let game = LocalizedStringResource.Settings.settingsCommonGame
-	static let checkNow = LocalizedStringResource.Settings.settingsCommonCheckNow
-	static let calculating = LocalizedStringResource.Settings.settingsCommonCalculating
-	static let cancel = LocalizedStringResource.Settings.settingsCommonCancel
-	static let choose = LocalizedStringResource.Settings.settingsCommonChoose
-	static let chooseImage = LocalizedStringResource.Settings.settingsCommonChooseImage
-	static let change = LocalizedStringResource.Settings.settingsCommonChange
-	static let show = LocalizedStringResource.Settings.settingsCommonShow
-	static let useDefault = LocalizedStringResource.Settings.settingsCommonUseDefault
-	static let useDefaults = LocalizedStringResource.Settings.settingsCommonUseDefaults
+	static let navigationLabel = "SETTINGS"
+	static let navigationGeneral = "General"
+	static let navigationAudio = "Audio"
+	static let navigationUpdates = "Updates"
+	static let navigationInstallation = "Installation"
+	static let navigationStorage = "Storage"
+	static let navigationStatistics = "Playtime"
+	static let navigationAbout = "About"
+	static let navigationDeveloper = "Developer"
+	static let dangerZone = "Danger Zone"
+	static let game = "Game"
+	static let checkNow = "Check Now"
+	static let calculating = "Calculating…"
+	static let cancel = "Cancel"
+	static let choose = "Choose…"
+	static let chooseImage = "Choose Image…"
+	static let change = "Change…"
+	static let show = "Show"
+	static let useDefault = "Use Default"
+	static let useDefaults = "Use Defaults"
 
-	static let generalTitle = LocalizedStringResource.Settings.settingsGeneralTitle
-	static let generalSubtitle = LocalizedStringResource.Settings.settingsGeneralSubtitle
-	static let displayControls = LocalizedStringResource.Settings.settingsGeneralDisplayControls
-	static let highResolution = LocalizedStringResource.Settings.settingsGeneralHighResolution
-	static let highResolutionDetail = LocalizedStringResource.Settings
-		.settingsGeneralHighResolutionDetail
-	static let gameDisplaySettings = LocalizedStringResource.Settings
-		.settingsGeneralGameDisplaySettings
-	static let gameDisplaySettingsDetail = LocalizedStringResource.Settings
-		.settingsGeneralGameDisplaySettingsDetail
-	static let displayModeFullscreen = LocalizedStringResource.Settings
-		.settingsGeneralDisplayModeFullscreen
-	static let displayModeWindowed = LocalizedStringResource.Settings
-		.settingsGeneralDisplayModeWindowed
-	static let displayModeBorderlessWindow = LocalizedStringResource.Settings
-		.settingsGeneralDisplayModeBorderlessWindow
-	static let windowMode = LocalizedStringResource.Settings.settingsGeneralWindowMode
-	static let windowModeDetail = LocalizedStringResource.Settings.settingsGeneralWindowModeDetail
-	static let resolution = LocalizedStringResource.Settings.settingsGeneralResolution
-	static let resolutionDetail = LocalizedStringResource.Settings.settingsGeneralResolutionDetail
-	static let launcher = LocalizedStringResource.Settings.settingsGeneralLauncher
-	static let language = LocalizedStringResource.Settings.settingsGeneralLanguage
-	static let languageDetail = LocalizedStringResource.Settings.settingsGeneralLanguageDetail
-	static let languageSystem = LocalizedStringResource.Settings.settingsGeneralLanguageSystem
-	static let languageEnglish = LocalizedStringResource.Settings.settingsGeneralLanguageEnglish
-	static let languageGerman = LocalizedStringResource.Settings.settingsGeneralLanguageGerman
-	static let showGameVersion = LocalizedStringResource.Settings.settingsGeneralShowGameVersion
-	static let showGameVersionDetail = LocalizedStringResource.Settings
-		.settingsGeneralShowGameVersionDetail
-	static let serverTime = LocalizedStringResource.Settings.settingsGeneralServerTime
-	static let serverTimeDetail = LocalizedStringResource.Settings.settingsGeneralServerTimeDetail
-	static let metalHUD = LocalizedStringResource.Settings.settingsGeneralMetalHUD
-	static let metalHUDDetail = LocalizedStringResource.Settings.settingsGeneralMetalHUDDetail
-	static let setupAssistant = LocalizedStringResource.Settings.settingsGeneralSetupAssistant
-	static let setupAssistantDetail = LocalizedStringResource.Settings
-		.settingsGeneralSetupAssistantDetail
-	static let runAgain = LocalizedStringResource.Settings.settingsGeneralRunAgain
-	static let personalization = LocalizedStringResource.Settings.settingsGeneralPersonalization
-	static let artwork = LocalizedStringResource.Settings.settingsGeneralArtwork
-	static let artworkDetail = LocalizedStringResource.Settings.settingsGeneralArtworkDetail
-	static let presets = LocalizedStringResource.Settings.settingsGeneralPresets
-	static let operatorIcons = LocalizedStringResource.Settings.settingsGeneralOperatorIcons
-	static let operatorIconsDetail = LocalizedStringResource.Settings
-		.settingsGeneralOperatorIconsDetail
-	static let chooseOperator = LocalizedStringResource.Settings.settingsGeneralChooseOperator
-	static let customIconOverrides = LocalizedStringResource.Settings
-		.settingsGeneralCustomIconOverrides
-	static let customIconOverridesDetail = LocalizedStringResource.Settings
-		.settingsGeneralCustomIconOverridesDetail
-	static let dynamicTheme = LocalizedStringResource.Settings.settingsGeneralDynamicTheme
-	static let dynamicThemeDetail = LocalizedStringResource.Settings
-		.settingsGeneralDynamicThemeDetail
+	static let generalTitle = "General"
+	static let generalSubtitle = "Display and personalization"
+	static let displayControls = "Display & Controls"
+	static let highResolution = "High-Resolution Mode"
+	static let highResolutionDetail =
+		"Uses the display's full pixel density without enlarging the game window."
+	static let gameDisplaySettings = "Use In-Game Display Settings"
+	static let gameDisplaySettingsDetail =
+		"Lets changes made inside Arknights persist between launches."
+	static let displayModeFullscreen = "Fullscreen"
+	static let displayModeWindowed = "Windowed"
+	static let displayModeBorderlessWindow = "Borderless Window (Recommended)"
+	static let windowMode = "Window Mode"
+	static let windowModeDetail = "Overrides the game window style the next time it starts."
+	static let resolution = "Resolution"
+	static let resolutionDetail = "Overrides the game resolution the next time it starts."
+	static let launcher = "Launcher"
+	static let showGameVersion = "Show Game Version"
+	static let showGameVersionDetail =
+		"Shows the installed Arknights version and a manual update check above the Play controls."
+	static let serverTime = "Server Time & Reset Countdown"
+	static let serverTimeDetail =
+		"Shows the active server time and time until its next daily reset."
+	static let metalHUD = "Metal Performance HUD"
+	static let metalHUDDetail =
+		"Shows Apple's native FPS and GPU overlay during the next game launch."
+	static let setupAssistant = "Setup Assistant"
+	static let setupAssistantDetail =
+		"Run the guided region, display, and personalization setup again."
+	static let runAgain = "Run Again…"
+	static let personalization = "Personalization"
+	static let artwork = "Artwork"
+	static let artworkDetail = "Background shown behind the launcher controls."
+	static let presets = "Presets…"
+	static let operatorIcons = "Operator Icons"
+	static let operatorIconsDetail =
+		"Use one operator for the Launcher and for a Game icon in the original Arknights style."
+	static let chooseOperator = "Choose Operator…"
+	static let customIconOverrides = "Custom Icon Overrides"
+	static let customIconOverridesDetail =
+		"Use separate local images instead of the generated operator pair."
+	static let dynamicTheme = "Dynamic Theme"
+	static let dynamicThemeDetail =
+		"Automatically changes the launcher colors and generated operator icon pair to match the selected background."
 
-	static func appLanguage(_ language: AppLanguage) -> LocalizedStringResource {
-		switch language {
-		case .system: languageSystem
-		case .english: languageEnglish
-		case .german: languageGerman
-		}
-	}
+	static let audioTitle = "Audio"
+	static let audioSubtitle = "Background music playback"
+	static let audioMusic = "Music"
+	static let audioBackgroundMusic = "Play Background Music"
+	static let audioBackgroundMusicDetail =
+		"Plays music while the launcher is open and the game is not running."
+	static let audioURL = "Music URL"
+	static let audioURLDetail = "YouTube video or playlist link."
+	static let audioURLPrompt = "https://www.youtube.com/playlist?..."
+	static let audioVolume = "Volume"
+	static let audioVolumeDetail = "Sets the launcher music playback level."
+	static let audioCurrentlyPlaying = "Show Currently Playing"
+	static let audioCurrentlyPlayingDetail =
+		"Shows the current track and expandable playback controls above the launcher controls."
 
-	static let audioTitle = LocalizedStringResource.Settings.settingsAudioTitle
-	static let audioSubtitle = LocalizedStringResource.Settings.settingsAudioSubtitle
-	static let audioMusic = LocalizedStringResource.Settings.settingsAudioMusic
-	static let audioBackgroundMusic = LocalizedStringResource.Settings.settingsAudioBackgroundMusic
-	static let audioBackgroundMusicDetail = LocalizedStringResource.Settings
-		.settingsAudioBackgroundMusicDetail
-	static let audioURL = LocalizedStringResource.Settings.settingsAudioUrl
-	static let audioURLDetail = LocalizedStringResource.Settings.settingsAudioUrlDetail
-	static let audioURLPrompt = LocalizedStringResource.Settings.settingsAudioUrlPrompt
-	static let audioVolume = LocalizedStringResource.Settings.settingsAudioVolume
-	static let audioVolumeDetail = LocalizedStringResource.Settings.settingsAudioVolumeDetail
-	static let audioCurrentlyPlaying = LocalizedStringResource.Settings
-		.settingsAudioCurrentlyPlaying
-	static let audioCurrentlyPlayingDetail = LocalizedStringResource.Settings
-		.settingsAudioCurrentlyPlayingDetail
+	static let updatesTitle = "Updates"
+	static let updatesSubtitle = "Keep the launcher and game current"
+	static let automaticChecks = "Automatic Checks"
+	static let announcements = "Announcements"
+	static let announcementsDetail = "Show occasional project messages once per announcement."
+	static let checking = "Checking…"
+	static let updateAvailable = "Update available"
 
-	static let updatesTitle = LocalizedStringResource.Settings.settingsUpdatesTitle
-	static let updatesSubtitle = LocalizedStringResource.Settings.settingsUpdatesSubtitle
-	static let automaticChecks = LocalizedStringResource.Settings.settingsUpdatesAutomaticChecks
-	static let announcements = LocalizedStringResource.Settings.settingsUpdatesAnnouncements
-	static let announcementsDetail = LocalizedStringResource.Settings
-		.settingsUpdatesAnnouncementsDetail
-	static let checking = LocalizedStringResource.Settings.settingsUpdatesChecking
-	static let updateAvailable = LocalizedStringResource.Settings.settingsUpdatesUpdateAvailable
+	static let installationTitle = "Installation"
+	static let installationSubtitle = "Files, repair, and removal"
+	static let region = "Region"
+	static let regionDetail = "Each region installs, updates, and launches independently."
+	static let location = "Location"
+	static let status = "Status"
+	static let statusDetail = "State of the selected region's game installation."
+	static let installationLocation = "Installation Location"
+	static let installationLocationDetail =
+		"Choose a new folder or adopt an existing game installation."
+	static let folder = "Folder"
+	static let chooseNewLocation = "Choose New Location…"
+	static let locateExisting = "Locate Existing Installation…"
+	static let maintenance = "Maintenance"
+	static let compatibility = "Compatibility"
+	static let canaryFeatures = "Canary Features"
+	static let canaryFeaturesDetail =
+		"Enables experimental features and reveals separate permissions for Taiwan and China clients. Disabling it switches a selected Canary client to Global."
+	static let chinaClients = "Allow China clients"
+	static let chinaClientsDetail =
+		"Exposes the China clients in the region picker. They stay disabled until you allow them here."
+	static let taiwanClient = "Allow Taiwan client"
+	static let taiwanClientDetail =
+		"Exposes the Taiwan client in the region picker. It stays disabled until you allow it here."
+	static let frameLatency = "Frame Latency"
+	static let frameLatencyDetail =
+		"Limits the DXMT queue to 1–3 frames. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+	static let repair = "Repair"
+	static let repairAction = "Repair…"
+	static let repairDetail = "Check every game file and download missing or damaged files again."
+	static let cacheGallery = "Preset Gallery Caches"
+	static let logs = "Logs"
+	static let showLogs = "Show Logs"
+	static let showGameFilesHelp = "Show game files in Finder"
+	static let gameMode = "Game Mode (Experimental)"
+	static let gameModeDetail =
+		"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
+	static let gameModeAlert = "Game Mode Needs Xcode"
+	static let gameModeAlertDetail =
+		"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
+	static let wineSynchronization = "Wine Thread Synchronization"
+	static let wineSynchronizationDetail =
+		"Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback. Applies on the next launch."
+	static let wineSetup = "Wine Setup"
+	static let forceMigration = "Force Migration"
+	static let forceMigrationAction = "Force Migration…"
+	static let forceMigrationConfirmation = "Force Wine Setup to Run Again?"
+	static let forceMigrationDetail =
+		"Redo Wine initialization, DXMT installation, and registry overrides on the next launch. Game files and saves are untouched; only the next launch takes longer."
+	static let resetSettings = "Reset Settings"
+	static let resetSettingsAction = "Reset All Settings…"
+	static let launcherSettings = "Launcher Settings"
+	static let resetSettingsConfirmation = "Reset All Launcher Settings?"
+	static let resetSettingsDetail =
+		"Reset every toggle and option on this screen to default. The install location and selected region are untouched."
+	static let winePrefix = "Wine Prefix"
+	static let winePrefixDetail =
+		"Delete the entire Wine environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else rebuilds on the next launch."
+	static let deleteWinePrefix = "Delete Wine Prefix…"
+	static let deleteWinePrefixAction = "Delete Wine Prefix"
+	static let deleteWinePrefixConfirmation = "Delete the Wine Prefix?"
+	static let deleteWinePrefixDetail =
+		"This signs you out of every login saved in the embedded browser. Game files are untouched."
+	static let gameFiles = "Game files"
+	static let gameFilesDetail = "Move the selected game installation to the Trash."
+	static let uninstall = "Uninstall Game…"
+	static let uninstallConfirmation = "Uninstall Arknights?"
+	static let uninstallDetail = "The launcher stays installed."
+	static let moveGameToTrash = "Move Game to Trash"
+	static let installed = "Installed"
+	static let paused = "Paused"
+	static let notInstalled = "Not installed"
+	static let preparingDownload = "Preparing download"
 
-	static let installationTitle = LocalizedStringResource.Settings.settingsInstallationTitle
-	static let installationSubtitle = LocalizedStringResource.Settings.settingsInstallationSubtitle
-	static let region = LocalizedStringResource.Settings.settingsInstallationRegion
-	static let regionDetail = LocalizedStringResource.Settings.settingsInstallationRegionDetail
-	static let location = LocalizedStringResource.Settings.settingsInstallationLocation
-	static let status = LocalizedStringResource.Settings.settingsInstallationStatus
-	static let statusDetail = LocalizedStringResource.Settings.settingsInstallationStatusDetail
-	static let installationLocation = LocalizedStringResource.Settings
-		.settingsInstallationInstallationLocation
-	static let installationLocationDetail = LocalizedStringResource.Settings
-		.settingsInstallationInstallationLocationDetail
-	static let folder = LocalizedStringResource.Settings.settingsInstallationFolder
-	static let chooseNewLocation = LocalizedStringResource.Settings
-		.settingsInstallationChooseNewLocation
-	static let locateExisting = LocalizedStringResource.Settings.settingsInstallationLocateExisting
-	static let maintenance = LocalizedStringResource.Settings.settingsInstallationMaintenance
-	static let compatibility = LocalizedStringResource.Settings.settingsInstallationCompatibility
-	static let canaryFeatures = LocalizedStringResource.Settings
-		.settingsInstallationCanaryFeatures
-	static let canaryFeaturesDetail = LocalizedStringResource.Settings
-		.settingsInstallationCanaryFeaturesDetail
-	static let chinaClients = LocalizedStringResource.Settings
-		.settingsInstallationChinaClients
-	static let chinaClientsDetail = LocalizedStringResource.Settings
-		.settingsInstallationChinaClientsDetail
-	static let taiwanClient = LocalizedStringResource.Settings
-		.settingsInstallationTaiwanClient
-	static let taiwanClientDetail = LocalizedStringResource.Settings
-		.settingsInstallationTaiwanClientDetail
-	static let frameLatency = LocalizedStringResource.Settings.settingsInstallationFrameLatency
-	static let frameLatencyDetail = LocalizedStringResource.Settings
-		.settingsInstallationFrameLatencyDetail
-	static let repair = LocalizedStringResource.Settings.settingsInstallationRepair
-	static let repairAction = LocalizedStringResource.Settings.settingsInstallationRepairAction
-	static let repairDetail = LocalizedStringResource.Settings.settingsInstallationRepairDetail
-	static let cacheGallery = LocalizedStringResource.Settings.settingsInstallationCacheGallery
-	static let logs = LocalizedStringResource.Settings.settingsInstallationLogs
-	static let showLogs = LocalizedStringResource.Settings.settingsInstallationShowLogs
-	static let showGameFilesHelp = LocalizedStringResource.Settings
-		.settingsInstallationShowGameFilesHelp
-	static let gameMode = LocalizedStringResource.Settings.settingsInstallationGameMode
-	static let gameModeDetail = LocalizedStringResource.Settings.settingsInstallationGameModeDetail
-	static let gameModeAlert = LocalizedStringResource.Settings.settingsInstallationGameModeAlert
-	static let gameModeAlertDetail = LocalizedStringResource.Settings
-		.settingsInstallationGameModeAlertDetail
-	static let wineSynchronization = LocalizedStringResource.Settings
-		.settingsInstallationWineSynchronization
-	static let wineSynchronizationDetail = LocalizedStringResource.Settings
-		.settingsInstallationWineSynchronizationDetail
-	static let wineSetup = LocalizedStringResource.Settings.settingsInstallationWineSetup
-	static let forceMigration = LocalizedStringResource.Settings.settingsInstallationForceMigration
-	static let forceMigrationAction = LocalizedStringResource.Settings
-		.settingsInstallationForceMigrationAction
-	static let forceMigrationConfirmation = LocalizedStringResource.Settings
-		.settingsInstallationForceMigrationConfirmation
-	static let forceMigrationDetail = LocalizedStringResource.Settings
-		.settingsInstallationForceMigrationDetail
-	static let resetSettings = LocalizedStringResource.Settings.settingsInstallationResetSettings
-	static let resetSettingsAction = LocalizedStringResource.Settings
-		.settingsInstallationResetSettingsAction
-	static let launcherSettings = LocalizedStringResource.Settings
-		.settingsInstallationLauncherSettings
-	static let resetSettingsConfirmation = LocalizedStringResource.Settings
-		.settingsInstallationResetSettingsConfirmation
-	static let resetSettingsDetail = LocalizedStringResource.Settings
-		.settingsInstallationResetSettingsDetail
-	static let winePrefix = LocalizedStringResource.Settings.settingsInstallationWinePrefix
-	static let winePrefixDetail = LocalizedStringResource.Settings
-		.settingsInstallationWinePrefixDetail
-	static let deleteWinePrefix = LocalizedStringResource.Settings
-		.settingsInstallationWinePrefixDelete
-	static let deleteWinePrefixAction = LocalizedStringResource.Settings
-		.settingsInstallationWinePrefixDeleteAction
-	static let deleteWinePrefixConfirmation = LocalizedStringResource.Settings
-		.settingsInstallationWinePrefixDeleteConfirmation
-	static let deleteWinePrefixDetail = LocalizedStringResource.Settings
-		.settingsInstallationWinePrefixDeleteDetail
-	static let gameFiles = LocalizedStringResource.Settings.settingsInstallationGameFiles
-	static let gameFilesDetail = LocalizedStringResource.Settings
-		.settingsInstallationGameFilesDetail
-	static let uninstall = LocalizedStringResource.Settings.settingsInstallationUninstall
-	static let uninstallConfirmation = LocalizedStringResource.Settings
-		.settingsInstallationUninstallConfirmation
-	static let uninstallDetail = LocalizedStringResource.Settings
-		.settingsInstallationUninstallDetail
-	static let moveGameToTrash = LocalizedStringResource.Settings
-		.settingsInstallationUninstallMoveToTrash
-	static let installed = LocalizedStringResource.Settings.settingsInstallationInstalled
-	static let paused = LocalizedStringResource.Settings.settingsInstallationPaused
-	static let notInstalled = LocalizedStringResource.Settings.settingsInstallationNotInstalled
-	static let preparingDownload = LocalizedStringResource.Settings
-		.settingsInstallationPreparingDownload
-
-	static let aboutTitle = LocalizedStringResource.Settings.settingsAboutTitle
-	static let application = LocalizedStringResource.Settings.settingsAboutApplication
-	static let unofficialLauncher = LocalizedStringResource.Settings.settingsAboutUnofficialLauncher
-	static let openFinder = LocalizedStringResource.Settings.settingsAboutOpenFinder
-	static let openFinderHelp = LocalizedStringResource.Settings.settingsAboutOpenFinderHelp
-	static let github = LocalizedStringResource.Settings.settingsAboutGithub
-	static let githubHelp = LocalizedStringResource.Settings.settingsAboutGithubHelp
-	static let donate = LocalizedStringResource.Settings.settingsAboutDonate
-	static let donateHelp = LocalizedStringResource.Settings.settingsAboutDonateHelp
-	static let documents = LocalizedStringResource.Settings.settingsAboutDocuments
-	static let changelog = LocalizedStringResource.Settings.settingsAboutChangelog
-	static let license = LocalizedStringResource.Settings.settingsAboutLicense
-	static let thirdPartyNotices = LocalizedStringResource.Settings.settingsAboutThirdPartyNotices
-	static let support = LocalizedStringResource.Settings.settingsAboutSupport
-	static let launcherIssues = LocalizedStringResource.Settings.settingsAboutLauncherIssues
-	static let launcherIssuesDetail = LocalizedStringResource.Settings
-		.settingsAboutLauncherIssuesDetail
-	static let report = LocalizedStringResource.Settings.settingsAboutReport
-	static let gameAccountIssues = LocalizedStringResource.Settings.settingsAboutGameAccountIssues
-	static let gameAccountIssuesDetail = LocalizedStringResource.Settings
-		.settingsAboutGameAccountIssuesDetail
-	static let contactYostar = LocalizedStringResource.Settings.settingsAboutContactYostar
-	static func contactPublisherTitle(region: GameRegion) -> LocalizedStringResource {
+	static let aboutTitle = "About"
+	static let application = "Arknights Client"
+	static let unofficialLauncher = "Unofficial macOS launcher"
+	static let openFinder = "Show in Finder"
+	static let openFinderHelp = "Reveal the launcher application in Finder"
+	static let github = "GitHub"
+	static let githubHelp = "Open project repository"
+	static let donate = "Donate"
+	static let donateHelp = "Support the project on Ko-fi"
+	static let documents = "Documents"
+	static let changelog = "Changelog"
+	static let license = "MPL-2.0 License"
+	static let thirdPartyNotices = "Third-Party Notices"
+	static let support = "Support"
+	static let launcherIssues = "Launcher Issues"
+	static let launcherIssuesDetail =
+		"Report launcher, Wine runtime, or embedded browser problems with generated diagnostics."
+	static let report = "Report…"
+	static let gameAccountIssues = "Game & Account Issues"
+	static let gameAccountIssuesDetail =
+		"Contact Yostar for account, payment, or game-service problems."
+	static let contactYostar = "Contact Yostar…"
+	static func contactPublisherTitle(region: GameRegion) -> String {
 		if region.publisher == .gryphline {
-			return .Settings.settingsAboutContactGryphline
+			return "Contact Gryphline…"
 		}
 		if region.publisher == .hypergryph {
-			return .Settings.settingsAboutContactHypergryph
+			return "Contact Hypergryph…"
 		}
 		return contactYostar
 	}
-	static func gameAccountIssuesDetail(region: GameRegion) -> LocalizedStringResource {
+	static func gameAccountIssuesDetail(region: GameRegion) -> String {
 		if region.publisher == .gryphline {
-			return .Settings.settingsAboutGameAccountIssuesGryphlineDetail
+			return "Contact Gryphline for account, payment, or game-service problems."
 		}
 		if region.publisher == .hypergryph {
-			return .Settings.settingsAboutGameAccountIssuesHypergryphDetail
+			return "Contact Hypergryph for account, payment, or game-service problems."
 		}
 		return gameAccountIssuesDetail
 	}
-	static let userAgreement = LocalizedStringResource.Settings.settingsAboutUserAgreement
-	static let privacyPolicy = LocalizedStringResource.Settings.settingsAboutPrivacyPolicy
-	static let notAffiliated = LocalizedStringResource.Settings.settingsAboutNotAffiliated
+	static let userAgreement = "User Agreement"
+	static let privacyPolicy = "Privacy Policy"
+	static let notAffiliated = "This launcher is not affiliated with Hypergryph or Yostar."
 
-	static let developerTitle = LocalizedStringResource.Settings.settingsDeveloperTitle
-	static let developerSubtitle = LocalizedStringResource.Settings.settingsDeveloperSubtitle
-	static let developerScenario = LocalizedStringResource.Settings.settingsDeveloperScenario
-	static let developerCustomPopup = LocalizedStringResource.Settings.settingsDeveloperCustomPopup
-	static let developerCustomPopupTitle = LocalizedStringResource.Settings
-		.settingsDeveloperCustomPopupTitle
-	static let developerShowPopup = LocalizedStringResource.Settings.settingsDeveloperShowPopup
-	static let developerIsolation = LocalizedStringResource.Settings.settingsDeveloperIsolation
-	static let developerIsolationDetail = LocalizedStringResource.Settings
-		.settingsDeveloperIsolationDetail
+	static let developerTitle = "Developer"
+	static let developerSubtitle = "Preview launcher states safely"
+	static let developerScenario = "Scenario"
+	static let developerCustomPopup = "Custom Popup"
+	static let developerCustomPopupTitle = "Title"
+	static let developerShowPopup = "Show Popup"
+	static let developerIsolation = "Isolation"
+	static let developerIsolationDetail =
+		"Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
 
-	static func cacheGalleryDetail(_ size: String) -> LocalizedStringResource {
-		LocalizedStringResource.Settings.settingsInstallationCacheGalleryDetail(size)
+	static func cacheGalleryDetail(_ size: String) -> String {
+		"Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers). They currently use \(size)."
 	}
 
-	static func downloading(_ percentage: Int) -> LocalizedStringResource {
-		LocalizedStringResource.Settings.settingsInstallationDownloading(percentage)
+	static func downloading(_ percentage: Int) -> String {
+		"Downloading \(percentage)%"
 	}
 
-	static func downloadSpeed(_ speed: String) -> LocalizedStringResource {
-		LocalizedStringResource.Settings.settingsInstallationDownloadSpeed(speed)
+	static func downloadSpeed(_ speed: String) -> String {
+		"\(speed)"
 	}
 
-	static let downloadWaiting = LocalizedStringResource.Settings
-		.settingsInstallationDownloadWaiting
+	static let downloadWaiting = "Waiting for network…"
 
-	static func audioVolumePercent(_ percentage: Int) -> LocalizedStringResource {
-		LocalizedStringResource.Settings.settingsAudioVolumePercent(percentage)
+	static func audioVolumePercent(_ percentage: Int) -> String {
+		"\(percentage)%"
 	}
 
-	static func displayMode(_ mode: GameDisplayMode) -> LocalizedStringResource {
+	static func displayMode(_ mode: GameDisplayMode) -> String {
 		switch mode {
 		case .fullscreen: displayModeFullscreen
 		case .windowed: displayModeWindowed

@@ -7,7 +7,7 @@ audience: users
 
 # Error codes
 
-Arknights Client shows a short word when a failed operation has a specific troubleshooting path. The word stays stable across app versions and languages, so it is more useful than copying the complete message into a search or report.
+Arknights Client shows a short word when a failed operation has a specific troubleshooting path. The word stays stable across app versions, so it is more useful than copying the complete message into a search or report.
 
 ## Start with the code you see
 

@@ -54,7 +54,7 @@ struct PlaytimeStatisticsTests {
 	}
 
 	@Test
-	func recentSummariesRespectCalendarBoundariesInEnglishAndGerman() throws {
+	func recentSummariesRespectCalendarBoundaries() throws {
 		let fixture = try Fixture()
 		var statistics = PlaytimeStatistics.empty
 		let now = fixture.date(2026, 1, 30, hour: 12)
@@ -77,12 +77,8 @@ struct PlaytimeStatisticsTests {
 			calendar: fixture.calendar
 		)
 
-		for localeIdentifier in ["en_US", "de_DE"] {
-			var calendar = fixture.calendar
-			calendar.locale = Locale(identifier: localeIdentifier)
-			#expect(statistics.duration(inLast: 7, now: now, calendar: calendar) == 90)
-			#expect(statistics.duration(inLast: 30, now: now, calendar: calendar) == 150)
-		}
+		#expect(statistics.duration(inLast: 7, now: now, calendar: fixture.calendar) == 90)
+		#expect(statistics.duration(inLast: 30, now: now, calendar: fixture.calendar) == 150)
 	}
 
 	@Test

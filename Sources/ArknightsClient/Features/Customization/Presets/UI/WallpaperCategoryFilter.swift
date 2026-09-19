@@ -20,19 +20,19 @@ struct WallpaperCategoryFilter: View {
 			options: options,
 			accentColor: accentColor,
 			listTitle: { category in
-				L10n.string(
-					CustomizationStrings.wallpaperFilterOption(
-						title(for: category), count: counts[category] ?? 0))
+
+				CustomizationStrings.wallpaperFilterOption(
+					title(for: category), count: counts[category] ?? 0)
 			},
 			trailingMenuItems: {
 				guard !operatorCounts.isEmpty else { return AnyView(EmptyView()) }
 				return AnyView(
-					Menu(L10n.string(CustomizationStrings.wallpaperFilterOperators)) {
+					Menu(CustomizationStrings.wallpaperFilterOperators) {
 						ForEach(operatorCounts) { entry in
 							Button(
-								L10n.string(
-									CustomizationStrings.wallpaperFilterOption(
-										entry.displayName, count: entry.count))
+
+								CustomizationStrings.wallpaperFilterOption(
+									entry.displayName, count: entry.count)
 							) {
 								onSelectOperator(entry.tag)
 							}
@@ -41,7 +41,7 @@ struct WallpaperCategoryFilter: View {
 				)
 			}
 		)
-		.accessibilityLabel(Text(L10n.string(CustomizationStrings.wallpaperFilterLabel)))
+		.accessibilityLabel(Text(CustomizationStrings.wallpaperFilterLabel))
 	}
 
 	private var options: [(value: WallpaperCategory?, title: String)] {
@@ -49,7 +49,7 @@ struct WallpaperCategoryFilter: View {
 	}
 
 	private func title(for category: WallpaperCategory?) -> String {
-		category.map { L10n.string(CustomizationStrings.wallpaperCategory($0)) }
-			?? L10n.string(CustomizationStrings.wallpaperFilterAll)
+		category.map { CustomizationStrings.wallpaperCategory($0) }
+			?? CustomizationStrings.wallpaperFilterAll
 	}
 }

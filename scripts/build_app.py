@@ -33,11 +33,6 @@ from lib.common import (
 from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
-from localization import (
-    compile_swift_localizations,
-    prepare_localization,
-    swift_resource_root,
-)
 from runtime_config import (
     RuntimeConfiguration,
     load_runtime_config,
@@ -185,13 +180,6 @@ def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path
         (project / "Resources/Assets.car", Path("Assets.car")),
         (project / "docs/help/errors", Path("SupportArticles")),
         *(
-            (
-                project / f"Resources/{language}.lproj/InfoPlist.strings",
-                Path(f"{language}.lproj/InfoPlist.strings"),
-            )
-            for language in configuration.product.localizations
-        ),
-        *(
             (source, Path(source.name))
             for source in configuration.copied_resource_source_paths
         ),
@@ -200,31 +188,6 @@ def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path
     if len(destinations) != len(set(destinations)):
         fail("application resources contain duplicate destinations")
     return tuple(entries)
-
-
-def copy_swift_localizations(
-    binary_dir: Path,
-    resources: Path,
-    configuration: ProjectConfiguration,
-) -> None:
-    source = require_directory(binary_dir / configuration.swift_resource_bundle_name)
-    resource_root = swift_resource_root(source)
-    localizations = sorted(resource_root.glob("*.lproj/*.strings"))
-    if not localizations:
-        fail("Swift resource bundle does not contain localizations")
-    discovered = {path.parent.name.removesuffix(".lproj") for path in localizations}
-    expected = set(configuration.product.localizations)
-    if discovered != expected:
-        fail(
-            "Swift resource bundle localizations do not match CFBundleLocalizations "
-            f"(found {sorted(discovered)}, expected {sorted(expected)})"
-        )
-    if resource_root != source:
-        resources.mkdir(parents=True, exist_ok=True)
-        copy_resource(source, resources / source.name)
-        return
-    for localization in localizations:
-        copy_file(localization, resources / localization.relative_to(resource_root))
 
 
 def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, ...]:
@@ -376,7 +339,6 @@ def build(
     project_configuration: ProjectConfiguration | None = None,
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
-    prepare_localization(configuration=project_configuration)
     project = project_configuration.project_directory
     runtime_configuration = load_runtime_config(project / "runtime.json")
     runtime = runtime.resolve() if runtime is not None else None
@@ -422,7 +384,6 @@ def build(
             environment=swift_environment,
         ).stdout.strip()
     )
-    compile_swift_localizations(binary_dir, project_configuration)
     binary = binary_dir / project_configuration.product.executable_name
     if not os.access(binary, os.X_OK):
         fail(f"{configuration} executable not found: {binary}")
@@ -437,7 +398,6 @@ def build(
         macos.mkdir(parents=True)
         resources.mkdir(parents=True)
         copy_file(binary, macos / project_configuration.product.executable_name, 0o755)
-        copy_swift_localizations(binary_dir, resources, project_configuration)
         configure_info_plist(
             project / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )

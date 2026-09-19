@@ -43,7 +43,7 @@ struct FloatingActionBar<Content: View>: View {
 
 /// Standard confirmation action used by floating modal footers.
 struct FloatingDoneButton: View {
-	var title = L10n.string(SharedStrings.done)
+	var title = "Done"
 	let accentColor: Color
 	let action: () -> Void
 

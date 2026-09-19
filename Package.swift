@@ -1,40 +1,16 @@
 // swift-tools-version: 6.2
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
 import PackageDescription
 
-let useCopiedLocalizationResources =
-	ProcessInfo.processInfo.environment["ARKNIGHTS_CLIENT_SWIFT_TESTS"] == "1"
-
-func localizationResource(_ path: String) -> Resource {
-	useCopiedLocalizationResources ? .copy(path) : .process(path)
-}
-
-let appResources: [Resource] =
-	useCopiedLocalizationResources
-	// Xcode 27 still scans individual .xcstrings files for native symbols even with .copy.
-	// Copying the directory keeps test resources available without scheduling that step.
-	? [
-		.copy("Resources"),
-		// Keep noncatalog assets at the bundle root for Bundle.url(forResource:).
-		.copy("Resources/GameIconBackground.png"),
-		.copy("Resources/OperatorIconFrame.svg"),
-		.copy("Resources/WallpaperTags.json"),
-	]
-	: [
-		.copy("Resources/GameIconBackground.png"),
-		.copy("Resources/OperatorIconFrame.svg"),
-		.copy("Resources/WallpaperTags.json"),
-		localizationResource("Resources/Customization.xcstrings"),
-		localizationResource("Resources/Launcher.xcstrings"),
-		localizationResource("Resources/Localizable.xcstrings"),
-		localizationResource("Resources/Settings.xcstrings"),
-	]
+let appResources: [Resource] = [
+	.copy("Resources/GameIconBackground.png"),
+	.copy("Resources/OperatorIconFrame.svg"),
+	.copy("Resources/WallpaperTags.json"),
+]
 
 let package = Package(
 	name: "ArknightsClient",
-	defaultLocalization: "en",
 	platforms: [
 		.macOS(.v15)
 	],

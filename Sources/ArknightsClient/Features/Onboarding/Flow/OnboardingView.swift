@@ -34,7 +34,6 @@ struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
-								preferences: preferences,
 								accentColor: customization.accentColor,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
@@ -105,30 +104,30 @@ struct OnboardingView: View {
 							isSkipConfirmationPresented = true
 						} label: {
 							Label(
-								L10n.string(OnboardingStrings.skipSetup),
+								OnboardingStrings.skipSetup,
 								systemImage: "forward.end"
 							)
 						}
 						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
 						.alert(
-							L10n.string(OnboardingStrings.skipSetupConfirmationTitle),
+							OnboardingStrings.skipSetupConfirmationTitle,
 							isPresented: $isSkipConfirmationPresented
 						) {
-							Button(L10n.string(OnboardingStrings.continueSetup), role: .cancel) {}
+							Button(OnboardingStrings.continueSetup, role: .cancel) {}
 								.keyboardShortcut(.defaultAction)
-							Button(L10n.string(OnboardingStrings.skipAnyway), role: .destructive) {
+							Button(OnboardingStrings.skipAnyway, role: .destructive) {
 								coordinator.skip()
 							}
 						} message: {
-							Text(L10n.string(OnboardingStrings.skipSetupConfirmationDetail))
+							Text(OnboardingStrings.skipSetupConfirmationDetail)
 						}
 					}
 					Spacer()
 					if coordinator.step != .welcome {
 						Button(action: coordinator.goBack) {
 							Label(
-								L10n.string(OnboardingStrings.back),
+								OnboardingStrings.back,
 								systemImage: "chevron.backward"
 							)
 						}
@@ -136,7 +135,7 @@ struct OnboardingView: View {
 						.controlSize(.large)
 					}
 					CapsuleActionButton(
-						title: L10n.string(primaryTitle),
+						title: primaryTitle,
 						systemImage: primarySystemImage,
 						tone: .accent(customization.accentColor),
 						action: performPrimaryAction
@@ -174,7 +173,7 @@ struct OnboardingView: View {
 		}
 	}
 
-	private var primaryTitle: LocalizedStringResource {
+	private var primaryTitle: String {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
 			case .checking: OnboardingStrings.checking

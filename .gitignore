@@ -10,4 +10,3 @@ __pycache__/
 .DS_Store
 /issues
 docs/superpowers
-Sources/ArknightsClient/Shared/Localization/GeneratedStringSymbols_*.swift

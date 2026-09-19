@@ -71,15 +71,15 @@ struct StatusHUDPill: View {
 			.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 8))
 			.onHover { isHovering = $0 }
 			.accessibilityLabel(
-				L10n.string(
-					isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
-				)
+
+				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
+
 			)
 			.accessibilityValue(Text(selectedCountdown))
 			.help(
-				L10n.string(
-					isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
-				)
+
+				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
+
 			)
 		} else {
 			headerLabel
@@ -132,7 +132,7 @@ struct StatusHUDPill: View {
 					}
 				} label: {
 					HStack(spacing: 8) {
-						Text(region.localizedDisplayName)
+						Text(region.displayName)
 							.font(.caption.weight(.semibold))
 							.foregroundStyle(
 								region == installation.region ? accentColor : .primary
@@ -166,7 +166,7 @@ struct StatusHUDPill: View {
 				.accessibilityAddTraits(
 					region == installation.region ? .isSelected : []
 				)
-				.accessibilityHint(Text(L10n.string(HomeStrings.switchRegionHelp)))
+				.accessibilityHint(Text(HomeStrings.switchRegionHelp))
 			}
 		}
 	}

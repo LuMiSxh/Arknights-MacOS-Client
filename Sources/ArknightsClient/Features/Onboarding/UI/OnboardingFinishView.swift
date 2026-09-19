@@ -11,12 +11,12 @@ struct OnboardingFinishView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: L10n.string(OnboardingStrings.finishTitle),
-			subtitle: L10n.string(OnboardingStrings.finishSubtitle),
+			title: OnboardingStrings.finishTitle,
+			subtitle: OnboardingStrings.finishSubtitle,
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: L10n.string(gameStatusTitle), systemImage: gameStatusImage) {
-				Text(L10n.string(gameStatusDetail))
+			SettingsPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
+				Text(gameStatusDetail)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 
@@ -29,7 +29,7 @@ struct OnboardingFinishView: View {
 					&& installation.canInstall
 				{
 					CapsuleActionButton(
-						title: L10n.string(OnboardingStrings.resumeDownload),
+						title: OnboardingStrings.resumeDownload,
 						systemImage: "arrow.clockwise",
 						tone: .accent(accentColor),
 						action: install
@@ -38,29 +38,28 @@ struct OnboardingFinishView: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(OnboardingStrings.communityTitle), systemImage: "person.3"
+				title: OnboardingStrings.communityTitle, systemImage: "person.3"
 			) {
-				Text(L10n.string(OnboardingStrings.communityDetail))
+				Text(OnboardingStrings.communityDetail)
 					.fixedSize(horizontal: false, vertical: true)
-				Text(L10n.string(OnboardingStrings.issueDetail))
+				Text(OnboardingStrings.issueDetail)
 					.font(.callout)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					title: L10n.string(OnboardingStrings.reportProblem), systemImage: "ladybug",
+					title: OnboardingStrings.reportProblem, systemImage: "ladybug",
 					tone: .accent(accentColor), action: reportProblem
 				)
 
 				SettingsHairline()
 
-				Text(L10n.string(OnboardingStrings.communitySupport(region: installation.region)))
+				Text(OnboardingStrings.communitySupport(region: installation.region))
 					.font(.callout)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					title: L10n.string(
-						OnboardingStrings.contactSupport(region: installation.region)
-					),
+					title:
+						OnboardingStrings.contactSupport(region: installation.region),
 					systemImage: "arrow.up.right.square",
 					tone: .accent(accentColor),
 					action: contactPublisher
@@ -69,7 +68,7 @@ struct OnboardingFinishView: View {
 		}
 	}
 
-	private var gameStatusTitle: LocalizedStringResource {
+	private var gameStatusTitle: String {
 		if lifecycle.activity.isGameActive { return OnboardingStrings.finishStatusRunning }
 		if installation.isDownloading { return OnboardingStrings.finishStatusDownloading }
 		if installation.isInstalled { return OnboardingStrings.finishStatusInstalled }
@@ -83,7 +82,7 @@ struct OnboardingFinishView: View {
 		return "pause.circle"
 	}
 
-	private var gameStatusDetail: LocalizedStringResource {
+	private var gameStatusDetail: String {
 		if lifecycle.activity.isGameActive { return OnboardingStrings.finishGameActiveDetail }
 		if installation.isDownloading { return OnboardingStrings.finishDownloadingDetail }
 		if installation.isInstalled { return OnboardingStrings.finishInstalledDetail }

@@ -106,7 +106,7 @@ private struct PresetGallerySuggestionChip: View {
 		.buttonStyle(.plain)
 		.keyboardFocusIndicator(in: Capsule())
 		.accessibilityLabel(Text(suggestion.accessibilityTitle))
-		.accessibilityHint(Text(L10n.string(CustomizationStrings.searchSuggestionSelect)))
+		.accessibilityHint(Text(CustomizationStrings.searchSuggestionSelect))
 		.transition(transition)
 	}
 }

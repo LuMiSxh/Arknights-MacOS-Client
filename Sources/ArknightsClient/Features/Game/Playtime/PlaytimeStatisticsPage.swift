@@ -10,27 +10,27 @@ struct PlaytimeStatisticsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: L10n.string(PlaytimeStrings.title),
-			subtitle: L10n.string(PlaytimeStrings.subtitle),
+			title: PlaytimeStrings.title,
+			subtitle: PlaytimeStrings.subtitle,
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: L10n.string(PlaytimeStrings.overview),
+				title: PlaytimeStrings.overview,
 				systemImage: "clock"
 			) {
 				HStack(spacing: 0) {
 					metric(
-						L10n.string(PlaytimeStrings.total),
+						PlaytimeStrings.total,
 						duration: controller.totalDuration
 					)
 					metricDivider
 					metric(
-						L10n.string(PlaytimeStrings.sevenDays),
+						PlaytimeStrings.sevenDays,
 						duration: controller.duration(inLast: 7)
 					)
 					metricDivider
 					metric(
-						L10n.string(PlaytimeStrings.thirtyDays),
+						PlaytimeStrings.thirtyDays,
 						duration: controller.duration(inLast: 30)
 					)
 				}
@@ -39,14 +39,14 @@ struct PlaytimeStatisticsPage: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(PlaytimeStrings.regions),
+				title: PlaytimeStrings.regions,
 				systemImage: "globe"
 			) {
 				ForEach(Array(regions.enumerated()), id: \.element.id) {
 					index, region in
 					if index > 0 { SettingsHairline() }
 					HStack {
-						Text(region.localizedDisplayName)
+						Text(region.displayName)
 						Spacer()
 						Text(durationText(controller.duration(for: region)))
 							.font(.callout.monospacedDigit().weight(.semibold))
@@ -55,29 +55,29 @@ struct PlaytimeStatisticsPage: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(PlaytimeStrings.about),
+				title: PlaytimeStrings.about,
 				systemImage: "info.circle"
 			) {
 				explanation(
-					title: L10n.string(PlaytimeStrings.measurement),
-					detail: L10n.string(PlaytimeStrings.measurementDetail),
+					title: PlaytimeStrings.measurement,
+					detail: PlaytimeStrings.measurementDetail,
 					systemImage: "clock.badge.checkmark"
 				)
 				SettingsHairline()
 				explanation(
-					title: L10n.string(PlaytimeStrings.privacy),
-					detail: L10n.string(PlaytimeStrings.privacyDetail),
+					title: PlaytimeStrings.privacy,
+					detail: PlaytimeStrings.privacyDetail,
 					systemImage: "lock"
 				)
 			}
 
 			DangerZonePanel {
 				SettingsActionRow(
-					title: L10n.string(PlaytimeStrings.reset),
-					detail: L10n.string(PlaytimeStrings.resetDetail)
+					title: PlaytimeStrings.reset,
+					detail: PlaytimeStrings.resetDetail
 				) {
 					CapsuleActionButton(
-						title: L10n.string(PlaytimeStrings.resetAction),
+						title: PlaytimeStrings.resetAction,
 						systemImage: "trash",
 						tone: .danger,
 						presentation: .compact,
@@ -90,18 +90,18 @@ struct PlaytimeStatisticsPage: View {
 							&& controller.statistics.activeSession == nil
 					)
 					.confirmationDialog(
-						L10n.string(PlaytimeStrings.resetConfirmation),
+						PlaytimeStrings.resetConfirmation,
 						isPresented: $confirmsReset,
 						titleVisibility: .visible
 					) {
 						Button(
-							L10n.string(PlaytimeStrings.resetConfirm),
+							PlaytimeStrings.resetConfirm,
 							role: .destructive,
 							action: controller.reset
 						)
-						Button(L10n.string(SettingsStrings.cancel), role: .cancel) {}
+						Button(SettingsStrings.cancel, role: .cancel) {}
 					} message: {
-						Text(L10n.string(PlaytimeStrings.resetDetail))
+						Text(PlaytimeStrings.resetDetail)
 					}
 				}
 			}
@@ -109,7 +109,7 @@ struct PlaytimeStatisticsPage: View {
 	}
 
 	private var locale: Locale {
-		L10n.activeLocale ?? .autoupdatingCurrent
+		Locale(identifier: "en_US_POSIX")
 	}
 
 	private var metricDivider: some View {
@@ -123,17 +123,17 @@ struct PlaytimeStatisticsPage: View {
 		Group {
 			if let session = controller.statistics.latestSession {
 				SettingsActionRow(
-					title: L10n.string(PlaytimeStrings.latest),
+					title: PlaytimeStrings.latest,
 					detail:
-						"\(session.region.localizedDisplayName) · \(dateText(session.startedAt))"
+						"\(session.region.displayName) · \(dateText(session.startedAt))"
 				) {
 					Text(durationText(session.duration))
 						.font(.callout.monospacedDigit().weight(.semibold))
 				}
 			} else {
 				SettingsActionRow(
-					title: L10n.string(PlaytimeStrings.latest),
-					detail: L10n.string(PlaytimeStrings.noSessions)
+					title: PlaytimeStrings.latest,
+					detail: PlaytimeStrings.noSessions
 				) {
 					EmptyView()
 				}
@@ -175,7 +175,7 @@ struct PlaytimeStatisticsPage: View {
 					.locale(locale)
 			)
 		}
-		guard duration >= 60 else { return L10n.string(PlaytimeStrings.lessThanMinute) }
+		guard duration >= 60 else { return PlaytimeStrings.lessThanMinute }
 		return Duration.seconds(duration).formatted(
 			.units(
 				allowed: [.hours, .minutes],

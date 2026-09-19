@@ -30,11 +30,11 @@ struct PresetGallerySearchBar: View {
 				}
 			}
 
-			TextField(L10n.string(destination.searchPlaceholder), text: $searchText)
+			TextField(destination.searchPlaceholder, text: $searchText)
 				.textFieldStyle(.plain)
 				.focused($isFocused)
 				.frame(height: Self.contentHeight)
-				.accessibilityLabel(L10n.string(CustomizationStrings.searchLabel))
+				.accessibilityLabel(CustomizationStrings.searchLabel)
 				.onKeyPress(.delete) {
 					guard searchText.isEmpty, !committedTags.isEmpty else { return .ignored }
 					committedTags.removeLast()
@@ -54,7 +54,7 @@ struct PresetGallerySearchBar: View {
 						.contentShape(Rectangle())
 				}
 				.buttonStyle(.plain)
-				.accessibilityLabel(L10n.string(CustomizationStrings.searchClear))
+				.accessibilityLabel(CustomizationStrings.searchClear)
 			}
 		}
 		.font(.callout)
@@ -105,7 +105,7 @@ struct PresetGallerySearchBar: View {
 		)
 		.overlay(Capsule().strokeBorder(accentColor.opacity(0.5), lineWidth: 1))
 		.frame(height: Self.contentHeight)
-		.accessibilityLabel(L10n.string(CustomizationStrings.searchRemoveTag(tag)))
+		.accessibilityLabel(CustomizationStrings.searchRemoveTag(tag))
 	}
 
 	private func promoteTrailingTag() {

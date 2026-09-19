@@ -53,8 +53,6 @@ def compile_arguments(
         configuration.product.icon_name,
         "--enable-on-demand-resources",
         "NO",
-        "--development-region",
-        configuration.product.development_region,
         "--target-device",
         "mac",
         "--minimum-deployment-target",

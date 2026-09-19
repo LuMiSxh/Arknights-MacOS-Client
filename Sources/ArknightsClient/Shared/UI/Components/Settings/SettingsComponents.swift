@@ -120,7 +120,7 @@ struct DangerZonePanel<Content: View>: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
 			Label(
-				L10n.string(SettingsStrings.dangerZone),
+				SettingsStrings.dangerZone,
 				systemImage: "exclamationmark.triangle.fill"
 			)
 			.font(.headline)
@@ -160,7 +160,7 @@ struct UpdateSettingsRow: View {
 			SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
 				.disabled(isDisabled)
 			CapsuleActionButton(
-				title: L10n.string(SettingsStrings.checkNow), tone: .accent(accentColor),
+				title: SettingsStrings.checkNow, tone: .accent(accentColor),
 				presentation: .compact,
 				action: check
 			)

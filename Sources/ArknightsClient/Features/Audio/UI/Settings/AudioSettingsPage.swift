@@ -9,18 +9,17 @@ struct AudioSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: L10n.string(SettingsStrings.audioTitle),
-			subtitle: L10n.string(SettingsStrings.audioSubtitle),
+			title: SettingsStrings.audioTitle,
+			subtitle: SettingsStrings.audioSubtitle,
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: L10n.string(SettingsStrings.audioMusic), systemImage: "music.note")
-			{
+			SettingsPanel(title: SettingsStrings.audioMusic, systemImage: "music.note") {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.audioBackgroundMusic),
-					detail: L10n.string(SettingsStrings.audioBackgroundMusicDetail)
+					title: SettingsStrings.audioBackgroundMusic,
+					detail: SettingsStrings.audioBackgroundMusicDetail
 				) {
 					SettingsToggle(
-						L10n.string(SettingsStrings.audioBackgroundMusic),
+						SettingsStrings.audioBackgroundMusic,
 						isOn: $settings.playsLauncherMusic,
 						accentColor: accentColor
 					)
@@ -29,12 +28,12 @@ struct AudioSettingsPage: View {
 				if settings.playsLauncherMusic {
 					SettingsHairline()
 					SettingsActionRow(
-						title: L10n.string(SettingsStrings.audioURL),
-						detail: L10n.string(SettingsStrings.audioURLDetail)
+						title: SettingsStrings.audioURL,
+						detail: SettingsStrings.audioURLDetail
 					) {
 						ThemedTextField(
-							L10n.string(SettingsStrings.audioURL),
-							prompt: L10n.string(SettingsStrings.audioURLPrompt),
+							SettingsStrings.audioURL,
+							prompt: SettingsStrings.audioURLPrompt,
 							text: $settings.launcherMusicURL,
 							systemImage: "link",
 							accentColor: accentColor
@@ -43,8 +42,8 @@ struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: L10n.string(SettingsStrings.audioVolume),
-						detail: L10n.string(SettingsStrings.audioVolumeDetail)
+						title: SettingsStrings.audioVolume,
+						detail: SettingsStrings.audioVolumeDetail
 					) {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")
@@ -57,23 +56,23 @@ struct AudioSettingsPage: View {
 								accentColor: accentColor,
 								width: 140
 							)
-							.accessibilityLabel(L10n.string(SettingsStrings.audioVolume))
+							.accessibilityLabel(SettingsStrings.audioVolume)
 							.accessibilityValue(
 								Text(
-									L10n.string(
-										SettingsStrings.audioVolumePercent(
-											Int(settings.launcherMusicVolume * 100)
-										))
+
+									SettingsStrings.audioVolumePercent(
+										Int(settings.launcherMusicVolume * 100)
+									)
 								)
 							)
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
 							Text(
-								L10n.string(
-									SettingsStrings.audioVolumePercent(
-										Int(settings.launcherMusicVolume * 100)
-									))
+
+								SettingsStrings.audioVolumePercent(
+									Int(settings.launcherMusicVolume * 100)
+								)
 							)
 							.font(.caption.monospacedDigit())
 							.foregroundStyle(.secondary)
@@ -82,11 +81,11 @@ struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: L10n.string(SettingsStrings.audioCurrentlyPlaying),
-						detail: L10n.string(SettingsStrings.audioCurrentlyPlayingDetail)
+						title: SettingsStrings.audioCurrentlyPlaying,
+						detail: SettingsStrings.audioCurrentlyPlayingDetail
 					) {
 						SettingsToggle(
-							L10n.string(SettingsStrings.audioCurrentlyPlaying),
+							SettingsStrings.audioCurrentlyPlaying,
 							isOn: $settings.showsPlayingMusic,
 							accentColor: accentColor
 						)

@@ -13,7 +13,7 @@ struct LauncherUpdateView: View {
 
 	var body: some View {
 		ThemedModalView(
-			title: L10n.string(LauncherStrings.updateTitle),
+			title: LauncherStrings.updateTitle,
 			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: modalWidth,
@@ -50,7 +50,7 @@ struct LauncherUpdateView: View {
 	private var statusHeader: some View {
 		VStack(alignment: .leading, spacing: 6) {
 			if let version = driver.version {
-				Text(L10n.string(LauncherStrings.updateVersion(version)))
+				Text(LauncherStrings.updateVersion(version))
 					.font(.headline)
 			}
 			Text(statusText)
@@ -68,7 +68,7 @@ struct LauncherUpdateView: View {
 			ProgressView()
 				.controlSize(.large)
 				.frame(maxWidth: .infinity, alignment: .center)
-				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateChecking)))
+				.accessibilityLabel(Text(LauncherStrings.updateChecking))
 		case .available:
 			availableContent
 		case .downloading:
@@ -76,24 +76,24 @@ struct LauncherUpdateView: View {
 		case .extracting:
 			extractionContent
 		case .readyToInstall:
-			Text(L10n.string(LauncherStrings.updateReadyDetail))
+			Text(LauncherStrings.updateReadyDetail)
 				.foregroundStyle(.secondary)
 		case .installing:
 			installingContent
 		case .installed:
 			Text(
-				L10n.string(
-					driver.relaunched
-						? LauncherStrings.updateRelaunchDetail
-						: LauncherStrings.updateInstalledDetail
-				)
+
+				driver.relaunched
+					? LauncherStrings.updateRelaunchDetail
+					: LauncherStrings.updateInstalledDetail
+
 			)
 			.foregroundStyle(.secondary)
 		case .noUpdate:
-			Text(L10n.string(LauncherStrings.updateNoUpdateDetail))
+			Text(LauncherStrings.updateNoUpdateDetail)
 				.foregroundStyle(.secondary)
 		case .failed:
-			Text(driver.message ?? L10n.string(LauncherStrings.updateErrorDetail))
+			Text(driver.message ?? LauncherStrings.updateErrorDetail)
 				.foregroundStyle(.secondary)
 				.textSelection(.enabled)
 		}
@@ -109,11 +109,11 @@ struct LauncherUpdateView: View {
 						.textSelection(.enabled)
 				}
 			} else {
-				Text(L10n.string(LauncherStrings.updateReleaseNotesUnavailable))
+				Text(LauncherStrings.updateReleaseNotesUnavailable)
 					.foregroundStyle(.secondary)
 			}
 			if driver.informationOnly {
-				Text(L10n.string(LauncherStrings.updateInformationOnlyDetail))
+				Text(LauncherStrings.updateInformationOnlyDetail)
 					.foregroundStyle(.secondary)
 			}
 		}
@@ -123,7 +123,7 @@ struct LauncherUpdateView: View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView(value: downloadProgress)
 				.tint(accentColor)
-				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateDownloading)))
+				.accessibilityLabel(Text(LauncherStrings.updateDownloading))
 				.accessibilityValue(Text(downloadProgressText))
 			Text(downloadProgressText)
 				.font(.caption.monospacedDigit())
@@ -135,7 +135,7 @@ struct LauncherUpdateView: View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView(value: driver.extractionProgress)
 				.tint(accentColor)
-				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateExtracting)))
+				.accessibilityLabel(Text(LauncherStrings.updateExtracting))
 				.accessibilityValue(Text(percentageText))
 			Text(percentageText)
 				.font(.caption.monospacedDigit())
@@ -146,14 +146,14 @@ struct LauncherUpdateView: View {
 	private var installingContent: some View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView()
-				.accessibilityLabel(Text(L10n.string(LauncherStrings.updateInstalling)))
+				.accessibilityLabel(Text(LauncherStrings.updateInstalling))
 			Text(
 				driver.message
 					?? (driver.gameIsRunning
-						? L10n.string(LauncherStrings.updateQuitDetail)
+						? LauncherStrings.updateQuitDetail
 						: driver.terminationBlocked
-							? L10n.string(LauncherStrings.updateWaitingDetail)
-							: L10n.string(LauncherStrings.updateInstallingDetail))
+							? LauncherStrings.updateWaitingDetail
+							: LauncherStrings.updateInstallingDetail)
 			)
 			.foregroundStyle(.secondary)
 		}
@@ -164,27 +164,27 @@ struct LauncherUpdateView: View {
 		switch driver.phase {
 		case .checking:
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateCancel),
+				title: LauncherStrings.updateCancel,
 				tone: .neutral,
 				action: driver.cancelCheck
 			)
 		case .available:
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateLater),
+				title: LauncherStrings.updateLater,
 				tone: .neutral,
 				action: { driver.choose(.dismiss) }
 			)
 			if driver.informationOnly {
 				if let informationURL = driver.informationURL {
 					CapsuleActionButton(
-						title: L10n.string(LauncherStrings.updateMoreInformation),
+						title: LauncherStrings.updateMoreInformation,
 						systemImage: "arrow.up.right",
 						tone: .neutral
 					) { NSWorkspace.shared.open(informationURL) }
 				}
 			} else {
 				CapsuleActionButton(
-					title: L10n.string(LauncherStrings.updateInstall),
+					title: LauncherStrings.updateInstall,
 					systemImage: "arrow.down.app",
 					tone: .accent(accentColor),
 					action: { driver.choose(.install) }
@@ -192,7 +192,7 @@ struct LauncherUpdateView: View {
 			}
 		case .downloading:
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateCancel),
+				title: LauncherStrings.updateCancel,
 				tone: .neutral,
 				action: driver.cancelDownload
 			)
@@ -200,12 +200,12 @@ struct LauncherUpdateView: View {
 			EmptyView()
 		case .readyToInstall:
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateLater),
+				title: LauncherStrings.updateLater,
 				tone: .neutral,
 				action: { driver.choose(.dismiss) }
 			)
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateInstallNow),
+				title: LauncherStrings.updateInstallNow,
 				systemImage: "arrow.down.app",
 				tone: .accent(accentColor),
 				action: { driver.choose(.install) }
@@ -213,7 +213,7 @@ struct LauncherUpdateView: View {
 		case .installing:
 			if !driver.applicationTerminated {
 				CapsuleActionButton(
-					title: L10n.string(LauncherStrings.updateRetryQuit),
+					title: LauncherStrings.updateRetryQuit,
 					systemImage: "arrow.clockwise",
 					tone: .accent(accentColor),
 					action: driver.retryTerminationRequest
@@ -221,31 +221,31 @@ struct LauncherUpdateView: View {
 			}
 		case .installed:
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateDone),
+				title: LauncherStrings.updateDone,
 				tone: .neutral,
 				action: driver.acknowledge
 			)
 		case .noUpdate:
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateCheckAgain),
+				title: LauncherStrings.updateCheckAgain,
 				systemImage: "arrow.clockwise",
 				tone: .accent(accentColor),
 				action: retryUpdate
 			)
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateDone),
+				title: LauncherStrings.updateDone,
 				tone: .neutral,
 				action: driver.acknowledge
 			)
 		case .failed:
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateTryAgain),
+				title: LauncherStrings.updateTryAgain,
 				systemImage: "arrow.clockwise",
 				tone: .accent(accentColor),
 				action: retryUpdate
 			)
 			CapsuleActionButton(
-				title: L10n.string(LauncherStrings.updateDone),
+				title: LauncherStrings.updateDone,
 				tone: .neutral,
 				action: driver.acknowledge
 			)
@@ -257,23 +257,23 @@ struct LauncherUpdateView: View {
 	private var statusText: String {
 		switch driver.phase {
 		case .hidden: ""
-		case .checking: L10n.string(LauncherStrings.updateChecking)
+		case .checking: LauncherStrings.updateChecking
 		case .available: availableStatusText
-		case .downloading: L10n.string(LauncherStrings.updateDownloading)
-		case .extracting: L10n.string(LauncherStrings.updateExtracting)
-		case .readyToInstall: L10n.string(LauncherStrings.updateReady)
-		case .installing: L10n.string(LauncherStrings.updateInstalling)
-		case .installed: L10n.string(LauncherStrings.updateInstalled)
-		case .noUpdate: L10n.string(LauncherStrings.updateNoUpdate)
-		case .failed: L10n.string(LauncherStrings.updateFailed)
+		case .downloading: LauncherStrings.updateDownloading
+		case .extracting: LauncherStrings.updateExtracting
+		case .readyToInstall: LauncherStrings.updateReady
+		case .installing: LauncherStrings.updateInstalling
+		case .installed: LauncherStrings.updateInstalled
+		case .noUpdate: LauncherStrings.updateNoUpdate
+		case .failed: LauncherStrings.updateFailed
 		}
 	}
 
 	private var availableStatusText: String {
 		switch driver.updateStage {
-		case .downloaded: L10n.string(LauncherStrings.updateReady)
-		case .installing: L10n.string(LauncherStrings.updateInstalling)
-		default: L10n.string(LauncherStrings.updateAvailable)
+		case .downloaded: LauncherStrings.updateReady
+		case .installing: LauncherStrings.updateInstalling
+		default: LauncherStrings.updateAvailable
 		}
 	}
 

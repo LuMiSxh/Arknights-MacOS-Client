@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-/// Localized copy and descriptions supplied by the Settings feature.
+/// English copy and descriptions supplied by the Settings feature.
 struct StorageOverviewCopy {
 	let title: String
 	let subtitle: String

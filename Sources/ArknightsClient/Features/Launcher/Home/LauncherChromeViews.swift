@@ -30,7 +30,7 @@ struct ArknightsWordmark: View {
 						.transition(wordmarkTransition)
 				}
 			} else {
-				Text(L10n.string(HomeStrings.wordmarkFallback(region: region)))
+				Text(HomeStrings.wordmarkFallback(region: region))
 					.font(.system(.title, design: .serif))
 					.minimumScaleFactor(0.7)
 					.lineLimit(1)
@@ -44,7 +44,7 @@ struct ArknightsWordmark: View {
 		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(
-			L10n.string(HomeStrings.wordmarkAccessibility(region: region.localizedDisplayName))
+			HomeStrings.wordmarkAccessibility(region: region.displayName)
 		)
 	}
 

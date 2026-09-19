@@ -13,8 +13,8 @@ struct AboutSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: L10n.string(SettingsStrings.aboutTitle),
-			subtitle: "\(L10n.string(SettingsStrings.application)) \(appVersion)",
+			title: SettingsStrings.aboutTitle,
+			subtitle: "\(SettingsStrings.application) \(appVersion)",
 			accentColor: accentColor
 		) {
 			HStack(alignment: .center, spacing: 18) {
@@ -23,9 +23,9 @@ struct AboutSettingsPage: View {
 					.frame(width: 76, height: 76)
 					.accessibilityHidden(true)
 				VStack(alignment: .leading, spacing: 5) {
-					Text(L10n.string(SettingsStrings.application))
+					Text(SettingsStrings.application)
 						.font(.title2.bold())
-					Text(L10n.string(SettingsStrings.unofficialLauncher))
+					Text(SettingsStrings.unofficialLauncher)
 						.foregroundStyle(.secondary)
 					AccentLink(
 						title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
@@ -35,13 +35,13 @@ struct AboutSettingsPage: View {
 				}
 				Spacer()
 				CapsuleActionButton(
-					title: L10n.string(SettingsStrings.openFinder), systemImage: "folder",
+					title: SettingsStrings.openFinder, systemImage: "folder",
 					tone: .accent(accentColor), showsTitle: false,
 					action: revealApplication
 				)
-				.help(L10n.string(SettingsStrings.openFinderHelp))
+				.help(SettingsStrings.openFinderHelp)
 				CapsuleActionButton(
-					title: L10n.string(SettingsStrings.github), tone: .accent(accentColor)
+					title: SettingsStrings.github, tone: .accent(accentColor)
 				) {
 					NSWorkspace.shared.open(
 						URL(
@@ -49,22 +49,22 @@ struct AboutSettingsPage: View {
 						)!
 					)
 				}
-				.help(L10n.string(SettingsStrings.githubHelp))
+				.help(SettingsStrings.githubHelp)
 				CapsuleActionButton(
-					title: L10n.string(SettingsStrings.donate),
+					title: SettingsStrings.donate,
 					systemImage: "heart.fill",
 					tone: .accent(accentColor)
 				) {
 					NSWorkspace.shared.open(SupportLinks.donate)
 				}
-				.help(L10n.string(SettingsStrings.donateHelp))
+				.help(SettingsStrings.donateHelp)
 			}
 			.padding(20)
 			.adaptiveGlassEffect(in: .rect(cornerRadius: 20))
 
-			SettingsPanel(title: L10n.string(SettingsStrings.documents), systemImage: "doc.text") {
+			SettingsPanel(title: SettingsStrings.documents, systemImage: "doc.text") {
 				DocumentLinkRow(
-					title: L10n.string(SettingsStrings.changelog),
+					title: SettingsStrings.changelog,
 					systemImage: "clock.arrow.circlepath",
 					accentColor: accentColor
 				) {
@@ -72,14 +72,14 @@ struct AboutSettingsPage: View {
 				}
 				SettingsHairline()
 				DocumentLinkRow(
-					title: L10n.string(SettingsStrings.license), systemImage: "checkmark.seal",
+					title: SettingsStrings.license, systemImage: "checkmark.seal",
 					accentColor: accentColor
 				) {
 					presentedDocument = .projectLicense
 				}
 				SettingsHairline()
 				DocumentLinkRow(
-					title: L10n.string(SettingsStrings.thirdPartyNotices),
+					title: SettingsStrings.thirdPartyNotices,
 					systemImage: "shippingbox",
 					accentColor: accentColor
 				) {
@@ -88,14 +88,14 @@ struct AboutSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(SettingsStrings.support), systemImage: "questionmark.circle"
+				title: SettingsStrings.support, systemImage: "questionmark.circle"
 			) {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.launcherIssues),
-					detail: L10n.string(SettingsStrings.launcherIssuesDetail)
+					title: SettingsStrings.launcherIssues,
+					detail: SettingsStrings.launcherIssuesDetail
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.report), systemImage: "ladybug",
+						title: SettingsStrings.report, systemImage: "ladybug",
 						tone: .accent(accentColor), presentation: .compact,
 						action: reportLauncherProblem
 					)
@@ -104,11 +104,11 @@ struct AboutSettingsPage: View {
 				SettingsHairline()
 
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.gameAccountIssues),
-					detail: L10n.string(SettingsStrings.gameAccountIssuesDetail(region: region))
+					title: SettingsStrings.gameAccountIssues,
+					detail: SettingsStrings.gameAccountIssuesDetail(region: region)
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.contactPublisherTitle(region: region)),
+						title: SettingsStrings.contactPublisherTitle(region: region),
 						systemImage: "arrow.up.right.square",
 						tone: .accent(accentColor), presentation: .compact,
 						action: contactPublisher
@@ -121,20 +121,20 @@ struct AboutSettingsPage: View {
 					HStack(spacing: 18) {
 						if let agreement = branding?.userAgreement {
 							AccentLink(
-								title: L10n.string(SettingsStrings.userAgreement),
+								title: SettingsStrings.userAgreement,
 								destination: agreement,
 								accentColor: accentColor
 							)
 						}
 						if let privacy = branding?.privacyPolicy {
 							AccentLink(
-								title: L10n.string(SettingsStrings.privacyPolicy),
+								title: SettingsStrings.privacyPolicy,
 								destination: privacy,
 								accentColor: accentColor
 							)
 						}
 					}
-					Text(L10n.string(SettingsStrings.notAffiliated))
+					Text(SettingsStrings.notAffiliated)
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}

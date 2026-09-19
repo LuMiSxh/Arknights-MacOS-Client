@@ -283,6 +283,9 @@ final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	private static let busyError = NSError(
 		domain: "ArknightsClient.LauncherUpdater",
 		code: 1,
-		userInfo: [NSLocalizedDescriptionKey: L10n.string(.Launcher.launcherUpdateBusy)]
+		userInfo: [
+			NSLocalizedDescriptionKey:
+				"Launcher updates are unavailable during an active operation."
+		]
 	)
 }

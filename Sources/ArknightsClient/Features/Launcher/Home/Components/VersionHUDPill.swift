@@ -51,15 +51,15 @@ struct VersionHUDPill: View {
 			)
 			.onHover { isHovering = $0 }
 			.accessibilityLabel(
-				L10n.string(
-					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
-				)
+
+				isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+
 			)
 			.accessibilityValue(Text(versionText))
 			.help(
-				L10n.string(
-					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
-				)
+
+				isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+
 			)
 
 			if isExpanded {
@@ -72,7 +72,7 @@ struct VersionHUDPill: View {
 						.fixedSize(horizontal: false, vertical: true)
 					Spacer()
 					CapsuleActionButton(
-						title: L10n.string(HomeStrings.versionCheckNow),
+						title: HomeStrings.versionCheckNow,
 						systemImage: "arrow.clockwise",
 						tone: .accent(accentColor), presentation: .hud,
 						action: checkGameUpdates
@@ -121,13 +121,13 @@ struct VersionHUDPill: View {
 	}
 
 	private var updateStatus: String {
-		if lifecycle.refresh.isChecking { return L10n.string(HomeStrings.versionChecking) }
+		if lifecycle.refresh.isChecking { return HomeStrings.versionChecking }
 		if installation.isGameUpdateAvailable,
 			let latest = installation.configuration?.gameLatestVersion
 		{
-			return L10n.string(HomeStrings.versionAvailable(latest))
+			return HomeStrings.versionAvailable(latest)
 		}
-		return L10n.string(HomeStrings.versionUpToDate)
+		return HomeStrings.versionUpToDate
 	}
 
 	private var updateStatusIcon: String {

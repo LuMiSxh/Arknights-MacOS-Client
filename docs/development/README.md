@@ -1,14 +1,14 @@
 ---
 title: Development
-description: Architecture, design, testing, localization, release, and runtime contracts for contributors
+description: Architecture, design, testing, release, and runtime contracts for contributors
 order: 30
 ---
 
 # Development
 
-These documents describe how Arknights Client is organized, tested, localized, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients by default and gates the Gryphline Taiwan client and Hypergryph's China and China — Bilibili clients behind Canary Features. Taiwan and the two China clients each have a separate permission switch.
+These documents describe how Arknights Client is organized, tested, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients by default and gates the Gryphline Taiwan client and Hypergryph's China and China — Bilibili clients behind Canary Features. Taiwan and the two China clients each have a separate permission switch.
 
-Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md), [Design](design.md), and [Localization](localization.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
+Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md) and [Design](design.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
 
 [Wine prefix architecture](architecture/wine-prefix.md) is the developer reference for prefix topology, isolation, migrations, drive mappings, persistent state, and process ownership.
 

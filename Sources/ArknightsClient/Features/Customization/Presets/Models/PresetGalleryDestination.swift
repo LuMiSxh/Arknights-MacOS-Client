@@ -8,14 +8,14 @@ enum PresetGalleryDestination: String, Identifiable {
 
 	var id: String { rawValue }
 
-	var title: LocalizedStringResource {
+	var title: String {
 		switch self {
 		case .artwork: CustomizationStrings.artworkTitle
 		case .operatorIcons: CustomizationStrings.operatorTitle
 		}
 	}
 
-	var subtitle: LocalizedStringResource {
+	var subtitle: String {
 		switch self {
 		case .artwork:
 			CustomizationStrings.artworkSubtitle
@@ -24,21 +24,21 @@ enum PresetGalleryDestination: String, Identifiable {
 		}
 	}
 
-	var searchPlaceholder: LocalizedStringResource {
+	var searchPlaceholder: String {
 		switch self {
 		case .artwork: CustomizationStrings.artworkSearchPlaceholder
 		case .operatorIcons: CustomizationStrings.operatorSearchPlaceholder
 		}
 	}
 
-	var loadingText: LocalizedStringResource {
+	var loadingText: String {
 		switch self {
 		case .artwork: CustomizationStrings.artworkLoading
 		case .operatorIcons: CustomizationStrings.operatorLoading
 		}
 	}
 
-	var emptyText: LocalizedStringResource {
+	var emptyText: String {
 		switch self {
 		case .artwork: CustomizationStrings.artworkEmpty
 		case .operatorIcons: CustomizationStrings.operatorEmpty

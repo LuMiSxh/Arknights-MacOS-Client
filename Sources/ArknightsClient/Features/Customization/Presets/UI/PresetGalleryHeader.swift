@@ -13,16 +13,16 @@ struct PresetGalleryHeader: View {
 	var body: some View {
 		HStack {
 			VStack(alignment: .leading, spacing: 3) {
-				Text(L10n.string(destination.title))
+				Text(destination.title)
 					.font(.title3.bold())
-				Text(L10n.string(destination.subtitle))
+				Text(destination.subtitle)
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
 			Spacer()
 			if destination == .operatorIcons {
 				CapsuleActionButton(
-					title: L10n.string(CustomizationStrings.previewStyles),
+					title: CustomizationStrings.previewStyles,
 					systemImage: "dock.rectangle",
 					tone: .accent(customization.accentColor)
 				) {

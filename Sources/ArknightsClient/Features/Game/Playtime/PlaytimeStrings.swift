@@ -1,29 +1,26 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
-
 enum PlaytimeStrings {
-	static let title = LocalizedStringResource.Settings.settingsStatisticsTitle
-	static let subtitle = LocalizedStringResource.Settings.settingsStatisticsSubtitle
-	static let overview = LocalizedStringResource.Settings.settingsStatisticsOverview
-	static let total = LocalizedStringResource.Settings.settingsStatisticsTotal
-	static let sevenDays = LocalizedStringResource.Settings.settingsStatisticsSevenDays
-	static let thirtyDays = LocalizedStringResource.Settings.settingsStatisticsThirtyDays
-	static let latest = LocalizedStringResource.Settings.settingsStatisticsLatest
-	static let noSessions = LocalizedStringResource.Settings.settingsStatisticsNoSessions
-	static let regions = LocalizedStringResource.Settings.settingsStatisticsRegions
-	static let about = LocalizedStringResource.Settings.settingsStatisticsAbout
-	static let measurement = LocalizedStringResource.Settings.settingsStatisticsMeasurement
-	static let measurementDetail = LocalizedStringResource.Settings
-		.settingsStatisticsMeasurementDetail
-	static let privacy = LocalizedStringResource.Settings.settingsStatisticsPrivacy
-	static let privacyDetail = LocalizedStringResource.Settings.settingsStatisticsPrivacyDetail
-	static let reset = LocalizedStringResource.Settings.settingsStatisticsReset
-	static let resetDetail = LocalizedStringResource.Settings.settingsStatisticsResetDetail
-	static let resetAction = LocalizedStringResource.Settings.settingsStatisticsResetAction
-	static let resetConfirm = LocalizedStringResource.Settings.settingsStatisticsResetConfirm
-	static let resetConfirmation = LocalizedStringResource.Settings
-		.settingsStatisticsResetConfirmation
-	static let lessThanMinute = LocalizedStringResource.Settings
-		.settingsStatisticsLessThanMinute
+	static let title = "Playtime"
+	static let subtitle = "How long the game has been running on this Mac"
+	static let overview = "Overview"
+	static let total = "All time"
+	static let sevenDays = "7 days"
+	static let thirtyDays = "30 days"
+	static let latest = "Latest session"
+	static let noSessions = "No completed session yet"
+	static let regions = "Regions"
+	static let about = "About playtime"
+	static let measurement = "What counts"
+	static let measurementDetail =
+		"Time starts when the game window becomes visible and ends with the game process. Menus, pauses, and idle time are included."
+	static let privacy = "Local only"
+	static let privacyDetail =
+		"Statistics stay on this Mac. They are not associated with an account, synced, or sent anywhere."
+	static let reset = "Playtime statistics"
+	static let resetDetail = "Deletes all local totals and daily data. This cannot be undone."
+	static let resetAction = "Reset Statistics…"
+	static let resetConfirm = "Reset Statistics"
+	static let resetConfirmation = "Reset playtime statistics?"
+	static let lessThanMinute = "< 1 min"
 }

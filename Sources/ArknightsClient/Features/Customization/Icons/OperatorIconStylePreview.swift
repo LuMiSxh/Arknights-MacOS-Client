@@ -12,9 +12,9 @@ struct OperatorIconStylePreview: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
 			VStack(alignment: .leading, spacing: 3) {
-				Text(L10n.string(CustomizationStrings.iconPreviewTitle))
+				Text(CustomizationStrings.iconPreviewTitle)
 					.font(.headline)
-				Text(L10n.string(CustomizationStrings.iconPreviewSubtitle))
+				Text(CustomizationStrings.iconPreviewSubtitle)
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
@@ -37,7 +37,7 @@ struct OperatorIconStylePreview: View {
 					)
 				}
 			} else {
-				ProgressView(L10n.string(CustomizationStrings.iconPreviewLoading))
+				ProgressView(CustomizationStrings.iconPreviewLoading)
 					.frame(maxWidth: .infinity, minHeight: 82)
 			}
 		}
@@ -47,13 +47,13 @@ struct OperatorIconStylePreview: View {
 		.preferredColorScheme(.dark)
 	}
 
-	private func styleLabel(_ title: LocalizedStringResource, detail: LocalizedStringResource)
+	private func styleLabel(_ title: String, detail: String)
 		-> some View
 	{
 		VStack(spacing: 2) {
-			Text(L10n.string(title))
+			Text(title)
 				.font(.caption.bold())
-			Text(L10n.string(detail))
+			Text(detail)
 				.font(.caption)
 				.foregroundStyle(.secondary)
 				.multilineTextAlignment(.center)

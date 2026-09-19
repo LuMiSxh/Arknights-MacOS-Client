@@ -79,7 +79,6 @@ struct ContentView: View {
 						showFailureDetails: showFailureDetails
 					))
 			}
-			.id(model.settings.appLanguage)
 		}
 		.background(Color.black)
 		.preferredColorScheme(.dark)
@@ -125,14 +124,14 @@ struct ContentView: View {
 			isPresented: rosettaConfirmationBinding, install: installRosetta
 		)
 		.confirmationDialog(
-			L10n.string(HomeStrings.repairConfirmationTitle),
+			HomeStrings.repairConfirmationTitle,
 			isPresented: repairConfirmationBinding,
 			titleVisibility: .visible
 		) {
-			Button(L10n.string(HomeStrings.repairConfirmationAction), action: confirmRepair)
-			Button(L10n.string(LauncherStrings.cancel), role: .cancel, action: cancelRepair)
+			Button(HomeStrings.repairConfirmationAction, action: confirmRepair)
+			Button(LauncherStrings.cancel, role: .cancel, action: cancelRepair)
 		} message: {
-			Text(L10n.string(HomeStrings.repairConfirmationDetail))
+			Text(HomeStrings.repairConfirmationDetail)
 		}
 		.aceWarningConfirmation(model: model)
 		.onAppear {
@@ -244,11 +243,11 @@ struct ContentView: View {
 			).padding(.top, 34)
 			Spacer()
 			Button(
-				L10n.string(HomeStrings.settings), systemImage: "gearshape", action: requestSettings
+				HomeStrings.settings, systemImage: "gearshape", action: requestSettings
 			)
 			.labelStyle(.iconOnly).font(.title2.weight(.medium)).frame(minWidth: 44, minHeight: 44)
 			.adaptiveGlassButton().buttonBorderShape(.circle).controlSize(.extraLarge)
-			.keyboardShortcut(",", modifiers: .command).help(L10n.string(HomeStrings.settingsHelp))
+			.keyboardShortcut(",", modifiers: .command).help(HomeStrings.settingsHelp)
 		}
 		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
 	}

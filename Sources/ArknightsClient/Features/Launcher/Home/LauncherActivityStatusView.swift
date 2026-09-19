@@ -81,13 +81,13 @@ struct LauncherActivityStatusView: View {
 			)
 		} else if intelTranslation.canRetryAvailabilityCheck {
 			AccentActionLink(
-				title: L10n.string(HomeStrings.checkAgain),
+				title: HomeStrings.checkAgain,
 				accentColor: accentColor,
 				action: retryIntelTranslationCheck
 			)
 		}
 		AccentLink(
-			title: L10n.string(HomeStrings.openTroubleshooting),
+			title: HomeStrings.openTroubleshooting,
 			destination: code.troubleshootingURL,
 			accentColor: accentColor
 		)
@@ -96,10 +96,10 @@ struct LauncherActivityStatusView: View {
 	private var statusTitle: String {
 		if lifecycle.presentation.status == .pausing { return lifecycle.activityMessage }
 		if installation.isDownloading, let progress = installation.progress {
-			return L10n.string(HomeStrings.downloadPercentage(Int(progress.fraction * 100)))
+			return HomeStrings.downloadPercentage(Int(progress.fraction * 100))
 		}
 		if lifecycle.failure?.blocksGameLaunch == true {
-			return L10n.string(HomeStrings.needsAttention)
+			return HomeStrings.needsAttention
 		}
 		if installation.isInstalled, let title = intelTranslation.statusTitle { return title }
 		return lifecycle.activityMessage
@@ -109,9 +109,9 @@ struct LauncherActivityStatusView: View {
 		if installation.isDownloading, let progress = installation.progress {
 			let downloaded = DownloadProgressFormatting.byteCount(progress.downloadedBytes)
 			let total = DownloadProgressFormatting.byteCount(progress.totalBytes)
-			return L10n.string(
+			return
 				HomeStrings.downloadProgress(downloaded: downloaded, total: total)
-			)
+
 		}
 		if lifecycle.failure?.blocksGameLaunch == true { return nil }
 		if installation.isInstalled { return intelTranslation.statusDetail }
@@ -124,14 +124,14 @@ struct LauncherActivityStatusView: View {
 		if let progress = installation.progress {
 			if let rate = progress.transferRateBytesPerSecond {
 				values.append(
-					L10n.string(
-						HomeStrings.downloadSpeed(
-							DownloadProgressFormatting.byteRate(rate)
-						)
+
+					HomeStrings.downloadSpeed(
+						DownloadProgressFormatting.byteRate(rate)
 					)
+
 				)
 			} else if progress.isTransferStalled {
-				values.append(L10n.string(HomeStrings.downloadWaiting))
+				values.append(HomeStrings.downloadWaiting)
 			}
 		}
 		return values.joined(separator: ", ")
@@ -157,11 +157,11 @@ struct LauncherActivityStatusView: View {
 			HStack(spacing: 7) {
 				if let rate = progress.transferRateBytesPerSecond {
 					Text(
-						L10n.string(
-							HomeStrings.downloadSpeed(
-								DownloadProgressFormatting.byteRate(rate)
-							)
+
+						HomeStrings.downloadSpeed(
+							DownloadProgressFormatting.byteRate(rate)
 						)
+
 					)
 					.monospacedDigit()
 					.frame(
@@ -169,7 +169,7 @@ struct LauncherActivityStatusView: View {
 						alignment: .leading
 					)
 				} else if progress.isTransferStalled {
-					Text(L10n.string(HomeStrings.downloadWaiting))
+					Text(HomeStrings.downloadWaiting)
 						.frame(
 							minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
 							alignment: .leading

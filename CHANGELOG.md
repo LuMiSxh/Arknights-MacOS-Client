@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [0.5.3] - 2026-XX-XX
+## [0.6.0] - 2026-XX-XX
 
 ### Added
 
@@ -36,10 +36,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).
 - Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
 - Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
-- Fixed macOS 27 SwiftPM String Catalog packaging and test execution so localized resources remain available and Swift tests run normally.
+- Fixed macOS 27 SwiftPM resource packaging and test execution so bundled assets remain available and Swift tests run normally.
 - A download on a fast connection can no longer outpace a slow disk and grow in memory without limit.
 - Removed a leak and a per-frame window-server query from the helpers injected into the game and its notice window.
 - Keep native Settings and onboarding toggles on the current macOS geometry by linking app builds against the active SDK while retaining the macOS 15 deployment target.
+
+### Removed
+
+- Removed localization, language preferences, String Catalogs, and the translation pipeline because the maintenance effort was not justified by the value they provided.
 
 ## [0.5.2] - 2026-09-14
 
@@ -291,8 +295,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.5.3...HEAD
-[0.5.3]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.3
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.0
 [0.5.2]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.2
 [0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0

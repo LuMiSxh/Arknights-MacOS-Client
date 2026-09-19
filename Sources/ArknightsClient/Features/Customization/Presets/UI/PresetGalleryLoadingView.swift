@@ -3,13 +3,13 @@
 import SwiftUI
 
 struct PresetGalleryLoadingView: View {
-	let text: LocalizedStringResource
+	let text: String
 
 	var body: some View {
 		VStack(spacing: 12) {
 			ProgressView()
 				.controlSize(.regular)
-			Text(L10n.string(text))
+			Text(text)
 				.font(.caption)
 				.foregroundStyle(.secondary)
 		}

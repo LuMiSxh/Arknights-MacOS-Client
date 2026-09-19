@@ -7,7 +7,7 @@ audience: developers
 
 # Error recovery
 
-Launcher failures use a typed presentation snapshot instead of deriving behavior from localized text. A snapshot contains an operation ID, user-facing message, optional `SupportCode`, original operation and region, and an ordered set of allowed recovery actions.
+Launcher failures use a typed presentation snapshot instead of deriving behavior from display text. A snapshot contains an operation ID, user-facing message, optional `SupportCode`, original operation and region, and an ordered set of allowed recovery actions.
 
 Every user-initiated failure opens the shared detail modal once. A snapshot marked as launch-blocking keeps **Action required** and **Show Details** in the HUD and disables the normal launch action after dismissal. Non-blocking failures, such as a failed manual update check for an already installed game or optional customization work, release the HUD when their modal is dismissed.
 
@@ -20,7 +20,7 @@ Every user-initiated failure opens the shared detail modal once. A snapshot mark
 - The website validates the same registry against one documentation page per code during its production build.
 
 > [!IMPORTANT]
-> Localized messages explain the immediate failure. They are never identifiers and must not decide the code, recovery action, retry target, or report contents.
+> User-facing messages explain the immediate failure. They are never identifiers and must not decide the code, recovery action, retry target, or report contents.
 
 ## Recovery invariants
 
@@ -31,7 +31,7 @@ Every user-initiated failure opens the shared detail modal once. A snapshot mark
 The failure modal renders the matching English Markdown page bundled from `docs/help/errors` during packaging. It keeps **Open on Website** available for the current, shareable GitHub Pages version. **Report Problem** sends only the code, operation, region, launcher version, and coarse environment through fields declared in the GitHub issue form. Logs remain available through **Settings → Storage** for maintainer-requested follow-up instead of appearing as an initial failure action.
 
 > [!CAUTION]
-> Never place localized error text, paths, URLs, response bodies, log excerpts, account data, or tokens in an automatically prepared public report.
+> Never place user-facing error text, paths, URLs, response bodies, log excerpts, account data, or tokens in an automatically prepared public report.
 
 ## Presentation policy
 
@@ -59,7 +59,7 @@ The domain describes the recovery owner rather than the lowest-level API that fa
 3. Add exactly one `docs/help/errors/<lowercase-code>.md` page with matching `code` and `domain` frontmatter.
 4. Map typed failures and ordered actions without inspecting message strings.
 5. Add fixtures for every mapped error family, route validation, report privacy, stale actions, duplicate selection, and each supported region affected by the operation.
-6. Update the changelog and run the Swift, localization, website, and production documentation checks.
+6. Update the changelog and run the Swift, website, and production documentation checks.
 
 > [!NOTE]
 > Public words and routes are compatibility contracts. Prefer adding a new code for a genuinely different recovery path over changing the meaning of a published one.

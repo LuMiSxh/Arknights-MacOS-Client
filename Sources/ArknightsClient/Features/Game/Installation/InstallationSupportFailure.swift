@@ -53,6 +53,8 @@ extension InstallationController {
 			.basalt
 		case LauncherError.insufficientDiskSpace:
 			.scree
+		case is DiskCapacityError:
+			.basalt
 		case LauncherError.invalidResponse,
 			LauncherError.invalidRemoteAsset,
 			LauncherError.remoteContentTooLarge,

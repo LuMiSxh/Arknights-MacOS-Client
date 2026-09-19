@@ -67,20 +67,20 @@ struct MusicHUDPill: View {
 				)
 				.onHover { isHovering = $0 }
 				.accessibilityLabel(
-					L10n.string(isExpanded ? AudioStrings.hideControls : AudioStrings.showControls)
+					isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
 				)
 				.accessibilityValue(Text(musicTitle))
 				.help(
-					L10n.string(
-						isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
-					)
+
+					isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
+
 				)
 
 				if isExpanded {
 					HStack(spacing: 6) {
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: L10n.string(AudioStrings.previousTrack),
+								title: AudioStrings.previousTrack,
 								systemImage: "backward.end.fill",
 								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
@@ -89,9 +89,8 @@ struct MusicHUDPill: View {
 						}
 
 						MusicPlayerControlButton(
-							title: L10n.string(
-								controller.isPlaying ? AudioStrings.pause : AudioStrings.play
-							),
+							title:
+								controller.isPlaying ? AudioStrings.pause : AudioStrings.play,
 							systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
 							accentColor: accentColor,
 							isProminent: true,
@@ -101,7 +100,7 @@ struct MusicHUDPill: View {
 
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: L10n.string(AudioStrings.nextTrack),
+								title: AudioStrings.nextTrack,
 								systemImage: "forward.end.fill",
 								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
@@ -120,7 +119,7 @@ struct MusicHUDPill: View {
 						Spacer(minLength: 0)
 
 						MusicPlayerControlButton(
-							title: L10n.string(AudioStrings.openYouTube),
+							title: AudioStrings.openYouTube,
 							systemImage: "arrow.up.right.square",
 							accentColor: accentColor,
 							isDisabled: controller.controlsAreDisabled,
@@ -158,9 +157,9 @@ struct MusicHUDPill: View {
 	}
 
 	private var playbackStatus: String {
-		if controller.isGameProcessRunning { return L10n.string(AudioStrings.pausedForGame) }
-		if controller.isChangingTrack { return L10n.string(AudioStrings.changingTrack) }
-		return L10n.string(controller.isPlaying ? AudioStrings.playing : AudioStrings.paused)
+		if controller.isGameProcessRunning { return AudioStrings.pausedForGame }
+		if controller.isChangingTrack { return AudioStrings.changingTrack }
+		return controller.isPlaying ? AudioStrings.playing : AudioStrings.paused
 	}
 
 	private var expandedContentTransition: AnyTransition {
