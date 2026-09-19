@@ -94,14 +94,14 @@ class ProjectConfiguration:
 
     @property
     def resource_directory(self) -> Path:
-        localization_parents = {
-            path.parent
-            for path in self.package.processed_resource_paths
-            if path.suffix == ".xcstrings"
-        }
+        localization_parents = {path.parent for path in self.catalog_resource_paths}
         if len(localization_parents) != 1:
             fail("package String Catalogs must share one resource directory")
         return self.target_directory / localization_parents.pop()
+
+    @property
+    def catalog_resource_paths(self) -> tuple[Path, ...]:
+        return _catalog_resource_paths(self.project_directory, self.package)
 
     @property
     def swift_resource_bundle_name(self) -> str:
@@ -124,7 +124,7 @@ def load_project_configuration(
     dump = _read_package_dump(project_dir, package_dump)
     product = _product_metadata(plist)
     package = _package_metadata(dump)
-    _validate_agreement(product, package)
+    _validate_agreement(product, package, project_dir)
     return ProjectConfiguration(project_dir, product, package)
 
 
@@ -267,7 +267,9 @@ def _exact_dependency_versions(
     return tuple(versions)
 
 
-def _validate_agreement(product: ProductMetadata, package: PackageMetadata) -> None:
+def _validate_agreement(
+    product: ProductMetadata, package: PackageMetadata, project_directory: Path
+) -> None:
     if product.display_name != product.bundle_name:
         fail("CFBundleDisplayName and CFBundleName must agree")
     if product.executable_name != package.executable_product_name:
@@ -280,16 +282,18 @@ def _validate_agreement(product: ProductMetadata, package: PackageMetadata) -> N
         fail("package defaultLocalization must match CFBundleDevelopmentRegion")
     if package.macos_version != product.minimum_macos_version:
         fail("package macOS platform must match LSMinimumSystemVersion")
-    processed_catalogs = tuple(
-        path for path in package.processed_resource_paths if path.suffix == ".xcstrings"
+    catalog_paths = _catalog_resource_paths(project_directory, package)
+    if not catalog_paths:
+        fail("package must include at least one String Catalog")
+    if len(catalog_paths) != len(set(catalog_paths)):
+        fail("package String Catalogs must be unique")
+    catalog_resources = (
+        *package.copy_resource_paths,
+        *package.processed_resource_paths,
     )
-    if not processed_catalogs:
-        fail("package must process at least one String Catalog")
-    if len(processed_catalogs) != len(set(processed_catalogs)):
-        fail("package processed String Catalogs must be unique")
-    if any(path.name.endswith(".lproj") for path in package.processed_resource_paths):
+    if any(path.name.endswith(".lproj") for path in catalog_resources):
         fail(
-            "package must process String Catalogs instead of generated .lproj resources"
+            "package must include String Catalogs instead of generated .lproj resources"
         )
 
 
@@ -304,6 +308,31 @@ def _resources(target: Mapping[str, Any]) -> tuple[tuple[Path, ...], tuple[Path,
         elif "process" in rule:
             processed.append(path)
     return tuple(copied), tuple(processed)
+
+
+def _catalog_resource_paths(
+    project_directory: Path, package: PackageMetadata
+) -> tuple[Path, ...]:
+    target_directory = project_directory / package.target_path
+    catalogs = [
+        path
+        for path in (
+            *package.copy_resource_paths,
+            *package.processed_resource_paths,
+        )
+        if path.suffix == ".xcstrings"
+    ]
+    for resource in package.copy_resource_paths:
+        if resource.suffix == ".xcstrings":
+            continue
+        directory = target_directory / resource
+        if not directory.is_dir():
+            continue
+        catalogs.extend(
+            resource / path.relative_to(directory)
+            for path in directory.rglob("*.xcstrings")
+        )
+    return tuple(catalogs)
 
 
 def _macos_version(dump: Mapping[str, Any]) -> str:

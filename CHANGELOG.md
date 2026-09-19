@@ -35,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).
 - Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
 - Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
-- Fixed macOS 27 SwiftPM String Catalog packaging so localized resources remain available in app and DMG builds.
+- Fixed macOS 27 SwiftPM String Catalog packaging and test execution so localized resources remain available and Swift tests run normally.
 - A download on a fast connection can no longer outpace a slow disk and grow in memory without limit.
 - Removed a leak and a per-frame window-server query from the helpers injected into the game and its notice window.
 - Keep native Settings and onboarding toggles on the current macOS geometry by linking app builds against the active SDK while retaining the macOS 15 deployment target.

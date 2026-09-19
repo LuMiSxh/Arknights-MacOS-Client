@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -40,6 +41,7 @@ APP_RESOURCE_BUNDLE_DECLARATION = (
     "private nonisolated let resourceBundle = AppResourceBundle.bundle"
 )
 TOOLCHAIN_SYMBOL_SDK_VERSION = 27
+SWIFT_TEST_RESOURCE_ENV = "ARKNIGHTS_CLIENT_SWIFT_TESTS"
 
 
 @dataclass(frozen=True)
@@ -64,16 +66,14 @@ def discover_layout(configuration: ProjectConfiguration) -> LocalizationLayout:
         raise ScriptError("no localization catalogs found")
     target_directory = configuration.target_directory
     excluded = set(configuration.package.excluded_paths)
-    processed = set(configuration.package.processed_resource_paths)
+    catalog_resources = set(configuration.catalog_resource_paths)
     for catalog in catalogs:
         relative = catalog.relative_to(target_directory)
         if relative in excluded:
+            raise ScriptError(f"Package.swift excludes String Catalog: {relative}")
+        if relative not in catalog_resources:
             raise ScriptError(
-                f"Package.swift excludes processed String Catalog: {relative}"
-            )
-        if relative not in processed:
-            raise ScriptError(
-                f"Package.swift does not process String Catalog: {relative}"
+                f"Package.swift does not include String Catalog: {relative}"
             )
     return LocalizationLayout(
         resource_directory=resource_directory,
@@ -146,6 +146,8 @@ def toolchain_generates_symbols() -> bool:
     file, so this script must stop writing its own symbols there.  Earlier SDKs generate
     nothing, and contributors on macOS 26 keep the symbols this script produces.
     """
+    if os.environ.get(SWIFT_TEST_RESOURCE_ENV) == "1":
+        return False
     try:
         version = output(["xcrun", "--sdk", "macosx", "--show-sdk-version"])
     except (ScriptError, OSError):
@@ -289,51 +291,60 @@ def compile_swift_localizations(
     or app packaging consume the resource bundle.
     """
     configuration = configuration or load_project_configuration()
-    bundle = require_directory(
-        binary_directory / configuration.swift_resource_bundle_name
+    bundles = tuple(
+        sorted(binary_directory.rglob(configuration.swift_resource_bundle_name))
     )
-    resource_root = swift_resource_root(bundle)
-    catalogs = tuple(sorted(resource_root.glob("*.xcstrings")))
+    if not bundles:
+        raise ScriptError(
+            "Swift build produced no resource bundles: "
+            f"{configuration.swift_resource_bundle_name}"
+        )
     languages = tuple(configuration.product.localizations)
-    if not catalogs:
-        localizations = tuple(sorted(resource_root.glob("*.lproj/*.strings")))
-        discovered = {path.parent.name.removesuffix(".lproj") for path in localizations}
-        expected = set(languages)
-        if discovered != expected:
-            raise ScriptError(
-                "Swift resource bundle contains neither raw String Catalogs nor "
-                f"all compiled localizations: {bundle}"
-            )
-        return
-
     language_arguments = [
         argument for language in languages for argument in ("--language", language)
     ]
-    for catalog in catalogs:
-        run(
-            [
-                "xcrun",
-                "xcstringstool",
-                "compile",
-                catalog,
-                "--output-directory",
-                resource_root,
-                *language_arguments,
-            ],
-            cwd=PROJECT_DIR,
-        )
+    for bundle in bundles:
+        require_directory(bundle)
+        resource_root = swift_resource_root(bundle)
+        catalogs = tuple(sorted(resource_root.rglob("*.xcstrings")))
+        if not catalogs:
+            localizations = tuple(sorted(resource_root.rglob("*.lproj/*.strings")))
+            discovered = {
+                path.parent.name.removesuffix(".lproj") for path in localizations
+            }
+            expected = set(languages)
+            if discovered != expected:
+                raise ScriptError(
+                    "Swift resource bundle contains neither raw String Catalogs nor "
+                    f"all compiled localizations: {bundle}"
+                )
+            continue
 
-    expected = {
-        resource_root / f"{language}.lproj" / f"{catalog.stem}.strings"
-        for language in languages
-        for catalog in catalogs
-    }
-    missing = sorted(path for path in expected if not path.is_file())
-    if missing:
-        raise ScriptError(
-            "xcstringstool did not produce all localized Swift resources: "
-            + ", ".join(str(path.relative_to(resource_root)) for path in missing)
-        )
+        for catalog in catalogs:
+            run(
+                [
+                    "xcrun",
+                    "xcstringstool",
+                    "compile",
+                    catalog,
+                    "--output-directory",
+                    resource_root,
+                    *language_arguments,
+                ],
+                cwd=PROJECT_DIR,
+            )
+
+        expected = {
+            resource_root / f"{language}.lproj" / f"{catalog.stem}.strings"
+            for language in languages
+            for catalog in catalogs
+        }
+        missing = sorted(path for path in expected if not path.is_file())
+        if missing:
+            raise ScriptError(
+                "xcstringstool did not produce all localized Swift resources: "
+                + ", ".join(str(path.relative_to(resource_root)) for path in missing)
+            )
 
 
 def prepare_toolchain_symbols(

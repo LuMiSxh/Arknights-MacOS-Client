@@ -112,6 +112,48 @@ def test_renames_languages_and_resources_are_derived_automatically(
     )
 
 
+def test_accepts_string_catalogs_copied_for_swift_tests(tmp_path: Path) -> None:
+    resources = [
+        {"path": "Resources/Icon.png", "rule": {"copy": {}}},
+        {
+            "path": "Resources/Localizable.xcstrings",
+            "rule": {"copy": {}},
+        },
+    ]
+
+    configuration = load_configuration(
+        tmp_path,
+        plist(),
+        package_dump(resources=resources),
+    )
+
+    assert configuration.resource_directory == configuration.target_directory / (
+        "Resources"
+    )
+    assert configuration.package.copy_resource_paths == tuple(
+        Path(path) for path in ("Resources/Icon.png", "Resources/Localizable.xcstrings")
+    )
+
+
+def test_accepts_catalogs_inside_a_copied_resource_directory(tmp_path: Path) -> None:
+    catalog_directory = tmp_path / "Sources/Client/Resources"
+    catalog_directory.mkdir(parents=True)
+    (catalog_directory / "Localizable.xcstrings").write_text("{}", encoding="utf-8")
+
+    configuration = load_configuration(
+        tmp_path,
+        plist(),
+        package_dump(
+            resources=[{"path": "Resources", "rule": {"copy": {}}}],
+        ),
+    )
+
+    assert configuration.resource_directory == catalog_directory
+    assert configuration.catalog_resource_paths == (
+        Path("Resources/Localizable.xcstrings"),
+    )
+
+
 @pytest.mark.parametrize(
     ("plist_value", "dump_value"),
     [

@@ -233,3 +233,35 @@ def test_accepts_toolchain_compiled_swift_resource_bundle(
     localization.compile_swift_localizations(binary_directory, configuration)
 
     assert commands == []
+
+
+def test_compiles_catalogs_nested_in_swift_resource_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configuration = load_project_configuration()
+    binary_directory = tmp_path / "bin"
+    bundle = binary_directory / configuration.swift_resource_bundle_name
+    resource_root = bundle / "Contents/Resources"
+    catalogs = (
+        resource_root / "Resources/Customization.xcstrings",
+        resource_root / "Resources/Settings.xcstrings",
+    )
+    for catalog in catalogs:
+        catalog.parent.mkdir(parents=True, exist_ok=True)
+        catalog.write_text("{}", encoding="utf-8")
+
+    commands: list[list[str | Path]] = []
+
+    def fake_run(command: list[str | Path], *, cwd: Path) -> None:
+        commands.append(command)
+        catalog = Path(command[3])
+        for language in configuration.product.localizations:
+            output = resource_root / f"{language}.lproj" / f"{catalog.stem}.strings"
+            output.parent.mkdir(exist_ok=True)
+            output.touch()
+
+    monkeypatch.setattr(localization, "run", fake_run)
+
+    localization.compile_swift_localizations(binary_directory, configuration)
+
+    assert len(commands) == len(catalogs)

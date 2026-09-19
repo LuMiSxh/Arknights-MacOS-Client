@@ -1,7 +1,36 @@
 // swift-tools-version: 6.2
 // SPDX-License-Identifier: MPL-2.0
 
+import Foundation
 import PackageDescription
+
+let useCopiedLocalizationResources =
+	ProcessInfo.processInfo.environment["ARKNIGHTS_CLIENT_SWIFT_TESTS"] == "1"
+
+func localizationResource(_ path: String) -> Resource {
+	useCopiedLocalizationResources ? .copy(path) : .process(path)
+}
+
+let appResources: [Resource] =
+	useCopiedLocalizationResources
+	// Xcode 27 still scans individual .xcstrings files for native symbols even with .copy.
+	// Copying the directory keeps test resources available without scheduling that step.
+	? [
+		.copy("Resources"),
+		// Keep noncatalog assets at the bundle root for Bundle.url(forResource:).
+		.copy("Resources/GameIconBackground.png"),
+		.copy("Resources/OperatorIconFrame.svg"),
+		.copy("Resources/WallpaperTags.json"),
+	]
+	: [
+		.copy("Resources/GameIconBackground.png"),
+		.copy("Resources/OperatorIconFrame.svg"),
+		.copy("Resources/WallpaperTags.json"),
+		localizationResource("Resources/Customization.xcstrings"),
+		localizationResource("Resources/Launcher.xcstrings"),
+		localizationResource("Resources/Localizable.xcstrings"),
+		localizationResource("Resources/Settings.xcstrings"),
+	]
 
 let package = Package(
 	name: "ArknightsClient",
@@ -14,7 +43,7 @@ let package = Package(
 	],
 	dependencies: [
 		.package(url: "https://github.com/sparkle-project/Sparkle.git", exact: "2.9.6"),
-		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0")
+		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0"),
 	],
 	targets: [
 		.systemLibrary(
@@ -26,18 +55,10 @@ let package = Package(
 			dependencies: [
 				"CCommonCrypto",
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
-				.product(name: "Sparkle", package: "Sparkle")
+				.product(name: "Sparkle", package: "Sparkle"),
 			],
 			path: "Sources/ArknightsClient",
-			resources: [
-				.copy("Resources/GameIconBackground.png"),
-				.copy("Resources/OperatorIconFrame.svg"),
-				.copy("Resources/WallpaperTags.json"),
-				.process("Resources/Customization.xcstrings"),
-				.process("Resources/Launcher.xcstrings"),
-				.process("Resources/Localizable.xcstrings"),
-				.process("Resources/Settings.xcstrings"),
-			]
+			resources: appResources
 		),
 		.testTarget(
 			name: "ArknightsClientTests",
