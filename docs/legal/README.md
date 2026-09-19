@@ -10,7 +10,7 @@ This section records the project's source license, bundled third-party notices, 
 boundaries. It describes what this repository and its builds contain; it is not a substitute for
 legal advice about a particular redistribution.
 
-Arknights Client is community-maintained and is not affiliated with Hypergryph or Yostar. Arknights,
+Arknights Client is community-maintained and is not affiliated with Gryphline, Hypergryph, or Yostar. Arknights,
 its game files, names, and artwork belong to their respective owners.
 
 ## Read by purpose
@@ -23,13 +23,13 @@ its game files, names, and artwork belong to their respective owners.
 
 ## What a release contains
 
-| Material                                                 | Project boundary                                                                                                                                |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Native SwiftUI launcher and small compatibility wrappers | Original project source, marked MPL-2.0; source is available from the matching repository tag                                                   |
-| Wine + DXMT compatibility runtime                        | Prebuilt third-party material with its own component licenses and provenance; see [Third-party notices](third-party-notices.md)                 |
-| Sparkle update framework                                 | Bundled third-party framework and notices, distributed under its own terms                                                                      |
-| Arknights game files                                     | Not included in source archives, DMGs, or update archives; downloaded by the user-facing installer from first-party publisher endpoints: Yostar for Global, Japan, and Korea, and Hypergryph for China and China — Bilibili |
-| Official or user artwork                                 | Official remote artwork is cached at runtime; repository releases do not bundle downloaded wallpapers, and user-selected files remain user data |
+| Material                                                 | Project boundary                                                                                                                                                                                                                                  |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native SwiftUI launcher and small compatibility wrappers | Original project source, marked MPL-2.0; source is available from the matching repository tag                                                                                                                                                     |
+| Wine + DXMT compatibility runtime                        | Prebuilt third-party material with its own component licenses and provenance; see [Third-party notices](third-party-notices.md)                                                                                                                   |
+| Sparkle update framework                                 | Bundled third-party framework and notices, distributed under its own terms                                                                                                                                                                        |
+| Arknights game files                                     | Not included in source archives, DMGs, or update archives; downloaded by the user-facing installer from first-party publisher endpoints: Yostar for Global, Japan, and Korea; Gryphline for Taiwan; and Hypergryph for China and China — Bilibili |
+| Official or user artwork                                 | Official remote artwork is cached at runtime; repository releases do not bundle downloaded wallpapers, and user-selected files remain user data                                                                                                   |
 
 > [!WARNING]
 > The repository's MPL-2.0 `LICENSE` does not replace the notices or conditions for bundled Wine,

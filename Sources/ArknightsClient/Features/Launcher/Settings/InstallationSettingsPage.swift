@@ -35,7 +35,8 @@ struct InstallationSettingsPage: View {
 						selection: regionBinding,
 						options: GameRegion.selectableCases(
 							canaryEnabled: settings.canaryFeaturesEnabled,
-							chinaClientsEnabled: settings.chinaClientsEnabled
+							chinaClientsEnabled: settings.chinaClientsEnabled,
+							taiwanClientEnabled: settings.taiwanClientEnabled
 						).map { ($0, $0.localizedDisplayName) },
 						accentColor: accentColor,
 						isDisabled: lifecycle.activity != .idle
@@ -214,7 +215,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsSettingsReset = true
 					}
-					.disabled(gameSession.isGameActive)
+					.disabled(gameSession.isGameActive || lifecycle.activity != .idle)
 					.confirmationDialog(
 						L10n.string(SettingsStrings.resetSettingsConfirmation),
 						isPresented: $confirmsSettingsReset,

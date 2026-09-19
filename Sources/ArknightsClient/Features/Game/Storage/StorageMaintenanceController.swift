@@ -84,16 +84,21 @@ final class StorageMaintenanceController {
 		NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
 	}
 
+	nonisolated static func logURLs(for paths: AppPaths) -> [URL] {
+		[
+			paths.launcherLogFile,
+			paths.publisherLogFile(for: .yostar),
+			paths.publisherLogFile(for: .hypergryph),
+			paths.publisherLogFile(for: .gryphline),
+			paths.unityLogFile,
+			paths.chromiumLogFile,
+		]
+	}
+
 	func revealLogs() {
 		Task { [log, paths] in
 			await log.prepare()
-			NSWorkspace.shared.activateFileViewerSelecting([
-				paths.launcherLogFile,
-				paths.publisherLogFile(for: .yostar),
-				paths.publisherLogFile(for: .hypergryph),
-				paths.unityLogFile,
-				paths.chromiumLogFile,
-			])
+			NSWorkspace.shared.activateFileViewerSelecting(Self.logURLs(for: paths))
 		}
 	}
 

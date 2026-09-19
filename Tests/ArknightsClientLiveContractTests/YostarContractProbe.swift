@@ -45,7 +45,15 @@ struct YostarContractProbe {
 			}
 			checks.append(await manifestCheck(region, manifestLocation))
 		}
+		checks.append(contentsOf: await gryphlineMetadataChecks())
 		return LiveContractReport(checks: checks, environment: environment)
+	}
+
+	private func gryphlineMetadataChecks() async -> [LiveContractCheck] {
+		let region = GameRegion.taiwan
+		let branding = await brandingCheck(region)
+		let configuration = await configurationCheck(region)
+		return [branding, configuration.check, await cdnCheck(region)]
 	}
 
 	private func brandingCheck(_ region: GameRegion) async -> LiveContractCheck {
@@ -73,9 +81,27 @@ struct YostarContractProbe {
 			guard !configuration.executableName.isEmpty else {
 				throw ProbeError.invalid("missing executable name")
 			}
-			_ = try GameInstaller.safeRelativePath(configuration.gameLatestFilePath)
+			try Self.validateGameConfigurationPath(
+				configuration.gameLatestFilePath,
+				region: region
+			)
 			return (configuration, "version \(configuration.gameLatestVersion)")
 		}
+	}
+
+	static func validateGameConfigurationPath(
+		_ value: String,
+		region: GameRegion
+	) throws {
+		guard region == .taiwan else {
+			_ = try GameInstaller.safeRelativePath(value)
+			return
+		}
+		guard let location = URL(string: value) else {
+			throw ProbeError.invalid("missing game package URL")
+		}
+		try validateHTTPS(location, expectedHosts: Self.downloadHosts(for: region))
+		_ = try GameInstaller.safeRelativePath(location.path)
 	}
 
 	private func cdnCheck(_ region: GameRegion) async -> LiveContractCheck {
@@ -188,7 +214,9 @@ struct YostarContractProbe {
 	}
 
 	private static func validateHTTPS(_ url: URL, expectedHosts: Set<String>) throws {
-		guard url.scheme == "https", url.host != nil, url.user == nil, url.password == nil else {
+		guard url.scheme == "https", url.host != nil, url.user == nil, url.password == nil,
+			url.port == nil
+		else {
 			throw ProbeError.invalid("URL is not a credential-free HTTPS endpoint")
 		}
 		guard let host = url.host?.lowercased(), expectedHosts.contains(host) else {
@@ -202,6 +230,7 @@ struct YostarContractProbe {
 			case .global: ["www.arknights.global"]
 			case .japan: ["arknights.jp", "www.arknights.jp"]
 			case .korea: ["arknights.kr", "www.arknights.kr"]
+			case .taiwan: ["gl-utils-public.hg-cdn.com"]
 			case .china, .chinaBilibili: []
 			}
 		return websiteHosts.union(downloadHosts(for: region))
@@ -215,6 +244,8 @@ struct YostarContractProbe {
 			["launcher-pkg-ark-jp.yo-star.com", "launcher-pkg-ark-jp-bk.yo-star.com"]
 		case .korea:
 			["launcher-pkg-ark-kr.yo-star.com", "launcher-pkg-ark-kr-bk.yo-star.com"]
+		case .taiwan:
+			["ak-tw.hg-cdn.com"]
 		case .china, .chinaBilibili:
 			[]
 		}

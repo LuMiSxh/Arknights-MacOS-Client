@@ -6,7 +6,7 @@ import Testing
 @testable import ArknightsClient
 
 @Suite(
-	"Yostar launcher live contract",
+	"Publisher launcher live contract",
 	.enabled(if: LiveContractGate.isEnabled, Comment(rawValue: LiveContractGate.disabledComment)),
 	.serialized
 )

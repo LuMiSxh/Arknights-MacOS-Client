@@ -38,6 +38,7 @@ You do not need log files for an initial report. This reference is for follow-up
 | Launcher log                | `~/Library/Logs/com.lumisxh.arknights-client/launcher.log`             | Setup, region refresh, downloads, update checks, prefix migrations, and launcher errors                                          |
 | Previous launcher log       | `~/Library/Logs/com.lumisxh.arknights-client/launcher.previous.log`    | The previous rotated launcher log after `launcher.log` reaches 4 MB                                                              |
 | Yostar runtime/game log     | `~/Library/Logs/com.lumisxh.arknights-client/arknights-yostar.log`     | Wine startup, DXMT, display setup, compatibility components, process output, and runtime failures for Global, Japan, and Korea   |
+| Gryphline runtime/game log  | `~/Library/Logs/com.lumisxh.arknights-client/arknights-gryphline.log`  | Wine startup, DXMT, display setup, compatibility components, process output, and runtime failures for Taiwan                     |
 | Hypergryph runtime/game log | `~/Library/Logs/com.lumisxh.arknights-client/arknights-hypergryph.log` | Wine startup, DXMT, display setup, compatibility components, process output, and runtime failures for China and China — Bilibili |
 | Unity log                   | `~/Library/Logs/com.lumisxh.arknights-client/unity.log`                | Unity exceptions, asset loading, and game-side diagnostics                                                                       |
 | Chromium log                | `~/Library/Logs/com.lumisxh.arknights-client/chromium.log`             | Embedded sign-in browser and CEF frame or JavaScript diagnostics                                                                 |
@@ -204,7 +205,7 @@ Quit the game, open **System Settings → Privacy & Security → Local Network**
 
 ## Sign-in, Notices, and embedded browser problems
 
-Global, Japan, Korea, and China clients use browser helpers launched through Wine for their
+Global, Japan, Korea, China, and Taiwan clients use browser helpers launched through Wine for their
 official sign-in window and separate Notices window. China — Bilibili uses its own client login
 flow; the embedded login-window guidance in this section does not apply to that client. For the
 clients that use these helpers, their first start or first start after an update, runtime change,

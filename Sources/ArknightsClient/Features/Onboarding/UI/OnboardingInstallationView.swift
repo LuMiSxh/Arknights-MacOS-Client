@@ -34,6 +34,13 @@ struct OnboardingInstallationView: View {
 						accentColor: LauncherVisuals.danger
 					)
 					.disabled(lifecycle.activity != .idle)
+					OnboardingToggleRow(
+						title: L10n.string(OnboardingStrings.taiwanClient),
+						detail: L10n.string(OnboardingStrings.taiwanClientDetail),
+						isOn: $preferences.taiwanClientEnabled,
+						accentColor: LauncherVisuals.danger
+					)
+					.disabled(lifecycle.activity != .idle)
 				}
 			}
 
@@ -45,7 +52,8 @@ struct OnboardingInstallationView: View {
 					selection: regionBinding,
 					options: GameRegion.selectableCases(
 						canaryEnabled: preferences.canaryFeaturesEnabled,
-						chinaClientsEnabled: preferences.chinaClientsEnabled
+						chinaClientsEnabled: preferences.chinaClientsEnabled,
+						taiwanClientEnabled: preferences.taiwanClientEnabled
 					),
 					accentColor: accentColor
 				) { region in

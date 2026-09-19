@@ -18,6 +18,18 @@ extension InstallationSettingsPage {
 		.disabled(lifecycle.activity != .idle)
 		SettingsHairline()
 		SettingsActionRow(
+			title: L10n.string(SettingsStrings.taiwanClient),
+			detail: L10n.string(SettingsStrings.taiwanClientDetail)
+		) {
+			SettingsToggle(
+				L10n.string(SettingsStrings.taiwanClient),
+				isOn: $settings.taiwanClientEnabled,
+				accentColor: LauncherVisuals.danger
+			)
+		}
+		.disabled(lifecycle.activity != .idle)
+		SettingsHairline()
+		SettingsActionRow(
 			title: L10n.string(SettingsStrings.frameLatency),
 			detail: L10n.string(SettingsStrings.frameLatencyDetail)
 		) {

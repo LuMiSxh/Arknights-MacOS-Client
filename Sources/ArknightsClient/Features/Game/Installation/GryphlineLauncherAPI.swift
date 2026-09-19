@@ -2,40 +2,54 @@
 
 import Foundation
 
-/// Adapts Hypergryph's launcher metadata and per-file manifest to the launcher's normal
-/// installation pipeline. China remains selected by the client; no vendor launcher is run.
-actor HypergryphLauncherAPI {
+/// Reads the traditional-Chinese Windows client contract exposed by Gryphline's launcher.
+/// The adapter consumes metadata and the encrypted per-file manifest; it never runs the vendor
+/// launcher.
+actor GryphlineLauncherAPI {
 	private static let metadataURL = URL(
-		string: "https://launcher.hypergryph.com/api/proxy/batch_proxy"
+		string: "https://launcher.gryphline.com/api/proxy/batch_proxy"
 	)!
 	private static let webMetadataURL = URL(
-		string: "https://launcher.hypergryph.com/api/proxy/web/batch_proxy"
+		string: "https://launcher.gryphline.com/api/proxy/web/batch_proxy"
 	)!
-	private static let gameAppCode = "GzD1CpaWgmSq1wew"
-	private static let officialLauncherAppCode = "abYeZZ16BPluCFyT"
+	private static let launcherAppCode = "TiaytKBUIEdoEwRT"
+	private static let gameAppCode = "uiCaUeGDB2htwXSv"
+	private static let channel = "6"
+	private static let subChannel = "6"
 	private static let sequence = "5"
+	private static let allowedAssetHosts: Set<String> = [
+		"launcher.hg-cdn.com",
+		"ak-tw.hg-cdn.com",
+		"gl-utils-public.hg-cdn.com",
+	]
+	private static let allowedHosts = allowedAssetHosts.union(["launcher.gryphline.com"])
 
 	private let loader: BoundedHTTPDataLoader
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
-	private var latestPackages: [String: HypergryphPackage] = [:]
+	private var latestPackage: GryphlinePackage?
 
 	init(
-		session: URLSession,
-		maximumAPIResponseBytes: Int,
-		maximumManifestResponseBytes: Int
+		session: URLSession = .shared,
+		maximumAPIResponseBytes: Int = AppConstants.Network.yostarAPIResponseMaximumBytes,
+		maximumManifestResponseBytes: Int = AppConstants.Network.yostarManifestMaximumBytes
 	) {
 		loader = BoundedHTTPDataLoader(session: session) { url in
-			guard url.scheme == "https", let host = url.host?.lowercased() else { return false }
-			return host == "launcher.hypergryph.com" || host.hasSuffix(".hycdn.cn")
+			guard url.scheme?.lowercased() == "https",
+				url.user == nil,
+				url.password == nil,
+				url.port == nil,
+				let host = url.host?.lowercased()
+			else { return false }
+			return Self.allowedHosts.contains(host)
 		}
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 	}
 
-	func gameConfiguration(channel: String) async throws -> GameConfiguration {
-		let latest = try await latestGame(channel: channel)
-		latestPackages[channel] = latest.package
+	func gameConfiguration() async throws -> GameConfiguration {
+		let latest = try await latestGame()
+		latestPackage = latest.package
 		guard let totalBytes = Int64(latest.package.totalSize), totalBytes >= 0 else {
 			throw LauncherError.invalidResponse
 		}
@@ -51,18 +65,18 @@ actor HypergryphLauncherAPI {
 		)
 	}
 
-	func branding(channel: String) async throws -> LauncherBranding {
-		let payload = HypergryphBatchRequest(
+	func branding() async throws -> LauncherBranding {
+		let payload = GryphlineBatchRequest(
 			sequence: Self.sequence,
 			requests: [
-				HypergryphProxyRequest(
+				GryphlineProxyRequest(
 					kind: "get_main_bg_image",
 					latestGame: nil,
-					mainBackground: HypergryphCommonRequest(
+					mainBackground: GryphlineCommonRequest(
 						appCode: Self.gameAppCode,
-						channel: channel,
-						subChannel: channel,
-						language: "zh-cn"
+						channel: Self.channel,
+						subChannel: Self.subChannel,
+						language: "zh-tw"
 					)
 				)
 			]
@@ -71,7 +85,7 @@ actor HypergryphLauncherAPI {
 		guard
 			let image = envelope.responses.first(where: { $0.kind == "get_main_bg_image" })?
 				.mainBackground?.image,
-			Self.isHypergryphAssetURL(image.url),
+			Self.isTrustedAssetURL(image.url),
 			image.md5.isEmpty
 				|| (image.md5.count == 32 && image.md5.allSatisfy(\.isHexDigit))
 		else { throw LauncherError.invalidResponse }
@@ -86,8 +100,8 @@ actor HypergryphLauncherAPI {
 		)
 	}
 
-	func cdnConfiguration(channel: String) async throws -> CDNConfiguration {
-		let package = try await package(channel: channel)
+	func cdnConfiguration() async throws -> CDNConfiguration {
+		let package = try await package()
 		let baseURL = try Self.cdnOrigin(for: package.filePath)
 		return CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
 	}
@@ -112,7 +126,7 @@ actor HypergryphLauncherAPI {
 		let decoder = JSONDecoder()
 		let files = try text.split(whereSeparator: \.isNewline).map { line in
 			let entry = try decoder.decode(
-				HypergryphManifestEntry.self,
+				GryphlineManifestEntry.self,
 				from: Data(line.utf8)
 			)
 			guard
@@ -126,25 +140,25 @@ actor HypergryphLauncherAPI {
 		return GameManifest(source: source, file: files)
 	}
 
-	private func package(channel: String) async throws -> HypergryphPackage {
-		if let latestPackage = latestPackages[channel] { return latestPackage }
-		let latest = try await latestGame(channel: channel)
-		latestPackages[channel] = latest.package
+	private func package() async throws -> GryphlinePackage {
+		if let latestPackage { return latestPackage }
+		let latest = try await latestGame()
+		latestPackage = latest.package
 		return latest.package
 	}
 
-	private func latestGame(channel: String) async throws -> HypergryphLatestGame {
-		let payload = HypergryphBatchRequest(
+	private func latestGame() async throws -> GryphlineLatestGame {
+		let payload = GryphlineBatchRequest(
 			sequence: Self.sequence,
 			requests: [
-				HypergryphProxyRequest(
+				GryphlineProxyRequest(
 					kind: "get_latest_game",
-					latestGame: HypergryphLatestGameRequest(
+					latestGame: GryphlineLatestGameRequest(
 						appCode: Self.gameAppCode,
-						channel: channel,
-						subChannel: channel,
+						channel: Self.channel,
+						subChannel: Self.subChannel,
 						version: "",
-						launcherAppCode: channel == "1" ? Self.officialLauncherAppCode : ""
+						launcherAppCode: Self.launcherAppCode
 					),
 					mainBackground: nil
 				)
@@ -161,9 +175,9 @@ actor HypergryphLauncherAPI {
 	}
 
 	private func response(
-		for payload: HypergryphBatchRequest,
+		for payload: GryphlineBatchRequest,
 		at url: URL
-	) async throws -> HypergryphBatchResponse {
+	) async throws -> GryphlineBatchResponse {
 		var request = URLRequest(url: url)
 		request.httpMethod = "POST"
 		request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -173,22 +187,27 @@ actor HypergryphLauncherAPI {
 			maximumBytes: maximumAPIResponseBytes
 		)
 		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
-		return try JSONDecoder().decode(HypergryphBatchResponse.self, from: data)
+		return try JSONDecoder().decode(GryphlineBatchResponse.self, from: data)
 	}
 
-	private static func isHypergryphAssetURL(_ url: URL) -> Bool {
-		url.scheme == "https" && url.user == nil && url.password == nil && url.port == nil
-			&& url.host?.lowercased().hasSuffix(".hycdn.cn") == true
+	private static func isTrustedAssetURL(_ url: URL) -> Bool {
+		isTrustedURL(url) && url.host.map { allowedAssetHosts.contains($0.lowercased()) } == true
+	}
+
+	private static func isTrustedURL(_ url: URL) -> Bool {
+		url.scheme?.lowercased() == "https"
+			&& url.user == nil
+			&& url.password == nil
+			&& url.port == nil
 	}
 
 	private static func cdnOrigin(for url: URL) throws -> URL {
 		guard
-			url.scheme == "https",
-			url.user == nil,
-			url.password == nil,
-			url.port == nil,
+			isTrustedURL(url),
 			let host = url.host?.lowercased(),
-			host.hasSuffix(".hycdn.cn")
+			allowedAssetHosts.contains(host),
+			url.query == nil,
+			url.fragment == nil
 		else { throw LauncherError.invalidResponse }
 		var components = URLComponents()
 		components.scheme = "https"
@@ -199,24 +218,13 @@ actor HypergryphLauncherAPI {
 
 	private static func cdnSource(for url: URL) throws -> String {
 		_ = try cdnOrigin(for: url)
-		guard url.query == nil, url.fragment == nil else { throw LauncherError.invalidResponse }
 		return try GameInstaller.safeRelativePath(url.path)
 	}
 }
 
-extension GameRegion {
-	var hypergryphChannel: String? {
-		switch self {
-		case .china: "1"
-		case .chinaBilibili: "2"
-		case .global, .japan, .korea, .taiwan: nil
-		}
-	}
-}
-
-private struct HypergryphBatchRequest: Encodable {
+private struct GryphlineBatchRequest: Encodable {
 	let sequence: String
-	let requests: [HypergryphProxyRequest]
+	let requests: [GryphlineProxyRequest]
 
 	private enum CodingKeys: String, CodingKey {
 		case sequence = "seq"
@@ -224,10 +232,10 @@ private struct HypergryphBatchRequest: Encodable {
 	}
 }
 
-private struct HypergryphProxyRequest: Encodable {
+private struct GryphlineProxyRequest: Encodable {
 	let kind: String
-	let latestGame: HypergryphLatestGameRequest?
-	let mainBackground: HypergryphCommonRequest?
+	let latestGame: GryphlineLatestGameRequest?
+	let mainBackground: GryphlineCommonRequest?
 
 	private enum CodingKeys: String, CodingKey {
 		case kind
@@ -236,7 +244,7 @@ private struct HypergryphProxyRequest: Encodable {
 	}
 }
 
-private struct HypergryphCommonRequest: Encodable {
+private struct GryphlineCommonRequest: Encodable {
 	let appCode: String
 	let channel: String
 	let subChannel: String
@@ -252,7 +260,7 @@ private struct HypergryphCommonRequest: Encodable {
 	}
 }
 
-private struct HypergryphLatestGameRequest: Encodable {
+private struct GryphlineLatestGameRequest: Encodable {
 	let appCode: String
 	let channel: String
 	let subChannel: String
@@ -268,18 +276,18 @@ private struct HypergryphLatestGameRequest: Encodable {
 	}
 }
 
-private struct HypergryphBatchResponse: Decodable {
-	let responses: [HypergryphProxyResponse]
+private struct GryphlineBatchResponse: Decodable {
+	let responses: [GryphlineProxyResponse]
 
 	private enum CodingKeys: String, CodingKey {
 		case responses = "proxy_rsps"
 	}
 }
 
-private struct HypergryphProxyResponse: Decodable {
+private struct GryphlineProxyResponse: Decodable {
 	let kind: String
-	let latestGame: HypergryphLatestGame?
-	let mainBackground: HypergryphMainBackgroundResponse?
+	let latestGame: GryphlineLatestGame?
+	let mainBackground: GryphlineMainBackgroundResponse?
 
 	private enum CodingKeys: String, CodingKey {
 		case kind
@@ -288,22 +296,22 @@ private struct HypergryphProxyResponse: Decodable {
 	}
 }
 
-private struct HypergryphMainBackgroundResponse: Decodable {
-	let image: HypergryphBackgroundImage
+private struct GryphlineMainBackgroundResponse: Decodable {
+	let image: GryphlineBackgroundImage
 
 	private enum CodingKeys: String, CodingKey {
 		case image = "main_bg_image"
 	}
 }
 
-private struct HypergryphBackgroundImage: Decodable {
+private struct GryphlineBackgroundImage: Decodable {
 	let url: URL
 	let md5: String
 }
 
-private struct HypergryphLatestGame: Decodable {
+private struct GryphlineLatestGame: Decodable {
 	let version: String
-	let package: HypergryphPackage
+	let package: GryphlinePackage
 
 	private enum CodingKeys: String, CodingKey {
 		case version
@@ -311,7 +319,7 @@ private struct HypergryphLatestGame: Decodable {
 	}
 }
 
-private struct HypergryphPackage: Decodable {
+private struct GryphlinePackage: Decodable {
 	let filePath: URL
 	let totalSize: String
 
@@ -321,7 +329,7 @@ private struct HypergryphPackage: Decodable {
 	}
 }
 
-private struct HypergryphManifestEntry: Decodable {
+private struct GryphlineManifestEntry: Decodable {
 	let path: String
 	let md5: String
 	let size: Int64

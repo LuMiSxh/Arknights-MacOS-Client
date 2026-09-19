@@ -17,6 +17,7 @@ actor LauncherAPI {
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
 	private let hypergryph: HypergryphLauncherAPI
+	private let gryphline: GryphlineLauncherAPI
 
 	init(
 		session: URLSession = .shared,
@@ -31,11 +32,19 @@ actor LauncherAPI {
 			maximumAPIResponseBytes: maximumAPIResponseBytes,
 			maximumManifestResponseBytes: maximumManifestResponseBytes
 		)
+		gryphline = GryphlineLauncherAPI(
+			session: session,
+			maximumAPIResponseBytes: maximumAPIResponseBytes,
+			maximumManifestResponseBytes: maximumManifestResponseBytes
+		)
 		decoder = JSONDecoder()
 		decoder.keyDecodingStrategy = .convertFromSnakeCase
 	}
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
+		if region == .taiwan {
+			return try await gryphline.gameConfiguration()
+		}
 		if let channel = region.hypergryphChannel {
 			return try await hypergryph.gameConfiguration(channel: channel)
 		}
@@ -47,6 +56,9 @@ actor LauncherAPI {
 	}
 
 	func branding(region: GameRegion) async throws -> LauncherBranding {
+		if region == .taiwan {
+			return try await gryphline.branding()
+		}
 		if let channel = region.hypergryphChannel {
 			return try await hypergryph.branding(channel: channel)
 		}
@@ -58,6 +70,9 @@ actor LauncherAPI {
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
+		if region == .taiwan {
+			return try await gryphline.cdnConfiguration()
+		}
 		if let channel = region.hypergryphChannel {
 			return try await hypergryph.cdnConfiguration(channel: channel)
 		}
@@ -72,6 +87,9 @@ actor LauncherAPI {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> GameManifest {
+		if region == .taiwan {
+			return try await gryphline.manifest(for: configuration)
+		}
 		if region.hypergryphChannel != nil {
 			return try await hypergryph.manifest(for: configuration)
 		}

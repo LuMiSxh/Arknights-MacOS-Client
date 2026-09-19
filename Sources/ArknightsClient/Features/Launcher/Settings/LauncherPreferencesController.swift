@@ -68,6 +68,12 @@ final class LauncherPreferencesController {
 			onChinaClientsChanged?(chinaClientsEnabled)
 		}
 	}
+	var taiwanClientEnabled: Bool {
+		didSet {
+			store.setTaiwanClientEnabled(taiwanClientEnabled)
+			onTaiwanClientChanged?(taiwanClientEnabled)
+		}
+	}
 	var maximumFrameLatency: Int {
 		didSet { store.setMaximumFrameLatency(maximumFrameLatency) }
 	}
@@ -84,6 +90,7 @@ final class LauncherPreferencesController {
 	@ObservationIgnored var onDynamicThemeChanged: (() -> Void)?
 	@ObservationIgnored var onCanaryFeaturesChanged: ((Bool) -> Void)?
 	@ObservationIgnored var onChinaClientsChanged: ((Bool) -> Void)?
+	@ObservationIgnored var onTaiwanClientChanged: ((Bool) -> Void)?
 	@ObservationIgnored var regionProvider: () -> GameRegion = { .global }
 
 	private let store: LauncherPreferencesStore
@@ -104,6 +111,7 @@ final class LauncherPreferencesController {
 		usesDynamicTheme = store.usesDynamicTheme()
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
 		chinaClientsEnabled = store.chinaClientsEnabled()
+		taiwanClientEnabled = store.taiwanClientEnabled()
 		maximumFrameLatency = store.maximumFrameLatency()
 		appLanguage = store.appLanguage()
 		L10n.useAppLanguage(appLanguage)
@@ -137,6 +145,7 @@ final class LauncherPreferencesController {
 		usesDynamicTheme = true
 		canaryFeaturesEnabled = false
 		chinaClientsEnabled = false
+		taiwanClientEnabled = false
 		store.clearACEWarningAcknowledgements()
 		maximumFrameLatency = 3
 		appLanguage = .system

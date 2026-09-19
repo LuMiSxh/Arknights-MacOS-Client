@@ -9,7 +9,7 @@ order: 10
 Arknights Client installs the selected official PC client and starts it through a bundled Wine + DXMT runtime. The launcher and the game download are separate: the DMG does not contain Arknights game files.
 
 > [!NOTE]
-> This is an unofficial community launcher. Yostar's Global, Japan, and Korea clients are available by default. Hypergryph's China and China — Bilibili clients require Canary Features and the separate China-client permission.
+> This is an unofficial community launcher. Yostar's Global, Japan, and Korea clients are available by default. The Gryphline Taiwan client requires Canary Features and the separate Taiwan-client permission. Hypergryph's China and China — Bilibili clients require Canary Features and the separate China-client permission.
 
 ## Before you download
 
@@ -22,6 +22,10 @@ You need:
 - a stable internet connection and enough free space for the selected client, its updates, and temporary files
 
 The launcher reads the current install size from the selected publisher before a download starts and checks the available capacity at the destination. Leave additional headroom for updates, repair files, and caches; the server-reported size can change independently of a launcher release.
+
+For the verified Gryphline Taiwan metadata fixture, version 72.0.0 reports `41,163 MB`, or about
+`41.2 GB`, for the PC package. Treat this as a dated service value rather than a fixed requirement:
+the launcher reads the selected publisher's current value before each operation.
 
 > [!WARNING]
 > The current runtime cannot use macOS 28's restricted Intel translation mode. macOS 27 also blocks Wine when **Legacy Game Test Mode** disables general Rosetta translation. The setup assistant checks the mode it can detect and keeps **Play** disabled until the host can run the runtime. See [Runtime compatibility](help/runtime-compatibility.md#macos-support) if you are deciding whether to upgrade macOS.
@@ -62,27 +66,29 @@ If Apple's installer or the manual command fails, keep the exact error text, res
 ### 2. Select a region
 
 During setup, choose the service and account you intend to use. The default list contains the
-Yostar clients; enable Canary Features and then **Allow China clients** to expose the Hypergryph clients:
+Yostar clients. Enable Canary Features, then enable the separate **Allow Taiwan client** or
+**Allow China clients** permission for the corresponding client group:
 
-| Region               | Publisher  | Availability | Use it for                                      |
-| -------------------- | ---------- | ------------ | ----------------------------------------------- |
-| **Global**           | Yostar     | Default      | The English Global PC client and Global service |
-| **Japan**            | Yostar     | Default      | The Japanese PC client and Japan service        |
-| **Korea**            | Yostar     | Default      | The Korean PC client and Korea service          |
-| **China**            | Hypergryph | Canary       | The Chinese PC client and China service         |
-| **China — Bilibili** | Hypergryph | Canary       | The Bilibili-distributed Chinese client         |
+| Region               | Publisher  | Availability | Use it for                                           |
+| -------------------- | ---------- | ------------ | ---------------------------------------------------- |
+| **Global**           | Yostar     | Default      | The English Global PC client and Global service      |
+| **Japan**            | Yostar     | Default      | The Japanese PC client and Japan service             |
+| **Korea**            | Yostar     | Default      | The Korean PC client and Korea service               |
+| **Taiwan**           | Gryphline  | Canary       | The Traditional Chinese PC client and Taiwan service |
+| **China**            | Hypergryph | Canary       | The Chinese PC client and China service              |
+| **China — Bilibili** | Hypergryph | Canary       | The Bilibili-distributed Chinese client              |
 
-Each region has its own game files, version, and installed state. The three Yostar regions share one Wine prefix. You can install another region later from **Settings → Installation**; enabling Canary Features there reveals **Allow China clients**, which must also be enabled before the China and China — Bilibili clients appear. Those clients share a separate Hypergryph prefix.
+Each region has its own game files, version, and installed state. The three Yostar regions share one Wine prefix. Taiwan has its own Gryphline prefix. You can install another region later from **Settings → Installation**; enable Canary Features and the corresponding client permission there before that region appears. The China clients share a separate Hypergryph prefix.
 
 > [!CAUTION]
-> The China clients use ACE Anti-Cheat. Before the first launch of each one, the launcher asks you to acknowledge that running it through Wine is unofficial and at your own risk.
+> The Taiwan and China clients use ACE Anti-Cheat. Before the first launch of each one, the launcher asks you to acknowledge that running it through Wine is unofficial and at your own risk.
 
 > [!IMPORTANT]
 > Selecting a different region does not move or convert an existing installation. It changes which regional installation the launcher refreshes and starts.
 
 ### 3. Start the official client download
 
-The assistant shows the current region and the install size returned by its publisher. Choose **Install & Continue** to start. The launcher downloads the official files directly from the publisher, verifies each file against the manifest, and writes the completed file only after its size and CRC64 checksum match.
+The assistant shows the current region and the install size returned by its publisher. Choose **Install & Continue** to start. The launcher downloads the official files directly from the publisher, verifies each file against the manifest, and writes the completed file only after its size and publisher checksum match (CRC64 for the Yostar manifests and MD5 for the Gryphline and Hypergryph manifests).
 
 The download can continue while you finish the remaining assistant pages. Closing the launcher pauses the operation safely. A later **Resume Download** continues existing `.part` files and verifies them when each file is complete; it does not restart the whole client.
 
@@ -139,7 +145,7 @@ After the selected region is installed:
 
 1. Let the launcher finish any pending Wine or DXMT setup shown before **Play**.
 2. Select **Play**.
-3. Sign in through the official game client. Global, Japan, Korea, and China clients use the
+3. Sign in through the official game client. Global, Japan, Korea, China, and Taiwan clients use the
    embedded browser inside the Wine environment for their sign-in flow. China — Bilibili uses its
    own client login flow; the embedded login-window guidance does not apply to that client.
 4. If the game opens correctly, configure any remaining display options from the game or from **Settings → General**.
@@ -170,6 +176,6 @@ Use the actions beside a launcher failure for installation, Wine, graphics, embe
 > [!WARNING]
 > GitHub issues are public. Review the pre-filled metadata and remove private paths, URLs, account details, tokens, and unrelated log content before submitting the report.
 
-For account access, payment, billing, or game-service issues, use the [publisher support routing](help/README.md#publisher-support-routing) table. Payment pages run inside the compatibility environment when the selected client provides them; transactions remain official publisher/payment-provider matters, so verify every charge with the payment provider. The table routes Global, Japan, and Korea to Yostar, and China and China — Bilibili to Hypergryph.
+For account access, payment, billing, or game-service issues, use the [publisher support routing](help/README.md#publisher-support-routing) table. Payment pages run inside the compatibility environment when the selected client provides them; transactions remain official publisher/payment-provider matters, so verify every charge with the payment provider. The table routes Global, Japan, and Korea to Yostar, Taiwan to Gryphline, and China and China — Bilibili to Hypergryph.
 
 If installation or launch fails, start with [Troubleshooting](help/troubleshooting.md). [FAQ](help/faq.md) answers common support-boundary and compatibility questions.

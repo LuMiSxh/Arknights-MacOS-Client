@@ -1765,6 +1765,24 @@
         }
       }
     },
+    "onboarding.finish.community.support.gryphline": {
+      "comment": "Gryphline support guidance for the Taiwan game client",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wende dich bei Problemen mit Konto, Zahlung oder Spieldienst stattdessen an den Gryphline-Support."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For account, payment, or game-service issues, contact Gryphline support instead."
+          }
+        }
+      }
+    },
     "onboarding.finish.community.title": {
       "comment": "Community project panel title",
       "extractionState": "manual",
@@ -1815,6 +1833,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Contact Hypergryph Support…"
+          }
+        }
+      }
+    },
+    "onboarding.finish.contactGryphline": {
+      "comment": "Open Gryphline support action for the Taiwan game client",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gryphline-Support kontaktieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Gryphline Support…"
           }
         }
       }
@@ -2504,19 +2540,19 @@
       }
     },
     "onboarding.installation.canaryFeatures.detail": {
-      "comment": "Canary features master toggle description that explains the China-client fallback",
+      "comment": "Canary features master toggle description that explains the independent Taiwan and China permissions",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiviert experimentelle Funktionen und zeigt die separate Freigabe für China-Clients. Eine aktive China-Auswahl wechselt beim Deaktivieren zu Global."
+            "value": "Aktiviert experimentelle Funktionen und macht separate Freigaben für Taiwan und China verfügbar. Eine aktive Canary-Auswahl wechselt beim Deaktivieren zu Global."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enables experimental features and reveals the separate China-client permission. Disabling it switches a selected China client to Global."
+            "value": "Enables experimental features and reveals separate permissions for Taiwan and China clients. Disabling it switches a selected Canary client to Global."
           }
         }
       }
@@ -2553,6 +2589,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Allows selecting the China clients in addition to Canary features."
+          }
+        }
+      }
+    },
+    "onboarding.installation.taiwanClient": {
+      "comment": "Taiwan client permission toggle during onboarding",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taiwan-Client erlauben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Taiwan client"
+          }
+        }
+      }
+    },
+    "onboarding.installation.taiwanClient.detail": {
+      "comment": "Taiwan client permission toggle description during onboarding",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erlaubt die Auswahl des Taiwan-Clients zusätzlich zu den Canary-Funktionen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allows selecting the Taiwan client in addition to Canary features."
           }
         }
       }
@@ -3835,6 +3907,24 @@
         }
       }
     },
+    "home.wordmark.fallback.taiwan": {
+      "comment": "Regional text fallback when the Taiwan wordmark is unavailable",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ARKNIGHTS · TAIWAN"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ARKNIGHTS · TAIWAN"
+          }
+        }
+      }
+    },
     "shared.action.done": {
       "comment": "Standard action that closes a completed modal flow",
       "extractionState": "manual",
@@ -3903,6 +3993,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Korea"
+          }
+        }
+      }
+    },
+    "shared.region.taiwan": {
+      "comment": "Display name for the Taiwan game region while Canary Features are enabled",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taiwan (Canary)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taiwan (Canary)"
           }
         }
       }

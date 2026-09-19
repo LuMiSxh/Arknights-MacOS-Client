@@ -73,6 +73,24 @@
         }
       }
     },
+    "settings.about.contactGryphline": {
+      "comment": "Open Gryphline support action for the Taiwan game client",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gryphline kontaktieren…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Gryphline…"
+          }
+        }
+      }
+    },
     "settings.about.documents": {
       "comment": "Documents panel title",
       "extractionState": "manual",
@@ -177,6 +195,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "Contact Hypergryph for account, payment, or game-service problems."
+          }
+        }
+      }
+    },
+    "settings.about.gameAccountIssues.gryphline.detail": {
+      "comment": "Taiwan game client game and account support row description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bei Konto-, Zahlungs- oder Spielservice-Problemen Gryphline kontaktieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact Gryphline for account, payment, or game-service problems."
           }
         }
       }
@@ -1802,19 +1838,19 @@
       }
     },
     "settings.installation.canaryFeatures.detail": {
-      "comment": "Canary features master toggle description",
+      "comment": "Canary features master toggle description that explains the independent Taiwan and China permissions",
       "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktiviert experimentelle Funktionen und zeigt die separate Freigabe für China-Clients."
+            "value": "Aktiviert experimentelle Funktionen und macht separate Freigaben für Taiwan und China verfügbar. Eine aktive Canary-Auswahl wechselt beim Deaktivieren zu Global."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enables experimental features and reveals the separate China-client permission."
+            "value": "Enables experimental features and reveals separate permissions for Taiwan and China clients. Disabling it switches a selected Canary client to Global."
           }
         }
       }
@@ -1851,6 +1887,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exposes the China clients in the region picker. They stay disabled until you allow them here."
+          }
+        }
+      }
+    },
+    "settings.installation.taiwanClient": {
+      "comment": "Taiwan client permission toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taiwan-Client erlauben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Taiwan client"
+          }
+        }
+      }
+    },
+    "settings.installation.taiwanClient.detail": {
+      "comment": "Taiwan client permission toggle description",
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Macht den Taiwan-Client im Regionswähler verfügbar. Er bleibt deaktiviert, bis du ihn hier freigibst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exposes the Taiwan client in the region picker. It stays disabled until you allow it here."
           }
         }
       }

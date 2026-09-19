@@ -105,16 +105,56 @@ struct HTTPChunkSessionTests {
 
 		#expect(bodies == Array(repeating: expected, count: 16))
 	}
+
+	@Test
+	func chunkSessionRejectsAStreamRedirectOutsideItsPolicy() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(configuration: configuration)
+		let sourceURL = URL(string: "https://download.test/game.bin")!
+		ChunkedURLProtocol.configureRedirect(to: URL(string: "https://evil.test/game.bin")!)
+		defer { ChunkedURLProtocol.reset() }
+
+		let stream = session.stream(
+			for: URLRequest(url: sourceURL),
+			redirectValidator: { $0.host == "download.test" }
+		)
+		var rejected = false
+		do {
+			for try await _ in stream.events {}
+		} catch HTTPTransportError.redirectRejected(let rejectedURL) {
+			rejected = rejectedURL.host == "evil.test"
+		}
+
+		#expect(rejected)
+	}
 }
 
 private final class ChunkedURLProtocol: URLProtocol, @unchecked Sendable {
 	nonisolated(unsafe) static var response: HTTPURLResponse?
 	nonisolated(unsafe) static var chunks: [Data] = []
+	nonisolated(unsafe) static var redirectURL: URL?
+	nonisolated(unsafe) static var didRedirect = false
 
 	override class func canInit(with request: URLRequest) -> Bool { true }
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
+		if let redirectURL = Self.redirectURL, !Self.didRedirect {
+			Self.didRedirect = true
+			let redirectResponse = HTTPURLResponse(
+				url: request.url!,
+				statusCode: 302,
+				httpVersion: "HTTP/1.1",
+				headerFields: ["Location": redirectURL.absoluteString]
+			)!
+			client?.urlProtocol(
+				self,
+				wasRedirectedTo: URLRequest(url: redirectURL),
+				redirectResponse: redirectResponse
+			)
+			return
+		}
 		guard let response = Self.response else {
 			client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
 			return
@@ -131,5 +171,12 @@ private final class ChunkedURLProtocol: URLProtocol, @unchecked Sendable {
 	static func reset() {
 		response = nil
 		chunks = []
+		redirectURL = nil
+		didRedirect = false
+	}
+
+	static func configureRedirect(to url: URL) {
+		redirectURL = url
+		didRedirect = false
 	}
 }

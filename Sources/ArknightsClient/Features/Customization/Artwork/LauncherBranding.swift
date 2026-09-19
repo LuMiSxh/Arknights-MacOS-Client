@@ -127,12 +127,13 @@ actor ArtworkCache {
 			}
 		} catch {
 			// A missing or malformed cache is recovered by downloading the active
-			// Yostar asset below.
+			// official asset below.
 		}
 
 		let data = try await downloadData(
 			from: sourceURL,
-			maximumBytes: AppConstants.Artwork.launcherMaximumBytes
+			maximumBytes: AppConstants.Artwork.launcherMaximumBytes,
+			region: region
 		)
 		guard isCurrentImageRequest(requestID, region: region) else { return nil }
 
@@ -162,7 +163,8 @@ actor ArtworkCache {
 		guard let sourceURL = Self.officialLogoURL(for: region) else { return nil }
 		let data = try await downloadData(
 			from: sourceURL,
-			maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes
+			maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes,
+			region: region
 		)
 
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -170,14 +172,19 @@ actor ArtworkCache {
 		return data
 	}
 
-	private func downloadData(from url: URL, maximumBytes: Int) async throws -> Data {
+	private func downloadData(
+		from url: URL,
+		maximumBytes: Int,
+		region: GameRegion
+	) async throws -> Data {
 		for attempt in 1...AppConstants.Network.maxDownloadAttempts {
 			do {
 				var request = URLRequest(url: url)
 				request.cachePolicy = .reloadRevalidatingCacheData
 				let (data, response) = try await loader.data(
 					for: request,
-					maximumBytes: maximumBytes
+					maximumBytes: maximumBytes,
+					redirectValidator: Self.artworkRedirectValidator(for: region)
 				)
 				guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 				guard !data.isEmpty else { throw LauncherError.invalidResponse }
@@ -228,6 +235,58 @@ actor ArtworkCache {
 		)
 	}
 
+	nonisolated static func artworkRedirectValidator(
+		for region: GameRegion
+	) -> @Sendable (URL) -> Bool {
+		let allowedHosts: Set<String> =
+			switch region {
+			case .global:
+				[
+					"webusstatic.yo-star.com",
+					"www.arknights.global",
+					"launcher-pkg-ark-en.yo-star.com",
+					"launcher-pkg-ark-en-bk.yo-star.com",
+				]
+			case .japan:
+				[
+					"webusstatic.yo-star.com",
+					"arknights.jp",
+					"www.arknights.jp",
+					"launcher-pkg-ark-jp.yo-star.com",
+					"launcher-pkg-ark-jp-bk.yo-star.com",
+				]
+			case .korea:
+				[
+					"webusstatic.yo-star.com",
+					"arknights.kr",
+					"www.arknights.kr",
+					"launcher-pkg-ark-kr.yo-star.com",
+					"launcher-pkg-ark-kr-bk.yo-star.com",
+				]
+			case .taiwan:
+				[
+					"launcher.hg-cdn.com",
+					"ak-tw.hg-cdn.com",
+					"gl-utils-public.hg-cdn.com",
+					"zh.wikifur.com",
+				]
+			case .china, .chinaBilibili:
+				["zh.wikifur.com"]
+			}
+
+		return { url in
+			guard url.scheme?.lowercased() == "https",
+				url.user == nil,
+				url.password == nil,
+				url.port == nil,
+				let host = url.host?.lowercased()
+			else { return false }
+			return allowedHosts.contains(host)
+				|| ((region == .china || region == .chinaBilibili)
+					&& host.hasSuffix(".hycdn.cn"))
+		}
+	}
+
 	nonisolated static func officialLogoURL(for region: GameRegion) -> URL? {
 		switch region {
 		case .global:
@@ -245,6 +304,8 @@ actor ArtworkCache {
 				string:
 					"https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
 			)!
+		case .taiwan:
+			Self.officialLogoURL(for: .china)
 		case .china, .chinaBilibili:
 			URL(string: "https://zh.wikifur.com/w/images/b/b3/Arknights_CN_Logo.png")!
 		}

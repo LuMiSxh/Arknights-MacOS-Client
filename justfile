@@ -40,7 +40,7 @@ build:
 integration:
     {{ uv }} scripts/swift_tests.py integration
 
-# Run read-only contracts against the live Yostar services; never part of normal source checks.
+# Run read-only contracts against live Yostar and Gryphline services; never part of normal source checks.
 [group('Checks')]
 live-contracts:
     {{ uv }} scripts/swift_tests.py live

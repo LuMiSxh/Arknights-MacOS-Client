@@ -58,6 +58,13 @@ struct LocalizationTests {
 			)
 				== "ARKNIGHTS · KOREA"
 		)
+		#expect(
+			L10n.string(
+				HomeStrings.wordmarkFallback(region: .taiwan),
+				locale: Locale(identifier: "en")
+			)
+				== "ARKNIGHTS · TAIWAN"
+		)
 	}
 
 	@Test
@@ -103,6 +110,18 @@ struct LocalizationTests {
 		)
 		#expect(
 			L10n.string(
+				SettingsStrings.contactPublisherTitle(region: .taiwan),
+				locale: Locale(identifier: "en")
+			) == "Contact Gryphline…"
+		)
+		#expect(
+			L10n.string(
+				SettingsStrings.gameAccountIssuesDetail(region: .taiwan),
+				locale: Locale(identifier: "de")
+			) == "Bei Konto-, Zahlungs- oder Spielservice-Problemen Gryphline kontaktieren."
+		)
+		#expect(
+			L10n.string(
 				SettingsStrings.gameAccountIssuesDetail(region: .china),
 				locale: Locale(identifier: "en")
 			) == "Contact Hypergryph for account, payment, or game-service problems."
@@ -125,6 +144,12 @@ struct LocalizationTests {
 				OnboardingStrings.contactSupport(region: .china),
 				locale: Locale(identifier: "en")
 			) == "Contact Hypergryph Support…"
+		)
+		#expect(
+			L10n.string(
+				OnboardingStrings.communitySupport(region: .taiwan),
+				locale: Locale(identifier: "en")
+			) == "For account, payment, or game-service issues, contact Gryphline support instead."
 		)
 	}
 }

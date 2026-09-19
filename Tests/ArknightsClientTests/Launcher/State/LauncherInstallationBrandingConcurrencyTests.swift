@@ -35,7 +35,9 @@ struct LauncherInstallationBrandingConcurrencyTests {
 		await api.waitForBrandingRequests(2)
 		await api.resolveBranding(
 			LauncherBranding(
-				launcherBackgroundImage: URL(string: "https://example.com/japan-artwork.png"),
+				launcherBackgroundImage: URL(
+					string: "https://www.arknights.jp/japan-artwork.png"
+				),
 				launcherBackgroundImageCRC64: "japan-artwork",
 				copyrightInformation: nil,
 				privacyPolicy: nil,

@@ -25,6 +25,7 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.usesDynamicTheme())
 		#expect(!store.canaryFeaturesEnabled())
 		#expect(!store.chinaClientsEnabled())
+		#expect(!store.taiwanClientEnabled())
 		#expect(store.maximumFrameLatency() == 3)
 		#expect(store.selectedRegion() == .global)
 		#expect(store.appLanguage() == .system)
@@ -42,6 +43,7 @@ struct LauncherPreferencesStoreTests {
 		store.setUsesDynamicTheme(false)
 		store.setCanaryFeaturesEnabled(true)
 		store.setChinaClientsEnabled(true)
+		store.setTaiwanClientEnabled(true)
 		store.setMaximumFrameLatency(1)
 		store.setSelectedRegion(.korea)
 		store.setAppLanguage(.german)
@@ -58,6 +60,7 @@ struct LauncherPreferencesStoreTests {
 		#expect(!store.usesDynamicTheme())
 		#expect(store.canaryFeaturesEnabled())
 		#expect(store.chinaClientsEnabled())
+		#expect(store.taiwanClientEnabled())
 		#expect(store.maximumFrameLatency() == 1)
 		#expect(store.selectedRegion() == .korea)
 		#expect(store.appLanguage() == .german)
@@ -81,6 +84,46 @@ struct LauncherPreferencesStoreTests {
 		store.setSelectedRegion(.china)
 		store.setCanaryFeaturesEnabled(false)
 		#expect(store.selectedRegion() == .global)
+	}
+
+	@Test
+	func taiwanSelectionRequiresTaiwanAndCanaryPermissions() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setSelectedRegion(.taiwan)
+		#expect(store.selectedRegion() == .global)
+
+		store.setCanaryFeaturesEnabled(true)
+		#expect(store.selectedRegion() == .global)
+
+		store.setTaiwanClientEnabled(true)
+		#expect(store.selectedRegion() == .taiwan)
+
+		store.setTaiwanClientEnabled(false)
+		#expect(store.selectedRegion() == .global)
+	}
+
+	@Test
+	func chinaAndTaiwanSelectionsUseIndependentPermissions() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setCanaryFeaturesEnabled(true)
+		store.setTaiwanClientEnabled(true)
+		store.setSelectedRegion(.taiwan)
+		#expect(store.selectedRegion() == .taiwan)
+
+		store.setSelectedRegion(.china)
+		#expect(store.selectedRegion() == .global)
+
+		store.setChinaClientsEnabled(true)
+		#expect(store.selectedRegion() == .china)
+
+		store.setTaiwanClientEnabled(false)
+		#expect(store.selectedRegion() == .china)
 	}
 
 	@Test

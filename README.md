@@ -25,14 +25,14 @@ Arknights Client downloads official PC game files directly from the selected pub
 > Use the [project website](https://lumisxh.github.io/Arknights-MacOS-Client/) for installation instructions, compatibility information, troubleshooting, and release history.
 
 > [!NOTE]
-> Arknights Client is an unofficial community project. It is not affiliated with Hypergryph, Yostar, or Bilibili and does not include game files or downloaded artwork in release builds.
+> Arknights Client is an unofficial community project. It is not affiliated with Gryphline, Hypergryph, Yostar, or Bilibili and does not include game files or downloaded artwork in release builds.
 
 ## Features
 
 ### Install and play
 
 - Install, resume, update, repair, and remove regional PC clients
-- Enable the China or China — Bilibili client through Canary Features and its separate permission
+- Enable the Taiwan client through Canary Features and its separate permission; expose the China and China — Bilibili clients through Canary Features and their separate permission
 - Keep each region in its own game directory and switch between installed regions
 - Run in windowed, borderless, or fullscreen mode at a selected resolution
 - Enable HiDPI rendering for the game and any embedded login browser the selected client provides
@@ -61,10 +61,11 @@ Arknights Client downloads official PC game files directly from the selected pub
 
 Use the website's [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) for requirements, Gatekeeper and Rosetta guidance, region setup, and first launch. The [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) covers troubleshooting, storage, runtime compatibility, and the boundary between launcher support and publisher support.
 
-Publisher support follows the selected region: Yostar supports Global, Japan, and Korea; Hypergryph
-supports China and China — Bilibili. Account, payment, billing, server, and in-game issues belong
-to the publisher and payment provider. The embedded login-window guidance applies to Global, Japan,
-Korea, and China; it does not apply to China — Bilibili. See the [publisher support routing table](https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing).
+Publisher support follows the selected region: Yostar supports Global, Japan, and Korea; Gryphline
+supports Taiwan; Hypergryph supports China and China — Bilibili. Account, payment, billing, server,
+and in-game issues belong to the publisher and payment provider. The embedded login-window guidance
+applies to Global, Japan, Korea, China, and Taiwan; it does not apply to China — Bilibili. See the
+[publisher support routing table](https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing).
 
 ## Development
 
@@ -80,7 +81,7 @@ just check
 | --------------------- | ----------------------------------------------------------- |
 | `just check`          | Run source checks and network-denied Python and Swift tests |
 | `just integration`    | Run the network-denied onboarding-to-download workflow      |
-| `just live-contracts` | Deliberately check the current public Yostar API contracts  |
+| `just live-contracts` | Deliberately check the current public Yostar and Gryphline API contracts  |
 | `just preview`        | Open the focused isolated UI-state simulator                |
 | `just dev web`        | Start the local documentation website                       |
 | `just check web`      | Check website types and formatting                          |

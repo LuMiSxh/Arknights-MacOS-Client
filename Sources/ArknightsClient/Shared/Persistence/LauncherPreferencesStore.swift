@@ -23,6 +23,7 @@ struct LauncherPreferencesStore {
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
 		static let chinaClientsEnabled = "chinaClientsEnabled"
+		static let taiwanClientEnabled = "taiwanClientEnabled"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
@@ -175,12 +176,17 @@ struct LauncherPreferencesStore {
 
 	func selectedRegion() -> GameRegion {
 		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
-		if region?.requiresCanaryPermission == true,
-			!canaryFeaturesEnabled() || !chinaClientsEnabled()
-		{
+		guard let region else { return .global }
+		if region.requiresCanaryPermission && !canaryFeaturesEnabled() {
 			return .global
 		}
-		return region ?? .global
+		if region.requiresChinaClientPermission && !chinaClientsEnabled() {
+			return .global
+		}
+		if region.requiresTaiwanClientPermission && !taiwanClientEnabled() {
+			return .global
+		}
+		return region
 	}
 
 	func setSelectedRegion(_ region: GameRegion) {
@@ -201,6 +207,14 @@ struct LauncherPreferencesStore {
 
 	func setChinaClientsEnabled(_ value: Bool) {
 		defaults.set(value, forKey: Key.chinaClientsEnabled)
+	}
+
+	func taiwanClientEnabled() -> Bool {
+		bool(for: Key.taiwanClientEnabled, defaultValue: false)
+	}
+
+	func setTaiwanClientEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.taiwanClientEnabled)
 	}
 
 	func hasAcknowledgedACEWarning(for region: GameRegion) -> Bool {

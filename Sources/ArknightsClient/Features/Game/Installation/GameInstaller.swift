@@ -12,6 +12,11 @@ struct GameInstaller: Sendable {
 	private let chunkSession: HTTPChunkSession
 	private let compatibilityManager: GameCompatibilityManager
 	private let concurrentDownloads = AppConstants.Network.concurrentDownloads
+	private static let gryphlineDownloadHosts: Set<String> = [
+		"ak-tw.hg-cdn.com",
+		"launcher.hg-cdn.com",
+		"gl-utils-public.hg-cdn.com",
+	]
 	let log: LauncherLog?
 
 	var fileManager: FileManager { .default }
@@ -26,6 +31,21 @@ struct GameInstaller: Sendable {
 		chunkSession = HTTPChunkSession(configuration: session.configuration)
 		self.compatibilityManager = compatibilityManager
 		self.log = log
+	}
+
+	static func downloadRedirectValidator(
+		for region: GameRegion
+	) -> (@Sendable (URL) -> Bool)? {
+		guard region == .taiwan else { return nil }
+		return { url in
+			guard url.scheme?.lowercased() == "https",
+				url.user == nil,
+				url.password == nil,
+				url.port == nil,
+				let host = url.host?.lowercased()
+			else { return false }
+			return Self.gryphlineDownloadHosts.contains(host)
+		}
 	}
 
 	func install(
@@ -115,6 +135,7 @@ struct GameInstaller: Sendable {
 					installDirectory: installDirectory,
 					counter: counter,
 					progress: progress,
+					region: region,
 					to: &group
 				)
 			}
@@ -131,6 +152,7 @@ struct GameInstaller: Sendable {
 							installDirectory: installDirectory,
 							counter: counter,
 							progress: progress,
+							region: region,
 							to: &group
 						)
 					}
@@ -160,7 +182,8 @@ struct GameInstaller: Sendable {
 		baseURL: URL,
 		installDirectory: URL,
 		counter: ProgressCounter,
-		progress: @escaping ProgressHandler
+		progress: @escaping ProgressHandler,
+		region: GameRegion? = nil
 	) async throws -> Int64 {
 		try Task.checkCancellation()
 		let destination = try destinationURL(for: item, inside: installDirectory)
@@ -203,6 +226,10 @@ struct GameInstaller: Sendable {
 			baseURL
 			.appending(path: relativeSource, directoryHint: .isDirectory)
 			.appending(path: relativeFile)
+		let redirectValidator = region.flatMap(Self.downloadRedirectValidator(for:))
+		guard redirectValidator?(downloadURL) != false else {
+			throw LauncherError.invalidResponse
+		}
 		var request = URLRequest(url: downloadURL)
 		if existingBytes > 0 {
 			request.setValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
@@ -239,7 +266,10 @@ struct GameInstaller: Sendable {
 		}
 		try handle.seekToEnd()
 
-		let stream = chunkSession.stream(for: request)
+		let stream = chunkSession.stream(
+			for: request,
+			redirectValidator: redirectValidator
+		)
 		defer { stream.cancel() }
 		let progressMonitor = Task {
 			do {

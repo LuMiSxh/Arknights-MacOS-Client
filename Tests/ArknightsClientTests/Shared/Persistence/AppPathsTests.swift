@@ -68,6 +68,13 @@ func appPathsUseStandardInjectedDirectories() {
 			)
 	)
 	#expect(
+		paths.gameInstall(for: .taiwan)
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Gryphline/Taiwan",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
 		paths.winePrefix
 			== support.appending(
 				path: "\(AppPaths.bundleIdentifier)/Yostar/Prefix",
@@ -82,6 +89,13 @@ func appPathsUseStandardInjectedDirectories() {
 			)
 	)
 	#expect(
+		paths.gryphlineWinePrefix
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Gryphline/Prefix",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
 		paths.yostarLogFile
 			== library.appending(
 				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-yostar.log"
@@ -91,6 +105,12 @@ func appPathsUseStandardInjectedDirectories() {
 		paths.publisherLogFile(for: .hypergryph)
 			== library.appending(
 				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-hypergryph.log"
+			)
+	)
+	#expect(
+		paths.publisherLogFile(for: .gryphline)
+			== library.appending(
+				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-gryphline.log"
 			)
 	)
 	#expect(
@@ -150,4 +170,16 @@ func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
 
 	#expect(paths.gameInstall(for: region).lastPathComponent == "China-Bilibili")
 	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: .china))
+}
+
+@Test
+func taiwanUsesItsOwnGryphlinePrefix() {
+	let paths = AppPaths(
+		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
+		cachesDirectory: URL(filePath: "/tmp/Caches"),
+		libraryDirectory: URL(filePath: "/tmp/Library")
+	)
+
+	#expect(paths.winePrefix(for: .taiwan) == paths.gryphlineWinePrefix)
+	#expect(paths.gameInstall(for: .taiwan).lastPathComponent == "Taiwan")
 }

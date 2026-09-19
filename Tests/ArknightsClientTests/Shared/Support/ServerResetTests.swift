@@ -22,6 +22,7 @@ func offsetsMatchEachRegionsFixedServerTime() {
 	#expect(ServerReset.offsetSeconds(for: .global) == -7 * 3600)
 	#expect(ServerReset.offsetSeconds(for: .japan) == 9 * 3600)
 	#expect(ServerReset.offsetSeconds(for: .korea) == 9 * 3600)
+	#expect(ServerReset.offsetSeconds(for: .taiwan) == 8 * 3600)
 }
 
 @Test

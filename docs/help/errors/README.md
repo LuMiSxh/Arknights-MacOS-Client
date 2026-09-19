@@ -25,5 +25,5 @@ If no code is shown, use [Troubleshooting](../troubleshooting.md) and include th
 
 Account, payment, billing, server, and in-game service problems are handled by the selected
 publisher and payment provider, not by a launcher error code. Use the [publisher support routing
-table](../README.md#publisher-support-routing): Yostar handles Global, Japan, and Korea; Hypergryph
-handles China and China — Bilibili.
+table](../README.md#publisher-support-routing): Yostar handles Global, Japan, and Korea; Gryphline
+handles Taiwan; Hypergryph handles China and China — Bilibili.

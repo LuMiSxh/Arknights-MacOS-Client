@@ -98,7 +98,11 @@ final class InstallationController {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
 		guard
 			!newRegion.requiresCanaryPermission
-				|| (preferences.canaryFeaturesEnabled() && preferences.chinaClientsEnabled())
+				|| (preferences.canaryFeaturesEnabled()
+					&& (!newRegion.requiresChinaClientPermission
+						|| preferences.chinaClientsEnabled())
+					&& (!newRegion.requiresTaiwanClientPermission
+						|| preferences.taiwanClientEnabled()))
 		else { return false }
 		cancelInstalledStateRefresh()
 		lifecycle.clearFailure()
@@ -142,7 +146,8 @@ final class InstallationController {
 			regionDirectories: Dictionary(
 				uniqueKeysWithValues: GameRegion.selectableCases(
 					canaryEnabled: preferences.canaryFeaturesEnabled(),
-					chinaClientsEnabled: preferences.chinaClientsEnabled()
+					chinaClientsEnabled: preferences.chinaClientsEnabled(),
+					taiwanClientEnabled: preferences.taiwanClientEnabled()
 				).map { candidate in
 					(
 						candidate,
@@ -166,7 +171,9 @@ final class InstallationController {
 				self.isInstalled = snapshot.isInstalled
 				self.hasPartialDownload = snapshot.hasPartialDownload
 				self.installedVersion = snapshot.installedVersion
-				self.installedRegions = snapshot.installedRegions
+				self.installedRegions = snapshot.installedRegions.filter {
+					self.currentSelectableRegions.contains($0)
+				}
 				self.finishStateRefresh(refreshID)
 				if let diagnostic = snapshot.diagnostic {
 					await log.error(diagnostic)
@@ -195,6 +202,10 @@ final class InstallationController {
 
 	func setRegionInstalled(_ candidate: GameRegion, _ installed: Bool) {
 		if installed {
+			guard currentSelectableRegions.contains(candidate) else {
+				installedRegions.removeAll { $0 == candidate }
+				return
+			}
 			if !installedRegions.contains(candidate) {
 				installedRegions.append(candidate)
 				installedRegions.sort { $0.rawValue < $1.rawValue }
@@ -219,6 +230,16 @@ final class InstallationController {
 		stateRefreshID == id && !Task.isCancelled
 			&& region == request.selectedRegion
 			&& installDirectory == request.selectedDirectory
+	}
+
+	private var currentSelectableRegions: Set<GameRegion> {
+		Set(
+			GameRegion.selectableCases(
+				canaryEnabled: preferences.canaryFeaturesEnabled(),
+				chinaClientsEnabled: preferences.chinaClientsEnabled(),
+				taiwanClientEnabled: preferences.taiwanClientEnabled()
+			)
+		)
 	}
 
 	private func finishStateRefresh(_ id: UUID) {

@@ -6,28 +6,30 @@ order: 30
 
 # Storage
 
-Arknights Client keeps regional game files separate. Yostar clients share one Wine prefix, while the two Hypergryph clients share another. The launcher computes its standard locations below from the bundle identifier `com.lumisxh.arknights-client`; a custom game location replaces only that region's default game path.
+Arknights Client keeps regional game files separate. Yostar clients share one Wine prefix, Taiwan has a dedicated Gryphline prefix, and the two Hypergryph clients share another. The launcher computes its standard locations below from the bundle identifier `com.lumisxh.arknights-client`; a custom game location replaces only that region's default game path.
 
 ## Locations at a glance
 
-| Data                           | Default location                                                                            | Lifetime                                                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Global game files              | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Global`                | Until **Uninstall Game** or manual removal                                    |
-| Japan game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Japan`                 | Until **Uninstall Game** or manual removal                                    |
-| Korea game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Korea`                 | Until **Uninstall Game** or manual removal                                    |
-| China game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/China`             | Until **Uninstall Game** or manual removal                                    |
-| China — Bilibili game files    | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/China-Bilibili`     | Until **Uninstall Game** or manual removal                                    |
-| Yostar Wine prefix             | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix`                | Persistent runtime state shared by Global, Japan, and Korea                   |
-| Hypergryph Wine prefix         | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix`            | Persistent runtime state shared by China and China — Bilibili                 |
-| Custom launcher and game icons | `~/Library/Application Support/com.lumisxh.arknights-client/Artwork/Custom`                 | Until reset or app-data removal                                               |
-| Local playtime statistics      | `~/Library/Application Support/com.lumisxh.arknights-client/playtime-v1.json`               | Until **Reset Statistics** or manual app-data removal                         |
-| Bundled compatibility runtime  | Inside the app at `Contents/Resources/Runtime`                                              | Read-only; replaced by a launcher release                                     |
-| Downloaded official artwork    | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                          | Recreated when missing                                                        |
-| Preset gallery cache           | `~/Library/Caches/com.lumisxh.arknights-client/PresetGallery`                               | Recreated automatically; cleared by **Clear Gallery Cache**                   |
-| Launcher and Wine logs         | `~/Library/Logs/com.lumisxh.arknights-client/`                                              | Rotating diagnostics; see [Troubleshooting](troubleshooting.md#log-locations) |
-| Preferences                    | macOS `UserDefaults` for the bundle identifier                                              | Small launcher settings; locations are kept when settings are reset           |
+| Data                           | Default location                                                                       | Lifetime                                                                      |
+| ------------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Global game files              | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Global`             | Until **Uninstall Game** or manual removal                                    |
+| Japan game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Japan`              | Until **Uninstall Game** or manual removal                                    |
+| Korea game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Korea`              | Until **Uninstall Game** or manual removal                                    |
+| Taiwan game files              | `~/Library/Application Support/com.lumisxh.arknights-client/Gryphline/Taiwan`          | Until **Uninstall Game** or manual removal                                    |
+| China game files               | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/China`          | Until **Uninstall Game** or manual removal                                    |
+| China — Bilibili game files    | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/China-Bilibili` | Until **Uninstall Game** or manual removal                                    |
+| Yostar Wine prefix             | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix`             | Persistent runtime state shared by Global, Japan, and Korea                   |
+| Gryphline Wine prefix          | `~/Library/Application Support/com.lumisxh.arknights-client/Gryphline/Prefix`          | Persistent runtime state for Taiwan                                           |
+| Hypergryph Wine prefix         | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix`         | Persistent runtime state shared by China and China — Bilibili                 |
+| Custom launcher and game icons | `~/Library/Application Support/com.lumisxh.arknights-client/Artwork/Custom`            | Until reset or app-data removal                                               |
+| Local playtime statistics      | `~/Library/Application Support/com.lumisxh.arknights-client/playtime-v1.json`          | Until **Reset Statistics** or manual app-data removal                         |
+| Bundled compatibility runtime  | Inside the app at `Contents/Resources/Runtime`                                         | Read-only; replaced by a launcher release                                     |
+| Downloaded official artwork    | `~/Library/Caches/com.lumisxh.arknights-client/Artwork/Downloaded`                     | Recreated when missing                                                        |
+| Preset gallery cache           | `~/Library/Caches/com.lumisxh.arknights-client/PresetGallery`                          | Recreated automatically; cleared by **Clear Gallery Cache**                   |
+| Launcher and Wine logs         | `~/Library/Logs/com.lumisxh.arknights-client/`                                         | Rotating diagnostics; see [Troubleshooting](troubleshooting.md#log-locations) |
+| Preferences                    | macOS `UserDefaults` for the bundle identifier                                         | Small launcher settings; locations are kept when settings are reset           |
 
-The launcher repoints the selected publisher family's prefix `G:` drive to the active region immediately before launch. Yostar's three clients use `Yostar/Prefix`; China and China — Bilibili use `Hypergryph/Prefix`.
+The launcher repoints the selected publisher family's prefix `G:` drive to the active region immediately before launch. Yostar's three clients use `Yostar/Prefix`; Taiwan uses `Gryphline/Prefix`; China and China — Bilibili use `Hypergryph/Prefix`.
 
 Playtime statistics contain only local durations, regional totals, recent daily aggregates, and the latest session. They are not associated with an account, synchronized, included in reports, or sent over the network. Collection begins with the launcher version that adds the feature; the launcher does not infer earlier playtime from game files or logs.
 
@@ -44,15 +46,15 @@ before normal startup. It may briefly block installation, updates, repair, and *
 moves existing data into the new publisher folders. The migration runs only for the exact old
 default paths listed below; custom game locations are never moved.
 
-| Old default location | New location |
-| -------------------- | ------------ |
-| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global` | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Global` |
-| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Japan` | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Japan` |
-| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Korea` | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Korea` |
-| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-China` | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/China` |
+| Old default location                                                                        | New location                                                                           |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Global`         | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Global`             |
+| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Japan`          | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Japan`              |
+| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-Korea`          | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Korea`              |
+| `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-China`          | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/China`          |
 | `~/Library/Application Support/com.lumisxh.arknights-client/Games/Arknights-China-Bilibili` | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/China-Bilibili` |
-| `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix` |
-| `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-China` | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix` |
+| `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-Global` | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix`             |
+| `~/Library/Application Support/com.lumisxh.arknights-client/Wine/Prefixes/Arknights-China`  | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix`         |
 
 The launcher also updates a saved path only when it exactly points to one of these old defaults. A
 custom path remains unchanged. Each move is a same-volume folder rename, so the files are not copied

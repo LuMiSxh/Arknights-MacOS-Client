@@ -202,7 +202,9 @@ extension LauncherViewModel {
 	}
 
 	func resetAllLauncherSettings() {
-		guard settings.resetToDefaults(canModifyLaunchOptions: !gameSession.isGameActive) else {
+		guard lifecycle.activity == .idle,
+			settings.resetToDefaults(canModifyLaunchOptions: !gameSession.isGameActive)
+		else {
 			return
 		}
 		Task { [log] in await log.info("Launcher settings reset to default") }

@@ -50,8 +50,8 @@ Restart the Mac and run the launcher check again. This mode disables the general
 6. The launcher waits up to 90 seconds for the game window, then monitors the game and Wine processes until exit.
 
 The selected publisher runtime log records these stages: `arknights-yostar.log` for Global, Japan,
-and Korea, or `arknights-hypergryph.log` for China and China — Bilibili. A first launch after a
-runtime change can take longer while the prefix migration completes.
+and Korea, `arknights-gryphline.log` for Taiwan, or `arknights-hypergryph.log` for China and China —
+Bilibili. A first launch after a runtime change can take longer while the prefix migration completes.
 
 ## The shared Wine prefix
 
@@ -68,6 +68,12 @@ separate Hypergryph prefix:
 
 ```text
 ~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix
+```
+
+The Canary-gated Taiwan client uses its own Gryphline prefix:
+
+```text
+~/Library/Application Support/com.lumisxh.arknights-client/Gryphline/Prefix
 ```
 
 After a launcher update that changes these locations, the first startup can be temporarily blocked
@@ -105,16 +111,16 @@ The default Wine synchronization mode is **MSYNC**. It uses macOS Mach synchroni
 
 ## Canary Features
 
-**Settings → Installation → Danger Zone → Canary Features** exposes optional runtime behavior for wider testing. Turning Canary Features off restores the regular launch behavior without deleting games or prefixes. The separate **Allow China clients** permission appears below it and controls whether the Hypergryph clients are listed. Changes to the options below apply on the next game launch. The game always follows the current macOS default audio output when it changes during play.
+**Settings → Installation → Danger Zone → Canary Features** exposes optional runtime behavior for wider testing. Turning Canary Features off restores the regular launch behavior without deleting games or prefixes. The separate **Allow Taiwan client** and **Allow China clients** permissions appear below it and independently control whether those clients are listed. Changes to the options below apply on the next game launch. The game always follows the current macOS default audio output when it changes during play.
 
 - **Frame Latency** sets DXMT's maximum queued frames from 1 to 3. The default is 3. A lower value may make the rendered cursor feel more responsive, but can reduce frame rate or make presentation less smooth.
-- **China (Canary)** and **China — Bilibili (Canary)** appear in the Region menu after **Allow China clients** is enabled and use the same native installation and launch controls as the other regions. Their game files remain separate, while both share the isolated Hypergryph Wine prefix. Each client shows a one-time ACE Anti-Cheat warning before its first launch through Wine.
+- **Taiwan (Canary)** appears in the Region menu when Canary Features and **Allow Taiwan client** are enabled and uses its own Gryphline game directory and Wine prefix. **China (Canary)** and **China — Bilibili (Canary)** additionally require **Allow China clients**; their game files remain separate, while both share the isolated Hypergryph Wine prefix. Taiwan and both China clients show a one-time ACE Anti-Cheat warning before their first launch through Wine.
 
 Canary behavior may change as testing continues. If an option causes a regression, restore its default or turn Canary Features off before the next launch and include the selected setting in a bug report.
 
 ## Embedded browser and notices
 
-Global, Japan, Korea, and China clients use separate Windows browser helpers for sign-in and some
+Global, Japan, Korea, China, and Taiwan clients use separate Windows browser helpers for sign-in and some
 game notices. China — Bilibili uses its own client login flow; the embedded login-window guidance
 does not apply to that client. The launcher keeps the official helpers and applies only the
 compatibility components required for the tested Wine environment:
@@ -127,7 +133,7 @@ These changes do not replace the official pages, inspect credentials, or bypass 
 
 > [!WARNING]
 > Payment flows run in the same embedded browser compatibility environment when the selected client provides them. Transactions are official publisher/payment-provider matters: verify every charge with the payment provider.
-> Use [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, or Korea, or [Hypergryph Support](https://user.hypergryph.com/support) for China or China — Bilibili. The launcher cannot resolve account, billing, or provider-side restrictions.
+> Use [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, or Korea, [Gryphline Support](https://cs.gryphline.com/) for Taiwan, or [Hypergryph Support](https://user.hypergryph.com/support) for China or China — Bilibili. The launcher cannot resolve account, billing, or provider-side restrictions.
 
 ## Runtime failures
 

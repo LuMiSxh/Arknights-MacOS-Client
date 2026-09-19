@@ -15,7 +15,7 @@ order: 40
 | ------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | Unit          | `just check`          | Swift components, Python scripts, parsing, persistence, safety rules, and static checks                                           | Denied         |
 | Integration   | `just integration`    | Fresh onboarding, real launcher API decoding, installer downloads, checksums, state persistence, and repeat runs against fixtures | Denied         |
-| Live contract | `just live-contracts` | Current Yostar configuration, CDN, and manifest shapes for Global, Japan, and Korea                                               | Required       |
+| Live contract | `just live-contracts` | Current Yostar configuration, CDN, and manifest shapes plus the Gryphline Taiwan metadata and CDN contract                        | Required       |
 
 > [!IMPORTANT]
 > `just ci` runs unit checks, deterministic integration tests, and the release Swift build. It never downloads the Wine runtime or game files and never launches the app or Wine. On a fresh checkout, uv and SwiftPM may resolve pinned development dependencies before test execution; the test processes themselves remain network-denied.
@@ -34,7 +34,7 @@ Choose the smallest level that proves the changed contract:
 | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | A parser, state transition, path rule, persistence value, renderer, or controller decision | A focused test in `ArknightsClientTests` using local values and fixtures                                  |
 | A flow crossing onboarding, API decoding, installation, progress, or persisted state       | `ArknightsClientIntegrationTests` with an isolated `IntegrationTestEnvironment` and `LocalFixtureNetwork` |
-| A current Yostar endpoint, response shape, manifest, or signing contract                   | A live probe plus a deterministic fixture/regression test when the decoder changes                        |
+| A current Yostar or Gryphline endpoint, response shape, manifest, or signing contract      | A live probe plus a deterministic fixture/regression test when the decoder changes                        |
 | `runtime.json` or a new packaged runtime release                                           | `just check`, `just runtime`, and the manual compatibility matrix                                         |
 | Website Markdown, Svelte UI, routes, or Mermaid                                            | `just check web` plus a production build; use a browser smoke check for visible behavior                  |
 
@@ -49,11 +49,11 @@ Swift unit and integration test execution runs inside the macOS sandbox with net
 
 HTTP behavior uses an ephemeral `URLSession` whose `URLProtocol` accepts only recorded fixture routes. An unknown URL fails the test instead of falling through to the internet. Fixtures must be small, deterministic, reviewable, and generated locally; downloaded game, runtime, and artwork files remain forbidden.
 
-Static `URLProtocol` handlers require serialized suites and must be reset during cleanup. Equivalent behavior for Global, Japan, and Korea should be parameterized when the region changes the contract.
+Static `URLProtocol` handlers require serialized suites and must be reset during cleanup. Equivalent behavior for Global, Japan, Korea, and Taiwan should be parameterized when the region changes the contract.
 
 ## Deterministic workflows
 
-The initial workflow creates empty paths and preferences, presents onboarding, advances to Region & Install, and drives the real `LauncherViewModel`, `LauncherAPI`, and `GameInstaller` against fixture responses. It verifies the downloaded bytes, CRC64, installed-state file, progress, completed onboarding, persisted region/path, and a second no-op installation.
+The initial workflow creates empty paths and preferences, presents onboarding, advances to Region & Install, and drives the real `LauncherViewModel`, `LauncherAPI`, and `GameInstaller` against fixture responses. It verifies the downloaded bytes, provider checksum, installed-state file, progress, completed onboarding, persisted region/path, and a second no-op installation.
 
 Future integration scenarios belong in the same level when they can use fixture runtimes or process doubles. Priorities include resumable and cancelled downloads across the launcher state model, compatibility reconciliation, prefix migration, region remapping, launch environment construction, process timeout and cancellation, and app-bundle packaging inspection.
 
@@ -100,7 +100,7 @@ Sparkle packaging checks run as part of the app smoke and release workflow. The 
 > [!NOTE]
 > Live contracts perform safe read-only requests and make no local installation changes. They are separate from deterministic CI because service outages, rate limits, and upstream deployments must not make unrelated pull requests flaky. The dedicated workflow runs every Monday at 04:23 UTC; `workflow_dispatch` and `just live-contracts` provide deliberate manual execution.
 
-Each run checks branding, game configuration, CDN configuration, manifest location, and the complete manifest for Global, Japan, and Korea through the production request signing and decoders. It requires credential-free HTTPS URLs, bounded response time and manifest size, safe non-conflicting paths, parseable CRC64 values, and nonnegative file sizes. Network and HTTP failures are retried three times; deterministic decoding and validation failures are not.
+Each run checks branding, game configuration, CDN configuration, manifest location, and the complete manifest for Global, Japan, and Korea through the production request signing and decoders. It also checks Taiwan's Gryphline branding, metadata, and CDN hosts without fetching the encrypted game manifest or any game package. It requires credential-free HTTPS URLs, bounded response time and manifest size, safe non-conflicting paths, parseable CRC64 or MD5 values, and nonnegative file sizes. Network and HTTP failures are retried three times; deterministic decoding and validation failures are not.
 
 The probe writes a schema-versioned report containing only contract names, health states, ordinary version or file-count observations, and sanitized failure categories. Reports are retained as Actions artifacts for 30 days and rendered into the workflow summary. Authorization values and response bodies are never persisted.
 

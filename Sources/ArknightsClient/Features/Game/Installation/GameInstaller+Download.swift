@@ -12,6 +12,7 @@ extension GameInstaller {
 		installDirectory: URL,
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler,
+		region: GameRegion,
 		to group: inout ThrowingTaskGroup<Int64, any Error>
 	) {
 		group.addTask {
@@ -21,7 +22,8 @@ extension GameInstaller {
 				cdn: cdn,
 				installDirectory: installDirectory,
 				counter: counter,
-				progress: progress
+				progress: progress,
+				region: region
 			)
 		}
 	}
@@ -32,7 +34,8 @@ extension GameInstaller {
 		cdn: CDNConfiguration,
 		installDirectory: URL,
 		counter: ProgressCounter,
-		progress: @escaping ProgressHandler
+		progress: @escaping ProgressHandler,
+		region: GameRegion
 	) async throws -> Int64 {
 		let maxAttempts = AppConstants.Network.maxDownloadAttempts
 		for attempt in 1...maxAttempts {
@@ -43,7 +46,8 @@ extension GameInstaller {
 					baseURL: attempt == 1 ? cdn.primaryCdn : cdn.backUpCdn,
 					installDirectory: installDirectory,
 					counter: counter,
-					progress: progress
+					progress: progress,
+					region: region
 				)
 			} catch is CancellationError {
 				throw CancellationError()

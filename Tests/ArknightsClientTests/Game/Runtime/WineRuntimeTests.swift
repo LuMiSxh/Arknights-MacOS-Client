@@ -150,7 +150,7 @@ func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled
 @Test
 @MainActor
 func runtimeCompatibilityFlagsFollowClientProfiles() {
-	for region in [GameRegion.global, .china, .chinaBilibili] {
+	for region in [GameRegion.global, .china, .chinaBilibili, .taiwan] {
 		let environment = GameSessionController.runtimeEnvironmentOverrides(
 			for: region,
 			canaryFeaturesEnabled: false,

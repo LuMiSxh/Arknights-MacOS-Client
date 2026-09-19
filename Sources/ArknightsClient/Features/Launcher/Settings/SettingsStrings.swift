@@ -137,6 +137,10 @@ enum SettingsStrings {
 		.settingsInstallationChinaClients
 	static let chinaClientsDetail = LocalizedStringResource.Settings
 		.settingsInstallationChinaClientsDetail
+	static let taiwanClient = LocalizedStringResource.Settings
+		.settingsInstallationTaiwanClient
+	static let taiwanClientDetail = LocalizedStringResource.Settings
+		.settingsInstallationTaiwanClientDetail
 	static let frameLatency = LocalizedStringResource.Settings.settingsInstallationFrameLatency
 	static let frameLatencyDetail = LocalizedStringResource.Settings
 		.settingsInstallationFrameLatencyDetail
@@ -224,12 +228,18 @@ enum SettingsStrings {
 		.settingsAboutGameAccountIssuesDetail
 	static let contactYostar = LocalizedStringResource.Settings.settingsAboutContactYostar
 	static func contactPublisherTitle(region: GameRegion) -> LocalizedStringResource {
+		if region.publisher == .gryphline {
+			return .Settings.settingsAboutContactGryphline
+		}
 		if region.publisher == .hypergryph {
 			return .Settings.settingsAboutContactHypergryph
 		}
 		return contactYostar
 	}
 	static func gameAccountIssuesDetail(region: GameRegion) -> LocalizedStringResource {
+		if region.publisher == .gryphline {
+			return .Settings.settingsAboutGameAccountIssuesGryphlineDetail
+		}
 		if region.publisher == .hypergryph {
 			return .Settings.settingsAboutGameAccountIssuesHypergryphDetail
 		}

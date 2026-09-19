@@ -9,9 +9,14 @@ enum SupportLinks {
 	)!
 	static let yostarContact = URL(string: "https://account.yo-star.com/contact")!
 	static let hypergryphContact = URL(string: "https://user.hypergryph.com/support")!
+	static let gryphlineContact = URL(string: "https://cs.gryphline.com/")!
 	static let donate = URL(string: "https://ko-fi.com/lumisxh")!
 
 	static func contact(for region: GameRegion) -> URL {
-		region.publisher == .hypergryph ? hypergryphContact : yostarContact
+		switch region.publisher {
+		case .yostar: yostarContact
+		case .hypergryph: hypergryphContact
+		case .gryphline: gryphlineContact
+		}
 	}
 }

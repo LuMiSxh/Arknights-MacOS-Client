@@ -32,6 +32,8 @@ final class LauncherViewModel {
 	#endif
 	var pendingACEWarningRegion: GameRegion?
 	@ObservationIgnored private var startupTask: Task<Bool, Never>?
+	@ObservationIgnored private var deferredCanaryRefreshTask: Task<Void, Never>?
+	@ObservationIgnored private var canaryRefreshPending = false
 	#if DEBUG
 		var developerScenario: DeveloperScenario?
 	#endif
@@ -175,13 +177,17 @@ final class LauncherViewModel {
 		settings.onDynamicThemeChanged = { [weak customization] in
 			customization?.updateThemeColor()
 		}
-		settings.onCanaryFeaturesChanged = { [weak installation, weak refreshController] enabled in
-			guard !enabled, installation?.region.requiresCanaryPermission == true else { return }
-			_ = refreshController?.selectRegion(.global)
+		settings.onCanaryFeaturesChanged = { [weak self] _ in
+			self?.refreshInstalledRegionsAfterCanaryChange()
 		}
-		settings.onChinaClientsChanged = { [weak installation, weak refreshController] enabled in
-			guard !enabled, installation?.region.requiresCanaryPermission == true else { return }
-			_ = refreshController?.selectRegion(.global)
+		settings.onChinaClientsChanged = { [weak self] _ in
+			self?.refreshInstalledRegionsAfterCanaryChange()
+		}
+		settings.onTaiwanClientChanged = { [weak self] _ in
+			self?.refreshInstalledRegionsAfterCanaryChange()
+		}
+		_ = lifecycle.observeActivityChanges { [weak self] in
+			self?.scheduleCanaryRefreshIfIdle()
 		}
 		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in
 			refreshController?.cancelForInstallationStart()
@@ -266,8 +272,43 @@ final class LauncherViewModel {
 		Task { [log] in await log.info("Launcher \(appVersion) started") }
 	}
 
+	private func refreshInstalledRegionsAfterCanaryChange() {
+		canaryRefreshPending = true
+		scheduleCanaryRefreshIfIdle()
+	}
+
+	private func scheduleCanaryRefreshIfIdle() {
+		guard
+			canaryRefreshPending, lifecycle.activity == .idle,
+			deferredCanaryRefreshTask == nil
+		else {
+			return
+		}
+		deferredCanaryRefreshTask = Task { @MainActor [weak self] in
+			await Task.yield()
+			guard let self else { return }
+			deferredCanaryRefreshTask = nil
+			guard lifecycle.activity == .idle, canaryRefreshPending else { return }
+			canaryRefreshPending = false
+			refreshInstalledRegionsNow()
+		}
+	}
+
+	private func refreshInstalledRegionsNow() {
+		let activeRegion = installation.region
+		let activeRegionDisabled =
+			(activeRegion.requiresCanaryPermission && !settings.canaryFeaturesEnabled)
+			|| (activeRegion.requiresChinaClientPermission && !settings.chinaClientsEnabled)
+			|| (activeRegion.requiresTaiwanClientPermission && !settings.taiwanClientEnabled)
+		if activeRegionDisabled, refreshController.selectRegion(.global) {
+			return
+		}
+		_ = installation.updateInstalledState()
+	}
+
 	deinit {
 		startupTask?.cancel()
+		deferredCanaryRefreshTask?.cancel()
 	}
 
 	func waitForStartup() async -> Bool {

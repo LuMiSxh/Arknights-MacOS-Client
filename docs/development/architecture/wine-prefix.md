@@ -20,13 +20,14 @@ is the only source of prefix locations.
 
 ## Prefix topology
 
-The stable Yostar regions share one historical prefix. The China and China — Bilibili clients share
-a separate Hypergryph prefix so their Windows-side state, login sessions, registry, and runtime
-processes cannot mix with the Yostar regions.
+The stable Yostar regions share one historical prefix. Taiwan uses a separate Gryphline prefix, and
+the China and China — Bilibili clients share a separate Hypergryph prefix, so Windows-side state,
+login sessions, registry, and runtime processes cannot mix across publisher families.
 
 | Region family              | Default prefix                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------ |
 | Global, Japan, and Korea   | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix`     |
+| Taiwan                     | `~/Library/Application Support/com.lumisxh.arknights-client/Gryphline/Prefix`  |
 | China and China — Bilibili | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix` |
 
 Code must resolve the active path through `AppPaths.winePrefix(for:)` instead of selecting a directory
@@ -43,7 +44,7 @@ Wine creates most of the prefix contents. The launcher owns the following additi
 mappings:
 
 ```text
-{Yostar,Hypergryph}/Prefix/
+{Yostar,Gryphline,Hypergryph}/Prefix/
 ├── .arknights-runtime-migrations.json
 ├── dosdevices/
 │   ├── c: -> ../drive_c
@@ -188,7 +189,7 @@ sessions, registry data unrelated to those settings, and game files.
 
 **Delete Wine Prefix** removes the selected region family's complete prefix on a background task.
 For Global, Japan, or Korea, that means the shared Yostar prefix and all browser sessions stored in
-it. For either China client, it means the shared Hypergryph prefix. Game installations,
+it. For Taiwan, it means the Gryphline prefix. For either China client, it means the shared Hypergryph prefix. Game installations,
 launcher preferences, artwork, and central logs remain outside either prefix.
 
 Both operations require an idle lifecycle. Do not add a direct filesystem deletion path in UI code;

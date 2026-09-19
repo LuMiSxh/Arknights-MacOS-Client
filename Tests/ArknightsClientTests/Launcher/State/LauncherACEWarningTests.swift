@@ -10,6 +10,7 @@ struct LauncherACEWarningTests {
 	@Test(arguments: [
 		(GameRegion.china, false, true),
 		(GameRegion.chinaBilibili, false, true),
+		(GameRegion.taiwan, false, true),
 		(GameRegion.china, true, false),
 		(GameRegion.global, false, false),
 		(GameRegion.japan, false, false),

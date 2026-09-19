@@ -32,7 +32,10 @@ struct PlaytimeStatisticsTests {
 		var uptime: TimeInterval = 0
 		let controller = fixture.controller(now: { fixture.date(2026, 3, 1) }, uptime: { uptime })
 
-		for (region, duration) in zip(GameRegion.allCases, [60.0, 120.0, 180.0, 240.0, 300.0]) {
+		for (region, duration) in zip(
+			GameRegion.allCases,
+			[60.0, 120.0, 180.0, 240.0, 300.0, 360.0]
+		) {
 			let sessionID = UUID()
 			controller.start(sessionID: sessionID, region: region)
 			uptime += duration
@@ -40,12 +43,13 @@ struct PlaytimeStatisticsTests {
 		}
 
 		let reloaded = fixture.controller()
-		#expect(reloaded.totalDuration == 900)
+		#expect(reloaded.totalDuration == 1_260)
 		#expect(reloaded.duration(for: .global) == 60)
 		#expect(reloaded.duration(for: .japan) == 120)
 		#expect(reloaded.duration(for: .korea) == 180)
-		#expect(reloaded.duration(for: .china) == 240)
-		#expect(reloaded.duration(for: .chinaBilibili) == 300)
+		#expect(reloaded.duration(for: .taiwan) == 240)
+		#expect(reloaded.duration(for: .china) == 300)
+		#expect(reloaded.duration(for: .chinaBilibili) == 360)
 		#expect(reloaded.statistics.latestSession?.region == .chinaBilibili)
 	}
 

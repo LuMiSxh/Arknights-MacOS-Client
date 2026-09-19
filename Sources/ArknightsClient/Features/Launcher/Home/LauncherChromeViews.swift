@@ -15,7 +15,7 @@ struct ArknightsWordmark: View {
 			wordmarkBacking
 
 			if let logo {
-				if region.publisher == .hypergryph {
+				if region.publisher != .yostar {
 					Image(nsImage: logo)
 						.resizable()
 						.scaledToFit()

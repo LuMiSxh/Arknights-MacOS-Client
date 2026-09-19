@@ -9,16 +9,17 @@ order: 10
 ## Which Arknights clients are supported?
 
 > [!NOTE]
-> The launcher supports Yostar's Global, Japan, and Korea PC clients. The China and China — Bilibili
-> clients are available when Canary Features and the separate China-client permission are enabled;
-> they are operated by Hypergryph.
+> The launcher supports Yostar's Global, Japan, and Korea PC clients. The Gryphline Taiwan client is
+> available when Canary Features and its separate Taiwan-client permission are enabled. The China and
+> China — Bilibili clients are available when Canary Features and the separate China-client permission
+> are enabled; they are operated by Hypergryph.
 
 Choose the region that matches the service and account you already use. Regional installations, versions, and installed states are kept separate.
 
-## Is this an official Yostar or Hypergryph launcher?
+## Is this an official Yostar, Gryphline, or Hypergryph launcher?
 
 > [!IMPORTANT]
-> No. Arknights Client is a community-maintained macOS launcher. It is not affiliated with, endorsed by, or supported by Hypergryph, Yostar, or Bilibili. It downloads the selected publisher's official PC-client files; it does not ship the game in the DMG.
+> No. Arknights Client is a community-maintained macOS launcher. It is not affiliated with, endorsed by, or supported by Gryphline, Hypergryph, Yostar, or Bilibili. It downloads the selected publisher's official PC-client files; it does not ship the game in the DMG.
 
 The project cannot guarantee how a publisher will treat any third-party launcher or compatibility environment. The selected service alone defines its account and enforcement policies. Do not rely on the project for assurances about account standing.
 
@@ -51,9 +52,9 @@ Yes for setup, installation, updates, sign-in, and normal access to the selected
 ## Can I install more than one region?
 
 Yes. Each supported region has its own game directory and manifest state. Global, Japan, and Korea
-are Yostar clients and share one Wine prefix; China and China — Bilibili are Hypergryph clients and
-share another. The selected region is mapped as Wine's `G:` drive for a launch. Switching regions
-does not move or convert the other region's files.
+are Yostar clients and share one Wine prefix; Taiwan has its own Gryphline prefix; China and China —
+Bilibili are Hypergryph clients and share another. The selected region is mapped as Wine's `G:` drive
+for a launch. Switching regions does not move or convert the other region's files.
 
 ## Can I use an existing installation?
 
@@ -75,7 +76,7 @@ A launcher update waits for an active game, download, update, or repair to finis
 - **Resume** continues a paused download from safe `.part` files beside their final destinations
 - **Repair** verifies every manifest file and downloads missing or damaged files again
 
-The installer verifies the size and CRC64 checksum of each downloaded file before moving it into place. If a download is interrupted, closing the launcher is safe; reopen it and choose **Resume Download**.
+The installer verifies the size and the checksum published by the selected service before moving each downloaded file into place. Yostar manifests use CRC64; Gryphline and Hypergryph manifests use MD5. If a download is interrupted, closing the launcher is safe; reopen it and choose **Resume Download**.
 
 ## Does the launcher modify the official game files?
 
@@ -91,7 +92,7 @@ No. Quitting Arknights Client stops its shared Wine server and the running game.
 
 ## Why is sign-in or the Notices window blank or slow?
 
-Global, Japan, Korea, and China clients use browser helpers inside Wine for their official sign-in
+Global, Japan, Korea, China, and Taiwan clients use browser helpers inside Wine for their official sign-in
 window and separate Notices window. China — Bilibili uses its own client login flow; the embedded
 login-window guidance in this answer does not apply to that client.
 
@@ -111,6 +112,7 @@ does not disable those notices.
 
 > [!WARNING]
 > Contact [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, and Korea account access, login ownership, payment, billing, server availability, or in-game service issues.
+> Contact [Gryphline Support](https://cs.gryphline.com/) for the same issues with Taiwan.
 > Contact [Hypergryph Support](https://user.hypergryph.com/support) for the same issues with China or China — Bilibili.
 > Contact the launcher project for installation, runtime, graphics, window, or launcher-owned embedded-browser failures.
 

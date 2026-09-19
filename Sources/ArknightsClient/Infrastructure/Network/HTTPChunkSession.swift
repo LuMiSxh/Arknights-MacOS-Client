@@ -52,6 +52,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 	private struct Subscriber {
 		let continuation: Continuation
 		weak var task: URLSessionDataTask?
+		let redirectValidator: (@Sendable (URL) -> Bool)?
 		var bufferedBytes = 0
 		var isSuspended = false
 	}
@@ -83,12 +84,19 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		)
 	}
 
-	func stream(for request: URLRequest) -> HTTPChunkStream {
+	func stream(
+		for request: URLRequest,
+		redirectValidator: (@Sendable (URL) -> Bool)? = nil
+	) -> HTTPChunkStream {
 		let (events, continuation) = AsyncThrowingStream<HTTPChunkEvent, any Error>.makeStream()
 		let task = session.dataTask(with: request)
 		let identifier = task.taskIdentifier
 		lock.withLock {
-			subscribers[identifier] = Subscriber(continuation: continuation, task: task)
+			subscribers[identifier] = Subscriber(
+				continuation: continuation,
+				task: task,
+				redirectValidator: redirectValidator ?? self.redirectValidator
+			)
 		}
 		continuation.onTermination = { @Sendable [weak self, weak task] _ in
 			task?.cancel()
@@ -129,7 +137,10 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		newRequest request: URLRequest,
 		completionHandler: @escaping @Sendable (URLRequest?) -> Void
 	) {
-		guard let url = request.url, redirectValidator?(url) != false else {
+		guard let url = request.url,
+			let subscriber = lock.withLock({ subscribers[task.taskIdentifier] }),
+			subscriber.redirectValidator?(url) != false
+		else {
 			completionHandler(nil)
 			finish(
 				taskIdentifier: task.taskIdentifier,

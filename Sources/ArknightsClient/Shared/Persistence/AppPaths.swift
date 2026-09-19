@@ -12,6 +12,7 @@ struct AppPaths: Sendable {
 	let logRoot: URL
 	let winePrefix: URL
 	let chinaWinePrefix: URL
+	let gryphlineWinePrefix: URL
 	let bundledRuntimeDirectory: URL?
 
 	init(
@@ -51,6 +52,10 @@ struct AppPaths: Sendable {
 			path: "Hypergryph/Prefix",
 			directoryHint: .isDirectory
 		)
+		gryphlineWinePrefix = applicationSupportRoot.appending(
+			path: "Gryphline/Prefix",
+			directoryHint: .isDirectory
+		)
 		bundledRuntimeDirectory = resourceDirectory?.appending(
 			path: "Runtime",
 			directoryHint: .isDirectory
@@ -63,6 +68,7 @@ struct AppPaths: Sendable {
 			case .global: "Global"
 			case .japan: "Japan"
 			case .korea: "Korea"
+			case .taiwan: "Taiwan"
 			case .china: "China"
 			case .chinaBilibili: "China-Bilibili"
 			}
@@ -80,6 +86,7 @@ struct AppPaths: Sendable {
 		switch publisher {
 		case .yostar: winePrefix
 		case .hypergryph: chinaWinePrefix
+		case .gryphline: gryphlineWinePrefix
 		}
 	}
 

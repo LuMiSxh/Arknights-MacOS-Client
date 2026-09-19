@@ -9,6 +9,98 @@ import Testing
 @MainActor
 struct LauncherViewModelConcurrencyTests {
 	@Test
+	func canaryGateChangesRefreshInstalledRegionsWhileGlobalIsActive() async throws {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			prepareStorage: { paths in
+				for region in [GameRegion.global, .taiwan, .china] {
+					try! writeInstalledRegion(region, paths: paths)
+				}
+			}
+		)
+		await api.waitForBrandingRequest()
+		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
+
+		model.settings.canaryFeaturesEnabled = true
+		model.settings.taiwanClientEnabled = true
+		#expect(
+			await waitForCondition {
+				model.installation.installedRegions == [.global, .taiwan]
+			}
+		)
+
+		model.settings.chinaClientsEnabled = true
+		#expect(
+			await waitForCondition {
+				model.installation.installedRegions == [.global, .taiwan, .china]
+			}
+		)
+
+		#expect(model.installation.selectRegion(.taiwan))
+		model.settings.taiwanClientEnabled = false
+		#expect(await waitForCondition { model.installation.region == .global })
+
+		model.settings.chinaClientsEnabled = false
+		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
+
+		model.settings.chinaClientsEnabled = true
+		#expect(await waitForCondition { model.installation.installedRegions.contains(.china) })
+		#expect(model.installation.selectRegion(.china))
+		model.settings.chinaClientsEnabled = false
+		#expect(await waitForCondition { model.installation.region == .global })
+
+		model.settings.chinaClientsEnabled = true
+		#expect(await waitForCondition { model.installation.installedRegions.contains(.china) })
+		#expect(model.installation.selectRegion(.china))
+		model.settings.canaryFeaturesEnabled = false
+		#expect(await waitForCondition { model.installation.region == .global })
+		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
+		await api.resolveBranding()
+	}
+
+	@Test
+	func canaryGateChangesDuringExclusiveActivityRefreshAfterIdle() async throws {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			prepareStorage: { paths in
+				for region in [GameRegion.global, .taiwan] {
+					try! writeInstalledRegion(region, paths: paths)
+				}
+			}
+		)
+		await api.waitForBrandingRequest()
+		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
+
+		model.settings.canaryFeaturesEnabled = true
+		model.settings.taiwanClientEnabled = true
+		#expect(
+			await waitForCondition {
+				model.installation.installedRegions == [.global, .taiwan]
+			}
+		)
+
+		model.lifecycle.activity = .installing(id: UUID(), stage: .downloading)
+		model.resetAllLauncherSettings()
+		#expect(model.settings.canaryFeaturesEnabled)
+		#expect(model.settings.taiwanClientEnabled)
+		model.settings.taiwanClientEnabled = false
+		await Task.yield()
+		#expect(model.installation.installedRegions == [.global, .taiwan])
+
+		model.lifecycle.activity = .idle
+		#expect(
+			await waitForCondition {
+				model.installation.installedRegions == [.global]
+			}
+		)
+		await api.resolveBranding()
+	}
+
+	@Test
 	func storageMigrationFailureBlocksNormalStartup() async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(
@@ -258,7 +350,7 @@ struct LauncherViewModelConcurrencyTests {
 		await api.waitForBrandingRequest()
 
 		let branding = LauncherBranding(
-			launcherBackgroundImage: URL(string: "https://example.com/japan-artwork.png"),
+			launcherBackgroundImage: URL(string: "https://www.arknights.global/japan-artwork.png"),
 			launcherBackgroundImageCRC64: "japan-artwork",
 			copyrightInformation: nil,
 			privacyPolicy: nil,
@@ -300,4 +392,23 @@ struct LauncherViewModelConcurrencyTests {
 		await api.waitForCancellations(3)
 	}
 
+}
+
+@MainActor
+private func writeInstalledRegion(_ region: GameRegion, paths: AppPaths) throws {
+	let directory = paths.gameInstall(for: region)
+	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+	try Data().write(to: directory.appending(path: "Arknights.exe"))
+	let state = InstalledState(
+		version: "1.0.0",
+		basis: "test",
+		source: "test",
+		installedAt: .now,
+		files: nil
+	)
+	let encoder = JSONEncoder()
+	encoder.dateEncodingStrategy = .iso8601
+	try encoder.encode(state).write(
+		to: directory.appending(path: AppConstants.Game.installedStateFileName)
+	)
 }

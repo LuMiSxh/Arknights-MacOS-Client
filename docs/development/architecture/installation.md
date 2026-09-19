@@ -12,8 +12,16 @@ owns the selected region, user-selected directory, readiness projection, progres
 lifecycle. [`GameInstaller`](../../../Sources/ArknightsClient/Features/Game/Installation/GameInstaller.swift)
 performs the filesystem and transfer work. `LauncherAPI` obtains the current version, manifest, and
 CDN URLs for a `GameRegion`. Global, Japan, and Korea use the same Yostar API shape and signature
-algorithm with different base URLs and `game_tag` values. The Canary-gated China clients use
+algorithm with different base URLs and `game_tag` values. The Canary-gated Taiwan client uses
+Gryphline's batch metadata and web-metadata endpoints with app code `uiCaUeGDB2htwXSv`, channel
+and sub-channel `6`, and launcher app code `TiaytKBUIEdoEwRT`. Its `game_files` response is an
+encrypted JSON-lines manifest whose entries use MD5 checksums. The Canary-gated China clients use
 Hypergryph's batch metadata endpoint with their respective distribution channels.
+The Gryphline adapter accepts only HTTPS responses from `launcher.gryphline.com`,
+`launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, and `gl-utils-public.hg-cdn.com`; it never starts the
+vendor launcher. It appends `game_files` to the verified package path, decrypts that response with
+the shared Hypergryph manifest cipher, and passes the resulting files through the same installer
+path-safety and resumable-download checks as every other region.
 
 ## Inputs and ownership
 
@@ -21,7 +29,7 @@ Hypergryph's batch metadata endpoint with their respective distribution channels
 | ------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Selected region and install directory | `InstallationController` plus `LauncherPreferencesStore` | Selects one of the supported clients and persists one path per region                                         |
 | Game configuration                    | `LauncherRefreshController` and `LauncherAPI`            | Supplies latest version, manifest location, executable name, launch parameters, and reported disk requirement |
-| Manifest and CDN configuration        | `GameInstaller`                                          | Lists relative file paths, expected byte counts, CRC64 values, and primary/fallback download roots            |
+| Manifest and CDN configuration        | `GameInstaller`                                          | Lists relative file paths, expected byte counts, provider checksums (CRC64 or MD5), and download roots        |
 | Installed state                       | `GameInstaller`                                          | Records the manifest that was successfully finalized in `.arknights-client-state.json`                        |
 | Exclusive operation                   | `LauncherLifecycleStore` and `ExclusiveOperationGate`    | Prevents refreshes, updates, repair, or stale tasks from mutating the same install concurrently               |
 | Compatibility files                   | `GameCompatibilityManager`                               | Restores launcher-owned shims before install/update/repair                                                    |
@@ -32,7 +40,7 @@ is usable. Those decisions remain with the controller and the lifecycle store.
 > [!IMPORTANT]
 > A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
 >
-> Each region has its own install directory and installed-state file, so regions install and update independently. Yostar regions share one Wine prefix; both Hypergryph regions share another. `WinePrefixConfigurator` re-points the selected family's `G:` drive to the active region's directory on every launch.
+> Each region has its own install directory and installed-state file, so regions install and update independently. Yostar regions share one Wine prefix; Taiwan has its own Gryphline prefix; both Hypergryph regions share another. `WinePrefixConfigurator` re-points the selected family's `G:` drive to the active region's directory on every launch.
 
 ## Operation flow
 
@@ -55,7 +63,7 @@ sequenceDiagram
 	Installer->>Disk: Restore owned compatibility files
 	par Up to configured concurrent downloads
 		Installer->>Disk: Write or resume file.part
-		Installer->>Installer: Verify size and CRC64
+		Installer->>Installer: Verify size and provider checksum
 		Installer->>Disk: Move verified part to final path
 	end
 	Installer->>Disk: Atomically save installed state
@@ -96,7 +104,7 @@ files must be regular files with one hard link; this keeps a resumed write from 
 modifying an unrelated inode.
 
 > [!CAUTION]
-> Never relax manifest path checks because a current Yostar or Hypergryph manifest happens to contain
+> Never relax manifest path checks because a current Yostar, Gryphline, or Hypergryph manifest happens to contain
 > only simple names. The manifest is remote input. Path containment, symlink rejection, duplicate detection,
 > and safe partial-file handling are installer invariants, not format niceties.
 
@@ -107,17 +115,17 @@ unverified file at the official destination.
 
 ## Reuse, repair, and resume
 
-| Mode                              | Existing file decision                                                                    | Network behavior                                          |
-| --------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Fresh install or incomplete state | A same-size file is checked against the manifest; absent or mismatching files are pending | Existing `.part` bytes are resumed when safe              |
-| Normal update                     | A same-size file whose previous installed manifest entry has the expected hash is reused  | Only changed, missing, or incomplete files are downloaded |
-| Repair                            | Every existing manifest file is checked with CRC64, regardless of the previous state file | Missing or damaged files are downloaded again             |
+| Mode                              | Existing file decision                                                                                    | Network behavior                                          |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Fresh install or incomplete state | A same-size file is checked against the manifest; absent or mismatching files are pending                 | Existing `.part` bytes are resumed when safe              |
+| Normal update                     | A same-size file whose previous installed manifest entry has the expected hash is reused                  | Only changed, missing, or incomplete files are downloaded |
+| Repair                            | Every existing manifest file is checked with its provider checksum, regardless of the previous state file | Missing or damaged files are downloaded again             |
 
 Each transfer starts at the primary CDN. Failed attempts retry with the configured backoff and use
 the fallback CDN on later attempts. A response must be HTTP 200 or 206; when a server answers a range
 request with 200, the installer safely truncates the partial file and restarts that file from zero.
-An unexpected status, oversized response, size mismatch, or CRC64 mismatch fails that file. A
-checksum failure removes the partial file instead of retrying corrupted bytes.
+An unexpected status, oversized response, size mismatch, or provider-checksum mismatch fails that
+file. A checksum failure removes the partial file instead of retrying corrupted bytes.
 
 > [!TIP]
 > If a download is paused, keep the regional directory and its `.part` files in place. Starting
@@ -141,14 +149,17 @@ flowchart TB
 	Controller --> Global[Global path + state]
 	Controller --> Japan[Japan path + state]
 	Controller --> Korea[Korea path + state]
+	Controller --> Taiwan[Taiwan path + state]
 	Controller --> China[China path + state]
 	Controller --> Bilibili[China — Bilibili path + state]
 	Global --> YostarPrefix[Yostar prefix]
 	Japan --> YostarPrefix
 	Korea --> YostarPrefix
+	Taiwan --> GryphlinePrefix[Gryphline prefix]
 	China --> HypergryphPrefix[Hypergryph prefix]
 	Bilibili --> HypergryphPrefix
 	YostarPrefix --> Active[Selected region mounted as G:]
+	GryphlinePrefix --> Active
 	HypergryphPrefix --> Active
 ```
 

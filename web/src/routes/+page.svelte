@@ -27,6 +27,12 @@
 			variant: 'success'
 		},
 		{
+			name: 'Taiwan',
+			publisher: 'Gryphline',
+			status: 'Canary',
+			variant: 'warning'
+		},
+		{
 			name: 'China',
 			publisher: 'Hypergryph',
 			status: 'Canary',
@@ -142,7 +148,8 @@
 
 <aside class="project-notice">
 	<strong
-		>Community project, not affiliated with Yostar, Hypergryph, or Bilibili</strong
+		>Community project, not affiliated with Yostar, Gryphline, Hypergryph,
+		or Bilibili</strong
 	>
 	<span>Game files are never bundled</span>
 	<a href={`${repositoryUrl}/releases`}>View releases ↗</a>

@@ -7,18 +7,20 @@ order: 40
 # Communication and boundaries
 
 The launcher has no project-owned application server. Its remote inputs are the official publisher
-launcher APIs (Yostar for Global, Japan, and Korea; Hypergryph for China and China — Bilibili), the
-repository-hosted announcements feed, the official branding response, and Sparkle's signed appcast.
+launcher APIs (Yostar for Global, Japan, and Korea; Gryphline for Taiwan; Hypergryph for China and
+China — Bilibili), the repository-hosted announcements feed, the official branding response, and
+Sparkle's signed appcast.
 Each source has a separate owner, validation policy, and failure path.
 Keep those channels separate when adding a new message or update surface.
 
 ## Launcher communication
 
-Four read-only channels feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Announcements and Yostar notices can enqueue a popup; launcher updates use status state and the themed Sparkle UI.
+Five read-only channels feed the launcher; no separate application server exists. Each fires independently at launch, on its own precondition, with no ordering or dependency between them. Announcements and Yostar notices can enqueue a popup; launcher updates use status state and the themed Sparkle UI.
 
 | Channel                                         | Owner                         | Payload                                                   | User-visible result                                                |
 | ----------------------------------------------- | ----------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------ |
 | Yostar game/config API (Global, Japan, Korea)   | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, region notice, or an actionable launcher error |
+| Gryphline metadata/payload API (Taiwan)         | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, or an actionable launcher error                |
 | Hypergryph metadata/payload API (China clients) | `LauncherAPI`                 | Region configuration, branding, CDN and manifest location | Readiness, artwork, or an actionable launcher error                |
 | Repository announcements                        | `LauncherAnnouncementService` | Bounded JSON feed from `main`                             | Once-only Markdown popup with an optional HTTPS action             |
 | Sparkle appcast                                 | `LauncherUpdaterController`   | Signed launcher update metadata and archive               | Update status, then Sparkle's themed update UI on request          |
@@ -97,7 +99,10 @@ applied.
 
 ## Boundaries
 
-- Yostar's Global, Japan, and Korea clients use the Yostar launcher API. The Canary-gated China and China — Bilibili clients use Hypergryph's separate metadata and payload infrastructure.
+- Yostar's Global, Japan, and Korea clients use the Yostar launcher API. The Canary-gated Taiwan
+  client uses Gryphline's separate batch metadata and encrypted-manifest infrastructure. The
+  Canary-gated China and China — Bilibili clients use Hypergryph's separate metadata and payload
+  infrastructure.
 - Game files come from first-party HTTPS endpoints and are never included in a release.
 - Manifest paths cannot escape the selected game directory; see [Installation architecture](installation.md#manifest-and-path-safety).
 - Wine receives private home, cache, configuration, runtime, and temporary directories.

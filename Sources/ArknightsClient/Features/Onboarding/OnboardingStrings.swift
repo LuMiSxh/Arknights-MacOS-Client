@@ -67,6 +67,10 @@ enum OnboardingStrings {
 	static let chinaClients = LocalizedStringResource.onboardingInstallationChinaClients
 	static let chinaClientsDetail = LocalizedStringResource
 		.onboardingInstallationChinaClientsDetail
+	static let taiwanClient = LocalizedStringResource
+		.onboardingInstallationTaiwanClient
+	static let taiwanClientDetail = LocalizedStringResource
+		.onboardingInstallationTaiwanClientDetail
 	static let serverRegion = LocalizedStringResource.onboardingInstallationRegionPanel
 	static let officialClient = LocalizedStringResource.onboardingInstallationOfficialClient
 	static let downloadingTitle = LocalizedStringResource.onboardingInstallationDownloadingTitle
@@ -108,12 +112,18 @@ enum OnboardingStrings {
 	static let communitySupport = LocalizedStringResource.onboardingFinishCommunitySupport
 	static let contactSupport = LocalizedStringResource.onboardingFinishContactSupport
 	static func communitySupport(region: GameRegion) -> LocalizedStringResource {
+		if region.publisher == .gryphline {
+			return .onboardingFinishCommunitySupportGryphline
+		}
 		if region.publisher == .hypergryph {
 			return .onboardingFinishCommunitySupportHypergryph
 		}
 		return communitySupport
 	}
 	static func contactSupport(region: GameRegion) -> LocalizedStringResource {
+		if region.publisher == .gryphline {
+			return .onboardingFinishContactGryphline
+		}
 		if region.publisher == .hypergryph {
 			return .onboardingFinishContactHypergryph
 		}
@@ -221,6 +231,7 @@ enum OnboardingStrings {
 		case .global: .onboardingInstallationRegionDetailGlobal
 		case .japan: .onboardingInstallationRegionDetailJapan
 		case .korea: .onboardingInstallationRegionDetailKorea
+		case .taiwan: .sharedRegionTaiwan
 		case .china: .sharedRegionChina
 		case .chinaBilibili: .sharedRegionChinaBilibili
 		}
