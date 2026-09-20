@@ -127,7 +127,7 @@ struct StatusHUDPill: View {
 	}
 
 	private var installedRegionRows: some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 			ForEach(installation.installedRegions) { region in
 				let countdown = ServerReset.countdownText(for: region)
 				Button {
@@ -136,54 +136,15 @@ struct StatusHUDPill: View {
 						isExpanded = false
 					}
 				} label: {
-					HStack(spacing: 8) {
-						Text(region.displayName)
-							.font(.caption.weight(.semibold))
-							.adaptiveControlForeground(
-								region == installation.region ? accentColor : .primary,
-								disabledTint: LauncherVisuals.disabled
-							)
-							.lineLimit(1)
-						Text(countdown)
-							.font(.caption.monospaced().weight(.medium))
-							.adaptiveControlForeground(
-								.secondary,
-								disabledTint: LauncherVisuals.disabled
-							)
-							.lineLimit(1)
-						if region == installation.region {
-							Image(systemName: "checkmark")
-								.font(.caption.bold())
-								.adaptiveControlForeground(
-									accentColor,
-									disabledTint: LauncherVisuals.disabled
-								)
-								.accessibilityHidden(true)
-						} else {
-							Image(systemName: "chevron.right")
-								.font(.caption.weight(.semibold))
-								.adaptiveControlForeground(
-									LauncherVisuals.controlTint.opacity(0.68),
-									disabledTint: LauncherVisuals.disabled
-								)
-								.accessibilityHidden(true)
-						}
-					}
-					.padding(.horizontal, 14)
-					.padding(.vertical, 3)
-					.adaptiveControlSurface(
-						tint: LauncherVisuals.controlTint,
-						isDisabled: !canSwitchRegion,
-						in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
-					)
-					.contentShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control))
+					regionRowLabel(region: region, countdown: countdown)
 				}
 				.buttonStyle(ActionPressStyle())
 				.keyboardFocusIndicator(
-					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
 				)
 				.disabled(!canSwitchRegion)
-				.accessibilityElement(children: .combine)
+				.accessibilityElement(children: .ignore)
+				.accessibilityLabel(Text(region.displayName))
 				.accessibilityValue(Text(countdown))
 				.accessibilityAddTraits(
 					region == installation.region ? .isSelected : []
@@ -191,6 +152,54 @@ struct StatusHUDPill: View {
 				.accessibilityHint(Text(HomeStrings.switchRegionHelp))
 			}
 		}
+		.padding(.horizontal, LauncherVisuals.Spacing.control)
+		.padding(.vertical, LauncherVisuals.Spacing.control)
+		.frame(maxWidth: .infinity, alignment: .leading)
+	}
+
+	private func regionRowLabel(region: GameRegion, countdown: String) -> some View {
+		HStack(spacing: LauncherVisuals.Spacing.control) {
+			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+				Text(region.displayName)
+					.font(.caption.weight(.semibold))
+					.adaptiveControlForeground(
+						.primary,
+						disabledTint: LauncherVisuals.disabled
+					)
+					.fixedSize(horizontal: false, vertical: true)
+				Text(countdown)
+					.font(.caption.monospacedDigit().weight(.medium))
+					.adaptiveControlForeground(
+						.secondary,
+						disabledTint: LauncherVisuals.disabled
+					)
+					.fixedSize(horizontal: false, vertical: true)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+
+			Image(systemName: "checkmark")
+				.font(.caption.bold())
+				.adaptiveControlForeground(
+					accentColor,
+					disabledTint: LauncherVisuals.disabled
+				)
+				.opacity(region == installation.region ? 1 : 0)
+				.frame(width: 16, alignment: .center)
+				.accessibilityHidden(true)
+		}
+		.padding(.horizontal, LauncherVisuals.Spacing.control)
+		.padding(.vertical, LauncherVisuals.Spacing.tight)
+		.frame(maxWidth: .infinity, alignment: .leading)
+		.background(
+			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
+		)
+		.contentShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+	}
+
+	private func rowFill(for region: GameRegion) -> Color {
+		guard region == installation.region else { return .clear }
+		let opacity = canSwitchRegion ? 1 : 0.45
+		return LauncherVisuals.selectedNavigationFill(for: accentColor).opacity(opacity)
 	}
 
 	private var expandedContentTransition: AnyTransition {
