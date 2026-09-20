@@ -98,14 +98,14 @@ enum HUDPillMotion {
 	}
 
 	static func expansionAnimation(reduceMotion: Bool) -> Animation? {
-		reduceMotion
-			? nil
-			: .snappy(duration: AppConstants.HUD.expansionDuration, extraBounce: 0.04)
+		reduceMotion ? nil : .spring(duration: 0.38, bounce: 0.18)
 	}
 
 	static func expandedContentTransition(reduceMotion: Bool) -> AnyTransition {
 		if reduceMotion { return .opacity }
-		return .opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing))
+		return .opacity
+			.combined(with: .scale(scale: 0.96, anchor: .topTrailing))
+			.animation(.easeOut(duration: 0.18))
 	}
 
 	static func chevronTransition(reduceMotion: Bool) -> ContentTransition {

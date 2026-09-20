@@ -35,7 +35,7 @@ The launcher should feel like a current macOS app first and an Arknights launche
 - The Endfield launcher is only a layout reference. Its yellow palette is not part of this app.
 - Crossfade artwork, theme colors, primary actions, and compact status pills with short native transitions; Reduce Motion replaces movement and scaling with opacity or no animation.
 - Keep expansion motion consistent across status, version, and music HUDs: collapsed surfaces stay compact capsules, expanded surfaces use the same fixed-radius panel geometry, and Reduce Motion removes the expansion movement.
-- Use a short spring only for structural pill expansion. Native sheets, modals, and controls keep their platform lifecycles; settings pages do not animate card insertion, progress stays linear within its rail, and frequent search-result updates use a quiet opacity transition.
+- Use one shared short spring with a subtle bounce (about 0.38 seconds and 0.18 bounce) for structural pill expansion; keep content reveal to a quiet opacity and scale transition. Native sheets, modals, and controls keep their platform lifecycles; settings pages do not animate card insertion, progress stays linear within its rail, and frequent search-result updates use a quiet opacity transition.
 
 ## Interaction contract
 
