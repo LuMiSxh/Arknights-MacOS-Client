@@ -118,12 +118,16 @@ func clientProfilesOwnRuntimePatchEnvironment() {
 		GameRegion.chinaBilibili.runtimeEnvironmentOverrides
 			== [
 				"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
+				"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
 				"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
 			]
 	)
 	#expect(
 		GameRegion.taiwan.runtimeEnvironmentOverrides
-			== ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"]
+			== [
+				"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
+				"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
+			]
 	)
 }
 
@@ -133,7 +137,7 @@ func clientProfilesOwnRuntimePatchEnvironment() {
 	(GameRegion.korea, "https://account.yo-star.com/contact"),
 	(GameRegion.china, "https://user.hypergryph.com/support"),
 	(GameRegion.chinaBilibili, "https://user.hypergryph.com/support"),
-	(GameRegion.taiwan, "https://cs.gryphline.com/"),
+	(GameRegion.taiwan, "https://www.gryphline.com/en-us/contacts"),
 ])
 func regionsUseTheOfficialPublisherSupportDestination(
 	region: GameRegion,

@@ -7,6 +7,15 @@ enum BundledDocument: String, Identifiable {
 	case projectLicense
 	case thirdPartyNotices
 
+	enum LoadError: Error, Equatable, LocalizedError {
+		case missingResource(name: String, fileExtension: String?)
+		case unreadableResource(name: String, reason: String)
+
+		var errorDescription: String? {
+			LauncherStrings.documentUnavailable
+		}
+	}
+
 	var id: String { rawValue }
 
 	var title: String {
@@ -25,64 +34,183 @@ enum BundledDocument: String, Identifiable {
 		}
 	}
 
-	func contents(bundle: Bundle = .main) -> String {
-		let resource = resource
-		guard let url = bundle.url(forResource: resource.name, withExtension: resource.extension),
-			let contents = try? String(contentsOf: url, encoding: .utf8)
-		else {
-			return LauncherStrings.documentUnavailable
+	func load(bundle: Bundle = .main) throws -> String {
+		let url = try resourceURL(bundle: bundle)
+		do {
+			return try String(contentsOf: url, encoding: .utf8)
+		} catch {
+			throw LoadError.unreadableResource(
+				name: resource.name,
+				reason: error.localizedDescription
+			)
 		}
-		return contents
 	}
+
+	func loadAndParse(bundle: Bundle = .main) async throws -> ParsedMarkdownDocument {
+		let url = try resourceURL(bundle: bundle)
+		do {
+			return try await Task.detached(priority: .utility) {
+				let source = try String(contentsOf: url, encoding: .utf8)
+				return ParsedMarkdownDocument(source: source)
+			}.value
+		} catch is CancellationError {
+			throw CancellationError()
+		} catch {
+			throw LoadError.unreadableResource(
+				name: resource.name,
+				reason: error.localizedDescription
+			)
+		}
+	}
+
+	private func resourceURL(bundle: Bundle) throws -> URL {
+		let resource = resource
+		guard let url = bundle.url(forResource: resource.name, withExtension: resource.extension)
+		else {
+			throw LoadError.missingResource(
+				name: resource.name,
+				fileExtension: resource.extension
+			)
+		}
+		return url
+	}
+}
+
+struct ParsedMarkdownDocument: Sendable {
+	let blocks: [MarkdownBlock]
+	let tableColumnWidths: [[CGFloat]?]
+
+	init(source: String) {
+		self.init(blocks: MarkdownParser(source: source).blocks)
+	}
+
+	init(blocks: [MarkdownBlock]) {
+		self.blocks = blocks
+		tableColumnWidths = blocks.map { block in
+			guard case .table(let rows) = block else { return nil }
+			return Self.widths(for: rows)
+		}
+	}
+
+	private static func widths(for rows: [[String]]) -> [CGFloat] {
+		let columnCount = rows.map(\.count).max() ?? 0
+		return (0..<columnCount).map { columnIndex in
+			let longestCell =
+				rows
+				.compactMap { row in row.indices.contains(columnIndex) ? row[columnIndex] : nil }
+				.map(\.count)
+				.max() ?? 0
+			return min(max(CGFloat(longestCell) * 7.5 + 24, 112), 320)
+		}
+	}
+}
+
+private enum BundledDocumentLoadState {
+	case loading
+	case loaded(ParsedMarkdownDocument)
+	case failed(BundledDocument.LoadError)
 }
 
 struct BundledDocumentView: View {
 	let document: BundledDocument
 	let accentColor: Color
 	let hudTintColor: Color
+	@State private var loadState = BundledDocumentLoadState.loading
 	@Environment(\.dismiss) private var dismiss
 
 	var body: some View {
 		ThemedModalView(
 			title: document.title,
-			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: 760,
 			height: 600
 		) {
-			MarkdownDocument(source: document.contents(), accentColor: accentColor)
-				.textSelection(.enabled)
+			switch loadState {
+			case .loading:
+				ProgressView()
+					.controlSize(.large)
+					.frame(maxWidth: .infinity, minHeight: 180)
+					.accessibilityLabel(Text(LauncherStrings.documentLoading))
+			case .loaded(let parsedDocument):
+				MarkdownDocument(parsed: parsedDocument, accentColor: accentColor)
+					.textSelection(.enabled)
+			case .failed(let error):
+				DocumentLoadErrorView(error: error)
+			}
 		} actions: {
 			FloatingDoneButton(accentColor: accentColor) {
 				dismiss()
 			}
 		}
 		.onExitCommand(perform: dismiss.callAsFunction)
+		.task(id: document) {
+			loadState = .loading
+			do {
+				let parsedDocument = try await document.loadAndParse()
+				guard !Task.isCancelled else { return }
+				loadState = .loaded(parsedDocument)
+			} catch is CancellationError {
+				return
+			} catch let error as BundledDocument.LoadError {
+				guard !Task.isCancelled else { return }
+				loadState = .failed(error)
+			} catch {
+				guard !Task.isCancelled else { return }
+				loadState = .failed(
+					.unreadableResource(
+						name: document.resource.name, reason: error.localizedDescription)
+				)
+			}
+		}
+	}
+}
+
+private struct DocumentLoadErrorView: View {
+	let error: BundledDocument.LoadError
+
+	var body: some View {
+		ContentUnavailableView {
+			Label(LauncherStrings.documentUnavailable, systemImage: "doc.badge.exclamationmark")
+		} description: {
+			Text(error.localizedDescription)
+		}
+		.frame(maxWidth: .infinity, minHeight: 180)
+		.pointerStyle(.default)
 	}
 }
 
 struct MarkdownDocument: View {
 	let accentColor: Color
-	private let blocks: [MarkdownBlock]
+	private let parsed: ParsedMarkdownDocument
 
 	init(source: String, accentColor: Color) {
+		self.init(parsed: ParsedMarkdownDocument(source: source), accentColor: accentColor)
+	}
+
+	init(parsed: ParsedMarkdownDocument, accentColor: Color) {
 		self.accentColor = accentColor
-		blocks = MarkdownParser(source: source).blocks
+		self.parsed = parsed
 	}
 
 	var body: some View {
 		LazyVStack(alignment: .leading, spacing: 10) {
-			ForEach(blocks.indices, id: \.self) { index in
-				MarkdownBlockView(block: blocks[index], accentColor: accentColor)
+			ForEach(parsed.blocks.indices, id: \.self) { index in
+				MarkdownBlockView(
+					block: parsed.blocks[index],
+					accentColor: accentColor,
+					columnWidths: parsed.tableColumnWidths[index] ?? []
+				)
 			}
 		}
 		.tint(accentColor)
+		.pointerStyle(.default)
 	}
 }
 
 private struct MarkdownBlockView: View {
 	let block: MarkdownBlock
 	let accentColor: Color
+	let columnWidths: [CGFloat]
 
 	@ViewBuilder
 	var body: some View {
@@ -91,6 +219,7 @@ private struct MarkdownBlockView: View {
 			Text(markdownInline(source))
 				.font(headingFont(level: level))
 				.padding(.top, level == 1 ? 0 : 10)
+				.accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
 		case .paragraph(let source):
 			Text(markdownInline(source))
 				.font(.body)
@@ -112,7 +241,7 @@ private struct MarkdownBlockView: View {
 			}
 			.padding(.leading, 6)
 		case .table(let rows):
-			MarkdownTable(rows: rows, accentColor: accentColor)
+			MarkdownTable(rows: rows, accentColor: accentColor, columnWidths: columnWidths)
 				.padding(.vertical, 4)
 		case .code(let source):
 			Text(source)
@@ -137,6 +266,7 @@ private struct MarkdownBlockView: View {
 private struct MarkdownTable: View {
 	let rows: [[String]]
 	let accentColor: Color
+	let columnWidths: [CGFloat]
 
 	var body: some View {
 		ScrollView(.horizontal) {
@@ -148,7 +278,7 @@ private struct MarkdownTable: View {
 							Text(markdownInline(row[columnIndex]))
 								.font(rowIndex == 0 ? .callout.bold() : .callout)
 								.frame(
-									width: columnWidth(columnIndex: columnIndex, count: row.count),
+									width: columnWidths[columnIndex],
 									alignment: .leading
 								)
 								.padding(10)
@@ -170,18 +300,15 @@ private struct MarkdownTable: View {
 		.scrollIndicators(.visible)
 	}
 
-	private func columnWidth(columnIndex: Int, count: Int) -> CGFloat {
-		if count == 4 {
-			return [150, 250, 290, 230][columnIndex]
-		}
-		return max(160, 680 / CGFloat(max(count, 1)))
-	}
 }
 
 private func markdownInline(_ source: String) -> AttributedString {
 	let options = AttributedString.MarkdownParsingOptions(
 		interpretedSyntax: .inlineOnlyPreservingWhitespace
 	)
-	return (try? AttributedString(markdown: source, options: options))
-		?? AttributedString(source)
+	do {
+		return try AttributedString(markdown: source, options: options)
+	} catch {
+		return AttributedString(source)
+	}
 }

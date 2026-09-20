@@ -18,6 +18,7 @@ struct PresetAvatarGrid: View {
 		LazyVGrid(columns: columns, spacing: 18) {
 			ForEach(avatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
+				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(avatar)
 				} label: {
@@ -76,6 +77,7 @@ struct PresetAvatarGrid: View {
 					.padding(.vertical, 4)
 					.frame(maxWidth: .infinity)
 					.contentShape(Rectangle())
+					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(.plain)
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
@@ -110,6 +112,7 @@ struct PresetWallpaperGrid: View {
 		LazyVGrid(columns: columns, spacing: 14) {
 			ForEach(wallpapers) { wp in
 				let isApplying = applyingItemID == wp.id
+				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(wp)
 				} label: {
@@ -168,6 +171,7 @@ struct PresetWallpaperGrid: View {
 						x: 0,
 						y: 2
 					)
+					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(.plain)
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))

@@ -36,12 +36,12 @@ struct AboutSettingsPage: View {
 				Spacer()
 				CapsuleActionButton(
 					title: SettingsStrings.openFinder, systemImage: "folder",
-					tone: .accent(accentColor), showsTitle: false,
+					tone: .neutral, showsTitle: false,
 					action: revealApplication
 				)
 				.help(SettingsStrings.openFinderHelp)
 				CapsuleActionButton(
-					title: SettingsStrings.github, tone: .accent(accentColor)
+					title: SettingsStrings.github, tone: .neutral
 				) {
 					NSWorkspace.shared.open(
 						URL(
@@ -53,7 +53,7 @@ struct AboutSettingsPage: View {
 				CapsuleActionButton(
 					title: SettingsStrings.donate,
 					systemImage: "heart.fill",
-					tone: .accent(accentColor)
+					tone: .neutral
 				) {
 					NSWorkspace.shared.open(SupportLinks.donate)
 				}
@@ -63,27 +63,37 @@ struct AboutSettingsPage: View {
 			.adaptiveGlassEffect(in: .rect(cornerRadius: 20))
 
 			SettingsPanel(title: SettingsStrings.documents, systemImage: "doc.text") {
-				DocumentLinkRow(
-					title: SettingsStrings.changelog,
-					systemImage: "clock.arrow.circlepath",
-					accentColor: accentColor
-				) {
-					presentedDocument = .changelog
-				}
-				SettingsHairline()
-				DocumentLinkRow(
-					title: SettingsStrings.license, systemImage: "checkmark.seal",
-					accentColor: accentColor
-				) {
-					presentedDocument = .projectLicense
-				}
-				SettingsHairline()
-				DocumentLinkRow(
-					title: SettingsStrings.thirdPartyNotices,
-					systemImage: "shippingbox",
-					accentColor: accentColor
-				) {
-					presentedDocument = .thirdPartyNotices
+				ViewThatFits(in: .horizontal) {
+					HStack(spacing: LauncherVisuals.Spacing.tight) {
+						documentLink(
+							.changelog, title: SettingsStrings.changelog,
+							systemImage: "clock.arrow.circlepath"
+						)
+						.frame(maxWidth: .infinity)
+						documentLink(
+							.projectLicense, title: SettingsStrings.license,
+							systemImage: "checkmark.seal"
+						)
+						.frame(maxWidth: .infinity)
+						documentLink(
+							.thirdPartyNotices, title: SettingsStrings.thirdPartyNotices,
+							systemImage: "doc.on.doc"
+						)
+						.frame(maxWidth: .infinity)
+					}
+					VStack(spacing: 0) {
+						documentLink(
+							.changelog, title: SettingsStrings.changelog,
+							systemImage: "clock.arrow.circlepath")
+						SettingsHairline()
+						documentLink(
+							.projectLicense, title: SettingsStrings.license,
+							systemImage: "checkmark.seal")
+						SettingsHairline()
+						documentLink(
+							.thirdPartyNotices, title: SettingsStrings.thirdPartyNotices,
+							systemImage: "doc.on.doc")
+					}
 				}
 			}
 
@@ -96,7 +106,7 @@ struct AboutSettingsPage: View {
 				) {
 					CapsuleActionButton(
 						title: SettingsStrings.report, systemImage: "ladybug",
-						tone: .accent(accentColor), presentation: .compact,
+						tone: .neutral, presentation: .compact,
 						action: reportLauncherProblem
 					)
 				}
@@ -110,7 +120,7 @@ struct AboutSettingsPage: View {
 					CapsuleActionButton(
 						title: SettingsStrings.contactPublisherTitle(region: region),
 						systemImage: "arrow.up.right.square",
-						tone: .accent(accentColor), presentation: .compact,
+						tone: .neutral, presentation: .compact,
 						action: contactPublisher
 					)
 				}
@@ -118,20 +128,12 @@ struct AboutSettingsPage: View {
 
 			SettingsPanel(title: "Arknights", systemImage: "link") {
 				VStack(alignment: .leading, spacing: 8) {
-					HStack(spacing: 18) {
-						if let agreement = branding?.userAgreement {
-							AccentLink(
-								title: SettingsStrings.userAgreement,
-								destination: agreement,
-								accentColor: accentColor
-							)
+					ViewThatFits(in: .horizontal) {
+						HStack(spacing: 18) {
+							publisherLinks
 						}
-						if let privacy = branding?.privacyPolicy {
-							AccentLink(
-								title: SettingsStrings.privacyPolicy,
-								destination: privacy,
-								accentColor: accentColor
-							)
+						VStack(alignment: .leading, spacing: 8) {
+							publisherLinks
 						}
 					}
 					Text(SettingsStrings.notAffiliated)
@@ -150,5 +152,38 @@ struct AboutSettingsPage: View {
 
 	private func contactPublisher() {
 		NSWorkspace.shared.open(SupportLinks.contact(for: region))
+	}
+
+	@ViewBuilder
+	private func documentLink(
+		_ document: BundledDocument,
+		title: String,
+		systemImage: String
+	) -> some View {
+		DocumentLinkRow(
+			title: title,
+			systemImage: systemImage,
+			accentColor: accentColor
+		) {
+			presentedDocument = document
+		}
+	}
+
+	@ViewBuilder
+	private var publisherLinks: some View {
+		if let agreement = branding?.userAgreement {
+			AccentLink(
+				title: SettingsStrings.userAgreement,
+				destination: agreement,
+				accentColor: accentColor
+			)
+		}
+		if let privacy = branding?.privacyPolicy {
+			AccentLink(
+				title: SettingsStrings.privacyPolicy,
+				destination: privacy,
+				accentColor: accentColor
+			)
+		}
 	}
 }

@@ -104,7 +104,10 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .gryphline,
 				variant: .standard,
-				runtimeEnvironmentOverrides: ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"],
+				runtimeEnvironmentOverrides: [
+					AppConstants.Runtime.aceCompactEnvironmentKey: "1",
+					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
+				],
 				requiresCanaryPermission: true,
 				requiresACEWarning: true
 			)
@@ -112,7 +115,9 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .hypergryph,
 				variant: .standard,
-				runtimeEnvironmentOverrides: ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"],
+				runtimeEnvironmentOverrides: [
+					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
+				],
 				requiresCanaryPermission: true,
 				requiresACEWarning: true
 			)
@@ -121,8 +126,9 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 				publisher: .hypergryph,
 				variant: .bilibili,
 				runtimeEnvironmentOverrides: [
-					"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
-					"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
+					AppConstants.Runtime.aceCompactEnvironmentKey: "1",
+					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
+					AppConstants.Runtime.cnCompatEnvironmentKey: "1",
 				],
 				requiresCanaryPermission: true,
 				requiresACEWarning: true

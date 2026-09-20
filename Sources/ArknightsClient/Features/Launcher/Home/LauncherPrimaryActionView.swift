@@ -93,6 +93,7 @@ struct LauncherPrimaryActionView: View {
 	private var actionKind: ActionKind {
 		if gameSession.isGameActive { return .stop }
 		if installation.isDownloading { return .pause }
+		if installation.hasPartialDownload { return .install }
 		if !installation.isInstalled { return .install }
 		if installation.isGameUpdateAvailable { return .update }
 		return .play

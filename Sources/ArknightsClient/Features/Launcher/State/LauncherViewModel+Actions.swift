@@ -3,14 +3,14 @@
 import Foundation
 
 /// Every action the launcher UI can trigger. Views call these rather than the controllers,
-/// because each one carries policy: developer-scenario short-circuits, the ACE warning, and
+/// because each one carries policy: developer-preview short-circuits, the ACE warning, and
 /// the guards that keep checks from firing during a storage migration.
 extension LauncherViewModel {
 	// MARK: - Developer-mode state
 
 	var isDeveloperMode: Bool {
 		#if DEBUG
-			developerScenario != nil
+			developerSimulation != nil
 		#else
 			false
 		#endif
@@ -18,7 +18,7 @@ extension LauncherViewModel {
 
 	var isOnboardingPreview: Bool {
 		#if DEBUG
-			developerScenario == .onboardingRosetta
+			developerSimulation?.onboardingPreview == true
 		#else
 			false
 		#endif
@@ -27,6 +27,16 @@ extension LauncherViewModel {
 	// MARK: - Region
 
 	func selectRegion(_ newRegion: GameRegion) {
+		#if DEBUG
+			if isDeveloperMode {
+				updateDeveloperSimulation { simulation in
+					if simulation.selectableRegions.contains(newRegion) {
+						simulation.selectedRegion = newRegion
+					}
+				}
+				return
+			}
+		#endif
 		_ = refreshController.selectRegion(newRegion)
 	}
 
@@ -35,7 +45,12 @@ extension LauncherViewModel {
 	func installOrUpdate() {
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.downloading)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .installing
+					$0.hasPartialDownload = false
+					$0.updateAvailable = true
+				}
 				return
 			}
 		#endif
@@ -45,7 +60,12 @@ extension LauncherViewModel {
 	func repairGame() {
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.downloading)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .installing
+					$0.hasPartialDownload = false
+					$0.updateAvailable = true
+				}
 				return
 			}
 		#endif
@@ -55,7 +75,11 @@ extension LauncherViewModel {
 	func cancelDownload() {
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.paused)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .paused
+					$0.hasPartialDownload = true
+				}
 				return
 			}
 		#endif
@@ -68,7 +92,11 @@ extension LauncherViewModel {
 		guard lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.gameUpdate)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .ready
+					$0.updateAvailable = true
+				}
 				return
 			}
 		#endif
@@ -79,7 +107,10 @@ extension LauncherViewModel {
 		guard lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.launcherUpdate)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.launcherUpdate = .available
+				}
 				return
 			}
 		#endif
@@ -90,7 +121,7 @@ extension LauncherViewModel {
 		guard lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.announcement)
+				updateDeveloperSimulation { $0.popup = .announcement }
 				return
 			}
 		#endif
@@ -98,11 +129,45 @@ extension LauncherViewModel {
 	}
 
 	func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
-		guard await waitForStartup() else { return .failed }
 		#if DEBUG
-			if isOnboardingPreview { return .current }
+			if isDeveloperMode {
+				switch developerSimulation?.launcherUpdate {
+				case .current, .none: return .current
+				case .available: return .updateAvailable("0.6.1")
+				case .failed: return .failed
+				}
+			}
 		#endif
+		guard await waitForStartup() else { return .failed }
 		return await communication.launcherUpdateCheckForOnboarding()
+	}
+
+	func openLauncherUpdate() {
+		#if DEBUG
+			if let simulation = developerSimulation {
+				communication.presentDeveloperLauncherUpdate(
+					version: simulation.launcherUpdate == .available ? "0.6.1" : nil,
+					failed: simulation.launcherUpdate == .failed
+				)
+				return
+			}
+		#endif
+		communication.openLauncherUpdate()
+	}
+
+	@discardableResult
+	func refreshIntelTranslationForUI(force: Bool = false) async -> IntelTranslationState {
+		#if DEBUG
+			if let simulation = developerSimulation {
+				let state: IntelTranslationState =
+					simulation.rosettaMissing
+					? .rosettaMissing
+					: .available
+				lifecycle.intelTranslationState = state
+				return state
+			}
+		#endif
+		return await intelTranslation.refreshAvailability(force: force)
 	}
 
 	// MARK: - Launching and stopping
@@ -114,7 +179,10 @@ extension LauncherViewModel {
 	func launch() {
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.launching)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .launching
+				}
 				return
 			}
 		#endif
@@ -147,7 +215,10 @@ extension LauncherViewModel {
 	func stopGame() {
 		#if DEBUG
 			if isDeveloperMode {
-				applyDeveloperScenario(.ready)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .ready
+				}
 				return
 			}
 		#endif
@@ -168,6 +239,9 @@ extension LauncherViewModel {
 	}
 
 	func launchFromDock(region: GameRegion) async -> Bool {
+		#if DEBUG
+			if isDeveloperMode { return simulateDeveloperDockLaunch(region: region) }
+		#endif
 		guard canRequestDockLaunch else { return false }
 		await installation.updateInstalledState().value
 		guard canRequestDockLaunch, installation.isRegionInstalled(region) else { return false }
@@ -184,6 +258,24 @@ extension LauncherViewModel {
 		launch()
 		return gameSession.isGameActive
 	}
+
+	#if DEBUG
+		private func simulateDeveloperDockLaunch(region: GameRegion) -> Bool {
+			guard var simulation = developerSimulation,
+				canRequestDockLaunch,
+				simulation.selectableRegions.contains(region),
+				simulation.installedRegions.contains(region),
+				simulation.isInstalled,
+				!simulation.hasPartialDownload,
+				!simulation.updateAvailable,
+				simulation.failure == .none
+			else { return false }
+			simulation.selectedRegion = region
+			simulation.lifecycle = .running
+			applyDeveloperSimulation(simulation)
+			return true
+		}
+	#endif
 
 	// MARK: - Files and settings
 
@@ -234,12 +326,16 @@ extension LauncherViewModel {
 	@discardableResult
 	func installRosetta() async -> IntelTranslationState {
 		#if DEBUG
-			if developerScenario == .onboardingRosetta {
-				lifecycle.rosettaInstallationState = .installing
-				await Task.yield()
-				lifecycle.rosettaInstallationState = .idle
-				lifecycle.intelTranslationState = .available
-				return .available
+			if isDeveloperMode {
+				if developerSimulation?.rosettaMissing == true {
+					lifecycle.rosettaInstallationState = .installing
+					await Task.yield()
+					lifecycle.rosettaInstallationState = .idle
+					lifecycle.intelTranslationState = .available
+					updateDeveloperSimulation { $0.rosettaMissing = false }
+					return .available
+				}
+				return await refreshIntelTranslationForUI()
 			}
 		#endif
 

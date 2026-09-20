@@ -207,11 +207,11 @@ enum SettingsStrings {
 	}
 	static let userAgreement = "User Agreement"
 	static let privacyPolicy = "Privacy Policy"
-	static let notAffiliated = "This launcher is not affiliated with Hypergryph or Yostar."
+	static let notAffiliated =
+		"This launcher is an independent community project and is not affiliated with Hypergryph, its affiliates, or any third-party publisher."
 
 	static let developerTitle = "Developer"
 	static let developerSubtitle = "Preview launcher states safely"
-	static let developerScenario = "Scenario"
 	static let developerCustomPopup = "Custom Popup"
 	static let developerCustomPopupTitle = "Title"
 	static let developerShowPopup = "Show Popup"

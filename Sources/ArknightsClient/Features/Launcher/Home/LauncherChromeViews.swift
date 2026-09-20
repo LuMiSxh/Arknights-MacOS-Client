@@ -88,7 +88,6 @@ struct LauncherPopupView: View {
 	var body: some View {
 		ThemedModalView(
 			title: popup.title,
-			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: 620,
 			height: popupHeight
@@ -108,15 +107,18 @@ struct LauncherPopupView: View {
 				contentHeight = newHeight
 			}
 			.textSelection(.enabled)
+			.pointerStyle(.default)
 		} actions: {
 			if let actionTitle = popup.actionTitle {
 				CapsuleActionButton(
-					title: actionTitle, tone: .neutral, action: openAction
+					title: actionTitle,
+					tone: .accent(accentColor),
+					action: openAction
 				)
 				.keyboardShortcut(.defaultAction)
 
 				CapsuleActionButton(
-					title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
+					title: popup.dismissTitle, tone: .neutral, action: dismiss
 				)
 			} else {
 				FloatingDoneButton(

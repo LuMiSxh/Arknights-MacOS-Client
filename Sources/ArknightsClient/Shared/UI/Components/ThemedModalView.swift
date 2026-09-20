@@ -5,7 +5,6 @@ import SwiftUI
 /// Shared launcher modal composition with a branded header and floating action bar.
 struct ThemedModalView<Content: View, Actions: View>: View {
 	let title: String
-	let accentColor: Color
 	let hudTintColor: Color
 	let width: CGFloat
 	let height: CGFloat
@@ -17,7 +16,6 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 
 	init(
 		title: String,
-		accentColor: Color,
 		hudTintColor: Color,
 		width: CGFloat,
 		height: CGFloat,
@@ -27,7 +25,6 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 		@ViewBuilder actions: () -> Actions
 	) {
 		self.title = title
-		self.accentColor = accentColor
 		self.hudTintColor = hudTintColor
 		self.width = width
 		self.height = height
@@ -38,43 +35,47 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 	}
 
 	var body: some View {
-		ZStack(alignment: .bottomTrailing) {
-			VStack(spacing: 0) {
-				VStack(alignment: .leading, spacing: 10) {
-					Text(title)
-						.font(.title2.bold())
-					HStack(spacing: 8) {
-						Rectangle().fill(accentColor).frame(width: 72, height: 3)
-						Rectangle().fill(LauncherVisuals.hairline)
-							.frame(height: 1)
-							.frame(maxWidth: .infinity)
-					}
+		VStack(spacing: 0) {
+			VStack(alignment: .leading, spacing: 10) {
+				Text(title)
+					.font(.title2.bold())
+				HStack(spacing: 8) {
+					Rectangle()
+						.fill(LauncherVisuals.controlTint.opacity(0.62))
+						.frame(width: 48, height: 2)
+					Rectangle().fill(LauncherVisuals.hairline)
+						.frame(height: 1)
+						.frame(maxWidth: .infinity)
 				}
-				.frame(maxWidth: .infinity, alignment: .leading)
-				.padding(.horizontal, 24)
-				.padding(.top, 22)
-				.padding(.bottom, 16)
-
-				ScrollView {
-					content
-						.frame(maxWidth: .infinity, alignment: .leading)
-						.padding(.horizontal, 24)
-						.padding(.top, 2)
-						.padding(.bottom, 76)
-				}
-				.contentMargins(.top, 8, for: .scrollIndicators)
-				.contentMargins(.bottom, 22, for: .scrollIndicators)
-				.scrollIndicators(.automatic)
 			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.padding(.horizontal, 24)
+			.padding(.top, 22)
+			.padding(.bottom, 16)
 
-			FloatingActionFooterFade(height: 72)
-
+			ScrollView {
+				content
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.padding(.horizontal, 24)
+					.padding(.top, 2)
+					.padding(.bottom, 20)
+			}
+			.contentMargins(.top, 8, for: .scrollIndicators)
+			.contentMargins(.bottom, 22, for: .scrollIndicators)
+			.scrollIndicators(.automatic)
+		}
+		.safeAreaInset(edge: .bottom, spacing: 0) {
 			FloatingActionBar(tint: hudTintColor) {
 				actions
 			}
 			.textSelection(.disabled)
+			.padding(.top, 14)
 			.padding(.trailing, 24)
 			.padding(.bottom, 18)
+			.frame(maxWidth: .infinity, alignment: .trailing)
+			.background {
+				FloatingActionFooterFade()
+			}
 		}
 		.frame(width: modalSize.width, height: modalSize.height)
 		.background {

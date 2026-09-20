@@ -34,7 +34,7 @@ struct OnboardingRosettaRecoveryView: View {
 					OnboardingStrings.rosettaFailed,
 					systemImage: "exclamationmark.triangle.fill"
 				)
-				.foregroundStyle(.orange)
+				.foregroundStyle(LauncherVisuals.warning)
 				Text(message)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)

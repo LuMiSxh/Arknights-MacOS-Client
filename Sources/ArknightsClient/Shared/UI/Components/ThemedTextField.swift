@@ -11,6 +11,7 @@ struct ThemedTextField: View {
 	let accentColor: Color
 
 	@FocusState private var isFocused: Bool
+	@Environment(\.isEnabled) private var isEnabled
 
 	init(
 		_ title: String,
@@ -41,23 +42,23 @@ struct ThemedTextField: View {
 				.accessibilityLabel(title)
 		}
 		.font(.callout)
-		.padding(.horizontal, 10)
-		.padding(.vertical, 7)
-		.adaptiveGlassEffect(
-			tint: accentColor.opacity(isFocused ? 0.16 : 0.08),
-			in: RoundedRectangle(cornerRadius: 10),
-			showsBorder: true
+		.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
+		.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding + 2)
+		.adaptiveControlSurface(
+			tint: accentColor,
+			in: Capsule()
 		)
 		.overlay {
-			RoundedRectangle(cornerRadius: 10)
-				.strokeBorder(
-					isFocused
-						? accentColor.opacity(0.72) : LauncherVisuals.controlTint.opacity(0.16),
-					lineWidth: isFocused ? 1.5 : 1
-				)
-				.allowsHitTesting(false)
+			if isEnabled && isFocused {
+				Capsule()
+					.strokeBorder(
+						accentColor.opacity(0.72),
+						lineWidth: LauncherVisuals.Control.focusWidth
+					)
+					.allowsHitTesting(false)
+			}
 		}
-		.contentShape(RoundedRectangle(cornerRadius: 10))
+		.contentShape(Capsule())
 		.focusEffectDisabled(true)
 	}
 }

@@ -8,19 +8,8 @@ struct OnboardingCanaryPanel<Content: View>: View {
 	@ViewBuilder let content: Content
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			Label(title, systemImage: "exclamationmark.triangle.fill")
-				.font(.headline)
-				.foregroundStyle(LauncherVisuals.danger)
-				.symbolRenderingMode(.hierarchical)
+		SettingsPanel(title: title, systemImage: "exclamationmark.triangle.fill", tone: .warning) {
 			content
-		}
-		.padding(18)
-		.frame(maxWidth: .infinity, alignment: .leading)
-		.adaptiveGlassEffect(in: .rect(cornerRadius: 18))
-		.overlay {
-			RoundedRectangle(cornerRadius: 18)
-				.strokeBorder(LauncherVisuals.danger.opacity(0.45), lineWidth: 1)
 		}
 	}
 }

@@ -94,6 +94,8 @@ file-system root is removed before each start, and its shell folders are kept in
 
 Wine, DXMT, Gecko, and the media libraries are selected and tested as one compatibility unit. Installing another Wine distribution beside the launcher does not replace its bundled runtime and is not a supported way to change that unit.
 
+ACE-protected clients use the runtime's ACE Compact compatibility profile. Taiwan and China — Bilibili also use the shared CEF compatibility profile for their known embedded-browser binaries; the standard China client keeps its ACE-only profile.
+
 ## Graphics and display behavior
 
 DXMT translates the game's Direct3D 11 calls to Metal. The bundled runtime includes both x64 and x32 DXMT libraries because the Windows client and its helpers can use different architectures. Apple D3DMetal is not required by this launcher and is not redistributed.
@@ -133,7 +135,7 @@ These changes do not replace the official pages, inspect credentials, or bypass 
 
 > [!WARNING]
 > Payment flows run in the same embedded browser compatibility environment when the selected client provides them. Transactions are official publisher/payment-provider matters: verify every charge with the payment provider.
-> Use [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, or Korea, [Gryphline Support](https://cs.gryphline.com/) for Taiwan, or [Hypergryph Support](https://user.hypergryph.com/support) for China or China — Bilibili. The launcher cannot resolve account, billing, or provider-side restrictions.
+> Use [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, or Korea, [Gryphline Support](https://www.gryphline.com/en-us/contacts) for Taiwan, or [Hypergryph Support](https://user.hypergryph.com/support) for China / China — Bilibili. The launcher cannot resolve account, billing, or provider-side restrictions.
 
 ## Runtime failures
 

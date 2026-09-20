@@ -161,7 +161,11 @@ struct InstallationSettingsPage: View {
 				}
 			}
 
-			DangerZonePanel {
+			SettingsPanel(
+				title: SettingsStrings.canaryFeatures,
+				systemImage: "exclamationmark.triangle.fill",
+				tone: .warning
+			) {
 				SettingsActionRow(
 					title: SettingsStrings.canaryFeatures,
 					detail: SettingsStrings.canaryFeaturesDetail
@@ -169,13 +173,16 @@ struct InstallationSettingsPage: View {
 					SettingsToggle(
 						SettingsStrings.canaryFeatures,
 						isOn: $settings.canaryFeaturesEnabled,
-						accentColor: LauncherVisuals.danger
+						accentColor: LauncherVisuals.warning
 					)
 					.disabled(lifecycle.activity != .idle)
 				}
 				if settings.canaryFeaturesEnabled {
 					canaryRuntimeSettings
 				}
+			}
+
+			DangerZonePanel {
 				SettingsHairline()
 				SettingsActionRow(
 					title: SettingsStrings.wineSetup,

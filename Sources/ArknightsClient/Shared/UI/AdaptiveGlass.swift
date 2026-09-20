@@ -9,13 +9,15 @@ extension View {
 	func adaptiveGlassEffect(
 		tint: Color? = nil,
 		in shape: some Shape = Rectangle(),
-		showsBorder: Bool = false
+		showsBorder: Bool = false,
+		isInteractive: Bool = false
 	) -> some View {
 		modifier(
 			AdaptiveGlassEffectModifier(
 				tint: tint,
 				shape: shape,
-				showsBorder: showsBorder
+				showsBorder: showsBorder,
+				isInteractive: isInteractive
 			)
 		)
 	}
@@ -30,43 +32,6 @@ extension View {
 		}
 	}
 
-	/// Applies neutral Liquid Glass to compact icon controls, with a bordered fallback.
-	@ViewBuilder
-	func adaptiveGlassButton() -> some View {
-		if #available(macOS 26, *) {
-			self.buttonStyle(.glass)
-		} else {
-			self.buttonStyle(.bordered)
-		}
-	}
-
-	/// Applies the shared accent action treatment independently of control geometry.
-	func adaptiveActionSurface<ControlShape: InsettableShape>(
-		tint: Color,
-		foreground: Color? = nil,
-		in shape: ControlShape
-	) -> some View {
-		self.adaptiveTintForeground(foreground ?? tint)
-			.adaptiveGlassEffect(tint: tint.opacity(0.1), in: shape, showsBorder: true)
-			.overlay {
-				shape.strokeBorder(tint.opacity(0.2)).allowsHitTesting(false)
-			}
-	}
-
-	/// Keeps Back and Skip visually separate from actions that mutate launcher state.
-	func adaptiveNavigationCapsuleButton() -> some View {
-		self.buttonBorderShape(.capsule)
-			.buttonStyle(.bordered)
-			.tint(LauncherVisuals.controlTint)
-	}
-
-	/// Gives compact HUD controls one neutral surface instead of ad-hoc white overlays.
-	func hudSecondaryControlSurface<ControlShape: InsettableShape>(
-		tint: Color = LauncherVisuals.controlTint,
-		in shape: ControlShape
-	) -> some View {
-		modifier(HUDSecondaryControlSurfaceModifier(tint: tint, shape: shape))
-	}
 }
 
 enum AdaptiveGlassSurfaceTreatment: Equatable {
@@ -106,8 +71,10 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	let tint: Color?
 	let shape: ShapeType
 	let showsBorder: Bool
+	let isInteractive: Bool
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@Environment(\.accessibilityShowBorders) private var showBorders
+	@Environment(\.isEnabled) private var isEnabled
 
 	@ViewBuilder
 	func body(content: Content) -> some View {
@@ -184,14 +151,21 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@ViewBuilder
 	private func macOS27GlassContent(_ content: Content, hasTint: Bool) -> some View {
 		if hasTint, let tint = macOS27ColorTint {
-			macOS27Backplate(content, tint: tint)
-				.glassEffect(
-					.regular.tint(tint),
-					in: shape
-				)
+			if isInteractive {
+				macOS27Backplate(content, tint: tint)
+					.glassEffect(.regular.tint(tint).interactive(isEnabled), in: shape)
+			} else {
+				macOS27Backplate(content, tint: tint)
+					.glassEffect(.regular.tint(tint), in: shape)
+			}
 		} else {
-			macOS27Backplate(content, tint: nil)
-				.glassEffect(.regular, in: shape)
+			if isInteractive {
+				macOS27Backplate(content, tint: nil)
+					.glassEffect(.regular.interactive(isEnabled), in: shape)
+			} else {
+				macOS27Backplate(content, tint: nil)
+					.glassEffect(.regular, in: shape)
+			}
 		}
 	}
 
@@ -249,9 +223,17 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@ViewBuilder
 	private func macOS26Glass(_ content: Content) -> some View {
 		if let tint {
-			content.glassEffect(.regular.tint(tint), in: shape)
+			if isInteractive {
+				content.glassEffect(.regular.tint(tint).interactive(isEnabled), in: shape)
+			} else {
+				content.glassEffect(.regular.tint(tint), in: shape)
+			}
 		} else {
-			content.glassEffect(.regular, in: shape)
+			if isInteractive {
+				content.glassEffect(.regular.interactive(isEnabled), in: shape)
+			} else {
+				content.glassEffect(.regular, in: shape)
+			}
 		}
 	}
 
@@ -264,57 +246,5 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		} else {
 			content.background(.regularMaterial, in: shape)
 		}
-	}
-}
-
-private struct SettingsControlCapsuleModifier: ViewModifier {
-	let tint: Color
-	let isDisabled: Bool
-
-	private var foreground: Color {
-		isDisabled ? LauncherVisuals.controlTint.opacity(0.65) : tint
-	}
-
-	private var surfaceTint: Color {
-		isDisabled ? Color.white.opacity(0.05) : tint.opacity(0.13)
-	}
-
-	func body(content: Content) -> some View {
-		content
-			.font(.caption.weight(.semibold))
-			.adaptiveTintForeground(foreground)
-			.padding(.horizontal, 10)
-			.padding(.vertical, 5)
-			.adaptiveGlassEffect(tint: surfaceTint, in: Capsule(), showsBorder: true)
-			.contentShape(Capsule())
-	}
-}
-
-private struct HUDSecondaryControlSurfaceModifier<ShapeType: InsettableShape>: ViewModifier {
-	let tint: Color
-	let shape: ShapeType
-	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-	func body(content: Content) -> some View {
-		content
-			.foregroundStyle(tint)
-			.background(
-				reduceTransparency ? Color.black.opacity(0.92) : tint.opacity(0.12),
-				in: shape
-			)
-			.overlay {
-				shape
-					.strokeBorder(
-						reduceTransparency ? tint.opacity(0.42) : tint.opacity(0.18)
-					)
-					.allowsHitTesting(false)
-			}
-	}
-}
-
-extension View {
-	/// Shared compact chrome for Settings actions and menu pickers.
-	func settingsControlCapsule(tint: Color, isDisabled: Bool = false) -> some View {
-		modifier(SettingsControlCapsuleModifier(tint: tint, isDisabled: isDisabled))
 	}
 }

@@ -23,7 +23,7 @@ struct OnboardingInstallationView: View {
 					title: OnboardingStrings.canaryFeatures,
 					detail: OnboardingStrings.canaryFeaturesDetail,
 					isOn: $preferences.canaryFeaturesEnabled,
-					accentColor: LauncherVisuals.danger
+					accentColor: LauncherVisuals.warning
 				)
 				.disabled(lifecycle.activity != .idle)
 				if preferences.canaryFeaturesEnabled {
@@ -31,14 +31,14 @@ struct OnboardingInstallationView: View {
 						title: OnboardingStrings.chinaClients,
 						detail: OnboardingStrings.chinaClientsDetail,
 						isOn: $preferences.chinaClientsEnabled,
-						accentColor: LauncherVisuals.danger
+						accentColor: LauncherVisuals.warning
 					)
 					.disabled(lifecycle.activity != .idle)
 					OnboardingToggleRow(
 						title: OnboardingStrings.taiwanClient,
 						detail: OnboardingStrings.taiwanClientDetail,
 						isOn: $preferences.taiwanClientEnabled,
-						accentColor: LauncherVisuals.danger
+						accentColor: LauncherVisuals.warning
 					)
 					.disabled(lifecycle.activity != .idle)
 				}

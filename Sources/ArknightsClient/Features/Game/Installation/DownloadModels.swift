@@ -2,7 +2,7 @@
 
 import Foundation
 
-struct DownloadProgress: Sendable {
+struct DownloadProgress: Equatable, Sendable {
 	let downloadedBytes: Int64
 	let totalBytes: Int64
 	let completedFiles: Int

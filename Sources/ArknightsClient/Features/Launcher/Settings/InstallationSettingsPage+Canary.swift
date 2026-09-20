@@ -4,7 +4,6 @@ import SwiftUI
 
 extension InstallationSettingsPage {
 	@ViewBuilder var canaryRuntimeSettings: some View {
-		SettingsHairline()
 		SettingsActionRow(
 			title: SettingsStrings.chinaClients,
 			detail: SettingsStrings.chinaClientsDetail
@@ -12,7 +11,7 @@ extension InstallationSettingsPage {
 			SettingsToggle(
 				SettingsStrings.chinaClients,
 				isOn: $settings.chinaClientsEnabled,
-				accentColor: LauncherVisuals.danger
+				accentColor: LauncherVisuals.warning
 			)
 		}
 		.disabled(lifecycle.activity != .idle)
@@ -24,7 +23,7 @@ extension InstallationSettingsPage {
 			SettingsToggle(
 				SettingsStrings.taiwanClient,
 				isOn: $settings.taiwanClientEnabled,
-				accentColor: LauncherVisuals.danger
+				accentColor: LauncherVisuals.warning
 			)
 		}
 		.disabled(lifecycle.activity != .idle)
@@ -38,7 +37,7 @@ extension InstallationSettingsPage {
 					value: frameLatencyBinding,
 					range: 1...3,
 					step: 1,
-					accentColor: LauncherVisuals.danger,
+					accentColor: LauncherVisuals.warning,
 					width: 120
 				)
 				.accessibilityLabel(SettingsStrings.frameLatency)

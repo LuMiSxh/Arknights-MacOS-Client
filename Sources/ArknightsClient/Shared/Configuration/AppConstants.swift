@@ -13,6 +13,12 @@ enum AppConstants {
 		static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
 	}
 
+	enum Runtime {
+		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
+		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
+		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
+	}
+
 	enum Icon {
 		static let canvasDimension: CGFloat = 512
 		static let squircleDimension: CGFloat = 412

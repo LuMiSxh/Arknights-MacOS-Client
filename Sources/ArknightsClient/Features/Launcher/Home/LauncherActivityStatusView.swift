@@ -2,6 +2,96 @@
 
 import SwiftUI
 
+enum LauncherDownloadProgressPresentation {
+	static func percentage(for progress: DownloadProgress?) -> Int? {
+		guard let progress, progress.totalBytes > 0 else { return nil }
+		return Int(progress.fraction * 100)
+	}
+
+	static func title(for progress: DownloadProgress?, isPaused: Bool) -> String? {
+		guard let percentage = percentage(for: progress) else { return nil }
+		return isPaused
+			? HomeStrings.pausedDownloadPercentage(percentage)
+			: HomeStrings.downloadPercentage(percentage)
+	}
+
+	static func fraction(
+		for progress: DownloadProgress?,
+		isActive: Bool,
+		isPaused: Bool
+	) -> Double? {
+		guard isActive || isPaused, let progress, progress.totalBytes > 0 else { return nil }
+		return progress.fraction
+	}
+
+	static func outlineFraction(
+		for progress: DownloadProgress?,
+		status: LauncherStatus,
+		hasPartialDownload: Bool,
+		hasFailure: Bool
+	) -> Double? {
+		guard !hasFailure else { return nil }
+
+		switch status {
+		case .preparingInstallation, .verifyingInstallation:
+			return 1
+		case .downloading, .pausing:
+			return knownFraction(for: progress)
+		case .paused:
+			return hasPartialDownload ? knownFraction(for: progress) : nil
+		default:
+			return nil
+		}
+	}
+
+	static func showsActiveProgressEffect(
+		for progress: DownloadProgress?,
+		status: LauncherStatus,
+		hasFailure: Bool
+	) -> Bool {
+		guard !hasFailure else { return false }
+		if status == .preparingInstallation || status == .verifyingInstallation {
+			return true
+		}
+		guard status == .downloading,
+			let progress,
+			!progress.isTransferStalled
+		else { return false }
+
+		return progress.fraction > 0 && progress.fraction < 1
+	}
+
+	private static func knownFraction(for progress: DownloadProgress?) -> Double? {
+		guard let progress, progress.totalBytes > 0 else { return nil }
+		return progress.fraction
+	}
+
+	static func transferDetail(
+		for progress: DownloadProgress?,
+		isPaused: Bool
+	) -> String? {
+		guard !isPaused, let progress else { return nil }
+		if let rate = progress.transferRateBytesPerSecond {
+			return HomeStrings.downloadSpeed(DownloadProgressFormatting.byteRate(rate))
+		}
+		if progress.isTransferStalled { return HomeStrings.downloadWaiting }
+		return nil
+	}
+
+	static func accessibilityValue(
+		for progress: DownloadProgress?,
+		detail: String?,
+		isPaused: Bool
+	) -> String {
+		var values: [String] = []
+		if let detail { values.append(detail) }
+		if let transferDetail = transferDetail(for: progress, isPaused: isPaused) {
+			values.append(transferDetail)
+		}
+		return values.joined(separator: ", ")
+	}
+}
+
 struct LauncherActivityStatusView: View {
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
@@ -13,25 +103,22 @@ struct LauncherActivityStatusView: View {
 
 	@ViewBuilder
 	var body: some View {
-		if installation.isDownloading {
-			VStack(alignment: .leading, spacing: 7) {
-				HStack(alignment: .firstTextBaseline, spacing: 10) {
-					Text(statusTitle)
-						.font(.system(size: 14, weight: .semibold))
-						.contentTransition(reduceMotion ? .identity : .numericText())
-					if statusDetail != nil {
+		if showsDownloadSnapshot {
+			VStack(alignment: .leading, spacing: 4) {
+				ViewThatFits(in: .horizontal) {
+					HStack(alignment: .firstTextBaseline, spacing: 10) {
+						percentageLabel
 						downloadProgressDetail
+						transferDetails
 					}
-					transferDetails
+					VStack(alignment: .leading, spacing: 3) {
+						percentageLabel
+						HStack(alignment: .firstTextBaseline, spacing: 8) {
+							downloadProgressDetail
+							transferDetails
+						}
+					}
 				}
-
-				ProgressView(value: installation.progress?.fraction ?? 0)
-					.progressViewStyle(.linear)
-					.tint(accentColor)
-					.animation(
-						reduceMotion ? nil : .linear(duration: 0.2),
-						value: installation.progress?.fraction ?? 0
-					)
 			}
 			.accessibilityElement(children: .ignore)
 			.accessibilityLabel(Text(statusTitle))
@@ -59,7 +146,7 @@ struct LauncherActivityStatusView: View {
 			installation.isInstalled, let code = intelTranslation.supportCode
 		{
 			VStack(alignment: .leading, spacing: 4) {
-				LauncherSupportCodeLabel(code: code, accentColor: accentColor)
+				LauncherSupportCodeLabel(code: code)
 				ViewThatFits(in: .horizontal) {
 					HStack(spacing: 10) { intelTranslationActions(code: code) }
 					VStack(alignment: .leading, spacing: 4) {
@@ -95,8 +182,13 @@ struct LauncherActivityStatusView: View {
 
 	private var statusTitle: String {
 		if lifecycle.presentation.status == .pausing { return lifecycle.activityMessage }
-		if installation.isDownloading, let progress = installation.progress {
-			return HomeStrings.downloadPercentage(Int(progress.fraction * 100))
+		if showsDownloadSnapshot,
+			let title = LauncherDownloadProgressPresentation.title(
+				for: installation.progress,
+				isPaused: isPausedDownload
+			)
+		{
+			return title
 		}
 		if lifecycle.failure?.blocksGameLaunch == true {
 			return HomeStrings.needsAttention
@@ -106,7 +198,9 @@ struct LauncherActivityStatusView: View {
 	}
 
 	private var statusDetail: String? {
-		if installation.isDownloading, let progress = installation.progress {
+		if showsDownloadSnapshot, let progress = installation.progress,
+			progress.totalBytes > 0
+		{
 			let downloaded = DownloadProgressFormatting.byteCount(progress.downloadedBytes)
 			let total = DownloadProgressFormatting.byteCount(progress.totalBytes)
 			return
@@ -119,22 +213,28 @@ struct LauncherActivityStatusView: View {
 	}
 
 	private var accessibilityProgressValue: String {
-		var values: [String] = []
-		if let statusDetail { values.append(statusDetail) }
-		if let progress = installation.progress {
-			if let rate = progress.transferRateBytesPerSecond {
-				values.append(
+		LauncherDownloadProgressPresentation.accessibilityValue(
+			for: installation.progress,
+			detail: statusDetail,
+			isPaused: isPausedDownload
+		)
+	}
 
-					HomeStrings.downloadSpeed(
-						DownloadProgressFormatting.byteRate(rate)
-					)
+	private var isPausedDownload: Bool {
+		lifecycle.presentation.status == .paused
+			&& installation.hasPartialDownload
+			&& lifecycle.failure == nil
+	}
 
-				)
-			} else if progress.isTransferStalled {
-				values.append(HomeStrings.downloadWaiting)
-			}
-		}
-		return values.joined(separator: ", ")
+	private var showsDownloadSnapshot: Bool {
+		guard lifecycle.failure == nil else { return false }
+		return lifecycle.presentation.status == .downloading
+			|| (isPausedDownload
+				&& LauncherDownloadProgressPresentation.fraction(
+					for: installation.progress,
+					isActive: false,
+					isPaused: true
+				) != nil)
 	}
 
 	private var downloadProgressDetail: some View {
@@ -151,35 +251,35 @@ struct LauncherActivityStatusView: View {
 			.accessibilityLabel(Text(statusDetail ?? ""))
 	}
 
+	private var percentageLabel: some View {
+		Text(statusTitle)
+			.font(.system(size: 16, weight: .semibold))
+			.contentTransition(reduceMotion ? .identity : .numericText())
+			.animation(
+				reduceMotion ? nil : .easeInOut(duration: 0.16),
+				value: statusTitle
+			)
+			.fixedSize(horizontal: true, vertical: false)
+	}
+
 	@ViewBuilder
 	private var transferDetails: some View {
-		if installation.isDownloading, let progress = installation.progress {
-			HStack(spacing: 7) {
-				if let rate = progress.transferRateBytesPerSecond {
-					Text(
-
-						HomeStrings.downloadSpeed(
-							DownloadProgressFormatting.byteRate(rate)
-						)
-
-					)
-					.monospacedDigit()
-					.frame(
-						minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
-						alignment: .leading
-					)
-				} else if progress.isTransferStalled {
-					Text(HomeStrings.downloadWaiting)
-						.frame(
-							minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
-							alignment: .leading
-						)
-				}
-			}
-			.font(.caption)
-			.foregroundStyle(.secondary)
-			.lineLimit(1)
-			.accessibilityElement(children: .combine)
+		if showsDownloadSnapshot,
+			let transferDetail = LauncherDownloadProgressPresentation.transferDetail(
+				for: installation.progress,
+				isPaused: isPausedDownload
+			)
+		{
+			Text(transferDetail)
+				.monospacedDigit()
+				.frame(
+					minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
+					alignment: .leading
+				)
+				.font(.caption)
+				.foregroundStyle(.secondary)
+				.lineLimit(1)
+				.accessibilityElement(children: .combine)
 		}
 	}
 }

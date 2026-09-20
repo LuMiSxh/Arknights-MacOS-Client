@@ -45,12 +45,7 @@ struct PlaytimeStatisticsPage: View {
 				ForEach(Array(regions.enumerated()), id: \.element.id) {
 					index, region in
 					if index > 0 { SettingsHairline() }
-					HStack {
-						Text(region.displayName)
-						Spacer()
-						Text(durationText(controller.duration(for: region)))
-							.font(.callout.monospacedDigit().weight(.semibold))
-					}
+					regionRow(region)
 				}
 			}
 
@@ -156,9 +151,9 @@ struct PlaytimeStatisticsPage: View {
 		HStack(alignment: .top, spacing: 12) {
 			Image(systemName: systemImage)
 				.frame(width: 18)
-				.foregroundStyle(accentColor)
+				.foregroundStyle(.secondary)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 				Text(title)
 				Text(detail)
 					.font(.caption)
@@ -166,6 +161,22 @@ struct PlaytimeStatisticsPage: View {
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
+		.padding(.vertical, LauncherVisuals.Spacing.control)
+	}
+
+	private func regionRow(_ region: GameRegion) -> some View {
+		HStack(spacing: LauncherVisuals.Spacing.control) {
+			Image(systemName: "globe")
+				.font(.caption)
+				.foregroundStyle(.secondary)
+				.frame(width: 18)
+				.accessibilityHidden(true)
+			Text(region.displayName)
+			Spacer(minLength: LauncherVisuals.Spacing.control)
+			Text(durationText(controller.duration(for: region)))
+				.font(.callout.monospacedDigit().weight(.semibold))
+		}
+		.padding(.vertical, LauncherVisuals.Spacing.control)
 	}
 
 	private func durationText(_ duration: TimeInterval) -> String {

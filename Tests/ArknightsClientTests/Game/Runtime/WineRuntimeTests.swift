@@ -140,6 +140,10 @@ func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled
 		environment["ARKNIGHTS_RUNTIME_CN_COMPAT"]
 			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CN_COMPAT"]
 	)
+	#expect(
+		environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
+			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
+	)
 	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == nil)
 	#expect(
 		environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"]
@@ -164,6 +168,10 @@ func runtimeCompatibilityFlagsFollowClientProfiles() {
 		#expect(
 			environment["ARKNIGHTS_RUNTIME_CN_COMPAT"]
 				== region.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CN_COMPAT"]
+		)
+		#expect(
+			environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
+				== region.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
 		)
 	}
 }

@@ -14,22 +14,28 @@ The launcher should feel like a current macOS app first and an Arknights launche
 - Extend the artwork beneath the native traffic-light area; do not add a separate title strip.
 - Anchor the official Arknights wordmark below the traffic lights at the upper-left corner.
 - Keep the native Settings control in the upper-right corner.
-- Keep one compact, capsule-shaped Liquid Glass control bar at the bottom.
+- Keep one compact, capsule-shaped Liquid Glass control bar at the bottom; when a HUD surface expands, use a fixed-radius rounded rectangle so its rows and controls have room to breathe.
 - Show only the current state, version, and one primary action.
 - The primary-action slot changes between **Install**, **Pause**, **Resume**, **Update**, **Play**, and **Stop** as the selected region moves through installation and game-session states.
-- Download progress appears in the same control bar; there is no recurring download screen.
+- Download progress appears in the same control bar; the progress rail follows the outer pill edge with a protected inner inset so text, rail, and action controls share one geometry.
+- Keep the progress percentage first in the compact download state, with transfer size, speed, and remaining time subordinate to it.
 - Put repair, paths, display options, and legal information in Settings.
 
 ## Visual language
 
-- The launcher's signal color is a single accent, sampled from the active hero artwork by default; Arknights cyan `#18D1FF` is the fallback whenever no artwork is loaded or no accent can be extracted, and stays available as a user-facing option to turn dynamic theming off.
+- The launcher's signal color is a single accent, sampled from the active hero artwork by default. Arknights cyan `#18D1FF` is used only as the fallback when no dynamic color is available; controls do not introduce cyan independently.
 - Black and steel are used for fallback surfaces and readable text.
 - Native controls provide Liquid Glass, focus, hover, and keyboard behavior.
 - Primary and download actions use native capsule shapes; branding remains rectangular.
-- Install, Update, and Play use the accent color as a prominent Liquid Glass tint; secondary actions stay neutral.
+- Install, Update, and Play use the dynamic artwork accent as a prominent Liquid Glass tint. Dynamic artwork or theme accents may also mark progress, the current selection, and interaction highlights. Secondary actions use quiet filled neutral surfaces with a restrained macOS 26-style border treatment.
+- Disabled controls use an explicit muted surface, border, and foreground from the shared control matrix. A disabled default action must remain visually distinct from a normal secondary or danger action.
+- Identical controls, surfaces, spacing, radii, and state treatments come from `Shared/UI` design tokens and components. Feature views provide state and semantics only.
+- Keep semantic panels quiet: neutral panels carry ordinary content, while success, warning, and danger tones are reserved for the state they explain.
 - Avoid fake window chrome, decorative metadata, large status slogans, and rounded card grids.
 - The Endfield launcher is only a layout reference. Its yellow palette is not part of this app.
 - Crossfade artwork, theme colors, primary actions, and compact status pills with short native transitions; Reduce Motion replaces movement and scaling with opacity or no animation.
+- Keep expansion motion consistent across status, version, and music HUDs: collapsed surfaces stay compact capsules, expanded surfaces use the same fixed-radius panel geometry, and Reduce Motion removes the expansion movement.
+- Use a short spring only for structural pill expansion. Native sheets, modals, and controls keep their platform lifecycles; settings pages do not animate card insertion, progress stays linear within its rail, and frequent search-result updates use a quiet opacity transition.
 
 ## Interaction contract
 
@@ -48,24 +54,35 @@ Report failures in the same status area as the operation that failed. Keep the m
 - Use semantic controls instead of gesture-only or hover-only actions. Never make Return or Space trigger Play or Install from an unrelated focused control.
 - Respect Reduce Motion, Reduce Transparency, Differentiate Without Color, VoiceOver, Full Keyboard Access, and the largest practical text size. A state change must remain understandable without animation, color, or precise pointer input.
 - Keep English labels free to wrap. Avoid fixed-width labels and truncation that hides the operation or error name.
+- Rendered Markdown uses the native default pointer on text and links so text selection does not leave an I-beam cursor over document content.
 
 ## Feedback and review
 
 Use native controls and the shared action families in `Shared/UI/Components` before adding a feature-local variant. A custom control is justified only when the interaction contract differs, not merely because its padding or tint is different. Keep primary emphasis on the current game action; secondary links, settings, diagnostics, and legal text should remain quiet.
 
-For a UI change, exercise the affected state through the debug scenario where possible, then check both an empty and an installed region, an active operation, and a failure/recovery path. Repeat with keyboard navigation, VoiceOver, Reduce Motion, and both normal and large text before release. The detailed release matrix lives in [Testing architecture](testing.md#manual-compatibility-matrix).
+For a UI change, exercise the affected state through the debug simulator where possible, then check both an empty and an installed region, an active operation, and a failure/recovery path. Repeat with keyboard navigation, VoiceOver, Reduce Motion, and both normal and large text before release. The detailed release matrix lives in [Testing architecture](testing.md#manual-compatibility-matrix).
+
+## Modals and popups
+
+- Use a quiet modal header with a restrained neutral rule. The current operation owns the only prominent action color.
+- Keep modal actions in a floating footer with a clear default action and neutral dismiss/support actions. Use a responsive second row when the action set cannot fit at the preferred width.
+- Keep native confirmation dialogs for destructive or system actions. A custom modal explains context and recovery; it does not replace the system confirmation contract.
 
 ## Settings and documents
 
-- Use a compact material navigation rail for General, Audio, Updates, Installation, Storage, and About.
-- Keep navigation neutral. The selected section uses a quiet graphite fill and a two-pixel cyan marker rather than the system accent color.
-- Keep links and ordinary controls monochrome; cyan indicates progress or a primary game action.
-- Group related controls in quiet Liquid Glass panels instead of form-style gray boxes.
+- Use a compact list navigation rail for General, Audio, Updates, Installation, Storage, and About.
+- Keep the navigation rail quiet. The selected section uses a quiet graphite fill with a dynamic accent marker and selected label/icon; hover remains neutral.
+- Keep links and ordinary controls quiet; use the dynamic accent for progress, the current primary game action, selected state, and intentional interaction highlights.
+- Group related controls in quiet Liquid Glass panels instead of form-style gray boxes. Use native capsules for settings controls and shared neutral capsules for secondary actions.
+- Switch Settings pages immediately without scale, card, or other decorative page transitions.
+- Warning and danger panels keep quiet neutral backgrounds; semantic color is limited to the header, icon, edge, and relevant actions.
+- Use semantic colors consistently: danger for destructive settings and failure codes, warning for cautionary state, success for completed state, and the dynamic accent for the current primary operation and intentional selection or highlight state.
 - Explain destructive or expensive actions in user terms. Repair checks every game file and downloads missing or damaged files again.
 - Keep developer terminology out of the interface; diagnostics may refer to launcher and Wine logs because users need those names when reporting a problem.
-- Render bundled Markdown as native text. Tables may scroll horizontally, but headings and ordinary paragraphs must fit the document width.
+- Render bundled Markdown as native text. Parse each document once when it opens. Tables adapt their column widths and may scroll horizontally, but headings and ordinary paragraphs must fit the document width. Missing or unreadable documents show an explicit error state.
 - Link the author and repository directly from About.
 - About links to the project's Ko-fi page as an optional way to support development.
+- Present About documents as a low-height document shelf when space allows, with a stacked fallback for narrow widths. Keep legal and publisher links in a quiet trust rail below support information.
 
 ## Dock menu
 
@@ -98,9 +115,9 @@ The service currently exposes one active image rather than a playlist. Do not ma
 
 ## App icon
 
-The source icon is an Icon Composer document with separate structure, glass glyph, and cyan signal layers. Packaging includes an asset-catalog rendition so macOS 26 recognizes the icon instead of placing a legacy ICNS on a gray backing plate.
+The source icon is an Icon Composer document with separate structure, glass glyph, and signal layers. Packaging includes an asset-catalog rendition so macOS 26 recognizes the icon instead of placing a legacy ICNS on a gray backing plate.
 
-Launcher and game operator presets are independent. The Launcher gallery uses its dark navy plate, signal corner, and glass facet around the operator. The Game gallery places the operator over the bundled crystalline cyan launcher background. Dynamic Theme recolors only a Launcher operator preset; it never modifies the Game icon. A local image can override either destination without changing the other.
+Launcher and game operator presets are independent. The Launcher gallery uses its dark navy plate, signal corner, and glass facet around the operator. The Game gallery places the operator over the bundled crystalline launcher background. Dynamic Theme recolors only a Launcher operator preset; it never modifies the Game icon. A local image can override either destination without changing the other. Gallery controls use the same neutral search, filter, preview, and dismissal language as Settings; semantic system icons carry meaning without adding decorative color.
 
 Settings gives Launcher Icon and Game Icon their own operator and local-image actions. Each action opens an isolated picker for its destination and previews only the icon that will change. Artwork remains a separate gallery destination without an in-gallery mode switch.
 

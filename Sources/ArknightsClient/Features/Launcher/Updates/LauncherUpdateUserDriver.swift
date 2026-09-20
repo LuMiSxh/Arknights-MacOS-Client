@@ -105,6 +105,39 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		message = nil
 		checkCancellation = cancellation
 	}
+
+	#if DEBUG
+		func showDeveloperPreview(version: String?, failed: Bool) {
+			resetCallbacks()
+			self.version = version
+			releaseNotes = nil
+			releaseNotesFormat = nil
+			updateStage = nil
+			informationOnly = false
+			informationURL = nil
+			expectedBytes = 0
+			receivedBytes = 0
+			extractionProgress = 0
+			message = failed ? LauncherStrings.updateErrorDetail : nil
+
+			if failed {
+				phase = .failed
+				errorAcknowledgement = { [weak self] in self?.dismissUpdateInstallation() }
+			} else if version != nil {
+				phase = .available
+				updateReply = { [weak self] choice in
+					guard choice == .install else { return }
+					self?.phase = .readyToInstall
+					self?.readyReply = { [weak self] _ in
+						self?.dismissUpdateInstallation()
+					}
+				}
+			} else {
+				phase = .noUpdate
+				noUpdateAcknowledgement = { [weak self] in self?.dismissUpdateInstallation() }
+			}
+		}
+	#endif
 	func showUpdateFound(
 		with appcastItem: SUAppcastItem,
 		state: SPUUserUpdateState,

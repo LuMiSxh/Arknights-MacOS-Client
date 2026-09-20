@@ -21,7 +21,10 @@ struct PresetGallerySearchBar: View {
 		HStack(spacing: 6) {
 			Image(systemName: "magnifyingglass")
 				.font(.caption)
-				.adaptiveTintForeground(isFocused ? accentColor : .secondary)
+				.adaptiveControlForeground(
+					isFocused ? accentColor : .secondary,
+					disabledTint: .secondary
+				)
 				.accessibilityHidden(true)
 
 			if destination == .artwork {
@@ -49,7 +52,7 @@ struct PresetGallerySearchBar: View {
 					Image(systemName: "xmark.circle.fill")
 						.font(.callout)
 						.imageScale(.large)
-						.foregroundStyle(.secondary)
+						.adaptiveControlForeground(.secondary, disabledTint: .secondary)
 						.frame(width: Self.contentHeight, height: Self.contentHeight)
 						.contentShape(Rectangle())
 				}
@@ -60,21 +63,11 @@ struct PresetGallerySearchBar: View {
 		.font(.callout)
 		.padding(.horizontal, 10)
 		.padding(.vertical, 7)
-		.adaptiveGlassEffect(
-			tint: accentColor.opacity(isFocused ? 0.16 : 0.13),
-			in: Capsule(),
-			showsBorder: true
+		.adaptiveControlSurface(
+			tint: isFocused || !committedTags.isEmpty ? accentColor : LauncherVisuals.controlTint,
+			in: Capsule()
 		)
-		.overlay {
-			Capsule()
-				.strokeBorder(
-					isFocused
-						? accentColor.opacity(0.72)
-						: LauncherVisuals.controlTint.opacity(0.16),
-					lineWidth: isFocused ? 1.5 : 1
-				)
-				.allowsHitTesting(false)
-		}
+		.keyboardFocusIndicator(isFocused: isFocused, in: Capsule())
 		.onChange(of: searchText) { _, _ in promoteTrailingTag() }
 	}
 
@@ -85,25 +78,20 @@ struct PresetGallerySearchBar: View {
 			HStack(spacing: 4) {
 				Text(tag)
 					.font(.caption.weight(.semibold))
-					.adaptiveTintForeground(accentColor)
 					.lineLimit(1)
 				Image(systemName: "xmark")
 					.font(.system(size: 10, weight: .bold))
-					.adaptiveTintForeground(accentColor)
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
+			.adaptiveControlForeground(accentColor, disabledTint: accentColor.opacity(0.44))
 			.padding(.leading, 8)
 			.padding(.trailing, 4)
 			.padding(.vertical, 3)
 			.contentShape(Capsule())
 		}
 		.buttonStyle(.plain)
-		.adaptiveGlassEffect(
-			tint: accentColor.opacity(0.22),
-			in: Capsule(),
-			showsBorder: true
-		)
-		.overlay(Capsule().strokeBorder(accentColor.opacity(0.5), lineWidth: 1))
+		.adaptiveControlSurface(tint: accentColor, in: Capsule())
+		.keyboardFocusIndicator(in: Capsule())
 		.frame(height: Self.contentHeight)
 		.accessibilityLabel(CustomizationStrings.searchRemoveTag(tag))
 	}

@@ -82,6 +82,7 @@ struct PresetGalleryView: View {
 				.padding(.vertical, 14)
 				PresetGallerySuggestions(
 					destination: destination,
+					accentColor: customization.accentColor,
 					avatars: hasSearchQuery ? filteredAvatars : [],
 					wallpaperTerms: hasSearchQuery ? wallpaperTerms : []
 				) { selection in

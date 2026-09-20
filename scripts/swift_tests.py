@@ -12,10 +12,19 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from lib.common import PROJECT_DIR, fail, require_command, run, run_main
-from lib.console import info, success
+from lib.console import child_output, success
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 _NETWORK_DENY_PROFILE = "(version 1) (allow default) (deny network*)"
+_SWIFT_TEST_TIFF_WARNING = (
+    "CGImageDestinationFinalize failed for output type 'public.tiff'"
+)
+_SWIFT_TEST_HARNESS_PREFIXES = (
+    "◇ Test run started.",
+    "Testing Library Version:",
+    "Target Platform:",
+    "✔ Test run with ",
+)
 
 
 @dataclass(frozen=True)
@@ -105,6 +114,24 @@ def test_count(output: str, target: str) -> int:
     return sum(line.startswith(prefix) for line in output.splitlines())
 
 
+def relevant_success_output(output: str) -> list[str]:
+    """Return successful Swift test output that is useful to a human."""
+    relevant = []
+    for line in output.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        while line.startswith("↳ "):
+            line = line[2:].lstrip()
+        if (
+            line.startswith(_SWIFT_TEST_HARNESS_PREFIXES)
+            or _SWIFT_TEST_TIFF_WARNING in line
+        ):
+            continue
+        relevant.append(line)
+    return relevant
+
+
 def isolated_environment(root: Path, level: SwiftTestLevel) -> dict[str, str]:
     home = root / "home"
     temporary = root / "tmp"
@@ -131,22 +158,25 @@ def run_level(name: str) -> None:
     if not level.allows_network:
         require_command("sandbox-exec")
 
-    info(f"Building the Swift {name} test target")
     run(build_command(architectures), cwd=PROJECT_DIR)
     listed_tests = run(
         list_command(architectures), cwd=PROJECT_DIR, capture=True
     ).stdout
-    if test_count(listed_tests, level.target) == 0:
+    test_total = test_count(listed_tests, level.target)
+    if test_total == 0:
         fail(f"Swift {name} test target contains no discoverable tests: {level.target}")
 
-    info(f"Running the Swift {name} test target")
     with tempfile.TemporaryDirectory(prefix=f"arknights-{name}-tests-") as directory:
-        run(
+        result = run(
             test_command(level, architectures),
             cwd=PROJECT_DIR,
+            capture=True,
             environment=isolated_environment(Path(directory), level),
         )
-    success(f"Swift {name} tests passed")
+    for line in relevant_success_output(f"{result.stdout}\n{result.stderr}"):
+        child_output(line)
+    suffix = "test" if test_total == 1 else "tests"
+    success(f"Swift {name} tests passed ({test_total} {suffix})")
 
 
 def main() -> None:

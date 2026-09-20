@@ -14,7 +14,6 @@ struct LauncherUpdateView: View {
 	var body: some View {
 		ThemedModalView(
 			title: LauncherStrings.updateTitle,
-			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: modalWidth,
 			height: modalHeight
@@ -54,7 +53,7 @@ struct LauncherUpdateView: View {
 					.font(.headline)
 			}
 			Text(statusText)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(statusColor)
 		}
 		.accessibilityElement(children: .combine)
 	}
@@ -189,6 +188,7 @@ struct LauncherUpdateView: View {
 					tone: .accent(accentColor),
 					action: { driver.choose(.install) }
 				)
+				.keyboardShortcut(.defaultAction)
 			}
 		case .downloading:
 			CapsuleActionButton(
@@ -210,6 +210,7 @@ struct LauncherUpdateView: View {
 				tone: .accent(accentColor),
 				action: { driver.choose(.install) }
 			)
+			.keyboardShortcut(.defaultAction)
 		case .installing:
 			if !driver.applicationTerminated {
 				CapsuleActionButton(
@@ -244,6 +245,7 @@ struct LauncherUpdateView: View {
 				tone: .accent(accentColor),
 				action: retryUpdate
 			)
+			.keyboardShortcut(.defaultAction)
 			CapsuleActionButton(
 				title: LauncherStrings.updateDone,
 				tone: .neutral,
@@ -274,6 +276,16 @@ struct LauncherUpdateView: View {
 		case .downloaded: LauncherStrings.updateReady
 		case .installing: LauncherStrings.updateInstalling
 		default: LauncherStrings.updateAvailable
+		}
+	}
+
+	private var statusColor: Color {
+		switch driver.phase {
+		case .failed: LauncherVisuals.dangerForeground
+		case .installed: LauncherVisuals.success
+		case .available, .downloading, .extracting, .readyToInstall, .installing:
+			accentColor
+		default: .secondary
 		}
 	}
 

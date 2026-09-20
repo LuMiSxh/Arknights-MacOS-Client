@@ -18,10 +18,10 @@ struct HUDMenuLabel: View {
 			}
 		}
 		.font(.caption.weight(.semibold))
-		.foregroundStyle(accentColor)
 		.padding(.horizontal, 6)
 		.padding(.vertical, 2)
-		.background(accentColor.opacity(0.15), in: Capsule())
+		.adaptiveControlForeground(accentColor)
+		.adaptiveControlSurface(tint: accentColor, in: Capsule())
 		.contentShape(Capsule())
 	}
 }

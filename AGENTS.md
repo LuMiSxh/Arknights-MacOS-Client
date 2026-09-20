@@ -25,6 +25,10 @@
 - Use Swift 6.2. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
 - Never import feature-owned types from `Shared` or `Infrastructure`; map infrastructure errors at the owning feature boundary.
 - Keep components feature-local unless multiple features share the same presentation contract.
+- Declare reusable identical controls, surfaces, and design tokens centrally in `Shared/UI`; keep feature-specific semantics and state local. Do not duplicate local button or panel styles.
+- Dynamic artwork or theme accents are intentionally allowed for the current primary operation, progress, selection, and interaction highlights. Preserve those highlights instead of replacing them with hardcoded neutrals.
+- Secondary controls use quiet filled neutral surfaces with restrained borders. Collapsed HUD surfaces stay compact capsules; expanded HUD surfaces use a fixed-radius rounded rectangle.
+- Never use a fixed cyan value in UI styling. `LauncherVisuals.cyan` is reserved for the fallback when no dynamic theme or artwork tint is available.
 - Keep handwritten production Swift and Swift tests below 450 lines. Native C/Objective-C shims and scripts are exempt.
 - Use tabs with width four and follow `.swift-format`.
 - Keep observable/UI/AppKit state on `@MainActor`; move synchronous network, hashing, extraction, and file work off it.

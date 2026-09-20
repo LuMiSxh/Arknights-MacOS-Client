@@ -51,6 +51,10 @@ enum HomeStrings {
 		"\(percentage)%"
 	}
 
+	static func pausedDownloadPercentage(_ percentage: Int) -> String {
+		"Paused · \(percentage)%"
+	}
+
 	static func actionInstallHelp(region: String) -> String {
 		"Download and verify the official \(region) PC files"
 	}

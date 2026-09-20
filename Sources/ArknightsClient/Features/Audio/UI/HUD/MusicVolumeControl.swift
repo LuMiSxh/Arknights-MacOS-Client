@@ -20,7 +20,11 @@ struct MusicVolumeControl: View {
 				Label(muteButtonTitle, systemImage: speakerSymbol)
 					.labelStyle(.iconOnly)
 					.font(.system(size: 13, weight: .semibold))
-					.foregroundStyle(LauncherVisuals.controlTint)
+					.adaptiveControlForeground(
+						LauncherVisuals.controlTint,
+						disabledTint: LauncherVisuals.disabled,
+						isDisabled: isDisabled
+					)
 					.frame(
 						width: AppConstants.Music.secondaryControlDimension,
 						height: AppConstants.Music.secondaryControlDimension
@@ -60,10 +64,13 @@ struct MusicVolumeControl: View {
 			height: AppConstants.Music.secondaryControlDimension,
 			alignment: .leading
 		)
-		.hudSecondaryControlSurface(in: Capsule())
+		.adaptiveControlSurface(
+			tint: LauncherVisuals.controlTint,
+			isDisabled: isDisabled,
+			in: Capsule()
+		)
 		.contentShape(Capsule())
 		.clipped()
-		.opacity(isDisabled ? 0.55 : 1)
 		.onHover { isHovering = $0 }
 		.animation(
 			reduceMotion

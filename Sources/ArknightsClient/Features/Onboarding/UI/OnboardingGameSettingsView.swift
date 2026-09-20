@@ -83,7 +83,7 @@ struct OnboardingGameSettingsView: View {
 								value: frameLatencyBinding,
 								range: 1...3,
 								step: 1,
-								accentColor: LauncherVisuals.danger,
+								accentColor: LauncherVisuals.warning,
 								width: 120
 							)
 							.accessibilityLabel(

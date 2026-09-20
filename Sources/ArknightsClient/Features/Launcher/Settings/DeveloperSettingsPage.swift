@@ -4,11 +4,10 @@ import SwiftUI
 
 #if DEBUG
 	struct DeveloperSettingsPage: View {
-		@Binding var scenario: DeveloperScenario
+		@Binding var simulation: DeveloperSimulationState
 		let accentColor: Color
 		let applyCustomPopup: (String, String) -> Void
-		@State private var customPopupTitle = SettingsStrings.developerCustomPopup
-		@State private var customPopupMarkdown = ""
+		@State private var isComponentLabPresented = false
 
 		var body: some View {
 			SettingsPage(
@@ -16,30 +15,22 @@ import SwiftUI
 				subtitle: SettingsStrings.developerSubtitle,
 				accentColor: accentColor
 			) {
-				SettingsPanel(
-					title: SettingsStrings.developerScenario, systemImage: "switch.2"
-				) {
-					GlassMenuPicker(
-						selection: $scenario,
-						options: DeveloperScenario.allCases.map { ($0, $0.title) },
-						accentColor: accentColor
-					)
-					SettingsHairline()
-					Text(scenario.detail)
-						.foregroundStyle(.secondary)
-				}
+				DeveloperSimulationControls(
+					simulation: $simulation,
+					accentColor: accentColor
+				)
 
-				if scenario == .customPopup {
+				if simulation.popup == .custom {
 					SettingsPanel(
 						title: SettingsStrings.developerCustomPopup,
 						systemImage: "text.bubble"
 					) {
 						TextField(
 							SettingsStrings.developerCustomPopupTitle,
-							text: $customPopupTitle
+							text: $simulation.customPopupTitle
 						)
 						.textFieldStyle(.roundedBorder)
-						TextEditor(text: $customPopupMarkdown)
+						TextEditor(text: $simulation.customPopupMarkdown)
 							.font(.system(.body, design: .monospaced))
 							.scrollContentBackground(.hidden)
 							.padding(8)
@@ -49,9 +40,12 @@ import SwiftUI
 							title: SettingsStrings.developerShowPopup,
 							tone: .accent(accentColor)
 						) {
-							applyCustomPopup(customPopupTitle, customPopupMarkdown)
+							applyCustomPopup(
+								simulation.customPopupTitle,
+								simulation.customPopupMarkdown
+							)
 						}
-						.disabled(customPopupMarkdown.isEmpty)
+						.disabled(simulation.customPopupMarkdown.isEmpty)
 					}
 				}
 
@@ -62,6 +56,27 @@ import SwiftUI
 					Text(SettingsStrings.developerIsolationDetail)
 						.foregroundStyle(.secondary)
 				}
+
+				SettingsPanel(
+					title: "Temporary Component Design Lab",
+					systemImage: "testtube.2"
+				) {
+					Text(
+						"Compare the shared control states, surfaces, and spacing used by the launcher."
+					)
+					.foregroundStyle(.secondary)
+					CapsuleActionButton(
+						title: "Open Component Lab",
+						systemImage: "rectangle.3.group",
+						tone: .neutral,
+						presentation: .compact
+					) {
+						isComponentLabPresented = true
+					}
+				}
+			}
+			.sheet(isPresented: $isComponentLabPresented) {
+				DeveloperComponentLabPage(accentColor: accentColor)
 			}
 		}
 	}

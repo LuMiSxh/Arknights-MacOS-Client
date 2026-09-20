@@ -26,7 +26,7 @@ struct OnboardingView: View {
 			)
 
 			Divider()
-				.overlay(Color.white.opacity(0.08))
+				.overlay(LauncherVisuals.hairline)
 
 			ZStack(alignment: .bottom) {
 				ScrollView {
@@ -100,15 +100,13 @@ struct OnboardingView: View {
 
 				FloatingActionBar(tint: customization.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
-						Button {
+						CapsuleActionButton(
+							title: OnboardingStrings.skipSetup,
+							systemImage: "forward.end",
+							tone: .neutral
+						) {
 							isSkipConfirmationPresented = true
-						} label: {
-							Label(
-								OnboardingStrings.skipSetup,
-								systemImage: "forward.end"
-							)
 						}
-						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
 						.alert(
 							OnboardingStrings.skipSetupConfirmationTitle,
@@ -125,13 +123,12 @@ struct OnboardingView: View {
 					}
 					Spacer()
 					if coordinator.step != .welcome {
-						Button(action: coordinator.goBack) {
-							Label(
-								OnboardingStrings.back,
-								systemImage: "chevron.backward"
-							)
-						}
-						.adaptiveNavigationCapsuleButton()
+						CapsuleActionButton(
+							title: OnboardingStrings.back,
+							systemImage: "chevron.backward",
+							tone: .neutral,
+							action: coordinator.goBack
+						)
 						.controlSize(.large)
 					}
 					CapsuleActionButton(
@@ -158,7 +155,10 @@ struct OnboardingView: View {
 		}
 		.tint(customization.accentColor)
 		.preferredColorScheme(.dark)
-		.animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: coordinator.step)
+		.animation(
+			reduceMotion ? nil : .easeInOut(duration: LauncherVisuals.Motion.page),
+			value: coordinator.step
+		)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
 			value: customization.dynamicThemeHue

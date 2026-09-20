@@ -10,13 +10,12 @@ struct MusicHUDPill: View {
 	let hudTintColor: Color
 	let openCurrentMusicURL: () -> Void
 	let controller: BackgroundMusicController
+	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@ScaledMetric(relativeTo: .caption) private var titleLineHeight =
 		AppConstants.Music.titleLineHeight
 	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
 		AppConstants.Music.collapsedPlayerHeight
-	@State private var isExpanded = false
-	@State private var isHovering = false
 
 	var body: some View {
 		if let musicTitle {
@@ -25,12 +24,12 @@ struct MusicHUDPill: View {
 					HStack(spacing: 5) {
 						Image(systemName: "music.note")
 							.font(.caption2.weight(.semibold))
-							.foregroundStyle(accentColor)
+							.adaptiveControlForeground(accentColor)
 							.accessibilityHidden(true)
 						VStack(alignment: .leading, spacing: 1) {
 							OverflowingMusicTitle(title: musicTitle)
 								.font(.caption.monospaced().weight(.medium))
-								.foregroundStyle(isHovering ? .primary : .secondary)
+								.foregroundStyle(.secondary)
 								.frame(
 									height: titleLineHeight,
 									alignment: .leading
@@ -44,16 +43,16 @@ struct MusicHUDPill: View {
 							if isExpanded {
 								Text(playbackStatus)
 									.font(.caption)
-									.foregroundStyle(accentColor)
+									.adaptiveControlForeground(accentColor)
 									.transition(.opacity)
 							}
 						}
 						Spacer(minLength: 6)
-						Image(systemName: isExpanded ? "chevron.down" : "slider.horizontal.3")
+						Image(systemName: disclosureImage)
 							.font(.caption.bold())
-							.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
+							.adaptiveControlForeground(accentColor)
 							.contentTransition(
-								reduceMotion ? .identity : .symbolEffect(.replace)
+								HUDPillMotion.chevronTransition(reduceMotion: reduceMotion)
 							)
 							.accessibilityHidden(true)
 					}
@@ -61,11 +60,8 @@ struct MusicHUDPill: View {
 					.frame(minHeight: isExpanded ? nil : collapsedPlayerHeight)
 					.contentShape(Rectangle())
 				}
-				.buttonStyle(.plain)
-				.keyboardFocusIndicator(
-					in: RoundedRectangle(cornerRadius: 8)
-				)
-				.onHover { isHovering = $0 }
+				.buttonStyle(ActionPressStyle())
+				.keyboardFocusIndicator(in: Capsule())
 				.accessibilityLabel(
 					isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
 				)
@@ -143,9 +139,10 @@ struct MusicHUDPill: View {
 				maxWidth: AppConstants.Music.expandedPlayerWidth
 			)
 			.fixedSize(horizontal: !isExpanded, vertical: false)
-			.adaptiveGlassEffect(
+			.hudPillSurface(
+				isExpanded: isExpanded,
 				tint: hudTintColor,
-				in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)
+				progressTint: accentColor
 			)
 			.shadow(
 				color: Color.black.opacity(isExpanded ? 0.35 : 0),
@@ -153,6 +150,7 @@ struct MusicHUDPill: View {
 				y: isExpanded ? 5 : 0
 			)
 			.accessibilityElement(children: .contain)
+			.onExitCommand(perform: collapseExpansion)
 		}
 	}
 
@@ -162,21 +160,24 @@ struct MusicHUDPill: View {
 		return controller.isPlaying ? AudioStrings.playing : AudioStrings.paused
 	}
 
+	private var disclosureImage: String {
+		isExpanded ? "chevron.up" : "chevron.down"
+	}
+
 	private var expandedContentTransition: AnyTransition {
-		if reduceMotion { return .opacity }
-		return .opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing))
+		HUDPillMotion.expandedContentTransition(reduceMotion: reduceMotion)
 	}
 
 	private func toggleExpansion() {
-		withAnimation(
-			reduceMotion
-				? nil
-				: .snappy(
-					duration: AppConstants.Music.playerExpansionDuration,
-					extraBounce: 0.04
-				)
-		) {
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
 			isExpanded.toggle()
+		}
+	}
+
+	private func collapseExpansion() {
+		guard isExpanded else { return }
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
+			isExpanded = false
 		}
 	}
 }

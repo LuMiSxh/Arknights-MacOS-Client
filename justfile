@@ -12,8 +12,8 @@ default:
 
 # Run the focused isolated debug simulator for safe launcher UI states.
 [group('Development')]
-preview scenario='ready':
-    swift build; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; swift run --skip-build "$executable_name" --developer-scenario {{ quote(scenario) }}
+preview:
+	binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --show-bin-path)"; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; "$binary_dir/$executable_name" --developer-preview
 
 # Start the website or download the verified runtime and build a local app bundle or dmg; add run to open app artifacts (default: app).
 [group('Development')]
@@ -33,7 +33,7 @@ format target='all':
 # Build the Apple Silicon release binary.
 [group('Checks')]
 build:
-    swift build --configuration release $({{ uv }} scripts/project_config.py swift-architecture-arguments)
+	{{ uv }} scripts/swift_build.py --configuration release
 
 # Run deterministic onboarding, API, installer, and persistence workflows without public network access.
 [group('Checks')]

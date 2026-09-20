@@ -112,7 +112,7 @@ does not disable those notices.
 
 > [!WARNING]
 > Contact [Yostar Support](https://account.yo-star.com/contact) for Global, Japan, and Korea account access, login ownership, payment, billing, server availability, or in-game service issues.
-> Contact [Gryphline Support](https://cs.gryphline.com/) for the same issues with Taiwan.
+> Contact [Gryphline Support](https://www.gryphline.com/en-us/contacts) for the same issues with Taiwan.
 > Contact [Hypergryph Support](https://user.hypergryph.com/support) for the same issues with China or China — Bilibili.
 > Contact the launcher project for installation, runtime, graphics, window, or launcher-owned embedded-browser failures.
 

@@ -20,7 +20,17 @@ extension LauncherViewModel {
 			if isDeveloperMode, action == .retry {
 				guard lifecycle.consumeFailure(id: failureID) != nil else { return .ignored }
 				logRecovery(action: action, result: "simulated")
-				applyDeveloperScenario(.launching)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					switch failure.context.operation {
+					case .configurationRefresh:
+						$0.lifecycle = .ready
+					case .install, .update, .repair:
+						$0.lifecycle = .installing
+					default:
+						$0.lifecycle = .launching
+					}
+				}
 				return .completed
 			}
 		#endif
@@ -106,7 +116,12 @@ extension LauncherViewModel {
 		#if DEBUG
 			if isDeveloperMode {
 				logRecovery(action: .repair, result: "simulated")
-				applyDeveloperScenario(.downloading)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .installing
+					$0.hasPartialDownload = false
+					$0.updateAvailable = true
+				}
 				return
 			}
 		#endif

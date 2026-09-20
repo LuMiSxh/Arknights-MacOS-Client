@@ -5,13 +5,42 @@ import SwiftUI
 enum CapsuleActionTone {
 	case accent(Color)
 	case neutral
+	case warning
 	case danger
 
 	var color: Color {
 		switch self {
 		case .accent(let color): color
 		case .neutral: LauncherVisuals.controlTint
+		case .warning: LauncherVisuals.warning
+		case .danger: LauncherVisuals.dangerForeground
+		}
+	}
+
+	var surfaceColor: Color {
+		switch self {
+		case .accent(let color): color
+		case .neutral: LauncherVisuals.controlTint
+		case .warning: LauncherVisuals.warning
 		case .danger: LauncherVisuals.danger
+		}
+	}
+
+	func foregroundColor(for contrast: ColorSchemeContrast) -> Color {
+		let color = color
+		if case .danger = self, contrast == .increased {
+			return Color(red: 1, green: 0.55, blue: 0.60)
+		}
+		return color
+	}
+
+	func disabledColor(for contrast: ColorSchemeContrast) -> Color {
+		let opacity = contrast == .increased ? 0.52 : 0.44
+		switch self {
+		case .accent(let color): return color.opacity(opacity)
+		case .neutral: return Color.white.opacity(contrast == .increased ? 0.52 : 0.36)
+		case .warning: return LauncherVisuals.warning.opacity(opacity)
+		case .danger: return LauncherVisuals.dangerForeground.opacity(opacity)
 		}
 	}
 }
@@ -34,6 +63,7 @@ struct CapsuleActionButton: View {
 
 	@Environment(\.controlSize) private var controlSize
 	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.colorSchemeContrast) private var contrast
 
 	init(
 		title: String,
@@ -58,7 +88,7 @@ struct CapsuleActionButton: View {
 			HStack(spacing: 6) {
 				if let systemImage {
 					Image(systemName: systemImage)
-						.accessibilityHidden(showsTitle)
+						.accessibilityHidden(true)
 				}
 				if showsTitle {
 					Text(title)
@@ -69,6 +99,7 @@ struct CapsuleActionButton: View {
 			.modifier(
 				CapsuleActionLabelModifier(
 					foreground: foregroundTint,
+					disabledForeground: tone.disabledColor(for: contrast),
 					surfaceTint: surfaceTint,
 					presentation: presentation,
 					controlSize: controlSize
@@ -77,27 +108,20 @@ struct CapsuleActionButton: View {
 		}
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())
-		.opacity(isEnabled ? 1 : 0.7)
 	}
 
 	private var foregroundTint: Color {
-		isEnabled ? effectiveToneColor : LauncherVisuals.controlTint
+		isEnabled ? tone.foregroundColor(for: contrast) : tone.disabledColor(for: contrast)
 	}
 
 	private var surfaceTint: Color {
-		isEnabled ? effectiveToneColor : LauncherVisuals.controlTint
-	}
-
-	private var effectiveToneColor: Color {
-		if case .neutral = tone, #available(macOS 27, *) {
-			return LauncherVisuals.macOS27NeutralControlTint
-		}
-		return tone.color
+		tone.surfaceColor
 	}
 }
 
 private struct CapsuleActionLabelModifier: ViewModifier {
 	let foreground: Color
+	let disabledForeground: Color
 	let surfaceTint: Color
 	let presentation: CapsuleActionPresentation
 	let controlSize: ControlSize
@@ -112,18 +136,11 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 		case .hud:
 			content
 				.font(.caption.weight(.semibold))
-				.adaptiveTintForeground(foreground)
-				.padding(.horizontal, 11)
-				.padding(.vertical, 6)
+				.adaptiveControlForeground(foreground, disabledTint: disabledForeground)
+				.padding(.horizontal, LauncherVisuals.Control.hudHorizontalPadding)
+				.padding(.vertical, LauncherVisuals.Control.hudVerticalPadding)
 				.contentShape(Capsule())
-				.adaptiveGlassEffect(
-					tint: surfaceTint.opacity(0.12),
-					in: Capsule(),
-					showsBorder: true
-				)
-				.overlay {
-					Capsule().strokeBorder(surfaceTint.opacity(0.18)).allowsHitTesting(false)
-				}
+				.adaptiveControlSurface(tint: surfaceTint, in: Capsule())
 		}
 	}
 
@@ -142,18 +159,11 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 	private func compactSurface(_ content: Content) -> some View {
 		content
 			.font(.caption.weight(.semibold))
-			.adaptiveTintForeground(foreground)
-			.padding(.horizontal, 10)
-			.padding(.vertical, 5)
+			.adaptiveControlForeground(foreground, disabledTint: disabledForeground)
+			.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
+			.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding)
 			.contentShape(Capsule())
-			.adaptiveGlassEffect(
-				tint: surfaceTint.opacity(0.13),
-				in: Capsule(),
-				showsBorder: true
-			)
-			.overlay {
-				Capsule().strokeBorder(surfaceTint.opacity(0.18)).allowsHitTesting(false)
-			}
+			.adaptiveControlSurface(tint: surfaceTint, in: Capsule())
 	}
 
 	private var standardHorizontalPadding: CGFloat {
@@ -161,7 +171,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 		case .mini: 7
 		case .small: 9
 		case .large, .extraLarge: 16
-		default: 12
+		default: LauncherVisuals.Control.standardHorizontalPadding
 		}
 	}
 
@@ -170,7 +180,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 		case .mini: 3
 		case .small: 4
 		case .large, .extraLarge: 8
-		default: 6
+		default: LauncherVisuals.Control.standardVerticalPadding
 		}
 	}
 }

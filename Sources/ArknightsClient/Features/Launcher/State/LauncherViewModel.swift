@@ -29,15 +29,12 @@ final class LauncherViewModel {
 
 	#if DEBUG
 		var developerAccessibilityMusicTitle: String?
+		var developerSimulation: DeveloperSimulationState?
 	#endif
 	var pendingACEWarningRegion: GameRegion?
 	@ObservationIgnored private var startupTask: Task<Bool, Never>?
 	@ObservationIgnored private var deferredCanaryRefreshTask: Task<Void, Never>?
 	@ObservationIgnored private var canaryRefreshPending = false
-	#if DEBUG
-		var developerScenario: DeveloperScenario?
-	#endif
-
 	init(
 		api: any LauncherAPIProviding = LauncherAPI(),
 		installer: (any GameInstalling)? = nil,
@@ -200,9 +197,12 @@ final class LauncherViewModel {
 		settings.start()
 
 		#if DEBUG
-			developerScenario = DeveloperScenario(arguments: arguments)
-			if let developerScenario {
-				applyDeveloperScenario(developerScenario)
+			developerSimulation =
+				DeveloperSimulationState.isPreviewArgument(arguments)
+				? DeveloperSimulationState()
+				: nil
+			if let developerSimulation {
+				applyDeveloperSimulation(developerSimulation)
 				Task { [weak self] in
 					guard let self else { return }
 					_ = await customization.loadCustomAppIcon()
@@ -273,6 +273,9 @@ final class LauncherViewModel {
 	}
 
 	private func refreshInstalledRegionsAfterCanaryChange() {
+		#if DEBUG
+			guard !isDeveloperMode else { return }
+		#endif
 		canaryRefreshPending = true
 		scheduleCanaryRefreshIfIdle()
 	}

@@ -14,14 +14,27 @@ struct LauncherHUDView: View {
 	let hudTintColor: Color
 	let musicController: BackgroundMusicController
 	let actions: LauncherHUDActions
+	let developerExpandedPill: String?
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var expandedPill: ExpandedPill?
 
 	var body: some View {
-		VStack(spacing: 10) {
-			hudPillRow
-			controlBar
+		ZStack(alignment: .bottom) {
+			Color.clear
+				.contentShape(Rectangle())
+				.onTapGesture(perform: collapseExpandedPill)
+
+			VStack(spacing: 10) {
+				hudPillRow
+				controlBar
+			}
+			.padding(20)
 		}
-		.padding(20)
+		.onChange(of: hasMusicPill) { _, _ in collapseUnavailablePill() }
+		.onChange(of: hasVersionPill) { _, _ in collapseUnavailablePill() }
+		.onChange(of: hasStatusPill) { _, _ in collapseUnavailablePill() }
+		.onAppear(perform: syncDeveloperExpandedPill)
+		.onChange(of: developerExpandedPill) { _, _ in syncDeveloperExpandedPill() }
 	}
 
 	private var controlBar: some View {
@@ -43,7 +56,7 @@ struct LauncherHUDView: View {
 					CapsuleActionButton(
 						title: HomeStrings.launcherUpdate,
 						systemImage: "arrow.down.app",
-						tone: .accent(accentColor),
+						tone: .neutral,
 						action: actions.openLauncherUpdate
 					)
 					.disabled(!communication.canOpenLauncherUpdate)
@@ -55,7 +68,7 @@ struct LauncherHUDView: View {
 					CapsuleActionButton(
 						title: HomeStrings.recoveryDetails,
 						systemImage: "info.circle",
-						tone: .accent(accentColor),
+						tone: .neutral,
 						action: actions.showFailureDetails
 					)
 					.controlSize(.large)
@@ -77,7 +90,21 @@ struct LauncherHUDView: View {
 			}
 		}
 		.padding(16)
-		.adaptiveGlassEffect(tint: hudTintColor, in: Capsule())
+		.hudPillSurface(
+			progress: LauncherDownloadProgressPresentation.outlineFraction(
+				for: installation.progress,
+				status: lifecycle.presentation.status,
+				hasPartialDownload: installation.hasPartialDownload,
+				hasFailure: lifecycle.failure != nil
+			),
+			isProgressActive: LauncherDownloadProgressPresentation.showsActiveProgressEffect(
+				for: installation.progress,
+				status: lifecycle.presentation.status,
+				hasFailure: lifecycle.failure != nil
+			),
+			tint: hudTintColor,
+			progressTint: accentColor
+		)
 		.animation(stateAnimation, value: installation.isDownloading)
 		.animation(stateAnimation, value: primaryActionIdentity)
 		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
@@ -99,7 +126,8 @@ struct LauncherHUDView: View {
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
 							openCurrentMusicURL: musicController.openCurrentMusicURL,
-							controller: musicController
+							controller: musicController,
+							isExpanded: expandedBinding(for: .music)
 						)
 						.transition(hudPillTransition)
 					}
@@ -110,7 +138,8 @@ struct LauncherHUDView: View {
 							gameSession: gameSession,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							checkGameUpdates: actions.checkGameUpdates
+							checkGameUpdates: actions.checkGameUpdates,
+							isExpanded: expandedBinding(for: .version)
 						)
 						.transition(hudPillTransition)
 					}
@@ -121,7 +150,8 @@ struct LauncherHUDView: View {
 							canSwitchRegion: canSwitchRegion,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							selectRegion: actions.selectRegion
+							selectRegion: actions.selectRegion,
+							isExpanded: expandedBinding(for: .status)
 						)
 						.transition(hudPillTransition)
 					}
@@ -153,6 +183,7 @@ struct LauncherHUDView: View {
 		if !installation.isInstalled {
 			return installation.hasPartialDownload ? "resume" : "install"
 		}
+		if installation.hasPartialDownload { return "resume" }
 		if installation.isGameUpdateAvailable { return "update" }
 		return "play"
 	}
@@ -173,5 +204,49 @@ struct LauncherHUDView: View {
 
 	private var hudPillTransition: AnyTransition {
 		reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
+	}
+
+	private func expandedBinding(for pill: ExpandedPill) -> Binding<Bool> {
+		Binding(
+			get: { expandedPill == pill },
+			set: { isExpanded in
+				if isExpanded {
+					expandedPill = pill
+				} else if expandedPill == pill {
+					expandedPill = nil
+				}
+			}
+		)
+	}
+
+	private func collapseUnavailablePill() {
+		guard
+			(expandedPill == .music && !hasMusicPill)
+				|| (expandedPill == .version && !hasVersionPill)
+				|| (expandedPill == .status && !hasStatusPill)
+		else { return }
+		expandedPill = nil
+	}
+
+	private func collapseExpandedPill() {
+		guard expandedPill != nil else { return }
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
+			expandedPill = nil
+		}
+	}
+
+	private func syncDeveloperExpandedPill() {
+		switch developerExpandedPill {
+		case "music": expandedPill = .music
+		case "version": expandedPill = .version
+		case "status": expandedPill = .status
+		default: expandedPill = nil
+		}
+	}
+
+	private enum ExpandedPill {
+		case music
+		case version
+		case status
 	}
 }

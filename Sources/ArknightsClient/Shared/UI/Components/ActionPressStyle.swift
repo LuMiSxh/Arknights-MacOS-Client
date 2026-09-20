@@ -5,13 +5,18 @@ import SwiftUI
 /// Shared native-feeling press feedback for custom launcher action surfaces.
 struct ActionPressStyle: ButtonStyle {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.isEnabled) private var isEnabled
 
 	func makeBody(configuration: Configuration) -> some View {
 		configuration.label
-			.opacity(configuration.isPressed ? 0.72 : 1)
-			.scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.98 : 1))
+			.opacity(isEnabled && configuration.isPressed ? 0.86 : 1)
+			.scaleEffect(
+				reduceMotion || !isEnabled ? 1 : (configuration.isPressed ? 0.98 : 1)
+			)
 			.animation(
-				reduceMotion ? nil : .easeOut(duration: 0.12),
+				reduceMotion || !isEnabled
+					? nil
+					: .easeOut(duration: LauncherVisuals.Motion.control),
 				value: configuration.isPressed
 			)
 	}
@@ -20,13 +25,20 @@ struct ActionPressStyle: ButtonStyle {
 struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 	let shape: S
 	@Environment(\.settingsFocusCoordinator) private var settingsFocusCoordinator
+	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.appearsActive) private var appearsActive
 	@FocusState private var isFocused: Bool
 	@State private var focusID = UUID()
 
 	func body(content: Content) -> some View {
 		content.overlay {
 			shape
-				.stroke(isFocused ? Color.primary.opacity(0.92) : .clear, lineWidth: 2)
+				.stroke(
+					isEnabled && appearsActive && isFocused
+						? Color.primary.opacity(0.92)
+						: .clear,
+					lineWidth: LauncherVisuals.Control.focusWidth
+				)
 				.padding(-3)
 				.allowsHitTesting(false)
 		}
@@ -48,12 +60,19 @@ private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
 	let isFocused: Bool
 	let shape: S
 	@Environment(\.settingsFocusCoordinator) private var settingsFocusCoordinator
+	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.appearsActive) private var appearsActive
 	@State private var focusID = UUID()
 
 	func body(content: Content) -> some View {
 		content.overlay {
 			shape
-				.stroke(isFocused ? Color.primary.opacity(0.92) : .clear, lineWidth: 2)
+				.stroke(
+					isEnabled && appearsActive && isFocused
+						? Color.primary.opacity(0.92)
+						: .clear,
+					lineWidth: LauncherVisuals.Control.focusWidth
+				)
 				.padding(-3)
 				.allowsHitTesting(false)
 		}

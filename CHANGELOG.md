@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Refined launcher controls, settings, documents, and dialogs with shared surfaces, consistent dynamic theming, and progress-aware HUD treatment.
+- Replaced fixed debug scenarios with composable preview controls, centralized active-SDK SwiftPM builds, and refreshed the locked Python tooling.
 - Repair verifies installed files several times faster by hashing eight bytes per step instead of one.
 - Preparing a Wine prefix applies its registry settings in one step instead of one Windows process per value.
 - Searching the Artwork gallery filters the catalog once per keystroke instead of once per category filter.
@@ -28,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Consolidated the background-music value types, the per-file download path, and the launcher view model's actions into one file each.
 - Named runtime logs after Arknights and their publisher.
 - Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.
-- Split runtime compatibility controls into independent ACE Compact and Bilibili CN flags.
+- Split runtime compatibility controls into independent ACE Compact, shared CEF, and Bilibili CN flags.
 - Removed the regressing experimental Wine/DXMT runtime performance toggle; the independent DXMT frame-latency control remains available behind Canary Features.
 
 ### Fixed

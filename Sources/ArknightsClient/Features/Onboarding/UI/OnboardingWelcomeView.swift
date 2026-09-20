@@ -17,7 +17,7 @@ struct OnboardingWelcomeView: View {
 			subtitle: OnboardingStrings.welcomeSubtitle,
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: statusTitle, systemImage: statusImage) {
+			SettingsPanel(title: statusTitle, systemImage: statusImage, tone: updatePanelTone) {
 				switch updateState {
 				case .checking:
 					HStack(spacing: 12) {
@@ -55,7 +55,8 @@ struct OnboardingWelcomeView: View {
 			if updateState.allowsSetup {
 				SettingsPanel(
 					title: OnboardingStrings.compatibilityPanel,
-					systemImage: translationImage
+					systemImage: translationImage,
+					tone: compatibilityPanelTone
 				) {
 					switch intelTranslationState {
 					case .waitingForLauncherCheck:
@@ -119,6 +120,22 @@ struct OnboardingWelcomeView: View {
 
 	private var statusTitle: String {
 		OnboardingStrings.statusTitle(updateState)
+	}
+
+	private var updatePanelTone: SettingsPanelTone {
+		switch updateState {
+		case .current: .success
+		case .updateRequired, .checkFailed: .warning
+		case .checking: .neutral
+		}
+	}
+
+	private var compatibilityPanelTone: SettingsPanelTone {
+		switch intelTranslationState {
+		case .available: .success
+		case .rosettaMissing, .gameTestModeEnabled, .unavailable, .unsupportedOS: .warning
+		case .waitingForLauncherCheck, .checking: .neutral
+		}
 	}
 
 	private var statusImage: String {

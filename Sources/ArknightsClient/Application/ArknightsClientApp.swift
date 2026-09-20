@@ -176,9 +176,10 @@ struct ArknightsClientApp: App {
 	init() {
 		let arguments = ProcessInfo.processInfo.arguments
 		#if DEBUG
-			if DeveloperScenario(arguments: arguments) != nil {
+			if DeveloperSimulationState.isPreviewArgument(arguments) {
+				let previewID = UUID().uuidString
 				let root = FileManager.default.temporaryDirectory.appending(
-					path: "ArknightsClientPreview",
+					path: "ArknightsClientPreview-\(previewID)",
 					directoryHint: .isDirectory
 				)
 				let paths = AppPaths(
@@ -186,7 +187,9 @@ struct ArknightsClientApp: App {
 					cachesDirectory: root.appending(path: "Caches"),
 					libraryDirectory: root.appending(path: "Library")
 				)
-				let defaults = UserDefaults(suiteName: "com.lumisxh.arknights-client.preview")!
+				let defaults = UserDefaults(
+					suiteName: "com.lumisxh.arknights-client.preview.\(previewID)"
+				)!
 				_model = State(
 					wrappedValue: LauncherViewModel(
 						paths: paths,

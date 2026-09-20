@@ -6,6 +6,7 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 	@Binding private var selection: Option
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+	@Environment(\.isEnabled) private var environmentIsEnabled
 	private let options: [Option]
 	private let accentColor: Color
 	private let isDisabled: Bool
@@ -42,41 +43,46 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 					}
 					.font(.caption.weight(.semibold))
 					.frame(maxWidth: .infinity, maxHeight: .infinity)
-					.padding(.horizontal, 10)
-					.padding(.vertical, 5)
+					.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
+					.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding)
 					.contentShape(Capsule())
 				}
-				.buttonStyle(.plain)
+				.buttonStyle(ActionPressStyle())
 				.keyboardFocusIndicator(in: Capsule())
-				.adaptiveTintForeground(
-					isDisabled
-						? Color.secondary.opacity(0.55)
-						: (selection == option ? accentColor : .secondary)
+				.adaptiveControlForeground(
+					effectiveDisabled
+						? accentColor.opacity(0.44)
+						: (selection == option ? accentColor : .secondary),
+					isDisabled: effectiveDisabled
 				)
 				.background {
 					if selection == option {
 						Color.clear
-							.adaptiveGlassEffect(
-								tint: accentColor.opacity(0.28),
-								in: Capsule(),
-								showsBorder: true
+							.adaptiveControlSurface(
+								tint: accentColor,
+								isDisabled: effectiveDisabled,
+								in: Capsule()
 							)
-							.overlay {
-								Capsule().strokeBorder(accentColor.opacity(0.32))
-							}
 					}
 				}
 				.accessibilityAddTraits(selection == option ? .isSelected : [])
 			}
 		}
 		.fixedSize(horizontal: false, vertical: true)
-		.padding(3)
-		.adaptiveGlassEffect(in: Capsule())
-		.opacity(isDisabled ? 0.6 : 1)
+		.padding(LauncherVisuals.Spacing.compact)
+		.adaptiveControlSurface(
+			tint: LauncherVisuals.controlTint,
+			isDisabled: effectiveDisabled,
+			in: Capsule()
+		)
 		.disabled(isDisabled)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: 0.16),
+			reduceMotion ? nil : .easeInOut(duration: LauncherVisuals.Motion.selection),
 			value: selection
 		)
+	}
+
+	private var effectiveDisabled: Bool {
+		isDisabled || !environmentIsEnabled
 	}
 }

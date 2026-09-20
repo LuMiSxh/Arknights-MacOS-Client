@@ -52,3 +52,16 @@ def test_test_count_requires_identifiers_from_the_selected_target() -> None:
 
     assert swift_tests.test_count(listing, "ArknightsClientIntegrationTests") == 1
     assert swift_tests.test_count(listing, "MissingTests") == 0
+
+
+def test_relevant_success_output_filters_known_swift_test_harness_noise() -> None:
+    output = """◇ Test run started.
+↳ Testing Library Version: 2084
+↳ Target Platform: arm64e-apple-macos14.0
+2026-09-19 23:47:16.365 swiftpm-testing-helper[73169:408775] CGImageDestinationFinalize failed for output type 'public.tiff'
+A warning from the test process that needs attention
+✔ Test run with 386 tests in 43 suites passed after 2.485 seconds."""
+
+    assert swift_tests.relevant_success_output(output) == [
+        "A warning from the test process that needs attention"
+    ]

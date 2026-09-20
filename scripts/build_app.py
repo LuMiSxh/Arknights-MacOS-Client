@@ -33,6 +33,7 @@ from lib.common import (
 from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
+from lib.swift_build import run_swift_build
 from runtime_config import (
     RuntimeConfiguration,
     load_runtime_config,
@@ -344,44 +345,14 @@ def build(
     runtime = runtime.resolve() if runtime is not None else None
     validate_inputs(runtime, project_configuration, runtime_configuration)
     architectures = project_configuration.product.architecture_priority
-    architecture_arguments = [
-        argument
-        for architecture in architectures
-        for argument in ("--arch", architecture)
-    ]
-    sdk_path = output(["xcrun", "--sdk", "macosx", "--show-sdk-path"])
-    sdk_version = output(["xcrun", "--sdk", "macosx", "--show-sdk-version"])
-    swift_environment = os.environ.copy()
-    swift_environment["SDKROOT"] = sdk_path
-    # SwiftPM otherwise copies the deployment platform into the Mach-O SDK field.
-    # Keep the macOS 15 minimum while recording the SDK that supplies the native UI.
-    swift_build_arguments = [
-        "swift",
-        "build",
-        "--configuration",
-        configuration,
-        *architecture_arguments,
-        "-Xlinker",
-        "-platform_version",
-        "-Xlinker",
-        "macos",
-        "-Xlinker",
-        project_configuration.package.macos_version,
-        "-Xlinker",
-        sdk_version,
-    ]
     info(f"Building the {configuration} executable for {', '.join(architectures)}")
-    run(
-        swift_build_arguments,
-        cwd=project,
-        environment=swift_environment,
-    )
+    run_swift_build(project_configuration, configuration)
     binary_dir = Path(
-        run(
-            [*swift_build_arguments, "--show-bin-path"],
-            cwd=project,
+        run_swift_build(
+            project_configuration,
+            configuration,
+            show_bin_path=True,
             capture=True,
-            environment=swift_environment,
         ).stdout.strip()
     )
     binary = binary_dir / project_configuration.product.executable_name

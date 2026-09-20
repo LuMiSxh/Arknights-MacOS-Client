@@ -32,12 +32,12 @@ Account access, payments, billing, server availability, and in-game data belong 
 publisher and payment provider, even when a page appears inside the game's embedded browser.
 Route publisher questions by the selected region:
 
-| Region or client        | Publisher  | Official support                                          |
-| ----------------------- | ---------- | --------------------------------------------------------- |
-| Global, Japan, or Korea | Yostar     | [Yostar Support](https://account.yo-star.com/contact)     |
-| Taiwan                  | Gryphline  | [Gryphline Support](https://cs.gryphline.com/)            |
-| China                   | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support) |
-| China — Bilibili        | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support) |
+| Region or client        | Publisher  | Official support                                                 |
+| ----------------------- | ---------- | ---------------------------------------------------------------- |
+| Global, Japan, or Korea | Yostar     | [Yostar Support](https://account.yo-star.com/contact)            |
+| Taiwan                  | Gryphline  | [Gryphline Contact Us](https://www.gryphline.com/en-us/contacts) |
+| China                   | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support)        |
+| China — Bilibili        | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support)        |
 
 Verify charges with the payment provider shown by the transaction, then contact the publisher
 listed above for account, entitlement, billing, or game-service review. The launcher project

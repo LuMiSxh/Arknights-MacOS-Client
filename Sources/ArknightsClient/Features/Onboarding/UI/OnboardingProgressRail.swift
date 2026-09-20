@@ -17,12 +17,12 @@ struct OnboardingProgressRail: View {
 				.padding(.top, 22)
 				.padding(.bottom, 14)
 
-			VStack(spacing: 5) {
+			VStack(spacing: LauncherVisuals.Spacing.compact) {
 				ForEach(OnboardingStep.allCases) { step in
-					HStack(spacing: 10) {
+					HStack(spacing: LauncherVisuals.Spacing.control) {
 						RoundedRectangle(cornerRadius: 1)
 							.fill(currentStep == step ? accentColor : .clear)
-							.frame(width: 2, height: 20)
+							.frame(width: 2, height: 18)
 							.accessibilityHidden(true)
 						Image(systemName: markerImage(for: step))
 							.frame(width: 17)
@@ -33,10 +33,13 @@ struct OnboardingProgressRail: View {
 						Spacer(minLength: 0)
 					}
 					.foregroundStyle(foregroundStyle(for: step))
-					.padding(.vertical, 9)
+					.padding(.vertical, 8)
 					.padding(.trailing, 12)
-					.background(backgroundFill(for: step), in: .rect(cornerRadius: 8))
-					.frame(minHeight: 44)
+					.background(
+						backgroundFill(for: step),
+						in: .rect(cornerRadius: LauncherVisuals.Radius.row)
+					)
+					.frame(minHeight: 38)
 					.accessibilityElement(children: .combine)
 					.accessibilityLabel(OnboardingStrings.stepTitle(step))
 					.accessibilityAddTraits(currentStep == step ? .isSelected : [])
@@ -46,7 +49,7 @@ struct OnboardingProgressRail: View {
 
 			Spacer()
 
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherVisuals.Spacing.control) {
 				Rectangle()
 					.fill(accentColor)
 					.frame(width: 28, height: 2)
@@ -57,12 +60,7 @@ struct OnboardingProgressRail: View {
 			.padding(18)
 		}
 		.frame(width: 205)
-		.background {
-			ZStack {
-				LauncherVisuals.navigationRailBackground
-				accentColor.opacity(0.03)
-			}
-		}
+		.background(LauncherVisuals.navigationRailBackground)
 	}
 
 	private func foregroundStyle(for step: OnboardingStep) -> Color {
@@ -72,7 +70,7 @@ struct OnboardingProgressRail: View {
 	}
 
 	private func backgroundFill(for step: OnboardingStep) -> Color {
-		step == currentStep ? accentColor.opacity(0.12) : .clear
+		step == currentStep ? LauncherVisuals.selectedNavigationFill(for: accentColor) : .clear
 	}
 
 	private func markerImage(for step: OnboardingStep) -> String {

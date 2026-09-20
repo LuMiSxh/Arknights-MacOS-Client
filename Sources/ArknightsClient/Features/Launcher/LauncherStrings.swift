@@ -6,6 +6,7 @@ enum LauncherStrings {
 	static let documentChangelog = "Changelog"
 	static let documentLicense = "MPL-2.0 License"
 	static let documentNotices = "Third-Party Notices"
+	static let documentLoading = "Loading document"
 	static let documentUnavailable = "This document is unavailable in the current build."
 	static let pickerChoose = "Choose"
 	static let pickerGameIcon = "Choose a game icon"

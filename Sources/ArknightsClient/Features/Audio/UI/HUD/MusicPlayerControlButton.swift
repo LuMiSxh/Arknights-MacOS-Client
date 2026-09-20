@@ -16,8 +16,10 @@ struct MusicPlayerControlButton: View {
 				Label(title, systemImage: systemImage)
 					.labelStyle(.iconOnly)
 					.font(.system(size: isProminent ? 16 : 13, weight: .semibold))
-					.foregroundStyle(
-						isProminent ? accentColor : LauncherVisuals.controlTint
+					.adaptiveControlForeground(
+						isProminent ? accentColor : LauncherVisuals.controlTint,
+						disabledTint: LauncherVisuals.disabled,
+						isDisabled: isDisabled
 					)
 					.frame(
 						width: isProminent
@@ -33,15 +35,15 @@ struct MusicPlayerControlButton: View {
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Circle())
 		.disabled(isDisabled)
-		.opacity(isDisabled ? 0.55 : 1)
+		.accessibilityLabel(title)
 	}
 
 	@ViewBuilder
 	private func controlSurface(_ content: some View) -> some View {
-		if isProminent {
-			content.adaptiveActionSurface(tint: accentColor, in: Circle())
-		} else {
-			content.hudSecondaryControlSurface(in: Circle())
-		}
+		content.adaptiveControlSurface(
+			tint: isProminent ? accentColor : LauncherVisuals.controlTint,
+			isDisabled: isDisabled,
+			in: Circle()
+		)
 	}
 }

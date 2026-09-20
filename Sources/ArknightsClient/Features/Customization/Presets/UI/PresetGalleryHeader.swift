@@ -24,7 +24,7 @@ struct PresetGalleryHeader: View {
 				CapsuleActionButton(
 					title: CustomizationStrings.previewStyles,
 					systemImage: "dock.rectangle",
-					tone: .accent(customization.accentColor)
+					tone: .neutral
 				) {
 					showsIconStylePreview = true
 				}
