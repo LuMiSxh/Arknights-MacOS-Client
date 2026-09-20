@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Named runtime logs after Arknights and their publisher.
 - Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.
 - Split runtime compatibility controls into independent ACE Compact, shared CEF, and Bilibili CN flags.
+- Improved China — Bilibili embedded browser compatibility for nested dialogs such as payment windows.
 - Removed the regressing experimental Wine/DXMT runtime performance toggle; the independent DXMT frame-latency control remains available behind Canary Features.
 
 ### Fixed
