@@ -149,7 +149,7 @@ enum WallpaperTagCatalog {
 }
 
 /// An operator identified among a set of wallpapers, with how many of them feature them.
-struct OperatorArtCount: Identifiable, Hashable {
+struct OperatorArtCount: Identifiable, Hashable, Sendable {
 	var id: String { tag }
 	let tag: String
 	let displayName: String

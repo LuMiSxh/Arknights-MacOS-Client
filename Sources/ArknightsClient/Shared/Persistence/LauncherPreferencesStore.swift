@@ -105,11 +105,11 @@ struct LauncherPreferencesStore {
 
 	func launcherMusicVolume() -> Double {
 		guard defaults.object(forKey: Key.launcherMusicVolume) != nil else { return 0.5 }
-		return defaults.double(forKey: Key.launcherMusicVolume)
+		return normalizedMusicVolume(defaults.double(forKey: Key.launcherMusicVolume))
 	}
 
 	func setLauncherMusicVolume(_ value: Double) {
-		defaults.set(value, forKey: Key.launcherMusicVolume)
+		defaults.set(normalizedMusicVolume(value), forKey: Key.launcherMusicVolume)
 	}
 
 	func seenAnnouncementIDs() -> Set<String> {
@@ -298,6 +298,11 @@ struct LauncherPreferencesStore {
 	private func bool(for key: String, defaultValue: Bool) -> Bool {
 		guard defaults.object(forKey: key) != nil else { return defaultValue }
 		return defaults.bool(forKey: key)
+	}
+
+	private func normalizedMusicVolume(_ value: Double) -> Double {
+		guard value.isFinite else { return 0.5 }
+		return min(max(value, 0), 1)
 	}
 
 	private func acknowledgedACEWarningRegions() -> Set<String> {

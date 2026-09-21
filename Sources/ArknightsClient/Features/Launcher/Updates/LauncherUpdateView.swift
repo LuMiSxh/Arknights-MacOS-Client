@@ -295,12 +295,8 @@ struct LauncherUpdateView: View {
 	}
 
 	private var downloadProgressText: String {
-		let formatter = ByteCountFormatter()
-		formatter.countStyle = .file
-		let received = formatter.string(
-			fromByteCount: Int64(min(driver.receivedBytes, UInt64(Int64.max))))
-		let expected = formatter.string(
-			fromByteCount: Int64(min(driver.expectedBytes, UInt64(Int64.max))))
+		let received = DownloadProgressFormatting.byteCount(driver.receivedBytes)
+		let expected = DownloadProgressFormatting.byteCount(driver.expectedBytes)
 		return "\(received) / \(expected)"
 	}
 

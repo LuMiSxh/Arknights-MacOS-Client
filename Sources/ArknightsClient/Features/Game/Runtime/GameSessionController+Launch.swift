@@ -39,7 +39,10 @@ extension GameSessionController {
 		do {
 			runtime = try discoverRuntime()
 		} catch {
-			refreshRuntime()
+			runtimeName = nil
+			Task { [log] in
+				await log.error("Runtime discovery failed: \(error.localizedDescription)")
+			}
 			presentRuntimeFailure(
 				error,
 				id: launchID,

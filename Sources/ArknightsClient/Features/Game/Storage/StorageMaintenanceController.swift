@@ -32,7 +32,8 @@ final class StorageMaintenanceController {
 		guard lifecycle.activity == .idle else { return }
 		let operationID = UUID()
 		lifecycle.activity = .maintaining(.clearingCache)
-		let winePrefix = paths.winePrefix(for: regionProvider())
+		let region = regionProvider()
+		let winePrefix = paths.winePrefix(for: region)
 		Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -44,7 +45,7 @@ final class StorageMaintenanceController {
 				await log.info("Shader and browser caches cleared")
 			} catch {
 				lifecycle.activity = .idle
-				presentCacheFailure(error, id: operationID)
+				presentCacheFailure(error, id: operationID, region: region)
 			}
 		}
 	}
@@ -53,7 +54,9 @@ final class StorageMaintenanceController {
 	func retryCacheFailure(id: UUID) -> Bool {
 		guard let failure = lifecycle.failure, failure.id == id else { return false }
 		guard failure.context.operation == .cacheClearing else { return false }
-		guard failure.context.region == nil, lifecycle.activity == .idle else { return false }
+		guard failure.context.region == regionProvider().supportRegion,
+			lifecycle.activity == .idle
+		else { return false }
 		guard failure.actions.contains(.retry) else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		Task { [log] in
@@ -102,14 +105,17 @@ final class StorageMaintenanceController {
 		}
 	}
 
-	private func presentCacheFailure(_ error: any Error, id: UUID) {
+	private func presentCacheFailure(_ error: any Error, id: UUID, region: GameRegion) {
 		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
 			LauncherFailurePresentation(
 				id: id,
 				message: message,
 				code: .basalt,
-				context: SupportContext(operation: .cacheClearing, region: nil),
+				context: SupportContext(
+					operation: .cacheClearing,
+					region: region.supportRegion
+				),
 				actions: [.retry, .openTroubleshooting, .reportProblem]
 			),
 			diagnostic: launcherDiagnosticDescription(for: error)

@@ -167,6 +167,22 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
+	func musicVolumeIsClampedWhenPersistedValueIsOutsideTheSupportedRange() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setLauncherMusicVolume(-0.25)
+		#expect(store.launcherMusicVolume() == 0)
+
+		store.setLauncherMusicVolume(1.25)
+		#expect(store.launcherMusicVolume() == 1)
+
+		store.setLauncherMusicVolume(.infinity)
+		#expect(store.launcherMusicVolume() == 0.5)
+	}
+
+	@Test
 	func installDirectoriesAreIndependentPerRegion() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }

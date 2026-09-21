@@ -2,7 +2,7 @@
 
 import Foundation
 
-enum PresetGalleryDestination: String, Identifiable {
+enum PresetGalleryDestination: String, Identifiable, Sendable {
 	case artwork
 	case operatorIcons
 

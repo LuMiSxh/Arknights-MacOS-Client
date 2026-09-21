@@ -15,6 +15,10 @@ enum DownloadProgressFormatting {
 		max(0, bytes).formatted(byteCountStyle)
 	}
 
+	static func byteCount(_ bytes: UInt64) -> String {
+		byteCount(bytes > UInt64(Int64.max) ? Int64.max : Int64(bytes))
+	}
+
 	static func byteRate(_ bytesPerSecond: Double) -> String {
 		let rounded = min(Double(Int64.max), max(0, bytesPerSecond)).rounded()
 		let bytes = Int64(rounded)

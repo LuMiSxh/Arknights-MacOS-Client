@@ -94,8 +94,8 @@ actor LauncherLog {
 
 		if fileManager.fileExists(atPath: fileURL.path) {
 			let attributes = try fileManager.attributesOfItem(atPath: fileURL.path)
-			let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
-			if size + byteCount > maximumFileSize {
+			let size = max((attributes[.size] as? NSNumber)?.intValue ?? 0, 0)
+			if size >= maximumFileSize || byteCount > maximumFileSize - size {
 				let previousURL = fileURL.deletingPathExtension()
 					.appendingPathExtension("previous.log")
 				if fileManager.fileExists(atPath: previousURL.path) {

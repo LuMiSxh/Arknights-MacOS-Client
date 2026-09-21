@@ -111,16 +111,80 @@ struct PresetGallerySearchBar: View {
 }
 
 enum PresetGallerySearch {
+	static func shouldPublishResults(
+		request: PresetGallerySearchQuery,
+		currentQuery: PresetGallerySearchQuery,
+		isCancelled: Bool
+	) -> Bool {
+		!isCancelled && request.catalogReady && request == currentQuery
+	}
+
+	static func results(
+		for destination: PresetGalleryDestination,
+		searchText: String,
+		committedTags: [String],
+		selectedCategory: WallpaperCategory?,
+		avatars avatarCatalog: [PresetAvatar],
+		wallpapers wallpaperCatalog: [PresetWallpaper]
+	) async throws -> PresetGallerySearchResults {
+		await Task.yield()
+		try Task.checkCancellation()
+		switch destination {
+		case .artwork:
+			let matches = try await wallpapers(
+				matching: searchText,
+				committedTags: committedTags,
+				category: nil,
+				in: wallpaperCatalog
+			)
+			let filteredWallpapers: [PresetWallpaper]
+			if let selectedCategory {
+				var filtered: [PresetWallpaper] = []
+				for wallpaper in matches {
+					try Task.checkCancellation()
+					if wallpaper.category == selectedCategory { filtered.append(wallpaper) }
+				}
+				filteredWallpapers = filtered
+			} else {
+				filteredWallpapers = matches
+			}
+
+			return PresetGallerySearchResults(
+				filteredAvatars: [],
+				filteredWallpapers: filteredWallpapers,
+				wallpaperCategoryCounts: try categoryCounts(in: matches),
+				wallpaperTerms: try await suggestions(
+					matching: searchText,
+					committedTags: committedTags,
+					category: selectedCategory,
+					in: wallpaperCatalog
+				),
+				operatorCounts: try operatorCounts(
+					among: filteredWallpapers, avatars: avatarCatalog)
+			)
+		case .operatorIcons:
+			return PresetGallerySearchResults(
+				filteredAvatars: try await PresetCatalogSearch.avatars(
+					matching: searchText, in: avatarCatalog
+				),
+				filteredWallpapers: [],
+				wallpaperCategoryCounts: [:],
+				wallpaperTerms: [],
+				operatorCounts: []
+			)
+		}
+	}
+
 	static func wallpapers(
 		matching searchText: String,
 		committedTags: [String],
 		category: WallpaperCategory?,
-		in wallpapers: [PresetWallpaper]
-	) -> [PresetWallpaper] {
-		PresetCatalogSearch.wallpapers(
+		in wallpaperCatalog: [PresetWallpaper]
+	) async throws -> [PresetWallpaper] {
+		try await PresetCatalogSearch.wallpapers(
 			matching: searchText,
 			category: category,
-			in: matchingTags(committedTags, in: wallpapers)
+			in: try matchingTags(committedTags, in: wallpaperCatalog)
 		)
 	}
 
@@ -128,26 +192,80 @@ enum PresetGallerySearch {
 		matching searchText: String,
 		committedTags: [String],
 		category: WallpaperCategory?,
-		in wallpapers: [PresetWallpaper]
-	) -> [String] {
-		let candidates = matchingTags(committedTags, in: wallpapers).filter {
-			category == nil || $0.category == category
+		in wallpaperCatalog: [PresetWallpaper]
+	) async throws -> [String] {
+		let tagged = try matchingTags(committedTags, in: wallpaperCatalog)
+		var candidates: [PresetWallpaper] = []
+		for wallpaper in tagged {
+			try Task.checkCancellation()
+			if category == nil || wallpaper.category == category {
+				candidates.append(wallpaper)
+			}
 		}
 		let committed = Set(committedTags.map(WallpaperSearch.normalized))
-		return PresetCatalogSearch.wallpaperSuggestions(
+		let suggestions = try await PresetCatalogSearch.wallpaperSuggestions(
 			matching: searchText,
 			in: candidates
-		).filter { !committed.contains(WallpaperSearch.normalized($0)) }
+		)
+		return suggestions.filter { !committed.contains(WallpaperSearch.normalized($0)) }
 	}
 
 	private static func matchingTags(
 		_ committedTags: [String], in wallpapers: [PresetWallpaper]
-	) -> [PresetWallpaper] {
-		wallpapers.filter { wallpaper in
-			committedTags.allSatisfy {
+	) throws -> [PresetWallpaper] {
+		var matches: [PresetWallpaper] = []
+		for wallpaper in wallpapers {
+			try Task.checkCancellation()
+			if committedTags.allSatisfy({
 				WallpaperSearch.tagsContain(
 					WallpaperTagCatalog.tags(for: wallpaper.id), exactly: $0)
+			}) {
+				matches.append(wallpaper)
 			}
+		}
+		return matches
+	}
+
+	private static func categoryCounts(
+		in matches: [PresetWallpaper]
+	) throws -> [WallpaperCategory?: Int] {
+		var counts: [WallpaperCategory?: Int] = [nil: matches.count]
+		for category in WallpaperCategory.allCases {
+			counts[category] = 0
+		}
+		for wallpaper in matches {
+			try Task.checkCancellation()
+			counts[wallpaper.category, default: 0] += 1
+		}
+		return counts
+	}
+
+	private static func operatorCounts(
+		among visibleWallpapers: [PresetWallpaper], avatars: [PresetAvatar]
+	) throws -> [OperatorArtCount] {
+		guard !avatars.isEmpty else { return [] }
+		let namesByNormalizedTag = Dictionary(
+			avatars.map { (WallpaperSearch.normalized($0.name), $0.name) },
+			uniquingKeysWith: { first, _ in first }
+		)
+		var counts: [String: Int] = [:]
+		for wallpaper in visibleWallpapers {
+			try Task.checkCancellation()
+			for tag in WallpaperTagCatalog.tags(for: wallpaper.id) {
+				try Task.checkCancellation()
+				guard namesByNormalizedTag[WallpaperSearch.normalized(tag)] != nil else { continue }
+				counts[tag, default: 0] += 1
+			}
+		}
+		return counts.compactMap { tag, count in
+			namesByNormalizedTag[WallpaperSearch.normalized(tag)].map {
+				OperatorArtCount(tag: tag, displayName: $0, count: count)
+			}
+		}
+		.sorted { lhs, rhs in
+			lhs.count != rhs.count
+				? lhs.count > rhs.count
+				: lhs.displayName.localizedStandardCompare(rhs.displayName) == .orderedAscending
 		}
 	}
 }

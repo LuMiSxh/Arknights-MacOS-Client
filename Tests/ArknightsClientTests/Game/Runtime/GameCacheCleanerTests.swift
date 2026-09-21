@@ -5,6 +5,12 @@ import Testing
 
 @testable import ArknightsClient
 
+private final class FailingCacheRemovalFileManager: FileManager {
+	override func removeItem(at URL: URL) throws {
+		throw CocoaError(.fileWriteNoPermission)
+	}
+}
+
 private func makePrefix(fileManager: FileManager = .default) -> URL {
 	let root = fileManager.temporaryDirectory.appending(
 		path: "cache-cleaner-test-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -19,12 +25,12 @@ private func makePrefix(fileManager: FileManager = .default) -> URL {
 }
 
 @Test
-func cacheDirectoriesFindsDXMTAndEveryWindowsUserBrowserCache() {
+func cacheDirectoriesFindsDXMTAndEveryWindowsUserBrowserCache() throws {
 	let fileManager = FileManager.default
 	let prefix = makePrefix(fileManager: fileManager)
 	defer { try? fileManager.removeItem(at: prefix) }
 
-	let directories = GameCacheCleaner.cacheDirectories(
+	let directories = try GameCacheCleaner.cacheDirectories(
 		winePrefix: prefix, fileManager: fileManager)
 
 	#expect(directories.count == 2)
@@ -53,4 +59,17 @@ func clearRemovesEveryCacheDirectoryButLeavesTheRestOfThePrefix() throws {
 
 	#expect(fileManager.fileExists(atPath: untouched.path))
 	#expect(fileManager.fileExists(atPath: externalFile.path))
+}
+
+@Test
+func cacheRemovalFailuresAreSurfaced() throws {
+	let prefix = makePrefix()
+	defer { try? FileManager.default.removeItem(at: prefix) }
+
+	#expect(throws: CocoaError.self) {
+		try GameCacheCleaner.clear(
+			winePrefix: prefix,
+			fileManager: FailingCacheRemovalFileManager()
+		)
+	}
 }

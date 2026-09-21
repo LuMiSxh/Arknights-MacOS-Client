@@ -8,7 +8,7 @@ import Testing
 @Suite
 struct PresetCatalogSearchTests {
 	@Test
-	func operatorMetadataIsSearchable() {
+	func operatorMetadataIsSearchable() async throws {
 		let avatar = PresetAvatar(
 			id: "char_001_test",
 			name: "Test Operator",
@@ -23,7 +23,7 @@ struct PresetCatalogSearchTests {
 			tagList: ["Support"]
 		)
 
-		let matches = PresetCatalogSearch.avatars(matching: "support", in: [avatar])
+		let matches = try await PresetCatalogSearch.avatars(matching: "support", in: [avatar])
 
 		#expect(matches == [avatar])
 	}
@@ -46,7 +46,7 @@ struct PresetCatalogSearchTests {
 	}
 
 	@Test
-	func oneCharacterTypoStillRanksTheClosestOperator() {
+	func oneCharacterTypoStillRanksTheClosestOperator() async throws {
 		let closest = PresetAvatar(
 			id: "char_002_amiya",
 			name: "Amiya",
@@ -60,13 +60,14 @@ struct PresetCatalogSearchTests {
 			rarity: "TIER_6"
 		)
 
-		let matches = PresetCatalogSearch.avatars(matching: "Amiyaa", in: [unrelated, closest])
+		let matches = try await PresetCatalogSearch.avatars(
+			matching: "Amiyaa", in: [unrelated, closest])
 
 		#expect(matches.first == closest)
 	}
 
 	@Test
-	func wallpaperSearchKeepsDisplayTitleBehavior() {
+	func wallpaperSearchKeepsDisplayTitleBehavior() async throws {
 		let wallpaper = PresetWallpaper(
 			id: "crossing",
 			title: "Crossing the Rhine",
@@ -75,13 +76,13 @@ struct PresetCatalogSearchTests {
 			thumbnailURL: nil
 		)
 
-		let matches = PresetCatalogSearch.wallpapers(matching: "rhine", in: [wallpaper])
+		let matches = try await PresetCatalogSearch.wallpapers(matching: "rhine", in: [wallpaper])
 
 		#expect(matches == [wallpaper])
 	}
 
 	@Test
-	func wallpaperSearchTrimsQueryWhitespace() {
+	func wallpaperSearchTrimsQueryWhitespace() async throws {
 		let wallpaper = PresetWallpaper(
 			id: "crossing",
 			title: "Crossing the Rhine",
@@ -90,13 +91,14 @@ struct PresetCatalogSearchTests {
 			thumbnailURL: nil
 		)
 
-		let matches = PresetCatalogSearch.wallpapers(matching: "  rhine  ", in: [wallpaper])
+		let matches = try await PresetCatalogSearch.wallpapers(
+			matching: "  rhine  ", in: [wallpaper])
 
 		#expect(matches == [wallpaper])
 	}
 
 	@Test
-	func wallpaperSearchRanksOneCharacterTypo() {
+	func wallpaperSearchRanksOneCharacterTypo() async throws {
 		let closest = PresetWallpaper(
 			id: "crossing",
 			title: "Crossing the Rhine",
@@ -112,13 +114,14 @@ struct PresetCatalogSearchTests {
 			thumbnailURL: nil
 		)
 
-		let matches = PresetCatalogSearch.wallpapers(matching: "Rhina", in: [unrelated, closest])
+		let matches = try await PresetCatalogSearch.wallpapers(
+			matching: "Rhina", in: [unrelated, closest])
 
 		#expect(matches.first == closest)
 	}
 
 	@Test
-	func shortUnrelatedQueryDoesNotUseFuzzyMatching() {
+	func shortUnrelatedQueryDoesNotUseFuzzyMatching() async throws {
 		let wallpaper = PresetWallpaper(
 			id: "crossing",
 			title: "Crossing the Rhine",
@@ -127,7 +130,7 @@ struct PresetCatalogSearchTests {
 			thumbnailURL: nil
 		)
 
-		let matches = PresetCatalogSearch.wallpapers(matching: "z", in: [wallpaper])
+		let matches = try await PresetCatalogSearch.wallpapers(matching: "z", in: [wallpaper])
 
 		#expect(matches.isEmpty)
 	}
@@ -164,7 +167,7 @@ struct PresetCatalogSearchTests {
 	}
 
 	@Test
-	func wallpaperMetadataParticipatesInSearch() {
+	func wallpaperMetadataParticipatesInSearch() async throws {
 		let wallpaper = PresetWallpaper(
 			id: "wp_42",
 			title: "Crossing the Rhine",
@@ -176,7 +179,9 @@ struct PresetCatalogSearchTests {
 		)
 
 		for query in ["yostar", "illustration"] {
-			#expect(PresetCatalogSearch.wallpapers(matching: query, in: [wallpaper]) == [wallpaper])
+			#expect(
+				try await PresetCatalogSearch.wallpapers(matching: query, in: [wallpaper])
+					== [wallpaper])
 		}
 	}
 

@@ -264,10 +264,9 @@ final class LauncherRefreshController {
 		customArtworkGeneration: UInt64,
 		refreshID: UUID
 	) async {
-		guard isCurrentBrandingAssetLoad(refreshID, region: region),
-			!customization.hasPersistedCustomArtwork
-		else { return }
 		let customArtworkWasPersisted = customization.hasPersistedCustomArtwork
+		guard isCurrentBrandingAssetLoad(refreshID, region: region), !customArtworkWasPersisted
+		else { return }
 		let artworkCache = customization.artworkCache
 		let logoTask = Task<Data?, Never> { [artworkCache, log] in
 			do {

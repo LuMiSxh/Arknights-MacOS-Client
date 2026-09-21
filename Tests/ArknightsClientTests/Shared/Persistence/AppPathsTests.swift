@@ -5,6 +5,16 @@ import Testing
 
 @testable import ArknightsClient
 
+private final class FailingCacheEnumerationFileManager: FileManager {
+	override func contentsOfDirectory(
+		at url: URL,
+		includingPropertiesForKeys keys: [URLResourceKey]? = nil,
+		options mask: FileManager.DirectoryEnumerationOptions = []
+	) throws -> [URL] {
+		throw CocoaError(.fileReadNoPermission)
+	}
+}
+
 @Test
 func appPathsUseStandardInjectedDirectories() {
 	let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
@@ -182,4 +192,26 @@ func taiwanUsesItsOwnGryphlinePrefix() {
 
 	#expect(paths.winePrefix(for: .taiwan) == paths.gryphlineWinePrefix)
 	#expect(paths.gameInstall(for: .taiwan).lastPathComponent == "Taiwan")
+}
+
+@Test
+func missingCacheUsersDirectoryIsBenign() throws {
+	let prefix = FileManager.default.temporaryDirectory.appending(
+		path: "AppPathsMissingCacheUsers.\(UUID().uuidString)", directoryHint: .isDirectory)
+	defer { try? FileManager.default.removeItem(at: prefix) }
+
+	#expect(try AppPaths.gameCacheDirectories(winePrefix: prefix).isEmpty)
+}
+
+@Test
+func cacheDirectoryEnumerationFailuresAreSurfaced() {
+	let prefix = FileManager.default.temporaryDirectory.appending(
+		path: "AppPathsCacheEnumerationFailure.\(UUID().uuidString)", directoryHint: .isDirectory)
+
+	#expect(throws: AppPathsError.self) {
+		try AppPaths.gameCacheDirectories(
+			winePrefix: prefix,
+			fileManager: FailingCacheEnumerationFileManager()
+		)
+	}
 }

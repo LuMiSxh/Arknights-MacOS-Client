@@ -68,8 +68,8 @@ enum StorageOverviewResolver {
 		preferences: LauncherPreferencesStore,
 		region: GameRegion = .global,
 		fileManager: FileManager = .default
-	) -> [StorageLocation] {
-		locations(
+	) throws -> [StorageLocation] {
+		try locations(
 			paths: paths,
 			context: context(preferences: preferences, region: region),
 			fileManager: fileManager
@@ -80,7 +80,7 @@ enum StorageOverviewResolver {
 		paths: AppPaths,
 		context: StorageOverviewContext,
 		fileManager: FileManager = .default
-	) -> [StorageLocation] {
+	) throws -> [StorageLocation] {
 		let games = GameRegion.selectableCases(
 			canaryEnabled: context.canaryFeaturesEnabled,
 			chinaClientsEnabled: context.chinaClientsEnabled,
@@ -93,7 +93,7 @@ enum StorageOverviewResolver {
 				]
 			)
 		}
-		let browserCaches = paths.browserCacheDirectories(
+		let browserCaches = try paths.browserCacheDirectories(
 			for: context.region,
 			fileManager: fileManager
 		)

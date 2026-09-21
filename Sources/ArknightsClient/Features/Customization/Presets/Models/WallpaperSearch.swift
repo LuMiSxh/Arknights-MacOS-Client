@@ -80,21 +80,29 @@ enum WallpaperSearch {
 		wallpapers: [(title: String, tags: [String])],
 		knownTags: Set<String>,
 		limit: Int = 8
-	) -> [String] {
+	) throws -> [String] {
+		try Task.checkCancellation()
 		guard query.last?.isWhitespace != true else { return [] }
 		let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
 		guard let lastTerm = terms.last, !lastTerm.isEmpty else { return [] }
 		let earlierTerms = terms.dropLast()
 
-		let candidates =
-			earlierTerms.isEmpty
-			? wallpapers
-			: wallpapers.filter { wallpaper in
-				earlierTerms.allSatisfy {
+		let candidates: [(title: String, tags: [String])]
+		if earlierTerms.isEmpty {
+			candidates = wallpapers
+		} else {
+			var scoped: [(title: String, tags: [String])] = []
+			for wallpaper in wallpapers {
+				try Task.checkCancellation()
+				if earlierTerms.allSatisfy({
 					matchesTerm(
 						$0, title: wallpaper.title, tags: wallpaper.tags, knownTags: knownTags)
+				}) {
+					scoped.append(wallpaper)
 				}
 			}
+			candidates = scoped
+		}
 
 		let normalizedQuery = normalized(lastTerm)
 		func matchesCandidate(_ candidate: String) -> Bool {
@@ -109,12 +117,14 @@ enum WallpaperSearch {
 		var titleWordSuggestions: [String] = []
 
 		for wallpaper in candidates {
+			try Task.checkCancellation()
 			for tag in wallpaper.tags
 			where matchesCandidate(tag) && seen.insert(normalized(tag)).inserted {
 				tagSuggestions.append(tag)
 			}
 		}
 		for wallpaper in candidates {
+			try Task.checkCancellation()
 			for word in wallpaper.title.components(separatedBy: titleWordSeparators)
 			where matchesCandidate(word) && seen.insert(normalized(word)).inserted {
 				titleWordSuggestions.append(word)

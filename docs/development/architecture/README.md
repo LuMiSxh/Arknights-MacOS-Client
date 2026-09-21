@@ -93,8 +93,8 @@ Repository scripts derive shipping product metadata from `Resources/Info.plist`,
 Tests follow separate unit, deterministic integration, and live-contract boundaries. Their target ownership, network and filesystem isolation, fixtures, CI cadence, and manual Wine/game matrix are documented in [Testing architecture](../testing.md).
 
 `LauncherViewModel` is the application composition root. It constructs feature controllers, wires the
-few transitions that cross feature boundaries, and provides the application shell used by developer
-scenarios. It does not implement network, filesystem, installation, Wine, audio,
+few transitions that cross feature boundaries, and provides the application shell used by the debug
+simulator. It does not implement network, filesystem, installation, Wine, audio,
 customization, or update work itself. Feature-local views receive their owning controller or explicit
 values and actions instead of the complete root model. New work should follow the same direction:
 put policy beside the feature that owns it and add only the smallest callback needed at composition
@@ -186,4 +186,4 @@ Before changing a behavior, identify its owner and its external contract:
 
 Run the focused checks while iterating and [Testing architecture](../testing.md) before a full
 release validation. A runtime layout, prefix migration, or installer safety change is not complete
-until the relevant fixture-backed tests and a manual compatibility scenario have been reviewed.
+until the relevant fixture-backed tests and a manual compatibility check have been reviewed.

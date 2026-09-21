@@ -42,8 +42,7 @@ struct LauncherSupportCodeTests {
 
 		#expect(
 			GameSessionController.supportCode(
-				for: BoundedFileReadError.tooLarge(url, maximumBytes: 1),
-				operation: .prefixMigration
+				for: BoundedFileReadError.tooLarge(url, maximumBytes: 1)
 			) == .sepia
 		)
 	}

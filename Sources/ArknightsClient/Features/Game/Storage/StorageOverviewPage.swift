@@ -153,8 +153,6 @@ struct StorageOverviewPage: View {
 			return controller.isMeasuring ? copy.calculating : copy.unavailable
 		}
 		guard usage.exists else { return copy.unavailable }
-		let formatter = ByteCountFormatter()
-		formatter.countStyle = .file
-		return formatter.string(fromByteCount: byteCount)
+		return DownloadProgressFormatting.byteCount(byteCount)
 	}
 }

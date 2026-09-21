@@ -26,7 +26,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 		path: "drive_c/users/crossover/AppData/Local/cache", directoryHint: .isDirectory)
 	try FileManager.default.createDirectory(at: browserCache, withIntermediateDirectories: true)
 
-	let locations = StorageOverviewResolver.locations(paths: paths, preferences: preferences)
+	let locations = try StorageOverviewResolver.locations(paths: paths, preferences: preferences)
 
 	#expect(locations.count == 9)
 	#expect(
@@ -47,7 +47,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 }
 
 @Test
-func storageResolverFiltersChinaAndTaiwanIndependently() {
+func storageResolverFiltersChinaAndTaiwanIndependently() throws {
 	let root = temporaryStorageRoot()
 	defer { try? FileManager.default.removeItem(at: root) }
 	let paths = AppPaths(
@@ -58,7 +58,7 @@ func storageResolverFiltersChinaAndTaiwanIndependently() {
 	)
 	let directories: [GameRegion: URL] = [:]
 
-	let taiwanOnly = StorageOverviewResolver.locations(
+	let taiwanOnly = try StorageOverviewResolver.locations(
 		paths: paths,
 		context: StorageOverviewContext(
 			region: .global,
@@ -71,7 +71,7 @@ func storageResolverFiltersChinaAndTaiwanIndependently() {
 	#expect(taiwanOnly.contains { $0.category == .game(.taiwan) })
 	#expect(!taiwanOnly.contains { $0.category == .game(.china) })
 
-	let chinaOnly = StorageOverviewResolver.locations(
+	let chinaOnly = try StorageOverviewResolver.locations(
 		paths: paths,
 		context: StorageOverviewContext(
 			region: .global,

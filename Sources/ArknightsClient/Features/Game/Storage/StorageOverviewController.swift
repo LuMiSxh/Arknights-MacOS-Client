@@ -76,7 +76,8 @@ final class StorageOverviewController {
 
 		measurementTask = Task { [weak self, log] in
 			let measurement = Task.detached(priority: .utility) {
-				let locations = StorageOverviewResolver.locations(paths: paths, context: context)
+				let locations = try StorageOverviewResolver.locations(
+					paths: paths, context: context)
 				return try StorageSizeCalculator.measure(locations)
 			}
 			do {

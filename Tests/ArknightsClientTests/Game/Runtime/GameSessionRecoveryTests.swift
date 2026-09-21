@@ -67,4 +67,45 @@ struct GameSessionRecoveryTests {
 		#expect(!model.gameSession.retryRuntimeFailure(id: UUID()))
 		await api.resolveBranding()
 	}
+
+	@Test
+	func prefixRecoveryRetryUsesTheSelectedRegionContext() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let failureID = UUID()
+		model.lifecycle.presentation.failure = LauncherFailurePresentation(
+			id: failureID,
+			message: "Prefix migration failed",
+			code: .sepia,
+			context: SupportContext(operation: .prefixMigration, region: .global),
+			actions: [.retry],
+			blocksGameLaunch: false
+		)
+
+		#expect(model.gameSession.retryRuntimeFailure(id: failureID))
+		#expect(model.lifecycle.failure == nil)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func prefixRecoveryRejectsAChangedRegion() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		#expect(model.installation.selectRegion(.japan))
+		let failureID = UUID()
+		model.lifecycle.presentation.failure = LauncherFailurePresentation(
+			id: failureID,
+			message: "Prefix deletion failed",
+			code: .sepia,
+			context: SupportContext(operation: .prefixDeletion, region: .global),
+			actions: [.retry],
+			blocksGameLaunch: false
+		)
+
+		#expect(!model.gameSession.retryRuntimeFailure(id: failureID))
+		#expect(model.lifecycle.failure?.id == failureID)
+		await api.resolveBranding()
+	}
 }

@@ -210,11 +210,11 @@ struct WallpaperSearchTests {
 	}
 
 	@Test("committed tags filter exact catalog tags")
-	func committedTagsFilterExactly() {
+	func committedTagsFilterExactly() async throws {
 		let exact = wallpaper(id: "global-586")
 		let prefixOnly = wallpaper(id: "global-592")
 
-		let matches = PresetGallerySearch.wallpapers(
+		let matches = try await PresetGallerySearch.wallpapers(
 			matching: "",
 			committedTags: ["w"],
 			category: nil,
@@ -224,10 +224,92 @@ struct WallpaperSearchTests {
 		#expect(matches == [exact])
 	}
 
-	private func wallpaper(id: String) -> PresetWallpaper {
+	@Test("gallery results derive only the selected destination and preserve category counts")
+	func galleryResultsKeepDestinationDataAndCounts() async throws {
+		let story = wallpaper(id: "story", title: "Story")
+		let holiday = wallpaper(id: "holiday", title: "Christmas")
+
+		let results = try await PresetGallerySearch.results(
+			for: .artwork,
+			searchText: "",
+			committedTags: [],
+			selectedCategory: .story,
+			avatars: [avatar(name: "Amiya")],
+			wallpapers: [story, holiday]
+		)
+
+		#expect(results.filteredAvatars.isEmpty)
+		#expect(results.filteredWallpapers == [story])
+		#expect(results.wallpaperCategoryCounts[nil] == 2)
+		#expect(results.wallpaperCategoryCounts[.story] == 1)
+		#expect(results.wallpaperCategoryCounts[.holiday] == 1)
+	}
+
+	@Test("gallery result publication rejects stale and cancelled requests")
+	func galleryResultsPublishOnlyForTheCurrentRequest() {
+		let current = PresetGallerySearchQuery(
+			destination: .artwork,
+			searchText: "amiya",
+			committedTags: [],
+			selectedCategory: nil,
+			catalogRevision: 2,
+			avatarRevision: 1,
+			catalogReady: true
+		)
+		let stale = PresetGallerySearchQuery(
+			destination: current.destination,
+			searchText: "ami",
+			committedTags: [],
+			selectedCategory: nil,
+			catalogRevision: current.catalogRevision,
+			avatarRevision: current.avatarRevision,
+			catalogReady: true
+		)
+		let loading = PresetGallerySearchQuery(
+			destination: current.destination,
+			searchText: current.searchText,
+			committedTags: current.committedTags,
+			selectedCategory: current.selectedCategory,
+			catalogRevision: current.catalogRevision,
+			avatarRevision: current.avatarRevision,
+			catalogReady: false
+		)
+
+		#expect(
+			PresetGallerySearch.shouldPublishResults(
+				request: current, currentQuery: current, isCancelled: false
+			)
+		)
+		#expect(
+			!PresetGallerySearch.shouldPublishResults(
+				request: stale, currentQuery: current, isCancelled: false
+			)
+		)
+		#expect(
+			!PresetGallerySearch.shouldPublishResults(
+				request: current, currentQuery: current, isCancelled: true
+			)
+		)
+		#expect(
+			!PresetGallerySearch.shouldPublishResults(
+				request: loading, currentQuery: loading, isCancelled: false
+			)
+		)
+	}
+
+	private func avatar(name: String) -> PresetAvatar {
+		PresetAvatar(
+			id: "char_002_amiya",
+			name: name,
+			filename: "char_002_amiya.png",
+			rarity: "TIER_5"
+		)
+	}
+
+	private func wallpaper(id: String, title: String = "Untitled") -> PresetWallpaper {
 		PresetWallpaper(
 			id: id,
-			title: "Untitled",
+			title: title,
 			fallbackOrdinal: nil,
 			url: URL(string: "https://example.com/wallpaper.png")!,
 			thumbnailURL: nil

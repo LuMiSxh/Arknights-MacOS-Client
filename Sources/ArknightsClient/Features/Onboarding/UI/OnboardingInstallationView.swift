@@ -95,7 +95,7 @@ struct OnboardingInstallationView: View {
 					ProgressView(value: progress.fraction)
 						.tint(accentColor)
 					Text(
-						"\(ByteCountFormatter.string(fromByteCount: progress.downloadedBytes, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: progress.totalBytes, countStyle: .file))"
+						"\(DownloadProgressFormatting.byteCount(progress.downloadedBytes)) of \(DownloadProgressFormatting.byteCount(progress.totalBytes))"
 					)
 					.font(.caption.monospacedDigit())
 					.foregroundStyle(.secondary)

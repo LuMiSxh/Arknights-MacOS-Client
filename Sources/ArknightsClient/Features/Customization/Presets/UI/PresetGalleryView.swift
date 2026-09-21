@@ -13,6 +13,12 @@ struct PresetGalleryView: View {
 	@State private var selectedCategory: WallpaperCategory?
 	@State private var avatars: [PresetAvatar] = []
 	@State private var wallpapers: [PresetWallpaper] = []
+	@State private var searchResults = PresetGallerySearchResults.empty
+	@State private var catalogRevision = 0
+	@State private var avatarRevision = 0
+	@State private var catalogRequestID = 0
+	@State private var avatarRequestID = 0
+	@State private var catalogReady = false
 	@State private var isLoading = true
 	@State private var applyingItemID: String?
 	@State private var showsIconStylePreview = false
@@ -29,25 +35,6 @@ struct PresetGalleryView: View {
 	}
 	var body: some View {
 		let hasSearchQuery = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-		let filteredAvatars = PresetCatalogSearch.avatars(matching: searchText, in: avatars)
-		// Matching is category-independent, so one search covers the grid and every filter count.
-		let matchedWallpapers = PresetGallerySearch.wallpapers(
-			matching: searchText,
-			committedTags: committedTags,
-			category: nil,
-			in: wallpapers
-		)
-		let filteredWallpapers =
-			selectedCategory.map { category in
-				matchedWallpapers.filter { $0.category == category }
-			} ?? matchedWallpapers
-		let wallpaperCategoryCounts = Self.categoryCounts(in: matchedWallpapers)
-		let wallpaperTerms = PresetGallerySearch.suggestions(
-			matching: searchText,
-			committedTags: committedTags,
-			category: selectedCategory,
-			in: wallpapers
-		)
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {
 				PresetGalleryHeader(
@@ -70,8 +57,8 @@ struct PresetGalleryView: View {
 						WallpaperCategoryFilter(
 							selection: $selectedCategory,
 							accentColor: customization.accentColor,
-							counts: wallpaperCategoryCounts,
-							operatorCounts: operatorArtCounts(among: filteredWallpapers),
+							counts: searchResults.wallpaperCategoryCounts,
+							operatorCounts: searchResults.operatorCounts,
 							onSelectOperator: { tag in
 								if !committedTags.contains(tag) { committedTags.append(tag) }
 							}
@@ -83,8 +70,8 @@ struct PresetGalleryView: View {
 				PresetGallerySuggestions(
 					destination: destination,
 					accentColor: customization.accentColor,
-					avatars: hasSearchQuery ? filteredAvatars : [],
-					wallpaperTerms: hasSearchQuery ? wallpaperTerms : []
+					avatars: hasSearchQuery ? searchResults.filteredAvatars : [],
+					wallpaperTerms: hasSearchQuery ? searchResults.wallpaperTerms : []
 				) { selection in
 					searchText =
 						destination == .artwork
@@ -97,20 +84,20 @@ struct PresetGalleryView: View {
 						if isLoading {
 							PresetGalleryLoadingView(text: destination.loadingText)
 						} else if destination == .artwork {
-							if filteredWallpapers.isEmpty {
+							if searchResults.filteredWallpapers.isEmpty {
 								PresetGalleryEmptyView(
 									text: destination.emptyText, systemImage: "photo")
 							} else {
 								PresetWallpaperGrid(
 									catalog: catalog,
 									accentColor: customization.accentColor,
-									wallpapers: filteredWallpapers,
+									wallpapers: searchResults.filteredWallpapers,
 									applyingItemID: applyingItemID,
 									onSelect: applyWallpaper
 								)
 							}
 						} else {
-							if filteredAvatars.isEmpty {
+							if searchResults.filteredAvatars.isEmpty {
 								PresetGalleryEmptyView(
 									text: destination.emptyText, systemImage: "person.crop.square"
 								)
@@ -118,7 +105,7 @@ struct PresetGalleryView: View {
 								PresetAvatarGrid(
 									catalog: catalog,
 									accentColor: customization.accentColor,
-									avatars: filteredAvatars,
+									avatars: searchResults.filteredAvatars,
 									applyingItemID: applyingItemID,
 									onSelect: applyAvatar
 								)
@@ -155,69 +142,129 @@ struct PresetGalleryView: View {
 		.onExitCommand(perform: dismiss.callAsFunction)
 		.task(id: destination) {
 			isLoading = true
+			catalogReady = false
+			searchResults = .empty
+			catalogRequestID &+= 1
 			let taskDestination = destination
-			if destination == .artwork {
-				wallpapers = await catalog.fetchWallpapers()
-			} else {
-				avatars = await catalog.fetchAvatars()
+			let requestID = catalogRequestID
+			let requestedRevision = catalogRevision
+			do {
+				let fetchedWallpapers: [PresetWallpaper]
+				let fetchedAvatars: [PresetAvatar]
+				if destination == .artwork {
+					fetchedWallpapers = await catalog.fetchWallpapers()
+					fetchedAvatars = []
+				} else {
+					fetchedWallpapers = []
+					fetchedAvatars = await catalog.fetchAvatars()
+				}
+				try Task.checkCancellation()
+				guard
+					taskDestination == destination,
+					requestID == catalogRequestID,
+					requestedRevision == catalogRevision
+				else { return }
+
+				if destination == .artwork {
+					wallpapers = fetchedWallpapers
+				} else {
+					avatars = fetchedAvatars
+				}
+				catalogRevision &+= 1
+				catalogReady = true
+			} catch is CancellationError {
+				return
+			} catch {
+				guard
+					!Task.isCancelled,
+					taskDestination == destination,
+					requestID == catalogRequestID,
+					requestedRevision == catalogRevision
+				else { return }
+				if destination == .artwork {
+					wallpapers = []
+				} else {
+					avatars = []
+				}
+				catalogRevision &+= 1
+				catalogReady = true
 			}
-			guard !Task.isCancelled, taskDestination == destination else { return }
-			isLoading = false
 		}
 		// Fetched separately from the wallpapers above so the operator roster (needed only to
 		// identify operators among wallpaper tags for the filter's submenu) never delays the
 		// Artwork grid itself from appearing.
 		.task(id: destination) {
 			guard destination == .artwork else { return }
-			let fetchedAvatars = await catalog.fetchAvatars()
-			guard !Task.isCancelled, destination == .artwork else { return }
-			avatars = fetchedAvatars
+			let taskDestination = destination
+			avatarRequestID &+= 1
+			let requestID = avatarRequestID
+			let requestedRevision = avatarRevision
+			do {
+				let fetchedAvatars = await catalog.fetchAvatars()
+				try Task.checkCancellation()
+				guard
+					taskDestination == destination,
+					requestID == avatarRequestID,
+					requestedRevision == avatarRevision
+				else { return }
+				avatars = fetchedAvatars
+				avatarRevision &+= 1
+			} catch is CancellationError {
+				return
+			} catch {
+				return
+			}
+		}
+		.task(id: searchQuery) {
+			let query = searchQuery
+			guard query.catalogReady else { return }
+			let sourceAvatars = avatars
+			let sourceWallpapers = wallpapers
+			do {
+				let computed = try await PresetGallerySearch.results(
+					for: query.destination,
+					searchText: query.searchText,
+					committedTags: query.committedTags,
+					selectedCategory: query.selectedCategory,
+					avatars: sourceAvatars,
+					wallpapers: sourceWallpapers
+				)
+				try Task.checkCancellation()
+				guard
+					PresetGallerySearch.shouldPublishResults(
+						request: query,
+						currentQuery: searchQuery,
+						isCancelled: Task.isCancelled
+					)
+				else { return }
+				searchResults = computed
+				isLoading = false
+			} catch is CancellationError {
+				return
+			} catch {
+				guard
+					PresetGallerySearch.shouldPublishResults(
+						request: query,
+						currentQuery: searchQuery,
+						isCancelled: Task.isCancelled
+					)
+				else { return }
+				searchResults = .empty
+				isLoading = false
+			}
 		}
 	}
 
-	// How many wallpapers each category filter option would show for the current search text
-	// and committed tag pills, regardless of which category (if any) is currently selected —
-	// so switching categories is an informed choice rather than a guess. `nil` is the "All
-	// Types" option's own total.
-	private static func categoryCounts(in matches: [PresetWallpaper]) -> [WallpaperCategory?: Int] {
-		var counts: [WallpaperCategory?: Int] = [nil: matches.count]
-		for category in WallpaperCategory.allCases {
-			counts[category] = 0
-		}
-		for wallpaper in matches {
-			counts[wallpaper.category, default: 0] += 1
-		}
-		return counts
-	}
-
-	// Every operator identifiable among `visibleWallpapers`, with how many of them feature
-	// them — sorted most-featured first. A tag counts as an operator only if it matches a real
-	// operator's name from the character roster, so unrelated tags (locations, event names)
-	// never show up here.
-	private func operatorArtCounts(among visibleWallpapers: [PresetWallpaper]) -> [OperatorArtCount]
-	{
-		guard !avatars.isEmpty else { return [] }
-		let namesByNormalizedTag = Dictionary(
-			avatars.map { (WallpaperSearch.normalized($0.name), $0.name) },
-			uniquingKeysWith: { first, _ in first }
+	private var searchQuery: PresetGallerySearchQuery {
+		PresetGallerySearchQuery(
+			destination: destination,
+			searchText: searchText,
+			committedTags: committedTags,
+			selectedCategory: selectedCategory,
+			catalogRevision: catalogRevision,
+			avatarRevision: avatarRevision,
+			catalogReady: catalogReady
 		)
-		var counts: [String: Int] = [:]
-		for wallpaper in visibleWallpapers {
-			for tag in WallpaperTagCatalog.tags(for: wallpaper.id) {
-				guard namesByNormalizedTag[WallpaperSearch.normalized(tag)] != nil else { continue }
-				counts[tag, default: 0] += 1
-			}
-		}
-		return counts.compactMap { tag, count in
-			namesByNormalizedTag[WallpaperSearch.normalized(tag)].map {
-				OperatorArtCount(tag: tag, displayName: $0, count: count)
-			}
-		}
-		.sorted { lhs, rhs in
-			lhs.count != rhs.count
-				? lhs.count > rhs.count
-				: lhs.displayName.localizedStandardCompare(rhs.displayName) == .orderedAscending
-		}
 	}
 	private func applyAvatar(_ avatar: PresetAvatar) {
 		applyPreset(id: avatar.id, url: avatar.url) { data in

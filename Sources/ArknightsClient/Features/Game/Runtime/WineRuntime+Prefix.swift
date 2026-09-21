@@ -80,10 +80,17 @@ extension WineRuntime {
 	/// Whether the next launch would replay any prefix migration, so callers can
 	/// show a "Migrating" state instead of the generic launch status.
 	func hasPendingMigration(prefixDirectory: URL) throws -> Bool {
-		try !migrationPlan(prefixDirectory: prefixDirectory).pending.isEmpty
+		try !migrationPlanContext(prefixDirectory: prefixDirectory).plan.pending.isEmpty
 	}
 
-	private func migrationPlan(prefixDirectory: URL) throws -> RuntimeMigrationPlan {
+	private struct MigrationPlanContext {
+		let plan: RuntimeMigrationPlan
+		let persistedState: RuntimeMigrationState?
+		let dxmtPayload: URL
+		let dxmtCurrent: Bool
+	}
+
+	private func migrationPlanContext(prefixDirectory: URL) throws -> MigrationPlanContext {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
 		let hasSystemRegistry = fileManager.fileExists(atPath: systemRegistry.path)
@@ -101,18 +108,24 @@ extension WineRuntime {
 		}
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
+		let dxmtCurrent = Self.dxmtIsCurrent(
+			from: dxmtPayload,
+			in: prefixDirectory,
+			fileManager: fileManager
+		)
 		let invalidatedMigrations: Set<RuntimeMigration> =
-			Self.dxmtIsCurrent(
-				from: dxmtPayload,
-				in: prefixDirectory,
-				fileManager: fileManager
-			)
-			? [] : [.installDXMT]
-		return RuntimeMigrationPlan(
+			dxmtCurrent ? [] : [.installDXMT]
+		let plan = RuntimeMigrationPlan(
 			expectedRevision: revision,
 			installedState: installedState,
 			hasSystemRegistry: hasSystemRegistry,
 			invalidatedMigrations: invalidatedMigrations
+		)
+		return MigrationPlanContext(
+			plan: plan,
+			persistedState: persistedState,
+			dxmtPayload: dxmtPayload,
+			dxmtCurrent: dxmtCurrent
 		)
 	}
 
@@ -126,15 +139,11 @@ extension WineRuntime {
 	) async throws {
 		let fileManager = FileManager.default
 		let store = RuntimeMigrationStore(fileManager: fileManager)
-		let persistedState = try store.load(from: prefixDirectory)
-		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
-		let dxmtCurrent = Self.dxmtIsCurrent(
-			from: dxmtPayload,
-			in: prefixDirectory,
-			fileManager: fileManager
-		)
-		var plan = try migrationPlan(prefixDirectory: prefixDirectory)
+		let migrationContext = try migrationPlanContext(prefixDirectory: prefixDirectory)
+		let persistedState = migrationContext.persistedState
+		let dxmtPayload = migrationContext.dxmtPayload
+		let dxmtCurrent = migrationContext.dxmtCurrent
+		var plan = migrationContext.plan
 		if !plan.pending.isEmpty {
 			await log?.info(
 				"Prefix migration plan: \(plan.pending); runtimeRevision=\(revision); "

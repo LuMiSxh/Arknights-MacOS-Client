@@ -16,8 +16,8 @@ struct WineRegistryEntry {
 }
 
 extension WineRuntime {
-	/// Applies every entry with one `regedit.exe`, instead of a Windows process per `reg.exe
-	/// add`. The script lives inside the prefix because `regedit.exe` takes only Windows paths,
+	/// Applies every entry with one `regedit.exe`, instead of a Windows process per `reg.exe add`.
+	/// The script lives inside the prefix because `regedit.exe` takes only Windows paths,
 	/// and is removed afterwards.
 	func applyRegistryEntries(
 		_ entries: [WineRegistryEntry],

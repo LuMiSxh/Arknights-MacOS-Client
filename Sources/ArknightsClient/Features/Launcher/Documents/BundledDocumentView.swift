@@ -181,29 +181,52 @@ private struct DocumentLoadErrorView: View {
 
 struct MarkdownDocument: View {
 	let accentColor: Color
-	private let parsed: ParsedMarkdownDocument
+	private let initialDocument: ParsedMarkdownDocument?
+	private let source: String?
+	@State private var loadedDocument: ParsedMarkdownDocument?
 
 	init(source: String, accentColor: Color) {
-		self.init(parsed: ParsedMarkdownDocument(source: source), accentColor: accentColor)
+		self.accentColor = accentColor
+		initialDocument = nil
+		self.source = source
 	}
 
 	init(parsed: ParsedMarkdownDocument, accentColor: Color) {
 		self.accentColor = accentColor
-		self.parsed = parsed
+		initialDocument = parsed
+		source = nil
 	}
 
 	var body: some View {
-		LazyVStack(alignment: .leading, spacing: 10) {
-			ForEach(parsed.blocks.indices, id: \.self) { index in
-				MarkdownBlockView(
-					block: parsed.blocks[index],
-					accentColor: accentColor,
-					columnWidths: parsed.tableColumnWidths[index] ?? []
-				)
+		Group {
+			if let document = initialDocument ?? loadedDocument {
+				LazyVStack(alignment: .leading, spacing: 10) {
+					ForEach(document.blocks.indices, id: \.self) { index in
+						MarkdownBlockView(
+							block: document.blocks[index],
+							accentColor: accentColor,
+							columnWidths: document.tableColumnWidths[index] ?? []
+						)
+					}
+				}
+			} else {
+				ProgressView()
+					.controlSize(.small)
+					.frame(maxWidth: .infinity, minHeight: 80)
+					.accessibilityLabel(Text(LauncherStrings.documentLoading))
 			}
 		}
 		.tint(accentColor)
 		.pointerStyle(.default)
+		.task(id: source) {
+			guard let source else { return }
+			loadedDocument = nil
+			let document = await Task.detached(priority: .utility) {
+				ParsedMarkdownDocument(source: source)
+			}.value
+			guard !Task.isCancelled else { return }
+			loadedDocument = document
+		}
 	}
 }
 
