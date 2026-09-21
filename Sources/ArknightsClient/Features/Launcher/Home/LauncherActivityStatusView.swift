@@ -100,44 +100,104 @@ struct LauncherActivityStatusView: View {
 	let requestRosettaInstallation: () -> Void
 	let retryIntelTranslationCheck: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var completionFeedback: InstallationCompletionFeedback?
 
-	@ViewBuilder
 	var body: some View {
-		if showsDownloadSnapshot {
-			VStack(alignment: .leading, spacing: 4) {
-				ViewThatFits(in: .horizontal) {
-					HStack(alignment: .firstTextBaseline, spacing: 10) {
-						percentageLabel
-						downloadProgressDetail
-						transferDetails
-					}
-					VStack(alignment: .leading, spacing: 3) {
-						percentageLabel
-						HStack(alignment: .firstTextBaseline, spacing: 8) {
+		Group {
+			if let completionFeedback, showsCompletionFeedback {
+				HStack(spacing: 6) {
+					LauncherCompletionFeedbackView(feedbackID: completionFeedback.id)
+					Text(HomeStrings.installationComplete)
+				}
+				.font(.system(size: 14, weight: .semibold))
+				.accessibilityElement(children: .combine)
+				.accessibilityLabel(Text(HomeStrings.installationComplete))
+			} else if showsDownloadSnapshot {
+				VStack(alignment: .leading, spacing: 4) {
+					ViewThatFits(in: .horizontal) {
+						HStack(alignment: .firstTextBaseline, spacing: 10) {
+							percentageLabel
 							downloadProgressDetail
 							transferDetails
 						}
+						VStack(alignment: .leading, spacing: 3) {
+							percentageLabel
+							HStack(alignment: .firstTextBaseline, spacing: 8) {
+								downloadProgressDetail
+								transferDetails
+							}
+						}
+					}
+				}
+				.accessibilityElement(children: .ignore)
+				.accessibilityLabel(Text(statusTitle))
+				.accessibilityValue(Text(accessibilityProgressValue))
+			} else {
+				VStack(alignment: .leading, spacing: 2) {
+					Text(statusTitle)
+						.font(.system(size: 14, weight: .semibold))
+						.contentTransition(.opacity)
+					if let detail = statusDetail {
+						Text(detail)
+							.font(.caption)
+							.foregroundStyle(.secondary)
+							.lineLimit(1)
+						transferDetails
+						statusAction
 					}
 				}
 			}
-			.accessibilityElement(children: .ignore)
-			.accessibilityLabel(Text(statusTitle))
-			.accessibilityValue(Text(accessibilityProgressValue))
-		} else {
-			VStack(alignment: .leading, spacing: 2) {
-				Text(statusTitle)
-					.font(.system(size: 14, weight: .semibold))
-					.contentTransition(.opacity)
-				if let detail = statusDetail {
-					Text(detail)
-						.font(.caption)
-						.foregroundStyle(.secondary)
-						.lineLimit(1)
-					transferDetails
-					statusAction
-				}
-			}
 		}
+		.onAppear(perform: consumeCompletionFeedback)
+		.onChange(of: installation.completionFeedback?.id) { _, _ in
+			consumeCompletionFeedback()
+		}
+		.onChange(of: lifecycle.failure?.id) { _, failureID in
+			if failureID != nil { completionFeedback = nil }
+		}
+		.onChange(of: lifecycle.activity) { _, activity in
+			if activity != .idle { completionFeedback = nil }
+		}
+		.onChange(of: installation.region) { _, region in
+			if completionFeedback?.region != region { completionFeedback = nil }
+		}
+		.task(id: completionFeedback?.id) {
+			guard let displayedFeedback = completionFeedback else { return }
+			if reduceMotion {
+				completionFeedback = nil
+				return
+			}
+			do {
+				try await Task.sleep(for: LauncherVisuals.Motion.completionFeedback)
+			} catch {
+				return
+			}
+			guard !Task.isCancelled,
+				completionFeedback == displayedFeedback,
+				displayedFeedback.region == installation.region,
+				lifecycle.activity == .idle,
+				lifecycle.failure == nil
+			else {
+				completionFeedback = nil
+				return
+			}
+			completionFeedback = nil
+			consumeCompletionFeedback()
+		}
+	}
+
+	private var showsCompletionFeedback: Bool {
+		LauncherCompletionFeedbackPresentation.isVisible(
+			completionFeedback,
+			currentRegion: installation.region,
+			activity: lifecycle.activity,
+			hasFailure: lifecycle.failure != nil
+		)
+	}
+
+	private func consumeCompletionFeedback() {
+		guard completionFeedback == nil else { return }
+		completionFeedback = installation.consumeCompletionFeedback(for: installation.region)
 	}
 
 	@ViewBuilder

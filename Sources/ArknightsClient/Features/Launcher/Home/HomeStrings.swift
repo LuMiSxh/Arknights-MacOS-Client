@@ -17,6 +17,7 @@ enum HomeStrings {
 	static let repairConfirmationAction = "Start Repair"
 	static let checkAgain = "Check Again"
 	static let needsAttention = "Needs attention"
+	static let installationComplete = "Installation complete"
 	static let actionStop = "Stop"
 	static let actionStopHelp = "Stop Arknights and its Windows runtime"
 	static let actionPause = "Pause"

@@ -51,6 +51,11 @@ enum CapsuleActionPresentation {
 	case hud
 }
 
+enum CapsuleActionLabelMotion: Equatable {
+	case none
+	case primary
+}
+
 /// A text action whose visible capsule and interactive label always share the same bounds.
 struct CapsuleActionButton: View {
 	let title: String
@@ -59,11 +64,13 @@ struct CapsuleActionButton: View {
 	var presentation = CapsuleActionPresentation.standard
 	var role: ButtonRole?
 	var showsTitle = true
+	var labelMotion = CapsuleActionLabelMotion.none
 	let action: () -> Void
 
 	@Environment(\.controlSize) private var controlSize
 	@Environment(\.isEnabled) private var isEnabled
 	@Environment(\.colorSchemeContrast) private var contrast
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	init(
 		title: String,
@@ -72,6 +79,7 @@ struct CapsuleActionButton: View {
 		presentation: CapsuleActionPresentation = .standard,
 		role: ButtonRole? = nil,
 		showsTitle: Bool = true,
+		labelMotion: CapsuleActionLabelMotion = .none,
 		action: @escaping () -> Void
 	) {
 		self.title = title
@@ -80,6 +88,7 @@ struct CapsuleActionButton: View {
 		self.presentation = presentation
 		self.role = role
 		self.showsTitle = showsTitle
+		self.labelMotion = labelMotion
 		self.action = action
 	}
 
@@ -88,10 +97,14 @@ struct CapsuleActionButton: View {
 			HStack(spacing: 6) {
 				if let systemImage {
 					Image(systemName: systemImage)
+						.contentTransition(labelContentTransition)
+						.animation(labelAnimation, value: systemImage)
 						.accessibilityHidden(true)
 				}
 				if showsTitle {
 					Text(title)
+						.contentTransition(titleContentTransition)
+						.animation(labelAnimation, value: title)
 				}
 			}
 			.accessibilityLabel(title)
@@ -108,6 +121,20 @@ struct CapsuleActionButton: View {
 		}
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())
+	}
+
+	private var labelContentTransition: ContentTransition {
+		guard labelMotion == .primary else { return .identity }
+		return reduceMotion ? .opacity : .symbolEffect(.replace)
+	}
+
+	private var labelAnimation: Animation? {
+		guard labelMotion == .primary, !reduceMotion else { return nil }
+		return .easeInOut(duration: LauncherVisuals.Motion.primaryAction)
+	}
+
+	private var titleContentTransition: ContentTransition {
+		labelMotion == .primary ? .opacity : .identity
 	}
 
 	private var foregroundTint: Color {

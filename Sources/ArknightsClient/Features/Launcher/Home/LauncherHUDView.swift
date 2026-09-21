@@ -86,7 +86,9 @@ struct LauncherHUDView: View {
 					stopGame: actions.stopGame
 				)
 				.disabled(lifecycle.failure?.blocksGameLaunch == true)
-				.transition(primaryActionTransition)
+				.transaction { transaction in
+					transaction.animation = nil
+				}
 			}
 		}
 		.padding(16)
@@ -106,7 +108,6 @@ struct LauncherHUDView: View {
 			progressTint: accentColor
 		)
 		.animation(stateAnimation, value: installation.isDownloading)
-		.animation(stateAnimation, value: primaryActionIdentity)
 		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
 		.animation(stateAnimation, value: lifecycle.failure?.id)
 	}
@@ -175,17 +176,6 @@ struct LauncherHUDView: View {
 
 	private var hasStatusPill: Bool {
 		settings.resetCountdownText != nil
-	}
-
-	private var primaryActionIdentity: String {
-		if gameSession.isGameActive { return "stop" }
-		if installation.isDownloading { return "pause" }
-		if !installation.isInstalled {
-			return installation.hasPartialDownload ? "resume" : "install"
-		}
-		if installation.hasPartialDownload { return "resume" }
-		if installation.isGameUpdateAvailable { return "update" }
-		return "play"
 	}
 
 	private var versionText: String {

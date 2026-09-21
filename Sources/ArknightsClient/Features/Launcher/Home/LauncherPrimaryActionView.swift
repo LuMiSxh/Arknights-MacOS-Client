@@ -17,6 +17,7 @@ struct LauncherPrimaryActionView: View {
 			title: actionTitle,
 			systemImage: actionImage,
 			tone: actionTone,
+			labelMotion: .primary,
 			action: action
 		)
 		.controlSize(.large)

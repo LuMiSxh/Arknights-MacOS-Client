@@ -7,9 +7,12 @@ struct OverflowingMusicTitle: View {
 	let title: String
 
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
 	@State private var availableWidth: Double = 0
 	@State private var textWidth: Double = 0
-	@State private var isScrolling = false
+	@State private var motionClock = DecorativeMotionClock()
+	@State private var isScrollingReady = false
+	@State private var scrollCycleDuration = 1.0
 
 	var body: some View {
 		if reduceMotion {
@@ -23,17 +26,18 @@ struct OverflowingMusicTitle: View {
 					.fixedSize(horizontal: true, vertical: false)
 
 				GeometryReader { _ in
-					HStack(spacing: AppConstants.Music.titleScrollGap) {
-						Text(title)
-						Text(title)
+					if decorativeMotionEnabled && isScrollingReady {
+						TimelineView(.animation(minimumInterval: 1 / 30)) { context in
+							marqueeContent(
+								phase: motionClock.phase(
+									at: context.date,
+									cycleDuration: scrollCycleDuration
+								)
+							)
+						}
+					} else {
+						marqueeContent(phase: motionClock.pausedPhase)
 					}
-					.lineLimit(1)
-					.fixedSize(horizontal: true, vertical: false)
-					.offset(
-						x: isScrolling
-							? -(textWidth + AppConstants.Music.titleScrollGap)
-							: 0
-					)
 				}
 				.background {
 					Text(title)
@@ -53,23 +57,52 @@ struct OverflowingMusicTitle: View {
 				}
 				.clipped()
 				.task(id: animationID) {
-					isScrolling = false
+					isScrollingReady = false
+					motionClock = DecorativeMotionClock()
 					guard textWidth > availableWidth else { return }
 					try? await Task.sleep(for: AppConstants.Music.titleScrollDelay)
 					guard !Task.isCancelled else { return }
-					let duration = max(
+					scrollCycleDuration = max(
 						AppConstants.Music.titleScrollMinimumDuration,
 						(textWidth + AppConstants.Music.titleScrollGap)
 							/ AppConstants.Music.titleScrollSpeed
 					)
-					withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
-						isScrolling = true
+					isScrollingReady = true
+					if decorativeMotionEnabled {
+						motionClock.begin(at: .now, cycleDuration: scrollCycleDuration)
+					} else {
+						motionClock.pause(at: .now, cycleDuration: scrollCycleDuration)
+					}
+				}
+				.onAppear {
+					if decorativeMotionEnabled {
+						motionClock.begin(at: .now, cycleDuration: scrollCycleDuration)
+					}
+				}
+				.onChange(of: decorativeMotionEnabled) { _, isEnabled in
+					guard isScrollingReady else { return }
+					if isEnabled {
+						motionClock.resume(at: .now, cycleDuration: scrollCycleDuration)
+					} else {
+						motionClock.pause(at: .now, cycleDuration: scrollCycleDuration)
 					}
 				}
 				.accessibilityElement(children: .ignore)
 				.accessibilityLabel(title)
 			}
 		}
+	}
+
+	private func marqueeContent(phase: Double) -> some View {
+		HStack(spacing: AppConstants.Music.titleScrollGap) {
+			Text(title)
+			Text(title)
+		}
+		.lineLimit(1)
+		.fixedSize(horizontal: true, vertical: false)
+		.offset(
+			x: -(textWidth + AppConstants.Music.titleScrollGap) * phase
+		)
 	}
 
 	private var animationID: String {

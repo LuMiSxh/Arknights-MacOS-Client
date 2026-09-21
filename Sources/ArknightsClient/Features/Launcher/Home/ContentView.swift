@@ -14,6 +14,7 @@ struct ContentView: View {
 	@State var repairFailureID: UUID?
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
+	@State private var decorativeMotionVisibility = DecorativeMotionVisibility()
 
 	init(
 		model: LauncherViewModel,
@@ -82,7 +83,13 @@ struct ContentView: View {
 				)
 			}
 		}
+		.disabled(updateOverlayIsPresented)
+		.allowsHitTesting(!updateOverlayIsPresented)
+		.accessibilityHidden(updateOverlayIsPresented)
 		.background(Color.black)
+		.background {
+			WindowVisibilityReader(visibility: decorativeMotionVisibility)
+		}
 		.preferredColorScheme(.dark)
 		.animation(themeAnimation, value: model.customization.dynamicThemeHue)
 		.onChange(of: developerAccessibilityMusicTitle) { _, title in
@@ -113,17 +120,13 @@ struct ContentView: View {
 		}
 		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) { sheetContent(for: $0) }
 		.overlay {
-			if presentation.current == .update,
-				model.communication.launcherUpdateUserDriver.isPresented
-			{
-				ZStack {
-					(reduceTransparency ? Color.black : Color.black.opacity(0.55)).ignoresSafeArea()
-					LauncherUpdateView(
-						driver: model.communication.launcherUpdateUserDriver,
-						accentColor: model.customization.accentColor,
-						hudTintColor: model.customization.hudTintColor,
-						checkForUpdates: model.openLauncherUpdate)
-				}
+			if updateOverlayIsPresented {
+				LauncherUpdateOverlay(
+					driver: model.communication.launcherUpdateUserDriver,
+					accentColor: model.customization.accentColor,
+					hudTintColor: model.customization.hudTintColor,
+					reduceTransparency: reduceTransparency,
+					checkForUpdates: model.openLauncherUpdate)
 			}
 		}
 		.confirmsRosettaInstallation(
@@ -176,6 +179,8 @@ struct ContentView: View {
 				Color.black.ignoresSafeArea()
 			}
 		}
+		// Keep this last so every sheet and overlay inherits the visibility gate.
+		.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
 	}
 
 	private var sheetPresentation: Binding<LauncherPresentationDestination?> {
@@ -208,6 +213,11 @@ struct ContentView: View {
 	}
 	private var onboardingIsPresentable: Bool {
 		onboarding.isPresented && presentation.current == nil && model.communication.popup == nil
+	}
+	private var updateOverlayIsPresented: Bool {
+		LauncherUpdateOverlayPresentation.isPresented(
+			destination: presentation.current,
+			driverIsPresented: model.communication.launcherUpdateUserDriver.isPresented)
 	}
 
 	@ViewBuilder

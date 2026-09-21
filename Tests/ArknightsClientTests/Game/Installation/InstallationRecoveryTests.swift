@@ -8,6 +8,111 @@ import Testing
 @MainActor
 struct InstallationRecoveryTests {
 	@Test
+	func successfulInstallationPublishesOneCompletionFeedback() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+
+		let feedback = fixture.controller.completionFeedback
+		#expect(feedback?.region == .global)
+		#expect(fixture.controller.lifecycle.presentation.status == .ready)
+		#expect(
+			fixture.controller.consumeCompletionFeedback(for: .global)?.id == feedback?.id
+		)
+		#expect(fixture.controller.consumeCompletionFeedback(for: .global) == nil)
+	}
+
+	@Test
+	func reachingOneHundredPercentWithoutSuccessfulCompletionDoesNotPublishFeedback() {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.progress = DownloadProgress(
+			downloadedBytes: 100,
+			totalBytes: 100,
+			completedFiles: 1,
+			totalFiles: 1,
+			currentFile: "game.zip"
+		)
+
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
+	func cancelledInstallationDoesNotPublishCompletionFeedback() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+
+		fixture.controller.cancelDownload()
+		await fixture.installer.waitForCancellationRequest()
+		#expect(await waitForCondition { !fixture.controller.isDownloading })
+
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
+	func changingRegionClearsPendingCompletionFeedback() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+		#expect(fixture.controller.completionFeedback != nil)
+
+		#expect(fixture.controller.selectRegion(.japan))
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
+	func consumedCompletionFeedbackDisappearsAfterRegionSwitch() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+
+		let displayedFeedback = fixture.controller.consumeCompletionFeedback(for: .global)
+		#expect(
+			LauncherCompletionFeedbackPresentation.isVisible(
+				displayedFeedback,
+				currentRegion: .global,
+				activity: .idle,
+				hasFailure: false
+			)
+		)
+		#expect(fixture.controller.selectRegion(.japan))
+		#expect(
+			!LauncherCompletionFeedbackPresentation.isVisible(
+				displayedFeedback,
+				currentRegion: fixture.controller.region,
+				activity: .idle,
+				hasFailure: false
+			)
+		)
+	}
+
+	@Test
+	func staleCompletionCannotBeConsumedForAnotherRegion() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+
+		#expect(fixture.controller.consumeCompletionFeedback(for: .japan) == nil)
+		#expect(fixture.controller.completionFeedback != nil)
+	}
+
+	@Test
+	func staleOperationCannotPublishCompletionFeedback() {
+		let fixture = makeInstallationFixture(region: .global)
+
+		#expect(!fixture.controller.finishInstallation(UUID()))
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
 	func regionSelectionUsesIndependentCanaryPermissions() {
 		let fixture = makeInstallationFixture(region: .global)
 		fixture.preferences.setCanaryFeaturesEnabled(true)

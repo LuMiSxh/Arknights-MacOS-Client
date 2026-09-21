@@ -13,6 +13,7 @@ final class InstallationController {
 	var region: GameRegion
 	var installDirectory: URL
 	var progress: DownloadProgress?
+	private(set) var completionFeedback: InstallationCompletionFeedback?
 	private(set) var installedRegions: [GameRegion] = []
 	@ObservationIgnored var progressSequence: UInt64 = 0
 
@@ -105,6 +106,7 @@ final class InstallationController {
 						|| preferences.taiwanClientEnabled()))
 		else { return false }
 		cancelInstalledStateRefresh()
+		completionFeedback = nil
 		lifecycle.clearFailure()
 		region = newRegion
 		preferences.setSelectedRegion(newRegion)
@@ -221,6 +223,21 @@ final class InstallationController {
 
 	func waitForCurrentInstallation() async {
 		await installationTask?.value
+	}
+
+	func consumeCompletionFeedback(for region: GameRegion) -> InstallationCompletionFeedback? {
+		guard let completionFeedback, completionFeedback.region == region else { return nil }
+		self.completionFeedback = nil
+		return completionFeedback
+	}
+
+	func clearCompletionFeedback() {
+		completionFeedback = nil
+	}
+
+	func publishCompletionFeedback(for operationID: UUID, region: GameRegion) {
+		guard self.region == region else { return }
+		completionFeedback = InstallationCompletionFeedback(id: operationID, region: region)
 	}
 
 	private func ownsStateRefresh(

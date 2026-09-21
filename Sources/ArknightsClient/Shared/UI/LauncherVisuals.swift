@@ -80,8 +80,10 @@ enum LauncherVisuals {
 
 	enum Motion {
 		static let control = 0.12
+		static let primaryAction = 0.18
 		static let selection = 0.16
 		static let page = 0.22
+		static let completionFeedback: Duration = .milliseconds(400)
 		static let progressSweepFadeIn = 0.12
 		static let progressSweepTravel = 1.40
 		static let progressSweepFadeOut = 0.25

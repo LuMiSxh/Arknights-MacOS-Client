@@ -8,7 +8,6 @@ struct LauncherUpdateView: View {
 	let accentColor: Color
 	let hudTintColor: Color
 	let checkForUpdates: () -> Void
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var contentHeight: CGFloat = 0
 
 	var body: some View {
@@ -40,10 +39,6 @@ struct LauncherUpdateView: View {
 				.keyboardShortcut(.cancelAction)
 				.hidden()
 		}
-		.animation(
-			reduceMotion ? nil : .easeInOut(duration: 0.18),
-			value: driver.phase
-		)
 	}
 
 	private var statusHeader: some View {
