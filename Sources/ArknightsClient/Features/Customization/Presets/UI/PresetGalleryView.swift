@@ -251,6 +251,7 @@ struct PresetGalleryView: View {
 				else { return }
 				searchResults = .empty
 				isLoading = false
+				lifecycle.show(error, context: "Preset gallery search")
 			}
 		}
 	}

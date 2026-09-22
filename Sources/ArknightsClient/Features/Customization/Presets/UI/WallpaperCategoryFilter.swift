@@ -18,7 +18,7 @@ struct WallpaperCategoryFilter: View {
 		GlassMenuPicker(
 			selection: $selection,
 			options: options,
-			accentColor: selection == nil ? LauncherVisuals.controlTint : accentColor,
+			accentColor: accentColor,
 			listTitle: { category in
 
 				CustomizationStrings.wallpaperFilterOption(

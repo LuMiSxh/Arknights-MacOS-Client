@@ -94,7 +94,7 @@ private struct PresetGallerySuggestionChip: View {
 				disabledTint: .secondary
 			)
 			.adaptiveControlSurface(
-				tint: isFocused ? accentColor : LauncherVisuals.controlTint,
+				tint: LauncherVisuals.controlTint,
 				in: Capsule()
 			)
 		}

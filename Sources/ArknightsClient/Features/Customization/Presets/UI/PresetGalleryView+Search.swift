@@ -64,10 +64,11 @@ struct PresetGallerySearchBar: View {
 		.padding(.horizontal, 10)
 		.padding(.vertical, 7)
 		.adaptiveControlSurface(
-			tint: isFocused || !committedTags.isEmpty ? accentColor : LauncherVisuals.controlTint,
+			tint: accentColor,
+			borderOpacity: isFocused ? 0.62 : nil,
 			in: Capsule()
 		)
-		.keyboardFocusIndicator(isFocused: isFocused, in: Capsule())
+		.focusEffectDisabled(true)
 		.onChange(of: searchText) { _, _ in promoteTrailingTag() }
 	}
 
@@ -83,14 +84,14 @@ struct PresetGallerySearchBar: View {
 					.font(.system(size: 10, weight: .bold))
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
-			.adaptiveControlForeground(accentColor, disabledTint: accentColor.opacity(0.44))
+			.adaptiveControlForeground(.secondary, disabledTint: .secondary.opacity(0.44))
 			.padding(.leading, 8)
 			.padding(.trailing, 4)
 			.padding(.vertical, 3)
 			.contentShape(Capsule())
 		}
 		.buttonStyle(.plain)
-		.adaptiveControlSurface(tint: accentColor, in: Capsule())
+		.adaptiveControlSurface(tint: LauncherVisuals.controlTint, in: Capsule())
 		.keyboardFocusIndicator(in: Capsule())
 		.frame(height: Self.contentHeight)
 		.accessibilityLabel(CustomizationStrings.searchRemoveTag(tag))
