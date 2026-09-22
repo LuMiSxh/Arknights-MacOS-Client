@@ -10,11 +10,11 @@ from lib.common import output, run
 from lib.project_config import ProjectConfiguration
 
 
-def active_macos_sdk() -> tuple[str, str]:
-    """Return the active macOS SDK path and version supplied by Xcode."""
+def active_macos_sdk(sdk_name: str = "macosx") -> tuple[str, str]:
+    """Return the requested macOS SDK path and version supplied by Xcode."""
     return (
-        output(["xcrun", "--sdk", "macosx", "--show-sdk-path"]),
-        output(["xcrun", "--sdk", "macosx", "--show-sdk-version"]),
+        output(["xcrun", "--sdk", sdk_name, "--show-sdk-path"]),
+        output(["xcrun", "--sdk", sdk_name, "--show-sdk-version"]),
     )
 
 
@@ -23,10 +23,19 @@ def swift_build_command(
     build_configuration: str,
     sdk_version: str,
     *,
+    sdk_name: str = "macosx",
     show_bin_path: bool = False,
 ) -> tuple[str, ...]:
-    """Build with the package minimum and active SDK as distinct platform versions."""
-    arguments = ["swift", "build", "--configuration", build_configuration]
+    """Build with the package minimum and selected SDK as distinct platform versions."""
+    arguments = [
+        "xcrun",
+        "--sdk",
+        sdk_name,
+        "swift",
+        "build",
+        "--configuration",
+        build_configuration,
+    ]
     for architecture in project_configuration.product.architecture_priority:
         arguments.extend(("--arch", architecture))
     arguments.extend(
@@ -57,16 +66,18 @@ def run_swift_build(
     project_configuration: ProjectConfiguration,
     build_configuration: str,
     *,
+    sdk_name: str = "macosx",
     show_bin_path: bool = False,
     capture: bool = False,
 ):
-    """Build a SwiftPM product using the active SDK and return the process result."""
-    sdk_path, sdk_version = active_macos_sdk()
+    """Build a SwiftPM product using the selected SDK and return the process result."""
+    sdk_path, sdk_version = active_macos_sdk(sdk_name)
     return run(
         swift_build_command(
             project_configuration,
             build_configuration,
             sdk_version,
+            sdk_name=sdk_name,
             show_bin_path=show_bin_path,
         ),
         cwd=project_configuration.project_directory,
