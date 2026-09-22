@@ -40,6 +40,19 @@ decision.
 | GStreamer     | 1.26.3, including base, good, bad, and libav plugins          | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer commit](https://github.com/GStreamer/gstreamer/tree/87bc0c6e949e3dcc440658f78ef52aa8088cb62f)               |
 | FFmpeg        | 7.1.1, `db69d06eeeab4f46da15030a80d539efb4503ca8`             | GPL-3.0-or-later for the bundled configuration                                                      | [FFmpeg commit](https://github.com/FFmpeg/FFmpeg/tree/db69d06eeeab4f46da15030a80d539efb4503ca8)                        |
 
+## Runtime build provenance
+
+The v0.6.0 runtime was built from the release commit and exact inputs below. The base archive and
+Nixpkgs revision are build inputs rather than independently selected runtime components, but they
+remain part of the release's corresponding-source record.
+
+| Build input             | Version or revision                                                                        | Exact provenance source                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Runtime build           | Arknights macOS Runtime v0.6.0, `8f4dcc3524e21b5baf98af2bfa6e9a86f611cad4`                 | [Runtime commit](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/8f4dcc3524e21b5baf98af2bfa6e9a86f611cad4) |
+| Whisky base libraries   | v4.6.8, `19b9d7942b8cfd4871eee2a8f81abc7c849307c7858873f9b504c24c1bb6b25d` archive SHA-256 | [Whisky v4.6.8 release](https://github.com/dappermint/Whisky/releases/tag/v4.6.8)                                  |
+| WineCX GPTK base recipe | `f374f5bae40631a466c03c59180ca34605091efd`                                                 | [winecx-gptk commit](https://github.com/dappermint/winecx-gptk/tree/f374f5bae40631a466c03c59180ca34605091efd)      |
+| Nixpkgs                 | `ac62194c3917d5f474c1a844b6fd6da2db95077d`                                                 | [Nixpkgs commit](https://github.com/NixOS/nixpkgs/tree/ac62194c3917d5f474c1a844b6fd6da2db95077d)                   |
+
 > [!IMPORTANT]
 > The runtime also contains dynamically linked libraries for media, text, networking, compression, and X11 compatibility. Notable media dependencies include x264, x265, FDK-AAC, FAAD2, libdvdcss, libdvdnav, libdvdread, OpenH264, libde265, libaom, dav1d, SVT-AV1, libvpx, LAME, OpenMPT, FLAC, Vorbis, Opus, Theora, Speex, and libsndfile. Their own licenses and patent terms continue to apply.
 
