@@ -57,15 +57,17 @@ struct StorageOverviewPage: View {
 					CapsuleActionButton(
 						title: copy.clearCaches,
 						systemImage: "trash",
-						tone: .accent(accentColor),
+						tone: .danger,
 						presentation: .compact,
+						role: .destructive,
 						action: actions.clearGameCaches
 					)
 					CapsuleActionButton(
 						title: copy.clearGalleryCache,
 						systemImage: "trash",
-						tone: .accent(accentColor),
+						tone: .danger,
 						presentation: .compact,
+						role: .destructive,
 						action: actions.clearGalleryCache
 					)
 				}
@@ -126,7 +128,7 @@ struct StorageOverviewPage: View {
 					CapsuleActionButton(
 						title: copy.showLogs,
 						systemImage: "doc.text.magnifyingglass",
-						tone: .accent(accentColor),
+						tone: .neutral,
 						presentation: .compact,
 						action: action
 					)

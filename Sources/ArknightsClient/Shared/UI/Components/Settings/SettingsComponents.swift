@@ -61,7 +61,6 @@ struct SettingsPage<Content: View>: View {
 				}
 				.padding(.horizontal, LauncherVisuals.Spacing.page)
 				.padding(.top, LauncherVisuals.Spacing.page)
-				.padding(.bottom, 72)
 				.environment(\.settingsFocusCoordinator, focusCoordinator)
 			}
 			.contentMargins(.top, LauncherVisuals.Spacing.page, for: .scrollIndicators)
@@ -97,6 +96,8 @@ struct SettingsPanel<Content: View>: View {
 	var tone: SettingsPanelTone = .neutral
 	@ViewBuilder let content: Content
 	@Environment(\.colorSchemeContrast) private var contrast
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@Environment(\.accessibilityShowBorders) private var showBorders
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
@@ -110,14 +111,26 @@ struct SettingsPanel<Content: View>: View {
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.adaptiveGlassEffect(
 			tint: nil,
+			borderTint: tone.color(for: contrast),
 			in: .rect(cornerRadius: LauncherVisuals.Radius.panel),
 			showsBorder: false
 		)
 		.overlay {
-			RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
-				.strokeBorder(tone.border, lineWidth: LauncherVisuals.Control.borderWidth)
-				.allowsHitTesting(false)
+			if ownsPanelEdge {
+				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+					.strokeBorder(
+						tone.border(for: contrast), lineWidth: LauncherVisuals.Control.borderWidth
+					)
+					.allowsHitTesting(false)
+			}
 		}
+	}
+
+	private var ownsPanelEdge: Bool {
+		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
+			reduceTransparency: reduceTransparency,
+			showBorders: showBorders
+		)
 	}
 }
 
@@ -128,7 +141,7 @@ enum SettingsPanelTone {
 	case danger
 
 	var color: Color {
-		switch self {
+		return switch self {
 		case .neutral: .primary
 		case .success: LauncherVisuals.success
 		case .warning: LauncherVisuals.warning
@@ -143,12 +156,16 @@ enum SettingsPanelTone {
 		return color
 	}
 
-	var border: Color {
-		switch self {
+	func border(for contrast: ColorSchemeContrast) -> Color {
+		let opacity =
+			contrast == .increased
+			? LauncherVisuals.Control.semanticBorderHighContrastOpacity
+			: LauncherVisuals.Control.semanticBorderOpacity
+		return switch self {
 		case .neutral: LauncherVisuals.panelBorder
-		case .success: LauncherVisuals.success.opacity(0.35)
-		case .warning: LauncherVisuals.warning.opacity(0.28)
-		case .danger: LauncherVisuals.danger.opacity(0.32)
+		case .success: LauncherVisuals.success.opacity(opacity)
+		case .warning: LauncherVisuals.warning.opacity(opacity)
+		case .danger: LauncherVisuals.dangerForeground.opacity(opacity)
 		}
 	}
 }
@@ -208,15 +225,22 @@ struct SettingsActionRow<Actions: View>: View {
 				label
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.layoutPriority(1)
-				actions.fixedSize(horizontal: true, vertical: false)
+				actionGroup
 			}
 			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
 				label
 				HStack {
 					Spacer(minLength: 0)
-					actions.fixedSize(horizontal: true, vertical: false)
+					actionGroup
 				}
 			}
+		}
+	}
+
+	@ViewBuilder
+	private var actionGroup: some View {
+		HStack(spacing: LauncherVisuals.Spacing.control) {
+			actions.fixedSize(horizontal: true, vertical: false)
 		}
 	}
 

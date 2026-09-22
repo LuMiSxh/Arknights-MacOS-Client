@@ -68,6 +68,12 @@ enum LauncherVisuals {
 		static let disabledChromaticSurfaceOpacity = 0.035
 		static let enabledChromaticBorderOpacity = 0.40
 		static let disabledChromaticBorderOpacity = 0.14
+		static let semanticBorderOpacity = 0.28
+		static let semanticBorderHighContrastOpacity = 0.52
+		static let disabledForegroundOpacity = 0.44
+		static let disabledForegroundHighContrastOpacity = 0.52
+		static let disabledNeutralForegroundOpacity = 0.36
+		static let disabledNeutralForegroundHighContrastOpacity = 0.52
 		static let hudBorderOpacity = 0.65
 		static let hudHoverSurfaceOpacity = 0.06
 		static let hudDisabledSurfaceOpacity = 0.68
@@ -76,6 +82,18 @@ enum LauncherVisuals {
 		static let opaqueDisabledSurface = Color(red: 0.094, green: 0.098, blue: 0.114)
 		static let iconButtonSize: CGFloat = 36
 		static let iconButtonGlyphSize: CGFloat = 17
+
+		static func disabledForegroundOpacity(for contrast: ColorSchemeContrast) -> Double {
+			contrast == .increased
+				? disabledForegroundHighContrastOpacity
+				: disabledForegroundOpacity
+		}
+
+		static func disabledNeutralForegroundOpacity(for contrast: ColorSchemeContrast) -> Double {
+			contrast == .increased
+				? disabledNeutralForegroundHighContrastOpacity
+				: disabledNeutralForegroundOpacity
+		}
 	}
 
 	enum Motion {

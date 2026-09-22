@@ -5,7 +5,6 @@ import SwiftUI
 struct AudioSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
 	let accentColor: Color
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		SettingsPage(
@@ -49,6 +48,7 @@ struct AudioSettingsPage: View {
 							Image(systemName: "speaker.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
+								.accessibilityHidden(true)
 							SettingsSlider(
 								value: $settings.launcherMusicVolume,
 								range: 0...1,
@@ -68,6 +68,7 @@ struct AudioSettingsPage: View {
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
 								.foregroundStyle(.secondary)
+								.accessibilityHidden(true)
 							Text(
 
 								SettingsStrings.audioVolumePercent(
@@ -92,10 +93,6 @@ struct AudioSettingsPage: View {
 					}
 				}
 			}
-			.animation(
-				reduceMotion ? nil : .easeInOut(duration: 0.2),
-				value: settings.playsLauncherMusic
-			)
 		}
 	}
 }

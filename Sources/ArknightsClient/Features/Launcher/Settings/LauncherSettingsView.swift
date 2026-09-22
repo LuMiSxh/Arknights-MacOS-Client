@@ -136,28 +136,34 @@ struct LauncherSettingsView: View {
 				}
 				.id(selectedSection)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
-
-				FloatingActionFooterFade(height: 60)
-
-				FloatingActionBar(tint: customization.hudTintColor) {
-					if selectedSection == .storage {
-						CapsuleActionButton(
-							title: StorageStrings.refresh,
-							systemImage: "arrow.clockwise",
-							tone: .neutral,
-							action: storageOverview.refreshNow
-						)
-						.controlSize(.large)
-						.disabled(storageOverview.isMeasuring)
-					}
-					FloatingDoneButton(accentColor: customization.accentColor) {
-						dismiss()
+			}
+			.frame(maxWidth: .infinity, maxHeight: .infinity)
+			.safeAreaInset(edge: .bottom, spacing: 0) {
+				HStack {
+					Spacer(minLength: 0)
+					FloatingActionBar(tint: customization.hudTintColor) {
+						if selectedSection == .storage {
+							CapsuleActionButton(
+								title: StorageStrings.refresh,
+								systemImage: "arrow.clockwise",
+								tone: .neutral,
+								action: storageOverview.refreshNow
+							)
+							.controlSize(.large)
+							.disabled(storageOverview.isMeasuring)
+						}
+						FloatingDoneButton(accentColor: customization.accentColor) {
+							dismiss()
+						}
 					}
 				}
 				.padding(.trailing, 26)
+				.padding(.top, LauncherVisuals.Spacing.control)
 				.padding(.bottom, 18)
+				.background {
+					FloatingActionFooterFade(height: 94)
+				}
 			}
-			.frame(maxWidth: .infinity, maxHeight: .infinity)
 		}
 		.tint(customization.accentColor)
 		.background(

@@ -13,6 +13,7 @@ import SwiftUI
 		@State private var accentIntensity = LabAccentIntensity.standard
 		@State private var pickerSelection = LabPickerChoice.primary
 		@State private var segmentSelection = LabSegment.compact
+		@State private var sliderValue = 0.45
 		@State private var text = "Shared component input"
 		@FocusState private var focusedAction: Bool
 
@@ -32,6 +33,7 @@ import SwiftUI
 			) {
 				accentIntensityPanel
 				togglePanel
+				semanticPanel
 				actionPanel
 				inputPanel
 				iconPanel
@@ -97,6 +99,47 @@ import SwiftUI
 						.toggleStyle(.switch)
 						.controlSize(.small)
 						.tint(labAccent)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Disabled switch",
+					detail: "Native switches keep their platform geometry when unavailable."
+				) {
+					SettingsToggle("Disabled switch", isOn: $compactToggle, accentColor: labAccent)
+						.disabled(true)
+				}
+			}
+		}
+
+		@ViewBuilder
+		private var semanticPanel: some View {
+			SettingsPanel(
+				title: "Warning surface", systemImage: "exclamationmark.triangle", tone: .warning
+			) {
+				SettingsActionRow(
+					title: "Canary preview",
+					detail:
+						"Warning color stays on the header and edge while the panel remains neutral."
+				) {
+					SettingsToggle(
+						"Canary preview", isOn: $quietToggle, accentColor: LauncherVisuals.warning)
+				}
+			}
+
+			DangerZonePanel {
+				SettingsActionRow(
+					title: "Destructive preview",
+					detail:
+						"Danger actions retain semantic contrast without filling the whole panel."
+				) {
+					CapsuleActionButton(
+						title: "Delete…",
+						systemImage: "trash",
+						tone: .danger,
+						presentation: .compact,
+						role: .destructive,
+						action: {}
+					)
 				}
 			}
 		}
@@ -174,6 +217,61 @@ import SwiftUI
 					accentColor: labAccent
 				) { segment in
 					Text(segment.title)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Disabled menu",
+					detail: "The same neutral surface and contrast tokens apply when unavailable."
+				) {
+					GlassMenuPicker(
+						selection: $pickerSelection,
+						options: LabPickerChoice.allCases.map { ($0, $0.title) },
+						accentColor: labAccent,
+						isDisabled: true
+					)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Disabled segments",
+					detail: "Selection remains readable without relying on color alone."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $segmentSelection,
+						options: LabSegment.allCases,
+						accentColor: labAccent,
+						isDisabled: true
+					) { segment in
+						Text(segment.title)
+					}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Disabled slider",
+					detail: "The shared rail keeps its disabled contrast and focus behavior."
+				) {
+					SettingsSlider(
+						value: $sliderValue,
+						range: 0...1,
+						step: 0.05,
+						accentColor: labAccent,
+						width: 140
+					)
+					.disabled(true)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Disabled field",
+					detail: "The field shares the same neutral surface and focus ring policy."
+				) {
+					ThemedTextField(
+						"Disabled component input",
+						prompt: "Unavailable",
+						text: $text,
+						systemImage: "character.cursor.ibeam",
+						accentColor: labAccent
+					)
+					.frame(width: 220)
+					.disabled(true)
 				}
 				ThemedTextField(
 					"Component input",

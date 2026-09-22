@@ -77,6 +77,7 @@ private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
 				.allowsHitTesting(false)
 		}
 		.id(focusID)
+		.focusEffectDisabled(true)
 		.onChange(of: isFocused) { _, focused in
 			guard let settingsFocusCoordinator else { return }
 			if focused {

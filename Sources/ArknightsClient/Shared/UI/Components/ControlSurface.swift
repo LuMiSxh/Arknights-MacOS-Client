@@ -241,13 +241,16 @@ private struct AdaptiveControlForegroundModifier: ViewModifier {
 private struct SettingsControlCapsuleModifier: ViewModifier {
 	let tint: Color
 	let isDisabled: Bool
+	@Environment(\.colorSchemeContrast) private var contrast
 
 	func body(content: Content) -> some View {
 		content
 			.font(.caption.weight(.semibold))
 			.adaptiveControlForeground(
 				tint,
-				disabledTint: tint.opacity(0.44),
+				disabledTint: tint.opacity(
+					LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
+				),
 				isDisabled: isDisabled
 			)
 			.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)

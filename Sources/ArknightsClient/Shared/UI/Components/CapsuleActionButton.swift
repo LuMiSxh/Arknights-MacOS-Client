@@ -35,10 +35,13 @@ enum CapsuleActionTone {
 	}
 
 	func disabledColor(for contrast: ColorSchemeContrast) -> Color {
-		let opacity = contrast == .increased ? 0.52 : 0.44
+		let opacity = LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
 		switch self {
 		case .accent(let color): return color.opacity(opacity)
-		case .neutral: return Color.white.opacity(contrast == .increased ? 0.52 : 0.36)
+		case .neutral:
+			return Color.white.opacity(
+				LauncherVisuals.Control.disabledNeutralForegroundOpacity(for: contrast)
+			)
 		case .warning: return LauncherVisuals.warning.opacity(opacity)
 		case .danger: return LauncherVisuals.dangerForeground.opacity(opacity)
 		}

@@ -8,6 +8,7 @@ extension View {
 	@ViewBuilder
 	func adaptiveGlassEffect(
 		tint: Color? = nil,
+		borderTint: Color? = nil,
 		in shape: some Shape = Rectangle(),
 		showsBorder: Bool = false,
 		isInteractive: Bool = false
@@ -15,6 +16,7 @@ extension View {
 		modifier(
 			AdaptiveGlassEffectModifier(
 				tint: tint,
+				borderTint: borderTint,
 				shape: shape,
 				showsBorder: showsBorder,
 				isInteractive: isInteractive
@@ -32,6 +34,12 @@ extension View {
 		}
 	}
 
+}
+
+enum AdaptiveGlassBorderTintSource: Equatable {
+	case semanticEdge
+	case surface
+	case neutral
 }
 
 enum AdaptiveGlassSurfaceTreatment: Equatable {
@@ -65,10 +73,90 @@ enum AdaptiveGlassSurfaceTreatment: Equatable {
 	static func macOS27TintOpacity(for opacity: Double) -> Double {
 		max(macOS27MinimumTintOpacity, min(opacity, 1))
 	}
+
+	/// Returns whether a caller must draw its semantic edge outside the adaptive surface.
+	/// macOS 27 Glass owns the accessibility border; older fallbacks and the ordinary
+	/// presentation leave the semantic edge to the caller. Reduced transparency always
+	/// draws its own accessibility edge.
+	static func ownsExternalBorder(
+		reduceTransparency: Bool,
+		showBorders: Bool
+	) -> Bool {
+		borderOwner(
+			isMacOS27Available: isMacOS27Available,
+			isMacOS26Available: isMacOS26Available,
+			reduceTransparency: reduceTransparency,
+			showBorders: showBorders
+		) == .external
+	}
+
+	static func ownsExternalBorder(
+		isMacOS27Available: Bool,
+		reduceTransparency: Bool,
+		showBorders: Bool
+	) -> Bool {
+		borderOwner(
+			isMacOS27Available: isMacOS27Available,
+			isMacOS26Available: false,
+			reduceTransparency: reduceTransparency,
+			showBorders: showBorders
+		) == .external
+	}
+
+	static func borderOwner(
+		isMacOS27Available: Bool,
+		isMacOS26Available: Bool,
+		reduceTransparency: Bool,
+		showBorders: Bool
+	) -> AdaptiveGlassBorderOwner {
+		switch resolve(
+			isMacOS27Available: isMacOS27Available,
+			isMacOS26Available: isMacOS26Available,
+			reduceTransparency: reduceTransparency,
+			showBorders: showBorders,
+			hasTint: false
+		) {
+		case .reducedTransparency:
+			.adaptiveSurface
+		case .macOS27(let showBorders, _):
+			showBorders ? .adaptiveSurface : .external
+		case .macOS26, .material:
+			.external
+		}
+	}
+
+	static func borderTintSource(
+		hasSemanticEdgeTint: Bool,
+		hasSurfaceTint: Bool
+	) -> AdaptiveGlassBorderTintSource {
+		if hasSemanticEdgeTint {
+			.semanticEdge
+		} else if hasSurfaceTint {
+			.surface
+		} else {
+			.neutral
+		}
+	}
+
+	private static var isMacOS27Available: Bool {
+		if #available(macOS 27, *) { return true }
+		return false
+	}
+
+	private static var isMacOS26Available: Bool {
+		if #available(macOS 26, *) { return true }
+		return false
+	}
+}
+
+enum AdaptiveGlassBorderOwner: Equatable {
+	case adaptiveSurface
+	case external
 }
 
 private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	let tint: Color?
+	let borderTint: Color?
 	let shape: ShapeType
 	let showsBorder: Bool
 	let isInteractive: Bool
@@ -91,7 +179,9 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 				.overlay {
 					shape
 						.stroke(
-							(tint ?? Color.white).opacity(showBorders ? 0.68 : 0.42),
+							(effectiveBorderTint ?? Color.white).opacity(
+								showBorders ? 0.68 : 0.42
+							),
 							lineWidth: 1
 						)
 						.allowsHitTesting(false)
@@ -209,7 +299,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	}
 
 	private var macOS27BorderTint: Color {
-		guard let tint else { return .white }
+		guard let tint = effectiveBorderTint else { return .white }
 		let resolved = tint.resolve(in: EnvironmentValues())
 		let red = Double(resolved.red)
 		let green = Double(resolved.green)
@@ -217,6 +307,20 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		let chroma = max(red, green, blue) - min(red, green, blue)
 		guard chroma > 0.08 else { return LauncherVisuals.macOS27NeutralControlTint }
 		return Color(.sRGB, red: red, green: green, blue: blue)
+	}
+
+	private var effectiveBorderTint: Color? {
+		switch AdaptiveGlassSurfaceTreatment.borderTintSource(
+			hasSemanticEdgeTint: borderTint != nil,
+			hasSurfaceTint: tint != nil
+		) {
+		case .semanticEdge:
+			borderTint
+		case .surface:
+			tint
+		case .neutral:
+			nil
+		}
 	}
 
 	@available(macOS 26, *)

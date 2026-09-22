@@ -7,6 +7,7 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 	@Environment(\.isEnabled) private var environmentIsEnabled
+	@Environment(\.colorSchemeContrast) private var contrast
 	private let options: [Option]
 	private let accentColor: Color
 	private let isDisabled: Bool
@@ -51,7 +52,9 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 				.keyboardFocusIndicator(in: Capsule())
 				.adaptiveControlForeground(
 					effectiveDisabled
-						? accentColor.opacity(0.44)
+						? accentColor.opacity(
+							LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
+						)
 						: (selection == option ? accentColor : .secondary),
 					isDisabled: effectiveDisabled
 				)

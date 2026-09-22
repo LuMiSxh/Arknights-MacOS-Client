@@ -65,7 +65,7 @@ struct InstallationSettingsPage: View {
 				) {
 					CapsuleActionButton(
 						title: SettingsStrings.show, systemImage: "folder",
-						tone: .accent(accentColor), presentation: .compact,
+						tone: .neutral, presentation: .compact,
 						action: installation.revealInstallDirectory
 					)
 					.disabled(!installation.isInstalled)
@@ -178,18 +178,20 @@ struct InstallationSettingsPage: View {
 					.disabled(lifecycle.activity != .idle)
 				}
 				if settings.canaryFeaturesEnabled {
+					SettingsHairline()
 					canaryRuntimeSettings
 				}
 			}
 
 			DangerZonePanel {
-				SettingsHairline()
 				SettingsActionRow(
 					title: SettingsStrings.wineSetup,
 					detail: SettingsStrings.forceMigrationDetail
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.forceMigrationAction, tone: .danger,
+						title: SettingsStrings.forceMigrationAction,
+						systemImage: "arrow.triangle.2.circlepath",
+						tone: .danger,
 						presentation: .compact,
 						role: .destructive
 					) {
@@ -216,7 +218,9 @@ struct InstallationSettingsPage: View {
 					detail: SettingsStrings.resetSettingsDetail
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.resetSettingsAction, tone: .danger,
+						title: SettingsStrings.resetSettingsAction,
+						systemImage: "arrow.counterclockwise",
+						tone: .danger,
 						presentation: .compact,
 						role: .destructive
 					) {
@@ -243,7 +247,9 @@ struct InstallationSettingsPage: View {
 					detail: SettingsStrings.winePrefixDetail
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.deleteWinePrefix, tone: .danger,
+						title: SettingsStrings.deleteWinePrefix,
+						systemImage: "trash",
+						tone: .danger,
 						presentation: .compact,
 						role: .destructive
 					) {
@@ -270,7 +276,9 @@ struct InstallationSettingsPage: View {
 					detail: SettingsStrings.gameFilesDetail
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.uninstall, tone: .danger,
+						title: SettingsStrings.uninstall,
+						systemImage: "trash",
+						tone: .danger,
 						presentation: .compact,
 						role: .destructive
 					) {

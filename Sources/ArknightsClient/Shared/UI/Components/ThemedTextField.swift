@@ -11,7 +11,6 @@ struct ThemedTextField: View {
 	let accentColor: Color
 
 	@FocusState private var isFocused: Bool
-	@Environment(\.isEnabled) private var isEnabled
 
 	init(
 		_ title: String,
@@ -48,17 +47,7 @@ struct ThemedTextField: View {
 			tint: accentColor,
 			in: Capsule()
 		)
-		.overlay {
-			if isEnabled && isFocused {
-				Capsule()
-					.strokeBorder(
-						accentColor.opacity(0.72),
-						lineWidth: LauncherVisuals.Control.focusWidth
-					)
-					.allowsHitTesting(false)
-			}
-		}
 		.contentShape(Capsule())
-		.focusEffectDisabled(true)
+		.keyboardFocusIndicator(isFocused: isFocused, in: Capsule())
 	}
 }

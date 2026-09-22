@@ -135,7 +135,7 @@ struct GeneralSettingsPage: View {
 					}
 					CapsuleActionButton(
 						title: SettingsStrings.choose, systemImage: "folder",
-						tone: .accent(accentColor), presentation: .compact,
+						tone: .neutral, presentation: .compact,
 						action: customization.chooseCustomArtwork
 					)
 					CapsuleActionButton(
