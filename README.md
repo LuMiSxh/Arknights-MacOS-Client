@@ -11,7 +11,7 @@
 [![Platform](https://img.shields.io/badge/platform-Apple%20Silicon-black.svg)](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements)
 [![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
 
-<img src="Resources/github/landing-page.png" width="1200" alt="Arknights Client ready to launch the official PC client on macOS" />
+<img src="Resources/github/landing-page.png" width="1616" height="894" alt="Arknights Client ready to launch the official PC client on macOS" />
 
 [Website & documentation](https://lumisxh.github.io/Arknights-MacOS-Client/) · [Download latest](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest) · [Installation](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) · [Troubleshooting](https://lumisxh.github.io/Arknights-MacOS-Client/help/troubleshooting/)
 
