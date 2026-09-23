@@ -104,9 +104,9 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 			GameClientProfile(
 				publisher: .gryphline,
 				variant: .standard,
+				// Taiwan signs in through the macOS default browser, so it needs no CEF profile.
 				runtimeEnvironmentOverrides: [
-					AppConstants.Runtime.aceCompactEnvironmentKey: "1",
-					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
+					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
 				],
 				requiresCanaryPermission: true,
 				requiresACEWarning: true

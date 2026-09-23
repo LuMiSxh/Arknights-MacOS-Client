@@ -124,10 +124,7 @@ func clientProfilesOwnRuntimePatchEnvironment() {
 	)
 	#expect(
 		GameRegion.taiwan.runtimeEnvironmentOverrides
-			== [
-				"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
-				"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
-			]
+			== ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"]
 	)
 }
 
