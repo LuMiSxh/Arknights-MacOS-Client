@@ -56,38 +56,24 @@
 
 			const { default: mermaid } = await import('mermaid');
 			if (cancelled || generation !== requestedGeneration) return;
-			const dark = document.documentElement.classList.contains('dark');
 			for (const block of blocks)
 				block.classList.remove('diagram-expanded');
 			mermaid.initialize({
 				startOnLoad: false,
 				securityLevel: 'strict',
 				theme: 'base',
-				themeVariables: dark
-					? {
-							background: '#11151a',
-							primaryColor: '#1b252c',
-							primaryTextColor: '#ffffff',
-							primaryBorderColor: '#6f8492',
-							secondaryColor: '#202830',
-							tertiaryColor: '#090b0d',
-							lineColor: '#aab2ba',
-							edgeLabelBackground: '#11151a',
-							clusterBkg: '#11151a',
-							clusterBorder: '#3d4650'
-						}
-					: {
-							background: '#fbfbfc',
-							primaryColor: '#e7ecef',
-							primaryTextColor: '#15171a',
-							primaryBorderColor: '#657783',
-							secondaryColor: '#f2f3f5',
-							tertiaryColor: '#e7e9ec',
-							lineColor: '#5d636c',
-							edgeLabelBackground: '#fbfbfc',
-							clusterBkg: '#f2f3f5',
-							clusterBorder: '#b8bdc5'
-						}
+				themeVariables: {
+					background: '#151619',
+					primaryColor: '#1b1c20',
+					primaryTextColor: '#f2f3f5',
+					primaryBorderColor: '#477acc',
+					secondaryColor: '#1b1c20',
+					tertiaryColor: '#0b0c0e',
+					lineColor: '#a1a6ae',
+					edgeLabelBackground: '#151619',
+					clusterBkg: '#151619',
+					clusterBorder: '#2a2c31'
+				}
 			});
 
 			for (const [index, block] of blocks.entries()) {

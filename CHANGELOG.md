@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Redesigned the website to match the launcher.
 - Unified Settings panel spacing and control states, and prevented the floating footer from covering content.
 - Improved launcher state feedback and update presentation while pausing decorative motion when the window is inactive.
 - Hardened filesystem cleanup, recovery ownership, and cancellable background work against stale or invalid state.

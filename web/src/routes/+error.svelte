@@ -34,35 +34,23 @@
 />
 
 <section class="error-page" aria-labelledby="error-title">
-	<div class="eyebrow">Error {status}</div>
-	<h1 id="error-title">{errorTitle}</h1>
-	<p>{errorMessage}</p>
-	<a href={resolve('/')}>Return home <span aria-hidden="true">↗</span></a>
+	<p class="eyebrow">Error {status}</p>
+	<div class="page-heading">
+		<h1 id="error-title">{errorTitle}</h1>
+		<p>{errorMessage}</p>
+	</div>
+	<a class="round-action" href={resolve('/')}>Return home</a>
 </section>
 
 <style>
 	.error-page {
 		max-width: 42rem;
 		margin: clamp(4rem, 14vw, 10rem) auto;
-	}
-
-	.error-page h1 {
-		margin: 0.8rem 0;
-		font-size: clamp(2rem, 4vw, 3.2rem);
-		letter-spacing: -0.045em;
-		line-height: 1;
-	}
-
-	.error-page p {
-		max-width: 48ch;
+		padding-inline: var(--site-space-4);
 	}
 
 	.error-page a {
-		display: inline-flex;
-		gap: 0.7rem;
-		margin-top: 1rem;
-		color: var(--color-anasthasia-text);
-		font-weight: 700;
-		text-decoration: none;
+		margin-top: var(--site-space-6);
+		padding-inline: var(--site-space-5);
 	}
 </style>

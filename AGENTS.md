@@ -7,7 +7,7 @@
 - Keep source, docs, tests, UI copy, and commits in English. The app ships English-only.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
 - Keep the static SvelteKit site in `web/`; follow `docs/development/README.md#documentation-website` and do not add Vitest.
-- Never commit game/runtime binaries, downloaded artwork, or `dist/`; regenerate tracked shipping icons only with `just icon`.
+- Never commit game/runtime binaries, downloaded artwork, or `dist/`; regenerate tracked shipping icons only with `just icon`. The only artwork exception is the website hero wallpaper in `web/static/artwork/`.
 
 ## Commands
 

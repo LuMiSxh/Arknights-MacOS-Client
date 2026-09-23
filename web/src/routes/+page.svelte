@@ -1,52 +1,32 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import { Badge, SectionLabel } from 'anasthasia';
+	import { asset, resolve } from '$app/paths';
+	import ArtworkStage from '$lib/components/ArtworkStage.svelte';
 	import PageMetadata from '$lib/components/PageMetadata.svelte';
-	import { releaseUrl, repositoryUrl } from '$lib/site.js';
+	import RegionManifest from '$lib/components/RegionManifest.svelte';
+	import { reveal } from '$lib/motion.svelte.js';
+	import { releaseUrl } from '$lib/site.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
 	const regions = [
-		{
-			name: 'Global',
-			publisher: 'Yostar',
-			status: 'Supported',
-			variant: 'success'
-		},
-		{
-			name: 'Japan',
-			publisher: 'Yostar',
-			status: 'Supported',
-			variant: 'success'
-		},
-		{
-			name: 'Korea',
-			publisher: 'Yostar',
-			status: 'Supported',
-			variant: 'success'
-		},
-		{
-			name: 'Taiwan',
-			publisher: 'Gryphline',
-			status: 'Canary',
-			variant: 'warning'
-		},
-		{
-			name: 'China',
-			publisher: 'Hypergryph',
-			status: 'Canary',
-			variant: 'warning'
-		},
-		{
-			name: 'China — Bilibili',
-			publisher: 'Hypergryph',
-			status: 'Canary',
-			variant: 'warning'
-		}
+		{ name: 'Global', publisher: 'Yostar', status: 'Supported' },
+		{ name: 'Japan', publisher: 'Yostar', status: 'Supported' },
+		{ name: 'Korea', publisher: 'Yostar', status: 'Supported' },
+		{ name: 'Taiwan', publisher: 'Gryphline', status: 'Canary' },
+		{ name: 'China', publisher: 'Hypergryph', status: 'Canary' },
+		{ name: 'China — Bilibili', publisher: 'Hypergryph', status: 'Canary' }
 	] as const;
+	const route = [
+		'Apple Silicon',
+		'Rosetta 2',
+		'Wine + DXMT',
+		'Official PC client'
+	];
 
-	const guides = $derived(data.navigation);
+	const guides = $derived(
+		data.navigation.filter((entry) => entry.audience !== 'developers')
+	);
 </script>
 
 <PageMetadata
@@ -55,102 +35,108 @@
 	path="/"
 />
 
-<section class="home-hero" aria-labelledby="home-title">
-	<div class="hero-copy">
-		<SectionLabel>Unofficial macOS launcher</SectionLabel>
-		<h1 class="display-title" id="home-title">Arknights on macOS</h1>
-		<p class="lead">
-			Run official regional Arknights PC clients on Apple Silicon. The
-			launcher installs the game, keeps it updated, and collects the logs
-			needed when something goes wrong.
+<ArtworkStage
+	title="Arknights on macOS"
+	detail="Unofficial launcher for the official Arknights PC clients"
+	iconUrl={asset('/AppIcon-128.png')}
+	installationHref={resolve('/installation/')}
+	releaseHref={releaseUrl}
+/>
+
+<div class="home-content home-sheet">
+	<header class="page-heading">
+		<h2>Play the official PC client on your Mac</h2>
+		<p>
+			The launcher installs the game, keeps it updated, and collects the
+			logs needed when something goes wrong.
 		</p>
-		<div class="hero-actions">
-			<a
-				class="download-action anasthasia-primary-action"
-				href={releaseUrl}>Download latest ↗</a
-			>
-			<a class="text-action" href={resolve('/installation/')}
-				>Read the installation guide →</a
-			>
-		</div>
-		<ol class="compatibility-route" aria-label="Compatibility route">
-			<li>Apple Silicon</li>
-			<li>Rosetta 2</li>
-			<li>Wine + DXMT</li>
-			<li>Official PC client</li>
-		</ol>
-	</div>
-
-	<table class="region-manifest">
-		<caption id="regions-title">Supported regions</caption>
-		<thead>
-			<tr>
-				<th scope="col">Client</th>
-				<th scope="col">Manifest</th>
-				<th scope="col">Status</th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each regions as region (region.name)}
-				<tr>
-					<th scope="row">{region.name}</th>
-					<td>{region.publisher}</td>
-					<td
-						><Badge variant={region.variant}>{region.status}</Badge
-						></td
-					>
-				</tr>
+		<ol class="route" aria-label="Compatibility route">
+			{#each route as step (step)}
+				<li>{step}</li>
 			{/each}
-		</tbody>
-	</table>
-</section>
+		</ol>
+	</header>
 
-<section class="home-section" aria-labelledby="guides-title">
-	<div class="home-section-heading">
-		<SectionLabel>Documentation</SectionLabel>
-		<h2 id="guides-title">Install, troubleshoot, or contribute</h2>
-	</div>
-	<nav class="guide-list" aria-label="Documentation sections">
-		{#each guides as guide (guide.route)}
-			<a href={resolve(guide.route)}>
-				<span>
-					<strong>{guide.title}</strong>
-					<small>
-						{guide.description}
-					</small>
-				</span>
-				<span aria-hidden="true">→</span>
-			</a>
-		{/each}
-	</nav>
-</section>
+	<div class="home-grid">
+		<section class="panel" aria-label="Regions" {@attach reveal()}>
+			<RegionManifest {regions} />
+		</section>
 
-<section class="home-section" aria-labelledby="capabilities-title">
-	<div class="home-section-heading">
-		<SectionLabel>Launcher responsibilities</SectionLabel>
-		<h2 id="capabilities-title">What it handles</h2>
+		<section
+			class="panel guides"
+			aria-labelledby="guides-title"
+			{@attach reveal(90)}
+		>
+			<h2 class="panel-title" id="guides-title">Documentation</h2>
+			<nav class="row-list" aria-label="Documentation sections">
+				{#each guides as guide (guide.route)}
+					<a href={resolve(guide.route)}>
+						<span>
+							<strong>{guide.title}</strong>
+							<small>{guide.description}</small>
+						</span>
+						<span class="chevron" aria-hidden="true">›</span>
+					</a>
+				{/each}
+			</nav>
+		</section>
 	</div>
-	<div class="capability-list">
-		<div>
-			<strong>Install and update</strong>
-			<p>Keeps each region separate and resumes interrupted downloads</p>
-		</div>
-		<div>
-			<strong>Run the Windows client</strong>
-			<p>Uses the project's tested Rosetta 2, Wine, and DXMT runtime</p>
-		</div>
-		<div>
-			<strong>Explain failures</strong>
-			<p>Keeps launcher and Wine logs ready for troubleshooting</p>
-		</div>
-	</div>
-</section>
+</div>
 
-<aside class="project-notice">
-	<strong
-		>Community project, not affiliated with Yostar, Gryphline, Hypergryph,
-		or Bilibili</strong
-	>
-	<span>Game files are never bundled</span>
-	<a href={`${repositoryUrl}/releases`}>View releases ↗</a>
-</aside>
+<style>
+	.home-content {
+		border-radius: var(--site-radius-modal) var(--site-radius-modal) 0 0;
+		margin-top: var(--site-space-6);
+		padding-block: var(--site-space-8) var(--site-space-12);
+	}
+
+	.route {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--site-space-2);
+		margin: var(--site-space-4) 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.route li {
+		border: 1px solid var(--site-border);
+		border-radius: var(--site-radius-capsule);
+		background: var(--site-panel);
+		padding: 0.3rem 0.75rem;
+		color: var(--site-muted);
+		font-family: var(--site-font-mono);
+		font-size: 0.7rem;
+	}
+
+	.route li:not(:last-child)::after {
+		margin-left: var(--site-space-2);
+		color: var(--site-signal-text);
+		content: '→';
+	}
+
+	.home-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		align-items: stretch;
+		gap: var(--site-space-5);
+		margin-top: var(--site-space-8);
+	}
+
+	/* Rows share the card height so both cards end on the same line. */
+	.guides {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.guides .row-list {
+		flex: 1;
+		grid-auto-rows: 1fr;
+	}
+
+	@media (max-width: 860px) {
+		.home-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

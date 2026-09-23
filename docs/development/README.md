@@ -2,6 +2,7 @@
 title: Development
 description: Architecture, design, testing, release, and runtime contracts for contributors
 order: 30
+audience: developers
 ---
 
 # Development
@@ -39,7 +40,7 @@ toc: true
 ---
 ```
 
-`title` and `description` are required. `order` is a finite number used for sorting; `hidden`, `draft`, and `toc` are booleans; and `audience` is `all`, `developers`, or `users`. An optional `code` must be one uppercase English word and must be paired with a non-empty `domain`; error codes are unique across documentation files. Public codes are registered in `docs/help/errors/registry.json`, use `/help/errors/<lowercase-code>/`, and must have exactly one matching page. `audience` is currently descriptive metadata, while `hidden` controls navigation and `toc` controls the page table of contents. A `draft: true` file fails the production build rather than silently publishing an unfinished page.
+`title` and `description` are required. `order` is a finite number used for sorting; `hidden`, `draft`, and `toc` are booleans; and `audience` is `all`, `developers`, or `users`. An optional `code` must be one uppercase English word and must be paired with a non-empty `domain`; error codes are unique across documentation files. Public codes are registered in `docs/help/errors/registry.json`, use `/help/errors/<lowercase-code>/`, and must have exactly one matching page. A top-level section with `audience: developers` is listed under **Contributors** in the website sidebar and omitted from the home page, so player-facing pages stay separate; `hidden` removes a page from navigation and `toc` controls the page table of contents. Keep player pages short and task-focused, and put implementation details in these development pages. A `draft: true` file fails the production build rather than silently publishing an unfinished page.
 
 The site renders the frontmatter title in its page header. A first-level Markdown heading that exactly matches `title` is removed from the body, so use that heading when the same document is also read in the repository or launcher. A different first heading remains visible and is useful only when the page deliberately needs a second title.
 
