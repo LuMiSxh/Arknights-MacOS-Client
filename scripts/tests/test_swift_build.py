@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 from types import SimpleNamespace
 
 from lib import swift_build
@@ -71,12 +73,51 @@ def test_swift_build_passes_active_sdk_to_swiftpm_and_linker(
     assert captured["command"][:4] == ("xcrun", "--sdk", "macosx", "swift")
 
 
-def test_just_build_recipes_use_the_sdk_aware_builder() -> None:
+def test_just_preview_builds_before_launching(tmp_path) -> None:
+    fake_uv = tmp_path / "fake-uv"
+    fake_uv.write_text(
+        """#!/bin/sh
+printf '%s\\n' "$*" >> "$PREVIEW_TEST_LOG"
+case "$*" in
+  *scripts/swift_build.py*--show-bin-path*) printf '%s\\n' "$PREVIEW_TEST_BIN" ;;
+  *scripts/project_config.py*executable-name*) printf '%s\\n' PreviewBinary ;;
+esac
+""",
+        encoding="utf-8",
+    )
+    fake_uv.chmod(0o755)
+    binary_dir = tmp_path / "bin"
+    binary_dir.mkdir()
+    binary = binary_dir / "PreviewBinary"
+    binary.write_text(
+        '#!/bin/sh\nprintf \'launch %s\\n\' "$*" >> "$PREVIEW_TEST_LOG"\n',
+        encoding="utf-8",
+    )
+    binary.chmod(0o755)
+    log = tmp_path / "preview.log"
+    environment = os.environ | {
+        "PREVIEW_TEST_BIN": str(binary_dir),
+        "PREVIEW_TEST_LOG": str(log),
+    }
+
+    subprocess.run(
+        ["just", "--set", "uv", str(fake_uv), "preview"],
+        cwd=PROJECT_DIR,
+        env=environment,
+        check=True,
+    )
+
+    commands = log.read_text(encoding="utf-8").splitlines()
+    builds = [command for command in commands if "scripts/swift_build.py" in command]
+    assert len(builds) == 2
+    assert "--show-bin-path" not in builds[0]
+    assert "--sdk macosx27.0" in builds[0]
+    assert "--show-bin-path" in builds[1]
+    assert commands[-1] == "launch --developer-preview"
+
+
+def test_just_release_build_uses_the_sdk_aware_builder() -> None:
     justfile = (PROJECT_DIR / "justfile").read_text(encoding="utf-8")
 
-    assert (
-        "scripts/swift_build.py --configuration debug --sdk macosx27.0 --show-bin-path"
-        in justfile
-    )
     assert "scripts/swift_build.py --configuration release" in justfile
     assert "swift run --skip-build" not in justfile

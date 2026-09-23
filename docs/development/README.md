@@ -65,7 +65,7 @@ Keep alerts short and actionable. Use one marker for one point instead of nestin
 
 ### Mermaid diagrams
 
-Put diagrams in fenced `mermaid` blocks. The website lazy-loads Mermaid only on pages that contain such a block, renders with a strict security level, and keeps the source as a fallback when rendering fails. Use ordinary flowcharts or sequence diagrams with concise labels, keep both light and dark themes readable, and avoid HTML, scripts, external assets, or behavior that requires Mermaid callbacks. The native launcher currently shows fenced code as text, so the surrounding prose must explain the contract without requiring the diagram.
+Put diagrams in fenced `mermaid` blocks. The website lazy-loads Mermaid only on pages that contain such a block, renders with a strict security level, and keeps the source as a fallback when rendering fails. Use ordinary flowcharts or sequence diagrams with concise labels, keep them readable on the dark-only website theme, and avoid HTML, scripts, external assets, or behavior that requires Mermaid callbacks. The native launcher currently shows fenced code as text, so the surrounding prose must explain the contract without requiring the diagram.
 
 ### Links and content checks
 
@@ -75,7 +75,7 @@ Prefer relative Markdown links for repository documents, with the `.md` suffix. 
 
 The SvelteKit site in `web/` builds these Markdown files into the project website. Every published document requires YAML frontmatter with at least `title` and `description`; `order`, `hidden`, `audience`, and `toc` refine navigation and presentation.
 
-The site uses Anasthasia's components and base tokens with a launcher-specific flavour in `web/src/lib/styles/arknights-client.css`. Keep that local flavour aligned with the launcher's compact graphite surfaces and reserve the dynamic artwork tint for the primary download action and active navigation; use cyan only when no dynamic color is available. Reuse library components for matching UI contracts, including semantic badges for compact supported and unsupported states.
+The site uses Anasthasia's components and base tokens with a launcher-specific flavour in `web/src/lib/styles/arknights-client.css`. Like the launcher, the website is dark-only. The home page shows one official Arknights Global wallpaper from `web/static/artwork/`, the repository's only bundled artwork, always uncropped at 16:9; credit the artist, Hypergryph, and Yostar beside it. `--site-signal` is the accent the launcher's `WallpaperColorExtractor` derives from that wallpaper, and `--site-signal-text` is its AA-readable text variant; update both together when the wallpaper changes. Reserve the signal for the primary download action, active navigation, and focus, use tinted fills rather than solid signal fills, and keep secondary controls as quiet neutral capsules.
 
 Use Node 24.14 or newer and the `pnpm` version declared by `web/package.json`; the lockfile is the dependency source of truth. Use `just dev web` for local editing. Before opening a change, run `just format web` if needed and `just check web` for Svelte/type and Prettier checks. The check command does not run the content/prerender build; run the production check explicitly from the website directory:
 

@@ -13,6 +13,7 @@ default:
 # Run the focused isolated debug simulator for safe launcher UI states.
 [group('Development')]
 preview:
+	{{ uv }} scripts/swift_build.py --configuration debug --sdk macosx27.0
 	binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --sdk macosx27.0 --show-bin-path)"; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; "$binary_dir/$executable_name" --developer-preview
 
 # Start the website or download the verified runtime and build a local app bundle or dmg; add run to open app artifacts (default: app).
