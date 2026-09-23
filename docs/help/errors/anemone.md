@@ -9,22 +9,20 @@ domain: runtime
 
 # ANEMONE
 
-The launcher could not safely apply, update, or restore one of its game-file compatibility helpers. These helpers make the embedded sign-in browser and Notices window work correctly through Wine for clients that provide those windows. China — Bilibili uses its own client login flow; the embedded login-window guidance does not apply to that client. The launcher stops instead of overwriting an unknown file or leaving an official helper without a recoverable backup.
+The launcher could not safely apply, update, or restore one of the compatibility files it adds to the game folder. These files make the in-game sign-in and Notices windows work under Wine: the embedded browser for Global, Japan, Korea, and China, and Bilibili's own login window for China — Bilibili. Taiwan signs in through your Mac's default browser and does not use them. The launcher stops instead of overwriting a file it does not recognize.
 
 ## Try this
 
-1. Quit Arknights and any official updater that may be changing the same game folder.
-2. In the launcher, choose **Repair**, confirm the full verification, and let it finish.
-3. Choose **Retry** after Repair completes.
-4. If the code returns, choose **Report Problem** and say whether Repair completed.
+1. Quit Arknights and any official updater that may be changing the game folder.
+2. Choose **Repair**, confirm the full check, and let it finish.
+3. Choose **Retry**.
+4. If Repair itself ends with `ANEMONE`, restart the Mac once and run **Repair** again from **Settings → Installation**.
 
 > [!IMPORTANT]
-> Repair restores official game files from the publisher and then reapplies only launcher-owned compatibility files. It preserves the Wine prefix, saved sign-ins, and launcher settings.
+> Repair restores the official game files and then adds the launcher's compatibility files again. Your Wine prefix, sign-ins, and settings stay.
 
 > [!CAUTION]
-> Do not delete or rename `.original.helper`, bridge, DLL, or launcher temporary files by hand. A rollback failure means the launcher could not prove that another manual change would preserve the official helper.
-
-If Repair itself ends with `ANEMONE`, restart the Mac once to release any open helper files, then start Repair again from **Settings → Installation**.
+> Do not delete or rename the `.original.helper` backups, the `.arknights-client-bilibili` folder, the bridge files, `userenv.dll`, or the launcher's temporary files by hand.
 
 ## Report this problem
 

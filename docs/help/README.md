@@ -6,50 +6,29 @@ order: 20
 
 # Help
 
-Use this section after [Installation](../installation.md) when the launcher, a regional game installation, sign-in, or the Wine runtime needs attention.
-
-## Find the right guide
-
-| What you are trying to do                                            | Start here                                        |
-| -------------------------------------------------------------------- | ------------------------------------------------- |
-| Install the launcher or a region                                     | [Installation](../installation.md)                |
-| Understand a warning or failed launch                                | [Troubleshooting](troubleshooting.md)             |
-| Find game files, logs, or the Wine prefix                            | [Storage](storage.md)                             |
-| Understand Rosetta, Wine, and DXMT                                   | [Runtime compatibility](runtime-compatibility.md) |
-| Check whether a behavior belongs to the launcher or the game service | [FAQ](faq.md)                                     |
-| Look up a word shown with a launcher failure                         | [Error codes](errors/README.md)                   |
-
-> [!TIP]
-> Start with the least destructive step that matches the symptom. Reopen the launcher and check the selected region before deleting a prefix or reinstalling game files.
-
-## What this project can support
-
-The launcher owns its download, manifest verification, runtime setup, display integration, settings, and diagnostics. It can resume partial downloads, repair a regional installation, clear recreatable caches, and reset the shared Wine prefix when necessary.
+- Something does not work → [Troubleshooting](troubleshooting.md)
+- The launcher shows a short word like `PEBBLE` → [Error codes](errors/README.md)
+- Where files live and what cleanup removes → [Storage](storage.md)
+- Which macOS versions work → [macOS compatibility](runtime-compatibility.md)
+- General questions → [FAQ](faq.md)
 
 ## Publisher support routing
 
-Account access, payments, billing, server availability, and in-game data belong to the official
-publisher and payment provider, even when a page appears inside the game's embedded browser.
-Route publisher questions by the selected region:
+Arknights Client only handles installing and running the game. Accounts, payments, servers, and in-game data belong to the publisher of your region, even when the page opens inside the game:
 
-| Region or client        | Publisher  | Official support                                                 |
-| ----------------------- | ---------- | ---------------------------------------------------------------- |
-| Global, Japan, or Korea | Yostar     | [Yostar Support](https://account.yo-star.com/contact)            |
-| Taiwan                  | Gryphline  | [Gryphline Contact Us](https://www.gryphline.com/en-us/contacts) |
-| China                   | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support)        |
-| China — Bilibili        | Hypergryph | [Hypergryph Support](https://user.hypergryph.com/support)        |
+| Region                  | Contact                                                       |
+| ----------------------- | ------------------------------------------------------------- |
+| Global, Japan, or Korea | [Yostar Support](https://account.yo-star.com/contact)         |
+| Taiwan                  | [Gryphline Support](https://www.gryphline.com/en-us/contacts) |
+| China, China — Bilibili | [Hypergryph Support](https://user.hypergryph.com/support)     |
 
-Verify charges with the payment provider shown by the transaction, then contact the publisher
-listed above for account, entitlement, billing, or game-service review. The launcher project
-handles installation, runtime, graphics, window, and launcher-owned embedded-browser failures.
+For an unexpected charge, check with the payment provider shown on the transaction first.
 
-> [!NOTE]
-> Global, Japan, Korea, China, and Taiwan clients can use the embedded login-window path described in this
-> Help section. China — Bilibili uses its own client login flow; the embedded login-window guidance
-> does not apply to that client.
+## Report a problem
 
-## Before opening a report
+Choose **Report Problem** next to the error, or **Settings → About → Report…**. It opens a GitHub issue that already contains the error code, region, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
 
-Record the selected region, Mac model, macOS version, launcher version, and the step that failed.
+Logs are not needed at first. If a maintainer asks for one, open **Settings → Storage → Show Logs** and attach only that file.
 
-The **Report a Problem…** action in the launcher opens a pre-filled public GitHub issue with basic environment metadata. When a failed operation has an error code, the report also includes that code, operation, and selected region. Log files are not needed for the initial report. If a maintainer later asks for a specific file, open **Settings → Storage** and choose **Show Logs**.
+> [!WARNING]
+> GitHub issues are public. Never post passwords, tokens, or payment details.

@@ -15,7 +15,7 @@ The bundled Intel Wine runtime cannot start because Rosetta is missing, its inst
 
 1. If the launcher offers **Install Rosetta…**, confirm the macOS system prompt and wait for it to finish.
 2. Choose **Retry** or **Check Again** after installation.
-3. If Legacy Game Test Mode is enabled, disable it as described in [Runtime compatibility](../runtime-compatibility.md#macos-27-legacy-game-test-mode), restart the Mac, and check again.
+3. If Legacy Game Test Mode is enabled, turn it off as described in [macOS compatibility](../runtime-compatibility.md#legacy-game-test-mode), restart the Mac, and check again.
 4. Install pending macOS updates.
 
 > [!IMPORTANT]

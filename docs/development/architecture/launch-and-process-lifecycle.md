@@ -38,7 +38,7 @@ game launch.
 
 “Allowlisted environment” means the launcher constructs Wine's environment from scratch. It inherits only `LANG`, `LC_ALL`, `LC_CTYPE`, and `__CF_USER_TEXT_ENCODING` when present, then adds the private home/XDG paths, Wine paths, runtime search path, logging, synchronization, and selected diagnostic values it owns. It does not forward the complete launcher process environment.
 
-Clients that expose the embedded web path start Arknights' Chromium-based Vuplex helper for account and in-game web pages. China — Bilibili uses its own client login flow; the embedded login-window guidance does not apply to that client. Taiwan follows the standard client path. Before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build.
+Sign-in differs per client. Global, Japan, Korea, and China start Arknights' Chromium-based Vuplex helper for account and in-game web pages. China — Bilibili uses Bilibili's own CEF login window (`BLPlatform64/PCGamePlatform.exe` with `BLWebBrowser`); `BilibiliPlatformCompatibility` installs a launcher-owned window controller and AppKit bridge beside it without replacing Bilibili's platform helper. Taiwan opens sign-in in the macOS default browser and uses no embedded helper. For the Vuplex path, before launch, the launcher moves the official helper beside a small wrapper. The wrapper preserves the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the one AppContainer SID function missing from the tested Wine build.
 
 Notices use a different Qt WebEngine helper named `PlatformProcess.exe`. It runs as a separate Wine and macOS process, so this implementation deliberately keeps it as a top-level companion instead of modifying the game process. A wrapper launches the untouched helper, clears its Win32 frame and `WS_EX_NOACTIVATE` style, and follows the game in Wine's coordinate system. An AppKit bridge keeps the helper's `NSPanel` non-activating while preserving Wine's first-click input path, removes the separate Dock presence, and applies companion-window presentation while Arknights is active. The compatibility components do not inspect page data; the bridge changes only native window presentation.
 
@@ -198,7 +198,7 @@ Normal launches inspect migration, registry, drive, and private-home state witho
 
 Game-directory shims implement `GameCompatibilityComponent` and are registered with `GameCompatibilityManager`. Active components are reconciled before every launch; all active and retired components are restored before install, update, or repair. Removing a shim means moving its component from the active list to the retired list for a supported upgrade cycle, allowing launcher-owned files to be cleaned up even when replacement assets are no longer bundled.
 
-Vuplex and PlatformProcess use this reconciliation path rather than one-time migration state because the official updater can replace either helper at any time. Their wrappers, `userenv.dll`, and AppKit bridge carry the embedded ownership markers described above, so upgrades and retirement never rely only on the current bundled bytes. Unknown files remain untouched.
+Vuplex, PlatformProcess, and the Bilibili platform component use this reconciliation path rather than one-time migration state because the official updater can replace these helpers at any time. Their wrappers, `userenv.dll`, and AppKit bridge carry the embedded ownership markers described above, so upgrades and retirement never rely only on the current bundled bytes. Unknown files remain untouched.
 
 ## Prefix boundary and process ownership
 
@@ -214,11 +214,12 @@ The process boundary is similarly deliberate:
 | `Arknights.exe` through `bin/Arknights` | `WineRuntime`                                           | Main Unity game                                  | `GameSessionController` via `wineserver` |
 | Vuplex / Chromium helper                | Official game helper through `VuplexShim`               | Account and in-game web pages                    | Wine prefix cleanup                      |
 | `PlatformProcess.exe`                   | Official game notice flow through `PlatformProcessShim` | Separate Qt WebEngine Notices window             | Wine prefix cleanup                      |
+| Bilibili `PCGamePlatform.exe`           | Official Bilibili client with the launcher's controller | Bilibili's own CEF login window                  | Wine prefix cleanup                      |
 | `wineserver`                            | Wine runtime                                            | Prefix-wide synchronization and process lifetime | `GameSessionController`                  |
 | Native icon/window bridges              | Runtime environment injection                           | AppKit presentation only                         | Process termination                      |
 
 The wrappers preserve the official helper arguments and content. They adjust only the compatibility
-or presentation behavior documented in [Runtime compatibility](../../help/runtime-compatibility.md).
+or presentation behavior documented above.
 They do not become a general proxy for browser data or credentials.
 
 > [!WARNING]
@@ -243,6 +244,29 @@ prefix, and it cannot clear state owned by a newer launch. See [Troubleshooting]
 for the user-facing recovery path and [Data and persistence](data-and-persistence.md) for what
 survives each reset.
 
+## Host checks and compatibility profiles
+
+These details used to live in the user guide; the user pages now describe only the visible behavior.
+
+- **Intel translation probe:** the launcher does not trust `/Library/Apple/usr/share/rosetta/rosetta`
+  alone. It runs `/usr/bin/arch -x86_64 /usr/bin/true` and, on macOS 27, reads
+  `/usr/bin/game-test-tool status` so Legacy Game Test Mode can be reported separately (`LIMPET`).
+  macOS 28 is blocked because general Intel translation is unavailable.
+- **Window wait:** after Wine starts the executable, the launcher waits up to 90 seconds for a visible
+  game window, then stops the timed-out runtime and reports `NARWHAL`.
+- **Compatibility profiles:** `GameRegion.clientProfile` sets the runtime flags. Taiwan and both China
+  clients enable ACE Compact. China — Bilibili also enables the CEF and CN flags for its own login
+  window; Taiwan and the standard China client keep the ACE-only profile.
+- **Sign-in paths:** the Vuplex helper (Global, Japan, Korea, China) runs with a process-local
+  configuration that disables the accelerated paint-sharing path that is unreliable under Wine, and a
+  launcher-owned `userenv.dll` supplies the AppContainer calls Chromium expects. China — Bilibili keeps
+  its own CEF login window with the launcher's window controller, and Taiwan uses the macOS default
+  browser. None of these paths inspect credentials or bypass provider challenges.
+- **Downloads:** each manifest file retries against the publisher's backup CDN, and a completed file is
+  moved into place only after its size and checksum match (CRC64 for Yostar, MD5 for Gryphline and
+  Hypergryph).
+- **Backups:** game directories and prefixes set `isExcludedFromBackup` because they are reproducible.
+
 ## Diagnostics
 
 The current launch directs Wine, Unity, and Chromium diagnostics to the central macOS log directory.
@@ -250,7 +274,7 @@ Wine writes the selected publisher runtime log directly: `arknights-yostar.log` 
 `arknights-gryphline.log` for Taiwan, and `arknights-hypergryph.log` for Hypergryph clients. The prefix maps that directory as `L:`,
 Unity receives `-logFile L:\unity.log`, and the Vuplex wrapper adds
 `--log-file=L:\chromium.log`. Their macOS paths are listed in
-[Troubleshooting](../../help/troubleshooting.md#log-locations). Launch diagnostics include the
+[Storage](../../help/storage.md#logs). Launch diagnostics include the
 session ID, region, display and synchronization options, and whether graphics diagnostics were
 enabled. An unexpected exit adds the process status, termination reason, recent `Arknights-*.ips`
 crash report when available, and a bounded tail of the selected publisher runtime log.
