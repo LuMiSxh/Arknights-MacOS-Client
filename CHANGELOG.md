@@ -11,36 +11,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [0.6.0] - 2026-09-22
+## [0.6.0] - 2026-09-24
 
 ### Added
 
 - Taiwan (Traditional Chinese) PC client support through Gryphline as a Canary region.
 - Added runtime-loaded CN and China — Bilibili wordmarks with cached startup restoration and high-contrast rendering on dark surfaces.
-- A separate Canary permission for exposing the China clients, plus a per-client ACE Anti-Cheat warning before the first launch through Wine.
+- Separate Canary permissions for exposing the Taiwan and China clients, plus a per-client ACE Anti-Cheat warning before their first launch through Wine.
 
 ### Changed
 
 - Redesigned the website to match the launcher.
-- Unified Settings panel spacing and control states, and prevented the floating footer from covering content.
+- Rewrote the installation, troubleshooting, storage, and macOS compatibility guides.
+- Refined launcher controls, Settings, documents, and dialogs with consistent spacing, shared surfaces, dynamic theming, and progress-aware HUD treatment.
 - Improved launcher state feedback and update presentation while pausing decorative motion when the window is inactive.
 - Hardened filesystem cleanup, recovery ownership, and cancellable background work against stale or invalid state.
-- Refined launcher controls, settings, documents, and dialogs with shared surfaces, consistent dynamic theming, and progress-aware HUD treatment.
-- Replaced fixed debug scenarios with composable preview controls, centralized active-SDK SwiftPM builds, and refreshed the locked Python tooling.
-- Repair verifies installed files several times faster by hashing eight bytes per step instead of one.
-- Preparing a Wine prefix applies its registry settings in one step instead of one Windows process per value.
-- Searching the Artwork gallery filters the catalog once per keystroke instead of once per category filter.
-- Calculating storage sizes reads each file's size once instead of inspecting it repeatedly.
-- Consolidated the background-music value types, the per-file download path, and the launcher view model's actions into one file each.
+- Improved checksum verification performance during repair.
+- Reduced repeated work when preparing Wine prefixes, searching the Artwork gallery, and calculating storage sizes.
+- Improved developer preview controls and centralized builds against the active macOS SDK.
 - Named runtime logs after Arknights and their publisher.
 - Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.
 - Split runtime compatibility controls into independent ACE Compact, shared CEF, and Bilibili CN flags.
-- Improved China — Bilibili embedded browser compatibility for nested dialogs such as payment windows.
+- Improved handling of nested China — Bilibili browser dialogs; payment-flow verification remains pending.
 - Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.0.
 - Removed the regressing experimental Wine/DXMT runtime performance toggle; the independent DXMT frame-latency control remains available behind Canary Features.
 
 ### Fixed
 
+- Prevented the floating Settings footer from covering content.
 - Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).
 - Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
 - Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
@@ -51,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Removed
 
-- Removed localization, language preferences, String Catalogs, and the translation pipeline because the maintenance effort was not justified by the value they provided.
+- The launcher now ships in English only; removed German localization and language preferences.
 
 ## [0.5.2] - 2026-09-14
 
