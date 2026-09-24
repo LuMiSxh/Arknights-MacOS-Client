@@ -2,6 +2,18 @@
 	"schemaVersion": 1,
 	"announcements": [
 		{
+			"id": "thank-you-0-6-2026-09",
+			"enabled": true,
+			"title": "Thank you for being here",
+			"body": "Thank you for using Arknights Client. A special thank-you to everyone who has reported a bug, suggested a feature, or shared feedback. You’ve helped make the launcher what it is today.\n\nWith roughly 200 users, this is now my biggest and most popular open-source project. Seeing so many of you keep up with new releases makes me really happy.\n\nI’m happy with where the launcher is now, too. The features have matured, the UI finally feels right to me, and we’ve fixed most of the bugs we’ve found together.\n\nUpdates will come a little less often from now on, also because work and personal life need more of my time. I’ll still be here, fixing bugs and making improvements. Things will just move at a slower pace.\n\nThanks again. It means a lot.\n\nLuMiSxh",
+			"actionTitle": null,
+			"actionURL": null,
+			"minimumVersion": "0.6.0",
+			"maximumVersion": "0.6.9223372036854775807",
+			"startsAt": "2026-09-24T16:31:19Z",
+			"endsAt": "2026-10-08T16:31:19Z"
+		},
+		{
 			"id": "canary-runtime-0-5",
 			"enabled": true,
 			"title": "Thank you for helping shape version 0.5",
