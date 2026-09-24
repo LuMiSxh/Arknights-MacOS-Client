@@ -230,6 +230,7 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 		await withCheckedContinuation { requestWaiters.append((count, $0)) }
 	}
 	func waitForBrandingRequest() async { await waitForBrandingRequests(1) }
+	func brandingRequestCount() -> Int { brandingRequests }
 	func resolveBranding(_ branding: LauncherBranding? = nil) {
 		let value =
 			branding

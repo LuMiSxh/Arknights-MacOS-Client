@@ -169,12 +169,12 @@ extension CustomizationController {
 	}
 
 	private func chooseCustomIcon(
-		title: LocalizedStringResource,
+		title: String,
 		apply: @escaping (URL) -> Void
 	) {
 		let panel = NSOpenPanel()
-		panel.title = L10n.string(title)
-		panel.prompt = L10n.string(LauncherStrings.pickerChoose)
+		panel.title = title
+		panel.prompt = LauncherStrings.pickerChoose
 		panel.allowedContentTypes = [.image]
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true

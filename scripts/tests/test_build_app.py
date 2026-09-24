@@ -17,29 +17,6 @@ def configuration() -> ProjectConfiguration:
     return load_project_configuration()
 
 
-def test_swift_localizations_are_copied_into_app_resources(
-    tmp_path: Path, configuration: ProjectConfiguration
-) -> None:
-    binary_dir = tmp_path / "bin"
-    bundle = binary_dir / configuration.swift_resource_bundle_name
-    for language in configuration.product.localizations:
-        (bundle / f"{language}.lproj").mkdir(parents=True)
-        (bundle / f"{language}.lproj/Localizable.strings").write_text(
-            '"home.settings" = "Settings";', encoding="utf-8"
-        )
-    resources = tmp_path / configuration.app_bundle_name / "Contents/Resources"
-
-    build_app.copy_swift_localizations(binary_dir, resources, configuration)
-
-    for language in configuration.product.localizations:
-        assert (resources / f"{language}.lproj/Localizable.strings").is_file()
-    assert not (
-        tmp_path
-        / configuration.app_bundle_name
-        / configuration.swift_resource_bundle_name
-    ).exists()
-
-
 def test_app_resources_follow_project_configuration(
     configuration: ProjectConfiguration,
 ) -> None:
@@ -50,12 +27,6 @@ def test_app_resources_follow_project_configuration(
     )
     for source in configuration.copied_resource_source_paths:
         assert resources[source] == Path(source.name)
-    for language in configuration.product.localizations:
-        source = (
-            configuration.project_directory
-            / f"Resources/{language}.lproj/InfoPlist.strings"
-        )
-        assert resources[source] == Path(f"{language}.lproj/InfoPlist.strings")
 
 
 def test_compatibility_artifacts_are_discovered_recursively(tmp_path: Path) -> None:

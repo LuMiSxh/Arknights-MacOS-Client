@@ -27,6 +27,7 @@ private enum PresetGallerySuggestion: Identifiable {
 
 struct PresetGallerySuggestions: View {
 	let destination: PresetGalleryDestination
+	let accentColor: Color
 	let avatars: [PresetAvatar]
 	let wallpaperTerms: [String]
 	let onSelect: (String) -> Void
@@ -48,9 +49,9 @@ struct PresetGallerySuggestions: View {
 				ForEach(suggestions) { suggestion in
 					PresetGallerySuggestionChip(
 						destination: destination,
+						accentColor: accentColor,
 						suggestion: suggestion,
-						onSelect: onSelect,
-						reduceMotion: reduceMotion
+						onSelect: onSelect
 					)
 				}
 			}
@@ -66,17 +67,10 @@ struct PresetGallerySuggestions: View {
 
 private struct PresetGallerySuggestionChip: View {
 	let destination: PresetGalleryDestination
+	let accentColor: Color
 	let suggestion: PresetGallerySuggestion
 	let onSelect: (String) -> Void
-	let reduceMotion: Bool
-
-	private var transition: AnyTransition {
-		guard !reduceMotion else { return .opacity }
-		return .asymmetric(
-			insertion: .move(edge: .trailing).combined(with: .opacity),
-			removal: .move(edge: .leading).combined(with: .opacity)
-		)
-	}
+	@FocusState private var isFocused: Bool
 
 	var body: some View {
 		Button {
@@ -86,7 +80,6 @@ private struct PresetGallerySuggestionChip: View {
 				Image(
 					systemName: destination == .artwork ? "tag" : "person.crop.square"
 				)
-				.foregroundStyle(.secondary)
 				Text(suggestion.compactTitle)
 					.font(.caption.weight(.medium))
 					.lineLimit(1)
@@ -96,17 +89,20 @@ private struct PresetGallerySuggestionChip: View {
 			.padding(.vertical, 6)
 			.frame(maxWidth: 220, alignment: .leading)
 			.contentShape(Capsule())
-			.adaptiveGlassEffect(in: Capsule())
-			.overlay {
-				Capsule()
-					.strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
-					.allowsHitTesting(false)
-			}
+			.adaptiveControlForeground(
+				isFocused ? accentColor : .secondary,
+				disabledTint: .secondary
+			)
+			.adaptiveControlSurface(
+				tint: LauncherVisuals.controlTint,
+				in: Capsule()
+			)
 		}
 		.buttonStyle(.plain)
+		.focused($isFocused)
 		.keyboardFocusIndicator(in: Capsule())
 		.accessibilityLabel(Text(suggestion.accessibilityTitle))
-		.accessibilityHint(Text(L10n.string(CustomizationStrings.searchSuggestionSelect)))
-		.transition(transition)
+		.accessibilityHint(Text(CustomizationStrings.searchSuggestionSelect))
+		.transition(.opacity)
 	}
 }

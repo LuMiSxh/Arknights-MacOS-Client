@@ -50,7 +50,7 @@ func artworkCacheRestoresTheLastActiveImagePerRegion() async throws {
 	try imageData.write(to: directory.appending(path: "artwork-key.jpg"))
 	let cache = ArtworkCache(directory: directory)
 	let branding = LauncherBranding(
-		launcherBackgroundImage: URL(string: "https://example.com/artwork.jpg"),
+		launcherBackgroundImage: URL(string: "https://www.arknights.global/artwork.jpg"),
 		launcherBackgroundImageCRC64: "artwork-key",
 		copyrightInformation: nil,
 		privacyPolicy: nil,
@@ -102,7 +102,7 @@ func artworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
 
 private func testBranding(host: String, key: String) -> LauncherBranding {
 	LauncherBranding(
-		launcherBackgroundImage: URL(string: "https://" + host + ".example.com/" + host + ".jpg"),
+		launcherBackgroundImage: URL(string: "https://www.arknights.global/" + host + ".jpg"),
 		launcherBackgroundImageCRC64: key, copyrightInformation: nil, privacyPolicy: nil,
 		userAgreement: nil, noticePopOpen: nil, noticeContent: nil)
 }
@@ -120,6 +120,18 @@ func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
 	#expect(
 		ArtworkCache.officialLogoURL(for: .korea)?.absoluteString
 			== "https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
+	)
+	#expect(
+		ArtworkCache.officialLogoURL(for: .china)?.absoluteString
+			== "https://zh.wikifur.com/w/images/b/b3/Arknights_CN_Logo.png"
+	)
+	#expect(
+		ArtworkCache.officialLogoURL(for: .chinaBilibili)?.absoluteString
+			== "https://zh.wikifur.com/w/images/b/b3/Arknights_CN_Logo.png"
+	)
+	#expect(
+		ArtworkCache.officialLogoURL(for: .taiwan)
+			== ArtworkCache.officialLogoURL(for: .china)
 	)
 
 	let directory = FileManager.default.temporaryDirectory.appending(
@@ -139,6 +151,22 @@ func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
 	#expect(try cache.cachedOfficialLogoData(for: .global) == globalData)
 	#expect(try cache.cachedOfficialLogoData(for: .japan) == japanData)
 	#expect(try cache.cachedOfficialLogoData(for: .korea) == nil)
+}
+
+@Test
+func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
+	let taiwanValidator = ArtworkCache.artworkRedirectValidator(for: .taiwan)
+	#expect(taiwanValidator(URL(string: "https://gl-utils-public.hg-cdn.com/background.png")!))
+	#expect(taiwanValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
+	#expect(!taiwanValidator(URL(string: "http://gl-utils-public.hg-cdn.com/background.png")!))
+	#expect(!taiwanValidator(URL(string: "https://evil.example/background.png")!))
+	#expect(!taiwanValidator(URL(string: "https://launcher.gryphline.com/background.png")!))
+	#expect(
+		!taiwanValidator(URL(string: "https://gl-utils-public.hg-cdn.com:8443/background.png")!))
+
+	let chinaValidator = ArtworkCache.artworkRedirectValidator(for: .china)
+	#expect(chinaValidator(URL(string: "https://ak.hycdn.cn/background.png")!))
+	#expect(chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
 }
 
 @Test
@@ -209,7 +237,7 @@ private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
-		if request.url?.host == "first.example.com" {
+		if request.url?.path == "/first.jpg" {
 			let shouldDelay = Self.lock.withLock {
 				Self.firstRequestStarted = true
 				return Self.delayFirst
@@ -222,7 +250,7 @@ private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
 				return
 			}
 		}
-		if request.url?.host == "second.example.com" {
+		if request.url?.path == "/second.jpg" {
 			finish(Self.imageData)
 			return
 		}

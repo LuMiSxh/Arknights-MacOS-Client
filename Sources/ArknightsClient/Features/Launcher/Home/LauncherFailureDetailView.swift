@@ -25,8 +25,7 @@ struct LauncherFailureDetailView: View {
 
 	var body: some View {
 		ThemedModalView(
-			title: L10n.string(HomeStrings.needsAttention),
-			accentColor: accentColor,
+			title: HomeStrings.needsAttention,
 			hudTintColor: hudTintColor,
 			width: failure.code == nil ? 620 : 820,
 			height: failure.code == nil ? 430 : 600,
@@ -34,7 +33,7 @@ struct LauncherFailureDetailView: View {
 		) {
 			VStack(alignment: .leading, spacing: 20) {
 				if let code = failure.code {
-					LauncherSupportCodeLabel(code: code, accentColor: accentColor)
+					LauncherSupportCodeLabel(code: code)
 				}
 
 				Text(failure.message)
@@ -58,36 +57,88 @@ struct LauncherFailureDetailView: View {
 
 	@ViewBuilder
 	private var footerActions: some View {
-		HStack(spacing: 8) {
-			if hasSupportActions {
-				supportActions
-				Divider()
-					.frame(height: 24)
-					.padding(.horizontal, 2)
-			}
-			if failure.actions.contains(.retry) {
-				CapsuleActionButton(
-					title: L10n.string(HomeStrings.retry),
-					systemImage: "arrow.clockwise",
-					tone: .neutral
-				) {
-					perform(.retry, failure.id)
+		ViewThatFits(in: .horizontal) {
+			HStack(spacing: 8) {
+				recoveryActions
+				if hasSupportActions {
+					supportActions
+					Divider()
+						.frame(height: 24)
+						.padding(.horizontal, 2)
 				}
+				dismissButton
 			}
-			if failure.actions.contains(.repair) {
-				CapsuleActionButton(
-					title: L10n.string(HomeStrings.repair),
-					systemImage: "wrench.and.screwdriver",
-					tone: .neutral
-				) {
-					perform(.repair, failure.id)
+			VStack(alignment: .trailing, spacing: LauncherVisuals.Spacing.control) {
+				HStack(spacing: 8) {
+					recoveryActions
 				}
-			}
-			FloatingDoneButton(accentColor: accentColor) {
-				dismiss()
+				HStack(spacing: 8) {
+					if hasSupportActions {
+						supportActions
+					}
+					dismissButton
+				}
 			}
 		}
 		.controlSize(.large)
+	}
+
+	@ViewBuilder
+	private var recoveryActions: some View {
+		if failure.actions.contains(.installRosetta) {
+			recoveryButton(
+				action: .installRosetta,
+				title: LauncherStrings.rosettaInstall,
+				systemImage: "arrow.down.circle",
+				tone: .accent(accentColor)
+			)
+		}
+		if failure.actions.contains(.retry) {
+			recoveryButton(
+				action: .retry,
+				title: HomeStrings.retry,
+				systemImage: "arrow.clockwise",
+				tone: .accent(accentColor)
+			)
+		}
+		if failure.actions.contains(.repair) {
+			recoveryButton(
+				action: .repair,
+				title: HomeStrings.repair,
+				systemImage: "wrench.and.screwdriver",
+				tone: failure.actions.contains(.retry) ? .neutral : .accent(accentColor)
+			)
+		}
+	}
+
+	@ViewBuilder
+	private func recoveryButton(
+		action recoveryAction: RecoveryAction,
+		title: String,
+		systemImage: String,
+		tone: CapsuleActionTone
+	) -> some View {
+		let button = CapsuleActionButton(
+			title: title,
+			systemImage: systemImage,
+			tone: tone
+		) {
+			perform(recoveryAction, failure.id)
+		}
+		if recoveryAction == defaultRecoveryAction {
+			button.keyboardShortcut(.defaultAction)
+		} else {
+			button
+		}
+	}
+
+	private var dismissButton: some View {
+		CapsuleActionButton(
+			title: LauncherStrings.popupDone,
+			tone: .neutral,
+			action: { dismiss() }
+		)
+		.keyboardShortcut(.cancelAction)
 	}
 
 	private var supportActions: some View {
@@ -95,14 +146,14 @@ struct LauncherFailureDetailView: View {
 			if failure.actions.contains(.openTroubleshooting) {
 				supportAction(
 					.openTroubleshooting,
-					title: L10n.string(HomeStrings.openTroubleshooting),
+					title: HomeStrings.openTroubleshooting,
 					systemImage: "arrow.up.right.square"
 				)
 			}
 			if failure.actions.contains(.reportProblem) {
 				supportAction(
 					.reportProblem,
-					title: L10n.string(HomeStrings.reportProblem),
+					title: HomeStrings.reportProblem,
 					systemImage: "ladybug"
 				)
 			}
@@ -126,5 +177,12 @@ struct LauncherFailureDetailView: View {
 	private var hasSupportActions: Bool {
 		failure.actions.contains(.openTroubleshooting)
 			|| failure.actions.contains(.reportProblem)
+	}
+
+	private var defaultRecoveryAction: RecoveryAction? {
+		if failure.actions.contains(.installRosetta) { return .installRosetta }
+		if failure.actions.contains(.retry) { return .retry }
+		if failure.actions.contains(.repair) { return .repair }
+		return nil
 	}
 }

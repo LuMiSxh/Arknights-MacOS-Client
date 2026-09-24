@@ -1,22 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<script>
-			try {
-				const mode =
-					localStorage.getItem('anasthasia:theme') ?? 'system';
-				const dark =
-					mode === 'dark' ||
-					(mode === 'system' &&
-						matchMedia('(prefers-color-scheme: dark)').matches);
-				document.documentElement.classList.toggle('dark', dark);
-				document.documentElement.style.colorScheme = dark
-					? 'dark'
-					: 'light';
-			} catch {}
-		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

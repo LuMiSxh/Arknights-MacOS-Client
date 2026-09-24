@@ -22,19 +22,25 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
-		static let runtimePerformanceEnabled = "runtimePerformanceEnabled"
+		static let chinaClientsEnabled = "chinaClientsEnabled"
+		static let taiwanClientEnabled = "taiwanClientEnabled"
+		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
 		static let forceDisableRetina = "forceDisableRetina"
-		static let appLanguage = "appLanguage"
 	}
 
 	let defaults: UserDefaults
 
 	init(defaults: UserDefaults = .standard) {
 		self.defaults = defaults
+		// Preserve the China access granted by the legacy Canary switch once.
+		if defaults.object(forKey: Key.chinaClientsEnabled) == nil {
+			defaults.set(
+				defaults.bool(forKey: Key.canaryFeaturesEnabled), forKey: Key.chinaClientsEnabled)
+		}
 	}
 
 	func automaticLauncherUpdates() -> Bool {
@@ -104,11 +110,11 @@ struct LauncherPreferencesStore {
 
 	func launcherMusicVolume() -> Double {
 		guard defaults.object(forKey: Key.launcherMusicVolume) != nil else { return 0.5 }
-		return defaults.double(forKey: Key.launcherMusicVolume)
+		return normalizedMusicVolume(defaults.double(forKey: Key.launcherMusicVolume))
 	}
 
 	func setLauncherMusicVolume(_ value: Double) {
-		defaults.set(value, forKey: Key.launcherMusicVolume)
+		defaults.set(normalizedMusicVolume(value), forKey: Key.launcherMusicVolume)
 	}
 
 	func seenAnnouncementIDs() -> Set<String> {
@@ -174,8 +180,17 @@ struct LauncherPreferencesStore {
 
 	func selectedRegion() -> GameRegion {
 		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
-		if region?.isChinaClient == true, !canaryFeaturesEnabled() { return .global }
-		return region ?? .global
+		guard let region else { return .global }
+		if region.requiresCanaryPermission && !canaryFeaturesEnabled() {
+			return .global
+		}
+		if region.requiresChinaClientPermission && !chinaClientsEnabled() {
+			return .global
+		}
+		if region.requiresTaiwanClientPermission && !taiwanClientEnabled() {
+			return .global
+		}
+		return region
 	}
 
 	func setSelectedRegion(_ region: GameRegion) {
@@ -190,12 +205,34 @@ struct LauncherPreferencesStore {
 		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
 	}
 
-	func runtimePerformanceEnabled() -> Bool {
-		bool(for: Key.runtimePerformanceEnabled, defaultValue: false)
+	func chinaClientsEnabled() -> Bool {
+		bool(for: Key.chinaClientsEnabled, defaultValue: false)
 	}
 
-	func setRuntimePerformanceEnabled(_ value: Bool) {
-		defaults.set(value, forKey: Key.runtimePerformanceEnabled)
+	func setChinaClientsEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.chinaClientsEnabled)
+	}
+
+	func taiwanClientEnabled() -> Bool {
+		bool(for: Key.taiwanClientEnabled, defaultValue: false)
+	}
+
+	func setTaiwanClientEnabled(_ value: Bool) {
+		defaults.set(value, forKey: Key.taiwanClientEnabled)
+	}
+
+	func hasAcknowledgedACEWarning(for region: GameRegion) -> Bool {
+		acknowledgedACEWarningRegions().contains(region.rawValue)
+	}
+
+	func markACEWarningAcknowledged(for region: GameRegion) {
+		var regions = acknowledgedACEWarningRegions()
+		regions.insert(region.rawValue)
+		defaults.set(Array(regions).sorted(), forKey: Key.acknowledgedACEWarningRegions)
+	}
+
+	func clearACEWarningAcknowledgements() {
+		defaults.removeObject(forKey: Key.acknowledgedACEWarningRegions)
 	}
 
 	func maximumFrameLatency() -> Int {
@@ -213,14 +250,6 @@ struct LauncherPreferencesStore {
 
 	func setUsesDynamicTheme(_ value: Bool) {
 		defaults.set(value, forKey: Key.usesDynamicTheme)
-	}
-
-	func appLanguage() -> AppLanguage {
-		defaults.string(forKey: Key.appLanguage).flatMap(AppLanguage.init(rawValue:)) ?? .system
-	}
-
-	func setAppLanguage(_ language: AppLanguage) {
-		defaults.set(language.rawValue, forKey: Key.appLanguage)
 	}
 
 	func forceDisableRetina() -> Bool {
@@ -274,5 +303,14 @@ struct LauncherPreferencesStore {
 	private func bool(for key: String, defaultValue: Bool) -> Bool {
 		guard defaults.object(forKey: key) != nil else { return defaultValue }
 		return defaults.bool(forKey: key)
+	}
+
+	private func normalizedMusicVolume(_ value: Double) -> Double {
+		guard value.isFinite else { return 0.5 }
+		return min(max(value, 0), 1)
+	}
+
+	private func acknowledgedACEWarningRegions() -> Set<String> {
+		Set(defaults.stringArray(forKey: Key.acknowledgedACEWarningRegions) ?? [])
 	}
 }

@@ -8,12 +8,7 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 	case resourceValuesReadFailed(URL, String)
 
 	var errorDescription: String? {
-		L10n.string(
-			LocalizedStringResource(
-				"launcher.error.diskCapacityUnavailable",
-				table: "Launcher"
-			)
-		)
+		"Disk capacity could not be determined for the selected location."
 	}
 
 	var diagnosticDescription: String {

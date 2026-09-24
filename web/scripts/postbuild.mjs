@@ -62,19 +62,19 @@ function contrastRatio(first, second) {
 	return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
 }
 
-function assertLightContrast() {
+function assertSignalContrast() {
 	const css = buildFiles('css')
 		.map((path) => readFileSync(path, 'utf8'))
 		.join('\n');
 	const token = (name) =>
-		new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
-	const background = token('color-anasthasia-bg');
-	const accent = token('color-anasthasia-accent');
-	assert.ok(background && accent, 'light contrast tokens are missing');
+		new RegExp(`--${name}:[^;]*?(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+	const background = token('site-bg');
+	const accent = token('site-signal-text');
+	assert.ok(background && accent, 'signal contrast tokens are missing');
 	const ratio = contrastRatio(background, accent);
 	assert.ok(
 		ratio >= 4.5,
-		`light accent contrast is below WCAG AA: ${ratio.toFixed(3)}:1`
+		`signal text contrast is below WCAG AA: ${ratio.toFixed(3)}:1`
 	);
 }
 
@@ -168,7 +168,7 @@ function writeDiscoveryFiles() {
 	writeFileSync(resolve(build, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${siteUrl}/sitemap.xml\n`, 'utf8');
 	writeFileSync(resolve(build, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${locations}\n</urlset>\n`, 'utf8');
 	const home = `${basePath}/`, canonical = `${siteUrl}/404.html`, description = 'The requested Arknights Client documentation page could not be found.', icon = `${siteUrl}/AppIcon-128.png`, favicon = `${basePath}/favicon.ico`;
-	const notFound = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>404 · Page not found · Arknights Client</title><meta name="description" content="${description}"><meta name="robots" content="noindex"><link rel="icon" type="image/x-icon" sizes="any" href="${favicon}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="website"><meta property="og:title" content="Page not found · Arknights Client"><meta property="og:description" content="${description}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${icon}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Page not found · Arknights Client"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${icon}"><style>body{max-width:42rem;margin:10vh auto;padding:1.5rem;font:1rem/1.6 system-ui,sans-serif;color:#f5f7f8;background:#090b0d}a{color:#78d7ff}</style></head><body><main><p>Error 404</p><h1>Page not found</h1><p>The page may have moved, or the link may be stale.</p><a href="${home}">Return home</a></main></body></html>\n`;
+	const notFound = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>404 · Page not found · Arknights Client</title><meta name="description" content="${description}"><meta name="robots" content="noindex"><link rel="icon" type="image/x-icon" sizes="any" href="${favicon}"><link rel="canonical" href="${canonical}"><meta property="og:type" content="website"><meta property="og:title" content="Page not found · Arknights Client"><meta property="og:description" content="${description}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${icon}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Page not found · Arknights Client"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${icon}"><style>body{max-width:42rem;margin:10vh auto;padding:1.5rem;font:1rem/1.6 system-ui,sans-serif;color:#f2f3f5;background:#0b0c0e}a{color:#7ea2db}</style></head><body><main><p>Error 404</p><h1>Page not found</h1><p>The page may have moved, or the link may be stale.</p><a href="${home}">Return home</a></main></body></html>\n`;
 	writeFileSync(resolve(build, '404.html'), notFound, 'utf8');
 }
 
@@ -200,7 +200,7 @@ function assertBuildOutput() {
 	assert.match(robots, new RegExp(`Sitemap: ${siteUrl}/sitemap\\.xml`));
 	assert.match(sitemap, new RegExp(`<loc>${siteUrl}/</loc>`));
 	assert.match(sitemap, new RegExp(`<loc>${siteUrl}/installation/</loc>`));
-	assertLightContrast();
+	assertSignalContrast();
 }
 
 writeDiscoveryFiles();

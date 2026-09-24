@@ -225,7 +225,7 @@ extension BackgroundMusicController {
 				?? targetVideoID
 			currentMusicVideoID = resolvedVideoID
 			if lastObservedVideoID != resolvedVideoID {
-				let fallbackTitle = L10n.string(AudioStrings.playlistTrack(targetIndex + 1))
+				let fallbackTitle = AudioStrings.playlistTrack(targetIndex + 1)
 				currentMusicTitle = fallbackTitle
 				nowPlaying.updateTrack(title: fallbackTitle, artist: nil)
 			}

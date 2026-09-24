@@ -6,6 +6,7 @@ extension GameRegion {
 		case .global: .global
 		case .japan: .japan
 		case .korea: .korea
+		case .taiwan: .taiwan
 		case .china: .china
 		case .chinaBilibili: .chinaBilibili
 		}

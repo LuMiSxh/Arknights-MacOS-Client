@@ -73,6 +73,7 @@ final class IntelTranslationController {
 		if check.state != .rosettaMissing {
 			lifecycle.rosettaInstallationState = .idle
 		}
+		updatePreflightFailure(for: check)
 		await log.info(
 			"Intel translation preflight; state=\(check.state.diagnosticName) \(check.diagnostics)"
 		)
@@ -106,8 +107,8 @@ final class IntelTranslationController {
 			await log.info(
 				"Rosetta installation finished; status=\(result.status) output=\(output)")
 			guard result.status == 0 else {
-				let message = L10n.string(
-					.Launcher.launcherRosettaFailureInstallerExited(String(result.status)))
+				let message =
+					"Apple’s installer exited with status \(String(result.status)). Use the Terminal command below or check the launcher log for details."
 				lifecycle.rosettaInstallationState = .failed(message)
 				presentRosettaFailure(
 					message: message,
@@ -126,7 +127,8 @@ final class IntelTranslationController {
 		} catch {
 			installationTask = nil
 			installationID = nil
-			let message = L10n.string(.Launcher.launcherRosettaFailureInstallerStart)
+			let message =
+				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
 			lifecycle.rosettaInstallationState = .failed(message)
 			await log.error("Rosetta installation failed: \(error.localizedDescription)")
 			presentRosettaFailure(
@@ -151,47 +153,60 @@ final class IntelTranslationController {
 		return true
 	}
 
+	@discardableResult
+	func retryAvailabilityFailure(id: UUID) -> Bool {
+		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard failure.context.operation == .intelTranslationPreflight else { return false }
+		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
+		guard lifecycle.consumeFailure(id: id) != nil else { return false }
+		Task { [weak self, log] in
+			await log.info("Recovery selected; action=retry operation=intel-translation-preflight")
+			_ = await self?.refreshAvailability(force: true)
+		}
+		return true
+	}
+
 	var statusTitle: String? {
 		if lifecycle.rosettaInstallationState.isInstalling {
-			return L10n.string(.Launcher.launcherRosettaStatusInstalling)
+			return "Installing Rosetta 2…"
 		}
 		if lifecycle.rosettaInstallationState.failureMessage != nil {
-			return L10n.string(.Launcher.launcherRosettaStatusInstallationFailed)
+			return "Rosetta installation failed"
 		}
 		return switch lifecycle.intelTranslationState {
 		case .waitingForLauncherCheck, .checking:
-			L10n.string(.Launcher.launcherRosettaStatusChecking)
+			"Checking Intel compatibility…"
 		case .available:
 			nil
 		case .rosettaMissing:
-			L10n.string(.Launcher.launcherRosettaStatusMissing)
+			"Rosetta 2 required"
 		case .gameTestModeEnabled:
-			L10n.string(.Launcher.launcherRosettaStatusGameTestMode)
+			"Legacy Game Test Mode is active"
 		case .unavailable:
-			L10n.string(.Launcher.launcherRosettaStatusUnavailable)
+			"Intel compatibility unavailable"
 		case .unsupportedOS:
-			L10n.string(.Launcher.launcherRosettaStatusUnsupported)
+			"Windows runtime unsupported"
 		}
 	}
 
 	var statusDetail: String? {
 		if lifecycle.rosettaInstallationState.isInstalling {
-			return L10n.string(.Launcher.launcherRosettaDetailInstalling)
+			return "Apple’s software update tool is installing the Intel compatibility layer."
 		}
 		if let failure = lifecycle.rosettaInstallationState.failureMessage { return failure }
 		return switch lifecycle.intelTranslationState {
 		case .waitingForLauncherCheck, .checking:
-			L10n.string(.Launcher.launcherRosettaDetailAvailableCheck)
+			"The launcher is verifying that the bundled Wine runtime can start."
 		case .available:
 			nil
 		case .rosettaMissing:
-			L10n.string(.Launcher.launcherRosettaDetailMissing)
+			"Install Rosetta 2, then check again."
 		case .gameTestModeEnabled:
-			L10n.string(.Launcher.launcherRosettaDetailGameTestMode)
+			"This macOS 27 test mode disables Rosetta. Turn it off, restart your Mac, then check again."
 		case .unavailable:
-			L10n.string(.Launcher.launcherRosettaDetailUnavailable)
+			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
 		case .unsupportedOS:
-			L10n.string(.Launcher.launcherRosettaDetailUnsupported)
+			"This macOS version no longer provides the general Rosetta support Wine requires."
 		}
 	}
 
@@ -221,8 +236,8 @@ final class IntelTranslationController {
 
 	var installationActionTitle: String {
 		lifecycle.rosettaInstallationState.failureMessage == nil
-			? L10n.string(.Launcher.launcherRosettaActionInstallEllipsis)
-			: L10n.string(.Launcher.launcherRosettaActionInstallAgain)
+			? "Install Rosetta 2…"
+			: "Try Installation Again…"
 	}
 
 	var launchError: LauncherError {
@@ -242,6 +257,41 @@ final class IntelTranslationController {
 		let normalized = output.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard !normalized.isEmpty else { return "empty" }
 		return String(normalized.prefix(AppConstants.IO.processDiagnosticMaximumCharacters))
+	}
+
+	private func updatePreflightFailure(for check: IntelTranslationCheck) {
+		if check.state == .available {
+			if lifecycle.failure?.context.operation == .intelTranslationPreflight {
+				lifecycle.clearFailure()
+			}
+			return
+		}
+		guard lifecycle.readiness.isInstalled else { return }
+		guard check.state != .waitingForLauncherCheck, check.state != .checking else { return }
+		guard
+			lifecycle.failure == nil
+				|| lifecycle.failure?.context.operation == .intelTranslationPreflight
+		else { return }
+
+		let error = launchError
+		var actions: [RecoveryAction] = [.retry, .openTroubleshooting, .reportProblem]
+		if check.state == .rosettaMissing { actions.insert(.installRosetta, at: 0) }
+		let existingID =
+			lifecycle.failure?.message == error.errorDescription
+			? lifecycle.failure?.id
+			: nil
+		lifecycle.presentFailure(
+			LauncherFailurePresentation(
+				id: existingID ?? UUID(),
+				message: error.errorDescription
+					?? "The operation could not be completed because of an unexpected error.",
+				code: .limpet,
+				context: SupportContext(operation: .intelTranslationPreflight, region: nil),
+				actions: actions,
+				blocksGameLaunch: true
+			),
+			diagnostic: check.diagnostics
+		)
 	}
 
 	private func presentRosettaFailure(message: String, diagnostic: String, id: UUID) {

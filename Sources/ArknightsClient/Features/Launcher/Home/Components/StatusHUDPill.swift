@@ -11,9 +11,8 @@ struct StatusHUDPill: View {
 	let accentColor: Color
 	let hudTintColor: Color
 	let selectRegion: (GameRegion) -> Void
+	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var isExpanded = false
-	@State private var isHovering = false
 
 	var body: some View {
 		if hasContent {
@@ -40,9 +39,10 @@ struct StatusHUDPill: View {
 					: AppConstants.HUD.collapsedStatusMaxWidth
 			)
 			.fixedSize(horizontal: true, vertical: false)
-			.adaptiveGlassEffect(
+			.hudPillSurface(
+				isExpanded: isExpanded && canExpand,
 				tint: hudTintColor,
-				in: RoundedRectangle(cornerRadius: isExpanded && canExpand ? 20 : 40)
+				progressTint: accentColor
 			)
 			.shadow(
 				color: Color.black.opacity(isExpanded && canExpand ? 0.35 : 0),
@@ -50,6 +50,7 @@ struct StatusHUDPill: View {
 				y: isExpanded && canExpand ? 5 : 0
 			)
 			.accessibilityElement(children: .contain)
+			.onExitCommand(perform: collapseExpansion)
 		}
 	}
 
@@ -67,19 +68,18 @@ struct StatusHUDPill: View {
 			Button(action: toggleExpansion) {
 				headerLabel
 			}
-			.buttonStyle(.plain)
-			.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 8))
-			.onHover { isHovering = $0 }
+			.buttonStyle(ActionPressStyle())
+			.keyboardFocusIndicator(in: Capsule())
 			.accessibilityLabel(
-				L10n.string(
-					isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
-				)
+
+				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
+
 			)
 			.accessibilityValue(Text(selectedCountdown))
 			.help(
-				L10n.string(
-					isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
-				)
+
+				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
+
 			)
 		} else {
 			headerLabel
@@ -90,11 +90,11 @@ struct StatusHUDPill: View {
 		HStack(spacing: 5) {
 			Image(systemName: "clock")
 				.font(.caption.weight(.semibold))
-				.foregroundStyle(accentColor)
+				.adaptiveControlForeground(accentColor)
 				.accessibilityHidden(true)
 			Text(selectedCountdown)
 				.font(.caption.monospaced().weight(.medium))
-				.foregroundStyle(isHovering ? .primary : .secondary)
+				.foregroundStyle(.secondary)
 				.lineLimit(2)
 				.truncationMode(.tail)
 				.fixedSize(horizontal: false, vertical: true)
@@ -104,11 +104,12 @@ struct StatusHUDPill: View {
 						: AppConstants.HUD.collapsedStatusTitleMaxWidth,
 					alignment: .leading
 				)
-			Spacer(minLength: isExpanded && canExpand ? 6 : 0)
-			if isExpanded && canExpand {
-				Image(systemName: "chevron.down")
+			Spacer(minLength: canExpand ? 6 : 0)
+			if canExpand {
+				Image(systemName: disclosureImage)
 					.font(.caption.bold())
-					.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
+					.adaptiveControlForeground(accentColor)
+					.contentTransition(HUDPillMotion.chevronTransition(reduceMotion: reduceMotion))
 					.accessibilityHidden(true)
 			}
 		}
@@ -121,72 +122,101 @@ struct StatusHUDPill: View {
 		settings.resetCountdownText ?? ""
 	}
 
+	private var disclosureImage: String {
+		isExpanded ? "chevron.up" : "chevron.down"
+	}
+
 	private var installedRegionRows: some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 			ForEach(installation.installedRegions) { region in
 				let countdown = ServerReset.countdownText(for: region)
 				Button {
 					selectRegion(region)
-					withAnimation(reduceMotion ? nil : .snappy) {
+					withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
 						isExpanded = false
 					}
 				} label: {
-					HStack(spacing: 8) {
-						Text(region.localizedDisplayName)
-							.font(.caption.weight(.semibold))
-							.foregroundStyle(
-								region == installation.region ? accentColor : .primary
-							)
-							.lineLimit(1)
-						Text(countdown)
-							.font(.caption.monospaced().weight(.medium))
-							.foregroundStyle(.secondary)
-							.lineLimit(1)
-						if region == installation.region {
-							Image(systemName: "checkmark")
-								.font(.caption.bold())
-								.foregroundStyle(accentColor)
-								.accessibilityHidden(true)
-						} else {
-							Image(systemName: "chevron.right")
-								.font(.caption.weight(.semibold))
-								.foregroundStyle(.tertiary)
-								.accessibilityHidden(true)
-						}
-					}
-					.padding(.horizontal, 14)
-					.padding(.vertical, 3)
-					.contentShape(Rectangle())
+					regionRowLabel(region: region, countdown: countdown)
 				}
-				.buttonStyle(.plain)
-				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 8))
+				.buttonStyle(ActionPressStyle())
+				.keyboardFocusIndicator(
+					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
+				)
 				.disabled(!canSwitchRegion)
-				.accessibilityElement(children: .combine)
+				.accessibilityElement(children: .ignore)
+				.accessibilityLabel(Text(region.displayName))
 				.accessibilityValue(Text(countdown))
 				.accessibilityAddTraits(
 					region == installation.region ? .isSelected : []
 				)
-				.accessibilityHint(Text(L10n.string(HomeStrings.switchRegionHelp)))
+				.accessibilityHint(Text(HomeStrings.switchRegionHelp))
 			}
 		}
+		.padding(.horizontal, LauncherVisuals.Spacing.control)
+		.padding(.vertical, LauncherVisuals.Spacing.control)
+		.frame(maxWidth: .infinity, alignment: .leading)
+	}
+
+	private func regionRowLabel(region: GameRegion, countdown: String) -> some View {
+		HStack(spacing: LauncherVisuals.Spacing.control) {
+			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+				Text(region.displayName)
+					.font(.caption.weight(.semibold))
+					.adaptiveControlForeground(
+						.primary,
+						disabledTint: LauncherVisuals.disabled
+					)
+					.fixedSize(horizontal: false, vertical: true)
+				Text(countdown)
+					.font(.caption.monospacedDigit().weight(.medium))
+					.adaptiveControlForeground(
+						.secondary,
+						disabledTint: LauncherVisuals.disabled
+					)
+					.fixedSize(horizontal: false, vertical: true)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+
+			Image(systemName: "checkmark")
+				.font(.caption.bold())
+				.adaptiveControlForeground(
+					accentColor,
+					disabledTint: LauncherVisuals.disabled
+				)
+				.opacity(region == installation.region ? 1 : 0)
+				.frame(width: 16, alignment: .center)
+				.accessibilityHidden(true)
+		}
+		.padding(.horizontal, LauncherVisuals.Spacing.control)
+		.padding(.vertical, LauncherVisuals.Spacing.tight)
+		.frame(maxWidth: .infinity, alignment: .leading)
+		.background(
+			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
+		)
+		.contentShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+	}
+
+	private func rowFill(for region: GameRegion) -> Color {
+		guard region == installation.region else { return .clear }
+		let opacity = canSwitchRegion ? 1 : 0.45
+		return LauncherVisuals.selectedNavigationFill(for: accentColor).opacity(opacity)
 	}
 
 	private var expandedContentTransition: AnyTransition {
-		if reduceMotion { return .opacity }
-		return .opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing))
+		HUDPillMotion.expandedContentTransition(reduceMotion: reduceMotion)
 	}
 
 	private func toggleExpansion() {
 		guard canExpand else { return }
-		withAnimation(
-			reduceMotion
-				? nil
-				: .snappy(
-					duration: AppConstants.HUD.expansionDuration,
-					extraBounce: 0.04
-				)
-		) {
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
 			isExpanded.toggle()
+		}
+	}
+
+	private func collapseExpansion() {
+		guard isExpanded else { return }
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
+			isExpanded = false
 		}
 	}
 }

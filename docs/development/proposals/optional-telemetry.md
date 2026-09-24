@@ -13,7 +13,7 @@ Related issue: [#55 — Collect anonymous telemetry](https://github.com/LuMiSxh/
 ## Summary
 
 Arknights Client may offer optional telemetry to learn which launcher features and compatibility
-settings matter, which operations fail, and which languages would benefit users. Collection must be
+settings matter and which operations fail. Collection must be
 explicitly enabled, remain independent from publisher services, and avoid identifiers or per-installation
 profiles.
 
@@ -29,7 +29,7 @@ It must never contain executable code, scripts, paths, arbitrary URLs, or comman
 
 - Explain what is collected and why before any telemetry request is made.
 - Make participation optional, disabled until the user makes an explicit choice, and reversible.
-- Measure feature use, compatibility outcomes, approximate world region, and language demand without
+- Measure feature use, compatibility outcomes, and approximate world region without
   assigning a stable installation or device identifier.
 - Keep collection asynchronous, best-effort, and outside installation, update, and launch critical
   paths.
@@ -58,8 +58,8 @@ Suggested English copy:
 > **Help improve Arknights Client**
 >
 > If enabled, the launcher occasionally sends privacy-preserving counts about used features,
-> compatibility settings, coarse success or failure categories, approximate world region, and
-> preferred app language. It never sends account data, identifiers, paths, logs, or game content.
+> compatibility settings, coarse success or failure categories, and approximate world region. It
+> never sends account data, identifiers, paths, logs, or game content.
 > Cloudflare processes the network request. You can change this choice at any time in Settings.
 
 Suggested actions:
@@ -113,7 +113,6 @@ Values must be fixed enums or coarse buckets, for example:
 - coarse duration, transfer, and frame-rate buckets;
 - known failure classes without error messages;
 - approximate continent derived by Cloudflare;
-- preferred base language, such as `en`, `de`, `es`, `fr`, `ja`, or `ko`.
 
 ### Prohibited categories
 
@@ -140,7 +139,6 @@ A possible D1 shape is:
 ```text
 campaign_id | metric             | bucket       | count
 ------------|--------------------|--------------|------
-2026-09-01  | preferred_language | es           | 12
 2026-09-01  | continent          | south_america| 8
 2026-09-01  | sync_mode          | msync        | 41
 ```
@@ -167,7 +165,7 @@ Cloudflare may separately process and retain ordinary service metadata under its
 and terms. Disabling Worker invocation logs and application logging minimizes project-accessible logs
 but does not mean Cloudflare never processes the source IP or request metadata.
 
-## Approximate region and language
+## Approximate region
 
 Cloudflare Workers expose an IP-derived continent in `request.cf.continent`. The Worker should map it
 immediately to one of:
@@ -184,16 +182,6 @@ The client does not need location permission and should not send a country, city
 coordinates, timezone, or IP address. The Worker must not persist the source IP used to derive the
 continent. Missing geolocation maps to `other`. VPNs, relays, travel, and geolocation errors make this
 an approximate signal only.
-
-Continent alone is not a reliable language signal. The client may separately submit the selected app
-language. If the launcher follows the system language, it may normalize the first preferred macOS
-language to its base code: `es-MX` becomes `es`. Unsupported or rare values become `other`; the full
-locale is never submitted. The campaign defines the accepted base-language allowlist. A missing value
-and a language outside that allowlist both map to `other`.
-
-Continent and language should normally be aggregated independently. A reviewed `continent × language`
-pair may be collected for a specific localization decision, subject to the same minimum reporting
-threshold.
 
 ## Cloudflare architecture
 
@@ -389,7 +377,7 @@ breaker and public endpoints can be attacked. Pricing and limits must be recheck
 - Whether the build-key master is shared with release CI or separate random release keys are registered
   during deployment.
 - The internal daily cap and anomaly policy.
-- Whether approximate continent and preferred base language belong in the initial consent scope.
+- Whether approximate continent belongs in the initial consent scope.
 - Whether a future continuous-event mode is valuable enough to justify Analytics Engine.
 
 ## References

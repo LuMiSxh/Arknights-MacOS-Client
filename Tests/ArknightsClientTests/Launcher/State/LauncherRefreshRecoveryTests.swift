@@ -13,12 +13,13 @@ struct LauncherRefreshRecoveryTests {
 			outcomes: region == .global ? [.failure, .success] : [.success, .failure, .success]
 		)
 		let model = makeModel(api: api, installer: ControllableInstaller())
+		#expect(await model.waitForStartup())
 		if region != .global {
-			_ = await model.waitForStartup()
 			model.selectRegion(region)
 		}
 
-		#expect(await waitForCondition { model.lifecycle.failure?.code == .virga })
+		await model.refreshController.waitForCurrentRefresh()
+		#expect(model.lifecycle.failure?.code == .virga)
 		let failure = try #require(model.lifecycle.failure)
 		#expect(failure.context.operation == .configurationRefresh)
 		#expect(failure.context.region == region.supportRegion)
@@ -29,7 +30,8 @@ struct LauncherRefreshRecoveryTests {
 
 		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .completed)
 		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .ignored)
-		#expect(await waitForCondition { model.installation.configuration != nil })
+		await model.refreshController.waitForCurrentRefresh()
+		#expect(model.installation.configuration != nil)
 		#expect(await api.requestedRegions().last == region)
 	}
 

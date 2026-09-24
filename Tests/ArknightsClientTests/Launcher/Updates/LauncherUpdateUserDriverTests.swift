@@ -100,6 +100,29 @@ struct LauncherUpdateUserDriverTests {
 	}
 
 	@Test
+	func developerPreviewUsesTheFixtureWithoutSparkleCallbacks() {
+		let driver = LauncherUpdateUserDriver()
+		driver.showDeveloperPreview(version: "0.6.1", failed: false)
+
+		#expect(driver.phase == .available)
+		#expect(driver.version == "0.6.1")
+		driver.choose(.install)
+		#expect(driver.phase == .readyToInstall)
+		driver.dismissFromUser()
+		#expect(driver.phase == .hidden)
+
+		driver.showDeveloperPreview(version: "0.6.1", failed: false)
+		driver.choose(.install)
+		driver.choose(.install)
+		#expect(driver.phase == .hidden)
+
+		driver.showDeveloperPreview(version: nil, failed: true)
+		#expect(driver.phase == .failed)
+		driver.acknowledge()
+		#expect(driver.phase == .hidden)
+	}
+
+	@Test
 	func noUpdateAcknowledgementReplacesStaleCheckCancellation() {
 		let driver = LauncherUpdateUserDriver()
 		var cancellationCount = 0

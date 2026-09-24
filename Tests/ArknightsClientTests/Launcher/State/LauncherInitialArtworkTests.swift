@@ -36,7 +36,7 @@ struct LauncherInitialArtworkTests {
 		)
 		let cacheKey = "startup-artwork"
 		let branding = LauncherBranding(
-			launcherBackgroundImage: URL(string: "https://example.com/artwork.jpg"),
+			launcherBackgroundImage: URL(string: "https://www.arknights.global/artwork.jpg"),
 			launcherBackgroundImageCRC64: cacheKey,
 			copyrightInformation: nil,
 			privacyPolicy: nil,

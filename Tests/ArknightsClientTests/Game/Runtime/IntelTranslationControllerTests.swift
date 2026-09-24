@@ -29,6 +29,118 @@ struct IntelTranslationControllerTests {
 		#expect(await installer.count == 1)
 	}
 
+	@Test(
+		arguments: [
+			IntelTranslationState.rosettaMissing,
+			.gameTestModeEnabled,
+			.unavailable,
+			.unsupportedOS,
+		]
+	)
+	func installedTerminalPreflightPublishesABlockingFailure(
+		state: IntelTranslationState
+	) async throws {
+		let lifecycle = makeLifecycleStore()
+		lifecycle.readiness.isInstalled = true
+		let controller = IntelTranslationController(
+			lifecycle: lifecycle,
+			checkIntelTranslation: {
+				IntelTranslationCheck(
+					state: state,
+					diagnostics: "preflight-\(state.diagnosticName)"
+				)
+			}
+		)
+
+		#expect(await controller.refreshAvailability(force: true) == state)
+		let failure = try #require(lifecycle.failure)
+
+		#expect(failure.code == .limpet)
+		#expect(failure.blocksGameLaunch)
+		#expect(failure.message == controller.launchError.errorDescription ?? "")
+		#expect(
+			failure.actions
+				== (state == .rosettaMissing
+					? [.installRosetta, .retry, .openTroubleshooting, .reportProblem]
+					: [.retry, .openTroubleshooting, .reportProblem])
+		)
+	}
+
+	@Test
+	func retryingAPreflightFailureChecksAvailabilityWithoutInstallingRosetta() async throws {
+		let checks = TranslationCheckSequence(states: [.rosettaMissing, .available])
+		let installer = RosettaInstallationRecorder(status: 0)
+		let lifecycle = makeLifecycleStore()
+		lifecycle.readiness.isInstalled = true
+		let controller = IntelTranslationController(
+			lifecycle: lifecycle,
+			checkIntelTranslation: { await checks.next() },
+			installRosettaSystemSoftware: { await installer.install() }
+		)
+
+		_ = await controller.refreshAvailability(force: true)
+		let failureID = try #require(lifecycle.failure?.id)
+
+		#expect(controller.retryAvailabilityFailure(id: failureID))
+		#expect(!controller.retryAvailabilityFailure(id: failureID))
+		let cleared = await waitForCondition {
+			lifecycle.intelTranslationState == .available && lifecycle.failure == nil
+		}
+		#expect(cleared)
+		#expect(await checks.count == 2)
+		#expect(await installer.count == 0)
+	}
+
+	@Test
+	func successfulPreflightCheckPreservesARealLaunchFailure() async {
+		let lifecycle = makeLifecycleStore()
+		lifecycle.readiness.isInstalled = true
+		let realFailure = LauncherFailurePresentation(
+			id: UUID(),
+			message: "A real launch failure",
+			code: .crux,
+			context: SupportContext(operation: .launch, region: .global),
+			actions: [.retry],
+			blocksGameLaunch: true
+		)
+		lifecycle.presentFailure(realFailure, diagnostic: "launch")
+		let controller = IntelTranslationController(
+			lifecycle: lifecycle,
+			checkIntelTranslation: {
+				IntelTranslationCheck(state: .available, diagnostics: "available")
+			}
+		)
+
+		_ = await controller.refreshAvailability(force: true)
+
+		#expect(lifecycle.failure == realFailure)
+	}
+
+	@Test
+	func successfulPreflightCheckPreservesARosettaInstallationFailure() async {
+		let lifecycle = makeLifecycleStore()
+		lifecycle.readiness.isInstalled = true
+		let realFailure = LauncherFailurePresentation(
+			id: UUID(),
+			message: "Rosetta installation failed",
+			code: .limpet,
+			context: SupportContext(operation: .rosettaInstallation, region: nil),
+			actions: [.retry],
+			blocksGameLaunch: true
+		)
+		lifecycle.presentFailure(realFailure, diagnostic: "installer")
+		let controller = IntelTranslationController(
+			lifecycle: lifecycle,
+			checkIntelTranslation: {
+				IntelTranslationCheck(state: .available, diagnostics: "available")
+			}
+		)
+
+		_ = await controller.refreshAvailability(force: true)
+
+		#expect(lifecycle.failure == realFailure)
+	}
+
 	@Test
 	func failedInstallationKeepsLaunchBlockedAndExposesRecovery() async {
 		let installer = RosettaInstallationRecorder(status: 7)
@@ -50,14 +162,8 @@ struct IntelTranslationControllerTests {
 			return
 		}
 		#expect(controller.canInstallRosetta)
-		#expect(
-			controller.installationActionTitle
-				== L10n.string(.Launcher.launcherRosettaActionInstallAgain)
-		)
-		#expect(
-			lifecycle.rosettaInstallationState.failureMessage
-				== L10n.string(.Launcher.launcherRosettaFailureInstallerExited("7"))
-		)
+		#expect(!controller.installationActionTitle.isEmpty)
+		#expect(lifecycle.rosettaInstallationState.failureMessage?.contains("7") == true)
 		#expect(lifecycle.failure?.blocksGameLaunch == true)
 	}
 

@@ -20,19 +20,19 @@ struct GeneralSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: L10n.string(SettingsStrings.generalTitle),
-			subtitle: L10n.string(SettingsStrings.generalSubtitle),
+			title: SettingsStrings.generalTitle,
+			subtitle: SettingsStrings.generalSubtitle,
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: L10n.string(SettingsStrings.displayControls), systemImage: "display"
+				title: SettingsStrings.displayControls, systemImage: "display"
 			) {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.highResolution),
-					detail: L10n.string(SettingsStrings.highResolutionDetail)
+					title: SettingsStrings.highResolution,
+					detail: SettingsStrings.highResolutionDetail
 				) {
 					SettingsToggle(
-						L10n.string(SettingsStrings.highResolution),
+						SettingsStrings.highResolution,
 						isOn: $settings.launchOptions.usesHighResolutionMode,
 						accentColor: accentColor
 					)
@@ -43,11 +43,11 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.gameDisplaySettings),
-					detail: L10n.string(SettingsStrings.gameDisplaySettingsDetail)
+					title: SettingsStrings.gameDisplaySettings,
+					detail: SettingsStrings.gameDisplaySettingsDetail
 				) {
 					SettingsToggle(
-						L10n.string(SettingsStrings.gameDisplaySettings),
+						SettingsStrings.gameDisplaySettings,
 						isOn: $settings.launchOptions.usesGameSettings,
 						accentColor: accentColor
 					)
@@ -55,13 +55,13 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.windowMode),
-					detail: L10n.string(SettingsStrings.windowModeDetail)
+					title: SettingsStrings.windowMode,
+					detail: SettingsStrings.windowModeDetail
 				) {
 					GlassMenuPicker(
 						selection: $settings.launchOptions.displayMode,
 						options: GameDisplayMode.allCases.map {
-							($0, L10n.string(SettingsStrings.displayMode($0)))
+							($0, SettingsStrings.displayMode($0))
 						},
 						accentColor: accentColor,
 						isDisabled: settings.launchOptions.usesGameSettings
@@ -70,8 +70,8 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.resolution),
-					detail: L10n.string(SettingsStrings.resolutionDetail)
+					title: SettingsStrings.resolution,
+					detail: SettingsStrings.resolutionDetail
 				) {
 					GlassMenuPicker(
 						selection: $settings.launchOptions.resolution,
@@ -83,35 +83,35 @@ struct GeneralSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: L10n.string(SettingsStrings.launcher), systemImage: "sparkles") {
+			SettingsPanel(title: SettingsStrings.launcher, systemImage: "sparkles") {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.showGameVersion),
-					detail: L10n.string(SettingsStrings.showGameVersionDetail)
+					title: SettingsStrings.showGameVersion,
+					detail: SettingsStrings.showGameVersionDetail
 				) {
 					SettingsToggle(
-						L10n.string(SettingsStrings.showGameVersion),
+						SettingsStrings.showGameVersion,
 						isOn: $settings.showsGameVersion,
 						accentColor: accentColor
 					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.serverTime),
-					detail: L10n.string(SettingsStrings.serverTimeDetail)
+					title: SettingsStrings.serverTime,
+					detail: SettingsStrings.serverTimeDetail
 				) {
 					SettingsToggle(
-						L10n.string(SettingsStrings.serverTime),
+						SettingsStrings.serverTime,
 						isOn: $settings.showsServerResetCountdown,
 						accentColor: accentColor
 					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.setupAssistant),
-					detail: L10n.string(SettingsStrings.setupAssistantDetail)
+					title: SettingsStrings.setupAssistant,
+					detail: SettingsStrings.setupAssistantDetail
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.runAgain), systemImage: "wand.and.stars",
+						title: SettingsStrings.runAgain, systemImage: "wand.and.stars",
 						tone: .accent(accentColor), presentation: .compact,
 						action: restartOnboarding
 					)
@@ -120,39 +120,26 @@ struct GeneralSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: L10n.string(SettingsStrings.personalization), systemImage: "paintbrush"
+				title: SettingsStrings.personalization, systemImage: "paintbrush"
 			) {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.language),
-					detail: L10n.string(SettingsStrings.languageDetail)
-				) {
-					GlassMenuPicker(
-						selection: $settings.appLanguage,
-						options: AppLanguage.allCases.map {
-							($0, L10n.string(SettingsStrings.appLanguage($0)))
-						},
-						accentColor: accentColor
-					)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: L10n.string(SettingsStrings.artwork),
-					detail: L10n.string(SettingsStrings.artworkDetail)
+					title: SettingsStrings.artwork,
+					detail: SettingsStrings.artworkDetail
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.presets),
+						title: SettingsStrings.presets,
 						systemImage: "photo.on.rectangle",
 						tone: .accent(accentColor), presentation: .compact
 					) {
 						presentedGallery = .artwork
 					}
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.choose), systemImage: "folder",
-						tone: .accent(accentColor), presentation: .compact,
+						title: SettingsStrings.choose, systemImage: "folder",
+						tone: .neutral, presentation: .compact,
 						action: customization.chooseCustomArtwork
 					)
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.useDefault),
+						title: SettingsStrings.useDefault,
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
@@ -166,11 +153,11 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.operatorIcons),
-					detail: L10n.string(SettingsStrings.operatorIconsDetail)
+					title: SettingsStrings.operatorIcons,
+					detail: SettingsStrings.operatorIconsDetail
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.chooseOperator),
+						title: SettingsStrings.chooseOperator,
 						systemImage: "person.2.crop.square.stack",
 						tone: .accent(accentColor),
 						presentation: .compact
@@ -178,7 +165,7 @@ struct GeneralSettingsPage: View {
 						presentedGallery = .operatorIcons
 					}
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.useDefaults),
+						title: SettingsStrings.useDefaults,
 						systemImage: "arrow.counterclockwise",
 						tone: .neutral,
 						presentation: .compact,
@@ -187,19 +174,19 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.customIconOverrides),
-					detail: L10n.string(SettingsStrings.customIconOverridesDetail)
+					title: SettingsStrings.customIconOverrides,
+					detail: SettingsStrings.customIconOverridesDetail
 				) {
 					GlassActionMenu(
-						title: L10n.string(SettingsStrings.launcher),
+						title: SettingsStrings.launcher,
 						systemImage: "macwindow",
 						accentColor: accentColor
 					) {
 						Button(
-							L10n.string(SettingsStrings.chooseImage), systemImage: "folder",
+							SettingsStrings.chooseImage, systemImage: "folder",
 							action: customization.chooseCustomAppIcon)
 						Button(
-							L10n.string(SettingsStrings.useDefault),
+							SettingsStrings.useDefault,
 							systemImage: "arrow.counterclockwise",
 							action: customization.resetAppIcon)
 					}
@@ -209,15 +196,15 @@ struct GeneralSettingsPage: View {
 						return true
 					}
 					GlassActionMenu(
-						title: L10n.string(SettingsStrings.game),
+						title: SettingsStrings.game,
 						systemImage: "gamecontroller",
 						accentColor: accentColor
 					) {
 						Button(
-							L10n.string(SettingsStrings.chooseImage), systemImage: "folder",
+							SettingsStrings.chooseImage, systemImage: "folder",
 							action: customization.chooseCustomGameIcon)
 						Button(
-							L10n.string(SettingsStrings.useDefault),
+							SettingsStrings.useDefault,
 							systemImage: "arrow.counterclockwise",
 							action: customization.resetGameIcon)
 					}
@@ -229,11 +216,11 @@ struct GeneralSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.dynamicTheme),
-					detail: L10n.string(SettingsStrings.dynamicThemeDetail)
+					title: SettingsStrings.dynamicTheme,
+					detail: SettingsStrings.dynamicThemeDetail
 				) {
 					SettingsToggle(
-						L10n.string(SettingsStrings.dynamicTheme),
+						SettingsStrings.dynamicTheme,
 						isOn: $settings.usesDynamicTheme,
 						accentColor: accentColor
 					)

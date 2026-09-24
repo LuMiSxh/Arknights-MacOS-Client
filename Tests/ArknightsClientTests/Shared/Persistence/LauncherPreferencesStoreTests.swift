@@ -24,10 +24,10 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.5)
 		#expect(store.usesDynamicTheme())
 		#expect(!store.canaryFeaturesEnabled())
-		#expect(!store.runtimePerformanceEnabled())
+		#expect(!store.chinaClientsEnabled())
+		#expect(!store.taiwanClientEnabled())
 		#expect(store.maximumFrameLatency() == 3)
 		#expect(store.selectedRegion() == .global)
-		#expect(store.appLanguage() == .system)
 		#expect(!store.forceDisableRetina())
 
 		store.setAutomaticLauncherUpdates(false)
@@ -41,10 +41,10 @@ struct LauncherPreferencesStoreTests {
 		store.setLauncherMusicVolume(0.8)
 		store.setUsesDynamicTheme(false)
 		store.setCanaryFeaturesEnabled(true)
-		store.setRuntimePerformanceEnabled(true)
+		store.setChinaClientsEnabled(true)
+		store.setTaiwanClientEnabled(true)
 		store.setMaximumFrameLatency(1)
 		store.setSelectedRegion(.korea)
-		store.setAppLanguage(.german)
 
 		#expect(!store.automaticLauncherUpdates())
 		#expect(!store.automaticGameUpdates())
@@ -57,10 +57,137 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.8)
 		#expect(!store.usesDynamicTheme())
 		#expect(store.canaryFeaturesEnabled())
-		#expect(store.runtimePerformanceEnabled())
+		#expect(store.chinaClientsEnabled())
+		#expect(store.taiwanClientEnabled())
 		#expect(store.maximumFrameLatency() == 1)
 		#expect(store.selectedRegion() == .korea)
-		#expect(store.appLanguage() == .german)
+	}
+
+	@Test
+	func chinaSelectionFallsBackWhenEitherPermissionIsDisabled() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setCanaryFeaturesEnabled(true)
+		store.setChinaClientsEnabled(true)
+		store.setSelectedRegion(.china)
+		#expect(store.selectedRegion() == .china)
+
+		store.setChinaClientsEnabled(false)
+		#expect(store.selectedRegion() == .global)
+
+		store.setChinaClientsEnabled(true)
+		store.setSelectedRegion(.china)
+		store.setCanaryFeaturesEnabled(false)
+		#expect(store.selectedRegion() == .global)
+	}
+
+	@Test(arguments: [GameRegion.global, .china, .chinaBilibili])
+	func legacyCanaryUsersKeepChinaClientsAvailable(region: GameRegion) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(true, forKey: "canaryFeaturesEnabled")
+		defaults.set(region.rawValue, forKey: "selectedRegion")
+
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.chinaClientsEnabled())
+		#expect(store.selectedRegion() == region)
+		#expect(!store.taiwanClientEnabled())
+		#expect(!store.hasAcknowledgedACEWarning(for: .china))
+		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
+
+		store.setChinaClientsEnabled(false)
+		let reopened = LauncherPreferencesStore(defaults: defaults)
+		#expect(!reopened.chinaClientsEnabled())
+		#expect(reopened.selectedRegion() == .global)
+	}
+
+	@Test(arguments: [false, true])
+	func chinaClientMigrationPreservesExplicitPermission(enabled: Bool) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(true, forKey: "canaryFeaturesEnabled")
+		defaults.set(enabled, forKey: "chinaClientsEnabled")
+		defaults.set(GameRegion.china.rawValue, forKey: "selectedRegion")
+
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.chinaClientsEnabled() == enabled)
+		#expect(store.selectedRegion() == (enabled ? .china : .global))
+	}
+
+	@Test(arguments: [Bool?.none, .some(false)])
+	func enablingCanaryAfterMigrationDoesNotEnableChinaClients(legacyCanary: Bool?) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		if let legacyCanary {
+			defaults.set(legacyCanary, forKey: "canaryFeaturesEnabled")
+		}
+		let store = LauncherPreferencesStore(defaults: defaults)
+		#expect(!store.chinaClientsEnabled())
+
+		store.setCanaryFeaturesEnabled(true)
+		let reopened = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(!reopened.chinaClientsEnabled())
+		#expect(!reopened.taiwanClientEnabled())
+	}
+
+	@Test
+	func taiwanSelectionRequiresTaiwanAndCanaryPermissions() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setSelectedRegion(.taiwan)
+		#expect(store.selectedRegion() == .global)
+
+		store.setCanaryFeaturesEnabled(true)
+		#expect(store.selectedRegion() == .global)
+
+		store.setTaiwanClientEnabled(true)
+		#expect(store.selectedRegion() == .taiwan)
+
+		store.setTaiwanClientEnabled(false)
+		#expect(store.selectedRegion() == .global)
+	}
+
+	@Test
+	func chinaAndTaiwanSelectionsUseIndependentPermissions() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setCanaryFeaturesEnabled(true)
+		store.setTaiwanClientEnabled(true)
+		store.setSelectedRegion(.taiwan)
+		#expect(store.selectedRegion() == .taiwan)
+
+		store.setSelectedRegion(.china)
+		#expect(store.selectedRegion() == .global)
+
+		store.setChinaClientsEnabled(true)
+		#expect(store.selectedRegion() == .china)
+
+		store.setTaiwanClientEnabled(false)
+		#expect(store.selectedRegion() == .china)
+	}
+
+	@Test
+	func aceWarningAcknowledgementsPersistPerRegion() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(!store.hasAcknowledgedACEWarning(for: .china))
+		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
+
+		store.markACEWarningAcknowledged(for: .china)
+
+		#expect(store.hasAcknowledgedACEWarning(for: .china))
+		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
 	}
 
 	@Test
@@ -89,6 +216,22 @@ struct LauncherPreferencesStoreTests {
 		store.setLaunchOptions(expected)
 
 		#expect(store.launchOptions() == expected)
+	}
+
+	@Test
+	func musicVolumeIsClampedWhenPersistedValueIsOutsideTheSupportedRange() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setLauncherMusicVolume(-0.25)
+		#expect(store.launcherMusicVolume() == 0)
+
+		store.setLauncherMusicVolume(1.25)
+		#expect(store.launcherMusicVolume() == 1)
+
+		store.setLauncherMusicVolume(.infinity)
+		#expect(store.launcherMusicVolume() == 0.5)
 	}
 
 	@Test

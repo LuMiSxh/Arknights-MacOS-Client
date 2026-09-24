@@ -18,6 +18,7 @@ struct PresetAvatarGrid: View {
 		LazyVGrid(columns: columns, spacing: 18) {
 			ForEach(avatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
+				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(avatar)
 				} label: {
@@ -76,16 +77,17 @@ struct PresetAvatarGrid: View {
 					.padding(.vertical, 4)
 					.frame(maxWidth: .infinity)
 					.contentShape(Rectangle())
+					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(.plain)
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(avatar.name)
 				.accessibilityHint(
-					L10n.string(CustomizationStrings.operatorApplyHelp(avatar.name))
+					CustomizationStrings.operatorApplyHelp(avatar.name)
 				)
 				.accessibilityValue(
-					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
+					isApplying ? Text(CustomizationStrings.applying) : Text("")
 				)
 			}
 		}
@@ -110,6 +112,7 @@ struct PresetWallpaperGrid: View {
 		LazyVGrid(columns: columns, spacing: 14) {
 			ForEach(wallpapers) { wp in
 				let isApplying = applyingItemID == wp.id
+				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(wp)
 				} label: {
@@ -133,7 +136,7 @@ struct PresetWallpaperGrid: View {
 										ProgressView()
 											.controlSize(.regular)
 											.tint(accentColor)
-										Text(L10n.string(CustomizationStrings.applying))
+										Text(CustomizationStrings.applying)
 											.font(.caption2.bold())
 											.foregroundStyle(.white)
 									}
@@ -168,16 +171,17 @@ struct PresetWallpaperGrid: View {
 						x: 0,
 						y: 2
 					)
+					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(.plain)
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(wp.displayTitle)
 				.accessibilityHint(
-					L10n.string(CustomizationStrings.wallpaperApplyHelp(wp.displayTitle))
+					CustomizationStrings.wallpaperApplyHelp(wp.displayTitle)
 				)
 				.accessibilityValue(
-					isApplying ? Text(L10n.string(CustomizationStrings.applying)) : Text("")
+					isApplying ? Text(CustomizationStrings.applying) : Text("")
 				)
 				.help(hoverText(for: wp))
 			}
@@ -187,8 +191,8 @@ struct PresetWallpaperGrid: View {
 	private func hoverText(for wp: PresetWallpaper) -> String {
 		let tags = WallpaperTagCatalog.tags(for: wp.id).joined(separator: ", ")
 		return [
-			wp.author.map { L10n.string(CustomizationStrings.wallpaperHoverArtist($0)) },
-			tags.isEmpty ? nil : L10n.string(CustomizationStrings.wallpaperHoverTags(tags)),
+			wp.author.map { CustomizationStrings.wallpaperHoverArtist($0) },
+			tags.isEmpty ? nil : CustomizationStrings.wallpaperHoverTags(tags),
 			wp.description,
 		]
 		.compactMap { $0 }

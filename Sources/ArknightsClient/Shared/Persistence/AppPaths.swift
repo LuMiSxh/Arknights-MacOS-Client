@@ -2,6 +2,20 @@
 
 import Foundation
 
+enum AppPathsError: LocalizedError, Sendable {
+	case cannotEnumerate(URL, reason: String)
+	case cannotInspect(URL, reason: String)
+
+	var errorDescription: String? {
+		switch self {
+		case .cannotEnumerate(let url, let reason):
+			"Could not enumerate cache directory \(url.path): \(reason)"
+		case .cannotInspect(let url, let reason):
+			"Could not inspect cache directory \(url.path): \(reason)"
+		}
+	}
+}
+
 /// Every standard macOS location this app writes to, rooted under its bundle identifier;
 /// the one place these paths are computed, so nothing hardcodes a repository-local path.
 struct AppPaths: Sendable {
@@ -12,6 +26,7 @@ struct AppPaths: Sendable {
 	let logRoot: URL
 	let winePrefix: URL
 	let chinaWinePrefix: URL
+	let gryphlineWinePrefix: URL
 	let bundledRuntimeDirectory: URL?
 
 	init(
@@ -51,6 +66,10 @@ struct AppPaths: Sendable {
 			path: "Hypergryph/Prefix",
 			directoryHint: .isDirectory
 		)
+		gryphlineWinePrefix = applicationSupportRoot.appending(
+			path: "Gryphline/Prefix",
+			directoryHint: .isDirectory
+		)
 		bundledRuntimeDirectory = resourceDirectory?.appending(
 			path: "Runtime",
 			directoryHint: .isDirectory
@@ -58,35 +77,49 @@ struct AppPaths: Sendable {
 	}
 
 	func gameInstall(for region: GameRegion) -> URL {
-		let publisher = region.isChinaClient ? "Hypergryph" : "Yostar"
 		let regionName =
 			switch region {
 			case .global: "Global"
 			case .japan: "Japan"
 			case .korea: "Korea"
+			case .taiwan: "Taiwan"
 			case .china: "China"
 			case .chinaBilibili: "China-Bilibili"
 			}
 		return applicationSupportRoot.appending(
-			path: "\(publisher)/\(regionName)", directoryHint: .isDirectory)
+			path: "\(region.publisher.storageDirectoryName)/\(regionName)",
+			directoryHint: .isDirectory
+		)
 	}
 
 	func winePrefix(for region: GameRegion) -> URL {
-		region.isChinaClient ? chinaWinePrefix : winePrefix
+		winePrefix(for: region.publisher)
+	}
+
+	func winePrefix(for publisher: GamePublisher) -> URL {
+		switch publisher {
+		case .yostar: winePrefix
+		case .hypergryph: chinaWinePrefix
+		case .gryphline: gryphlineWinePrefix
+		}
 	}
 
 	var logsDirectory: URL { logRoot }
 
-	var logFile: URL {
-		logsDirectory.appending(path: "wine.log")
+	var yostarLogFile: URL {
+		publisherLogFile(for: .yostar)
 	}
 
 	var launcherLogFile: URL {
 		logsDirectory.appending(path: "launcher.log")
 	}
 
-	func wineLogFile(for region: GameRegion) -> URL {
-		region.isChinaClient ? logsDirectory.appending(path: "wine-cn.log") : logFile
+	func publisherLogFile(for publisher: GamePublisher) -> URL {
+		logsDirectory.appending(path: publisher.runtimeLogFileName)
+	}
+
+	func runtimeLogFile(for region: GameRegion) -> URL {
+		publisherLogFile(for: region.publisher)
 	}
 
 	var unityLogFile: URL {
@@ -115,48 +148,64 @@ struct AppPaths: Sendable {
 		winePrefix(for: region).appending(path: "home/.cache/dxmt", directoryHint: .isDirectory)
 	}
 
-	func browserCacheDirectories(fileManager: FileManager = .default) -> [URL] {
-		browserCacheDirectories(for: .global, fileManager: fileManager)
+	func browserCacheDirectories(fileManager: FileManager = .default) throws -> [URL] {
+		try browserCacheDirectories(for: .global, fileManager: fileManager)
 	}
 
 	func browserCacheDirectories(
 		for region: GameRegion,
 		fileManager: FileManager = .default
-	) -> [URL] {
-		Self.gameCacheDirectories(winePrefix: winePrefix(for: region), fileManager: fileManager)
+	) throws -> [URL] {
+		try Self.gameCacheDirectories(winePrefix: winePrefix(for: region), fileManager: fileManager)
 			.filter { $0 != dxmtCache(for: region) }
 	}
 
 	static func gameCacheDirectories(
 		winePrefix: URL,
 		fileManager: FileManager = .default
-	) -> [URL] {
+	) throws -> [URL] {
 		let prefix = winePrefix.resolvingSymlinksInPath().standardizedFileURL
 		let dxmt = winePrefix.appending(
 			path: "home/.cache/dxmt", directoryHint: .isDirectory)
-		var directories =
-			isSafeCacheDirectory(
-				dxmt, inside: prefix, fileManager: fileManager) ? [dxmt] : []
+		var directories: [URL] = []
+		if try isSafeCacheDirectory(dxmt, inside: prefix, fileManager: fileManager) {
+			directories.append(dxmt)
+		}
 		let usersDirectory = winePrefix.appending(
 			path: "drive_c/users", directoryHint: .isDirectory)
-		guard
-			let entries = try? fileManager.contentsOfDirectory(
+		let entries: [URL]
+		do {
+			entries = try fileManager.contentsOfDirectory(
 				at: usersDirectory,
 				includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey]
 			)
-		else { return directories }
+		} catch  where isMissingPathError(error) {
+			return directories
+		} catch {
+			throw AppPathsError.cannotEnumerate(
+				usersDirectory,
+				reason: error.localizedDescription
+			)
+		}
 
 		for entry in entries {
-			guard
-				let values = try? entry.resourceValues(forKeys: [
+			let values: URLResourceValues
+			do {
+				values = try entry.resourceValues(forKeys: [
 					.isDirectoryKey, .isSymbolicLinkKey,
-				]),
-				values.isDirectory == true,
-				values.isSymbolicLink != true
-			else { continue }
+				])
+			} catch  where isMissingPathError(error) {
+				continue
+			} catch {
+				throw AppPathsError.cannotInspect(
+					entry,
+					reason: error.localizedDescription
+				)
+			}
+			guard values.isDirectory == true, values.isSymbolicLink != true else { continue }
 			let cache = entry.appending(
 				path: "AppData/Local/cache", directoryHint: .isDirectory)
-			if isSafeCacheDirectory(cache, inside: prefix, fileManager: fileManager) {
+			if try isSafeCacheDirectory(cache, inside: prefix, fileManager: fileManager) {
 				directories.append(cache)
 			}
 		}
@@ -167,17 +216,38 @@ struct AppPaths: Sendable {
 		_ url: URL,
 		inside prefix: URL,
 		fileManager: FileManager = .default
-	) -> Bool {
-		guard
-			fileManager.fileExists(atPath: url.path),
-			let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
-			values.isDirectory == true,
-			values.isSymbolicLink != true
-		else { return false }
+	) throws -> Bool {
+		_ = fileManager
+		let values: URLResourceValues
+		do {
+			values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+		} catch  where isMissingPathError(error) {
+			return false
+		} catch {
+			throw AppPathsError.cannotInspect(url, reason: error.localizedDescription)
+		}
+		guard values.isDirectory == true, values.isSymbolicLink != true else { return false }
 
 		let canonicalURL = url.resolvingSymlinksInPath().standardizedFileURL
 		let prefixComponents = prefix.pathComponents
 		return canonicalURL.pathComponents.starts(with: prefixComponents)
+	}
+
+	static func isMissingPathError(_ error: any Error) -> Bool {
+		if let error = error as? CocoaError {
+			return error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
+		}
+		if let error = error as? POSIXError {
+			return error.code == .ENOENT || error.code == .ENOTDIR
+		}
+
+		let error = error as NSError
+		if error.domain == NSPOSIXErrorDomain {
+			return error.code == Int(ENOENT) || error.code == Int(ENOTDIR)
+		}
+		return error.domain == NSCocoaErrorDomain
+			&& (error.code == CocoaError.fileNoSuchFile.rawValue
+				|| error.code == CocoaError.fileReadNoSuchFile.rawValue)
 	}
 
 	var customArtwork: URL {

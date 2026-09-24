@@ -16,13 +16,13 @@ The launcher selects the first eligible entry in the array. `just announcement s
 
 ## Previewing a popup
 
-Run the isolated debug simulator, open Settings → Developer, pick "Custom popup" from the Scenario menu, type the message as Markdown, and press Show Popup to see it rendered in the real popup modal:
+Run the isolated debug simulator, open Settings → Developer, set the **Popup** control under **HUD and popups** to **Custom Markdown**, type the message as Markdown, and press **Show Popup** to see it rendered in the real popup modal:
 
 ```sh
 just preview
 ```
 
-The preview uses separate temporary paths and preferences. Its game controls intercept installation and launch actions, and the focused Scenario menu covers launcher-update state, downloads, accessibility/layout, failures, Rosetta recovery, and custom popups.
+The preview uses separate temporary paths and preferences. Its game controls intercept installation and launch actions, and its composable controls cover launcher state, download progress, region availability, HUD pills, popups, accessibility/layout, failures, and Rosetta recovery.
 
 ## Publishing
 

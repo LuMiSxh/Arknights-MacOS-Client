@@ -153,7 +153,8 @@ struct WineRuntime: Sendable {
 		metalPerformanceHUDEnabled: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
 		runtimeEnvironmentOverrides: [String: String] = [:],
-		bilibiliPlatformEnabled: Bool = false,
+		clientVariant: GameClientVariant = .standard,
+		publisher: GamePublisher = .yostar,
 		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
 		log: LauncherLog? = nil
@@ -184,7 +185,10 @@ struct WineRuntime: Sendable {
 		}
 
 		let logURL =
-			logURL ?? prefixDirectory.deletingLastPathComponent().appending(path: "wine.log")
+			logURL
+			?? prefixDirectory.deletingLastPathComponent().appending(
+				path: publisher.runtimeLogFileName
+			)
 		try fileManager.createDirectory(
 			at: logURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
@@ -222,7 +226,7 @@ struct WineRuntime: Sendable {
 			synchronizationMode: synchronizationMode
 		)
 		environment.merge(runtimeEnvironmentOverrides) { _, value in value }
-		if bilibiliPlatformEnabled {
+		if clientVariant == .bilibili {
 			environment["LANG"] = "zh_CN.UTF-8"
 			environment["LC_ALL"] = "zh_CN.UTF-8"
 		}
@@ -237,8 +241,9 @@ struct WineRuntime: Sendable {
 		)
 		RuntimePerformanceLog.write(
 			stage: "prefix", since: launchStarted, to: logHandle)
-		if bilibiliPlatformEnabled {
+		if clientVariant == .bilibili {
 			try await applyBilibiliFontConfiguration(
+				prefixDirectory: prefixDirectory,
 				environment: environment,
 				logHandle: logHandle
 			)
@@ -280,7 +285,7 @@ struct WineRuntime: Sendable {
 			terminationContinuation.finish()
 		}
 		try process.run()
-		if bilibiliPlatformEnabled {
+		if clientVariant == .bilibili {
 			let controller = Process()
 			controller.executableURL = executableURL
 			controller.arguments = [

@@ -5,6 +5,16 @@ import Testing
 
 @testable import ArknightsClient
 
+private final class FailingCacheEnumerationFileManager: FileManager {
+	override func contentsOfDirectory(
+		at url: URL,
+		includingPropertiesForKeys keys: [URLResourceKey]? = nil,
+		options mask: FileManager.DirectoryEnumerationOptions = []
+	) throws -> [URL] {
+		throw CocoaError(.fileReadNoPermission)
+	}
+}
+
 @Test
 func appPathsUseStandardInjectedDirectories() {
 	let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
@@ -68,6 +78,13 @@ func appPathsUseStandardInjectedDirectories() {
 			)
 	)
 	#expect(
+		paths.gameInstall(for: .taiwan)
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Gryphline/Taiwan",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
 		paths.winePrefix
 			== support.appending(
 				path: "\(AppPaths.bundleIdentifier)/Yostar/Prefix",
@@ -81,7 +98,31 @@ func appPathsUseStandardInjectedDirectories() {
 				directoryHint: .isDirectory
 			)
 	)
-	#expect(paths.logFile == library.appending(path: "Logs/\(AppPaths.bundleIdentifier)/wine.log"))
+	#expect(
+		paths.gryphlineWinePrefix
+			== support.appending(
+				path: "\(AppPaths.bundleIdentifier)/Gryphline/Prefix",
+				directoryHint: .isDirectory
+			)
+	)
+	#expect(
+		paths.yostarLogFile
+			== library.appending(
+				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-yostar.log"
+			)
+	)
+	#expect(
+		paths.publisherLogFile(for: .hypergryph)
+			== library.appending(
+				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-hypergryph.log"
+			)
+	)
+	#expect(
+		paths.publisherLogFile(for: .gryphline)
+			== library.appending(
+				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-gryphline.log"
+			)
+	)
 	#expect(
 		paths.launcherLogFile
 			== library.appending(path: "Logs/\(AppPaths.bundleIdentifier)/launcher.log")
@@ -139,4 +180,38 @@ func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
 
 	#expect(paths.gameInstall(for: region).lastPathComponent == "China-Bilibili")
 	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: .china))
+}
+
+@Test
+func taiwanUsesItsOwnGryphlinePrefix() {
+	let paths = AppPaths(
+		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
+		cachesDirectory: URL(filePath: "/tmp/Caches"),
+		libraryDirectory: URL(filePath: "/tmp/Library")
+	)
+
+	#expect(paths.winePrefix(for: .taiwan) == paths.gryphlineWinePrefix)
+	#expect(paths.gameInstall(for: .taiwan).lastPathComponent == "Taiwan")
+}
+
+@Test
+func missingCacheUsersDirectoryIsBenign() throws {
+	let prefix = FileManager.default.temporaryDirectory.appending(
+		path: "AppPathsMissingCacheUsers.\(UUID().uuidString)", directoryHint: .isDirectory)
+	defer { try? FileManager.default.removeItem(at: prefix) }
+
+	#expect(try AppPaths.gameCacheDirectories(winePrefix: prefix).isEmpty)
+}
+
+@Test
+func cacheDirectoryEnumerationFailuresAreSurfaced() {
+	let prefix = FileManager.default.temporaryDirectory.appending(
+		path: "AppPathsCacheEnumerationFailure.\(UUID().uuidString)", directoryHint: .isDirectory)
+
+	#expect(throws: AppPathsError.self) {
+		try AppPaths.gameCacheDirectories(
+			winePrefix: prefix,
+			fileManager: FailingCacheEnumerationFileManager()
+		)
+	}
 }

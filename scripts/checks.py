@@ -13,21 +13,10 @@ from pathlib import Path
 from lib.common import PROJECT_DIR, run, run_main
 from lib.console import info, success
 from lib.project_config import load_project_configuration
-from localization import prepare_localization
 from runtime_config import validate_config
 from swift_tests import run_level as run_swift_test_level
 
 RUFF = (sys.executable, "-m", "ruff")
-
-
-def check_localization() -> None:
-    info("Checking localization catalogs")
-    prepare_localization()
-
-
-def format_localization() -> None:
-    info("Regenerating localization symbols")
-    prepare_localization(force=True)
 
 
 def shim_sources() -> list[Path]:
@@ -39,14 +28,10 @@ def workflow_files() -> list[Path]:
     return sorted((PROJECT_DIR / ".github" / "workflows").glob("*.yml"))
 
 
-def handwritten_swift_sources() -> list[Path]:
+def swift_sources() -> list[Path]:
     sources = sorted((PROJECT_DIR / "Sources").rglob("*.swift"))
     tests = sorted((PROJECT_DIR / "Tests").rglob("*.swift"))
-    return [
-        path
-        for path in [*sources, *tests]
-        if not path.name.startswith("GeneratedStringSymbols_")
-    ]
+    return [*sources, *tests]
 
 
 def check_swift() -> None:
@@ -59,7 +44,7 @@ def check_swift() -> None:
             "--configuration",
             ".swift-format",
             "--strict",
-            *handwritten_swift_sources(),
+            *swift_sources(),
         ],
         cwd=PROJECT_DIR,
     )
@@ -76,7 +61,7 @@ def format_swift() -> None:
             "--configuration",
             ".swift-format",
             "--in-place",
-            *handwritten_swift_sources(),
+            *swift_sources(),
         ],
         cwd=PROJECT_DIR,
     )
@@ -130,13 +115,12 @@ def format_website() -> None:
 
 
 TARGETS: dict[str, tuple[Callable[[], None], Callable[[], None]]] = {
-    "localization": (check_localization, format_localization),
     "swift": (check_swift, format_swift),
     "scripts": (check_scripts, format_scripts),
     "shim": (check_shim, format_shim),
     "web": (check_website, format_website),
 }
-DEFAULT_TARGETS = ("localization", "swift", "scripts", "shim")
+DEFAULT_TARGETS = ("swift", "scripts", "shim")
 
 
 def run_mode(mode: str, target: str) -> None:

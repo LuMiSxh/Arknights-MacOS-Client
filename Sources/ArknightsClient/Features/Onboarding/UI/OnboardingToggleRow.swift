@@ -10,19 +10,8 @@ struct OnboardingToggleRow: View {
 	let accentColor: Color
 
 	var body: some View {
-		HStack(alignment: .top, spacing: 18) {
-			VStack(alignment: .leading, spacing: 3) {
-				Text(title)
-				Text(detail)
-					.font(.caption)
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
-			}
-			Spacer(minLength: 18)
-			Toggle(title, isOn: $isOn)
-				.labelsHidden()
-				.toggleStyle(.switch)
-				.tint(accentColor)
+		SettingsActionRow(title: title, detail: detail) {
+			SettingsToggle(title, isOn: $isOn, accentColor: accentColor)
 		}
 	}
 }

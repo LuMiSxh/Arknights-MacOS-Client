@@ -4,28 +4,32 @@
 
 - Target Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs through `AdaptiveGlass.swift` fallbacks.
 - Treat Yostar's Global, Japan, and Korea PC clients as stable; keep China-specific behavior behind Canary Features.
-- Keep source, docs, tests, localization keys, translator comments, and commits in English. Ship complete reviewed English and German UI copy.
+- Keep source, docs, tests, UI copy, and commits in English. The app ships English-only.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
 - Keep the static SvelteKit site in `web/`; follow `docs/development/README.md#documentation-website` and do not add Vitest.
-- Never commit game/runtime binaries, downloaded artwork, or `dist/`; regenerate tracked shipping icons only with `just icon`.
+- Never commit game/runtime binaries, downloaded artwork, or `dist/`; regenerate tracked shipping icons only with `just icon`. The only artwork exception is the website hero wallpaper in `web/static/artwork/`.
 
 ## Commands
 
-| Task | Command |
-| --- | --- |
-| Focused native checks | `just check` |
-| Native CI | `just ci` |
-| Integration tests | `just integration` |
-| Website checks | `just check web` |
-| Production website | `cd web && BASE_PATH=/Arknights-MacOS-Client pnpm build` |
-| Other tasks | `just --list` |
+| Task                  | Command                                                  |
+| --------------------- | -------------------------------------------------------- |
+| Focused native checks | `just check`                                             |
+| Native CI             | `just ci`                                                |
+| Integration tests     | `just integration`                                       |
+| Website checks        | `just check web`                                         |
+| Production website    | `cd web && BASE_PATH=/Arknights-MacOS-Client pnpm build` |
+| Other tasks           | `just --list`                                            |
 
 ## Architecture and Swift
 
 - Use Swift 6.2. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
 - Never import feature-owned types from `Shared` or `Infrastructure`; map infrastructure errors at the owning feature boundary.
 - Keep components feature-local unless multiple features share the same presentation contract.
-- Keep handwritten production Swift and Swift tests below 350 lines. Generated localization symbols, native C/Objective-C shims, and scripts are exempt.
+- Declare reusable identical controls, surfaces, and design tokens centrally in `Shared/UI`; keep feature-specific semantics and state local. Do not duplicate local button or panel styles.
+- Dynamic artwork or theme accents are intentionally allowed for the current primary operation, progress, selection, and interaction highlights. Preserve those highlights instead of replacing them with hardcoded neutrals.
+- Secondary controls use quiet filled neutral surfaces with restrained borders. Collapsed HUD surfaces stay compact capsules; expanded HUD surfaces use a fixed-radius rounded rectangle.
+- Never use a fixed cyan value in UI styling. `LauncherVisuals.cyan` is reserved for the fallback when no dynamic theme or artwork tint is available.
+- Keep handwritten production Swift and Swift tests below 450 lines. Native C/Objective-C shims and scripts are exempt.
 - Use tabs with width four and follow `.swift-format`.
 - Keep observable/UI/AppKit state on `@MainActor`; move synchronous network, hashing, extraction, and file work off it.
 - Use `@Observable`; keep `LauncherViewModel` at composition and inject narrow dependencies into features and views.
@@ -35,7 +39,6 @@
 - Treat installation as exclusive, preserve resumable `.part` files, and validate every manifest path before writing.
 - Define persisted locations through `AppPaths`; preserve paths, keys, and serialized formats unless a migration is explicit.
 - Centralize application-owned fixed keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.
-- Put every user-facing string in the owning String Catalog with a namespaced lower-camel key, translator comment, and complete English/German values; never edit generated symbols.
 - Follow `docs/development/design.md`; reuse controls only when semantics, spacing, accessibility, and state match.
 - Avoid silent `try?` for filesystem, process, and network work. Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
 - Test behavior by regression impact; share fixtures and parameterize equivalent cases without deleting path, persistence, migration, isolation, cancellation, or concurrency contracts.
@@ -53,11 +56,10 @@
 
 ## References
 
-| Need | File |
-| --- | --- |
-| Architecture | `docs/development/architecture/README.md` |
-| Testing | `docs/development/testing.md` |
-| Localization | `docs/development/localization.md` |
-| Storage/runtime | `docs/help/storage.md`, `docs/help/runtime-compatibility.md` |
+| Need              | File                                                                             |
+| ----------------- | -------------------------------------------------------------------------------- |
+| Architecture      | `docs/development/architecture/README.md`                                        |
+| Testing           | `docs/development/testing.md`                                                    |
+| Storage/runtime   | `docs/help/storage.md`, `docs/help/runtime-compatibility.md`                     |
 | Recovery/releases | `docs/development/error-recovery.md`, `docs/development/releases-and-updates.md` |
-| Legal | `docs/legal/third-party-notices.md` |
+| Legal             | `docs/legal/third-party-notices.md`                                              |

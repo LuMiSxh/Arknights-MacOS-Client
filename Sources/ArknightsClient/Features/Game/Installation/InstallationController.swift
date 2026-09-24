@@ -13,6 +13,7 @@ final class InstallationController {
 	var region: GameRegion
 	var installDirectory: URL
 	var progress: DownloadProgress?
+	private(set) var completionFeedback: InstallationCompletionFeedback?
 	private(set) var installedRegions: [GameRegion] = []
 	@ObservationIgnored var progressSequence: UInt64 = 0
 
@@ -96,8 +97,16 @@ final class InstallationController {
 
 	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
-		guard !newRegion.isChinaClient || preferences.canaryFeaturesEnabled() else { return false }
+		guard
+			!newRegion.requiresCanaryPermission
+				|| (preferences.canaryFeaturesEnabled()
+					&& (!newRegion.requiresChinaClientPermission
+						|| preferences.chinaClientsEnabled())
+					&& (!newRegion.requiresTaiwanClientPermission
+						|| preferences.taiwanClientEnabled()))
+		else { return false }
 		cancelInstalledStateRefresh()
+		completionFeedback = nil
 		lifecycle.clearFailure()
 		region = newRegion
 		preferences.setSelectedRegion(newRegion)
@@ -138,7 +147,9 @@ final class InstallationController {
 			selectedDirectory: installDirectory,
 			regionDirectories: Dictionary(
 				uniqueKeysWithValues: GameRegion.selectableCases(
-					canaryEnabled: preferences.canaryFeaturesEnabled()
+					canaryEnabled: preferences.canaryFeaturesEnabled(),
+					chinaClientsEnabled: preferences.chinaClientsEnabled(),
+					taiwanClientEnabled: preferences.taiwanClientEnabled()
 				).map { candidate in
 					(
 						candidate,
@@ -162,7 +173,9 @@ final class InstallationController {
 				self.isInstalled = snapshot.isInstalled
 				self.hasPartialDownload = snapshot.hasPartialDownload
 				self.installedVersion = snapshot.installedVersion
-				self.installedRegions = snapshot.installedRegions
+				self.installedRegions = snapshot.installedRegions.filter {
+					self.currentSelectableRegions.contains($0)
+				}
 				self.finishStateRefresh(refreshID)
 				if let diagnostic = snapshot.diagnostic {
 					await log.error(diagnostic)
@@ -191,6 +204,10 @@ final class InstallationController {
 
 	func setRegionInstalled(_ candidate: GameRegion, _ installed: Bool) {
 		if installed {
+			guard currentSelectableRegions.contains(candidate) else {
+				installedRegions.removeAll { $0 == candidate }
+				return
+			}
 			if !installedRegions.contains(candidate) {
 				installedRegions.append(candidate)
 				installedRegions.sort { $0.rawValue < $1.rawValue }
@@ -208,6 +225,21 @@ final class InstallationController {
 		await installationTask?.value
 	}
 
+	func consumeCompletionFeedback(for region: GameRegion) -> InstallationCompletionFeedback? {
+		guard let completionFeedback, completionFeedback.region == region else { return nil }
+		self.completionFeedback = nil
+		return completionFeedback
+	}
+
+	func clearCompletionFeedback() {
+		completionFeedback = nil
+	}
+
+	func publishCompletionFeedback(for operationID: UUID, region: GameRegion) {
+		guard self.region == region else { return }
+		completionFeedback = InstallationCompletionFeedback(id: operationID, region: region)
+	}
+
 	private func ownsStateRefresh(
 		_ id: UUID,
 		request: InstallationStateRequest
@@ -215,6 +247,16 @@ final class InstallationController {
 		stateRefreshID == id && !Task.isCancelled
 			&& region == request.selectedRegion
 			&& installDirectory == request.selectedDirectory
+	}
+
+	private var currentSelectableRegions: Set<GameRegion> {
+		Set(
+			GameRegion.selectableCases(
+				canaryEnabled: preferences.canaryFeaturesEnabled(),
+				chinaClientsEnabled: preferences.chinaClientsEnabled(),
+				taiwanClientEnabled: preferences.taiwanClientEnabled()
+			)
+		)
 	}
 
 	private func finishStateRefresh(_ id: UUID) {

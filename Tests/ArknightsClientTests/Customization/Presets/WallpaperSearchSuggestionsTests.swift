@@ -12,24 +12,24 @@ struct WallpaperSearchSuggestionsTests {
 	]
 
 	@Test("suggests exact tags before title words")
-	func ranksSuggestions() {
-		let suggestions = WallpaperSearch.suggestions(
+	func ranksSuggestions() throws {
+		let suggestions = try WallpaperSearch.suggestions(
 			for: "w", wallpapers: wallpapers, knownTags: ["w", "warfarin"])
 		#expect(suggestions.prefix(2) == ["w", "warfarin"])
 		#expect(!suggestions.contains("Twitter"))
 	}
 
 	@Test("scopes later suggestions to wallpapers matching earlier terms")
-	func scopesSuggestions() {
-		let suggestions = WallpaperSearch.suggestions(
+	func scopesSuggestions() throws {
+		let suggestions = try WallpaperSearch.suggestions(
 			for: "twitter ang", wallpapers: wallpapers, knownTags: ["angelina"])
 		#expect(suggestions == ["angelina"])
 	}
 
 	@Test("hides suggestions after a selection until typing resumes")
-	func hidesCompletedSuggestion() {
+	func hidesCompletedSuggestion() throws {
 		#expect(
-			WallpaperSearch.suggestions(
+			try WallpaperSearch.suggestions(
 				for: "twitter ", wallpapers: wallpapers, knownTags: []
 			).isEmpty)
 	}

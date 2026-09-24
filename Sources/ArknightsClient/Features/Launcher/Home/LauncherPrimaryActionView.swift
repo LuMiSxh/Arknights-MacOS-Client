@@ -17,6 +17,7 @@ struct LauncherPrimaryActionView: View {
 			title: actionTitle,
 			systemImage: actionImage,
 			tone: actionTone,
+			labelMotion: .primary,
 			action: action
 		)
 		.controlSize(.large)
@@ -36,15 +37,15 @@ struct LauncherPrimaryActionView: View {
 
 	private var actionTitle: String {
 		switch actionKind {
-		case .stop: L10n.string(HomeStrings.actionStop)
-		case .pause: L10n.string(HomeStrings.actionPause)
+		case .stop: HomeStrings.actionStop
+		case .pause: HomeStrings.actionPause
 		case .install:
-			L10n.string(
-				installation.hasPartialDownload
-					? HomeStrings.actionResume : HomeStrings.actionInstall
-			)
-		case .update: L10n.string(HomeStrings.actionUpdate)
-		case .play: L10n.string(HomeStrings.actionPlay)
+
+			installation.hasPartialDownload
+				? HomeStrings.actionResume : HomeStrings.actionInstall
+
+		case .update: HomeStrings.actionUpdate
+		case .play: HomeStrings.actionPlay
 		}
 	}
 
@@ -76,23 +77,24 @@ struct LauncherPrimaryActionView: View {
 
 	private var actionHelp: String {
 		switch actionKind {
-		case .stop: return L10n.string(HomeStrings.actionStopHelp)
-		case .pause: return L10n.string(HomeStrings.actionPauseHelp)
+		case .stop: return HomeStrings.actionStopHelp
+		case .pause: return HomeStrings.actionPauseHelp
 		case .install:
 			if installation.hasPartialDownload {
-				return L10n.string(HomeStrings.actionResumeHelp)
+				return HomeStrings.actionResumeHelp
 			}
-			return L10n.string(
-				HomeStrings.actionInstallHelp(region: installation.region.localizedDisplayName)
-			)
-		case .update: return L10n.string(HomeStrings.actionUpdateHelp)
-		case .play: return intelTranslation.statusDetail ?? L10n.string(HomeStrings.actionPlayHelp)
+			return
+				HomeStrings.actionInstallHelp(region: installation.region.displayName)
+
+		case .update: return HomeStrings.actionUpdateHelp
+		case .play: return intelTranslation.statusDetail ?? HomeStrings.actionPlayHelp
 		}
 	}
 
 	private var actionKind: ActionKind {
 		if gameSession.isGameActive { return .stop }
 		if installation.isDownloading { return .pause }
+		if installation.hasPartialDownload { return .install }
 		if !installation.isInstalled { return .install }
 		if installation.isGameUpdateAvailable { return .update }
 		return .play

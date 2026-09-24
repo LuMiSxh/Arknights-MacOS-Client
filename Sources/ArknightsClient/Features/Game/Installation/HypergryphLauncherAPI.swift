@@ -209,7 +209,7 @@ extension GameRegion {
 		switch self {
 		case .china: "1"
 		case .chinaBilibili: "2"
-		case .global, .japan, .korea: nil
+		case .global, .japan, .korea, .taiwan: nil
 		}
 	}
 }

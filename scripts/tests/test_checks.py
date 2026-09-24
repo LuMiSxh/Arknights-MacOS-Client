@@ -3,15 +3,7 @@
 from __future__ import annotations
 
 import build_compatibility
-import checks
 from lib.common import PROJECT_DIR
-
-
-def test_handwritten_swift_sources_exclude_generated_catalog_symbols() -> None:
-    sources = checks.handwritten_swift_sources()
-
-    assert any(path.name == "L10n.swift" for path in sources)
-    assert not any(path.name.startswith("GeneratedStringSymbols_") for path in sources)
 
 
 def test_compatibility_manifest_declares_native_sources_once() -> None:

@@ -36,8 +36,6 @@ class ProductMetadata:
     marketing_version: str
     icon_name: str
     icon_file: str
-    development_region: str
-    localizations: tuple[str, ...]
     minimum_macos_version: str
     architecture_priority: tuple[str, ...]
 
@@ -47,7 +45,6 @@ class PackageMetadata:
     """Build properties resolved by SwiftPM's package manifest evaluation."""
 
     name: str
-    default_localization: str
     macos_version: str
     executable_product_name: str
     executable_target_name: str
@@ -93,21 +90,6 @@ class ProjectConfiguration:
         return self.project_directory / self.package.target_path
 
     @property
-    def resource_directory(self) -> Path:
-        localization_parents = {
-            path.parent
-            for path in self.package.processed_resource_paths
-            if path.suffix == ".xcstrings"
-        }
-        if len(localization_parents) != 1:
-            fail("package String Catalogs must share one resource directory")
-        return self.target_directory / localization_parents.pop()
-
-    @property
-    def swift_resource_bundle_name(self) -> str:
-        return f"{self.package.name}_{self.package.executable_target_name}.bundle"
-
-    @property
     def copied_resource_source_paths(self) -> tuple[Path, ...]:
         return tuple(
             self.target_directory / path for path in self.package.copy_resource_paths
@@ -124,7 +106,7 @@ def load_project_configuration(
     dump = _read_package_dump(project_dir, package_dump)
     product = _product_metadata(plist)
     package = _package_metadata(dump)
-    _validate_agreement(product, package)
+    _validate_agreement(product, package, project_dir)
     return ProjectConfiguration(project_dir, product, package)
 
 
@@ -160,7 +142,6 @@ def _read_package_dump(
 
 
 def _product_metadata(plist: Mapping[str, Any]) -> ProductMetadata:
-    localizations = _unique_strings(plist, "CFBundleLocalizations")
     return ProductMetadata(
         display_name=_safe_component(
             _string(plist, "CFBundleDisplayName"), "CFBundleDisplayName"
@@ -176,12 +157,6 @@ def _product_metadata(plist: Mapping[str, Any]) -> ProductMetadata:
         ),
         icon_file=_safe_component(
             _string(plist, "CFBundleIconFile"), "CFBundleIconFile"
-        ),
-        development_region=_language(
-            _string(plist, "CFBundleDevelopmentRegion"), "CFBundleDevelopmentRegion"
-        ),
-        localizations=tuple(
-            _language(value, "CFBundleLocalizations") for value in localizations
         ),
         minimum_macos_version=_string(plist, "LSMinimumSystemVersion"),
         architecture_priority=tuple(
@@ -220,9 +195,6 @@ def _package_metadata(dump: Mapping[str, Any]) -> PackageMetadata:
     copy_resources, processed_resources = _resources(target)
     return PackageMetadata(
         name=_safe_component(_string(dump, "name"), "package name"),
-        default_localization=_language(
-            _string(dump, "defaultLocalization"), "defaultLocalization"
-        ),
         macos_version=_macos_version(dump),
         executable_product_name=product_name,
         executable_target_name=target_name,
@@ -267,30 +239,17 @@ def _exact_dependency_versions(
     return tuple(versions)
 
 
-def _validate_agreement(product: ProductMetadata, package: PackageMetadata) -> None:
+def _validate_agreement(
+    product: ProductMetadata, package: PackageMetadata, project_directory: Path
+) -> None:
     if product.display_name != product.bundle_name:
         fail("CFBundleDisplayName and CFBundleName must agree")
     if product.executable_name != package.executable_product_name:
         fail("CFBundleExecutable must match the executable product name")
     if product.icon_name != product.icon_file:
         fail("CFBundleIconName and CFBundleIconFile must agree")
-    if product.development_region not in product.localizations:
-        fail("CFBundleDevelopmentRegion must be included in CFBundleLocalizations")
-    if package.default_localization != product.development_region:
-        fail("package defaultLocalization must match CFBundleDevelopmentRegion")
     if package.macos_version != product.minimum_macos_version:
         fail("package macOS platform must match LSMinimumSystemVersion")
-    processed_catalogs = tuple(
-        path for path in package.processed_resource_paths if path.suffix == ".xcstrings"
-    )
-    if not processed_catalogs:
-        fail("package must process at least one String Catalog")
-    if len(processed_catalogs) != len(set(processed_catalogs)):
-        fail("package processed String Catalogs must be unique")
-    if any(path.name.endswith(".lproj") for path in package.processed_resource_paths):
-        fail(
-            "package must process String Catalogs instead of generated .lproj resources"
-        )
 
 
 def _resources(target: Mapping[str, Any]) -> tuple[tuple[Path, ...], tuple[Path, ...]]:
@@ -375,10 +334,6 @@ def _safe_relative_path(value: str, name: str) -> Path:
     ):
         fail(f"{name} must be a safe relative path")
     return Path(*path.parts)
-
-
-def _language(value: str, name: str) -> str:
-    return _safe_component(value, name)
 
 
 def _architecture(value: str) -> str:

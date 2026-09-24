@@ -10,7 +10,7 @@ extension GameSessionController {
 		region: GameRegion,
 		blocksGameLaunch: Bool? = nil
 	) {
-		let code = Self.supportCode(for: error, operation: operation)
+		let code = Self.supportCode(for: error)
 		let actions = Self.recoveryActions(
 			for: code,
 			isInstalled: installation.isInstalled,
@@ -40,7 +40,9 @@ extension GameSessionController {
 		guard failure.actions.contains(.retry) else { return false }
 		switch failure.context.operation {
 		case .prefixMigration, .prefixDeletion:
-			guard failure.context.region == nil, lifecycle.activity == .idle else { return false }
+			guard failure.context.region == installation.region.supportRegion,
+				lifecycle.activity == .idle
+			else { return false }
 		case .runtimeStop:
 			guard failure.context.region == installation.region.supportRegion else { return false }
 			guard lifecycle.activity.activeGameSessionID == failure.id else { return false }
@@ -69,10 +71,7 @@ extension GameSessionController {
 		return true
 	}
 
-	static func supportCode(
-		for error: any Error,
-		operation: SupportOperation
-	) -> SupportCode? {
+	static func supportCode(for error: any Error) -> SupportCode? {
 		if error is WineRuntimeDiscoveryError {
 			return .whelk
 		}
@@ -96,6 +95,8 @@ extension GameSessionController {
 			.pebble
 		case LauncherError.cannotCreateFile:
 			.basalt
+		case is BoundedFileReadError:
+			.sepia
 		case is CocoaError, is POSIXError:
 			.sepia
 		default:

@@ -3,13 +3,13 @@
 import SwiftUI
 
 struct PresetGalleryEmptyView: View {
-	let text: LocalizedStringResource
+	let text: String
 	let systemImage: String
 
 	var body: some View {
 		ContentUnavailableView {
 			Label {
-				Text(L10n.string(text))
+				Text(text)
 			} icon: {
 				Image(systemName: systemImage)
 			}

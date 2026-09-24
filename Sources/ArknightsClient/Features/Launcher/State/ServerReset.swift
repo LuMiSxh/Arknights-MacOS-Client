@@ -10,6 +10,7 @@ enum ServerReset {
 		switch region {
 		case .global: -7 * 3600
 		case .japan, .korea: 9 * 3600
+		case .taiwan: 8 * 3600
 		case .china, .chinaBilibili: 0
 		}
 	}
@@ -28,16 +29,12 @@ enum ServerReset {
 
 	static func countdownText(
 		for region: GameRegion,
-		now: Date = Date(),
-		locale: Locale? = nil
+		now: Date = Date()
 	) -> String {
 		let remaining = max(0, Int(nextReset(for: region, after: now).timeIntervalSince(now)))
-		return L10n.string(
-			LauncherStrings.serverReset(
-				hours: remaining / 3600,
-				minutes: (remaining % 3600) / 60
-			),
-			locale: locale
+		return LauncherStrings.serverReset(
+			hours: remaining / 3600,
+			minutes: (remaining % 3600) / 60
 		)
 	}
 }

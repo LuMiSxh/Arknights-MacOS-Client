@@ -3,9 +3,9 @@
 import SwiftUI
 
 #if DEBUG
-	typealias DeveloperScenarioBinding = Binding<DeveloperScenario>
+	typealias DeveloperSimulationBinding = Binding<DeveloperSimulationState>
 #else
-	typealias DeveloperScenarioBinding = Never
+	typealias DeveloperSimulationBinding = Never
 #endif
 
 struct LauncherSettingsView: View {
@@ -31,7 +31,7 @@ struct LauncherSettingsView: View {
 	let uninstallGame: () -> Void
 	let restartOnboarding: () -> Void
 	let requestLauncherUpdateCheck: () -> Void
-	let developerScenario: DeveloperScenarioBinding?
+	let developerSimulation: DeveloperSimulationBinding?
 	let applyCustomPopup: ((String, String) -> Void)?
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -46,7 +46,7 @@ struct LauncherSettingsView: View {
 				accentColor: customization.accentColor
 			)
 			Divider()
-				.overlay(Color.white.opacity(0.08))
+				.overlay(LauncherVisuals.hairline)
 
 			ZStack(alignment: .bottomTrailing) {
 				Group {
@@ -107,7 +107,9 @@ struct LauncherSettingsView: View {
 						PlaytimeStatisticsPage(
 							controller: playtimeStatistics,
 							regions: GameRegion.selectableCases(
-								canaryEnabled: settings.canaryFeaturesEnabled
+								canaryEnabled: settings.canaryFeaturesEnabled,
+								chinaClientsEnabled: settings.chinaClientsEnabled,
+								taiwanClientEnabled: settings.taiwanClientEnabled
 							),
 							accentColor: customization.accentColor
 						)
@@ -122,9 +124,9 @@ struct LauncherSettingsView: View {
 						)
 					#if DEBUG
 						case .developer:
-							if let developerScenario, let applyCustomPopup {
+							if let developerSimulation, let applyCustomPopup {
 								DeveloperSettingsPage(
-									scenario: developerScenario,
+									simulation: developerSimulation,
 									accentColor: customization.accentColor,
 									applyCustomPopup: applyCustomPopup
 								)
@@ -133,38 +135,36 @@ struct LauncherSettingsView: View {
 					}
 				}
 				.id(selectedSection)
-				.transition(.opacity)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
-
-				FloatingActionFooterFade(height: 60)
-
-				FloatingActionBar(tint: customization.hudTintColor) {
-					if selectedSection == .storage {
-						CapsuleActionButton(
-							title: L10n.string(StorageStrings.refresh),
-							systemImage: "arrow.clockwise",
-							tone: .neutral,
-							action: storageOverview.refreshNow
-						)
-						.controlSize(.large)
-						.disabled(storageOverview.isMeasuring)
-					}
-					FloatingDoneButton(accentColor: customization.accentColor) {
-						dismiss()
+			}
+			.frame(maxWidth: .infinity, maxHeight: .infinity)
+			.safeAreaInset(edge: .bottom, spacing: 0) {
+				HStack {
+					Spacer(minLength: 0)
+					FloatingActionBar(tint: customization.hudTintColor) {
+						if selectedSection == .storage {
+							CapsuleActionButton(
+								title: StorageStrings.refresh,
+								systemImage: "arrow.clockwise",
+								tone: .neutral,
+								action: storageOverview.refreshNow
+							)
+							.controlSize(.large)
+							.disabled(storageOverview.isMeasuring)
+						}
+						FloatingDoneButton(accentColor: customization.accentColor) {
+							dismiss()
+						}
 					}
 				}
 				.padding(.trailing, 26)
+				.padding(.top, LauncherVisuals.Spacing.control)
 				.padding(.bottom, 18)
+				.background {
+					FloatingActionFooterFade(height: 94)
+				}
 			}
-			.frame(maxWidth: .infinity, maxHeight: .infinity)
-			.animation(
-				reduceMotion ? nil : .easeInOut(duration: 0.18),
-				value: selectedSection
-			)
 		}
-		// See ContentView: L10n reads a plain mutex, not an Observable value, so a
-		// language change here needs an explicit re-key to redraw immediately.
-		.id(settings.appLanguage)
 		.tint(customization.accentColor)
 		.background(
 			ZStack {
@@ -190,7 +190,7 @@ struct LauncherSettingsView: View {
 
 	private var isDeveloperMode: Bool {
 		#if DEBUG
-			developerScenario != nil
+			developerSimulation != nil
 		#else
 			false
 		#endif
@@ -204,7 +204,7 @@ private struct SettingsNavigationRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text(L10n.string(SettingsStrings.navigationLabel))
+			Text(SettingsStrings.navigationLabel)
 				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
@@ -212,12 +212,12 @@ private struct SettingsNavigationRail: View {
 				.padding(.top, 22)
 				.padding(.bottom, 14)
 
-			VStack(spacing: 5) {
+			VStack(spacing: LauncherVisuals.Spacing.compact) {
 				ForEach(visibleSections) { section in
 					SettingsNavigationButton(
 						section: section,
 						isSelected: selection == section,
-						accentColor: accentColor
+						accentColor: accentColor,
 					) {
 						selection = section
 					}
@@ -227,9 +227,9 @@ private struct SettingsNavigationRail: View {
 
 			Spacer()
 
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherVisuals.Spacing.control) {
 				Rectangle()
-					.fill(accentColor)
+					.fill(LauncherVisuals.selectedNavigationMarker(for: accentColor))
 					.frame(width: 28, height: 2)
 				Rectangle()
 					.fill(LauncherVisuals.hairline)
@@ -237,13 +237,8 @@ private struct SettingsNavigationRail: View {
 			}
 			.padding(18)
 		}
-		.frame(width: 178)
-		.background(
-			ZStack {
-				LauncherVisuals.navigationRailBackground
-				accentColor.opacity(0.03)
-			}
-		)
+		.frame(width: 164)
+		.background(LauncherVisuals.navigationRailBackground)
 	}
 
 	private var visibleSections: [SettingsSection] {
@@ -264,10 +259,10 @@ private struct SettingsNavigationButton: View {
 
 	var body: some View {
 		Button(action: action) {
-			HStack(spacing: 10) {
+			HStack(spacing: LauncherVisuals.Spacing.control) {
 				RoundedRectangle(cornerRadius: 1)
 					.fill(isSelected ? accentColor : .clear)
-					.frame(width: 2, height: 20)
+					.frame(width: 2, height: 18)
 					.accessibilityHidden(true)
 				Image(systemName: section.systemImage)
 					.frame(width: 17)
@@ -277,16 +272,16 @@ private struct SettingsNavigationButton: View {
 					.fontWeight(isSelected ? .semibold : .regular)
 				Spacer(minLength: 0)
 			}
-			.foregroundStyle(isSelected || isHovering ? accentColor : .secondary)
-			.padding(.vertical, 9)
+			.foregroundStyle(isSelected ? accentColor : (isHovering ? .primary : .secondary))
+			.padding(.vertical, 8)
 			.padding(.trailing, 12)
-			.background(backgroundFill, in: .rect(cornerRadius: 8))
+			.background(backgroundFill, in: .rect(cornerRadius: LauncherVisuals.Radius.row))
 			.contentShape(.rect)
-			.frame(minHeight: 44)
+			.frame(minHeight: 38)
 		}
 		.buttonStyle(.plain)
 		.keyboardFocusIndicator(
-			in: RoundedRectangle(cornerRadius: 8)
+			in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
 		)
 		.onHover { isHovering = $0 }
 		.accessibilityLabel(section.title)
@@ -294,8 +289,8 @@ private struct SettingsNavigationButton: View {
 	}
 
 	private var backgroundFill: Color {
-		if isSelected { return accentColor.opacity(0.12) }
-		if isHovering { return accentColor.opacity(0.06) }
+		if isSelected { return LauncherVisuals.selectedNavigationFill(for: accentColor) }
+		if isHovering { return LauncherVisuals.navigationHoverFill }
 		return .clear
 	}
 }
@@ -316,15 +311,15 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var title: String {
 		switch self {
-		case .general: L10n.string(SettingsStrings.navigationGeneral)
-		case .audio: L10n.string(SettingsStrings.navigationAudio)
-		case .updates: L10n.string(SettingsStrings.navigationUpdates)
-		case .installation: L10n.string(SettingsStrings.navigationInstallation)
-		case .storage: L10n.string(SettingsStrings.navigationStorage)
-		case .statistics: L10n.string(SettingsStrings.navigationStatistics)
-		case .about: L10n.string(SettingsStrings.navigationAbout)
+		case .general: SettingsStrings.navigationGeneral
+		case .audio: SettingsStrings.navigationAudio
+		case .updates: SettingsStrings.navigationUpdates
+		case .installation: SettingsStrings.navigationInstallation
+		case .storage: SettingsStrings.navigationStorage
+		case .statistics: SettingsStrings.navigationStatistics
+		case .about: SettingsStrings.navigationAbout
 		#if DEBUG
-			case .developer: L10n.string(SettingsStrings.navigationDeveloper)
+			case .developer: SettingsStrings.navigationDeveloper
 		#endif
 		}
 	}

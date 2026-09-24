@@ -1,19 +1,19 @@
 [project]
 name = "arknights-macos-client-scripts"
 version = "0.0.0"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = []
 
 [dependency-groups]
 dev = [
     "actionlint-py==1.7.12.24",
     "pytest==9.1.1",
-    "pytest-socket==0.7.0",
-    "ruff==0.16.3",
+    "pytest-socket==0.8.1",
+    "ruff==0.16.8",
 ]
 packaging = [
     "dmgbuild==1.6.7",
-    "ziglang==0.15.1",
+    "ziglang==0.16.0",
 ]
 
 [tool.pytest.ini_options]

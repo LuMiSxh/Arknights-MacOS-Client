@@ -88,7 +88,11 @@ final class LauncherLifecycleStore {
 
 	func setStatus(_ status: LauncherStatus, clearsFailure: Bool = true) {
 		state.presentation.status = status
-		if clearsFailure { state.presentation.failure = nil }
+		if clearsFailure,
+			state.presentation.failure?.context.operation != .intelTranslationPreflight
+		{
+			state.presentation.failure = nil
+		}
 	}
 
 	func clearFailure() {
@@ -120,15 +124,27 @@ final class LauncherLifecycleStore {
 		blocksGameLaunch: Bool = false
 	) {
 		let message = launcherUserMessage(for: error)
+		let code = Self.supportCode(for: error)
 		let failure = LauncherFailurePresentation(
-			id: UUID(), message: message, code: nil,
+			id: UUID(), message: message, code: code,
 			context: SupportContext(operation: .launcher, region: nil),
-			actions: [.reportProblem],
+			actions: code == nil ? [.reportProblem] : [.openTroubleshooting, .reportProblem],
 			blocksGameLaunch: blocksGameLaunch
 		)
 		let diagnostic = launcherDiagnosticDescription(for: error)
 		let logMessage = context.map { "\($0): \(diagnostic)" } ?? diagnostic
 		presentFailure(failure, diagnostic: logMessage)
+	}
+
+	private static func supportCode(for error: any Error) -> SupportCode? {
+		switch error {
+		case LauncherError.storageMigrationFailed,
+			is CocoaError,
+			is POSIXError:
+			.basalt
+		default:
+			nil
+		}
 	}
 
 	@discardableResult

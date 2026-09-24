@@ -16,7 +16,7 @@ struct OnboardingRosettaRecoveryView: View {
 			case .idle:
 				recoveryIntroduction
 				CapsuleActionButton(
-					title: L10n.string(OnboardingStrings.installRosetta),
+					title: OnboardingStrings.installRosetta,
 					systemImage: "arrow.down.circle",
 					tone: .accent(accentColor)
 				) {
@@ -25,34 +25,34 @@ struct OnboardingRosettaRecoveryView: View {
 			case .installing:
 				HStack(spacing: 12) {
 					ProgressView()
-					Text(L10n.string(OnboardingStrings.rosettaInstalling))
+					Text(OnboardingStrings.rosettaInstalling)
 						.foregroundStyle(.secondary)
 				}
 			case .failed(let message):
 				recoveryIntroduction
 				Label(
-					L10n.string(OnboardingStrings.rosettaFailed),
+					OnboardingStrings.rosettaFailed,
 					systemImage: "exclamationmark.triangle.fill"
 				)
-				.foregroundStyle(.orange)
+				.foregroundStyle(LauncherVisuals.warning)
 				Text(message)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
-				Text(L10n.string(OnboardingStrings.rosettaManualInstall))
+				Text(OnboardingStrings.rosettaManualInstall)
 					.foregroundStyle(.secondary)
 				Text("softwareupdate --install-rosetta --agree-to-license")
 					.font(.callout.monospaced())
 					.textSelection(.enabled)
 				HStack(spacing: 10) {
 					CapsuleActionButton(
-						title: L10n.string(OnboardingStrings.tryInstallationAgain),
+						title: OnboardingStrings.tryInstallationAgain,
 						systemImage: "arrow.clockwise",
 						tone: .accent(accentColor)
 					) {
 						confirmsInstallation = true
 					}
 					CapsuleActionButton(
-						title: L10n.string(OnboardingStrings.checkAgain),
+						title: OnboardingStrings.checkAgain,
 						systemImage: "checkmark.arrow.trianglehead.counterclockwise",
 						tone: .accent(accentColor)
 					) {
@@ -66,7 +66,7 @@ struct OnboardingRosettaRecoveryView: View {
 	}
 
 	private var recoveryIntroduction: some View {
-		Text(L10n.string(OnboardingStrings.rosettaIntroduction))
+		Text(OnboardingStrings.rosettaIntroduction)
 			.foregroundStyle(.secondary)
 			.fixedSize(horizontal: false, vertical: true)
 	}

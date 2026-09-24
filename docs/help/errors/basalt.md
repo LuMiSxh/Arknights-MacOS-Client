@@ -16,7 +16,7 @@ The launcher found a symbolic link, unsafe temporary file, permission failure, o
 1. Quit Arknights and any app that may be using the affected folder.
 2. Confirm the folder is on a writable volume and owned by your macOS account.
 3. For installation failures, choose a normal local folder without symbolic links or cloud synchronization.
-4. Choose **Retry** once.
+4. Choose **Retry** once when the failed operation offers it. If this happened while the launcher was starting, quit and reopen the launcher after correcting the folder.
 
 > [!WARNING]
 > Do not change ownership or permissions recursively across your home folder. Choose a fresh install location instead.

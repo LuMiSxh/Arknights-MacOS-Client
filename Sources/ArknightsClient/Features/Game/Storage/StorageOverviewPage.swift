@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-/// Localized copy and descriptions supplied by the Settings feature.
+/// English copy and descriptions supplied by the Settings feature.
 struct StorageOverviewCopy {
 	let title: String
 	let subtitle: String
@@ -57,15 +57,17 @@ struct StorageOverviewPage: View {
 					CapsuleActionButton(
 						title: copy.clearCaches,
 						systemImage: "trash",
-						tone: .accent(accentColor),
+						tone: .danger,
 						presentation: .compact,
+						role: .destructive,
 						action: actions.clearGameCaches
 					)
 					CapsuleActionButton(
 						title: copy.clearGalleryCache,
 						systemImage: "trash",
-						tone: .accent(accentColor),
+						tone: .danger,
 						presentation: .compact,
+						role: .destructive,
 						action: actions.clearGalleryCache
 					)
 				}
@@ -126,7 +128,7 @@ struct StorageOverviewPage: View {
 					CapsuleActionButton(
 						title: copy.showLogs,
 						systemImage: "doc.text.magnifyingglass",
-						tone: .accent(accentColor),
+						tone: .neutral,
 						presentation: .compact,
 						action: action
 					)
@@ -153,8 +155,6 @@ struct StorageOverviewPage: View {
 			return controller.isMeasuring ? copy.calculating : copy.unavailable
 		}
 		guard usage.exists else { return copy.unavailable }
-		let formatter = ByteCountFormatter()
-		formatter.countStyle = .file
-		return formatter.string(fromByteCount: byteCount)
+		return DownloadProgressFormatting.byteCount(byteCount)
 	}
 }

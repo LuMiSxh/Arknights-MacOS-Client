@@ -13,24 +13,28 @@ struct LauncherHUDView: View {
 	let accentColor: Color
 	let hudTintColor: Color
 	let musicController: BackgroundMusicController
-	let openLauncherUpdate: () -> Void
-	let checkGameUpdates: () -> Void
-	let selectRegion: (GameRegion) -> Void
-	let installOrUpdate: () -> Void
-	let cancelDownload: () -> Void
-	let launch: () -> Void
-	let stopGame: () -> Void
-	let requestRosettaInstallation: () -> Void
-	let retryIntelTranslationCheck: () -> Void
-	let showFailureDetails: () -> Void
+	let actions: LauncherHUDActions
+	let developerExpandedPill: String?
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var expandedPill: ExpandedPill?
 
 	var body: some View {
-		VStack(spacing: 10) {
-			hudPillRow
-			controlBar
+		ZStack(alignment: .bottom) {
+			Color.clear
+				.contentShape(Rectangle())
+				.onTapGesture(perform: collapseExpandedPill)
+
+			VStack(spacing: 10) {
+				hudPillRow
+				controlBar
+			}
+			.padding(20)
 		}
-		.padding(20)
+		.onChange(of: hasMusicPill) { _, _ in collapseUnavailablePill() }
+		.onChange(of: hasVersionPill) { _, _ in collapseUnavailablePill() }
+		.onChange(of: hasStatusPill) { _, _ in collapseUnavailablePill() }
+		.onAppear(perform: syncDeveloperExpandedPill)
+		.onChange(of: developerExpandedPill) { _, _ in syncDeveloperExpandedPill() }
 	}
 
 	private var controlBar: some View {
@@ -40,8 +44,8 @@ struct LauncherHUDView: View {
 				installation: installation,
 				intelTranslation: intelTranslation,
 				accentColor: accentColor,
-				requestRosettaInstallation: requestRosettaInstallation,
-				retryIntelTranslationCheck: retryIntelTranslationCheck
+				requestRosettaInstallation: actions.requestRosettaInstallation,
+				retryIntelTranslationCheck: actions.retryIntelTranslationCheck
 			)
 			.id(installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)
@@ -50,22 +54,22 @@ struct LauncherHUDView: View {
 			HStack(spacing: 8) {
 				if communication.shouldShowLauncherUpdateButton {
 					CapsuleActionButton(
-						title: L10n.string(HomeStrings.launcherUpdate),
+						title: HomeStrings.launcherUpdate,
 						systemImage: "arrow.down.app",
-						tone: .accent(accentColor),
-						action: openLauncherUpdate
+						tone: .neutral,
+						action: actions.openLauncherUpdate
 					)
 					.disabled(!communication.canOpenLauncherUpdate)
 					.transition(.opacity)
-					.help(L10n.string(HomeStrings.launcherUpdateHelp))
+					.help(HomeStrings.launcherUpdateHelp)
 				}
 
 				if lifecycle.failure?.blocksGameLaunch == true {
 					CapsuleActionButton(
-						title: L10n.string(HomeStrings.recoveryDetails),
+						title: HomeStrings.recoveryDetails,
 						systemImage: "info.circle",
-						tone: .accent(accentColor),
-						action: showFailureDetails
+						tone: .neutral,
+						action: actions.showFailureDetails
 					)
 					.controlSize(.large)
 					.transition(primaryActionTransition)
@@ -76,19 +80,34 @@ struct LauncherHUDView: View {
 					gameSession: gameSession,
 					intelTranslation: intelTranslation,
 					accentColor: accentColor,
-					installOrUpdate: installOrUpdate,
-					cancelDownload: cancelDownload,
-					launch: launch,
-					stopGame: stopGame
+					installOrUpdate: actions.installOrUpdate,
+					cancelDownload: actions.cancelDownload,
+					launch: actions.launch,
+					stopGame: actions.stopGame
 				)
 				.disabled(lifecycle.failure?.blocksGameLaunch == true)
-				.transition(primaryActionTransition)
+				.transaction { transaction in
+					transaction.animation = nil
+				}
 			}
 		}
 		.padding(16)
-		.adaptiveGlassEffect(tint: hudTintColor, in: Capsule())
+		.hudPillSurface(
+			progress: LauncherDownloadProgressPresentation.outlineFraction(
+				for: installation.progress,
+				status: lifecycle.presentation.status,
+				hasPartialDownload: installation.hasPartialDownload,
+				hasFailure: lifecycle.failure != nil
+			),
+			isProgressActive: LauncherDownloadProgressPresentation.showsActiveProgressEffect(
+				for: installation.progress,
+				status: lifecycle.presentation.status,
+				hasFailure: lifecycle.failure != nil
+			),
+			tint: hudTintColor,
+			progressTint: accentColor
+		)
 		.animation(stateAnimation, value: installation.isDownloading)
-		.animation(stateAnimation, value: primaryActionIdentity)
 		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
 		.animation(stateAnimation, value: lifecycle.failure?.id)
 	}
@@ -108,7 +127,8 @@ struct LauncherHUDView: View {
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
 							openCurrentMusicURL: musicController.openCurrentMusicURL,
-							controller: musicController
+							controller: musicController,
+							isExpanded: expandedBinding(for: .music)
 						)
 						.transition(hudPillTransition)
 					}
@@ -119,7 +139,8 @@ struct LauncherHUDView: View {
 							gameSession: gameSession,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							checkGameUpdates: checkGameUpdates
+							checkGameUpdates: actions.checkGameUpdates,
+							isExpanded: expandedBinding(for: .version)
 						)
 						.transition(hudPillTransition)
 					}
@@ -130,7 +151,8 @@ struct LauncherHUDView: View {
 							canSwitchRegion: canSwitchRegion,
 							accentColor: accentColor,
 							hudTintColor: hudTintColor,
-							selectRegion: selectRegion
+							selectRegion: actions.selectRegion,
+							isExpanded: expandedBinding(for: .status)
 						)
 						.transition(hudPillTransition)
 					}
@@ -156,16 +178,6 @@ struct LauncherHUDView: View {
 		settings.resetCountdownText != nil
 	}
 
-	private var primaryActionIdentity: String {
-		if gameSession.isGameActive { return "stop" }
-		if installation.isDownloading { return "pause" }
-		if !installation.isInstalled {
-			return installation.hasPartialDownload ? "resume" : "install"
-		}
-		if installation.isGameUpdateAvailable { return "update" }
-		return "play"
-	}
-
 	private var versionText: String {
 		installation.installedVersion
 			?? installation.configuration?.gameLatestVersion
@@ -182,5 +194,49 @@ struct LauncherHUDView: View {
 
 	private var hudPillTransition: AnyTransition {
 		reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
+	}
+
+	private func expandedBinding(for pill: ExpandedPill) -> Binding<Bool> {
+		Binding(
+			get: { expandedPill == pill },
+			set: { isExpanded in
+				if isExpanded {
+					expandedPill = pill
+				} else if expandedPill == pill {
+					expandedPill = nil
+				}
+			}
+		)
+	}
+
+	private func collapseUnavailablePill() {
+		guard
+			(expandedPill == .music && !hasMusicPill)
+				|| (expandedPill == .version && !hasVersionPill)
+				|| (expandedPill == .status && !hasStatusPill)
+		else { return }
+		expandedPill = nil
+	}
+
+	private func collapseExpandedPill() {
+		guard expandedPill != nil else { return }
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
+			expandedPill = nil
+		}
+	}
+
+	private func syncDeveloperExpandedPill() {
+		switch developerExpandedPill {
+		case "music": expandedPill = .music
+		case "version": expandedPill = .version
+		case "status": expandedPill = .status
+		default: expandedPill = nil
+		}
+	}
+
+	private enum ExpandedPill {
+		case music
+		case version
+		case status
 	}
 }

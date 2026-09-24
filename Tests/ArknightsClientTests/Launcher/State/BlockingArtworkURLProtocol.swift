@@ -15,7 +15,7 @@ final class BlockingArtworkURLProtocol: URLProtocol, @unchecked Sendable {
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
-		if request.url?.host == "example.com" {
+		if request.url?.host == "www.arknights.global" {
 			let gate = Self.lock.withLock {
 				Self.artworkRequestStarted = true
 				return Self.artworkGate

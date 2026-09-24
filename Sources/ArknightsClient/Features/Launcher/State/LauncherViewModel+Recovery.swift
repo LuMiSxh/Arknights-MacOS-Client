@@ -20,7 +20,17 @@ extension LauncherViewModel {
 			if isDeveloperMode, action == .retry {
 				guard lifecycle.consumeFailure(id: failureID) != nil else { return .ignored }
 				logRecovery(action: action, result: "simulated")
-				applyDeveloperScenario(.launching)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					switch failure.context.operation {
+					case .configurationRefresh:
+						$0.lifecycle = .ready
+					case .install, .update, .repair:
+						$0.lifecycle = .installing
+					default:
+						$0.lifecycle = .launching
+					}
+				}
 				return .completed
 			}
 		#endif
@@ -42,6 +52,8 @@ extension LauncherViewModel {
 				started = refreshController.retryConfigurationFailure(id: failureID)
 			case .rosettaInstallation:
 				started = intelTranslation.retryRosettaFailure(id: failureID)
+			case .intelTranslationPreflight:
+				started = intelTranslation.retryAvailabilityFailure(id: failureID)
 			case .launcher:
 				logRecovery(action: action, result: "ignored-no-retry-route")
 				return .ignored
@@ -67,6 +79,16 @@ extension LauncherViewModel {
 			return .completed
 		case .repair:
 			return .repairConfirmationRequired
+		case .installRosetta:
+			guard failure.context.operation == .intelTranslationPreflight,
+				lifecycle.intelTranslationState == .rosettaMissing,
+				intelTranslation.canInstallRosetta
+			else {
+				logRecovery(action: action, result: "ignored-ineligible")
+				return .ignored
+			}
+			logRecovery(action: action, result: "confirmation-required")
+			return .rosettaConfirmationRequired
 		}
 	}
 
@@ -94,7 +116,12 @@ extension LauncherViewModel {
 		#if DEBUG
 			if isDeveloperMode {
 				logRecovery(action: .repair, result: "simulated")
-				applyDeveloperScenario(.downloading)
+				updateDeveloperSimulation {
+					$0.failure = .none
+					$0.lifecycle = .installing
+					$0.hasPartialDownload = false
+					$0.updateAvailable = true
+				}
 				return
 			}
 		#endif

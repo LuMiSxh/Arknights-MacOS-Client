@@ -131,7 +131,7 @@ def _resume_state(partial: Path, metadata_path: Path, url: str) -> tuple[int, st
         etag = _strong_etag(
             metadata.get("etag") if isinstance(metadata, dict) else None
         )
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         etag = None
     if (
         isinstance(metadata, dict)

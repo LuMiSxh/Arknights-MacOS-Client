@@ -10,9 +10,7 @@ from lib.common import ScriptError
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 
-def plist(
-    *, languages: list[str] | None = None, executable: str = "Client"
-) -> dict[str, object]:
+def plist(*, executable: str = "Client") -> dict[str, object]:
     return {
         "CFBundleDisplayName": "Example Client",
         "CFBundleName": "Example Client",
@@ -21,8 +19,6 @@ def plist(
         "CFBundleShortVersionString": "1.2.3",
         "CFBundleIconName": "AppIcon",
         "CFBundleIconFile": "AppIcon",
-        "CFBundleDevelopmentRegion": "en",
-        "CFBundleLocalizations": languages or ["en", "de"],
         "LSMinimumSystemVersion": "15.0",
         "LSArchitecturePriority": ["arm64"],
     }
@@ -36,7 +32,6 @@ def package_dump(
     return {
         "dependencies": [],
         "name": name,
-        "defaultLocalization": "en",
         "platforms": [{"platformName": "macos", "version": "15.0"}],
         "products": [{"name": name, "type": {"executable": {}}, "targets": [name]}],
         "targets": [
@@ -47,10 +42,6 @@ def package_dump(
                 "resources": resources
                 or [
                     {"path": "Resources/Icon.png", "rule": {"copy": {}}},
-                    {
-                        "path": "Resources/Localizable.xcstrings",
-                        "rule": {"process": {}},
-                    },
                 ],
             }
         ],
@@ -77,38 +68,27 @@ def test_derives_paths_from_manifest_and_plist(tmp_path: Path) -> None:
     assert configuration.target_directory == configuration.project_directory / (
         "Sources/Client"
     )
-    assert configuration.resource_directory == configuration.target_directory / (
-        "Resources"
-    )
-    assert configuration.swift_resource_bundle_name == "Client_Client.bundle"
     assert configuration.copied_resource_source_paths == (
         configuration.target_directory / "Resources/Icon.png",
     )
 
 
-def test_renames_languages_and_resources_are_derived_automatically(
+def test_renamed_target_and_resources_are_derived_automatically(
     tmp_path: Path,
 ) -> None:
-    languages = ["en", "de", "ja"]
     resources = [
         {"path": "Assets/Brand.png", "rule": {"copy": {}}},
-        {"path": "Assets/Launcher.xcstrings", "rule": {"process": {}}},
-        {"path": "Assets/Settings.xcstrings", "rule": {"process": {}}},
+        {"path": "Assets/WallpaperTags.json", "rule": {"copy": {}}},
     ]
     configuration = load_configuration(
         tmp_path,
-        plist(languages=languages, executable="Renamed"),
+        plist(executable="Renamed"),
         package_dump(name="Renamed", resources=resources),
     )
 
-    assert configuration.swift_resource_bundle_name == "Renamed_Renamed.bundle"
-    assert configuration.package.processed_resource_paths == tuple(
-        Path(path)
-        for path in ("Assets/Launcher.xcstrings", "Assets/Settings.xcstrings")
-    )
-    assert configuration.product.localizations == ("en", "de", "ja")
     assert configuration.copied_resource_source_paths == (
         configuration.target_directory / "Assets/Brand.png",
+        configuration.target_directory / "Assets/WallpaperTags.json",
     )
 
 
@@ -120,11 +100,6 @@ def test_renames_languages_and_resources_are_derived_automatically(
             {**plist(), "CFBundleIconFile": "OtherIcon"},
             package_dump(),
             id="icon-file",
-        ),
-        pytest.param(
-            plist(),
-            {**package_dump(), "defaultLocalization": "de"},
-            id="default-localization",
         ),
         pytest.param(
             plist(),
@@ -153,9 +128,6 @@ unsafe_target = {**unsafe_target_dump["targets"][0], "path": "../Client"}
     ("plist_value", "dump_value"),
     [
         pytest.param(
-            plist(languages=["en", "en"]), package_dump(), id="duplicate-languages"
-        ),
-        pytest.param(
             {**plist(), "LSArchitecturePriority": ["arm64", "arm64"]},
             package_dump(),
             id="duplicate-architectures",
@@ -167,7 +139,7 @@ unsafe_target = {**unsafe_target_dump["targets"][0], "path": "../Client"}
         ),
     ],
 )
-def test_rejects_duplicate_languages_architectures_and_unsafe_paths(
+def test_rejects_duplicate_architectures_and_unsafe_paths(
     tmp_path: Path,
     plist_value: dict[str, object],
     dump_value: dict[str, object],

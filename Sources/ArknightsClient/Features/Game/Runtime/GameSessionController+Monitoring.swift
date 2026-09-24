@@ -71,7 +71,7 @@ extension GameSessionController {
 	) {
 		gameMonitorTask?.cancel()
 		gameProcessMonitorTask?.cancel()
-		let logURL = paths.wineLogFile(for: activeGameRegion ?? installation.region)
+		let logURL = paths.runtimeLogFile(for: activeGameRegion ?? installation.region)
 		gameProcessMonitorTask = Task { [weak self, log, logURL] in
 			let exit = await launch.waitUntilExit()
 			guard let self, !Task.isCancelled else { return }

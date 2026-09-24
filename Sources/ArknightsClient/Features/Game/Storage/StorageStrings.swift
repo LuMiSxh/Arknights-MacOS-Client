@@ -1,36 +1,34 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Foundation
-
 enum StorageStrings {
-	static let title = LocalizedStringResource.Settings.settingsStorageTitle
-	static let subtitle = LocalizedStringResource.Settings.settingsStorageSubtitle
-	static let installations = LocalizedStringResource.Settings.settingsStorageSectionInstallations
-	static let shared = LocalizedStringResource.Settings.settingsStorageSectionShared
-	static let caches = LocalizedStringResource.Settings.settingsStorageSectionCaches
-	static let unavailable = LocalizedStringResource.Settings.settingsStorageCommonUnavailable
-	static let refresh = LocalizedStringResource.Settings.settingsStorageActionRefresh
-	static let clearCaches = LocalizedStringResource.Settings.settingsStorageActionClearCaches
+	static let title = "Storage"
+	static let subtitle = "Disk usage and targeted cleanup"
+	static let installations = "Game Installations"
+	static let shared = "Shared Runtime Data"
+	static let caches = "Recreatable Caches"
+	static let unavailable = "Not present"
+	static let refresh = "Refresh"
+	static let clearCaches = "Clear Caches"
 	static let clearGalleryCache =
-		LocalizedStringResource.Settings.settingsStorageActionClearGalleryCache
+		"Clear Gallery Cache"
 	static let compatibilityRuntime =
-		LocalizedStringResource.Settings.settingsStorageCategoryCompatibilityRuntime
-	static let dxmtCache = LocalizedStringResource.Settings.settingsStorageCategoryDxmtCache
-	static let browserCache = LocalizedStringResource.Settings.settingsStorageCategoryBrowserCache
+		"Compatibility Runtime"
+	static let dxmtCache = "DXMT Shader Cache"
+	static let browserCache = "Embedded Browser Data"
 
 	static func copy() -> StorageOverviewCopy {
 		StorageOverviewCopy(
-			title: L10n.string(title),
-			subtitle: L10n.string(subtitle),
-			installationsTitle: L10n.string(installations),
-			sharedTitle: L10n.string(shared),
-			cachesTitle: L10n.string(caches),
-			logsTitle: L10n.string(SettingsStrings.logs),
-			calculating: L10n.string(SettingsStrings.calculating),
-			unavailable: L10n.string(unavailable),
-			clearCaches: L10n.string(clearCaches),
-			clearGalleryCache: L10n.string(clearGalleryCache),
-			showLogs: L10n.string(SettingsStrings.showLogs),
+			title: title,
+			subtitle: subtitle,
+			installationsTitle: installations,
+			sharedTitle: shared,
+			cachesTitle: caches,
+			logsTitle: SettingsStrings.logs,
+			calculating: SettingsStrings.calculating,
+			unavailable: unavailable,
+			clearCaches: clearCaches,
+			clearGalleryCache: clearGalleryCache,
+			showLogs: SettingsStrings.showLogs,
 			categoryTitle: categoryTitle,
 			categoryDetail: categoryDetail
 		)
@@ -38,27 +36,27 @@ enum StorageStrings {
 
 	private static func categoryTitle(_ category: StorageCategory) -> String {
 		switch category {
-		case .game(let region): region.localizedDisplayName
-		case .winePrefix: L10n.string(SettingsStrings.winePrefix)
-		case .compatibilityRuntime: L10n.string(compatibilityRuntime)
-		case .dxmtCache: L10n.string(dxmtCache)
-		case .browserCache: L10n.string(browserCache)
-		case .galleryCache: L10n.string(SettingsStrings.cacheGallery)
-		case .logs: L10n.string(SettingsStrings.logs)
+		case .game(let region): region.displayName
+		case .winePrefix: SettingsStrings.winePrefix
+		case .compatibilityRuntime: compatibilityRuntime
+		case .dxmtCache: dxmtCache
+		case .browserCache: browserCache
+		case .galleryCache: SettingsStrings.cacheGallery
+		case .logs: SettingsStrings.logs
 		}
 	}
 
 	private static func categoryDetail(_ category: StorageCategory) -> String {
 		switch category {
-		case .game: L10n.string(.Settings.settingsStorageCategoryGameDetail)
-		case .winePrefix: L10n.string(.Settings.settingsStorageCategoryWinePrefixDetail)
+		case .game: "Game files that may require repair or reinstall."
+		case .winePrefix: "Shared by the selected client family; contains runtime data and logins."
 		case .compatibilityRuntime:
-			L10n.string(.Settings.settingsStorageCategoryCompatibilityRuntimeDetail)
-		case .dxmtCache: L10n.string(.Settings.settingsStorageCategoryDxmtCacheDetail)
-		case .browserCache: L10n.string(.Settings.settingsStorageCategoryBrowserCacheDetail)
+			"Bundled Wine and DXMT components; read-only."
+		case .dxmtCache: "Recreated automatically and removed by the cache cleanup action."
+		case .browserCache: "Recreated automatically and removed by the cache cleanup action."
 		case .galleryCache:
-			L10n.string(.Settings.settingsStorageCategoryGalleryCacheDetail)
-		case .logs: L10n.string(.Settings.settingsStorageCategoryLogsDetail)
+			"Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers)."
+		case .logs: "Launcher and game diagnostics; reveal them in Finder."
 		}
 	}
 }

@@ -7,8 +7,8 @@ extension InstallationController {
 	func chooseInstallDirectory() {
 		guard lifecycle.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = L10n.string(LauncherStrings.pickerInstallDirectory)
-		panel.prompt = L10n.string(LauncherStrings.pickerChoose)
+		panel.title = LauncherStrings.pickerInstallDirectory
+		panel.prompt = LauncherStrings.pickerChoose
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.canCreateDirectories = true
@@ -26,8 +26,8 @@ extension InstallationController {
 	func locateExistingInstallation() {
 		guard lifecycle.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = L10n.string(LauncherStrings.pickerLocateInstallation)
-		panel.prompt = L10n.string(LauncherStrings.pickerUseFolder)
+		panel.title = LauncherStrings.pickerLocateInstallation
+		panel.prompt = LauncherStrings.pickerUseFolder
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.allowsMultipleSelection = false
@@ -48,7 +48,7 @@ extension InstallationController {
 				self.lifecycle.setStatus(
 					self.isInstalled
 						? .ready
-						: .custom(L10n.string(.Launcher.launcherStatusGameNotFound))
+						: .custom("Arknights.exe not found")
 				)
 			}
 		}

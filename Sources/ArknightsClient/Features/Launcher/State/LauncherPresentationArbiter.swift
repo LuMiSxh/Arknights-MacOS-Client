@@ -79,6 +79,19 @@ struct LauncherPresentationArbiter {
 		if case .failure = queued { queued = nil }
 	}
 
+	mutating func removeRosettaPreflightFailures() {
+		if case .failure(let failure) = current,
+			failure.context.operation == .intelTranslationPreflight
+		{
+			current = nil
+		}
+		if case .failure(let failure) = queued,
+			failure.context.operation == .intelTranslationPreflight
+		{
+			queued = nil
+		}
+	}
+
 	func blockingDestination(hasPendingPopup: Bool) -> LauncherPresentationDestination? {
 		current ?? (hasPendingPopup ? .popup : nil)
 	}

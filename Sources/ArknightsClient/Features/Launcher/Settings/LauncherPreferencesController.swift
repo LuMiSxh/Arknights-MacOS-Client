@@ -62,24 +62,28 @@ final class LauncherPreferencesController {
 			onCanaryFeaturesChanged?(canaryFeaturesEnabled)
 		}
 	}
-	var runtimePerformanceEnabled: Bool {
-		didSet { store.setRuntimePerformanceEnabled(runtimePerformanceEnabled) }
+	var chinaClientsEnabled: Bool {
+		didSet {
+			store.setChinaClientsEnabled(chinaClientsEnabled)
+			onChinaClientsChanged?(chinaClientsEnabled)
+		}
+	}
+	var taiwanClientEnabled: Bool {
+		didSet {
+			store.setTaiwanClientEnabled(taiwanClientEnabled)
+			onTaiwanClientChanged?(taiwanClientEnabled)
+		}
 	}
 	var maximumFrameLatency: Int {
 		didSet { store.setMaximumFrameLatency(maximumFrameLatency) }
-	}
-	var appLanguage: AppLanguage {
-		didSet {
-			store.setAppLanguage(appLanguage)
-			L10n.useAppLanguage(appLanguage)
-			refreshResetCountdown()
-		}
 	}
 	@ObservationIgnored var onLauncherUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onGameUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onAnnouncementCheckRequested: (() -> Void)?
 	@ObservationIgnored var onDynamicThemeChanged: (() -> Void)?
 	@ObservationIgnored var onCanaryFeaturesChanged: ((Bool) -> Void)?
+	@ObservationIgnored var onChinaClientsChanged: ((Bool) -> Void)?
+	@ObservationIgnored var onTaiwanClientChanged: ((Bool) -> Void)?
 	@ObservationIgnored var regionProvider: () -> GameRegion = { .global }
 
 	private let store: LauncherPreferencesStore
@@ -99,10 +103,9 @@ final class LauncherPreferencesController {
 		launcherMusicVolume = store.launcherMusicVolume()
 		usesDynamicTheme = store.usesDynamicTheme()
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
-		runtimePerformanceEnabled = store.runtimePerformanceEnabled()
+		chinaClientsEnabled = store.chinaClientsEnabled()
+		taiwanClientEnabled = store.taiwanClientEnabled()
 		maximumFrameLatency = store.maximumFrameLatency()
-		appLanguage = store.appLanguage()
-		L10n.useAppLanguage(appLanguage)
 	}
 
 	deinit {
@@ -132,9 +135,10 @@ final class LauncherPreferencesController {
 		launcherMusicVolume = 0.5
 		usesDynamicTheme = true
 		canaryFeaturesEnabled = false
-		runtimePerformanceEnabled = false
+		chinaClientsEnabled = false
+		taiwanClientEnabled = false
+		store.clearACEWarningAcknowledgements()
 		maximumFrameLatency = 3
-		appLanguage = .system
 		return true
 	}
 

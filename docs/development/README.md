@@ -1,14 +1,15 @@
 ---
 title: Development
-description: Architecture, design, testing, localization, release, and runtime contracts for contributors
+description: Architecture, design, testing, release, and runtime contracts for contributors
 order: 30
+audience: developers
 ---
 
 # Development
 
-These documents describe how Arknights Client is organized, tested, localized, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients by default and gates Hypergryph's China and China — Bilibili clients behind Canary Features.
+These documents describe how Arknights Client is organized, tested, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients by default and gates the Gryphline Taiwan client and Hypergryph's China and China — Bilibili clients behind Canary Features. Taiwan and the two China clients each have a separate permission switch.
 
-Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md), [Design](design.md), and [Localization](localization.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
+Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md) and [Design](design.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
 
 [Wine prefix architecture](architecture/wine-prefix.md) is the developer reference for prefix topology, isolation, migrations, drive mappings, persistent state, and process ownership.
 
@@ -39,7 +40,7 @@ toc: true
 ---
 ```
 
-`title` and `description` are required. `order` is a finite number used for sorting; `hidden`, `draft`, and `toc` are booleans; and `audience` is `all`, `developers`, or `users`. An optional `code` must be one uppercase English word and must be paired with a non-empty `domain`; error codes are unique across documentation files. Public codes are registered in `docs/help/errors/registry.json`, use `/help/errors/<lowercase-code>/`, and must have exactly one matching page. `audience` is currently descriptive metadata, while `hidden` controls navigation and `toc` controls the page table of contents. A `draft: true` file fails the production build rather than silently publishing an unfinished page.
+`title` and `description` are required. `order` is a finite number used for sorting; `hidden`, `draft`, and `toc` are booleans; and `audience` is `all`, `developers`, or `users`. An optional `code` must be one uppercase English word and must be paired with a non-empty `domain`; error codes are unique across documentation files. Public codes are registered in `docs/help/errors/registry.json`, use `/help/errors/<lowercase-code>/`, and must have exactly one matching page. A top-level section with `audience: developers` is listed under **Contributors** in the website sidebar and omitted from the home page, so player-facing pages stay separate; `hidden` removes a page from navigation and `toc` controls the page table of contents. Keep player pages short and task-focused, and put implementation details in these development pages. A `draft: true` file fails the production build rather than silently publishing an unfinished page.
 
 The site renders the frontmatter title in its page header. A first-level Markdown heading that exactly matches `title` is removed from the body, so use that heading when the same document is also read in the repository or launcher. A different first heading remains visible and is useful only when the page deliberately needs a second title.
 
@@ -65,7 +66,7 @@ Keep alerts short and actionable. Use one marker for one point instead of nestin
 
 ### Mermaid diagrams
 
-Put diagrams in fenced `mermaid` blocks. The website lazy-loads Mermaid only on pages that contain such a block, renders with a strict security level, and keeps the source as a fallback when rendering fails. Use ordinary flowcharts or sequence diagrams with concise labels, keep both light and dark themes readable, and avoid HTML, scripts, external assets, or behavior that requires Mermaid callbacks. The native launcher currently shows fenced code as text, so the surrounding prose must explain the contract without requiring the diagram.
+Put diagrams in fenced `mermaid` blocks. The website lazy-loads Mermaid only on pages that contain such a block, renders with a strict security level, and keeps the source as a fallback when rendering fails. Use ordinary flowcharts or sequence diagrams with concise labels, keep them readable on the dark-only website theme, and avoid HTML, scripts, external assets, or behavior that requires Mermaid callbacks. The native launcher currently shows fenced code as text, so the surrounding prose must explain the contract without requiring the diagram.
 
 ### Links and content checks
 
@@ -75,7 +76,7 @@ Prefer relative Markdown links for repository documents, with the `.md` suffix. 
 
 The SvelteKit site in `web/` builds these Markdown files into the project website. Every published document requires YAML frontmatter with at least `title` and `description`; `order`, `hidden`, `audience`, and `toc` refine navigation and presentation.
 
-The site uses Anasthasia's components and base tokens with a launcher-specific flavour in `web/src/lib/styles/arknights-client.css`. Keep that local flavour aligned with the launcher's compact graphite surfaces and reserve cyan for the primary download action and active navigation. Reuse library components for matching UI contracts, including semantic badges for compact supported and unsupported states.
+The site uses Anasthasia's components and base tokens with a launcher-specific flavour in `web/src/lib/styles/arknights-client.css`. Like the launcher, the website is dark-only. The home page shows one official Arknights Global wallpaper from `web/static/artwork/`, the repository's only bundled artwork, always uncropped at 16:9; credit the artist, Hypergryph, and Yostar beside it. `--site-signal` is the accent the launcher's `WallpaperColorExtractor` derives from that wallpaper, and `--site-signal-text` is its AA-readable text variant; update both together when the wallpaper changes. Reserve the signal for the primary download action, active navigation, and focus, use tinted fills rather than solid signal fills, and keep secondary controls as quiet neutral capsules.
 
 Use Node 24.14 or newer and the `pnpm` version declared by `web/package.json`; the lockfile is the dependency source of truth. Use `just dev web` for local editing. Before opening a change, run `just format web` if needed and `just check web` for Svelte/type and Prettier checks. The check command does not run the content/prerender build; run the production check explicitly from the website directory:
 

@@ -29,12 +29,12 @@ final class LauncherViewModel {
 
 	#if DEBUG
 		var developerAccessibilityMusicTitle: String?
+		var developerSimulation: DeveloperSimulationState?
 	#endif
+	var pendingACEWarningRegion: GameRegion?
 	@ObservationIgnored private var startupTask: Task<Bool, Never>?
-	#if DEBUG
-		var developerScenario: DeveloperScenario?
-	#endif
-
+	@ObservationIgnored private var deferredCanaryRefreshTask: Task<Void, Never>?
+	@ObservationIgnored private var canaryRefreshPending = false
 	init(
 		api: any LauncherAPIProviding = LauncherAPI(),
 		installer: (any GameInstalling)? = nil,
@@ -174,9 +174,17 @@ final class LauncherViewModel {
 		settings.onDynamicThemeChanged = { [weak customization] in
 			customization?.updateThemeColor()
 		}
-		settings.onCanaryFeaturesChanged = { [weak installation, weak refreshController] enabled in
-			guard !enabled, installation?.region.isChinaClient == true else { return }
-			_ = refreshController?.selectRegion(.global)
+		settings.onCanaryFeaturesChanged = { [weak self] _ in
+			self?.refreshInstalledRegionsAfterCanaryChange()
+		}
+		settings.onChinaClientsChanged = { [weak self] _ in
+			self?.refreshInstalledRegionsAfterCanaryChange()
+		}
+		settings.onTaiwanClientChanged = { [weak self] _ in
+			self?.refreshInstalledRegionsAfterCanaryChange()
+		}
+		_ = lifecycle.observeActivityChanges { [weak self] in
+			self?.scheduleCanaryRefreshIfIdle()
 		}
 		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in
 			refreshController?.cancelForInstallationStart()
@@ -189,9 +197,12 @@ final class LauncherViewModel {
 		settings.start()
 
 		#if DEBUG
-			developerScenario = DeveloperScenario(arguments: arguments)
-			if let developerScenario {
-				applyDeveloperScenario(developerScenario)
+			developerSimulation =
+				DeveloperSimulationState.isPreviewArgument(arguments)
+				? DeveloperSimulationState()
+				: nil
+			if let developerSimulation {
+				applyDeveloperSimulation(developerSimulation)
 				Task { [weak self] in
 					guard let self else { return }
 					_ = await customization.loadCustomAppIcon()
@@ -238,6 +249,7 @@ final class LauncherViewModel {
 			await customization.restoreInitialArtwork(for: installation.region)
 			customization.markInitialArtworkLoadComplete()
 			_ = await customization.loadCustomAppIcon()
+			await installation.updateInstalledState().value
 			_ = await intelTranslation.refreshAvailability()
 			let refreshTask = refreshController.startRefresh()
 			await refreshTask.value
@@ -260,8 +272,46 @@ final class LauncherViewModel {
 		Task { [log] in await log.info("Launcher \(appVersion) started") }
 	}
 
+	private func refreshInstalledRegionsAfterCanaryChange() {
+		#if DEBUG
+			guard !isDeveloperMode else { return }
+		#endif
+		canaryRefreshPending = true
+		scheduleCanaryRefreshIfIdle()
+	}
+
+	private func scheduleCanaryRefreshIfIdle() {
+		guard
+			canaryRefreshPending, lifecycle.activity == .idle,
+			deferredCanaryRefreshTask == nil
+		else {
+			return
+		}
+		deferredCanaryRefreshTask = Task { @MainActor [weak self] in
+			await Task.yield()
+			guard let self else { return }
+			deferredCanaryRefreshTask = nil
+			guard lifecycle.activity == .idle, canaryRefreshPending else { return }
+			canaryRefreshPending = false
+			refreshInstalledRegionsNow()
+		}
+	}
+
+	private func refreshInstalledRegionsNow() {
+		let activeRegion = installation.region
+		let activeRegionDisabled =
+			(activeRegion.requiresCanaryPermission && !settings.canaryFeaturesEnabled)
+			|| (activeRegion.requiresChinaClientPermission && !settings.chinaClientsEnabled)
+			|| (activeRegion.requiresTaiwanClientPermission && !settings.taiwanClientEnabled)
+		if activeRegionDisabled, refreshController.selectRegion(.global) {
+			return
+		}
+		_ = installation.updateInstalledState()
+	}
+
 	deinit {
 		startupTask?.cancel()
+		deferredCanaryRefreshTask?.cancel()
 	}
 
 	func waitForStartup() async -> Bool {

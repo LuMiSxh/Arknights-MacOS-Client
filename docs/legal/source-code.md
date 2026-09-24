@@ -50,7 +50,7 @@ Before publishing a binary release, the maintainer should be able to answer all 
 5. Has the release-specific corresponding-source and notice package been reviewed for every bundled
    runtime component before the draft is published?
 
-The packaging checks enforce the input files, runtime interface, localization resources, and
+The packaging checks enforce the input files, runtime interface, resource files, and
 required license text files. They cannot by themselves determine whether a third-party component's
 full corresponding source has been published, so that final review remains a release decision.
 

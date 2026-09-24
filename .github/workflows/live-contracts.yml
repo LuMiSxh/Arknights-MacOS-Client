@@ -16,7 +16,7 @@ concurrency:
 jobs:
   probe:
     name: Yostar launcher API
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 15
     outputs:
       report-artifact-id: ${{ steps.upload-report.outputs.artifact-id }}

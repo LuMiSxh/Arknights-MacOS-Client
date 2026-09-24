@@ -4,32 +4,43 @@ import SwiftUI
 
 extension InstallationSettingsPage {
 	@ViewBuilder var canaryRuntimeSettings: some View {
-		SettingsHairline()
 		SettingsActionRow(
-			title: L10n.string(SettingsStrings.runtimePerformance),
-			detail: L10n.string(SettingsStrings.runtimePerformanceDetail)
+			title: SettingsStrings.chinaClients,
+			detail: SettingsStrings.chinaClientsDetail
 		) {
 			SettingsToggle(
-				L10n.string(SettingsStrings.runtimePerformance),
-				isOn: $settings.runtimePerformanceEnabled,
-				accentColor: LauncherVisuals.danger
+				SettingsStrings.chinaClients,
+				isOn: $settings.chinaClientsEnabled,
+				accentColor: LauncherVisuals.warning
 			)
 		}
-		.disabled(gameSession.isGameActive)
+		.disabled(lifecycle.activity != .idle)
 		SettingsHairline()
 		SettingsActionRow(
-			title: L10n.string(SettingsStrings.frameLatency),
-			detail: L10n.string(SettingsStrings.frameLatencyDetail)
+			title: SettingsStrings.taiwanClient,
+			detail: SettingsStrings.taiwanClientDetail
+		) {
+			SettingsToggle(
+				SettingsStrings.taiwanClient,
+				isOn: $settings.taiwanClientEnabled,
+				accentColor: LauncherVisuals.warning
+			)
+		}
+		.disabled(lifecycle.activity != .idle)
+		SettingsHairline()
+		SettingsActionRow(
+			title: SettingsStrings.frameLatency,
+			detail: SettingsStrings.frameLatencyDetail
 		) {
 			HStack(spacing: 10) {
 				SettingsSlider(
 					value: frameLatencyBinding,
 					range: 1...3,
 					step: 1,
-					accentColor: LauncherVisuals.danger,
+					accentColor: LauncherVisuals.warning,
 					width: 120
 				)
-				.accessibilityLabel(L10n.string(SettingsStrings.frameLatency))
+				.accessibilityLabel(SettingsStrings.frameLatency)
 				.accessibilityValue(settings.maximumFrameLatency.formatted())
 				Text(settings.maximumFrameLatency.formatted())
 					.monospacedDigit()

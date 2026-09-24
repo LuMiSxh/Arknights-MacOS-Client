@@ -10,9 +10,8 @@ struct VersionHUDPill: View {
 	let accentColor: Color
 	let hudTintColor: Color
 	let checkGameUpdates: () -> Void
+	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var isExpanded = false
-	@State private var isHovering = false
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: isExpanded ? 10 : 0) {
@@ -20,11 +19,11 @@ struct VersionHUDPill: View {
 				HStack(spacing: 5) {
 					Image(systemName: "number")
 						.font(.caption.weight(.semibold))
-						.foregroundStyle(accentColor)
+						.adaptiveControlForeground(accentColor)
 						.accessibilityHidden(true)
 					Text(versionText)
 						.font(.caption.monospaced().weight(.medium))
-						.foregroundStyle(isHovering ? .primary : .secondary)
+						.foregroundStyle(.secondary)
 						.lineLimit(1)
 						.truncationMode(.tail)
 						.frame(
@@ -33,33 +32,31 @@ struct VersionHUDPill: View {
 								: AppConstants.HUD.collapsedVersionTitleMaxWidth,
 							alignment: .leading
 						)
-					Spacer(minLength: isExpanded ? 6 : 0)
-					if isExpanded {
-						Image(systemName: "chevron.down")
-							.font(.caption.bold())
-							.foregroundStyle(accentColor.opacity(isHovering ? 1 : 0.65))
-							.accessibilityHidden(true)
-					}
+					Spacer(minLength: 6)
+					Image(systemName: disclosureImage)
+						.font(.caption.bold())
+						.adaptiveControlForeground(accentColor)
+						.contentTransition(
+							HUDPillMotion.chevronTransition(reduceMotion: reduceMotion)
+						)
+						.accessibilityHidden(true)
 				}
 				.padding(.horizontal, isExpanded ? 14 : 12)
 				.frame(minHeight: isExpanded ? nil : AppConstants.Music.collapsedPlayerHeight)
 				.contentShape(Rectangle())
 			}
-			.buttonStyle(.plain)
-			.keyboardFocusIndicator(
-				in: RoundedRectangle(cornerRadius: 8)
-			)
-			.onHover { isHovering = $0 }
+			.buttonStyle(ActionPressStyle())
+			.keyboardFocusIndicator(in: Capsule())
 			.accessibilityLabel(
-				L10n.string(
-					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
-				)
+
+				isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+
 			)
 			.accessibilityValue(Text(versionText))
 			.help(
-				L10n.string(
-					isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
-				)
+
+				isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+
 			)
 
 			if isExpanded {
@@ -72,7 +69,7 @@ struct VersionHUDPill: View {
 						.fixedSize(horizontal: false, vertical: true)
 					Spacer()
 					CapsuleActionButton(
-						title: L10n.string(HomeStrings.versionCheckNow),
+						title: HomeStrings.versionCheckNow,
 						systemImage: "arrow.clockwise",
 						tone: .accent(accentColor), presentation: .hud,
 						action: checkGameUpdates
@@ -97,9 +94,10 @@ struct VersionHUDPill: View {
 				: AppConstants.HUD.collapsedVersionMaxWidth
 		)
 		.fixedSize(horizontal: !isExpanded, vertical: false)
-		.adaptiveGlassEffect(
+		.hudPillSurface(
+			isExpanded: isExpanded,
 			tint: hudTintColor,
-			in: RoundedRectangle(cornerRadius: isExpanded ? 20 : 40)
+			progressTint: accentColor
 		)
 		.shadow(
 			color: Color.black.opacity(isExpanded ? 0.35 : 0),
@@ -107,6 +105,7 @@ struct VersionHUDPill: View {
 			y: isExpanded ? 5 : 0
 		)
 		.accessibilityElement(children: .contain)
+		.onExitCommand(perform: collapseExpansion)
 	}
 
 	private var cannotCheck: Bool {
@@ -121,13 +120,13 @@ struct VersionHUDPill: View {
 	}
 
 	private var updateStatus: String {
-		if lifecycle.refresh.isChecking { return L10n.string(HomeStrings.versionChecking) }
+		if lifecycle.refresh.isChecking { return HomeStrings.versionChecking }
 		if installation.isGameUpdateAvailable,
 			let latest = installation.configuration?.gameLatestVersion
 		{
-			return L10n.string(HomeStrings.versionAvailable(latest))
+			return HomeStrings.versionAvailable(latest)
 		}
-		return L10n.string(HomeStrings.versionUpToDate)
+		return HomeStrings.versionUpToDate
 	}
 
 	private var updateStatusIcon: String {
@@ -135,21 +134,24 @@ struct VersionHUDPill: View {
 		return installation.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
 	}
 
+	private var disclosureImage: String {
+		isExpanded ? "chevron.up" : "chevron.down"
+	}
+
 	private var expandedContentTransition: AnyTransition {
-		if reduceMotion { return .opacity }
-		return .opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing))
+		HUDPillMotion.expandedContentTransition(reduceMotion: reduceMotion)
 	}
 
 	private func toggleExpansion() {
-		withAnimation(
-			reduceMotion
-				? nil
-				: .snappy(
-					duration: AppConstants.HUD.expansionDuration,
-					extraBounce: 0.04
-				)
-		) {
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
 			isExpanded.toggle()
+		}
+	}
+
+	private func collapseExpansion() {
+		guard isExpanded else { return }
+		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
+			isExpanded = false
 		}
 	}
 }

@@ -31,14 +31,27 @@ decision.
 
 ## Runtime components
 
-| Component     | Version or revision                                    | License                                                                                             | Exact provenance source                                                                                                |
-| ------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| WineCX / Wine | Wine 11.16, `7dbc5b5322a6ef3fb04bdc643c64b188fd641149` | LGPL-2.1-or-later and bundled third-party terms                                                     | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/7dbc5b5322a6ef3fb04bdc643c64b188fd641149)         |
-| DXMT          | 0.80-199-g19e24ee, `19e24ee068a44a747e556965730482038c5bb068` | MIT and bundled third-party terms                                                             | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/19e24ee068a44a747e556965730482038c5bb068)                     |
-| MoltenVK      | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf`      | Apache-2.0 and bundled third-party terms                                                            | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
-| Wine Gecko    | 2.47.4, `557ea0c2e9f9ebd621323b3dbfbdd18c2528759c`     | MPL/GPL/LGPL terms and Mozilla notices                                                              | [Wine Gecko commit](https://gitlab.winehq.org/wine/wine-gecko/-/tree/557ea0c2e9f9ebd621323b3dbfbdd18c2528759c)         |
-| GStreamer     | 1.26.3, including base, good, bad, and libav plugins   | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer commit](https://github.com/GStreamer/gstreamer/tree/87bc0c6e949e3dcc440658f78ef52aa8088cb62f)               |
-| FFmpeg        | 7.1.1, `db69d06eeeab4f46da15030a80d539efb4503ca8`      | GPL-3.0-or-later for the bundled configuration                                                      | [FFmpeg commit](https://github.com/FFmpeg/FFmpeg/tree/db69d06eeeab4f46da15030a80d539efb4503ca8)                        |
+| Component     | Version or revision                                           | License                                                                                             | Exact provenance source                                                                                                |
+| ------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| WineCX / Wine | Wine 11.16, `e1b410a5fdd96a32722a5f2617b5068bd385b7db`        | LGPL-2.1-or-later and bundled third-party terms                                                     | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/e1b410a5fdd96a32722a5f2617b5068bd385b7db)         |
+| DXMT          | 0.80-213-g4ddb20e, `4ddb20e54672c0cb56115ce80d6db1beef94ae28` | MIT and bundled third-party terms                                                                   | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/4ddb20e54672c0cb56115ce80d6db1beef94ae28)                     |
+| MoltenVK      | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf`             | Apache-2.0 and bundled third-party terms                                                            | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
+| Wine Gecko    | 2.47.4, `557ea0c2e9f9ebd621323b3dbfbdd18c2528759c`            | MPL/GPL/LGPL terms and Mozilla notices                                                              | [Wine Gecko commit](https://gitlab.winehq.org/wine/wine-gecko/-/tree/557ea0c2e9f9ebd621323b3dbfbdd18c2528759c)         |
+| GStreamer     | 1.26.3, including base, good, bad, and libav plugins          | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer commit](https://github.com/GStreamer/gstreamer/tree/87bc0c6e949e3dcc440658f78ef52aa8088cb62f)               |
+| FFmpeg        | 7.1.1, `db69d06eeeab4f46da15030a80d539efb4503ca8`             | GPL-3.0-or-later for the bundled configuration                                                      | [FFmpeg commit](https://github.com/FFmpeg/FFmpeg/tree/db69d06eeeab4f46da15030a80d539efb4503ca8)                        |
+
+## Runtime build provenance
+
+The v0.6.0 runtime was built from the release commit and exact inputs below. The base archive and
+Nixpkgs revision are build inputs rather than independently selected runtime components, but they
+remain part of the release's corresponding-source record.
+
+| Build input             | Version or revision                                                                        | Exact provenance source                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Runtime build           | Arknights macOS Runtime v0.6.0, `8f4dcc3524e21b5baf98af2bfa6e9a86f611cad4`                 | [Runtime commit](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/8f4dcc3524e21b5baf98af2bfa6e9a86f611cad4) |
+| Whisky base libraries   | v4.6.8, `19b9d7942b8cfd4871eee2a8f81abc7c849307c7858873f9b504c24c1bb6b25d` archive SHA-256 | [Whisky v4.6.8 release](https://github.com/dappermint/Whisky/releases/tag/v4.6.8)                                  |
+| WineCX GPTK base recipe | `f374f5bae40631a466c03c59180ca34605091efd`                                                 | [winecx-gptk commit](https://github.com/dappermint/winecx-gptk/tree/f374f5bae40631a466c03c59180ca34605091efd)      |
+| Nixpkgs                 | `ac62194c3917d5f474c1a844b6fd6da2db95077d`                                                 | [Nixpkgs commit](https://github.com/NixOS/nixpkgs/tree/ac62194c3917d5f474c1a844b6fd6da2db95077d)                   |
 
 > [!IMPORTANT]
 > The runtime also contains dynamically linked libraries for media, text, networking, compression, and X11 compatibility. Notable media dependencies include x264, x265, FDK-AAC, FAAD2, libdvdcss, libdvdnav, libdvdread, OpenH264, libde265, libaom, dav1d, SVT-AV1, libvpx, LAME, OpenMPT, FLAC, Vorbis, Opus, Theora, Speex, and libsndfile. Their own licenses and patent terms continue to apply.
@@ -73,16 +86,16 @@ and upstream source distributions remain authoritative for the complete notice s
 
 ## Included and excluded material
 
-| Material                                   | Packaged?                       | Where its boundary is recorded                                               |
-| ------------------------------------------ | ------------------------------- | ---------------------------------------------------------------------------- |
-| Native launcher                            | Yes                             | Repository source and top-level [`LICENSE`](../../LICENSE)                   |
-| Project compatibility wrappers and bridges | Yes                             | `RuntimeSupport/` source at the matching tag; MPL-2.0 SPDX markers           |
-| WineCX + DXMT runtime                      | Yes, as a prebuilt runtime unit | [`runtime.json`](../../runtime.json), `RUNTIME.json`, and this page          |
-| Sparkle framework                          | Yes                             | `ThirdPartyLicenses/sparkle.txt` and the Sparkle project                     |
-| Arknights game files                       | No                              | Downloaded from first-party publisher endpoints after the user starts installation: Yostar for Global, Japan, and Korea; Hypergryph for China and China — Bilibili |
-| Wine Mono                                  | No                              | Explicitly excluded by packaging                                             |
-| DXVK                                       | No                              | Not copied into the app bundle                                               |
-| Apple Game Porting Toolkit                 | No                              | Not copied into the app bundle                                               |
+| Material                                   | Packaged?                       | Where its boundary is recorded                                                                                                                                                           |
+| ------------------------------------------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native launcher                            | Yes                             | Repository source and top-level [`LICENSE`](../../LICENSE)                                                                                                                               |
+| Project compatibility wrappers and bridges | Yes                             | `RuntimeSupport/` source at the matching tag; MPL-2.0 SPDX markers                                                                                                                       |
+| WineCX + DXMT runtime                      | Yes, as a prebuilt runtime unit | [`runtime.json`](../../runtime.json), `RUNTIME.json`, and this page                                                                                                                      |
+| Sparkle framework                          | Yes                             | `ThirdPartyLicenses/sparkle.txt` and the Sparkle project                                                                                                                                 |
+| Arknights game files                       | No                              | Downloaded from first-party publisher endpoints after the user starts installation: Yostar for Global, Japan, and Korea; Gryphline for Taiwan; Hypergryph for China and China — Bilibili |
+| Wine Mono                                  | No                              | Explicitly excluded by packaging                                                                                                                                                         |
+| DXVK                                       | No                              | Not copied into the app bundle                                                                                                                                                           |
+| Apple Game Porting Toolkit                 | No                              | Not copied into the app bundle                                                                                                                                                           |
 
 > [!WARNING]
 > Do not use the presence of a source link or license text as evidence that a dependency is bundled

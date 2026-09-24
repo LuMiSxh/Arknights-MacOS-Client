@@ -2,7 +2,7 @@
 
 import Foundation
 
-enum MarkdownBlock: Equatable {
+enum MarkdownBlock: Equatable, Sendable {
 	case heading(level: Int, source: String)
 	case paragraph(String)
 	case bullet(String)
@@ -13,7 +13,7 @@ enum MarkdownBlock: Equatable {
 }
 
 /// A small hand-rolled block parser for the Markdown constructs used by bundled documents.
-struct MarkdownParser {
+struct MarkdownParser: Sendable {
 	let source: String
 
 	var blocks: [MarkdownBlock] {

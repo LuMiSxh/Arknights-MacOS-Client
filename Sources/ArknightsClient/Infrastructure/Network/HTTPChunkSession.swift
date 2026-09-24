@@ -17,37 +17,60 @@ enum HTTPChunkEvent: Sendable {
 struct HTTPChunkStream: Sendable {
 	let events: AsyncThrowingStream<HTTPChunkEvent, any Error>
 	private let cancelHandler: @Sendable () -> Void
+	private let acknowledgeHandler: @Sendable (Int) -> Void
 
 	init(
 		events: AsyncThrowingStream<HTTPChunkEvent, any Error>,
-		cancelHandler: @escaping @Sendable () -> Void
+		cancelHandler: @escaping @Sendable () -> Void,
+		acknowledgeHandler: @escaping @Sendable (Int) -> Void
 	) {
 		self.events = events
 		self.cancelHandler = cancelHandler
+		self.acknowledgeHandler = acknowledgeHandler
 	}
 
 	func cancel() {
 		cancelHandler()
+	}
+
+	/// Releases a consumed chunk's bytes from the stream's ceiling. Every consumer must call
+	/// this for every chunk, or the stream stays suspended once the ceiling is reached.
+	func acknowledge(_ byteCount: Int) {
+		acknowledgeHandler(byteCount)
 	}
 }
 
 /// Bridges `URLSessionDataDelegate`'s callback-based streaming into an `AsyncThrowingStream`
 /// per request, so callers can process each chunk as it arrives instead of buffering a whole
 /// response in memory.
+///
+/// `AsyncThrowingStream` has no backpressure, so each stream counts its unacknowledged bytes
+/// and suspends its task at the ceiling, letting TCP flow control slow the server down.
 final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Sendable {
 	private typealias Continuation = AsyncThrowingStream<HTTPChunkEvent, any Error>.Continuation
 
+	private struct Subscriber {
+		let continuation: Continuation
+		weak var task: URLSessionDataTask?
+		let redirectValidator: (@Sendable (URL) -> Bool)?
+		var bufferedBytes = 0
+		var isSuspended = false
+	}
+
 	private let redirectValidator: (@Sendable (URL) -> Bool)?
+	private let maximumBufferedBytes: Int
 	private let delegateQueue: OperationQueue
 	private let lock = NSLock()
-	private var continuations: [Int: Continuation] = [:]
+	private var subscribers: [Int: Subscriber] = [:]
 	private var session: URLSession!
 
 	init(
 		configuration: URLSessionConfiguration,
-		redirectValidator: (@Sendable (URL) -> Bool)? = nil
+		redirectValidator: (@Sendable (URL) -> Bool)? = nil,
+		maximumBufferedBytes: Int = AppConstants.Network.maximumBufferedStreamBytes
 	) {
 		self.redirectValidator = redirectValidator
+		self.maximumBufferedBytes = maximumBufferedBytes
 		delegateQueue = OperationQueue()
 		delegateQueue.maxConcurrentOperationCount = 1
 		delegateQueue.qualityOfService = .userInitiated
@@ -61,16 +84,32 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		)
 	}
 
-	func stream(for request: URLRequest) -> HTTPChunkStream {
+	func stream(
+		for request: URLRequest,
+		redirectValidator: (@Sendable (URL) -> Bool)? = nil
+	) -> HTTPChunkStream {
 		let (events, continuation) = AsyncThrowingStream<HTTPChunkEvent, any Error>.makeStream()
 		let task = session.dataTask(with: request)
-		lock.withLock { continuations[task.taskIdentifier] = continuation }
+		let identifier = task.taskIdentifier
+		lock.withLock {
+			subscribers[identifier] = Subscriber(
+				continuation: continuation,
+				task: task,
+				redirectValidator: redirectValidator ?? self.redirectValidator
+			)
+		}
 		continuation.onTermination = { @Sendable [weak self, weak task] _ in
 			task?.cancel()
-			self?.removeContinuation(for: task?.taskIdentifier)
+			self?.removeSubscriber(for: task?.taskIdentifier)
 		}
 		task.resume()
-		return HTTPChunkStream(events: events) { task.cancel() }
+		return HTTPChunkStream(
+			events: events,
+			cancelHandler: { task.cancel() },
+			acknowledgeHandler: { [weak self] byteCount in
+				self?.acknowledge(byteCount, taskIdentifier: identifier)
+			}
+		)
 	}
 
 	func urlSession(
@@ -98,7 +137,10 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		newRequest request: URLRequest,
 		completionHandler: @escaping @Sendable (URLRequest?) -> Void
 	) {
-		guard let url = request.url, redirectValidator?(url) != false else {
+		guard let url = request.url,
+			let subscriber = lock.withLock({ subscribers[task.taskIdentifier] }),
+			subscriber.redirectValidator?(url) != false
+		else {
 			completionHandler(nil)
 			finish(
 				taskIdentifier: task.taskIdentifier,
@@ -116,7 +158,30 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		dataTask: URLSessionDataTask,
 		didReceive data: Data
 	) {
-		continuation(for: dataTask.taskIdentifier)?.yield(.data(data))
+		let continuation = lock.withLock { () -> Continuation? in
+			guard var subscriber = subscribers[dataTask.taskIdentifier] else { return nil }
+			subscriber.bufferedBytes += data.count
+			if !subscriber.isSuspended, subscriber.bufferedBytes >= maximumBufferedBytes {
+				subscriber.isSuspended = true
+				dataTask.suspend()
+			}
+			subscribers[dataTask.taskIdentifier] = subscriber
+			return subscriber.continuation
+		}
+		continuation?.yield(.data(data))
+	}
+
+	/// Resumes at half the ceiling, so a steady download does not suspend once per chunk.
+	private func acknowledge(_ byteCount: Int, taskIdentifier: Int) {
+		lock.withLock {
+			guard var subscriber = subscribers[taskIdentifier] else { return }
+			subscriber.bufferedBytes = max(0, subscriber.bufferedBytes - byteCount)
+			if subscriber.isSuspended, subscriber.bufferedBytes <= maximumBufferedBytes / 2 {
+				subscriber.isSuspended = false
+				subscriber.task?.resume()
+			}
+			subscribers[taskIdentifier] = subscriber
+		}
 	}
 
 	func urlSession(
@@ -128,16 +193,18 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 	}
 
 	private func continuation(for taskIdentifier: Int) -> Continuation? {
-		lock.withLock { continuations[taskIdentifier] }
+		lock.withLock { subscribers[taskIdentifier]?.continuation }
 	}
 
-	private func removeContinuation(for taskIdentifier: Int?) {
+	private func removeSubscriber(for taskIdentifier: Int?) {
 		guard let taskIdentifier else { return }
-		_ = lock.withLock { continuations.removeValue(forKey: taskIdentifier) }
+		_ = lock.withLock { subscribers.removeValue(forKey: taskIdentifier) }
 	}
 
 	private func finish(taskIdentifier: Int, throwing error: (any Error)?) {
-		let continuation = lock.withLock { continuations.removeValue(forKey: taskIdentifier) }
+		let continuation = lock.withLock {
+			subscribers.removeValue(forKey: taskIdentifier)?.continuation
+		}
 		if let error {
 			continuation?.finish(throwing: error)
 		} else {

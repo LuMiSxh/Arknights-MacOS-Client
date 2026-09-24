@@ -20,7 +20,11 @@ struct MusicVolumeControl: View {
 				Label(muteButtonTitle, systemImage: speakerSymbol)
 					.labelStyle(.iconOnly)
 					.font(.system(size: 13, weight: .semibold))
-					.foregroundStyle(LauncherVisuals.controlTint)
+					.adaptiveControlForeground(
+						LauncherVisuals.controlTint,
+						disabledTint: LauncherVisuals.disabled,
+						isDisabled: isDisabled
+					)
 					.frame(
 						width: AppConstants.Music.secondaryControlDimension,
 						height: AppConstants.Music.secondaryControlDimension
@@ -33,7 +37,7 @@ struct MusicVolumeControl: View {
 			.keyboardFocusIndicator(isFocused: focusedElement == .speaker, in: Circle())
 			.disabled(isDisabled)
 			.accessibilityValue(
-				isMuted ? L10n.string(AudioStrings.muted) : volumeAccessibilityValue
+				isMuted ? AudioStrings.muted : volumeAccessibilityValue
 			)
 			.help(muteButtonTitle)
 
@@ -47,7 +51,7 @@ struct MusicVolumeControl: View {
 						isFocused: focusedElement == .slider,
 						in: Capsule()
 					)
-					.accessibilityLabel(L10n.string(AudioStrings.volume))
+					.accessibilityLabel(AudioStrings.volume)
 					.accessibilityValue(volumeAccessibilityValue)
 					.disabled(isDisabled)
 					.transition(.opacity.combined(with: .move(edge: .leading)))
@@ -60,10 +64,13 @@ struct MusicVolumeControl: View {
 			height: AppConstants.Music.secondaryControlDimension,
 			alignment: .leading
 		)
-		.hudSecondaryControlSurface(in: Capsule())
+		.adaptiveControlSurface(
+			tint: LauncherVisuals.controlTint,
+			isDisabled: isDisabled,
+			in: Capsule()
+		)
 		.contentShape(Capsule())
 		.clipped()
-		.opacity(isDisabled ? 0.55 : 1)
 		.onHover { isHovering = $0 }
 		.animation(
 			reduceMotion
@@ -81,7 +88,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var muteButtonTitle: String {
-		L10n.string(isMuted ? AudioStrings.unmute : AudioStrings.mute)
+		isMuted ? AudioStrings.unmute : AudioStrings.mute
 	}
 
 	private var speakerSymbol: String {
@@ -95,7 +102,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var volumeAccessibilityValue: String {
-		L10n.string(AudioStrings.volumePercent(Int(volume * 100)))
+		AudioStrings.volumePercent(Int(volume * 100))
 	}
 
 	private enum FocusedElement: Hashable {

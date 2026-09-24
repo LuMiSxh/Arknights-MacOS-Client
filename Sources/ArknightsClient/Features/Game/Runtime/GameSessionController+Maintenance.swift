@@ -17,11 +17,12 @@ extension GameSessionController {
 	func forcePrefixMigration() {
 		guard lifecycle.activity == .idle else { return }
 		let operationID = UUID()
-		let prefixDirectory = paths.winePrefix(for: installation.region)
+		let region = installation.region
+		let prefixDirectory = paths.winePrefix(for: region)
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: prefixDirectory)
 			lifecycle.setStatus(
-				.custom(L10n.string(.Launcher.launcherStatusWineMigrationPending)))
+				.custom("Wine setup will run again on next launch"))
 			Task { [log] in
 				await log.info("Wine prefix migration state was reset on request")
 			}
@@ -29,19 +30,21 @@ extension GameSessionController {
 			presentRuntimeMaintenanceFailure(
 				error,
 				id: operationID,
-				operation: .prefixMigration
+				operation: .prefixMigration,
+				region: region
 			)
 		}
 	}
 
 	func deleteWinePrefix() {
 		guard lifecycle.activity == .idle else { return }
-		let prefixDirectory = paths.winePrefix(for: installation.region)
+		let region = installation.region
+		let prefixDirectory = paths.winePrefix(for: region)
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
 		let operationID = UUID()
 		lifecycle.activity = .maintaining(.deletingWinePrefix)
 		lifecycle.setStatus(
-			.custom(L10n.string(.Launcher.launcherStatusWinePrefixDeleting)))
+			.custom("Deleting Wine prefix…"))
 		Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -50,14 +53,15 @@ extension GameSessionController {
 				}.value
 				lifecycle.activity = .idle
 				lifecycle.setStatus(
-					.custom(L10n.string(.Launcher.launcherStatusWineMigrationDeleted)))
+					.custom("Wine prefix deleted; setup will run again on next launch"))
 				await log.info("Wine prefix deleted on request")
 			} catch {
 				lifecycle.activity = .idle
 				presentRuntimeMaintenanceFailure(
 					error,
 					id: operationID,
-					operation: .prefixDeletion
+					operation: .prefixDeletion,
+					region: region
 				)
 			}
 		}
@@ -66,7 +70,8 @@ extension GameSessionController {
 	private func presentRuntimeMaintenanceFailure(
 		_ error: any Error,
 		id: UUID,
-		operation: SupportOperation
+		operation: SupportOperation,
+		region: GameRegion
 	) {
 		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
@@ -74,7 +79,10 @@ extension GameSessionController {
 				id: id,
 				message: message,
 				code: .sepia,
-				context: SupportContext(operation: operation, region: nil),
+				context: SupportContext(
+					operation: operation,
+					region: region.supportRegion
+				),
 				actions: [.retry, .openTroubleshooting, .reportProblem]
 			),
 			diagnostic: launcherDiagnosticDescription(for: error)

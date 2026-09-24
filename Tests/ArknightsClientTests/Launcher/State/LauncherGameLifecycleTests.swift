@@ -84,9 +84,11 @@ struct LauncherGameLifecycleTests {
 	}
 
 	@Test
-	func exitDiagnosticsIncludesDurationAndWineLogTailForACrash() throws {
+	func exitDiagnosticsIncludesDurationAndRuntimeLogTailForACrash() throws {
 		let fileManager = FileManager.default
-		let logURL = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+		let logURL = fileManager.temporaryDirectory.appendingPathComponent(
+			"test-\(UUID().uuidString).log"
+		)
 		defer { try? fileManager.removeItem(at: logURL) }
 		try "err: something exploded".write(to: logURL, atomically: true, encoding: .utf8)
 
@@ -98,7 +100,9 @@ struct LauncherGameLifecycleTests {
 
 		#expect(summary.contains("status=134 reason=uncaughtSignal"))
 		#expect(summary.contains("ranFor="))
-		#expect(summary.contains("wine.log tail: err: something exploded"))
+		#expect(
+			summary.contains("\(logURL.lastPathComponent) tail: err: something exploded")
+		)
 	}
 
 	@Test

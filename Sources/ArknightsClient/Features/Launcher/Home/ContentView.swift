@@ -9,11 +9,12 @@ struct ContentView: View {
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-	@State private var presentation = LauncherPresentationArbiter()
-	@State private var confirmation: LauncherConfirmation?
-	@State private var repairFailureID: UUID?
+	@State var presentation = LauncherPresentationArbiter()
+	@State var confirmation: LauncherConfirmation?
+	@State var repairFailureID: UUID?
 	@State private var onboarding: OnboardingCoordinator
 	@State private var musicController: BackgroundMusicController
+	@State private var decorativeMotionVisibility = DecorativeMotionVisibility()
 
 	init(
 		model: LauncherViewModel,
@@ -66,22 +67,35 @@ struct ContentView: View {
 					accentColor: model.customization.accentColor,
 					hudTintColor: model.customization.hudTintColor,
 					musicController: musicController,
-					openLauncherUpdate: requestLauncherUpdateCheck,
-					checkGameUpdates: model.checkGameUpdates,
-					selectRegion: { model.selectRegion($0) },
-					installOrUpdate: model.installOrUpdate,
-					cancelDownload: model.cancelDownload,
-					launch: model.launch,
-					stopGame: model.stopGame,
-					requestRosettaInstallation: { confirmation = .rosetta },
-					retryIntelTranslationCheck: retryIntelTranslationCheck,
-					showFailureDetails: showFailureDetails)
+					actions: LauncherHUDActions(
+						openLauncherUpdate: requestLauncherUpdateCheck,
+						checkGameUpdates: model.checkGameUpdates,
+						selectRegion: { model.selectRegion($0) },
+						installOrUpdate: model.installOrUpdate,
+						cancelDownload: model.cancelDownload,
+						launch: model.launch,
+						stopGame: model.stopGame,
+						requestRosettaInstallation: { confirmation = .rosetta },
+						retryIntelTranslationCheck: retryIntelTranslationCheck,
+						showFailureDetails: showFailureDetails
+					),
+					developerExpandedPill: developerExpandedPillID
+				)
 			}
-			.id(model.settings.appLanguage)
 		}
+		.disabled(updateOverlayIsPresented)
+		.allowsHitTesting(!updateOverlayIsPresented)
+		.accessibilityHidden(updateOverlayIsPresented)
 		.background(Color.black)
+		.background {
+			WindowVisibilityReader(visibility: decorativeMotionVisibility)
+		}
 		.preferredColorScheme(.dark)
 		.animation(themeAnimation, value: model.customization.dynamicThemeHue)
+		.onChange(of: developerAccessibilityMusicTitle) { _, title in
+			guard title != nil else { return }
+			musicController.currentMusicTitle = title
+		}
 		.overlay {
 			if onboardingIsPresentable {
 				OnboardingView(
@@ -96,9 +110,9 @@ struct ContentView: View {
 						selectRegion: model.selectRegion,
 						resetArtwork: model.resetArtwork,
 						installOrUpdate: model.installOrUpdate,
-						openLauncherUpdate: model.communication.openLauncherUpdate,
+						openLauncherUpdate: model.openLauncherUpdate,
 						retryIntelTranslation: {
-							await model.intelTranslation.refreshAvailability(force: true)
+							await model.refreshIntelTranslationForUI(force: true)
 						},
 						installRosetta: model.installRosetta),
 					retryUpdateCheck: retryOnboardingUpdateCheck)
@@ -106,32 +120,29 @@ struct ContentView: View {
 		}
 		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) { sheetContent(for: $0) }
 		.overlay {
-			if presentation.current == .update,
-				model.communication.launcherUpdateUserDriver.isPresented
-			{
-				ZStack {
-					(reduceTransparency ? Color.black : Color.black.opacity(0.55)).ignoresSafeArea()
-					LauncherUpdateView(
-						driver: model.communication.launcherUpdateUserDriver,
-						accentColor: model.customization.accentColor,
-						hudTintColor: model.customization.hudTintColor,
-						checkForUpdates: model.communication.openLauncherUpdate)
-				}
+			if updateOverlayIsPresented {
+				LauncherUpdateOverlay(
+					driver: model.communication.launcherUpdateUserDriver,
+					accentColor: model.customization.accentColor,
+					hudTintColor: model.customization.hudTintColor,
+					reduceTransparency: reduceTransparency,
+					checkForUpdates: model.openLauncherUpdate)
 			}
 		}
 		.confirmsRosettaInstallation(
 			isPresented: rosettaConfirmationBinding, install: installRosetta
 		)
 		.confirmationDialog(
-			L10n.string(HomeStrings.repairConfirmationTitle),
+			HomeStrings.repairConfirmationTitle,
 			isPresented: repairConfirmationBinding,
 			titleVisibility: .visible
 		) {
-			Button(L10n.string(HomeStrings.repairConfirmationAction), action: confirmRepair)
-			Button(L10n.string(LauncherStrings.cancel), role: .cancel, action: cancelRepair)
+			Button(HomeStrings.repairConfirmationAction, action: confirmRepair)
+			Button(LauncherStrings.cancel, role: .cancel, action: cancelRepair)
 		} message: {
-			Text(L10n.string(HomeStrings.repairConfirmationDetail))
+			Text(HomeStrings.repairConfirmationDetail)
 		}
+		.aceWarningConfirmation(model: model)
 		.onAppear {
 			registerOpenSettings(requestSettings)
 			registerQuitPresentationQuery {
@@ -141,6 +152,20 @@ struct ContentView: View {
 			registerQuitDismissal { presentation.dismissCurrent() }
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
+		.onChange(of: onboarding.isPresented) { _, isPresented in
+			onboardingPresentationDidChange(isPresented)
+		}
+		.onChange(of: model.isOnboardingPreview) { _, isEnabled in
+			Task {
+				if isEnabled {
+					await startOnboardingIfNeeded()
+				} else {
+					#if DEBUG
+						onboarding.dismissDeveloperPreview()
+					#endif
+				}
+			}
+		}
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
 			if isPresented {
 				presentation.request(.update)
@@ -154,6 +179,8 @@ struct ContentView: View {
 				Color.black.ignoresSafeArea()
 			}
 		}
+		// Keep this last so every sheet and overlay inherits the visibility gate.
+		.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
 	}
 
 	private var sheetPresentation: Binding<LauncherPresentationDestination?> {
@@ -187,6 +214,11 @@ struct ContentView: View {
 	private var onboardingIsPresentable: Bool {
 		onboarding.isPresented && presentation.current == nil && model.communication.popup == nil
 	}
+	private var updateOverlayIsPresented: Bool {
+		LauncherUpdateOverlayPresentation.isPresented(
+			destination: presentation.current,
+			driverIsPresented: model.communication.launcherUpdateUserDriver.isPresented)
+	}
 
 	@ViewBuilder
 	private func sheetContent(for destination: LauncherPresentationDestination) -> some View {
@@ -210,7 +242,8 @@ struct ContentView: View {
 				uninstallGame: model.uninstallGame,
 				restartOnboarding: restartOnboarding,
 				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
-				developerScenario: developerScenarioBinding, applyCustomPopup: developerPopup)
+				developerSimulation: developerSimulationBinding,
+				applyCustomPopup: developerPopup)
 		case .failure(let failure):
 			LauncherFailureDetailView(
 				failure: failure, accentColor: model.customization.accentColor,
@@ -237,12 +270,21 @@ struct ContentView: View {
 				logo: model.customization.officialLogo, region: model.installation.region
 			).padding(.top, 34)
 			Spacer()
-			Button(
-				L10n.string(HomeStrings.settings), systemImage: "gearshape", action: requestSettings
+			IconActionButton(
+				title: HomeStrings.settings,
+				systemImage: "gearshape",
+				tone: .neutral,
+				foreground: .primary,
+				surface: .hud,
+				surfaceTint: model.customization.hudTintColor,
+				size: 40,
+				hitTargetSize: 44,
+				action: requestSettings
 			)
-			.labelStyle(.iconOnly).font(.title2.weight(.medium)).frame(minWidth: 44, minHeight: 44)
-			.adaptiveGlassButton().buttonBorderShape(.circle).controlSize(.extraLarge)
-			.keyboardShortcut(",", modifiers: .command).help(L10n.string(HomeStrings.settingsHelp))
+			.frame(minWidth: 44, minHeight: 44)
+			.keyboardShortcut(",", modifiers: .command)
+			.accessibilityHint(Text(HomeStrings.settingsHelp))
+			.help(HomeStrings.settingsHelp)
 		}
 		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
 	}
@@ -257,18 +299,24 @@ struct ContentView: View {
 		let hadCurrentPresentation = presentation.current != nil
 		presentation.request(.update)
 		if !hadCurrentPresentation, presentation.current == .update {
-			model.communication.openLauncherUpdate()
+			model.openLauncherUpdate()
 		}
 	}
 	private func presentationDidDismiss() {
 		presentation.didDismiss()
-		if presentation.current == .update { model.communication.openLauncherUpdate() }
+		if presentation.current == .update { model.openLauncherUpdate() }
 	}
 	private func launcherUpdateDidDismiss() {
 		presentation.didDismiss(.update)
-		if presentation.current == .update { model.communication.openLauncherUpdate() }
+		if presentation.current == .update { model.openLauncherUpdate() }
 	}
 	private func presentFailure(_ failure: LauncherFailurePresentation?) {
+		if onboarding.isPresented,
+			let operation = failure?.context.operation,
+			operation == .intelTranslationPreflight || operation == .rosettaInstallation
+		{
+			return
+		}
 		guard let failure else {
 			presentation.removeFailures()
 			return
@@ -280,46 +328,43 @@ struct ContentView: View {
 	private func startOnboardingIfNeeded() async {
 		guard await model.waitForStartup() else { return }
 		if model.isDeveloperMode, !model.isOnboardingPreview { return }
-		await model.installation.updateInstalledState().value
+		if !model.isDeveloperMode {
+			await model.installation.updateInstalledState().value
+		}
 		await onboarding.startIfNeeded(
 			isDeveloperMode: model.isDeveloperMode,
 			isOnboardingPreview: model.isOnboardingPreview,
 			gameIsInstalled: model.installation.isInstalled,
 			checkForUpdates: model.launcherUpdateCheckForOnboarding,
-			checkIntelTranslation: { await model.intelTranslation.refreshAvailability() })
+			checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
+		if onboarding.isPresented { presentation.removeRosettaPreflightFailures() }
 	}
 	private func retryOnboardingUpdateCheck() {
 		Task {
 			await onboarding.retryUpdateCheck(
 				model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.intelTranslation.refreshAvailability() })
+				checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
 		}
 	}
 	private func restartOnboarding() {
 		guard model.lifecycle.activity != .maintaining(.migratingStorage) else { return }
 		presentation.dismissCurrent()
 		Task {
-			await model.installation.updateInstalledState().value
+			if !model.isDeveloperMode {
+				await model.installation.updateInstalledState().value
+			}
 			await onboarding.restart(
 				gameIsInstalled: model.installation.isInstalled,
 				checkForUpdates: model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.intelTranslation.refreshAvailability() })
+				checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
 		}
 	}
 	private func retryIntelTranslationCheck() {
-		Task { await model.intelTranslation.refreshAvailability(force: true) }
+		Task { await model.refreshIntelTranslationForUI(force: true) }
 	}
 	private func installRosetta() {
 		confirmation = nil
 		Task { _ = await model.installRosetta() }
-	}
-	private func performRecoveryAction(_ action: RecoveryAction, _ failureID: UUID) {
-		if model.performRecoveryAction(action, failureID: failureID) == .repairConfirmationRequired
-		{
-			presentation.dismissCurrent()
-			repairFailureID = failureID
-			confirmation = .repair(failureID)
-		}
 	}
 	private func showFailureDetails() {
 		if let failure = model.lifecycle.failure { presentation.request(.failure(failure)) }

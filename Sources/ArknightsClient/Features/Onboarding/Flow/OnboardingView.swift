@@ -26,7 +26,7 @@ struct OnboardingView: View {
 			)
 
 			Divider()
-				.overlay(Color.white.opacity(0.08))
+				.overlay(LauncherVisuals.hairline)
 
 			ZStack(alignment: .bottom) {
 				ScrollView {
@@ -34,7 +34,6 @@ struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
-								preferences: preferences,
 								accentColor: customization.accentColor,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
@@ -101,42 +100,39 @@ struct OnboardingView: View {
 
 				FloatingActionBar(tint: customization.hudTintColor) {
 					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
-						Button {
+						CapsuleActionButton(
+							title: OnboardingStrings.skipSetup,
+							systemImage: "forward.end",
+							tone: .neutral
+						) {
 							isSkipConfirmationPresented = true
-						} label: {
-							Label(
-								L10n.string(OnboardingStrings.skipSetup),
-								systemImage: "forward.end"
-							)
 						}
-						.adaptiveNavigationCapsuleButton()
 						.controlSize(.large)
 						.alert(
-							L10n.string(OnboardingStrings.skipSetupConfirmationTitle),
+							OnboardingStrings.skipSetupConfirmationTitle,
 							isPresented: $isSkipConfirmationPresented
 						) {
-							Button(L10n.string(OnboardingStrings.continueSetup), role: .cancel) {}
+							Button(OnboardingStrings.continueSetup, role: .cancel) {}
 								.keyboardShortcut(.defaultAction)
-							Button(L10n.string(OnboardingStrings.skipAnyway), role: .destructive) {
+							Button(OnboardingStrings.skipAnyway, role: .destructive) {
 								coordinator.skip()
 							}
 						} message: {
-							Text(L10n.string(OnboardingStrings.skipSetupConfirmationDetail))
+							Text(OnboardingStrings.skipSetupConfirmationDetail)
 						}
 					}
 					Spacer()
 					if coordinator.step != .welcome {
-						Button(action: coordinator.goBack) {
-							Label(
-								L10n.string(OnboardingStrings.back),
-								systemImage: "chevron.backward"
-							)
-						}
-						.adaptiveNavigationCapsuleButton()
+						CapsuleActionButton(
+							title: OnboardingStrings.back,
+							systemImage: "chevron.backward",
+							tone: .neutral,
+							action: coordinator.goBack
+						)
 						.controlSize(.large)
 					}
 					CapsuleActionButton(
-						title: L10n.string(primaryTitle),
+						title: primaryTitle,
 						systemImage: primarySystemImage,
 						tone: .accent(customization.accentColor),
 						action: performPrimaryAction
@@ -159,7 +155,10 @@ struct OnboardingView: View {
 		}
 		.tint(customization.accentColor)
 		.preferredColorScheme(.dark)
-		.animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: coordinator.step)
+		.animation(
+			reduceMotion ? nil : .easeInOut(duration: LauncherVisuals.Motion.page),
+			value: coordinator.step
+		)
 		.animation(
 			reduceMotion ? nil : .easeInOut(duration: 0.3),
 			value: customization.dynamicThemeHue
@@ -174,7 +173,7 @@ struct OnboardingView: View {
 		}
 	}
 
-	private var primaryTitle: LocalizedStringResource {
+	private var primaryTitle: String {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
 			case .checking: OnboardingStrings.checking

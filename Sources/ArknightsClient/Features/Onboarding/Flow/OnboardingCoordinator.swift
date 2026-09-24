@@ -113,6 +113,12 @@ final class OnboardingCoordinator {
 		isPresented = false
 	}
 
+	#if DEBUG
+		func dismissDeveloperPreview() {
+			isPresented = false
+		}
+	#endif
+
 	private func begin(
 		gameIsInstalled: Bool,
 		checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,

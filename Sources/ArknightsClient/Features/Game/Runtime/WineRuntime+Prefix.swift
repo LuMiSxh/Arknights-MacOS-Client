@@ -4,20 +4,20 @@ import Foundation
 
 extension WineRuntime {
 	func applyBilibiliFontConfiguration(
+		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle
 	) async throws {
 		let key = "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes"
-		for name in ["Microsoft YaHei", "Microsoft YaHei UI", "SimSun"] {
-			try await writeRegistryValue(
-				key: key,
-				name: name,
-				type: "REG_SZ",
-				value: "Hiragino Sans GB W3",
-				environment: environment,
-				logHandle: logHandle
-			)
-		}
+		try await applyRegistryEntries(
+			["Microsoft YaHei", "Microsoft YaHei UI", "SimSun"].map {
+				WineRegistryEntry(key: key, name: $0, kind: .string("Hiragino Sans GB W3"))
+			},
+			description: "Chinese font fallbacks",
+			prefixDirectory: prefixDirectory,
+			environment: environment,
+			logHandle: logHandle
+		)
 		try logHandle.write(
 			contentsOf: Data(
 				"Arknights Client: configured Bilibili Chinese font fallbacks.\n".utf8
@@ -33,41 +33,42 @@ extension WineRuntime {
 	) async throws {
 		let current = configuration.registryState(in: prefixDirectory)
 		let preciseScrollingValue = Self.normalizedScrollingRegistryData
+		var entries: [WineRegistryEntry] = []
 		if current?.retinaMode != configuration.registryValue {
-			try await writeRegistryValue(
-				key: "HKCU\\Software\\Wine\\Mac Driver",
-				name: "RetinaMode",
-				type: "REG_SZ",
-				value: configuration.registryValue,
-				environment: environment,
-				logHandle: logHandle
+			entries.append(
+				WineRegistryEntry(
+					key: Self.macDriverRegistryKey,
+					name: "RetinaMode",
+					kind: .string(configuration.registryValue)
+				)
 			)
 		}
 		if current?.logPixels != configuration.logPixels {
-			try await writeRegistryValue(
-				key: "HKCU\\Control Panel\\Desktop",
-				name: "LogPixels",
-				type: "REG_DWORD",
-				value: String(configuration.logPixels),
-				environment: environment,
-				logHandle: logHandle
+			entries.append(
+				WineRegistryEntry(
+					key: "HKCU\\Control Panel\\Desktop",
+					name: "LogPixels",
+					kind: .dword(UInt32(clamping: configuration.logPixels))
+				)
 			)
 		}
 		if current?.usePreciseScrolling != preciseScrollingValue {
-			try await writeRegistryValue(
-				key: Self.macDriverRegistryKey,
-				name: Self.preciseScrollingRegistryValue,
-				type: "REG_SZ",
-				value: preciseScrollingValue,
-				environment: environment,
-				logHandle: logHandle
+			entries.append(
+				WineRegistryEntry(
+					key: Self.macDriverRegistryKey,
+					name: Self.preciseScrollingRegistryValue,
+					kind: .string(preciseScrollingValue)
+				)
 			)
 		}
-		guard
-			current?.retinaMode != configuration.registryValue
-				|| current?.logPixels != configuration.logPixels
-				|| current?.usePreciseScrolling != preciseScrollingValue
-		else { return }
+		guard !entries.isEmpty else { return }
+		try await applyRegistryEntries(
+			entries,
+			description: "display configuration",
+			prefixDirectory: prefixDirectory,
+			environment: environment,
+			logHandle: logHandle
+		)
 		try? logHandle.write(
 			contentsOf: Data(
 				"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels); UsePreciseScrolling=\(preciseScrollingValue).\n"
@@ -76,36 +77,20 @@ extension WineRuntime {
 		)
 	}
 
-	private func writeRegistryValue(
-		key: String,
-		name: String,
-		type: String,
-		value: String,
-		environment: [String: String],
-		logHandle: FileHandle
-	) async throws {
-		let status = try await runAndWait(
-			executable: executableURL,
-			arguments: [
-				"reg.exe", "add", key, "/v", name, "/t", type, "/d", value, "/f",
-			],
-			environment: environment,
-			output: logHandle
-		)
-		guard status == 0 else {
-			throw LauncherError.runtimeConfiguration(
-				"Wine could not configure \(name) (status \(status))."
-			)
-		}
-	}
-
 	/// Whether the next launch would replay any prefix migration, so callers can
 	/// show a "Migrating" state instead of the generic launch status.
 	func hasPendingMigration(prefixDirectory: URL) throws -> Bool {
-		try !migrationPlan(prefixDirectory: prefixDirectory).pending.isEmpty
+		try !migrationPlanContext(prefixDirectory: prefixDirectory).plan.pending.isEmpty
 	}
 
-	private func migrationPlan(prefixDirectory: URL) throws -> RuntimeMigrationPlan {
+	private struct MigrationPlanContext {
+		let plan: RuntimeMigrationPlan
+		let persistedState: RuntimeMigrationState?
+		let dxmtPayload: URL
+		let dxmtCurrent: Bool
+	}
+
+	private func migrationPlanContext(prefixDirectory: URL) throws -> MigrationPlanContext {
 		let fileManager = FileManager.default
 		let systemRegistry = prefixDirectory.appending(path: "system.reg")
 		let hasSystemRegistry = fileManager.fileExists(atPath: systemRegistry.path)
@@ -123,18 +108,24 @@ extension WineRuntime {
 		}
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
 		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
+		let dxmtCurrent = Self.dxmtIsCurrent(
+			from: dxmtPayload,
+			in: prefixDirectory,
+			fileManager: fileManager
+		)
 		let invalidatedMigrations: Set<RuntimeMigration> =
-			Self.dxmtIsCurrent(
-				from: dxmtPayload,
-				in: prefixDirectory,
-				fileManager: fileManager
-			)
-			? [] : [.installDXMT]
-		return RuntimeMigrationPlan(
+			dxmtCurrent ? [] : [.installDXMT]
+		let plan = RuntimeMigrationPlan(
 			expectedRevision: revision,
 			installedState: installedState,
 			hasSystemRegistry: hasSystemRegistry,
 			invalidatedMigrations: invalidatedMigrations
+		)
+		return MigrationPlanContext(
+			plan: plan,
+			persistedState: persistedState,
+			dxmtPayload: dxmtPayload,
+			dxmtCurrent: dxmtCurrent
 		)
 	}
 
@@ -148,15 +139,11 @@ extension WineRuntime {
 	) async throws {
 		let fileManager = FileManager.default
 		let store = RuntimeMigrationStore(fileManager: fileManager)
-		let persistedState = try store.load(from: prefixDirectory)
-		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		let dxmtPayload = runtimeRoot.appending(path: "DXMT", directoryHint: .isDirectory)
-		let dxmtCurrent = Self.dxmtIsCurrent(
-			from: dxmtPayload,
-			in: prefixDirectory,
-			fileManager: fileManager
-		)
-		var plan = try migrationPlan(prefixDirectory: prefixDirectory)
+		let migrationContext = try migrationPlanContext(prefixDirectory: prefixDirectory)
+		let persistedState = migrationContext.persistedState
+		let dxmtPayload = migrationContext.dxmtPayload
+		let dxmtCurrent = migrationContext.dxmtCurrent
+		var plan = migrationContext.plan
 		if !plan.pending.isEmpty {
 			await log?.info(
 				"Prefix migration plan: \(plan.pending); runtimeRevision=\(revision); "
@@ -177,6 +164,7 @@ extension WineRuntime {
 				)
 			case .configureRegistry:
 				try await configureCompatibilityOverrides(
+					prefixDirectory: prefixDirectory,
 					environment: environment,
 					logHandle: logHandle
 				)
@@ -222,57 +210,34 @@ extension WineRuntime {
 	}
 
 	private func configureCompatibilityOverrides(
+		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle
 	) async throws {
 		let globalKey = "HKCU\\Software\\Wine\\DllOverrides"
-		for (name, value) in Self.globalRegistryOverrides.sorted(by: { $0.key < $1.key }) {
-			let status = try await runAndWait(
-				executable: executableURL,
-				arguments: [
-					"reg.exe", "add", globalKey, "/v", name, "/t", "REG_SZ", "/d", value, "/f",
-				],
-				environment: environment,
-				output: logHandle
-			)
-			guard status == 0 else {
-				throw LauncherError.runtimeConfiguration(
-					"Wine could not apply the \(name) compatibility override (status \(status))."
-				)
-			}
+		let overrides = Self.globalRegistryOverrides.sorted { $0.key < $1.key }.map {
+			WineRegistryEntry(key: globalKey, name: $0.key, kind: .string($0.value))
 		}
-		let crashDialogStatus = try await runAndWait(
-			executable: executableURL,
-			arguments: [
-				"reg.exe", "add", Self.crashDialogRegistryKey,
-				"/v", Self.crashDialogRegistryValue,
-				"/t", "REG_DWORD", "/d", "0", "/f",
-			],
+		let commandKeyMapping = [
+			Self.leftCommandIsCtrlRegistryValue, Self.rightCommandIsCtrlRegistryValue,
+		].map {
+			WineRegistryEntry(key: Self.macDriverRegistryKey, name: $0, kind: .string("y"))
+		}
+		try await applyRegistryEntries(
+			overrides
+				+ [
+					WineRegistryEntry(
+						key: Self.crashDialogRegistryKey,
+						name: Self.crashDialogRegistryValue,
+						kind: .dword(0)
+					)
+				]
+				+ commandKeyMapping,
+			description: "compatibility overrides",
+			prefixDirectory: prefixDirectory,
 			environment: environment,
-			output: logHandle
+			logHandle: logHandle
 		)
-		guard crashDialogStatus == 0 else {
-			throw LauncherError.runtimeConfiguration(
-				"Wine could not disable its crash dialog (status \(crashDialogStatus))."
-			)
-		}
-		for name in [Self.leftCommandIsCtrlRegistryValue, Self.rightCommandIsCtrlRegistryValue] {
-			let status = try await runAndWait(
-				executable: executableURL,
-				arguments: [
-					"reg.exe", "add", Self.macDriverRegistryKey,
-					"/v", name,
-					"/t", "REG_SZ", "/d", "y", "/f",
-				],
-				environment: environment,
-				output: logHandle
-			)
-			guard status == 0 else {
-				throw LauncherError.runtimeConfiguration(
-					"Wine could not map the Command key to Control (status \(status))."
-				)
-			}
-		}
 	}
 
 	static func installDXMT(

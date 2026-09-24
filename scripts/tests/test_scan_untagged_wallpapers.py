@@ -12,23 +12,15 @@ import scan_untagged_wallpapers as scan
 
 
 class ScanUntaggedWallpapersTests(unittest.TestCase):
-    def test_parse_image_field_plain_string(self) -> None:
-        self.assertEqual(
-            scan.parse_image_field("https://example.com/a.png"),
-            "https://example.com/a.png",
-        )
-
-    def test_parse_image_field_single_element_array(self) -> None:
-        self.assertEqual(
-            scan.parse_image_field(["https://example.com/a.png"]),
-            "https://example.com/a.png",
-        )
-
-    def test_parse_image_field_empty_array_is_none(self) -> None:
-        self.assertIsNone(scan.parse_image_field([]))
-
-    def test_parse_image_field_none_is_none(self) -> None:
-        self.assertIsNone(scan.parse_image_field(None))
+    def test_parse_image_field_supported_shapes(self) -> None:
+        for value, expected in (
+            ("https://example.com/a.png", "https://example.com/a.png"),
+            (["https://example.com/a.png"], "https://example.com/a.png"),
+            ([], None),
+            (None, None),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(scan.parse_image_field(value), expected)
 
     def test_load_tagged_ids_from_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

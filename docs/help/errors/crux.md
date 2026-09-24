@@ -15,7 +15,7 @@ The Wine or game process ended before launch completed, or exited abnormally aft
 
 1. Choose **Retry** once after closing overlays or tools that modify game processes.
 2. If a game file is missing or corrupt, choose **Repair** in the launcher and confirm the full verification.
-3. If Repair completes but the code returns, follow [Runtime compatibility](../runtime-compatibility.md).
+3. If Repair completes but the code returns, follow [The game will not start](../troubleshooting.md#the-game-will-not-start).
 
 > [!IMPORTANT]
 > A normal exit after closing the game does not produce CRUX. The code is reserved for an abnormal or premature process exit.

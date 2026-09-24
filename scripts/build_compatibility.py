@@ -102,6 +102,8 @@ def compile_artifact(source: Path, destination: Path, artifact: dict[str, Any]) 
     run(
         [
             "xcrun",
+            "--sdk",
+            "macosx",
             "clang",
             "-arch",
             "x86_64",

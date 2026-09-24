@@ -15,13 +15,22 @@ struct ArknightsWordmark: View {
 			wordmarkBacking
 
 			if let logo {
-				Image(nsImage: logo)
-					.resizable()
-					.scaledToFit()
-					.id(wordmarkIdentity)
-					.transition(wordmarkTransition)
+				if region.publisher != .yostar {
+					Image(nsImage: logo)
+						.resizable()
+						.scaledToFit()
+						.colorInvert()
+						.id(wordmarkIdentity)
+						.transition(wordmarkTransition)
+				} else {
+					Image(nsImage: logo)
+						.resizable()
+						.scaledToFit()
+						.id(wordmarkIdentity)
+						.transition(wordmarkTransition)
+				}
 			} else {
-				Text(L10n.string(HomeStrings.wordmarkFallback(region: region)))
+				Text(HomeStrings.wordmarkFallback(region: region))
 					.font(.system(.title, design: .serif))
 					.minimumScaleFactor(0.7)
 					.lineLimit(1)
@@ -35,7 +44,7 @@ struct ArknightsWordmark: View {
 		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(
-			L10n.string(HomeStrings.wordmarkAccessibility(region: region.localizedDisplayName))
+			HomeStrings.wordmarkAccessibility(region: region.displayName)
 		)
 	}
 
@@ -79,7 +88,6 @@ struct LauncherPopupView: View {
 	var body: some View {
 		ThemedModalView(
 			title: popup.title,
-			accentColor: accentColor,
 			hudTintColor: hudTintColor,
 			width: 620,
 			height: popupHeight
@@ -99,15 +107,18 @@ struct LauncherPopupView: View {
 				contentHeight = newHeight
 			}
 			.textSelection(.enabled)
+			.pointerStyle(.default)
 		} actions: {
 			if let actionTitle = popup.actionTitle {
 				CapsuleActionButton(
-					title: actionTitle, tone: .neutral, action: openAction
+					title: actionTitle,
+					tone: .accent(accentColor),
+					action: openAction
 				)
 				.keyboardShortcut(.defaultAction)
 
 				CapsuleActionButton(
-					title: popup.dismissTitle, tone: .accent(accentColor), action: dismiss
+					title: popup.dismissTitle, tone: .neutral, action: dismiss
 				)
 			} else {
 				FloatingDoneButton(

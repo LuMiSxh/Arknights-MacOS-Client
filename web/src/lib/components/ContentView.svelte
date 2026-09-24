@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
-	import { SectionLabel } from 'anasthasia';
+	import { onMount, tick } from 'svelte';
+	import { SlideIndicator } from '$lib/motion.svelte.js';
 	import MermaidEnhancer from './MermaidEnhancer.svelte';
 	import PageMetadata from './PageMetadata.svelte';
 	import type {
@@ -20,6 +20,17 @@
 	let activeHeading = $state('');
 	let tocNavigation = $state<HTMLElement>();
 	let copyStatus = $state('');
+	const tocIndicator = new SlideIndicator();
+
+	// The accent segment follows the active heading along the table of contents track.
+	function trackHeading(node: HTMLElement) {
+		void activeHeading;
+		void tick().then(() =>
+			tocIndicator.move(
+				node.querySelector<HTMLElement>('[aria-current="location"]')
+			)
+		);
+	}
 	let copyStatusTimer: number | undefined;
 	let headingScanFrame: number | undefined;
 	const visibleChildren = $derived(
@@ -135,24 +146,24 @@
 			{/if}
 		{/each}
 	</nav>
-	<div class="content-title-row">
-		<div>
-			<div class="eyebrow">
-				{content.kind === 'directory'
-					? 'Documentation section'
-					: 'Documentation'}
-			</div>
-			<h1>{content.title}</h1>
-			{#if !content.code}<p>{content.description}</p>{/if}
-		</div>
+	<div class="page-heading">
+		<h1>{content.title}</h1>
+		{#if !content.code}<p>{content.description}</p>{/if}
 	</div>
 </header>
 
 <div class={`content-layout${toc.length > 0 ? ' with-toc' : ''}`}>
 	{#if toc.length > 0}
 		<aside class="content-toc" aria-label="On this page">
-			<SectionLabel>On this page</SectionLabel>
-			<nav bind:this={tocNavigation}>
+			<p class="toc-label">On this page</p>
+			<nav bind:this={tocNavigation} {@attach trackHeading}>
+				<span
+					class="toc-indicator"
+					class:visible={tocIndicator.visible}
+					style:transform={`translateY(${tocIndicator.top}px)`}
+					style:height={`${tocIndicator.height}px`}
+					aria-hidden="true"
+				></span>
 				{#each toc as heading (heading.id)}
 					<a
 						class={heading.level > 2 ? 'toc-nested' : undefined}
@@ -176,20 +187,20 @@
 
 		{#if content.kind === 'directory' && visibleChildren.length > 0}
 			<section
-				class="directory-children"
+				class="directory-children panel"
 				aria-labelledby="section-contents"
 			>
-				<div class="directory-heading" id="section-contents">
-					<SectionLabel>In this section</SectionLabel>
-				</div>
-				<nav class="directory-list" aria-label="Pages in this section">
+				<h2 class="panel-title" id="section-contents">
+					In this section
+				</h2>
+				<nav class="row-list" aria-label="Pages in this section">
 					{#each visibleChildren as entry (entry.route)}
 						<a href={resolve(entry.route)}>
 							<span>
 								<strong>{entry.title}</strong>
 								<small>{entry.description}</small>
 							</span>
-							<span aria-hidden="true">→</span>
+							<span class="chevron" aria-hidden="true">›</span>
 						</a>
 					{/each}
 				</nav>
@@ -223,51 +234,26 @@
 
 <style>
 	.content-header {
-		border-bottom: 1px solid var(--site-line);
-		margin: clamp(1rem, 3vw, 2.5rem) 0 1.5rem;
-		padding-bottom: 1.2rem;
+		margin-bottom: var(--site-space-8);
 	}
 
 	.breadcrumbs {
 		display: flex;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 0.35rem;
-		margin-bottom: 1.2rem;
-		color: var(--color-anasthasia-muted);
-		font-family: var(--font-anasthasia-mono);
-		font-size: 0.6rem;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
+		gap: 0.4rem;
+		margin-bottom: var(--site-space-4);
+		color: var(--site-faint);
+		font-size: 0.8rem;
 	}
 
 	.breadcrumbs a {
-		color: inherit;
+		color: var(--site-muted);
 		text-decoration: none;
 	}
 
 	.breadcrumbs a:hover {
-		color: var(--color-anasthasia-text);
-	}
-
-	.content-title-row {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 1.5rem;
-	}
-
-	.content-title-row h1 {
-		margin: 0.45rem 0 0;
-		font-size: clamp(1.9rem, 3.2vw, 2.85rem);
-		letter-spacing: -0.045em;
-		line-height: 1;
-	}
-
-	.content-title-row p {
-		margin: 0.65rem 0 0;
-		color: var(--color-anasthasia-muted);
-		font-size: 0.9rem;
+		color: var(--site-text);
 	}
 
 	.content-layout {
@@ -276,9 +262,9 @@
 
 	.content-layout.with-toc {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 11rem;
+		grid-template-columns: minmax(0, 1fr) 15rem;
 		grid-template-areas: 'copy toc';
-		gap: 1.5rem;
+		gap: var(--site-space-8);
 	}
 
 	.content-copy {
@@ -297,23 +283,29 @@
 		white-space: nowrap;
 	}
 
+	/* The glyph sits right after the heading text; a transparent overlay keeps a 44px target. */
 	.content-copy :global(.heading-link) {
-		display: inline-grid;
-		min-width: 2.75rem;
-		min-height: 2.75rem;
-		place-items: center;
-		margin-left: 0.4em;
-		color: var(--color-anasthasia-muted);
-		font-family: var(--font-anasthasia-mono);
-		font-size: 0.72em;
+		position: relative;
+		margin-left: 0.3em;
+		color: var(--site-faint);
+		font-family: var(--site-font-mono);
+		font-size: 0.8em;
 		font-weight: 500;
-		line-height: 1;
 		opacity: 0;
 		text-decoration: none;
-		vertical-align: middle;
 		transition:
-			opacity 120ms ease,
-			color 120ms ease;
+			opacity var(--site-motion-fast) ease,
+			color var(--site-motion-fast) ease;
+	}
+
+	.content-copy :global(.heading-link::after) {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: var(--site-touch-target);
+		height: var(--site-touch-target);
+		transform: translate(-50%, -50%);
+		content: '';
 	}
 
 	.content-copy :global(:is(h2, h3, h4, h5, h6):hover .heading-link),
@@ -330,140 +322,119 @@
 
 	.content-copy :global(.heading-link:hover),
 	.content-copy :global(.heading-link:focus-visible) {
-		color: var(--color-anasthasia-accent);
+		color: var(--site-signal-text);
 	}
 
 	.content-copy :global(.heading-link[data-copied='true']) {
-		color: var(--color-anasthasia-success);
+		color: var(--site-success);
 	}
 
 	.empty-directory-note {
-		border-left: 2px solid var(--color-anasthasia-text);
-		padding-left: 0.8rem;
+		color: var(--site-muted);
 	}
 
 	.content-toc {
 		grid-area: toc;
 		position: sticky;
-		top: 1.25rem;
+		top: var(--site-space-6);
 		align-self: start;
 		display: flex;
-		max-height: calc(100dvh - 2.5rem);
+		max-height: calc(100dvh - 3rem);
 		flex-direction: column;
-		border-left: 1px solid var(--site-line);
-		padding-left: 0.8rem;
 		overflow: hidden;
 	}
 
+	.toc-label {
+		margin: 0 0 var(--site-space-3);
+		color: var(--site-faint);
+		font-family: var(--site-font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+	}
+
+	/* A hairline track with a gliding accent segment, the launcher's page-heading motif. */
 	.content-toc nav {
+		position: relative;
 		display: grid;
 		min-height: 0;
-		gap: 0.15rem;
-		margin-top: 0.6rem;
+		border-left: 1px solid var(--site-line);
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		scrollbar-gutter: stable;
+	}
+
+	.toc-indicator {
+		position: absolute;
+		top: 0;
+		left: -1px;
+		width: 2px;
+		border-radius: var(--site-radius-capsule);
+		background: var(--site-signal);
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.toc-indicator.visible {
+		opacity: 1;
 	}
 
 	.content-toc a {
-		border-left: 2px solid transparent;
-		padding: 0.22rem 0.4rem;
-		color: var(--color-anasthasia-muted);
-		font-size: 0.7rem;
-		line-height: 1.35;
+		padding: 0.4rem 0 0.4rem var(--site-space-4);
+		color: var(--site-faint);
+		font-size: 0.84rem;
+		line-height: 1.4;
 		text-decoration: none;
+		transition: color var(--site-motion-fast) ease;
 	}
 
-	.content-toc a:hover,
-	.content-toc a[aria-current='location'] {
-		color: var(--color-anasthasia-text);
+	.content-toc a:hover {
+		color: var(--site-text);
 	}
 
 	.content-toc a[aria-current='location'] {
-		border-left-color: var(--color-anasthasia-text);
-		background: color-mix(
-			in srgb,
-			var(--color-anasthasia-text) 8%,
-			transparent
-		);
-		font-weight: 700;
+		color: var(--site-signal-text);
+		font-weight: 600;
 	}
 
 	.content-toc a.toc-nested {
-		padding-left: 0.8rem;
-		font-size: 0.66rem;
+		padding-left: calc(var(--site-space-4) + 0.75rem);
+		font-size: 0.8rem;
 	}
 
 	.directory-children {
-		border-top: 1px solid var(--site-line);
-		margin-top: 2rem;
-		padding-top: 1rem;
-	}
-
-	.directory-heading {
-		margin-bottom: 0.6rem;
-	}
-
-	.directory-list {
-		display: grid;
-	}
-
-	.directory-list a {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1.5rem;
-		border-bottom: 1px solid var(--site-line);
-		padding: 0.75rem 0;
-		color: var(--color-anasthasia-text);
-		text-decoration: none;
-	}
-
-	.directory-list a:first-child {
-		border-top: 1px solid var(--site-line);
-	}
-
-	.directory-list strong,
-	.directory-list small {
-		display: block;
-	}
-
-	.directory-list strong {
-		font-size: 0.85rem;
-	}
-
-	.directory-list small {
-		margin-top: 0.2rem;
-		color: var(--color-anasthasia-muted);
-		font-size: 0.7rem;
+		margin-top: var(--site-space-8);
 	}
 
 	.page-neighbors {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
-		border-top: 1px solid var(--site-line);
-		margin-top: 2rem;
-		padding-top: 1rem;
+		gap: var(--site-space-4);
+		margin-top: var(--site-space-12);
 	}
 
 	.page-neighbors a {
 		display: grid;
 		gap: 0.2rem;
-		color: var(--color-anasthasia-text);
+		border: 1px solid var(--site-border);
+		border-radius: var(--site-radius-panel);
+		background: var(--site-panel);
+		padding: var(--site-space-4) var(--site-space-5);
+		color: var(--site-text);
 		text-decoration: none;
+		transition: border-color var(--site-motion-fast) ease;
 	}
 
-	.page-neighbors a:hover strong {
-		text-decoration: underline;
-		text-underline-offset: 0.2em;
+	.page-neighbors a:hover {
+		border-color: var(--site-signal-border);
 	}
 
 	.page-neighbors small {
-		color: var(--color-anasthasia-muted);
-		font-family: var(--font-anasthasia-mono);
-		font-size: 0.6rem;
-		text-transform: uppercase;
+		color: var(--site-faint);
+		font-size: 0.75rem;
+	}
+
+	.page-neighbors strong {
+		font-weight: 600;
 	}
 
 	.next-page {
@@ -472,33 +443,29 @@
 
 	@media (max-width: 1100px) {
 		.content-layout.with-toc {
-			display: grid;
 			grid-template-columns: 1fr;
 			grid-template-areas: 'toc' 'copy';
+			gap: 0;
 		}
 
 		.content-toc {
 			position: static;
 			display: block;
 			max-height: none;
-			border-top: 1px solid var(--site-line);
-			border-left: 0;
-			margin-top: 2rem;
-			padding: 1rem 0 0;
+			border: 1px solid var(--site-border);
+			border-radius: var(--site-radius-panel);
+			background: var(--site-panel);
+			margin-bottom: var(--site-space-8);
+			padding: var(--site-space-4);
 			overflow: visible;
 		}
 
 		.content-toc nav {
 			overflow: visible;
-			scrollbar-gutter: auto;
 		}
 	}
 
 	@media (max-width: 760px) {
-		.content-title-row {
-			flex-direction: column;
-		}
-
 		.page-neighbors {
 			grid-template-columns: 1fr;
 		}

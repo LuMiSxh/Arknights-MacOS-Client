@@ -23,7 +23,7 @@ struct CachedPresetOperatorPair: View {
 				}
 			} else if hasFailed {
 				Label(
-					L10n.string(CustomizationStrings.iconPreviewUnavailable),
+					CustomizationStrings.iconPreviewUnavailable,
 					systemImage: "person.crop.square.fill"
 				)
 				.labelStyle(.iconOnly)
@@ -36,7 +36,7 @@ struct CachedPresetOperatorPair: View {
 		}
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(
-			L10n.string(CustomizationStrings.iconPreviewPairAccessibilityLabel)
+			CustomizationStrings.iconPreviewPairAccessibilityLabel
 		)
 		.task(id: renderIdentifier) {
 			let taskIdentifier = renderIdentifier

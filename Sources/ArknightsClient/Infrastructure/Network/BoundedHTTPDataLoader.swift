@@ -5,6 +5,7 @@ import Foundation
 /// Streams an HTTP response into memory while enforcing a hard byte limit before appending.
 struct BoundedHTTPDataLoader: Sendable {
 	private let session: HTTPChunkSession
+	private let redirectValidator: (@Sendable (URL) -> Bool)?
 
 	init(
 		session: URLSession = .shared,
@@ -12,6 +13,7 @@ struct BoundedHTTPDataLoader: Sendable {
 			$0.scheme?.lowercased() == "https"
 		}
 	) {
+		self.redirectValidator = redirectValidator
 		self.session = HTTPChunkSession(
 			configuration: session.configuration,
 			redirectValidator: redirectValidator
@@ -20,7 +22,8 @@ struct BoundedHTTPDataLoader: Sendable {
 
 	func data(
 		for request: URLRequest,
-		maximumBytes: Int
+		maximumBytes: Int,
+		redirectValidator: (@Sendable (URL) -> Bool)? = nil
 	) async throws -> (Data, HTTPURLResponse) {
 		guard maximumBytes > 0 else {
 			throw HTTPTransportError.responseTooLarge(
@@ -28,9 +31,20 @@ struct BoundedHTTPDataLoader: Sendable {
 				maximumBytes: maximumBytes
 			)
 		}
-		let stream = session.stream(for: request)
-		defer { stream.cancel() }
+		let effectiveRedirectValidator = redirectValidator ?? self.redirectValidator
 		let sourceURL = request.url ?? URL(filePath: "/invalid-remote-request")
+		// An explicit per-request policy also owns the source URL; initializer-level policies
+		// retain their historical redirect-only behavior for existing callers.
+		if let redirectValidator {
+			guard redirectValidator(sourceURL) else {
+				throw HTTPTransportError.redirectRejected(sourceURL)
+			}
+		}
+		let stream = session.stream(
+			for: request,
+			redirectValidator: effectiveRedirectValidator
+		)
+		defer { stream.cancel() }
 		var response: HTTPURLResponse?
 		var accumulated = Data()
 
@@ -61,6 +75,7 @@ struct BoundedHTTPDataLoader: Sendable {
 							)
 						}
 						accumulated.append(chunk)
+						stream.acknowledge(chunk.count)
 					}
 				}
 			} catch let error as URLError where error.code == .cancelled && Task.isCancelled {

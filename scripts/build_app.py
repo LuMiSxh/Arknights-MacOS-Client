@@ -33,7 +33,7 @@ from lib.common import (
 from lib.console import info, spinner, success
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
-from localization import compile_swift_localizations, prepare_localization
+from lib.swift_build import run_swift_build
 from runtime_config import (
     RuntimeConfiguration,
     load_runtime_config,
@@ -181,13 +181,6 @@ def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path
         (project / "Resources/Assets.car", Path("Assets.car")),
         (project / "docs/help/errors", Path("SupportArticles")),
         *(
-            (
-                project / f"Resources/{language}.lproj/InfoPlist.strings",
-                Path(f"{language}.lproj/InfoPlist.strings"),
-            )
-            for language in configuration.product.localizations
-        ),
-        *(
             (source, Path(source.name))
             for source in configuration.copied_resource_source_paths
         ),
@@ -196,26 +189,6 @@ def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path
     if len(destinations) != len(set(destinations)):
         fail("application resources contain duplicate destinations")
     return tuple(entries)
-
-
-def copy_swift_localizations(
-    binary_dir: Path,
-    resources: Path,
-    configuration: ProjectConfiguration,
-) -> None:
-    source = require_directory(binary_dir / configuration.swift_resource_bundle_name)
-    localizations = sorted(source.glob("*.lproj/*.strings"))
-    if not localizations:
-        fail("Swift resource bundle does not contain localizations")
-    discovered = {path.parent.name.removesuffix(".lproj") for path in localizations}
-    expected = set(configuration.product.localizations)
-    if discovered != expected:
-        fail(
-            "Swift resource bundle localizations do not match CFBundleLocalizations "
-            f"(found {sorted(discovered)}, expected {sorted(expected)})"
-        )
-    for localization in localizations:
-        copy_file(localization, resources / localization.relative_to(source))
 
 
 def copy_compatibility_helpers(source: Path, destination: Path) -> tuple[Path, ...]:
@@ -306,7 +279,15 @@ def validate_inputs(
     runtime_configuration: RuntimeConfiguration,
 ) -> None:
     require_commands(
-        ("codesign", "install_name_tool", "lipo", "otool", "plutil", "swift")
+        (
+            "codesign",
+            "install_name_tool",
+            "lipo",
+            "otool",
+            "plutil",
+            "swift",
+            "xcrun",
+        )
     )
     project = configuration.project_directory
     require_file(project / "Resources/Info.plist")
@@ -359,36 +340,21 @@ def build(
     project_configuration: ProjectConfiguration | None = None,
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
-    prepare_localization(configuration=project_configuration)
     project = project_configuration.project_directory
     runtime_configuration = load_runtime_config(project / "runtime.json")
     runtime = runtime.resolve() if runtime is not None else None
     validate_inputs(runtime, project_configuration, runtime_configuration)
     architectures = project_configuration.product.architecture_priority
-    architecture_arguments = [
-        argument
-        for architecture in architectures
-        for argument in ("--arch", architecture)
-    ]
     info(f"Building the {configuration} executable for {', '.join(architectures)}")
-    run(
-        ["swift", "build", "--configuration", configuration, *architecture_arguments],
-        cwd=project,
-    )
+    run_swift_build(project_configuration, configuration)
     binary_dir = Path(
-        output(
-            [
-                "swift",
-                "build",
-                "--configuration",
-                configuration,
-                *architecture_arguments,
-                "--show-bin-path",
-            ],
-            cwd=project,
-        )
+        run_swift_build(
+            project_configuration,
+            configuration,
+            show_bin_path=True,
+            capture=True,
+        ).stdout.strip()
     )
-    compile_swift_localizations(binary_dir, project_configuration)
     binary = binary_dir / project_configuration.product.executable_name
     if not os.access(binary, os.X_OK):
         fail(f"{configuration} executable not found: {binary}")
@@ -403,7 +369,6 @@ def build(
         macos.mkdir(parents=True)
         resources.mkdir(parents=True)
         copy_file(binary, macos / project_configuration.product.executable_name, 0o755)
-        copy_swift_localizations(binary_dir, resources, project_configuration)
         configure_info_plist(
             project / "Resources/Info.plist", staged_app / "Contents/Info.plist"
         )

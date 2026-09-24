@@ -134,6 +134,30 @@ struct OnboardingCoordinatorTests {
 		#expect(coordinator.intelTranslationState == .available)
 	}
 
+	#if DEBUG
+		@Test
+		func developerPreviewCanBeToggledWithoutCompletingOnboarding() async {
+			let (defaults, suiteName) = makeDefaults()
+			defer { defaults.removePersistentDomain(forName: suiteName) }
+			let store = OnboardingProgressStore(defaults: defaults)
+			let coordinator = OnboardingCoordinator(store: store)
+
+			await coordinator.startIfNeeded(
+				isDeveloperMode: true,
+				isOnboardingPreview: true,
+				gameIsInstalled: true,
+				checkForUpdates: { .current },
+				checkIntelTranslation: { .available }
+			)
+			#expect(coordinator.isPresented)
+
+			coordinator.dismissDeveloperPreview()
+
+			#expect(!coordinator.isPresented)
+			#expect(store.needsOnboarding)
+		}
+	#endif
+
 	private func makeDefaults() -> (UserDefaults, String) {
 		let suiteName = "OnboardingCoordinatorTests.\(UUID().uuidString)"
 		return (UserDefaults(suiteName: suiteName)!, suiteName)

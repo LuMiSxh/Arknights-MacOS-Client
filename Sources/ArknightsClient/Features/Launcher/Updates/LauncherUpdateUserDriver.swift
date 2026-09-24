@@ -105,6 +105,39 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		message = nil
 		checkCancellation = cancellation
 	}
+
+	#if DEBUG
+		func showDeveloperPreview(version: String?, failed: Bool) {
+			resetCallbacks()
+			self.version = version
+			releaseNotes = nil
+			releaseNotesFormat = nil
+			updateStage = nil
+			informationOnly = false
+			informationURL = nil
+			expectedBytes = 0
+			receivedBytes = 0
+			extractionProgress = 0
+			message = failed ? LauncherStrings.updateErrorDetail : nil
+
+			if failed {
+				phase = .failed
+				errorAcknowledgement = { [weak self] in self?.dismissUpdateInstallation() }
+			} else if version != nil {
+				phase = .available
+				updateReply = { [weak self] choice in
+					guard choice == .install else { return }
+					self?.phase = .readyToInstall
+					self?.readyReply = { [weak self] _ in
+						self?.dismissUpdateInstallation()
+					}
+				}
+			} else {
+				phase = .noUpdate
+				noUpdateAcknowledgement = { [weak self] in self?.dismissUpdateInstallation() }
+			}
+		}
+	#endif
 	func showUpdateFound(
 		with appcastItem: SUAppcastItem,
 		state: SPUUserUpdateState,
@@ -124,12 +157,12 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		releaseNotesFormat = downloadData.mimeType == "text/plain" ? "plain-text" : "html"
 	}
 	func showUpdateReleaseNotesFailedToDownloadWithError(_ error: Error) {
-		message = L10n.string(LauncherStrings.updateReleaseNotesUnavailable)
+		message = LauncherStrings.updateReleaseNotesUnavailable
 	}
 	func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
 		phase = .noUpdate
-		message = L10n.string(LauncherStrings.updateErrorDetail)
+		message = LauncherStrings.updateErrorDetail
 		noUpdateAcknowledgement = acknowledgement
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
@@ -275,7 +308,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showError(_ error: Error) {
 		cancelAutomaticTerminationRetry()
 		phase = .failed
-		message = L10n.string(LauncherStrings.updateErrorDetail)
+		message = LauncherStrings.updateErrorDetail
 		if errorAcknowledgement == nil {
 			errorAcknowledgement = {}
 		}
@@ -302,7 +335,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	}
 	func recordNoUpdate(_ error: Error) {
 		if phase == .hidden || phase == .checking { phase = .noUpdate }
-		message = L10n.string(LauncherStrings.updateErrorDetail)
+		message = LauncherStrings.updateErrorDetail
 	}
 	func recordAvailabilityError(_ error: Error) {
 		if phase == .hidden || phase == .checking { showError(error) }

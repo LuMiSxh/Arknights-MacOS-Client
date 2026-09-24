@@ -11,6 +11,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-24
+
+### Added
+
+- Taiwan (Traditional Chinese) PC client support through Gryphline as a Canary region.
+- Added runtime-loaded CN and China — Bilibili wordmarks with cached startup restoration and high-contrast rendering on dark surfaces.
+- Separate Canary permissions for exposing the Taiwan and China clients, plus a per-client ACE Anti-Cheat warning before their first launch through Wine.
+
+### Changed
+
+- Redesigned the website to match the launcher.
+- Rewrote the installation, troubleshooting, storage, and macOS compatibility guides.
+- Refined launcher controls, Settings, documents, and dialogs with consistent spacing, shared surfaces, dynamic theming, and progress-aware HUD treatment.
+- Improved launcher state feedback and update presentation while pausing decorative motion when the window is inactive.
+- Hardened filesystem cleanup, recovery ownership, and cancellable background work against stale or invalid state.
+- Improved checksum verification performance during repair.
+- Reduced repeated work when preparing Wine prefixes, searching the Artwork gallery, and calculating storage sizes.
+- Improved developer preview controls and centralized builds against the active macOS SDK.
+- Named runtime logs after Arknights and their publisher.
+- Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.
+- Split runtime compatibility controls into independent ACE Compact, shared CEF, and Bilibili CN flags.
+- Improved handling of nested China — Bilibili browser dialogs; payment-flow verification remains pending.
+- Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.0.
+- Removed the regressing experimental Wine/DXMT runtime performance toggle; the independent DXMT frame-latency control remains available behind Canary Features.
+
+### Fixed
+
+- Preserved China and China — Bilibili access and region selection when upgrading with Canary Features enabled, while respecting explicitly disabled China access.
+- Prevented the floating Settings footer from covering content.
+- Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).
+- Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
+- Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
+- Fixed macOS 27 SwiftPM resource packaging and test execution so bundled assets remain available and Swift tests run normally.
+- A download on a fast connection can no longer outpace a slow disk and grow in memory without limit.
+- Removed a leak and a per-frame window-server query from the helpers injected into the game and its notice window.
+- Keep native Settings and onboarding toggles on the current macOS geometry by linking app builds against the active SDK while retaining the macOS 15 deployment target.
+
+### Removed
+
+- The launcher now ships in English only; removed German localization and language preferences.
+
 ## [0.5.2] - 2026-09-14
 
 ### Added
@@ -261,7 +302,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.5.2...HEAD
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.0
 [0.5.2]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.2
 [0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1
 [0.5.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.0

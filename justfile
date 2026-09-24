@@ -12,8 +12,9 @@ default:
 
 # Run the focused isolated debug simulator for safe launcher UI states.
 [group('Development')]
-preview scenario='ready':
-    {{ uv }} scripts/localization.py prepare; swift build; binary_dir="$(swift build --show-bin-path)"; {{ uv }} scripts/localization.py compile "$binary_dir"; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; swift run --skip-build "$executable_name" --developer-scenario {{ quote(scenario) }}
+preview:
+	{{ uv }} scripts/swift_build.py --configuration debug --sdk macosx27.0
+	binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --sdk macosx27.0 --show-bin-path)"; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; "$binary_dir/$executable_name" --developer-preview
 
 # Start the website or download the verified runtime and build a local app bundle or dmg; add run to open app artifacts (default: app).
 [group('Development')]
@@ -33,14 +34,14 @@ format target='all':
 # Build the Apple Silicon release binary.
 [group('Checks')]
 build:
-    {{ uv }} scripts/localization.py prepare; swift build --configuration release $({{ uv }} scripts/project_config.py swift-architecture-arguments); binary_dir="$(swift build --configuration release $({{ uv }} scripts/project_config.py swift-architecture-arguments) --show-bin-path)"; {{ uv }} scripts/localization.py compile "$binary_dir"
+	{{ uv }} scripts/swift_build.py --configuration release
 
 # Run deterministic onboarding, API, installer, and persistence workflows without public network access.
 [group('Checks')]
 integration:
     {{ uv }} scripts/swift_tests.py integration
 
-# Run read-only contracts against the live Yostar services; never part of normal source checks.
+# Run read-only contracts against live Yostar and Gryphline services; never part of normal source checks.
 [group('Checks')]
 live-contracts:
     {{ uv }} scripts/swift_tests.py live

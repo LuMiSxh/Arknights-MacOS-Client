@@ -13,90 +13,72 @@ struct AboutSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: L10n.string(SettingsStrings.aboutTitle),
-			subtitle: "\(L10n.string(SettingsStrings.application)) \(appVersion)",
+			title: SettingsStrings.aboutTitle,
+			subtitle: "\(SettingsStrings.application) \(appVersion)",
 			accentColor: accentColor
 		) {
-			HStack(alignment: .center, spacing: 18) {
-				Image(nsImage: launcherIconManager.currentIcon)
-					.resizable()
-					.frame(width: 76, height: 76)
-					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 5) {
-					Text(L10n.string(SettingsStrings.application))
-						.font(.title2.bold())
-					Text(L10n.string(SettingsStrings.unofficialLauncher))
-						.foregroundStyle(.secondary)
-					AccentLink(
-						title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
-						accentColor: accentColor
-					)
-					.font(.callout.weight(.medium))
+			SettingsPanel(title: SettingsStrings.application, systemImage: "info.circle") {
+				ViewThatFits(in: .horizontal) {
+					HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+						identitySummary
+						Spacer(minLength: 0)
+						identityActions
+					}
+					VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
+						identitySummary
+						HStack {
+							Spacer(minLength: 0)
+							identityActions
+						}
+					}
 				}
-				Spacer()
-				CapsuleActionButton(
-					title: L10n.string(SettingsStrings.openFinder), systemImage: "folder",
-					tone: .accent(accentColor), showsTitle: false,
-					action: revealApplication
-				)
-				.help(L10n.string(SettingsStrings.openFinderHelp))
-				CapsuleActionButton(
-					title: L10n.string(SettingsStrings.github), tone: .accent(accentColor)
-				) {
-					NSWorkspace.shared.open(
-						URL(
-							string: "https://github.com/LuMiSxh/Arknights-MacOS-Client"
-						)!
-					)
-				}
-				.help(L10n.string(SettingsStrings.githubHelp))
-				CapsuleActionButton(
-					title: L10n.string(SettingsStrings.donate),
-					systemImage: "heart.fill",
-					tone: .accent(accentColor)
-				) {
-					NSWorkspace.shared.open(SupportLinks.donate)
-				}
-				.help(L10n.string(SettingsStrings.donateHelp))
 			}
-			.padding(20)
-			.adaptiveGlassEffect(in: .rect(cornerRadius: 20))
 
-			SettingsPanel(title: L10n.string(SettingsStrings.documents), systemImage: "doc.text") {
-				DocumentLinkRow(
-					title: L10n.string(SettingsStrings.changelog),
-					systemImage: "clock.arrow.circlepath",
-					accentColor: accentColor
-				) {
-					presentedDocument = .changelog
-				}
-				SettingsHairline()
-				DocumentLinkRow(
-					title: L10n.string(SettingsStrings.license), systemImage: "checkmark.seal",
-					accentColor: accentColor
-				) {
-					presentedDocument = .projectLicense
-				}
-				SettingsHairline()
-				DocumentLinkRow(
-					title: L10n.string(SettingsStrings.thirdPartyNotices),
-					systemImage: "shippingbox",
-					accentColor: accentColor
-				) {
-					presentedDocument = .thirdPartyNotices
+			SettingsPanel(title: SettingsStrings.documents, systemImage: "doc.text") {
+				ViewThatFits(in: .horizontal) {
+					HStack(spacing: LauncherVisuals.Spacing.tight) {
+						documentLink(
+							.changelog, title: SettingsStrings.changelog,
+							systemImage: "clock.arrow.circlepath"
+						)
+						.frame(maxWidth: .infinity)
+						documentLink(
+							.projectLicense, title: SettingsStrings.license,
+							systemImage: "checkmark.seal"
+						)
+						.frame(maxWidth: .infinity)
+						documentLink(
+							.thirdPartyNotices, title: SettingsStrings.thirdPartyNotices,
+							systemImage: "doc.on.doc"
+						)
+						.frame(maxWidth: .infinity)
+					}
+					VStack(spacing: 0) {
+						documentLink(
+							.changelog, title: SettingsStrings.changelog,
+							systemImage: "clock.arrow.circlepath")
+						SettingsHairline()
+						documentLink(
+							.projectLicense, title: SettingsStrings.license,
+							systemImage: "checkmark.seal")
+						SettingsHairline()
+						documentLink(
+							.thirdPartyNotices, title: SettingsStrings.thirdPartyNotices,
+							systemImage: "doc.on.doc")
+					}
 				}
 			}
 
 			SettingsPanel(
-				title: L10n.string(SettingsStrings.support), systemImage: "questionmark.circle"
+				title: SettingsStrings.support, systemImage: "questionmark.circle"
 			) {
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.launcherIssues),
-					detail: L10n.string(SettingsStrings.launcherIssuesDetail)
+					title: SettingsStrings.launcherIssues,
+					detail: SettingsStrings.launcherIssuesDetail
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.report), systemImage: "ladybug",
-						tone: .accent(accentColor), presentation: .compact,
+						title: SettingsStrings.report, systemImage: "ladybug",
+						tone: .neutral, presentation: .compact,
 						action: reportLauncherProblem
 					)
 				}
@@ -104,13 +86,13 @@ struct AboutSettingsPage: View {
 				SettingsHairline()
 
 				SettingsActionRow(
-					title: L10n.string(SettingsStrings.gameAccountIssues),
-					detail: L10n.string(SettingsStrings.gameAccountIssuesDetail(region: region))
+					title: SettingsStrings.gameAccountIssues,
+					detail: SettingsStrings.gameAccountIssuesDetail(region: region)
 				) {
 					CapsuleActionButton(
-						title: L10n.string(SettingsStrings.contactPublisherTitle(region: region)),
+						title: SettingsStrings.contactPublisherTitle(region: region),
 						systemImage: "arrow.up.right.square",
-						tone: .accent(accentColor), presentation: .compact,
+						tone: .neutral, presentation: .compact,
 						action: contactPublisher
 					)
 				}
@@ -118,23 +100,15 @@ struct AboutSettingsPage: View {
 
 			SettingsPanel(title: "Arknights", systemImage: "link") {
 				VStack(alignment: .leading, spacing: 8) {
-					HStack(spacing: 18) {
-						if let agreement = branding?.userAgreement {
-							AccentLink(
-								title: L10n.string(SettingsStrings.userAgreement),
-								destination: agreement,
-								accentColor: accentColor
-							)
+					ViewThatFits(in: .horizontal) {
+						HStack(spacing: 18) {
+							publisherLinks
 						}
-						if let privacy = branding?.privacyPolicy {
-							AccentLink(
-								title: L10n.string(SettingsStrings.privacyPolicy),
-								destination: privacy,
-								accentColor: accentColor
-							)
+						VStack(alignment: .leading, spacing: 8) {
+							publisherLinks
 						}
 					}
-					Text(L10n.string(SettingsStrings.notAffiliated))
+					Text(SettingsStrings.notAffiliated)
 						.font(.caption)
 						.foregroundStyle(.secondary)
 				}
@@ -144,11 +118,91 @@ struct AboutSettingsPage: View {
 
 	private var appVersion: String { IssueReportURL.appVersion }
 
+	@ViewBuilder
+	private var identitySummary: some View {
+		HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+			Image(nsImage: launcherIconManager.currentIcon)
+				.resizable()
+				.frame(width: 76, height: 76)
+				.accessibilityHidden(true)
+			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.tight) {
+				Text(SettingsStrings.unofficialLauncher)
+					.foregroundStyle(.secondary)
+				AccentLink(
+					title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
+					accentColor: accentColor
+				)
+				.font(.callout.weight(.medium))
+			}
+		}
+	}
+
+	@ViewBuilder
+	private var identityActions: some View {
+		HStack(spacing: LauncherVisuals.Spacing.tight) {
+			CapsuleActionButton(
+				title: SettingsStrings.openFinder, systemImage: "folder",
+				tone: .neutral, showsTitle: false,
+				action: revealApplication
+			)
+			.help(SettingsStrings.openFinderHelp)
+			CapsuleActionButton(
+				title: SettingsStrings.github, tone: .neutral
+			) {
+				NSWorkspace.shared.open(
+					URL(string: "https://github.com/LuMiSxh/Arknights-MacOS-Client")!
+				)
+			}
+			.help(SettingsStrings.githubHelp)
+			CapsuleActionButton(
+				title: SettingsStrings.donate,
+				systemImage: "heart.fill",
+				tone: .neutral
+			) {
+				NSWorkspace.shared.open(SupportLinks.donate)
+			}
+			.help(SettingsStrings.donateHelp)
+		}
+	}
+
 	private func reportLauncherProblem() {
 		NSWorkspace.shared.open(IssueReportURL.build())
 	}
 
 	private func contactPublisher() {
 		NSWorkspace.shared.open(SupportLinks.contact(for: region))
+	}
+
+	@ViewBuilder
+	private func documentLink(
+		_ document: BundledDocument,
+		title: String,
+		systemImage: String
+	) -> some View {
+		DocumentLinkRow(
+			title: title,
+			systemImage: systemImage,
+			accentColor: accentColor
+		) {
+			presentedDocument = document
+		}
+	}
+
+	@ViewBuilder
+	private var publisherLinks: some View {
+		if let agreement = branding?.userAgreement {
+			AccentLink(
+				title: SettingsStrings.userAgreement,
+				destination: agreement,
+				accentColor: accentColor
+			)
+		}
+		if let privacy = branding?.privacyPolicy {
+			AccentLink(
+				title: SettingsStrings.privacyPolicy,
+				destination: privacy,
+				accentColor: accentColor
+			)
+		}
 	}
 }

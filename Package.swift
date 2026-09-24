@@ -3,9 +3,14 @@
 
 import PackageDescription
 
+let appResources: [Resource] = [
+	.copy("Resources/GameIconBackground.png"),
+	.copy("Resources/OperatorIconFrame.svg"),
+	.copy("Resources/WallpaperTags.json"),
+]
+
 let package = Package(
 	name: "ArknightsClient",
-	defaultLocalization: "en",
 	platforms: [
 		.macOS(.v15)
 	],
@@ -14,7 +19,7 @@ let package = Package(
 	],
 	dependencies: [
 		.package(url: "https://github.com/sparkle-project/Sparkle.git", exact: "2.9.6"),
-		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0")
+		.package(url: "https://github.com/SvenTiigi/YouTubePlayerKit.git", from: "2.0.0"),
 	],
 	targets: [
 		.systemLibrary(
@@ -26,18 +31,10 @@ let package = Package(
 			dependencies: [
 				"CCommonCrypto",
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
-				.product(name: "Sparkle", package: "Sparkle")
+				.product(name: "Sparkle", package: "Sparkle"),
 			],
 			path: "Sources/ArknightsClient",
-			resources: [
-				.copy("Resources/GameIconBackground.png"),
-				.copy("Resources/OperatorIconFrame.svg"),
-				.copy("Resources/WallpaperTags.json"),
-				.process("Resources/Customization.xcstrings"),
-				.process("Resources/Launcher.xcstrings"),
-				.process("Resources/Localizable.xcstrings"),
-				.process("Resources/Settings.xcstrings"),
-			]
+			resources: appResources
 		),
 		.testTarget(
 			name: "ArknightsClientTests",

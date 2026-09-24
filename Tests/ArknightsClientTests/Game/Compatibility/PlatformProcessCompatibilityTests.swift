@@ -61,6 +61,22 @@ func platformProcessNoticeWrapperUsesOneTimeCenteringCoarsePollingAndModalLock()
 }
 
 @Test
+func platformProcessNoticeWrapperStopsWhenTheGameWindowDisappears() throws {
+	let repositoryRoot = (0..<5).reduce(URL(filePath: #filePath)) { url, _ in
+		url.deletingLastPathComponent()
+	}
+	let sourceURL = repositoryRoot.appending(
+		path: "RuntimeSupport/PlatformProcess/PlatformProcessShim.c"
+	)
+	let source = try String(contentsOf: sourceURL, encoding: .utf8)
+
+	#expect(source.contains("GAME_MISSING_LIMIT = 4"))
+	#expect(source.contains("saw_game"))
+	#expect(source.contains("missing_game_ticks"))
+	#expect(source.contains("TerminateProcess(process.hProcess"))
+}
+
+@Test
 func platformProcessComponentInstallsAndRestoresOfficialHelper() throws {
 	let fixture = try PlatformProcessFixture()
 	defer { fixture.remove() }

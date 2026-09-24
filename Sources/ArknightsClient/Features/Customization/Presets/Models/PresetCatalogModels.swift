@@ -87,7 +87,7 @@ struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	}
 
 	var displayTitle: String {
-		fallbackOrdinal.map { L10n.string(CustomizationStrings.wallpaperFallbackTitle($0)) }
+		fallbackOrdinal.map { CustomizationStrings.wallpaperFallbackTitle($0) }
 			?? title
 	}
 
@@ -149,7 +149,7 @@ enum WallpaperTagCatalog {
 }
 
 /// An operator identified among a set of wallpapers, with how many of them feature them.
-struct OperatorArtCount: Identifiable, Hashable {
+struct OperatorArtCount: Identifiable, Hashable, Sendable {
 	var id: String { tag }
 	let tag: String
 	let displayName: String

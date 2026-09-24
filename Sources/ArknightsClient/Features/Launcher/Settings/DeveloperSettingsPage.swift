@@ -4,64 +4,79 @@ import SwiftUI
 
 #if DEBUG
 	struct DeveloperSettingsPage: View {
-		@Binding var scenario: DeveloperScenario
+		@Binding var simulation: DeveloperSimulationState
 		let accentColor: Color
 		let applyCustomPopup: (String, String) -> Void
-		@State private var customPopupTitle = L10n.string(SettingsStrings.developerCustomPopup)
-		@State private var customPopupMarkdown = ""
+		@State private var isComponentLabPresented = false
 
 		var body: some View {
 			SettingsPage(
-				title: L10n.string(SettingsStrings.developerTitle),
-				subtitle: L10n.string(SettingsStrings.developerSubtitle),
+				title: SettingsStrings.developerTitle,
+				subtitle: SettingsStrings.developerSubtitle,
 				accentColor: accentColor
 			) {
-				SettingsPanel(
-					title: L10n.string(SettingsStrings.developerScenario), systemImage: "switch.2"
-				) {
-					GlassMenuPicker(
-						selection: $scenario,
-						options: DeveloperScenario.allCases.map { ($0, $0.title) },
-						accentColor: accentColor
-					)
-					SettingsHairline()
-					Text(scenario.detail)
-						.foregroundStyle(.secondary)
-				}
+				DeveloperSimulationControls(
+					simulation: $simulation,
+					accentColor: accentColor
+				)
 
-				if scenario == .customPopup {
+				if simulation.popup == .custom {
 					SettingsPanel(
-						title: L10n.string(SettingsStrings.developerCustomPopup),
+						title: SettingsStrings.developerCustomPopup,
 						systemImage: "text.bubble"
 					) {
 						TextField(
-							L10n.string(SettingsStrings.developerCustomPopupTitle),
-							text: $customPopupTitle
+							SettingsStrings.developerCustomPopupTitle,
+							text: $simulation.customPopupTitle
 						)
 						.textFieldStyle(.roundedBorder)
-						TextEditor(text: $customPopupMarkdown)
+						TextEditor(text: $simulation.customPopupMarkdown)
 							.font(.system(.body, design: .monospaced))
 							.scrollContentBackground(.hidden)
 							.padding(8)
 							.frame(height: 140)
 							.background(.black.opacity(0.2), in: .rect(cornerRadius: 8))
 						CapsuleActionButton(
-							title: L10n.string(SettingsStrings.developerShowPopup),
+							title: SettingsStrings.developerShowPopup,
 							tone: .accent(accentColor)
 						) {
-							applyCustomPopup(customPopupTitle, customPopupMarkdown)
+							applyCustomPopup(
+								simulation.customPopupTitle,
+								simulation.customPopupMarkdown
+							)
 						}
-						.disabled(customPopupMarkdown.isEmpty)
+						.disabled(simulation.customPopupMarkdown.isEmpty)
 					}
 				}
 
 				SettingsPanel(
-					title: L10n.string(SettingsStrings.developerIsolation),
+					title: SettingsStrings.developerIsolation,
 					systemImage: "lock.shield"
 				) {
-					Text(L10n.string(SettingsStrings.developerIsolationDetail))
+					Text(SettingsStrings.developerIsolationDetail)
 						.foregroundStyle(.secondary)
 				}
+
+				SettingsPanel(
+					title: "Temporary Component Design Lab",
+					systemImage: "testtube.2"
+				) {
+					Text(
+						"Compare the shared control states, surfaces, and spacing used by the launcher."
+					)
+					.foregroundStyle(.secondary)
+					CapsuleActionButton(
+						title: "Open Component Lab",
+						systemImage: "rectangle.3.group",
+						tone: .neutral,
+						presentation: .compact
+					) {
+						isComponentLabPresented = true
+					}
+				}
+			}
+			.sheet(isPresented: $isComponentLabPresented) {
+				DeveloperComponentLabPage(accentColor: accentColor)
 			}
 		}
 	}

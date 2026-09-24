@@ -27,19 +27,19 @@ struct SectionPageHeader: View {
 	var fixesSubtitleHeight = false
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 7) {
+		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
 			Text(title)
 				.font(.largeTitle.bold())
 			Text(subtitle)
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
-			HStack(spacing: 8) {
+			HStack(spacing: LauncherVisuals.Spacing.control) {
 				Rectangle().fill(accentColor).frame(width: 72, height: 3)
 				Rectangle().fill(.secondary.opacity(0.28))
 					.frame(height: 1)
 					.frame(maxWidth: .infinity)
 			}
-			.padding(.top, 5)
+			.padding(.top, LauncherVisuals.Spacing.tight)
 		}
 	}
 }
@@ -55,16 +55,15 @@ struct SettingsPage<Content: View>: View {
 	var body: some View {
 		ScrollViewReader { proxy in
 			ScrollView {
-				VStack(alignment: .leading, spacing: 18) {
+				VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.section) {
 					SectionPageHeader(title: title, subtitle: subtitle, accentColor: accentColor)
 					content
 				}
-				.padding(.horizontal, 26)
-				.padding(.top, 26)
-				.padding(.bottom, 72)
+				.padding(.horizontal, LauncherVisuals.Spacing.page)
+				.padding(.top, LauncherVisuals.Spacing.page)
 				.environment(\.settingsFocusCoordinator, focusCoordinator)
 			}
-			.contentMargins(.top, 26, for: .scrollIndicators)
+			.contentMargins(.top, LauncherVisuals.Spacing.page, for: .scrollIndicators)
 			.contentMargins(.bottom, 22, for: .scrollIndicators)
 			.scrollIndicators(.automatic)
 			.onChange(of: focusCoordinator.focusedID) { _, focusedID in
@@ -72,7 +71,7 @@ struct SettingsPage<Content: View>: View {
 				if reduceMotion {
 					proxy.scrollTo(focusedID, anchor: .center)
 				} else {
-					withAnimation(.easeInOut(duration: 0.15)) {
+					withAnimation(.easeInOut(duration: LauncherVisuals.Motion.selection)) {
 						proxy.scrollTo(focusedID, anchor: .center)
 					}
 				}
@@ -87,52 +86,103 @@ struct SettingsHairline: View {
 	var body: some View {
 		Rectangle()
 			.fill(LauncherVisuals.hairline)
-			.frame(height: 1)
+			.frame(height: LauncherVisuals.Spacing.hairline)
 	}
 }
 
 struct SettingsPanel<Content: View>: View {
 	let title: String
 	let systemImage: String
+	var tone: SettingsPanelTone = .neutral
 	@ViewBuilder let content: Content
+	@Environment(\.colorSchemeContrast) private var contrast
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@Environment(\.accessibilityShowBorders) private var showBorders
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
+		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
 			Label(title, systemImage: systemImage)
 				.font(.headline)
+				.foregroundStyle(tone.color(for: contrast))
 				.symbolRenderingMode(.hierarchical)
 			content
 		}
-		.padding(18)
+		.padding(LauncherVisuals.Spacing.panel)
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.background(Color.white.opacity(0.04), in: .rect(cornerRadius: 18))
+		.adaptiveGlassEffect(
+			tint: nil,
+			borderTint: tone.color(for: contrast),
+			in: .rect(cornerRadius: LauncherVisuals.Radius.panel),
+			showsBorder: false
+		)
 		.overlay {
-			RoundedRectangle(cornerRadius: 18)
-				.strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+			if ownsPanelEdge {
+				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+					.strokeBorder(
+						tone.border(for: contrast), lineWidth: LauncherVisuals.Control.borderWidth
+					)
+					.allowsHitTesting(false)
+			}
+		}
+	}
+
+	private var ownsPanelEdge: Bool {
+		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
+			reduceTransparency: reduceTransparency,
+			showBorders: showBorders
+		)
+	}
+}
+
+enum SettingsPanelTone {
+	case neutral
+	case success
+	case warning
+	case danger
+
+	var color: Color {
+		return switch self {
+		case .neutral: .primary
+		case .success: LauncherVisuals.success
+		case .warning: LauncherVisuals.warning
+		case .danger: LauncherVisuals.dangerForeground
+		}
+	}
+
+	func color(for contrast: ColorSchemeContrast) -> Color {
+		if case .danger = self, contrast == .increased {
+			return Color(red: 1, green: 0.55, blue: 0.60)
+		}
+		return color
+	}
+
+	func border(for contrast: ColorSchemeContrast) -> Color {
+		let opacity =
+			contrast == .increased
+			? LauncherVisuals.Control.semanticBorderHighContrastOpacity
+			: LauncherVisuals.Control.semanticBorderOpacity
+		return switch self {
+		case .neutral: LauncherVisuals.panelBorder
+		case .success: LauncherVisuals.success.opacity(opacity)
+		case .warning: LauncherVisuals.warning.opacity(opacity)
+		case .danger: LauncherVisuals.dangerForeground.opacity(opacity)
 		}
 	}
 }
 
-/// Same shape as `SettingsPanel`, tinted red for risky compatibility and destructive actions.
+/// Same quiet panel geometry as `SettingsPanel`, reserved for destructive actions.
 struct DangerZonePanel<Content: View>: View {
+	let title: String
 	@ViewBuilder let content: Content
 
+	init(title: String = "Danger Zone", @ViewBuilder content: () -> Content) {
+		self.title = title
+		self.content = content()
+	}
+
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			Label(
-				L10n.string(SettingsStrings.dangerZone),
-				systemImage: "exclamationmark.triangle.fill"
-			)
-			.font(.headline)
-			.foregroundStyle(LauncherVisuals.danger)
+		SettingsPanel(title: title, systemImage: "exclamationmark.triangle.fill", tone: .danger) {
 			content
-		}
-		.padding(18)
-		.frame(maxWidth: .infinity, alignment: .leading)
-		.adaptiveGlassEffect(in: .rect(cornerRadius: 18))
-		.overlay {
-			RoundedRectangle(cornerRadius: 18)
-				.strokeBorder(LauncherVisuals.danger.opacity(0.45), lineWidth: 1)
 		}
 	}
 }
@@ -144,27 +194,22 @@ struct UpdateSettingsRow: View {
 	let isChecking: Bool
 	var isDisabled = false
 	let accentColor: Color
+	var checkTitle = "Check Now"
 	let check: () -> Void
 
 	var body: some View {
-		HStack(spacing: 16) {
-			VStack(alignment: .leading, spacing: 3) {
-				Text(title)
-				Text(status)
-					.font(.caption)
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
+		SettingsActionRow(title: title, detail: status) {
+			HStack(spacing: LauncherVisuals.Spacing.control) {
+				SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
+					.disabled(isDisabled)
+				CapsuleActionButton(
+					title: checkTitle,
+					tone: .accent(accentColor),
+					presentation: .compact,
+					action: check
+				)
+				.disabled(isChecking || isDisabled)
 			}
-			.frame(maxWidth: .infinity, alignment: .leading)
-			Spacer()
-			SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
-				.disabled(isDisabled)
-			CapsuleActionButton(
-				title: L10n.string(SettingsStrings.checkNow), tone: .accent(accentColor),
-				presentation: .compact,
-				action: check
-			)
-			.disabled(isChecking || isDisabled)
 		}
 	}
 }
@@ -175,23 +220,43 @@ struct SettingsActionRow<Actions: View>: View {
 	@ViewBuilder let actions: Actions
 
 	var body: some View {
-		HStack(spacing: 18) {
-			VStack(alignment: .leading, spacing: 3) {
-				Text(title)
-				Text(detail)
-					.font(.caption)
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
+		ViewThatFits(in: .horizontal) {
+			HStack(spacing: LauncherVisuals.Spacing.section) {
+				label
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.layoutPriority(1)
+				actionGroup
 			}
-			.frame(maxWidth: .infinity, alignment: .leading)
-			.layoutPriority(1)
-			actions
-				.fixedSize(horizontal: true, vertical: false)
+			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
+				label
+				HStack {
+					Spacer(minLength: 0)
+					actionGroup
+				}
+			}
+		}
+	}
+
+	@ViewBuilder
+	private var actionGroup: some View {
+		HStack(spacing: LauncherVisuals.Spacing.control) {
+			actions.fixedSize(horizontal: true, vertical: false)
+		}
+	}
+
+	@ViewBuilder
+	private var label: some View {
+		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+			Text(title)
+			Text(detail)
+				.font(.caption)
+				.foregroundStyle(.secondary)
+				.fixedSize(horizontal: false, vertical: true)
 		}
 	}
 }
 
-/// A cyan glass chip that stands in for `Picker`'s stock menu-button chrome, so option
+/// An accent glass chip that stands in for `Picker`'s stock menu-button chrome, so option
 /// pickers read as the same interaction language as the landing page's region switcher
 /// rather than a default AppKit control.
 struct GlassMenuPicker<Value: Hashable>: View {
@@ -223,7 +288,7 @@ struct GlassMenuPicker<Value: Hashable>: View {
 			}
 			trailingMenuItems()
 		} label: {
-			HStack(spacing: 5) {
+			HStack(spacing: LauncherVisuals.Spacing.tight) {
 				Text(currentTitle)
 				Image(systemName: "chevron.up.chevron.down")
 					.font(.system(size: 9, weight: .bold))
@@ -254,7 +319,7 @@ struct GlassActionMenu<Content: View>: View {
 		Menu {
 			content
 		} label: {
-			HStack(spacing: 5) {
+			HStack(spacing: LauncherVisuals.Spacing.tight) {
 				Image(systemName: systemImage)
 					.accessibilityHidden(true)
 				Text(title)
@@ -322,16 +387,16 @@ struct DocumentLinkRow: View {
 					.accessibilityHidden(true)
 			}
 			.foregroundStyle(isHovering ? accentColor : .primary)
-			.padding(.vertical, 10)
-			.padding(.horizontal, 6)
+			.padding(.vertical, LauncherVisuals.Spacing.content)
+			.padding(.horizontal, LauncherVisuals.Spacing.tight)
 			.background(
 				isHovering ? accentColor.opacity(0.08) : .clear,
-				in: .rect(cornerRadius: 8)
+				in: .rect(cornerRadius: LauncherVisuals.Radius.row)
 			)
 			.contentShape(.rect)
 		}
 		.buttonStyle(.plain)
-		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 8))
+		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
 		.onHover { isHovering = $0 }
 	}
 }

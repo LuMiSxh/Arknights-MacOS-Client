@@ -111,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			let installedRegions = model.installation.installedRegions
 			for region in installedRegions {
 				let item = NSMenuItem(
-					title: L10n.string(ApplicationStrings.play(region.localizedDisplayName)),
+					title: ApplicationStrings.play(region.displayName),
 					action: #selector(playRegion(_:)),
 					keyEquivalent: ""
 				)
@@ -126,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 
 		let settingsItem = NSMenuItem(
-			title: L10n.string(ApplicationStrings.settings),
+			title: ApplicationStrings.settings,
 			action: #selector(showSettings),
 			keyEquivalent: ","
 		)
@@ -176,9 +176,10 @@ struct ArknightsClientApp: App {
 	init() {
 		let arguments = ProcessInfo.processInfo.arguments
 		#if DEBUG
-			if DeveloperScenario(arguments: arguments) != nil {
+			if DeveloperSimulationState.isPreviewArgument(arguments) {
+				let previewID = UUID().uuidString
 				let root = FileManager.default.temporaryDirectory.appending(
-					path: "ArknightsClientPreview",
+					path: "ArknightsClientPreview-\(previewID)",
 					directoryHint: .isDirectory
 				)
 				let paths = AppPaths(
@@ -186,7 +187,9 @@ struct ArknightsClientApp: App {
 					cachesDirectory: root.appending(path: "Caches"),
 					libraryDirectory: root.appending(path: "Library")
 				)
-				let defaults = UserDefaults(suiteName: "com.lumisxh.arknights-client.preview")!
+				let defaults = UserDefaults(
+					suiteName: "com.lumisxh.arknights-client.preview.\(previewID)"
+				)!
 				_model = State(
 					wrappedValue: LauncherViewModel(
 						paths: paths,
@@ -215,7 +218,6 @@ struct ArknightsClientApp: App {
 				)
 				.environment(\.launcherWindowSize, geometry.size)
 			}
-			.environment(\.locale, model.settings.appLanguage.locale ?? .autoupdatingCurrent)
 			.frame(minWidth: 880, minHeight: 560)
 			.onAppear {
 				appDelegate.model = model

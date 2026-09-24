@@ -213,18 +213,15 @@ static NSWindow *notice_window(void) {
 	return candidate;
 }
 
-/* Runs on every presentation timer tick: locates and reconfigures the notice window,
- * and pins the window
- * level just above the fullscreen shielding window so it stays visible over a fullscreen
- * game instead of behind it. Logs the first successful
- * notice/game window pairing once each, not every tick. */
+/* Runs on every presentation timer tick: locates and reconfigures the notice window, and
+ * pins the window level just above the fullscreen shielding window so it stays visible over
+ * a fullscreen game instead of behind it. Logs the first successful notice/game window
+ * pairing once each, not every tick. */
 static void maintain_presentation(void) {
 	NSWindow *window = notice_window();
-	struct game_window game;
 
 	if (window == nil) return;
 	configure_window(window);
-	game = game_window_info();
 
 	NSWindowLevel target_level = (NSWindowLevel)(CGShieldingWindowLevel() + 1);
 
@@ -233,14 +230,20 @@ static void maintain_presentation(void) {
 	}
 	[window orderFrontRegardless];
 
-	if (game.number != kCGNullWindowID && logged_game_window != game.number) {
-		fprintf(
-			stderr,
-			"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
-			(long)window.windowNumber,
-			game.number,
-			game.process_id);
-		logged_game_window = game.number;
+	/* Only needed for the pairing log, so it stops after the first hit rather than asking the
+	 * WindowServer for every on-screen window sixty times a second. */
+	if (logged_game_window == kCGNullWindowID) {
+		struct game_window game = game_window_info();
+
+		if (game.number != kCGNullWindowID) {
+			fprintf(
+				stderr,
+				"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
+				(long)window.windowNumber,
+				game.number,
+				game.process_id);
+			logged_game_window = game.number;
+		}
 	}
 }
 

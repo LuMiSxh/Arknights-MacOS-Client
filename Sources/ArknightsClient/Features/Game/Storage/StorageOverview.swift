@@ -42,6 +42,8 @@ struct StorageUsage: Equatable, Identifiable, Sendable {
 struct StorageOverviewContext: Equatable, Sendable {
 	let region: GameRegion
 	let canaryFeaturesEnabled: Bool
+	let chinaClientsEnabled: Bool
+	let taiwanClientEnabled: Bool
 	let persistedInstallDirectories: [GameRegion: URL]
 }
 
@@ -54,6 +56,8 @@ enum StorageOverviewResolver {
 		StorageOverviewContext(
 			region: region,
 			canaryFeaturesEnabled: preferences.canaryFeaturesEnabled(),
+			chinaClientsEnabled: preferences.chinaClientsEnabled(),
+			taiwanClientEnabled: preferences.taiwanClientEnabled(),
 			persistedInstallDirectories: preferences.persistedInstallDirectories()
 		)
 	}
@@ -64,8 +68,8 @@ enum StorageOverviewResolver {
 		preferences: LauncherPreferencesStore,
 		region: GameRegion = .global,
 		fileManager: FileManager = .default
-	) -> [StorageLocation] {
-		locations(
+	) throws -> [StorageLocation] {
+		try locations(
 			paths: paths,
 			context: context(preferences: preferences, region: region),
 			fileManager: fileManager
@@ -76,9 +80,11 @@ enum StorageOverviewResolver {
 		paths: AppPaths,
 		context: StorageOverviewContext,
 		fileManager: FileManager = .default
-	) -> [StorageLocation] {
+	) throws -> [StorageLocation] {
 		let games = GameRegion.selectableCases(
-			canaryEnabled: context.canaryFeaturesEnabled
+			canaryEnabled: context.canaryFeaturesEnabled,
+			chinaClientsEnabled: context.chinaClientsEnabled,
+			taiwanClientEnabled: context.taiwanClientEnabled
 		).map { region in
 			StorageLocation(
 				category: .game(region),
@@ -87,7 +93,7 @@ enum StorageOverviewResolver {
 				]
 			)
 		}
-		let browserCaches = paths.browserCacheDirectories(
+		let browserCaches = try paths.browserCacheDirectories(
 			for: context.region,
 			fileManager: fileManager
 		)
@@ -109,7 +115,11 @@ enum StorageOverviewResolver {
 	}
 
 	static func placeholderLocations(context: StorageOverviewContext) -> [StorageLocation] {
-		let games = GameRegion.selectableCases(canaryEnabled: context.canaryFeaturesEnabled).map {
+		let games = GameRegion.selectableCases(
+			canaryEnabled: context.canaryFeaturesEnabled,
+			chinaClientsEnabled: context.chinaClientsEnabled,
+			taiwanClientEnabled: context.taiwanClientEnabled
+		).map {
 			StorageLocation(category: .game($0), urls: [])
 		}
 		return games + [
@@ -165,11 +175,12 @@ enum StorageSizeCalculator {
 		var total: Int64 = 0
 		for case let fileURL as URL in enumerator {
 			try Task.checkCancellation()
-			if isSymbolicLink(fileURL, fileManager: fileManager) {
+			// One call, both prefetched keys: an installation holds tens of thousands of files.
+			let values = try fileURL.resourceValues(forKeys: [.fileSizeKey, .isSymbolicLinkKey])
+			if values.isSymbolicLink == true {
 				enumerator.skipDescendants()
 				continue
 			}
-			let values = try fileURL.resourceValues(forKeys: [.fileSizeKey])
 			total += Int64(values.fileSize ?? 0)
 		}
 		return total

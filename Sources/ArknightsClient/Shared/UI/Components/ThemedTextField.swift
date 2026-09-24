@@ -31,7 +31,7 @@ struct ThemedTextField: View {
 			if let systemImage {
 				Image(systemName: systemImage)
 					.font(.caption)
-					.foregroundStyle(isFocused ? accentColor : .secondary)
+					.adaptiveTintForeground(isFocused ? accentColor : .secondary)
 					.accessibilityHidden(true)
 			}
 
@@ -41,22 +41,13 @@ struct ThemedTextField: View {
 				.accessibilityLabel(title)
 		}
 		.font(.callout)
-		.padding(.horizontal, 10)
-		.padding(.vertical, 7)
-		.adaptiveGlassEffect(
-			tint: accentColor.opacity(isFocused ? 0.16 : 0.08),
-			in: RoundedRectangle(cornerRadius: 10)
+		.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
+		.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding + 2)
+		.adaptiveControlSurface(
+			tint: accentColor,
+			in: Capsule()
 		)
-		.overlay {
-			RoundedRectangle(cornerRadius: 10)
-				.strokeBorder(
-					isFocused
-						? accentColor.opacity(0.72) : LauncherVisuals.controlTint.opacity(0.16),
-					lineWidth: isFocused ? 1.5 : 1
-				)
-				.allowsHitTesting(false)
-		}
-		.contentShape(RoundedRectangle(cornerRadius: 10))
-		.focusEffectDisabled(true)
+		.contentShape(Capsule())
+		.keyboardFocusIndicator(isFocused: isFocused, in: Capsule())
 	}
 }

@@ -30,6 +30,7 @@ static const wchar_t bridge_name[] = L"PlatformProcessWindowBridge.dylib";
 enum {
 	NOTICE_DISCOVERY_INTERVAL_MS = 50,
 	NOTICE_LIFECYCLE_INTERVAL_MS = 250,
+	GAME_MISSING_LIMIT = 4,
 };
 
 typedef char *(CDECL *wine_get_unix_file_name_fn)(const wchar_t *path);
@@ -342,7 +343,9 @@ static BOOL install_bridge_environment(const wchar_t *bridge_path) {
  * the child's environment, rebuilds the original command line unchanged, and launches the
  * real PlatformProcess.exe. While it runs, polls for the notice and game windows every
  * 50ms until both are found, centers the notice once, then checks lifecycle changes every
- * 250ms. Exits with the child's exit code once it terminates. */
+ * 250ms. Once a game window was observed, a missing window gets a one-second grace period
+ * before the notice helper is terminated so its separate Dock entry cannot survive the game.
+ * Exits with the child's exit code once it terminates. */
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_line, int show) {
 	wchar_t *module = NULL;
 	wchar_t *original = NULL;
@@ -365,6 +368,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 	BOOL has_locked_game = FALSE;
 	BOOL has_centered_notice = FALSE;
 	BOOL reported_windows = FALSE;
+	BOOL saw_game = FALSE;
+	unsigned int missing_game_ticks = 0;
 
 	(void)instance;
 	(void)previous;
@@ -412,6 +417,19 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 
 		discovered_notice = repair_notice_window(process.dwProcessId);
 		discovered_game = locate_game_window(process.dwProcessId);
+		if (discovered_game != NULL) {
+			saw_game = TRUE;
+			missing_game_ticks = 0;
+		} else if (saw_game && ++missing_game_ticks >= GAME_MISSING_LIMIT) {
+			fprintf(
+				stderr,
+				"platform-window-wrapper: game window disappeared; terminating notice helper\n");
+			if (!TerminateProcess(process.hProcess, 0)) {
+				exit_code = GetLastError();
+				goto cleanup;
+			}
+			continue;
+		}
 		if (discovered_notice != notice) {
 			if (has_locked_game)
 				restore_game_window(game, game_was_enabled, game_process_id, game_thread_id);
@@ -433,7 +451,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 			has_centered_notice = FALSE;
 		}
 		if (notice == NULL || game == NULL) {
-			wait_timeout = NOTICE_DISCOVERY_INTERVAL_MS;
+			wait_timeout = saw_game && game == NULL ? NOTICE_LIFECYCLE_INTERVAL_MS
+													: NOTICE_DISCOVERY_INTERVAL_MS;
 			continue;
 		}
 		if (!has_locked_game) {

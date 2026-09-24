@@ -26,7 +26,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 		path: "drive_c/users/crossover/AppData/Local/cache", directoryHint: .isDirectory)
 	try FileManager.default.createDirectory(at: browserCache, withIntermediateDirectories: true)
 
-	let locations = StorageOverviewResolver.locations(paths: paths, preferences: preferences)
+	let locations = try StorageOverviewResolver.locations(paths: paths, preferences: preferences)
 
 	#expect(locations.count == 9)
 	#expect(
@@ -44,6 +44,45 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 		locations.first { $0.category == .browserCache }?.urls.first?.resolvingSymlinksInPath()
 			.path == browserCache.resolvingSymlinksInPath().path
 	)
+}
+
+@Test
+func storageResolverFiltersChinaAndTaiwanIndependently() throws {
+	let root = temporaryStorageRoot()
+	defer { try? FileManager.default.removeItem(at: root) }
+	let paths = AppPaths(
+		applicationSupportDirectory: root.appending(path: "Support"),
+		cachesDirectory: root.appending(path: "Caches"),
+		libraryDirectory: root.appending(path: "Library"),
+		resourceDirectory: root.appending(path: "Resources")
+	)
+	let directories: [GameRegion: URL] = [:]
+
+	let taiwanOnly = try StorageOverviewResolver.locations(
+		paths: paths,
+		context: StorageOverviewContext(
+			region: .global,
+			canaryFeaturesEnabled: true,
+			chinaClientsEnabled: false,
+			taiwanClientEnabled: true,
+			persistedInstallDirectories: directories
+		)
+	)
+	#expect(taiwanOnly.contains { $0.category == .game(.taiwan) })
+	#expect(!taiwanOnly.contains { $0.category == .game(.china) })
+
+	let chinaOnly = try StorageOverviewResolver.locations(
+		paths: paths,
+		context: StorageOverviewContext(
+			region: .global,
+			canaryFeaturesEnabled: true,
+			chinaClientsEnabled: true,
+			taiwanClientEnabled: false,
+			persistedInstallDirectories: directories
+		)
+	)
+	#expect(!chinaOnly.contains { $0.category == .game(.taiwan) })
+	#expect(chinaOnly.contains { $0.category == .game(.china) })
 }
 
 @Test
@@ -149,6 +188,23 @@ func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 	storage.clearPresetGalleryCache()
 
 	#expect(lifecycle.activity.isInstalling)
+}
+
+@Test
+func storageMaintenanceIncludesEveryPublisherLog() {
+	let root = temporaryStorageRoot()
+	defer { try? FileManager.default.removeItem(at: root) }
+	let paths = AppPaths(
+		applicationSupportDirectory: root.appending(path: "Support"),
+		cachesDirectory: root.appending(path: "Caches"),
+		libraryDirectory: root.appending(path: "Library"),
+		resourceDirectory: root.appending(path: "Resources")
+	)
+
+	let logURLs = StorageMaintenanceController.logURLs(for: paths)
+	for publisher in [GamePublisher.yostar, .hypergryph, .gryphline] {
+		#expect(logURLs.contains(paths.publisherLogFile(for: publisher)))
+	}
 }
 
 private func temporaryStorageRoot() -> URL {

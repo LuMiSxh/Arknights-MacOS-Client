@@ -8,20 +8,24 @@ enum GameCacheCleaner {
 	static func cacheDirectories(
 		winePrefix: URL,
 		fileManager: FileManager = .default
-	) -> [URL] {
-		AppPaths.gameCacheDirectories(winePrefix: winePrefix, fileManager: fileManager)
+	) throws -> [URL] {
+		try AppPaths.gameCacheDirectories(winePrefix: winePrefix, fileManager: fileManager)
 	}
 
 	static func clear(winePrefix: URL, fileManager: FileManager = .default) throws {
-		for directory in cacheDirectories(winePrefix: winePrefix, fileManager: fileManager) {
+		for directory in try cacheDirectories(winePrefix: winePrefix, fileManager: fileManager) {
 			guard
-				AppPaths.isSafeCacheDirectory(
+				try AppPaths.isSafeCacheDirectory(
 					directory,
 					inside: winePrefix.resolvingSymlinksInPath().standardizedFileURL,
 					fileManager: fileManager
 				)
 			else { continue }
-			try fileManager.removeItem(at: directory)
+			do {
+				try fileManager.removeItem(at: directory)
+			} catch  where AppPaths.isMissingPathError(error) {
+				continue
+			}
 		}
 	}
 

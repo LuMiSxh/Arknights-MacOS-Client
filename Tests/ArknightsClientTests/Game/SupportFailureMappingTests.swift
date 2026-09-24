@@ -47,35 +47,30 @@ struct SupportFailureMappingTests {
 	@Test(
 		arguments: [
 			(
-				LauncherError.wineRuntimeMissing as any Error, SupportOperation.launch,
-				SupportCode.whelk
+				LauncherError.wineRuntimeMissing as any Error, SupportCode.whelk
 			),
-			(LauncherError.rosettaMissing as any Error, .launch, .limpet),
-			(LauncherError.runtimeConfiguration("test") as any Error, .launch, .sepia),
-			(LauncherError.runtimeWindowTimeout as any Error, .launch, .narwhal),
+			(LauncherError.rosettaMissing as any Error, .limpet),
+			(LauncherError.runtimeConfiguration("test") as any Error, .sepia),
+			(LauncherError.runtimeWindowTimeout as any Error, .narwhal),
 			(
 				LauncherError.runtimeExited(status: 1, log: URL(filePath: "/tmp/test"))
-					as any Error, .runtimeExit, .crux
+					as any Error, .crux
 			),
 			(
 				LauncherError.gameNotInstalled(URL(filePath: "/tmp/Arknights.exe")) as any Error,
-				.launch, .pebble
+				.pebble
 			),
-			(CocoaError(.fileWriteNoPermission) as any Error, .launch, .sepia),
-			(LauncherError.gameCompatibility("test") as any Error, .launch, .anemone),
+			(CocoaError(.fileWriteNoPermission) as any Error, .sepia),
+			(LauncherError.gameCompatibility("test") as any Error, .anemone),
 			(
-				WineRuntimeDiscoveryError.missingResourceDirectory as any Error, .runtimeDiscovery,
-				.whelk
+				WineRuntimeDiscoveryError.missingResourceDirectory as any Error, .whelk
 			),
 		]
 	)
 	func runtimeFailuresMapToPublishedCodes(
-		fixture: (any Error, SupportOperation, SupportCode)
+		fixture: (any Error, SupportCode)
 	) {
-		#expect(
-			GameSessionController.supportCode(for: fixture.0, operation: fixture.1)
-				== fixture.2
-		)
+		#expect(GameSessionController.supportCode(for: fixture.0) == fixture.1)
 	}
 
 }

@@ -7,6 +7,127 @@ import Testing
 
 @MainActor
 struct InstallationRecoveryTests {
+	@Test
+	func successfulInstallationPublishesOneCompletionFeedback() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+
+		let feedback = fixture.controller.completionFeedback
+		#expect(feedback?.region == .global)
+		#expect(fixture.controller.lifecycle.presentation.status == .ready)
+		#expect(
+			fixture.controller.consumeCompletionFeedback(for: .global)?.id == feedback?.id
+		)
+		#expect(fixture.controller.consumeCompletionFeedback(for: .global) == nil)
+	}
+
+	@Test
+	func reachingOneHundredPercentWithoutSuccessfulCompletionDoesNotPublishFeedback() {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.progress = DownloadProgress(
+			downloadedBytes: 100,
+			totalBytes: 100,
+			completedFiles: 1,
+			totalFiles: 1,
+			currentFile: "game.zip"
+		)
+
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
+	func cancelledInstallationDoesNotPublishCompletionFeedback() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+
+		fixture.controller.cancelDownload()
+		await fixture.installer.waitForCancellationRequest()
+		#expect(await waitForCondition { !fixture.controller.isDownloading })
+
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
+	func changingRegionClearsPendingCompletionFeedback() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+		#expect(fixture.controller.completionFeedback != nil)
+
+		#expect(fixture.controller.selectRegion(.japan))
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
+	func consumedCompletionFeedbackDisappearsAfterRegionSwitch() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+
+		let displayedFeedback = fixture.controller.consumeCompletionFeedback(for: .global)
+		#expect(
+			LauncherCompletionFeedbackPresentation.isVisible(
+				displayedFeedback,
+				currentRegion: .global,
+				activity: .idle,
+				hasFailure: false
+			)
+		)
+		#expect(fixture.controller.selectRegion(.japan))
+		#expect(
+			!LauncherCompletionFeedbackPresentation.isVisible(
+				displayedFeedback,
+				currentRegion: fixture.controller.region,
+				activity: .idle,
+				hasFailure: false
+			)
+		)
+	}
+
+	@Test
+	func staleCompletionCannotBeConsumedForAnotherRegion() async {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.controller.startInstallation(launchAfterCompletion: false)
+		await fixture.installer.waitForInstallationStart()
+		await fixture.installer.completeSuccessfully()
+		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+
+		#expect(fixture.controller.consumeCompletionFeedback(for: .japan) == nil)
+		#expect(fixture.controller.completionFeedback != nil)
+	}
+
+	@Test
+	func staleOperationCannotPublishCompletionFeedback() {
+		let fixture = makeInstallationFixture(region: .global)
+
+		#expect(!fixture.controller.finishInstallation(UUID()))
+		#expect(fixture.controller.completionFeedback == nil)
+	}
+
+	@Test
+	func regionSelectionUsesIndependentCanaryPermissions() {
+		let fixture = makeInstallationFixture(region: .global)
+		fixture.preferences.setCanaryFeaturesEnabled(true)
+		fixture.preferences.setTaiwanClientEnabled(true)
+
+		#expect(fixture.controller.selectRegion(.taiwan))
+		#expect(!fixture.controller.selectRegion(.china))
+
+		fixture.preferences.setChinaClientsEnabled(true)
+		#expect(fixture.controller.selectRegion(.china))
+
+		fixture.preferences.setTaiwanClientEnabled(false)
+		#expect(!fixture.controller.selectRegion(.taiwan))
+	}
+
 	@Test(arguments: GameRegion.allCases)
 	func retryUsesTheOriginalRegion(region: GameRegion) async {
 		let fixture = makeInstallationFixture(region: region)
@@ -195,12 +316,51 @@ struct InstallationRecoveryTests {
 		#expect(controller.installedVersion == "2.0.0")
 		#expect(controller.installedRegions == [.japan])
 	}
+
+	@Test
+	func completedStateRefreshRevalidatesRegionsAfterCanaryGateChange() async throws {
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "InstallationStateGateTests.\(UUID().uuidString)", directoryHint: .isDirectory
+		)
+		let paths = AppPaths(
+			applicationSupportDirectory: root.appending(path: "Support"),
+			cachesDirectory: root.appending(path: "Caches"),
+			libraryDirectory: root.appending(path: "Library"),
+			resourceDirectory: root.appending(path: "Resources"))
+		let defaults = try #require(
+			UserDefaults(suiteName: "InstallationStateGateTests.\(UUID().uuidString)"))
+		let preferences = LauncherPreferencesStore(defaults: defaults)
+		preferences.setCanaryFeaturesEnabled(true)
+		preferences.setTaiwanClientEnabled(true)
+		let gate = ControlledRequestGate<InstallationStateSnapshot, InstallationStateRequest>()
+		let log = LauncherLog(fileURL: paths.launcherLogFile)
+		let controller = InstallationController(
+			lifecycle: LauncherLifecycleStore(log: log), installer: ControllableInstaller(),
+			paths: paths, preferences: preferences, log: log,
+			region: .global, stateLoader: gate.next)
+
+		let refresh = controller.updateInstalledState()
+		await gate.waitForRequestCount(1)
+		preferences.setTaiwanClientEnabled(false)
+		await gate.resolve(
+			0,
+			with: InstallationStateSnapshot(
+				isInstalled: true, hasPartialDownload: false, installedVersion: "2.0.0",
+				installedRegions: [.global, .taiwan], diagnostic: nil))
+		await refresh.value
+
+		#expect(controller.installedRegions == [.global])
+	}
 }
 
 @MainActor
 private func makeInstallationFixture(
 	region: GameRegion
-) -> (controller: InstallationController, installer: ControllableInstaller) {
+) -> (
+	controller: InstallationController,
+	installer: ControllableInstaller,
+	preferences: LauncherPreferencesStore
+) {
 	let root = FileManager.default.temporaryDirectory.appending(
 		path: "InstallationRecoveryTests.\(UUID().uuidString)",
 		directoryHint: .isDirectory
@@ -224,7 +384,7 @@ private func makeInstallationFixture(
 		region: region
 	)
 	controller.configuration = testGameConfiguration
-	return (controller, installer)
+	return (controller, installer, preferences)
 }
 
 private let testGameConfiguration = GameConfiguration(
