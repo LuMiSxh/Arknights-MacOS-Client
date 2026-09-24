@@ -83,6 +83,58 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.selectedRegion() == .global)
 	}
 
+	@Test(arguments: [GameRegion.global, .china, .chinaBilibili])
+	func legacyCanaryUsersKeepChinaClientsAvailable(region: GameRegion) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(true, forKey: "canaryFeaturesEnabled")
+		defaults.set(region.rawValue, forKey: "selectedRegion")
+
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.chinaClientsEnabled())
+		#expect(store.selectedRegion() == region)
+		#expect(!store.taiwanClientEnabled())
+		#expect(!store.hasAcknowledgedACEWarning(for: .china))
+		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
+
+		store.setChinaClientsEnabled(false)
+		let reopened = LauncherPreferencesStore(defaults: defaults)
+		#expect(!reopened.chinaClientsEnabled())
+		#expect(reopened.selectedRegion() == .global)
+	}
+
+	@Test(arguments: [false, true])
+	func chinaClientMigrationPreservesExplicitPermission(enabled: Bool) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(true, forKey: "canaryFeaturesEnabled")
+		defaults.set(enabled, forKey: "chinaClientsEnabled")
+		defaults.set(GameRegion.china.rawValue, forKey: "selectedRegion")
+
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.chinaClientsEnabled() == enabled)
+		#expect(store.selectedRegion() == (enabled ? .china : .global))
+	}
+
+	@Test(arguments: [Bool?.none, .some(false)])
+	func enablingCanaryAfterMigrationDoesNotEnableChinaClients(legacyCanary: Bool?) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		if let legacyCanary {
+			defaults.set(legacyCanary, forKey: "canaryFeaturesEnabled")
+		}
+		let store = LauncherPreferencesStore(defaults: defaults)
+		#expect(!store.chinaClientsEnabled())
+
+		store.setCanaryFeaturesEnabled(true)
+		let reopened = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(!reopened.chinaClientsEnabled())
+		#expect(!reopened.taiwanClientEnabled())
+	}
+
 	@Test
 	func taiwanSelectionRequiresTaiwanAndCanaryPermissions() {
 		let (defaults, suiteName) = makeDefaults()

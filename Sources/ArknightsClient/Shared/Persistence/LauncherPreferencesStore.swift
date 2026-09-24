@@ -36,6 +36,11 @@ struct LauncherPreferencesStore {
 
 	init(defaults: UserDefaults = .standard) {
 		self.defaults = defaults
+		// Preserve the China access granted by the legacy Canary switch once.
+		if defaults.object(forKey: Key.chinaClientsEnabled) == nil {
+			defaults.set(
+				defaults.bool(forKey: Key.canaryFeaturesEnabled), forKey: Key.chinaClientsEnabled)
+		}
 	}
 
 	func automaticLauncherUpdates() -> Bool {
