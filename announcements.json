@@ -11,7 +11,7 @@
 			"minimumVersion": "0.6.0",
 			"maximumVersion": "0.6.9223372036854775807",
 			"startsAt": "2026-09-24T16:31:19Z",
-			"endsAt": "2026-10-08T16:31:19Z"
+			"endsAt": "2026-10-24T16:31:19Z"
 		},
 		{
 			"id": "canary-runtime-0-5",
