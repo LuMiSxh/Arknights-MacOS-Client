@@ -20,7 +20,7 @@ final class LauncherCommunicationController {
 	private let announcementService: LauncherAnnouncementService
 	private let preferences: LauncherPreferencesStore
 	private let log: LauncherLog
-	private let launcherUpdater: LauncherUpdaterController
+	let launcherUpdater: LauncherUpdaterController
 	private var pendingPopups: [LauncherPopup] = []
 	private var presentedNoticeContent: String?
 	@ObservationIgnored private var launcherUpdateTask: Task<LauncherUpdateCheckOutcome, Never>?

@@ -7,6 +7,7 @@ import Sparkle
 @MainActor
 final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	let userDriver: LauncherUpdateUserDriver
+	private(set) var installationID: UUID?
 
 	private let lifecycle: LauncherLifecycleStore
 	private let log: LauncherLog
@@ -64,6 +65,11 @@ final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 
 	var hasActiveUpdate: Bool { userDriver.phase != .hidden }
+	var canTerminateForUpdate: Bool {
+		installationID != nil && lifecycle.isLauncherUpdatePending
+			&& !lifecycle.hasActiveActivity
+			&& userDriver.phase != .failed && userDriver.phase != .hidden
+	}
 
 	func checkForUpdates() {
 		if userDriver.phase != .hidden && !userDriver.isPresented {
@@ -204,6 +210,8 @@ final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		willInstallUpdate item: SUAppcastItem
 	) {
 		lifecycle.beginLauncherUpdate()
+		// Sparkle can send its quit event before the user driver reaches .installing.
+		if installationID == nil { installationID = UUID() }
 	}
 
 	func updater(
@@ -258,6 +266,7 @@ final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 
 	private func finishLauncherUpdate() {
+		installationID = nil
 		if let postponedActivityObserverID {
 			lifecycle.removeActivityObserver(postponedActivityObserverID)
 			self.postponedActivityObserverID = nil

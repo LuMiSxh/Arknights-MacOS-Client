@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Allowed Sparkle to finish installing launcher updates by honoring its quit request once active game and file operations have ended, even while the update dialog is open.
 - Preserved China and China — Bilibili access and region selection when upgrading with Canary Features enabled, while respecting explicitly disabled China access.
 - Prevented the floating Settings footer from covering content.
 - Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).

@@ -6,6 +6,8 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
 	weak var model: LauncherViewModel?
+	weak var launcherUpdater: LauncherUpdaterController?
+	var terminateApplication: () -> Void = { NSApp.terminate(nil) }
 	var stopGame: (() -> Void)?
 	var openSettings: (() -> Void)?
 	var blockingPresentationForQuit: (() -> LauncherPresentationDestination?)?
@@ -67,9 +69,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	}
 
 	@objc private func requestQuit() {
+		if let installationID = launcherUpdater?.installationID {
+			guard launcherUpdater?.canTerminateForUpdate == true else { return }
+			dismissSettingsForQuit?()
+			terminateOnceSheetDetaches(installationID: installationID)
+			return
+		}
 		switch blockingPresentationForQuit?() {
 		case .none:
-			NSApp.terminate(nil)
+			terminateApplication()
 		case .settings:
 			dismissSettingsForQuit?()
 			terminateOnceSheetDetaches()
@@ -78,11 +86,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 	}
 
-	private func terminateOnceSheetDetaches(attempt: Int = 0) {
+	private func terminateOnceSheetDetaches(attempt: Int = 0, installationID: UUID? = nil) {
+		if let installationID {
+			guard launcherUpdater?.installationID == installationID,
+				launcherUpdater?.canTerminateForUpdate == true
+			else { return }
+		}
 		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }),
 			attempt < AppConstants.Timeouts.quitSheetDetachPollLimit
 		else {
-			NSApp.terminate(nil)
+			terminateApplication()
 			return
 		}
 		// SwiftUI clears presentation state before AppKit detaches the sheet.
@@ -90,7 +103,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			timeInterval: AppConstants.Timeouts.quitSheetDetachPollInterval,
 			repeats: false
 		) { [weak self] _ in
-			MainActor.assumeIsolated { self?.terminateOnceSheetDetaches(attempt: attempt + 1) }
+			MainActor.assumeIsolated {
+				self?.terminateOnceSheetDetaches(
+					attempt: attempt + 1, installationID: installationID)
+			}
 		}
 		RunLoop.main.add(timer, forMode: .common)
 	}
@@ -221,6 +237,7 @@ struct ArknightsClientApp: App {
 			.frame(minWidth: 880, minHeight: 560)
 			.onAppear {
 				appDelegate.model = model
+				appDelegate.launcherUpdater = model.communication.launcherUpdater
 				appDelegate.stopGame = model.stopGameForApplicationTermination
 				NSApp.activate(ignoringOtherApps: true)
 			}
