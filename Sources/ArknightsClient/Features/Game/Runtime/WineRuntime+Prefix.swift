@@ -8,11 +8,8 @@ extension WineRuntime {
 		environment: [String: String],
 		logHandle: FileHandle
 	) async throws {
-		let key = "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes"
 		try await applyRegistryEntries(
-			["Microsoft YaHei", "Microsoft YaHei UI", "SimSun"].map {
-				WineRegistryEntry(key: key, name: $0, kind: .string("Hiragino Sans GB W3"))
-			},
+			Self.bilibiliFontRegistryEntries(),
 			description: "Chinese font fallbacks",
 			prefixDirectory: prefixDirectory,
 			environment: environment,
@@ -23,6 +20,24 @@ extension WineRuntime {
 				"Arknights Client: configured Bilibili Chinese font fallbacks.\n".utf8
 			)
 		)
+	}
+
+	static func bilibiliFontRegistryEntries() -> [WineRegistryEntry] {
+		let gdiKey = "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes"
+		let directWriteKey = "HKCU\\Software\\Wine\\Fonts\\Replacements"
+		let gdiSubstitutions = ["Microsoft YaHei", "Microsoft YaHei UI", "SimSun"].map {
+			WineRegistryEntry(key: gdiKey, name: $0, kind: .string("Hiragino Sans GB W3"))
+		}
+		let directWriteReplacements = [
+			("Microsoft YaHei", "Hiragino Sans GB W3"),
+			("MicrosoftYaHei-Bold", "Hiragino Sans GB W6"),
+			("PingFangSC-Regular", "Hiragino Sans GB W3"),
+			("Noto Sans CJK SC", "Hiragino Sans GB W3"),
+			("Noto Sans CJK JP", "Hiragino Sans GB W3"),
+		].map { name, replacement in
+			WineRegistryEntry(key: directWriteKey, name: name, kind: .string(replacement))
+		}
+		return gdiSubstitutions + directWriteReplacements
 	}
 
 	func applyDisplayConfiguration(

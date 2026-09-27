@@ -51,3 +51,22 @@ func registryScriptEscapesBackslashesAndQuotesInValues() {
 	)
 	#expect(script.contains("\"Microsoft YaHei\"=\"C:\\\\fonts\\\\\\\"Hiragino Sans GB W3\\\"\""))
 }
+
+@Test
+func bilibiliFontRegistryScriptIncludesGDIAndDirectWriteFallbacks() {
+	let script = WineRuntime.registryScript(for: WineRuntime.bilibiliFontRegistryEntries())
+
+	#expect(
+		script == "Windows Registry Editor Version 5.00\r\n"
+			+ "\r\n[HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\FontSubstitutes]\r\n"
+			+ "\"Microsoft YaHei\"=\"Hiragino Sans GB W3\"\r\n"
+			+ "\"Microsoft YaHei UI\"=\"Hiragino Sans GB W3\"\r\n"
+			+ "\"SimSun\"=\"Hiragino Sans GB W3\"\r\n"
+			+ "\r\n[HKEY_CURRENT_USER\\Software\\Wine\\Fonts\\Replacements]\r\n"
+			+ "\"Microsoft YaHei\"=\"Hiragino Sans GB W3\"\r\n"
+			+ "\"MicrosoftYaHei-Bold\"=\"Hiragino Sans GB W6\"\r\n"
+			+ "\"PingFangSC-Regular\"=\"Hiragino Sans GB W3\"\r\n"
+			+ "\"Noto Sans CJK SC\"=\"Hiragino Sans GB W3\"\r\n"
+			+ "\"Noto Sans CJK JP\"=\"Hiragino Sans GB W3\"\r\n"
+	)
+}
