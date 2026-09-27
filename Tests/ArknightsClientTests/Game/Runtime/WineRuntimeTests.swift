@@ -177,6 +177,25 @@ func runtimeEnvironmentGatesHardwareCursorWithCanaryAndToggle(
 }
 
 @Test
+func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
+	let environment = WineRuntime.bilibiliControllerEnvironment(from: [
+		"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1",
+		"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
+		"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
+		"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
+		"DYLD_INSERT_LIBRARIES": "/runtime/bridge.dylib",
+		"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/game/icon.icns",
+	])
+
+	#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
+	#expect(environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
+	#expect(environment["DYLD_INSERT_LIBRARIES"] == nil)
+	#expect(environment["ARKNIGHTS_CLIENT_GAME_ICON_PATH"] == nil)
+}
+
+@Test
 @MainActor
 func runtimeCompatibilityFlagsFollowClientProfiles() {
 	for region in [GameRegion.global, .china, .chinaBilibili, .taiwan] {

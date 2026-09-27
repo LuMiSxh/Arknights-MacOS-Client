@@ -292,10 +292,7 @@ struct WineRuntime: Sendable {
 				"G:\\BLPlatform64\\\(BilibiliPlatformCompatibility.controllerName)"
 			]
 			controller.currentDirectoryURL = gameExecutable.deletingLastPathComponent()
-			var controllerEnvironment = environment
-			controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
-			controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
-			controller.environment = controllerEnvironment
+			controller.environment = Self.bilibiliControllerEnvironment(from: environment)
 			controller.standardOutput = logHandle
 			controller.standardError = logHandle
 			do {
@@ -323,6 +320,17 @@ struct WineRuntime: Sendable {
 
 	static func windowsGamePath(for executable: URL) -> String {
 		"G:\\" + executable.lastPathComponent
+	}
+
+	static func bilibiliControllerEnvironment(
+		from environment: [String: String]
+	) -> [String: String] {
+		var controllerEnvironment = environment
+		controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
+		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
+		controllerEnvironment.removeValue(
+			forKey: AppConstants.Runtime.hardwareCursorEnvironmentKey)
+		return controllerEnvironment
 	}
 
 }

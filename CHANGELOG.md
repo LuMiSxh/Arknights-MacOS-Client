@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
 
+### Fixed
+
+- Fixed China — Bilibili startup with Hardware Cursor enabled and hid the CN-specific PRTS cursor asset.
+
 ## [0.6.0] - 2026-09-24
 
 ### Added
