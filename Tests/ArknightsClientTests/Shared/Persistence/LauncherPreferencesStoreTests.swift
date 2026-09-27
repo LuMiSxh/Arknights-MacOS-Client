@@ -63,6 +63,32 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.selectedRegion() == .korea)
 	}
 
+	@Test
+	func hardwareCursorPreferenceDefaultsOffAndPersists() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(!store.usesHardwareCursor())
+
+		store.setUsesHardwareCursor(true)
+
+		#expect(LauncherPreferencesStore(defaults: defaults).usesHardwareCursor())
+	}
+
+	@Test
+	func resettingPreferencesDisablesHardwareCursor() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+		let settings = LauncherPreferencesController(store: store)
+		settings.usesHardwareCursor = true
+
+		#expect(settings.resetToDefaults(canModifyLaunchOptions: true))
+		#expect(!settings.usesHardwareCursor)
+		#expect(!store.usesHardwareCursor())
+	}
+
 	@Test(arguments: [(-1, 0), (0, 0), (2, 2), (4, 3)])
 	func frameLatencyClampsToSupportedRange(value: Int, expected: Int) {
 		let (defaults, suiteName) = makeDefaults()

@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added an off-by-default Canary Hardware Cursor option that asks the runtime to hide the game's PRTS cursor so the macOS hardware cursor can appear.
+
 ### Changed
 
 - Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.

@@ -36,6 +36,7 @@ Restart the Mac, then choose **Check Again** in the launcher.
 
 - **Allow Taiwan client** and **Allow China clients** show the Taiwan, China, and China — Bilibili regions.
 - **Frame Latency** (0–3, default 3) can make the cursor feel more responsive at lower values. At 0, DXMT waits for the current GPU frame before queuing another; this may significantly reduce FPS or make frame pacing less smooth.
+- **Use Hardware Cursor** asks the runtime to hide the game's PRTS cursor so the macOS hardware cursor can appear. The cursor may look different, and the setting applies on the next game launch.
 
 If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).
 

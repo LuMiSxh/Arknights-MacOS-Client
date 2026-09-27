@@ -118,6 +118,9 @@ enum SettingsStrings {
 	static let frameLatency = "Frame Latency"
 	static let frameLatencyDetail =
 		"At 0, DXMT waits for the current GPU frame before queuing another. This may reduce FPS or make frame pacing less smooth. Applies on the next game launch."
+	static let hardwareCursor = "Use Hardware Cursor"
+	static let hardwareCursorDetail =
+		"Experimental: hides the game's PRTS cursor so the macOS hardware cursor can show instead. Its appearance may differ. Applies on the next game launch."
 	static let repair = "Repair"
 	static let repairAction = "Repair…"
 	static let repairDetail = "Check every game file and download missing or damaged files again."

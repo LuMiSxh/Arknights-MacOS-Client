@@ -49,6 +49,18 @@ extension InstallationSettingsPage {
 			}
 			.disabled(gameSession.isGameActive)
 		}
+		SettingsHairline()
+		SettingsActionRow(
+			title: SettingsStrings.hardwareCursor,
+			detail: SettingsStrings.hardwareCursorDetail
+		) {
+			SettingsToggle(
+				SettingsStrings.hardwareCursor,
+				isOn: $settings.usesHardwareCursor,
+				accentColor: LauncherVisuals.warning
+			)
+		}
+		.disabled(lifecycle.activity != .idle)
 	}
 
 	private var frameLatencyBinding: Binding<Double> {

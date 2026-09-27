@@ -77,6 +77,9 @@ final class LauncherPreferencesController {
 	var maximumFrameLatency: Int {
 		didSet { store.setMaximumFrameLatency(maximumFrameLatency) }
 	}
+	var usesHardwareCursor: Bool {
+		didSet { store.setUsesHardwareCursor(usesHardwareCursor) }
+	}
 	@ObservationIgnored var onLauncherUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onGameUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onAnnouncementCheckRequested: (() -> Void)?
@@ -106,6 +109,7 @@ final class LauncherPreferencesController {
 		chinaClientsEnabled = store.chinaClientsEnabled()
 		taiwanClientEnabled = store.taiwanClientEnabled()
 		maximumFrameLatency = store.maximumFrameLatency()
+		usesHardwareCursor = store.usesHardwareCursor()
 	}
 
 	deinit {
@@ -139,6 +143,7 @@ final class LauncherPreferencesController {
 		taiwanClientEnabled = false
 		store.clearACEWarningAcknowledgements()
 		maximumFrameLatency = 3
+		usesHardwareCursor = false
 		return true
 	}
 

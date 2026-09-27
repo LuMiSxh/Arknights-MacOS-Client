@@ -128,7 +128,8 @@ func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled
 	let environment = GameSessionController.runtimeEnvironmentOverrides(
 		for: .chinaBilibili,
 		canaryFeaturesEnabled: canaryFeaturesEnabled,
-		maximumFrameLatency: 0
+		maximumFrameLatency: 0,
+		usesHardwareCursor: false
 	)
 
 	#expect(environment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] == "1")
@@ -151,6 +152,30 @@ func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled
 	)
 }
 
+@Test(arguments: [
+	(false, false, nil as String?),
+	(false, true, nil),
+	(true, false, nil),
+	(true, true, "1"),
+])
+@MainActor
+func runtimeEnvironmentGatesHardwareCursorWithCanaryAndToggle(
+	canaryFeaturesEnabled: Bool,
+	usesHardwareCursor: Bool,
+	expectedValue: String?
+) {
+	for region in GameRegion.allCases {
+		let environment = GameSessionController.runtimeEnvironmentOverrides(
+			for: region,
+			canaryFeaturesEnabled: canaryFeaturesEnabled,
+			maximumFrameLatency: 3,
+			usesHardwareCursor: usesHardwareCursor
+		)
+
+		#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == expectedValue)
+	}
+}
+
 @Test
 @MainActor
 func runtimeCompatibilityFlagsFollowClientProfiles() {
@@ -158,7 +183,8 @@ func runtimeCompatibilityFlagsFollowClientProfiles() {
 		let environment = GameSessionController.runtimeEnvironmentOverrides(
 			for: region,
 			canaryFeaturesEnabled: false,
-			maximumFrameLatency: 2
+			maximumFrameLatency: 2,
+			usesHardwareCursor: false
 		)
 
 		#expect(

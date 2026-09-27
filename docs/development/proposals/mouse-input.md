@@ -9,9 +9,12 @@ audience: developers
 # Mouse responsiveness investigation
 
 Status: A local instrumented A/B run confirms that Frame Latency 1 reaches DXMT and actively
-shortens the queue. Canary now exposes values 0–3 with default 3. Value 0 waits for the current GPU
-frame to complete before queuing more work; it does not mean zero input-to-display latency. No
-further diagnostic work is requested from the original reporter, and no fix for #84 is confirmed.
+shortens the queue. Canary exposes values 0–3 with default 3. Value 0 waits for the current GPU
+frame to complete before queuing more work; it does not mean zero input-to-display latency. The
+client now has an off-by-default Hardware Cursor Canary option that asks the runtime to hide the
+game-rendered PRTS cursor. A matching Wine patch is required for the option to take effect, and its
+effect on cursor appearance and responsiveness remains unverified. No further diagnostic work is
+requested from the original reporter, and no fix for #84 is confirmed.
 
 Investigated on 2026-09-26 against client
 `3d5417987d9f375a2105a4a7cd2e62659730c9cd`, the published `v0.6.0` tag.
@@ -32,9 +35,11 @@ runtime ignored it or that presentation contributes no latency.
 
 The leading hypothesis is now the game's software cursor and presentation path. The client and
 runtime contain no cursor-speed control, and the existing frame-latency experiment never changes
-mouse input. A separate sensitivity or coordinate mismatch remains possible, but the report does
-not yet establish one: a delayed software cursor also appears to travel less distance while the
-physical pointer is still moving.
+mouse input. The new Hardware Cursor option requests hiding the PRTS cursor so the Wine/macOS
+hardware pointer can appear; it does not change mouse speed or coordinate handling. A separate
+sensitivity or coordinate mismatch remains possible, but the report does not yet establish one: a
+delayed software cursor also appears to travel less distance while the physical pointer is still
+moving.
 
 A local instrumented Global-client comparison on 2026-09-27 found a small subjective improvement
 at Frame Latency 1. At value 3, 8,100 command-queue fence samples waited 6.816 ms in total, averaging
@@ -240,10 +245,14 @@ diagnostic requests of the reporter. Existing evidence continues to point toward
 software-cursor and presentation path, but does not confirm a fix for #84.
 
 The client passes the selected Canary value to DXMT, including 0, and continues to omit it when
-Canary is off. Preferences tests should preserve the 0–3 clamp and default 3; environment tests
-should verify that an enabled Canary selection of 0 is emitted exactly. These offline checks protect
-configuration propagation; manual comparisons remain necessary to establish any improvement in the
-game.
+Canary is off. The Hardware Cursor preference defaults off and resets off. The client emits
+`ARKNIGHTS_RUNTIME_HARDWARE_CURSOR=1` only when both Canary Features and Use Hardware Cursor are on,
+for every game profile. The runtime must interpret this flag by suppressing the game's rendered
+cursor; the launcher does not modify game assets. The setting applies on the next launch and may
+change cursor appearance. Preferences tests cover the default, persistence, and reset; environment
+tests cover every region and all four Canary/toggle combinations. These checks protect
+configuration propagation, while manual comparisons with the matching runtime remain necessary to
+establish whether the hardware pointer feels better.
 
 ## Limits
 

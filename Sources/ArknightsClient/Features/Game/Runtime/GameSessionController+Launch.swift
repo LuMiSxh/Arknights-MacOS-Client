@@ -6,7 +6,8 @@ extension GameSessionController {
 	static func runtimeEnvironmentOverrides(
 		for region: GameRegion,
 		canaryFeaturesEnabled: Bool,
-		maximumFrameLatency: Int
+		maximumFrameLatency: Int,
+		usesHardwareCursor: Bool
 	) -> [String: String] {
 		var environment = [
 			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1"
@@ -15,6 +16,9 @@ extension GameSessionController {
 		if canaryFeaturesEnabled {
 			environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] =
 				String(maximumFrameLatency)
+			if usesHardwareCursor {
+				environment[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "1"
+			}
 		}
 		return environment
 	}
@@ -95,7 +99,8 @@ extension GameSessionController {
 		let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
 			for: requestedRegion,
 			canaryFeaturesEnabled: settings.canaryFeaturesEnabled,
-			maximumFrameLatency: settings.maximumFrameLatency
+			maximumFrameLatency: settings.maximumFrameLatency,
+			usesHardwareCursor: settings.usesHardwareCursor
 		)
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let displayConfiguration = WineDisplayConfiguration.current(

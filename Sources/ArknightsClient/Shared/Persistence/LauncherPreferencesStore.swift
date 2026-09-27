@@ -26,6 +26,7 @@ struct LauncherPreferencesStore {
 		static let taiwanClientEnabled = "taiwanClientEnabled"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		static let maximumFrameLatency = "maximumFrameLatency"
+		static let usesHardwareCursor = "usesHardwareCursor"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
@@ -242,6 +243,14 @@ struct LauncherPreferencesStore {
 
 	func setMaximumFrameLatency(_ value: Int) {
 		defaults.set(min(max(value, 0), 3), forKey: Key.maximumFrameLatency)
+	}
+
+	func usesHardwareCursor() -> Bool {
+		bool(for: Key.usesHardwareCursor, defaultValue: false)
+	}
+
+	func setUsesHardwareCursor(_ value: Bool) {
+		defaults.set(value, forKey: Key.usesHardwareCursor)
 	}
 
 	func usesDynamicTheme() -> Bool {
