@@ -64,7 +64,7 @@ enum OnboardingStrings {
 	static let runtimeOptimizations = "Runtime Optimizations"
 	static let maximumFrameLatency = "Maximum Frame Latency"
 	static let maximumFrameLatencyDetail =
-		"Sets DXMT's maximum queued frames to 1–3. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+		"At 0, DXMT waits for the current GPU frame before queuing another. This may reduce FPS or make frame pacing less smooth. Applies on the next game launch."
 
 	static let installationTitle = "Choose where you play"
 	static let installationSubtitle =

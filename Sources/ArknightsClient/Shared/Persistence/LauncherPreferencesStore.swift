@@ -237,11 +237,11 @@ struct LauncherPreferencesStore {
 
 	func maximumFrameLatency() -> Int {
 		guard defaults.object(forKey: Key.maximumFrameLatency) != nil else { return 3 }
-		return min(max(defaults.integer(forKey: Key.maximumFrameLatency), 1), 3)
+		return min(max(defaults.integer(forKey: Key.maximumFrameLatency), 0), 3)
 	}
 
 	func setMaximumFrameLatency(_ value: Int) {
-		defaults.set(min(max(value, 1), 3), forKey: Key.maximumFrameLatency)
+		defaults.set(min(max(value, 0), 3), forKey: Key.maximumFrameLatency)
 	}
 
 	func usesDynamicTheme() -> Bool {

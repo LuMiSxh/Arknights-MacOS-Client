@@ -128,7 +128,7 @@ func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled
 	let environment = GameSessionController.runtimeEnvironmentOverrides(
 		for: .chinaBilibili,
 		canaryFeaturesEnabled: canaryFeaturesEnabled,
-		maximumFrameLatency: 2
+		maximumFrameLatency: 0
 	)
 
 	#expect(environment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] == "1")
@@ -147,7 +147,7 @@ func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled
 	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == nil)
 	#expect(
 		environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"]
-			== (canaryFeaturesEnabled ? "2" : nil)
+			== (canaryFeaturesEnabled ? "0" : nil)
 	)
 }
 

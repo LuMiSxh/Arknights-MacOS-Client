@@ -117,7 +117,7 @@ enum SettingsStrings {
 		"Exposes the Taiwan client in the region picker. It stays disabled until you allow it here."
 	static let frameLatency = "Frame Latency"
 	static let frameLatencyDetail =
-		"Limits the DXMT queue to 1–3 frames. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+		"At 0, DXMT waits for the current GPU frame before queuing another. This may reduce FPS or make frame pacing less smooth. Applies on the next game launch."
 	static let repair = "Repair"
 	static let repairAction = "Repair…"
 	static let repairDetail = "Check every game file and download missing or damaged files again."

@@ -63,6 +63,17 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.selectedRegion() == .korea)
 	}
 
+	@Test(arguments: [(-1, 0), (0, 0), (2, 2), (4, 3)])
+	func frameLatencyClampsToSupportedRange(value: Int, expected: Int) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		store.setMaximumFrameLatency(value)
+
+		#expect(store.maximumFrameLatency() == expected)
+	}
+
 	@Test
 	func chinaSelectionFallsBackWhenEitherPermissionIsDisabled() {
 		let (defaults, suiteName) = makeDefaults()

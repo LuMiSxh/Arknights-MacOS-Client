@@ -35,7 +35,7 @@ Restart the Mac, then choose **Check Again** in the launcher.
 **Settings → Installation → Canary Features** turns on experimental options. Turning it off again restores the normal behavior without deleting anything.
 
 - **Allow Taiwan client** and **Allow China clients** show the Taiwan, China, and China — Bilibili regions.
-- **Frame Latency** (1–3, default 3) can make the cursor feel more responsive at lower values, but may reduce the frame rate.
+- **Frame Latency** (0–3, default 3) can make the cursor feel more responsive at lower values. At 0, DXMT waits for the current GPU frame before queuing another; this may significantly reduce FPS or make frame pacing less smooth.
 
 If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).
 
