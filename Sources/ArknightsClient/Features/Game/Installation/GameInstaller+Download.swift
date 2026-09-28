@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 
 /// One manifest file from request to installed byte: retrying across CDNs, then verifying
@@ -97,10 +98,10 @@ extension GameInstaller {
 			throw LauncherError.checksumMismatch(
 				path: item.path, expected: item.hash, actual: checksum)
 		}
-		if fileManager.fileExists(atPath: destination.path) {
-			try fileManager.removeItem(at: destination)
+		// rename(2) replaces an existing file atomically, so a crash never leaves it missing.
+		guard rename(partial.path, destination.path) == 0 else {
+			throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
 		}
-		try fileManager.moveItem(at: partial, to: destination)
 	}
 
 	func fileSize(at url: URL) throws -> Int64? {

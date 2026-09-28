@@ -310,7 +310,8 @@ struct WineRuntime: Sendable {
 
 		let terminationTask = Task {
 			for await exit in terminationStatuses { return exit }
-			return WineProcessExit(status: 0, reason: .exit)
+			// The stream ended without a termination status; never report that as a clean exit.
+			return WineProcessExit(status: -1, reason: .uncaughtSignal)
 		}
 		return WineLaunch(
 			processIdentifier: process.processIdentifier,
