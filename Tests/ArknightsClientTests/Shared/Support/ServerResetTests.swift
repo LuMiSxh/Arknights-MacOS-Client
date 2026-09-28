@@ -23,6 +23,17 @@ func offsetsMatchEachRegionsFixedServerTime() {
 	#expect(ServerReset.offsetSeconds(for: .japan) == 9 * 3600)
 	#expect(ServerReset.offsetSeconds(for: .korea) == 9 * 3600)
 	#expect(ServerReset.offsetSeconds(for: .taiwan) == 8 * 3600)
+	#expect(ServerReset.offsetSeconds(for: .china) == 8 * 3600)
+	#expect(ServerReset.offsetSeconds(for: .chinaBilibili) == 8 * 3600)
+}
+
+@Test
+func chinaResetsAtFourAMBeijingTime() throws {
+	let date = try #require(ISO8601DateFormatter().date(from: "2026-08-17T03:00:00+08:00"))
+	let expected = try #require(ISO8601DateFormatter().date(from: "2026-08-17T04:00:00+08:00"))
+
+	#expect(ServerReset.nextReset(for: .china, after: date) == expected)
+	#expect(ServerReset.nextReset(for: .chinaBilibili, after: date) == expected)
 }
 
 @Test
