@@ -57,7 +57,7 @@ extension GameInstaller {
 				await progress(await counter.resetRate(file: item.path))
 				log?.debug(
 					"Retrying \(item.path) (attempt \(attempt + 1)/\(maxAttempts)) after: "
-						+ error.localizedDescription
+						+ launcherDiagnosticDescription(for: error)
 				)
 				try await Task.sleep(for: AppConstants.Network.retryBackoffStep * attempt)
 			}

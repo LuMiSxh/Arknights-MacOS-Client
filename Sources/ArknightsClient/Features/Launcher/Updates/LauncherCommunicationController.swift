@@ -124,7 +124,7 @@ final class LauncherCommunicationController {
 			} catch is CancellationError {
 				return
 			} catch {
-				log.error("Announcement check failed: \(error.localizedDescription)")
+				log.error("Announcement check failed: \(launcherDiagnosticDescription(for: error))")
 			}
 		}
 	}

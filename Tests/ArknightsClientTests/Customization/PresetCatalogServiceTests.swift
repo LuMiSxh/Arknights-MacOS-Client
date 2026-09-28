@@ -151,6 +151,34 @@ struct PresetCatalogServiceTests {
 	}
 
 	@Test
+	func failedImageDownloadsKeepTheValidationReasonInTheLog() async throws {
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "PresetCatalogDiagnosticsTests-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [BoundedDataURLProtocol.self]
+		BoundedDataURLProtocol.configure(body: Data("not an image".utf8))
+		defer { BoundedDataURLProtocol.reset() }
+		let session = URLSession(configuration: configuration)
+		defer { session.invalidateAndCancel() }
+		let fileURL = root.appending(path: "launcher.log")
+		let log = LauncherLog(fileURL: fileURL)
+		let service = PresetCatalogService(cacheDirectory: root, session: session, log: log)
+		let url = URL(string: "https://webusstatic.yo-star.com/invalid.png")!
+
+		await #expect(throws: LauncherError.self) {
+			_ = try await service.imageData(for: url, cacheKey: "invalid")
+		}
+		await log.flush()
+
+		let diagnostic = try String(contentsOf: fileURL, encoding: .utf8)
+		try FileManager.default.removeItem(at: root)
+		#expect(diagnostic.contains(url.absoluteString))
+		#expect(diagnostic.contains("unsafe dimensions"))
+	}
+
+	@Test
 	func truncatedJPEGFailsImageValidation() throws {
 		let encoded =
 			"/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9sAQwACAgICAgIDAgIDBQMDAwUGBQUFBQYIBgYGBgYICggICAgICAoKCgoKCgoKDAwMDAwMDg4ODg4PDw8PDw8PDw8P/9sAQwECAgIEBAQHBAQHEAsJCxAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ/90ABAAB/9oADAMBAAIRAxEAPwD9/KKKKAP/2Q=="
