@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- The HUD outline now pulses while Wine is prepared, the game starts or stops, launcher data updates, the Wine prefix is deleted, or the game moves to the Trash.
+- Repair now shows verification progress in the HUD, Settings, and setup, and Pause stops file verification immediately instead of waiting for every file to be checked.
+- Region selection, installation, storage listings, statistics, and setup now share one Canary permission check.
+- Installation tasks now prove ownership through the active installation state instead of a separate lock.
+- Launcher log entries are now written in call order without suspending launcher work, removing redundant state checks after every log line.
+- The developer preview now reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
 - Reworked launcher motion around shared spring curves: buttons press and release with a spring, lift on hover, and show a pointer-following sheen; the primary action morphs between operations and breathes softly when Play is ready; download progress gains a glowing leading edge and completed installations send a success ripple; HUD pills enter in a staggered cascade, recede while another panel is open, and reveal their details with a soft blur; the update dialog and launcher popups spring into place. Reduce Motion and Reduce Transparency keep the previous quiet behavior.
 - Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
 
@@ -28,6 +34,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added Wine DirectWrite CJK font fallbacks for Bilibili payment pages so Chinese text renders when macOS uses another language.
 - Fixed the China and China — Bilibili server reset countdown using UTC instead of China Standard Time (UTC+8).
 - Fixed Now Playing artwork no longer following launcher icon changes after the window was resized.
+- Allowed Stop while Wine is being prepared or the game is starting, instead of waiting up to 90 seconds for the game window.
+- Quitting now closes open notices, failure details, and Settings instead of being ignored, and the launcher no longer blocks macOS logout, restart, or shutdown.
+- Kept the remaining launch options when a single saved value is no longer supported instead of resetting all of them.
+- Fixed older announcements reappearing once more than 100 announcements had been dismissed.
+- Replaced updated game files atomically so an interrupted install or repair can no longer leave a file missing.
+- Treated a Wine process that ends without an exit status as a failure instead of a clean exit.
+- Kept server reset countdowns for every installed client current while the region list is open, updating on each minute.
+- Stopped Yostar notices from loading remote images, scripts, or stylesheets while they are formatted.
 
 ## [0.6.0] - 2026-09-24
 

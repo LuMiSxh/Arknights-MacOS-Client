@@ -48,7 +48,7 @@ extension InstallationController {
 				self.lifecycle.setStatus(
 					self.isInstalled
 						? .ready
-						: .custom("Arknights.exe not found")
+						: .gameExecutableNotFound
 				)
 			}
 		}
@@ -68,7 +68,7 @@ extension InstallationController {
 		let requestedRegion = region
 		lifecycle.activity = .maintaining(.uninstalling)
 		lifecycle.setStatus(.movingToTrash)
-		Task { [log] in await log.info("Game uninstall requested") }
+		log.info("Game uninstall requested")
 		NSWorkspace.shared.recycle([installDirectory]) { [weak self] _, error in
 			Task { @MainActor in
 				guard let self else { return }
@@ -99,11 +99,9 @@ extension InstallationController {
 		guard failure.context.region == region.supportRegion else { return false }
 		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
 		guard isInstalled, lifecycle.consumeFailure(id: id) != nil else { return false }
-		Task { [log] in
-			await log.info(
-				"Recovery selected; action=retry operation=uninstall region=\(region.rawValue)"
-			)
-		}
+		log.info(
+			"Recovery selected; action=retry operation=uninstall region=\(region.rawValue)"
+		)
 		uninstallGame()
 		return true
 	}

@@ -11,7 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	var stopGame: (() -> Void)?
 	var openSettings: (() -> Void)?
 	var blockingPresentationForQuit: (() -> LauncherPresentationDestination?)?
-	var dismissSettingsForQuit: (() -> Void)?
+	var dismissPresentationForQuit: (() -> Void)?
 	private var quitKeyMonitor: Any?
 
 	// `swift run` (used by `just preview`) launches the executable directly rather than
@@ -34,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				.first(where: { $0.action == #selector(NSApplication.terminate(_:)) })
 		else { return }
 		item.target = self
-		item.action = #selector(requestQuit)
+		item.action = #selector(requestQuitFromMenu)
 	}
 
 	// A key sheet can also bypass the menu item's Command-Q dispatch.
@@ -43,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
 				event.charactersIgnoringModifiers?.lowercased() == "q"
 			else { return event }
-			self?.requestQuit()
+			self?.requestQuitFromMenu()
 			return nil
 		}
 	}
@@ -65,24 +65,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 	@objc private func handleQuitEvent(
 		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
 	) {
-		requestQuit()
+		// Logout, restart, and shutdown attach a quit reason; the launcher never vetoes them.
+		let isSystemInitiated =
+			event.attributeDescriptor(forKeyword: AEKeyword(kAEQuitReason)) != nil
+		requestQuit(isSystemInitiated: isSystemInitiated)
 	}
 
-	@objc private func requestQuit() {
-		if let installationID = launcherUpdater?.installationID {
+	@objc private func requestQuitFromMenu() {
+		requestQuit(isSystemInitiated: false)
+	}
+
+	private func requestQuit(isSystemInitiated: Bool) {
+		if !isSystemInitiated, let installationID = launcherUpdater?.installationID {
 			guard launcherUpdater?.canTerminateForUpdate == true else { return }
-			dismissSettingsForQuit?()
+			dismissPresentationForQuit?()
 			terminateOnceSheetDetaches(installationID: installationID)
 			return
 		}
 		switch blockingPresentationForQuit?() {
 		case .none:
 			terminateApplication()
-		case .settings:
-			dismissSettingsForQuit?()
-			terminateOnceSheetDetaches()
-		case .update, .failure, .popup:
+		case .update where !isSystemInitiated:
+			// Sparkle owns this prompt and may send its own quit requests while it is visible.
 			break
+		case .settings, .failure, .popup, .update:
+			dismissPresentationForQuit?()
+			terminateOnceSheetDetaches()
 		}
 	}
 
@@ -111,7 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		RunLoop.main.add(timer, forMode: .common)
 	}
 
-	// requestQuit() applies presentation policy before asking AppKit to terminate.
+	// requestQuit(isSystemInitiated:) applies presentation policy before asking AppKit to terminate.
 	func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
 		.terminateNow
 	}
@@ -219,19 +227,27 @@ struct ArknightsClientApp: App {
 		let arguments = ProcessInfo.processInfo.arguments
 		#if DEBUG
 			if DeveloperSimulationState.isPreviewArgument(arguments) {
-				let previewID = UUID().uuidString
+				// One fixed preview store, cleared on every start, so previews never accumulate
+				// preference domains or temporary folders.
+				let suiteName = "com.lumisxh.arknights-client.preview"
 				let root = FileManager.default.temporaryDirectory.appending(
-					path: "ArknightsClientPreview-\(previewID)",
+					path: "ArknightsClientPreview",
 					directoryHint: .isDirectory
 				)
+				do {
+					if FileManager.default.fileExists(atPath: root.path) {
+						try FileManager.default.removeItem(at: root)
+					}
+				} catch {
+					NSLog("ArknightsClient could not clear the previous preview data: \(error)")
+				}
 				let paths = AppPaths(
 					applicationSupportDirectory: root.appending(path: "Support"),
 					cachesDirectory: root.appending(path: "Caches"),
 					libraryDirectory: root.appending(path: "Library")
 				)
-				let defaults = UserDefaults(
-					suiteName: "com.lumisxh.arknights-client.preview.\(previewID)"
-				)!
+				let defaults = UserDefaults(suiteName: suiteName)!
+				defaults.removePersistentDomain(forName: suiteName)
 				return LauncherViewModel(
 					paths: paths,
 					preferences: LauncherPreferencesStore(defaults: defaults),
@@ -253,7 +269,7 @@ struct ArknightsClientApp: App {
 					registerQuitPresentationQuery: {
 						appDelegate.blockingPresentationForQuit = $0
 					},
-					registerQuitDismissal: { appDelegate.dismissSettingsForQuit = $0 }
+					registerQuitDismissal: { appDelegate.dismissPresentationForQuit = $0 }
 				)
 				.environment(\.launcherWindowSize, geometry.size)
 			}

@@ -62,9 +62,11 @@ func storageResolverFiltersChinaAndTaiwanIndependently() throws {
 		paths: paths,
 		context: StorageOverviewContext(
 			region: .global,
-			canaryFeaturesEnabled: true,
-			chinaClientsEnabled: false,
-			taiwanClientEnabled: true,
+			regionAccess: RegionAccess(
+				canaryFeaturesEnabled: true,
+				chinaClientsEnabled: false,
+				taiwanClientEnabled: true
+			),
 			persistedInstallDirectories: directories
 		)
 	)
@@ -75,9 +77,11 @@ func storageResolverFiltersChinaAndTaiwanIndependently() throws {
 		paths: paths,
 		context: StorageOverviewContext(
 			region: .global,
-			canaryFeaturesEnabled: true,
-			chinaClientsEnabled: true,
-			taiwanClientEnabled: false,
+			regionAccess: RegionAccess(
+				canaryFeaturesEnabled: true,
+				chinaClientsEnabled: true,
+				taiwanClientEnabled: false
+			),
 			persistedInstallDirectories: directories
 		)
 	)

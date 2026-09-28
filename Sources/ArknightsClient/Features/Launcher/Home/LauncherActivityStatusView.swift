@@ -10,6 +10,9 @@ enum LauncherDownloadProgressPresentation {
 
 	static func title(for progress: DownloadProgress?, isPaused: Bool) -> String? {
 		guard let percentage = percentage(for: progress) else { return nil }
+		if progress?.isVerifying == true {
+			return HomeStrings.verificationPercentage(percentage)
+		}
 		return isPaused
 			? HomeStrings.pausedDownloadPercentage(percentage)
 			: HomeStrings.downloadPercentage(percentage)
@@ -32,9 +35,10 @@ enum LauncherDownloadProgressPresentation {
 	) -> Double? {
 		guard !hasFailure else { return nil }
 
+		if status.isIndeterminateWork { return 1 }
 		switch status {
-		case .preparingInstallation, .verifyingInstallation:
-			return 1
+		case .verifyingInstallation:
+			return progress?.isVerifying == true ? knownFraction(for: progress) ?? 1 : 1
 		case .downloading, .pausing:
 			return knownFraction(for: progress)
 		case .paused:
@@ -50,9 +54,7 @@ enum LauncherDownloadProgressPresentation {
 		hasFailure: Bool
 	) -> Bool {
 		guard !hasFailure else { return false }
-		if status == .preparingInstallation || status == .verifyingInstallation {
-			return true
-		}
+		if status.isIndeterminateWork || status == .verifyingInstallation { return true }
 		guard status == .downloading,
 			let progress,
 			!progress.isTransferStalled
@@ -289,6 +291,8 @@ struct LauncherActivityStatusView: View {
 	private var showsDownloadSnapshot: Bool {
 		guard lifecycle.failure == nil else { return false }
 		return lifecycle.presentation.status == .downloading
+			|| (lifecycle.presentation.status == .verifyingInstallation
+				&& installation.progress?.isVerifying == true)
 			|| (isPausedDownload
 				&& LauncherDownloadProgressPresentation.fraction(
 					for: installation.progress,

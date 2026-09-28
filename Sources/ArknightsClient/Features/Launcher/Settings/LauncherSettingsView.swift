@@ -106,11 +106,7 @@ struct LauncherSettingsView: View {
 					case .statistics:
 						PlaytimeStatisticsPage(
 							controller: playtimeStatistics,
-							regions: GameRegion.selectableCases(
-								canaryEnabled: settings.canaryFeaturesEnabled,
-								chinaClientsEnabled: settings.chinaClientsEnabled,
-								taiwanClientEnabled: settings.taiwanClientEnabled
-							),
+							regions: settings.regionAccess.selectableRegions,
 							accentColor: customization.accentColor
 						)
 					case .about:

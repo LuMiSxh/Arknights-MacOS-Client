@@ -28,46 +28,46 @@ func globalRegionPreservesThePreExistingPreferencesKey() {
 @Test
 func canaryRegionSelectionSeparatesTaiwanAndChinaPermissions() {
 	#expect(
-		GameRegion.selectableCases(
-			canaryEnabled: false,
+		RegionAccess(
+			canaryFeaturesEnabled: false,
 			chinaClientsEnabled: false,
 			taiwanClientEnabled: false
-		)
+		).selectableRegions
 			== GameRegion.yostarCases)
 	#expect(
-		GameRegion.selectableCases(
-			canaryEnabled: true,
+		RegionAccess(
+			canaryFeaturesEnabled: true,
 			chinaClientsEnabled: false,
 			taiwanClientEnabled: false
-		)
+		).selectableRegions
 			== GameRegion.yostarCases)
 	#expect(
-		GameRegion.selectableCases(
-			canaryEnabled: true,
+		RegionAccess(
+			canaryFeaturesEnabled: true,
 			chinaClientsEnabled: false,
 			taiwanClientEnabled: true
-		)
+		).selectableRegions
 			== GameRegion.canaryCases)
 	#expect(
-		GameRegion.selectableCases(
-			canaryEnabled: true,
+		RegionAccess(
+			canaryFeaturesEnabled: true,
 			chinaClientsEnabled: true,
 			taiwanClientEnabled: false
-		)
+		).selectableRegions
 			== [.global, .japan, .korea, .china, .chinaBilibili])
 	#expect(
-		GameRegion.selectableCases(
-			canaryEnabled: false,
+		RegionAccess(
+			canaryFeaturesEnabled: false,
 			chinaClientsEnabled: true,
 			taiwanClientEnabled: true
-		)
+		).selectableRegions
 			== GameRegion.yostarCases)
 	#expect(
-		GameRegion.selectableCases(
-			canaryEnabled: true,
+		RegionAccess(
+			canaryFeaturesEnabled: true,
 			chinaClientsEnabled: true,
 			taiwanClientEnabled: true
-		)
+		).selectableRegions
 			== GameRegion.allCases)
 }
 

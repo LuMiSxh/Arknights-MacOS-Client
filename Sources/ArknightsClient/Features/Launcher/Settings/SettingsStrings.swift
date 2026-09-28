@@ -230,6 +230,10 @@ enum SettingsStrings {
 		"Downloading \(percentage)%"
 	}
 
+	static func verifying(_ percentage: Int) -> String {
+		"Verifying \(percentage)%"
+	}
+
 	static func downloadSpeed(_ speed: String) -> String {
 		"\(speed)"
 	}

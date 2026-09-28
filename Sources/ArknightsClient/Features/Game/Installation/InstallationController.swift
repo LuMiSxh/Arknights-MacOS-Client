@@ -55,7 +55,6 @@ final class InstallationController {
 	@ObservationIgnored var installationTask: Task<Void, Never>?
 	@ObservationIgnored private var stateRefreshTask: Task<Void, Never>?
 	@ObservationIgnored private var stateRefreshID: UUID?
-	var installationGate = ExclusiveOperationGate()
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -97,14 +96,7 @@ final class InstallationController {
 
 	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
-		guard
-			!newRegion.requiresCanaryPermission
-				|| (preferences.canaryFeaturesEnabled()
-					&& (!newRegion.requiresChinaClientPermission
-						|| preferences.chinaClientsEnabled())
-					&& (!newRegion.requiresTaiwanClientPermission
-						|| preferences.taiwanClientEnabled()))
-		else { return false }
+		guard preferences.regionAccess().allows(newRegion) else { return false }
 		cancelInstalledStateRefresh()
 		completionFeedback = nil
 		lifecycle.clearFailure()
@@ -146,11 +138,8 @@ final class InstallationController {
 			selectedRegion: region,
 			selectedDirectory: installDirectory,
 			regionDirectories: Dictionary(
-				uniqueKeysWithValues: GameRegion.selectableCases(
-					canaryEnabled: preferences.canaryFeaturesEnabled(),
-					chinaClientsEnabled: preferences.chinaClientsEnabled(),
-					taiwanClientEnabled: preferences.taiwanClientEnabled()
-				).map { candidate in
+				uniqueKeysWithValues: preferences.regionAccess().selectableRegions.map {
+					candidate in
 					(
 						candidate,
 						preferences.installDirectory(
@@ -178,7 +167,7 @@ final class InstallationController {
 				}
 				self.finishStateRefresh(refreshID)
 				if let diagnostic = snapshot.diagnostic {
-					await log.error(diagnostic)
+					log.error(diagnostic)
 				}
 			} catch is CancellationError {
 				self?.finishStateRefresh(refreshID)
@@ -187,7 +176,7 @@ final class InstallationController {
 					return
 				}
 				self.finishStateRefresh(refreshID)
-				await log.error(
+				log.error(
 					"Failed to inspect installation state for \(request.selectedRegion.displayName): \(error.localizedDescription)"
 				)
 			}
@@ -251,11 +240,7 @@ final class InstallationController {
 
 	private var currentSelectableRegions: Set<GameRegion> {
 		Set(
-			GameRegion.selectableCases(
-				canaryEnabled: preferences.canaryFeaturesEnabled(),
-				chinaClientsEnabled: preferences.chinaClientsEnabled(),
-				taiwanClientEnabled: preferences.taiwanClientEnabled()
-			)
+			preferences.regionAccess().selectableRegions
 		)
 	}
 

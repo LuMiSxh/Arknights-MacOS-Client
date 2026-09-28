@@ -106,11 +106,9 @@ final class LauncherRefreshController {
 		guard failure.context.operation == .configurationRefresh else { return false }
 		guard failure.context.region == installation.region.supportRegion else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
-		Task { [log] in
-			await log.info(
-				"Recovery selected; action=retry operation=configuration-refresh region=\(installation.region.rawValue)"
-			)
-		}
+		log.info(
+			"Recovery selected; action=retry operation=configuration-refresh region=\(installation.region.rawValue)"
+		)
 		lifecycle.refresh = .idle
 		startRefresh(forceGameUpdateCheck: true)
 		return true
@@ -124,17 +122,15 @@ final class LauncherRefreshController {
 		branding = nil
 		customization.restoreOfficialLogo(for: newRegion)
 		communication.resetPresentedNotice()
-		settings.regionDidChange()
 		lifecycle.setStatus(.checking)
-		Task { [log] in await log.info("Region switched to \(newRegion.displayName)") }
+		log.info("Region switched to \(newRegion.displayName)")
 		startRefresh()
 		return true
 	}
 
 	private func refresh(forceGameUpdateCheck: Bool, refreshID: UUID) async {
 		guard isCurrentRefresh(refreshID) else { return }
-		await log.info("Refreshing game and branding state")
-		guard isCurrentRefresh(refreshID) else { return }
+		log.info("Refreshing game and branding state")
 		let region = installation.region
 		await installation.updateInstalledState().value
 		guard isCurrentRefresh(refreshID) else { return }
@@ -148,7 +144,7 @@ final class LauncherRefreshController {
 			} catch is CancellationError {
 				return nil
 			} catch {
-				await log.error(
+				log.error(
 					"Branding for \(region.displayName) failed: \(launcherDiagnosticDescription(for: error))"
 				)
 				return nil
@@ -164,10 +160,9 @@ final class LauncherRefreshController {
 				guard isCurrentRefresh(refreshID) else { return }
 				installation.configuration = fetchedConfiguration
 				installation.updateGameAvailability()
-				await log.info(
+				log.info(
 					"Game configuration loaded; latest=\(fetchedConfiguration.gameLatestVersion)"
 				)
-				guard isCurrentRefresh(refreshID) else { return }
 			} catch is CancellationError {
 				return
 			} catch {
@@ -182,10 +177,9 @@ final class LauncherRefreshController {
 					)
 					return
 				}
-				await log.error(
+				log.error(
 					"Game configuration failed: \(launcherDiagnosticDescription(for: error))"
 				)
-				guard isCurrentRefresh(refreshID) else { return }
 			}
 		}
 
@@ -198,10 +192,9 @@ final class LauncherRefreshController {
 		if let currentBranding = fetchedBranding {
 			branding = currentBranding
 			communication.presentNoticeIfNeeded(currentBranding)
-			await log.info(
+			log.info(
 				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
 			)
-			guard isCurrentRefresh(refreshID) else { return }
 			let assetTask = Task { [weak self] in
 				guard let self else { return }
 				await loadBrandingAssets(
@@ -214,7 +207,6 @@ final class LauncherRefreshController {
 			brandingAssetTask = assetTask
 		}
 
-		guard isCurrentRefresh(refreshID) else { return }
 		metadataRequestID = nil
 		lifecycle.refresh = .idle
 		if lifecycle.activity == .idle {
@@ -226,8 +218,7 @@ final class LauncherRefreshController {
 			)
 		}
 		let completedState = lifecycle.activityMessage
-		await log.info("Refresh completed; state=\(completedState)")
-		guard isCurrentRefresh(refreshID) else { return }
+		log.info("Refresh completed; state=\(completedState)")
 	}
 
 	private func presentConfigurationFailure(
@@ -272,7 +263,7 @@ final class LauncherRefreshController {
 			do {
 				return try await artworkCache.officialLogoData(for: region)
 			} catch {
-				await log.error(
+				log.error(
 					"Official \(region.displayName) logo load failed: \(error.localizedDescription)"
 				)
 				return nil
@@ -283,7 +274,7 @@ final class LauncherRefreshController {
 			do {
 				return try await artworkCache.imageData(for: branding, region: region)
 			} catch {
-				await log.error(
+				log.error(
 					"Artwork for \(region.displayName) failed: \(error.localizedDescription)"
 				)
 				return nil

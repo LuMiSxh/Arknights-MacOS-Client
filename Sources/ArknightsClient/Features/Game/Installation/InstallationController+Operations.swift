@@ -17,14 +17,13 @@ extension InstallationController {
 		operationOverride: SupportOperation? = nil
 	) {
 		guard lifecycle.activity == .idle else { return }
-		guard let installationID = installationGate.begin() else { return }
+		let installationID = UUID()
 		cancelInstalledStateRefresh()
 		let requestedRegion = region
 		let operation: SupportOperation =
 			operationOverride
 			?? (verifyAllExistingFiles ? .repair : (isInstalled ? .update : .install))
 		guard let configuration else {
-			installationGate.finish(installationID)
 			presentInstallationFailure(
 				LauncherError.missingConfiguration,
 				id: installationID,
@@ -35,7 +34,6 @@ extension InstallationController {
 		}
 		let targetDirectory = installDirectory
 		guard let required = configuration.requiredInstallBytes else {
-			installationGate.finish(installationID)
 			presentInstallationFailure(
 				LauncherError.invalidResponse,
 				id: installationID,
@@ -47,7 +45,6 @@ extension InstallationController {
 		do {
 			let available = try GameInstaller.availableCapacityBytes(at: targetDirectory)
 			if available < required {
-				installationGate.finish(installationID)
 				presentInstallationFailure(
 					LauncherError.insufficientDiskSpace(required: required, available: available),
 					id: installationID,
@@ -57,7 +54,6 @@ extension InstallationController {
 				return
 			}
 		} catch {
-			installationGate.finish(installationID)
 			presentInstallationFailure(
 				error,
 				id: installationID,
@@ -78,11 +74,9 @@ extension InstallationController {
 		hasPartialDownload = false
 		lifecycle.setStatus(
 			verifyAllExistingFiles ? .verifyingInstallation : .preparingInstallation)
-		Task { [log] in
-			await log.info(
-				"Installation started; repair=\(verifyAllExistingFiles); target=\(targetDirectory.path)"
-			)
-		}
+		log.info(
+			"Installation started; repair=\(verifyAllExistingFiles); target=\(targetDirectory.path)"
+		)
 
 		installationTask = Task { [weak self] in
 			guard let self else { return }
@@ -94,7 +88,7 @@ extension InstallationController {
 					verifyAllExistingFiles: verifyAllExistingFiles
 				) { [weak self] update in
 					await MainActor.run {
-						guard let self, self.installationGate.owns(installationID) else { return }
+						guard let self, self.ownsInstallation(installationID) else { return }
 						guard
 							(update.sequence == 0 && self.progressSequence == 0)
 								|| update.sequence >= self.progressSequence
@@ -105,9 +99,13 @@ extension InstallationController {
 						self.progress = update
 						self.lifecycle.activity = .installing(
 							id: installationID,
-							stage: .downloading
+							stage: update.isVerifying ? .verifying : .downloading
 						)
-						self.lifecycle.setStatus(.downloading)
+						let status: LauncherStatus =
+							update.isVerifying ? .verifyingInstallation : .downloading
+						if self.lifecycle.presentation.status != status {
+							self.lifecycle.setStatus(status)
+						}
 					}
 				}
 				guard finishInstallation(installationID) else { return }
@@ -118,15 +116,17 @@ extension InstallationController {
 				isGameUpdateAvailable = false
 				lifecycle.setStatus(.ready)
 				publishCompletionFeedback(for: installationID, region: requestedRegion)
-				await log.info(
+				log.info(
 					"Installation completed; files=\(result.downloadedFiles); bytes=\(result.downloadedBytes)"
 				)
 				if launchAfterCompletion { onLaunchRequested?() }
 			} catch is CancellationError {
 				await updateInstalledState().value
 				guard finishInstallation(installationID) else { return }
+				// A paused verification pass says nothing about partial-download progress.
+				if progress?.isVerifying == true { progress = nil }
 				lifecycle.setStatus(.paused)
-				await log.info("Installation paused")
+				log.info("Installation paused")
 			} catch {
 				guard finishInstallation(installationID) else { return }
 				presentInstallationFailure(
@@ -157,11 +157,9 @@ extension InstallationController {
 			break
 		}
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
-		Task { [log] in
-			await log.info(
-				"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(region.rawValue)"
-			)
-		}
+		log.info(
+			"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(region.rawValue)"
+		)
 		startInstallation(
 			launchAfterCompletion: false,
 			verifyAllExistingFiles: failure.context.operation == .repair,
@@ -175,14 +173,20 @@ extension InstallationController {
 		guard case .installing(let installationID, _) = lifecycle.activity else { return }
 		lifecycle.activity = .installing(id: installationID, stage: .pausing)
 		lifecycle.setStatus(.pausing)
-		Task { [log] in await log.info("Installation pause requested") }
+		log.info("Installation pause requested")
 		installationTask?.cancel()
+	}
+
+	/// The installing activity carries its operation ID, so a stale task that lost a race to a
+	/// newer operation can never finish or update it.
+	func ownsInstallation(_ installationID: UUID) -> Bool {
+		guard case .installing(let activeID, _) = lifecycle.activity else { return false }
+		return activeID == installationID
 	}
 
 	@discardableResult
 	func finishInstallation(_ installationID: UUID) -> Bool {
-		guard installationGate.owns(installationID) else { return false }
-		installationGate.finish(installationID)
+		guard ownsInstallation(installationID) else { return false }
 		installationTask = nil
 		lifecycle.activity = .idle
 		return true

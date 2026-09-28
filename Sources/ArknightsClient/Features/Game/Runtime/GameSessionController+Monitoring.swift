@@ -4,9 +4,18 @@ import Foundation
 
 extension GameSessionController {
 	func stopGame() {
-		guard let sessionID = activeGameSessionID else { return }
+		guard let sessionID = activeGameSessionID, canStopGame else { return }
 		let processIdentifier = lifecycle.activity.gameProcessIdentifier
 		let region = activeGameRegion ?? installation.region
+		guard let processIdentifier else {
+			// Wine is still being prepared or spawned; the launch task owns cleanup so a game
+			// process that spawns concurrently is still stopped afterwards.
+			lifecycle.activity = .stoppingGame(sessionID: sessionID, processIdentifier: nil)
+			lifecycle.setStatus(.stoppingGame)
+			log.info("Game stop requested during launch")
+			launchTask?.cancel()
+			return
+		}
 		let runtime: any WineRuntimeSessionControlling
 		do {
 			runtime = try runtimeSessionControllerProvider()
@@ -19,18 +28,16 @@ extension GameSessionController {
 			)
 			return
 		}
-		if let processIdentifier {
-			lifecycle.activity = .stoppingGame(
-				sessionID: sessionID,
-				processIdentifier: processIdentifier
-			)
-		}
+		lifecycle.activity = .stoppingGame(
+			sessionID: sessionID,
+			processIdentifier: processIdentifier
+		)
 		lifecycle.setStatus(.stoppingGame)
 		launchTask?.cancel()
 		gameMonitorTask?.cancel()
 		gameMonitorTask = Task { [weak self] in
 			guard let self else { return }
-			await log.info("Game stop requested")
+			log.info("Game stop requested")
 			guard activeGameSessionID == sessionID else { return }
 			await stopAndFinishGameSession(
 				using: runtime,
@@ -51,11 +58,9 @@ extension GameSessionController {
 		do {
 			runtime = try discoverRuntime()
 		} catch {
-			Task { [log] in
-				await log.error(
-					"Could not stop Wine during app termination: \(error.localizedDescription)"
-				)
-			}
+			log.error(
+				"Could not stop Wine during app termination: \(error.localizedDescription)"
+			)
 			return
 		}
 		runtime.stopSynchronously(
@@ -90,8 +95,7 @@ extension GameSessionController {
 					Self.exitDiagnostics(exit, since: since, logURL: logURL)
 				}.value
 				guard activeGameSessionID == sessionID else { return }
-				await log.error("Game process exited unexpectedly; \(diagnostics)")
-				guard activeGameSessionID == sessionID else { return }
+				log.error("Game process exited unexpectedly; \(diagnostics)")
 				await stopAndFinishGameSession(
 					using: runtime,
 					sessionID: sessionID,
@@ -116,9 +120,9 @@ extension GameSessionController {
 				}.value
 				guard activeGameSessionID == sessionID else { return }
 				if exit.status == 0, exit.reason == .exit {
-					await log.info("Game process exited; \(diagnostics)")
+					log.info("Game process exited; \(diagnostics)")
 				} else {
-					await log.error("Game process exited unexpectedly; \(diagnostics)")
+					log.error("Game process exited unexpectedly; \(diagnostics)")
 				}
 				guard activeGameSessionID == sessionID else { return }
 				let failure =
@@ -151,7 +155,7 @@ extension GameSessionController {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
 			} catch {
 				guard !Task.isCancelled else { return }
-				await log.error("Game process monitor failed: \(error.localizedDescription)")
+				log.error("Game process monitor failed: \(error.localizedDescription)")
 				guard let self, !Task.isCancelled, activeGameSessionID == sessionID else {
 					return
 				}
@@ -184,8 +188,7 @@ extension GameSessionController {
 			try await runtime.stop(prefixDirectory: paths.winePrefix(for: region))
 		} catch {
 			guard activeGameSessionID == sessionID else { return }
-			await log.error("Runtime cleanup failed: \(error.localizedDescription)")
-			guard activeGameSessionID == sessionID else { return }
+			log.error("Runtime cleanup failed: \(error.localizedDescription)")
 			presentRuntimeFailure(
 				error,
 				id: sessionID,
@@ -219,17 +222,15 @@ extension GameSessionController {
 				blocksGameLaunch: terminalFailure.blocksGameLaunch
 			)
 		}
-		Task { [log] in await log.info("Game process stopped") }
+		log.info("Game process stopped")
 	}
 
 	private func markGameSessionStopping(_ sessionID: UUID, processIdentifier: Int32?) {
 		guard activeGameSessionID == sessionID else { return }
-		if let processIdentifier {
-			lifecycle.activity = .stoppingGame(
-				sessionID: sessionID,
-				processIdentifier: processIdentifier
-			)
-		}
+		lifecycle.activity = .stoppingGame(
+			sessionID: sessionID,
+			processIdentifier: processIdentifier ?? lifecycle.activity.gameProcessIdentifier
+		)
 		lifecycle.setStatus(.stoppingGame)
 	}
 

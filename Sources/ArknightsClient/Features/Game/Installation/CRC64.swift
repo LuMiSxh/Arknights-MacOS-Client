@@ -65,7 +65,7 @@ struct CRC64: Sendable {
 		String(~value)
 	}
 
-	static func checksum(of url: URL) throws -> String {
+	static func checksum(of url: URL, onRead: ((Int) -> Void)? = nil) throws -> String {
 		let handle = try FileHandle(forReadingFrom: url)
 		defer {
 			do {
@@ -77,9 +77,11 @@ struct CRC64: Sendable {
 
 		var checksum = CRC64()
 		while true {
+			try Task.checkCancellation()
 			let data = try handle.read(upToCount: AppConstants.IO.checksumBufferSize)
 			guard let data, !data.isEmpty else { break }
 			checksum.update(data)
+			onRead?(data.count)
 		}
 		return checksum.decimalString
 	}

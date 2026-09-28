@@ -50,11 +50,7 @@ struct OnboardingInstallationView: View {
 			) {
 				AdaptiveSegmentedControl(
 					selection: regionBinding,
-					options: GameRegion.selectableCases(
-						canaryEnabled: preferences.canaryFeaturesEnabled,
-						chinaClientsEnabled: preferences.chinaClientsEnabled,
-						taiwanClientEnabled: preferences.taiwanClientEnabled
-					),
+					options: preferences.regionAccess.selectableRegions,
 					accentColor: accentColor
 				) { region in
 					Text(region.displayName)

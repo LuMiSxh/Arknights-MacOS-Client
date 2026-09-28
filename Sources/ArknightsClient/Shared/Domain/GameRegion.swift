@@ -37,6 +37,24 @@ struct GameClientProfile: Sendable {
 	let requiresACEWarning: Bool
 }
 
+/// The Canary permissions that expose extra regions. This is the single source of truth for
+/// whether a region may be selected, installed, listed, or launched.
+struct RegionAccess: Equatable, Sendable {
+	var canaryFeaturesEnabled: Bool
+	var chinaClientsEnabled: Bool
+	var taiwanClientEnabled: Bool
+
+	var selectableRegions: [GameRegion] { GameRegion.allCases.filter(allows) }
+
+	func allows(_ region: GameRegion) -> Bool {
+		guard region.requiresCanaryPermission else { return true }
+		guard canaryFeaturesEnabled else { return false }
+		if region.requiresChinaClientPermission { return chinaClientsEnabled }
+		if region.requiresTaiwanClientPermission { return taiwanClientEnabled }
+		return true
+	}
+}
+
 enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 	case global
 	case japan
@@ -60,21 +78,6 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 
 	var requiresTaiwanClientPermission: Bool {
 		self == .taiwan
-	}
-
-	static func selectableCases(
-		canaryEnabled: Bool,
-		chinaClientsEnabled: Bool,
-		taiwanClientEnabled: Bool
-	) -> [GameRegion] {
-		guard canaryEnabled else { return yostarCases }
-		return allCases.filter { region in
-			switch region {
-			case .taiwan: taiwanClientEnabled
-			case .china, .chinaBilibili: chinaClientsEnabled
-			case .global, .japan, .korea: true
-			}
-		}
 	}
 
 	var id: String { rawValue }

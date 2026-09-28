@@ -122,10 +122,12 @@ struct LauncherPreferencesStore {
 		Set(defaults.stringArray(forKey: Key.seenAnnouncementIDs) ?? [])
 	}
 
+	/// Keeps the 100 most recently seen IDs in the order they were seen.
 	func markAnnouncementSeen(_ id: String) {
-		var ids = seenAnnouncementIDs()
-		ids.insert(id)
-		defaults.set(Array(ids.sorted().suffix(100)), forKey: Key.seenAnnouncementIDs)
+		var ids = defaults.stringArray(forKey: Key.seenAnnouncementIDs) ?? []
+		ids.removeAll { $0 == id }
+		ids.append(id)
+		defaults.set(Array(ids.suffix(100)), forKey: Key.seenAnnouncementIDs)
 	}
 
 	func launchOptions() -> GameLaunchOptions {
@@ -181,17 +183,16 @@ struct LauncherPreferencesStore {
 
 	func selectedRegion() -> GameRegion {
 		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
-		guard let region else { return .global }
-		if region.requiresCanaryPermission && !canaryFeaturesEnabled() {
-			return .global
-		}
-		if region.requiresChinaClientPermission && !chinaClientsEnabled() {
-			return .global
-		}
-		if region.requiresTaiwanClientPermission && !taiwanClientEnabled() {
-			return .global
-		}
+		guard let region, regionAccess().allows(region) else { return .global }
 		return region
+	}
+
+	func regionAccess() -> RegionAccess {
+		RegionAccess(
+			canaryFeaturesEnabled: canaryFeaturesEnabled(),
+			chinaClientsEnabled: chinaClientsEnabled(),
+			taiwanClientEnabled: taiwanClientEnabled()
+		)
 	}
 
 	func setSelectedRegion(_ region: GameRegion) {
@@ -232,8 +233,19 @@ struct LauncherPreferencesStore {
 		defaults.set(Array(regions).sorted(), forKey: Key.acknowledgedACEWarningRegions)
 	}
 
-	func clearACEWarningAcknowledgements() {
-		defaults.removeObject(forKey: Key.acknowledgedACEWarningRegions)
+	/// Removes every user-facing setting so each getter falls back to its single default.
+	/// Region, install locations, announcement history, and theme caches are kept.
+	func removeResettablePreferences() {
+		for key in [
+			Key.automaticLauncherUpdates, Key.automaticGameUpdates, Key.announcementsEnabled,
+			Key.gameLaunchOptions, Key.showsServerResetCountdown, Key.showsGameVersion,
+			Key.playsLauncherMusic, Key.launcherMusicURL, Key.showsPlayingMusic,
+			Key.launcherMusicVolume, Key.usesDynamicTheme, Key.canaryFeaturesEnabled,
+			Key.chinaClientsEnabled, Key.taiwanClientEnabled,
+			Key.acknowledgedACEWarningRegions, Key.maximumFrameLatency, Key.usesHardwareCursor,
+		] {
+			defaults.removeObject(forKey: key)
+		}
 	}
 
 	func maximumFrameLatency() -> Int {

@@ -160,14 +160,14 @@ extension WineRuntime {
 		let dxmtCurrent = migrationContext.dxmtCurrent
 		var plan = migrationContext.plan
 		if !plan.pending.isEmpty {
-			await log?.info(
+			log?.info(
 				"Prefix migration plan: \(plan.pending); runtimeRevision=\(revision); "
 					+ "persistedState=\(persistedState != nil); dxmtCurrent=\(dxmtCurrent)"
 			)
 		}
 		for migration in plan.pending {
 			let stepStarted = Date()
-			await log?.debug("Running prefix migration: \(migration)")
+			log?.debug("Running prefix migration: \(migration)")
 			switch migration {
 			case .initializeWinePrefix:
 				try await initializePrefix(environment: environment, logHandle: logHandle)
@@ -186,7 +186,7 @@ extension WineRuntime {
 			}
 			plan.complete(migration)
 			try store.save(plan.state, to: prefixDirectory)
-			await log?.debug(
+			log?.debug(
 				"Completed prefix migration: \(migration); "
 					+ "elapsed=\(String(format: "%.2fs", max(0, Date().timeIntervalSince(stepStarted))))"
 			)
@@ -195,9 +195,9 @@ extension WineRuntime {
 			if persistedState != plan.state {
 				try store.save(plan.state, to: prefixDirectory)
 			}
-			await log?.debug("Prefix migration: nothing pending; runtimeRevision=\(revision)")
+			log?.debug("Prefix migration: nothing pending; runtimeRevision=\(revision)")
 		} else {
-			await log?.info("Prefix migration completed; ran \(plan.pending.count) step(s)")
+			log?.info("Prefix migration completed; ran \(plan.pending.count) step(s)")
 		}
 		try store.removeLegacyMarkers(from: prefixDirectory)
 		try WinePrefixConfigurator().configure(

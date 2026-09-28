@@ -8,9 +8,7 @@ extension GameSessionController {
 			runtimeName = try discoverRuntime().displayName
 		} catch {
 			runtimeName = nil
-			Task { [log] in
-				await log.error("Runtime discovery failed: \(error.localizedDescription)")
-			}
+			log.error("Runtime discovery failed: \(error.localizedDescription)")
 		}
 	}
 
@@ -21,11 +19,8 @@ extension GameSessionController {
 		let prefixDirectory = paths.winePrefix(for: region)
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: prefixDirectory)
-			lifecycle.setStatus(
-				.custom("Wine setup will run again on next launch"))
-			Task { [log] in
-				await log.info("Wine prefix migration state was reset on request")
-			}
+			lifecycle.setStatus(.winePrefixResetScheduled)
+			log.info("Wine prefix migration state was reset on request")
 		} catch {
 			presentRuntimeMaintenanceFailure(
 				error,
@@ -43,8 +38,7 @@ extension GameSessionController {
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
 		let operationID = UUID()
 		lifecycle.activity = .maintaining(.deletingWinePrefix)
-		lifecycle.setStatus(
-			.custom("Deleting Wine prefix…"))
+		lifecycle.setStatus(.deletingWinePrefix)
 		Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -52,9 +46,8 @@ extension GameSessionController {
 					try FileManager.default.removeItem(at: prefixDirectory)
 				}.value
 				lifecycle.activity = .idle
-				lifecycle.setStatus(
-					.custom("Wine prefix deleted; setup will run again on next launch"))
-				await log.info("Wine prefix deleted on request")
+				lifecycle.setStatus(.winePrefixDeleted)
+				log.info("Wine prefix deleted on request")
 			} catch {
 				lifecycle.activity = .idle
 				presentRuntimeMaintenanceFailure(

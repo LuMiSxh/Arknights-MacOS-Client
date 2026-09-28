@@ -66,7 +66,7 @@
 					guard installation.region == region else { return }
 					customization.officialLogo = logoData.flatMap(NSImage.init(data:))
 				} catch {
-					await log.error(
+					log.error(
 						"Failed to load developer logo: \(error.localizedDescription)"
 					)
 				}
@@ -87,12 +87,12 @@
 						)
 					}
 				} catch {
-					await log.error(
+					log.error(
 						"Failed to load developer artwork: \(error.localizedDescription)"
 					)
 				}
 			} catch {
-				await log.error(
+				log.error(
 					"Failed to load developer branding: \(error.localizedDescription)"
 				)
 			}

@@ -237,7 +237,7 @@ final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 			if let observerID { self.lifecycle.removeActivityObserver(observerID) }
 			self.postponedActivityObserverID = nil
 			installHandler()
-			Task { await self.log.info("Resuming postponed launcher update installation") }
+			self.log.info("Resuming postponed launcher update installation")
 		}
 		postponedActivityObserverID = observerID
 		return true

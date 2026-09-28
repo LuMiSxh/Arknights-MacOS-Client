@@ -61,7 +61,7 @@ enum CustomizationImageIO {
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			Task { await log.error("Failed to remove staged icon at \(url.path): \(error)") }
+			log.error("Failed to remove staged icon at \(url.path): \(error)")
 		}
 	}
 

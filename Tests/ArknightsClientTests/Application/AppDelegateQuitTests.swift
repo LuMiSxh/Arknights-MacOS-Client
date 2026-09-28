@@ -108,7 +108,7 @@ struct AppDelegateQuitTests {
 	func sheetDismissalRevalidatesActivityBeforeTermination() {
 		let fixture = QuitFixture()
 		fixture.prepareUpdateInstallation()
-		fixture.delegate.dismissSettingsForQuit = { [weak fixture] in
+		fixture.delegate.dismissPresentationForQuit = { [weak fixture] in
 			fixture?.lifecycle.activity = .stoppingGame(sessionID: UUID(), processIdentifier: 42)
 		}
 
@@ -121,7 +121,7 @@ struct AppDelegateQuitTests {
 	func sheetDismissalCannotTerminateAReplacementUpdate() {
 		let fixture = QuitFixture()
 		fixture.prepareUpdateInstallation()
-		fixture.delegate.dismissSettingsForQuit = { [weak fixture] in
+		fixture.delegate.dismissPresentationForQuit = { [weak fixture] in
 			guard let fixture else { return }
 			fixture.updater.userDidCancelDownload(fixture.sparkle)
 			fixture.prepareUpdateInstallation()
@@ -136,7 +136,7 @@ struct AppDelegateQuitTests {
 	func repeatedInstallationNotificationKeepsTheCurrentQuitRequestValid() {
 		let fixture = QuitFixture()
 		fixture.prepareUpdateInstallation()
-		fixture.delegate.dismissSettingsForQuit = { [weak fixture] in
+		fixture.delegate.dismissPresentationForQuit = { [weak fixture] in
 			fixture?.prepareUpdateInstallation()
 		}
 
@@ -150,7 +150,7 @@ struct AppDelegateQuitTests {
 		let fixture = QuitFixture()
 		fixture.delegate.blockingPresentationForQuit = { settingsOpen ? .settings : nil }
 		var dismissed = false
-		fixture.delegate.dismissSettingsForQuit = { dismissed = true }
+		fixture.delegate.dismissPresentationForQuit = { dismissed = true }
 
 		fixture.sendQuitEvent()
 
@@ -158,14 +158,48 @@ struct AppDelegateQuitTests {
 		#expect(dismissed == settingsOpen)
 	}
 
-	@Test(arguments: [LauncherPresentationDestination.popup, .update])
-	func ordinaryQuitPreservesActivePrompts(destination: LauncherPresentationDestination) {
+	@Test(arguments: [
+		LauncherPresentationDestination.popup,
+		.failure(
+			LauncherFailurePresentation(
+				id: UUID(), message: "Failed", code: nil,
+				context: SupportContext(operation: .launch, region: nil),
+				actions: [.reportProblem]
+			)
+		),
+	])
+	func ordinaryQuitClosesPromptsAndTerminates(destination: LauncherPresentationDestination) {
 		let fixture = QuitFixture()
 		fixture.delegate.blockingPresentationForQuit = { destination }
+		var dismissed = false
+		fixture.delegate.dismissPresentationForQuit = { dismissed = true }
+
+		fixture.sendQuitEvent()
+
+		#expect(fixture.terminationCount == 1)
+		#expect(dismissed)
+	}
+
+	@Test
+	func ordinaryQuitLeavesTheSparklePromptInControl() {
+		let fixture = QuitFixture()
+		fixture.delegate.blockingPresentationForQuit = { .update }
 
 		fixture.sendQuitEvent()
 
 		#expect(fixture.terminationCount == 0)
+	}
+
+	@Test
+	func systemLogoutIsNeverVetoedByLauncherPrompts() {
+		let fixture = QuitFixture()
+		fixture.lifecycle.beginLauncherUpdate()
+		fixture.updater.userDriver.showDownloadInitiated(cancellation: {})
+		fixture.delegate.blockingPresentationForQuit = { .update }
+
+		fixture.sendQuitEvent(reason: AEKeyword(kAELogOut))
+
+		#expect(fixture.terminationCount == 1)
 	}
 }
 
@@ -197,11 +231,16 @@ private final class QuitFixture {
 		updater.updater(sparkle, willInstallUpdate: .empty())
 	}
 
-	func sendQuitEvent() {
+	func sendQuitEvent(reason: AEKeyword? = nil) {
 		let event = NSAppleEventDescriptor(
 			eventClass: AEEventClass(kCoreEventClass), eventID: AEEventID(kAEQuitApplication),
 			targetDescriptor: nil, returnID: AEReturnID(kAutoGenerateReturnID),
 			transactionID: AETransactionID(kAnyTransactionID))
+		if let reason {
+			event.setAttribute(
+				NSAppleEventDescriptor(enumCode: OSType(reason)),
+				forKeyword: AEKeyword(kAEQuitReason))
+		}
 		delegate.perform(
 			NSSelectorFromString("handleQuitEvent:withReplyEvent:"),
 			with: event, with: NSAppleEventDescriptor())

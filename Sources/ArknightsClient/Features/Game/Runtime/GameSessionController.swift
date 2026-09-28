@@ -93,8 +93,10 @@ final class GameSessionController {
 	}
 
 	static func canStopGame(for activity: LauncherActivity) -> Bool {
-		if case .runningGame = activity { return true }
-		return false
+		switch activity {
+		case .preparingGame, .launchingGame, .runningGame: true
+		case .idle, .maintaining, .installing, .stoppingGame: false
+		}
 	}
 
 	static func directWineProcessExitAction(

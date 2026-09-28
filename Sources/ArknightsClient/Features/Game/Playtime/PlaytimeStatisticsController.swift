@@ -38,9 +38,7 @@ final class PlaytimeStatisticsController {
 		if statistics.activeSession != nil {
 			statistics.activeSession = nil
 			save()
-			Task { [log] in
-				await log.info("Discarded an unfinished playtime session after launcher restart")
-			}
+			log.info("Discarded an unfinished playtime session after launcher restart")
 		}
 	}
 
@@ -135,10 +133,8 @@ final class PlaytimeStatisticsController {
 		operation: String,
 		log: LauncherLog
 	) {
-		Task { [log] in
-			await log.error(
-				"Could not \(operation) local playtime statistics: \(error.localizedDescription)"
-			)
-		}
+		log.error(
+			"Could not \(operation) local playtime statistics: \(error.localizedDescription)"
+		)
 	}
 }

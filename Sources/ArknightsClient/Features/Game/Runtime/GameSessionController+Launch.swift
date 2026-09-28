@@ -44,9 +44,7 @@ extension GameSessionController {
 			runtime = try discoverRuntime()
 		} catch {
 			runtimeName = nil
-			Task { [log] in
-				await log.error("Runtime discovery failed: \(error.localizedDescription)")
-			}
+			log.error("Runtime discovery failed: \(error.localizedDescription)")
 			presentRuntimeFailure(
 				error,
 				id: launchID,
@@ -91,9 +89,7 @@ extension GameSessionController {
 			)
 			lifecycle.setStatus(.startingGame)
 		}
-		Task { [log] in
-			await log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
-		}
+		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
 		let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
@@ -107,16 +103,14 @@ extension GameSessionController {
 			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
 			forceDisabled: preferences.forceDisableRetina()
 		)
-		Task { [log] in
-			await log.info(
-				Self.launchDiagnostics(
-					sessionID: gameSessionID,
-					region: requestedRegion,
-					options: requestedLaunchOptions,
-					graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
-				)
+		log.info(
+			Self.launchDiagnostics(
+				sessionID: gameSessionID,
+				region: requestedRegion,
+				options: requestedLaunchOptions,
+				graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
 			)
-		}
+		)
 		launchTask?.cancel()
 		launchTask = Task { [weak self] in
 			guard let self else { return }
@@ -138,10 +132,19 @@ extension GameSessionController {
 					logURL: paths.runtimeLogFile(for: requestedRegion),
 					log: log
 				)
-				await log.info(
+				log.info(
 					"Game runtime started; session=\(gameSessionID.uuidString); pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 				guard activeGameSessionID == gameSessionID else { return }
+				if Task.isCancelled {
+					await stopAfterCancelledLaunch(
+						runtime: runtime,
+						sessionID: gameSessionID,
+						processIdentifier: launch.processIdentifier,
+						region: requestedRegion
+					)
+					return
+				}
 				if requestedLaunchOptions.usesGameMode {
 					GamePolicyControl.setGameMode(on: true, log: log)
 				}
@@ -164,18 +167,19 @@ extension GameSessionController {
 					region: requestedRegion
 				)
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
-				await log.info(
+				log.info(
 					"Game window became visible; session=\(gameSessionID.uuidString); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 			} catch is CancellationError {
 				guard activeGameSessionID == gameSessionID else { return }
-				if case .stoppingGame(let sessionID, _) = lifecycle.activity,
+				// Stop owns cleanup once the game process is known.
+				if case .stoppingGame(let sessionID, .some) = lifecycle.activity,
 					sessionID == gameSessionID
 				{
 					return
 				}
-				await stopAndFinishGameSession(
-					using: runtime,
+				await stopAfterCancelledLaunch(
+					runtime: runtime,
 					sessionID: gameSessionID,
 					processIdentifier: lifecycle.activity.gameProcessIdentifier,
 					region: requestedRegion
@@ -208,6 +212,24 @@ extension GameSessionController {
 				)
 			}
 		}
+	}
+
+	/// Cleans up from a cancelled launch task without inheriting its cancellation, which would
+	/// otherwise abort the `wineserver -k` call itself.
+	private func stopAfterCancelledLaunch(
+		runtime: WineRuntime,
+		sessionID: UUID,
+		processIdentifier: Int32?,
+		region: GameRegion
+	) async {
+		await Task { @MainActor in
+			await stopAndFinishGameSession(
+				using: runtime,
+				sessionID: sessionID,
+				processIdentifier: processIdentifier,
+				region: region
+			)
+		}.value
 	}
 
 	func handleWindowTimeout(

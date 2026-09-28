@@ -120,11 +120,11 @@ final class LauncherCommunicationController {
 						actionURL: announcement.actionURL
 					)
 				)
-				await log.info("Announcement presented; id=\(announcement.id)")
+				log.info("Announcement presented; id=\(announcement.id)")
 			} catch is CancellationError {
 				return
 			} catch {
-				await log.error("Announcement check failed: \(error.localizedDescription)")
+				log.error("Announcement check failed: \(error.localizedDescription)")
 			}
 		}
 	}
