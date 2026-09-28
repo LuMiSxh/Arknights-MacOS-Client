@@ -5,15 +5,14 @@ import Testing
 
 @testable import ArknightsClient
 
-@Suite(.serialized)
-struct GameInstallerVerificationTests {
+// Shares StreamingURLProtocol's global handler, so these run inside the serialized suite.
+extension GameInstallerStreamingTests {
 	@Test
 	func repairReportsVerificationProgressBeforeReusingIntactFiles() async throws {
 		let body = Data(repeating: 0x3C, count: 256 * 1_024)
-		let fixture = try GameInstallerStreamingTests.makeFixture(body: body)
+		let fixture = try Self.makeFixture(body: body)
 		defer { fixture.remove() }
 		try body.write(to: fixture.destination)
-		StreamingURLProtocol.handler = nil
 		let recorder = ProgressRecorder()
 
 		let result = try await fixture.installer.install(
@@ -36,11 +35,11 @@ struct GameInstallerVerificationTests {
 	@Test
 	func downloadProgressContinuesAfterTheVerificationSequence() async throws {
 		let body = Data(repeating: 0x7E, count: 128 * 1_024)
-		let fixture = try GameInstallerStreamingTests.makeFixture(body: body)
+		let fixture = try Self.makeFixture(body: body)
 		defer { fixture.remove() }
 		try Data(repeating: 0x00, count: body.count).write(to: fixture.destination)
 		StreamingURLProtocol.handler = { request in
-			(GameInstallerStreamingTests.response(url: request.url!, status: 200), body)
+			(Self.response(url: request.url!, status: 200), body)
 		}
 		defer { StreamingURLProtocol.handler = nil }
 		let recorder = ProgressRecorder()
