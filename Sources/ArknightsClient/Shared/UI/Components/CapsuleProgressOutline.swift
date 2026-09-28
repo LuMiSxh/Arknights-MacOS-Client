@@ -50,7 +50,7 @@ struct CapsuleProgressOutline: View {
 			.accessibilityHidden(true)
 	}
 
-	/// A glowing comet head at the leading edge of the transferred fraction.
+	/// A soft glow at the leading edge of the transferred fraction.
 	private var progressHead: some View {
 		let tail = max(0, clampedProgress - min(0.035, clampedProgress))
 		return Capsule()
@@ -146,7 +146,7 @@ private struct CapsuleProgressSweep: View {
 	}
 }
 
-/// Indeterminate work: an accent comet orbits the outline while the ring breathes on the
+/// Indeterminate work: an accent glint circles the outline while the ring breathes on the
 /// same cycle as the primary action halo. The orbit eases without ever stopping, so it
 /// reads as ongoing work rather than a looping progress fill.
 private struct CapsuleIndeterminatePulse: View {
@@ -185,18 +185,18 @@ private struct CapsuleIndeterminatePulse: View {
 		let breath = (1 - cos(phase * 2 * .pi)) / 2
 		let laps = LauncherVisuals.Motion.indeterminateOrbitLaps
 		let lap = (phase * laps).truncatingRemainder(dividingBy: 1)
-		// Blend linear travel with an eased lap so the comet surges and settles but never halts.
+		// Blend linear travel with an eased lap so the glint surges and settles but never halts.
 		let head = 0.6 * lap + 0.4 * smoothstep(lap)
-		let tail = LauncherVisuals.Motion.indeterminateCometLength
+		let tail = LauncherVisuals.Motion.indeterminateGlintLength
 		return ZStack {
 			outline
 				.stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
 				.opacity(0.35 + 0.35 * breath)
-			comet(head: head, length: tail, width: lineWidth * 3)
+			glint(head: head, length: tail, width: lineWidth * 3)
 				.blur(radius: 4)
 				.blendMode(.plusLighter)
 				.opacity(0.7 + 0.3 * breath)
-			comet(head: head, length: tail * 0.5, width: lineWidth)
+			glint(head: head, length: tail * 0.5, width: lineWidth)
 				.blendMode(.plusLighter)
 		}
 	}
@@ -206,7 +206,7 @@ private struct CapsuleIndeterminatePulse: View {
 	}
 
 	/// Draws a segment ending at `head`, split in two where it wraps past the path start.
-	private func comet(head: Double, length: Double, width: CGFloat) -> some View {
+	private func glint(head: Double, length: Double, width: CGFloat) -> some View {
 		let start = head - length
 		let style = StrokeStyle(lineWidth: width, lineCap: .round)
 		return ZStack {
