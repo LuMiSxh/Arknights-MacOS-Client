@@ -31,7 +31,7 @@ path-safety and resumable-download checks as every other region.
 | Game configuration                    | `LauncherRefreshController` and `LauncherAPI`            | Supplies latest version, manifest location, executable name, launch parameters, and reported disk requirement |
 | Manifest and CDN configuration        | `GameInstaller`                                          | Lists relative file paths, expected byte counts, provider checksums (CRC64 or MD5), and download roots        |
 | Installed state                       | `GameInstaller`                                          | Records the manifest that was successfully finalized in `.arknights-client-state.json`                        |
-| Exclusive operation                   | `LauncherLifecycleStore` and `ExclusiveOperationGate`    | Prevents refreshes, updates, repair, or stale tasks from mutating the same install concurrently               |
+| Exclusive operation                   | `LauncherLifecycleStore` (`installing(id:)` ownership)   | Prevents refreshes, updates, repair, or stale tasks from mutating the same install concurrently               |
 | Compatibility files                   | `GameCompatibilityManager`                               | Restores launcher-owned shims before install/update/repair                                                    |
 
 The installer does not choose a region, update the UI directly, or infer whether a partial install

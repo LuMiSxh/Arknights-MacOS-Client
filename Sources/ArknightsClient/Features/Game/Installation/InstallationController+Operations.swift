@@ -17,14 +17,13 @@ extension InstallationController {
 		operationOverride: SupportOperation? = nil
 	) {
 		guard lifecycle.activity == .idle else { return }
-		guard let installationID = installationGate.begin() else { return }
+		let installationID = UUID()
 		cancelInstalledStateRefresh()
 		let requestedRegion = region
 		let operation: SupportOperation =
 			operationOverride
 			?? (verifyAllExistingFiles ? .repair : (isInstalled ? .update : .install))
 		guard let configuration else {
-			installationGate.finish(installationID)
 			presentInstallationFailure(
 				LauncherError.missingConfiguration,
 				id: installationID,
@@ -35,7 +34,6 @@ extension InstallationController {
 		}
 		let targetDirectory = installDirectory
 		guard let required = configuration.requiredInstallBytes else {
-			installationGate.finish(installationID)
 			presentInstallationFailure(
 				LauncherError.invalidResponse,
 				id: installationID,
@@ -47,7 +45,6 @@ extension InstallationController {
 		do {
 			let available = try GameInstaller.availableCapacityBytes(at: targetDirectory)
 			if available < required {
-				installationGate.finish(installationID)
 				presentInstallationFailure(
 					LauncherError.insufficientDiskSpace(required: required, available: available),
 					id: installationID,
@@ -57,7 +54,6 @@ extension InstallationController {
 				return
 			}
 		} catch {
-			installationGate.finish(installationID)
 			presentInstallationFailure(
 				error,
 				id: installationID,
@@ -92,7 +88,7 @@ extension InstallationController {
 					verifyAllExistingFiles: verifyAllExistingFiles
 				) { [weak self] update in
 					await MainActor.run {
-						guard let self, self.installationGate.owns(installationID) else { return }
+						guard let self, self.ownsInstallation(installationID) else { return }
 						guard
 							(update.sequence == 0 && self.progressSequence == 0)
 								|| update.sequence >= self.progressSequence
@@ -181,10 +177,16 @@ extension InstallationController {
 		installationTask?.cancel()
 	}
 
+	/// The installing activity carries its operation ID, so a stale task that lost a race to a
+	/// newer operation can never finish or update it.
+	func ownsInstallation(_ installationID: UUID) -> Bool {
+		guard case .installing(let activeID, _) = lifecycle.activity else { return false }
+		return activeID == installationID
+	}
+
 	@discardableResult
 	func finishInstallation(_ installationID: UUID) -> Bool {
-		guard installationGate.owns(installationID) else { return false }
-		installationGate.finish(installationID)
+		guard ownsInstallation(installationID) else { return false }
 		installationTask = nil
 		lifecycle.activity = .idle
 		return true

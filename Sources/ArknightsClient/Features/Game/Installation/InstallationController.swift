@@ -55,7 +55,6 @@ final class InstallationController {
 	@ObservationIgnored var installationTask: Task<Void, Never>?
 	@ObservationIgnored private var stateRefreshTask: Task<Void, Never>?
 	@ObservationIgnored private var stateRefreshID: UUID?
-	var installationGate = ExclusiveOperationGate()
 
 	init(
 		lifecycle: LauncherLifecycleStore,

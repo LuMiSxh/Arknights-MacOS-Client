@@ -132,8 +132,8 @@ The state tree has three deliberately separate concerns:
 
 Do not use a presentation message as a lifecycle lock, and do not clear an active lifecycle state
 just because a refresh failed. `LauncherLifecycleStore` is the single gate for mutually exclusive
-work; `ExclusiveOperationGate` additionally gives an installation task a token so a stale cancelled
-task cannot finish a newer operation.
+work. The `installing(id:)` activity carries its operation ID, so a stale cancelled installation task
+cannot finish a newer operation.
 
 ```mermaid
 flowchart TD
