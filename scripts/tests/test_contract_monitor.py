@@ -45,13 +45,18 @@ def test_report_rejects_untrusted_check_metadata(
         ContractReport.from_json(report)
 
 
-def test_markdown_renders_health_and_summary() -> None:
-    report = make_report("healthy", summary="version 1.2")
+@pytest.mark.parametrize("region", ["global", "japan", "korea", "taiwan"])
+@pytest.mark.parametrize("contract", ["branding", "game-configuration", "cdn"])
+def test_report_accepts_publisher_metadata_and_renders_summary(
+    region: str, contract: str
+) -> None:
+    value = report_value("healthy")
+    value["checks"][0].update(region=region, contract=contract, summary="version 1.2")
+    report = ContractReport.from_json(value)
 
     markdown = report_markdown(report)
 
-    assert "| healthy |" in markdown
-    assert "version 1.2" in markdown
+    assert f"| {region.title()} | {contract} | healthy | version 1.2 |" in markdown
 
 
 def test_first_failure_does_not_open_an_issue() -> None:
@@ -67,20 +72,24 @@ def test_first_failure_does_not_open_an_issue() -> None:
     assert store.label_ensured == 0
 
 
-def test_second_consecutive_failure_opens_one_sanitized_issue() -> None:
+@pytest.mark.parametrize("region", ["global", "taiwan"])
+def test_second_consecutive_failure_opens_one_sanitized_issue(region: str) -> None:
     store = FakeIssueStore()
-    current = make_report("failed", run=3, summary="HTTP 503")
+    current = make_report("failed", run=3, summary="HTTP 503", region=region)
 
     actions = ContractAlertReconciler(store).reconcile(
         current,
-        [make_report("failed", run=2), make_report("healthy", run=1)],
+        [
+            make_report("failed", run=2, region=region),
+            make_report("healthy", run=1, region=region),
+        ],
     )
 
-    assert actions == ["opened global:manifest"]
+    assert actions == [f"opened {region}:manifest"]
     assert store.label_ensured == 1
     assert len(store.issues) == 1
     issue = store.issues[0]
-    assert issue.key == "global:manifest"
+    assert issue.key == f"{region}:manifest"
     assert "2026-08-02T04:23:00Z" in issue.body
     assert "2026-08-03T04:23:00Z" in issue.body
     assert "2026-08-01T04:23:00Z" in issue.body
@@ -189,6 +198,7 @@ def make_report(
     run: int = 1,
     trigger: str = "schedule",
     summary: str = "fixture result",
+    region: str = "global",
 ) -> ContractReport:
     value = report_value(status)
     value.update(
@@ -202,6 +212,7 @@ def make_report(
     checks = value["checks"]
     assert isinstance(checks, list)
     checks[0]["summary"] = summary
+    checks[0]["region"] = region
     return ContractReport.from_json(value)
 
 
