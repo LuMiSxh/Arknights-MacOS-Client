@@ -15,6 +15,11 @@ struct CapsuleProgressOutline: View {
 		min(max(progress, 0), 1)
 	}
 
+	/// A full, active outline marks work without measurable progress.
+	private var showsIndeterminatePulse: Bool {
+		isGlintActive && clampedProgress >= 1 && !reduceMotion
+	}
+
 	var body: some View {
 		Capsule()
 			.inset(by: lineWidth / 2)
@@ -27,16 +32,21 @@ struct CapsuleProgressOutline: View {
 						tint,
 						style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
 					)
+					.opacity(showsIndeterminatePulse ? 0 : 1)
 			}
 			.overlay {
-				if isGlintActive && clampedProgress > 0 && !reduceMotion {
-					// A full outline marks indeterminate work; only the sweep pulses there.
-					if clampedProgress < 1 {
-						progressHead
-					}
+				if showsIndeterminatePulse {
+					CapsuleIndeterminatePulse(tint: tint, lineWidth: lineWidth)
+						.transition(.opacity)
+				} else if isGlintActive && clampedProgress > 0 && !reduceMotion {
+					progressHead
 					CapsuleProgressSweep(progress: clampedProgress, lineWidth: lineWidth)
 				}
 			}
+			.animation(
+				LauncherMotion.fade(reduceMotion: reduceMotion),
+				value: showsIndeterminatePulse
+			)
 			.accessibilityHidden(true)
 	}
 
@@ -128,6 +138,83 @@ private struct CapsuleProgressSweep: View {
 			return (1, 0.4 * (1 - fraction))
 		}
 		return (0, 0)
+	}
+
+	private func smoothstep(_ value: Double) -> Double {
+		let clamped = min(max(value, 0), 1)
+		return clamped * clamped * (3 - 2 * clamped)
+	}
+}
+
+/// Indeterminate work: an accent comet orbits the outline while the ring breathes on the
+/// same cycle as the primary action halo. The orbit eases without ever stopping, so it
+/// reads as ongoing work rather than a looping progress fill.
+private struct CapsuleIndeterminatePulse: View {
+	let tint: Color
+	let lineWidth: CGFloat
+	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
+	@State private var motionClock = DecorativeMotionClock()
+
+	private var cycle: TimeInterval { LauncherMotion.breathingCycle }
+
+	var body: some View {
+		Group {
+			if decorativeMotionEnabled {
+				TimelineView(.animation(minimumInterval: 1 / 30)) { context in
+					pulse(phase: motionClock.phase(at: context.date, cycleDuration: cycle))
+				}
+			} else {
+				pulse(phase: motionClock.pausedPhase)
+			}
+		}
+		.onAppear {
+			if decorativeMotionEnabled {
+				motionClock.begin(at: .now, cycleDuration: cycle)
+			}
+		}
+		.onChange(of: decorativeMotionEnabled) { _, isEnabled in
+			if isEnabled {
+				motionClock.resume(at: .now, cycleDuration: cycle)
+			} else {
+				motionClock.pause(at: .now, cycleDuration: cycle)
+			}
+		}
+	}
+
+	private func pulse(phase: Double) -> some View {
+		let breath = (1 - cos(phase * 2 * .pi)) / 2
+		let laps = LauncherVisuals.Motion.indeterminateOrbitLaps
+		let lap = (phase * laps).truncatingRemainder(dividingBy: 1)
+		// Blend linear travel with an eased lap so the comet surges and settles but never halts.
+		let head = 0.6 * lap + 0.4 * smoothstep(lap)
+		let tail = LauncherVisuals.Motion.indeterminateCometLength
+		return ZStack {
+			outline
+				.stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+				.opacity(0.35 + 0.35 * breath)
+			comet(head: head, length: tail, width: lineWidth * 3)
+				.blur(radius: 4)
+				.blendMode(.plusLighter)
+				.opacity(0.7 + 0.3 * breath)
+			comet(head: head, length: tail * 0.5, width: lineWidth)
+				.blendMode(.plusLighter)
+		}
+	}
+
+	private var outline: some Shape {
+		Capsule().inset(by: lineWidth / 2)
+	}
+
+	/// Draws a segment ending at `head`, split in two where it wraps past the path start.
+	private func comet(head: Double, length: Double, width: CGFloat) -> some View {
+		let start = head - length
+		let style = StrokeStyle(lineWidth: width, lineCap: .round)
+		return ZStack {
+			outline.trim(from: max(0, start), to: head).stroke(tint, style: style)
+			if start < 0 {
+				outline.trim(from: 1 + start, to: 1).stroke(tint, style: style)
+			}
+		}
 	}
 
 	private func smoothstep(_ value: Double) -> Double {
