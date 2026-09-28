@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added Wine DirectWrite CJK font fallbacks for Bilibili payment pages so Chinese text renders when macOS uses another language.
 - Fixed the China and China — Bilibili server reset countdown using UTC instead of China Standard Time (UTC+8).
 - Fixed Now Playing artwork no longer following launcher icon changes after the window was resized.
+- Allowed Stop while Wine is being prepared or the game is starting, instead of waiting up to 90 seconds for the game window.
 
 ## [0.6.0] - 2026-09-24
 

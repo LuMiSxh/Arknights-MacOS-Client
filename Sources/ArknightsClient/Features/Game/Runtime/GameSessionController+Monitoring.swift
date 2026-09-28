@@ -4,9 +4,18 @@ import Foundation
 
 extension GameSessionController {
 	func stopGame() {
-		guard let sessionID = activeGameSessionID else { return }
+		guard let sessionID = activeGameSessionID, canStopGame else { return }
 		let processIdentifier = lifecycle.activity.gameProcessIdentifier
 		let region = activeGameRegion ?? installation.region
+		guard let processIdentifier else {
+			// Wine is still being prepared or spawned; the launch task owns cleanup so a game
+			// process that spawns concurrently is still stopped afterwards.
+			lifecycle.activity = .stoppingGame(sessionID: sessionID, processIdentifier: nil)
+			lifecycle.setStatus(.stoppingGame)
+			Task { [log] in await log.info("Game stop requested during launch") }
+			launchTask?.cancel()
+			return
+		}
 		let runtime: any WineRuntimeSessionControlling
 		do {
 			runtime = try runtimeSessionControllerProvider()
@@ -19,12 +28,10 @@ extension GameSessionController {
 			)
 			return
 		}
-		if let processIdentifier {
-			lifecycle.activity = .stoppingGame(
-				sessionID: sessionID,
-				processIdentifier: processIdentifier
-			)
-		}
+		lifecycle.activity = .stoppingGame(
+			sessionID: sessionID,
+			processIdentifier: processIdentifier
+		)
 		lifecycle.setStatus(.stoppingGame)
 		launchTask?.cancel()
 		gameMonitorTask?.cancel()
@@ -224,12 +231,10 @@ extension GameSessionController {
 
 	private func markGameSessionStopping(_ sessionID: UUID, processIdentifier: Int32?) {
 		guard activeGameSessionID == sessionID else { return }
-		if let processIdentifier {
-			lifecycle.activity = .stoppingGame(
-				sessionID: sessionID,
-				processIdentifier: processIdentifier
-			)
-		}
+		lifecycle.activity = .stoppingGame(
+			sessionID: sessionID,
+			processIdentifier: processIdentifier ?? lifecycle.activity.gameProcessIdentifier
+		)
 		lifecycle.setStatus(.stoppingGame)
 	}
 

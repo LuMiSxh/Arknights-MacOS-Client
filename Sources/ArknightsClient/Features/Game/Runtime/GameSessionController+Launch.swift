@@ -142,6 +142,15 @@ extension GameSessionController {
 					"Game runtime started; session=\(gameSessionID.uuidString); pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 				guard activeGameSessionID == gameSessionID else { return }
+				if Task.isCancelled {
+					await stopAfterCancelledLaunch(
+						runtime: runtime,
+						sessionID: gameSessionID,
+						processIdentifier: launch.processIdentifier,
+						region: requestedRegion
+					)
+					return
+				}
 				if requestedLaunchOptions.usesGameMode {
 					GamePolicyControl.setGameMode(on: true, log: log)
 				}
@@ -169,13 +178,14 @@ extension GameSessionController {
 				)
 			} catch is CancellationError {
 				guard activeGameSessionID == gameSessionID else { return }
-				if case .stoppingGame(let sessionID, _) = lifecycle.activity,
+				// Stop owns cleanup once the game process is known.
+				if case .stoppingGame(let sessionID, .some) = lifecycle.activity,
 					sessionID == gameSessionID
 				{
 					return
 				}
-				await stopAndFinishGameSession(
-					using: runtime,
+				await stopAfterCancelledLaunch(
+					runtime: runtime,
 					sessionID: gameSessionID,
 					processIdentifier: lifecycle.activity.gameProcessIdentifier,
 					region: requestedRegion
@@ -208,6 +218,24 @@ extension GameSessionController {
 				)
 			}
 		}
+	}
+
+	/// Cleans up from a cancelled launch task without inheriting its cancellation, which would
+	/// otherwise abort the `wineserver -k` call itself.
+	private func stopAfterCancelledLaunch(
+		runtime: WineRuntime,
+		sessionID: UUID,
+		processIdentifier: Int32?,
+		region: GameRegion
+	) async {
+		await Task { @MainActor in
+			await stopAndFinishGameSession(
+				using: runtime,
+				sessionID: sessionID,
+				processIdentifier: processIdentifier,
+				region: region
+			)
+		}.value
 	}
 
 	func handleWindowTimeout(

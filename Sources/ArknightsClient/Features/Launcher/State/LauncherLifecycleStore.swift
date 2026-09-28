@@ -70,9 +70,10 @@ final class LauncherLifecycleStore {
 			.migrating
 		case .launchingGame:
 			.launching
-		case .runningGame(_, let processIdentifier),
-			.stoppingGame(_, let processIdentifier):
+		case .runningGame(_, let processIdentifier):
 			.running(processIdentifier: processIdentifier)
+		case .stoppingGame(_, let processIdentifier):
+			processIdentifier.map { .running(processIdentifier: $0) } ?? .launching
 		case .idle, .maintaining:
 			state.refresh.isChecking ? .checking : .ready
 		}

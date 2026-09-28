@@ -10,7 +10,8 @@ enum LauncherActivity: Equatable, Sendable {
 	case preparingGame(sessionID: UUID)
 	case launchingGame(sessionID: UUID, processIdentifier: Int32?)
 	case runningGame(sessionID: UUID, processIdentifier: Int32)
-	case stoppingGame(sessionID: UUID, processIdentifier: Int32)
+	/// The process identifier is nil when Stop interrupts Wine preparation before the game spawns.
+	case stoppingGame(sessionID: UUID, processIdentifier: Int32?)
 
 	var activeGameSessionID: UUID? {
 		switch self {
@@ -26,9 +27,9 @@ enum LauncherActivity: Equatable, Sendable {
 
 	var gameProcessIdentifier: Int32? {
 		switch self {
-		case .launchingGame(_, let processIdentifier): processIdentifier
-		case .runningGame(_, let processIdentifier), .stoppingGame(_, let processIdentifier):
+		case .launchingGame(_, let processIdentifier), .stoppingGame(_, let processIdentifier):
 			processIdentifier
+		case .runningGame(_, let processIdentifier): processIdentifier
 		case .idle, .maintaining, .installing, .preparingGame: nil
 		}
 	}
@@ -37,7 +38,8 @@ enum LauncherActivity: Equatable, Sendable {
 
 	var isGameProcessRunning: Bool {
 		switch self {
-		case .runningGame, .stoppingGame: true
+		case .runningGame: true
+		case .stoppingGame(_, let processIdentifier): processIdentifier != nil
 		case .idle, .maintaining, .installing, .preparingGame, .launchingGame: false
 		}
 	}
