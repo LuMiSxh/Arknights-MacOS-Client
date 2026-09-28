@@ -98,14 +98,23 @@ enum HUDPillMotion {
 	}
 
 	static func expansionAnimation(reduceMotion: Bool) -> Animation? {
-		reduceMotion ? nil : .spring(duration: 0.38, bounce: 0.18)
+		LauncherMotion.animation(.expansion, reduceMotion: reduceMotion)
 	}
 
 	static func expandedContentTransition(reduceMotion: Bool) -> AnyTransition {
 		if reduceMotion { return .opacity }
-		return .opacity
-			.combined(with: .scale(scale: 0.96, anchor: .topTrailing))
-			.animation(.easeOut(duration: 0.18))
+		return .asymmetric(
+			insertion: .materialize(
+				reduceMotion: false,
+				scale: 0.92,
+				blur: 8,
+				offsetY: 6,
+				anchor: .topTrailing
+			)
+			.animation(LauncherMotion.Curve.reveal.animation.delay(0.06)),
+			removal: .materialize(reduceMotion: false, scale: 0.96, blur: 4, anchor: .topTrailing)
+				.animation(LauncherMotion.Curve.dismiss.animation)
+		)
 	}
 
 	static func chevronTransition(reduceMotion: Bool) -> ContentTransition {

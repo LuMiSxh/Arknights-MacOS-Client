@@ -352,3 +352,25 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		}
 	}
 }
+
+/// Groups sibling glass surfaces so macOS 26 can blend and morph them as they appear,
+/// disappear, or resize next to each other. Earlier systems render the content unchanged.
+struct AdaptiveGlassGroup<Content: View>: View {
+	let spacing: CGFloat
+	@ViewBuilder let content: Content
+
+	init(spacing: CGFloat, @ViewBuilder content: () -> Content) {
+		self.spacing = spacing
+		self.content = content()
+	}
+
+	var body: some View {
+		if #available(macOS 26, *) {
+			GlassEffectContainer(spacing: spacing) {
+				content
+			}
+		} else {
+			content
+		}
+	}
+}
