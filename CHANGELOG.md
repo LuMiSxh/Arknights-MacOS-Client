@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Softened the main HUD pill's orbiting glint with a quieter outline and a more diffuse accent glow.
 - Launcher errors now explain recovery steps while keeping file paths, checksums, and service details in the logs.
 - The HUD outline now pulses while Wine is prepared, the game starts or stops, launcher data updates, the Wine prefix is deleted, or the game moves to the Trash.
 - Repair now shows verification progress in the HUD, Settings, and setup, and Pause stops file verification immediately instead of waiting for every file to be checked.
@@ -29,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Kept Play/Stop morph timing independent of the primary action's fading glow.
 - Matched preview errors and launch availability to the real recovery flow, and corrected verification progress in the preview and setup.
 - Removed the old inline Rosetta recovery controls and made the developer preview use the same failure dialog and recovery actions as the launcher.
 - Fixed live contract report summaries and monitor alerts rejecting Taiwan metadata checks.

@@ -191,13 +191,13 @@ private struct CapsuleIndeterminatePulse: View {
 		return ZStack {
 			outline
 				.stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-				.opacity(0.35 + 0.35 * breath)
-			glint(head: head, length: tail, width: lineWidth * 3)
-				.blur(radius: 4)
-				.blendMode(.plusLighter)
-				.opacity(0.7 + 0.3 * breath)
+				.opacity(0.35 + 0.15 * breath)
+			glint(head: head, length: tail, width: lineWidth * 2)
+				.blur(radius: 6)
+				.opacity(0.3 + 0.1 * breath)
 			glint(head: head, length: tail * 0.5, width: lineWidth)
-				.blendMode(.plusLighter)
+				.blur(radius: 1)
+				.opacity(0.65)
 		}
 	}
 

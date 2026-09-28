@@ -14,14 +14,16 @@ private struct BreathingGlowModifier<S: Shape>: ViewModifier {
 	func body(content: Content) -> some View {
 		content
 			.background {
-				if isActive && !reduceTransparency {
-					BreathingGlowHalo(tint: tint, shape: shape)
-						.transition(.opacity)
-						.allowsHitTesting(false)
-						.accessibilityHidden(true)
+				ZStack {
+					if isActive && !reduceTransparency {
+						BreathingGlowHalo(tint: tint, shape: shape)
+							.transition(.opacity)
+							.allowsHitTesting(false)
+							.accessibilityHidden(true)
+					}
 				}
+				.animation(LauncherMotion.fade(reduceMotion: reduceMotion), value: isActive)
 			}
-			.animation(LauncherMotion.fade(reduceMotion: reduceMotion), value: isActive)
 	}
 }
 
