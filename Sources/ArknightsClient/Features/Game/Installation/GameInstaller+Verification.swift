@@ -1,0 +1,138 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import Foundation
+import Synchronization
+
+/// Selects the manifest files that must be downloaded. Existing files the previous manifest
+/// cannot vouch for are hashed first; that pass is cancellable and reported as progress.
+extension GameInstaller {
+	struct PendingDownloads: Sendable {
+		let files: [ManifestFile]
+		/// The last progress sequence emitted, so download progress continues after it.
+		let lastSequence: UInt64
+	}
+
+	func pendingDownloads(
+		in manifest: GameManifest,
+		installDirectory: URL,
+		previousFiles: [String: ManifestFile]?,
+		verifyAllExistingFiles: Bool,
+		progress: @escaping ProgressHandler
+	) async throws -> PendingDownloads {
+		var candidates: [(item: ManifestFile, destination: URL, size: Int64?)] = []
+		for item in manifest.file {
+			try Task.checkCancellation()
+			let destination = try destinationURL(for: item, inside: installDirectory)
+			try assertNoSymbolicLinks(from: installDirectory, through: destination)
+			candidates.append((item, destination, try fileSize(at: destination)))
+		}
+		let hashedFiles = candidates.filter {
+			$0.size == $0.item.byteCount
+				&& (verifyAllExistingFiles || previousFiles?[$0.item.path] == nil)
+		}
+		let tally = VerificationTally(
+			totalBytes: try Self.totalByteCount(of: hashedFiles.map(\.item)),
+			totalFiles: hashedFiles.count
+		)
+		let monitor = hashedFiles.isEmpty ? nil : Self.monitorVerification(tally, progress)
+
+		var pending: [ManifestFile] = []
+		do {
+			for candidate in candidates {
+				try Task.checkCancellation()
+				let item = candidate.item
+				tally.begin(file: item.path)
+				let needsDownload = try Self.needsDownload(
+					item,
+					destinationSize: candidate.size,
+					previousFile: previousFiles?[item.path],
+					verifyAllExistingFiles: verifyAllExistingFiles,
+					checksum: {
+						defer { tally.finishFile() }
+						return try ManifestChecksum.checksum(
+							of: candidate.destination,
+							expected: item.hash,
+							onRead: tally.add(bytes:)
+						)
+					}
+				)
+				if needsDownload { pending.append(item) }
+			}
+		} catch {
+			monitor?.cancel()
+			_ = await monitor?.value
+			throw error
+		}
+
+		guard let monitor else { return PendingDownloads(files: pending, lastSequence: 0) }
+		monitor.cancel()
+		let sequence = await monitor.value + 1
+		await progress(tally.snapshot(sequence: sequence))
+		return PendingDownloads(files: pending, lastSequence: sequence)
+	}
+
+	/// Emits verification snapshots on the progress cadence until cancelled; returns the last
+	/// sequence it used.
+	private static func monitorVerification(
+		_ tally: VerificationTally,
+		_ progress: @escaping ProgressHandler
+	) -> Task<UInt64, Never> {
+		Task {
+			var sequence: UInt64 = 0
+			while !Task.isCancelled {
+				sequence += 1
+				await progress(tally.snapshot(sequence: sequence))
+				do {
+					try await Task.sleep(for: AppConstants.Network.progressEmissionInterval)
+				} catch {
+					break
+				}
+			}
+			return sequence
+		}
+	}
+}
+
+/// Thread-safe verification counters written by the synchronous hashing loop and read by the
+/// progress monitor.
+final class VerificationTally: Sendable {
+	private struct State {
+		var verifiedBytes: Int64 = 0
+		var verifiedFiles = 0
+		var currentFile = ""
+	}
+
+	private let totalBytes: Int64
+	private let totalFiles: Int
+	private let state = Mutex(State())
+
+	init(totalBytes: Int64, totalFiles: Int) {
+		self.totalBytes = totalBytes
+		self.totalFiles = totalFiles
+	}
+
+	func begin(file: String) {
+		state.withLock { $0.currentFile = file }
+	}
+
+	func add(bytes: Int) {
+		state.withLock { $0.verifiedBytes += Int64(bytes) }
+	}
+
+	func finishFile() {
+		state.withLock { $0.verifiedFiles += 1 }
+	}
+
+	func snapshot(sequence: UInt64) -> DownloadProgress {
+		let current = state.withLock { $0 }
+		return DownloadProgress(
+			downloadedBytes: min(current.verifiedBytes, totalBytes),
+			totalBytes: totalBytes,
+			completedFiles: current.verifiedFiles,
+			totalFiles: totalFiles,
+			currentFile: current.currentFile,
+			isVerifying: true,
+			sequence: sequence
+		)
+	}
+}

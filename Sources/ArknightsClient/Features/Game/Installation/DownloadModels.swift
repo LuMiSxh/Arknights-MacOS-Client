@@ -13,6 +13,9 @@ struct DownloadProgress: Equatable, Sendable {
 	let networkDownloadedBytes: Int64
 	let transferRateBytesPerSecond: Double?
 	let isTransferStalled: Bool
+	/// True while existing files are hashed before any download starts. Byte and file counts
+	/// then describe the verification pass instead of the transfer.
+	let isVerifying: Bool
 	/// Monotonic within one installer operation, so concurrent stream callbacks cannot move
 	/// the controller back to an older snapshot.
 	let sequence: UInt64
@@ -26,6 +29,7 @@ struct DownloadProgress: Equatable, Sendable {
 		networkDownloadedBytes: Int64 = 0,
 		transferRateBytesPerSecond: Double? = nil,
 		isTransferStalled: Bool = false,
+		isVerifying: Bool = false,
 		sequence: UInt64 = 0
 	) {
 		self.downloadedBytes = downloadedBytes
@@ -36,6 +40,7 @@ struct DownloadProgress: Equatable, Sendable {
 		self.networkDownloadedBytes = networkDownloadedBytes
 		self.transferRateBytesPerSecond = transferRateBytesPerSecond
 		self.isTransferStalled = isTransferStalled
+		self.isVerifying = isVerifying
 		self.sequence = sequence
 	}
 

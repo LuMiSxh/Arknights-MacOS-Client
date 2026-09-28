@@ -317,7 +317,9 @@ struct InstallationSettingsPage: View {
 
 	private var gameStatus: String {
 		if installation.isDownloading, let progress = installation.progress {
-			return SettingsStrings.downloading(Int(progress.fraction * 100))
+			let percentage = Int(progress.fraction * 100)
+			return progress.isVerifying
+				? SettingsStrings.verifying(percentage) : SettingsStrings.downloading(percentage)
 		}
 		if installation.isDownloading { return SettingsStrings.preparingDownload }
 		if installation.isInstalled { return SettingsStrings.installed }

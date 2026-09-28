@@ -52,6 +52,10 @@ enum HomeStrings {
 		"\(percentage)%"
 	}
 
+	static func verificationPercentage(_ percentage: Int) -> String {
+		"Verifying · \(percentage)%"
+	}
+
 	static func pausedDownloadPercentage(_ percentage: Int) -> String {
 		"Paused · \(percentage)%"
 	}

@@ -105,9 +105,13 @@ extension InstallationController {
 						self.progress = update
 						self.lifecycle.activity = .installing(
 							id: installationID,
-							stage: .downloading
+							stage: update.isVerifying ? .verifying : .downloading
 						)
-						self.lifecycle.setStatus(.downloading)
+						let status: LauncherStatus =
+							update.isVerifying ? .verifyingInstallation : .downloading
+						if self.lifecycle.presentation.status != status {
+							self.lifecycle.setStatus(status)
+						}
 					}
 				}
 				guard finishInstallation(installationID) else { return }
@@ -125,6 +129,8 @@ extension InstallationController {
 			} catch is CancellationError {
 				await updateInstalledState().value
 				guard finishInstallation(installationID) else { return }
+				// A paused verification pass says nothing about partial-download progress.
+				if progress?.isVerifying == true { progress = nil }
 				lifecycle.setStatus(.paused)
 				await log.info("Installation paused")
 			} catch {

@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Repair now shows verification progress in the HUD, Settings, and setup, and Pause stops file verification immediately instead of waiting for every file to be checked.
 - Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
 
 ### Fixed

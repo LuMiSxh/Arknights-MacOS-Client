@@ -84,17 +84,14 @@ struct GameInstaller: Sendable {
 		let previousFiles = previousState?.files.map {
 			Dictionary($0.map { ($0.path, $0) }, uniquingKeysWith: { existing, _ in existing })
 		}
-		let pendingFiles = try manifest.file.filter { item in
-			let destination = try destinationURL(for: item, inside: installDirectory)
-			try assertNoSymbolicLinks(from: installDirectory, through: destination)
-			return try Self.needsDownload(
-				item,
-				destinationSize: try fileSize(at: destination),
-				previousFile: previousFiles?[item.path],
-				verifyAllExistingFiles: verifyAllExistingFiles,
-				checksum: { try ManifestChecksum.checksum(of: destination, expected: item.hash) }
-			)
-		}
+		let verification = try await pendingDownloads(
+			in: manifest,
+			installDirectory: installDirectory,
+			previousFiles: previousFiles,
+			verifyAllExistingFiles: verifyAllExistingFiles,
+			progress: progress
+		)
+		let pendingFiles = verification.files
 		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)
 		await log?.debug(
 			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
@@ -112,7 +109,8 @@ struct GameInstaller: Sendable {
 			totalBytes: progressBaseline.totalBytes,
 			totalFiles: progressBaseline.totalFiles,
 			downloadedBytes: progressBaseline.downloadedBytes,
-			completedFiles: progressBaseline.completedFiles
+			completedFiles: progressBaseline.completedFiles,
+			sequence: verification.lastSequence
 		)
 		if pendingFiles.isEmpty {
 			try Task.checkCancellation()
