@@ -161,17 +161,20 @@
 			} else {
 				failureID = UUID()
 			}
+			let error: LauncherError =
+				isConfiguration
+				? .invalidResponse
+				: .runtimeExited(status: 1, log: gameSession.paths.runtimeLogFile(for: region))
 			lifecycle.presentation.failure = LauncherFailurePresentation(
 				id: failureID,
-				message: isConfiguration
-					? "The selected game configuration could not be loaded."
-					: "The Windows runtime exited with status 1.",
+				message: launcherUserMessage(for: error),
 				code: code,
 				context: SupportContext(operation: operation, region: region.supportRegion),
 				actions: isConfiguration
 					? [.retry, .openTroubleshooting, .reportProblem]
-					: [.retry, .openTroubleshooting, .repair, .reportProblem],
-				blocksGameLaunch: true
+					: GameSessionController.recoveryActions(
+						for: code, isInstalled: projection.isInstalled, operation: operation),
+				blocksGameLaunch: isConfiguration && !projection.isInstalled
 			)
 		}
 

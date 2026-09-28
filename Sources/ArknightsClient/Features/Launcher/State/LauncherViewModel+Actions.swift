@@ -268,9 +268,10 @@ extension LauncherViewModel {
 				simulation.isInstalled,
 				!simulation.hasPartialDownload,
 				!simulation.updateAvailable,
-				simulation.failure == .none
+				lifecycle.failure?.blocksGameLaunch != true
 			else { return false }
 			simulation.selectedRegion = region
+			simulation.failure = .none
 			simulation.lifecycle = .running
 			applyDeveloperSimulation(simulation)
 			return true

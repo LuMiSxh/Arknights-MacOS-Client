@@ -83,6 +83,37 @@ import Testing
 		}
 
 		@Test
+		func simulatedNonblockingFailuresAllowDockLaunch() async throws {
+			let api = CancellableBrandingAPI()
+			let model = makeModel(
+				api: api, installer: ControllableInstaller(), arguments: ["--developer-preview"])
+			await api.waitForBrandingRequest()
+			await api.resolveBranding()
+
+			for kind in [DeveloperPreviewFailure.runtime, .configuration] {
+				model.updateDeveloperSimulation {
+					$0.failure = kind
+					$0.isInstalled = true
+					$0.lifecycle = .ready
+				}
+				let failure = try #require(model.lifecycle.failure)
+				#expect(!failure.blocksGameLaunch)
+				#expect(!failure.message.contains("status 1"))
+				#expect(await model.launchFromDock(region: .global))
+				#expect(model.lifecycle.failure == nil)
+				#expect(model.developerSimulation?.failure == DeveloperPreviewFailure.none)
+				model.stopGame()
+			}
+
+			model.updateDeveloperSimulation {
+				$0.failure = .configuration
+				$0.isInstalled = false
+			}
+			#expect(model.lifecycle.failure?.blocksGameLaunch == true)
+			#expect(await model.launchFromDock(region: .global) == false)
+		}
+
+		@Test
 		func simulatedRosettaFailureUsesTheModalAndKeepsItsIdentity() async throws {
 			let api = CancellableBrandingAPI()
 			let model = makeModel(

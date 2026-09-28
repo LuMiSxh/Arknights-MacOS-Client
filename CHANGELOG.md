@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Matched preview errors and launch availability to the real recovery flow, and corrected verification progress in the preview and setup.
 - Removed the old inline Rosetta recovery controls and made the developer preview use the same failure dialog and recovery actions as the launcher.
 - Fixed live contract report summaries and monitor alerts rejecting Taiwan metadata checks.
 - Fixed China — Bilibili startup with Hardware Cursor enabled and hid the CN-specific PRTS cursor asset.
