@@ -15,6 +15,7 @@ struct ContentView: View {
 	@State var confirmation: LauncherConfirmation?
 	@State var repairFailureID: UUID?
 	@State private var decorativeMotionVisibility = DecorativeMotionVisibility()
+	@State private var isTerminating = false
 
 	init(
 		model: LauncherViewModel,
@@ -141,7 +142,7 @@ struct ContentView: View {
 				presentation.blockingDestination(
 					hasPendingPopup: model.communication.popup != nil)
 			}
-			registerQuitDismissal { presentation.dismissCurrent() }
+			registerQuitDismissal(dismissPresentationForQuit)
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
 		.onChange(of: onboarding.isPresented) { _, isPresented in
@@ -178,6 +179,7 @@ struct ContentView: View {
 	private var sheetPresentation: Binding<LauncherPresentationDestination?> {
 		Binding(
 			get: {
+				guard !isTerminating else { return nil }
 				if let current = presentation.current, current.isSheet { return current }
 				guard presentation.current == nil, !onboarding.isPresented,
 					!model.communication.launcherUpdateUserDriver.isPresented,
@@ -279,6 +281,15 @@ struct ContentView: View {
 			.help(HomeStrings.settingsHelp)
 		}
 		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
+	}
+
+	/// Closes every sheet and dialog so AppKit accepts the quit, without advancing popup queues.
+	private func dismissPresentationForQuit() {
+		isTerminating = true
+		confirmation = nil
+		repairFailureID = nil
+		model.cancelACEWarning()
+		presentation.dismissCurrent()
 	}
 
 	private func requestSettings() {
