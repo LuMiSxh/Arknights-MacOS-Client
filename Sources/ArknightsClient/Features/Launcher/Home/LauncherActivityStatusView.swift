@@ -316,7 +316,7 @@ struct LauncherActivityStatusView: View {
 			.font(.system(size: 16, weight: .semibold))
 			.contentTransition(reduceMotion ? .identity : .numericText())
 			.animation(
-				reduceMotion ? nil : .easeInOut(duration: 0.16),
+				LauncherMotion.animation(.reveal, reduceMotion: reduceMotion),
 				value: statusTitle
 			)
 			.fixedSize(horizontal: true, vertical: false)

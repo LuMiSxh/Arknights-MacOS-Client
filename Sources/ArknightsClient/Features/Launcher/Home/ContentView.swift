@@ -377,5 +377,7 @@ struct ContentView: View {
 		model.confirmRepair(failureID: id)
 	}
 
-	private var themeAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
+	private var themeAnimation: Animation? {
+		LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion)
+	}
 }

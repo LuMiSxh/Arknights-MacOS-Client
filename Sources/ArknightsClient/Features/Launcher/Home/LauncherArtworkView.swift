@@ -31,7 +31,8 @@ struct LauncherArtworkView: View {
 			.frame(width: proxy.size.width, height: proxy.size.height)
 			.clipped()
 			.animation(
-				hasShownArtworkBefore && !reduceMotion ? .easeInOut(duration: 0.36) : nil,
+				hasShownArtworkBefore
+					? LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion) : nil,
 				value: artworkIdentity
 			)
 			.onChange(of: artworkIdentity, initial: true) { _, _ in
@@ -45,7 +46,7 @@ struct LauncherArtworkView: View {
 	}
 
 	private var artworkTransition: AnyTransition {
-		reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.015))
+		.materialize(reduceMotion: reduceMotion, scale: 1.03, blur: 12)
 	}
 
 	private var fallbackArtwork: some View {

@@ -174,7 +174,7 @@ struct LauncherSettingsView: View {
 		)
 		.preferredColorScheme(.dark)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: 0.3),
+			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
 			value: customization.dynamicThemeHue
 		)
 		.onExitCommand(perform: dismiss.callAsFunction)
