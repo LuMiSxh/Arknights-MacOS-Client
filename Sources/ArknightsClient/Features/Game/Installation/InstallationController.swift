@@ -178,7 +178,7 @@ final class InstallationController {
 				}
 				self.finishStateRefresh(refreshID)
 				if let diagnostic = snapshot.diagnostic {
-					await log.error(diagnostic)
+					log.error(diagnostic)
 				}
 			} catch is CancellationError {
 				self?.finishStateRefresh(refreshID)
@@ -187,7 +187,7 @@ final class InstallationController {
 					return
 				}
 				self.finishStateRefresh(refreshID)
-				await log.error(
+				log.error(
 					"Failed to inspect installation state for \(request.selectedRegion.displayName): \(error.localizedDescription)"
 				)
 			}

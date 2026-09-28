@@ -74,7 +74,7 @@ final class IntelTranslationController {
 			lifecycle.rosettaInstallationState = .idle
 		}
 		updatePreflightFailure(for: check)
-		await log.info(
+		log.info(
 			"Intel translation preflight; state=\(check.state.diagnosticName) \(check.diagnostics)"
 		)
 		return check.state
@@ -104,7 +104,7 @@ final class IntelTranslationController {
 			installationTask = nil
 			installationID = nil
 			let output = Self.boundedDiagnostics(result.output)
-			await log.info(
+			log.info(
 				"Rosetta installation finished; status=\(result.status) output=\(output)")
 			guard result.status == 0 else {
 				let message =
@@ -130,7 +130,7 @@ final class IntelTranslationController {
 			let message =
 				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
 			lifecycle.rosettaInstallationState = .failed(message)
-			await log.error("Rosetta installation failed: \(error.localizedDescription)")
+			log.error("Rosetta installation failed: \(error.localizedDescription)")
 			presentRosettaFailure(
 				message: message,
 				diagnostic: error.localizedDescription,
@@ -147,7 +147,7 @@ final class IntelTranslationController {
 		guard failure.actions.contains(.retry), canInstallRosetta else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		Task { [weak self, log] in
-			await log.info("Recovery selected; action=retry operation=rosetta-installation")
+			log.info("Recovery selected; action=retry operation=rosetta-installation")
 			_ = await self?.installRosetta()
 		}
 		return true
@@ -160,7 +160,7 @@ final class IntelTranslationController {
 		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		Task { [weak self, log] in
-			await log.info("Recovery selected; action=retry operation=intel-translation-preflight")
+			log.info("Recovery selected; action=retry operation=intel-translation-preflight")
 			_ = await self?.refreshAvailability(force: true)
 		}
 		return true

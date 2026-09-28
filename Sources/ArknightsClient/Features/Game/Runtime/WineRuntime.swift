@@ -179,7 +179,7 @@ struct WineRuntime: Sendable {
 		do {
 			try mutablePrefixDirectory.setResourceValues(prefixValues)
 		} catch {
-			await log?.error(
+			log?.error(
 				"Failed to exclude the Wine prefix from backups: \(error.localizedDescription)"
 			)
 		}

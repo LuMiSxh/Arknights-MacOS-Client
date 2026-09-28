@@ -34,11 +34,10 @@ extension BackgroundMusicController {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				try await player.pause()
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await lifecycle.log.info("Background music faded out and paused")
-				guard !Task.isCancelled, isCurrent(operation) else { return }
+				lifecycle.log.info("Background music faded out and paused")
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await lifecycle.log.error(
+				lifecycle.log.error(
 					"Background music failed to pause after fading out: \(error.localizedDescription)"
 				)
 			}
@@ -71,7 +70,7 @@ extension BackgroundMusicController {
 				if let userPlaybackOperation {
 					finishOperation(userPlaybackOperation)
 				}
-				await lifecycle.log.info("Background music resuming with fade-in")
+				lifecycle.log.info("Background music resuming with fade-in")
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				shuffleInitialPlaylistIfNeeded(on: target)
 			} catch {
@@ -80,7 +79,7 @@ extension BackgroundMusicController {
 					finishOperation(userPlaybackOperation)
 				}
 				clearPlaybackExpectation(expectation)
-				await lifecycle.log.error(
+				lifecycle.log.error(
 					"Background music failed to resume: \(error.localizedDescription)"
 				)
 				finishFade(operation)
@@ -127,9 +126,9 @@ extension BackgroundMusicController {
 		Task { [log = lifecycle.log] in
 			do {
 				try await playerToStop?.pause()
-				await log.info("Background music stopped")
+				log.info("Background music stopped")
 			} catch {
-				await log.error(
+				log.error(
 					"Background music failed to stop cleanly: \(error.localizedDescription)"
 				)
 			}
@@ -148,7 +147,7 @@ extension BackgroundMusicController {
 			)
 		} catch {
 			guard !Task.isCancelled, isCurrent(playerToUse, generation: generation) else { return }
-			await lifecycle.log.debug(
+			lifecycle.log.debug(
 				"Background music volume update was not applied: \(error.localizedDescription)"
 			)
 		}

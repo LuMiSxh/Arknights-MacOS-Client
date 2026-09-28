@@ -112,7 +112,7 @@ extension CustomizationController {
 				return false
 			}
 			guard let image = NSImage(data: data) else {
-				await log.error("Custom launcher artwork is not a valid image")
+				log.error("Custom launcher artwork is not a valid image")
 				return false
 			}
 			setHasPersistedCustomArtwork(true)
@@ -124,7 +124,7 @@ extension CustomizationController {
 			}
 			setHasPersistedCustomArtwork(false)
 			if (error as? CocoaError)?.code == .fileReadNoSuchFile { return false }
-			await log.error("Failed to load custom launcher artwork: \(error.localizedDescription)")
+			log.error("Failed to load custom launcher artwork: \(error.localizedDescription)")
 			return false
 		}
 	}
@@ -165,7 +165,7 @@ extension CustomizationController {
 				self.officialLogo = data.flatMap { NSImage(data: $0) }
 			} catch {
 				guard self?.officialLogoOperationID == operationID else { return }
-				await log.error(
+				log.error(
 					"Failed to load cached logo for \(region.displayName): \(error.localizedDescription)"
 				)
 			}
@@ -192,7 +192,7 @@ extension CustomizationController {
 				themeCacheKey: Self.officialThemeCacheKey(for: region, artworkCacheKey: cacheKey)
 			)
 		} catch {
-			await log.error(
+			log.error(
 				"Failed to load cached artwork for \(region.displayName): \(error.localizedDescription)"
 			)
 		}
@@ -246,11 +246,9 @@ extension CustomizationController {
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			Task { [log] in
-				await log.error(
-					"Failed to remove staged custom artwork at \(url.path): \(error.localizedDescription)"
-				)
-			}
+			log.error(
+				"Failed to remove staged custom artwork at \(url.path): \(error.localizedDescription)"
+			)
 		}
 	}
 }

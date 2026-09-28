@@ -67,7 +67,7 @@ struct GameInstaller: Sendable {
 		do {
 			try excludeFromBackup(installDirectory)
 		} catch {
-			await log?.error(
+			log?.error(
 				"Failed to exclude game installation from backups at \(installDirectory.path): \(error.localizedDescription)"
 			)
 		}
@@ -77,7 +77,7 @@ struct GameInstaller: Sendable {
 			previousState = try loadState(from: installDirectory)
 		} catch {
 			previousState = nil
-			await log?.error(
+			log?.error(
 				"Failed to read installed-state file at \(installDirectory.path): \(error.localizedDescription)"
 			)
 		}
@@ -93,7 +93,7 @@ struct GameInstaller: Sendable {
 		)
 		let pendingFiles = verification.files
 		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)
-		await log?.debug(
+		log?.debug(
 			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
 				+ "(\(downloadedBytes) bytes); repair=\(verifyAllExistingFiles)"
 		)
@@ -164,7 +164,7 @@ struct GameInstaller: Sendable {
 		try Task.checkCancellation()
 		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
 		try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
-		await log?.debug(
+		log?.debug(
 			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes"
 		)
 		return InstallResult(
@@ -254,11 +254,9 @@ struct GameInstaller: Sendable {
 				do {
 					try handle.close()
 				} catch {
-					Task {
-						await log?.error(
-							"Failed to close partial download at \(partial.path): \(error.localizedDescription)"
-						)
-					}
+					log?.error(
+						"Failed to close partial download at \(partial.path): \(error.localizedDescription)"
+					)
 				}
 			}
 		}

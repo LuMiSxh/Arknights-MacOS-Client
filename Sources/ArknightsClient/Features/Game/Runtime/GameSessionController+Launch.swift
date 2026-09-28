@@ -44,9 +44,7 @@ extension GameSessionController {
 			runtime = try discoverRuntime()
 		} catch {
 			runtimeName = nil
-			Task { [log] in
-				await log.error("Runtime discovery failed: \(error.localizedDescription)")
-			}
+			log.error("Runtime discovery failed: \(error.localizedDescription)")
 			presentRuntimeFailure(
 				error,
 				id: launchID,
@@ -91,9 +89,7 @@ extension GameSessionController {
 			)
 			lifecycle.setStatus(.startingGame)
 		}
-		Task { [log] in
-			await log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
-		}
+		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
 		let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
@@ -107,16 +103,14 @@ extension GameSessionController {
 			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
 			forceDisabled: preferences.forceDisableRetina()
 		)
-		Task { [log] in
-			await log.info(
-				Self.launchDiagnostics(
-					sessionID: gameSessionID,
-					region: requestedRegion,
-					options: requestedLaunchOptions,
-					graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
-				)
+		log.info(
+			Self.launchDiagnostics(
+				sessionID: gameSessionID,
+				region: requestedRegion,
+				options: requestedLaunchOptions,
+				graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
 			)
-		}
+		)
 		launchTask?.cancel()
 		launchTask = Task { [weak self] in
 			guard let self else { return }
@@ -138,7 +132,7 @@ extension GameSessionController {
 					logURL: paths.runtimeLogFile(for: requestedRegion),
 					log: log
 				)
-				await log.info(
+				log.info(
 					"Game runtime started; session=\(gameSessionID.uuidString); pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 				guard activeGameSessionID == gameSessionID else { return }
@@ -173,7 +167,7 @@ extension GameSessionController {
 					region: requestedRegion
 				)
 				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
-				await log.info(
+				log.info(
 					"Game window became visible; session=\(gameSessionID.uuidString); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 			} catch is CancellationError {

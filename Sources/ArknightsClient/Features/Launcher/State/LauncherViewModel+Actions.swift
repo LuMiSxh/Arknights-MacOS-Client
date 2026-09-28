@@ -299,7 +299,7 @@ extension LauncherViewModel {
 		else {
 			return
 		}
-		Task { [log] in await log.info("Launcher settings reset to default") }
+		log.info("Launcher settings reset to default")
 	}
 
 	func uninstallGame() {

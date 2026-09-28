@@ -4,43 +4,82 @@ import Foundation
 
 /// Appends to a size-capped file the launcher and Wine layers share, so "Report a Problem"
 /// and Settings → Logs always have one place to find recent diagnostic history.
-actor LauncherLog {
-	private enum Level: String {
+///
+/// Logging never suspends the caller: entries are timestamped immediately and written in call
+/// order on one serial queue. Use `flush()` when a caller needs earlier entries on disk.
+final class LauncherLog: Sendable {
+	fileprivate enum Level: String {
 		case debug = "DEBUG"
 		case info = "INFO"
 		case error = "ERROR"
 	}
 
-	private let fileURL: URL
-	private let fileManager: FileManager
-	private let formatter = ISO8601DateFormatter()
-	private let maximumFileSize: Int
-	private let maximumMessageBytes: Int
+	private let queue = DispatchQueue(label: "com.lumisxh.arknights-client.log", qos: .utility)
+	private let writer: LauncherLogWriter
 
 	init(
 		fileURL: URL,
-		fileManager: FileManager = .default,
 		maximumFileSize: Int = AppConstants.Logging.maximumFileSize,
 		maximumMessageBytes: Int = AppConstants.Logging.maximumMessageBytes
 	) {
 		precondition(maximumMessageBytes + 128 <= maximumFileSize)
-		self.fileURL = fileURL
-		self.fileManager = fileManager
-		self.maximumFileSize = maximumFileSize
-		self.maximumMessageBytes = maximumMessageBytes
-		formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+		writer = LauncherLogWriter(
+			fileURL: fileURL,
+			maximumFileSize: maximumFileSize,
+			maximumMessageBytes: maximumMessageBytes
+		)
 	}
 
 	func debug(_ message: String) {
-		write(.debug, message)
+		enqueue(.debug, message)
 	}
 
 	func info(_ message: String) {
-		write(.info, message)
+		enqueue(.info, message)
 	}
 
 	func error(_ message: String) {
-		write(.error, message)
+		enqueue(.error, message)
+	}
+
+	/// Ensures the log file exists after every earlier entry has been written.
+	func prepare() async {
+		await perform { $0.prepare() }
+	}
+
+	/// Returns once every earlier entry has been written.
+	func flush() async {
+		await perform { _ in }
+	}
+
+	private func enqueue(_ level: Level, _ message: String) {
+		let date = Date()
+		queue.async { [writer] in writer.write(level, message, at: date) }
+	}
+
+	private func perform(_ work: @escaping @Sendable (LauncherLogWriter) -> Void) async {
+		await withCheckedContinuation { continuation in
+			queue.async { [writer] in
+				work(writer)
+				continuation.resume()
+			}
+		}
+	}
+}
+
+/// Owns the file and formatter; only ever used on `LauncherLog`'s serial queue.
+private final class LauncherLogWriter: @unchecked Sendable {
+	private let fileURL: URL
+	private let fileManager = FileManager.default
+	private let formatter = ISO8601DateFormatter()
+	private let maximumFileSize: Int
+	private let maximumMessageBytes: Int
+
+	init(fileURL: URL, maximumFileSize: Int, maximumMessageBytes: Int) {
+		self.fileURL = fileURL
+		self.maximumFileSize = maximumFileSize
+		self.maximumMessageBytes = maximumMessageBytes
+		formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 	}
 
 	func prepare() {
@@ -51,12 +90,11 @@ actor LauncherLog {
 		}
 	}
 
-	private func write(_ level: Level, _ message: String) {
+	func write(_ level: LauncherLog.Level, _ message: String, at date: Date) {
 		do {
 			let sanitized = boundedMessage(message.replacingOccurrences(of: "\n", with: " "))
-			let timestamp = formatter.string(from: Date())
-			let line = "\(timestamp) [\(level.rawValue)] \(sanitized)\n"
-			guard let data = line.data(using: .utf8) else { return }
+			let line = "\(formatter.string(from: date)) [\(level.rawValue)] \(sanitized)\n"
+			let data = Data(line.utf8)
 			try prepareFile(forAppending: data.count)
 
 			let handle = try FileHandle(forWritingTo: fileURL)

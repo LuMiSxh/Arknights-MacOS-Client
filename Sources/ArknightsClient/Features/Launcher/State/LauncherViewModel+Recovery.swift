@@ -130,8 +130,6 @@ extension LauncherViewModel {
 	}
 
 	private func logRecovery(action: RecoveryAction, result: String) {
-		Task { [log] in
-			await log.info("Recovery selected; action=\(action.rawValue) result=\(result)")
-		}
+		log.info("Recovery selected; action=\(action.rawValue) result=\(result)")
 	}
 }

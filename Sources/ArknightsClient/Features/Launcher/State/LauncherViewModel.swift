@@ -206,7 +206,7 @@ final class LauncherViewModel {
 					await loadDeveloperArtwork()
 					customization.markInitialArtworkLoadComplete()
 				}
-				Task { [log] in await log.info("Developer simulation started") }
+				log.info("Developer simulation started")
 				return
 			}
 		#endif
@@ -266,7 +266,7 @@ final class LauncherViewModel {
 		}
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
-		Task { [log] in await log.info("Launcher \(appVersion) started") }
+		log.info("Launcher \(appVersion) started")
 	}
 
 	private func refreshInstalledRegionsAfterCanaryChange() {

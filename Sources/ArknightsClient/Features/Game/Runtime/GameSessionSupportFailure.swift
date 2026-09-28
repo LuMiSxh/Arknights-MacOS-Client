@@ -53,11 +53,9 @@ extension GameSessionController {
 			return false
 		}
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
-		Task { [log] in
-			await log.info(
-				"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(installation.region.rawValue)"
-			)
-		}
+		log.info(
+			"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(installation.region.rawValue)"
+		)
 		switch failure.context.operation {
 		case .runtimeStop:
 			stopGame()

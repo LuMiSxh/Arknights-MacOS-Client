@@ -78,11 +78,9 @@ extension InstallationController {
 		hasPartialDownload = false
 		lifecycle.setStatus(
 			verifyAllExistingFiles ? .verifyingInstallation : .preparingInstallation)
-		Task { [log] in
-			await log.info(
-				"Installation started; repair=\(verifyAllExistingFiles); target=\(targetDirectory.path)"
-			)
-		}
+		log.info(
+			"Installation started; repair=\(verifyAllExistingFiles); target=\(targetDirectory.path)"
+		)
 
 		installationTask = Task { [weak self] in
 			guard let self else { return }
@@ -122,7 +120,7 @@ extension InstallationController {
 				isGameUpdateAvailable = false
 				lifecycle.setStatus(.ready)
 				publishCompletionFeedback(for: installationID, region: requestedRegion)
-				await log.info(
+				log.info(
 					"Installation completed; files=\(result.downloadedFiles); bytes=\(result.downloadedBytes)"
 				)
 				if launchAfterCompletion { onLaunchRequested?() }
@@ -132,7 +130,7 @@ extension InstallationController {
 				// A paused verification pass says nothing about partial-download progress.
 				if progress?.isVerifying == true { progress = nil }
 				lifecycle.setStatus(.paused)
-				await log.info("Installation paused")
+				log.info("Installation paused")
 			} catch {
 				guard finishInstallation(installationID) else { return }
 				presentInstallationFailure(
@@ -163,11 +161,9 @@ extension InstallationController {
 			break
 		}
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
-		Task { [log] in
-			await log.info(
-				"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(region.rawValue)"
-			)
-		}
+		log.info(
+			"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(region.rawValue)"
+		)
 		startInstallation(
 			launchAfterCompletion: false,
 			verifyAllExistingFiles: failure.context.operation == .repair,
@@ -181,7 +177,7 @@ extension InstallationController {
 		guard case .installing(let installationID, _) = lifecycle.activity else { return }
 		lifecycle.activity = .installing(id: installationID, stage: .pausing)
 		lifecycle.setStatus(.pausing)
-		Task { [log] in await log.info("Installation pause requested") }
+		log.info("Installation pause requested")
 		installationTask?.cancel()
 	}
 

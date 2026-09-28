@@ -58,12 +58,12 @@ extension CustomizationController {
 			let data = try await dataLoader(iconURL)
 			guard isCurrentIconRestore(operationID, generation: generation) else { return false }
 			guard let image = NSImage(data: data) else {
-				await log.error("Saved launcher icon is not a valid image")
+				log.error("Saved launcher icon is not a valid image")
 				setHasCustomAppIcon(false)
 				return false
 			}
 			guard launcherIconManager.apply(image) else {
-				await log.error("Failed to reapply the saved launcher icon to the app bundle")
+				log.error("Failed to reapply the saved launcher icon to the app bundle")
 				setHasCustomAppIcon(false)
 				return false
 			}
@@ -74,7 +74,7 @@ extension CustomizationController {
 			guard isCurrentIconRestore(operationID, generation: generation) else { return false }
 			setHasCustomAppIcon(false)
 			if (error as? CocoaError)?.code == .fileReadNoSuchFile { return false }
-			await log.error("Failed to load saved launcher icon: \(error.localizedDescription)")
+			log.error("Failed to load saved launcher icon: \(error.localizedDescription)")
 			return false
 		}
 	}
@@ -159,7 +159,7 @@ extension CustomizationController {
 				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
 				else { return }
 				if (error as? CocoaError)?.code == .fileReadNoSuchFile { return }
-				await log.error(
+				log.error(
 					"Failed to refresh operator icons for Dynamic Theme: \(error.localizedDescription)"
 				)
 			}

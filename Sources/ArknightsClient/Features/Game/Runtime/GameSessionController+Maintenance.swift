@@ -8,9 +8,7 @@ extension GameSessionController {
 			runtimeName = try discoverRuntime().displayName
 		} catch {
 			runtimeName = nil
-			Task { [log] in
-				await log.error("Runtime discovery failed: \(error.localizedDescription)")
-			}
+			log.error("Runtime discovery failed: \(error.localizedDescription)")
 		}
 	}
 
@@ -22,9 +20,7 @@ extension GameSessionController {
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: prefixDirectory)
 			lifecycle.setStatus(.winePrefixResetScheduled)
-			Task { [log] in
-				await log.info("Wine prefix migration state was reset on request")
-			}
+			log.info("Wine prefix migration state was reset on request")
 		} catch {
 			presentRuntimeMaintenanceFailure(
 				error,
@@ -51,7 +47,7 @@ extension GameSessionController {
 				}.value
 				lifecycle.activity = .idle
 				lifecycle.setStatus(.winePrefixDeleted)
-				await log.info("Wine prefix deleted on request")
+				log.info("Wine prefix deleted on request")
 			} catch {
 				lifecycle.activity = .idle
 				presentRuntimeMaintenanceFailure(

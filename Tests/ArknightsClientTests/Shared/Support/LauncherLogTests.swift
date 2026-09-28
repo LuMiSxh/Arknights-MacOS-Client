@@ -14,8 +14,9 @@ func launcherLogWritesShareableDiagnosticLines() async throws {
 	let fileURL = directory.appending(path: "launcher.log")
 	let log = LauncherLog(fileURL: fileURL)
 
-	await log.info("Installation started")
-	await log.error("Download failed\nConnection closed")
+	log.info("Installation started")
+	log.error("Download failed\nConnection closed")
+	await log.flush()
 
 	let content = try String(contentsOf: fileURL, encoding: .utf8)
 	#expect(content.contains("[INFO] Installation started"))
@@ -34,7 +35,8 @@ func launcherLogBoundsOversizedMessagesWithAnExplicitMarker() async throws {
 	let message =
 		String(repeating: "a", count: AppConstants.Logging.maximumMessageBytes) + omittedSuffix
 
-	await log.info(message)
+	log.info(message)
+	await log.flush()
 
 	let content = try String(contentsOf: fileURL, encoding: .utf8)
 	#expect(content.contains(AppConstants.Logging.truncationMarker))
@@ -55,9 +57,10 @@ func launcherLogRotatesBeforeAnAppendingEntryExceedsItsLimit() async throws {
 		maximumMessageBytes: 64
 	)
 
-	await log.info(String(repeating: "a", count: 64))
-	await log.info(String(repeating: "b", count: 64))
-	await log.info(String(repeating: "c", count: 64))
+	log.info(String(repeating: "a", count: 64))
+	log.info(String(repeating: "b", count: 64))
+	log.info(String(repeating: "c", count: 64))
+	await log.flush()
 
 	let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
 	let currentSize = try #require(attributes[.size] as? NSNumber)
