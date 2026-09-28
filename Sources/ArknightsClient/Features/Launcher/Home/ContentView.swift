@@ -4,6 +4,8 @@ import SwiftUI
 
 struct ContentView: View {
 	let model: LauncherViewModel
+	let musicController: BackgroundMusicController
+	let onboarding: OnboardingCoordinator
 	let registerOpenSettings: (@escaping () -> Void) -> Void
 	let registerQuitPresentationQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
@@ -12,33 +14,23 @@ struct ContentView: View {
 	@State var presentation = LauncherPresentationArbiter()
 	@State var confirmation: LauncherConfirmation?
 	@State var repairFailureID: UUID?
-	@State private var onboarding: OnboardingCoordinator
-	@State private var musicController: BackgroundMusicController
 	@State private var decorativeMotionVisibility = DecorativeMotionVisibility()
 
 	init(
 		model: LauncherViewModel,
-		initialMusicTitle: String?,
-		openMusicURL: @escaping (URL) -> Void,
+		musicController: BackgroundMusicController,
+		onboarding: OnboardingCoordinator,
 		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
 		registerQuitPresentationQuery:
 			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void,
 		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void
 	) {
 		self.model = model
+		self.musicController = musicController
+		self.onboarding = onboarding
 		self.registerOpenSettings = registerOpenSettings
 		self.registerQuitPresentationQuery = registerQuitPresentationQuery
 		self.registerQuitDismissal = registerQuitDismissal
-		_onboarding = State(
-			initialValue: OnboardingCoordinator(
-				store: OnboardingProgressStore(defaults: model.preferences.defaults)))
-		_musicController = State(
-			initialValue: BackgroundMusicController(
-				lifecycle: model.lifecycle,
-				settings: model.settings,
-				launcherIconManager: model.launcherIconManager,
-				initialMusicTitle: initialMusicTitle,
-				openURL: openMusicURL))
 	}
 
 	var body: some View {

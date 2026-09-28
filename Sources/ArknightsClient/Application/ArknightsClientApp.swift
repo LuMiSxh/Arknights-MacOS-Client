@@ -188,8 +188,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct ArknightsClientApp: App {
 	@NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 	@State private var model: LauncherViewModel
+	@State private var musicController: BackgroundMusicController
+	@State private var onboarding: OnboardingCoordinator
 
 	init() {
+		let model = Self.makeModel()
+		_model = State(wrappedValue: model)
+		#if DEBUG
+			let initialMusicTitle = model.developerAccessibilityMusicTitle
+		#else
+			let initialMusicTitle: String? = nil
+		#endif
+		_musicController = State(
+			wrappedValue: BackgroundMusicController(
+				lifecycle: model.lifecycle,
+				settings: model.settings,
+				launcherIconManager: model.launcherIconManager,
+				initialMusicTitle: initialMusicTitle,
+				openURL: { _ = NSWorkspace.shared.open($0) }
+			)
+		)
+		_onboarding = State(
+			wrappedValue: OnboardingCoordinator(
+				store: OnboardingProgressStore(defaults: model.preferences.defaults)
+			)
+		)
+	}
+
+	private static func makeModel() -> LauncherViewModel {
 		let arguments = ProcessInfo.processInfo.arguments
 		#if DEBUG
 			if DeveloperSimulationState.isPreviewArgument(arguments) {
@@ -206,17 +232,14 @@ struct ArknightsClientApp: App {
 				let defaults = UserDefaults(
 					suiteName: "com.lumisxh.arknights-client.preview.\(previewID)"
 				)!
-				_model = State(
-					wrappedValue: LauncherViewModel(
-						paths: paths,
-						preferences: LauncherPreferencesStore(defaults: defaults),
-						arguments: arguments
-					)
+				return LauncherViewModel(
+					paths: paths,
+					preferences: LauncherPreferencesStore(defaults: defaults),
+					arguments: arguments
 				)
-				return
 			}
 		#endif
-		_model = State(wrappedValue: LauncherViewModel(arguments: arguments))
+		return LauncherViewModel(arguments: arguments)
 	}
 
 	var body: some Scene {
@@ -224,8 +247,8 @@ struct ArknightsClientApp: App {
 			GeometryReader { geometry in
 				ContentView(
 					model: model,
-					initialMusicTitle: developerMusicTitle,
-					openMusicURL: { _ = NSWorkspace.shared.open($0) },
+					musicController: musicController,
+					onboarding: onboarding,
 					registerOpenSettings: { appDelegate.openSettings = $0 },
 					registerQuitPresentationQuery: {
 						appDelegate.blockingPresentationForQuit = $0
@@ -245,12 +268,4 @@ struct ArknightsClientApp: App {
 		.windowStyle(.hiddenTitleBar)
 		.defaultSize(width: 1040, height: 680)
 	}
-
-	#if DEBUG
-		private var developerMusicTitle: String? {
-			model.developerAccessibilityMusicTitle
-		}
-	#else
-		private var developerMusicTitle: String? { nil }
-	#endif
 }

@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed Bilibili payment pages getting stuck while loading by correcting Wine's handling of nested CEF windows.
 - Added Wine DirectWrite CJK font fallbacks for Bilibili payment pages so Chinese text renders when macOS uses another language.
 - Fixed the China and China — Bilibili server reset countdown using UTC instead of China Standard Time (UTC+8).
+- Fixed Now Playing artwork no longer following launcher icon changes after the window was resized.
 
 ## [0.6.0] - 2026-09-24
 
