@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Reworked launcher motion around shared spring curves: buttons press and release with a spring, lift on hover, and show a pointer-following sheen; the primary action morphs between operations and breathes softly when Play is ready; download progress gains a glowing leading edge and completed installations send a success ripple; HUD pills enter in a staggered cascade, recede while another panel is open, and reveal their details with a soft blur; the update dialog and launcher popups spring into place. Reduce Motion and Reduce Transparency keep the previous quiet behavior.
 - Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
 
 ### Fixed
