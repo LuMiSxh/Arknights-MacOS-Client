@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Replaced updated game files atomically so an interrupted install or repair can no longer leave a file missing.
 - Treated a Wine process that ends without an exit status as a failure instead of a clean exit.
 - Kept server reset countdowns for every installed client current while the region list is open, updating on each minute.
+- Stopped Yostar notices from loading remote images, scripts, or stylesheets while they are formatted.
 
 ## [0.6.0] - 2026-09-24
 
