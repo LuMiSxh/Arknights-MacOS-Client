@@ -21,9 +21,9 @@ enum LauncherUpdateOverlayPresentation {
 	static func motion(reduceMotion: Bool) -> Motion {
 		guard !reduceMotion else { return .immediate }
 		return .animated(
-			backgroundDuration: 0.18,
-			dialogDuration: 0.22,
-			initialDialogScale: 0.985)
+			backgroundDuration: 0.24,
+			dialogDuration: 0.50,
+			initialDialogScale: 0.90)
 	}
 }
 
@@ -63,8 +63,10 @@ struct LauncherUpdateOverlay: View {
 			hudTintColor: hudTintColor,
 			checkForUpdates: checkForUpdates
 		)
-		.opacity(isVisible ? 1 : 0)
+		.blur(radius: isVisible ? 0 : initialDialogBlur)
+		.offset(y: isVisible ? 0 : initialDialogOffset)
 		.scaleEffect(isVisible ? 1 : initialDialogScale)
+		.opacity(isVisible ? 1 : 0)
 		.animation(dialogAnimation, value: isVisible)
 		.focusSection()
 		.accessibilityAddTraits(.isModal)
@@ -79,6 +81,17 @@ struct LauncherUpdateOverlay: View {
 		return 1
 	}
 
+	/// The dialog starts soft and slightly low, then springs into focus.
+	private var initialDialogBlur: CGFloat {
+		if case .animated = motion { return 10 }
+		return 0
+	}
+
+	private var initialDialogOffset: CGFloat {
+		if case .animated = motion { return 18 }
+		return 0
+	}
+
 	private var backgroundAnimation: Animation? {
 		if case .animated(let duration, _, _) = motion {
 			return .easeOut(duration: duration)
@@ -88,7 +101,7 @@ struct LauncherUpdateOverlay: View {
 
 	private var dialogAnimation: Animation? {
 		if case .animated(_, let duration, _) = motion {
-			return .easeOut(duration: duration)
+			return .spring(duration: duration, bounce: 0.24)
 		}
 		return nil
 	}

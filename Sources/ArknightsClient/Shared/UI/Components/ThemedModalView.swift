@@ -13,6 +13,8 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 	@ViewBuilder let content: Content
 	@ViewBuilder let actions: Actions
 	@Environment(\.launcherWindowSize) private var launcherWindowSize
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var hasEntered = false
 
 	init(
 		title: String,
@@ -39,13 +41,15 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 			VStack(alignment: .leading, spacing: 10) {
 				Text(title)
 					.font(.title2.bold())
+					.modifier(ModalEntrance(hasEntered: hasEntered, reduceMotion: reduceMotion))
 				HStack(spacing: 8) {
 					Rectangle()
 						.fill(LauncherVisuals.controlTint.opacity(0.62))
-						.frame(width: 48, height: 2)
+						.frame(width: hasEntered || reduceMotion ? 48 : 0, height: 2)
 					Rectangle().fill(LauncherVisuals.hairline)
 						.frame(height: 1)
 						.frame(maxWidth: .infinity)
+						.scaleEffect(x: hasEntered || reduceMotion ? 1 : 0, anchor: .leading)
 				}
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
@@ -59,6 +63,13 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 					.padding(.horizontal, 24)
 					.padding(.top, 2)
 					.padding(.bottom, 20)
+					.modifier(
+						ModalEntrance(
+							hasEntered: hasEntered,
+							reduceMotion: reduceMotion,
+							offsetY: 14
+						)
+					)
 			}
 			.contentMargins(.top, 8, for: .scrollIndicators)
 			.contentMargins(.bottom, 22, for: .scrollIndicators)
@@ -91,6 +102,12 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 		}
 		.shadow(color: .black.opacity(0.45), radius: 24, y: 10)
 		.preferredColorScheme(.dark)
+		.onAppear {
+			let entrance = LauncherMotion.animation(.present, reduceMotion: reduceMotion)
+			withAnimation(entrance?.delay(0.08)) {
+				hasEntered = true
+			}
+		}
 	}
 
 	private var modalSize: CGSize {
@@ -118,5 +135,19 @@ struct ThemedModalView<Content: View, Actions: View>: View {
 		available: CGFloat
 	) -> CGFloat {
 		min(max(preferred, minimum), max(0, available))
+	}
+}
+
+/// Lets modal content settle in after the native sheet lifecycle has placed the window.
+private struct ModalEntrance: ViewModifier {
+	let hasEntered: Bool
+	let reduceMotion: Bool
+	var offsetY: CGFloat = 8
+
+	func body(content: Content) -> some View {
+		content
+			.opacity(hasEntered || reduceMotion ? 1 : 0)
+			.offset(y: hasEntered || reduceMotion ? 0 : offsetY)
+			.blur(radius: hasEntered || reduceMotion ? 0 : 4)
 	}
 }

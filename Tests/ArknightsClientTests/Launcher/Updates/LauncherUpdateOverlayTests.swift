@@ -28,9 +28,9 @@ func updateOverlayMotionKeepsDialogAndDimDurationsSeparate() {
 	#expect(
 		motion
 			== .animated(
-				backgroundDuration: 0.18,
-				dialogDuration: 0.22,
-				initialDialogScale: 0.985))
+				backgroundDuration: 0.24,
+				dialogDuration: 0.50,
+				initialDialogScale: 0.90))
 	#expect(LauncherUpdateOverlayPresentation.motion(reduceMotion: true) == .immediate)
 }
 
