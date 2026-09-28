@@ -30,10 +30,22 @@ struct CapsuleProgressOutline: View {
 			}
 			.overlay {
 				if isGlintActive && clampedProgress > 0 && !reduceMotion {
+					progressHead
 					CapsuleProgressSweep(progress: clampedProgress, lineWidth: lineWidth)
 				}
 			}
 			.accessibilityHidden(true)
+	}
+
+	/// A glowing comet head at the leading edge of the transferred fraction.
+	private var progressHead: some View {
+		let tail = max(0, clampedProgress - min(0.035, clampedProgress))
+		return Capsule()
+			.inset(by: lineWidth / 2)
+			.trim(from: tail, to: clampedProgress)
+			.stroke(tint, style: StrokeStyle(lineWidth: lineWidth * 3, lineCap: .round))
+			.blur(radius: 4)
+			.blendMode(.plusLighter)
 	}
 }
 
@@ -78,13 +90,22 @@ private struct CapsuleProgressSweep: View {
 		let values = sweepValues(for: phase)
 		let head = values.head * progress
 		let length = min(0.06, progress * 0.25)
-		return Capsule()
+		let segment = Capsule()
 			.inset(by: lineWidth / 2)
 			.trim(from: max(0, head - length), to: head)
-			.stroke(
-				Color.white.opacity(values.opacity),
-				style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-			)
+		return ZStack {
+			segment
+				.stroke(
+					Color.white.opacity(values.opacity * 0.6),
+					style: StrokeStyle(lineWidth: lineWidth * 3, lineCap: .round)
+				)
+				.blur(radius: 3)
+			segment
+				.stroke(
+					Color.white.opacity(values.opacity),
+					style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+				)
+		}
 	}
 
 	private func sweepValues(for phase: Double) -> (head: Double, opacity: Double) {
@@ -94,14 +115,14 @@ private struct CapsuleProgressSweep: View {
 		let elapsed = phase * cycleDuration
 		if elapsed < fadeIn {
 			let fraction = smoothstep(elapsed / fadeIn)
-			return (0, 0.22 * fraction)
+			return (0, 0.4 * fraction)
 		}
 		if elapsed < fadeIn + travel {
-			return ((elapsed - fadeIn) / travel, 0.22)
+			return ((elapsed - fadeIn) / travel, 0.4)
 		}
 		if elapsed < fadeIn + travel + fadeOut {
 			let fraction = smoothstep((elapsed - fadeIn - travel) / fadeOut)
-			return (1, 0.22 * (1 - fraction))
+			return (1, 0.4 * (1 - fraction))
 		}
 		return (0, 0)
 	}

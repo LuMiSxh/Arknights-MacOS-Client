@@ -11,6 +11,7 @@ struct LauncherPrimaryActionView: View {
 	let cancelDownload: () -> Void
 	let launch: () -> Void
 	let stopGame: () -> Void
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		CapsuleActionButton(
@@ -21,7 +22,16 @@ struct LauncherPrimaryActionView: View {
 			action: action
 		)
 		.controlSize(.large)
+		.breathingGlow(
+			tint: accentColor,
+			isActive: actionKind == .play && !actionIsDisabled,
+			in: Capsule()
+		)
 		.disabled(actionIsDisabled)
+		.animation(
+			LauncherMotion.animation(.morph, reduceMotion: reduceMotion),
+			value: actionKind
+		)
 		.help(actionHelp)
 		.accessibilityHint(actionHelp)
 	}

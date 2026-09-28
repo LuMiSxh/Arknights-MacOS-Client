@@ -7,6 +7,7 @@ struct LauncherCompletionFeedbackView: View {
 	let feedbackID: UUID
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isVisible = false
+	@State private var isRippling = false
 
 	var body: some View {
 		Group {
@@ -20,12 +21,24 @@ struct LauncherCompletionFeedbackView: View {
 		}
 		.font(.system(size: 15, weight: .semibold))
 		.foregroundStyle(LauncherVisuals.success)
+		.background {
+			if !reduceMotion {
+				Circle()
+					.stroke(LauncherVisuals.success, lineWidth: 1.5)
+					.scaleEffect(isRippling ? 2.6 : 0.6)
+					.opacity(isRippling ? 0 : 0.75)
+			}
+		}
 		.accessibilityHidden(true)
 		.task(id: feedbackID) {
 			guard !Task.isCancelled else { return }
 			if reduceMotion {
 				isVisible = true
 				return
+			}
+			isRippling = false
+			withAnimation(.easeOut(duration: 0.9)) {
+				isRippling = true
 			}
 			if #available(macOS 26, *) {
 				isVisible = true
