@@ -161,7 +161,6 @@ final class LauncherViewModel {
 		)
 		self.gameSession = gameSession
 
-		settings.regionProvider = { [weak installation] in installation?.region ?? .global }
 		settings.onLauncherUpdateCheckRequested = { [weak self] in
 			self?.checkLauncherUpdates()
 		}
@@ -193,8 +192,6 @@ final class LauncherViewModel {
 		gameSession.customGameIconURL = { [weak customization, paths] in
 			customization?.hasCustomGameIcon == true ? paths.customGameIcon : nil
 		}
-
-		settings.start()
 
 		#if DEBUG
 			developerSimulation =

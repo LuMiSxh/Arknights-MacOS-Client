@@ -29,12 +29,8 @@ final class LauncherPreferencesController {
 		}
 	}
 	var showsServerResetCountdown: Bool {
-		didSet {
-			store.setShowsServerResetCountdown(showsServerResetCountdown)
-			showsServerResetCountdown ? startResetCountdownTimer() : stopResetCountdownTimer()
-		}
+		didSet { store.setShowsServerResetCountdown(showsServerResetCountdown) }
 	}
-	var resetCountdownText: String?
 	var showsGameVersion: Bool {
 		didSet { store.setShowsGameVersion(showsGameVersion) }
 	}
@@ -87,10 +83,8 @@ final class LauncherPreferencesController {
 	@ObservationIgnored var onCanaryFeaturesChanged: ((Bool) -> Void)?
 	@ObservationIgnored var onChinaClientsChanged: ((Bool) -> Void)?
 	@ObservationIgnored var onTaiwanClientChanged: ((Bool) -> Void)?
-	@ObservationIgnored var regionProvider: () -> GameRegion = { .global }
 
 	private let store: LauncherPreferencesStore
-	@ObservationIgnored private var resetCountdownTask: Task<Void, Never>?
 
 	init(store: LauncherPreferencesStore) {
 		self.store = store
@@ -112,64 +106,27 @@ final class LauncherPreferencesController {
 		usesHardwareCursor = store.usesHardwareCursor()
 	}
 
-	deinit {
-		resetCountdownTask?.cancel()
-	}
-
-	func start() {
-		if showsServerResetCountdown { startResetCountdownTimer() }
-	}
-
-	func regionDidChange() {
-		refreshResetCountdown()
-	}
-
 	/// Keeps region and installation locations intact because they point to user files.
 	func resetToDefaults(canModifyLaunchOptions: Bool) -> Bool {
 		guard canModifyLaunchOptions else { return false }
-		automaticallyChecksLauncherUpdates = true
-		automaticallyChecksGameUpdates = true
-		announcementsEnabled = true
-		launchOptions = .default
-		showsServerResetCountdown = false
-		showsGameVersion = true
-		playsLauncherMusic = true
-		launcherMusicURL = AppConstants.Music.defaultLauncherMusicURL
-		showsPlayingMusic = false
-		launcherMusicVolume = 0.5
-		usesDynamicTheme = true
-		canaryFeaturesEnabled = false
-		chinaClientsEnabled = false
-		taiwanClientEnabled = false
-		store.clearACEWarningAcknowledgements()
-		maximumFrameLatency = 3
-		usesHardwareCursor = false
+		store.removeResettablePreferences()
+		// Reassigning from the store runs each property's change handlers with the defaults.
+		automaticallyChecksLauncherUpdates = store.automaticLauncherUpdates()
+		automaticallyChecksGameUpdates = store.automaticGameUpdates()
+		announcementsEnabled = store.announcementsEnabled()
+		launchOptions = store.launchOptions()
+		showsServerResetCountdown = store.showsServerResetCountdown()
+		showsGameVersion = store.showsGameVersion()
+		playsLauncherMusic = store.playsLauncherMusic()
+		launcherMusicURL = store.launcherMusicURL()
+		showsPlayingMusic = store.showsPlayingMusic()
+		launcherMusicVolume = store.launcherMusicVolume()
+		usesDynamicTheme = store.usesDynamicTheme()
+		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
+		chinaClientsEnabled = store.chinaClientsEnabled()
+		taiwanClientEnabled = store.taiwanClientEnabled()
+		maximumFrameLatency = store.maximumFrameLatency()
+		usesHardwareCursor = store.usesHardwareCursor()
 		return true
-	}
-
-	private func startResetCountdownTimer() {
-		resetCountdownTask?.cancel()
-		refreshResetCountdown()
-		resetCountdownTask = Task { [weak self] in
-			while !Task.isCancelled {
-				try? await Task.sleep(for: AppConstants.Timeouts.resetCountdownPollInterval)
-				guard !Task.isCancelled, let self else { return }
-				refreshResetCountdown()
-			}
-		}
-	}
-
-	private func stopResetCountdownTimer() {
-		resetCountdownTask?.cancel()
-		resetCountdownTask = nil
-		resetCountdownText = nil
-	}
-
-	private func refreshResetCountdown() {
-		guard showsServerResetCountdown else {
-			resetCountdownText = nil
-			return
-		}
-		resetCountdownText = ServerReset.countdownText(for: regionProvider())
 	}
 }

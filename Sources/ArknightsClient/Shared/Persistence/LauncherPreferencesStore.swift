@@ -234,8 +234,19 @@ struct LauncherPreferencesStore {
 		defaults.set(Array(regions).sorted(), forKey: Key.acknowledgedACEWarningRegions)
 	}
 
-	func clearACEWarningAcknowledgements() {
-		defaults.removeObject(forKey: Key.acknowledgedACEWarningRegions)
+	/// Removes every user-facing setting so each getter falls back to its single default.
+	/// Region, install locations, announcement history, and theme caches are kept.
+	func removeResettablePreferences() {
+		for key in [
+			Key.automaticLauncherUpdates, Key.automaticGameUpdates, Key.announcementsEnabled,
+			Key.gameLaunchOptions, Key.showsServerResetCountdown, Key.showsGameVersion,
+			Key.playsLauncherMusic, Key.launcherMusicURL, Key.showsPlayingMusic,
+			Key.launcherMusicVolume, Key.usesDynamicTheme, Key.canaryFeaturesEnabled,
+			Key.chinaClientsEnabled, Key.taiwanClientEnabled,
+			Key.acknowledgedACEWarningRegions, Key.maximumFrameLatency, Key.usesHardwareCursor,
+		] {
+			defaults.removeObject(forKey: key)
+		}
 	}
 
 	func maximumFrameLatency() -> Int {

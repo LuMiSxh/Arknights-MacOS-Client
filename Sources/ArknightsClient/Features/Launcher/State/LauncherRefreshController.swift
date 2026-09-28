@@ -124,7 +124,6 @@ final class LauncherRefreshController {
 		branding = nil
 		customization.restoreOfficialLogo(for: newRegion)
 		communication.resetPresentedNotice()
-		settings.regionDidChange()
 		lifecycle.setStatus(.checking)
 		Task { [log] in await log.info("Region switched to \(newRegion.displayName)") }
 		startRefresh()

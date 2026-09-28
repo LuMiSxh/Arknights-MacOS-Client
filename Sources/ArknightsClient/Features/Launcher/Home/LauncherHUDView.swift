@@ -175,7 +175,7 @@ struct LauncherHUDView: View {
 	}
 
 	private var hasStatusPill: Bool {
-		settings.resetCountdownText != nil
+		settings.showsServerResetCountdown
 	}
 
 	private var versionText: String {
