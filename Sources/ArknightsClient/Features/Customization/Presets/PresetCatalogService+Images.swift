@@ -67,7 +67,7 @@ extension PresetCatalogService {
 		let finalError = lastError ?? LauncherError.invalidPresetImage(url)
 		guard cacheEpoch == epoch else { throw CancellationError() }
 		log.error(
-			"Failed to load preset image from \(url.absoluteString): \(finalError.localizedDescription)"
+			"Failed to load preset image from \(url.absoluteString): \(launcherDiagnosticDescription(for: finalError))"
 		)
 		guard cacheEpoch == epoch else { throw CancellationError() }
 		throw finalError
@@ -146,7 +146,8 @@ extension PresetCatalogService {
 				guard cacheEpoch == epoch else { return nil }
 			}
 			log.error(
-				"Rejected preset cache entry at \(url.path): \(error.localizedDescription)")
+				"Rejected preset cache entry at \(url.path): \(launcherDiagnosticDescription(for: error))"
+			)
 			guard cacheEpoch == epoch else { return nil }
 			return nil
 		}

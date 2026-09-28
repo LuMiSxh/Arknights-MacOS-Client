@@ -263,22 +263,26 @@
 
 		func projection() -> DeveloperSimulationProjection {
 			let progress: DownloadProgress?
+			// A stopped verification pass does not represent partial-download progress.
 			if progressMode == .known,
+				installationPhase != .verifying || lifecycle == .installing,
 				lifecycle == .installing || lifecycle == .paused
 					|| (lifecycle == .ready && hasPartialDownload)
 			{
 				let total = max(totalBytes, 1)
 				let downloaded = min(max(downloadedBytes, 0), total)
+				let isVerifying = installationPhase == .verifying
 				progress = DownloadProgress(
 					downloadedBytes: downloaded,
 					totalBytes: total,
 					completedFiles: max(completedFiles, 0),
 					totalFiles: max(totalFiles, 0),
 					currentFile: currentFile,
-					transferRateBytesPerSecond: transferRateMode == .known
+					transferRateBytesPerSecond: !isVerifying && transferRateMode == .known
 						? transferRateBytesPerSecond
 						: nil,
-					isTransferStalled: transferStalled
+					isTransferStalled: !isVerifying && transferStalled,
+					isVerifying: isVerifying
 				)
 			} else {
 				progress = nil

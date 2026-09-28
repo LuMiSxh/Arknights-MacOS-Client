@@ -59,7 +59,7 @@ extension GameSessionController {
 			runtime = try discoverRuntime()
 		} catch {
 			log.error(
-				"Could not stop Wine during app termination: \(error.localizedDescription)"
+				"Could not stop Wine during app termination: \(launcherDiagnosticDescription(for: error))"
 			)
 			return
 		}
@@ -155,7 +155,8 @@ extension GameSessionController {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
 			} catch {
 				guard !Task.isCancelled else { return }
-				log.error("Game process monitor failed: \(error.localizedDescription)")
+				log.error(
+					"Game process monitor failed: \(launcherDiagnosticDescription(for: error))")
 				guard let self, !Task.isCancelled, activeGameSessionID == sessionID else {
 					return
 				}
@@ -188,7 +189,7 @@ extension GameSessionController {
 			try await runtime.stop(prefixDirectory: paths.winePrefix(for: region))
 		} catch {
 			guard activeGameSessionID == sessionID else { return }
-			log.error("Runtime cleanup failed: \(error.localizedDescription)")
+			log.error("Runtime cleanup failed: \(launcherDiagnosticDescription(for: error))")
 			presentRuntimeFailure(
 				error,
 				id: sessionID,

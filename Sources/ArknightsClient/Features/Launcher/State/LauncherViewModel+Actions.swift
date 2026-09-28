@@ -159,12 +159,8 @@ extension LauncherViewModel {
 	func refreshIntelTranslationForUI(force: Bool = false) async -> IntelTranslationState {
 		#if DEBUG
 			if let simulation = developerSimulation {
-				let state: IntelTranslationState =
-					simulation.rosettaMissing
-					? .rosettaMissing
-					: .available
-				lifecycle.intelTranslationState = state
-				return state
+				applyDeveloperTranslationCheck(simulation)
+				return intelTranslation.state
 			}
 		#endif
 		return await intelTranslation.refreshAvailability(force: force)
@@ -179,6 +175,9 @@ extension LauncherViewModel {
 	func launch() {
 		#if DEBUG
 			if isDeveloperMode {
+				guard gameSession.canLaunch, lifecycle.failure?.blocksGameLaunch != true else {
+					return
+				}
 				updateDeveloperSimulation {
 					$0.failure = .none
 					$0.lifecycle = .launching
@@ -263,14 +262,16 @@ extension LauncherViewModel {
 		private func simulateDeveloperDockLaunch(region: GameRegion) -> Bool {
 			guard var simulation = developerSimulation,
 				canRequestDockLaunch,
+				intelTranslation.allowsWine,
 				simulation.selectableRegions.contains(region),
 				simulation.installedRegions.contains(region),
 				simulation.isInstalled,
 				!simulation.hasPartialDownload,
 				!simulation.updateAvailable,
-				simulation.failure == .none
+				lifecycle.failure?.blocksGameLaunch != true
 			else { return false }
 			simulation.selectedRegion = region
+			simulation.failure = .none
 			simulation.lifecycle = .running
 			applyDeveloperSimulation(simulation)
 			return true

@@ -69,6 +69,12 @@ final class IntelTranslationController {
 
 		let check = await task.value
 		checkTask = nil
+		applyAvailabilityCheck(check)
+		return check.state
+	}
+
+	/// Applies real and simulated probe results through the same recovery presentation.
+	func applyAvailabilityCheck(_ check: IntelTranslationCheck) {
 		lifecycle.intelTranslationState = check.state
 		if check.state != .rosettaMissing {
 			lifecycle.rosettaInstallationState = .idle
@@ -77,7 +83,6 @@ final class IntelTranslationController {
 		log.info(
 			"Intel translation preflight; state=\(check.state.diagnosticName) \(check.diagnostics)"
 		)
-		return check.state
 	}
 
 	@discardableResult
@@ -166,29 +171,6 @@ final class IntelTranslationController {
 		return true
 	}
 
-	var statusTitle: String? {
-		if lifecycle.rosettaInstallationState.isInstalling {
-			return "Installing Rosetta 2…"
-		}
-		if lifecycle.rosettaInstallationState.failureMessage != nil {
-			return "Rosetta installation failed"
-		}
-		return switch lifecycle.intelTranslationState {
-		case .waitingForLauncherCheck, .checking:
-			"Checking Intel compatibility…"
-		case .available:
-			nil
-		case .rosettaMissing:
-			"Rosetta 2 required"
-		case .gameTestModeEnabled:
-			"Legacy Game Test Mode is active"
-		case .unavailable:
-			"Intel compatibility unavailable"
-		case .unsupportedOS:
-			"Windows runtime unsupported"
-		}
-	}
-
 	var statusDetail: String? {
 		if lifecycle.rosettaInstallationState.isInstalling {
 			return "Apple’s software update tool is installing the Intel compatibility layer."
@@ -210,34 +192,9 @@ final class IntelTranslationController {
 		}
 	}
 
-	var canRetryAvailabilityCheck: Bool {
-		guard !lifecycle.rosettaInstallationState.isInstalling else { return false }
-		return switch lifecycle.intelTranslationState {
-		case .rosettaMissing, .gameTestModeEnabled, .unavailable:
-			true
-		case .waitingForLauncherCheck, .checking, .available, .unsupportedOS:
-			false
-		}
-	}
-
 	var canInstallRosetta: Bool {
 		lifecycle.intelTranslationState == .rosettaMissing
 			&& !lifecycle.rosettaInstallationState.isInstalling
-	}
-
-	var supportCode: SupportCode? {
-		switch lifecycle.intelTranslationState {
-		case .rosettaMissing, .gameTestModeEnabled, .unavailable, .unsupportedOS:
-			.limpet
-		case .waitingForLauncherCheck, .checking, .available:
-			nil
-		}
-	}
-
-	var installationActionTitle: String {
-		lifecycle.rosettaInstallationState.failureMessage == nil
-			? "Install Rosetta 2…"
-			: "Try Installation Again…"
 	}
 
 	var launchError: LauncherError {

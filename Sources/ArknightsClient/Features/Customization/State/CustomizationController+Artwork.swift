@@ -124,7 +124,9 @@ extension CustomizationController {
 			}
 			setHasPersistedCustomArtwork(false)
 			if (error as? CocoaError)?.code == .fileReadNoSuchFile { return false }
-			log.error("Failed to load custom launcher artwork: \(error.localizedDescription)")
+			log.error(
+				"Failed to load custom launcher artwork: \(launcherDiagnosticDescription(for: error))"
+			)
 			return false
 		}
 	}

@@ -23,14 +23,22 @@
 			communication.launcherUpdateVersion = projection.launcherUpdateVersion
 			communication.launcherUpdateStatus = projection.launcherUpdateStatus
 			communication.isCheckingLauncherUpdates = false
-			lifecycle.intelTranslationState =
-				simulation.rosettaMissing ? .rosettaMissing : .available
 			lifecycle.refresh = .idle
 			lifecycle.activity = simulatedActivity(for: simulation)
 			lifecycle.setStatus(projection.status, clearsFailure: projection.failureCode == nil)
 			applyDeveloperPreferences(simulation)
 			applyDeveloperFailure(projection, region: simulation.selectedRegion)
+			applyDeveloperTranslationCheck(simulation)
 			applyDeveloperPopup(simulation)
+		}
+
+		func applyDeveloperTranslationCheck(_ simulation: DeveloperSimulationState) {
+			intelTranslation.applyAvailabilityCheck(
+				IntelTranslationCheck(
+					state: simulation.rosettaMissing ? .rosettaMissing : .available,
+					diagnostics: "Developer preview"
+				)
+			)
 		}
 
 		func updateDeveloperSimulation(_ update: (inout DeveloperSimulationState) -> Void) {
@@ -134,7 +142,11 @@
 		) {
 			guard let code = projection.failureCode, let operation = projection.failureOperation
 			else {
-				lifecycle.clearFailure()
+				if lifecycle.failure?.context.operation != .intelTranslationPreflight
+					|| !installation.isInstalled
+				{
+					lifecycle.clearFailure()
+				}
 				return
 			}
 			let isConfiguration = operation == .configurationRefresh
@@ -149,17 +161,20 @@
 			} else {
 				failureID = UUID()
 			}
+			let error: LauncherError =
+				isConfiguration
+				? .invalidResponse
+				: .runtimeExited(status: 1, log: gameSession.paths.runtimeLogFile(for: region))
 			lifecycle.presentation.failure = LauncherFailurePresentation(
 				id: failureID,
-				message: isConfiguration
-					? "The selected game configuration could not be loaded."
-					: "The Windows runtime exited with status 1.",
+				message: launcherUserMessage(for: error),
 				code: code,
 				context: SupportContext(operation: operation, region: region.supportRegion),
 				actions: isConfiguration
 					? [.retry, .openTroubleshooting, .reportProblem]
-					: [.retry, .openTroubleshooting, .repair, .reportProblem],
-				blocksGameLaunch: true
+					: GameSessionController.recoveryActions(
+						for: code, isInstalled: projection.isInstalled, operation: operation),
+				blocksGameLaunch: isConfiguration && !projection.isInstalled
 			)
 		}
 

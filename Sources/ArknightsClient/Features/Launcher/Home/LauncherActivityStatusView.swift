@@ -97,10 +97,7 @@ enum LauncherDownloadProgressPresentation {
 struct LauncherActivityStatusView: View {
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
-	let intelTranslation: IntelTranslationController
 	let accentColor: Color
-	let requestRosettaInstallation: () -> Void
-	let retryIntelTranslationCheck: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var completionFeedback: InstallationCompletionFeedback?
 
@@ -145,7 +142,6 @@ struct LauncherActivityStatusView: View {
 							.foregroundStyle(.secondary)
 							.lineLimit(1)
 						transferDetails
-						statusAction
 					}
 				}
 			}
@@ -202,46 +198,6 @@ struct LauncherActivityStatusView: View {
 		completionFeedback = installation.consumeCompletionFeedback(for: installation.region)
 	}
 
-	@ViewBuilder
-	private var statusAction: some View {
-		if lifecycle.failure == nil,
-			installation.isInstalled, let code = intelTranslation.supportCode
-		{
-			VStack(alignment: .leading, spacing: 4) {
-				LauncherSupportCodeLabel(code: code)
-				ViewThatFits(in: .horizontal) {
-					HStack(spacing: 10) { intelTranslationActions(code: code) }
-					VStack(alignment: .leading, spacing: 4) {
-						intelTranslationActions(code: code)
-					}
-				}
-				.font(.caption)
-			}
-		}
-	}
-
-	@ViewBuilder
-	private func intelTranslationActions(code: SupportCode) -> some View {
-		if intelTranslation.canInstallRosetta {
-			AccentActionLink(
-				title: intelTranslation.installationActionTitle,
-				accentColor: accentColor,
-				action: requestRosettaInstallation
-			)
-		} else if intelTranslation.canRetryAvailabilityCheck {
-			AccentActionLink(
-				title: HomeStrings.checkAgain,
-				accentColor: accentColor,
-				action: retryIntelTranslationCheck
-			)
-		}
-		AccentLink(
-			title: HomeStrings.openTroubleshooting,
-			destination: code.troubleshootingURL,
-			accentColor: accentColor
-		)
-	}
-
 	private var statusTitle: String {
 		if lifecycle.presentation.status == .pausing { return lifecycle.activityMessage }
 		if showsDownloadSnapshot,
@@ -255,7 +211,6 @@ struct LauncherActivityStatusView: View {
 		if lifecycle.failure?.blocksGameLaunch == true {
 			return HomeStrings.needsAttention
 		}
-		if installation.isInstalled, let title = intelTranslation.statusTitle { return title }
 		return lifecycle.activityMessage
 	}
 
@@ -269,8 +224,6 @@ struct LauncherActivityStatusView: View {
 				HomeStrings.downloadProgress(downloaded: downloaded, total: total)
 
 		}
-		if lifecycle.failure?.blocksGameLaunch == true { return nil }
-		if installation.isInstalled { return intelTranslation.statusDetail }
 		return nil
 	}
 

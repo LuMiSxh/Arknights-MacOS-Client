@@ -162,7 +162,7 @@ struct IntelTranslationControllerTests {
 			return
 		}
 		#expect(controller.canInstallRosetta)
-		#expect(!controller.installationActionTitle.isEmpty)
+		#expect(lifecycle.failure?.actions.contains(.retry) == true)
 		#expect(lifecycle.rosettaInstallationState.failureMessage?.contains("7") == true)
 		#expect(lifecycle.failure?.blocksGameLaunch == true)
 	}
@@ -196,14 +196,16 @@ struct IntelTranslationControllerTests {
 			(.checking, SupportCode?.none),
 		]
 	)
-	func readinessExposesLimpetOnlyForTerminalBlockedStates(
+	func readinessPublishesLimpetOnlyForTerminalBlockedStates(
 		fixture: (IntelTranslationState, SupportCode?)
 	) {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.intelTranslationState = fixture.0
+		lifecycle.readiness.isInstalled = true
 		let controller = IntelTranslationController(lifecycle: lifecycle)
+		controller.applyAvailabilityCheck(
+			IntelTranslationCheck(state: fixture.0, diagnostics: "test"))
 
-		#expect(controller.supportCode == fixture.1)
+		#expect(lifecycle.failure?.code == fixture.1)
 	}
 
 	@Test

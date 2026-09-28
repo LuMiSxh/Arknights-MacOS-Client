@@ -18,12 +18,17 @@ extension LauncherViewModel {
 		}
 		#if DEBUG
 			if isDeveloperMode, action == .retry {
+				if failure.context.operation == .intelTranslationPreflight,
+					lifecycle.activity != .idle
+				{
+					return .ignored
+				}
 				guard lifecycle.consumeFailure(id: failureID) != nil else { return .ignored }
 				logRecovery(action: action, result: "simulated")
 				updateDeveloperSimulation {
 					$0.failure = .none
 					switch failure.context.operation {
-					case .configurationRefresh:
+					case .configurationRefresh, .intelTranslationPreflight:
 						$0.lifecycle = .ready
 					case .install, .update, .repair:
 						$0.lifecycle = .installing

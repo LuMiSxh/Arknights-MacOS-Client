@@ -49,7 +49,7 @@ Installation, update, repair, prefix preparation, and game launch share one excl
 
 Each region owns its game directory and installed manifest. The active region is the only one shown in the home action and status capsule. Regions share the configured Wine prefix only within their publisher family, and launching a region must repoint that family's `G:` drive first. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md) for the implementation boundary.
 
-Report failures in the same status area as the operation that failed. Keep the message actionable, expose **Report a Problem** when diagnostic context is available, and leave recovery actions such as **Check Again**, **Repair**, or Rosetta installation next to the relevant state. Do not turn a transient check failure into an install or play action.
+Present launcher failures in the shared failure dialog, with actionable guidance and the matching recovery actions. The home status capsule shows **Needs Attention** and **Details** for blocking failures; it does not duplicate error text, support codes, or Rosetta recovery controls. During onboarding, keep Rosetta prerequisites and installation recovery in the setup step. Do not turn a transient check failure into an install or play action.
 
 ## Accessibility and input
 

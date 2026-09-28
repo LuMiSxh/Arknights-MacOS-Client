@@ -132,7 +132,8 @@ actor PresetCatalogService {
 			return try JSONDecoder().decode(Value.self, from: data)
 		} catch {
 			log.error(
-				"Failed to read preset index at \(url.path): \(error.localizedDescription)")
+				"Failed to read preset index at \(url.path): \(launcherDiagnosticDescription(for: error))"
+			)
 			return nil
 		}
 	}
@@ -157,7 +158,8 @@ actor PresetCatalogService {
 		} catch {
 			guard cacheEpoch == epoch else { return }
 			log.error(
-				"Failed to write preset index at \(url.path): \(error.localizedDescription)")
+				"Failed to write preset index at \(url.path): \(launcherDiagnosticDescription(for: error))"
+			)
 		}
 	}
 
