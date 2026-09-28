@@ -30,7 +30,10 @@ struct CapsuleProgressOutline: View {
 			}
 			.overlay {
 				if isGlintActive && clampedProgress > 0 && !reduceMotion {
-					progressHead
+					// A full outline marks indeterminate work; only the sweep pulses there.
+					if clampedProgress < 1 {
+						progressHead
+					}
 					CapsuleProgressSweep(progress: clampedProgress, lineWidth: lineWidth)
 				}
 			}
