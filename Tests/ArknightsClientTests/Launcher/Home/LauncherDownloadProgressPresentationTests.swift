@@ -211,3 +211,32 @@ func launcherDownloadProgressDoesNotInventPercentageWithoutKnownTotal() {
 		) == "1.73 GB of 4.03 GB"
 	)
 }
+
+@Test(arguments: [
+	LauncherStatus.preparingWine, .startingGame, .stoppingGame, .movingToTrash,
+	.migratingStorage, .deletingWinePrefix,
+])
+func indeterminateWorkPulsesAFullOutline(status: LauncherStatus) {
+	#expect(
+		LauncherDownloadProgressPresentation.outlineFraction(
+			for: nil,
+			status: status,
+			hasPartialDownload: false,
+			hasFailure: false
+		) == 1
+	)
+	#expect(
+		LauncherDownloadProgressPresentation.showsActiveProgressEffect(
+			for: nil,
+			status: status,
+			hasFailure: false
+		)
+	)
+	#expect(
+		!LauncherDownloadProgressPresentation.showsActiveProgressEffect(
+			for: nil,
+			status: status,
+			hasFailure: true
+		)
+	)
+}

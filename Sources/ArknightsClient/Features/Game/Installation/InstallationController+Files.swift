@@ -48,7 +48,7 @@ extension InstallationController {
 				self.lifecycle.setStatus(
 					self.isInstalled
 						? .ready
-						: .custom("Arknights.exe not found")
+						: .gameExecutableNotFound
 				)
 			}
 		}

@@ -35,9 +35,8 @@ enum LauncherDownloadProgressPresentation {
 	) -> Double? {
 		guard !hasFailure else { return nil }
 
+		if status.isIndeterminateWork { return 1 }
 		switch status {
-		case .preparingInstallation:
-			return 1
 		case .verifyingInstallation:
 			return progress?.isVerifying == true ? knownFraction(for: progress) ?? 1 : 1
 		case .downloading, .pausing:
@@ -55,9 +54,7 @@ enum LauncherDownloadProgressPresentation {
 		hasFailure: Bool
 	) -> Bool {
 		guard !hasFailure else { return false }
-		if status == .preparingInstallation || status == .verifyingInstallation {
-			return true
-		}
+		if status.isIndeterminateWork || status == .verifyingInstallation { return true }
 		guard status == .downloading,
 			let progress,
 			!progress.isTransferStalled

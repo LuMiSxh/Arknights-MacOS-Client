@@ -20,7 +20,21 @@ enum LauncherStatus: Equatable, Sendable {
 	case movingToTrash
 	case uninstalled
 	case migratingStorage
-	case custom(String)
+	case deletingWinePrefix
+	case winePrefixDeleted
+	case winePrefixResetScheduled
+	case gameExecutableNotFound
+
+	/// Work without measurable progress, shown with the pulsing HUD outline instead of a fraction.
+	var isIndeterminateWork: Bool {
+		switch self {
+		case .preparingInstallation, .preparingWine, .startingGame, .stoppingGame,
+			.movingToTrash, .migratingStorage, .deletingWinePrefix:
+			true
+		default:
+			false
+		}
+	}
 
 	var message: String {
 		switch self {
@@ -41,7 +55,10 @@ enum LauncherStatus: Equatable, Sendable {
 		case .movingToTrash: "Moving to Trash…"
 		case .uninstalled: "Uninstalled"
 		case .migratingStorage: "Updating launcher data…"
-		case .custom(let message): message
+		case .deletingWinePrefix: "Deleting Wine prefix…"
+		case .winePrefixDeleted: "Wine prefix deleted; setup will run again on next launch"
+		case .winePrefixResetScheduled: "Wine setup will run again on next launch"
+		case .gameExecutableNotFound: "Arknights.exe not found"
 		}
 	}
 }

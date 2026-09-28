@@ -21,8 +21,7 @@ extension GameSessionController {
 		let prefixDirectory = paths.winePrefix(for: region)
 		do {
 			try RuntimeMigrationStore().reset(prefixDirectory: prefixDirectory)
-			lifecycle.setStatus(
-				.custom("Wine setup will run again on next launch"))
+			lifecycle.setStatus(.winePrefixResetScheduled)
 			Task { [log] in
 				await log.info("Wine prefix migration state was reset on request")
 			}
@@ -43,8 +42,7 @@ extension GameSessionController {
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
 		let operationID = UUID()
 		lifecycle.activity = .maintaining(.deletingWinePrefix)
-		lifecycle.setStatus(
-			.custom("Deleting Wine prefix…"))
+		lifecycle.setStatus(.deletingWinePrefix)
 		Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -52,8 +50,7 @@ extension GameSessionController {
 					try FileManager.default.removeItem(at: prefixDirectory)
 				}.value
 				lifecycle.activity = .idle
-				lifecycle.setStatus(
-					.custom("Wine prefix deleted; setup will run again on next launch"))
+				lifecycle.setStatus(.winePrefixDeleted)
 				await log.info("Wine prefix deleted on request")
 			} catch {
 				lifecycle.activity = .idle
