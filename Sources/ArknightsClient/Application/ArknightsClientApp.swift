@@ -227,19 +227,27 @@ struct ArknightsClientApp: App {
 		let arguments = ProcessInfo.processInfo.arguments
 		#if DEBUG
 			if DeveloperSimulationState.isPreviewArgument(arguments) {
-				let previewID = UUID().uuidString
+				// One fixed preview store, cleared on every start, so previews never accumulate
+				// preference domains or temporary folders.
+				let suiteName = "com.lumisxh.arknights-client.preview"
 				let root = FileManager.default.temporaryDirectory.appending(
-					path: "ArknightsClientPreview-\(previewID)",
+					path: "ArknightsClientPreview",
 					directoryHint: .isDirectory
 				)
+				do {
+					if FileManager.default.fileExists(atPath: root.path) {
+						try FileManager.default.removeItem(at: root)
+					}
+				} catch {
+					NSLog("ArknightsClient could not clear the previous preview data: \(error)")
+				}
 				let paths = AppPaths(
 					applicationSupportDirectory: root.appending(path: "Support"),
 					cachesDirectory: root.appending(path: "Caches"),
 					libraryDirectory: root.appending(path: "Library")
 				)
-				let defaults = UserDefaults(
-					suiteName: "com.lumisxh.arknights-client.preview.\(previewID)"
-				)!
+				let defaults = UserDefaults(suiteName: suiteName)!
+				defaults.removePersistentDomain(forName: suiteName)
 				return LauncherViewModel(
 					paths: paths,
 					preferences: LauncherPreferencesStore(defaults: defaults),
