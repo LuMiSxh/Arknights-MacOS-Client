@@ -31,6 +31,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed Now Playing artwork no longer following launcher icon changes after the window was resized.
 - Allowed Stop while Wine is being prepared or the game is starting, instead of waiting up to 90 seconds for the game window.
 - Quitting now closes open notices, failure details, and Settings instead of being ignored, and the launcher no longer blocks macOS logout, restart, or shutdown.
+- Kept the remaining launch options when a single saved value is no longer supported instead of resetting all of them.
+- Fixed older announcements reappearing once more than 100 announcements had been dismissed.
 
 ## [0.6.0] - 2026-09-24
 

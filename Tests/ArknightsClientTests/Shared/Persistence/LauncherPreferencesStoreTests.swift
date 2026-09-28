@@ -237,6 +237,32 @@ struct LauncherPreferencesStoreTests {
 			store.markAnnouncementSeen("message-\(index)")
 		}
 		#expect(store.seenAnnouncementIDs().count == 100)
+		#expect(store.seenAnnouncementIDs().contains("message-109"))
+		#expect(!store.seenAnnouncementIDs().contains("message-9"))
+
+		store.markAnnouncementSeen("message-10")
+		store.markAnnouncementSeen("new")
+		#expect(store.seenAnnouncementIDs().contains("message-10"))
+		#expect(!store.seenAnnouncementIDs().contains("message-11"))
+	}
+
+	@Test
+	func launchOptionsKeepValidFieldsWhenOneValueIsRetired() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+		defaults.set(
+			Data(
+				#"{"displayMode":"borderlessWindow","resolution":"9999x9999","usesGameMode":true}"#
+					.utf8),
+			forKey: "gameLaunchOptions"
+		)
+
+		let options = store.launchOptions()
+
+		#expect(options.displayMode == .borderlessWindow)
+		#expect(options.resolution == GameLaunchOptions.default.resolution)
+		#expect(options.usesGameMode)
 	}
 
 	@Test

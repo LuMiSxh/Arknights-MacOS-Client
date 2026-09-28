@@ -122,10 +122,12 @@ struct LauncherPreferencesStore {
 		Set(defaults.stringArray(forKey: Key.seenAnnouncementIDs) ?? [])
 	}
 
+	/// Keeps the 100 most recently seen IDs in the order they were seen.
 	func markAnnouncementSeen(_ id: String) {
-		var ids = seenAnnouncementIDs()
-		ids.insert(id)
-		defaults.set(Array(ids.sorted().suffix(100)), forKey: Key.seenAnnouncementIDs)
+		var ids = defaults.stringArray(forKey: Key.seenAnnouncementIDs) ?? []
+		ids.removeAll { $0 == id }
+		ids.append(id)
+		defaults.set(Array(ids.suffix(100)), forKey: Key.seenAnnouncementIDs)
 	}
 
 	func launchOptions() -> GameLaunchOptions {

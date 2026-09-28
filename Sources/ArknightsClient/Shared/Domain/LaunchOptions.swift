@@ -98,20 +98,26 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		self.synchronizationMode = synchronizationMode
 	}
 
+	/// Decodes each option independently, so one missing, retired, or malformed value falls
+	/// back to its default instead of resetting every other launch option.
 	init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
-		displayMode = try container.decode(GameDisplayMode.self, forKey: .displayMode)
-		resolution = try container.decode(GameResolution.self, forKey: .resolution)
-		usesGameSettings =
-			try container.decodeIfPresent(Bool.self, forKey: .usesGameSettings) ?? true
-		usesHighResolutionMode =
-			try container.decodeIfPresent(Bool.self, forKey: .usesHighResolutionMode) ?? true
-		usesMetalPerformanceHUD =
-			try container.decodeIfPresent(Bool.self, forKey: .usesMetalPerformanceHUD) ?? false
-		usesGameMode = try container.decodeIfPresent(Bool.self, forKey: .usesGameMode) ?? false
-		synchronizationMode =
-			try container.decodeIfPresent(
-				WineSynchronizationMode.self, forKey: .synchronizationMode) ?? .msync
+		let defaults = Self.default
+		func value<Value: Decodable>(_ key: CodingKeys, _ fallback: Value) -> Value {
+			do {
+				return try container.decodeIfPresent(Value.self, forKey: key) ?? fallback
+			} catch {
+				return fallback
+			}
+		}
+		displayMode = value(.displayMode, defaults.displayMode)
+		resolution = value(.resolution, defaults.resolution)
+		usesGameSettings = value(.usesGameSettings, defaults.usesGameSettings)
+		usesHighResolutionMode = value(.usesHighResolutionMode, defaults.usesHighResolutionMode)
+		usesMetalPerformanceHUD = value(
+			.usesMetalPerformanceHUD, defaults.usesMetalPerformanceHUD)
+		usesGameMode = value(.usesGameMode, defaults.usesGameMode)
+		synchronizationMode = value(.synchronizationMode, defaults.synchronizationMode)
 	}
 
 	/// Unity standalone-player arguments supported by the Windows client.
