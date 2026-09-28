@@ -68,8 +68,6 @@ struct ContentView: View {
 						cancelDownload: model.cancelDownload,
 						launch: model.launch,
 						stopGame: model.stopGame,
-						requestRosettaInstallation: { confirmation = .rosetta },
-						retryIntelTranslationCheck: retryIntelTranslationCheck,
 						showFailureDetails: showFailureDetails
 					),
 					developerExpandedPill: developerExpandedPillID
@@ -361,9 +359,6 @@ struct ContentView: View {
 				checkForUpdates: model.launcherUpdateCheckForOnboarding,
 				checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
 		}
-	}
-	private func retryIntelTranslationCheck() {
-		Task { await model.refreshIntelTranslationForUI(force: true) }
 	}
 	private func installRosetta() {
 		confirmation = nil

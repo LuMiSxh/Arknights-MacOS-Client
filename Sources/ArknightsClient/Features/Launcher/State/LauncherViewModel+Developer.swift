@@ -23,14 +23,22 @@
 			communication.launcherUpdateVersion = projection.launcherUpdateVersion
 			communication.launcherUpdateStatus = projection.launcherUpdateStatus
 			communication.isCheckingLauncherUpdates = false
-			lifecycle.intelTranslationState =
-				simulation.rosettaMissing ? .rosettaMissing : .available
 			lifecycle.refresh = .idle
 			lifecycle.activity = simulatedActivity(for: simulation)
 			lifecycle.setStatus(projection.status, clearsFailure: projection.failureCode == nil)
 			applyDeveloperPreferences(simulation)
 			applyDeveloperFailure(projection, region: simulation.selectedRegion)
+			applyDeveloperTranslationCheck(simulation)
 			applyDeveloperPopup(simulation)
+		}
+
+		func applyDeveloperTranslationCheck(_ simulation: DeveloperSimulationState) {
+			intelTranslation.applyAvailabilityCheck(
+				IntelTranslationCheck(
+					state: simulation.rosettaMissing ? .rosettaMissing : .available,
+					diagnostics: "Developer preview"
+				)
+			)
 		}
 
 		func updateDeveloperSimulation(_ update: (inout DeveloperSimulationState) -> Void) {
@@ -134,7 +142,11 @@
 		) {
 			guard let code = projection.failureCode, let operation = projection.failureOperation
 			else {
-				lifecycle.clearFailure()
+				if lifecycle.failure?.context.operation != .intelTranslationPreflight
+					|| !installation.isInstalled
+				{
+					lifecycle.clearFailure()
+				}
 				return
 			}
 			let isConfiguration = operation == .configurationRefresh

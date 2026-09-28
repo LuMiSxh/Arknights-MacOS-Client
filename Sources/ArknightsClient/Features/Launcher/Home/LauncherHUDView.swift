@@ -42,10 +42,7 @@ struct LauncherHUDView: View {
 			LauncherActivityStatusView(
 				lifecycle: lifecycle,
 				installation: installation,
-				intelTranslation: intelTranslation,
-				accentColor: accentColor,
-				requestRosettaInstallation: actions.requestRosettaInstallation,
-				retryIntelTranslationCheck: actions.retryIntelTranslationCheck
+				accentColor: accentColor
 			)
 			.id(installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)

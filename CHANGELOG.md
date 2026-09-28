@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Removed the old inline Rosetta recovery controls and made the developer preview use the same failure dialog and recovery actions as the launcher.
 - Fixed live contract report summaries and monitor alerts rejecting Taiwan metadata checks.
 - Fixed China — Bilibili startup with Hardware Cursor enabled and hid the CN-specific PRTS cursor asset.
 - Fixed Bilibili payment pages getting stuck while loading by correcting Wine's handling of nested CEF windows.

@@ -83,20 +83,83 @@ import Testing
 		}
 
 		@Test
-		func simulatedRosettaInstallNeverFallsThroughToTheController() async {
+		func simulatedRosettaFailureUsesTheModalAndKeepsItsIdentity() async throws {
 			let api = CancellableBrandingAPI()
 			let model = makeModel(
-				api: api,
-				installer: ControllableInstaller(),
+				api: api, installer: ControllableInstaller(), arguments: ["--developer-preview"])
+			await api.waitForBrandingRequest()
+			await api.resolveBranding()
+
+			model.updateDeveloperSimulation { $0.rosettaMissing = true }
+			let failure = try #require(model.lifecycle.failure)
+			#expect(failure.code == .limpet)
+			#expect(failure.context.operation == .intelTranslationPreflight)
+			#expect(failure.context.region == nil)
+			#expect(failure.blocksGameLaunch)
+			#expect(
+				failure.actions == [.installRosetta, .retry, .openTroubleshooting, .reportProblem])
+
+			model.updateDeveloperSimulation { $0.showVersionPill.toggle() }
+			#expect(model.lifecycle.failure?.id == failure.id)
+			model.updateDeveloperSimulation { $0.isInstalled = false }
+			#expect(model.lifecycle.failure == nil)
+			model.updateDeveloperSimulation { $0.isInstalled = true }
+			#expect(model.lifecycle.failure?.context.operation == .intelTranslationPreflight)
+			model.updateDeveloperSimulation { $0.rosettaMissing = false }
+			#expect(model.lifecycle.failure == nil)
+		}
+
+		@Test
+		func simulatedRosettaRetryRechecksWithoutLaunchingOrCallingTheSystem() async throws {
+			let api = CancellableBrandingAPI()
+			let checks = TranslationCheckSequence(states: [.available])
+			let model = makeModel(
+				api: api, installer: ControllableInstaller(),
+				checkIntelTranslation: { await checks.next() },
 				arguments: ["--developer-preview"]
 			)
 			await api.waitForBrandingRequest()
 			await api.resolveBranding()
 
+			model.updateDeveloperSimulation { $0.rosettaMissing = true }
+			let failureID = try #require(model.lifecycle.failure?.id)
+			model.launch()
+			#expect(model.lifecycle.activity == .idle)
+			#expect(await model.launchFromDock(region: .global) == false)
+			#expect(model.performRecoveryAction(.retry, failureID: failureID) == .completed)
+			#expect(model.lifecycle.activity == .idle)
+			#expect(model.lifecycle.intelTranslationState == .rosettaMissing)
+			#expect(model.lifecycle.failure?.context.operation == .intelTranslationPreflight)
+
+			model.lifecycle.clearFailure()
+			#expect(await model.refreshIntelTranslationForUI(force: true) == .rosettaMissing)
+			#expect(model.lifecycle.failure?.context.operation == .intelTranslationPreflight)
+			#expect(await checks.count == 0)
+		}
+
+		@Test
+		func simulatedRosettaInstallNeverFallsThroughToTheController() async {
+			let api = CancellableBrandingAPI()
+			let checks = TranslationCheckSequence(states: [.available])
+			let installer = RosettaInstallationRecorder(status: 0)
+			let model = makeModel(
+				api: api,
+				installer: ControllableInstaller(),
+				checkIntelTranslation: { await checks.next() },
+				installRosettaSystemSoftware: { await installer.install() },
+				arguments: ["--developer-preview"]
+			)
+			await api.waitForBrandingRequest()
+			await api.resolveBranding()
+
+			model.updateDeveloperSimulation { $0.rosettaMissing = true }
 			let result = await model.installRosetta()
 
 			#expect(result == .available)
 			#expect(model.developerSimulation?.rosettaMissing == false)
+			#expect(model.lifecycle.failure == nil)
+			#expect(await checks.count == 0)
+			#expect(await installer.count == 0)
 		}
 	}
 #endif
