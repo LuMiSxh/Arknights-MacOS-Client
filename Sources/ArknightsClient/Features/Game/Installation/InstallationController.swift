@@ -97,14 +97,7 @@ final class InstallationController {
 
 	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard newRegion != region, lifecycle.activity == .idle else { return false }
-		guard
-			!newRegion.requiresCanaryPermission
-				|| (preferences.canaryFeaturesEnabled()
-					&& (!newRegion.requiresChinaClientPermission
-						|| preferences.chinaClientsEnabled())
-					&& (!newRegion.requiresTaiwanClientPermission
-						|| preferences.taiwanClientEnabled()))
-		else { return false }
+		guard preferences.regionAccess().allows(newRegion) else { return false }
 		cancelInstalledStateRefresh()
 		completionFeedback = nil
 		lifecycle.clearFailure()
@@ -146,11 +139,8 @@ final class InstallationController {
 			selectedRegion: region,
 			selectedDirectory: installDirectory,
 			regionDirectories: Dictionary(
-				uniqueKeysWithValues: GameRegion.selectableCases(
-					canaryEnabled: preferences.canaryFeaturesEnabled(),
-					chinaClientsEnabled: preferences.chinaClientsEnabled(),
-					taiwanClientEnabled: preferences.taiwanClientEnabled()
-				).map { candidate in
+				uniqueKeysWithValues: preferences.regionAccess().selectableRegions.map {
+					candidate in
 					(
 						candidate,
 						preferences.installDirectory(
@@ -251,11 +241,7 @@ final class InstallationController {
 
 	private var currentSelectableRegions: Set<GameRegion> {
 		Set(
-			GameRegion.selectableCases(
-				canaryEnabled: preferences.canaryFeaturesEnabled(),
-				chinaClientsEnabled: preferences.chinaClientsEnabled(),
-				taiwanClientEnabled: preferences.taiwanClientEnabled()
-			)
+			preferences.regionAccess().selectableRegions
 		)
 	}
 

@@ -76,6 +76,13 @@ final class LauncherPreferencesController {
 	var usesHardwareCursor: Bool {
 		didSet { store.setUsesHardwareCursor(usesHardwareCursor) }
 	}
+	var regionAccess: RegionAccess {
+		RegionAccess(
+			canaryFeaturesEnabled: canaryFeaturesEnabled,
+			chinaClientsEnabled: chinaClientsEnabled,
+			taiwanClientEnabled: taiwanClientEnabled
+		)
+	}
 	@ObservationIgnored var onLauncherUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onGameUpdateCheckRequested: (() -> Void)?
 	@ObservationIgnored var onAnnouncementCheckRequested: (() -> Void)?

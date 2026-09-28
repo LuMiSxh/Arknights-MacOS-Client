@@ -183,17 +183,16 @@ struct LauncherPreferencesStore {
 
 	func selectedRegion() -> GameRegion {
 		let region = defaults.string(forKey: Key.selectedRegion).flatMap(GameRegion.init(rawValue:))
-		guard let region else { return .global }
-		if region.requiresCanaryPermission && !canaryFeaturesEnabled() {
-			return .global
-		}
-		if region.requiresChinaClientPermission && !chinaClientsEnabled() {
-			return .global
-		}
-		if region.requiresTaiwanClientPermission && !taiwanClientEnabled() {
-			return .global
-		}
+		guard let region, regionAccess().allows(region) else { return .global }
 		return region
+	}
+
+	func regionAccess() -> RegionAccess {
+		RegionAccess(
+			canaryFeaturesEnabled: canaryFeaturesEnabled(),
+			chinaClientsEnabled: chinaClientsEnabled(),
+			taiwanClientEnabled: taiwanClientEnabled()
+		)
 	}
 
 	func setSelectedRegion(_ region: GameRegion) {

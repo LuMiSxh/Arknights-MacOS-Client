@@ -33,11 +33,9 @@ struct InstallationSettingsPage: View {
 				) {
 					GlassMenuPicker(
 						selection: regionBinding,
-						options: GameRegion.selectableCases(
-							canaryEnabled: settings.canaryFeaturesEnabled,
-							chinaClientsEnabled: settings.chinaClientsEnabled,
-							taiwanClientEnabled: settings.taiwanClientEnabled
-						).map { ($0, $0.displayName) },
+						options: settings.regionAccess.selectableRegions.map {
+							($0, $0.displayName)
+						},
 						accentColor: accentColor,
 						isDisabled: lifecycle.activity != .idle
 					)

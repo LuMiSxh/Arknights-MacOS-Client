@@ -295,12 +295,9 @@ final class LauncherViewModel {
 	}
 
 	private func refreshInstalledRegionsNow() {
-		let activeRegion = installation.region
-		let activeRegionDisabled =
-			(activeRegion.requiresCanaryPermission && !settings.canaryFeaturesEnabled)
-			|| (activeRegion.requiresChinaClientPermission && !settings.chinaClientsEnabled)
-			|| (activeRegion.requiresTaiwanClientPermission && !settings.taiwanClientEnabled)
-		if activeRegionDisabled, refreshController.selectRegion(.global) {
+		if !settings.regionAccess.allows(installation.region),
+			refreshController.selectRegion(.global)
+		{
 			return
 		}
 		_ = installation.updateInstalledState()

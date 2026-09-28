@@ -41,9 +41,7 @@ struct StorageUsage: Equatable, Identifiable, Sendable {
 
 struct StorageOverviewContext: Equatable, Sendable {
 	let region: GameRegion
-	let canaryFeaturesEnabled: Bool
-	let chinaClientsEnabled: Bool
-	let taiwanClientEnabled: Bool
+	let regionAccess: RegionAccess
 	let persistedInstallDirectories: [GameRegion: URL]
 }
 
@@ -55,9 +53,7 @@ enum StorageOverviewResolver {
 	) -> StorageOverviewContext {
 		StorageOverviewContext(
 			region: region,
-			canaryFeaturesEnabled: preferences.canaryFeaturesEnabled(),
-			chinaClientsEnabled: preferences.chinaClientsEnabled(),
-			taiwanClientEnabled: preferences.taiwanClientEnabled(),
+			regionAccess: preferences.regionAccess(),
 			persistedInstallDirectories: preferences.persistedInstallDirectories()
 		)
 	}
@@ -81,11 +77,7 @@ enum StorageOverviewResolver {
 		context: StorageOverviewContext,
 		fileManager: FileManager = .default
 	) throws -> [StorageLocation] {
-		let games = GameRegion.selectableCases(
-			canaryEnabled: context.canaryFeaturesEnabled,
-			chinaClientsEnabled: context.chinaClientsEnabled,
-			taiwanClientEnabled: context.taiwanClientEnabled
-		).map { region in
+		let games = context.regionAccess.selectableRegions.map { region in
 			StorageLocation(
 				category: .game(region),
 				urls: [
@@ -115,11 +107,7 @@ enum StorageOverviewResolver {
 	}
 
 	static func placeholderLocations(context: StorageOverviewContext) -> [StorageLocation] {
-		let games = GameRegion.selectableCases(
-			canaryEnabled: context.canaryFeaturesEnabled,
-			chinaClientsEnabled: context.chinaClientsEnabled,
-			taiwanClientEnabled: context.taiwanClientEnabled
-		).map {
+		let games = context.regionAccess.selectableRegions.map {
 			StorageLocation(category: .game($0), urls: [])
 		}
 		return games + [

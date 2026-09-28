@@ -213,11 +213,11 @@
 		}
 
 		var selectableRegions: [GameRegion] {
-			GameRegion.selectableCases(
-				canaryEnabled: canaryFeaturesEnabled,
+			RegionAccess(
+				canaryFeaturesEnabled: canaryFeaturesEnabled,
 				chinaClientsEnabled: chinaClientsEnabled,
 				taiwanClientEnabled: taiwanClientEnabled
-			)
+			).selectableRegions
 		}
 
 		/// Keeps combinations shown by the simulator meaningful before they reach production
