@@ -29,6 +29,13 @@
 	);
 </script>
 
+<svelte:head>
+	<meta
+		name="google-site-verification"
+		content="rKSkIR3sV4QdLRzh6LfguydNElkuRCFjlw7EIqDHnyI"
+	/>
+</svelte:head>
+
 <PageMetadata
 	title="Play Arknights PC on Mac · Arknights Client"
 	description="Play Arknights PC on an Apple Silicon Mac with this free, unofficial launcher. Supports macOS 15–27."
