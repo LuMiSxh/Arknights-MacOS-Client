@@ -184,11 +184,11 @@ final class IntelTranslationController {
 		case .rosettaMissing:
 			"Install Rosetta 2, then check again."
 		case .gameTestModeEnabled:
-			"This macOS 27 test mode disables Rosetta. Turn it off, restart your Mac, then check again."
+			"On macOS 27 beta, Legacy Game Test Mode disables Rosetta. If it is enabled, turn it off, restart your Mac, then check again."
 		case .unavailable:
 			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
 		case .unsupportedOS:
-			"This macOS version no longer provides the general Rosetta support Wine requires."
+			"The launcher currently blocks this macOS version. Apple retains Rosetta only for certain legacy games, and whether this Wine and game setup qualifies is unconfirmed."
 		}
 	}
 

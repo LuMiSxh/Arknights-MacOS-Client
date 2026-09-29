@@ -107,7 +107,7 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 		case .intelTranslationUnavailable:
 			"macOS could not start the Intel-based Wine runtime. Check that Rosetta 2 is installed and restart your Mac before trying again."
 		case .intelTranslationUnsupported:
-			"This macOS version no longer supports the general Intel translation required by the bundled Wine runtime."
+			"The launcher currently blocks this macOS version. Apple retains Rosetta only for certain legacy games, and whether this Wine and game setup qualifies is unconfirmed."
 		case .runtimeWindowTimeout:
 			"Arknights did not open a window within \(Self.windowTimeoutText). Check the Wine log in Settings and try again."
 		case .runtimeConfiguration:
