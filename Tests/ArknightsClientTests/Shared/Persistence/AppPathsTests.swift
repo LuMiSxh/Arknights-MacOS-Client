@@ -166,18 +166,11 @@ func appPathsUseStandardInjectedDirectories() {
 	)
 }
 
-@Test(arguments: [
-	("chinaBilibili", "China-Bilibili", GameRegion.china),
-	("taiwan", "Taiwan", GameRegion.taiwan),
-])
-func publisherRegionPathsKeepGameFilesAndWinePrefixesSeparate(
-	encodedRegion: String,
-	expectedGameDirectory: String,
-	prefixRegion: GameRegion
-) throws {
+@Test
+func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
 	let region = try JSONDecoder().decode(
 		GameRegion.self,
-		from: Data("\"\(encodedRegion)\"".utf8)
+		from: Data(#""chinaBilibili""#.utf8)
 	)
 	let paths = AppPaths(
 		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
@@ -185,8 +178,20 @@ func publisherRegionPathsKeepGameFilesAndWinePrefixesSeparate(
 		libraryDirectory: URL(filePath: "/tmp/Library")
 	)
 
-	#expect(paths.gameInstall(for: region).lastPathComponent == expectedGameDirectory)
-	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: prefixRegion))
+	#expect(paths.gameInstall(for: region).lastPathComponent == "China-Bilibili")
+	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: .china))
+}
+
+@Test
+func taiwanUsesItsOwnGryphlinePrefix() {
+	let paths = AppPaths(
+		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
+		cachesDirectory: URL(filePath: "/tmp/Caches"),
+		libraryDirectory: URL(filePath: "/tmp/Library")
+	)
+
+	#expect(paths.winePrefix(for: .taiwan) == paths.gryphlineWinePrefix)
+	#expect(paths.gameInstall(for: .taiwan).lastPathComponent == "Taiwan")
 }
 
 @Test

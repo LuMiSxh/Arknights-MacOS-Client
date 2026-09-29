@@ -14,9 +14,9 @@ struct WallpaperSearchTests {
 				"title substring",
 				"2019 Christmas",
 				[String](),
-				WallpaperCategory.holiday,
+				WallpaperCategory.holiday.rawValue,
 				"christmas",
-				nil as WallpaperCategory?,
+				nil as String?,
 				[String](),
 				true
 			),
@@ -24,9 +24,9 @@ struct WallpaperSearchTests {
 				"empty query includes every category",
 				"Untitled",
 				[String](),
-				WallpaperCategory.story,
+				WallpaperCategory.story.rawValue,
 				"",
-				nil as WallpaperCategory?,
+				nil as String?,
 				[String](),
 				true
 			),
@@ -34,9 +34,9 @@ struct WallpaperSearchTests {
 				"empty query still respects the selected category",
 				"Untitled",
 				[String](),
-				WallpaperCategory.story,
+				WallpaperCategory.story.rawValue,
 				"",
-				WallpaperCategory.holiday,
+				WallpaperCategory.holiday.rawValue,
 				[String](),
 				false
 			),
@@ -44,9 +44,9 @@ struct WallpaperSearchTests {
 				"category mismatch excludes an otherwise matching tag",
 				"Untitled",
 				["w"],
-				WallpaperCategory.story,
+				WallpaperCategory.story.rawValue,
 				"w",
-				WallpaperCategory.holiday,
+				WallpaperCategory.holiday.rawValue,
 				["w"],
 				false
 			),
@@ -54,9 +54,9 @@ struct WallpaperSearchTests {
 				"matching category keeps the tag result",
 				"Untitled",
 				["w"],
-				WallpaperCategory.story,
+				WallpaperCategory.story.rawValue,
 				"w",
-				WallpaperCategory.story,
+				WallpaperCategory.story.rawValue,
 				["w"],
 				true
 			),
@@ -66,12 +66,14 @@ struct WallpaperSearchTests {
 		caseLabel: String,
 		title: String,
 		tags: [String],
-		category: WallpaperCategory,
+		categoryRawValue: String,
 		query: String,
-		selectedCategory: WallpaperCategory?,
+		selectedCategoryRawValue: String?,
 		knownTags: [String],
 		expected: Bool
-	) {
+	) throws {
+		let category = try #require(WallpaperCategory(rawValue: categoryRawValue))
+		let selectedCategory = selectedCategoryRawValue.flatMap(WallpaperCategory.init(rawValue:))
 		let matches = WallpaperSearch.matches(
 			title: title,
 			tags: tags,

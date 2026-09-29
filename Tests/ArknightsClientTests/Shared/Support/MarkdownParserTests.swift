@@ -4,10 +4,12 @@ import Testing
 
 @testable import ArknightsClient
 
-struct MarkdownParserSyntaxCase: Sendable {
+struct MarkdownParserSyntaxCase: Identifiable, Sendable {
 	let label: String
 	let source: String
 	let expected: [MarkdownBlock]
+
+	var id: String { label }
 }
 
 private let markdownParserSyntaxCases = [

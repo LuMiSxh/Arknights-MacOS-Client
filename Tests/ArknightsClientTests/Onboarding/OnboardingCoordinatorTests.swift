@@ -88,6 +88,12 @@ struct OnboardingCoordinatorTests {
 			Comment(rawValue: caseLabel)
 		)
 		coordinator.skip()
+		if updateIsAvailable {
+			#expect(coordinator.step == .welcome, Comment(rawValue: caseLabel))
+		} else {
+			#expect(!coordinator.isPresented, Comment(rawValue: caseLabel))
+			#expect(!store.needsOnboarding, Comment(rawValue: caseLabel))
+		}
 
 		#expect(
 			coordinator.intelTranslationState
