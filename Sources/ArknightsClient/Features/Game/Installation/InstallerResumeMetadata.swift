@@ -76,7 +76,7 @@ extension GameInstaller {
 			guard let raw = response.value(forHTTPHeaderField: field) else { return nil }
 			let header = raw.trimmingCharacters(in: .whitespacesAndNewlines)
 			guard !header.isEmpty, header.utf8.count <= 4_096,
-				!header.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains)
+				header.rangeOfCharacter(from: .controlCharacters) == nil
 			else { throw LauncherError.invalidResponse }
 			return header
 		}

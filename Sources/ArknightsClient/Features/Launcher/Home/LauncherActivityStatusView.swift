@@ -269,14 +269,29 @@ struct LauncherActivityStatusView: View {
 	}
 
 	private var percentageLabel: some View {
-		Text(statusTitle)
-			.font(.system(size: 16, weight: .semibold))
-			.contentTransition(reduceMotion ? .identity : .numericText())
-			.animation(
-				LauncherMotion.animation(.reveal, reduceMotion: reduceMotion),
-				value: statusTitle
+		ZStack(alignment: .leading) {
+			Text(
+				installation.progress?.isVerifying == true
+					? HomeStrings.verificationPercentage(100)
+					: isPausedDownload
+						? HomeStrings.pausedDownloadPercentage(100)
+						: HomeStrings.downloadPercentage(100)
 			)
-			.fixedSize(horizontal: true, vertical: false)
+			.font(.system(size: 16, weight: .semibold))
+			.monospacedDigit()
+			.hidden()
+			.accessibilityHidden(true)
+			Text(statusTitle)
+				.font(.system(size: 16, weight: .semibold))
+				.monospacedDigit()
+				.contentTransition(reduceMotion ? .identity : .numericText())
+				.animation(
+					LauncherMotion.animation(.reveal, reduceMotion: reduceMotion),
+					value: statusTitle
+				)
+				.fixedSize(horizontal: true, vertical: false)
+		}
+		.fixedSize(horizontal: true, vertical: false)
 	}
 
 	@ViewBuilder

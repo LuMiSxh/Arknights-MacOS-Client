@@ -106,7 +106,9 @@ struct LauncherSettingsView: View {
 					case .statistics:
 						PlaytimeStatisticsPage(
 							controller: playtimeStatistics,
-							regions: settings.regionAccess.selectableRegions,
+							regions: settings.regionAccess.selectableRegions.filter {
+								installation.isRegionInstalled($0)
+							},
 							accentColor: customization.accentColor
 						)
 					case .about:

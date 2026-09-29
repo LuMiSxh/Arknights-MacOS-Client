@@ -43,6 +43,7 @@ final class InstallationController {
 		lifecycle.activity == .idle && configuration != nil
 	}
 	var canModifyGameFiles: Bool { lifecycle.activity == .idle }
+	var canUninstallGame: Bool { canModifyGameFiles && (isInstalled || hasPartialDownload) }
 
 	let lifecycle: LauncherLifecycleStore
 	let installer: any GameInstalling

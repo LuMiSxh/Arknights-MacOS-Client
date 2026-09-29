@@ -168,6 +168,34 @@ struct InstallationRecoveryTests {
 	}
 
 	@Test
+	func partialInstallCanBeUninstalledOnlyWhileIdle() {
+		let fixture = makeInstallationFixture(region: .global)
+		#expect(!fixture.controller.canUninstallGame)
+
+		fixture.controller.isInstalled = true
+		#expect(fixture.controller.canUninstallGame)
+		fixture.controller.isInstalled = false
+		fixture.controller.hasPartialDownload = true
+		#expect(fixture.controller.canUninstallGame)
+
+		fixture.controller.lifecycle.activity = .installing(id: UUID(), stage: .downloading)
+		#expect(!fixture.controller.canUninstallGame)
+		fixture.controller.lifecycle.activity = .runningGame(
+			sessionID: UUID(), processIdentifier: 42)
+		#expect(!fixture.controller.canUninstallGame)
+
+		fixture.controller.lifecycle.activity = .idle
+		let failureID = UUID()
+		fixture.controller.presentInstallationFailure(
+			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			id: failureID,
+			operation: .uninstall,
+			region: .global
+		)
+		#expect(fixture.controller.retryUninstallFailure(id: failureID))
+	}
+
+	@Test
 	func retryRejectsChangedRegionAndDuplicateSelection() async {
 		let fixture = makeInstallationFixture(region: .global)
 		let failureID = UUID()

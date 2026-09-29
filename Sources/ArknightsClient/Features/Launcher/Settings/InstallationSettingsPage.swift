@@ -282,7 +282,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsGameUninstall = true
 					}
-					.disabled(!installation.isInstalled || !installation.canModifyGameFiles)
+					.disabled(!installation.canUninstallGame)
 					.confirmationDialog(
 						SettingsStrings.uninstallConfirmation,
 						isPresented: $confirmsGameUninstall,

@@ -128,7 +128,7 @@ enum SettingsStrings {
 	static let logs = "Logs"
 	static let showLogs = "Show Logs"
 	static let showGameFilesHelp = "Show game files in Finder"
-	static let gameMode = "Game Mode (Experimental)"
+	static let gameMode = "Game Mode"
 	static let gameModeDetail =
 		"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
 	static let gameModeAlert = "Game Mode Needs Xcode"

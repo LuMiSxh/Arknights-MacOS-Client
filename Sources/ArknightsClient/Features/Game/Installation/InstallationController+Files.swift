@@ -59,7 +59,7 @@ extension InstallationController {
 	}
 
 	func uninstallGame() {
-		guard lifecycle.activity == .idle else { return }
+		guard canUninstallGame else { return }
 		guard FileManager.default.fileExists(atPath: installDirectory.path) else {
 			updateInstalledState()
 			return
@@ -97,8 +97,8 @@ extension InstallationController {
 		guard let failure = lifecycle.failure, failure.id == id else { return false }
 		guard failure.context.operation == .uninstall else { return false }
 		guard failure.context.region == region.supportRegion else { return false }
-		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
-		guard isInstalled, lifecycle.consumeFailure(id: id) != nil else { return false }
+		guard failure.actions.contains(.retry), canUninstallGame else { return false }
+		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		log.info(
 			"Recovery selected; action=retry operation=uninstall region=\(region.rawValue)"
 		)

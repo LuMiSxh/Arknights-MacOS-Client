@@ -18,50 +18,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.1.
-- Reduced repeated text comparisons in documentation search.
-- Preset gallery thumbnails now decode off the main actor so large artwork does not block the interface.
-- Updated first-launch guidance for ad-hoc signed releases to use Apple's app-specific Gatekeeper confirmation flow.
+- Reduced repeated text comparisons in documentation search and moved preset thumbnail decoding off the main actor so large artwork does not block the interface.
+- Clarified first-launch steps for ad-hoc signed, non-notarized releases, including Apple's app-specific Gatekeeper confirmation.
 - Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
 - Release packaging now rejects Sparkle appcasts and update archives that fail cryptographic verification against the tracked update key.
-- Canary runtime overrides now follow the capabilities declared by the packaged runtime; legacy or unsupported runtimes keep conservative defaults and saved preferences.
-- Softened the main HUD pill's orbiting glint with a quieter outline and a more diffuse accent glow.
-- Launcher errors now explain recovery steps while keeping file paths, checksums, and service details in the logs.
-- The HUD outline now pulses while Wine is prepared, the game starts or stops, launcher data updates, the Wine prefix is deleted, or the game moves to the Trash.
-- Repair now shows verification progress in the HUD, Settings, and setup, and Pause stops file verification immediately instead of waiting for every file to be checked.
-- Region selection, installation, storage listings, statistics, and setup now share one Canary permission check.
+- Canary runtime overrides now follow the packaged runtime's declared capabilities, with conservative defaults and saved preferences retained for legacy or unsupported runtimes.
+- One Canary permission check now governs region selection, installation, storage listings, playtime statistics, and setup; playtime region lists show only installed regions.
+- Refined launcher and HUD motion with softer accents and outline pulses during launch, shutdown, updates, and file operations; preserved Reduce Motion, Dynamic Type.
+- Launcher errors now show recovery steps, with technical details kept in logs; the developer preview uses the same dialogs, actions, and launch availability, replacing inline Rosetta controls.
+- Repair verification progress appears in the HUD, Settings, setup, and developer preview; Pause stops file verification immediately.
 - Installation task ownership now follows the active installation state.
 - Launcher log entries are now written in call order without suspending launcher work, removing redundant state checks after every log line.
 - The developer preview now reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
-- Reworked launcher motion and display to look more consistent, appealing, and responsive while respecting Reduce Motion and Dynamic Type.
+- The Game Mode label no longer says Experimental.
 - Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
 
 ### Fixed
 
-- Prevented large manifests from exhausting open-file descriptors while the installer checks existing files.
+- Large manifests now use bounded file handles; concurrent installs are serialized, resumed ranges and staged files are validated before promotion, and game files are replaced atomically.
+- Paused and partial installations can be moved to Trash from Uninstall Game while idle.
+- Download size labels stay aligned when the displayed percentage changes.
 - Restored focus when dismissing mobile navigation with Escape and made enlarged Mermaid diagrams accessible modal dialogs.
 - Fixed music controls staying disabled after the game interrupts playback, and kept custom music URLs and playlist IDs out of logs.
 - Kept preset launcher, game, and source icons together when a later icon file commit fails.
-- Prevented concurrent installer processes from interleaving updates, and validated resumed download ranges and staged files before promotion.
-- Kept Play/Stop morph timing independent of the primary action's fading glow.
-- Matched preview errors and launch availability to the real recovery flow, and corrected verification progress in the preview and setup.
-- Removed the old inline Rosetta recovery controls and made the developer preview use the same failure dialog and recovery actions as the launcher.
 - Fixed live contract report summaries and monitor alerts rejecting Taiwan metadata checks.
 - Fixed China — Bilibili startup with Hardware Cursor enabled and hid the CN-specific PRTS cursor asset.
-- Fixed Bilibili payment pages getting stuck while loading by correcting Wine's handling of nested CEF windows.
-- Added Wine DirectWrite CJK font fallbacks for Bilibili payment pages so Chinese text renders when macOS uses another language.
-- Fixed the China and China — Bilibili server reset countdown using UTC instead of China Standard Time (UTC+8).
+- Fixed Bilibili payment pages getting stuck while loading by correcting Wine's handling of nested CEF windows, and added DirectWrite CJK font fallbacks for macOS systems using another language.
 - Fixed Now Playing artwork no longer following launcher icon changes after the window was resized.
-- Allowed Stop while Wine is being prepared or the game is starting, instead of waiting up to 90 seconds for the game window.
-- Kept the shared Wine prefix owned until launch processes retire and `wineserver -w` confirms shutdown, and made a failed Stop retryable for the same session.
-- Prevented Wine setup helpers and the game from starting after app termination has taken ownership of shutdown.
-- Quitting now closes open notices, failure details, and Settings instead of being ignored, and the launcher no longer blocks macOS logout, restart, or shutdown.
+- Stop works during Wine preparation and startup, remains retryable, and retains prefix ownership until processes retire and `wineserver -w` confirms shutdown.
+- App termination now prevents Wine setup helpers and the game from starting after it takes ownership of shutdown.
+- Quitting closes open notices, failure details, and Settings, and no longer blocks macOS logout, restart, or shutdown.
 - Kept the remaining launch options when a single saved value is no longer supported instead of resetting all of them.
 - Fixed older announcements reappearing once more than 100 announcements had been dismissed.
-- Replaced updated game files atomically so an interrupted install or repair can no longer leave a file missing.
-- Treated a Wine process that ends without an exit status as a failure instead of a clean exit.
-- Kept server reset countdowns for every installed client current while the region list is open, updating on each minute.
-- Stopped Yostar notices from loading remote images, scripts, or stylesheets while they are formatted.
-- Restricted publisher manifest and game-file requests to HTTPS without URL credentials while retaining verified Taiwan CDN hosts.
+- Kept China and China — Bilibili reset countdowns on China Standard Time (UTC+8), and refreshed countdowns for every installed client each minute while the region list is open.
+- Yostar notices no longer load remote images, scripts, or stylesheets. Manifest and game-file requests require credential-free HTTPS; Taiwan requests remain restricted to verified CDN hosts.
 
 ## [0.6.0] - 2026-09-24
 
