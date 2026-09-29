@@ -10,25 +10,29 @@ Arknights is a Windows game. The launcher runs it through a tested, bundled vers
 
 ## macOS support
 
-| macOS       | Status                                                                                  |
-| ----------- | --------------------------------------------------------------------------------------- |
-| macOS 15–26 | Supported with Rosetta 2                                                                |
-| macOS 27    | Supported with Rosetta 2 and [Legacy Game Test Mode](#legacy-game-test-mode) turned off |
-| macOS 28    | Blocked, because it no longer offers the Rosetta translation Wine needs                 |
+| macOS       | Status                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| macOS 15–26 | Supported with Rosetta 2                                                                       |
+| macOS 27    | Supported with Rosetta 2                                                                       |
+| macOS 28    | Blocked by current launcher policy; compatibility with Apple's limited Rosetta support is unconfirmed |
 
 Only Apple silicon Macs are supported. The launcher itself runs natively; Rosetta 2 is needed for the Windows part.
 
+Apple says macOS 27 is the last release with general Rosetta support. Starting with macOS 28, Rosetta remains only for certain older, unmaintained games that rely on Intel frameworks. Apple has not established whether this Wine runtime and game qualify. The launcher currently blocks macOS 28, so this is a policy limit rather than a verified Wine failure. See [Apple's Rosetta support details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
+
 If the check reports Rosetta as unavailable even though it is installed, restart the Mac and choose **Check Again** before reinstalling anything.
 
-## Legacy Game Test Mode
+## Legacy Game Test Mode on macOS 27 beta
 
-On macOS 27, this test mode turns off the Rosetta translation Wine needs, and the launcher keeps **Play** disabled while it is active. Turn it off in Terminal:
+Apple documented Legacy Game Test Mode as a beta-only macOS 27 feature. It disables Rosetta and may make non-game processes crash or behave unexpectedly; Apple says the feature is unavailable outside macOS beta releases. The launcher detects the mode when Apple's beta-only `game-test-tool` is available and reports it as a launch blocker.
+
+If you are running a macOS 27 beta with Legacy Game Test Mode enabled, turn it off in Terminal:
 
 ```sh
 sudo game-test-tool disable
 ```
 
-Restart the Mac, then choose **Check Again** in the launcher.
+Restart the Mac, then choose **Check Again** in the launcher. This command is not a stable macOS troubleshooting step; the tool is unavailable outside beta releases. See Apple's [macOS 27 release notes](https://developer.apple.com/documentation/macos-release-notes/macos-27-release-notes?changes=l_2).
 
 ## Canary Features
 

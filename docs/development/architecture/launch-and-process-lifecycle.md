@@ -249,9 +249,10 @@ survives each reset.
 These details used to live in the user guide; the user pages now describe only the visible behavior.
 
 - **Intel translation probe:** the launcher does not trust `/Library/Apple/usr/share/rosetta/rosetta`
-  alone. It runs `/usr/bin/arch -x86_64 /usr/bin/true` and, on macOS 27, reads
-  `/usr/bin/game-test-tool status` so Legacy Game Test Mode can be reported separately (`LIMPET`).
-  macOS 28 is blocked because general Intel translation is unavailable.
+  alone. It runs `/usr/bin/arch -x86_64 /usr/bin/true` and, on macOS 27 when Apple's beta-only
+  `game-test-tool` is available, reads its status so Legacy Game Test Mode can be reported separately
+  (`LIMPET`). macOS 28 is blocked by current launcher policy; compatibility with Apple's limited
+  Rosetta support for certain legacy games is unconfirmed.
 - **Window wait:** after Wine starts the executable, the launcher waits up to 90 seconds for a visible
   game window, then stops the timed-out runtime and reports `NARWHAL`.
 - **Compatibility profiles:** `GameRegion.clientProfile` sets the runtime flags. Taiwan and both China

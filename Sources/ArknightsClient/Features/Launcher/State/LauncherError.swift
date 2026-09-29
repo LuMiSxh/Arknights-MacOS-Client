@@ -103,7 +103,7 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 		case .rosettaMissing:
 			"Rosetta 2 is required to run the bundled Wine runtime. Install it by running \"softwareupdate --install-rosetta --agree-to-license\" in Terminal, then check again."
 		case .rosettaDisabledByGameTestMode:
-			"macOS Legacy Game Test Mode disables the Rosetta translation required by Wine. Run \"sudo game-test-tool disable\" in Terminal, restart your Mac, then check again."
+			"On macOS 27 beta, Legacy Game Test Mode disables the Rosetta translation required by Wine. Run \"sudo game-test-tool disable\" in Terminal, restart your Mac, then check again."
 		case .intelTranslationUnavailable:
 			"macOS could not start the Intel-based Wine runtime. Check that Rosetta 2 is installed and restart your Mac before trying again."
 		case .intelTranslationUnsupported:
