@@ -216,10 +216,11 @@ VALID_APPCAST_ITEM = (
 
 
 @pytest.mark.parametrize(
-    ("item", "feed_signature", "message"),
+    ("item", "feed_signature", "expected_update_name", "message"),
     [
         pytest.param(
             VALID_APPCAST_ITEM,
+            None,
             None,
             "missing its sparkle-signatures block",
             id="unsigned-appcast",
@@ -227,6 +228,7 @@ VALID_APPCAST_ITEM = (
         pytest.param(
             VALID_APPCAST_ITEM,
             "",
+            None,
             "empty feed Ed25519 signature",
             id="empty-feed-signature",
         ),
@@ -235,18 +237,21 @@ VALID_APPCAST_ITEM = (
                 f' sparkle:edSignature="{ENCLOSURE_SIGNATURE}"', ""
             ),
             FEED_SIGNATURE,
+            None,
             "every Sparkle appcast enclosure",
             id="unsigned-enclosure",
         ),
         pytest.param(
             VALID_APPCAST_ITEM.replace("Example.Client.zip", "Other.zip"),
             FEED_SIGNATURE,
+            "Example.Client.zip",
             "does not match expected update asset",
             id="wrong-update-name",
         ),
         pytest.param(
             VALID_APPCAST_ITEM.removeprefix("<description>Release notes</description>"),
             FEED_SIGNATURE,
+            None,
             "contains no release notes",
             id="missing-release-notes",
         ),
@@ -256,6 +261,7 @@ def test_rejects_invalid_appcasts(
     tmp_path: Path,
     item: str,
     feed_signature: str | None,
+    expected_update_name: str | None,
     message: str,
 ) -> None:
     appcast = tmp_path / "appcast.xml"
@@ -277,5 +283,5 @@ def test_rejects_invalid_appcasts(
 
     with pytest.raises(RuntimeError, match=message):
         validate_sparkle_keys.validate_appcast(
-            appcast, expected_update_name="Example.Client.zip"
+            appcast, expected_update_name=expected_update_name
         )
