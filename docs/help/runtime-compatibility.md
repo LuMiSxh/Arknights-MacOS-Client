@@ -10,10 +10,10 @@ Arknights is a Windows game. The launcher runs it through a tested, bundled vers
 
 ## macOS support
 
-| macOS       | Status                                                                                         |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| macOS 15–26 | Supported with Rosetta 2                                                                       |
-| macOS 27    | Supported with Rosetta 2                                                                       |
+| macOS       | Status                                                                                                |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| macOS 15–26 | Supported with Rosetta 2                                                                              |
+| macOS 27    | Supported with Rosetta 2                                                                              |
 | macOS 28    | Blocked by current launcher policy; compatibility with Apple's limited Rosetta support is unconfirmed |
 
 Only Apple silicon Macs are supported. The launcher itself runs natively; Rosetta 2 is needed for the Windows part.
@@ -39,8 +39,10 @@ Restart the Mac, then choose **Check Again** in the launcher. This command is no
 **Settings → Installation → Canary Features** turns on experimental options. Turning it off again restores the normal behavior without deleting anything.
 
 - **Allow Taiwan client** and **Allow China clients** show the Taiwan, China, and China — Bilibili regions.
-- **Frame Latency** (0–3, default 3) can make the cursor feel more responsive at lower values. At 0, DXMT waits for the current GPU frame before queuing another; this may significantly reduce FPS or make frame pacing less smooth.
-- **Use Hardware Cursor** asks the runtime to hide the game's PRTS cursor so the macOS hardware cursor can appear. The cursor may look different, and the setting applies on the next game launch.
+- **Frame Latency** (0–3, default 3) can make the cursor feel more responsive at lower values when the runtime supports it. At 0, DXMT waits for the current GPU frame before queuing another; this may significantly reduce FPS or make frame pacing less smooth.
+- **Use Hardware Cursor** asks a supporting runtime to hide the game's PRTS cursor so the macOS hardware cursor can appear. The cursor may look different, and the setting applies on the next game launch when supported.
+
+These preferences are saved, but the launcher passes each override only when the packaged runtime advertises that capability. If a capability is absent or unsupported, the runtime keeps its default behavior.
 
 If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).
 

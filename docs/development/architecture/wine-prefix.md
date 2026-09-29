@@ -164,10 +164,12 @@ The launcher does not return to Idle merely because the direct process or `-k` e
 
 Every callback is scoped to the session UUID that captured the region and prefix. A stale callback
 cannot clear a newer session's state. **Stop**, launch cancellation, visible-window timeout, normal
-game exit, and app termination all trigger prefix-scoped cleanup. For a user stop, the controller
-retains prefix ownership until the bounded lock wait completes. If that cleanup fails or times out,
-the session stays in **Stopping** with a retry for the same session UUID, region, and prefix;
-repeated failure keeps that recovery state.
+game exit, and app termination all request prefix-scoped shutdown. For a user stop, the controller
+closes the spawn gate, issues `wineserver -k`, waits for every `Process` registered with the gate to
+exit, then sends a final `-k` and requires a successful `-w` before releasing prefix ownership. One
+20-second deadline covers the sequence. If a child does not retire, a shutdown command times out, or
+the final wait fails or times out, the session stays in **Stopping** with **Retry** for the same UUID,
+region, and prefix; repeated failure keeps that recovery state.
 
 See [Launch and process lifecycle](launch-and-process-lifecycle.md) for the complete session state
 machine and failure behavior.
