@@ -6,6 +6,9 @@ import YouTubePlayerKit
 extension BackgroundMusicController {
 	func performFadeOut() {
 		guard let player else { return }
+		if case .playbackChange(let playbackOperation, .playing) = operation {
+			finishOperation(playbackOperation)
+		}
 		expectPlayback(.paused, on: player)
 		volumeTask?.cancel()
 		volumeTask = nil
@@ -32,7 +35,7 @@ extension BackgroundMusicController {
 
 			do {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				try await player.pause()
+				try await playerCommands.pause(player)
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				lifecycle.log.info("Background music faded out and paused")
 			} catch {
@@ -65,7 +68,7 @@ extension BackgroundMusicController {
 			await applyVolume(0, on: target, generation: operation.generation)
 			do {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				try await target.play()
+				try await playerCommands.play(target)
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				if let userPlaybackOperation {
 					finishOperation(userPlaybackOperation)
@@ -139,12 +142,7 @@ extension BackgroundMusicController {
 		guard isCurrent(playerToUse, generation: generation) else { return }
 		let normalizedVolume = max(0, min(100, Int(volume * 100)))
 		do {
-			try await playerToUse.evaluate(
-				javaScript: .youTubePlayer(
-					functionName: "setVolume",
-					parameters: [normalizedVolume]
-				)
-			)
+			try await playerCommands.setVolume(playerToUse, normalizedVolume)
 		} catch {
 			guard !Task.isCancelled, isCurrent(playerToUse, generation: generation) else { return }
 			lifecycle.log.debug(
