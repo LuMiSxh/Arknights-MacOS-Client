@@ -28,8 +28,8 @@ The report initially did not distinguish reduced movement speed from delayed pre
 game cursor. These require different interventions. A sensitivity control changes the settled
 distance travelled; a frame-latency control changes how long rendered feedback can remain queued.
 
-The current release already implements a Canary **Frame Latency** setting with values 1–3 and
-default 3. The reporter compared 1 with 3 and saw no visible difference. This rules out that
+At the time of the report, launcher v0.6.0 provided a Canary **Frame Latency** setting with values
+1–3 and default 3. The reporter compared 1 with 3 and saw no visible difference. This rules out that
 control as a useful workaround on the reported M1 configuration, but does not prove that the
 runtime ignored it or that presentation contributes no latency.
 
@@ -244,15 +244,18 @@ GPU wait time, so they may trade throughput and smooth pacing for responsiveness
 diagnostic requests of the reporter. Existing evidence continues to point toward the game's
 software-cursor and presentation path, but does not confirm a fix for #84.
 
-The client passes the selected Canary value to DXMT, including 0, and continues to omit it when
-Canary is off. The Hardware Cursor preference defaults off and resets off. The client emits
-`ARKNIGHTS_RUNTIME_HARDWARE_CURSOR=1` only when both Canary Features and Use Hardware Cursor are on,
-for every game profile. The runtime must interpret this flag by suppressing the game's rendered
-cursor; the launcher does not modify game assets. The setting applies on the next launch and may
-change cursor appearance. Preferences tests cover the default, persistence, and reset; environment
-tests cover every region and all four Canary/toggle combinations. These checks protect
-configuration propagation, while manual comparisons with the matching runtime remain necessary to
-establish whether the hardware pointer feels better.
+The current Canary Frame Latency control spans 0–3, with 3 as the default. The launcher passes the
+saved value to DXMT only when Canary is enabled and the packaged runtime advertises
+`dxmtMaximumFrameLatency`; the value is clamped to that advertised range. Otherwise the preference
+remains saved and the runtime default applies. The Hardware Cursor preference defaults off and
+resets off. The client emits `ARKNIGHTS_RUNTIME_HARDWARE_CURSOR=1` only when Canary Features and Use
+Hardware Cursor are on and the packaged runtime advertises `hardwareCursor`. The runtime must
+interpret this flag by suppressing the game's rendered cursor; the launcher does not modify game
+assets. The setting applies on the next launch and may change cursor appearance. Preferences tests
+cover the default, persistence, and reset; environment tests cover every region and all four
+Canary/toggle combinations. These checks protect configuration propagation, while manual
+comparisons with the matching runtime remain necessary to establish whether the hardware pointer
+feels better.
 
 ## Limits
 

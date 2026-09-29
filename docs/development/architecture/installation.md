@@ -139,6 +139,14 @@ answers a range request with 200, the installer safely truncates the partial fil
 file from zero. An unexpected status, oversized response, size mismatch, or provider-checksum
 mismatch fails that attempt. A checksum failure clears those unverified partial bytes before retrying.
 
+Before accepting file bytes, the installer validates both the source URL and every redirect. All
+must use HTTPS and contain no embedded credentials. Global, Japan, and Korea accept any otherwise
+valid HTTPS host from their publisher configuration. China artifact URLs and redirects must omit an
+explicit port and use a hostname ending in `.hycdn.cn`; Taiwan artifact URLs and redirects must omit
+an explicit port and use exactly `launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, or
+`gl-utils-public.hg-cdn.com`. `launcher.gryphline.com` is used by the Taiwan metadata adapter, not
+for game-file downloads.
+
 > [!TIP]
 > If a download is paused, keep the regional directory and its `.part` files in place. Starting
 > **Resume** or **Install/Update** later lets the installer reuse complete files and continue safe
