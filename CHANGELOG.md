@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Prevented large manifests from exhausting open-file descriptors while the installer checks existing files.
 - Restored focus when dismissing mobile navigation with Escape and made enlarged Mermaid diagrams accessible modal dialogs.
 - Fixed music controls staying disabled after the game interrupts playback, and kept custom music URLs and playlist IDs out of logs.
 - Kept preset launcher, game, and source icons together when a later icon file commit fails.
