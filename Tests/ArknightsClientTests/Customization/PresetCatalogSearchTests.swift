@@ -66,8 +66,11 @@ struct PresetCatalogSearchTests {
 		#expect(matches.first == closest)
 	}
 
-	@Test
-	func wallpaperSearchKeepsDisplayTitleBehavior() async throws {
+	@Test(
+		"wallpaper search matches display titles after trimming surrounding whitespace",
+		arguments: ["rhine", "  rhine  "]
+	)
+	func wallpaperSearchMatchesDisplayTitle(query: String) async throws {
 		let wallpaper = PresetWallpaper(
 			id: "crossing",
 			title: "Crossing the Rhine",
@@ -76,23 +79,7 @@ struct PresetCatalogSearchTests {
 			thumbnailURL: nil
 		)
 
-		let matches = try await PresetCatalogSearch.wallpapers(matching: "rhine", in: [wallpaper])
-
-		#expect(matches == [wallpaper])
-	}
-
-	@Test
-	func wallpaperSearchTrimsQueryWhitespace() async throws {
-		let wallpaper = PresetWallpaper(
-			id: "crossing",
-			title: "Crossing the Rhine",
-			fallbackOrdinal: nil,
-			url: URL(string: "https://arknights.global/crossing.png")!,
-			thumbnailURL: nil
-		)
-
-		let matches = try await PresetCatalogSearch.wallpapers(
-			matching: "  rhine  ", in: [wallpaper])
+		let matches = try await PresetCatalogSearch.wallpapers(matching: query, in: [wallpaper])
 
 		#expect(matches == [wallpaper])
 	}
