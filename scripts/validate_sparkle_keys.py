@@ -245,7 +245,7 @@ def validate_appcast(
             openssl,
         )
     try:
-        root = ET.fromstring(data)
+        root = ET.fromstring(feed_content)
     except ET.ParseError as error:
         fail(f"could not parse generated Sparkle appcast: {error}")
 

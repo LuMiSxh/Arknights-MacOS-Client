@@ -139,16 +139,20 @@ def test_cryptographically_verifies_appcast_and_update_artifact(
     ).encode()
     appcast = tmp_path / "appcast.xml"
     feed = tmp_path / "feed.xml"
-    feed.write_bytes(body)
-    appcast.write_bytes(
-        body
-        + (
-            "<!-- sparkle-signatures:\n"
-            f"edSignature: {encoded(sign(feed))}\n"
-            f"length: {len(body)}\n"
-            "-->\n"
-        ).encode()
-    )
+
+    def signed_feed(content: bytes) -> bytes:
+        feed.write_bytes(content)
+        return (
+            content
+            + (
+                "<!-- sparkle-signatures:\n"
+                f"edSignature: {encoded(sign(feed))}\n"
+                f"length: {len(content)}\n"
+                "-->\n"
+            ).encode()
+        )
+
+    appcast.write_bytes(signed_feed(body))
 
     validate_sparkle_keys.validate_appcast(
         appcast,
@@ -157,6 +161,18 @@ def test_cryptographically_verifies_appcast_and_update_artifact(
         public_key=encoded(public_key),
         openssl=openssl,
     )
+
+    incomplete_appcast = tmp_path / "signed-prefix-completed-after-comment.xml"
+    incomplete_prefix = body.removesuffix(b"</rss>\n")
+    incomplete_appcast.write_bytes(signed_feed(incomplete_prefix) + b"</rss>\n")
+    with pytest.raises(RuntimeError, match="could not parse generated Sparkle appcast"):
+        validate_sparkle_keys.validate_appcast(
+            incomplete_appcast,
+            expected_update_name=update.name,
+            update_file=update,
+            public_key=encoded(public_key),
+            openssl=openssl,
+        )
 
     update.write_bytes(b"tampered update contents")
     with pytest.raises(RuntimeError, match="enclosure Ed25519 signature is invalid"):
