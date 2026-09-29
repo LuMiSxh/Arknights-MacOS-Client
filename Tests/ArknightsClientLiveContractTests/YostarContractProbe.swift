@@ -137,10 +137,7 @@ struct YostarContractProbe {
 			guard !payload.manifest.file.isEmpty else {
 				throw ProbeError.invalid("manifest contains no files")
 			}
-			let root = FileManager.default.temporaryDirectory.appending(
-				path: "ArknightsContractValidation-\(region.rawValue)-\(UUID().uuidString)"
-			)
-			try installer.validateManifest(payload.manifest, inside: root)
+			try installer.validateManifestPaths(payload.manifest)
 			for file in payload.manifest.file {
 				guard UInt64(file.hash) != nil else {
 					throw ProbeError.invalid("manifest contains an invalid checksum")

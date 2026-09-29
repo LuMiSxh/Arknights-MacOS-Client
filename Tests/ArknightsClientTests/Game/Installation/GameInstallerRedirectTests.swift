@@ -15,6 +15,7 @@ import Testing
 	(.global, "http://cdn.example", false),
 	(.korea, "https://user@cdn.example", false),
 	(.china, "https://evil.example", false),
+	(.china, "http://ak.hycdn.cn", false),
 	(.taiwan, "http://ak-tw.hg-cdn.com", false),
 	(.taiwan, "https://evil.example", false),
 	(.taiwan, "https://launcher.gryphline.com", false),
@@ -47,7 +48,7 @@ func installerAdmitsOnlyAllowedPublisherSources(
 			item,
 			source: "game",
 			baseURL: try #require(URL(string: source)),
-			installDirectory: root,
+			installDirectory: try InstallerInstallDirectory(at: root),
 			counter: ProgressCounter(totalBytes: 4, totalFiles: 1),
 			progress: { _ in },
 			region: region

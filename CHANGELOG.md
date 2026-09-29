@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The HUD outline now pulses while Wine is prepared, the game starts or stops, launcher data updates, the Wine prefix is deleted, or the game moves to the Trash.
 - Repair now shows verification progress in the HUD, Settings, and setup, and Pause stops file verification immediately instead of waiting for every file to be checked.
 - Region selection, installation, storage listings, statistics, and setup now share one Canary permission check.
-- Installation tasks now prove ownership through the active installation state instead of a separate lock.
+- Installation task ownership now follows the active installation state.
 - Launcher log entries are now written in call order without suspending launcher work, removing redundant state checks after every log line.
 - The developer preview now reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
 - Reworked launcher motion and display to look more consistent, appealing, and responsive while respecting Reduce Motion and Dynamic Type.
@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Restored focus when dismissing mobile navigation with Escape and made enlarged Mermaid diagrams accessible modal dialogs.
 - Fixed music controls staying disabled after the game interrupts playback, and kept custom music URLs and playlist IDs out of logs.
 - Kept preset launcher, game, and source icons together when a later icon file commit fails.
+- Prevented concurrent installer processes from interleaving updates, and validated resumed download ranges and staged files before promotion.
 - Kept Play/Stop morph timing independent of the primary action's fading glow.
 - Matched preview errors and launch availability to the real recovery flow, and corrected verification progress in the preview and setup.
 - Removed the old inline Rosetta recovery controls and made the developer preview use the same failure dialog and recovery actions as the launcher.

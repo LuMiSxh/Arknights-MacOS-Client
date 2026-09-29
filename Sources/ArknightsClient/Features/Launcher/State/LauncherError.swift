@@ -47,6 +47,7 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 	case checksumMismatch(path: String, expected: String, actual: String)
 	case cannotCreateFile(URL)
 	case unsafeInstallerTemporaryFile(URL)
+	case installDirectoryInUse(URL)
 	case missingConfiguration
 	case gameNotInstalled(URL)
 	case insufficientDiskSpace(required: Int64, available: Int64)
@@ -92,6 +93,8 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 			"The launcher could not create a file. Check folder permissions and free disk space, then try again."
 		case .unsafeInstallerTemporaryFile:
 			"The launcher could not safely write to the install folder. Choose another folder and try again."
+		case .installDirectoryInUse:
+			"Another launcher process is changing this install folder. Wait for it to finish and try again."
 		case .missingConfiguration:
 			"Game information has not loaded yet. Refresh the launcher and try again."
 		case .gameNotInstalled:
@@ -147,6 +150,8 @@ enum LauncherError: LocalizedError, LauncherDiagnosticError {
 		case .cannotCreateFile(let url): "Could not create temporary file: \(url.path)"
 		case .unsafeInstallerTemporaryFile(let url):
 			"The installer refused a non-regular or multiply linked temporary file: \(url.path)"
+		case .installDirectoryInUse(let url):
+			"Another launcher process holds the install lease for \(url.path)."
 		case .missingConfiguration: "The current game configuration has not been loaded yet."
 		case .gameNotInstalled(let url): "Arknights.exe was not found: \(url.path)"
 		case .runtimeConfiguration(let message):

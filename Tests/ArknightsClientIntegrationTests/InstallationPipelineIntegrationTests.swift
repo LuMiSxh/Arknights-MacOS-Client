@@ -83,11 +83,14 @@ struct InstallationPipelineIntegrationTests {
 		#expect(
 			!FileManager.default.fileExists(atPath: payloadURL.appendingPathExtension("part").path))
 
-		let state = try #require(try installer.loadState(from: installDirectory))
-		#expect(state.version == "1.2.3")
-		#expect(state.basis == "fixture-manifest.json")
-		#expect(state.source == "fixture-source")
-		#expect(state.files?.map(\.path) == ["Arknights.exe"])
+		do {
+			let installationRoot = try InstallerInstallDirectory(at: installDirectory)
+			let state = try #require(try installer.loadState(from: installationRoot))
+			#expect(state.version == "1.2.3")
+			#expect(state.basis == "fixture-manifest.json")
+			#expect(state.source == "fixture-source")
+			#expect(state.files?.map(\.path) == ["Arknights.exe"])
+		}
 		let finalProgress = try #require(await progress.updates().last)
 		#expect(finalProgress.fraction == 1)
 		#expect(finalProgress.completedFiles == 1)

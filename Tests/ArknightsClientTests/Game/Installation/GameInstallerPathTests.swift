@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 import Testing
 
@@ -22,6 +23,39 @@ struct GameInstallerPathTests {
 		#expect(throws: Error.self) {
 			_ = try BoundedFileReader.readRegularFile(at: link, maximumBytes: 32)
 		}
+
+		let fifo = root.appending(path: "fifo")
+		guard mkfifo(fifo.path, 0o600) == 0 else {
+			throw POSIXError(.init(rawValue: errno) ?? .EIO)
+		}
+		let started = DispatchSemaphore(value: 0)
+		let finished = DispatchSemaphore(value: 0)
+		let install = try InstallerInstallDirectory(at: root)
+		DispatchQueue.global().async {
+			started.signal()
+			do {
+				_ = try BoundedFileReader.readRegularFile(at: fifo, maximumBytes: 32)
+			} catch {
+				// A FIFO is rejected after its nonblocking descriptor is inspected.
+			}
+			do {
+				let descriptor = try install.file(at: "fifo").open(flags: O_RDONLY | O_CLOEXEC)
+				_ = close(descriptor)
+			} catch {
+				// Descriptor-anchored file opens also reject FIFOs without waiting for a writer.
+			}
+			finished.signal()
+		}
+		#expect(started.wait(timeout: .now() + .seconds(1)) == .success)
+		let returnedBeforeWriter = finished.wait(timeout: .now() + .milliseconds(400)) == .success
+		if !returnedBeforeWriter {
+			DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(450)) {
+				let writer = open(fifo.path, O_WRONLY | O_NONBLOCK | O_CLOEXEC)
+				if writer >= 0 { _ = close(writer) }
+			}
+			#expect(finished.wait(timeout: .now() + .seconds(2)) == .success)
+		}
+		#expect(returnedBeforeWriter)
 	}
 	private let installer = GameInstaller(
 		api: PathTestAPI(),
@@ -38,7 +72,7 @@ struct GameInstallerPathTests {
 			source: "/Arknights_JP-36.7.23-game",
 			file: [ManifestFile(path: "/Arknights.exe", hash: "0", size: "0")]
 		)
-		try installer.validateManifest(manifest, inside: temporaryInstallDirectory())
+		try validateManifest(manifest)
 	}
 
 	@Test
@@ -58,7 +92,7 @@ struct GameInstallerPathTests {
 		let manifest = makeManifest(paths: ["bin/Game.dat", "BIN/game.dat"])
 
 		#expect(throws: LauncherError.self) {
-			try installer.validateManifest(manifest, inside: temporaryInstallDirectory())
+			try validateManifest(manifest)
 		}
 	}
 
@@ -67,7 +101,7 @@ struct GameInstallerPathTests {
 		let manifest = makeManifest(paths: ["assets", "assets/image.png"])
 
 		#expect(throws: LauncherError.self) {
-			try installer.validateManifest(manifest, inside: temporaryInstallDirectory())
+			try validateManifest(manifest)
 		}
 	}
 
@@ -78,7 +112,7 @@ struct GameInstallerPathTests {
 		)
 
 		#expect(throws: LauncherError.self) {
-			try installer.validateManifest(manifest, inside: temporaryInstallDirectory())
+			try validateManifest(manifest)
 		}
 	}
 
@@ -89,12 +123,10 @@ struct GameInstallerPathTests {
 			["foo", "foo.part/content"],
 			[AppConstants.Game.installedStateFileName],
 			[AppConstants.Game.installedStateFileName + "/content"],
+			["bin/\(AppConstants.Game.installerStagingDirectoryName)/content"],
 		] {
 			#expect(throws: LauncherError.self) {
-				try installer.validateManifest(
-					makeManifest(paths: paths),
-					inside: temporaryInstallDirectory()
-				)
+				try validateManifest(makeManifest(paths: paths))
 			}
 		}
 	}
@@ -249,6 +281,13 @@ struct GameInstallerPathTests {
 			Issue.record("Unexpected installer error: \(error)")
 		}
 		#expect(try Data(contentsOf: outside) == sentinel)
+	}
+
+	private func validateManifest(_ manifest: GameManifest) throws {
+		let root = temporaryInstallDirectory()
+		defer { try? FileManager.default.removeItem(at: root) }
+		let installDirectory = try InstallerInstallDirectory(at: root)
+		try installer.validateManifest(manifest, in: installDirectory)
 	}
 
 	private func makeManifest(paths: [String]) -> GameManifest {
