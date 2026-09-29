@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.1.
 - Reduced repeated text comparisons in documentation search.
 - Preset gallery thumbnails now decode off the main actor so large artwork does not block the interface.
 - Updated first-launch guidance for ad-hoc signed releases to use Apple's app-specific Gatekeeper confirmation flow.

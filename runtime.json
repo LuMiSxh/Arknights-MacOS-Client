@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.6.0",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.0/Arknights-MacOS-Runtime-v0.6.0.tar.gz",
-    "sha256": "2316464a4dfa09a18327698c13d8fd204f4600f869f9384c466a4e93ef8d5297"
+    "name": "Arknights macOS Runtime 0.6.1",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1.tar.gz",
+    "sha256": "56e5d3448ad18446b824ec1f7eda266f836bdd3d05b99dcadc0c69a9c0a1dc6d"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.0/Arknights-MacOS-Runtime-v0.6.0-source.tar.gz",
-    "sha256": "a756ecac64a9b93078bac570531a36870bb076d2763316b0fa8c67c44f67ef18"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1-source.tar.gz",
+    "sha256": "55889cdbda123751ab5b7e9ea0dc34c8afd8ee95e548f84d6a390fdc5c5e70d2"
   },
   "interface": {
     "archive": {
@@ -36,8 +36,8 @@
     }
   },
   "components": {
-    "wine": "11.16",
-    "dxmt": "0.80-213-g4ddb20e",
+    "wine": "11.17",
+    "dxmt": "0.80-244-g7c8dee1",
     "gstreamer": "1.26.3",
     "ffmpeg": "7.1.1",
     "moltenvk": "1.4.2",
@@ -45,11 +45,11 @@
   },
   "provenance": {
     "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "8f4dcc3524e21b5baf98af2bfa6e9a86f611cad4",
+    "buildCommit": "e53f807f6567209482fa0be134b8fee85d01e60c",
     "wineRepository": "https://github.com/dappermint/winecx",
-    "wineCommit": "e1b410a5fdd96a32722a5f2617b5068bd385b7db",
+    "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
-    "dxmtCommit": "4ddb20e54672c0cb56115ce80d6db1beef94ae28",
+    "dxmtCommit": "7c8dee1c2d73415301ceb7d1fa810861cef4cd67",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "gstreamerRepository": "https://github.com/GStreamer/gstreamer",
