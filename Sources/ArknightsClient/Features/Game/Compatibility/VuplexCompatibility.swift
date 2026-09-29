@@ -77,7 +77,7 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			try GameShimIO.containsMarker(
 				at: officialHelperURL,
 				marker: Data(Self.compatibilityArgument.utf8),
-				maximumSize: AppConstants.Game.vuplexShimMaximumBytes
+				maximumSize: AppConstants.Game.vuplexOfficialHelperMaximumBytes
 			)
 		else {
 			return false
