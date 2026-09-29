@@ -17,7 +17,7 @@ enum RuntimeCapabilityContractError: LocalizedError, Sendable {
 		case .invalidFrameLatencyRange:
 			"Capability manifest frame latency range is invalid."
 		case .invalidManifestPath:
-			"Capability manifest path must be a safe relative path."
+			"Capability manifest path must be a safe single filename."
 		}
 	}
 }
@@ -89,21 +89,12 @@ struct RuntimeCapabilities: Equatable, Sendable {
 				"runtime configuration does not advertise a capability manifest"
 			)
 		}
-		let components = manifestRelativePath.split(
-			separator: "/",
-			omittingEmptySubsequences: false
-		)
-		guard !manifestRelativePath.hasPrefix("/"),
-			!components.isEmpty,
-			components.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." })
-		else {
+		guard Self.isSafeManifestFilename(manifestRelativePath) else {
 			return fallback(
 				RuntimeCapabilityContractError.invalidManifestPath.localizedDescription
 			)
 		}
-		let manifestURL = components.reduce(directory) { parent, component in
-			parent.appending(path: String(component))
-		}
+		let manifestURL = directory.appending(path: manifestRelativePath)
 		do {
 			let data = try BoundedFileReader.readRegularFile(
 				at: manifestURL,
@@ -118,6 +109,15 @@ struct RuntimeCapabilities: Equatable, Sendable {
 				"Ignoring runtime capability manifest at \(manifestURL.path): \(Self.diagnostic(for: error))"
 			)
 		}
+	}
+
+	private static func isSafeManifestFilename(_ value: String) -> Bool {
+		!value.isEmpty
+			&& value != "."
+			&& value != ".."
+			&& !value.contains("/")
+			&& !value.contains("\\")
+			&& !value.utf8.contains(0)
 	}
 
 	private static func fallback(_ diagnostic: String) -> RuntimeCapabilityDiscovery {

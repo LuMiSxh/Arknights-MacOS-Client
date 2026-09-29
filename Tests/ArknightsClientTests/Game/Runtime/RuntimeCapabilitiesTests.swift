@@ -88,12 +88,35 @@ func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() th
 	#expect(unconfigured.capabilities == .conservative)
 	#expect(unconfigured.diagnostic?.isEmpty == false)
 
-	let unsafePath = RuntimeCapabilities.discover(
-		inRuntimeDirectory: root,
-		manifestRelativePath: "../runtime-capabilities.json"
+	for unsafePath in [
+		"", ".", "..", "../runtime-capabilities.json", "linked/manifest.json",
+		"nested\\manifest.json", "bad\u{0}name.json",
+	] {
+		let discovery = RuntimeCapabilities.discover(
+			inRuntimeDirectory: root,
+			manifestRelativePath: unsafePath
+		)
+		#expect(discovery.capabilities == .conservative)
+		#expect(discovery.diagnostic?.contains("single filename") == true)
+	}
+
+	let outside = fileManager.temporaryDirectory.appending(
+		path: "runtime-capabilities-outside-\(UUID().uuidString)",
+		directoryHint: .isDirectory
 	)
-	#expect(unsafePath.capabilities == .conservative)
-	#expect(unsafePath.diagnostic?.isEmpty == false)
+	try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
+	defer { try? fileManager.removeItem(at: outside) }
+	try runtimeCapabilityManifest.write(to: outside.appending(path: "manifest.json"))
+	try fileManager.createSymbolicLink(
+		at: root.appending(path: "linked"),
+		withDestinationURL: outside
+	)
+	let linkedParent = RuntimeCapabilities.discover(
+		inRuntimeDirectory: root,
+		manifestRelativePath: "linked/manifest.json"
+	)
+	#expect(linkedParent.capabilities == .conservative)
+	#expect(linkedParent.diagnostic?.contains("single filename") == true)
 
 	let relativePath = "runtime-capabilities.json"
 	let manifestURL = root.appending(path: relativePath)

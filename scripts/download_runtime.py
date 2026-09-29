@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import tempfile
 import urllib.error
 import urllib.parse
@@ -220,6 +221,20 @@ def prepare_runtime(
         dxmt_destination = runtime / layout.dxmt.payload_directory
         dxmt_destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(dxmt, dxmt_destination)
+        capability_manifest = libraries / layout.capability_manifest_path
+        try:
+            manifest_status = capability_manifest.lstat()
+        except FileNotFoundError:
+            manifest_status = None
+        except OSError as error:
+            fail(f"unable to inspect runtime capability manifest: {error}")
+        if manifest_status is not None:
+            if (
+                not stat.S_ISREG(manifest_status.st_mode)
+                or manifest_status.st_nlink != 1
+            ):
+                fail("runtime capability manifest must be a regular, unlinked file")
+            capability_manifest.replace(runtime / layout.capability_manifest_path)
         launcher = runtime / layout.launcher.path
         launcher.parent.mkdir(parents=True, exist_ok=True)
         if not launcher.exists() and not launcher.is_symlink():

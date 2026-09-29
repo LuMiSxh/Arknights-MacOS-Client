@@ -106,7 +106,19 @@ def test_reads_safe_runtime_capability_manifest_path(tmp_path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize("path", ["../outside.json", "/tmp/outside.json"])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "",
+        ".",
+        "..",
+        "../outside.json",
+        "/tmp/outside.json",
+        "nested/file.json",
+        "nested\\file.json",
+        "manifest\x00.json",
+    ],
+)
 def test_rejects_unsafe_runtime_capability_manifest_path(
     tmp_path: Path, path: str
 ) -> None:
@@ -116,5 +128,5 @@ def test_rejects_unsafe_runtime_capability_manifest_path(
     value["interface"]["runtimeCapabilities"] = path
     write_config(config, value)
 
-    with pytest.raises(RuntimeError, match="safe and relative"):
+    with pytest.raises(RuntimeError):
         runtime_config.load_runtime_config(config)
