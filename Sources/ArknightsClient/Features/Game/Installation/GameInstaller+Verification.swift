@@ -22,15 +22,16 @@ extension GameInstaller {
 	) async throws -> PendingDownloads {
 		var candidates:
 			[(
-				item: ManifestFile, destination: InstallerFilePath, size: Int64?,
+				item: ManifestFile, relativePath: String, size: Int64?,
 				identity: InstallerFileIdentity?
-			)] = []
+			)] =
+				[]
 		for item in manifest.file {
 			try Task.checkCancellation()
 			let relativePath = try Self.safeRelativePath(item.path)
 			let destination = try installFile(at: relativePath, inside: installDirectory)
 			guard let status = try destination.stat() else {
-				candidates.append((item, destination, nil, nil))
+				candidates.append((item, relativePath, nil, nil))
 				continue
 			}
 			guard status.st_mode & S_IFMT == S_IFREG, status.st_nlink == 1,
@@ -39,7 +40,7 @@ extension GameInstaller {
 				throw LauncherError.unsafeInstallerTemporaryFile(destination.url)
 			}
 			candidates.append(
-				(item, destination, Int64(status.st_size), InstallerFileIdentity(status))
+				(item, relativePath, Int64(status.st_size), InstallerFileIdentity(status))
 			)
 		}
 		let hashedFiles = candidates.filter {
@@ -65,7 +66,11 @@ extension GameInstaller {
 					verifyAllExistingFiles: verifyAllExistingFiles,
 					checksum: {
 						defer { tally.finishFile() }
-						let descriptor = try candidate.destination.open(
+						let destination = try installFile(
+							at: candidate.relativePath,
+							inside: installDirectory
+						)
+						let descriptor = try destination.open(
 							flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW
 						)
 						defer { _ = close(descriptor) }
@@ -76,7 +81,7 @@ extension GameInstaller {
 							InstallerFileIdentity(before) == candidate.identity
 						else {
 							throw LauncherError.unsafeInstallerTemporaryFile(
-								candidate.destination.url
+								destination.url
 							)
 						}
 						let checksum = try ManifestChecksum.checksum(
@@ -88,11 +93,11 @@ extension GameInstaller {
 						guard fstat(descriptor, &after) == 0,
 							InstallerFileIdentity(after) == InstallerFileIdentity(before),
 							after.st_size == before.st_size,
-							let current = try candidate.destination.stat(),
+							let current = try destination.stat(),
 							InstallerFileIdentity(current) == InstallerFileIdentity(before)
 						else {
 							throw LauncherError.unsafeInstallerTemporaryFile(
-								candidate.destination.url
+								destination.url
 							)
 						}
 						return checksum
