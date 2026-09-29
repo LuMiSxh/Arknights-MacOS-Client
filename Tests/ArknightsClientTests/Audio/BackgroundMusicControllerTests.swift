@@ -128,52 +128,80 @@ struct BackgroundMusicControllerTests {
 	}
 
 	@Test
-	func gameStartRetiresSupersededPlayAndFailedResumeReenablesControls() throws {
-		let (controller, _, defaults, suiteName, _) = makeController()
+	func interruptedPlayFailureReenablesControlsAndPreservesNewerRequest() async throws {
+		let commands = SuspendedMusicPlayerCommands()
+		let playerCommands = BackgroundMusicPlayerCommands(
+			play: { try await commands.play($0) },
+			pause: { try await commands.pause($0) },
+			setVolume: { try await commands.setVolume($0, $1) }
+		)
+		let (controller, _, defaults, suiteName, _) = makeController(
+			playerCommands: playerCommands
+		)
 		defer {
 			controller.cancelFade()
+			commands.completePlay(1)
+			commands.completePlay(3)
 			defaults.removePersistentDomain(forName: suiteName)
 		}
 
 		let player = YouTubePlayer(source: .video(id: "test"))
 		controller.player = player
-		let playOperation = controller.beginOperation(.playbackChange(.playing), on: player)
-		controller.expectPlayback(.playing, on: player)
+		controller.playbackState = .paused
+		controller.togglePlayback()
+		let originalOperation = try #require(controller.operation.token)
+		let originalFade = try #require(controller.fadeTask)
+		await commands.waitForPlay(1)
+		#expect(controller.isManuallyPaused == false)
+		#expect(controller.isChangingPlayback)
+
 		controller.lifecycle.activity = .runningGame(
 			sessionID: UUID(),
 			processIdentifier: 42
 		)
-
 		controller.gameRunningDidChange(to: true)
-
-		#expect(!controller.isChangingPlayback)
-		#expect(!controller.isCurrent(playOperation))
-		#expect(controller.playbackIntent == .paused)
+		let gamePauseFade = try #require(controller.fadeTask)
+		await gamePauseFade.value
+		#expect(commands.pauseCount == 1)
+		#expect(!controller.isCurrent(originalOperation))
+		controller.playbackState = .playing
 		controller.reconcilePlaybackIntent(with: .playing)
 		#expect(controller.playbackIntent == .paused)
+		controller.playbackState = .paused
 		controller.reconcilePlaybackIntent(with: .paused)
 		#expect(controller.playbackIntent == nil)
+
+		#expect(!controller.isChangingPlayback)
 
 		controller.lifecycle.activity = .idle
 		controller.gameRunningDidChange(to: false)
 		let resumeExpectation = try #require(controller.playbackExpectation)
 		#expect(resumeExpectation.intent == .playing)
+		let resumeFade = try #require(controller.fadeTask)
+		await commands.waitForPlay(2)
+		await resumeFade.value
+		#expect(controller.playbackIntent == nil)
 		#expect(!controller.isManuallyPaused)
-		// Mirror the automatic fade-in error path, which clears its playback expectation.
-		controller.clearPlaybackExpectation(resumeExpectation)
-
 		#expect(!controller.isChangingPlayback)
 		#expect(!controller.controlsAreDisabled)
 
-		let pauseOperation = controller.beginOperation(.playbackChange(.paused), on: player)
-		controller.expectPlayback(.paused, on: player)
-		controller.finishOperation(playOperation)
-		#expect(controller.isCurrent(pauseOperation))
+		controller.togglePlayback()
+		let newerOperation = try #require(controller.operation.token)
+		let newerFade = try #require(controller.fadeTask)
+		await commands.waitForPlay(3)
+		commands.completePlay(1)
+		await originalFade.value
+		#expect(controller.isCurrent(newerOperation))
+		#expect(controller.isChangingPlayback)
+		#expect(controller.player === player)
+
+		controller.playbackState = .playing
 		controller.reconcilePlaybackIntent(with: .playing)
-		#expect(controller.isCurrent(pauseOperation))
-		controller.reconcilePlaybackIntent(with: .paused)
 		#expect(!controller.isChangingPlayback)
 		#expect(!controller.controlsAreDisabled)
+		controller.cancelFade()
+		commands.completePlay(3)
+		await newerFade.value
 	}
 
 	@Test
@@ -199,7 +227,10 @@ struct BackgroundMusicControllerTests {
 		)
 	}
 
-	private func makeController(openURL: @escaping (URL) -> Void = { _ in }) -> (
+	private func makeController(
+		openURL: @escaping (URL) -> Void = { _ in },
+		playerCommands: BackgroundMusicPlayerCommands = .live
+	) -> (
 		BackgroundMusicController, LauncherPreferencesController, UserDefaults, String, URL
 	) {
 		let identifier = "BackgroundMusicControllerTests.\(UUID().uuidString)"
@@ -231,6 +262,7 @@ struct BackgroundMusicControllerTests {
 				lifecycle: lifecycle,
 				settings: settings,
 				launcherIconManager: iconManager,
+				playerCommands: playerCommands,
 				openURL: openURL
 			),
 			settings,
@@ -238,5 +270,44 @@ struct BackgroundMusicControllerTests {
 			identifier,
 			paths.launcherLogFile
 		)
+	}
+}
+
+@MainActor
+private final class SuspendedMusicPlayerCommands {
+	enum Failure: Error {
+		case automaticResume
+	}
+
+	private(set) var pauseCount = 0
+	private var playCount = 0
+	private var pendingPlays: [Int: CheckedContinuation<Void, any Error>] = [:]
+	private var playWaiters: [Int: CheckedContinuation<Void, Never>] = [:]
+
+	func play(_ player: YouTubePlayer) async throws {
+		playCount += 1
+		let request = playCount
+		playWaiters.removeValue(forKey: request)?.resume()
+		if request == 2 { throw Failure.automaticResume }
+		try await withCheckedThrowingContinuation { continuation in
+			pendingPlays[request] = continuation
+		}
+	}
+
+	func pause(_ player: YouTubePlayer) async throws {
+		pauseCount += 1
+	}
+
+	func setVolume(_ player: YouTubePlayer, _ volume: Int) async throws {}
+
+	func waitForPlay(_ request: Int) async {
+		guard playCount < request else { return }
+		await withCheckedContinuation { continuation in
+			playWaiters[request] = continuation
+		}
+	}
+
+	func completePlay(_ request: Int) {
+		pendingPlays.removeValue(forKey: request)?.resume(returning: ())
 	}
 }

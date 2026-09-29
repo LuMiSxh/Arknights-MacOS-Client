@@ -19,6 +19,7 @@ final class BackgroundMusicController {
 	let lifecycle: LauncherLifecycleStore
 	let settings: LauncherPreferencesController
 	let nowPlaying: NowPlayingCoordinator
+	let playerCommands: BackgroundMusicPlayerCommands
 	let openURL: (URL) -> Void
 	var currentMusicTitle: String?
 	var currentMusicVideoID: String?
@@ -46,10 +47,12 @@ final class BackgroundMusicController {
 		settings: LauncherPreferencesController,
 		launcherIconManager: LauncherIconManager,
 		initialMusicTitle: String? = nil,
+		playerCommands: BackgroundMusicPlayerCommands = .live,
 		openURL: @escaping (URL) -> Void
 	) {
 		self.lifecycle = lifecycle
 		self.settings = settings
+		self.playerCommands = playerCommands
 		self.openURL = openURL
 		currentMusicTitle = initialMusicTitle
 		nowPlaying = NowPlayingCoordinator(icon: launcherIconManager.currentIcon)
