@@ -157,7 +157,8 @@ struct WineRuntime: Sendable {
 		publisher: GamePublisher = .yostar,
 		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
-		log: LauncherLog? = nil
+		log: LauncherLog? = nil,
+		spawnGate: WineProcessSpawnGate = WineProcessSpawnGate()
 	) async throws -> WineLaunch {
 		let launchStarted = ContinuousClock.now
 		let fileManager = FileManager.default
@@ -237,7 +238,8 @@ struct WineRuntime: Sendable {
 			logsDirectory: logURL.deletingLastPathComponent(),
 			environment: environment,
 			logHandle: logHandle,
-			log: log
+			log: log,
+			spawnGate: spawnGate
 		)
 		RuntimePerformanceLog.write(
 			stage: "prefix", since: launchStarted, to: logHandle)
@@ -245,7 +247,8 @@ struct WineRuntime: Sendable {
 			try await applyBilibiliFontConfiguration(
 				prefixDirectory: prefixDirectory,
 				environment: environment,
-				logHandle: logHandle
+				logHandle: logHandle,
+				spawnGate: spawnGate
 			)
 		}
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
@@ -253,7 +256,8 @@ struct WineRuntime: Sendable {
 			displayConfiguration,
 			prefixDirectory: prefixDirectory,
 			environment: environment,
-			logHandle: logHandle
+			logHandle: logHandle,
+			spawnGate: spawnGate
 		)
 		RuntimePerformanceLog.write(
 			stage: "display", since: launchStarted, to: logHandle)
@@ -284,7 +288,7 @@ struct WineRuntime: Sendable {
 			)
 			terminationContinuation.finish()
 		}
-		try process.run()
+		try spawnGate.runIfAllowed { try process.run() }
 		if clientVariant == .bilibili {
 			let controller = Process()
 			controller.executableURL = executableURL
@@ -296,7 +300,7 @@ struct WineRuntime: Sendable {
 			controller.standardOutput = logHandle
 			controller.standardError = logHandle
 			do {
-				try controller.run()
+				try spawnGate.runIfAllowed { try controller.run() }
 			} catch {
 				try? logHandle.write(
 					contentsOf: Data(

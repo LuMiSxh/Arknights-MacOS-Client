@@ -24,7 +24,7 @@ extension GameSessionController {
 	}
 
 	func launch() {
-		guard lifecycle.activity == .idle else { return }
+		guard lifecycle.activity == .idle, !applicationTerminationRequested else { return }
 		let launchID = UUID()
 		let requestedRegion = installation.region
 		let executable = installation.installDirectory.appending(
@@ -112,6 +112,8 @@ extension GameSessionController {
 			)
 		)
 		launchTask?.cancel()
+		let spawnGate = WineProcessSpawnGate()
+		activeWineProcessSpawnGate = spawnGate
 		launchTask = Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -130,12 +132,15 @@ extension GameSessionController {
 					publisher: requestedRegion.publisher,
 					gameIconURL: customGameIconURL(),
 					logURL: paths.runtimeLogFile(for: requestedRegion),
-					log: log
+					log: log,
+					spawnGate: spawnGate
 				)
 				log.info(
 					"Game runtime started; session=\(gameSessionID.uuidString); pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
-				guard activeGameSessionID == gameSessionID else { return }
+				guard activeGameSessionID == gameSessionID, !applicationTerminationRequested else {
+					return
+				}
 				if Task.isCancelled {
 					await stopAfterCancelledLaunch(
 						runtime: runtime,
@@ -155,7 +160,9 @@ extension GameSessionController {
 				lifecycle.setStatus(.startingGame)
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
 				try await WineWindowReadiness.wait(processIdentifier: launch.processIdentifier)
-				guard activeGameSessionID == gameSessionID, isGameActive else { return }
+				guard activeGameSessionID == gameSessionID, isGameActive,
+					!applicationTerminationRequested
+				else { return }
 				lifecycle.activity = .runningGame(
 					sessionID: gameSessionID,
 					processIdentifier: launch.processIdentifier
@@ -171,7 +178,9 @@ extension GameSessionController {
 					"Game window became visible; session=\(gameSessionID.uuidString); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
 				)
 			} catch is CancellationError {
-				guard activeGameSessionID == gameSessionID else { return }
+				guard activeGameSessionID == gameSessionID, !applicationTerminationRequested else {
+					return
+				}
 				// Stop owns cleanup once the game process is known.
 				if case .stoppingGame(let sessionID, .some) = lifecycle.activity,
 					sessionID == gameSessionID
@@ -185,13 +194,16 @@ extension GameSessionController {
 					region: requestedRegion
 				)
 			} catch LauncherError.runtimeWindowTimeout {
+				guard !applicationTerminationRequested else { return }
 				await handleWindowTimeout(
 					runtime: runtime,
 					sessionID: gameSessionID,
 					region: requestedRegion
 				)
 			} catch {
-				guard activeGameSessionID == gameSessionID else { return }
+				guard activeGameSessionID == gameSessionID, !applicationTerminationRequested else {
+					return
+				}
 				let launchError: any Error
 				if RosettaAvailability.isBadCPUType(error) {
 					lifecycle.intelTranslationState = .unavailable
