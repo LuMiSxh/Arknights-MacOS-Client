@@ -16,6 +16,7 @@
       "dxmtDirectory": "DXMT"
     },
     "executables": ["bin/wine64", "bin/wineserver"],
+    "runtimeCapabilities": "runtime-capabilities.json",
     "requiredFiles": [
       "lib/wine/x86_64-unix/winecoreaudio.so",
       "lib/wine/x86_64-windows/winemetal.dll"

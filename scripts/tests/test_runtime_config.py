@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 import runtime_config
@@ -90,3 +90,31 @@ def test_new_component_requires_and_accepts_matching_provenance(
     value["provenance"]["newMediaCommit"] = "1" * 40
     write_config(config, value)
     runtime_config.validate_config(config)
+
+
+def test_reads_safe_runtime_capability_manifest_path(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    assert isinstance(value["interface"], dict)
+    value["interface"]["runtimeCapabilities"] = "runtime-capabilities.json"
+    write_config(config, value)
+
+    loaded = runtime_config.load_runtime_config(config)
+
+    assert loaded.layout.capability_manifest_path == PurePosixPath(
+        "runtime-capabilities.json"
+    )
+
+
+@pytest.mark.parametrize("path", ["../outside.json", "/tmp/outside.json"])
+def test_rejects_unsafe_runtime_capability_manifest_path(
+    tmp_path: Path, path: str
+) -> None:
+    config = tmp_path / "runtime.json"
+    value = valid_config()
+    assert isinstance(value["interface"], dict)
+    value["interface"]["runtimeCapabilities"] = path
+    write_config(config, value)
+
+    with pytest.raises(RuntimeError, match="safe and relative"):
+        runtime_config.load_runtime_config(config)

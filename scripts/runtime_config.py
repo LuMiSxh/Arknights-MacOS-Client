@@ -37,6 +37,7 @@ class DXMTLayout:
 class RuntimeLayout:
     archive_wine_directory: PurePosixPath
     archive_dxmt_directory: PurePosixPath
+    capability_manifest_path: PurePosixPath
     executables: tuple[PurePosixPath, ...]
     required_files: tuple[PurePosixPath, ...]
     mac_driver: PurePosixPath
@@ -230,6 +231,9 @@ def _read_layout(config: dict[str, Any]) -> RuntimeLayout:
         ),
         archive_dxmt_directory=_relative_path(
             config, "interface.archive.dxmtDirectory"
+        ),
+        capability_manifest_path=_relative_path(
+            config, "interface.runtimeCapabilities"
         ),
         executables=executables,
         required_files=required_files,

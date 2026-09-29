@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Canary runtime overrides now follow the capabilities declared by the packaged runtime; legacy or unsupported runtimes keep conservative defaults and saved preferences.
 - Softened the main HUD pill's orbiting glint with a quieter outline and a more diffuse accent glow.
 - Launcher errors now explain recovery steps while keeping file paths, checksums, and service details in the logs.
 - The HUD outline now pulses while Wine is prepared, the game starts or stops, launcher data updates, the Wine prefix is deleted, or the game moves to the Trash.
