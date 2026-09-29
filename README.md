@@ -19,7 +19,7 @@
 
 ## Get started
 
-1. Use an Apple silicon Mac with macOS 15–27 and enough space for the game. Rosetta 2 is required; the setup assistant can install it. On macOS 27, turn off Legacy Game Test Mode. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements).
+1. Use an Apple silicon Mac with macOS 15–27 and enough space for the game. Rosetta 2 is required; the setup assistant can install it. On macOS 27 beta only, turn off Legacy Game Test Mode if it is enabled. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements).
 2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), then drag the app to **Applications**.
 3. Right-click **Arknights Client** in Finder and choose **Open** on the first launch. The app is not notarized; you do not need to change your security settings. Choose your region in the setup assistant and let it download the official game files.
 

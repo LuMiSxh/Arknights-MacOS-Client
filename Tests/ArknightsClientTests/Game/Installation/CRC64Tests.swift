@@ -6,7 +6,7 @@ import Testing
 @testable import ArknightsClient
 
 @Test
-func crc64MatchesECMAReferenceVector() {
+func crc64MatchesXZReferenceVector() {
 	var checksum = CRC64()
 	checksum.update(Data("123456789".utf8))
 

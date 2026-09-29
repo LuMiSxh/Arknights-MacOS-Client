@@ -98,7 +98,7 @@ For a UI change, exercise the affected state through the debug simulator where p
 
 - Present setup as an operation briefing inside the launcher window: a persistent route on the left, one focused task on the right, and the active installation status inside the relevant step.
 - Check for a newer launcher before explaining version-specific settings. If one exists, stop setup at the update action until the newer launcher is installed and reopened.
-- Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 upgrade and Legacy Game Test Mode recovery before the first game launch.
+- Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 beta-only Legacy Game Test Mode recovery without presenting it as a stable-OS step.
 - Let the official game download continue while the user configures display, artwork, theme, icons, updates, and audio. Do not duplicate installer progress or cancellation state inside the setup module.
 - Apply choices immediately through the same actions used in Settings. A skipped or completed assistant can be opened again from Settings → General.
 - End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form; route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).

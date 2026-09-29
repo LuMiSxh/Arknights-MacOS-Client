@@ -2,7 +2,7 @@
 
 import Foundation
 
-/// ECMA-182 CRC-64, the checksum Yostar's manifest uses to verify each downloaded file.
+/// CRC-64/XZ, the checksum Yostar's manifest uses to verify each downloaded file.
 struct CRC64: Sendable {
 	private static let polynomial: UInt64 = 0xC96C_5795_D787_0F42
 

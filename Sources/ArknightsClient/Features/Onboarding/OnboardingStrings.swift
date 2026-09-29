@@ -179,7 +179,7 @@ enum OnboardingStrings {
 	static let compatibilityAvailable =
 		"Compatibility verified. The bundled Wine runtime can start."
 	static let compatibilityGameTestMode =
-		"macOS Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:"
+		"On macOS 27 beta, Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:"
 	static let compatibilityUnavailable =
 		"macOS could not start an Intel test process. Restart your Mac, then check again. If the problem remains, include the launcher log in a bug report."
 	static let compatibilityUnsupported =

@@ -28,7 +28,7 @@ If macOS says the app **is damaged and can't be opened**, download the DMG again
    ```
 
 2. Restart the Mac and choose **Check Again**.
-3. On macOS 27, also turn off [Legacy Game Test Mode](runtime-compatibility.md#legacy-game-test-mode).
+3. If you are running a macOS 27 beta with Legacy Game Test Mode enabled, turn it off as described in [macOS compatibility](runtime-compatibility.md#legacy-game-test-mode-on-macos-27-beta).
 
 If the check still fails, see [macOS compatibility](runtime-compatibility.md).
 
