@@ -10,13 +10,24 @@ struct InstallerResumeMetadata: Codable, Sendable {
 	let lastModified: String?
 
 	var ifRangeValue: String? {
-		if let entityTag, !entityTag.hasPrefix("W/") { return entityTag }
-		return lastModified
+		guard let entityTag, !entityTag.hasPrefix("W/") else { return nil }
+		return entityTag
 	}
 
 	func matchesEntity(_ response: InstallerResumeMetadata) -> Bool {
-		(entityTag == nil || entityTag == response.entityTag)
-			&& (lastModified == nil || lastModified == response.lastModified)
+		(entityTag == nil || response.entityTag == nil || entityTag == response.entityTag)
+			&& (lastModified == nil || response.lastModified == nil
+				|| lastModified == response.lastModified)
+	}
+
+	func preservingValidatorsOmitted(by response: InstallerResumeMetadata)
+		-> InstallerResumeMetadata
+	{
+		InstallerResumeMetadata(
+			manifestHash: response.manifestHash,
+			entityTag: response.entityTag ?? entityTag,
+			lastModified: response.lastModified ?? lastModified
+		)
 	}
 }
 

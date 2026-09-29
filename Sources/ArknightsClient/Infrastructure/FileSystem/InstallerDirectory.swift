@@ -245,6 +245,9 @@ final class InstallerDirectoryHandle: @unchecked Sendable {
 		return InstallerDirectoryHandle(descriptor: child, url: childURL)
 	}
 
+	/// Other-UID isolation of staged names depends on the volume enforcing ownership and mode bits.
+	/// Descriptor hashing and atomic rename still apply elsewhere, but cannot block hostile
+	/// source-name replacement on ownership-ignored volumes.
 	func stagingDirectory(named name: String) throws -> InstallerDirectoryHandle {
 		let directory = try openDirectory(named: name, create: true, mode: 0o700)
 		var status = stat()
@@ -342,6 +345,20 @@ struct InstallerFilePath: @unchecked Sendable {
 
 	func rename(to destination: InstallerFilePath) throws {
 		try directory.renameFile(named: name, to: destination.directory, as: destination.name)
+	}
+
+	func renameExclusively(to destination: InstallerFilePath) throws {
+		try InstallerDirectoryHandle.validateLeaf(name)
+		try InstallerDirectoryHandle.validateLeaf(destination.name)
+		guard
+			renameatx_np(
+				directory.descriptor,
+				name,
+				destination.directory.descriptor,
+				destination.name,
+				UInt32(RENAME_EXCL)
+			) == 0
+		else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
 	}
 
 	func unlink() throws {

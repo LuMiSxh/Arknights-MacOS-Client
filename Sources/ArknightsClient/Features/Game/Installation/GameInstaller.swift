@@ -113,16 +113,15 @@ struct GameInstaller: Sendable {
 			!ManifestChecksum.matches(priorMetadata.manifestHash, expected: item.hash)
 		{
 			try handle.truncate(atOffset: 0)
-			await progress(
-				await counter.remove(bytes: existingBytes, file: item.path)
-			)
+			if existingBytes <= item.byteCount, existingBytes > 0 {
+				await progress(await counter.remove(bytes: existingBytes, file: item.path))
+			}
 			existingBytes = 0
 			try metadataFile.unlink()
 			resumeMetadata = nil
 		}
 		if existingBytes > item.byteCount {
 			try handle.truncate(atOffset: 0)
-			await progress(await counter.remove(bytes: existingBytes, file: item.path))
 			existingBytes = 0
 		}
 
@@ -217,27 +216,35 @@ struct GameInstaller: Sendable {
 									response.expectedContentLength < 0
 										|| response.expectedContentLength == byteCount
 								else { throw LauncherError.invalidResponse }
+								var acceptedMetadata = responseMetadata
 								if let priorMetadata = resumeMetadata,
 									ManifestChecksum.matches(
 										priorMetadata.manifestHash,
 										expected: item.hash
-									),
-									!priorMetadata.matchesEntity(responseMetadata)
-								{
-									try handle.truncate(atOffset: 0)
-									try handle.seek(toOffset: 0)
-									await progress(
-										await counter.remove(bytes: existingBytes, file: item.path)
 									)
-									existingBytes = 0
-									try metadataFile.unlink()
-									resumeMetadata = nil
-									throw LauncherError.invalidResponse
+								{
+									if !priorMetadata.matchesEntity(responseMetadata) {
+										try handle.truncate(atOffset: 0)
+										try handle.seek(toOffset: 0)
+										if existingBytes > 0 {
+											await progress(
+												await counter.remove(
+													bytes: existingBytes, file: item.path)
+											)
+										}
+										existingBytes = 0
+										try metadataFile.unlink()
+										resumeMetadata = nil
+										throw LauncherError.invalidResponse
+									}
+									acceptedMetadata = priorMetadata.preservingValidatorsOmitted(
+										by: responseMetadata
+									)
 								}
 								rangeBaseBytes = existingBytes
 								expectedRangeBytes = byteCount
-								try writeResumeMetadata(responseMetadata, to: metadataFile)
-								resumeMetadata = responseMetadata
+								try writeResumeMetadata(acceptedMetadata, to: metadataFile)
+								resumeMetadata = acceptedMetadata
 							} else {
 								guard
 									response.expectedContentLength < 0

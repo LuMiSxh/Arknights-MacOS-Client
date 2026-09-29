@@ -25,7 +25,10 @@ extension GameInstaller {
 			throw LauncherError.invalidResponse
 		}
 		let name = AppConstants.Game.installedStateFileName
-		let temporary = installDirectory.root.file(named: ".\(name).\(UUID().uuidString).tmp")
+		let stagingDirectory = try installDirectory.stagingDirectory(
+			named: AppConstants.Game.installerStagingDirectoryName
+		)
+		let temporary = stagingDirectory.file(named: "state-\(UUID().uuidString).tmp")
 		let descriptor = try temporary.open(
 			flags: O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW,
 			mode: S_IRUSR | S_IWUSR
@@ -48,7 +51,7 @@ extension GameInstaller {
 		}
 		guard
 			renameat(
-				installDirectory.root.descriptor,
+				stagingDirectory.descriptor,
 				temporary.name,
 				installDirectory.root.descriptor,
 				name
@@ -57,7 +60,9 @@ extension GameInstaller {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
 		temporaryExists = false
-		guard fsync(installDirectory.root.descriptor) == 0 else {
+		guard fsync(stagingDirectory.descriptor) == 0,
+			fsync(installDirectory.root.descriptor) == 0
+		else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
 	}

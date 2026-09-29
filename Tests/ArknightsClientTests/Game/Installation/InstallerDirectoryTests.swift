@@ -68,12 +68,41 @@ struct InstallerDirectoryTests {
 	}
 
 	@Test
-	func privateStagingClearsInheritedDirectoryAndFileACLs() throws {
-		let rootURL = FileManager.default.temporaryDirectory.appending(
-			path: "InstallerDirectoryTests-acl-\(UUID().uuidString)",
+	func exclusiveRestoreKeepsBothQuarantineAndConcurrentReplacement() throws {
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "InstallerDirectoryTests-restore-\(UUID().uuidString)",
 			directoryHint: .isDirectory
 		)
-		defer { try? FileManager.default.removeItem(at: rootURL) }
+		defer { try? FileManager.default.removeItem(at: root) }
+		let install = try InstallerInstallDirectory(at: root)
+		let staging = try install.stagingDirectory(
+			named: AppConstants.Game.installerStagingDirectoryName
+		)
+		let quarantine = staging.file(named: "download.part.quarantine")
+		let replacement = install.root.file(named: "download.part")
+		let retained = Data("verified quarantine".utf8)
+		let concurrent = Data("concurrent replacement".utf8)
+		try retained.write(to: quarantine.url)
+		try concurrent.write(to: replacement.url)
+
+		do {
+			try quarantine.renameExclusively(to: replacement)
+			Issue.record("Expected exclusive restore to preserve an occupied destination")
+		} catch let error as POSIXError {
+			#expect(error.code == .EEXIST)
+		} catch {
+			Issue.record("Unexpected exclusive restore error: \(error)")
+		}
+
+		#expect(try Data(contentsOf: quarantine.url) == retained)
+		#expect(try Data(contentsOf: replacement.url) == concurrent)
+	}
+
+	@Test
+	func privateStagingClearsInheritedDirectoryAndFileACLs() throws {
+		let fixture = try GameInstallerStreamingTests.makeFixture(body: Data("game".utf8))
+		defer { fixture.remove() }
+		let rootURL = fixture.directory
 		let install = try InstallerInstallDirectory(at: rootURL)
 		let chmod = Process()
 		chmod.executableURL = URL(fileURLWithPath: "/bin/chmod")
@@ -117,6 +146,27 @@ struct InstallerDirectoryTests {
 		defer { _ = close(stagedFile) }
 		let stagedFileACL = acl_get_fd_np(stagedFile, ACL_TYPE_EXTENDED)
 		#expect(stagedFileACL == nil)
+		#expect(errno == ENOENT)
+
+		var stagingBeforeState = stat()
+		#expect(fstat(staging.descriptor, &stagingBeforeState) == 0)
+		try fixture.installer.saveState(
+			configuration: fixture.configuration,
+			manifest: GameManifest(source: fixture.source, file: [fixture.item]),
+			to: install
+		)
+		var stagingAfterState = stat()
+		#expect(fstat(staging.descriptor, &stagingAfterState) == 0)
+		#expect(
+			stagingAfterState.st_mtimespec.tv_sec != stagingBeforeState.st_mtimespec.tv_sec
+				|| stagingAfterState.st_mtimespec.tv_nsec != stagingBeforeState.st_mtimespec.tv_nsec
+		)
+		#expect(try fixture.installer.loadState(from: install) != nil)
+		let state = install.root.file(named: AppConstants.Game.installedStateFileName)
+		let stateDescriptor = try state.open(flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+		defer { _ = close(stateDescriptor) }
+		let stateACL = acl_get_fd_np(stateDescriptor, ACL_TYPE_EXTENDED)
+		#expect(stateACL == nil)
 		#expect(errno == ENOENT)
 	}
 

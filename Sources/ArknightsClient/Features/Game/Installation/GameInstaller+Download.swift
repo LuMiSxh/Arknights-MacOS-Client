@@ -332,11 +332,11 @@ extension GameInstaller {
 		try partial.rename(to: retired)
 		guard let retiredStatus = try retired.stat() else { return }
 		guard InstallerFileIdentity(retiredStatus) == expectedIdentity else {
-			if try partial.stat() == nil {
-				try retired.rename(to: partial)
-			} else {
+			do {
+				try retired.renameExclusively(to: partial)
+			} catch {
 				log?.error(
-					"Left a substituted partial in private staging for manual cleanup at \(retired.url.path)"
+					"Left a substituted partial in private staging for manual cleanup at \(retired.url.path): \(error.localizedDescription)"
 				)
 			}
 			return
