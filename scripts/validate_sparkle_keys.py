@@ -11,12 +11,14 @@ import binascii
 import hmac
 import os
 import plistlib
+import shutil
 import subprocess
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from lib.common import fail, require_command, run_main
+from lib.common import fail, run_main
 from lib.console import success
 
 PUBLIC_KEY_BYTES = 32
@@ -38,9 +40,10 @@ def decode_base64(value: str, label: str) -> bytes:
 
 
 def derive_public_key(seed: bytes, openssl: str | None = None) -> bytes:
-    """Derive an Ed25519 public key from Sparkle's 32-byte seed using OpenSSL."""
+    """Derive an Ed25519 public key from Sparkle's 32-byte seed using OpenSSL 3."""
+    openssl = require_openssl_ed25519(openssl)
     command = [
-        openssl or require_command("openssl"),
+        openssl,
         "pkey",
         "-inform",
         "DER",
@@ -55,10 +58,10 @@ def derive_public_key(seed: bytes, openssl: str | None = None) -> bytes:
             capture_output=True,
             check=True,
         )
-    except FileNotFoundError:
-        fail("required command not found: openssl")
+    except OSError:
+        fail(openssl_ed25519_guidance())
     except subprocess.CalledProcessError:
-        fail("OpenSSL could not derive the Sparkle Ed25519 public key")
+        fail("OpenSSL 3 could not derive the Sparkle Ed25519 public key")
 
     public_key = result.stdout
     if not public_key.startswith(SPKI_ED25519_PREFIX):
@@ -69,6 +72,28 @@ def derive_public_key(seed: bytes, openssl: str | None = None) -> bytes:
     return public_key
 
 
+def openssl_ed25519_guidance() -> str:
+    return (
+        "Sparkle Ed25519 validation requires OpenSSL 3; on macOS run "
+        "`brew install openssl@3` and put its bin directory first in PATH"
+    )
+
+
+def require_openssl_ed25519(openssl: str | None = None) -> str:
+    candidate = openssl or shutil.which("openssl")
+    if candidate is None:
+        fail(openssl_ed25519_guidance())
+    try:
+        version = subprocess.run(
+            [candidate, "version"], capture_output=True, check=True, text=True
+        ).stdout.strip()
+    except OSError, subprocess.CalledProcessError:
+        fail(openssl_ed25519_guidance())
+    if not version.startswith("OpenSSL 3."):
+        fail(openssl_ed25519_guidance())
+    return candidate
+
+
 def public_key_for_secret(secret: bytes, openssl: str | None = None) -> bytes:
     if len(secret) == PRIVATE_SEED_BYTES:
         return derive_public_key(secret, openssl)
@@ -76,15 +101,18 @@ def public_key_for_secret(secret: bytes, openssl: str | None = None) -> bytes:
 
 
 def validate_keys(
-    public_key: str, private_key: str, openssl: str | None = None
-) -> None:
+    public_key: str,
+    private_key: str,
+    openssl: str | None = None,
+) -> bytes:
     expected = decode_base64(public_key, "SUPublicEDKey")
     if len(expected) != PUBLIC_KEY_BYTES:
         fail("SUPublicEDKey must decode to 32 bytes")
     secret = decode_base64(private_key, "SPARKLE_ED25519_PRIVATE_KEY")
     derived = public_key_for_secret(secret, openssl)
-    if not hmac.compare_digest(expected, derived):
-        fail("Sparkle public and private keys do not match")
+    if hmac.compare_digest(expected, derived):
+        return derived
+    fail("Sparkle public and private keys do not match")
 
 
 def public_key_from_plist(path: Path) -> str:
@@ -99,7 +127,7 @@ def public_key_from_plist(path: Path) -> str:
     return public_key
 
 
-def validate_feed_signature(data: bytes) -> None:
+def validate_feed_signature(data: bytes) -> tuple[bytes, bytes]:
     """Validate Sparkle 2.9.6's trailing appcast signing comment."""
     prefix_index = data.rfind(SPARKLE_FEED_SIGNATURE_PREFIX)
     if prefix_index < 0:
@@ -135,17 +163,89 @@ def validate_feed_signature(data: bytes) -> None:
         fail("generated Sparkle appcast signing block has an invalid content length")
     if content_length != prefix_index:
         fail("generated Sparkle appcast signing block has an incorrect content length")
+    return data[:prefix_index], decoded_signature
 
 
-def validate_appcast(path: Path, expected_update_name: str | None = None) -> None:
+def verify_ed25519_signature(
+    public_key: bytes,
+    signature: bytes,
+    content: bytes | Path,
+    description: str,
+    openssl: str | None = None,
+) -> None:
+    """Verify Sparkle's raw Ed25519 signatures using OpenSSL 3."""
+    if len(public_key) != PUBLIC_KEY_BYTES:
+        fail("SUPublicEDKey must decode to 32 bytes")
+    if len(signature) != 64:
+        fail(f"generated Sparkle {description} signature must decode to 64 bytes")
+    openssl = require_openssl_ed25519(openssl)
+    with tempfile.TemporaryDirectory(prefix=".sparkle-signature.") as directory:
+        temporary = Path(directory)
+        public_key_path = temporary / "public.der"
+        signature_path = temporary / "signature.bin"
+        content_path = temporary / "content.bin"
+        public_key_path.write_bytes(SPKI_ED25519_PREFIX + public_key)
+        signature_path.write_bytes(signature)
+        if isinstance(content, Path):
+            content_path = content
+        else:
+            content_path.write_bytes(content)
+        try:
+            result = subprocess.run(
+                [
+                    openssl,
+                    "pkeyutl",
+                    "-verify",
+                    "-pubin",
+                    "-keyform",
+                    "DER",
+                    "-inkey",
+                    str(public_key_path),
+                    "-sigfile",
+                    str(signature_path),
+                    "-rawin",
+                    "-in",
+                    str(content_path),
+                ],
+                capture_output=True,
+                check=False,
+            )
+        except OSError:
+            fail(openssl_ed25519_guidance())
+    if result.returncode != 0:
+        fail(f"generated Sparkle {description} Ed25519 signature is invalid")
+
+
+def validate_appcast(
+    path: Path,
+    expected_update_name: str | None = None,
+    *,
+    update_file: Path | None = None,
+    public_key: str | None = None,
+    openssl: str | None = None,
+) -> None:
     """Reject generated appcasts without Sparkle feed or enclosure signatures."""
+    if (update_file is None) != (public_key is None):
+        fail("Sparkle appcast verification requires both an update file and public key")
     try:
         data = path.read_bytes()
     except OSError as error:
         fail(f"could not read generated Sparkle appcast: {error}")
-    validate_feed_signature(data)
+    feed_content, feed_signature = validate_feed_signature(data)
+    decoded_public_key: bytes | None = None
+    if public_key is not None:
+        decoded_public_key = decode_base64(public_key, "SUPublicEDKey")
+        if len(decoded_public_key) != PUBLIC_KEY_BYTES:
+            fail("SUPublicEDKey must decode to 32 bytes")
+        verify_ed25519_signature(
+            decoded_public_key,
+            feed_signature,
+            feed_content,
+            "appcast",
+            openssl,
+        )
     try:
-        root = ET.fromstring(data)
+        root = ET.fromstring(feed_content)
     except ET.ParseError as error:
         fail(f"could not parse generated Sparkle appcast: {error}")
 
@@ -162,6 +262,14 @@ def validate_appcast(path: Path, expected_update_name: str | None = None) -> Non
         not enclosure.get(signature_attribute, "").strip() for enclosure in enclosures
     ):
         fail("every Sparkle appcast enclosure must contain an Ed25519 signature")
+    if update_file is not None:
+        if not update_file.is_file():
+            fail(f"Sparkle update artifact not found: {update_file}")
+        if (
+            expected_update_name is not None
+            and update_file.name != expected_update_name
+        ):
+            fail("Sparkle update artifact does not match the expected update name")
     if expected_update_name is not None:
         for enclosure in enclosures:
             url = enclosure.get("url", "")
@@ -171,6 +279,27 @@ def validate_appcast(path: Path, expected_update_name: str | None = None) -> Non
                     "Sparkle appcast enclosure does not match expected update asset "
                     f"{expected_update_name!r}: {filename!r}"
                 )
+    if update_file is not None and decoded_public_key is not None:
+        for enclosure in enclosures:
+            try:
+                artifact_length = int(enclosure.get("length", ""))
+            except ValueError:
+                fail("Sparkle appcast enclosure has an invalid artifact length")
+            if artifact_length != update_file.stat().st_size:
+                fail(
+                    "Sparkle appcast enclosure length does not match the update artifact"
+                )
+            signature = decode_base64(
+                enclosure.get(signature_attribute, ""),
+                "Sparkle enclosure Ed25519 signature",
+            )
+            verify_ed25519_signature(
+                decoded_public_key,
+                signature,
+                update_file,
+                "enclosure",
+                openssl,
+            )
     items = [
         element
         for element in root.iter()
@@ -205,14 +334,26 @@ def main() -> None:
         "--update-name",
         help="also require every appcast enclosure to use this release ZIP name",
     )
+    parser.add_argument(
+        "--update-file",
+        type=Path,
+        help="cryptographically verify every appcast enclosure against this generated artifact",
+    )
     arguments = parser.parse_args()
     public_key = public_key_from_plist(arguments.plist)
     private_key = os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", "")
     if not private_key:
         fail("SPARKLE_ED25519_PRIVATE_KEY is required")
-    validate_keys(public_key, private_key)
+    signing_public_key = validate_keys(public_key, private_key)
     if arguments.appcast:
-        validate_appcast(arguments.appcast, arguments.update_name)
+        if arguments.update_file is None:
+            fail("--update-file is required when --appcast is specified")
+        validate_appcast(
+            arguments.appcast,
+            arguments.update_name,
+            update_file=arguments.update_file,
+            public_key=base64.b64encode(signing_public_key).decode("ascii"),
+        )
     success("Sparkle Ed25519 key pair validated")
 
 
