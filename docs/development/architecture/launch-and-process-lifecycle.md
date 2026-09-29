@@ -133,7 +133,7 @@ Here, an “expected signature” is a bounded byte marker already present in th
 
 ## Process lifecycle
 
-The launcher remains in **Starting** until Wine exposes a visible game window. It monitors both the direct Wine process and the prefix-wide `wineserver`. Closing the game triggers prefix-scoped cleanup so browser and publisher helpers do not keep the launcher in **Running**. **Stop** and launcher termination use the same prefix-scoped shutdown.
+The launcher remains in **Starting** until Wine exposes a visible game window. It monitors both the direct Wine process and the prefix-wide `wineserver`. Closing the game triggers prefix-scoped cleanup so browser and publisher helpers do not keep the launcher in **Running**. User-initiated **Stop** waits for verified prefix shutdown; application termination uses a separate bounded, best-effort `wineserver -k` request.
 
 Local playtime follows the same boundary. A failed launch or visible-window timeout records nothing. Once the window is visible, the controller keeps the wall-clock start only for the daily bucket and measures elapsed time from monotonic system uptime. Direct-process and prefix callbacks converge on the same session UUID, so whichever terminal path arrives first records the duration and the other becomes a no-op. Application termination flushes the active duration before synchronous Wine shutdown. A stale marker after an unclean launcher termination is cleared without inventing an end time.
 
@@ -231,17 +231,26 @@ They do not become a general proxy for browser data or credentials.
 
 ## Failure and shutdown behavior
 
-Launch failures return the lifecycle to **Ready** (or **Update available**) after disabling Game
-Mode. A visible-window timeout stops the prefix before reporting the error. If the direct game
-process exits during startup, the controller records the exit status and the Wine log; if it exits
-after **Running**, the controller still waits for prefix cleanup before publishing the final state.
+Launch failures return the lifecycle to **Ready** (or **Update available**) only after disabling
+Game Mode and completing any required prefix cleanup. If cleanup fails or times out, the session
+stays in **Stopping** with a retryable error. A visible-window timeout stops the prefix before
+reporting the error. If the direct game process exits during startup, the controller records the
+exit status and the Wine log; if it exits after **Running**, the controller still waits for prefix
+cleanup before publishing the final state.
 
-User-initiated **Stop** changes the activity to **Stopping**, sends `wineserver -k`, then performs a
-bounded `wineserver -w` wait. Exiting from `-k` means only that the termination request was issued;
-the launcher keeps the prefix owned until the lock wait completes. A failure or timeout leaves the
-session in **Stopping** with a retryable error. **Retry** repeats cleanup for the same session UUID,
-region, and prefix; a repeated failure keeps the same recovery state, and overlapping cleanup for
-one session is deduplicated.
+User-initiated **Stop** changes the activity to **Stopping**, closes the process-spawn gate, and
+issues `wineserver -k`. The launcher keeps the prefix owned until every `Process` registered with
+the gate has exited, then issues a final `-k` and requires a successful bounded `wineserver -w`
+before releasing ownership. One 20-second deadline covers the full cleanup. An unresolved child,
+timed-out shutdown command, or unsuccessful final wait leaves the session in **Stopping** with a
+retryable error. **Retry** repeats cleanup for the same session UUID, region, and prefix; a repeated
+failure keeps the same recovery state, and overlapping cleanup for one session is deduplicated.
+
+On application termination, the controller closes the process-spawn gate before synchronously
+requesting `wineserver -k`. It waits up to three seconds, sends TERM if the command is still running,
+waits up to one more second, then sends SIGKILL if needed. This bounded best-effort path does not
+wait for gated `Process` owners to exit or run a final `wineserver -w`, so it cannot confirm
+prefix-wide shutdown and never publishes **Idle**.
 
 Cancellation is scoped to the current session. Cancelling launch does not delete game files or the
 prefix, and it cannot clear state owned by a newer launch. See [Troubleshooting](../../help/troubleshooting.md)
