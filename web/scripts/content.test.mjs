@@ -182,6 +182,35 @@ test('fuzzy search finds body text and links a heading match directly', () => {
 		'perfix'
 	);
 	assert.match(typoOnly[0]?.excerpt ?? '', /prefix/);
+
+	const gap = 'detail '.repeat(40);
+	for (const [body, included, excluded] of [
+		[
+			`First prefix anchor. ${gap} Final prefix anchor.`,
+			'First prefix',
+			'Final prefix'
+		],
+		[
+			`Early perfix anchor. ${gap} Later prefix anchor.`,
+			'Later prefix',
+			'Early perfix'
+		]
+	]) {
+		const [result] = searchContent(
+			[
+				{
+					route: '/fixture/',
+					title: 'Guide',
+					description: '',
+					headings: [],
+					body
+				}
+			],
+			'prefix'
+		);
+		assert.ok(result?.excerpt?.includes(included), body);
+		assert.ok(!result?.excerpt?.includes(excluded), body);
+	}
 });
 
 test('search keeps page destination when the title is the strongest match', () => {
@@ -237,6 +266,21 @@ test('search highlighting preserves text and marks exact and fuzzy words', () =>
 	assert.deepEqual(highlightSearchText('The guide', 'the'), [
 		{ text: 'The guide', matched: false }
 	]);
+
+	for (const [value, query, matched] of [
+		['win', 'wines', true],
+		['win', 'winery', false],
+		['wime', 'wine', true],
+		['wome', 'wine', false],
+		['perfix', 'prefix', true],
+		['parfux', 'prefix', false]
+	]) {
+		assert.deepEqual(
+			highlightSearchText(value, query),
+			[{ text: value, matched }],
+			`${value}: ${query}`
+		);
+	}
 });
 
 test('search result scrolling follows only the local list edges', () => {
