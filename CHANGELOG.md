@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Reduced repeated text comparisons in documentation search.
+- Preset gallery thumbnails now decode off the main actor so large artwork does not block the interface.
 - Updated first-launch guidance for ad-hoc signed releases to use Apple's app-specific Gatekeeper confirmation flow.
 - Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
 - Release packaging now rejects Sparkle appcasts and update archives that fail cryptographic verification against the tracked update key.

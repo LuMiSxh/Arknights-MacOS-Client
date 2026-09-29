@@ -49,11 +49,12 @@ struct CachedPresetImage: View {
 					for: url,
 					cacheKey: cacheKey
 				)
-				guard let loadedImage = Self.decodedThumbnail(from: data) else {
+				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
+				guard let thumbnail = await Self.decodedThumbnail(from: data) else {
 					throw LauncherError.invalidPresetImage(url)
 				}
 				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
-				image = loadedImage
+				image = NSImage(cgImage: thumbnail, size: .zero)
 				hasFailed = false
 			} catch is CancellationError {
 				return
@@ -71,17 +72,35 @@ struct CachedPresetImage: View {
 	// Decodes straight to a bounded-size bitmap via ImageIO's own thumbnail generator instead
 	// of NSImage(data:), which would decode the source at its full native resolution before
 	// anything gets a chance to scale it down.
-	private static func decodedThumbnail(from data: Data) -> NSImage? {
+	@MainActor
+	private static func decodedThumbnail(from data: Data) async -> CGImage? {
+		guard !Task.isCancelled else { return nil }
+		let maximumPixelSize = maxDecodedPixelSize
+		let decodingTask = Task.detached(priority: .utility) { () -> CGImage? in
+			guard !Task.isCancelled else { return nil }
+			return Self.createThumbnail(from: data, maxPixelSize: maximumPixelSize)
+		}
+		return await withTaskCancellationHandler {
+			await decodingTask.value
+		} onCancel: {
+			decodingTask.cancel()
+		}
+	}
+
+	private nonisolated static func createThumbnail(
+		from data: Data,
+		maxPixelSize: CGFloat
+	) -> CGImage? {
 		guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
 		let options: [CFString: Any] = [
 			kCGImageSourceCreateThumbnailFromImageAlways: true,
-			kCGImageSourceThumbnailMaxPixelSize: maxDecodedPixelSize,
+			kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
 			kCGImageSourceCreateThumbnailWithTransform: true,
 		]
 		guard
 			let thumbnail = CGImageSourceCreateThumbnailAtIndex(
 				source, 0, options as CFDictionary)
 		else { return nil }
-		return NSImage(cgImage: thumbnail, size: .zero)
+		return thumbnail
 	}
 }
