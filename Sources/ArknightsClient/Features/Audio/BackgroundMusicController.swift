@@ -179,11 +179,10 @@ final class BackgroundMusicController {
 	private func setupPlayer() {
 		guard let source = parsedYouTubeSource else {
 			stopAndClearPlayer()
-			lifecycle.log.error(
-				"Background music failed: invalid YouTube URL (\(settings.launcherMusicURL))"
-			)
+			lifecycle.log.error("Background music failed: invalid YouTube URL")
 			return
 		}
+		let sourceType = sourceTypeName(source)
 
 		invalidatePlayerTasks()
 		didShuffleCurrentPlaylist = false
@@ -203,7 +202,7 @@ final class BackgroundMusicController {
 					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
 						return
 					}
-					lifecycle.log.info("Background music loaded source: \(source)")
+					lifecycle.log.info("Background music loaded source type: \(sourceType)")
 					performFadeIn(on: player)
 				} catch {
 					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
@@ -227,7 +226,7 @@ final class BackgroundMusicController {
 				restrictRelatedVideosToSameChannel: false
 			)
 		)
-		lifecycle.log.info("Background music initializing player with source: \(source)")
+		lifecycle.log.info("Background music initializing player with source type: \(sourceType)")
 		player = newPlayer
 		setupObservation(for: newPlayer, source: source)
 	}
@@ -255,6 +254,12 @@ final class BackgroundMusicController {
 			}
 		}
 		return .init(url: url)
+	}
+
+	private func sourceTypeName(_ source: YouTubePlayer.Source) -> String {
+		if case .playlist = source { return "playlist" }
+		if case .video = source { return "video" }
+		return "custom URL"
 	}
 
 	func openCurrentMusicURL() {

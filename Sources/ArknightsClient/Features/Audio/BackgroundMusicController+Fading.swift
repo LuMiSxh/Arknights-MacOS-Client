@@ -6,6 +6,9 @@ import YouTubePlayerKit
 extension BackgroundMusicController {
 	func performFadeOut() {
 		guard let player else { return }
+		if case .playbackChange(let playbackOperation, .playing) = operation {
+			finishOperation(playbackOperation)
+		}
 		expectPlayback(.paused, on: player)
 		volumeTask?.cancel()
 		volumeTask = nil

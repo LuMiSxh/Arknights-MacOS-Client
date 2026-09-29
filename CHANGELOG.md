@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Retired superseded music playback requests when the game pauses audio, and removed custom music URLs and playlist IDs from logs.
 - Kept Play/Stop morph timing independent of the primary action's fading glow.
 - Matched preview errors and launch availability to the real recovery flow, and corrected verification progress in the preview and setup.
 - Removed the old inline Rosetta recovery controls and made the developer preview use the same failure dialog and recovery actions as the launcher.
