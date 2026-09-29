@@ -15,11 +15,6 @@ def encoded(value: bytes) -> str:
     return base64.b64encode(value).decode("ascii")
 
 
-def test_rejects_legacy_key_format() -> None:
-    with pytest.raises(RuntimeError, match="exactly 32 bytes"):
-        validate_sparkle_keys.validate_keys(encoded(b"P" * 32), encoded(b"S" * 96))
-
-
 def test_rejects_mismatched_key_pair(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         validate_sparkle_keys,
@@ -46,16 +41,32 @@ def test_rejects_system_libressl_with_actionable_openssl_guidance(
         validate_sparkle_keys.derive_public_key(b"S" * 32, "openssl")
 
 
-def test_rejects_invalid_public_key_length() -> None:
-    with pytest.raises(RuntimeError, match="must decode to 32 bytes"):
-        validate_sparkle_keys.validate_keys(encoded(b"P" * 31), encoded(b"S" * 32))
-
-
-def test_rejects_public_key_whitespace() -> None:
-    with pytest.raises(RuntimeError, match="must not contain whitespace"):
-        validate_sparkle_keys.validate_keys(
-            f" {encoded(b'P' * 32)}", encoded(b"S" * 32)
-        )
+@pytest.mark.parametrize(
+    ("public_key", "private_key", "message"),
+    [
+        (
+            encoded(b"P" * 32),
+            encoded(b"S" * 96),
+            "exactly 32 bytes",
+        ),
+        (
+            encoded(b"P" * 31),
+            encoded(b"S" * 32),
+            "must decode to 32 bytes",
+        ),
+        (
+            f" {encoded(b'P' * 32)}",
+            encoded(b"S" * 32),
+            "must not contain whitespace",
+        ),
+    ],
+    ids=("legacy-private-key-format", "public-key-length", "public-key-whitespace"),
+)
+def test_rejects_invalid_key_encodings(
+    public_key: str, private_key: str, message: str
+) -> None:
+    with pytest.raises(RuntimeError, match=message):
+        validate_sparkle_keys.validate_keys(public_key, private_key)
 
 
 def test_reads_public_key_from_tracked_info_plist(tmp_path: Path) -> None:
@@ -195,82 +206,76 @@ def test_cryptographically_verifies_appcast_and_update_artifact(
         )
 
 
-def test_rejects_appcast_with_wrong_update_name(tmp_path: Path) -> None:
+ENCLOSURE_SIGNATURE = encoded(b"E" * 64)
+FEED_SIGNATURE = encoded(b"S" * 64)
+VALID_APPCAST_ITEM = (
+    "<description>Release notes</description>"
+    '<enclosure url="https://example.invalid/Example.Client.zip" length="1" '
+    f'type="application/octet-stream" sparkle:edSignature="{ENCLOSURE_SIGNATURE}" />'
+)
+
+
+@pytest.mark.parametrize(
+    ("item", "feed_signature", "message"),
+    [
+        pytest.param(
+            VALID_APPCAST_ITEM,
+            None,
+            "missing its sparkle-signatures block",
+            id="unsigned-appcast",
+        ),
+        pytest.param(
+            VALID_APPCAST_ITEM,
+            "",
+            "empty feed Ed25519 signature",
+            id="empty-feed-signature",
+        ),
+        pytest.param(
+            VALID_APPCAST_ITEM.replace(
+                f' sparkle:edSignature="{ENCLOSURE_SIGNATURE}"', ""
+            ),
+            FEED_SIGNATURE,
+            "every Sparkle appcast enclosure",
+            id="unsigned-enclosure",
+        ),
+        pytest.param(
+            VALID_APPCAST_ITEM.replace("Example.Client.zip", "Other.zip"),
+            FEED_SIGNATURE,
+            "does not match expected update asset",
+            id="wrong-update-name",
+        ),
+        pytest.param(
+            VALID_APPCAST_ITEM.removeprefix("<description>Release notes</description>"),
+            FEED_SIGNATURE,
+            "contains no release notes",
+            id="missing-release-notes",
+        ),
+    ],
+)
+def test_rejects_invalid_appcasts(
+    tmp_path: Path,
+    item: str,
+    feed_signature: str | None,
+    message: str,
+) -> None:
     appcast = tmp_path / "appcast.xml"
-    enclosure_signature = encoded(b"E" * 64)
     content = (
         '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">'
-        "<channel><item>"
-        "<description>Release notes</description>"
-        f'<enclosure url="https://example.invalid/Other.zip" length="1" '
-        f'type="application/octet-stream" sparkle:edSignature="{enclosure_signature}" />'
-        "</item></channel></rss>\n"
+        f"<channel><item>{item}</item></channel></rss>\n"
     ).encode()
     signing_block = (
-        "<!-- sparkle-signatures:\n"
-        f"edSignature: {encoded(b'S' * 64)}\n"
-        f"length: {len(content)}\n"
-        "-->\n"
-    ).encode()
+        b""
+        if feed_signature is None
+        else (
+            "<!-- sparkle-signatures:\n"
+            f"edSignature: {feed_signature}\n"
+            f"length: {len(content)}\n"
+            "-->\n"
+        ).encode()
+    )
     appcast.write_bytes(content + signing_block)
 
-    with pytest.raises(RuntimeError, match="does not match expected update asset"):
+    with pytest.raises(RuntimeError, match=message):
         validate_sparkle_keys.validate_appcast(
             appcast, expected_update_name="Example.Client.zip"
         )
-
-
-def test_rejects_appcast_without_release_notes(tmp_path: Path) -> None:
-    appcast = tmp_path / "appcast.xml"
-    enclosure_signature = encoded(b"E" * 64)
-    content = (
-        '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">'
-        "<channel><item>"
-        f'<enclosure url="https://example.invalid/Example.Client.zip" length="1" '
-        f'type="application/octet-stream" sparkle:edSignature="{enclosure_signature}" />'
-        "</item></channel></rss>\n"
-    ).encode()
-    signing_block = (
-        "<!-- sparkle-signatures:\n"
-        f"edSignature: {encoded(b'S' * 64)}\n"
-        f"length: {len(content)}\n"
-        "-->\n"
-    ).encode()
-    appcast.write_bytes(content + signing_block)
-
-    with pytest.raises(RuntimeError, match="contains no release notes"):
-        validate_sparkle_keys.validate_appcast(appcast)
-
-
-def test_rejects_unsigned_appcast(tmp_path: Path) -> None:
-    appcast = tmp_path / "appcast.xml"
-    appcast.write_text(
-        "<rss><channel><item><enclosure /></item></channel></rss>", encoding="utf-8"
-    )
-
-    with pytest.raises(RuntimeError, match="missing its sparkle-signatures block"):
-        validate_sparkle_keys.validate_appcast(appcast)
-
-
-def test_rejects_empty_feed_signature(tmp_path: Path) -> None:
-    appcast = tmp_path / "appcast.xml"
-    content = b"<rss><channel /></rss>\n"
-    appcast.write_bytes(
-        content
-        + f"<!-- sparkle-signatures:\nedSignature: \nlength: {len(content)}\n-->\n".encode()
-    )
-
-    with pytest.raises(RuntimeError, match="empty feed Ed25519 signature"):
-        validate_sparkle_keys.validate_appcast(appcast)
-
-
-def test_rejects_unsigned_enclosure(tmp_path: Path) -> None:
-    appcast = tmp_path / "appcast.xml"
-    content = b"<rss><channel><item><enclosure /></item></channel></rss>\n"
-    appcast.write_bytes(
-        content
-        + f"<!-- sparkle-signatures:\nedSignature: {encoded(b'S' * 64)}\nlength: {len(content)}\n-->\n".encode()
-    )
-
-    with pytest.raises(RuntimeError, match="every Sparkle appcast enclosure"):
-        validate_sparkle_keys.validate_appcast(appcast)
