@@ -22,10 +22,10 @@ The launcher shows the current download size before it starts and checks that th
 
 1. Download `Arknights.Client.dmg` from [GitHub Releases](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest).
 2. Open it and drag **Arknights Client** to **Applications**.
-3. The first time, right-click the app in Finder and choose **Open**.
+3. Open the app from **Applications** once.
 
 > [!WARNING]
-> Releases are not notarized, so macOS shows a warning on the first start. Choosing **Open** from Finder is enough; you do not need to change any security settings.
+> Releases are ad-hoc signed and not notarized. If macOS says the developer cannot be verified or Apple cannot check the app, continue only if you downloaded it from the official GitHub release. After trying to open the app, go to **System Settings → Privacy & Security → Open Anyway**, then review the warning and choose **Open**. This saves an exception for this app only. See [Apple’s steps for opening an app that has not been notarized](https://support.apple.com/en-au/102445). If macOS says the app is damaged or will damage your computer, do not override that alert.
 
 ## Set up the game
 

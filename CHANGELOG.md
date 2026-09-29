@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Updated first-launch guidance for ad-hoc signed releases to use Apple's app-specific Gatekeeper confirmation flow.
 - Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
 - Softened the main HUD pill's orbiting glint with a quieter outline and a more diffuse accent glow.
 - Launcher errors now explain recovery steps while keeping file paths, checksums, and service details in the logs.

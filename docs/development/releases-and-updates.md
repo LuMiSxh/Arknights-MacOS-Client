@@ -116,7 +116,7 @@ The release extractor accepts a heading in the form `## [X.Y.Z]` with an optiona
 
 ## Signing limitation
 
-The app is ad-hoc signed so its bundle is internally consistent, but it is not notarized. Users must confirm the first launch with right-click → **Open**. Sparkle updates are signed separately with Ed25519 and replace the complete app bundle through Sparkle's helper; this does not remove the first-launch Gatekeeper confirmation.
+The app is ad-hoc signed so its bundle is internally consistent, but it is not notarized. On first launch, Gatekeeper may block it because macOS cannot verify the developer or check the app for malicious software. Users should first verify that the app came from the official GitHub release. After trying to open it, Apple's documented flow is **System Settings → Privacy & Security → Open Anyway**, then review the next warning and choose **Open**. This creates an exception for that app only; it does not change the system-wide app policy. See [Apple's steps for opening apps that have not been notarized](https://support.apple.com/en-au/102445). Sparkle updates are signed separately with Ed25519 and replace the complete app bundle through Sparkle's helper; this does not remove the first-launch Gatekeeper confirmation.
 
 The appcast is published as the `appcast.xml` asset of the latest GitHub release and is read through the stable `releases/latest/download/appcast.xml` URL. Each release also contains a complete `.app.zip` update archive. The release workflow creates both from the fully packaged app, preserving bundle symlinks and executable modes, then generates and signs the appcast with Sparkle's `generate_appcast` tool.
 
