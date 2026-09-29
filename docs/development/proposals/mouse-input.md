@@ -126,7 +126,7 @@ or rendered-cursor latency, so it is not a candidate fix for #84.
 
 ## Runtime evidence
 
-The client manifest pins Runtime v0.6.0 at build commit
+At the time of this investigation, client v0.6.0 pinned Runtime v0.6.0 at build commit
 `8f4dcc3524e21b5baf98af2bfa6e9a86f611cad4`, WineCX
 `e1b410a5fdd96a32722a5f2617b5068bd385b7db` (Wine 11.16), and DXMT
 `4ddb20e54672c0cb56115ce80d6db1beef94ae28`. The matching runtime recipe contains
@@ -155,7 +155,17 @@ The patch was introduced in runtime commit
 and has the same hash in runtime tags v0.5.0, v0.5.2, and v0.6.0. The
 [runtime lock](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/blob/8f4dcc3524e21b5baf98af2bfa6e9a86f611cad4/runtime.lock.json#L79-L83)
 includes it in the source recipe. This establishes recipe inclusion; the published binary
-was not downloaded or inspected during this research.
+was not downloaded or inspected during this v0.6.0 investigation.
+
+The current published Runtime v0.6.1 is built from commit
+[`e53f807`](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/e53f807f6567209482fa0be134b8fee85d01e60c)
+and pins WineCX/Wine 11.17 at
+[`e0aa380`](https://github.com/dappermint/winecx/tree/e0aa380780b73e20fabcfe78fd42713b94929a53)
+and DXMT 0.80-244-g7c8dee1 at
+[`7c8dee1`](https://github.com/3Shain/dxmt/tree/7c8dee1c2d73415301ceb7d1fa810861cef4cd67).
+Its source recipe still includes the [frame-latency patch](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/blob/e53f807f6567209482fa0be134b8fee85d01e60c/patches/dxmt/cursor/0001-dxmt-command-queue-configurable-frame-latency.patch).
+This pin and recipe evidence do not establish manual compatibility: game checks with Runtime
+v0.6.1 remain pending.
 
 ## Upstream input alternatives
 
