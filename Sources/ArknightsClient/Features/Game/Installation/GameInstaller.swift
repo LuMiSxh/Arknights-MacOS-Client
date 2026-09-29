@@ -8,10 +8,10 @@ import Foundation
 struct GameInstaller: Sendable {
 	typealias ProgressHandler = @Sendable (DownloadProgress) async -> Void
 
-	private let api: any LauncherAPIProviding
+	let api: any LauncherAPIProviding
 	private let chunkSession: HTTPChunkSession
-	private let compatibilityManager: GameCompatibilityManager
-	private let concurrentDownloads = AppConstants.Network.concurrentDownloads
+	let compatibilityManager: GameCompatibilityManager
+	let concurrentDownloads = AppConstants.Network.concurrentDownloads
 	private static let gryphlineDownloadHosts: Set<String> = [
 		"ak-tw.hg-cdn.com",
 		"launcher.hg-cdn.com",
@@ -48,170 +48,100 @@ struct GameInstaller: Sendable {
 		}
 	}
 
-	func install(
-		configuration: GameConfiguration,
-		region: GameRegion,
-		into installDirectory: URL,
-		verifyAllExistingFiles: Bool = false,
-		progress: @escaping ProgressHandler
-	) async throws -> InstallResult {
-		let (manifest, cdn) = try await Self.fetchRemoteResources {
-			try await (
-				api.manifest(for: configuration, region: region),
-				api.cdnConfiguration(region: region)
-			)
-		}
-		try validateManifest(manifest, inside: installDirectory)
-		try fileManager.createDirectory(at: installDirectory, withIntermediateDirectories: true)
-		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
-		do {
-			try excludeFromBackup(installDirectory)
-		} catch {
-			log?.error(
-				"Failed to exclude game installation from backups at \(installDirectory.path): \(error.localizedDescription)"
-			)
-		}
-		try compatibilityManager.restoreForUpdate(in: installDirectory)
-		let previousState: InstalledState?
-		do {
-			previousState = try loadState(from: installDirectory)
-		} catch {
-			previousState = nil
-			log?.error(
-				"Failed to read installed-state file at \(installDirectory.path): \(error.localizedDescription)"
-			)
-		}
-		let previousFiles = previousState?.files.map {
-			Dictionary($0.map { ($0.path, $0) }, uniquingKeysWith: { existing, _ in existing })
-		}
-		let verification = try await pendingDownloads(
-			in: manifest,
-			installDirectory: installDirectory,
-			previousFiles: previousFiles,
-			verifyAllExistingFiles: verifyAllExistingFiles,
-			progress: progress
-		)
-		let pendingFiles = verification.files
-		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)
-		log?.debug(
-			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
-				+ "(\(downloadedBytes) bytes); repair=\(verifyAllExistingFiles)"
-		)
-		let progressBaseline = try DownloadProgressBaseline(
-			manifestFiles: manifest.file,
-			pendingFiles: pendingFiles,
-			isIncompleteInstallation: previousFiles == nil
-		) { item in
-			let destination = try destinationURL(for: item, inside: installDirectory)
-			return try fileSize(at: destination.appendingPathExtension("part")) ?? 0
-		}
-		let counter = ProgressCounter(
-			totalBytes: progressBaseline.totalBytes,
-			totalFiles: progressBaseline.totalFiles,
-			downloadedBytes: progressBaseline.downloadedBytes,
-			completedFiles: progressBaseline.completedFiles,
-			sequence: verification.lastSequence
-		)
-		if pendingFiles.isEmpty {
-			try Task.checkCancellation()
-			try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
-			try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
-			return InstallResult(
-				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
-		}
-		await progress(await counter.current(file: pendingFiles[0].path))
-		try await withThrowingTaskGroup(of: Int64.self) { group in
-			var nextIndex = 0
-			let initialCount = min(concurrentDownloads, pendingFiles.count)
-			for _ in 0..<initialCount {
-				let item = pendingFiles[nextIndex]
-				nextIndex += 1
-				addDownload(
-					item,
-					manifest: manifest,
-					cdn: cdn,
-					installDirectory: installDirectory,
-					counter: counter,
-					progress: progress,
-					region: region,
-					to: &group
-				)
-			}
-
-			do {
-				while try await group.next() != nil {
-					if nextIndex < pendingFiles.count {
-						let item = pendingFiles[nextIndex]
-						nextIndex += 1
-						addDownload(
-							item,
-							manifest: manifest,
-							cdn: cdn,
-							installDirectory: installDirectory,
-							counter: counter,
-							progress: progress,
-							region: region,
-							to: &group
-						)
-					}
-				}
-			} catch {
-				group.cancelAll()
-				throw error
-			}
-		}
-
-		try Task.checkCancellation()
-		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
-		try saveState(configuration: configuration, manifest: manifest, to: installDirectory)
-		log?.debug(
-			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes"
-		)
-		return InstallResult(
-			downloadedFiles: pendingFiles.count,
-			downloadedBytes: downloadedBytes,
-			installDirectory: installDirectory
-		)
-	}
-
 	func download(
 		_ item: ManifestFile,
 		source: String,
 		baseURL: URL,
-		installDirectory: URL,
+		installDirectory: InstallerInstallDirectory,
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler,
 		region: GameRegion? = nil
 	) async throws -> Int64 {
 		try Task.checkCancellation()
-		let destination = try destinationURL(for: item, inside: installDirectory)
-		let partial = destination.appendingPathExtension("part")
-		try fileManager.createDirectory(
-			at: destination.deletingLastPathComponent(),
-			withIntermediateDirectories: true
+		let relativePath = try Self.safeRelativePath(item.path)
+		let destination = try installFile(
+			at: relativePath,
+			inside: installDirectory,
+			createParents: true
 		)
-		try assertNoSymbolicLinks(from: installDirectory, through: destination)
-		try assertNoSymbolicLinks(from: installDirectory, through: partial)
+		let partial = destination.sibling(named: destination.name + ".part")
+		try assertRegularDestinationIfPresent(destination)
 		try assertSafeExistingPartialFile(at: partial)
-
-		var existingBytes = try fileSize(at: partial) ?? 0
+		let stagingDirectory: InstallerDirectoryHandle
+		do {
+			stagingDirectory = try installDirectory.stagingDirectory(
+				named: AppConstants.Game.installerStagingDirectoryName
+			)
+		} catch {
+			throw mapInstallerFileSystemError(error)
+		}
+		let metadataFile = resumeMetadataFile(for: relativePath, in: stagingDirectory)
+		let descriptor: Int32
+		do {
+			descriptor = try partial.open(
+				flags: O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC,
+				mode: S_IRUSR | S_IWUSR
+			)
+		} catch {
+			throw mapInstallerFileSystemError(error)
+		}
+		var fileStatus = stat()
+		guard fstat(descriptor, &fileStatus) == 0,
+			fileStatus.st_mode & S_IFMT == S_IFREG,
+			fileStatus.st_nlink == 1,
+			fileStatus.st_size >= 0
+		else {
+			_ = close(descriptor)
+			throw LauncherError.unsafeInstallerTemporaryFile(partial.url)
+		}
+		var existingBytes = Int64(fileStatus.st_size)
+		let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+		var handleIsClosed = false
+		defer {
+			if !handleIsClosed {
+				do {
+					try handle.close()
+				} catch {
+					log?.error(
+						"Failed to close partial download at \(partial.url.path): \(error.localizedDescription)"
+					)
+				}
+			}
+		}
+		var resumeMetadata = try readResumeMetadata(at: metadataFile)
+		if let priorMetadata = resumeMetadata,
+			!ManifestChecksum.matches(priorMetadata.manifestHash, expected: item.hash)
+		{
+			try handle.truncate(atOffset: 0)
+			await progress(
+				await counter.remove(bytes: existingBytes, file: item.path)
+			)
+			existingBytes = 0
+			try metadataFile.unlink()
+			resumeMetadata = nil
+		}
 		if existingBytes > item.byteCount {
-			try fileManager.removeItem(at: partial)
+			try handle.truncate(atOffset: 0)
+			await progress(await counter.remove(bytes: existingBytes, file: item.path))
 			existingBytes = 0
 		}
 
-		if existingBytes == item.byteCount, existingBytes > 0 {
+		if existingBytes == item.byteCount {
 			try Task.checkCancellation()
 			try await finishDownload(
 				item,
 				partial: partial,
+				partialDescriptor: descriptor,
 				destination: destination,
-				installDirectory: installDirectory,
+				stagingDirectory: stagingDirectory,
+				metadataFile: metadataFile,
 				countedBytes: existingBytes,
 				networkBytes: 0,
 				counter: counter,
 				progress: progress
 			)
+			try handle.close()
+			handleIsClosed = true
 			if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 				await progress(update)
 			}
@@ -231,35 +161,11 @@ struct GameInstaller: Sendable {
 		var request = URLRequest(url: downloadURL)
 		if existingBytes > 0 {
 			request.setValue("bytes=\(existingBytes)-", forHTTPHeaderField: "Range")
-		}
-
-		let descriptor = open(
-			partial.path,
-			O_WRONLY | O_CREAT | O_NOFOLLOW,
-			S_IRUSR | S_IWUSR
-		)
-		guard descriptor >= 0 else { throw LauncherError.cannotCreateFile(partial) }
-		var fileStatus = stat()
-		guard fstat(descriptor, &fileStatus) == 0,
-			fileStatus.st_mode & S_IFMT == S_IFREG,
-			fileStatus.st_nlink == 1
-		else {
-			_ = close(descriptor)
-			throw LauncherError.unsafeInstallerTemporaryFile(partial)
-		}
-		let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
-		var handleIsClosed = false
-		defer {
-			if !handleIsClosed {
-				do {
-					try handle.close()
-				} catch {
-					log?.error(
-						"Failed to close partial download at \(partial.path): \(error.localizedDescription)"
-					)
-				}
+			if let ifRange = resumeMetadata?.ifRangeValue {
+				request.setValue(ifRange, forHTTPHeaderField: "If-Range")
 			}
 		}
+
 		try handle.seekToEnd()
 
 		let stream = chunkSession.stream(
@@ -280,6 +186,9 @@ struct GameInstaller: Sendable {
 		}
 		var newlyDownloaded: Int64 = 0
 		var receivedResponse = false
+		var responseBodyBytes: Int64 = 0
+		var rangeBaseBytes = existingBytes
+		var expectedRangeBytes: Int64?
 		do {
 			try await withTaskCancellationHandler(
 				operation: {
@@ -293,17 +202,58 @@ struct GameInstaller: Sendable {
 									path: item.path
 								)
 							}
-							if existingBytes > 0, response.statusCode == 200 {
-								try handle.truncate(atOffset: 0)
-								try handle.seek(toOffset: 0)
-								await progress(
-									await counter.remove(
-										bytes: existingBytes,
-										networkBytes: 0,
-										file: item.path
+							let responseMetadata = try Self.resumeMetadata(
+								from: response,
+								manifestHash: item.hash
+							)
+							if response.statusCode == 206 {
+								guard existingBytes > 0,
+									let contentRange = InstallerContentRange.parse(
+										response.value(forHTTPHeaderField: "Content-Range")
+									),
+									contentRange.start == existingBytes,
+									contentRange.total == item.byteCount,
+									let byteCount = contentRange.byteCount,
+									response.expectedContentLength < 0
+										|| response.expectedContentLength == byteCount
+								else { throw LauncherError.invalidResponse }
+								if let priorMetadata = resumeMetadata,
+									ManifestChecksum.matches(
+										priorMetadata.manifestHash,
+										expected: item.hash
+									),
+									!priorMetadata.matchesEntity(responseMetadata)
+								{
+									try handle.truncate(atOffset: 0)
+									try handle.seek(toOffset: 0)
+									await progress(
+										await counter.remove(bytes: existingBytes, file: item.path)
 									)
-								)
-								existingBytes = 0
+									existingBytes = 0
+									try metadataFile.unlink()
+									resumeMetadata = nil
+									throw LauncherError.invalidResponse
+								}
+								rangeBaseBytes = existingBytes
+								expectedRangeBytes = byteCount
+								try writeResumeMetadata(responseMetadata, to: metadataFile)
+								resumeMetadata = responseMetadata
+							} else {
+								guard
+									response.expectedContentLength < 0
+										|| response.expectedContentLength == item.byteCount
+								else { throw LauncherError.invalidResponse }
+								if existingBytes > 0 {
+									try handle.truncate(atOffset: 0)
+									try handle.seek(toOffset: 0)
+									await progress(
+										await counter.remove(bytes: existingBytes, file: item.path)
+									)
+									existingBytes = 0
+								}
+								rangeBaseBytes = 0
+								try writeResumeMetadata(responseMetadata, to: metadataFile)
+								resumeMetadata = responseMetadata
 							}
 							receivedResponse = true
 						case .data(let data):
@@ -329,9 +279,26 @@ struct GameInstaller: Sendable {
 									actual: overflow ? Int64.max : receivedBytes
 								)
 							}
+							let (newResponseBodyBytes, responseOverflow) =
+								responseBodyBytes
+								.addingReportingOverflow(incomingBytes)
+							guard !responseOverflow,
+								expectedRangeBytes.map({ newResponseBodyBytes <= $0 }) ?? true
+							else {
+								try handle.truncate(atOffset: UInt64(rangeBaseBytes))
+								await progress(
+									await counter.remove(
+										bytes: newlyDownloaded,
+										networkBytes: newlyDownloaded,
+										file: item.path
+									)
+								)
+								throw LauncherError.invalidResponse
+							}
 							try handle.write(contentsOf: data)
 							stream.acknowledge(data.count)
 							newlyDownloaded += incomingBytes
+							responseBodyBytes = newResponseBodyBytes
 							if let update = await counter.add(bytes: incomingBytes, file: item.path)
 							{
 								await progress(update)
@@ -354,20 +321,34 @@ struct GameInstaller: Sendable {
 		progressMonitor.cancel()
 		await progressMonitor.value
 		guard receivedResponse else { throw LauncherError.invalidResponse }
+		if let expectedRangeBytes, responseBodyBytes != expectedRangeBytes {
+			try handle.truncate(atOffset: UInt64(rangeBaseBytes))
+			try handle.synchronize()
+			await progress(
+				await counter.remove(
+					bytes: newlyDownloaded,
+					networkBytes: newlyDownloaded,
+					file: item.path
+				)
+			)
+			throw LauncherError.invalidResponse
+		}
 		try handle.synchronize()
-		try handle.close()
-		handleIsClosed = true
 		try Task.checkCancellation()
 		try await finishDownload(
 			item,
 			partial: partial,
+			partialDescriptor: descriptor,
 			destination: destination,
-			installDirectory: installDirectory,
+			stagingDirectory: stagingDirectory,
+			metadataFile: metadataFile,
 			countedBytes: existingBytes + newlyDownloaded,
 			networkBytes: newlyDownloaded,
 			counter: counter,
 			progress: progress
 		)
+		try handle.close()
+		handleIsClosed = true
 		if let update = await counter.add(bytes: 0, file: item.path, force: true) {
 			await progress(update)
 		}

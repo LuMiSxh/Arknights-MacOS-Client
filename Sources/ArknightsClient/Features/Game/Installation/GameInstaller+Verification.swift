@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 import Synchronization
 
@@ -14,17 +15,32 @@ extension GameInstaller {
 
 	func pendingDownloads(
 		in manifest: GameManifest,
-		installDirectory: URL,
+		installDirectory: InstallerInstallDirectory,
 		previousFiles: [String: ManifestFile]?,
 		verifyAllExistingFiles: Bool,
 		progress: @escaping ProgressHandler
 	) async throws -> PendingDownloads {
-		var candidates: [(item: ManifestFile, destination: URL, size: Int64?)] = []
+		var candidates:
+			[(
+				item: ManifestFile, destination: InstallerFilePath, size: Int64?,
+				identity: InstallerFileIdentity?
+			)] = []
 		for item in manifest.file {
 			try Task.checkCancellation()
-			let destination = try destinationURL(for: item, inside: installDirectory)
-			try assertNoSymbolicLinks(from: installDirectory, through: destination)
-			candidates.append((item, destination, try fileSize(at: destination)))
+			let relativePath = try Self.safeRelativePath(item.path)
+			let destination = try installFile(at: relativePath, inside: installDirectory)
+			guard let status = try destination.stat() else {
+				candidates.append((item, destination, nil, nil))
+				continue
+			}
+			guard status.st_mode & S_IFMT == S_IFREG, status.st_nlink == 1,
+				status.st_size >= 0
+			else {
+				throw LauncherError.unsafeInstallerTemporaryFile(destination.url)
+			}
+			candidates.append(
+				(item, destination, Int64(status.st_size), InstallerFileIdentity(status))
+			)
 		}
 		let hashedFiles = candidates.filter {
 			$0.size == $0.item.byteCount
@@ -49,11 +65,37 @@ extension GameInstaller {
 					verifyAllExistingFiles: verifyAllExistingFiles,
 					checksum: {
 						defer { tally.finishFile() }
-						return try ManifestChecksum.checksum(
-							of: candidate.destination,
+						let descriptor = try candidate.destination.open(
+							flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW
+						)
+						defer { _ = close(descriptor) }
+						var before = stat()
+						guard fstat(descriptor, &before) == 0,
+							before.st_mode & S_IFMT == S_IFREG,
+							before.st_nlink == 1,
+							InstallerFileIdentity(before) == candidate.identity
+						else {
+							throw LauncherError.unsafeInstallerTemporaryFile(
+								candidate.destination.url
+							)
+						}
+						let checksum = try ManifestChecksum.checksum(
+							ofFileDescriptor: descriptor,
 							expected: item.hash,
 							onRead: tally.add(bytes:)
 						)
+						var after = stat()
+						guard fstat(descriptor, &after) == 0,
+							InstallerFileIdentity(after) == InstallerFileIdentity(before),
+							after.st_size == before.st_size,
+							let current = try candidate.destination.stat(),
+							InstallerFileIdentity(current) == InstallerFileIdentity(before)
+						else {
+							throw LauncherError.unsafeInstallerTemporaryFile(
+								candidate.destination.url
+							)
+						}
+						return checksum
 					}
 				)
 				if needsDownload { pending.append(item) }

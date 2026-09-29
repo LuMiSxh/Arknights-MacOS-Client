@@ -19,7 +19,14 @@ func gryphlineDownloadRedirectsRequireTrustedHTTPSHosts() throws {
 }
 
 @Test
-func nonGryphlineDownloadRedirectsKeepExistingSessionSemantics() {
-	#expect(GameInstaller.downloadRedirectValidator(for: .global) == nil)
-	#expect(GameInstaller.downloadRedirectValidator(for: .china) == nil)
+func downloadRedirectPoliciesPreserveVerifiedPublisherRoutes() throws {
+	let yostar = try #require(GameInstaller.downloadRedirectValidator(for: .global))
+	#expect(yostar(URL(string: "https://cdn.example/game/file")!))
+	#expect(!yostar(URL(string: "http://cdn.example/game/file")!))
+	#expect(!yostar(URL(string: "https://user@cdn.example/game/file")!))
+
+	let hypergryph = try #require(GameInstaller.downloadRedirectValidator(for: .china))
+	#expect(hypergryph(URL(string: "https://ak.hycdn.cn/game/file")!))
+	#expect(!hypergryph(URL(string: "https://evil.example/game/file")!))
+	#expect(!hypergryph(URL(string: "http://ak.hycdn.cn/game/file")!))
 }

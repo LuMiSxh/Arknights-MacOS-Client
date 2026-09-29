@@ -61,10 +61,9 @@ func manifestValidationRejectsPerFileAndAggregateLimits() throws {
 				primaryCdn: URL(string: "https://example.invalid")!,
 				backUpCdn: URL(string: "https://example.invalid")!)),
 		compatibilityManager: GameCompatibilityManager())
-	let root = URL(filePath: "/tmp/manifest-validation")
 	let file = try decodeManifestFile(path: "large", size: "1099511627777")
 	#expect(throws: LauncherError.self) {
-		try installer.validateManifest(GameManifest(source: "payload", file: [file]), inside: root)
+		try installer.validateManifestPaths(GameManifest(source: "payload", file: [file]))
 	}
 	let maximum = try decodeManifestFile(path: "file", size: "1099511627776")
 	let aggregate = GameManifest(
@@ -72,7 +71,7 @@ func manifestValidationRejectsPerFileAndAggregateLimits() throws {
 		file: (0..<5).map {
 			ManifestFile(path: "\(maximum.path)-\($0)", hash: maximum.hash, size: maximum.size)
 		})
-	#expect(throws: LauncherError.self) { try installer.validateManifest(aggregate, inside: root) }
+	#expect(throws: LauncherError.self) { try installer.validateManifestPaths(aggregate) }
 }
 
 private func decodeManifestFile(path: String, size: String) throws -> ManifestFile {

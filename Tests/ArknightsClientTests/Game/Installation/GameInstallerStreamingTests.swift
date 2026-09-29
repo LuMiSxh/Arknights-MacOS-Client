@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 import Testing
 
@@ -17,7 +18,11 @@ struct GameInstallerStreamingTests {
 		StreamingURLProtocol.handler = { request in
 			#expect(request.value(forHTTPHeaderField: "Range") == "bytes=98304-")
 			return (
-				Self.response(url: request.url!, status: 206),
+				Self.response(
+					url: request.url!,
+					status: 206,
+					headers: ["Content-Range": "bytes 98304-524287/524288"]
+				),
 				Data(body.dropFirst(partialSize))
 			)
 		}
@@ -38,6 +43,92 @@ struct GameInstallerStreamingTests {
 		#expect(updates.first?.networkDownloadedBytes == 0)
 		#expect(updates.last?.downloadedBytes == Int64(body.count))
 		#expect(updates.last?.networkDownloadedBytes == Int64(body.count - partialSize))
+	}
+
+	@Test
+	func installerRejectsWrongRangeAndKeepsThePreviousDestination() async throws {
+		let body = Data("game".utf8)
+		let previous = Data("old!".utf8)
+		let fixture = try Self.makeFixture(body: body)
+		defer { fixture.remove() }
+		try previous.write(to: fixture.destination)
+		try Data("ga".utf8).write(to: fixture.partial)
+		StreamingURLProtocol.handler = { request in
+			#expect(request.value(forHTTPHeaderField: "Range") == "bytes=2-")
+			return (
+				Self.response(
+					url: request.url!,
+					status: 206,
+					headers: ["Content-Range": "bytes 1-3/4"]
+				),
+				Data("me".utf8)
+			)
+		}
+		defer { StreamingURLProtocol.handler = nil }
+
+		await #expect(throws: (any Error).self) {
+			try await fixture.installer.download(
+				fixture.item,
+				source: fixture.source,
+				baseURL: fixture.baseURL,
+				installDirectory: try InstallerInstallDirectory(at: fixture.directory),
+				counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
+				progress: { _ in }
+			)
+		}
+
+		#expect(try Data(contentsOf: fixture.destination) == previous)
+		#expect(try Data(contentsOf: fixture.partial) == Data("ga".utf8))
+	}
+
+	@Test
+	func installerRestartsWhenAResumedEntityChanges() async throws {
+		let body = Data("game".utf8)
+		let fixture = try Self.makeFixture(body: body)
+		defer { fixture.remove() }
+		var requestCount = 0
+		StreamingURLProtocol.handler = { request in
+			requestCount += 1
+			switch requestCount {
+			case 1:
+				#expect(request.value(forHTTPHeaderField: "Range") == nil)
+				return (
+					Self.response(url: request.url!, status: 200, headers: ["ETag": "\"v1\""]),
+					Data("ga".utf8)
+				)
+			case 2:
+				#expect(request.value(forHTTPHeaderField: "Range") == "bytes=2-")
+				#expect(request.value(forHTTPHeaderField: "If-Range") == "\"v1\"")
+				return (
+					Self.response(
+						url: request.url!,
+						status: 206,
+						headers: [
+							"Content-Range": "bytes 2-3/4",
+							"ETag": "\"v2\"",
+						]
+					),
+					Data("me".utf8)
+				)
+			default:
+				#expect(request.value(forHTTPHeaderField: "Range") == nil)
+				return (
+					Self.response(url: request.url!, status: 200, headers: ["ETag": "\"v2\""]),
+					body
+				)
+			}
+		}
+		defer { StreamingURLProtocol.handler = nil }
+
+		_ = try await fixture.installer.install(
+			configuration: fixture.configuration,
+			region: .global,
+			into: fixture.directory,
+			progress: { _ in }
+		)
+
+		#expect(requestCount == 3)
+		#expect(try Data(contentsOf: fixture.destination) == body)
 	}
 
 	@Test
@@ -73,13 +164,14 @@ struct GameInstallerStreamingTests {
 		let fixture = try Self.makeFixture(
 			body: body,
 			source: "/Arknights_JP-36.7.23-game",
-			relativePath: "/Arknights.exe"
+			relativePath: "/bin/Arknights.exe"
 		)
 		defer { fixture.remove() }
+		try FileManager.default.removeItem(at: fixture.destination.deletingLastPathComponent())
 		StreamingURLProtocol.handler = { request in
 			#expect(
 				request.url?.absoluteString
-					== "https://download.test/Arknights_JP-36.7.23-game/Arknights.exe"
+					== "https://download.test/Arknights_JP-36.7.23-game/bin/Arknights.exe"
 			)
 			return (Self.response(url: request.url!, status: 200), body)
 		}
@@ -113,7 +205,7 @@ struct GameInstallerStreamingTests {
 				fixture.item,
 				source: fixture.source,
 				baseURL: fixture.baseURL,
-				installDirectory: fixture.directory,
+				installDirectory: try InstallerInstallDirectory(at: fixture.directory),
 				counter: ProgressCounter(
 					totalBytes: fixture.item.byteCount,
 					totalFiles: 1
@@ -227,12 +319,16 @@ struct GameInstallerStreamingTests {
 		)
 	}
 
-	static func response(url: URL, status: Int) -> HTTPURLResponse {
+	static func response(
+		url: URL,
+		status: Int,
+		headers: [String: String] = [:]
+	) -> HTTPURLResponse {
 		HTTPURLResponse(
 			url: url,
 			statusCode: status,
 			httpVersion: "HTTP/1.1",
-			headerFields: nil
+			headerFields: headers
 		)!
 	}
 }

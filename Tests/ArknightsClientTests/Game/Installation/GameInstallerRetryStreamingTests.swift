@@ -31,7 +31,14 @@ struct GameInstallerRetryStreamingTests {
 					== "bytes=\(partialNetworkBytes)-"
 			)
 			return (
-				GameInstallerStreamingTests.response(url: request.url!, status: 206),
+				GameInstallerStreamingTests.response(
+					url: request.url!,
+					status: 206,
+					headers: [
+						"Content-Range":
+							"bytes \(partialNetworkBytes)-\(body.count - 1)/\(body.count)"
+					]
+				),
 				Data(body.dropFirst(partialNetworkBytes))
 			)
 		}

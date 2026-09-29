@@ -14,6 +14,7 @@ struct GameInstallerDownloadLifecycleTests {
 			protocolClass: LifecycleURLProtocol.self
 		)
 		defer { fixture.remove() }
+		let installDirectory = try InstallerInstallDirectory(at: fixture.directory)
 		let monitorGate = ProgressCallbackGate()
 		let completion = DownloadCompletion()
 		let operation = Task {
@@ -22,7 +23,7 @@ struct GameInstallerDownloadLifecycleTests {
 					fixture.item,
 					source: fixture.source,
 					baseURL: fixture.baseURL,
-					installDirectory: fixture.directory,
+					installDirectory: installDirectory,
 					counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
 					progress: { update in await monitorGate.record(update) }
 				)
@@ -47,6 +48,7 @@ struct GameInstallerDownloadLifecycleTests {
 			protocolClass: LifecycleURLProtocol.self
 		)
 		defer { fixture.remove() }
+		let installDirectory = try InstallerInstallDirectory(at: fixture.directory)
 		let monitorGate = ProgressCallbackGate()
 		let completion = DownloadCompletion()
 		let operation = Task {
@@ -55,7 +57,7 @@ struct GameInstallerDownloadLifecycleTests {
 					fixture.item,
 					source: fixture.source,
 					baseURL: fixture.baseURL,
-					installDirectory: fixture.directory,
+					installDirectory: installDirectory,
 					counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
 					progress: { update in await monitorGate.record(update) }
 				)
