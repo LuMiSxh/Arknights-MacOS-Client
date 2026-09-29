@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Kept preset launcher, game, and source icons together when a later icon file commit fails.
 - Kept Play/Stop morph timing independent of the primary action's fading glow.
 - Matched preview errors and launch availability to the real recovery flow, and corrected verification progress in the preview and setup.
 - Removed the old inline Rosetta recovery controls and made the developer preview use the same failure dialog and recovery actions as the launcher.

@@ -136,21 +136,24 @@ extension CustomizationController {
 					for: self.paths.customGameIcon,
 					operationID: operationID
 				)
-				try await self.dataStager(encodedIcons.0, launcherStage)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else {
-					CustomizationImageIO.discard(launcherStage, log: log)
-					return
-				}
-				try await self.dataStager(encodedIcons.1, gameStage)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else {
+				defer {
 					CustomizationImageIO.discard(launcherStage, log: log)
 					CustomizationImageIO.discard(gameStage, log: log)
-					return
 				}
-				try CustomizationImageIO.commit(launcherStage, to: self.paths.customAppIcon)
-				try CustomizationImageIO.commit(gameStage, to: self.paths.customGameIcon)
+				try await self.dataStager(encodedIcons.0, launcherStage)
+				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
+				else { return }
+				try await self.dataStager(encodedIcons.1, gameStage)
+				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
+				else { return }
+				try CustomizationImageIO.publish(
+					[
+						(staged: launcherStage, destination: self.paths.customAppIcon),
+						(staged: gameStage, destination: self.paths.customGameIcon),
+					],
+					using: self.iconCommitter,
+					log: log
+				)
 				guard self.launcherIconManager.apply(icons.launcher) else {
 					throw LauncherError.cannotSetAppIcon
 				}
@@ -244,27 +247,24 @@ extension CustomizationController {
 			let app = CustomizationImageIO.stagedURL(for: paths.customAppIcon, operationID: id)
 			let gameURL = CustomizationImageIO.stagedURL(for: paths.customGameIcon, operationID: id)
 			let sourceURL = CustomizationImageIO.stagedURL(for: source, operationID: id)
+			defer {
+				for url in [app, gameURL, sourceURL] { CustomizationImageIO.discard(url, log: log) }
+			}
 			try await dataStager(encoded.0, app)
-			guard operatorIconOperationID == id else {
-				CustomizationImageIO.discard(app, log: log)
-				return
-			}
+			guard operatorIconOperationID == id else { return }
 			try await dataStager(encoded.1, gameURL)
-			guard operatorIconOperationID == id else {
-				CustomizationImageIO.discard(app, log: log)
-				CustomizationImageIO.discard(gameURL, log: log)
-				return
-			}
+			guard operatorIconOperationID == id else { return }
 			try await dataStager(data, sourceURL)
-			guard operatorIconOperationID == id else {
-				for url in [app, gameURL, sourceURL] {
-					CustomizationImageIO.discard(url, log: log)
-				}
-				return
-			}
-			try CustomizationImageIO.commit(app, to: paths.customAppIcon)
-			try CustomizationImageIO.commit(gameURL, to: paths.customGameIcon)
-			try CustomizationImageIO.commit(sourceURL, to: source)
+			guard operatorIconOperationID == id else { return }
+			try CustomizationImageIO.publish(
+				[
+					(staged: app, destination: paths.customAppIcon),
+					(staged: gameURL, destination: paths.customGameIcon),
+					(staged: sourceURL, destination: source),
+				],
+				using: iconCommitter,
+				log: log
+			)
 			guard launcherIconManager.apply(icons.launcher) else {
 				throw LauncherError.cannotSetAppIcon
 			}

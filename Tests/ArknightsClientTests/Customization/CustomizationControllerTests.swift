@@ -237,6 +237,7 @@ struct CustomizationControllerTests {
 
 		#expect(try Data(contentsOf: fixture.paths.customAppIcon) == expected)
 	}
+
 	@Test
 	func manualAppIconSelectionWinsOverDelayedStartupRestore() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
@@ -265,10 +266,11 @@ struct CustomizationControllerTests {
 }
 
 @MainActor
-private func makeCustomizationController(
+func makeCustomizationController(
 	usesDynamicTheme: Bool = false,
 	dataLoader: CustomizationController.DataLoader? = nil,
 	dataStager: CustomizationController.DataStager? = nil,
+	iconCommitter: CustomizationController.IconCommitter? = nil,
 	accentExtractor: CustomizationController.AccentExtractor? = nil,
 	dynamicIconRenderer: CustomizationController.DynamicIconRenderer? = nil,
 	setBundleIcon: @escaping (NSImage?) -> Bool = { _ in true },
@@ -304,6 +306,7 @@ private func makeCustomizationController(
 		usesDynamicTheme: { usesDynamicTheme },
 		dataLoader: dataLoader,
 		dataStager: dataStager,
+		iconCommitter: iconCommitter,
 		accentExtractor: accentExtractor,
 		dynamicIconRenderer: dynamicIconRenderer
 	)
@@ -311,7 +314,7 @@ private func makeCustomizationController(
 }
 
 @MainActor
-private func solidImage(_ color: NSColor) -> NSImage {
+func solidImage(_ color: NSColor) -> NSImage {
 	let image = NSImage(size: NSSize(width: 64, height: 64))
 	image.lockFocus()
 	color.setFill()

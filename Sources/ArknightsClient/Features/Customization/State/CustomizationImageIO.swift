@@ -5,6 +5,26 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
+private struct IconFileBackup {
+	let destination: URL
+	let backupURL: URL?
+}
+
+struct IconRollbackFailure: LauncherDiagnosticError {
+	let original: any Error
+	let rollbackErrors: [any Error]
+
+	var errorDescription: String? {
+		"The icon update failed, and the previous icons could not be fully restored. Check the launcher log."
+	}
+
+	var diagnosticDescription: String {
+		let details = rollbackErrors.map(\.localizedDescription).joined(separator: "; ")
+		return
+			"Icon publication failed: \(original.localizedDescription). Rollback failures: \(details)"
+	}
+}
+
 enum CustomizationImageIO {
 	static func load(_ url: URL) async throws -> Data {
 		try await Task.detached(priority: .userInitiated) {
@@ -56,12 +76,80 @@ enum CustomizationImageIO {
 		}
 	}
 
+	static func publish(
+		_ replacements: [(staged: URL, destination: URL)],
+		using committer: CustomizationController.IconCommitter,
+		log: LauncherLog
+	) throws {
+		let fileManager = FileManager.default
+		var backups: [IconFileBackup] = []
+		do {
+			for replacement in replacements {
+				guard fileManager.fileExists(atPath: replacement.destination.path) else {
+					backups.append(
+						IconFileBackup(destination: replacement.destination, backupURL: nil))
+					continue
+				}
+				let backupURL = replacement.destination.appendingPathExtension(
+					"backup.\(UUID().uuidString)"
+				)
+				backups.append(
+					IconFileBackup(destination: replacement.destination, backupURL: backupURL))
+				try fileManager.copyItem(at: replacement.destination, to: backupURL)
+			}
+		} catch {
+			cleanupBackups(backups, preserving: [], log: log)
+			throw error
+		}
+
+		var attempted: [Int] = []
+		do {
+			for index in replacements.indices {
+				attempted.append(index)
+				try committer(replacements[index].staged, replacements[index].destination)
+			}
+		} catch {
+			let original = error
+			var rollbackFailures: [(index: Int, error: any Error)] = []
+			for index in attempted.reversed() {
+				do {
+					if let backupURL = backups[index].backupURL {
+						try commit(backupURL, to: backups[index].destination)
+					} else {
+						try removeIfPresent(backups[index].destination)
+					}
+				} catch {
+					rollbackFailures.append((index, error))
+				}
+			}
+			let failedIndexes = Set(rollbackFailures.map(\.index))
+			cleanupBackups(backups, preserving: failedIndexes, log: log)
+			guard !rollbackFailures.isEmpty else { throw original }
+			throw IconRollbackFailure(
+				original: original,
+				rollbackErrors: rollbackFailures.map(\.error)
+			)
+		}
+		cleanupBackups(backups, preserving: [], log: log)
+	}
+
+	private static func cleanupBackups(
+		_ backups: [IconFileBackup],
+		preserving indexes: Set<Int>,
+		log: LauncherLog
+	) {
+		for (index, backup) in backups.enumerated()
+		where !indexes.contains(index) {
+			if let backupURL = backup.backupURL { discard(backupURL, log: log) }
+		}
+	}
+
 	static func discard(_ url: URL, log: LauncherLog) {
 		guard FileManager.default.fileExists(atPath: url.path) else { return }
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			log.error("Failed to remove staged icon at \(url.path): \(error)")
+			log.error("Failed to remove temporary icon file at \(url.path): \(error)")
 		}
 	}
 
