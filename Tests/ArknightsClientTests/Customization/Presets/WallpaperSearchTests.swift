@@ -7,206 +7,192 @@ import Testing
 
 @Suite("WallpaperSearch matching")
 struct WallpaperSearchTests {
-	@Test("a complete tag query matches only that exact tag, not tags that merely start with it")
-	func exactTagQueryDoesNotMatchLongerTags() {
-		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["w"],
-				category: .story,
-				query: "w",
-				selectedCategory: nil,
-				knownTags: ["w"]
-			))
-		#expect(
-			!WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["warfarin"],
-				category: .story,
-				query: "w",
-				selectedCategory: nil,
-				knownTags: ["w", "warfarin"]
-			))
-	}
-
-	@Test("an incomplete tag query falls back to a prefix match")
-	func incompleteTagQueryPrefixMatches() {
-		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["kristen wright"],
-				category: .story,
-				query: "kr",
-				selectedCategory: nil,
-				knownTags: ["kristen wright"]
-			))
-		#expect(
-			!WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["amiya"],
-				category: .story,
-				query: "kr",
-				selectedCategory: nil,
-				knownTags: ["kristen wright", "amiya"]
-			))
-	}
-
-	@Test("the title matches by substring regardless of tags")
-	func titleMatchesBySubstring() {
-		#expect(
-			WallpaperSearch.matches(
-				title: "2019 Christmas",
-				tags: [],
-				category: .holiday,
-				query: "christmas",
-				selectedCategory: nil,
-				knownTags: []
-			))
-	}
-
-	@Test("the type filter excludes non-matching categories even when the query matches")
-	func typeFilterExcludesMismatchedCategory() {
-		#expect(
-			!WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["w"],
-				category: .story,
-				query: "w",
-				selectedCategory: .holiday,
-				knownTags: ["w"]
-			))
-		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["w"],
-				category: .story,
-				query: "w",
-				selectedCategory: .story,
-				knownTags: ["w"]
-			))
-	}
-
-	@Test("an empty query matches everything, subject only to the type filter")
-	func emptyQueryMatchesEverythingWithinCategory() {
-		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: [],
-				category: .story,
-				query: "",
-				selectedCategory: nil,
-				knownTags: []
-			))
-		#expect(
-			!WallpaperSearch.matches(
-				title: "Untitled",
-				tags: [],
-				category: .story,
-				query: "",
-				selectedCategory: .holiday,
-				knownTags: []
-			))
+	@Test(
+		"matches title and category filters",
+		arguments: [
+			(
+				"title substring",
+				"2019 Christmas",
+				[String](),
+				WallpaperCategory.holiday,
+				"christmas",
+				nil as WallpaperCategory?,
+				[String](),
+				true
+			),
+			(
+				"empty query includes every category",
+				"Untitled",
+				[String](),
+				WallpaperCategory.story,
+				"",
+				nil as WallpaperCategory?,
+				[String](),
+				true
+			),
+			(
+				"empty query still respects the selected category",
+				"Untitled",
+				[String](),
+				WallpaperCategory.story,
+				"",
+				WallpaperCategory.holiday,
+				[String](),
+				false
+			),
+			(
+				"category mismatch excludes an otherwise matching tag",
+				"Untitled",
+				["w"],
+				WallpaperCategory.story,
+				"w",
+				WallpaperCategory.holiday,
+				["w"],
+				false
+			),
+			(
+				"matching category keeps the tag result",
+				"Untitled",
+				["w"],
+				WallpaperCategory.story,
+				"w",
+				WallpaperCategory.story,
+				["w"],
+				true
+			),
+		]
+	)
+	func wallpaperSearchMatchesTextAndCategoryFilters(
+		caseLabel: String,
+		title: String,
+		tags: [String],
+		category: WallpaperCategory,
+		query: String,
+		selectedCategory: WallpaperCategory?,
+		knownTags: [String],
+		expected: Bool
+	) {
+		let matches = WallpaperSearch.matches(
+			title: title,
+			tags: tags,
+			category: category,
+			query: query,
+			selectedCategory: selectedCategory,
+			knownTags: Set(knownTags.map { WallpaperSearch.normalized($0) })
+		)
+		#expect(matches == expected, Comment(rawValue: caseLabel))
 	}
 
 	@Test(
-		"tag matching folds letters Foundation's diacritic-insensitive option doesn't decompose",
+		"matches complete tags exactly and incomplete tags by prefix",
 		arguments: [
-			("mlynar", "młynar"),
-			("ae", "ægir"),
+			("complete tag", ["w"], "w", ["w"], true),
+			("complete tag is not a prefix", ["warfarin"], "w", ["w", "warfarin"], false),
+			("incomplete tag prefix", ["kristen wright"], "kr", ["kristen wright"], true),
+			(
+				"unrelated tag has no prefix match", ["amiya"], "kr", ["kristen wright", "amiya"],
+				false
+			),
+			("non-decomposable diacritic", ["młynar"], "mlynar", ["młynar"], true),
+			("ligature", ["ægir"], "ae", ["ægir"], true),
+			(
+				"complete multi-word tag", ["kristen wright"], "kristen wright",
+				["kristen wright", "amiya"], true
+			),
+			(
+				"multi-word query is not split over another tag", ["amiya"], "kristen wright",
+				["kristen wright", "amiya"], false
+			),
 		]
 	)
-	func matchingFoldsNonDecomposableLetters(query: String, tag: String) {
-		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: [tag],
-				category: .story,
-				query: query,
-				selectedCategory: nil,
-				knownTags: [WallpaperSearch.normalized(tag)]
-			))
+	func wallpaperSearchMatchesExpectedTags(
+		caseLabel: String,
+		tags: [String],
+		query: String,
+		knownTags: [String],
+		expected: Bool
+	) {
+		let matches = WallpaperSearch.matches(
+			title: "Untitled",
+			tags: tags,
+			category: .story,
+			query: query,
+			selectedCategory: nil,
+			knownTags: Set(knownTags.map { WallpaperSearch.normalized($0) })
+		)
+		#expect(matches == expected, Comment(rawValue: caseLabel))
 	}
 
-	@Test("a multi-word query requires every term to match, in title or tags, not as one phrase")
-	func multiWordQueryRequiresAllTermsToMatch() {
-		#expect(
-			WallpaperSearch.matches(
-				title: "Twitter 460k Followers Commemorative Wallpaper",
-				tags: ["angelina", "amiya"],
-				category: .commemorative,
-				query: "twitter angelina",
-				selectedCategory: nil,
-				knownTags: ["angelina", "amiya"]
-			))
-		#expect(
-			!WallpaperSearch.matches(
-				title: "Unrelated Title",
-				tags: ["angelina", "amiya"],
-				category: .story,
-				query: "twitter angelina",
-				selectedCategory: nil,
-				knownTags: ["angelina", "amiya"]
-			))
+	@Test(
+		"requires every search term to match across the title or tags",
+		arguments: [
+			(
+				"all terms match across title and tags",
+				"Twitter 460k Followers Commemorative Wallpaper",
+				["angelina", "amiya"],
+				"twitter angelina",
+				["angelina", "amiya"],
+				true
+			),
+			(
+				"one missing term rejects the result",
+				"Unrelated Title",
+				["angelina", "amiya"],
+				"twitter angelina",
+				["angelina", "amiya"],
+				false
+			),
+			(
+				"terms can match separate tags",
+				"Untitled",
+				["amiya", "pramanix", "angelina"],
+				"amiya angelina",
+				["amiya", "pramanix", "angelina"],
+				true
+			),
+			(
+				"an incomplete term keeps prefix matching",
+				"Untitled",
+				["kristen wright", "angelina"],
+				"kr angelina",
+				["kristen wright", "angelina"],
+				true
+			),
+		]
+	)
+	func wallpaperSearchRequiresAllTerms(
+		caseLabel: String,
+		title: String,
+		tags: [String],
+		query: String,
+		knownTags: [String],
+		expected: Bool
+	) {
+		let matches = WallpaperSearch.matches(
+			title: title,
+			tags: tags,
+			category: .story,
+			query: query,
+			selectedCategory: nil,
+			knownTags: Set(knownTags.map { WallpaperSearch.normalized($0) })
+		)
+		#expect(matches == expected, Comment(rawValue: caseLabel))
 	}
 
-	@Test("a multi-word query can match terms split across the title and the tags")
-	func multiWordQueryMatchesTermsAcrossTitleAndTags() {
+	@Test(arguments: [
+		("exact tag", ["w", "amiya"], "w", true),
+		("prefix is not exact", ["warfarin"], "w", false),
+		("diacritic folds", ["młynar"], "mlynar", true),
+	])
+	func tagsContainUsesExactNormalizedMatching(
+		caseLabel: String,
+		tags: [String],
+		query: String,
+		expected: Bool
+	) {
 		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["amiya", "pramanix", "angelina"],
-				category: .story,
-				query: "amiya angelina",
-				selectedCategory: nil,
-				knownTags: ["amiya", "pramanix", "angelina"]
-			))
-	}
-
-	@Test("a multi-word tag typed or selected in full still matches exactly, not split into terms")
-	func fullMultiWordTagStillMatchesExactly() {
-		let knownTags: Set<String> = [WallpaperSearch.normalized("kristen wright"), "amiya"]
-		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["kristen wright"],
-				category: .story,
-				query: "kristen wright",
-				selectedCategory: nil,
-				knownTags: knownTags
-			))
-		#expect(
-			!WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["amiya"],
-				category: .story,
-				query: "kristen wright",
-				selectedCategory: nil,
-				knownTags: knownTags
-			))
-	}
-
-	@Test("an incomplete word within a multi-word query still prefix-matches")
-	func incompleteWordWithinMultiWordQueryPrefixMatches() {
-		#expect(
-			WallpaperSearch.matches(
-				title: "Untitled",
-				tags: ["kristen wright", "angelina"],
-				category: .story,
-				query: "kr angelina",
-				selectedCategory: nil,
-				knownTags: ["kristen wright", "angelina"]
-			))
-	}
-
-	@Test("tagsContain requires an exact tag, not a prefix or substring")
-	func tagsContainRequiresExactMatch() {
-		#expect(WallpaperSearch.tagsContain(["w", "amiya"], exactly: "w"))
-		#expect(!WallpaperSearch.tagsContain(["warfarin"], exactly: "w"))
-	}
-
-	@Test("tagsContain folds diacritics the same way matches(...) does")
-	func tagsContainFoldsDiacritics() {
-		#expect(WallpaperSearch.tagsContain(["młynar"], exactly: "mlynar"))
+			WallpaperSearch.tagsContain(tags, exactly: query) == expected,
+			Comment(rawValue: caseLabel))
 	}
 
 	@Test("committed tags filter exact catalog tags")

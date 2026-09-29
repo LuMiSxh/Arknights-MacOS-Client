@@ -166,11 +166,18 @@ func appPathsUseStandardInjectedDirectories() {
 	)
 }
 
-@Test
-func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
+@Test(arguments: [
+	("chinaBilibili", "China-Bilibili", GameRegion.china),
+	("taiwan", "Taiwan", GameRegion.taiwan),
+])
+func publisherRegionPathsKeepGameFilesAndWinePrefixesSeparate(
+	encodedRegion: String,
+	expectedGameDirectory: String,
+	prefixRegion: GameRegion
+) throws {
 	let region = try JSONDecoder().decode(
 		GameRegion.self,
-		from: Data(#""chinaBilibili""#.utf8)
+		from: Data("\"\(encodedRegion)\"".utf8)
 	)
 	let paths = AppPaths(
 		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
@@ -178,39 +185,21 @@ func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
 		libraryDirectory: URL(filePath: "/tmp/Library")
 	)
 
-	#expect(paths.gameInstall(for: region).lastPathComponent == "China-Bilibili")
-	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: .china))
+	#expect(paths.gameInstall(for: region).lastPathComponent == expectedGameDirectory)
+	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: prefixRegion))
 }
 
 @Test
-func taiwanUsesItsOwnGryphlinePrefix() {
-	let paths = AppPaths(
-		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
-		cachesDirectory: URL(filePath: "/tmp/Caches"),
-		libraryDirectory: URL(filePath: "/tmp/Library")
-	)
-
-	#expect(paths.winePrefix(for: .taiwan) == paths.gryphlineWinePrefix)
-	#expect(paths.gameInstall(for: .taiwan).lastPathComponent == "Taiwan")
-}
-
-@Test
-func missingCacheUsersDirectoryIsBenign() throws {
-	let prefix = FileManager.default.temporaryDirectory.appending(
+func gameCacheEnumerationTreatsMissingUsersAsEmptyAndSurfacesFailures() throws {
+	let missingPrefix = FileManager.default.temporaryDirectory.appending(
 		path: "AppPathsMissingCacheUsers.\(UUID().uuidString)", directoryHint: .isDirectory)
-	defer { try? FileManager.default.removeItem(at: prefix) }
+	#expect(try AppPaths.gameCacheDirectories(winePrefix: missingPrefix).isEmpty)
 
-	#expect(try AppPaths.gameCacheDirectories(winePrefix: prefix).isEmpty)
-}
-
-@Test
-func cacheDirectoryEnumerationFailuresAreSurfaced() {
-	let prefix = FileManager.default.temporaryDirectory.appending(
+	let unreadablePrefix = FileManager.default.temporaryDirectory.appending(
 		path: "AppPathsCacheEnumerationFailure.\(UUID().uuidString)", directoryHint: .isDirectory)
-
 	#expect(throws: AppPathsError.self) {
 		try AppPaths.gameCacheDirectories(
-			winePrefix: prefix,
+			winePrefix: unreadablePrefix,
 			fileManager: FailingCacheEnumerationFileManager()
 		)
 	}

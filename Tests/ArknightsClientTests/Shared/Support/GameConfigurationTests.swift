@@ -17,14 +17,10 @@ func byteSizeParsesRecognizedUnits(input: String, expected: Int64) {
 	#expect(GameConfiguration.parseByteSize(input) == expected)
 }
 
-@Test
-func byteSizeRejectsUnrecognizedInput() {
-	#expect(GameConfiguration.parseByteSize("") == nil)
-	#expect(GameConfiguration.parseByteSize("unknown") == nil)
-}
-
 @Test(
 	arguments: [
+		"",
+		"unknown",
 		"-1 GB",
 		"NaN GB",
 		"infinity GB",
@@ -33,7 +29,7 @@ func byteSizeRejectsUnrecognizedInput() {
 		"100000000000000000000 TB",
 	]
 )
-func byteSizeRejectsNonFiniteNegativeAndOverflowValues(input: String) {
+func byteSizeRejectsInvalidInput(input: String) {
 	#expect(GameConfiguration.parseByteSize(input) == nil)
 }
 

@@ -7,43 +7,60 @@ import Testing
 
 @Suite("PresetCatalogModels")
 struct PresetCatalogModelsTests {
-	@Test("decodes plain string image fields")
-	func decodesPlainStringImages() throws {
-		let json = #"""
-			{
-			  "id": 4431,
-			  "title": "Crossing",
-			  "image1": "https://webusstatic.yo-star.com/a.png",
-			  "smallImage": "https://webusstatic.yo-star.com/a-small.jpg"
-			}
-			"""#
+	@Test(
+		"decodes gallery image fields from strings or one-element arrays",
+		arguments: [
+			(
+				"plain string fields",
+				#"""
+				{
+				  "id": 4431,
+				  "title": "Crossing",
+				  "image1": "https://webusstatic.yo-star.com/a.png",
+				  "smallImage": "https://webusstatic.yo-star.com/a-small.jpg"
+				}
+				"""#,
+				4431,
+				"Crossing",
+				"https://webusstatic.yo-star.com/a.png",
+				"https://webusstatic.yo-star.com/a-small.jpg"
+			),
+			(
+				"single-element array-wrapped fields",
+				#"""
+				{
+				  "id": 172197591815510122,
+				  "title": "70万人突破記念イラスト",
+				  "image1": ["https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/01.jpg"],
+				  "smallImage": ["https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/small.jpg"]
+				}
+				"""#,
+				172_197_591_815_510_122,
+				"70万人突破記念イラスト",
+				"https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/01.jpg",
+				"https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/small.jpg"
+			),
+		]
+	)
+	func decodesGalleryImageFields(
+		caseLabel: String,
+		json: String,
+		expectedID: Int,
+		expectedTitle: String,
+		expectedImage: String,
+		expectedSmallImage: String
+	) throws {
 		let row = try JSONDecoder().decode(YostarGalleryRow.self, from: Data(json.utf8))
 
-		#expect(row.id == 4431)
-		#expect(row.title == "Crossing")
-		#expect(row.image1 == "https://webusstatic.yo-star.com/a.png")
-		#expect(row.smallImage == "https://webusstatic.yo-star.com/a-small.jpg")
-	}
-
-	@Test("decodes single-element array-wrapped image fields")
-	func decodesArrayWrappedImages() throws {
-		let json = #"""
-			{
-			  "id": 172197591815510122,
-			  "title": "70万人突破記念イラスト",
-			  "image1": ["https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/01.jpg"],
-			  "smallImage": ["https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/small.jpg"]
-			}
-			"""#
-		let row = try JSONDecoder().decode(YostarGalleryRow.self, from: Data(json.utf8))
-
+		#expect(row.id == expectedID, Comment(rawValue: caseLabel))
+		#expect(row.title == expectedTitle, Comment(rawValue: caseLabel))
 		#expect(
-			row.image1
-				== "https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/01.jpg"
+			row.image1 == expectedImage,
+			Comment(rawValue: caseLabel)
 		)
 		#expect(
-			row.smallImage
-				== "https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/small.jpg"
+			row.smallImage == expectedSmallImage,
+			Comment(rawValue: caseLabel)
 		)
 	}
 
@@ -91,16 +108,13 @@ struct PresetCatalogModelsTests {
 			("2019 Christmas", WallpaperCategory.holiday),
 			("4th Anniversary Celebration", WallpaperCategory.celebration),
 			("3rd Anniverary Celebration", WallpaperCategory.celebration),
+			(
+				"5.5th Livestream Commemorative Wallpaper",
+				WallpaperCategory.celebration
+			),
 		]
 	)
 	func classifiesTitles(title: String, expected: WallpaperCategory) {
 		#expect(WallpaperCategory(title: title) == expected)
-	}
-
-	@Test("anniversary livestream wallpapers count as celebration, not commemorative")
-	func livestreamAnniversaryIsCelebration() {
-		#expect(
-			WallpaperCategory(title: "5.5th Livestream Commemorative Wallpaper")
-				== .celebration)
 	}
 }

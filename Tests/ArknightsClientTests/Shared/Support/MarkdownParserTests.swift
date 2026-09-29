@@ -4,53 +4,49 @@ import Testing
 
 @testable import ArknightsClient
 
-@Test
-func markdownParserRecognizesTablesAndInlineSource() {
-	let source = """
-		# Components
-
-		| Name | Version | Source |
-		| --- | ---: | --- |
-		| Wine | `11.15` | [Repository](https://example.com) |
-
-		- Bundled with the launcher
-		"""
-	let blocks = MarkdownParser(source: source).blocks
-
-	#expect(blocks.count == 3)
-	#expect(blocks[0] == .heading(level: 1, source: "Components"))
-	#expect(
-		blocks[1]
-			== .table([
-				["Name", "Version", "Source"],
-				["Wine", "`11.15`", "[Repository](https://example.com)"],
-			]))
-	#expect(blocks[2] == .bullet("Bundled with the launcher"))
+struct MarkdownParserSyntaxCase: Sendable {
+	let label: String
+	let source: String
+	let expected: [MarkdownBlock]
 }
 
-@Test
-func markdownParserTreatsSetextHeadingsAsHeadingsInsteadOfTables() {
-	let blocks = MarkdownParser(
+private let markdownParserSyntaxCases = [
+	MarkdownParserSyntaxCase(
+		label: "tables with inline source",
+		source: """
+			# Components
+
+			| Name | Version | Source |
+			| --- | ---: | --- |
+			| Wine | `11.15` | [Repository](https://example.com) |
+
+			- Bundled with the launcher
+			""",
+		expected: [
+			.heading(level: 1, source: "Components"),
+			.table([
+				["Name", "Version", "Source"],
+				["Wine", "`11.15`", "[Repository](https://example.com)"],
+			]),
+			.bullet("Bundled with the launcher"),
+		]
+	),
+	MarkdownParserSyntaxCase(
+		label: "setext headings",
 		source: """
 			Mozilla Public License Version 2.0
 			==================================
 
 			1. Definitions
 			---------------
-			"""
-	).blocks
-
-	#expect(
-		blocks == [
+			""",
+		expected: [
 			.heading(level: 1, source: "Mozilla Public License Version 2.0"),
 			.heading(level: 2, source: "1. Definitions"),
 		]
-	)
-}
-
-@Test
-func markdownParserIgnoresLeadingFrontmatter() {
-	let blocks = MarkdownParser(
+	),
+	MarkdownParserSyntaxCase(
+		label: "leading frontmatter",
 		source: """
 			---
 			title: Changelog
@@ -60,50 +56,46 @@ func markdownParserIgnoresLeadingFrontmatter() {
 			# Changelog
 
 			- Added a website.
-			"""
-	).blocks
-
-	#expect(
-		blocks == [
+			""",
+		expected: [
 			.heading(level: 1, source: "Changelog"),
 			.bullet("Added a website."),
 		]
-	)
-}
-
-@Test
-func markdownParserRemovesGitHubAlertMarkers() {
-	let blocks = MarkdownParser(
+	),
+	MarkdownParserSyntaxCase(
+		label: "GitHub alert markers",
 		source: """
 			> [!IMPORTANT]
 			> Keep the runtime components together.
-			"""
-	).blocks
-
-	#expect(
-		blocks == [
+			""",
+		expected: [
 			.paragraph("**Important**"),
 			.paragraph("Keep the runtime components together."),
 		]
-	)
-}
-
-@Test
-func markdownParserPreservesNumberedRecoverySteps() {
-	let blocks = MarkdownParser(
+	),
+	MarkdownParserSyntaxCase(
+		label: "numbered recovery steps",
 		source: """
 			## Try this
 
 			1. Choose **Retry** once.
 			2. Choose **Retry** again after closing the game.
-			"""
-	).blocks
-
-	#expect(
-		blocks == [
+			""",
+		expected: [
 			.heading(level: 2, source: "Try this"),
 			.numbered(1, "Choose **Retry** once."),
 			.numbered(2, "Choose **Retry** again after closing the game."),
 		]
+	),
+]
+
+@Test(
+	"MarkdownParser recognizes supported document syntax",
+	arguments: markdownParserSyntaxCases
+)
+func markdownParserRecognizesDocumentSyntax(testCase: MarkdownParserSyntaxCase) {
+	#expect(
+		MarkdownParser(source: testCase.source).blocks == testCase.expected,
+		Comment(rawValue: testCase.label)
 	)
 }

@@ -101,12 +101,18 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func chinaSelectionFallsBackWhenEitherPermissionIsDisabled() {
+	func regionSelectionRechecksIndependentPublisherPermissions() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 
+		store.setSelectedRegion(.china)
+		#expect(store.selectedRegion() == .global)
+
 		store.setCanaryFeaturesEnabled(true)
+		store.setSelectedRegion(.taiwan)
+		#expect(store.selectedRegion() == .global)
+
 		store.setChinaClientsEnabled(true)
 		store.setSelectedRegion(.china)
 		#expect(store.selectedRegion() == .china)
@@ -118,98 +124,120 @@ struct LauncherPreferencesStoreTests {
 		store.setSelectedRegion(.china)
 		store.setCanaryFeaturesEnabled(false)
 		#expect(store.selectedRegion() == .global)
-	}
 
-	@Test(arguments: [GameRegion.global, .china, .chinaBilibili])
-	func legacyCanaryUsersKeepChinaClientsAvailable(region: GameRegion) {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		defaults.set(true, forKey: "canaryFeaturesEnabled")
-		defaults.set(region.rawValue, forKey: "selectedRegion")
+		store.setCanaryFeaturesEnabled(true)
+		store.setSelectedRegion(.taiwan)
+		#expect(store.selectedRegion() == .global)
 
-		let store = LauncherPreferencesStore(defaults: defaults)
+		store.setTaiwanClientEnabled(true)
+		store.setSelectedRegion(.taiwan)
+		#expect(store.selectedRegion() == .taiwan)
+		store.setTaiwanClientEnabled(false)
+		#expect(store.selectedRegion() == .global)
 
-		#expect(store.chinaClientsEnabled())
-		#expect(store.selectedRegion() == region)
-		#expect(!store.taiwanClientEnabled())
-		#expect(!store.hasAcknowledgedACEWarning(for: .china))
-		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
-
+		store.setTaiwanClientEnabled(true)
+		store.setSelectedRegion(.taiwan)
 		store.setChinaClientsEnabled(false)
-		let reopened = LauncherPreferencesStore(defaults: defaults)
-		#expect(!reopened.chinaClientsEnabled())
-		#expect(reopened.selectedRegion() == .global)
+		store.setSelectedRegion(.china)
+		#expect(store.selectedRegion() == .global)
+
+		store.setChinaClientsEnabled(true)
+		store.setSelectedRegion(.china)
+		#expect(store.selectedRegion() == .china)
+		store.setTaiwanClientEnabled(false)
+		#expect(store.selectedRegion() == .china)
 	}
 
-	@Test(arguments: [false, true])
-	func chinaClientMigrationPreservesExplicitPermission(enabled: Bool) {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		defaults.set(true, forKey: "canaryFeaturesEnabled")
-		defaults.set(enabled, forKey: "chinaClientsEnabled")
-		defaults.set(GameRegion.china.rawValue, forKey: "selectedRegion")
-
-		let store = LauncherPreferencesStore(defaults: defaults)
-
-		#expect(store.chinaClientsEnabled() == enabled)
-		#expect(store.selectedRegion() == (enabled ? .china : .global))
-	}
-
-	@Test(arguments: [Bool?.none, .some(false)])
-	func enablingCanaryAfterMigrationDoesNotEnableChinaClients(legacyCanary: Bool?) {
+	@Test(arguments: [
+		(
+			"legacy canary access keeps the saved Yostar region",
+			true,
+			Optional<Bool>.none,
+			GameRegion.global,
+			true,
+			GameRegion.global
+		),
+		(
+			"legacy canary access keeps the saved China region",
+			true,
+			Optional<Bool>.none,
+			GameRegion.china,
+			true,
+			GameRegion.china
+		),
+		(
+			"legacy canary access keeps the saved Bilibili region",
+			true,
+			Optional<Bool>.none,
+			GameRegion.chinaBilibili,
+			true,
+			GameRegion.chinaBilibili
+		),
+		(
+			"an explicit China opt-out survives migration",
+			true,
+			false as Bool?,
+			GameRegion.china,
+			false,
+			GameRegion.global
+		),
+		(
+			"an explicit China opt-in survives migration",
+			true,
+			true as Bool?,
+			GameRegion.china,
+			true,
+			GameRegion.china
+		),
+		(
+			"a missing legacy canary value grants no China access",
+			Optional<Bool>.none,
+			Optional<Bool>.none,
+			GameRegion.global,
+			false,
+			GameRegion.global
+		),
+		(
+			"a disabled legacy canary value grants no China access",
+			false as Bool?,
+			Optional<Bool>.none,
+			GameRegion.global,
+			false,
+			GameRegion.global
+		),
+	])
+	func chinaPermissionMigrationKeepsCanaryAndExplicitAccessIndependent(
+		caseLabel: String,
+		legacyCanary: Bool?,
+		legacyChinaPermission: Bool?,
+		selectedRegion: GameRegion,
+		expectedChinaPermission: Bool,
+		expectedRegion: GameRegion
+	) {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		if let legacyCanary {
 			defaults.set(legacyCanary, forKey: "canaryFeaturesEnabled")
 		}
+		if let legacyChinaPermission {
+			defaults.set(legacyChinaPermission, forKey: "chinaClientsEnabled")
+		}
+		defaults.set(selectedRegion.rawValue, forKey: "selectedRegion")
+
 		let store = LauncherPreferencesStore(defaults: defaults)
-		#expect(!store.chinaClientsEnabled())
+		#expect(
+			store.chinaClientsEnabled() == expectedChinaPermission, Comment(rawValue: caseLabel))
+		#expect(store.selectedRegion() == expectedRegion, Comment(rawValue: caseLabel))
+		#expect(!store.taiwanClientEnabled())
+		#expect(!store.hasAcknowledgedACEWarning(for: .china))
+		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
 
 		store.setCanaryFeaturesEnabled(true)
 		let reopened = LauncherPreferencesStore(defaults: defaults)
-
-		#expect(!reopened.chinaClientsEnabled())
+		#expect(
+			reopened.chinaClientsEnabled() == expectedChinaPermission, Comment(rawValue: caseLabel))
+		#expect(reopened.selectedRegion() == expectedRegion, Comment(rawValue: caseLabel))
 		#expect(!reopened.taiwanClientEnabled())
-	}
-
-	@Test
-	func taiwanSelectionRequiresTaiwanAndCanaryPermissions() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-
-		store.setSelectedRegion(.taiwan)
-		#expect(store.selectedRegion() == .global)
-
-		store.setCanaryFeaturesEnabled(true)
-		#expect(store.selectedRegion() == .global)
-
-		store.setTaiwanClientEnabled(true)
-		#expect(store.selectedRegion() == .taiwan)
-
-		store.setTaiwanClientEnabled(false)
-		#expect(store.selectedRegion() == .global)
-	}
-
-	@Test
-	func chinaAndTaiwanSelectionsUseIndependentPermissions() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-
-		store.setCanaryFeaturesEnabled(true)
-		store.setTaiwanClientEnabled(true)
-		store.setSelectedRegion(.taiwan)
-		#expect(store.selectedRegion() == .taiwan)
-
-		store.setSelectedRegion(.china)
-		#expect(store.selectedRegion() == .global)
-
-		store.setChinaClientsEnabled(true)
-		#expect(store.selectedRegion() == .china)
-
-		store.setTaiwanClientEnabled(false)
-		#expect(store.selectedRegion() == .china)
 	}
 
 	@Test
@@ -247,7 +275,7 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func launchOptionsKeepValidFieldsWhenOneValueIsRetired() {
+	func launchOptionsPreserveValidStoredFieldsAndRoundTrip() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
@@ -263,13 +291,7 @@ struct LauncherPreferencesStoreTests {
 		#expect(options.displayMode == .borderlessWindow)
 		#expect(options.resolution == GameLaunchOptions.default.resolution)
 		#expect(options.usesGameMode)
-	}
 
-	@Test
-	func launchOptionsRoundTrip() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
 		let expected = GameLaunchOptions(
 			displayMode: .borderlessWindow,
 			resolution: .quadHD,
@@ -298,34 +320,23 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func installDirectoriesAreIndependentPerRegion() {
+	func installDirectoryMigrationPreservesSeparateRegionalUserChoices() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
-		let global = URL(filePath: "/tmp/Global", directoryHint: .isDirectory)
-		let japan = URL(filePath: "/tmp/Japan", directoryHint: .isDirectory)
+		let legacyGlobal = URL(filePath: "/tmp/Legacy-Global", directoryHint: .isDirectory)
+		let legacyJapan = URL(filePath: "/tmp/Legacy-Japan", directoryHint: .isDirectory)
 		let fallback = URL(filePath: "/tmp/Fallback", directoryHint: .isDirectory)
 
-		store.setInstallDirectory(global, for: .global)
-		store.setInstallDirectory(japan, for: .japan)
+		store.setInstallDirectory(legacyGlobal, for: .global)
+		store.setInstallDirectory(legacyJapan, for: .japan)
 
-		#expect(store.installDirectory(for: .global, default: fallback) == global)
-		#expect(store.installDirectory(for: .japan, default: fallback) == japan)
+		#expect(store.installDirectory(for: .global, default: fallback) == legacyGlobal)
+		#expect(store.installDirectory(for: .japan, default: fallback) == legacyJapan)
 		#expect(store.installDirectory(for: .korea, default: fallback) == fallback)
-	}
-
-	@Test
-	func migrationUpdatesOnlyInstallDirectoriesThatHaveNotChanged() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-		let legacyGlobal = URL(filePath: "/tmp/Legacy-Global")
-		let legacyJapan = URL(filePath: "/tmp/Legacy-Japan")
 		let customJapan = URL(filePath: "/tmp/Custom-Japan", directoryHint: .isDirectory)
 		let currentGlobal = URL(filePath: "/tmp/Yostar/Global", directoryHint: .isDirectory)
 		let currentJapan = URL(filePath: "/tmp/Yostar/Japan", directoryHint: .isDirectory)
-		store.setInstallDirectory(legacyGlobal, for: .global)
-		store.setInstallDirectory(legacyJapan, for: .japan)
 		let snapshot = store.persistedInstallDirectories()
 		store.setInstallDirectory(customJapan, for: .japan)
 
