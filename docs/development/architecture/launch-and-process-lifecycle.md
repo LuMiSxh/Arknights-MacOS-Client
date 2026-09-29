@@ -8,9 +8,10 @@ order: 30
 
 [`GameSessionController`](../../../Sources/ArknightsClient/Features/Game/Runtime/GameSessionController.swift)
 owns one Wine-backed session at a time. It does not treat a successful `Process.run()` call as a
-running game: launch remains in **Starting** until a visible game window is observed, and shutdown
-continues until the prefix-wide `wineserver` has stopped. This distinction keeps browser helpers and
-Wine child processes from being mistaken for a ready or fully stopped game.
+running game: launch remains in **Starting** until a visible game window is observed. During a
+user-initiated stop, the session retains prefix ownership until cleanup completes; a failed or
+timed-out stop remains in **Stopping** with a retry action. This distinction keeps browser helpers
+and Wine child processes from being mistaken for a ready or fully stopped game.
 
 See [Wine prefix architecture](wine-prefix.md) for the prefix topology, environment, drive mappings,
 migration state, persistent data, and maintenance contract used by this lifecycle.
@@ -72,8 +73,9 @@ sequenceDiagram
 ```
 
 The direct process handle and the prefix monitor have different jobs. The direct process tells the
-controller whether startup failed or the main process exited; `wineserver -w` observes the complete
-prefix so helper processes cannot keep the launcher in **Running** after the game is gone.
+controller whether startup failed or the main process exited. `wineserver -w` waits on the
+wineserver lock, which remains held while the prefix is active; it does not return just because the
+game's direct process exited.
 
 > [!IMPORTANT]
 > A process ID is scoped to a launch session. Every asynchronous callback carries that session's
@@ -148,8 +150,8 @@ stateDiagram-v2
 	Launching --> Idle: startup failure or timeout
 	Running --> Stopping: Stop or app termination
 	Running --> Idle: main process and wineserver stopped
-	Stopping --> Running: stop request failed
-	Stopping --> Idle: wineserver stopped
+	Stopping --> Stopping: cleanup fails; keep ownership and offer Retry
+	Stopping --> Idle: prefix cleanup completes
 ```
 
 `LauncherLifecycleStore` exposes these states through `LauncherActivity`; `LauncherPhase` is only a
@@ -234,10 +236,12 @@ Mode. A visible-window timeout stops the prefix before reporting the error. If t
 process exits during startup, the controller records the exit status and the Wine log; if it exits
 after **Running**, the controller still waits for prefix cleanup before publishing the final state.
 
-User-initiated **Stop** changes the activity to **Stopping** before sending `wineserver -k`. If the
-stop request fails, the session returns to **Running** so the user can retry. When the application
-terminates, the same stop operation runs synchronously with bounded grace periods; a timeout is
-logged and escalated to terminate/kill the wineserver process.
+User-initiated **Stop** changes the activity to **Stopping**, sends `wineserver -k`, then performs a
+bounded `wineserver -w` wait. Exiting from `-k` means only that the termination request was issued;
+the launcher keeps the prefix owned until the lock wait completes. A failure or timeout leaves the
+session in **Stopping** with a retryable error. **Retry** repeats cleanup for the same session UUID,
+region, and prefix; a repeated failure keeps the same recovery state, and overlapping cleanup for
+one session is deduplicated.
 
 Cancellation is scoped to the current session. Cancelling launch does not delete game files or the
 prefix, and it cannot clear state owned by a newer launch. See [Troubleshooting](../../help/troubleshooting.md)
