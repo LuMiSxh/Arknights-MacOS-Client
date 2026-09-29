@@ -14,7 +14,7 @@ enum BoundedFileReader {
 		guard maximumBytes >= 0, maximumBytes < Int.max else {
 			throw BoundedFileReadError.invalidMaximum(maximumBytes)
 		}
-		let descriptor = open(url.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+		let descriptor = open(url.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
 		guard descriptor >= 0 else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
