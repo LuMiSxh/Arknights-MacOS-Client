@@ -31,31 +31,19 @@ def test_rejects_mismatched_key_pair(monkeypatch: pytest.MonkeyPatch) -> None:
         validate_sparkle_keys.validate_keys(encoded(b"Q" * 32), encoded(b"S" * 32))
 
 
-def test_derives_new_seed_using_native_key_format(
+def test_rejects_system_libressl_with_actionable_openssl_guidance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    public_key = b"P" * 32
+    monkeypatch.setattr(
+        validate_sparkle_keys.subprocess,
+        "run",
+        lambda command, **kwargs: subprocess.CompletedProcess(
+            command, 0, stdout="LibreSSL 3.3.6", stderr=""
+        ),
+    )
 
-    def fake_run(command, *, input, capture_output, check):
-        assert command[1:] == [
-            "pkey",
-            "-inform",
-            "DER",
-            "-pubout",
-            "-outform",
-            "DER",
-        ]
-        assert input == validate_sparkle_keys.PKCS8_ED25519_PREFIX + b"S" * 32
-        return subprocess.CompletedProcess(
-            command,
-            0,
-            stdout=validate_sparkle_keys.SPKI_ED25519_PREFIX + public_key,
-            stderr=b"",
-        )
-
-    monkeypatch.setattr(validate_sparkle_keys.subprocess, "run", fake_run)
-
-    assert validate_sparkle_keys.derive_public_key(b"S" * 32, "openssl") == public_key
+    with pytest.raises(RuntimeError, match="brew install openssl@3"):
+        validate_sparkle_keys.derive_public_key(b"S" * 32, "openssl")
 
 
 def test_rejects_invalid_public_key_length() -> None:
@@ -105,6 +93,90 @@ def test_accepts_signed_appcast(tmp_path: Path) -> None:
     validate_sparkle_keys.validate_appcast(
         appcast, expected_update_name="Example.Client.zip"
     )
+
+
+def test_cryptographically_verifies_appcast_and_update_artifact(
+    tmp_path: Path,
+) -> None:
+    openssl = validate_sparkle_keys.require_openssl_ed25519()
+
+    seed = b"S" * validate_sparkle_keys.PRIVATE_SEED_BYTES
+    private_key = tmp_path / "private.der"
+    private_key.write_bytes(validate_sparkle_keys.PKCS8_ED25519_PREFIX + seed)
+    public_key = validate_sparkle_keys.derive_public_key(seed, openssl)
+    update = tmp_path / "Example.Client.zip"
+    update.write_bytes(b"verified update contents")
+
+    def sign(path: Path) -> bytes:
+        result = subprocess.run(
+            [
+                openssl,
+                "pkeyutl",
+                "-sign",
+                "-rawin",
+                "-inkey",
+                str(private_key),
+                "-keyform",
+                "DER",
+                "-in",
+                str(path),
+            ],
+            capture_output=True,
+            check=True,
+        )
+        return result.stdout
+
+    enclosure_signature = sign(update)
+    body = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">\n'
+        "  <channel><item>\n"
+        "    <description>Release notes</description>\n"
+        f'    <enclosure url="https://example.invalid/{update.name}" length="{update.stat().st_size}" '
+        f'type="application/octet-stream" sparkle:edSignature="{encoded(enclosure_signature)}" />\n'
+        "  </item></channel>\n"
+        "</rss>\n"
+    ).encode()
+    appcast = tmp_path / "appcast.xml"
+    feed = tmp_path / "feed.xml"
+    feed.write_bytes(body)
+    appcast.write_bytes(
+        body
+        + (
+            "<!-- sparkle-signatures:\n"
+            f"edSignature: {encoded(sign(feed))}\n"
+            f"length: {len(body)}\n"
+            "-->\n"
+        ).encode()
+    )
+
+    validate_sparkle_keys.validate_appcast(
+        appcast,
+        expected_update_name=update.name,
+        update_file=update,
+        public_key=encoded(public_key),
+        openssl=openssl,
+    )
+
+    update.write_bytes(b"tampered update contents")
+    with pytest.raises(RuntimeError, match="enclosure Ed25519 signature is invalid"):
+        validate_sparkle_keys.validate_appcast(
+            appcast,
+            expected_update_name=update.name,
+            update_file=update,
+            public_key=encoded(public_key),
+            openssl=openssl,
+        )
+
+    update.write_bytes(b"verified update contents")
+    with pytest.raises(RuntimeError, match="appcast Ed25519 signature is invalid"):
+        validate_sparkle_keys.validate_appcast(
+            appcast,
+            expected_update_name=update.name,
+            update_file=update,
+            public_key=encoded(b"W" * validate_sparkle_keys.PUBLIC_KEY_BYTES),
+            openssl=openssl,
+        )
 
 
 def test_rejects_appcast_with_wrong_update_name(tmp_path: Path) -> None:
