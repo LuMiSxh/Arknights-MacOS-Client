@@ -20,9 +20,9 @@ func displayConfigurationEnablesRetinaOnlyForScaledDisplays() {
 	)
 }
 
-@Test
-func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
-	let registry =
+@Test(arguments: [
+	(
+		"global Mac Driver overrides the executable-specific value",
 		"""
 		[Software\\\\Wine\\\\AppDefaults\\\\Arknights.exe\\\\Mac Driver] 1786868781
 		"RetinaMode"="n"
@@ -30,19 +30,11 @@ func displayConfigurationReadsOnlyTheGlobalMacDriverValue() throws {
 		[Software\\\\Wine\\\\Mac Driver] 1786868782
 		"RetinaMode"="y"
 
-		"""
-	let prefix = try makeRegistryPrefix(registry)
-	defer { try? FileManager.default.removeItem(at: prefix) }
-
-	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
-	#expect(state?.retinaMode == "y")
-	#expect(state?.logPixels == nil)
-	#expect(state?.usePreciseScrolling == nil)
-}
-
-@Test
-func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
-	let registry =
+		""",
+		WineDisplayRegistryState(retinaMode: "y", logPixels: nil, usePreciseScrolling: nil)
+	),
+	(
+		"Wine DPI comes from the desktop section",
 		"""
 		[Control Panel\\\\Desktop] 1786869739
 		"LogPixels"=dword:000000c0
@@ -50,36 +42,31 @@ func displayConfigurationReadsWineDPIFromTheDesktopSection() throws {
 		[Software\\\\Wine\\\\Mac Driver] 1786868782
 		"RetinaMode"="y"
 
-		"""
-	let prefix = try makeRegistryPrefix(registry)
-	defer { try? FileManager.default.removeItem(at: prefix) }
-
-	let configuration = WineDisplayConfiguration(backingScaleFactor: 2)
-	#expect(configuration.logPixels == 96)
-	#expect(configuration.browserScaleFactor == 2)
-	#expect(
-		configuration.registryState(in: prefix)
-			== WineDisplayRegistryState(
-				retinaMode: "y",
-				logPixels: 192,
-				usePreciseScrolling: nil
-			)
-	)
-}
-
-@Test
-func displayConfigurationReadsPreciseScrolling() throws {
-	let registry =
+		""",
+		WineDisplayRegistryState(retinaMode: "y", logPixels: 192, usePreciseScrolling: nil)
+	),
+	(
+		"precise scrolling comes from the global Mac Driver section",
 		"""
 		[Software\\\\Wine\\\\Mac Driver] 1786868782
 		"UsePreciseScrolling"="n"
 
-		"""
+		""",
+		WineDisplayRegistryState(retinaMode: nil, logPixels: nil, usePreciseScrolling: "n")
+	),
+])
+func displayConfigurationReadsTheExpectedRegistryState(
+	scenario: String,
+	registry: String,
+	expected: WineDisplayRegistryState
+) throws {
 	let prefix = try makeRegistryPrefix(registry)
 	defer { try? FileManager.default.removeItem(at: prefix) }
 
-	let state = WineDisplayConfiguration(backingScaleFactor: 2).registryState(in: prefix)
-	#expect(state?.usePreciseScrolling == "n")
+	let configuration = WineDisplayConfiguration(backingScaleFactor: 2)
+	#expect(configuration.registryState(in: prefix) == expected, Comment(rawValue: scenario))
+	#expect(configuration.logPixels == 96)
+	#expect(configuration.browserScaleFactor == 2)
 }
 
 private func makeRegistryPrefix(_ registry: String) throws -> URL {

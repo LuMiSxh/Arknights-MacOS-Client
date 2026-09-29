@@ -5,10 +5,15 @@ import Testing
 
 @testable import ArknightsClient
 
+enum ProgressMonitorOutcome: String, CaseIterable, Sendable {
+	case failure
+	case cancellation
+}
+
 @Suite(.serialized)
 struct GameInstallerDownloadLifecycleTests {
-	@Test
-	func waitsForTheProgressMonitorBeforeReturningAnError() async throws {
+	@Test(arguments: ProgressMonitorOutcome.allCases)
+	func waitsForTheProgressMonitorBeforeReturning(outcome: ProgressMonitorOutcome) async throws {
 		let fixture = try GameInstallerStreamingTests.makeFixture(
 			body: Data("game".utf8),
 			protocolClass: LifecycleURLProtocol.self
@@ -34,41 +39,9 @@ struct GameInstallerDownloadLifecycleTests {
 		}
 
 		await monitorGate.waitUntilEntered()
-		#expect(!(await completion.finished))
-		await monitorGate.release()
-		await operation.value
-		#expect(await completion.finished)
-		#expect(await completion.failed)
-	}
-
-	@Test
-	func waitsForTheProgressMonitorBeforeReturningCancellation() async throws {
-		let fixture = try GameInstallerStreamingTests.makeFixture(
-			body: Data("game".utf8),
-			protocolClass: LifecycleURLProtocol.self
-		)
-		defer { fixture.remove() }
-		let installDirectory = try InstallerInstallDirectory(at: fixture.directory)
-		let monitorGate = ProgressCallbackGate()
-		let completion = DownloadCompletion()
-		let operation = Task {
-			do {
-				_ = try await fixture.installer.download(
-					fixture.item,
-					source: fixture.source,
-					baseURL: fixture.baseURL,
-					installDirectory: installDirectory,
-					counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
-					progress: { update in await monitorGate.record(update) }
-				)
-				await completion.record(failed: false)
-			} catch {
-				await completion.record(failed: true)
-			}
+		if outcome == .cancellation {
+			operation.cancel()
 		}
-
-		await monitorGate.waitUntilEntered()
-		operation.cancel()
 		#expect(!(await completion.finished))
 		await monitorGate.release()
 		await operation.value
