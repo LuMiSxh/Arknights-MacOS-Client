@@ -10,6 +10,7 @@ extension GameSessionController {
 		guard let processIdentifier else {
 			// Wine is still being prepared or spawned; the launch task owns cleanup so a game
 			// process that spawns concurrently is still stopped afterwards.
+			activeWineProcessSpawnGate?.denyFurtherSpawns()
 			lifecycle.activity = .stoppingGame(sessionID: sessionID, processIdentifier: nil)
 			lifecycle.setStatus(.stoppingGame)
 			log.info("Game stop requested during launch")
@@ -28,6 +29,48 @@ extension GameSessionController {
 			)
 			return
 		}
+		beginStopGame(
+			using: runtime,
+			sessionID: sessionID,
+			processIdentifier: processIdentifier,
+			region: region
+		)
+	}
+
+	func retryFailedRuntimeStop(sessionID: UUID, region: GameRegion) {
+		guard activeGameSessionID == sessionID,
+			activeGameRegion == region,
+			runtimeStopAttemptSessionID != sessionID,
+			lifecycle.activity.activeGameSessionID == sessionID
+		else { return }
+		let processIdentifier = lifecycle.activity.gameProcessIdentifier
+		let runtime: any WineRuntimeSessionControlling
+		do {
+			runtime = try runtimeSessionControllerProvider()
+		} catch {
+			presentRuntimeFailure(
+				error,
+				id: sessionID,
+				operation: .runtimeStop,
+				region: region
+			)
+			return
+		}
+		beginStopGame(
+			using: runtime,
+			sessionID: sessionID,
+			processIdentifier: processIdentifier,
+			region: region
+		)
+	}
+
+	private func beginStopGame(
+		using runtime: any WineRuntimeSessionControlling,
+		sessionID: UUID,
+		processIdentifier: Int32?,
+		region: GameRegion
+	) {
+		activeWineProcessSpawnGate?.denyFurtherSpawns()
 		lifecycle.activity = .stoppingGame(
 			sessionID: sessionID,
 			processIdentifier: processIdentifier
@@ -49,7 +92,8 @@ extension GameSessionController {
 	}
 
 	func stopGameForApplicationTermination() {
-		guard isGameActive else { return }
+		guard isGameActive, !applicationTerminationRequested else { return }
+		prepareForApplicationTermination()
 		if let activeGameSessionID {
 			playtimeStatistics.finish(sessionID: activeGameSessionID)
 		}
@@ -67,6 +111,21 @@ extension GameSessionController {
 			prefixDirectory: paths.winePrefix(for: activeGameRegion ?? installation.region),
 			log: log
 		)
+	}
+
+	func prepareForApplicationTermination() {
+		applicationTerminationRequested = true
+		activeWineProcessSpawnGate?.denyFurtherSpawns()
+		launchTask?.cancel()
+		gameMonitorTask?.cancel()
+		gameProcessMonitorTask?.cancel()
+		if let sessionID = activeGameSessionID {
+			lifecycle.activity = .stoppingGame(
+				sessionID: sessionID,
+				processIdentifier: lifecycle.activity.gameProcessIdentifier
+			)
+			lifecycle.setStatus(.stoppingGame)
+		}
 	}
 
 	func monitorGame(
@@ -183,10 +242,22 @@ extension GameSessionController {
 		terminalFailure: GameSessionTerminalFailure? = nil
 	) async {
 		guard activeGameSessionID == sessionID else { return }
+		guard runtimeStopAttemptSessionID != sessionID else { return }
+		runtimeStopAttemptSessionID = sessionID
+		defer {
+			if runtimeStopAttemptSessionID == sessionID {
+				runtimeStopAttemptSessionID = nil
+			}
+		}
+		let spawnGate = activeWineProcessSpawnGate
+		spawnGate?.denyFurtherSpawns()
 		rememberTerminalFailure(terminalFailure, for: sessionID)
 		markGameSessionStopping(sessionID, processIdentifier: processIdentifier)
 		do {
-			try await runtime.stop(prefixDirectory: paths.winePrefix(for: region))
+			try await runtime.stop(
+				prefixDirectory: paths.winePrefix(for: region),
+				spawnGate: spawnGate
+			)
 		} catch {
 			guard activeGameSessionID == sessionID else { return }
 			log.error("Runtime cleanup failed: \(launcherDiagnosticDescription(for: error))")
@@ -211,6 +282,7 @@ extension GameSessionController {
 		launchTask?.cancel()
 		gameMonitorTask?.cancel()
 		gameProcessMonitorTask?.cancel()
+		activeWineProcessSpawnGate = nil
 		disableActiveGameMode()
 		activeGameRegion = nil
 		lifecycle.setStatus(installation.isGameUpdateAvailable ? .updateAvailable : .ready)

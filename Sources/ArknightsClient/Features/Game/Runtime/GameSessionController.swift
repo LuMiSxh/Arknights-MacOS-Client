@@ -33,7 +33,8 @@ final class GameSessionController {
 	var activeGameSessionID: UUID? { lifecycle.activity.activeGameSessionID }
 	var canStopGame: Bool { Self.canStopGame(for: lifecycle.activity) }
 	var canLaunch: Bool {
-		installation.isInstalled && runtimeName != nil
+		!applicationTerminationRequested
+			&& installation.isInstalled && runtimeName != nil
 			&& intelTranslation.allowsWine
 			&& lifecycle.activity == .idle
 	}
@@ -56,6 +57,9 @@ final class GameSessionController {
 	@ObservationIgnored var gameProcessMonitorTask: Task<Void, Never>?
 	@ObservationIgnored var activeGameModeEnabled = false
 	@ObservationIgnored var activeGameRegion: GameRegion?
+	@ObservationIgnored var activeWineProcessSpawnGate: WineProcessSpawnGate?
+	@ObservationIgnored var applicationTerminationRequested = false
+	@ObservationIgnored var runtimeStopAttemptSessionID: UUID?
 	@ObservationIgnored private var pendingTerminalFailure: PendingGameSessionTerminalFailure?
 	var gameRunningSince: Date?
 

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Dispatch
 import Foundation
+
+struct WineProcessWaitTimeout: Error, Sendable {}
 
 /// Owns one short-lived Wine helper process and resumes its awaiting task exactly once.
 final class WineProcessWaiter: @unchecked Sendable {
@@ -10,12 +13,16 @@ final class WineProcessWaiter: @unchecked Sendable {
 	private var hasStarted = false
 	private var isCancelled = false
 	private var isFinished = false
+	private var cancellationError: (any Error)?
+	private var timeoutTimer: DispatchSourceTimer?
+	private let spawnGate: WineProcessSpawnGate?
 
 	init(
 		executable: URL,
 		arguments: [String],
 		environment: [String: String],
-		output: FileHandle
+		output: FileHandle,
+		spawnGate: WineProcessSpawnGate? = nil
 	) {
 		let process = Process()
 		process.executableURL = executable
@@ -24,28 +31,43 @@ final class WineProcessWaiter: @unchecked Sendable {
 		process.standardOutput = output
 		process.standardError = output
 		self.process = process
+		self.spawnGate = spawnGate
 	}
 
-	func wait() async throws -> Int32 {
+	func wait(timeout: Duration? = nil) async throws -> Int32 {
 		try await withTaskCancellationHandler {
 			try await withCheckedThrowingContinuation { continuation in
-				start(continuation)
+				start(continuation, timeout: timeout)
 			}
 		} onCancel: {
-			cancel()
+			cancel(with: CancellationError())
 		}
 	}
 
-	private func start(_ continuation: CheckedContinuation<Int32, any Error>) {
+	private func start(
+		_ continuation: CheckedContinuation<Int32, any Error>,
+		timeout: Duration?
+	) {
 		lock.lock()
 		if isCancelled || isFinished {
 			isFinished = true
+			process = nil
+			let error = cancellationError ?? CancellationError()
 			lock.unlock()
-			continuation.resume(throwing: CancellationError())
+			continuation.resume(throwing: error)
 			return
 		}
 		self.continuation = continuation
 		let process = process
+		if let timeout {
+			let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+			timer.schedule(deadline: .now() + Self.dispatchInterval(for: timeout))
+			timer.setEventHandler { [weak self] in
+				self?.cancel(with: WineProcessWaitTimeout())
+			}
+			timeoutTimer = timer
+			timer.resume()
+		}
 		lock.unlock()
 
 		guard let process else {
@@ -56,45 +78,49 @@ final class WineProcessWaiter: @unchecked Sendable {
 			self?.finish(status: process.terminationStatus)
 		}
 
-		lock.lock()
-		let shouldRun = !isCancelled && !isFinished
-		lock.unlock()
-		guard shouldRun else {
-			finish(error: CancellationError())
-			return
-		}
-
 		do {
-			try process.run()
+			let run = {
+				self.lock.lock()
+				defer { self.lock.unlock() }
+				guard !self.isCancelled, !self.isFinished else {
+					throw self.cancellationError ?? CancellationError()
+				}
+				try process.run()
+				self.hasStarted = true
+			}
+			if let spawnGate {
+				try spawnGate.runIfAllowed(process: process, run)
+			} else {
+				try run()
+			}
 		} catch {
 			lock.lock()
-			let cancelled = isCancelled
+			let cancellationError = self.cancellationError
 			lock.unlock()
-			finish(error: cancelled ? CancellationError() : error)
+			finish(error: cancellationError ?? error)
 			return
 		}
 
-		lock.lock()
-		hasStarted = true
-		let cancelledAfterStart = isCancelled
-		lock.unlock()
-		if cancelledAfterStart { cancel() }
 	}
 
-	private func cancel() {
+	private func cancel(with error: any Error) {
 		lock.lock()
 		isCancelled = true
-		guard hasStarted, !isFinished, let process, let continuation else {
+		cancellationError = error
+		guard !isFinished, let continuation else {
 			lock.unlock()
 			return
 		}
 		isFinished = true
-		self.process = nil
+		let process = hasStarted ? self.process : nil
+		if hasStarted { self.process = nil }
 		self.continuation = nil
+		let timer = takeTimeoutTimer()
 		lock.unlock()
 
-		process.terminate()
-		continuation.resume(throwing: CancellationError())
+		timer?.cancel()
+		process?.terminate()
+		continuation.resume(throwing: error)
 	}
 
 	private func finish(status: Int32) {
@@ -106,7 +132,9 @@ final class WineProcessWaiter: @unchecked Sendable {
 		isFinished = true
 		process = nil
 		self.continuation = nil
+		let timer = takeTimeoutTimer()
 		lock.unlock()
+		timer?.cancel()
 		continuation.resume(returning: status)
 	}
 
@@ -119,7 +147,22 @@ final class WineProcessWaiter: @unchecked Sendable {
 		isFinished = true
 		process = nil
 		self.continuation = nil
+		let timer = takeTimeoutTimer()
 		lock.unlock()
+		timer?.cancel()
 		continuation.resume(throwing: error)
+	}
+
+	private func takeTimeoutTimer() -> DispatchSourceTimer? {
+		defer { timeoutTimer = nil }
+		return timeoutTimer
+	}
+
+	private static func dispatchInterval(for duration: Duration) -> DispatchTimeInterval {
+		let components = duration.components
+		let seconds = Double(components.seconds)
+		let fractionalSeconds = Double(components.attoseconds) / 1_000_000_000_000_000_000
+		let nanoseconds = Int(max(0, seconds + fractionalSeconds) * 1_000_000_000)
+		return .nanoseconds(nanoseconds)
 	}
 }

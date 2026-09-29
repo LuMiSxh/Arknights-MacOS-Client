@@ -6,14 +6,16 @@ extension WineRuntime {
 	func applyBilibiliFontConfiguration(
 		prefixDirectory: URL,
 		environment: [String: String],
-		logHandle: FileHandle
+		logHandle: FileHandle,
+		spawnGate: WineProcessSpawnGate? = nil
 	) async throws {
 		try await applyRegistryEntries(
 			Self.bilibiliFontRegistryEntries(),
 			description: "Chinese font fallbacks",
 			prefixDirectory: prefixDirectory,
 			environment: environment,
-			logHandle: logHandle
+			logHandle: logHandle,
+			spawnGate: spawnGate
 		)
 		try logHandle.write(
 			contentsOf: Data(
@@ -44,7 +46,8 @@ extension WineRuntime {
 		_ configuration: WineDisplayConfiguration,
 		prefixDirectory: URL,
 		environment: [String: String],
-		logHandle: FileHandle
+		logHandle: FileHandle,
+		spawnGate: WineProcessSpawnGate? = nil
 	) async throws {
 		let current = configuration.registryState(in: prefixDirectory)
 		let preciseScrollingValue = Self.normalizedScrollingRegistryData
@@ -82,7 +85,8 @@ extension WineRuntime {
 			description: "display configuration",
 			prefixDirectory: prefixDirectory,
 			environment: environment,
-			logHandle: logHandle
+			logHandle: logHandle,
+			spawnGate: spawnGate
 		)
 		try? logHandle.write(
 			contentsOf: Data(
@@ -150,7 +154,8 @@ extension WineRuntime {
 		logsDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
-		log: LauncherLog? = nil
+		log: LauncherLog? = nil,
+		spawnGate: WineProcessSpawnGate? = nil
 	) async throws {
 		let fileManager = FileManager.default
 		let store = RuntimeMigrationStore(fileManager: fileManager)
@@ -170,7 +175,11 @@ extension WineRuntime {
 			log?.debug("Running prefix migration: \(migration)")
 			switch migration {
 			case .initializeWinePrefix:
-				try await initializePrefix(environment: environment, logHandle: logHandle)
+				try await initializePrefix(
+					environment: environment,
+					logHandle: logHandle,
+					spawnGate: spawnGate
+				)
 			case .installDXMT:
 				try Self.installDXMT(
 					from: dxmtPayload,
@@ -181,7 +190,8 @@ extension WineRuntime {
 				try await configureCompatibilityOverrides(
 					prefixDirectory: prefixDirectory,
 					environment: environment,
-					logHandle: logHandle
+					logHandle: logHandle,
+					spawnGate: spawnGate
 				)
 			}
 			plan.complete(migration)
@@ -209,13 +219,15 @@ extension WineRuntime {
 
 	private func initializePrefix(
 		environment: [String: String],
-		logHandle: FileHandle
+		logHandle: FileHandle,
+		spawnGate: WineProcessSpawnGate?
 	) async throws {
 		let exitStatus = try await runAndWait(
 			executable: executableURL,
 			arguments: ["wineboot.exe", "-u"],
 			environment: environment,
-			output: logHandle
+			output: logHandle,
+			spawnGate: spawnGate
 		)
 		guard exitStatus == 0 else {
 			throw LauncherError.runtimeConfiguration(
@@ -227,7 +239,8 @@ extension WineRuntime {
 	private func configureCompatibilityOverrides(
 		prefixDirectory: URL,
 		environment: [String: String],
-		logHandle: FileHandle
+		logHandle: FileHandle,
+		spawnGate: WineProcessSpawnGate?
 	) async throws {
 		let globalKey = "HKCU\\Software\\Wine\\DllOverrides"
 		let overrides = Self.globalRegistryOverrides.sorted { $0.key < $1.key }.map {
@@ -251,7 +264,8 @@ extension WineRuntime {
 			description: "compatibility overrides",
 			prefixDirectory: prefixDirectory,
 			environment: environment,
-			logHandle: logHandle
+			logHandle: logHandle,
+			spawnGate: spawnGate
 		)
 	}
 

@@ -47,6 +47,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed the China and China — Bilibili server reset countdown using UTC instead of China Standard Time (UTC+8).
 - Fixed Now Playing artwork no longer following launcher icon changes after the window was resized.
 - Allowed Stop while Wine is being prepared or the game is starting, instead of waiting up to 90 seconds for the game window.
+- Kept the shared Wine prefix owned until launch processes retire and `wineserver -w` confirms shutdown, and made a failed Stop retryable for the same session.
+- Prevented Wine setup helpers and the game from starting after app termination has taken ownership of shutdown.
 - Quitting now closes open notices, failure details, and Settings instead of being ignored, and the launcher no longer blocks macOS logout, restart, or shutdown.
 - Kept the remaining launch options when a single saved value is no longer supported instead of resetting all of them.
 - Fixed older announcements reappearing once more than 100 announcements had been dismissed.

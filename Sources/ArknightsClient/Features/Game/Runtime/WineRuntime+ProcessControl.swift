@@ -6,6 +6,13 @@ import Foundation
 protocol WineRuntimeSessionControlling: Sendable {
 	func waitUntilStopped(prefixDirectory: URL) async throws
 	func stop(prefixDirectory: URL) async throws
+	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws
+}
+
+extension WineRuntimeSessionControlling {
+	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
+		try await stop(prefixDirectory: prefixDirectory)
+	}
 }
 
 extension WineRuntime: WineRuntimeSessionControlling {}
@@ -29,19 +36,79 @@ extension WineRuntime {
 	}
 
 	func stop(prefixDirectory: URL) async throws {
+		try await stop(
+			prefixDirectory: prefixDirectory,
+			timeout: AppConstants.Timeouts.runtimeShutdown,
+			spawnGate: nil
+		)
+	}
+
+	func stop(prefixDirectory: URL, timeout: Duration) async throws {
+		try await stop(
+			prefixDirectory: prefixDirectory,
+			timeout: timeout,
+			spawnGate: nil
+		)
+	}
+
+	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
+		try await stop(
+			prefixDirectory: prefixDirectory,
+			timeout: AppConstants.Timeouts.runtimeShutdown,
+			spawnGate: spawnGate
+		)
+	}
+
+	func stop(
+		prefixDirectory: URL,
+		timeout: Duration,
+		spawnGate: WineProcessSpawnGate?
+	) async throws {
 		guard let wineserverURL else {
 			throw LauncherError.runtimeConfiguration(
 				"wineserver is missing from the bundled runtime.")
 		}
-		let status = try await runAndWait(
-			executable: wineserverURL,
-			arguments: ["-k"],
-			environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
-			output: .nullDevice
-		)
-		guard status == 0 else {
+		let clock = ContinuousClock()
+		let deadline = clock.now.advanced(by: timeout)
+		spawnGate?.denyFurtherSpawns()
+		do {
+			// Wine returns status 1 when -k finds no server; -w is the completion check.
+			_ = try await runAndWait(
+				executable: wineserverURL,
+				arguments: ["-k"],
+				environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+				output: .nullDevice,
+				timeout: remainingShutdownTime(clock: clock, deadline: deadline)
+			)
+			if let spawnGate {
+				try await spawnGate.waitForRetirement(
+					timeout: remainingShutdownTime(clock: clock, deadline: deadline)
+				)
+				_ = try await runAndWait(
+					executable: wineserverURL,
+					arguments: ["-k"],
+					environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+					output: .nullDevice,
+					timeout: remainingShutdownTime(clock: clock, deadline: deadline)
+				)
+			}
+			let waitStatus = try await runAndWait(
+				executable: wineserverURL,
+				arguments: ["-w"],
+				environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+				output: .nullDevice,
+				timeout: remainingShutdownTime(clock: clock, deadline: deadline)
+			)
+			guard waitStatus == 0 else {
+				throw LauncherError.runtimeConfiguration(
+					"Wine could not finish stopping Arknights (status \(waitStatus)).")
+			}
+		} catch is WineProcessWaitTimeout {
 			throw LauncherError.runtimeConfiguration(
-				"Wine could not stop Arknights (status \(status)).")
+				"Wine could not finish stopping Arknights before the shutdown deadline.")
+		} catch is WineProcessRetirementTimeout {
+			throw LauncherError.runtimeConfiguration(
+				"Wine launch processes did not exit before the shutdown deadline.")
 		}
 	}
 
@@ -108,13 +175,23 @@ extension WineRuntime {
 		executable: URL,
 		arguments: [String],
 		environment: [String: String],
-		output: FileHandle
+		output: FileHandle,
+		timeout: Duration? = nil,
+		spawnGate: WineProcessSpawnGate? = nil
 	) async throws -> Int32 {
 		try await WineProcessWaiter(
 			executable: executable,
 			arguments: arguments,
 			environment: environment,
-			output: output
-		).wait()
+			output: output,
+			spawnGate: spawnGate
+		).wait(timeout: timeout)
+	}
+
+	private func remainingShutdownTime(
+		clock: ContinuousClock,
+		deadline: ContinuousClock.Instant
+	) -> Duration {
+		max(.zero, clock.now.duration(to: deadline))
 	}
 }

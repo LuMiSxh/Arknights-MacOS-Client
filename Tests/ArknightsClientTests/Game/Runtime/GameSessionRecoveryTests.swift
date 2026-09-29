@@ -49,6 +49,7 @@ struct GameSessionRecoveryTests {
 			sessionID: sessionID,
 			processIdentifier: 42
 		)
+		model.gameSession.activeGameRegion = .global
 		model.gameSession.presentRuntimeFailure(
 			LauncherError.runtimeConfiguration("test"),
 			id: sessionID,
