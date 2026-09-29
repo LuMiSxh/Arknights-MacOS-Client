@@ -16,34 +16,51 @@
 
 		function toggleDiagram(event: MouseEvent) {
 			if (!(event.target instanceof Element)) return;
+			const closeButton = event.target.closest<HTMLButtonElement>(
+				'.diagram-dialog-close'
+			);
+			if (closeButton) {
+				closeButton
+					.closest<HTMLDialogElement>('.diagram-dialog')
+					?.close();
+				return;
+			}
+			const clickedDialog =
+				event.target.closest<HTMLDialogElement>('.diagram-dialog');
+			if (clickedDialog) {
+				if (event.target === clickedDialog) clickedDialog.close();
+				return;
+			}
 			const button =
 				event.target.closest<HTMLButtonElement>('.diagram-rendered');
 			const shell = button?.closest<HTMLElement>('.mermaid-shell');
-			if (!button || !shell) return;
-			const expanded = shell.classList.toggle('diagram-expanded');
-			button.setAttribute('aria-expanded', String(expanded));
-			button.setAttribute(
-				'aria-label',
-				expanded ? 'Close diagram' : 'Expand diagram'
+			const dialog =
+				shell?.querySelector<HTMLDialogElement>('.diagram-dialog');
+			const content = dialog?.querySelector<HTMLElement>(
+				'.diagram-dialog-content'
 			);
-			const hint = button.querySelector('.diagram-hint');
-			if (hint) hint.textContent = expanded ? 'Close' : 'Expand';
+			const svg = button?.querySelector('svg');
+			if (!button || !shell || !dialog || !content || !svg) return;
+			content.append(svg);
+			button.setAttribute('aria-expanded', 'true');
+			button.setAttribute('aria-label', 'Close diagram');
+			dialog.showModal();
 		}
 
-		function closeDiagram(event: KeyboardEvent) {
-			if (event.key !== 'Escape') return;
-			const shell = document.querySelector<HTMLElement>(
-				'.mermaid-shell.diagram-expanded'
-			);
-			if (!shell) return;
-			shell.classList.remove('diagram-expanded');
+		function restoreDiagram(event: Event) {
+			const dialog = event.currentTarget;
+			if (!(dialog instanceof HTMLDialogElement)) return;
+			const shell = dialog.closest<HTMLElement>('.mermaid-shell');
 			const button =
-				shell.querySelector<HTMLButtonElement>('.diagram-rendered');
+				shell?.querySelector<HTMLButtonElement>('.diagram-rendered');
+			if (!button) return;
+			const svg = dialog.querySelector('svg');
+			const hint = button.querySelector('.diagram-hint');
+			if (svg) button.insertBefore(svg, hint);
 			button?.setAttribute('aria-expanded', 'false');
 			button?.setAttribute('aria-label', 'Expand diagram');
-			const hint = button?.querySelector('.diagram-hint');
 			if (hint) hint.textContent = 'Expand';
-			button?.focus();
+			if (button.isConnected) button.focus();
 		}
 
 		async function renderDiagrams(generation: number) {
@@ -56,8 +73,6 @@
 
 			const { default: mermaid } = await import('mermaid');
 			if (cancelled || generation !== requestedGeneration) return;
-			for (const block of blocks)
-				block.classList.remove('diagram-expanded');
 			mermaid.initialize({
 				startOnLoad: false,
 				securityLevel: 'strict',
@@ -90,7 +105,10 @@
 					const id = `diagram-${sequence++}-${index}-${route.replace(/[^a-z0-9]/gi, '-')}`;
 					const result = await mermaid.render(id, saved.source);
 					if (cancelled || generation !== requestedGeneration) return;
-					block.innerHTML = `<button class="diagram-rendered" type="button" aria-expanded="false" aria-label="Expand diagram">${result.svg}<span class="diagram-hint" aria-hidden="true">Expand</span></button>`;
+					block.innerHTML = `<button class="diagram-rendered" type="button" aria-expanded="false" aria-label="Expand diagram">${result.svg}<span class="diagram-hint" aria-hidden="true">Expand</span></button><dialog class="diagram-dialog" aria-label="Expanded diagram"><button class="diagram-dialog-close" type="button" autofocus>Close diagram</button><div class="diagram-dialog-content"></div></dialog>`;
+					block
+						.querySelector<HTMLDialogElement>('.diagram-dialog')
+						?.addEventListener('close', restoreDiagram);
 					result.bindFunctions?.(block);
 					delete block.dataset.diagramError;
 				} catch {
@@ -113,14 +131,12 @@
 			attributeFilter: ['class']
 		});
 		document.addEventListener('click', toggleDiagram);
-		document.addEventListener('keydown', closeDiagram);
 		requestRender();
 
 		return () => {
 			cancelled = true;
 			observer.disconnect();
 			document.removeEventListener('click', toggleDiagram);
-			document.removeEventListener('keydown', closeDiagram);
 		};
 	});
 </script>
