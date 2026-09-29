@@ -17,13 +17,6 @@ actor GryphlineLauncherAPI {
 	private static let channel = "6"
 	private static let subChannel = "6"
 	private static let sequence = "5"
-	private static let allowedAssetHosts: Set<String> = [
-		"launcher.hg-cdn.com",
-		"ak-tw.hg-cdn.com",
-		"gl-utils-public.hg-cdn.com",
-	]
-	private static let allowedHosts = allowedAssetHosts.union(["launcher.gryphline.com"])
-
 	private let loader: BoundedHTTPDataLoader
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
@@ -34,15 +27,10 @@ actor GryphlineLauncherAPI {
 		maximumAPIResponseBytes: Int = AppConstants.Network.yostarAPIResponseMaximumBytes,
 		maximumManifestResponseBytes: Int = AppConstants.Network.yostarManifestMaximumBytes
 	) {
-		loader = BoundedHTTPDataLoader(session: session) { url in
-			guard url.scheme?.lowercased() == "https",
-				url.user == nil,
-				url.password == nil,
-				url.port == nil,
-				let host = url.host?.lowercased()
-			else { return false }
-			return Self.allowedHosts.contains(host)
-		}
+		loader = BoundedHTTPDataLoader(
+			session: session,
+			redirectValidator: Self.isAllowedMetadataURL
+		)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 	}
@@ -116,7 +104,8 @@ actor GryphlineLauncherAPI {
 		request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 		let (encrypted, response) = try await loader.data(
 			for: request,
-			maximumBytes: maximumManifestResponseBytes
+			maximumBytes: maximumManifestResponseBytes,
+			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: .taiwan)
 		)
 		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		let decrypted = try HypergryphManifestCipher.decrypt(encrypted)
@@ -184,28 +173,31 @@ actor GryphlineLauncherAPI {
 		request.httpBody = try JSONEncoder().encode(payload)
 		let (data, response) = try await loader.data(
 			for: request,
-			maximumBytes: maximumAPIResponseBytes
+			maximumBytes: maximumAPIResponseBytes,
+			redirectValidator: Self.isAllowedMetadataURL
 		)
 		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		return try JSONDecoder().decode(GryphlineBatchResponse.self, from: data)
 	}
 
-	private static func isTrustedAssetURL(_ url: URL) -> Bool {
-		isTrustedURL(url) && url.host.map { allowedAssetHosts.contains($0.lowercased()) } == true
+	private static func isAllowedMetadataURL(_ url: URL) -> Bool {
+		guard
+			DownloadHTTPPolicy.isValidHTTPSURL(url),
+			url.port == nil,
+			let host = url.host?.lowercased()
+		else { return false }
+		return host == "launcher.gryphline.com"
+			|| DownloadHTTPPolicy.isAllowedSource(url, for: .taiwan)
 	}
 
-	private static func isTrustedURL(_ url: URL) -> Bool {
-		url.scheme?.lowercased() == "https"
-			&& url.user == nil
-			&& url.password == nil
-			&& url.port == nil
+	private static func isTrustedAssetURL(_ url: URL) -> Bool {
+		DownloadHTTPPolicy.isAllowedSource(url, for: .taiwan)
 	}
 
 	private static func cdnOrigin(for url: URL) throws -> URL {
 		guard
-			isTrustedURL(url),
+			DownloadHTTPPolicy.isAllowedSource(url, for: .taiwan),
 			let host = url.host?.lowercased(),
-			allowedAssetHosts.contains(host),
 			url.query == nil,
 			url.fragment == nil
 		else { throw LauncherError.invalidResponse }

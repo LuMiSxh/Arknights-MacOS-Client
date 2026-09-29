@@ -151,6 +151,27 @@ struct LauncherAPITests {
 		}
 	}
 
+	@Test
+	func manifestRejectsAnInsecureInitialSourceBeforeOpeningTheRequest() async throws {
+		let session = makeSession()
+		var requestWasOpened = false
+		LauncherAPIURLProtocol.handler = { request in
+			requestWasOpened = true
+			let response = HTTPURLResponse(
+				url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+			return (response, Data())
+		}
+		defer { LauncherAPIURLProtocol.handler = nil }
+
+		await #expect(throws: ContextualLauncherError.self) {
+			try await LauncherAPI(session: session).manifestPayload(
+				at: URL(string: "http://fixtures.invalid/manifest.json")!,
+				region: .global
+			)
+		}
+		#expect(!requestWasOpened)
+	}
+
 	private func makeSession() -> URLSession {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [LauncherAPIURLProtocol.self]

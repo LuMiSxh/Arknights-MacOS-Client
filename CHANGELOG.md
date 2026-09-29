@@ -50,6 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Treated a Wine process that ends without an exit status as a failure instead of a clean exit.
 - Kept server reset countdowns for every installed client current while the region list is open, updating on each minute.
 - Stopped Yostar notices from loading remote images, scripts, or stylesheets while they are formatted.
+- Restricted publisher manifest and game-file requests to HTTPS without URL credentials while retaining verified Taiwan CDN hosts.
 
 ## [0.6.0] - 2026-09-24
 

@@ -25,10 +25,10 @@ actor HypergryphLauncherAPI {
 		maximumAPIResponseBytes: Int,
 		maximumManifestResponseBytes: Int
 	) {
-		loader = BoundedHTTPDataLoader(session: session) { url in
-			guard url.scheme == "https", let host = url.host?.lowercased() else { return false }
-			return host == "launcher.hypergryph.com" || host.hasSuffix(".hycdn.cn")
-		}
+		loader = BoundedHTTPDataLoader(
+			session: session,
+			redirectValidator: Self.isAllowedMetadataURL
+		)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 	}
@@ -102,7 +102,8 @@ actor HypergryphLauncherAPI {
 		request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 		let (encrypted, response) = try await loader.data(
 			for: request,
-			maximumBytes: maximumManifestResponseBytes
+			maximumBytes: maximumManifestResponseBytes,
+			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: .china)
 		)
 		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		let decrypted = try HypergryphManifestCipher.decrypt(encrypted)
@@ -170,25 +171,30 @@ actor HypergryphLauncherAPI {
 		request.httpBody = try JSONEncoder().encode(payload)
 		let (data, response) = try await loader.data(
 			for: request,
-			maximumBytes: maximumAPIResponseBytes
+			maximumBytes: maximumAPIResponseBytes,
+			redirectValidator: Self.isAllowedMetadataURL
 		)
 		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		return try JSONDecoder().decode(HypergryphBatchResponse.self, from: data)
 	}
 
+	private static func isAllowedMetadataURL(_ url: URL) -> Bool {
+		guard
+			DownloadHTTPPolicy.isValidHTTPSURL(url),
+			let host = url.host?.lowercased()
+		else { return false }
+		return host == "launcher.hypergryph.com"
+			|| DownloadHTTPPolicy.isAllowedSource(url, for: .china)
+	}
+
 	private static func isHypergryphAssetURL(_ url: URL) -> Bool {
-		url.scheme == "https" && url.user == nil && url.password == nil && url.port == nil
-			&& url.host?.lowercased().hasSuffix(".hycdn.cn") == true
+		DownloadHTTPPolicy.isAllowedSource(url, for: .china)
 	}
 
 	private static func cdnOrigin(for url: URL) throws -> URL {
 		guard
-			url.scheme == "https",
-			url.user == nil,
-			url.password == nil,
-			url.port == nil,
-			let host = url.host?.lowercased(),
-			host.hasSuffix(".hycdn.cn")
+			DownloadHTTPPolicy.isAllowedSource(url, for: .china),
+			let host = url.host?.lowercased()
 		else { throw LauncherError.invalidResponse }
 		var components = URLComponents()
 		components.scheme = "https"
