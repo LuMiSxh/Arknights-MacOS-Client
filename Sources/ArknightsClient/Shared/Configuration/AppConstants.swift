@@ -157,7 +157,8 @@ enum AppConstants {
 	enum Timeouts {
 		static let processTerminateGracePeriod: TimeInterval = 3
 		static let processKillGracePeriod: TimeInterval = 1
-		/// Covers wineserver -k's retry loop plus the -w lock wait before prefix ownership ends.
+		static let processRetirementPollInterval: Duration = .milliseconds(25)
+		/// Covers helper retirement and final wineserver verification before prefix ownership ends.
 		static let runtimeShutdown: Duration = .seconds(20)
 		static let windowReadiness: Duration = .seconds(90)
 		static let windowPollInterval: Duration = .milliseconds(250)

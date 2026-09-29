@@ -61,6 +61,36 @@ func asynchronousStopWaitsForWineServerToReleaseThePrefix() async throws {
 }
 
 @Test
+func wineserverWaitIsAuthoritativeWhenKillFindsNoServer() async throws {
+	let root = FileManager.default.temporaryDirectory.appending(
+		path: "wine-kill-status-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? FileManager.default.removeItem(at: root) }
+	for (name, waitStatus, shouldSucceed) in [
+		("already-stopped", 0, true),
+		("still-running", 1, false),
+	] {
+		let fixture = try makeWineserverStatusFixture(
+			at: root.appending(path: name, directoryHint: .isDirectory),
+			killStatus: 1,
+			waitStatus: Int32(waitStatus)
+		)
+		var didFail = false
+		do {
+			try await fixture.runtime.stop(
+				prefixDirectory: fixture.prefixDirectory,
+				timeout: .seconds(1)
+			)
+		} catch {
+			didFail = true
+		}
+		#expect(didFail == !shouldSucceed)
+		#expect(try String(contentsOf: fixture.trace, encoding: .utf8) == "-k\n-w\n")
+	}
+}
+
+@Test
 func wineserverWaitTimeoutFailsShutdownWithoutWaitingForAChildTask() async throws {
 	let root = FileManager.default.temporaryDirectory.appending(
 		path: "wine-shutdown-timeout-test-\(UUID().uuidString)",
@@ -107,70 +137,100 @@ func wineserverWaitTimeoutFailsShutdownWithoutWaitingForAChildTask() async throw
 }
 
 @Test
-func wineProcessWaiterDeadlineRetiresTheHelperWait() async {
-	let waiter = WineProcessWaiter(
-		executable: URL(filePath: "/bin/sleep"),
-		arguments: ["30"],
-		environment: [:],
-		output: .nullDevice,
-		terminationGracePeriod: .milliseconds(50)
-	)
-	let clock = ContinuousClock()
-	let started = clock.now
-	var didTimeOut = false
-	do {
-		_ = try await waiter.wait(timeout: .milliseconds(25))
-	} catch {
-		didTimeOut = true
-	}
-
-	#expect(didTimeOut)
-	#expect(started.duration(to: clock.now) < .seconds(1))
-}
-
-@Test
-func wineProcessWaiterEscalatesWhenATimedOutHelperIgnoresTerminate() async throws {
+func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	let root = FileManager.default.temporaryDirectory.appending(
-		path: "wine-helper-kill-test-\(UUID().uuidString)",
+		path: "wine-helper-retirement-test-\(UUID().uuidString)",
 		directoryHint: .isDirectory
 	)
 	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? FileManager.default.removeItem(at: root) }
+	let runtimeDirectory = root.appending(path: "Runtime/bin", directoryHint: .isDirectory)
+	try FileManager.default.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
 	let fifo = root.appending(path: "block")
 	let started = root.appending(path: "started")
-	let pidFile = root.appending(path: "pid")
+	let delayedConnection = root.appending(path: "late-server-connection")
 	let fifoStatus = fifo.path.withCString { Darwin.mkfifo($0, 0o600) }
 	#expect(fifoStatus == 0)
+	let trace = root.appending(path: "commands.log")
+	let wineserverScript = """
+		#!/bin/sh
+		printf '%s\\n' "$1" >> '\(trace.path)'
+		if [ "$1" = "-k" ]; then
+		  if [ -e '\(delayedConnection.path)' ]; then exit 0; else exit 1; fi
+		fi
+		exit 0
+		"""
+	let wineserver = runtimeDirectory.appending(path: "wineserver")
+	try Data(wineserverScript.utf8).write(to: wineserver)
+	try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wineserver.path)
+	let runtime = WineRuntime(
+		executableURL: runtimeDirectory.appending(path: "Arknights"),
+		displayName: "Fixture",
+		revision: "fixture",
+		compatibilityManager: GameCompatibilityManager(active: [])
+	)
+	let prefixDirectory = root.appending(path: "prefix", directoryHint: .isDirectory)
+	let spawnGate = WineProcessSpawnGate()
 	let script = """
 		trap '' TERM
-		printf '%s\\n' "$$" > '\(pidFile.path)'
 		: > '\(started.path)'
 		read ignored < '\(fifo.path)'
+		: > '\(delayedConnection.path)'
 		"""
 	let waiter = WineProcessWaiter(
 		executable: URL(filePath: "/bin/sh"),
 		arguments: ["-c", script],
 		environment: [:],
 		output: .nullDevice,
-		terminationGracePeriod: .milliseconds(50)
+		spawnGate: spawnGate
 	)
-	let wait = Task { try await waiter.wait(timeout: .milliseconds(500)) }
+	let clock = ContinuousClock()
+	let startedWaiting = clock.now
+	let wait = Task {
+		do {
+			_ = try await waiter.wait(timeout: .milliseconds(500))
+			return false
+		} catch is WineProcessWaitTimeout {
+			return true
+		} catch {
+			Issue.record("The Wine helper returned an unexpected error: \(error)")
+			return false
+		}
+	}
 	let helperStarted = await waitForFixtureFile(started, timeout: .seconds(1))
 	#expect(helperStarted)
 	guard helperStarted else {
-		_ = try? await wait.value
+		_ = await wait.value
 		return
 	}
+	let didTimeOut = await wait.value
+	#expect(didTimeOut)
+	#expect(startedWaiting.duration(to: clock.now) < .seconds(1))
+
+	var firstStopFailed = false
 	do {
-		_ = try await wait.value
-		Issue.record("A blocked helper unexpectedly completed before its timeout.")
-	} catch is WineProcessWaitTimeout {
-	} catch {
-		Issue.record("The blocked helper produced an unexpected error: \(error)")
+		try await runtime.stop(
+			prefixDirectory: prefixDirectory,
+			timeout: .seconds(1),
+			spawnGate: spawnGate
+		)
+	} catch is LauncherError {
+		firstStopFailed = true
 	}
-	let pidText = try String(contentsOf: pidFile, encoding: .utf8)
-	let pid = pid_t(pidText.trimmingCharacters(in: .whitespacesAndNewlines))!
-	#expect(await waitForProcessExit(pid, timeout: .seconds(1)))
+	#expect(firstStopFailed)
+	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n")
+	#expect(!FileManager.default.fileExists(atPath: delayedConnection.path))
+
+	let writer = try FileHandle(forWritingTo: fifo)
+	try writer.write(contentsOf: Data("connect\n".utf8))
+	try writer.close()
+	#expect(await waitForFixtureFile(delayedConnection, timeout: .seconds(1)))
+	try await runtime.stop(
+		prefixDirectory: prefixDirectory,
+		timeout: .seconds(1),
+		spawnGate: spawnGate
+	)
+	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-k\n-k\n-w\n")
 }
 
 @Test(arguments: [false, true])
@@ -247,16 +307,6 @@ private func waitForSemaphore(_ semaphore: DispatchSemaphore, timeout: DispatchT
 	semaphore.wait(timeout: timeout) == .success
 }
 
-private func waitForProcessExit(_ processIdentifier: pid_t, timeout: Duration) async -> Bool {
-	let clock = ContinuousClock()
-	let deadline = clock.now.advanced(by: timeout)
-	while clock.now < deadline {
-		if Darwin.kill(processIdentifier, 0) != 0, errno == ESRCH { return true }
-		try? await Task.sleep(for: .milliseconds(10))
-	}
-	return Darwin.kill(processIdentifier, 0) != 0 && errno == ESRCH
-}
-
 private func waitForFixtureFile(_ url: URL, timeout: Duration) async -> Bool {
 	let clock = ContinuousClock()
 	let deadline = clock.now.advanced(by: timeout)
@@ -265,6 +315,43 @@ private func waitForFixtureFile(_ url: URL, timeout: Duration) async -> Bool {
 		try? await Task.sleep(for: .milliseconds(10))
 	}
 	return FileManager.default.fileExists(atPath: url.path)
+}
+
+private struct WineserverStatusFixture {
+	let runtime: WineRuntime
+	let prefixDirectory: URL
+	let trace: URL
+}
+
+private func makeWineserverStatusFixture(
+	at root: URL,
+	killStatus: Int32,
+	waitStatus: Int32
+) throws -> WineserverStatusFixture {
+	let fileManager = FileManager.default
+	let runtimeDirectory = root.appending(path: "Runtime/bin", directoryHint: .isDirectory)
+	try fileManager.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
+	let trace = root.appending(path: "commands.log")
+	let script = """
+		#!/bin/sh
+		printf '%s\\n' "$1" >> '\(trace.path)'
+		if [ "$1" = "-k" ]; then exit \(killStatus); fi
+		exit \(waitStatus)
+		"""
+	let wineserver = runtimeDirectory.appending(path: "wineserver")
+	try Data(script.utf8).write(to: wineserver)
+	try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wineserver.path)
+	let runtime = WineRuntime(
+		executableURL: runtimeDirectory.appending(path: "Arknights"),
+		displayName: "Fixture",
+		revision: "fixture",
+		compatibilityManager: GameCompatibilityManager(active: [])
+	)
+	return WineserverStatusFixture(
+		runtime: runtime,
+		prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
+		trace: trace
+	)
 }
 
 private struct LaunchFixture {

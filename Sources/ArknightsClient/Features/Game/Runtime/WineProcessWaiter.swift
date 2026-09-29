@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import Darwin
 import Dispatch
 import Foundation
 
@@ -17,17 +16,13 @@ final class WineProcessWaiter: @unchecked Sendable {
 	private var cancellationError: (any Error)?
 	private var timeoutTimer: DispatchSourceTimer?
 	private let spawnGate: WineProcessSpawnGate?
-	private let terminationGracePeriod: Duration
 
 	init(
 		executable: URL,
 		arguments: [String],
 		environment: [String: String],
 		output: FileHandle,
-		spawnGate: WineProcessSpawnGate? = nil,
-		terminationGracePeriod: Duration = .seconds(
-			AppConstants.Timeouts.processTerminateGracePeriod
-		)
+		spawnGate: WineProcessSpawnGate? = nil
 	) {
 		let process = Process()
 		process.executableURL = executable
@@ -37,7 +32,6 @@ final class WineProcessWaiter: @unchecked Sendable {
 		process.standardError = output
 		self.process = process
 		self.spawnGate = spawnGate
-		self.terminationGracePeriod = terminationGracePeriod
 	}
 
 	func wait(timeout: Duration? = nil) async throws -> Int32 {
@@ -95,7 +89,7 @@ final class WineProcessWaiter: @unchecked Sendable {
 				self.hasStarted = true
 			}
 			if let spawnGate {
-				try spawnGate.runIfAllowed(run)
+				try spawnGate.runIfAllowed(process: process, run)
 			} else {
 				try run()
 			}
@@ -125,18 +119,7 @@ final class WineProcessWaiter: @unchecked Sendable {
 		lock.unlock()
 
 		timer?.cancel()
-		if let process {
-			process.terminate()
-			let processIdentifier = process.processIdentifier
-			DispatchQueue.global(qos: .utility).asyncAfter(
-				deadline: .now() + Self.dispatchInterval(for: terminationGracePeriod)
-			) {
-				guard process.isRunning,
-					Darwin.kill(processIdentifier, 0) == 0
-				else { return }
-				_ = Darwin.kill(processIdentifier, SIGKILL)
-			}
-		}
+		process?.terminate()
 		continuation.resume(throwing: error)
 	}
 

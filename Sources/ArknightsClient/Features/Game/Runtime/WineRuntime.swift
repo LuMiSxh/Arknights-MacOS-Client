@@ -288,7 +288,7 @@ struct WineRuntime: Sendable {
 			)
 			terminationContinuation.finish()
 		}
-		try spawnGate.runIfAllowed { try process.run() }
+		try spawnGate.runIfAllowed(process: process) { try process.run() }
 		if clientVariant == .bilibili {
 			let controller = Process()
 			controller.executableURL = executableURL
@@ -300,7 +300,7 @@ struct WineRuntime: Sendable {
 			controller.standardOutput = logHandle
 			controller.standardError = logHandle
 			do {
-				try spawnGate.runIfAllowed { try controller.run() }
+				try spawnGate.runIfAllowed(process: controller) { try controller.run() }
 			} catch {
 				try? logHandle.write(
 					contentsOf: Data(

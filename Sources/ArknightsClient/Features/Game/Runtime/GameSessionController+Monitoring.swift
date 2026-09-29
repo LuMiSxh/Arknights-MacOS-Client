@@ -249,10 +249,15 @@ extension GameSessionController {
 				runtimeStopAttemptSessionID = nil
 			}
 		}
+		let spawnGate = activeWineProcessSpawnGate
+		spawnGate?.denyFurtherSpawns()
 		rememberTerminalFailure(terminalFailure, for: sessionID)
 		markGameSessionStopping(sessionID, processIdentifier: processIdentifier)
 		do {
-			try await runtime.stop(prefixDirectory: paths.winePrefix(for: region))
+			try await runtime.stop(
+				prefixDirectory: paths.winePrefix(for: region),
+				spawnGate: spawnGate
+			)
 		} catch {
 			guard activeGameSessionID == sessionID else { return }
 			log.error("Runtime cleanup failed: \(launcherDiagnosticDescription(for: error))")
