@@ -37,13 +37,13 @@ struct LauncherUpdaterControllerTests {
 		#expect(subject.updaterShouldRelaunchApplication(sparkle.1))
 	}
 
-	@Test(arguments: UpdateLifecycleScenario.allCases)
-	func hiddenInstallingUpdateRefocusesForAnyLifecycleState(
-		scenario: UpdateLifecycleScenario
+	@Test(arguments: [false, true])
+	func hiddenInstallingUpdateRefocusesWhileIdleOrTheUpdateGateIsHeld(
+		holdsUpdateGate: Bool
 	) {
 		// Installing has no Later button, so dismissFromUser only hides this presentation.
 		let lifecycle = makeLifecycleStore()
-		if scenario.isBusy {
+		if holdsUpdateGate {
 			lifecycle.beginLauncherUpdate()
 		}
 		var activationCount = 0
@@ -57,7 +57,7 @@ struct LauncherUpdaterControllerTests {
 		subject.userDriver.dismissFromUser()
 		#expect(subject.userDriver.phase == .installing)
 		#expect(!subject.userDriver.isPresented)
-		if scenario.isBusy {
+		if holdsUpdateGate {
 			#expect(subject.canOpenUpdate)
 		}
 

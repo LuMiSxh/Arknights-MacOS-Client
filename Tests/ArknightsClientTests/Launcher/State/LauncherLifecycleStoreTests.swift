@@ -19,38 +19,36 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.failureMessage == LauncherError.cannotSetAppIcon.errorDescription)
 	}
 
-	@Test(arguments: FailurePreservationScenario.allCases)
-	func statusUpdatesFollowFailurePreservationRules(scenario: FailurePreservationScenario) {
+	@Test
+	func statusClearsFailuresUnlessTheCallerPreservesThem() {
 		let lifecycle = makeLifecycleStore()
-		var preflightFailure: LauncherFailurePresentation?
-		switch scenario {
-		case .ordinaryFailure:
-			lifecycle.show(LauncherError.cannotSetAppIcon)
-		case .rosettaPreflight:
-			let failure = LauncherFailurePresentation(
-				id: UUID(),
-				message: "Rosetta is unavailable",
-				code: .limpet,
-				context: SupportContext(operation: .intelTranslationPreflight, region: nil),
-				actions: [.retry],
-				blocksGameLaunch: true
-			)
-			preflightFailure = failure
-			lifecycle.presentFailure(failure, diagnostic: "preflight")
-		}
+		lifecycle.show(LauncherError.cannotSetAppIcon)
 
-		switch scenario {
-		case .ordinaryFailure:
-			lifecycle.setStatus(.ready, clearsFailure: false)
-			#expect(lifecycle.failureMessage != nil)
-			lifecycle.setStatus(.running)
-			#expect(lifecycle.failure == nil)
-			#expect(!lifecycle.activityMessage.isEmpty)
-		case .rosettaPreflight:
-			lifecycle.setStatus(.checking)
-			lifecycle.setStatus(.ready)
-			#expect(lifecycle.failure == preflightFailure)
-		}
+		lifecycle.setStatus(.ready, clearsFailure: false)
+		#expect(lifecycle.failureMessage != nil)
+
+		lifecycle.setStatus(.running)
+		#expect(lifecycle.failureMessage == nil)
+		#expect(!lifecycle.activityMessage.isEmpty)
+	}
+
+	@Test
+	func statusUpdatesKeepRosettaPreflightFailureUntilItsCheckSucceeds() {
+		let lifecycle = makeLifecycleStore()
+		let failure = LauncherFailurePresentation(
+			id: UUID(),
+			message: "Rosetta is unavailable",
+			code: .limpet,
+			context: SupportContext(operation: .intelTranslationPreflight, region: nil),
+			actions: [.retry],
+			blocksGameLaunch: true
+		)
+		lifecycle.presentFailure(failure, diagnostic: "preflight")
+
+		lifecycle.setStatus(.checking)
+		lifecycle.setStatus(.ready)
+
+		#expect(lifecycle.failure == failure)
 	}
 
 	@Test(arguments: LauncherUpdateStartScenario.allCases)
@@ -92,11 +90,6 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.consumeFailure(id: failure.id) == failure)
 		#expect(lifecycle.consumeFailure(id: failure.id) == nil)
 	}
-}
-
-enum FailurePreservationScenario: String, CaseIterable, Sendable {
-	case ordinaryFailure
-	case rosettaPreflight
 }
 
 enum LauncherUpdateStartScenario: String, CaseIterable, Equatable, Sendable {

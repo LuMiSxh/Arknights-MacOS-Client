@@ -98,44 +98,37 @@ struct LauncherGameLifecycleTests {
 		await api.resolveBranding()
 	}
 
-	@Test(arguments: ExitDiagnosticsScenario.allCases)
-	func exitDiagnosticsIncludeOnlyAvailableCrashDetails(scenario: ExitDiagnosticsScenario) throws {
-		let fileManager = FileManager.default
-		var logURL: URL?
-		defer {
-			if let logURL {
-				try? fileManager.removeItem(at: logURL)
-			}
-		}
-		let exit: WineProcessExit
-		let since: Date?
-		switch scenario {
-		case .normalExitWithoutLog:
-			exit = WineProcessExit(status: 0, reason: .exit)
-			since = nil
-		case .crashWithRuntimeLog:
-			let url = fileManager.temporaryDirectory.appendingPathComponent(
-				"test-\(UUID().uuidString).log"
-			)
-			logURL = url
-			try "err: something exploded".write(
-				to: url, atomically: true, encoding: .utf8)
-			exit = WineProcessExit(status: 134, reason: .uncaughtSignal)
-			since = Date(timeIntervalSinceNow: -90)
-		}
+	@Test
+	func exitDiagnosticsOmitsCrashDetailsWhenNoLogIsAvailable() {
+		let summary = GameSessionController.exitDiagnostics(
+			WineProcessExit(status: 0, reason: .exit),
+			since: nil,
+			logURL: nil
+		)
 
-		let summary = GameSessionController.exitDiagnostics(exit, since: since, logURL: logURL)
-		switch scenario {
-		case .normalExitWithoutLog:
-			#expect(summary == "status=0 reason=exit")
-		case .crashWithRuntimeLog:
-			let logURL = try #require(logURL)
-			#expect(summary.contains("status=134 reason=uncaughtSignal"))
-			#expect(summary.contains("ranFor="))
-			#expect(
-				summary.contains("\(logURL.lastPathComponent) tail: err: something exploded")
-			)
-		}
+		#expect(summary == "status=0 reason=exit")
+	}
+
+	@Test
+	func exitDiagnosticsIncludesDurationAndRuntimeLogTailForACrash() throws {
+		let fileManager = FileManager.default
+		let logURL = fileManager.temporaryDirectory.appendingPathComponent(
+			"test-\(UUID().uuidString).log"
+		)
+		defer { try? fileManager.removeItem(at: logURL) }
+		try "err: something exploded".write(to: logURL, atomically: true, encoding: .utf8)
+
+		let summary = GameSessionController.exitDiagnostics(
+			WineProcessExit(status: 134, reason: .uncaughtSignal),
+			since: Date(timeIntervalSinceNow: -90),
+			logURL: logURL
+		)
+
+		#expect(summary.contains("status=134 reason=uncaughtSignal"))
+		#expect(summary.contains("ranFor="))
+		#expect(
+			summary.contains("\(logURL.lastPathComponent) tail: err: something exploded")
+		)
 	}
 
 	@Test
@@ -170,9 +163,4 @@ struct LauncherGameLifecycleTests {
 			) == nil
 		)
 	}
-}
-
-enum ExitDiagnosticsScenario: String, CaseIterable, Sendable {
-	case normalExitWithoutLog
-	case crashWithRuntimeLog
 }
