@@ -7,19 +7,20 @@ extension GameSessionController {
 		for region: GameRegion,
 		canaryFeaturesEnabled: Bool,
 		maximumFrameLatency: Int,
-		usesHardwareCursor: Bool
+		usesHardwareCursor: Bool,
+		capabilities: RuntimeCapabilities = .conservative
 	) -> [String: String] {
 		var environment = [
 			"ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT": "1"
 		]
 		environment.merge(region.runtimeEnvironmentOverrides) { _, profileValue in profileValue }
-		if canaryFeaturesEnabled {
-			environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] =
-				String(maximumFrameLatency)
-			if usesHardwareCursor {
-				environment[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "1"
-			}
-		}
+		environment.merge(
+			capabilities.environmentOverrides(
+				canaryFeaturesEnabled: canaryFeaturesEnabled,
+				maximumFrameLatency: maximumFrameLatency,
+				usesHardwareCursor: usesHardwareCursor
+			)
+		) { _, value in value }
 		return environment
 	}
 
@@ -92,12 +93,9 @@ extension GameSessionController {
 		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
-		let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
-			for: requestedRegion,
-			canaryFeaturesEnabled: settings.canaryFeaturesEnabled,
-			maximumFrameLatency: settings.maximumFrameLatency,
-			usesHardwareCursor: settings.usesHardwareCursor
-		)
+		let requestedCanaryFeatures = settings.canaryFeaturesEnabled
+		let requestedFrameLatency = settings.maximumFrameLatency
+		let requestedHardwareCursor = settings.usesHardwareCursor
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let displayConfiguration = WineDisplayConfiguration.current(
 			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
@@ -115,6 +113,19 @@ extension GameSessionController {
 		launchTask = Task { [weak self] in
 			guard let self else { return }
 			do {
+				let discovery = await runtime.discoverCapabilities()
+				try Task.checkCancellation()
+				guard activeGameSessionID == gameSessionID else { return }
+				if let diagnostic = discovery.diagnostic {
+					log.info("Runtime capability fallback: \(diagnostic)")
+				}
+				let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
+					for: requestedRegion,
+					canaryFeaturesEnabled: requestedCanaryFeatures,
+					maximumFrameLatency: requestedFrameLatency,
+					usesHardwareCursor: requestedHardwareCursor,
+					capabilities: discovery.capabilities
+				)
 				let launch = try await runtime.launch(
 					gameExecutable: executable,
 					prefixDirectory: prefixDirectory,

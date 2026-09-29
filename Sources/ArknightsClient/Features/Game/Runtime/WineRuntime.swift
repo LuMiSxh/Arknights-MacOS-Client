@@ -25,9 +25,13 @@ struct RuntimeConfiguration: Decodable, Sendable {
 	struct Archive: Decodable, Sendable {
 		let sha256: String
 	}
+	struct Interface: Decodable, Sendable {
+		let runtimeCapabilities: String?
+	}
 
 	let prefixRevision: Int
 	let runtime: Archive
+	let interface: Interface?
 
 	var revision: String {
 		"\(runtime.sha256)-prefix-\(prefixRevision)"
@@ -41,6 +45,7 @@ struct WineRuntime: Sendable {
 	let displayName: String
 	let revision: String
 	let gameIconBridgeURL: URL?
+	let capabilityManifestFileName: String?
 	private let compatibilityManager: GameCompatibilityManager
 
 	init(
@@ -48,12 +53,14 @@ struct WineRuntime: Sendable {
 		displayName: String,
 		revision: String,
 		gameIconBridgeURL: URL? = nil,
+		capabilityManifestFileName: String? = nil,
 		compatibilityManager: GameCompatibilityManager
 	) {
 		self.executableURL = executableURL
 		self.displayName = displayName
 		self.revision = revision
 		self.gameIconBridgeURL = gameIconBridgeURL
+		self.capabilityManifestFileName = capabilityManifestFileName
 		self.compatibilityManager = compatibilityManager
 	}
 
@@ -140,8 +147,20 @@ struct WineRuntime: Sendable {
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
+			capabilityManifestFileName: configuration.interface?.runtimeCapabilities,
 			compatibilityManager: compatibilityManager
 		)
+	}
+
+	func discoverCapabilities() async -> RuntimeCapabilityDiscovery {
+		let runtimeDirectory = executableURL.deletingLastPathComponent().deletingLastPathComponent()
+		let manifestFileName = capabilityManifestFileName
+		return await Task.detached(priority: .utility) {
+			RuntimeCapabilities.discover(
+				inRuntimeDirectory: runtimeDirectory,
+				manifestRelativePath: manifestFileName
+			)
+		}.value
 	}
 
 	func launch(

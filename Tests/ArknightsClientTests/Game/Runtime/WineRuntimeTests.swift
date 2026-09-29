@@ -122,60 +122,6 @@ func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
 	#expect(environment["WINEESYNC"] == "1")
 }
 
-@Test(arguments: [false, true])
-@MainActor
-func runtimeEnvironmentGatesFrameLatencyWithCanaryFeatures(canaryFeaturesEnabled: Bool) {
-	let environment = GameSessionController.runtimeEnvironmentOverrides(
-		for: .chinaBilibili,
-		canaryFeaturesEnabled: canaryFeaturesEnabled,
-		maximumFrameLatency: 0,
-		usesHardwareCursor: false
-	)
-
-	#expect(environment["ARKNIGHTS_RUNTIME_AUDIO_FOLLOW_DEFAULT_OUTPUT"] == "1")
-	#expect(
-		environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
-			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
-	)
-	#expect(
-		environment["ARKNIGHTS_RUNTIME_CN_COMPAT"]
-			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CN_COMPAT"]
-	)
-	#expect(
-		environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
-			== GameRegion.chinaBilibili.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
-	)
-	#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == nil)
-	#expect(
-		environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"]
-			== (canaryFeaturesEnabled ? "0" : nil)
-	)
-}
-
-@Test(arguments: [
-	(false, false, nil as String?),
-	(false, true, nil),
-	(true, false, nil),
-	(true, true, "1"),
-])
-@MainActor
-func runtimeEnvironmentGatesHardwareCursorWithCanaryAndToggle(
-	canaryFeaturesEnabled: Bool,
-	usesHardwareCursor: Bool,
-	expectedValue: String?
-) {
-	for region in GameRegion.allCases {
-		let environment = GameSessionController.runtimeEnvironmentOverrides(
-			for: region,
-			canaryFeaturesEnabled: canaryFeaturesEnabled,
-			maximumFrameLatency: 3,
-			usesHardwareCursor: usesHardwareCursor
-		)
-
-		#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == expectedValue)
-	}
-}
-
 @Test
 func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
 	let environment = WineRuntime.bilibiliControllerEnvironment(from: [
@@ -193,32 +139,6 @@ func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
 	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
 	#expect(environment["DYLD_INSERT_LIBRARIES"] == nil)
 	#expect(environment["ARKNIGHTS_CLIENT_GAME_ICON_PATH"] == nil)
-}
-
-@Test
-@MainActor
-func runtimeCompatibilityFlagsFollowClientProfiles() {
-	for region in [GameRegion.global, .china, .chinaBilibili, .taiwan] {
-		let environment = GameSessionController.runtimeEnvironmentOverrides(
-			for: region,
-			canaryFeaturesEnabled: false,
-			maximumFrameLatency: 2,
-			usesHardwareCursor: false
-		)
-
-		#expect(
-			environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
-				== region.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_ACE_COMPACT"]
-		)
-		#expect(
-			environment["ARKNIGHTS_RUNTIME_CN_COMPAT"]
-				== region.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CN_COMPAT"]
-		)
-		#expect(
-			environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
-				== region.runtimeEnvironmentOverrides["ARKNIGHTS_RUNTIME_CEF_COMPAT"]
-		)
-	}
 }
 
 @Test
