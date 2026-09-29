@@ -13,7 +13,7 @@ Each release contains a complete Apple Silicon DMG with the launcher, Wine, DXMT
 > [!IMPORTANT]
 > Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary latest versions: the browser and graphics fixes must match the Wine build. The current unit is published by [Arknights macOS Runtime](https://github.com/LuMiSxh/Arknights-MacOS-Runtime) and pinned with its exact components, source revisions, and checksums in [`runtime.json`](../../runtime.json). A runtime change requires a fresh-prefix and existing-prefix game launch, each supported client's login path where provided, and a clean exit test before release.
 
-The launcher performs a silent Sparkle feed check when it opens. If a newer launcher version exists, the launcher invokes its themed Sparkle update UI for the signed update archive. The app remains ad-hoc signed and is not notarized, so users must confirm the first launch with right-click → **Open**. The check can be disabled in Settings.
+The launcher performs a silent Sparkle feed check when it opens. If a newer launcher version exists, the launcher invokes its themed Sparkle update UI for the signed update archive. The app remains ad-hoc signed and is not notarized; first-launch approval follows the [installation guide](../installation.md). The check can be disabled in Settings.
 
 The first check that discovers a new version records it in the launcher's status capsule and Settings. Selecting the update action opens the launcher's accessible Sparkle UI, which presents embedded release notes while Sparkle owns the download, verification, and installation flow; release pages remain available through GitHub.
 
@@ -116,7 +116,7 @@ The release extractor accepts a heading in the form `## [X.Y.Z]` with an optiona
 
 ## Signing limitation
 
-The 0.6.1 release remains ad-hoc signed and non-notarized because the project has no Apple Developer ID. Users must confirm the first launch with right-click → **Open**. Sparkle updates are signed separately with Ed25519 and replace the complete app bundle through Sparkle's helper; this does not remove the first-launch Gatekeeper confirmation.
+The 0.6.1 release remains ad-hoc signed and non-notarized. Users should obtain the official release and follow the [installation guide](../installation.md) for Apple's app-specific **Open Anyway** flow. Sparkle signs updates separately with Ed25519 and replaces the complete app bundle through its helper; this does not remove the first-launch Gatekeeper confirmation.
 
 The appcast is published as the `appcast.xml` asset of the latest GitHub release and is read through the stable `releases/latest/download/appcast.xml` URL. Each release also contains a complete `.app.zip` update archive. The release workflow creates both from the fully packaged app, preserving bundle symlinks and executable modes, then generates and signs the appcast with Sparkle's `generate_appcast` tool. Before it creates a draft, the workflow validates the public/private key pair and cryptographically verifies the signed appcast bytes and every enclosure against the generated update archive. It checks the expected ZIP basename and byte length; the workflow constructs the release URL prefix. This rejects a bad signature, a tampered archive, an incorrect asset filename, or a length mismatch before publication.
 

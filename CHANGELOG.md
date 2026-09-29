@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Updated first-launch guidance for ad-hoc signed releases to use Apple's app-specific Gatekeeper confirmation flow.
 - Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
 - Release packaging now rejects Sparkle appcasts and update archives that fail cryptographic verification against the tracked update key.
 - Canary runtime overrides now follow the capabilities declared by the packaged runtime; legacy or unsupported runtimes keep conservative defaults and saved preferences.

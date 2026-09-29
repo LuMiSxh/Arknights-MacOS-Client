@@ -21,7 +21,7 @@
 
 1. Use an Apple silicon Mac with macOS 15–27 and enough space for the game. Rosetta 2 is required; the setup assistant can install it. On macOS 27 beta only, turn off Legacy Game Test Mode if it is enabled. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements).
 2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), then drag the app to **Applications**.
-3. Right-click **Arknights Client** in Finder and choose **Open** on the first launch. The app is not notarized; you do not need to change your security settings. Choose your region in the setup assistant and let it download the official game files.
+3. Open the app from **Applications** once. Because releases are ad-hoc signed and not notarized, macOS may block the first launch. If you trust this copy from the official GitHub release and macOS says its developer cannot be verified or Apple cannot check it, follow [Apple’s Open Anyway steps](https://support.apple.com/en-au/102445) after that first attempt; this adds an exception for this app only. If the alert says the app is damaged or will damage your computer, do not override it. Choose your region in the setup assistant and let it download the official game files.
 
 Global, Japan, and Korea are supported by default. Taiwan, China, and China — Bilibili are experimental Canary regions with separate opt-in. The [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) covers each region and the first game launch.
 
