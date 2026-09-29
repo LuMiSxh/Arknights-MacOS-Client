@@ -29,6 +29,13 @@
 	);
 </script>
 
+<svelte:head>
+	<meta
+		name="google-site-verification"
+		content="rKSkIR3sV4QdLRzh6LfguydNElkuRCFjlw7EIqDHnyI"
+	/>
+</svelte:head>
+
 <PageMetadata
 	title="Arknights Client · macOS launcher"
 	description="A native macOS launcher for official regional Arknights PC clients."
