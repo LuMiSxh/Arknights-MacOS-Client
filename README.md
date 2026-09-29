@@ -4,7 +4,7 @@
 
 # Arknights Client
 
-**Play the original Arknights PC client on Apple Silicon Macs.** This free, unofficial launcher handles setup and runs the publisher's Windows game through bundled Wine and DXMT. It is not for Arknights: Endfield.
+**Play Arknights PC on Apple Silicon Macs.** This free, unofficial launcher handles setup and runs the publisher's Windows game through bundled Wine and DXMT.
 
 [![Version](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
 [![macOS](https://img.shields.io/badge/macOS-15%E2%80%9327-black.svg)](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/)
