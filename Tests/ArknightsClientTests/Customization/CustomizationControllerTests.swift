@@ -271,6 +271,7 @@ func makeCustomizationController(
 	dataLoader: CustomizationController.DataLoader? = nil,
 	dataStager: CustomizationController.DataStager? = nil,
 	iconCommitter: CustomizationController.IconCommitter? = nil,
+	iconPublicationPreparer: CustomizationController.IconPublicationPreparer? = nil,
 	accentExtractor: CustomizationController.AccentExtractor? = nil,
 	dynamicIconRenderer: CustomizationController.DynamicIconRenderer? = nil,
 	setBundleIcon: @escaping (NSImage?) -> Bool = { _ in true },
@@ -307,6 +308,7 @@ func makeCustomizationController(
 		dataLoader: dataLoader,
 		dataStager: dataStager,
 		iconCommitter: iconCommitter,
+		iconPublicationPreparer: iconPublicationPreparer,
 		accentExtractor: accentExtractor,
 		dynamicIconRenderer: dynamicIconRenderer
 	)

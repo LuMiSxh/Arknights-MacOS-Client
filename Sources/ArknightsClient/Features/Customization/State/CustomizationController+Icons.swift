@@ -146,11 +146,23 @@ extension CustomizationController {
 				try await self.dataStager(encodedIcons.1, gameStage)
 				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
 				else { return }
+				let replacements = [
+					(staged: launcherStage, destination: self.paths.customAppIcon),
+					(staged: gameStage, destination: self.paths.customGameIcon),
+				]
+				let prepared = try await self.iconPublicationPreparer(
+					replacements.map(\.destination),
+					operationID,
+					log
+				)
+				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
+				else {
+					prepared.discard(log: log)
+					return
+				}
 				try CustomizationImageIO.publish(
-					[
-						(staged: launcherStage, destination: self.paths.customAppIcon),
-						(staged: gameStage, destination: self.paths.customGameIcon),
-					],
+					replacements,
+					prepared: prepared,
 					using: self.iconCommitter,
 					log: log
 				)
@@ -229,6 +241,8 @@ extension CustomizationController {
 	}
 	func applyPresetAvatar(data: Data) async {
 		let id = beginIconOperation()
+		let generation = iconMutationGeneration
+		defer { finishIconMutation(id) }
 		let source = paths.operatorPresetAvatar
 		do {
 			try await Task.detached(priority: .userInitiated) {
@@ -256,12 +270,26 @@ extension CustomizationController {
 			guard operatorIconOperationID == id else { return }
 			try await dataStager(data, sourceURL)
 			guard operatorIconOperationID == id else { return }
+			let replacements = [
+				(staged: app, destination: paths.customAppIcon),
+				(staged: gameURL, destination: paths.customGameIcon),
+				(staged: sourceURL, destination: source),
+			]
+			let prepared = try await iconPublicationPreparer(
+				replacements.map(\.destination),
+				id,
+				log
+			)
+			guard operatorIconOperationID == id,
+				iconMutationGeneration == generation,
+				!Task.isCancelled
+			else {
+				prepared.discard(log: log)
+				return
+			}
 			try CustomizationImageIO.publish(
-				[
-					(staged: app, destination: paths.customAppIcon),
-					(staged: gameURL, destination: paths.customGameIcon),
-					(staged: sourceURL, destination: source),
-				],
+				replacements,
+				prepared: prepared,
 				using: iconCommitter,
 				log: log
 			)
@@ -271,10 +299,11 @@ extension CustomizationController {
 			setHasCustomAppIcon(true)
 			setHasCustomGameIcon(true)
 		} catch {
-			guard operatorIconOperationID == id else { return }
+			guard operatorIconOperationID == id, iconMutationGeneration == generation else {
+				return
+			}
 			lifecycle.show(error)
 		}
-		finishIconMutation(id)
 	}
 	private func loadAndApplyCustomIcon(from url: URL, operationID id: UUID, isAppIcon: Bool) {
 		let load = dataLoader

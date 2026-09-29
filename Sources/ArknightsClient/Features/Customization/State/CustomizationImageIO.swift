@@ -5,9 +5,19 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-private struct IconFileBackup {
-	let destination: URL
-	let backupURL: URL?
+private struct IconFileIdentity: Sendable, Equatable {
+	let deviceNumber: UInt64?
+	let fileNumber: UInt64?
+	let size: UInt64?
+	let modificationDate: Date?
+}
+
+struct IconPublicationSnapshotError: LauncherDiagnosticError {
+	let diagnosticDescription: String
+
+	var errorDescription: String? {
+		"Icon files changed while an update was being prepared. Try again."
+	}
 }
 
 struct IconRollbackFailure: LauncherDiagnosticError {
@@ -26,6 +36,16 @@ struct IconRollbackFailure: LauncherDiagnosticError {
 }
 
 enum CustomizationImageIO {
+	struct PreparedPublication: Sendable {
+		fileprivate let destinations: [URL]
+		fileprivate let identities: [IconFileIdentity?]
+		fileprivate let backupURLs: [URL?]
+
+		func discard(log: LauncherLog) {
+			CustomizationImageIO.cleanupBackups(backupURLs, preserving: [], log: log)
+		}
+	}
+
 	static func load(_ url: URL) async throws -> Data {
 		try await Task.detached(priority: .userInitiated) {
 			let values = try url.resourceValues(forKeys: [
@@ -76,29 +96,59 @@ enum CustomizationImageIO {
 		}
 	}
 
+	static func preparePublication(
+		_ destinations: [URL],
+		operationID: UUID,
+		log: LauncherLog
+	) async throws -> PreparedPublication {
+		try await Task.detached(priority: .userInitiated) {
+			let identities = try fileIdentities(for: destinations)
+			var backupURLs = [URL?](repeating: nil, count: destinations.count)
+			do {
+				for (index, destination) in destinations.enumerated()
+				where identities[index] != nil {
+					let backupURL = destination.appendingPathExtension(
+						"backup.\(operationID.uuidString).\(index)"
+					)
+					backupURLs[index] = backupURL
+					try FileManager.default.copyItem(at: destination, to: backupURL)
+				}
+				// Reject a mixed backup set if another icon publication raced these copies.
+				guard try fileIdentities(for: destinations) == identities else {
+					throw IconPublicationSnapshotError(
+						diagnosticDescription:
+							"Icon files changed while backups were being prepared."
+					)
+				}
+				return PreparedPublication(
+					destinations: destinations,
+					identities: identities,
+					backupURLs: backupURLs
+				)
+			} catch {
+				cleanupBackups(backupURLs, preserving: [], log: log)
+				throw error
+			}
+		}.value
+	}
+
 	static func publish(
 		_ replacements: [(staged: URL, destination: URL)],
+		prepared: PreparedPublication,
 		using committer: CustomizationController.IconCommitter,
 		log: LauncherLog
 	) throws {
-		let fileManager = FileManager.default
-		var backups: [IconFileBackup] = []
 		do {
-			for replacement in replacements {
-				guard fileManager.fileExists(atPath: replacement.destination.path) else {
-					backups.append(
-						IconFileBackup(destination: replacement.destination, backupURL: nil))
-					continue
-				}
-				let backupURL = replacement.destination.appendingPathExtension(
-					"backup.\(UUID().uuidString)"
+			guard replacements.map(\.destination) == prepared.destinations,
+				try fileIdentities(for: prepared.destinations) == prepared.identities
+			else {
+				throw IconPublicationSnapshotError(
+					diagnosticDescription:
+						"Icon files changed before the prepared update could commit."
 				)
-				backups.append(
-					IconFileBackup(destination: replacement.destination, backupURL: backupURL))
-				try fileManager.copyItem(at: replacement.destination, to: backupURL)
 			}
 		} catch {
-			cleanupBackups(backups, preserving: [], log: log)
+			prepared.discard(log: log)
 			throw error
 		}
 
@@ -113,34 +163,61 @@ enum CustomizationImageIO {
 			var rollbackFailures: [(index: Int, error: any Error)] = []
 			for index in attempted.reversed() {
 				do {
-					if let backupURL = backups[index].backupURL {
-						try commit(backupURL, to: backups[index].destination)
+					if let backupURL = prepared.backupURLs[index] {
+						try commit(backupURL, to: prepared.destinations[index])
 					} else {
-						try removeIfPresent(backups[index].destination)
+						try removeIfPresent(prepared.destinations[index])
 					}
 				} catch {
 					rollbackFailures.append((index, error))
 				}
 			}
 			let failedIndexes = Set(rollbackFailures.map(\.index))
-			cleanupBackups(backups, preserving: failedIndexes, log: log)
+			cleanupBackups(prepared.backupURLs, preserving: failedIndexes, log: log)
 			guard !rollbackFailures.isEmpty else { throw original }
 			throw IconRollbackFailure(
 				original: original,
 				rollbackErrors: rollbackFailures.map(\.error)
 			)
 		}
-		cleanupBackups(backups, preserving: [], log: log)
+		cleanupBackups(prepared.backupURLs, preserving: [], log: log)
+	}
+
+	private static func fileIdentities(for urls: [URL]) throws -> [IconFileIdentity?] {
+		try urls.map { url in
+			let attributes: [FileAttributeKey: Any]
+			do {
+				attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+			} catch {
+				if (error as? CocoaError)?.code == .fileReadNoSuchFile
+					|| (error as? POSIXError)?.code == .ENOENT
+				{
+					return nil
+				}
+				throw error
+			}
+			guard attributes[.type] as? FileAttributeType == .typeRegular else {
+				throw IconPublicationSnapshotError(
+					diagnosticDescription: "Icon destination is not a regular file: \(url.path)"
+				)
+			}
+			return IconFileIdentity(
+				deviceNumber: (attributes[.systemNumber] as? NSNumber)?.uint64Value,
+				fileNumber: (attributes[.systemFileNumber] as? NSNumber)?.uint64Value,
+				size: (attributes[.size] as? NSNumber)?.uint64Value,
+				modificationDate: attributes[.modificationDate] as? Date
+			)
+		}
 	}
 
 	private static func cleanupBackups(
-		_ backups: [IconFileBackup],
+		_ backupURLs: [URL?],
 		preserving indexes: Set<Int>,
 		log: LauncherLog
 	) {
-		for (index, backup) in backups.enumerated()
+		for (index, backupURL) in backupURLs.enumerated()
 		where !indexes.contains(index) {
-			if let backupURL = backup.backupURL { discard(backupURL, log: log) }
+			if let backupURL { discard(backupURL, log: log) }
 		}
 	}
 
