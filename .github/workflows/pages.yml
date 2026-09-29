@@ -1,6 +1,12 @@
 name: Publish website
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
   workflow_call:
   workflow_dispatch:
 
