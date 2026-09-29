@@ -9,10 +9,17 @@ import Testing
 func publisherArtifactSourcesAndRedirectsUseTheSameHTTPSPolicy() throws {
 	let cases: [(GameRegion, String, Bool)] = [
 		(.global, "https://cdn.unverified.example/game/file", true),
+		(.global, "https://127.0.0.1/game/file", true),
+		(.global, "https://[2001:db8::1]/game/file", true),
+		(.global, "https://bücher.example/game/file", true),
+		(.global, "https://foo%20bar/game/file", false),
+		(.global, "https://host%2fpath.example/game/file", false),
+		(.global, "https://host%5bname%5d.example/game/file", false),
 		(.japan, "http://cdn.example/game/file", false),
 		(.korea, "https://user:pass@cdn.example/game/file", false),
 		(.china, "https://ak.hycdn.cn/game/file", true),
 		(.chinaBilibili, "https://cdn.hycdn.cn/game/file", true),
+		(.china, "https://bad%20host.hycdn.cn/game/file", false),
 		(.china, "https://launcher.hypergryph.com/game/file", false),
 		(.china, "https://evilhycdn.cn/game/file", false),
 		(.taiwan, "https://ak-tw.hg-cdn.com/game/file", true),

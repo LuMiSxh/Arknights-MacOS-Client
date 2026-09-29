@@ -4,6 +4,13 @@ import Foundation
 
 /// Validates publisher artifact sources and their redirects before any bytes are accepted.
 enum DownloadHTTPPolicy {
+	private static let hostCharacters: CharacterSet = {
+		var characters = CharacterSet.urlHostAllowed
+		// URL.host strips the brackets from IP literals, so brackets here are malformed.
+		characters.remove(charactersIn: "[]")
+		return characters
+	}()
+
 	private static let gryphlineArtifactHosts: Set<String> = [
 		"launcher.hg-cdn.com",
 		"ak-tw.hg-cdn.com",
@@ -28,9 +35,14 @@ enum DownloadHTTPPolicy {
 	}
 
 	static func isValidHTTPSURL(_ url: URL) -> Bool {
-		url.scheme?.lowercased() == "https"
-			&& url.user == nil
-			&& url.password == nil
-			&& url.host?.isEmpty == false
+		guard
+			url.scheme?.lowercased() == "https",
+			url.user == nil,
+			url.password == nil,
+			let host = url.host,
+			!host.isEmpty
+		else { return false }
+
+		return host.unicodeScalars.allSatisfy(hostCharacters.contains)
 	}
 }
