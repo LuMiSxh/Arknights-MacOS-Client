@@ -19,62 +19,60 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.failureMessage == LauncherError.cannotSetAppIcon.errorDescription)
 	}
 
-	@Test
-	func statusClearsFailuresUnlessTheCallerPreservesThem() {
+	@Test(arguments: FailurePreservationScenario.allCases)
+	func statusUpdatesFollowFailurePreservationRules(scenario: FailurePreservationScenario) {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.show(LauncherError.cannotSetAppIcon)
+		var preflightFailure: LauncherFailurePresentation?
+		switch scenario {
+		case .ordinaryFailure:
+			lifecycle.show(LauncherError.cannotSetAppIcon)
+		case .rosettaPreflight:
+			let failure = LauncherFailurePresentation(
+				id: UUID(),
+				message: "Rosetta is unavailable",
+				code: .limpet,
+				context: SupportContext(operation: .intelTranslationPreflight, region: nil),
+				actions: [.retry],
+				blocksGameLaunch: true
+			)
+			preflightFailure = failure
+			lifecycle.presentFailure(failure, diagnostic: "preflight")
+		}
 
-		lifecycle.setStatus(.ready, clearsFailure: false)
-		#expect(lifecycle.failureMessage != nil)
-
-		lifecycle.setStatus(.running)
-		#expect(lifecycle.failureMessage == nil)
-		#expect(!lifecycle.activityMessage.isEmpty)
+		switch scenario {
+		case .ordinaryFailure:
+			lifecycle.setStatus(.ready, clearsFailure: false)
+			#expect(lifecycle.failureMessage != nil)
+			lifecycle.setStatus(.running)
+			#expect(lifecycle.failure == nil)
+			#expect(!lifecycle.activityMessage.isEmpty)
+		case .rosettaPreflight:
+			lifecycle.setStatus(.checking)
+			lifecycle.setStatus(.ready)
+			#expect(lifecycle.failure == preflightFailure)
+		}
 	}
 
-	@Test
-	func statusUpdatesKeepRosettaPreflightFailureUntilItsCheckSucceeds() {
-		let lifecycle = makeLifecycleStore()
-		let failure = LauncherFailurePresentation(
-			id: UUID(),
-			message: "Rosetta is unavailable",
-			code: .limpet,
-			context: SupportContext(operation: .intelTranslationPreflight, region: nil),
-			actions: [.retry],
-			blocksGameLaunch: true
-		)
-		lifecycle.presentFailure(failure, diagnostic: "preflight")
-
-		lifecycle.setStatus(.checking)
-		lifecycle.setStatus(.ready)
-
-		#expect(lifecycle.failure == failure)
-	}
-
-	@Test
-	func idleLifecycleAllowsLauncherUpdateActivity() {
-		let lifecycle = makeLifecycleStore()
-
-		#expect(lifecycle.canBeginExclusiveActivity)
-		#expect(!lifecycle.hasActiveActivity)
-
-		lifecycle.beginLauncherUpdate()
-		#expect(!lifecycle.canBeginExclusiveActivity)
-		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
-	}
-
-	@Test
-	func pendingLauncherUpdateWaitsForActiveActivityToFinish() {
+	@Test(arguments: LauncherUpdateStartScenario.allCases)
+	func launcherUpdateWaitsForAnActiveGameToFinish(scenario: LauncherUpdateStartScenario) {
 		let lifecycle = makeLifecycleStore()
 		let sessionID = UUID()
-		lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		let gameActivity = LauncherActivity.runningGame(
+			sessionID: sessionID, processIdentifier: 42)
+		if scenario == .gameRunning {
+			lifecycle.activity = gameActivity
+		}
+
+		#expect(lifecycle.canBeginExclusiveActivity == (scenario == .idle))
+		#expect(lifecycle.hasActiveActivity == (scenario == .gameRunning))
 		lifecycle.beginLauncherUpdate()
 
 		#expect(!lifecycle.canBeginExclusiveActivity)
-		#expect(lifecycle.hasActiveActivity)
-		#expect(lifecycle.activity == .runningGame(sessionID: sessionID, processIdentifier: 42))
-
-		lifecycle.activity = .idle
+		if scenario == .gameRunning {
+			#expect(lifecycle.hasActiveActivity)
+			#expect(lifecycle.activity == gameActivity)
+			lifecycle.activity = .idle
+		}
 		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
 		#expect(!lifecycle.canBeginExclusiveActivity)
 
@@ -94,6 +92,16 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.consumeFailure(id: failure.id) == failure)
 		#expect(lifecycle.consumeFailure(id: failure.id) == nil)
 	}
+}
+
+enum FailurePreservationScenario: String, CaseIterable, Sendable {
+	case ordinaryFailure
+	case rosettaPreflight
+}
+
+enum LauncherUpdateStartScenario: String, CaseIterable, Equatable, Sendable {
+	case idle
+	case gameRunning
 }
 
 @MainActor

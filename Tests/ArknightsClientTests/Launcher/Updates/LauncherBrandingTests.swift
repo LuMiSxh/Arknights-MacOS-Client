@@ -67,8 +67,7 @@ func artworkCacheRestoresTheLastActiveImagePerRegion() async throws {
 	#expect(try cache.cachedActiveImageData(for: .korea) == nil)
 }
 
-@Test
-func artworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
+private func verifyArtworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
 	RegionalLogoURLProtocol.resetOrdering()
 	defer {
 		RegionalLogoURLProtocol.releaseFirst()
@@ -169,8 +168,7 @@ func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 	#expect(chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
 }
 
-@Test
-func japanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {
+private func verifyJapanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {
 	let directory = FileManager.default.temporaryDirectory.appending(
 		path: "JapanWordmarkRetryTests.\(UUID().uuidString)",
 		directoryHint: .isDirectory
@@ -218,6 +216,19 @@ func japanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {
 	#expect(loaded == imageData)
 	#expect(try cache.cachedOfficialLogoData(for: .japan) == imageData)
 	#expect(RegionalLogoURLProtocol.requestCountValue == 2)
+}
+
+@Suite(.serialized)
+struct LauncherBrandingURLProtocolTests {
+	@Test
+	func artworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
+		try await verifyArtworkCacheKeepsTheNewestSameRegionRequestActive()
+	}
+
+	@Test
+	func japanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {
+		try await verifyJapanWordmarkRecoversFromMalformedCacheAndCorruptResponse()
+	}
 }
 
 private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
