@@ -87,47 +87,25 @@ struct GameInstallerPathTests {
 		}
 	}
 
-	@Test
-	func manifestRejectsCaseInsensitiveDuplicatePaths() {
-		let manifest = makeManifest(paths: ["bin/Game.dat", "BIN/game.dat"])
-
+	@Test(arguments: [
+		("case-insensitive duplicate paths", ["bin/Game.dat", "BIN/game.dat"]),
+		("file and directory conflict", ["assets", "assets/image.png"]),
+		("non-adjacent file and directory conflict", ["assets", "assets-foo", "assets/image.png"]),
+		("partial file suffix", ["foo", "foo.part"]),
+		("nested partial file suffix", ["foo", "foo.part/content"]),
+		("installed state filename", [AppConstants.Game.installedStateFileName]),
+		(
+			"nested installed state filename",
+			[AppConstants.Game.installedStateFileName + "/content"]
+		),
+		(
+			"installer staging directory",
+			["bin/\(AppConstants.Game.installerStagingDirectoryName)/content"]
+		),
+	])
+	func manifestRejectsInvalidFileSets(scenario: String, paths: [String]) {
 		#expect(throws: LauncherError.self) {
-			try validateManifest(manifest)
-		}
-	}
-
-	@Test
-	func manifestRejectsFileDirectoryConflicts() {
-		let manifest = makeManifest(paths: ["assets", "assets/image.png"])
-
-		#expect(throws: LauncherError.self) {
-			try validateManifest(manifest)
-		}
-	}
-
-	@Test
-	func manifestRejectsNonAdjacentFileDirectoryConflicts() {
-		let manifest = makeManifest(
-			paths: ["assets", "assets-foo", "assets/image.png"]
-		)
-
-		#expect(throws: LauncherError.self) {
-			try validateManifest(manifest)
-		}
-	}
-
-	@Test
-	func manifestRejectsInstallerOwnedPathCollisions() {
-		for paths in [
-			["foo", "foo.part"],
-			["foo", "foo.part/content"],
-			[AppConstants.Game.installedStateFileName],
-			[AppConstants.Game.installedStateFileName + "/content"],
-			["bin/\(AppConstants.Game.installerStagingDirectoryName)/content"],
-		] {
-			#expect(throws: LauncherError.self) {
-				try validateManifest(makeManifest(paths: paths))
-			}
+			try validateManifest(makeManifest(paths: paths))
 		}
 	}
 

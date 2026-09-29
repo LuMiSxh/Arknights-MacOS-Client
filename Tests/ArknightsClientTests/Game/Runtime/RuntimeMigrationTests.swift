@@ -5,78 +5,77 @@ import Testing
 
 @testable import ArknightsClient
 
-private let fullReplayCases: [(String, RuntimeMigrationState?, Bool)] = [
-	("new prefix", nil, false),
-	(
-		"incomplete earlier migration",
-		RuntimeMigrationState(
-			runtimeRevision: "runtime-prefix-2",
-			completed: [.installDXMT, .configureRegistry]
+private let migrationPlanCases:
+	[(String, RuntimeMigrationState?, Bool, Set<RuntimeMigration>, [RuntimeMigration])] = [
+		("new prefix", nil, false, [], RuntimeMigration.allCases),
+		(
+			"incomplete earlier migration",
+			RuntimeMigrationState(
+				runtimeRevision: "runtime-prefix-2",
+				completed: [.installDXMT, .configureRegistry]
+			),
+			true,
+			[],
+			RuntimeMigration.allCases
 		),
-		true
-	),
-	(
-		"changed runtime revision",
-		RuntimeMigrationState(
-			runtimeRevision: "runtime-prefix-1",
-			completed: RuntimeMigration.allCases
+		(
+			"changed runtime revision",
+			RuntimeMigrationState(
+				runtimeRevision: "runtime-prefix-1",
+				completed: RuntimeMigration.allCases
+			),
+			true,
+			[],
+			RuntimeMigration.allCases
 		),
-		true
-	),
-	(
-		"missing system registry",
-		RuntimeMigrationState(
-			runtimeRevision: "runtime-prefix-2",
-			completed: RuntimeMigration.allCases
+		(
+			"missing system registry",
+			RuntimeMigrationState(
+				runtimeRevision: "runtime-prefix-2",
+				completed: RuntimeMigration.allCases
+			),
+			false,
+			[],
+			RuntimeMigration.allCases
 		),
-		false
-	),
-]
+		(
+			"interrupted migration resumes at its first incomplete step",
+			RuntimeMigrationState(
+				runtimeRevision: "runtime-prefix-2",
+				completed: [.initializeWinePrefix]
+			),
+			true,
+			[],
+			[.installDXMT, .configureRegistry]
+		),
+		(
+			"invalidated migration replays itself and following steps",
+			RuntimeMigrationState(
+				runtimeRevision: "runtime-prefix-2",
+				completed: RuntimeMigration.allCases
+			),
+			true,
+			[.installDXMT],
+			[.installDXMT, .configureRegistry]
+		),
+	]
 
-@Test(arguments: fullReplayCases)
-func invalidPrefixStateReplaysEveryMigration(
+@Test(arguments: migrationPlanCases)
+func migrationPlanSelectsThePendingSteps(
 	caseName: String,
 	installedState: RuntimeMigrationState?,
-	hasSystemRegistry: Bool
+	hasSystemRegistry: Bool,
+	invalidatedMigrations: Set<RuntimeMigration>,
+	expectedPending: [RuntimeMigration]
 ) {
 	let plan = RuntimeMigrationPlan(
 		expectedRevision: "runtime-prefix-2",
 		installedState: installedState,
-		hasSystemRegistry: hasSystemRegistry
+		hasSystemRegistry: hasSystemRegistry,
+		invalidatedMigrations: invalidatedMigrations
 	)
 
-	#expect(plan.pending == RuntimeMigration.allCases, Comment(rawValue: caseName))
-}
-
-@Test
-func interruptedMigrationResumesAtTheFirstIncompleteStep() {
-	let state = RuntimeMigrationState(
-		runtimeRevision: "runtime-prefix-2",
-		completed: [.initializeWinePrefix]
-	)
-	let plan = RuntimeMigrationPlan(
-		expectedRevision: "runtime-prefix-2",
-		installedState: state,
-		hasSystemRegistry: true
-	)
-
-	#expect(plan.pending == [.installDXMT, .configureRegistry])
-}
-
-@Test
-func invalidatedMigrationReplaysItselfAndFollowingSteps() {
-	let state = RuntimeMigrationState(
-		runtimeRevision: "runtime-prefix-2",
-		completed: RuntimeMigration.allCases
-	)
-	let plan = RuntimeMigrationPlan(
-		expectedRevision: "runtime-prefix-2",
-		installedState: state,
-		hasSystemRegistry: true,
-		invalidatedMigrations: [.installDXMT]
-	)
-
-	#expect(plan.pending == [.installDXMT, .configureRegistry])
+	#expect(plan.pending == expectedPending, Comment(rawValue: caseName))
 }
 
 @Test
