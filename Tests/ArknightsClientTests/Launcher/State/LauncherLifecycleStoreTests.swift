@@ -51,30 +51,26 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.failure == failure)
 	}
 
-	@Test
-	func idleLifecycleAllowsLauncherUpdateActivity() {
-		let lifecycle = makeLifecycleStore()
-
-		#expect(lifecycle.canBeginExclusiveActivity)
-		#expect(!lifecycle.hasActiveActivity)
-
-		lifecycle.beginLauncherUpdate()
-		#expect(!lifecycle.canBeginExclusiveActivity)
-		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
-	}
-
-	@Test
-	func pendingLauncherUpdateWaitsForActiveActivityToFinish() {
+	@Test(arguments: LauncherUpdateStartScenario.allCases)
+	func launcherUpdateWaitsForAnActiveGameToFinish(scenario: LauncherUpdateStartScenario) {
 		let lifecycle = makeLifecycleStore()
 		let sessionID = UUID()
-		lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		let gameActivity = LauncherActivity.runningGame(
+			sessionID: sessionID, processIdentifier: 42)
+		if scenario == .gameRunning {
+			lifecycle.activity = gameActivity
+		}
+
+		#expect(lifecycle.canBeginExclusiveActivity == (scenario == .idle))
+		#expect(lifecycle.hasActiveActivity == (scenario == .gameRunning))
 		lifecycle.beginLauncherUpdate()
 
 		#expect(!lifecycle.canBeginExclusiveActivity)
-		#expect(lifecycle.hasActiveActivity)
-		#expect(lifecycle.activity == .runningGame(sessionID: sessionID, processIdentifier: 42))
-
-		lifecycle.activity = .idle
+		if scenario == .gameRunning {
+			#expect(lifecycle.hasActiveActivity)
+			#expect(lifecycle.activity == gameActivity)
+			lifecycle.activity = .idle
+		}
 		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
 		#expect(!lifecycle.canBeginExclusiveActivity)
 
@@ -94,6 +90,11 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.consumeFailure(id: failure.id) == failure)
 		#expect(lifecycle.consumeFailure(id: failure.id) == nil)
 	}
+}
+
+enum LauncherUpdateStartScenario: String, CaseIterable, Equatable, Sendable {
+	case idle
+	case gameRunning
 }
 
 @MainActor

@@ -8,25 +8,23 @@ import Testing
 
 @MainActor
 struct LauncherUpdaterControllerTests {
-	@Test
-	func exactSparkleCheckDelegateAllowsAnIdleLifecycle() throws {
-		let subject = makeUpdater()
-		let sparkle = makeSparkleUpdater()
-
-		try subject.updater(sparkle.1, mayPerform: .updates)
-	}
-
-	@Test
-	func exactSparkleCheckDelegateThrowsWhileLifecycleIsBusy() {
+	@Test(arguments: UpdateLifecycleScenario.allCases)
+	func exactSparkleCheckDelegateAllowsOnlyAnIdleLifecycle(
+		scenario: UpdateLifecycleScenario
+	) throws {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+		lifecycle.activity = scenario.activity
 		let subject = LauncherUpdaterController(
 			lifecycle: lifecycle,
 			log: lifecycle.log
 		)
 		let sparkle = makeSparkleUpdater()
 
-		#expect(throws: NSError.self) {
+		if scenario.isBusy {
+			#expect(throws: NSError.self) {
+				try subject.updater(sparkle.1, mayPerform: .updates)
+			}
+		} else {
 			try subject.updater(sparkle.1, mayPerform: .updates)
 		}
 	}
@@ -39,45 +37,15 @@ struct LauncherUpdaterControllerTests {
 		#expect(subject.updaterShouldRelaunchApplication(sparkle.1))
 	}
 
-	@Test
-	func relaunchIsNotPostponedWhenTheLifecycleIsIdle() {
-		let subject = makeUpdater()
-		let sparkle = makeSparkleUpdater()
-
-		#expect(
-			!subject.updater(
-				sparkle.1,
-				shouldPostponeRelaunchForUpdate: .empty(),
-				untilInvokingBlock: {}
-			)
-		)
-	}
-
-	@Test
-	func hiddenActiveUpdateRemainsOpenableWhileLifecycleGateIsHeld() {
-		// Installing has no Later button, so dismissFromUser still only hides it (unlike
-		// readyToInstall, where dismissFromUser now fully declines, same as Later).
+	@Test(arguments: [false, true])
+	func hiddenInstallingUpdateRefocusesWhileIdleOrTheUpdateGateIsHeld(
+		holdsUpdateGate: Bool
+	) {
+		// Installing has no Later button, so dismissFromUser only hides this presentation.
 		let lifecycle = makeLifecycleStore()
-		lifecycle.beginLauncherUpdate()
-		var activationCount = 0
-		let subject = LauncherUpdaterController(
-			lifecycle: lifecycle,
-			log: lifecycle.log,
-			activateApplication: { activationCount += 1 }
-		)
-		subject.userDriver.showInstallingUpdate(withApplicationTerminated: true) {}
-		subject.userDriver.dismissFromUser()
-
-		#expect(subject.canOpenUpdate)
-		subject.checkForUpdates()
-
-		#expect(subject.userDriver.isPresented)
-		#expect(activationCount == 1)
-	}
-
-	@Test
-	func hiddenInstallingUpdateRefocusesOnCheckForUpdates() {
-		let lifecycle = makeLifecycleStore()
+		if holdsUpdateGate {
+			lifecycle.beginLauncherUpdate()
+		}
 		var activationCount = 0
 		let subject = LauncherUpdaterController(
 			lifecycle: lifecycle,
@@ -89,6 +57,9 @@ struct LauncherUpdaterControllerTests {
 		subject.userDriver.dismissFromUser()
 		#expect(subject.userDriver.phase == .installing)
 		#expect(!subject.userDriver.isPresented)
+		if holdsUpdateGate {
+			#expect(subject.canOpenUpdate)
+		}
 
 		subject.checkForUpdates()
 
@@ -97,24 +68,26 @@ struct LauncherUpdaterControllerTests {
 		#expect(activationCount == 1)
 	}
 
-	@Test
-	func relaunchIsPostponedUntilActiveLifecycleFinishes() {
+	@Test(arguments: UpdateLifecycleScenario.allCases)
+	func relaunchIsPostponedOnlyUntilAnActiveLifecycleFinishes(
+		scenario: UpdateLifecycleScenario
+	) {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+		lifecycle.activity = scenario.activity
 		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		let sparkle = makeSparkleUpdater()
 		var installCalled = false
-
-		#expect(
-			subject.updater(
-				sparkle.1,
-				shouldPostponeRelaunchForUpdate: .empty(),
-				untilInvokingBlock: { installCalled = true }
-			)
+		let postponed = subject.updater(
+			sparkle.1,
+			shouldPostponeRelaunchForUpdate: .empty(),
+			untilInvokingBlock: { installCalled = true }
 		)
-		lifecycle.activity = .idle
 
-		#expect(installCalled)
+		#expect(postponed == scenario.isBusy)
+		if scenario.isBusy {
+			lifecycle.activity = .idle
+			#expect(installCalled)
+		}
 	}
 
 	@Test
@@ -189,18 +162,18 @@ struct LauncherUpdaterControllerTests {
 		let subject = makeUpdater()
 		var outcome: LauncherUpdateCheckOutcome?
 		subject.beginProbeForTesting { outcome = $0 }
-		subject.updater(
-			makeSparkleUpdater().1,
-			didAbortWithError: NSError(domain: "Test", code: 1)
-		)
+		let error = NSError(domain: "Test", code: 1)
+		subject.updater(makeSparkleUpdater().1, didAbortWithError: error)
 
 		#expect(outcome == nil)
+		#expect(subject.userDriver.phase == .hidden)
 		subject.updater(
 			makeSparkleUpdater().1,
 			didFinishUpdateCycleFor: .updateInformation,
-			error: NSError(domain: "Test", code: 1)
+			error: error
 		)
 		#expect(outcome == .failed)
+		#expect(subject.userDriver.phase == .hidden)
 	}
 
 	@Test
@@ -233,24 +206,6 @@ struct LauncherUpdaterControllerTests {
 			didFinishUpdateCycleFor: .updateInformation,
 			error: nil
 		)
-		#expect(subject.userDriver.phase == .hidden)
-	}
-
-	@Test
-	func silentProbeAbortThenFinishDoesNotPresentOtherErrors() {
-		let subject = makeUpdater()
-		var outcome: LauncherUpdateCheckOutcome?
-		subject.beginProbeForTesting { outcome = $0 }
-		let error = NSError(domain: "Test", code: 1)
-
-		subject.updater(makeSparkleUpdater().1, didAbortWithError: error)
-		subject.updater(
-			makeSparkleUpdater().1,
-			didFinishUpdateCycleFor: .updateInformation,
-			error: error
-		)
-
-		#expect(outcome == .failed)
 		#expect(subject.userDriver.phase == .hidden)
 	}
 
@@ -303,4 +258,20 @@ private func makeLifecycleStore() -> LauncherLifecycleStore {
 		path: "LauncherUpdaterControllerTests.\(UUID().uuidString).log"
 	)
 	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
+}
+
+enum UpdateLifecycleScenario: String, CaseIterable, Equatable, Sendable {
+	case idle
+	case gameRunning
+
+	var activity: LauncherActivity {
+		switch self {
+		case .idle:
+			.idle
+		case .gameRunning:
+			.runningGame(sessionID: UUID(), processIdentifier: 42)
+		}
+	}
+
+	var isBusy: Bool { self == .gameRunning }
 }
