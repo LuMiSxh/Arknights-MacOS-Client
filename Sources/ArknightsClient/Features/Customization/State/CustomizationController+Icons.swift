@@ -136,21 +136,36 @@ extension CustomizationController {
 					for: self.paths.customGameIcon,
 					operationID: operationID
 				)
-				try await self.dataStager(encodedIcons.0, launcherStage)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else {
-					CustomizationImageIO.discard(launcherStage, log: log)
-					return
-				}
-				try await self.dataStager(encodedIcons.1, gameStage)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else {
+				defer {
 					CustomizationImageIO.discard(launcherStage, log: log)
 					CustomizationImageIO.discard(gameStage, log: log)
+				}
+				try await self.dataStager(encodedIcons.0, launcherStage)
+				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
+				else { return }
+				try await self.dataStager(encodedIcons.1, gameStage)
+				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
+				else { return }
+				let replacements = [
+					(staged: launcherStage, destination: self.paths.customAppIcon),
+					(staged: gameStage, destination: self.paths.customGameIcon),
+				]
+				let prepared = try await self.iconPublicationPreparer(
+					replacements.map(\.destination),
+					operationID,
+					log
+				)
+				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
+				else {
+					prepared.discard(log: log)
 					return
 				}
-				try CustomizationImageIO.commit(launcherStage, to: self.paths.customAppIcon)
-				try CustomizationImageIO.commit(gameStage, to: self.paths.customGameIcon)
+				try CustomizationImageIO.publish(
+					replacements,
+					prepared: prepared,
+					using: self.iconCommitter,
+					log: log
+				)
 				guard self.launcherIconManager.apply(icons.launcher) else {
 					throw LauncherError.cannotSetAppIcon
 				}
@@ -226,6 +241,8 @@ extension CustomizationController {
 	}
 	func applyPresetAvatar(data: Data) async {
 		let id = beginIconOperation()
+		let generation = iconMutationGeneration
+		defer { finishIconMutation(id) }
 		let source = paths.operatorPresetAvatar
 		do {
 			try await Task.detached(priority: .userInitiated) {
@@ -244,37 +261,49 @@ extension CustomizationController {
 			let app = CustomizationImageIO.stagedURL(for: paths.customAppIcon, operationID: id)
 			let gameURL = CustomizationImageIO.stagedURL(for: paths.customGameIcon, operationID: id)
 			let sourceURL = CustomizationImageIO.stagedURL(for: source, operationID: id)
+			defer {
+				for url in [app, gameURL, sourceURL] { CustomizationImageIO.discard(url, log: log) }
+			}
 			try await dataStager(encoded.0, app)
-			guard operatorIconOperationID == id else {
-				CustomizationImageIO.discard(app, log: log)
-				return
-			}
+			guard operatorIconOperationID == id else { return }
 			try await dataStager(encoded.1, gameURL)
-			guard operatorIconOperationID == id else {
-				CustomizationImageIO.discard(app, log: log)
-				CustomizationImageIO.discard(gameURL, log: log)
-				return
-			}
+			guard operatorIconOperationID == id else { return }
 			try await dataStager(data, sourceURL)
-			guard operatorIconOperationID == id else {
-				for url in [app, gameURL, sourceURL] {
-					CustomizationImageIO.discard(url, log: log)
-				}
+			guard operatorIconOperationID == id else { return }
+			let replacements = [
+				(staged: app, destination: paths.customAppIcon),
+				(staged: gameURL, destination: paths.customGameIcon),
+				(staged: sourceURL, destination: source),
+			]
+			let prepared = try await iconPublicationPreparer(
+				replacements.map(\.destination),
+				id,
+				log
+			)
+			guard operatorIconOperationID == id,
+				iconMutationGeneration == generation,
+				!Task.isCancelled
+			else {
+				prepared.discard(log: log)
 				return
 			}
-			try CustomizationImageIO.commit(app, to: paths.customAppIcon)
-			try CustomizationImageIO.commit(gameURL, to: paths.customGameIcon)
-			try CustomizationImageIO.commit(sourceURL, to: source)
+			try CustomizationImageIO.publish(
+				replacements,
+				prepared: prepared,
+				using: iconCommitter,
+				log: log
+			)
 			guard launcherIconManager.apply(icons.launcher) else {
 				throw LauncherError.cannotSetAppIcon
 			}
 			setHasCustomAppIcon(true)
 			setHasCustomGameIcon(true)
 		} catch {
-			guard operatorIconOperationID == id else { return }
+			guard operatorIconOperationID == id, iconMutationGeneration == generation else {
+				return
+			}
 			lifecycle.show(error)
 		}
-		finishIconMutation(id)
 	}
 	private func loadAndApplyCustomIcon(from url: URL, operationID id: UUID, isAppIcon: Bool) {
 		let load = dataLoader

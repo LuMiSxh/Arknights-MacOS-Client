@@ -11,6 +11,10 @@ import SwiftUI
 final class CustomizationController {
 	typealias DataLoader = @Sendable (URL) async throws -> Data
 	typealias DataStager = @Sendable (Data, URL) async throws -> Void
+	typealias IconCommitter = @Sendable (URL, URL) throws -> Void
+	typealias IconPublicationPreparer =
+		@Sendable ([URL], UUID, LauncherLog) async throws
+		-> CustomizationImageIO.PreparedPublication
 	typealias AccentExtractor = @MainActor @Sendable (NSImage) async -> ExtractedAccent?
 	typealias DynamicIconRenderer = @MainActor (Double) -> NSImage?
 
@@ -43,6 +47,8 @@ final class CustomizationController {
 	private(set) var hasPersistedCustomArtwork = false
 	let dataLoader: DataLoader
 	let dataStager: DataStager
+	let iconCommitter: IconCommitter
+	let iconPublicationPreparer: IconPublicationPreparer
 	let accentExtractor: AccentExtractor
 	let dynamicIconRenderer: DynamicIconRenderer
 	@ObservationIgnored var artworkOperationID: UUID?
@@ -87,6 +93,8 @@ final class CustomizationController {
 		usesDynamicTheme: @escaping @MainActor () -> Bool,
 		dataLoader: DataLoader? = nil,
 		dataStager: DataStager? = nil,
+		iconCommitter: IconCommitter? = nil,
+		iconPublicationPreparer: IconPublicationPreparer? = nil,
 		accentExtractor: AccentExtractor? = nil,
 		dynamicIconRenderer: DynamicIconRenderer? = nil
 	) {
@@ -100,6 +108,10 @@ final class CustomizationController {
 		self.usesDynamicTheme = usesDynamicTheme
 		self.dataLoader = dataLoader ?? CustomizationImageIO.load
 		self.dataStager = dataStager ?? CustomizationImageIO.stage
+		self.iconCommitter = iconCommitter ?? CustomizationImageIO.commit
+		self.iconPublicationPreparer =
+			iconPublicationPreparer
+			?? CustomizationImageIO.preparePublication
 		self.accentExtractor = accentExtractor ?? WallpaperColorExtractor.extractAccent
 		self.dynamicIconRenderer = dynamicIconRenderer ?? AppIconRenderer.tintedDefaultIcon
 	}
