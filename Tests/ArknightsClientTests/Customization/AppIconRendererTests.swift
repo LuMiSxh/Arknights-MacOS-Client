@@ -36,32 +36,25 @@ func operatorIconTreatmentsRenderOnTheNormalizedCanvas() throws {
 
 @MainActor
 @Test
-func launcherTreatmentUsesTheDynamicThemeHue() throws {
+func dynamicThemeHueOnlyChangesLauncherTreatment() throws {
 	let sourceData = try whiteCircleSourceData()
-	let cyan = try #require(
+	let defaultLauncher = try #require(
 		AppIconRenderer.createPresetIcon(
 			from: sourceData, treatment: .launcher, accentHue: nil)
 	)
-	let purple = try #require(
+	let purpleLauncher = try #require(
 		AppIconRenderer.createPresetIcon(
 			from: sourceData, treatment: .launcher, accentHue: 0.78)
 	)
-
-	#expect(cyan.tiffRepresentation != purple.tiffRepresentation)
-}
-
-@MainActor
-@Test
-func gameTreatmentIgnoresTheDynamicThemeHue() throws {
-	let sourceData = try whiteCircleSourceData()
-	let cyan = try #require(
+	let defaultGame = try #require(
 		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: nil)
 	)
-	let purple = try #require(
+	let purpleGame = try #require(
 		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: 0.78)
 	)
 
-	#expect(cyan.tiffRepresentation == purple.tiffRepresentation)
+	#expect(defaultLauncher.tiffRepresentation != purpleLauncher.tiffRepresentation)
+	#expect(defaultGame.tiffRepresentation == purpleGame.tiffRepresentation)
 }
 
 @Test(arguments: [

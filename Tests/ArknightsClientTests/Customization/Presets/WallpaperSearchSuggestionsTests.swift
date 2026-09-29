@@ -32,6 +32,10 @@ struct WallpaperSearchSuggestionsTests {
 			try WallpaperSearch.suggestions(
 				for: "twitter ", wallpapers: wallpapers, knownTags: []
 			).isEmpty)
+		#expect(
+			WallpaperSearch.trailingKnownTag(
+				in: "twitter random ", canonicalTagsByNormalizedForm: [:]
+			) == nil)
 	}
 
 	@Test("replaces only the active term")
@@ -67,13 +71,5 @@ struct WallpaperSearchSuggestionsTests {
 			in: query, canonicalTagsByNormalizedForm: canonicalTags)
 		#expect(result?.tag == expectedTag)
 		#expect(result?.remainingQuery == remainingQuery)
-	}
-
-	@Test("trailingKnownTag returns nil when nothing trailing is a known tag")
-	func trailingKnownTagReturnsNilWhenNoMatch() {
-		#expect(
-			WallpaperSearch.trailingKnownTag(
-				in: "twitter random ", canonicalTagsByNormalizedForm: [:]
-			) == nil)
 	}
 }

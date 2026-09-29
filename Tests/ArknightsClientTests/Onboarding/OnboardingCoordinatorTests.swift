@@ -61,8 +61,14 @@ struct OnboardingCoordinatorTests {
 		#expect(coordinator.step == .installation)
 	}
 
-	@Test
-	func availableUpdateBlocksSetupAndSkip() async {
+	@Test(arguments: [
+		("launcher update available", true),
+		("launcher update check failed", false),
+	])
+	func launcherUpdateGateControlsSetupAndSkip(
+		caseLabel: String,
+		updateIsAvailable: Bool
+	) async {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = OnboardingProgressStore(defaults: defaults)
@@ -71,38 +77,30 @@ struct OnboardingCoordinatorTests {
 			isDeveloperMode: false,
 			isOnboardingPreview: false,
 			gameIsInstalled: false,
-			checkForUpdates: { .updateAvailable("0.5.0") },
+			checkForUpdates: {
+				updateIsAvailable ? .updateAvailable("0.5.0") : .failed
+			},
 			checkIntelTranslation: { .available }
 		)
 		coordinator.advance()
-		coordinator.skip()
-
-		#expect(coordinator.step == .welcome)
-		#expect(coordinator.intelTranslationState == .waitingForLauncherCheck)
-		#expect(coordinator.isPresented)
-		#expect(store.needsOnboarding)
-	}
-
-	@Test
-	func failedUpdateCheckAllowsSetupAndSkip() async {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = OnboardingProgressStore(defaults: defaults)
-		let coordinator = OnboardingCoordinator(store: store)
-
-		await coordinator.startIfNeeded(
-			isDeveloperMode: false,
-			isOnboardingPreview: false,
-			gameIsInstalled: false,
-			checkForUpdates: { .failed },
-			checkIntelTranslation: { .available }
+		#expect(
+			coordinator.step == (updateIsAvailable ? .welcome : .installation),
+			Comment(rawValue: caseLabel)
 		)
-		coordinator.advance()
-		#expect(coordinator.step == .installation)
-
 		coordinator.skip()
-		#expect(!coordinator.isPresented)
-		#expect(!store.needsOnboarding)
+		if updateIsAvailable {
+			#expect(coordinator.step == .welcome, Comment(rawValue: caseLabel))
+		} else {
+			#expect(!coordinator.isPresented, Comment(rawValue: caseLabel))
+			#expect(!store.needsOnboarding, Comment(rawValue: caseLabel))
+		}
+
+		#expect(
+			coordinator.intelTranslationState
+				== (updateIsAvailable ? .waitingForLauncherCheck : .available),
+			Comment(rawValue: caseLabel))
+		#expect(coordinator.isPresented == updateIsAvailable, Comment(rawValue: caseLabel))
+		#expect(store.needsOnboarding == updateIsAvailable, Comment(rawValue: caseLabel))
 	}
 
 	@Test

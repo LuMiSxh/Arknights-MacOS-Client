@@ -8,7 +8,7 @@ import Testing
 @MainActor
 struct OnboardingProgressStoreTests {
 	@Test
-	func newStoreNeedsOnboardingAndResumesItsSavedStep() {
+	func onboardingProgressPersistsUntilCompletionAndReset() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = OnboardingProgressStore(defaults: defaults)
@@ -20,13 +20,6 @@ struct OnboardingProgressStoreTests {
 
 		#expect(store.savedStep == .icons)
 		#expect(store.needsOnboarding)
-	}
-
-	@Test
-	func completionAndResetControlFuturePresentation() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = OnboardingProgressStore(defaults: defaults)
 
 		store.save(step: .finish)
 		store.complete()
