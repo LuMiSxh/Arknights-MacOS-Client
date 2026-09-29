@@ -30,14 +30,14 @@
 </script>
 
 <PageMetadata
-	title="Arknights Client · macOS launcher"
-	description="A native macOS launcher for official regional Arknights PC clients."
+	title="Play Arknights PC on Mac · Arknights Client"
+	description="Play the original Arknights PC client on an Apple Silicon Mac with this free, unofficial launcher. Supports macOS 15–27; not for Arknights: Endfield."
 	path="/"
 />
 
 <ArtworkStage
 	title="Arknights on macOS"
-	detail="Unofficial launcher for the official Arknights PC clients"
+	detail="The original Arknights PC client on Apple Silicon Macs"
 	iconUrl={asset('/AppIcon-128.png')}
 	installationHref={resolve('/installation/')}
 	releaseHref={releaseUrl}

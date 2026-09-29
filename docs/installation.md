@@ -6,7 +6,7 @@ order: 10
 
 # Installation
 
-Arknights Client downloads the official PC version of Arknights from its publisher and runs it on your Mac. The launcher download does not contain any game files.
+Arknights Client downloads the official PC version of the original Arknights from its publisher and runs it on your Mac. This guide does not apply to Arknights: Endfield. The launcher download does not contain any game files.
 
 ## Requirements
 

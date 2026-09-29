@@ -4,10 +4,10 @@
 
 # Arknights Client
 
-**Run official Arknights PC clients on Apple Silicon Macs through a native SwiftUI launcher.**
+**Play the original Arknights PC client on Apple Silicon Macs.** This free, unofficial launcher handles setup and runs the publisher's Windows game through bundled Wine and DXMT. It is not for Arknights: Endfield.
 
 [![Version](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
-[![macOS](https://img.shields.io/badge/macOS-15%2B-black.svg)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-15%E2%80%9327-black.svg)](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/)
 [![Platform](https://img.shields.io/badge/platform-Apple%20Silicon-black.svg)](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements)
 [![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
 
@@ -16,6 +16,14 @@
 [Website & documentation](https://lumisxh.github.io/Arknights-MacOS-Client/) · [Download latest](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest) · [Installation](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) · [Troubleshooting](https://lumisxh.github.io/Arknights-MacOS-Client/help/troubleshooting/)
 
 </div>
+
+## Get started
+
+1. Use an Apple silicon Mac with macOS 15–27 and enough space for the game. Rosetta 2 is required; the setup assistant can install it. On macOS 27, turn off Legacy Game Test Mode. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements).
+2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), then drag the app to **Applications**.
+3. Right-click **Arknights Client** in Finder and choose **Open** on the first launch. The app is not notarized; you do not need to change your security settings. Choose your region in the setup assistant and let it download the official game files.
+
+Global, Japan, and Korea are supported by default. Taiwan, China, and China — Bilibili are experimental Canary regions with separate opt-in. The [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) covers each region and the first game launch.
 
 ## Overview
 

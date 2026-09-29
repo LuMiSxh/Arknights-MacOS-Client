@@ -15,7 +15,7 @@
 
 <section class="artwork-stage" aria-labelledby="stage-title">
 	<div class="stage-bottom">
-		<p class="stage-pill glass-surface">Apple Silicon · macOS 15+</p>
+		<p class="stage-pill glass-surface">Apple Silicon · macOS 15–27</p>
 		<ReleaseHud
 			{title}
 			{detail}
