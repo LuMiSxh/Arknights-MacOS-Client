@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
+import tarfile
 import urllib.error
 import urllib.request
 from pathlib import Path, PurePosixPath
@@ -75,6 +77,44 @@ def create_runtime(runtime: Path, layout: RuntimeLayout) -> None:
     launcher = runtime / layout.launcher.path
     launcher.parent.mkdir(parents=True, exist_ok=True)
     launcher.symlink_to(layout.launcher.target)
+
+
+def write_runtime_archive(
+    archive: Path,
+    root: Path,
+    layout: RuntimeLayout,
+    *,
+    manifest: bytes | None,
+    manifest_symlink: bool = False,
+) -> None:
+    libraries = root / "Libraries"
+    wine = libraries / layout.archive_wine_directory
+    wine.mkdir(parents=True)
+    for relative in (*layout.executables, *layout.required_files, layout.mac_driver):
+        path = wine / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    for relative in layout.executables:
+        (wine / relative).chmod(0o755)
+    launcher = wine / layout.launcher.path
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.symlink_to(layout.launcher.target)
+
+    dxmt = libraries / layout.archive_dxmt_directory
+    for architecture, _ in layout.dxmt.destinations:
+        for library in layout.dxmt.libraries:
+            path = dxmt / architecture / library
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+    if manifest is not None or manifest_symlink:
+        manifest_path = libraries / layout.capability_manifest_path
+        if manifest_symlink:
+            manifest_path.symlink_to("Wine/bin/wine64")
+        else:
+            manifest_path.write_bytes(manifest or b"")
+
+    with tarfile.open(archive, "w:gz") as contents:
+        contents.add(libraries, arcname="Libraries")
 
 
 @pytest.mark.parametrize("content_length", ["unknown", "9" * 5_000])
@@ -165,6 +205,68 @@ def test_download_preserves_partial_after_transient_failure(
 
     assert partial.read_bytes() == b"prefixsuffix"
     assert metadata_path.is_file()
+
+
+@pytest.mark.parametrize("sidecar", ["present", "missing", "symlink"])
+def test_prepare_runtime_preserves_only_regular_capability_sidecar(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    layout: RuntimeLayout,
+    sidecar: str,
+) -> None:
+    archive = tmp_path / "fixture.tar.gz"
+    manifest = json.dumps(
+        {
+            "schemaVersion": 1,
+            "capabilities": {
+                "dxmtMaximumFrameLatency": {
+                    "minimum": 0,
+                    "maximum": 3,
+                    "defaultValue": 3,
+                },
+                "hardwareCursor": True,
+            },
+        }
+    ).encode()
+    write_runtime_archive(
+        archive,
+        tmp_path / "source",
+        layout,
+        manifest=manifest,
+        manifest_symlink=sidecar == "symlink",
+    )
+    if sidecar == "missing":
+        # Recreate without a sidecar to model the verified legacy 0.6.0 archive.
+        write_runtime_archive(
+            archive,
+            tmp_path / "legacy-source",
+            layout,
+            manifest=None,
+        )
+
+    def use_fixture_archive(
+        url: str, output: Path, checksum: str, user_agent: str
+    ) -> None:
+        shutil.copyfile(archive, output)
+
+    monkeypatch.setattr(download_runtime, "BUILD_DIR", tmp_path / "build")
+    monkeypatch.setattr(download_runtime, "download", use_fixture_archive)
+
+    if sidecar == "symlink":
+        with pytest.raises(RuntimeError, match="capability manifest"):
+            download_runtime.prepare_runtime(
+                "https://example.invalid/runtime", "a" * 64, layout, "test"
+            )
+        return
+
+    prepared = download_runtime.prepare_runtime(
+        "https://example.invalid/runtime", "a" * 64, layout, "test"
+    )
+    manifest_path = prepared / layout.capability_manifest_path
+    assert manifest_path.is_file() is (sidecar == "present")
+    if sidecar == "present":
+        assert manifest_path.read_bytes() == manifest
+        assert not manifest_path.is_symlink()
 
 
 def test_accepts_complete_runtime_layout(tmp_path: Path, layout: RuntimeLayout) -> None:

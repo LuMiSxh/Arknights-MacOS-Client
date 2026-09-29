@@ -17,7 +17,10 @@ enum AppConstants {
 		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
 		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
 		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
+		static let dxmtMaximumFrameLatencyEnvironmentKey =
+			"ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"
 		static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
+		static let capabilityManifestMaximumBytes = 4 * 1_024
 	}
 
 	enum Icon {

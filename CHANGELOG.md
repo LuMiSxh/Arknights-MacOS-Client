@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
 - Release packaging now rejects Sparkle appcasts and update archives that fail cryptographic verification against the tracked update key.
+- Canary runtime overrides now follow the capabilities declared by the packaged runtime; legacy or unsupported runtimes keep conservative defaults and saved preferences.
 - Softened the main HUD pill's orbiting glint with a quieter outline and a more diffuse accent glow.
 - Launcher errors now explain recovery steps while keeping file paths, checksums, and service details in the logs.
 - The HUD outline now pulses while Wine is prepared, the game starts or stops, launcher data updates, the Wine prefix is deleted, or the game moves to the Trash.
