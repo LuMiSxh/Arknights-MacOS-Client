@@ -90,3 +90,29 @@ private func whiteCircleSourceData() throws -> Data {
 	source.unlockFocus()
 	return try #require(source.tiffRepresentation)
 }
+
+@MainActor
+@Test
+func padToAppleGridPreservesAspectRatio() throws {
+	let source = NSImage(size: NSSize(width: 200, height: 100))
+	source.lockFocus()
+	NSColor.red.setFill()
+	NSBezierPath(rect: NSRect(x: 0, y: 0, width: 200, height: 100)).fill()
+	source.unlockFocus()
+
+	let padded = AppIconRenderer.padToAppleGrid(image: source)
+	let data = try #require(padded.tiffRepresentation)
+	let bitmap = try #require(NSBitmapImageRep(data: data))
+	let scale = Double(bitmap.pixelsWide) / AppConstants.Icon.canvasDimension
+	let box = AppConstants.Icon.squircleDimension * scale
+	let center = bitmap.pixelsWide / 2
+
+	func isOpaque(x: Int, y: Int) -> Bool {
+		(bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.5
+	}
+	// Wide image: fills the box horizontally, half height vertically.
+	#expect(isOpaque(x: center - Int(box / 2) + 4, y: center))
+	#expect(isOpaque(x: center, y: center + Int(box / 4) - 4))
+	#expect(!isOpaque(x: center, y: center + Int(box / 4) + 4))
+	#expect(!isOpaque(x: center, y: center - Int(box / 4) - 4))
+}

@@ -6,17 +6,16 @@ import SwiftUI
 
 /// Unified engine for generating, dynamically tinting, and grid-normalizing macOS application icons.
 enum AppIconRenderer {
-	/// Insets and centers full-bleed icon artwork onto the standard 80.5% Apple Icon Grid
+	/// Aspect-fits and centers full-bleed icon artwork onto the standard 80.5% Apple Icon Grid
 	/// with transparent margins, matching macOS system apps (Safari, Music, Settings).
 	static func padToAppleGrid(image: NSImage) -> NSImage {
 		let canvasSize = NSSize(
 			width: AppConstants.Icon.canvasDimension,
 			height: AppConstants.Icon.canvasDimension
 		)
-		let contentSize = NSSize(
-			width: AppConstants.Icon.squircleDimension,
-			height: AppConstants.Icon.squircleDimension
-		)
+		let box = AppConstants.Icon.squircleDimension
+		let scale = min(box / max(image.size.width, 1), box / max(image.size.height, 1))
+		let contentSize = NSSize(width: image.size.width * scale, height: image.size.height * scale)
 		let origin = NSPoint(
 			x: (canvasSize.width - contentSize.width) / 2.0,
 			y: (canvasSize.height - contentSize.height) / 2.0
@@ -33,7 +32,7 @@ enum AppIconRenderer {
 
 	/// Generates a dynamically tinted version of the bundled app icon for the given hue.
 	static func tintedDefaultIcon(for targetHue: Double) -> NSImage? {
-		guard let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+		guard let iconURL = tintSourceURL(),
 			let baseIcon = NSImage(contentsOf: iconURL),
 			let tiffData = baseIcon.tiffRepresentation,
 			let ciImage = CIImage(data: tiffData)
@@ -54,6 +53,12 @@ enum AppIconRenderer {
 			size: NSSize(width: outputCI.extent.width, height: outputCI.extent.height)
 		)
 		return padToAppleGrid(image: rawTintedImage)
+	}
+
+	/// The 1024-pixel render produced by `just icon`; the compiled ICNS tops out at 256 pixels.
+	private static func tintSourceURL() -> URL? {
+		Bundle.main.url(forResource: "AppIconTintSource", withExtension: "png")
+			?? AppResourceBundle.bundle.url(forResource: "AppIconTintSource", withExtension: "png")
 	}
 
 	/// `CIHueAdjust` rotates hue in `NSColor`'s HSB circle, not YIQ chroma-angle space.

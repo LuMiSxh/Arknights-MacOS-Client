@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Imported launcher and game icons keep their aspect ratio instead of being stretched to a square.
 - Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.1.
 - Reduced repeated text comparisons in documentation search and moved preset thumbnail decoding off the main actor so large artwork does not block the interface.
 - Clarified first-launch steps for ad-hoc signed, non-notarized releases, including Apple's app-specific Gatekeeper confirmation.

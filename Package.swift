@@ -4,6 +4,7 @@
 import PackageDescription
 
 let appResources: [Resource] = [
+	.copy("Resources/AppIconTintSource.png"),
 	.copy("Resources/GameIconBackground.png"),
 	.copy("Resources/OperatorIconFrame.svg"),
 	.copy("Resources/WallpaperTags.json"),

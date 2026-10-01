@@ -71,7 +71,10 @@ extension CustomizationController {
 				launcherIconManager.apply(launcherIconManager.currentIcon, persistToBundle: false)
 				return
 			}
-			guard let tinted = dynamicIconRenderer(hue) else { return }
+			guard let tinted = dynamicIconRenderer(hue) else {
+				resetDynamicLauncherIcon()
+				return
+			}
 			applyDynamicLauncherIcon(tinted, persistToBundle: hueChanged)
 			if hueChanged { preferences.setLastAppliedDynamicIconHue(hue) }
 		} else {

@@ -168,6 +168,28 @@ struct CustomizationControllerTests {
 	}
 
 	@Test
+	func resettingTheAppIconWithDynamicThemeNeverPublishesTheUntintedDefault() {
+		var clearedRunningIcon = false
+		let fixture = makeCustomizationController(
+			usesDynamicTheme: true,
+			dynamicIconRenderer: { _ in solidImage(.systemPink) },
+			setRunningIcon: { clearedRunningIcon = clearedRunningIcon || $0 == nil }
+		)
+		let cacheKey = "official.global.cached"
+		fixture.preferences.setDynamicThemeAccent(
+			ThemeAccentSnapshot(hue: 0.42, saturation: 0.8, brightness: 0.9),
+			for: cacheKey
+		)
+		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
+		fixture.controller.setHasCustomAppIcon(true)
+		clearedRunningIcon = false
+
+		fixture.controller.resetAppIcon()
+
+		#expect(!clearedRunningIcon)
+	}
+
+	@Test
 	func cachedThemeAccentSkipsRedundantExtraction() async {
 		let extractor = ControlledRequestGate<ExtractedAccent?, NSImage>()
 		let fixture = makeCustomizationController(

@@ -32,6 +32,13 @@ extension CustomizationController {
 		}
 	}
 
+	/// With Dynamic Theme active the themed icon replaces the custom one directly. Clearing the
+	/// bundle icon first lets the Dock re-read the untinted default over the themed result.
+	private func restoreLauncherIcon() -> Bool {
+		if usesDynamicTheme(), heroArtwork != nil { return true }
+		return launcherIconManager.reset()
+	}
+
 	func resetAppIcon() {
 		invalidateIconOperations()
 		do {
@@ -39,7 +46,7 @@ extension CustomizationController {
 				try FileManager.default.removeItem(at: paths.customAppIcon)
 			}
 			try CustomizationImageIO.removeIfPresent(paths.operatorPresetAvatar)
-			guard launcherIconManager.reset() else { throw LauncherError.cannotSetAppIcon }
+			guard restoreLauncherIcon() else { throw LauncherError.cannotSetAppIcon }
 			setHasCustomAppIcon(false)
 			preferences.setLastAppliedDynamicIconHue(nil)
 			updateThemeColor()
@@ -87,7 +94,7 @@ extension CustomizationController {
 			where FileManager.default.fileExists(atPath: url.path) {
 				try FileManager.default.removeItem(at: url)
 			}
-			guard launcherIconManager.reset() else { throw LauncherError.cannotSetAppIcon }
+			guard restoreLauncherIcon() else { throw LauncherError.cannotSetAppIcon }
 			setHasCustomAppIcon(false)
 			setHasCustomGameIcon(false)
 			preferences.setLastAppliedDynamicIconHue(nil)
