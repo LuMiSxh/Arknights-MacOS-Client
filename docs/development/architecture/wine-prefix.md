@@ -157,14 +157,19 @@ symbolic links. Prefix maintenance must preserve the same containment rule.
 ## Process ownership and shutdown
 
 The direct Wine process and the prefix-wide `wineserver` answer different questions. The direct
-process reports whether game startup failed or `Arknights.exe` exited. `wineserver -w` observes the
-entire prefix, including browser and notice helpers. The launcher does not return to Idle merely
-because the direct process ended.
+process reports whether game startup failed or `Arknights.exe` exited. `wineserver -k` requests
+prefix shutdown; its exit means the signal request was issued, not that shutdown completed. A
+bounded `wineserver -w` wait blocks on the server lock and completes after wineserver releases it.
+The launcher does not return to Idle merely because the direct process or `-k` exited.
 
 Every callback is scoped to the session UUID that captured the region and prefix. A stale callback
 cannot clear a newer session's state. **Stop**, launch cancellation, visible-window timeout, normal
-game exit, and app termination all converge on prefix-scoped cleanup. The controller retains prefix
-ownership until `wineserver` confirms shutdown or the bounded termination escalation finishes.
+game exit, and app termination all request prefix-scoped shutdown. For a user stop, the controller
+closes the spawn gate, issues `wineserver -k`, waits for every `Process` registered with the gate to
+exit, then sends a final `-k` and requires a successful `-w` before releasing prefix ownership. One
+20-second deadline covers the sequence. If a child does not retire, a shutdown command times out, or
+the final wait fails or times out, the session stays in **Stopping** with **Retry** for the same UUID,
+region, and prefix; repeated failure keeps that recovery state.
 
 See [Launch and process lifecycle](launch-and-process-lifecycle.md) for the complete session state
 machine and failure behavior.

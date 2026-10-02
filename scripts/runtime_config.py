@@ -37,6 +37,7 @@ class DXMTLayout:
 class RuntimeLayout:
     archive_wine_directory: PurePosixPath
     archive_dxmt_directory: PurePosixPath
+    capability_manifest_path: PurePosixPath
     executables: tuple[PurePosixPath, ...]
     required_files: tuple[PurePosixPath, ...]
     mac_driver: PurePosixPath
@@ -144,6 +145,15 @@ def _relative_path(config: dict[str, Any], key: str) -> PurePosixPath:
     return _safe_list_path(_string(config, key), key)
 
 
+def _filename(config: dict[str, Any], key: str) -> PurePosixPath:
+    value = _string(config, key)
+    if value in (".", "..") or any(
+        separator in value for separator in ("/", "\\", "\0")
+    ):
+        fail(f"runtime configuration path must be a safe single filename: {key}")
+    return PurePosixPath(value)
+
+
 def _string_list(config: dict[str, Any], key: str) -> tuple[str, ...]:
     value = nested_value(config, key)
     if (
@@ -231,6 +241,7 @@ def _read_layout(config: dict[str, Any]) -> RuntimeLayout:
         archive_dxmt_directory=_relative_path(
             config, "interface.archive.dxmtDirectory"
         ),
+        capability_manifest_path=_filename(config, "interface.runtimeCapabilities"),
         executables=executables,
         required_files=required_files,
         mac_driver=_relative_path(config, "interface.macDriver"),

@@ -117,7 +117,10 @@ enum SettingsStrings {
 		"Exposes the Taiwan client in the region picker. It stays disabled until you allow it here."
 	static let frameLatency = "Frame Latency"
 	static let frameLatencyDetail =
-		"Limits the DXMT queue to 1–3 frames. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+		"At 0, DXMT waits for the current GPU frame before queuing another. This may reduce FPS or make frame pacing less smooth. Applies on the next game launch."
+	static let hardwareCursor = "Use Hardware Cursor"
+	static let hardwareCursorDetail =
+		"Experimental: hides the game's PRTS cursor so the macOS hardware cursor can show instead. Its appearance may differ. Applies on the next game launch."
 	static let repair = "Repair"
 	static let repairAction = "Repair…"
 	static let repairDetail = "Check every game file and download missing or damaged files again."
@@ -125,7 +128,7 @@ enum SettingsStrings {
 	static let logs = "Logs"
 	static let showLogs = "Show Logs"
 	static let showGameFilesHelp = "Show game files in Finder"
-	static let gameMode = "Game Mode (Experimental)"
+	static let gameMode = "Game Mode"
 	static let gameModeDetail =
 		"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
 	static let gameModeAlert = "Game Mode Needs Xcode"
@@ -225,6 +228,10 @@ enum SettingsStrings {
 
 	static func downloading(_ percentage: Int) -> String {
 		"Downloading \(percentage)%"
+	}
+
+	static func verifying(_ percentage: Int) -> String {
+		"Verifying \(percentage)%"
 	}
 
 	static func downloadSpeed(_ speed: String) -> String {

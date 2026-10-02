@@ -6,8 +6,11 @@ enum AppConstants {
 	enum Game {
 		static let installedStateFileName = ".arknights-client-state.json"
 		static let installedStateMaximumBytes = 8 * 1_024 * 1_024
+		static let installerStagingDirectoryName = ".arknights-client-install-staging"
+		static let installerResumeMetadataMaximumBytes = 16 * 1_024
 		static let runtimeMigrationStateMaximumBytes = 64 * 1_024
 		static let userDirectoryConfigurationMaximumBytes = 64 * 1_024
+		static let vuplexOfficialHelperMaximumBytes = 5 * 1_024 * 1_024
 		static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
 		static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
 		static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
@@ -17,6 +20,10 @@ enum AppConstants {
 		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
 		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
 		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
+		static let dxmtMaximumFrameLatencyEnvironmentKey =
+			"ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"
+		static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
+		static let capabilityManifestMaximumBytes = 4 * 1_024
 	}
 
 	enum Icon {
@@ -156,9 +163,11 @@ enum AppConstants {
 	enum Timeouts {
 		static let processTerminateGracePeriod: TimeInterval = 3
 		static let processKillGracePeriod: TimeInterval = 1
+		static let processRetirementPollInterval: Duration = .milliseconds(25)
+		/// Covers helper retirement and final wineserver verification before prefix ownership ends.
+		static let runtimeShutdown: Duration = .seconds(20)
 		static let windowReadiness: Duration = .seconds(90)
 		static let windowPollInterval: Duration = .milliseconds(250)
-		static let resetCountdownPollInterval: Duration = .seconds(30)
 		static let quitSheetDetachPollInterval: TimeInterval = 0.05
 		static let quitSheetDetachPollLimit = 20
 	}

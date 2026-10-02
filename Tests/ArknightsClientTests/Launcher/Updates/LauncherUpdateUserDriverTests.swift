@@ -122,38 +122,34 @@ struct LauncherUpdateUserDriverTests {
 		#expect(driver.phase == .hidden)
 	}
 
-	@Test
-	func noUpdateAcknowledgementReplacesStaleCheckCancellation() {
+	@Test(arguments: ReplacedCheckCallback.allCases)
+	func replacementAcknowledgementReplacesStaleCheckCancellation(
+		callback: ReplacedCheckCallback
+	) {
 		let driver = LauncherUpdateUserDriver()
 		var cancellationCount = 0
 		var acknowledgementCount = 0
 		driver.showUserInitiatedUpdateCheck { cancellationCount += 1 }
-		driver.showUpdateNotFoundWithError(
-			NSError(domain: "Test", code: 1),
-			acknowledgement: { acknowledgementCount += 1 }
-		)
+		switch callback {
+		case .noUpdate:
+			driver.showUpdateNotFoundWithError(
+				NSError(domain: "Test", code: 1),
+				acknowledgement: { acknowledgementCount += 1 }
+			)
+		case .updaterError:
+			driver.showUpdaterError(
+				NSError(domain: "Test", code: 1),
+				acknowledgement: { acknowledgementCount += 1 }
+			)
+		}
 
 		driver.dismissFromUser()
-		driver.cancelCheck()
-
-		#expect(cancellationCount == 0)
-		#expect(acknowledgementCount == 1)
-		#expect(driver.phase == .hidden)
-	}
-
-	@Test
-	func updaterErrorAcknowledgementReplacesStaleCallbacks() {
-		let driver = LauncherUpdateUserDriver()
-		var cancellationCount = 0
-		var acknowledgementCount = 0
-		driver.showUserInitiatedUpdateCheck { cancellationCount += 1 }
-		driver.showUpdaterError(
-			NSError(domain: "Test", code: 1),
-			acknowledgement: { acknowledgementCount += 1 }
-		)
-
-		driver.dismissFromUser()
-		driver.acknowledge()
+		switch callback {
+		case .noUpdate:
+			driver.cancelCheck()
+		case .updaterError:
+			driver.acknowledge()
+		}
 
 		#expect(cancellationCount == 0)
 		#expect(acknowledgementCount == 1)
@@ -301,4 +297,9 @@ struct LauncherUpdateUserDriverTests {
 
 		#expect(driver.phase == .hidden)
 	}
+}
+
+enum ReplacedCheckCallback: String, CaseIterable, Sendable {
+	case noUpdate
+	case updaterError
 }

@@ -10,6 +10,9 @@ enum LauncherDownloadProgressPresentation {
 
 	static func title(for progress: DownloadProgress?, isPaused: Bool) -> String? {
 		guard let percentage = percentage(for: progress) else { return nil }
+		if progress?.isVerifying == true {
+			return HomeStrings.verificationPercentage(percentage)
+		}
 		return isPaused
 			? HomeStrings.pausedDownloadPercentage(percentage)
 			: HomeStrings.downloadPercentage(percentage)
@@ -32,9 +35,10 @@ enum LauncherDownloadProgressPresentation {
 	) -> Double? {
 		guard !hasFailure else { return nil }
 
+		if status.isIndeterminateWork { return 1 }
 		switch status {
-		case .preparingInstallation, .verifyingInstallation:
-			return 1
+		case .verifyingInstallation:
+			return progress?.isVerifying == true ? knownFraction(for: progress) ?? 1 : 1
 		case .downloading, .pausing:
 			return knownFraction(for: progress)
 		case .paused:
@@ -50,9 +54,7 @@ enum LauncherDownloadProgressPresentation {
 		hasFailure: Bool
 	) -> Bool {
 		guard !hasFailure else { return false }
-		if status == .preparingInstallation || status == .verifyingInstallation {
-			return true
-		}
+		if status.isIndeterminateWork || status == .verifyingInstallation { return true }
 		guard status == .downloading,
 			let progress,
 			!progress.isTransferStalled
@@ -95,10 +97,7 @@ enum LauncherDownloadProgressPresentation {
 struct LauncherActivityStatusView: View {
 	let lifecycle: LauncherLifecycleStore
 	let installation: InstallationController
-	let intelTranslation: IntelTranslationController
 	let accentColor: Color
-	let requestRosettaInstallation: () -> Void
-	let retryIntelTranslationCheck: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var completionFeedback: InstallationCompletionFeedback?
 
@@ -143,7 +142,6 @@ struct LauncherActivityStatusView: View {
 							.foregroundStyle(.secondary)
 							.lineLimit(1)
 						transferDetails
-						statusAction
 					}
 				}
 			}
@@ -200,46 +198,6 @@ struct LauncherActivityStatusView: View {
 		completionFeedback = installation.consumeCompletionFeedback(for: installation.region)
 	}
 
-	@ViewBuilder
-	private var statusAction: some View {
-		if lifecycle.failure == nil,
-			installation.isInstalled, let code = intelTranslation.supportCode
-		{
-			VStack(alignment: .leading, spacing: 4) {
-				LauncherSupportCodeLabel(code: code)
-				ViewThatFits(in: .horizontal) {
-					HStack(spacing: 10) { intelTranslationActions(code: code) }
-					VStack(alignment: .leading, spacing: 4) {
-						intelTranslationActions(code: code)
-					}
-				}
-				.font(.caption)
-			}
-		}
-	}
-
-	@ViewBuilder
-	private func intelTranslationActions(code: SupportCode) -> some View {
-		if intelTranslation.canInstallRosetta {
-			AccentActionLink(
-				title: intelTranslation.installationActionTitle,
-				accentColor: accentColor,
-				action: requestRosettaInstallation
-			)
-		} else if intelTranslation.canRetryAvailabilityCheck {
-			AccentActionLink(
-				title: HomeStrings.checkAgain,
-				accentColor: accentColor,
-				action: retryIntelTranslationCheck
-			)
-		}
-		AccentLink(
-			title: HomeStrings.openTroubleshooting,
-			destination: code.troubleshootingURL,
-			accentColor: accentColor
-		)
-	}
-
 	private var statusTitle: String {
 		if lifecycle.presentation.status == .pausing { return lifecycle.activityMessage }
 		if showsDownloadSnapshot,
@@ -253,7 +211,6 @@ struct LauncherActivityStatusView: View {
 		if lifecycle.failure?.blocksGameLaunch == true {
 			return HomeStrings.needsAttention
 		}
-		if installation.isInstalled, let title = intelTranslation.statusTitle { return title }
 		return lifecycle.activityMessage
 	}
 
@@ -267,8 +224,6 @@ struct LauncherActivityStatusView: View {
 				HomeStrings.downloadProgress(downloaded: downloaded, total: total)
 
 		}
-		if lifecycle.failure?.blocksGameLaunch == true { return nil }
-		if installation.isInstalled { return intelTranslation.statusDetail }
 		return nil
 	}
 
@@ -289,6 +244,8 @@ struct LauncherActivityStatusView: View {
 	private var showsDownloadSnapshot: Bool {
 		guard lifecycle.failure == nil else { return false }
 		return lifecycle.presentation.status == .downloading
+			|| (lifecycle.presentation.status == .verifyingInstallation
+				&& installation.progress?.isVerifying == true)
 			|| (isPausedDownload
 				&& LauncherDownloadProgressPresentation.fraction(
 					for: installation.progress,
@@ -312,14 +269,29 @@ struct LauncherActivityStatusView: View {
 	}
 
 	private var percentageLabel: some View {
-		Text(statusTitle)
-			.font(.system(size: 16, weight: .semibold))
-			.contentTransition(reduceMotion ? .identity : .numericText())
-			.animation(
-				reduceMotion ? nil : .easeInOut(duration: 0.16),
-				value: statusTitle
+		ZStack(alignment: .leading) {
+			Text(
+				installation.progress?.isVerifying == true
+					? HomeStrings.verificationPercentage(100)
+					: isPausedDownload
+						? HomeStrings.pausedDownloadPercentage(100)
+						: HomeStrings.downloadPercentage(100)
 			)
-			.fixedSize(horizontal: true, vertical: false)
+			.font(.system(size: 16, weight: .semibold))
+			.monospacedDigit()
+			.hidden()
+			.accessibilityHidden(true)
+			Text(statusTitle)
+				.font(.system(size: 16, weight: .semibold))
+				.monospacedDigit()
+				.contentTransition(reduceMotion ? .identity : .numericText())
+				.animation(
+					LauncherMotion.animation(.reveal, reduceMotion: reduceMotion),
+					value: statusTitle
+				)
+				.fixedSize(horizontal: true, vertical: false)
+		}
+		.fixedSize(horizontal: true, vertical: false)
 	}
 
 	@ViewBuilder

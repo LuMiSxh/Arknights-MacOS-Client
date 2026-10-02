@@ -13,7 +13,5 @@ struct LauncherHUDActions {
 	let cancelDownload: () -> Void
 	let launch: () -> Void
 	let stopGame: () -> Void
-	let requestRosettaInstallation: () -> Void
-	let retryIntelTranslationCheck: () -> Void
 	let showFailureDetails: () -> Void
 }

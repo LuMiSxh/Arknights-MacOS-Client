@@ -38,14 +38,16 @@ struct PlaytimeStatisticsPage: View {
 				latestSession
 			}
 
-			SettingsPanel(
-				title: PlaytimeStrings.regions,
-				systemImage: "globe"
-			) {
-				ForEach(Array(regions.enumerated()), id: \.element.id) {
-					index, region in
-					if index > 0 { SettingsHairline() }
-					regionRow(region)
+			if !regions.isEmpty {
+				SettingsPanel(
+					title: PlaytimeStrings.regions,
+					systemImage: "globe"
+				) {
+					ForEach(Array(regions.enumerated()), id: \.element.id) {
+						index, region in
+						if index > 0 { SettingsHairline() }
+						regionRow(region)
+					}
 				}
 			}
 

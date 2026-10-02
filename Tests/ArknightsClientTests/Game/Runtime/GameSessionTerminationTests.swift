@@ -24,13 +24,28 @@ struct GameSessionTerminationTests {
 			)
 		}
 
-		await fixture.runtime.waitForStop()
+		#expect(await fixture.runtime.waitForStop(attempt: 1))
+		let duplicateCleanup = Task {
+			await fixture.model.gameSession.stopAndFinishGameSession(
+				using: fixture.runtime,
+				sessionID: fixture.sessionID,
+				processIdentifier: 42,
+				region: .japan
+			)
+		}
+		let duplicateStarted = await fixture.runtime.waitForStop(attempt: 2)
+		#expect(!duplicateStarted)
+		#expect(await fixture.runtime.stopAttemptCount() == 1)
+		if duplicateStarted {
+			await fixture.runtime.succeedStop(attempt: 2)
+		}
+		await duplicateCleanup.value
 		#expect(
 			fixture.model.lifecycle.activity
 				== .stoppingGame(sessionID: fixture.sessionID, processIdentifier: 42)
 		)
 		#expect(!fixture.model.lifecycle.canBeginExclusiveActivity)
-		await fixture.runtime.succeedStop()
+		await fixture.runtime.succeedStop(attempt: 1)
 		await cleanup.value
 
 		#expect(fixture.model.lifecycle.activity == .idle)
@@ -40,20 +55,14 @@ struct GameSessionTerminationTests {
 	}
 
 	@Test
-	func stopFailureKeepsTheSessionOwnedAndOffersRuntimeStopRecovery() async {
+	func failedStopRetriesTheSameSessionAndRetainsRecoveryAfterAnotherFailure() async {
 		let fixture = await makeFixture(region: .korea)
-		let cleanup = Task {
-			await fixture.model.gameSession.stopAndFinishGameSession(
-				using: fixture.runtime,
-				sessionID: fixture.sessionID,
-				processIdentifier: 42,
-				region: .korea
-			)
-		}
-
-		await fixture.runtime.waitForStop()
-		await fixture.runtime.failStop()
-		await cleanup.value
+		fixture.model.gameSession.runtimeSessionControllerProvider = { fixture.runtime }
+		fixture.model.gameSession.stopGame()
+		#expect(await fixture.runtime.waitForStop(attempt: 1))
+		let firstCleanup = fixture.model.gameSession.gameMonitorTask
+		await fixture.runtime.failStop(attempt: 1)
+		await firstCleanup?.value
 
 		#expect(
 			fixture.model.lifecycle.activity
@@ -63,6 +72,36 @@ struct GameSessionTerminationTests {
 		#expect(fixture.model.lifecycle.failure?.context.operation == .runtimeStop)
 		#expect(fixture.model.lifecycle.failure?.context.region == .korea)
 		#expect(fixture.model.lifecycle.failure?.actions.contains(.retry) == true)
+		#expect(await fixture.runtime.stopAttemptCount() == 1)
+
+		#expect(fixture.model.gameSession.retryRuntimeFailure(id: fixture.sessionID))
+		#expect(!fixture.model.gameSession.retryRuntimeFailure(id: fixture.sessionID))
+		let retryStarted = await fixture.runtime.waitForStop(attempt: 2)
+		#expect(retryStarted)
+		guard retryStarted else {
+			await fixture.api.resolveBranding()
+			return
+		}
+		let retryCount = await fixture.runtime.stopAttemptCount()
+		#expect(retryCount == 2)
+		let retryCleanup = fixture.model.gameSession.gameMonitorTask
+		#expect(
+			await fixture.runtime.stopDirectories() == [
+				fixture.model.installation.paths.winePrefix(for: .korea),
+				fixture.model.installation.paths.winePrefix(for: .korea),
+			])
+		await fixture.runtime.failStop(attempt: 2)
+		await retryCleanup?.value
+
+		#expect(
+			fixture.model.lifecycle.activity
+				== .stoppingGame(sessionID: fixture.sessionID, processIdentifier: 42)
+		)
+		#expect(fixture.model.lifecycle.failure?.id == fixture.sessionID)
+		#expect(fixture.model.lifecycle.failure?.context.operation == .runtimeStop)
+		#expect(fixture.model.lifecycle.failure?.context.region == .korea)
+		#expect(fixture.model.lifecycle.failure?.actions.contains(.retry) == true)
+		#expect(await fixture.runtime.stopAttemptCount() == 2)
 		await fixture.api.resolveBranding()
 	}
 
@@ -84,13 +123,13 @@ struct GameSessionTerminationTests {
 			)
 		}
 
-		await fixture.runtime.waitForStop()
+		#expect(await fixture.runtime.waitForStop(attempt: 1))
 		fixture.model.lifecycle.activity = .runningGame(
 			sessionID: replacementSessionID,
 			processIdentifier: 99
 		)
 		fixture.model.gameSession.activeGameRegion = .global
-		await fixture.runtime.succeedStop()
+		await fixture.runtime.succeedStop(attempt: 1)
 		await cleanup.value
 
 		#expect(
@@ -107,6 +146,9 @@ private func makeFixture(region: GameRegion) async -> SessionFixture {
 	let api = BlockingBrandingAPI()
 	let model = makeModel(api: api, installer: ControllableInstaller())
 	await api.waitForBrandingRequest()
+	if model.installation.region != region {
+		_ = model.installation.selectRegion(region)
+	}
 	let sessionID = UUID()
 	model.lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
 	model.gameSession.activeGameRegion = region
@@ -127,30 +169,41 @@ private enum TestSessionError: Error {
 }
 
 private actor BlockingSessionRuntime: WineRuntimeSessionControlling {
-	private var stopContinuation: CheckedContinuation<Void, any Error>?
-	private var stopWaiters: [CheckedContinuation<Void, Never>] = []
+	private var stopContinuations: [Int: CheckedContinuation<Void, any Error>] = [:]
+	private var requestedDirectories: [URL] = []
 
 	func stop(prefixDirectory: URL) async throws {
-		for waiter in stopWaiters { waiter.resume() }
-		stopWaiters.removeAll()
-		try await withCheckedThrowingContinuation { stopContinuation = $0 }
+		requestedDirectories.append(prefixDirectory)
+		let attempt = requestedDirectories.count
+		try await withCheckedThrowingContinuation { stopContinuations[attempt] = $0 }
 	}
 
 	func waitUntilStopped(prefixDirectory: URL) async throws {
 	}
 
-	func waitForStop() async {
-		if stopContinuation != nil { return }
-		await withCheckedContinuation { stopWaiters.append($0) }
+	func waitForStop(attempt: Int) async -> Bool {
+		for _ in 0..<100 {
+			if stopContinuations[attempt] != nil { return true }
+			try? await Task.sleep(for: .milliseconds(10))
+		}
+		return stopContinuations[attempt] != nil
 	}
 
-	func succeedStop() {
-		stopContinuation?.resume()
-		stopContinuation = nil
+	func succeedStop(attempt: Int) {
+		stopContinuations.removeValue(forKey: attempt)?.resume()
 	}
 
-	func failStop() {
-		stopContinuation?.resume(throwing: TestSessionError.cleanupFailed)
-		stopContinuation = nil
+	func failStop(attempt: Int) {
+		stopContinuations.removeValue(forKey: attempt)?.resume(
+			throwing: TestSessionError.cleanupFailed
+		)
+	}
+
+	func stopAttemptCount() -> Int {
+		requestedDirectories.count
+	}
+
+	func stopDirectories() -> [URL] {
+		requestedDirectories
 	}
 }

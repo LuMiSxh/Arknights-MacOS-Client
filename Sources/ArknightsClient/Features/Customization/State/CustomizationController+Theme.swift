@@ -71,7 +71,10 @@ extension CustomizationController {
 				launcherIconManager.apply(launcherIconManager.currentIcon, persistToBundle: false)
 				return
 			}
-			guard let tinted = dynamicIconRenderer(hue) else { return }
+			guard let tinted = dynamicIconRenderer(hue) else {
+				resetDynamicLauncherIcon()
+				return
+			}
 			applyDynamicLauncherIcon(tinted, persistToBundle: hueChanged)
 			if hueChanged { preferences.setLastAppliedDynamicIconHue(hue) }
 		} else {
@@ -94,11 +97,11 @@ extension CustomizationController {
 
 	private func applyDynamicLauncherIcon(_ image: NSImage, persistToBundle: Bool) {
 		guard !launcherIconManager.apply(image, persistToBundle: persistToBundle) else { return }
-		Task { [log] in await log.error("Failed to persist the Dynamic Theme launcher icon") }
+		log.error("Failed to persist the Dynamic Theme launcher icon")
 	}
 
 	private func resetDynamicLauncherIcon() {
 		guard !launcherIconManager.reset() else { return }
-		Task { [log] in await log.error("Failed to restore the bundled launcher icon") }
+		log.error("Failed to restore the bundled launcher icon")
 	}
 }

@@ -46,78 +46,59 @@ struct PresetCatalogSearchTests {
 	}
 
 	@Test
-	func oneCharacterTypoStillRanksTheClosestOperator() async throws {
-		let closest = PresetAvatar(
+	func oneCharacterTypoRanksTheClosestPresetAcrossCatalogs() async throws {
+		let closestAvatar = PresetAvatar(
 			id: "char_002_amiya",
 			name: "Amiya",
 			filename: "char_002_amiya.png",
 			rarity: "TIER_5"
 		)
-		let unrelated = PresetAvatar(
+		let unrelatedAvatar = PresetAvatar(
 			id: "char_003_kalts",
 			name: "Kal'tsit",
 			filename: "char_003_kalts.png",
 			rarity: "TIER_6"
 		)
 
-		let matches = try await PresetCatalogSearch.avatars(
-			matching: "Amiyaa", in: [unrelated, closest])
+		let avatarMatches = try await PresetCatalogSearch.avatars(
+			matching: "Amiyaa", in: [unrelatedAvatar, closestAvatar])
+		#expect(avatarMatches.first == closestAvatar, "operator query")
 
-		#expect(matches.first == closest)
-	}
-
-	@Test
-	func wallpaperSearchKeepsDisplayTitleBehavior() async throws {
-		let wallpaper = PresetWallpaper(
+		let closestWallpaper = PresetWallpaper(
 			id: "crossing",
 			title: "Crossing the Rhine",
 			fallbackOrdinal: nil,
 			url: URL(string: "https://arknights.global/crossing.png")!,
 			thumbnailURL: nil
 		)
-
-		let matches = try await PresetCatalogSearch.wallpapers(matching: "rhine", in: [wallpaper])
-
-		#expect(matches == [wallpaper])
-	}
-
-	@Test
-	func wallpaperSearchTrimsQueryWhitespace() async throws {
-		let wallpaper = PresetWallpaper(
-			id: "crossing",
-			title: "Crossing the Rhine",
-			fallbackOrdinal: nil,
-			url: URL(string: "https://arknights.global/crossing.png")!,
-			thumbnailURL: nil
-		)
-
-		let matches = try await PresetCatalogSearch.wallpapers(
-			matching: "  rhine  ", in: [wallpaper])
-
-		#expect(matches == [wallpaper])
-	}
-
-	@Test
-	func wallpaperSearchRanksOneCharacterTypo() async throws {
-		let closest = PresetWallpaper(
-			id: "crossing",
-			title: "Crossing the Rhine",
-			fallbackOrdinal: nil,
-			url: URL(string: "https://arknights.global/crossing.png")!,
-			thumbnailURL: nil
-		)
-		let unrelated = PresetWallpaper(
+		let unrelatedWallpaper = PresetWallpaper(
 			id: "summer",
 			title: "Summer Celebration",
 			fallbackOrdinal: nil,
 			url: URL(string: "https://arknights.global/summer.png")!,
 			thumbnailURL: nil
 		)
+		let wallpaperMatches = try await PresetCatalogSearch.wallpapers(
+			matching: "Rhina", in: [unrelatedWallpaper, closestWallpaper])
+		#expect(wallpaperMatches.first == closestWallpaper, "wallpaper query")
+	}
 
-		let matches = try await PresetCatalogSearch.wallpapers(
-			matching: "Rhina", in: [unrelated, closest])
+	@Test(
+		"wallpaper search matches display titles after trimming surrounding whitespace",
+		arguments: ["rhine", "  rhine  "]
+	)
+	func wallpaperSearchMatchesDisplayTitle(query: String) async throws {
+		let wallpaper = PresetWallpaper(
+			id: "crossing",
+			title: "Crossing the Rhine",
+			fallbackOrdinal: nil,
+			url: URL(string: "https://arknights.global/crossing.png")!,
+			thumbnailURL: nil
+		)
 
-		#expect(matches.first == closest)
+		let matches = try await PresetCatalogSearch.wallpapers(matching: query, in: [wallpaper])
+
+		#expect(matches == [wallpaper])
 	}
 
 	@Test

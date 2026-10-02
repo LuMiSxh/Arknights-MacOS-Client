@@ -106,11 +106,9 @@ struct LauncherSettingsView: View {
 					case .statistics:
 						PlaytimeStatisticsPage(
 							controller: playtimeStatistics,
-							regions: GameRegion.selectableCases(
-								canaryEnabled: settings.canaryFeaturesEnabled,
-								chinaClientsEnabled: settings.chinaClientsEnabled,
-								taiwanClientEnabled: settings.taiwanClientEnabled
-							),
+							regions: settings.regionAccess.selectableRegions.filter {
+								installation.isRegionInstalled($0)
+							},
 							accentColor: customization.accentColor
 						)
 					case .about:
@@ -174,7 +172,7 @@ struct LauncherSettingsView: View {
 		)
 		.preferredColorScheme(.dark)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: 0.3),
+			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
 			value: customization.dynamicThemeHue
 		)
 		.onExitCommand(perform: dismiss.callAsFunction)

@@ -16,9 +16,7 @@ enum GamePolicyControl {
 	/// Requests the policy change without blocking launch and records start or exit failures.
 	static func setGameMode(on: Bool, log: LauncherLog) {
 		guard isAvailable() else {
-			Task {
-				await log.debug("Game Mode request skipped because gamepolicyctl is unavailable")
-			}
+			log.debug("Game Mode request skipped because gamepolicyctl is unavailable")
 			return
 		}
 		let process = Process()
@@ -28,20 +26,16 @@ enum GamePolicyControl {
 		process.standardError = FileHandle.nullDevice
 		process.terminationHandler = { process in
 			guard process.terminationStatus != 0 else { return }
-			Task {
-				await log.error(
-					"gamepolicyctl exited with status \(process.terminationStatus) while setting Game Mode \(on ? "on" : "auto")"
-				)
-			}
+			log.error(
+				"gamepolicyctl exited with status \(process.terminationStatus) while setting Game Mode \(on ? "on" : "auto")"
+			)
 		}
 		do {
 			try process.run()
 		} catch {
-			Task {
-				await log.error(
-					"Failed to start gamepolicyctl for Game Mode \(on ? "on" : "auto"): \(error.localizedDescription)"
-				)
-			}
+			log.error(
+				"Failed to start gamepolicyctl for Game Mode \(on ? "on" : "auto"): \(error.localizedDescription)"
+			)
 		}
 	}
 }

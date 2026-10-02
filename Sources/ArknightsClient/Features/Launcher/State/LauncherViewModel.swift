@@ -161,7 +161,6 @@ final class LauncherViewModel {
 		)
 		self.gameSession = gameSession
 
-		settings.regionProvider = { [weak installation] in installation?.region ?? .global }
 		settings.onLauncherUpdateCheckRequested = { [weak self] in
 			self?.checkLauncherUpdates()
 		}
@@ -194,8 +193,6 @@ final class LauncherViewModel {
 			customization?.hasCustomGameIcon == true ? paths.customGameIcon : nil
 		}
 
-		settings.start()
-
 		#if DEBUG
 			developerSimulation =
 				DeveloperSimulationState.isPreviewArgument(arguments)
@@ -209,7 +206,7 @@ final class LauncherViewModel {
 					await loadDeveloperArtwork()
 					customization.markInitialArtworkLoadComplete()
 				}
-				Task { [log] in await log.info("Developer simulation started") }
+				log.info("Developer simulation started")
 				return
 			}
 		#endif
@@ -269,7 +266,7 @@ final class LauncherViewModel {
 		}
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
-		Task { [log] in await log.info("Launcher \(appVersion) started") }
+		log.info("Launcher \(appVersion) started")
 	}
 
 	private func refreshInstalledRegionsAfterCanaryChange() {
@@ -298,12 +295,9 @@ final class LauncherViewModel {
 	}
 
 	private func refreshInstalledRegionsNow() {
-		let activeRegion = installation.region
-		let activeRegionDisabled =
-			(activeRegion.requiresCanaryPermission && !settings.canaryFeaturesEnabled)
-			|| (activeRegion.requiresChinaClientPermission && !settings.chinaClientsEnabled)
-			|| (activeRegion.requiresTaiwanClientPermission && !settings.taiwanClientEnabled)
-		if activeRegionDisabled, refreshController.selectRegion(.global) {
+		if !settings.regionAccess.allows(installation.region),
+			refreshController.selectRegion(.global)
+		{
 			return
 		}
 		_ = installation.updateInstalledState()

@@ -128,12 +128,13 @@ struct CapsuleActionButton: View {
 
 	private var labelContentTransition: ContentTransition {
 		guard labelMotion == .primary else { return .identity }
-		return reduceMotion ? .opacity : .symbolEffect(.replace)
+		guard !reduceMotion else { return .opacity }
+		return .symbolEffect(ReplaceSymbolEffect.replace.magic(fallback: .replace.downUp))
 	}
 
 	private var labelAnimation: Animation? {
-		guard labelMotion == .primary, !reduceMotion else { return nil }
-		return .easeInOut(duration: LauncherVisuals.Motion.primaryAction)
+		guard labelMotion == .primary else { return nil }
+		return LauncherMotion.animation(.morph, reduceMotion: reduceMotion)
 	}
 
 	private var titleContentTransition: ContentTransition {
@@ -184,6 +185,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 				foreground: foreground,
 				in: Capsule()
 			)
+			.pointerSheen(tint: foreground, in: Capsule())
 	}
 
 	private func compactSurface(_ content: Content) -> some View {

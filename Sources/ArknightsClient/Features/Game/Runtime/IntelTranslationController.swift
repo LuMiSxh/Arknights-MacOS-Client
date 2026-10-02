@@ -69,15 +69,20 @@ final class IntelTranslationController {
 
 		let check = await task.value
 		checkTask = nil
+		applyAvailabilityCheck(check)
+		return check.state
+	}
+
+	/// Applies real and simulated probe results through the same recovery presentation.
+	func applyAvailabilityCheck(_ check: IntelTranslationCheck) {
 		lifecycle.intelTranslationState = check.state
 		if check.state != .rosettaMissing {
 			lifecycle.rosettaInstallationState = .idle
 		}
 		updatePreflightFailure(for: check)
-		await log.info(
+		log.info(
 			"Intel translation preflight; state=\(check.state.diagnosticName) \(check.diagnostics)"
 		)
-		return check.state
 	}
 
 	@discardableResult
@@ -104,7 +109,7 @@ final class IntelTranslationController {
 			installationTask = nil
 			installationID = nil
 			let output = Self.boundedDiagnostics(result.output)
-			await log.info(
+			log.info(
 				"Rosetta installation finished; status=\(result.status) output=\(output)")
 			guard result.status == 0 else {
 				let message =
@@ -130,7 +135,7 @@ final class IntelTranslationController {
 			let message =
 				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
 			lifecycle.rosettaInstallationState = .failed(message)
-			await log.error("Rosetta installation failed: \(error.localizedDescription)")
+			log.error("Rosetta installation failed: \(error.localizedDescription)")
 			presentRosettaFailure(
 				message: message,
 				diagnostic: error.localizedDescription,
@@ -147,7 +152,7 @@ final class IntelTranslationController {
 		guard failure.actions.contains(.retry), canInstallRosetta else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		Task { [weak self, log] in
-			await log.info("Recovery selected; action=retry operation=rosetta-installation")
+			log.info("Recovery selected; action=retry operation=rosetta-installation")
 			_ = await self?.installRosetta()
 		}
 		return true
@@ -160,33 +165,10 @@ final class IntelTranslationController {
 		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
 		Task { [weak self, log] in
-			await log.info("Recovery selected; action=retry operation=intel-translation-preflight")
+			log.info("Recovery selected; action=retry operation=intel-translation-preflight")
 			_ = await self?.refreshAvailability(force: true)
 		}
 		return true
-	}
-
-	var statusTitle: String? {
-		if lifecycle.rosettaInstallationState.isInstalling {
-			return "Installing Rosetta 2…"
-		}
-		if lifecycle.rosettaInstallationState.failureMessage != nil {
-			return "Rosetta installation failed"
-		}
-		return switch lifecycle.intelTranslationState {
-		case .waitingForLauncherCheck, .checking:
-			"Checking Intel compatibility…"
-		case .available:
-			nil
-		case .rosettaMissing:
-			"Rosetta 2 required"
-		case .gameTestModeEnabled:
-			"Legacy Game Test Mode is active"
-		case .unavailable:
-			"Intel compatibility unavailable"
-		case .unsupportedOS:
-			"Windows runtime unsupported"
-		}
 	}
 
 	var statusDetail: String? {
@@ -202,42 +184,17 @@ final class IntelTranslationController {
 		case .rosettaMissing:
 			"Install Rosetta 2, then check again."
 		case .gameTestModeEnabled:
-			"This macOS 27 test mode disables Rosetta. Turn it off, restart your Mac, then check again."
+			"On macOS 27 beta, Legacy Game Test Mode disables Rosetta. If it is enabled, turn it off, restart your Mac, then check again."
 		case .unavailable:
 			"macOS could not start an Intel test process. Check Rosetta, restart your Mac, then check again."
 		case .unsupportedOS:
-			"This macOS version no longer provides the general Rosetta support Wine requires."
-		}
-	}
-
-	var canRetryAvailabilityCheck: Bool {
-		guard !lifecycle.rosettaInstallationState.isInstalling else { return false }
-		return switch lifecycle.intelTranslationState {
-		case .rosettaMissing, .gameTestModeEnabled, .unavailable:
-			true
-		case .waitingForLauncherCheck, .checking, .available, .unsupportedOS:
-			false
+			"The launcher currently blocks this macOS version. Apple retains Rosetta only for certain legacy games, and whether this Wine and game setup qualifies is unconfirmed."
 		}
 	}
 
 	var canInstallRosetta: Bool {
 		lifecycle.intelTranslationState == .rosettaMissing
 			&& !lifecycle.rosettaInstallationState.isInstalling
-	}
-
-	var supportCode: SupportCode? {
-		switch lifecycle.intelTranslationState {
-		case .rosettaMissing, .gameTestModeEnabled, .unavailable, .unsupportedOS:
-			.limpet
-		case .waitingForLauncherCheck, .checking, .available:
-			nil
-		}
-	}
-
-	var installationActionTitle: String {
-		lifecycle.rosettaInstallationState.failureMessage == nil
-			? "Install Rosetta 2…"
-			: "Try Installation Again…"
 	}
 
 	var launchError: LauncherError {

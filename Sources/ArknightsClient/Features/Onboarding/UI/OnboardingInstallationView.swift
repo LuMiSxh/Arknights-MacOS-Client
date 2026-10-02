@@ -50,11 +50,7 @@ struct OnboardingInstallationView: View {
 			) {
 				AdaptiveSegmentedControl(
 					selection: regionBinding,
-					options: GameRegion.selectableCases(
-						canaryEnabled: preferences.canaryFeaturesEnabled,
-						chinaClientsEnabled: preferences.chinaClientsEnabled,
-						taiwanClientEnabled: preferences.taiwanClientEnabled
-					),
+					options: preferences.regionAccess.selectableRegions,
 					accentColor: accentColor
 				) { region in
 					Text(region.displayName)
@@ -94,6 +90,7 @@ struct OnboardingInstallationView: View {
 				if installation.isDownloading, let progress = installation.progress {
 					ProgressView(value: progress.fraction)
 						.tint(accentColor)
+						.accessibilityLabel(Text(installationTitle))
 					Text(
 						"\(DownloadProgressFormatting.byteCount(progress.downloadedBytes)) of \(DownloadProgressFormatting.byteCount(progress.totalBytes))"
 					)
@@ -115,20 +112,25 @@ struct OnboardingInstallationView: View {
 	}
 
 	private var installationImage: String {
-		if installation.isDownloading { return "arrow.down.circle" }
+		if installation.isDownloading {
+			return isVerifying ? "checkmark.shield" : "arrow.down.circle"
+		}
 		if installation.isInstalled { return "checkmark.circle" }
 		return "externaldrive.badge.plus"
 	}
 
 	private var installationTitle: String {
-		if installation.isDownloading { return OnboardingStrings.downloadingTitle }
+		if installation.isDownloading { return lifecycle.activityMessage }
 		if installation.isInstalled { return OnboardingStrings.existingTitle }
 		if installation.hasPartialDownload { return OnboardingStrings.partialTitle }
 		return OnboardingStrings.readyToInstall(installation.region.displayName)
 	}
 
 	private var installationDetail: String {
-		if installation.isDownloading { return OnboardingStrings.downloadingDetail }
+		if installation.isDownloading {
+			return isVerifying
+				? OnboardingStrings.verifyingDetail : OnboardingStrings.downloadingDetail
+		}
 		if installation.isInstalled {
 			return OnboardingStrings.installationExisting(
 				version: installation.installedVersion
@@ -138,6 +140,11 @@ struct OnboardingInstallationView: View {
 		}
 		if installation.hasPartialDownload { return OnboardingStrings.partialDetail }
 		return OnboardingStrings.installationSize(installationSize)
+	}
+
+	private var isVerifying: Bool {
+		lifecycle.presentation.status == .verifyingInstallation
+			|| installation.progress?.isVerifying == true
 	}
 
 	private var isLoadingInstallationMetadata: Bool {

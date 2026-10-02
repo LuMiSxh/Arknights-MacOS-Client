@@ -244,7 +244,11 @@ actor LauncherAPI {
 		url: URL
 	) async throws -> (Data, HTTPURLResponse) {
 		do {
-			return try await loader.data(for: request, maximumBytes: maximumBytes)
+			return try await loader.data(
+				for: request,
+				maximumBytes: maximumBytes,
+				redirectValidator: DownloadHTTPPolicy.redirectValidator(for: region)
+			)
 		} catch is CancellationError {
 			throw CancellationError()
 		} catch let error as HTTPTransportError {

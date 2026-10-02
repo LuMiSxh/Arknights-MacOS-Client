@@ -15,47 +15,50 @@ struct StatusHUDPill: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
-		if hasContent {
-			VStack(alignment: .leading, spacing: isExpanded && canExpand ? 10 : 0) {
-				header
-				if isExpanded && canExpand {
-					installedRegionRows
-						.transition(expandedContentTransition)
-				}
+		if settings.showsServerResetCountdown {
+			// Countdowns show whole minutes, so redrawing on minute boundaries keeps them exact.
+			TimelineView(.everyMinute) { context in
+				pill(now: context.date)
 			}
-			.padding(.vertical, isExpanded && canExpand ? 11 : 0)
-			.frame(
-				minHeight: isExpanded && canExpand
-					? nil
-					: AppConstants.Music.collapsedPlayerHeight,
-				alignment: isExpanded && canExpand ? .topLeading : .center
-			)
-			.frame(
-				minWidth: isExpanded && canExpand
-					? AppConstants.HUD.expandedStatusMinWidth
-					: nil,
-				maxWidth: isExpanded && canExpand
-					? AppConstants.HUD.expandedStatusWidth
-					: AppConstants.HUD.collapsedStatusMaxWidth
-			)
-			.fixedSize(horizontal: true, vertical: false)
-			.hudPillSurface(
-				isExpanded: isExpanded && canExpand,
-				tint: hudTintColor,
-				progressTint: accentColor
-			)
-			.shadow(
-				color: Color.black.opacity(isExpanded && canExpand ? 0.35 : 0),
-				radius: isExpanded && canExpand ? 12 : 0,
-				y: isExpanded && canExpand ? 5 : 0
-			)
-			.accessibilityElement(children: .contain)
-			.onExitCommand(perform: collapseExpansion)
 		}
 	}
 
-	private var hasContent: Bool {
-		settings.resetCountdownText != nil
+	private func pill(now: Date) -> some View {
+		VStack(alignment: .leading, spacing: isExpanded && canExpand ? 10 : 0) {
+			header(now: now)
+			if isExpanded && canExpand {
+				installedRegionRows(now: now)
+					.transition(expandedContentTransition)
+			}
+		}
+		.padding(.vertical, isExpanded && canExpand ? 11 : 0)
+		.frame(
+			minHeight: isExpanded && canExpand
+				? nil
+				: AppConstants.Music.collapsedPlayerHeight,
+			alignment: isExpanded && canExpand ? .topLeading : .center
+		)
+		.frame(
+			minWidth: isExpanded && canExpand
+				? AppConstants.HUD.expandedStatusMinWidth
+				: nil,
+			maxWidth: isExpanded && canExpand
+				? AppConstants.HUD.expandedStatusWidth
+				: AppConstants.HUD.collapsedStatusMaxWidth
+		)
+		.fixedSize(horizontal: true, vertical: false)
+		.hudPillSurface(
+			isExpanded: isExpanded && canExpand,
+			tint: hudTintColor,
+			progressTint: accentColor
+		)
+		.shadow(
+			color: Color.black.opacity(isExpanded && canExpand ? 0.35 : 0),
+			radius: isExpanded && canExpand ? 12 : 0,
+			y: isExpanded && canExpand ? 5 : 0
+		)
+		.accessibilityElement(children: .contain)
+		.onExitCommand(perform: collapseExpansion)
 	}
 
 	private var canExpand: Bool {
@@ -63,10 +66,10 @@ struct StatusHUDPill: View {
 	}
 
 	@ViewBuilder
-	private var header: some View {
+	private func header(now: Date) -> some View {
 		if canExpand {
 			Button(action: toggleExpansion) {
-				headerLabel
+				headerLabel(now: now)
 			}
 			.buttonStyle(ActionPressStyle())
 			.keyboardFocusIndicator(in: Capsule())
@@ -75,24 +78,24 @@ struct StatusHUDPill: View {
 				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
 
 			)
-			.accessibilityValue(Text(selectedCountdown))
+			.accessibilityValue(Text(countdown(for: installation.region, now: now)))
 			.help(
 
 				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
 
 			)
 		} else {
-			headerLabel
+			headerLabel(now: now)
 		}
 	}
 
-	private var headerLabel: some View {
+	private func headerLabel(now: Date) -> some View {
 		HStack(spacing: 5) {
 			Image(systemName: "clock")
 				.font(.caption.weight(.semibold))
 				.adaptiveControlForeground(accentColor)
 				.accessibilityHidden(true)
-			Text(selectedCountdown)
+			Text(countdown(for: installation.region, now: now))
 				.font(.caption.monospaced().weight(.medium))
 				.foregroundStyle(.secondary)
 				.lineLimit(2)
@@ -118,18 +121,18 @@ struct StatusHUDPill: View {
 		.contentShape(Rectangle())
 	}
 
-	private var selectedCountdown: String {
-		settings.resetCountdownText ?? ""
+	private func countdown(for region: GameRegion, now: Date) -> String {
+		ServerReset.countdownText(for: region, now: now)
 	}
 
 	private var disclosureImage: String {
 		isExpanded ? "chevron.up" : "chevron.down"
 	}
 
-	private var installedRegionRows: some View {
+	private func installedRegionRows(now: Date) -> some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 			ForEach(installation.installedRegions) { region in
-				let countdown = ServerReset.countdownText(for: region)
+				let countdown = countdown(for: region, now: now)
 				Button {
 					selectRegion(region)
 					withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {

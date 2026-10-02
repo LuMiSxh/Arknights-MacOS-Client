@@ -102,7 +102,7 @@ final class StorageOverviewController {
 				guard let self, self.measurementEpoch == epoch else { return }
 				self.isMeasuring = false
 				self.measurementTask = nil
-				await log.error("Failed to measure launcher storage: \(error.localizedDescription)")
+				log.error("Failed to measure launcher storage: \(error.localizedDescription)")
 			}
 		}
 	}

@@ -38,14 +38,17 @@ extension GameSessionController {
 	func retryRuntimeFailure(id: UUID) -> Bool {
 		guard let failure = lifecycle.failure, failure.id == id else { return false }
 		guard failure.actions.contains(.retry) else { return false }
+		let activeRegion = activeGameRegion
 		switch failure.context.operation {
 		case .prefixMigration, .prefixDeletion:
 			guard failure.context.region == installation.region.supportRegion,
 				lifecycle.activity == .idle
 			else { return false }
 		case .runtimeStop:
-			guard failure.context.region == installation.region.supportRegion else { return false }
-			guard lifecycle.activity.activeGameSessionID == failure.id else { return false }
+			guard activeRegion?.supportRegion == failure.context.region,
+				lifecycle.activity.activeGameSessionID == failure.id,
+				runtimeStopAttemptSessionID != failure.id
+			else { return false }
 		case .launch, .runtimeExit, .runtimeDiscovery:
 			guard failure.context.region == installation.region.supportRegion else { return false }
 			guard lifecycle.activity == .idle else { return false }
@@ -53,14 +56,13 @@ extension GameSessionController {
 			return false
 		}
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
-		Task { [log] in
-			await log.info(
-				"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(installation.region.rawValue)"
-			)
-		}
+		log.info(
+			"Recovery selected; action=retry operation=\(failure.context.operation.rawValue) region=\(installation.region.rawValue)"
+		)
 		switch failure.context.operation {
 		case .runtimeStop:
-			stopGame()
+			guard let activeRegion else { return false }
+			retryFailedRuntimeStop(sessionID: id, region: activeRegion)
 		case .prefixMigration:
 			forcePrefixMigration()
 		case .prefixDeletion:

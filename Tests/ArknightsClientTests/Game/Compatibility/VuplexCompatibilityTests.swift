@@ -5,12 +5,14 @@ import Testing
 
 @testable import ArknightsClient
 
-@Test
-func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal() throws {
+@Test(arguments: [64, 1_733_632, 5 * 1_024 * 1_024])
+func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal(helperBytes: Int) throws {
 	let fixture = try VuplexFixture()
 	defer { fixture.remove() }
 	let (root, helper) = (fixture.root, fixture.helper)
-	let officialData = Data("official-vx-accelerated-paint-disabled".utf8)
+	var officialData = Data(repeating: 0, count: helperBytes)
+	let marker = Data(VuplexCompatibility.compatibilityArgument.utf8)
+	officialData.replaceSubrange((helperBytes - marker.count)..<helperBytes, with: marker)
 	try officialData.write(to: helper)
 	let shim = root.appending(path: "shim.exe")
 	let shimData = Data("launcher-shim".utf8)
@@ -32,12 +34,17 @@ func vuplexShimIsInstalledAndRestoredWithoutChangingTheOriginal() throws {
 	#expect(!FileManager.default.fileExists(atPath: installedUserenv.path))
 }
 
-@Test
-func vuplexShimLeavesUnknownHelpersUntouched() throws {
+@Test(arguments: [false, true])
+func vuplexShimLeavesUnknownHelpersUntouched(oversized: Bool) throws {
 	let fixture = try VuplexFixture()
 	defer { fixture.remove() }
 	let (root, helper) = (fixture.root, fixture.helper)
-	let officialData = Data("unknown-helper".utf8)
+	var officialData = Data("unknown-helper".utf8)
+	if oversized {
+		officialData = Data(repeating: 0, count: 5 * 1_024 * 1_024 + 1)
+		let marker = Data(VuplexCompatibility.compatibilityArgument.utf8)
+		officialData.replaceSubrange(0..<marker.count, with: marker)
+	}
 	try officialData.write(to: helper)
 	let shim = root.appending(path: "shim.exe")
 	try Data("launcher-shim".utf8).write(to: shim)

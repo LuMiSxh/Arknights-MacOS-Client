@@ -15,7 +15,6 @@ enum HomeStrings {
 	static let repairConfirmationDetail =
 		"Every game file for this region will be checked. Missing or damaged files will be downloaded again and may use substantial data. Launcher settings and the Wine prefix are preserved."
 	static let repairConfirmationAction = "Start Repair"
-	static let checkAgain = "Check Again"
 	static let needsAttention = "Needs attention"
 	static let installationComplete = "Installation complete"
 	static let actionStop = "Stop"
@@ -50,6 +49,10 @@ enum HomeStrings {
 
 	static func downloadPercentage(_ percentage: Int) -> String {
 		"\(percentage)%"
+	}
+
+	static func verificationPercentage(_ percentage: Int) -> String {
+		"Verifying · \(percentage)%"
 	}
 
 	static func pausedDownloadPercentage(_ percentage: Int) -> String {

@@ -25,9 +25,13 @@ struct RuntimeConfiguration: Decodable, Sendable {
 	struct Archive: Decodable, Sendable {
 		let sha256: String
 	}
+	struct Interface: Decodable, Sendable {
+		let runtimeCapabilities: String?
+	}
 
 	let prefixRevision: Int
 	let runtime: Archive
+	let interface: Interface?
 
 	var revision: String {
 		"\(runtime.sha256)-prefix-\(prefixRevision)"
@@ -41,6 +45,7 @@ struct WineRuntime: Sendable {
 	let displayName: String
 	let revision: String
 	let gameIconBridgeURL: URL?
+	let capabilityManifestFileName: String?
 	private let compatibilityManager: GameCompatibilityManager
 
 	init(
@@ -48,12 +53,14 @@ struct WineRuntime: Sendable {
 		displayName: String,
 		revision: String,
 		gameIconBridgeURL: URL? = nil,
+		capabilityManifestFileName: String? = nil,
 		compatibilityManager: GameCompatibilityManager
 	) {
 		self.executableURL = executableURL
 		self.displayName = displayName
 		self.revision = revision
 		self.gameIconBridgeURL = gameIconBridgeURL
+		self.capabilityManifestFileName = capabilityManifestFileName
 		self.compatibilityManager = compatibilityManager
 	}
 
@@ -140,8 +147,20 @@ struct WineRuntime: Sendable {
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
+			capabilityManifestFileName: configuration.interface?.runtimeCapabilities,
 			compatibilityManager: compatibilityManager
 		)
+	}
+
+	func discoverCapabilities() async -> RuntimeCapabilityDiscovery {
+		let runtimeDirectory = executableURL.deletingLastPathComponent().deletingLastPathComponent()
+		let manifestFileName = capabilityManifestFileName
+		return await Task.detached(priority: .utility) {
+			RuntimeCapabilities.discover(
+				inRuntimeDirectory: runtimeDirectory,
+				manifestRelativePath: manifestFileName
+			)
+		}.value
 	}
 
 	func launch(
@@ -157,7 +176,8 @@ struct WineRuntime: Sendable {
 		publisher: GamePublisher = .yostar,
 		gameIconURL: URL? = nil,
 		logURL: URL? = nil,
-		log: LauncherLog? = nil
+		log: LauncherLog? = nil,
+		spawnGate: WineProcessSpawnGate = WineProcessSpawnGate()
 	) async throws -> WineLaunch {
 		let launchStarted = ContinuousClock.now
 		let fileManager = FileManager.default
@@ -179,7 +199,7 @@ struct WineRuntime: Sendable {
 		do {
 			try mutablePrefixDirectory.setResourceValues(prefixValues)
 		} catch {
-			await log?.error(
+			log?.error(
 				"Failed to exclude the Wine prefix from backups: \(error.localizedDescription)"
 			)
 		}
@@ -237,7 +257,8 @@ struct WineRuntime: Sendable {
 			logsDirectory: logURL.deletingLastPathComponent(),
 			environment: environment,
 			logHandle: logHandle,
-			log: log
+			log: log,
+			spawnGate: spawnGate
 		)
 		RuntimePerformanceLog.write(
 			stage: "prefix", since: launchStarted, to: logHandle)
@@ -245,7 +266,8 @@ struct WineRuntime: Sendable {
 			try await applyBilibiliFontConfiguration(
 				prefixDirectory: prefixDirectory,
 				environment: environment,
-				logHandle: logHandle
+				logHandle: logHandle,
+				spawnGate: spawnGate
 			)
 		}
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")
@@ -253,7 +275,8 @@ struct WineRuntime: Sendable {
 			displayConfiguration,
 			prefixDirectory: prefixDirectory,
 			environment: environment,
-			logHandle: logHandle
+			logHandle: logHandle,
+			spawnGate: spawnGate
 		)
 		RuntimePerformanceLog.write(
 			stage: "display", since: launchStarted, to: logHandle)
@@ -284,7 +307,7 @@ struct WineRuntime: Sendable {
 			)
 			terminationContinuation.finish()
 		}
-		try process.run()
+		try spawnGate.runIfAllowed(process: process) { try process.run() }
 		if clientVariant == .bilibili {
 			let controller = Process()
 			controller.executableURL = executableURL
@@ -292,14 +315,11 @@ struct WineRuntime: Sendable {
 				"G:\\BLPlatform64\\\(BilibiliPlatformCompatibility.controllerName)"
 			]
 			controller.currentDirectoryURL = gameExecutable.deletingLastPathComponent()
-			var controllerEnvironment = environment
-			controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
-			controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
-			controller.environment = controllerEnvironment
+			controller.environment = Self.bilibiliControllerEnvironment(from: environment)
 			controller.standardOutput = logHandle
 			controller.standardError = logHandle
 			do {
-				try controller.run()
+				try spawnGate.runIfAllowed(process: controller) { try controller.run() }
 			} catch {
 				try? logHandle.write(
 					contentsOf: Data(
@@ -313,7 +333,8 @@ struct WineRuntime: Sendable {
 
 		let terminationTask = Task {
 			for await exit in terminationStatuses { return exit }
-			return WineProcessExit(status: 0, reason: .exit)
+			// The stream ended without a termination status; never report that as a clean exit.
+			return WineProcessExit(status: -1, reason: .uncaughtSignal)
 		}
 		return WineLaunch(
 			processIdentifier: process.processIdentifier,
@@ -323,6 +344,17 @@ struct WineRuntime: Sendable {
 
 	static func windowsGamePath(for executable: URL) -> String {
 		"G:\\" + executable.lastPathComponent
+	}
+
+	static func bilibiliControllerEnvironment(
+		from environment: [String: String]
+	) -> [String: String] {
+		var controllerEnvironment = environment
+		controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
+		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
+		controllerEnvironment.removeValue(
+			forKey: AppConstants.Runtime.hardwareCursorEnvironmentKey)
+		return controllerEnvironment
 	}
 
 }

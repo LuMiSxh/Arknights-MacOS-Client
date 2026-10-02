@@ -64,7 +64,7 @@ enum OnboardingStrings {
 	static let runtimeOptimizations = "Runtime Optimizations"
 	static let maximumFrameLatency = "Maximum Frame Latency"
 	static let maximumFrameLatencyDetail =
-		"Sets DXMT's maximum queued frames to 1–3. Lower values may reduce cursor latency but can make presentation less smooth. Applies on the next game launch."
+		"At 0, DXMT waits for the current GPU frame before queuing another. This may reduce FPS or make frame pacing less smooth. Applies on the next game launch."
 
 	static let installationTitle = "Choose where you play"
 	static let installationSubtitle =
@@ -80,8 +80,8 @@ enum OnboardingStrings {
 		"Allows selecting the Taiwan client in addition to Canary features."
 	static let serverRegion = "Server region"
 	static let officialClient = "Official PC client"
-	static let downloadingTitle = "Downloading in the background"
 	static let downloadingDetail = "You can continue setup while the game files download."
+	static let verifyingDetail = "You can continue setup while the existing game files are checked."
 	static let existingTitle = "Existing installation found"
 	static let partialTitle = "Paused download found"
 	static let partialDetail = "The installer will continue from verified partial files."
@@ -179,7 +179,7 @@ enum OnboardingStrings {
 	static let compatibilityAvailable =
 		"Compatibility verified. The bundled Wine runtime can start."
 	static let compatibilityGameTestMode =
-		"macOS Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:"
+		"On macOS 27 beta, Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:"
 	static let compatibilityUnavailable =
 		"macOS could not start an Intel test process. Restart your Mac, then check again. If the problem remains, include the launcher log in a bug report."
 	static let compatibilityUnsupported =

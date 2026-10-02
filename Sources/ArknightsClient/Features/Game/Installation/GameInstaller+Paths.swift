@@ -1,9 +1,23 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import Darwin
 import Foundation
 
 extension GameInstaller {
-	func validateManifest(_ manifest: GameManifest, inside installDirectory: URL) throws {
+	func validateManifest(_ manifest: GameManifest, in installDirectory: InstallerInstallDirectory)
+		throws
+	{
+		try validateManifestPaths(manifest)
+		for item in manifest.file {
+			let path = try Self.safeRelativePath(item.path)
+			let destination = try installDirectory.file(at: path, createParents: true)
+			try assertRegularDestinationIfPresent(destination)
+			let partial = destination.sibling(named: destination.name + ".part")
+			try assertSafeExistingPartialFile(at: partial)
+		}
+	}
+
+	func validateManifestPaths(_ manifest: GameManifest) throws {
 		_ = try Self.safeRelativePath(manifest.source)
 		_ = try Self.totalByteCount(of: manifest.file)
 		let paths = try manifest.file.map { try Self.safeRelativePath($0.path) }
@@ -19,10 +33,21 @@ extension GameInstaller {
 
 		var ownerByInstallerPathKey = [
 			Self.manifestPathKey(AppConstants.Game.installedStateFileName):
-				AppConstants.Game.installedStateFileName
+				AppConstants.Game.installedStateFileName,
+			Self.manifestPathKey(AppConstants.Game.installerStagingDirectoryName):
+				AppConstants.Game.installerStagingDirectoryName,
 		]
 		for (index, path) in paths.enumerated() {
 			let originalPath = manifest.file[index].path
+			if path.split(separator: "/").contains(where: {
+				Self.manifestPathKey(String($0))
+					== Self.manifestPathKey(AppConstants.Game.installerStagingDirectoryName)
+			}) {
+				throw LauncherError.conflictingManifestPaths(
+					AppConstants.Game.installerStagingDirectoryName,
+					originalPath
+				)
+			}
 			for installerPath in [path, path + ".part"] {
 				let key = Self.manifestPathKey(installerPath)
 				if let existingOwner = ownerByInstallerPathKey[key] {
@@ -44,17 +69,6 @@ extension GameInstaller {
 				}
 			}
 		}
-
-		try assertNoSymbolicLinks(from: installDirectory, through: installDirectory)
-		for item in manifest.file {
-			let destination = try destinationURL(for: item, inside: installDirectory)
-			try assertNoSymbolicLinks(from: installDirectory, through: destination)
-			try assertNoSymbolicLinks(
-				from: installDirectory,
-				through: destination.appendingPathExtension("part")
-			)
-			try assertSafeExistingPartialFile(at: destination.appendingPathExtension("part"))
-		}
 	}
 
 	static func totalByteCount(of files: [ManifestFile]) throws -> Int64 {
@@ -71,16 +85,6 @@ extension GameInstaller {
 			}
 		}
 		return total
-	}
-
-	func destinationURL(for item: ManifestFile, inside installDirectory: URL) throws -> URL {
-		let root = installDirectory.standardizedFileURL
-		let destination =
-			root.appending(path: try Self.safeRelativePath(item.path)).standardizedFileURL
-		guard Self.isContained(destination, in: root) else {
-			throw LauncherError.invalidManifestPath(item.path)
-		}
-		return destination
 	}
 
 	static func safeRelativePath(_ input: String) throws -> String {
@@ -100,48 +104,60 @@ extension GameInstaller {
 		return components.joined(separator: "/")
 	}
 
-	func assertNoSymbolicLinks(from root: URL, through destination: URL) throws {
-		let root = root.standardizedFileURL
-		let destination = destination.standardizedFileURL
-		guard destination == root || Self.isContained(destination, in: root) else {
-			throw LauncherError.invalidManifestPath(destination.path)
-		}
-
-		let relativePath = String(destination.path.dropFirst(root.path.count))
-		let components = relativePath.split(separator: "/").map(String.init)
-		var candidate = root
-		try rejectSymbolicLink(at: candidate)
-		for component in components {
-			candidate.append(path: component)
-			try rejectSymbolicLink(at: candidate)
+	func assertSafeExistingPartialFile(at partial: InstallerFilePath) throws {
+		guard let attributes = try partial.stat() else { return }
+		guard attributes.st_mode & S_IFMT == S_IFREG, attributes.st_nlink == 1 else {
+			throw LauncherError.unsafeInstallerTemporaryFile(partial.url)
 		}
 	}
 
-	func assertSafeExistingPartialFile(at url: URL) throws {
-		do {
-			let attributes = try fileManager.attributesOfItem(atPath: url.path)
-			let type = attributes[.type] as? FileAttributeType
-			let referenceCount = (attributes[.referenceCount] as? NSNumber)?.intValue ?? 1
-			guard type == .typeRegular, referenceCount == 1 else {
-				throw LauncherError.unsafeInstallerTemporaryFile(url)
-			}
-		} catch let error as CocoaError
-			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
-		{
-			return
+	func assertRegularDestinationIfPresent(_ destination: InstallerFilePath) throws {
+		guard let attributes = try destination.stat() else { return }
+		guard attributes.st_mode & S_IFMT == S_IFREG else {
+			throw LauncherError.unsafeInstallerTemporaryFile(destination.url)
 		}
 	}
 
-	private func rejectSymbolicLink(at url: URL) throws {
+	func installFile(
+		at relativePath: String,
+		inside installDirectory: InstallerInstallDirectory,
+		createParents: Bool = false
+	) throws -> InstallerFilePath {
 		do {
-			let attributes = try fileManager.attributesOfItem(atPath: url.path)
-			if attributes[.type] as? FileAttributeType == .typeSymbolicLink {
-				throw LauncherError.symbolicLinkInInstallPath(url)
-			}
-		} catch let error as CocoaError
-			where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile
-		{
-			return
+			return try installDirectory.file(at: relativePath, createParents: createParents)
+		} catch {
+			throw mapInstallerFileSystemError(error)
+		}
+	}
+
+	func installDirectory(
+		at relativePath: String,
+		inside installDirectory: InstallerInstallDirectory,
+		createParents: Bool = false
+	) throws -> InstallerDirectoryHandle {
+		do {
+			return try installDirectory.directory(at: relativePath, createParents: createParents)
+		} catch {
+			throw mapInstallerFileSystemError(error)
+		}
+	}
+
+	func fileSize(at file: InstallerFilePath) throws -> Int64? {
+		guard let attributes = try file.stat() else { return nil }
+		guard attributes.st_mode & S_IFMT == S_IFREG, attributes.st_size >= 0 else {
+			throw LauncherError.unsafeInstallerTemporaryFile(file.url)
+		}
+		return Int64(attributes.st_size)
+	}
+
+	func mapInstallerFileSystemError(_ error: any Error) -> any Error {
+		guard let error = error as? InstallerFileSystemError else { return error }
+		return switch error {
+		case .invalidPath(let path): LauncherError.invalidManifestPath(path)
+		case .symbolicLink(let url): LauncherError.symbolicLinkInInstallPath(url)
+		case .unsafeFile(let url), .unsafeDirectory(let url):
+			LauncherError.unsafeInstallerTemporaryFile(url)
+		case .directoryInUse(let url): LauncherError.installDirectoryInUse(url)
 		}
 	}
 
@@ -152,7 +168,4 @@ extension GameInstaller {
 		)
 	}
 
-	private static func isContained(_ destination: URL, in root: URL) -> Bool {
-		destination.path.hasPrefix(root.path.hasSuffix("/") ? root.path : root.path + "/")
-	}
 }

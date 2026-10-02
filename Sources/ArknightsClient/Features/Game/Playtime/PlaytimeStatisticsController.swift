@@ -33,14 +33,13 @@ final class PlaytimeStatisticsController {
 		} catch {
 			statistics = .empty
 			Self.logPersistenceError(error, operation: "load", log: log)
+			Self.moveUnreadableFileAside(fileURL, log: log)
 		}
 
 		if statistics.activeSession != nil {
 			statistics.activeSession = nil
 			save()
-			Task { [log] in
-				await log.info("Discarded an unfinished playtime session after launcher restart")
-			}
+			log.info("Discarded an unfinished playtime session after launcher restart")
 		}
 	}
 
@@ -96,6 +95,21 @@ final class PlaytimeStatisticsController {
 		save()
 	}
 
+	/// Keeps unreadable statistics (for example after a downgrade) from being overwritten by the next save.
+	private static func moveUnreadableFileAside(_ fileURL: URL, log: LauncherLog) {
+		let fileManager = FileManager.default
+		guard fileManager.fileExists(atPath: fileURL.path) else { return }
+		let asideURL = fileURL.appendingPathExtension("unreadable")
+		do {
+			if fileManager.fileExists(atPath: asideURL.path) {
+				try fileManager.removeItem(at: asideURL)
+			}
+			try fileManager.moveItem(at: fileURL, to: asideURL)
+		} catch {
+			logPersistenceError(error, operation: "preserve unreadable", log: log)
+		}
+	}
+
 	private func save() {
 		do {
 			try FileManager.default.createDirectory(
@@ -135,10 +149,8 @@ final class PlaytimeStatisticsController {
 		operation: String,
 		log: LauncherLog
 	) {
-		Task { [log] in
-			await log.error(
-				"Could not \(operation) local playtime statistics: \(error.localizedDescription)"
-			)
-		}
+		log.error(
+			"Could not \(operation) local playtime statistics: \(error.localizedDescription)"
+		)
 	}
 }

@@ -34,7 +34,7 @@ func defaultLaunchOptionsFavorCompatibleWindow() {
 }
 
 @Test
-func legacyLaunchOptionsEnableHighResolutionModeWhenDecoded() throws {
+func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws {
 	let data = Data(
 		#"{"displayMode":"windowed","resolution":"1280x720","usesGameSettings":true}"#.utf8
 	)
@@ -44,6 +44,15 @@ func legacyLaunchOptionsEnableHighResolutionModeWhenDecoded() throws {
 	#expect(!options.usesMetalPerformanceHUD)
 	#expect(!options.usesGameMode)
 	#expect(options.synchronizationMode == .msync)
+
+	let retiredFieldData = Data(
+		#"{"displayMode":"windowed","resolution":"1280x720","usesPreciseScrolling":true}"#.utf8
+	)
+
+	let retiredFieldOptions = try JSONDecoder().decode(
+		GameLaunchOptions.self, from: retiredFieldData)
+
+	#expect(retiredFieldOptions == .default)
 }
 
 @Test
@@ -76,17 +85,6 @@ func launchDiagnosticsRecordEveryOptionAppliedToWine() throws {
 	#expect(diagnostic.contains("gameMode=true"))
 	#expect(diagnostic.contains("synchronization=ESYNC"))
 	#expect(diagnostic.contains("graphicsDiagnostics=true"))
-}
-
-@Test
-func prereleasePreciseScrollingSettingIsIgnoredWhenDecoded() throws {
-	let data = Data(
-		#"{"displayMode":"windowed","resolution":"1280x720","usesPreciseScrolling":true}"#.utf8
-	)
-
-	let options = try JSONDecoder().decode(GameLaunchOptions.self, from: data)
-
-	#expect(options == .default)
 }
 
 @Test(arguments: [

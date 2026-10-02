@@ -38,11 +38,9 @@ actor PresetCatalogService {
 				withIntermediateDirectories: true
 			)
 		} catch {
-			Task {
-				await log.error(
-					"Failed to create preset cache directory at \(cacheDirectory.path): \(error.localizedDescription)"
-				)
-			}
+			log.error(
+				"Failed to create preset cache directory at \(cacheDirectory.path): \(error.localizedDescription)"
+			)
 		}
 	}
 
@@ -110,7 +108,7 @@ actor PresetCatalogService {
 				withIntermediateDirectories: true
 			)
 		} catch {
-			await log.error(
+			log.error(
 				"Failed to clear preset catalog caches at \(cacheDirectory.path): \(error.localizedDescription)"
 			)
 			throw error
@@ -127,14 +125,15 @@ actor PresetCatalogService {
 			let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
 			guard size <= maximumBytes else {
 				try FileManager.default.removeItem(at: url)
-				await log.error("Removed oversized preset index at \(url.path) (\(size) bytes)")
+				log.error("Removed oversized preset index at \(url.path) (\(size) bytes)")
 				return nil
 			}
 			let data = try Self.readBoundedFile(at: url, maximumBytes: maximumBytes)
 			return try JSONDecoder().decode(Value.self, from: data)
 		} catch {
-			await log.error(
-				"Failed to read preset index at \(url.path): \(error.localizedDescription)")
+			log.error(
+				"Failed to read preset index at \(url.path): \(launcherDiagnosticDescription(for: error))"
+			)
 			return nil
 		}
 	}
@@ -158,8 +157,9 @@ actor PresetCatalogService {
 			try data.write(to: url, options: .atomic)
 		} catch {
 			guard cacheEpoch == epoch else { return }
-			await log.error(
-				"Failed to write preset index at \(url.path): \(error.localizedDescription)")
+			log.error(
+				"Failed to write preset index at \(url.path): \(launcherDiagnosticDescription(for: error))"
+			)
 		}
 	}
 

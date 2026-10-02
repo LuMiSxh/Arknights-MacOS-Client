@@ -49,7 +49,8 @@ extension InstallationController {
 			.gabbro
 		case LauncherError.symbolicLinkInInstallPath,
 			LauncherError.cannotCreateFile,
-			LauncherError.unsafeInstallerTemporaryFile:
+			LauncherError.unsafeInstallerTemporaryFile,
+			LauncherError.installDirectoryInUse:
 			.basalt
 		case LauncherError.insufficientDiskSpace:
 			.scree

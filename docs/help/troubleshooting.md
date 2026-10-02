@@ -17,7 +17,9 @@ A short uppercase word such as `PEBBLE` points to a specific fix. Choose **Troub
 
 ## The launcher will not open
 
-If macOS says the app **is damaged and can't be opened**, download the DMG again from [GitHub Releases](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), copy the app to **Applications**, then right-click it and choose **Open**. Only use the official release DMG.
+If macOS says the developer cannot be verified or Apple cannot check the app for malicious software, first confirm that you downloaded it from [the official GitHub release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), then try to open it once. If you trust that copy, follow [Apple’s Open Anyway steps](https://support.apple.com/en-au/102445): in **System Settings → Privacy & Security**, choose **Open Anyway**, review the next warning, then choose **Open**. This adds an exception for this app only.
+
+If macOS says the app is damaged, download a fresh DMG from the official release. If the warning persists, stop and report it. If macOS says the app will damage your computer, do not open or override it; report the warning and where you downloaded the app.
 
 ## Setup says Rosetta is missing or unavailable
 
@@ -28,7 +30,7 @@ If macOS says the app **is damaged and can't be opened**, download the DMG again
    ```
 
 2. Restart the Mac and choose **Check Again**.
-3. On macOS 27, also turn off [Legacy Game Test Mode](runtime-compatibility.md#legacy-game-test-mode).
+3. If you are running a macOS 27 beta with Legacy Game Test Mode enabled, turn it off as described in [macOS compatibility](runtime-compatibility.md#legacy-game-test-mode-on-macos-27-beta).
 
 If the check still fails, see [macOS compatibility](runtime-compatibility.md).
 

@@ -3,6 +3,29 @@
 import Foundation
 import YouTubePlayerKit
 
+@MainActor
+struct BackgroundMusicPlayerCommands {
+	typealias PlayerCommand = @MainActor (YouTubePlayer) async throws -> Void
+	typealias VolumeCommand = @MainActor (YouTubePlayer, Int) async throws -> Void
+
+	let play: PlayerCommand
+	let pause: PlayerCommand
+	let setVolume: VolumeCommand
+
+	static let live = Self(
+		play: { try await $0.play() },
+		pause: { try await $0.pause() },
+		setVolume: { player, volume in
+			try await player.evaluate(
+				javaScript: .youTubePlayer(
+					functionName: "setVolume",
+					parameters: [volume]
+				)
+			)
+		}
+	)
+}
+
 /// The value types the background-music controller passes between its track, playback, and
 /// fade paths.
 

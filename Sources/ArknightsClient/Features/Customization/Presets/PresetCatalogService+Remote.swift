@@ -7,7 +7,7 @@ extension PresetCatalogService {
 	func refreshAvatarsFromRemote() async -> [PresetAvatar] {
 		let epoch = cacheEpoch
 		do {
-			await log.info("Fetching remote character table from GameData…")
+			log.info("Fetching remote character table from GameData…")
 			let request = URLRequest(url: Self.characterTableURL)
 			let (data, response) = try await loader.data(
 				for: request,
@@ -54,13 +54,11 @@ extension PresetCatalogService {
 				epoch: epoch
 			)
 			guard cacheEpoch == epoch else { return [] }
-			await log.info("Successfully indexed \(parsed.count) operators into local cache")
-			guard cacheEpoch == epoch else { return [] }
+			log.info("Successfully indexed \(parsed.count) operators into local cache")
 			return parsed
 		} catch {
 			guard cacheEpoch == epoch else { return [] }
-			await log.error("Failed to fetch remote character table: \(error.localizedDescription)")
-			guard cacheEpoch == epoch else { return [] }
+			log.error("Failed to fetch remote character table: \(error.localizedDescription)")
 			return []
 		}
 	}
@@ -69,7 +67,7 @@ extension PresetCatalogService {
 	func refreshWallpapersFromRemote() async -> [PresetWallpaper] {
 		let epoch = cacheEpoch
 		do {
-			await log.info("Fetching official wallpapers from Yostar Fankit API…")
+			log.info("Fetching official wallpapers from Yostar Fankit API…")
 			var wallpapers: [PresetWallpaper] = []
 
 			for page in 1...AppConstants.Presets.wallpaperPageLimit {
@@ -121,15 +119,13 @@ extension PresetCatalogService {
 				epoch: epoch
 			)
 			guard cacheEpoch == epoch else { return [] }
-			await log.info(
+			log.info(
 				"Successfully loaded \(wallpapers.count) official wallpapers from Yostar"
 			)
-			guard cacheEpoch == epoch else { return [] }
 			return wallpapers
 		} catch {
 			guard cacheEpoch == epoch else { return [] }
-			await log.error("Failed to fetch official wallpapers: \(error.localizedDescription)")
-			guard cacheEpoch == epoch else { return [] }
+			log.error("Failed to fetch official wallpapers: \(error.localizedDescription)")
 			return []
 		}
 	}

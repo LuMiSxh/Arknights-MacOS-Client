@@ -86,7 +86,11 @@ final class LauncherCommunicationController {
 	}
 
 	func checkAnnouncements(isEnabled: Bool) {
-		guard isEnabled else { return }
+		guard isEnabled else {
+			announcementTask?.cancel()
+			announcementTask = nil
+			return
+		}
 		guard
 			let endpointString = Bundle.main.object(
 				forInfoDictionaryKey: "LauncherAnnouncementsURL"
@@ -99,6 +103,7 @@ final class LauncherCommunicationController {
 			guard let self else { return }
 			do {
 				let announcements = try await announcementService.announcements(from: endpoint)
+				try Task.checkCancellation()
 				let currentVersion = Bundle.main.shortVersionString ?? "0"
 				let seenIDs = preferences.seenAnnouncementIDs()
 				guard
@@ -120,11 +125,11 @@ final class LauncherCommunicationController {
 						actionURL: announcement.actionURL
 					)
 				)
-				await log.info("Announcement presented; id=\(announcement.id)")
+				log.info("Announcement presented; id=\(announcement.id)")
 			} catch is CancellationError {
 				return
 			} catch {
-				await log.error("Announcement check failed: \(error.localizedDescription)")
+				log.error("Announcement check failed: \(launcherDiagnosticDescription(for: error))")
 			}
 		}
 	}
@@ -159,15 +164,15 @@ final class LauncherCommunicationController {
 		else { return }
 		if popup == nil {
 			popup = newPopup
-			recordPopupPresentation(newPopup)
 		} else {
 			pendingPopups.append(newPopup)
 		}
 	}
 
 	func dismissPopup() {
+		// Announcements count as seen once dismissed, so one hidden behind another modal is not lost.
+		if let dismissed = popup { recordPopupSeen(dismissed) }
 		popup = pendingPopups.isEmpty ? nil : pendingPopups.removeFirst()
-		if let popup { recordPopupPresentation(popup) }
 	}
 
 	func openPopupAction() {
@@ -222,7 +227,7 @@ final class LauncherCommunicationController {
 		}
 	}
 
-	private func recordPopupPresentation(_ popup: LauncherPopup) {
+	private func recordPopupSeen(_ popup: LauncherPopup) {
 		let announcementPrefix = "announcement-"
 		if popup.id.hasPrefix(announcementPrefix) {
 			preferences.markAnnouncementSeen(String(popup.id.dropFirst(announcementPrefix.count)))

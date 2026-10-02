@@ -31,7 +31,7 @@ path-safety and resumable-download checks as every other region.
 | Game configuration                    | `LauncherRefreshController` and `LauncherAPI`            | Supplies latest version, manifest location, executable name, launch parameters, and reported disk requirement |
 | Manifest and CDN configuration        | `GameInstaller`                                          | Lists relative file paths, expected byte counts, provider checksums (CRC64 or MD5), and download roots        |
 | Installed state                       | `GameInstaller`                                          | Records the manifest that was successfully finalized in `.arknights-client-state.json`                        |
-| Exclusive operation                   | `LauncherLifecycleStore` and `ExclusiveOperationGate`    | Prevents refreshes, updates, repair, or stale tasks from mutating the same install concurrently               |
+| Exclusive operation                   | `LauncherLifecycleStore` plus an installer-root `flock`  | Coordinates in-process operations and cooperating installer processes for the same opened install root        |
 | Compatibility files                   | `GameCompatibilityManager`                               | Restores launcher-owned shims before install/update/repair                                                    |
 
 The installer does not choose a region, update the UI directly, or infer whether a partial install
@@ -63,8 +63,9 @@ sequenceDiagram
 	Installer->>Disk: Restore owned compatibility files
 	par Up to configured concurrent downloads
 		Installer->>Disk: Write or resume file.part
-		Installer->>Installer: Verify size and provider checksum
-		Installer->>Disk: Move verified part to final path
+		Installer->>Disk: Clone or copy retained part into private staging
+		Installer->>Installer: Verify staged size and provider checksum
+		Installer->>Disk: Atomically rename verified staged file to final path
 	end
 	Installer->>Disk: Atomically save installed state
 	Disk-->>Controller: InstallResult
@@ -108,10 +109,20 @@ modifying an unrelated inode.
 > only simple names. The manifest is remote input. Path containment, symlink rejection, duplicate detection,
 > and safe partial-file handling are installer invariants, not format niceties.
 
-The destination is still checked immediately before a download and immediately before finalization.
-This protects the gap between initial validation and a later filesystem change. Verified bytes are
-moved from the `.part` path rather than copied, so an interrupted finalization cannot leave an
-unverified file at the official destination.
+The installer holds its advisory root lock from manifest fetch through state commit. Directory
+parents are retained as open descriptors, and download bytes stay attached to the opened `.part`
+inode even if its name or a parent pathname changes. Before promotion, the installer clones or
+copies that descriptor into a unique file in owner-only staging, removes inherited ACLs, hashes the
+staged descriptor, and atomically renames that verified inode into the opened destination parent.
+On a volume that enforces ownership and permissions, the private staging namespace prevents other
+UIDs from replacing the verified source name before promotion. On a volume mounted to ignore
+ownership, mode and ACL checks do not isolate staged names: descriptor hashing and atomic rename
+still run, but resistance to hostile other-UID source-name replacement is not guaranteed. The
+installer lock coordinates cooperating installers; it does not stop uncooperative writers or
+hostile same-UID code. Installed-state records are also written and synced in private staging before
+an atomic descriptor-rooted rename into the install root. When filesystem cloning is unavailable,
+staging uses a bounded copy that can fail for lack of free space; failure leaves the previous
+destination intact and retains the resumable `.part`.
 
 ## Reuse, repair, and resume
 
@@ -122,10 +133,19 @@ unverified file at the official destination.
 | Repair                            | Every existing manifest file is checked with its provider checksum, regardless of the previous state file | Missing or damaged files are downloaded again             |
 
 Each transfer starts at the primary CDN. Failed attempts retry with the configured backoff and use
-the fallback CDN on later attempts. A response must be HTTP 200 or 206; when a server answers a range
-request with 200, the installer safely truncates the partial file and restarts that file from zero.
-An unexpected status, oversized response, size mismatch, or provider-checksum mismatch fails that
-file. A checksum failure removes the partial file instead of retrying corrupted bytes.
+the fallback CDN on later attempts. A response must be HTTP 200 or 206; resumed responses must match
+the requested byte offset and manifest size, and a changed entity restarts from zero. When a server
+answers a range request with 200, the installer safely truncates the partial file and restarts that
+file from zero. An unexpected status, oversized response, size mismatch, or provider-checksum
+mismatch fails that attempt. A checksum failure clears those unverified partial bytes before retrying.
+
+Before accepting file bytes, the installer validates both the source URL and every redirect. All
+must use HTTPS and contain no embedded credentials. Global, Japan, and Korea accept any otherwise
+valid HTTPS host from their publisher configuration. China artifact URLs and redirects must omit an
+explicit port and use a hostname ending in `.hycdn.cn`; Taiwan artifact URLs and redirects must omit
+an explicit port and use exactly `launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, or
+`gl-utils-public.hg-cdn.com`. `launcher.gryphline.com` is used by the Taiwan metadata adapter, not
+for game-file downloads.
 
 > [!TIP]
 > If a download is paused, keep the regional directory and its `.part` files in place. Starting

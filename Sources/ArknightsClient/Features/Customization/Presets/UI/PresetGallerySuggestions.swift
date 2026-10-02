@@ -59,7 +59,7 @@ struct PresetGallerySuggestions: View {
 		.scrollClipDisabled()
 		.padding(.bottom, suggestions.isEmpty ? 0 : 8)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: 0.2),
+			LauncherMotion.animation(.state, reduceMotion: reduceMotion),
 			value: suggestions.map(\.id)
 		)
 	}

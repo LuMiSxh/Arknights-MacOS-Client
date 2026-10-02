@@ -31,19 +31,19 @@ extension BackgroundMusicController {
 					expectsPlayback: true
 				)
 				if changed {
-					await lifecycle.log.info(
+					lifecycle.log.info(
 						"Background music playlist shuffled and started a random track"
 					)
 					guard isCurrent(operation) else { return }
 				} else {
-					await lifecycle.log.error(
+					lifecycle.log.error(
 						"Background music playlist shuffled, but the selected track did not start"
 					)
 					guard isCurrent(operation) else { return }
 				}
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await lifecycle.log.error(
+				lifecycle.log.error(
 					"Background music failed to shuffle the playlist: \(error.localizedDescription)"
 				)
 			}
@@ -65,11 +65,11 @@ extension BackgroundMusicController {
 				guard isCurrent(operation) else { return }
 				try await player.pause()
 				guard isCurrent(operation) else { return }
-				await lifecycle.log.info("Background music paused by user")
+				lifecycle.log.info("Background music paused by user")
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
 				clearPlaybackExpectation(expectation)
-				await lifecycle.log.error(
+				lifecycle.log.error(
 					"Background music failed to pause: \(error.localizedDescription)"
 				)
 			}
@@ -95,17 +95,17 @@ extension BackgroundMusicController {
 					expectsPlayback: expectsPlayback
 				)
 				if changed {
-					await lifecycle.log.info(
+					lifecycle.log.info(
 						"Background music started the \(direction.logName) track"
 					)
 				} else {
-					await lifecycle.log.error(
+					lifecycle.log.error(
 						"Background music did not start the \(direction.logName) track"
 					)
 				}
 			} catch {
 				guard !Task.isCancelled, isCurrent(operation) else { return }
-				await lifecycle.log.error(
+				lifecycle.log.error(
 					"Background music failed to select the \(direction.logName) track: \(error.localizedDescription)"
 				)
 			}
@@ -125,7 +125,7 @@ extension BackgroundMusicController {
 		guard isCurrent(operation) else { return false }
 		guard let playlist = try await targetPlayer.getPlaylist(), !playlist.isEmpty else {
 			guard isCurrent(operation) else { return false }
-			await lifecycle.log.error("Background music playlist is empty or unavailable")
+			lifecycle.log.error("Background music playlist is empty or unavailable")
 			return false
 		}
 		guard isCurrent(operation) else { return false }
@@ -137,7 +137,7 @@ extension BackgroundMusicController {
 				currentIndex: currentIndex
 			)
 		else {
-			await lifecycle.log.error(
+			lifecycle.log.error(
 				"Background music playlist has no different playable track; count=\(playlist.count) index=\(currentIndex)"
 			)
 			return false
@@ -235,7 +235,7 @@ extension BackgroundMusicController {
 		let observedVideoID = lastVideoID ?? "unknown"
 		let observedState = lastState.map(String.init(describing:)) ?? "unknown"
 		let errorDetail = lastError.map { " error=\($0)" } ?? ""
-		await lifecycle.log.error(
+		lifecycle.log.error(
 			"Background music timed out waiting for target; previous=\(previous) targetIndex=\(targetIndex) targetVideo=\(targetVideoID) observedIndex=\(observedIndex) observedVideo=\(observedVideoID) state=\(observedState)\(errorDetail)"
 		)
 		return false
@@ -282,9 +282,7 @@ extension BackgroundMusicController {
 		lastObservedVideoID = metadata.videoId
 		currentMusicTitle = title
 		guard changed else { return true }
-		Task { [log = lifecycle.log] in
-			await log.info("Background music now playing: \(title)")
-		}
+		lifecycle.log.info("Background music now playing: \(title)")
 		return true
 	}
 }

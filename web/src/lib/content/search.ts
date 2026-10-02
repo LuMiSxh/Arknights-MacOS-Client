@@ -126,6 +126,7 @@ function tokenMatch(query: string, candidate: string): number {
 		return 0.82;
 	if (query.length < 3 || candidate.length < 3) return 0;
 	const limit = query.length > 5 ? 2 : 1;
+	if (Math.abs(query.length - candidate.length) > limit) return 0;
 	const distance = editDistance(query, candidate);
 	return distance <= limit ? 0.72 - distance * 0.1 : 0;
 }
@@ -217,6 +218,7 @@ function excerpt(body: string, queryTokens: string[]): string | undefined {
 			matchScore = score;
 			matchAt = match.index;
 		}
+		if (score === 1) break;
 	}
 	if (matchAt === undefined) return undefined;
 	const start = Math.max(0, matchAt - 48);

@@ -33,11 +33,9 @@ struct InstallationSettingsPage: View {
 				) {
 					GlassMenuPicker(
 						selection: regionBinding,
-						options: GameRegion.selectableCases(
-							canaryEnabled: settings.canaryFeaturesEnabled,
-							chinaClientsEnabled: settings.chinaClientsEnabled,
-							taiwanClientEnabled: settings.taiwanClientEnabled
-						).map { ($0, $0.displayName) },
+						options: settings.regionAccess.selectableRegions.map {
+							($0, $0.displayName)
+						},
 						accentColor: accentColor,
 						isDisabled: lifecycle.activity != .idle
 					)
@@ -284,7 +282,7 @@ struct InstallationSettingsPage: View {
 					) {
 						confirmsGameUninstall = true
 					}
-					.disabled(!installation.isInstalled || !installation.canModifyGameFiles)
+					.disabled(!installation.canUninstallGame)
 					.confirmationDialog(
 						SettingsStrings.uninstallConfirmation,
 						isPresented: $confirmsGameUninstall,
@@ -317,7 +315,9 @@ struct InstallationSettingsPage: View {
 
 	private var gameStatus: String {
 		if installation.isDownloading, let progress = installation.progress {
-			return SettingsStrings.downloading(Int(progress.fraction * 100))
+			let percentage = Int(progress.fraction * 100)
+			return progress.isVerifying
+				? SettingsStrings.verifying(percentage) : SettingsStrings.downloading(percentage)
 		}
 		if installation.isDownloading { return SettingsStrings.preparingDownload }
 		if installation.isInstalled { return SettingsStrings.installed }

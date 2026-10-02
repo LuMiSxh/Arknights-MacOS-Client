@@ -91,19 +91,37 @@ struct IntelTranslationControllerTests {
 		#expect(await installer.count == 0)
 	}
 
-	@Test
-	func successfulPreflightCheckPreservesARealLaunchFailure() async {
+	@Test(arguments: [
+		(
+			"launch failure",
+			SupportCode.crux,
+			SupportContext(operation: .launch, region: .global),
+			"A real launch failure"
+		),
+		(
+			"Rosetta installation failure",
+			SupportCode.limpet,
+			SupportContext(operation: .rosettaInstallation, region: nil),
+			"Rosetta installation failed"
+		),
+	])
+	func successfulPreflightCheckPreservesAnExistingFailure(
+		caseName: String,
+		code: SupportCode,
+		context: SupportContext,
+		message: String
+	) async {
 		let lifecycle = makeLifecycleStore()
 		lifecycle.readiness.isInstalled = true
-		let realFailure = LauncherFailurePresentation(
+		let existingFailure = LauncherFailurePresentation(
 			id: UUID(),
-			message: "A real launch failure",
-			code: .crux,
-			context: SupportContext(operation: .launch, region: .global),
+			message: message,
+			code: code,
+			context: context,
 			actions: [.retry],
 			blocksGameLaunch: true
 		)
-		lifecycle.presentFailure(realFailure, diagnostic: "launch")
+		lifecycle.presentFailure(existingFailure, diagnostic: caseName)
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			checkIntelTranslation: {
@@ -113,32 +131,7 @@ struct IntelTranslationControllerTests {
 
 		_ = await controller.refreshAvailability(force: true)
 
-		#expect(lifecycle.failure == realFailure)
-	}
-
-	@Test
-	func successfulPreflightCheckPreservesARosettaInstallationFailure() async {
-		let lifecycle = makeLifecycleStore()
-		lifecycle.readiness.isInstalled = true
-		let realFailure = LauncherFailurePresentation(
-			id: UUID(),
-			message: "Rosetta installation failed",
-			code: .limpet,
-			context: SupportContext(operation: .rosettaInstallation, region: nil),
-			actions: [.retry],
-			blocksGameLaunch: true
-		)
-		lifecycle.presentFailure(realFailure, diagnostic: "installer")
-		let controller = IntelTranslationController(
-			lifecycle: lifecycle,
-			checkIntelTranslation: {
-				IntelTranslationCheck(state: .available, diagnostics: "available")
-			}
-		)
-
-		_ = await controller.refreshAvailability(force: true)
-
-		#expect(lifecycle.failure == realFailure)
+		#expect(lifecycle.failure == existingFailure, Comment(rawValue: caseName))
 	}
 
 	@Test
@@ -162,7 +155,7 @@ struct IntelTranslationControllerTests {
 			return
 		}
 		#expect(controller.canInstallRosetta)
-		#expect(!controller.installationActionTitle.isEmpty)
+		#expect(lifecycle.failure?.actions.contains(.retry) == true)
 		#expect(lifecycle.rosettaInstallationState.failureMessage?.contains("7") == true)
 		#expect(lifecycle.failure?.blocksGameLaunch == true)
 	}
@@ -196,14 +189,16 @@ struct IntelTranslationControllerTests {
 			(.checking, SupportCode?.none),
 		]
 	)
-	func readinessExposesLimpetOnlyForTerminalBlockedStates(
+	func readinessPublishesLimpetOnlyForTerminalBlockedStates(
 		fixture: (IntelTranslationState, SupportCode?)
 	) {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.intelTranslationState = fixture.0
+		lifecycle.readiness.isInstalled = true
 		let controller = IntelTranslationController(lifecycle: lifecycle)
+		controller.applyAvailabilityCheck(
+			IntelTranslationCheck(state: fixture.0, diagnostics: "test"))
 
-		#expect(controller.supportCode == fixture.1)
+		#expect(lifecycle.failure?.code == fixture.1)
 	}
 
 	@Test

@@ -15,7 +15,7 @@ REPORT_SCHEMA_VERSION = 1
 MONITOR_MARKER_PREFIX = "arknights-contract-monitor:"
 CONSECUTIVE_FAILURES_TO_ALERT = 2
 CONSECUTIVE_SUCCESSES_TO_RECOVER = 2
-SUPPORTED_REGIONS = {"global", "japan", "korea"}
+SUPPORTED_REGIONS = {"global", "japan", "korea", "taiwan"}
 SUPPORTED_CONTRACTS = {
     "branding",
     "game-configuration",
@@ -371,6 +371,6 @@ def _failure_body(
             f"- Sanitized failure: `{check.summary}`",
             f"- Latest workflow run: {latest_failure.run_url}",
             "",
-            "This issue is maintained automatically. Response bodies and authorization values are never included.",
+            "This issue was created and is maintained automatically. Response bodies and authorization values are never included.",
         ]
     )

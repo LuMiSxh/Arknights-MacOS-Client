@@ -81,6 +81,9 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
     build_directory = project / BUILD_DIR.relative_to(PROJECT_DIR)
     rendered = build_directory / f"{icon_name}.png"
     preview = project / f"Resources/{icon_name}.png"
+    tint_source = (
+        project / f"Sources/ArknightsClient/Resources/{icon_name}TintSource.png"
+    )
     catalog = build_directory / f"{icon_name}.xcassets"
     iconset = catalog / f"{icon_name}.appiconset"
     compiled = build_directory / f"{icon_name}.compiled"
@@ -116,6 +119,7 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
             ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
             capture=True,
         )
+        shutil.copyfile(rendered, tint_source)
 
     with spinner("Compiling the native layered icon"):
         result = subprocess.run(

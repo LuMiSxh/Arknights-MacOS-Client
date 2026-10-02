@@ -9,9 +9,7 @@ on:
         type: string
 
 permissions:
-  contents: write
-  attestations: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: release-${{ inputs.version }}
@@ -29,19 +27,24 @@ jobs:
     uses: ./.github/workflows/pages.yml
 
   package:
+    name: Build and draft release
     runs-on: xcode-27
     timeout-minutes: 90
     environment: release
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
     env:
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
           prune-cache: true
@@ -51,7 +54,13 @@ jobs:
         run: uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json
 
       - name: Set up just
-        uses: extractions/setup-just@v4
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+
+      - name: Set up OpenSSL 3 for Sparkle Ed25519 verification
+        run: |
+          brew install openssl@3
+          echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
+          "$(brew --prefix openssl@3)/bin/openssl" version
 
       - name: Validate release inputs
         env:
@@ -140,7 +149,8 @@ jobs:
           uv run --locked --no-dev scripts/validate_sparkle_keys.py \
             --plist "dist/$app_name/Contents/Info.plist" \
             --appcast "$update_directory/appcast.xml" \
-            --update-name "$update_name"
+            --update-name "$update_name" \
+            --update-file "$update_directory/$update_name"
           cp "$update_directory/$update_name" "dist/$update_name"
           cp "$update_directory/appcast.xml" dist/appcast.xml
           dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
@@ -149,7 +159,7 @@ jobs:
             dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
 
       - name: Attest release provenance
-        uses: actions/attest-build-provenance@v4.2.2
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         env:
           GH_TOKEN: ${{ github.token }}
         with:

@@ -16,6 +16,8 @@ from lib.common import ScriptError, fail
 from lib.github_client import MAXIMUM_API_BYTES, GitHubClient
 
 AUTOMATED_LABEL = "automated"
+AUTOMATED_LABEL_COLOR = "B60205"
+AUTOMATED_LABEL_DESCRIPTION = "Created by repository automation"
 MAXIMUM_REPORT_ARCHIVE_BYTES = 2 * 1_024 * 1_024
 MAXIMUM_REPORT_BYTES = 1_024 * 1_024
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")

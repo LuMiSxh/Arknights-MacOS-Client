@@ -195,22 +195,16 @@ func taiwanUsesItsOwnGryphlinePrefix() {
 }
 
 @Test
-func missingCacheUsersDirectoryIsBenign() throws {
-	let prefix = FileManager.default.temporaryDirectory.appending(
+func gameCacheEnumerationTreatsMissingUsersAsEmptyAndSurfacesFailures() throws {
+	let missingPrefix = FileManager.default.temporaryDirectory.appending(
 		path: "AppPathsMissingCacheUsers.\(UUID().uuidString)", directoryHint: .isDirectory)
-	defer { try? FileManager.default.removeItem(at: prefix) }
+	#expect(try AppPaths.gameCacheDirectories(winePrefix: missingPrefix).isEmpty)
 
-	#expect(try AppPaths.gameCacheDirectories(winePrefix: prefix).isEmpty)
-}
-
-@Test
-func cacheDirectoryEnumerationFailuresAreSurfaced() {
-	let prefix = FileManager.default.temporaryDirectory.appending(
+	let unreadablePrefix = FileManager.default.temporaryDirectory.appending(
 		path: "AppPathsCacheEnumerationFailure.\(UUID().uuidString)", directoryHint: .isDirectory)
-
 	#expect(throws: AppPathsError.self) {
 		try AppPaths.gameCacheDirectories(
-			winePrefix: prefix,
+			winePrefix: unreadablePrefix,
 			fileManager: FailingCacheEnumerationFileManager()
 		)
 	}

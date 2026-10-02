@@ -160,7 +160,7 @@ struct OnboardingView: View {
 			value: coordinator.step
 		)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: 0.3),
+			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
 			value: customization.dynamicThemeHue
 		)
 		.sheet(item: $presentedGallery) { destination in

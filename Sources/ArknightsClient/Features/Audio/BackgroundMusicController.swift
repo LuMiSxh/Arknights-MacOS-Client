@@ -19,6 +19,7 @@ final class BackgroundMusicController {
 	let lifecycle: LauncherLifecycleStore
 	let settings: LauncherPreferencesController
 	let nowPlaying: NowPlayingCoordinator
+	let playerCommands: BackgroundMusicPlayerCommands
 	let openURL: (URL) -> Void
 	var currentMusicTitle: String?
 	var currentMusicVideoID: String?
@@ -46,10 +47,12 @@ final class BackgroundMusicController {
 		settings: LauncherPreferencesController,
 		launcherIconManager: LauncherIconManager,
 		initialMusicTitle: String? = nil,
+		playerCommands: BackgroundMusicPlayerCommands = .live,
 		openURL: @escaping (URL) -> Void
 	) {
 		self.lifecycle = lifecycle
 		self.settings = settings
+		self.playerCommands = playerCommands
 		self.openURL = openURL
 		currentMusicTitle = initialMusicTitle
 		nowPlaying = NowPlayingCoordinator(icon: launcherIconManager.currentIcon)
@@ -179,13 +182,10 @@ final class BackgroundMusicController {
 	private func setupPlayer() {
 		guard let source = parsedYouTubeSource else {
 			stopAndClearPlayer()
-			Task {
-				await lifecycle.log.error(
-					"Background music failed: invalid YouTube URL (\(settings.launcherMusicURL))"
-				)
-			}
+			lifecycle.log.error("Background music failed: invalid YouTube URL")
 			return
 		}
+		let sourceType = sourceTypeName(source)
 
 		invalidatePlayerTasks()
 		didShuffleCurrentPlaylist = false
@@ -205,16 +205,13 @@ final class BackgroundMusicController {
 					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
 						return
 					}
-					await lifecycle.log.info("Background music loaded source: \(source)")
-					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
-						return
-					}
+					lifecycle.log.info("Background music loaded source type: \(sourceType)")
 					performFadeIn(on: player)
 				} catch {
 					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
 						return
 					}
-					await lifecycle.log.error(
+					lifecycle.log.error(
 						"Background music failed to load source: \(error.localizedDescription)"
 					)
 				}
@@ -232,9 +229,7 @@ final class BackgroundMusicController {
 				restrictRelatedVideosToSameChannel: false
 			)
 		)
-		Task { [log = lifecycle.log] in
-			await log.info("Background music initializing player with source: \(source)")
-		}
+		lifecycle.log.info("Background music initializing player with source type: \(sourceType)")
 		player = newPlayer
 		setupObservation(for: newPlayer, source: source)
 	}
@@ -262,6 +257,12 @@ final class BackgroundMusicController {
 			}
 		}
 		return .init(url: url)
+	}
+
+	private func sourceTypeName(_ source: YouTubePlayer.Source) -> String {
+		if case .playlist = source { return "playlist" }
+		if case .video = source { return "video" }
+		return "custom URL"
 	}
 
 	func openCurrentMusicURL() {
@@ -292,9 +293,7 @@ final class BackgroundMusicController {
 				playbackState = state
 				reconcilePlaybackIntent(with: state)
 				nowPlaying.updatePlayback(isPlaying: isPlaying)
-				Task { [log = lifecycle.log] in
-					await log.debug("Background music state: \(state)")
-				}
+				lifecycle.log.debug("Background music state: \(state)")
 
 				if state == .cued || state == .unstarted {
 					if settings.playsLauncherMusic

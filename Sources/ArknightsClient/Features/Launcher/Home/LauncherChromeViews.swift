@@ -53,7 +53,7 @@ struct ArknightsWordmark: View {
 	}
 
 	private var wordmarkAnimation: Animation? {
-		reduceMotion ? nil : .easeInOut(duration: 0.28)
+		LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion)
 	}
 
 	@ViewBuilder

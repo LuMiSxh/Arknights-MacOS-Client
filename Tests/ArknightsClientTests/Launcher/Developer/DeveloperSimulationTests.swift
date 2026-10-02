@@ -26,6 +26,36 @@ import Testing
 	}
 
 	@Test
+	func developerVerificationProgressUsesTheRealVerificationPresentation() throws {
+		var state = DeveloperSimulationState()
+		state.lifecycle = .installing
+		state.installationPhase = .verifying
+		state.progressPercent = 0.42
+		state.transferStalled = true
+
+		let projection = state.projection()
+		let progress = try #require(projection.progress)
+		#expect(progress.isVerifying)
+		#expect(progress.transferRateBytesPerSecond == nil)
+		#expect(!progress.isTransferStalled)
+		#expect(
+			LauncherDownloadProgressPresentation.title(for: progress, isPaused: false)
+				== "Verifying · 42%"
+		)
+		#expect(
+			LauncherDownloadProgressPresentation.outlineFraction(
+				for: progress, status: projection.status,
+				hasPartialDownload: false, hasFailure: false
+			) == 0.42
+		)
+		state.lifecycle = .paused
+		#expect(state.projection().progress == nil)
+		state.lifecycle = .ready
+		state.hasPartialDownload = true
+		#expect(state.projection().progress == nil)
+	}
+
+	@Test
 	func developerSimulationCanHideProgressValuesWithoutChangingLifecycle() {
 		var state = DeveloperSimulationState()
 		state.lifecycle = .paused

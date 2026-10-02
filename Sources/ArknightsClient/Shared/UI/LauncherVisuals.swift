@@ -106,6 +106,8 @@ enum LauncherVisuals {
 		static let progressSweepTravel = 1.40
 		static let progressSweepFadeOut = 0.25
 		static let progressSweepPause = 0.55
+		static let indeterminateOrbitLaps = 2.0
+		static let indeterminateGlintLength = 0.14
 	}
 
 	/// Raises the contrast of a chromatic foreground while retaining its hue. macOS 27's

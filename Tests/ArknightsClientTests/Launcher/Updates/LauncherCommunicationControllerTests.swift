@@ -8,22 +8,10 @@ import Testing
 @MainActor
 struct LauncherCommunicationControllerTests {
 	@Test
-	func queuedPopupsAreRecordedOnlyWhenTheyBecomeVisible() {
-		let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
-		let defaults = UserDefaults(suiteName: suiteName)!
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let preferences = LauncherPreferencesStore(defaults: defaults)
-		let logURL = FileManager.default.temporaryDirectory.appending(
-			path: "\(suiteName).log"
-		)
-		let log = LauncherLog(fileURL: logURL)
-		let lifecycle = LauncherLifecycleStore(log: log)
-		let controller = LauncherCommunicationController(
-			lifecycle: lifecycle,
-			announcementService: LauncherAnnouncementService(),
-			preferences: preferences,
-			log: log
-		)
+	func announcementsAreRecordedOnlyWhenTheyAreDismissed() {
+		let fixture = CommunicationFixture()
+		defer { fixture.removeDefaults() }
+		let controller = fixture.controller
 		let popup: (String) -> LauncherPopup = { id in
 			LauncherPopup(
 				id: id,
@@ -38,82 +26,73 @@ struct LauncherCommunicationControllerTests {
 		controller.enqueuePopup(popup("official-notice"))
 		controller.enqueuePopup(popup("announcement-feedback"))
 
-		#expect(!preferences.seenAnnouncementIDs().contains("feedback"))
-
 		controller.dismissPopup()
-		#expect(preferences.seenAnnouncementIDs().contains("feedback"))
+		#expect(controller.popup?.id == "announcement-feedback")
+		#expect(!fixture.preferences.seenAnnouncementIDs().contains("feedback"))
 
 		controller.dismissPopup()
 		#expect(controller.popup == nil)
+		#expect(fixture.preferences.seenAnnouncementIDs().contains("feedback"))
 	}
 
-	@Test
-	func silentProbeUpdatesAvailabilityWithoutPresentingTheDriver() {
-		let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
-		let defaults = UserDefaults(suiteName: suiteName)!
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let preferences = LauncherPreferencesStore(defaults: defaults)
-		let logURL = FileManager.default.temporaryDirectory.appending(
-			path: "\(suiteName).log"
-		)
-		let log = LauncherLog(fileURL: logURL)
-		let lifecycle = LauncherLifecycleStore(log: log)
-		let controller = LauncherCommunicationController(
-			lifecycle: lifecycle,
-			announcementService: LauncherAnnouncementService(),
-			preferences: preferences,
-			log: log
-		)
-		controller.recordLauncherUpdateAvailability(.updateAvailable("0.5.0"))
+	@Test(arguments: LauncherUpdateButtonScenario.allCases)
+	func launcherUpdateButtonTracksAvailabilityAndActiveInstallation(
+		scenario: LauncherUpdateButtonScenario
+	) {
+		let fixture = CommunicationFixture()
+		defer { fixture.removeDefaults() }
+		let controller = fixture.controller
+		var expectedVersion: String?
+		var expectedButtonVisibility = true
 
-		#expect(controller.launcherUpdateVersion == "0.5.0")
+		switch scenario {
+		case .available:
+			controller.recordLauncherUpdateAvailability(.updateAvailable("0.5.0"))
+			expectedVersion = "0.5.0"
+		case .current:
+			controller.recordLauncherUpdateAvailability(.updateAvailable("0.5.0"))
+			#expect(controller.shouldShowLauncherUpdateButton)
+			controller.recordLauncherUpdateAvailability(.current)
+			expectedButtonVisibility = false
+		case .hiddenInstallation:
+			controller.launcherUpdateUserDriver.showInstallingUpdate(
+				withApplicationTerminated: true
+			) {}
+			controller.launcherUpdateUserDriver.dismissFromUser()
+		}
+
+		#expect(controller.launcherUpdateVersion == expectedVersion)
+		#expect(controller.shouldShowLauncherUpdateButton == expectedButtonVisibility)
 		#expect(!controller.launcherUpdateUserDriver.isPresented)
 	}
+}
 
-	@Test
-	func currentAvailabilityClearsTheLauncherUpdateAction() {
-		let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
-		let defaults = UserDefaults(suiteName: suiteName)!
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let preferences = LauncherPreferencesStore(defaults: defaults)
-		let logURL = FileManager.default.temporaryDirectory.appending(path: "\(suiteName).log")
-		let log = LauncherLog(fileURL: logURL)
-		let lifecycle = LauncherLifecycleStore(log: log)
-		let controller = LauncherCommunicationController(
-			lifecycle: lifecycle,
+enum LauncherUpdateButtonScenario: String, CaseIterable, Sendable {
+	case available
+	case current
+	case hiddenInstallation
+}
+
+@MainActor
+private struct CommunicationFixture {
+	private let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
+	private let defaults: UserDefaults
+	let preferences: LauncherPreferencesStore
+	let controller: LauncherCommunicationController
+
+	init() {
+		defaults = UserDefaults(suiteName: suiteName)!
+		preferences = LauncherPreferencesStore(defaults: defaults)
+		let log = LauncherLog(
+			fileURL: FileManager.default.temporaryDirectory.appending(path: "\(suiteName).log"))
+		controller = LauncherCommunicationController(
+			lifecycle: LauncherLifecycleStore(log: log),
 			announcementService: LauncherAnnouncementService(),
 			preferences: preferences,
-			log: log
-		)
-		controller.recordLauncherUpdateAvailability(.updateAvailable("0.5.0"))
-		#expect(controller.shouldShowLauncherUpdateButton)
-
-		controller.recordLauncherUpdateAvailability(.current)
-
-		#expect(controller.launcherUpdateVersion == nil)
-		#expect(!controller.shouldShowLauncherUpdateButton)
+			log: log)
 	}
 
-	@Test
-	func hiddenActiveUpdateKeepsLauncherButtonVisibleWithoutCachedVersion() {
-		let suiteName = "LauncherCommunicationControllerTests.\(UUID().uuidString)"
-		let defaults = UserDefaults(suiteName: suiteName)!
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let preferences = LauncherPreferencesStore(defaults: defaults)
-		let logURL = FileManager.default.temporaryDirectory.appending(path: "\(suiteName).log")
-		let log = LauncherLog(fileURL: logURL)
-		let lifecycle = LauncherLifecycleStore(log: log)
-		let controller = LauncherCommunicationController(
-			lifecycle: lifecycle,
-			announcementService: LauncherAnnouncementService(),
-			preferences: preferences,
-			log: log
-		)
-		controller.launcherUpdateUserDriver.showInstallingUpdate(withApplicationTerminated: true) {}
-		controller.launcherUpdateUserDriver.dismissFromUser()
-
-		#expect(controller.launcherUpdateVersion == nil)
-		#expect(!controller.launcherUpdateUserDriver.isPresented)
-		#expect(controller.shouldShowLauncherUpdateButton)
+	func removeDefaults() {
+		defaults.removePersistentDomain(forName: suiteName)
 	}
 }

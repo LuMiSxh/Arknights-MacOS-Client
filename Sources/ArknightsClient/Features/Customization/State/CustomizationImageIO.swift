@@ -5,7 +5,47 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
+private struct IconFileIdentity: Sendable, Equatable {
+	let deviceNumber: UInt64?
+	let fileNumber: UInt64?
+	let size: UInt64?
+	let modificationDate: Date?
+}
+
+struct IconPublicationSnapshotError: LauncherDiagnosticError {
+	let diagnosticDescription: String
+
+	var errorDescription: String? {
+		"Icon files changed while an update was being prepared. Try again."
+	}
+}
+
+struct IconRollbackFailure: LauncherDiagnosticError {
+	let original: any Error
+	let rollbackErrors: [any Error]
+
+	var errorDescription: String? {
+		"The icon update failed, and the previous icons could not be fully restored. Check the launcher log."
+	}
+
+	var diagnosticDescription: String {
+		let details = rollbackErrors.map(\.localizedDescription).joined(separator: "; ")
+		return
+			"Icon publication failed: \(original.localizedDescription). Rollback failures: \(details)"
+	}
+}
+
 enum CustomizationImageIO {
+	struct PreparedPublication: Sendable {
+		fileprivate let destinations: [URL]
+		fileprivate let identities: [IconFileIdentity?]
+		fileprivate let backupURLs: [URL?]
+
+		func discard(log: LauncherLog) {
+			CustomizationImageIO.cleanupBackups(backupURLs, preserving: [], log: log)
+		}
+	}
+
 	static func load(_ url: URL) async throws -> Data {
 		try await Task.detached(priority: .userInitiated) {
 			let values = try url.resourceValues(forKeys: [
@@ -56,12 +96,137 @@ enum CustomizationImageIO {
 		}
 	}
 
+	static func preparePublication(
+		_ destinations: [URL],
+		operationID: UUID,
+		log: LauncherLog
+	) async throws -> PreparedPublication {
+		try await Task.detached(priority: .userInitiated) {
+			let identities = try fileIdentities(for: destinations)
+			var backupURLs = [URL?](repeating: nil, count: destinations.count)
+			do {
+				for (index, destination) in destinations.enumerated()
+				where identities[index] != nil {
+					let backupURL = destination.appendingPathExtension(
+						"backup.\(operationID.uuidString).\(index)"
+					)
+					backupURLs[index] = backupURL
+					try FileManager.default.copyItem(at: destination, to: backupURL)
+				}
+				// Reject a mixed backup set if another icon publication raced these copies.
+				guard try fileIdentities(for: destinations) == identities else {
+					throw IconPublicationSnapshotError(
+						diagnosticDescription:
+							"Icon files changed while backups were being prepared."
+					)
+				}
+				return PreparedPublication(
+					destinations: destinations,
+					identities: identities,
+					backupURLs: backupURLs
+				)
+			} catch {
+				cleanupBackups(backupURLs, preserving: [], log: log)
+				throw error
+			}
+		}.value
+	}
+
+	static func publish(
+		_ replacements: [(staged: URL, destination: URL)],
+		prepared: PreparedPublication,
+		using committer: CustomizationController.IconCommitter,
+		log: LauncherLog
+	) throws {
+		do {
+			guard replacements.map(\.destination) == prepared.destinations,
+				try fileIdentities(for: prepared.destinations) == prepared.identities
+			else {
+				throw IconPublicationSnapshotError(
+					diagnosticDescription:
+						"Icon files changed before the prepared update could commit."
+				)
+			}
+		} catch {
+			prepared.discard(log: log)
+			throw error
+		}
+
+		var attempted: [Int] = []
+		do {
+			for index in replacements.indices {
+				attempted.append(index)
+				try committer(replacements[index].staged, replacements[index].destination)
+			}
+		} catch {
+			let original = error
+			var rollbackFailures: [(index: Int, error: any Error)] = []
+			for index in attempted.reversed() {
+				do {
+					if let backupURL = prepared.backupURLs[index] {
+						try commit(backupURL, to: prepared.destinations[index])
+					} else {
+						try removeIfPresent(prepared.destinations[index])
+					}
+				} catch {
+					rollbackFailures.append((index, error))
+				}
+			}
+			let failedIndexes = Set(rollbackFailures.map(\.index))
+			cleanupBackups(prepared.backupURLs, preserving: failedIndexes, log: log)
+			guard !rollbackFailures.isEmpty else { throw original }
+			throw IconRollbackFailure(
+				original: original,
+				rollbackErrors: rollbackFailures.map(\.error)
+			)
+		}
+		cleanupBackups(prepared.backupURLs, preserving: [], log: log)
+	}
+
+	private static func fileIdentities(for urls: [URL]) throws -> [IconFileIdentity?] {
+		try urls.map { url in
+			let attributes: [FileAttributeKey: Any]
+			do {
+				attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+			} catch {
+				if (error as? CocoaError)?.code == .fileReadNoSuchFile
+					|| (error as? POSIXError)?.code == .ENOENT
+				{
+					return nil
+				}
+				throw error
+			}
+			guard attributes[.type] as? FileAttributeType == .typeRegular else {
+				throw IconPublicationSnapshotError(
+					diagnosticDescription: "Icon destination is not a regular file: \(url.path)"
+				)
+			}
+			return IconFileIdentity(
+				deviceNumber: (attributes[.systemNumber] as? NSNumber)?.uint64Value,
+				fileNumber: (attributes[.systemFileNumber] as? NSNumber)?.uint64Value,
+				size: (attributes[.size] as? NSNumber)?.uint64Value,
+				modificationDate: attributes[.modificationDate] as? Date
+			)
+		}
+	}
+
+	private static func cleanupBackups(
+		_ backupURLs: [URL?],
+		preserving indexes: Set<Int>,
+		log: LauncherLog
+	) {
+		for (index, backupURL) in backupURLs.enumerated()
+		where !indexes.contains(index) {
+			if let backupURL { discard(backupURL, log: log) }
+		}
+	}
+
 	static func discard(_ url: URL, log: LauncherLog) {
 		guard FileManager.default.fileExists(atPath: url.path) else { return }
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			Task { await log.error("Failed to remove staged icon at \(url.path): \(error)") }
+			log.error("Failed to remove temporary icon file at \(url.path): \(error)")
 		}
 	}
 

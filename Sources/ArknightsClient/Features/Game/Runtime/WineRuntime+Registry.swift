@@ -25,6 +25,7 @@ extension WineRuntime {
 		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
+		spawnGate: WineProcessSpawnGate? = nil,
 		fileManager: FileManager = .default
 	) async throws {
 		guard !entries.isEmpty else { return }
@@ -48,7 +49,8 @@ extension WineRuntime {
 			executable: executableURL,
 			arguments: ["regedit.exe", "/S", "C:\\windows\\temp\\" + Self.registryScriptName],
 			environment: environment,
-			output: logHandle
+			output: logHandle,
+			spawnGate: spawnGate
 		)
 		guard status == 0 else {
 			throw LauncherError.runtimeConfiguration(

@@ -70,9 +70,10 @@ final class LauncherLifecycleStore {
 			.migrating
 		case .launchingGame:
 			.launching
-		case .runningGame(_, let processIdentifier),
-			.stoppingGame(_, let processIdentifier):
+		case .runningGame(_, let processIdentifier):
 			.running(processIdentifier: processIdentifier)
+		case .stoppingGame(_, let processIdentifier):
+			processIdentifier.map { .running(processIdentifier: $0) } ?? .launching
 		case .idle, .maintaining:
 			state.refresh.isChecking ? .checking : .ready
 		}
@@ -153,19 +154,15 @@ final class LauncherLifecycleStore {
 		diagnostic: String
 	) -> Bool {
 		if state.presentation.failure?.id == failure.id {
-			Task { [log] in
-				await log.error(
-					"Failure not presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
-				)
-			}
+			log.error(
+				"Failure not presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
+			)
 			return false
 		}
 		state.presentation.failure = failure
-		Task { [log] in
-			await log.error(
-				"Failure presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
-			)
-		}
+		log.error(
+			"Failure presented; code=\(failure.code?.rawValue ?? "none") operation=\(failure.context.operation.rawValue) diagnostic=\(diagnostic)"
+		)
 		return true
 	}
 

@@ -81,7 +81,7 @@ struct OnboardingGameSettingsView: View {
 						HStack(spacing: 10) {
 							SettingsSlider(
 								value: frameLatencyBinding,
-								range: 1...3,
+								range: 0...3,
 								step: 1,
 								accentColor: LauncherVisuals.warning,
 								width: 120

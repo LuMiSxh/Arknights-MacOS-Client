@@ -25,6 +25,7 @@
 	);
 	let mobileMenuOpen = $state(false);
 	let searchOpen = $state(false);
+	let menuTrigger = $state<HTMLButtonElement>();
 	const isHome = $derived(isExact('/'));
 	// Contributor documentation is kept apart from the player-facing guides.
 	const railGroups = $derived([
@@ -82,8 +83,25 @@
 		mobileMenuOpen = false;
 	}
 
+	function closeMenuOnEscape(event: KeyboardEvent) {
+		if (
+			event.key !== 'Escape' ||
+			!mobileMenuOpen ||
+			document.querySelector('dialog[open], [aria-modal="true"]')
+		)
+			return;
+		closeMobileMenu();
+		if (menuTrigger?.isConnected && menuTrigger.getClientRects().length)
+			menuTrigger.focus();
+	}
+
+	function closeMenuOnResize() {
+		if (window.innerWidth > 760) closeMobileMenu();
+	}
+
 	// Cross-fades between pages; the sidebar keeps its own identity so it stays in place.
 	onNavigate((navigation) => {
+		closeMobileMenu();
 		if (
 			!document.startViewTransition ||
 			prefersReducedMotion.current ||
@@ -159,9 +177,7 @@
 	</footer>
 {/snippet}
 
-<svelte:window
-	onkeydown={(event) => event.key === 'Escape' && closeMobileMenu()}
-/>
+<svelte:window onkeydown={closeMenuOnEscape} onresize={closeMenuOnResize} />
 <svelte:document onclick={closeMenuOnOutsideClick} />
 
 <svelte:head>
@@ -215,6 +231,7 @@
 				<button
 					class="menu-trigger"
 					type="button"
+					bind:this={menuTrigger}
 					aria-expanded={mobileMenuOpen}
 					aria-controls="mobile-menu"
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}

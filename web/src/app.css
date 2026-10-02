@@ -566,34 +566,59 @@ p {
 	text-transform: uppercase;
 }
 
-.content-copy .mermaid-shell.diagram-expanded {
+.content-copy .diagram-dialog {
 	position: fixed;
 	inset: 1rem;
-	z-index: 20;
+	width: auto;
+	max-width: none;
+	height: auto;
+	max-height: none;
+	margin: 0;
 	overflow: auto;
+	border: 1px solid var(--site-line);
+	border-radius: var(--site-radius-control);
 	background: var(--site-bg);
-	padding: 2.5rem 1rem 1rem;
+	padding: 3.5rem 1rem 1rem;
+	color: var(--site-text);
 	box-shadow: var(--shadow-anasthasia-dialog);
 }
 
-.content-copy .diagram-expanded .diagram-rendered {
-	min-width: max-content;
-	cursor: zoom-out;
+.content-copy .diagram-dialog::backdrop {
+	background: rgb(0 0 0 / 0.78);
 }
 
-.content-copy .diagram-expanded .diagram-rendered svg {
+.content-copy .diagram-dialog-content {
+	min-width: max-content;
+}
+
+.content-copy .diagram-dialog-content svg {
+	display: block;
 	width: auto;
 	min-width: calc(100vw - 4rem);
 	max-width: none !important;
 }
 
-.content-copy .diagram-expanded .diagram-hint {
-	position: fixed;
-	top: 1.5rem;
-	right: 2rem;
+.content-copy .diagram-dialog-close {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	min-height: var(--site-touch-target);
+	border: 1px solid var(--site-border);
+	border-radius: var(--site-radius-capsule);
+	background: var(--site-hover);
+	padding: 0 var(--site-space-4);
+	color: var(--site-text);
+	cursor: pointer;
+	font: inherit;
+	font-size: 0.85rem;
 }
 
-body:has(.diagram-expanded) {
+.content-copy .diagram-dialog-close:focus-visible {
+	outline: 2px solid var(--site-signal-text);
+	outline-offset: 0.25rem;
+}
+
+body:has(.diagram-dialog[open]) {
 	overflow: hidden;
 }
 

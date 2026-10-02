@@ -9,13 +9,13 @@ domain: runtime
 
 # LIMPET
 
-The bundled Intel Wine runtime cannot start because Rosetta is missing, its installation failed, or Legacy Game Test Mode disabled the required translation path.
+The bundled Intel Wine runtime cannot start because Rosetta is missing or unavailable, its installation failed, or Legacy Game Test Mode disabled translation on a macOS 27 beta.
 
 ## Try this
 
 1. If the launcher offers **Install Rosetta…**, confirm the macOS system prompt and wait for it to finish.
 2. Choose **Retry** or **Check Again** after installation.
-3. If Legacy Game Test Mode is enabled, turn it off as described in [macOS compatibility](../runtime-compatibility.md#legacy-game-test-mode), restart the Mac, and check again.
+3. If you are running a macOS 27 beta with Legacy Game Test Mode enabled, turn it off as described in [macOS compatibility](../runtime-compatibility.md#legacy-game-test-mode-on-macos-27-beta), restart the Mac, and check again.
 4. Install pending macOS updates.
 
 > [!IMPORTANT]

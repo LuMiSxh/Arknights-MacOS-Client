@@ -14,7 +14,7 @@ extension PresetCatalogService {
 				preserving: cacheDirectory.appending(path: ".cache-limit-check")
 			)
 		} catch {
-			await log.error(
+			log.error(
 				"Failed to enforce the preset image cache limit at \(cacheDirectory.path): \(error.localizedDescription)"
 			)
 		}
@@ -66,8 +66,8 @@ extension PresetCatalogService {
 		}
 		let finalError = lastError ?? LauncherError.invalidPresetImage(url)
 		guard cacheEpoch == epoch else { throw CancellationError() }
-		await log.error(
-			"Failed to load preset image from \(url.absoluteString): \(finalError.localizedDescription)"
+		log.error(
+			"Failed to load preset image from \(url.absoluteString): \(launcherDiagnosticDescription(for: finalError))"
 		)
 		guard cacheEpoch == epoch else { throw CancellationError() }
 		throw finalError
@@ -113,14 +113,13 @@ extension PresetCatalogService {
 			let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
 			guard attributes[.type] as? FileAttributeType == .typeRegular else {
 				try FileManager.default.removeItem(at: url)
-				await log.error("Removed non-regular preset cache entry at \(url.path)")
-				guard cacheEpoch == epoch else { return nil }
+				log.error("Removed non-regular preset cache entry at \(url.path)")
 				return nil
 			}
 			let size = (attributes[.size] as? NSNumber)?.intValue ?? 0
 			guard size > 0, size <= AppConstants.Presets.imageMaximumBytes else {
 				try FileManager.default.removeItem(at: url)
-				await log.error(
+				log.error(
 					"Removed oversized preset cache entry at \(url.path) (\(size) bytes)")
 				guard cacheEpoch == epoch else { return nil }
 				return nil
@@ -141,13 +140,14 @@ extension PresetCatalogService {
 					try FileManager.default.removeItem(at: url)
 				}
 			} catch {
-				await log.error(
+				log.error(
 					"Failed to remove invalid preset cache entry at \(url.path): \(error.localizedDescription)"
 				)
 				guard cacheEpoch == epoch else { return nil }
 			}
-			await log.error(
-				"Rejected preset cache entry at \(url.path): \(error.localizedDescription)")
+			log.error(
+				"Rejected preset cache entry at \(url.path): \(launcherDiagnosticDescription(for: error))"
+			)
 			guard cacheEpoch == epoch else { return nil }
 			return nil
 		}
@@ -164,9 +164,8 @@ extension PresetCatalogService {
 			try data.write(to: url, options: .atomic)
 		} catch {
 			guard cacheEpoch == epoch else { return }
-			await log.error(
+			log.error(
 				"Failed to cache preset image at \(url.path): \(error.localizedDescription)")
-			guard cacheEpoch == epoch else { return }
 		}
 	}
 

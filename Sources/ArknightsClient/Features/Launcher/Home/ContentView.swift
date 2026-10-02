@@ -4,6 +4,8 @@ import SwiftUI
 
 struct ContentView: View {
 	let model: LauncherViewModel
+	let musicController: BackgroundMusicController
+	let onboarding: OnboardingCoordinator
 	let registerOpenSettings: (@escaping () -> Void) -> Void
 	let registerQuitPresentationQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
@@ -12,33 +14,24 @@ struct ContentView: View {
 	@State var presentation = LauncherPresentationArbiter()
 	@State var confirmation: LauncherConfirmation?
 	@State var repairFailureID: UUID?
-	@State private var onboarding: OnboardingCoordinator
-	@State private var musicController: BackgroundMusicController
 	@State private var decorativeMotionVisibility = DecorativeMotionVisibility()
+	@State private var isTerminating = false
 
 	init(
 		model: LauncherViewModel,
-		initialMusicTitle: String?,
-		openMusicURL: @escaping (URL) -> Void,
+		musicController: BackgroundMusicController,
+		onboarding: OnboardingCoordinator,
 		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
 		registerQuitPresentationQuery:
 			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void,
 		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void
 	) {
 		self.model = model
+		self.musicController = musicController
+		self.onboarding = onboarding
 		self.registerOpenSettings = registerOpenSettings
 		self.registerQuitPresentationQuery = registerQuitPresentationQuery
 		self.registerQuitDismissal = registerQuitDismissal
-		_onboarding = State(
-			initialValue: OnboardingCoordinator(
-				store: OnboardingProgressStore(defaults: model.preferences.defaults)))
-		_musicController = State(
-			initialValue: BackgroundMusicController(
-				lifecycle: model.lifecycle,
-				settings: model.settings,
-				launcherIconManager: model.launcherIconManager,
-				initialMusicTitle: initialMusicTitle,
-				openURL: openMusicURL))
 	}
 
 	var body: some View {
@@ -75,8 +68,6 @@ struct ContentView: View {
 						cancelDownload: model.cancelDownload,
 						launch: model.launch,
 						stopGame: model.stopGame,
-						requestRosettaInstallation: { confirmation = .rosetta },
-						retryIntelTranslationCheck: retryIntelTranslationCheck,
 						showFailureDetails: showFailureDetails
 					),
 					developerExpandedPill: developerExpandedPillID
@@ -149,7 +140,7 @@ struct ContentView: View {
 				presentation.blockingDestination(
 					hasPendingPopup: model.communication.popup != nil)
 			}
-			registerQuitDismissal { presentation.dismissCurrent() }
+			registerQuitDismissal(dismissPresentationForQuit)
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
 		.onChange(of: onboarding.isPresented) { _, isPresented in
@@ -186,6 +177,7 @@ struct ContentView: View {
 	private var sheetPresentation: Binding<LauncherPresentationDestination?> {
 		Binding(
 			get: {
+				guard !isTerminating else { return nil }
 				if let current = presentation.current, current.isSheet { return current }
 				guard presentation.current == nil, !onboarding.isPresented,
 					!model.communication.launcherUpdateUserDriver.isPresented,
@@ -289,6 +281,15 @@ struct ContentView: View {
 		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
 	}
 
+	/// Closes every sheet and dialog so AppKit accepts the quit, without advancing popup queues.
+	private func dismissPresentationForQuit() {
+		isTerminating = true
+		confirmation = nil
+		repairFailureID = nil
+		model.cancelACEWarning()
+		presentation.dismissCurrent()
+	}
+
 	private func requestSettings() {
 		guard !onboarding.isPresented, !model.communication.launcherUpdateUserDriver.isPresented,
 			model.communication.popup == nil, presentation.current == nil
@@ -359,9 +360,6 @@ struct ContentView: View {
 				checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
 		}
 	}
-	private func retryIntelTranslationCheck() {
-		Task { await model.refreshIntelTranslationForUI(force: true) }
-	}
 	private func installRosetta() {
 		confirmation = nil
 		Task { _ = await model.installRosetta() }
@@ -385,5 +383,7 @@ struct ContentView: View {
 		model.confirmRepair(failureID: id)
 	}
 
-	private var themeAnimation: Animation? { reduceMotion ? nil : .easeInOut(duration: 0.3) }
+	private var themeAnimation: Animation? {
+		LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion)
+	}
 }

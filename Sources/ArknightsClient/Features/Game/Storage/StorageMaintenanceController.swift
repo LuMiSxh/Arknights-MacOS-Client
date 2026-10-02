@@ -42,7 +42,7 @@ final class StorageMaintenanceController {
 				}.value
 				lifecycle.activity = .idle
 				onStorageOverviewChanged?()
-				await log.info("Shader and browser caches cleared")
+				log.info("Shader and browser caches cleared")
 			} catch {
 				lifecycle.activity = .idle
 				presentCacheFailure(error, id: operationID, region: region)
@@ -59,9 +59,7 @@ final class StorageMaintenanceController {
 		else { return false }
 		guard failure.actions.contains(.retry) else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
-		Task { [log] in
-			await log.info("Recovery selected; action=retry operation=cache-clearing")
-		}
+		log.info("Recovery selected; action=retry operation=cache-clearing")
 		clearGameCache()
 		return true
 	}
@@ -75,7 +73,7 @@ final class StorageMaintenanceController {
 				try await presetCatalog.clearCaches()
 				lifecycle.activity = .idle
 				onStorageOverviewChanged?()
-				await log.info("Preset gallery caches cleared")
+				log.info("Preset gallery caches cleared")
 			} catch {
 				lifecycle.activity = .idle
 				lifecycle.show(error)

@@ -168,6 +168,28 @@ struct CustomizationControllerTests {
 	}
 
 	@Test
+	func resettingTheAppIconWithDynamicThemeNeverPublishesTheUntintedDefault() {
+		var clearedRunningIcon = false
+		let fixture = makeCustomizationController(
+			usesDynamicTheme: true,
+			dynamicIconRenderer: { _ in solidImage(.systemPink) },
+			setRunningIcon: { clearedRunningIcon = clearedRunningIcon || $0 == nil }
+		)
+		let cacheKey = "official.global.cached"
+		fixture.preferences.setDynamicThemeAccent(
+			ThemeAccentSnapshot(hue: 0.42, saturation: 0.8, brightness: 0.9),
+			for: cacheKey
+		)
+		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
+		fixture.controller.setHasCustomAppIcon(true)
+		clearedRunningIcon = false
+
+		fixture.controller.resetAppIcon()
+
+		#expect(!clearedRunningIcon)
+	}
+
+	@Test
 	func cachedThemeAccentSkipsRedundantExtraction() async {
 		let extractor = ControlledRequestGate<ExtractedAccent?, NSImage>()
 		let fixture = makeCustomizationController(
@@ -237,6 +259,7 @@ struct CustomizationControllerTests {
 
 		#expect(try Data(contentsOf: fixture.paths.customAppIcon) == expected)
 	}
+
 	@Test
 	func manualAppIconSelectionWinsOverDelayedStartupRestore() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
@@ -265,10 +288,12 @@ struct CustomizationControllerTests {
 }
 
 @MainActor
-private func makeCustomizationController(
+func makeCustomizationController(
 	usesDynamicTheme: Bool = false,
 	dataLoader: CustomizationController.DataLoader? = nil,
 	dataStager: CustomizationController.DataStager? = nil,
+	iconCommitter: CustomizationController.IconCommitter? = nil,
+	iconPublicationPreparer: CustomizationController.IconPublicationPreparer? = nil,
 	accentExtractor: CustomizationController.AccentExtractor? = nil,
 	dynamicIconRenderer: CustomizationController.DynamicIconRenderer? = nil,
 	setBundleIcon: @escaping (NSImage?) -> Bool = { _ in true },
@@ -304,6 +329,8 @@ private func makeCustomizationController(
 		usesDynamicTheme: { usesDynamicTheme },
 		dataLoader: dataLoader,
 		dataStager: dataStager,
+		iconCommitter: iconCommitter,
+		iconPublicationPreparer: iconPublicationPreparer,
 		accentExtractor: accentExtractor,
 		dynamicIconRenderer: dynamicIconRenderer
 	)
@@ -311,7 +338,7 @@ private func makeCustomizationController(
 }
 
 @MainActor
-private func solidImage(_ color: NSColor) -> NSImage {
+func solidImage(_ color: NSColor) -> NSImage {
 	let image = NSImage(size: NSSize(width: 64, height: 64))
 	image.lockFocus()
 	color.setFill()

@@ -8,10 +8,11 @@ import Testing
 @MainActor
 struct LauncherGameLifecycleTests {
 	@Test
-	func stopIsEnabledOnlyForRunningGameActivity() {
+	func stopIsEnabledWhilePreparingLaunchingAndRunning() {
 		let sessionID = UUID()
+		#expect(GameSessionController.canStopGame(for: .preparingGame(sessionID: sessionID)))
 		#expect(
-			!GameSessionController.canStopGame(
+			GameSessionController.canStopGame(
 				for: .launchingGame(sessionID: sessionID, processIdentifier: nil)
 			))
 		#expect(
@@ -20,9 +21,34 @@ struct LauncherGameLifecycleTests {
 			))
 		#expect(
 			!GameSessionController.canStopGame(
-				for: .stoppingGame(sessionID: sessionID, processIdentifier: 42)
+				for: .stoppingGame(sessionID: sessionID, processIdentifier: nil)
 			))
 		#expect(!GameSessionController.canStopGame(for: .idle))
+	}
+
+	@Test
+	func stoppingBeforeTheGameSpawnsCancelsTheLaunchAndKeepsPrefixOwnership() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let sessionID = UUID()
+		let launch = Task<Void, Never> {
+			while !Task.isCancelled { await Task.yield() }
+		}
+		model.lifecycle.activity = .preparingGame(sessionID: sessionID)
+		model.gameSession.launchTask = launch
+
+		model.gameSession.stopGame()
+		await launch.value
+
+		#expect(
+			model.lifecycle.activity
+				== .stoppingGame(sessionID: sessionID, processIdentifier: nil)
+		)
+		#expect(model.lifecycle.activityMessage == LauncherStatus.stoppingGame.message)
+		#expect(!model.lifecycle.canBeginExclusiveActivity)
+		#expect(!model.lifecycle.activity.isGameProcessRunning)
+		await api.resolveBranding()
 	}
 
 	@Test

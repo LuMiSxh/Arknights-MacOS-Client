@@ -2,23 +2,46 @@
 
 import SwiftUI
 
-/// Shared native-feeling press feedback for custom launcher action surfaces.
+/// Shared press and hover feedback for custom launcher action surfaces: a critically damped
+/// press, a springy release, and a small hover lift. Reduce Motion keeps only the opacity dip.
 struct ActionPressStyle: ButtonStyle {
+	func makeBody(configuration: Configuration) -> some View {
+		ActionPressBody(configuration: configuration)
+	}
+}
+
+private struct ActionPressBody: View {
+	let configuration: ButtonStyleConfiguration
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.isEnabled) private var isEnabled
+	@State private var isHovered = false
 
-	func makeBody(configuration: Configuration) -> some View {
+	var body: some View {
 		configuration.label
 			.opacity(isEnabled && configuration.isPressed ? 0.86 : 1)
-			.scaleEffect(
-				reduceMotion || !isEnabled ? 1 : (configuration.isPressed ? 0.98 : 1)
-			)
+			.scaleEffect(scale)
+			.animation(pressAnimation, value: configuration.isPressed)
 			.animation(
-				reduceMotion || !isEnabled
-					? nil
-					: .easeOut(duration: LauncherVisuals.Motion.control),
-				value: configuration.isPressed
+				LauncherMotion.animation(.hover, reduceMotion: reduceMotion),
+				value: isHovered
 			)
+			.onHover { hovering in
+				isHovered = hovering
+			}
+	}
+
+	private var scale: CGFloat {
+		guard isEnabled, !reduceMotion else { return 1 }
+		if configuration.isPressed { return LauncherMotion.pressedScale }
+		return isHovered ? LauncherMotion.hoverScale : 1
+	}
+
+	private var pressAnimation: Animation? {
+		guard isEnabled else { return nil }
+		return LauncherMotion.animation(
+			configuration.isPressed ? .press : .release,
+			reduceMotion: reduceMotion
+		)
 	}
 }
 

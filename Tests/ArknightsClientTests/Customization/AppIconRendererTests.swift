@@ -36,32 +36,25 @@ func operatorIconTreatmentsRenderOnTheNormalizedCanvas() throws {
 
 @MainActor
 @Test
-func launcherTreatmentUsesTheDynamicThemeHue() throws {
+func dynamicThemeHueOnlyChangesLauncherTreatment() throws {
 	let sourceData = try whiteCircleSourceData()
-	let cyan = try #require(
+	let defaultLauncher = try #require(
 		AppIconRenderer.createPresetIcon(
 			from: sourceData, treatment: .launcher, accentHue: nil)
 	)
-	let purple = try #require(
+	let purpleLauncher = try #require(
 		AppIconRenderer.createPresetIcon(
 			from: sourceData, treatment: .launcher, accentHue: 0.78)
 	)
-
-	#expect(cyan.tiffRepresentation != purple.tiffRepresentation)
-}
-
-@MainActor
-@Test
-func gameTreatmentIgnoresTheDynamicThemeHue() throws {
-	let sourceData = try whiteCircleSourceData()
-	let cyan = try #require(
+	let defaultGame = try #require(
 		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: nil)
 	)
-	let purple = try #require(
+	let purpleGame = try #require(
 		AppIconRenderer.createPresetIcon(from: sourceData, treatment: .game, accentHue: 0.78)
 	)
 
-	#expect(cyan.tiffRepresentation == purple.tiffRepresentation)
+	#expect(defaultLauncher.tiffRepresentation != purpleLauncher.tiffRepresentation)
+	#expect(defaultGame.tiffRepresentation == purpleGame.tiffRepresentation)
 }
 
 @Test(arguments: [
@@ -96,4 +89,30 @@ private func whiteCircleSourceData() throws -> Data {
 	NSBezierPath(ovalIn: NSRect(x: 8, y: 8, width: 48, height: 48)).fill()
 	source.unlockFocus()
 	return try #require(source.tiffRepresentation)
+}
+
+@MainActor
+@Test
+func padToAppleGridPreservesAspectRatio() throws {
+	let source = NSImage(size: NSSize(width: 200, height: 100))
+	source.lockFocus()
+	NSColor.red.setFill()
+	NSBezierPath(rect: NSRect(x: 0, y: 0, width: 200, height: 100)).fill()
+	source.unlockFocus()
+
+	let padded = AppIconRenderer.padToAppleGrid(image: source)
+	let data = try #require(padded.tiffRepresentation)
+	let bitmap = try #require(NSBitmapImageRep(data: data))
+	let scale = Double(bitmap.pixelsWide) / AppConstants.Icon.canvasDimension
+	let box = AppConstants.Icon.squircleDimension * scale
+	let center = bitmap.pixelsWide / 2
+
+	func isOpaque(x: Int, y: Int) -> Bool {
+		(bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.5
+	}
+	// Wide image: fills the box horizontally, half height vertically.
+	#expect(isOpaque(x: center - Int(box / 2) + 4, y: center))
+	#expect(isOpaque(x: center, y: center + Int(box / 4) - 4))
+	#expect(!isOpaque(x: center, y: center + Int(box / 4) + 4))
+	#expect(!isOpaque(x: center, y: center - Int(box / 4) - 4))
 }

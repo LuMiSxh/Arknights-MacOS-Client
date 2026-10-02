@@ -35,7 +35,7 @@ extension InstallationSettingsPage {
 			HStack(spacing: 10) {
 				SettingsSlider(
 					value: frameLatencyBinding,
-					range: 1...3,
+					range: 0...3,
 					step: 1,
 					accentColor: LauncherVisuals.warning,
 					width: 120
@@ -49,6 +49,18 @@ extension InstallationSettingsPage {
 			}
 			.disabled(gameSession.isGameActive)
 		}
+		SettingsHairline()
+		SettingsActionRow(
+			title: SettingsStrings.hardwareCursor,
+			detail: SettingsStrings.hardwareCursorDetail
+		) {
+			SettingsToggle(
+				SettingsStrings.hardwareCursor,
+				isOn: $settings.usesHardwareCursor,
+				accentColor: LauncherVisuals.warning
+			)
+		}
+		.disabled(lifecycle.activity != .idle)
 	}
 
 	private var frameLatencyBinding: Binding<Double> {

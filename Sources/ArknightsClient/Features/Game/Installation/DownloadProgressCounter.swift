@@ -20,6 +20,7 @@ actor ProgressCounter {
 		totalFiles: Int,
 		downloadedBytes: Int64 = 0,
 		completedFiles: Int = 0,
+		sequence: UInt64 = 0,
 		clock: any DownloadClock = ContinuousDownloadClock()
 	) {
 		self.totalBytes = totalBytes
@@ -27,6 +28,7 @@ actor ProgressCounter {
 		self.clock = clock
 		self.downloadedBytes = downloadedBytes
 		self.completedFiles = completedFiles
+		self.sequence = sequence
 		estimator = TransferRateEstimator(clock: clock)
 		lastEmission = clock.now
 	}
