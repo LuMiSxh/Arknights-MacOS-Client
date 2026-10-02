@@ -8,7 +8,7 @@ import Testing
 @MainActor
 struct LauncherCommunicationControllerTests {
 	@Test
-	func queuedPopupsAreRecordedOnlyWhenTheyBecomeVisible() {
+	func announcementsAreRecordedOnlyWhenTheyAreDismissed() {
 		let fixture = CommunicationFixture()
 		defer { fixture.removeDefaults() }
 		let controller = fixture.controller
@@ -26,13 +26,13 @@ struct LauncherCommunicationControllerTests {
 		controller.enqueuePopup(popup("official-notice"))
 		controller.enqueuePopup(popup("announcement-feedback"))
 
+		controller.dismissPopup()
+		#expect(controller.popup?.id == "announcement-feedback")
 		#expect(!fixture.preferences.seenAnnouncementIDs().contains("feedback"))
 
 		controller.dismissPopup()
-		#expect(fixture.preferences.seenAnnouncementIDs().contains("feedback"))
-
-		controller.dismissPopup()
 		#expect(controller.popup == nil)
+		#expect(fixture.preferences.seenAnnouncementIDs().contains("feedback"))
 	}
 
 	@Test(arguments: LauncherUpdateButtonScenario.allCases)

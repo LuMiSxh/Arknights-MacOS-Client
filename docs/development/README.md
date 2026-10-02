@@ -15,8 +15,6 @@ Start with [Architecture](architecture/README.md) for ownership and process boun
 
 [Wallpaper tagging and search](wallpaper-tagging.md) documents the curated metadata and maintenance workflow for official artwork presets.
 
-Proposals are retained under `proposals/` for project history and are hidden from the primary development index until accepted. They are not implementation or support commitments.
-
 ## Before handing off a change
 
 1. Run the narrowest focused check while iterating and add regression coverage where behavior changed.

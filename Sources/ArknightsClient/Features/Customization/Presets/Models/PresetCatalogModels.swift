@@ -139,12 +139,24 @@ enum WallpaperTagCatalog {
 		// Packaged apps flatten copied resources into Bundle.main; SwiftPM uses its resource bundle.
 		guard
 			let url = Bundle.main.url(forResource: "WallpaperTags", withExtension: "json")
-				?? AppResourceBundle.bundle.url(forResource: "WallpaperTags", withExtension: "json"),
-			let data = try? Data(contentsOf: url),
-			let manifest = try? JSONDecoder().decode(WallpaperTagManifest.self, from: data),
-			manifest.schemaVersion == 1
-		else { return [:] }
-		return manifest.tags
+				?? AppResourceBundle.bundle.url(forResource: "WallpaperTags", withExtension: "json")
+		else {
+			NSLog("ArknightsClient could not find the bundled WallpaperTags.json.")
+			return [:]
+		}
+		do {
+			let manifest = try JSONDecoder().decode(
+				WallpaperTagManifest.self, from: Data(contentsOf: url))
+			guard manifest.schemaVersion == 1 else {
+				NSLog(
+					"ArknightsClient ignored WallpaperTags.json schema \(manifest.schemaVersion).")
+				return [:]
+			}
+			return manifest.tags
+		} catch {
+			NSLog("ArknightsClient could not read WallpaperTags.json: \(error)")
+			return [:]
+		}
 	}
 }
 

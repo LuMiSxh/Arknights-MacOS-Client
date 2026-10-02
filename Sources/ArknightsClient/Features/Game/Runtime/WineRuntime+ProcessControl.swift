@@ -153,9 +153,8 @@ extension WineRuntime {
 				timeout: .now() + AppConstants.Timeouts.processKillGracePeriod
 			) == .timedOut
 		else { return }
-		// The process may have exited and its PID been recycled in the gap between the
-		// timeout above and here; confirm it still exists before sending SIGKILL.
-		guard Darwin.kill(process.processIdentifier, 0) == 0 else { return }
+		// Foundation clears `isRunning` once it reaps the child, so a recycled PID is never signalled.
+		guard process.isRunning else { return }
 		let result = Darwin.kill(process.processIdentifier, SIGKILL)
 		Task {
 			if result == 0 {

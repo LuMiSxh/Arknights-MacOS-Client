@@ -138,6 +138,10 @@ struct PlaytimeStatisticsTests {
 		let corrupt = try Fixture()
 		try Data("not json".utf8).write(to: corrupt.statisticsURL)
 		#expect(corrupt.controller().statistics == .empty)
+		#expect(!FileManager.default.fileExists(atPath: corrupt.statisticsURL.path))
+		#expect(
+			try Data(contentsOf: corrupt.statisticsURL.appendingPathExtension("unreadable"))
+				== Data("not json".utf8))
 
 		let oversized = try Fixture()
 		try Data(repeating: 0, count: AppConstants.Playtime.statisticsMaximumBytes + 1)

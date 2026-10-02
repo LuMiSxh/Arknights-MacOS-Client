@@ -6,78 +6,56 @@
 
 **Play Arknights PC on Apple Silicon Macs.** This free, unofficial launcher handles setup and runs the publisher's Windows game through bundled Wine and DXMT.
 
-[![Version](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
-[![macOS](https://img.shields.io/badge/macOS-15%E2%80%9327-black.svg)](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/)
-[![Platform](https://img.shields.io/badge/platform-Apple%20Silicon-black.svg)](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements)
-[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/LuMiSxh/Arknights-MacOS-Client?style=flat-square&labelColor=23252a&color=477acc)](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases)
+[![macOS 15–27](https://img.shields.io/badge/macOS-15%E2%80%9327-477acc?style=flat-square&labelColor=23252a)](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/)
+[![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-required-477acc?style=flat-square&labelColor=23252a)](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements)
+[![MPL-2.0 license](https://img.shields.io/badge/license-MPL--2.0-477acc?style=flat-square&labelColor=23252a)](LICENSE)
 
 <img src="Resources/github/landing-page.png" width="2928" height="1752" alt="Arknights Client ready to launch the official PC client on macOS" />
 
-[Website & documentation](https://lumisxh.github.io/Arknights-MacOS-Client/) · [Download latest](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest) · [Installation](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) · [Troubleshooting](https://lumisxh.github.io/Arknights-MacOS-Client/help/troubleshooting/)
+**[Download](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest)** · [Website](https://lumisxh.github.io/Arknights-MacOS-Client/) · [Installation](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) · [Troubleshooting](https://lumisxh.github.io/Arknights-MacOS-Client/help/troubleshooting/) · [Changelog](https://lumisxh.github.io/Arknights-MacOS-Client/changelog/)
 
 </div>
 
 ## Get started
 
-1. Use an Apple silicon Mac with macOS 15–27 and enough space for the game. Rosetta 2 is required; the setup assistant can install it. On macOS 27 beta only, turn off Legacy Game Test Mode if it is enabled. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements).
-2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), then drag the app to **Applications**.
-3. Open the app from **Applications** once. Because releases are ad-hoc signed and not notarized, macOS may block the first launch. If you trust this copy from the official GitHub release and macOS says its developer cannot be verified or Apple cannot check it, follow [Apple’s Open Anyway steps](https://support.apple.com/en-au/102445) after that first attempt; this adds an exception for this app only. If the alert says the app is damaged or will damage your computer, do not override it. Choose your region in the setup assistant and let it download the official game files.
+1. Use an Apple silicon Mac with macOS 15–27 and enough space for the game. Rosetta 2 is required; the setup assistant can install it. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements) and [runtime compatibility](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/) for macOS betas.
+2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest) and drag the app to **Applications**.
+3. Open the app once. Releases are ad-hoc signed and not notarized, so macOS may block the first launch; the [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) explains how to allow it safely.
+4. Choose your region in the setup assistant and let it download the official game files.
 
-Global, Japan, and Korea are supported by default. Taiwan, China, and China — Bilibili are experimental Canary regions with separate opt-in. The [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) covers each region and the first game launch.
-
-## Overview
-
-Arknights Client downloads official PC game files directly from the selected publisher and runs them through a bundled, tested Wine and DXMT environment. The native launcher manages game installation, updates, display options, artwork, icons, compatibility fixes, and diagnostics.
-
-> [!TIP]
-> Use the [project website](https://lumisxh.github.io/Arknights-MacOS-Client/) for installation instructions, compatibility information, troubleshooting, and release history.
+Global, Japan, and Korea are supported by default. Taiwan, China, and China — Bilibili are experimental Canary regions with separate opt-in.
 
 > [!NOTE]
 > Arknights Client is an unofficial community project. It is not affiliated with Gryphline, Hypergryph, Yostar, or Bilibili and does not include game files or downloaded artwork in release builds.
 
 ## Features
 
-### Install and play
+**Install and play**
 
-- Install, resume, update, repair, and remove regional PC clients
-- Enable the Taiwan client through Canary Features and its separate permission; expose the China and China — Bilibili clients through Canary Features and their separate permission
-- Keep each region in its own game directory and switch between installed regions
-- Run in windowed, borderless, or fullscreen mode at a selected resolution
-- Enable HiDPI rendering for the game and any embedded login browser the selected client provides
-- Use each supported client's official sign-in providers through Wine compatibility helpers where that client provides an embedded login window
+- Install, resume, update, repair, and remove regional PC clients, each in its own game directory
+- Run windowed, borderless, or fullscreen at a selected resolution, with HiDPI rendering
+- Sign in through each client's official providers via Wine compatibility helpers
 
-### Native macOS experience
+**Native macOS experience**
 
-- Follow a resumable setup assistant while the game downloads in the background
-- Personalize the launcher with custom artwork, a preset gallery, and dynamic theme colors
-- Customize launcher and game icons with normalized macOS Dock sizing
-- Start any installed region or open Settings from the app's Dock menu
-- Show optional game-version, server-time, and daily-reset indicators
-- Play optional YouTube background music with playlist and volume controls
-- Use native Settings, update notices, diagnostics, and support actions
+- Resumable setup assistant while the game downloads in the background
+- Custom artwork, a preset gallery, dynamic theme colors, and custom launcher and game icons
+- Dock menu, optional game-version, server-time, and daily-reset indicators, and optional YouTube background music
 
-### Compatibility and maintenance
+**Compatibility and maintenance**
 
-- Launch through a pinned Wine and DXMT runtime tested as one compatibility unit
-- Apply game-specific browser, window, input, and Command-Q integrations automatically
-- Check launcher and game versions independently; automatic checks can be disabled
-- Move existing default installations into publisher-based folders after a launcher update without touching custom locations
-- Clear DXMT shader, browser, and downloaded gallery caches from Settings
-- Keep launcher, Wine, game, and embedded-browser logs available for troubleshooting
+- Pinned Wine and DXMT runtime tested as one compatibility unit
+- Game-specific browser, window, input, and Command-Q integrations applied automatically
+- Independent launcher and game update checks, cache clearing, and launcher, Wine, game, and browser logs
 
-## Installation and support
+## Support
 
-Use the website's [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) for requirements, Gatekeeper and Rosetta guidance, region setup, and first launch. The [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) covers troubleshooting, storage, runtime compatibility, and the boundary between launcher support and publisher support.
-
-Publisher support follows the selected region: Yostar supports Global, Japan, and Korea; Gryphline
-supports Taiwan; Hypergryph supports China and China — Bilibili. Account, payment, billing, server,
-and in-game issues belong to the publisher and payment provider. The embedded login-window guidance
-applies to Global, Japan, Korea, China, and Taiwan; it does not apply to China — Bilibili. See the
-[publisher support routing table](https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing).
+Publisher support follows the selected region; account, payment, and in-game issues belong to the publisher. See the [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) for troubleshooting, storage, and [publisher support routing](https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing).
 
 ## Development
 
-Development requires Swift 6.2, the matching Xcode command-line tools, [`just`](https://github.com/casey/just), and [`uv`](https://docs.astral.sh/uv/).
+Requires Swift 6.2, the matching Xcode command-line tools, [`just`](https://github.com/casey/just), and [`uv`](https://docs.astral.sh/uv/).
 
 ```sh
 git clone https://github.com/LuMiSxh/Arknights-MacOS-Client.git
@@ -85,33 +63,15 @@ cd Arknights-MacOS-Client
 just check
 ```
 
-| Command               | Purpose                                                     |
-| --------------------- | ----------------------------------------------------------- |
-| `just check`          | Run source checks and network-denied Python and Swift tests |
-| `just integration`    | Run the network-denied onboarding-to-download workflow      |
-| `just live-contracts` | Deliberately check the current public Yostar and Gryphline API contracts  |
-| `just preview`        | Open the focused isolated UI-state simulator                |
-| `just dev web`        | Start the local documentation website                       |
-| `just check web`      | Check website types and formatting                          |
-| `just format web`     | Format website sources                                      |
-| `just runtime`        | Download and verify the tested Wine and DXMT runtime        |
-| `just dev app run`    | Build the app with its runtime and open it                  |
-| `just ci`             | Run deterministic tests and build the release configuration |
+| Command            | Purpose                                                     |
+| ------------------ | ----------------------------------------------------------- |
+| `just check`       | Run source checks and network-denied Python and Swift tests |
+| `just integration` | Run the network-denied onboarding-to-download workflow      |
+| `just ci`          | Run deterministic tests and build the release configuration |
+| `just dev app run` | Build the app with its runtime and open it                  |
+| `just dev web`     | Start the local documentation website                       |
 
-Run `just --groups` for the complete command list. Tested runtime versions, download locations, checksums, and source provenance are pinned in [`runtime.json`](runtime.json). Repository automation lives in `scripts/` and resolves from the root `pyproject.toml` and `uv.lock`; packaging-only Python tools remain in a separate dependency group.
-
-A fresh checkout may resolve pinned uv and SwiftPM development dependencies before tests start. Unit and integration test execution itself is isolated from the public network.
-
-## Documentation
-
-User documentation is published on the project website:
-
-- [Installation](https://lumisxh.github.io/Arknights-MacOS-Client/installation/)
-- [Help and troubleshooting](https://lumisxh.github.io/Arknights-MacOS-Client/help/)
-- [Runtime compatibility](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/)
-- [Changelog](https://lumisxh.github.io/Arknights-MacOS-Client/changelog/)
-
-Contributor and source-level documentation remains versioned with the repository under [`docs/development/`](docs/development/README.md) and [`docs/legal/`](docs/legal/README.md).
+Run `just --list` for all commands. The tested runtime is pinned in [`runtime.json`](runtime.json). Contributor documentation lives in [`docs/development/`](docs/development/README.md) and [`docs/legal/`](docs/legal/README.md).
 
 ## License
 

@@ -12,7 +12,7 @@ Each announcement is shown once per local preference store. Changing its text do
 
 Announcements are for short, time-sensitive launcher messages: a maintenance note, a request for feedback, or a link to a project resource. They are not a replacement for the changelog or the troubleshooting guides. Keep the body useful without the action link; users may have links disabled or may read the popup after its display window.
 
-The launcher selects the first eligible entry in the array. `just announcement set` inserts or replaces an entry at the top, so put the message that should win when several entries overlap first. An entry is marked seen when its popup becomes visible, not merely when the feed is downloaded. The preference store retains the latest 100 seen IDs.
+The launcher selects the first eligible entry in the array. `just announcement set` inserts or replaces an entry at the top, so put the message that should win when several entries overlap first. An entry is marked seen when the user dismisses its popup, not merely when the feed is downloaded or the popup is queued behind another modal. The preference store retains the latest 100 seen IDs.
 
 ## Previewing a popup
 

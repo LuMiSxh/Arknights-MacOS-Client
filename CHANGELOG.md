@@ -11,29 +11,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-02
+
 ### Added
 
-- Added an off-by-default Canary Hardware Cursor option that asks the runtime to hide the game's PRTS cursor so the macOS hardware cursor can appear.
+- Added an off-by-default Canary Hardware Cursor option that hides the game's PRTS cursor so the macOS hardware cursor can appear.
 
 ### Changed
 
 - Imported launcher and game icons keep their aspect ratio instead of being stretched to a square.
 - Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.1.
-- Reduced repeated text comparisons in documentation search and moved preset thumbnail decoding off the main actor so large artwork does not block the interface.
+- Sped up documentation search and moved preset thumbnail decoding off the main actor so large artwork no longer blocks the interface.
 - Clarified first-launch steps for ad-hoc signed, non-notarized releases, including Apple's app-specific Gatekeeper confirmation.
 - Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
 - Release packaging now rejects Sparkle appcasts and update archives that fail cryptographic verification against the tracked update key.
 - Canary runtime overrides now follow the packaged runtime's declared capabilities, with conservative defaults and saved preferences retained for legacy or unsupported runtimes.
 - One Canary permission check now governs region selection, installation, storage listings, playtime statistics, and setup; playtime region lists show only installed regions.
-- Refined launcher and HUD motion with softer accents and outline pulses during launch, shutdown, updates, and file operations; preserved Reduce Motion, Dynamic Type.
+- Refined launcher and HUD motion with softer accents and outline pulses during launch, shutdown, updates, and file operations, while respecting Reduce Motion and Dynamic Type.
 - Launcher errors now show recovery steps, with technical details kept in logs; the developer preview uses the same dialogs, actions, and launch availability, replacing inline Rosetta controls.
 - Repair verification progress appears in the HUD, Settings, setup, and developer preview; Pause stops file verification immediately.
-- Installation task ownership now follows the active installation state.
-- Launcher log entries are now written in call order without suspending launcher work, removing redundant state checks after every log line.
-- The developer preview now reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
+- Launcher log entries are written in call order without suspending launcher work, and installation task ownership follows the active installation state.
+- The developer preview reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
 - The Game Mode label no longer says Experimental.
-- Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
-- Unified GitHub workflows and automated issues, and Sparkle signature checks now accept OpenSSL 3 or newer.
+- Extended the Canary Frame Latency range to 0–3 and kept the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
+- Streamlined GitHub workflows, gave automated issues a shared label and layout, and let Sparkle signature checks accept OpenSSL 3 or newer.
 
 ### Fixed
 
@@ -43,17 +44,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Restored focus when dismissing mobile navigation with Escape and made enlarged Mermaid diagrams accessible modal dialogs.
 - Fixed music controls staying disabled after the game interrupts playback, and kept custom music URLs and playlist IDs out of logs.
 - Kept preset launcher, game, and source icons together when a later icon file commit fails.
-- Fixed live contract report summaries and monitor alerts rejecting Taiwan metadata checks.
+- Fixed live contract summaries and monitor alerts rejecting Taiwan metadata checks.
 - Fixed China — Bilibili startup with Hardware Cursor enabled and hid the CN-specific PRTS cursor asset.
 - Fixed Bilibili payment pages getting stuck while loading by correcting Wine's handling of nested CEF windows, and added DirectWrite CJK font fallbacks for macOS systems using another language.
-- Fixed Now Playing artwork no longer following launcher icon changes after the window was resized.
-- Stop works during Wine preparation and startup, remains retryable, and retains prefix ownership until processes retire and `wineserver -w` confirms shutdown.
-- App termination now prevents Wine setup helpers and the game from starting after it takes ownership of shutdown.
-- Quitting closes open notices, failure details, and Settings, and no longer blocks macOS logout, restart, or shutdown.
-- Kept the remaining launch options when a single saved value is no longer supported instead of resetting all of them.
+- Fixed Now Playing artwork not following launcher icon changes after the window was resized.
+- Fixed Stop during Wine preparation and startup; it stays retryable and keeps prefix ownership until processes retire and `wineserver -w` confirms shutdown.
+- Fixed Wine setup helpers and the game starting after app termination had taken ownership of shutdown.
+- Fixed quitting: it now closes open notices, failure details, and Settings, and no longer blocks macOS logout, restart, or shutdown.
+- Fixed all launch options resetting when a single saved value is no longer supported; the remaining options are kept.
 - Fixed older announcements reappearing once more than 100 announcements had been dismissed.
-- Kept China and China — Bilibili reset countdowns on China Standard Time (UTC+8), and refreshed countdowns for every installed client each minute while the region list is open.
-- Yostar notices no longer load remote images, scripts, or stylesheets. Manifest and game-file requests require credential-free HTTPS; Taiwan requests remain restricted to verified CDN hosts.
+- Fixed China and China — Bilibili reset countdowns to follow China Standard Time (UTC+8), and refreshed countdowns for every installed client each minute while the region list is open.
+- Fixed playtime statistics being overwritten when the saved file cannot be read, for example after a downgrade; the unreadable file is now kept as `playtime.json.unreadable`.
+- Fixed announcements counting as seen before they were shown and still appearing after announcements were turned off in Settings.
+- Hardened networking: Yostar notices no longer load remote images, scripts, or stylesheets, and manifest and game-file requests require credential-free HTTPS. Taiwan requests remain restricted to verified CDN hosts.
 
 ## [0.6.0] - 2026-09-24
 
@@ -347,7 +350,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.1
 [0.6.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.0
 [0.5.2]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.2
 [0.5.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.1

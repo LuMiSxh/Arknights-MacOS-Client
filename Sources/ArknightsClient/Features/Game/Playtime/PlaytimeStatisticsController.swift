@@ -33,6 +33,7 @@ final class PlaytimeStatisticsController {
 		} catch {
 			statistics = .empty
 			Self.logPersistenceError(error, operation: "load", log: log)
+			Self.moveUnreadableFileAside(fileURL, log: log)
 		}
 
 		if statistics.activeSession != nil {
@@ -92,6 +93,21 @@ final class PlaytimeStatisticsController {
 			monotonicStart = uptime()
 		}
 		save()
+	}
+
+	/// Keeps unreadable statistics (for example after a downgrade) from being overwritten by the next save.
+	private static func moveUnreadableFileAside(_ fileURL: URL, log: LauncherLog) {
+		let fileManager = FileManager.default
+		guard fileManager.fileExists(atPath: fileURL.path) else { return }
+		let asideURL = fileURL.appendingPathExtension("unreadable")
+		do {
+			if fileManager.fileExists(atPath: asideURL.path) {
+				try fileManager.removeItem(at: asideURL)
+			}
+			try fileManager.moveItem(at: fileURL, to: asideURL)
+		} catch {
+			logPersistenceError(error, operation: "preserve unreadable", log: log)
+		}
 	}
 
 	private func save() {

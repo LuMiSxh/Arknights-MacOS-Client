@@ -98,8 +98,11 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 			previousPrefix: "\(Self.temporaryPrefix)previous-",
 			fileManager: fileManager
 		) {
-			try? fileManager.removeItem(at: installedBridge)
-			try fileManager.moveItem(at: stagedBridge, to: installedBridge)
+			if fileManager.fileExists(atPath: installedBridge.path) {
+				_ = try fileManager.replaceItemAt(installedBridge, withItemAt: stagedBridge)
+			} else {
+				try fileManager.moveItem(at: stagedBridge, to: installedBridge)
+			}
 		}
 		return true
 	}

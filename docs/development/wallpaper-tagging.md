@@ -19,8 +19,8 @@ official titles. This classification needs no manifest entry and therefore works
 ## Finding untagged wallpapers
 
 The `wallpaper-tag-scan` workflow runs monthly and can be dispatched manually. It compares the Global
-Fankit gallery with the bundled manifest and open `wallpaper-tagging` issues, then files one issue for
-each newly discovered wallpaper. It never guesses tags or modifies the manifest.
+Fankit gallery with the bundled manifest and open `wallpaper-tagging` issues, then files one issue labelled `automated` and
+`wallpaper-tagging` for each newly discovered wallpaper. It never guesses tags or modifies the manifest.
 
 Run the same scan locally without creating issues:
 
@@ -33,10 +33,10 @@ tagging issue from the pull request. The updated tags ship with the next launche
 
 ```json
 {
-	"schemaVersion": 1,
-	"tags": {
-		"global-4431": ["amiya", "closer", "anniversary"]
-	}
+  "schemaVersion": 1,
+  "tags": {
+    "global-4431": ["amiya", "closer", "anniversary"]
+  }
 }
 ```
 
