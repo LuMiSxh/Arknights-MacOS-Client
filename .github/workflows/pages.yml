@@ -4,12 +4,12 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: github-pages
   cancel-in-progress: false
-
-permissions:
-  contents: read
 
 jobs:
   build:

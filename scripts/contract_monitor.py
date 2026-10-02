@@ -19,7 +19,12 @@ from lib.contract_monitor import (
     report_markdown,
 )
 from lib.github_client import GitHubClient
-from lib.github_monitor import GitHubIssueStore, historical_reports
+from lib.github_monitor import (
+    AUTOMATED_LABEL_COLOR,
+    AUTOMATED_LABEL_DESCRIPTION,
+    GitHubIssueStore,
+    historical_reports,
+)
 
 REPORT_ARTIFACT_NAME = "yostar-contract-report"
 MAXIMUM_API_RESPONSE_BYTES = 4 * 1_024 * 1_024
@@ -65,8 +70,8 @@ def reconcile(report_path: Path) -> None:
         client,
         repository,
         issue_factory=issue_from_json,
-        label_color="B60205",
-        label_description="Created and maintained by repository monitoring",
+        label_color=AUTOMATED_LABEL_COLOR,
+        label_description=AUTOMATED_LABEL_DESCRIPTION,
         maximum_api_bytes=MAXIMUM_API_RESPONSE_BYTES,
     )
     history = historical_reports(

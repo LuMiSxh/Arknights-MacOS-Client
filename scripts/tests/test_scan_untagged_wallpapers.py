@@ -60,7 +60,7 @@ class ScanUntaggedWallpapersTests(unittest.TestCase):
         )
         body = scan.issue_body(wallpaper)
         self.assertIn("<!-- wallpaper-id: global-4431 -->", body)
-        self.assertIn("Tag this wallpaper by hand", body)
+        self.assertIn("Automated wallpaper tagging request", body)
         self.assertIn("WallpaperTags.json", body)
         self.assertIn("https://example.com/a.png", body)
 

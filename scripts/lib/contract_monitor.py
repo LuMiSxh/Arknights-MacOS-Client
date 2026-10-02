@@ -371,6 +371,6 @@ def _failure_body(
             f"- Sanitized failure: `{check.summary}`",
             f"- Latest workflow run: {latest_failure.run_url}",
             "",
-            "This issue is maintained automatically. Response bodies and authorization values are never included.",
+            "This issue was created and is maintained automatically. Response bodies and authorization values are never included.",
         ]
     )

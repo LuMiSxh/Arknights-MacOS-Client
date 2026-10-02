@@ -2,24 +2,39 @@ name: Scan for untagged wallpapers
 
 on:
   schedule:
-    - cron: "0 6 1 * *"
+    - cron: '0 6 1 * *'
+      timezone: Etc/UTC
   workflow_dispatch:
 
 permissions:
   contents: read
-  issues: write
+
+concurrency:
+  group: wallpaper-tag-scan
+  cancel-in-progress: false
 
 jobs:
   scan:
-    runs-on: macos-26
+    name: Scan wallpapers
+    runs-on: xcode-27
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          prune-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Scan for untagged wallpapers
         run: uv run --locked --no-dev scripts/scan_untagged_wallpapers.py

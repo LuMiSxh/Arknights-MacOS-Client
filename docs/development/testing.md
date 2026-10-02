@@ -57,7 +57,7 @@ The initial workflow creates empty paths and preferences, presents onboarding, a
 
 Future integration scenarios belong in the same level when they can use fixture runtimes or process doubles. Priorities include resumable and cancelled downloads across the launcher state model, compatibility reconciliation, prefix migration, region remapping, launch environment construction, process timeout and cancellation, and app-bundle packaging inspection.
 
-The main-branch CI packaging smoke builds an app without a runtime. Complete runtime/DMG packaging remains in the release workflow because it downloads the pinned runtime and has a substantially larger time and disk budget.
+App and DMG packaging run only in the release workflow, which downloads the pinned runtime and has a substantially larger time and disk budget than CI.
 
 ## Website validation
 

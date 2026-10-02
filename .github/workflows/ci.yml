@@ -41,28 +41,3 @@ jobs:
 
       - name: Check source
         run: just ci
-
-  package:
-    name: App packaging smoke
-    if: github.event_name == 'push'
-    needs: test
-    runs-on: xcode-27
-    timeout-minutes: 15
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          enable-cache: true
-          prune-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Set up just
-        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-
-      - name: Build app bundle without runtime
-        run: just app

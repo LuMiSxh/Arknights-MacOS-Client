@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The developer preview now reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
 - The Game Mode label no longer says Experimental.
 - Extended the Canary Frame Latency range to 0–3 while keeping the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
+- Unified GitHub workflows and automated issues, and Sparkle signature checks now accept OpenSSL 3 or newer.
 
 ### Fixed
 

@@ -11,6 +11,7 @@ import binascii
 import hmac
 import os
 import plistlib
+import re
 import shutil
 import subprocess
 import tempfile
@@ -40,7 +41,7 @@ def decode_base64(value: str, label: str) -> bytes:
 
 
 def derive_public_key(seed: bytes, openssl: str | None = None) -> bytes:
-    """Derive an Ed25519 public key from Sparkle's 32-byte seed using OpenSSL 3."""
+    """Derive an Ed25519 public key from Sparkle's 32-byte seed using OpenSSL 3+."""
     openssl = require_openssl_ed25519(openssl)
     command = [
         openssl,
@@ -61,7 +62,7 @@ def derive_public_key(seed: bytes, openssl: str | None = None) -> bytes:
     except OSError:
         fail(openssl_ed25519_guidance())
     except subprocess.CalledProcessError:
-        fail("OpenSSL 3 could not derive the Sparkle Ed25519 public key")
+        fail("OpenSSL could not derive the Sparkle Ed25519 public key")
 
     public_key = result.stdout
     if not public_key.startswith(SPKI_ED25519_PREFIX):
@@ -74,7 +75,7 @@ def derive_public_key(seed: bytes, openssl: str | None = None) -> bytes:
 
 def openssl_ed25519_guidance() -> str:
     return (
-        "Sparkle Ed25519 validation requires OpenSSL 3; on macOS run "
+        "Sparkle Ed25519 validation requires OpenSSL 3 or newer; on macOS run "
         "`brew install openssl@3` and put its bin directory first in PATH"
     )
 
@@ -89,7 +90,8 @@ def require_openssl_ed25519(openssl: str | None = None) -> str:
         ).stdout.strip()
     except OSError, subprocess.CalledProcessError:
         fail(openssl_ed25519_guidance())
-    if not version.startswith("OpenSSL 3."):
+    match = re.match(r"OpenSSL (\d+)\.", version)
+    if match is None or int(match[1]) < 3:
         fail(openssl_ed25519_guidance())
     return candidate
 
@@ -173,7 +175,7 @@ def verify_ed25519_signature(
     description: str,
     openssl: str | None = None,
 ) -> None:
-    """Verify Sparkle's raw Ed25519 signatures using OpenSSL 3."""
+    """Verify Sparkle's raw Ed25519 signatures using OpenSSL 3+."""
     if len(public_key) != PUBLIC_KEY_BYTES:
         fail("SUPublicEDKey must decode to 32 bytes")
     if len(signature) != 64:
