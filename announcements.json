@@ -1,29 +1,41 @@
 {
-	"schemaVersion": 1,
-	"announcements": [
-		{
-			"id": "thank-you-0-6-2026-09",
-			"enabled": true,
-			"title": "Thank you for being here",
-			"body": "Thank you for using Arknights Client. A special thank-you to everyone who has reported a bug, suggested a feature, or shared feedback. You’ve helped make the launcher what it is today.\n\nWith roughly 200 users, this is now my biggest and most popular open-source project. Seeing so many of you keep up with new releases makes me really happy.\n\nI’m happy with where the launcher is now, too. The features have matured, the UI finally feels right to me, and we’ve fixed most of the bugs we’ve found together.\n\nUpdates will come a little less often from now on, also because work and personal life need more of my time. I’ll still be here, fixing bugs and making improvements. Things will just move at a slower pace.\n\nThanks again. It means a lot.\n\nLuMiSxh",
-			"actionTitle": null,
-			"actionURL": null,
-			"minimumVersion": "0.6.0",
-			"maximumVersion": "0.6.9223372036854775807",
-			"startsAt": "2026-09-24T16:31:19Z",
-			"endsAt": "2026-10-24T16:31:19Z"
-		},
-		{
-			"id": "canary-runtime-0-5",
-			"enabled": true,
-			"title": "Thank you for helping shape version 0.5",
-			"body": "Thank you for using Arknights Client — and an extra thank-you to everyone who took part in the settings survey. Your feedback helped shape version 0.5.\n\nVersion 0.5 adds optional **Canary Features**: new settings that are ready for wider testing. Find them under **Settings → Installation → Danger Zone**.\n\nDoes the in-game cursor feel delayed? Enable Canary Features and try a **Frame Latency** value from 1 to 3. Lower values may feel more responsive. If the game feels less smooth, switch back to 3.\n\nDo you often switch between speakers, headphones, displays, or AirPlay devices? Enable **Follow Default Audio Output** so the game can follow your Mac's current audio output without being restarted.\n\nChanges apply the next time you start the game. Canary settings may change while we test them, then move into the regular launcher in a later version.\n\nThe **China and China — Bilibili clients** are also available through Canary Features. Once Canary is enabled, select either client under **Settings → Installation → Region**. They install, update, and launch through Arknights Client like the other regions.",
-			"actionTitle": "Read Canary details",
-			"actionURL": "https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/",
-			"minimumVersion": "0.5.0",
-			"maximumVersion": "0.5.2",
-			"startsAt": null,
-			"endsAt": null
-		}
-	]
+  "schemaVersion": 1,
+  "announcements": [
+    {
+      "id": "updater-fix-0-6-1",
+      "enabled": true,
+      "title": "Please update manually",
+      "body": "I'm sorry: in versions 0.5.1 and 0.5.2, the launcher found and downloaded updates, but the automatic restart that installs them did not work. It only works again since 0.6.0.\n\nTo make sure this does not happen again, I now test the update installation much more rigorously before every release.\n\nPlease download the latest Arknights Client DMG from GitHub and replace the app in **Applications**. Your settings and installed game files stay as they are.\n\nThank you for your patience.\n\nLuMiSxh",
+      "actionTitle": "Open latest release",
+      "actionURL": "https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest",
+      "minimumVersion": "0.5.1",
+      "maximumVersion": "0.6.0",
+      "startsAt": null,
+      "endsAt": null
+    },
+    {
+      "id": "thank-you-0-6-2026-09",
+      "enabled": true,
+      "title": "Thank you for being here",
+      "body": "Thank you for using Arknights Client. A special thank-you to everyone who has reported a bug, suggested a feature, or shared feedback. You’ve helped make the launcher what it is today.\n\nWith roughly 200 users, this is now my biggest and most popular open-source project. Seeing so many of you keep up with new releases makes me really happy.\n\nI’m happy with where the launcher is now, too. The features have matured, the UI finally feels right to me, and we’ve fixed most of the bugs we’ve found together.\n\nUpdates will come a little less often from now on, also because work and personal life need more of my time. I’ll still be here, fixing bugs and making improvements. Things will just move at a slower pace.\n\nThanks again. It means a lot.\n\nLuMiSxh",
+      "actionTitle": null,
+      "actionURL": null,
+      "minimumVersion": "0.6.0",
+      "maximumVersion": "0.6.9223372036854775807",
+      "startsAt": "2026-09-24T16:31:19Z",
+      "endsAt": "2026-10-24T16:31:19Z"
+    },
+    {
+      "id": "canary-runtime-0-5",
+      "enabled": true,
+      "title": "Thank you for helping shape version 0.5",
+      "body": "Thank you for using Arknights Client — and an extra thank-you to everyone who took part in the settings survey. Your feedback helped shape version 0.5.\n\nVersion 0.5 adds optional **Canary Features**: new settings that are ready for wider testing. Find them under **Settings → Installation → Danger Zone**.\n\nDoes the in-game cursor feel delayed? Enable Canary Features and try a **Frame Latency** value from 1 to 3. Lower values may feel more responsive. If the game feels less smooth, switch back to 3.\n\nDo you often switch between speakers, headphones, displays, or AirPlay devices? Enable **Follow Default Audio Output** so the game can follow your Mac's current audio output without being restarted.\n\nChanges apply the next time you start the game. Canary settings may change while we test them, then move into the regular launcher in a later version.\n\nThe **China and China — Bilibili clients** are also available through Canary Features. Once Canary is enabled, select either client under **Settings → Installation → Region**. They install, update, and launch through Arknights Client like the other regions.",
+      "actionTitle": "Read Canary details",
+      "actionURL": "https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/",
+      "minimumVersion": "0.5.0",
+      "maximumVersion": "0.5.2",
+      "startsAt": null,
+      "endsAt": null
+    }
+  ]
 }
