@@ -146,7 +146,7 @@ are applied through the same single-script path.
 | DXMT libraries                | `<prefix>/drive_c/windows/{system32,syswow64}`                          | Reconciled from the bundled runtime               |
 | DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                             | Recreatable through targeted cache cleanup        |
 | Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`                  | Recreatable through targeted cache cleanup        |
-| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                           | Reset by **Force Migration**; recreated on launch |
+| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                           | Reset by **Run Setup Again**; recreated on launch |
 | Regional game files           | Outside the prefix under the publisher folder or a selected custom path | Owned by installation, not prefix maintenance     |
 | Runtime binaries              | Outside the prefix in the app bundle                                    | Replaced only with the launcher application       |
 | Runtime and game logs         | Outside the prefix under `~/Library/Logs/com.lumisxh.arknights-client`  | Shared diagnostic destination mapped as `L:`      |
@@ -188,7 +188,7 @@ files.
 
 ## Maintenance operations
 
-**Force Migration** removes only current and legacy migration bookkeeping. The next launch reruns
+**Run Setup Again** removes only current and legacy migration bookkeeping. The next launch reruns
 Wine initialization, DXMT installation, and registry configuration while preserving profiles,
 sessions, registry data unrelated to those settings, and game files.
 

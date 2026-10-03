@@ -34,14 +34,24 @@ sudo game-test-tool disable
 
 Restart the Mac, then choose **Check Again** in the launcher. This command is not a stable macOS troubleshooting step; the tool is unavailable outside beta releases. See Apple's [macOS 27 release notes](https://developer.apple.com/documentation/macos-release-notes/macos-27-release-notes?changes=l_2).
 
+## Rendering
+
+**Settings → General → Rendering** chooses how the game reaches a Retina display. Every mode applies on the next game launch, and all three look the same on non-Retina displays.
+
+- **Retina** draws every pixel of the display. It is the sharpest mode and needs the most GPU time.
+- **MetalFX** draws one pixel per macOS point and lets DXMT upscale each frame 2× with MetalFX spatial scaling. It uses noticeably less GPU time on 4K and larger displays, and text looks slightly softer. A runtime without MetalFX support uses Lightweight instead.
+- **Lightweight** draws one pixel per macOS point and lets macOS stretch the window, which looks blurry on Retina displays.
+
+**Window Size** is measured like the resolutions in **System Settings → Displays**, so it keeps the same on-screen size in every mode. **Game Resolution** applies to fullscreen and counts the pixels the game draws. **Let the Launcher Size the Game** is on by default and recommended: the launcher converts the window size into the resolution the game draws, so the picture stays sharp. When it is off, Arknights' own display settings decide, and their resolution counts drawn pixels: with Retina rendering on a 2× display, 2560×1440 opens a 1280×720 window.
+
+**Use Mac Pointer** in the same section shows the macOS pointer instead of the game's PRTS cursor, so the cursor follows the mouse without delay. It looks different from the game cursor, applies on the next game launch, and needs a runtime that supports it.
+
 ## Canary Features
 
 **Settings → Installation → Canary Features** turns on experimental options. Turning it off again restores the normal behavior without deleting anything.
 
 - **Allow Taiwan client** and **Allow China clients** show the Taiwan, China, and China — Bilibili regions.
 - **Frame Latency** (0–3, default 3) can make the cursor feel more responsive at lower values when the runtime supports it. At 0, DXMT waits for the current GPU frame before queuing another; this may significantly reduce FPS or make frame pacing less smooth.
-- **Use Hardware Cursor** asks a supporting runtime to hide the game's PRTS cursor so the macOS hardware cursor can appear. The cursor may look different, and the setting applies on the next game launch when supported.
-- **MetalFX Upscaling** renders the game at the selected resolution and lets MetalFX upscale it to the display's Retina resolution. It replaces High Resolution Mode while on, uses noticeably less GPU time on 4K and larger displays, and can make text look slightly softer. It has no effect on non-Retina displays and applies on the next game launch when supported.
 
 These preferences are saved, but the launcher passes each override only when the packaged runtime advertises that capability. If a capability is absent or unsupported, the runtime keeps its default behavior.
 

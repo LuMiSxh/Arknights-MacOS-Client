@@ -13,7 +13,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added an off-by-default Canary MetalFX Upscaling option that renders the game at the selected resolution and upscales it to the display's Retina resolution, reducing GPU load on high-resolution displays.
+- Added a **Rendering** setting with Retina (the default), MetalFX, and Lightweight modes. MetalFX draws fewer pixels and upscales them to the display's Retina resolution, which keeps battles smoother on 4K and larger displays.
+
+### Changed
+
+- Reworked the display settings: windowed and borderless games now use a **Window Size** measured like macOS display resolutions, and the launcher works out the resolution the game draws. Fullscreen keeps a separate **Game Resolution**, and each size shows what the game actually draws. Existing launcher-controlled sizes keep their window size.
+- The launcher now sizes the game by default (**Let the Launcher Size the Game**), and Settings explain why this is recommended. When it is off on a Retina display, the launcher explains once how in-game resolutions map to the window size.
+- Setup now asks questions instead of showing settings: window or fullscreen, sharpness or smoothness, how to check for updates, and whether to play music. The answers set up the launcher, and the window size is picked to fit the screen.
+- **Game Mode** is greyed out with an explanation when Xcode is not installed.
+- **Use Mac Pointer** (formerly the Canary Hardware Cursor option) is now a regular setting in **Settings → General → Display & Controls**.
+- Game Mode, Wine Thread Synchronization, and the Metal Performance HUD moved from **Settings → Installation** to a new **Performance** section in **Settings → General**.
+- Rewrote technical setting descriptions in plain language; the technical details are now tooltips. **Force Migration…** is now **Run Setup Again…**.
 
 ### Fixed
 

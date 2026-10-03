@@ -25,12 +25,16 @@ func gameResolutionsMatchOfficialClientOptions() {
 func defaultLaunchOptionsFavorCompatibleWindow() {
 	#expect(GameLaunchOptions.default.displayMode == .windowed)
 	#expect(GameLaunchOptions.default.resolution == .hd)
-	#expect(GameLaunchOptions.default.usesGameSettings)
-	#expect(GameLaunchOptions.default.usesHighResolutionMode)
+	#expect(!GameLaunchOptions.default.usesGameSettings)
+	#expect(GameLaunchOptions.default.windowSize == .defaultWindow)
+	#expect(GameLaunchOptions.default.renderingMode == .retina)
 	#expect(!GameLaunchOptions.default.usesMetalPerformanceHUD)
 	#expect(!GameLaunchOptions.default.usesGameMode)
 	#expect(GameLaunchOptions.default.synchronizationMode == .msync)
-	#expect(GameLaunchOptions.default.playerArguments.isEmpty)
+	#expect(
+		GameLaunchOptions.default.playerArguments(gamePixelsPerPoint: 2)
+			== ["-screen-fullscreen", "0", "-screen-width", "2560", "-screen-height", "1440"]
+	)
 }
 
 @Test
@@ -40,7 +44,8 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 	)
 	let options = try JSONDecoder().decode(GameLaunchOptions.self, from: data)
 
-	#expect(options.usesHighResolutionMode)
+	#expect(options.renderingMode == .retina)
+	#expect(options.windowSize == .defaultWindow)
 	#expect(!options.usesMetalPerformanceHUD)
 	#expect(!options.usesGameMode)
 	#expect(options.synchronizationMode == .msync)
@@ -52,7 +57,12 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 	let retiredFieldOptions = try JSONDecoder().decode(
 		GameLaunchOptions.self, from: retiredFieldData)
 
-	#expect(retiredFieldOptions == .default)
+	let currentFieldOptions = try JSONDecoder().decode(
+		GameLaunchOptions.self,
+		from: Data(#"{"displayMode":"windowed","resolution":"1280x720"}"#.utf8)
+	)
+	#expect(retiredFieldOptions == currentFieldOptions)
+	#expect(retiredFieldOptions.usesGameSettings)
 }
 
 @Test
@@ -61,8 +71,9 @@ func launchDiagnosticsRecordEveryOptionAppliedToWine() throws {
 	let options = GameLaunchOptions(
 		displayMode: .fullscreen,
 		resolution: .quadHD,
+		windowSize: GameDisplaySize(width: 1600, height: 900),
 		usesGameSettings: false,
-		usesHighResolutionMode: false,
+		renderingMode: .metalFX,
 		usesMetalPerformanceHUD: true,
 		usesGameMode: true,
 		synchronizationMode: .esync
@@ -80,7 +91,8 @@ func launchDiagnosticsRecordEveryOptionAppliedToWine() throws {
 	#expect(diagnostic.contains("usesGameSettings=false"))
 	#expect(diagnostic.contains("displayMode=Fullscreen"))
 	#expect(diagnostic.contains("resolution=2560x1440"))
-	#expect(diagnostic.contains("highResolution=false"))
+	#expect(diagnostic.contains("windowSize=1600x900"))
+	#expect(diagnostic.contains("rendering=metalFX"))
 	#expect(diagnostic.contains("metalHUD=true"))
 	#expect(diagnostic.contains("gameMode=true"))
 	#expect(diagnostic.contains("synchronization=ESYNC"))
@@ -89,34 +101,75 @@ func launchDiagnosticsRecordEveryOptionAppliedToWine() throws {
 
 @Test(arguments: [
 	(
-		GameDisplayMode.fullscreen,
-		GameResolution.quadHD,
+		GameDisplayMode.fullscreen, 2,
 		["-screen-fullscreen", "1", "-screen-width", "2560", "-screen-height", "1440"]
 	),
 	(
-		GameDisplayMode.windowed,
-		GameResolution.fullHD,
-		["-screen-fullscreen", "0", "-screen-width", "1920", "-screen-height", "1080"]
+		GameDisplayMode.windowed, 1,
+		["-screen-fullscreen", "0", "-screen-width", "1280", "-screen-height", "720"]
 	),
 	(
-		GameDisplayMode.borderlessWindow,
-		GameResolution.ultraHD,
+		GameDisplayMode.windowed, 2,
+		["-screen-fullscreen", "0", "-screen-width", "2560", "-screen-height", "1440"]
+	),
+	(
+		GameDisplayMode.borderlessWindow, 2,
 		[
-			"-screen-fullscreen", "0", "-screen-width", "3840", "-screen-height", "2160",
+			"-screen-fullscreen", "0", "-screen-width", "2560", "-screen-height", "1440",
 			"-popupwindow",
 		]
 	),
 ])
-func launchArgumentsMatchDisplayMode(
+func launchArgumentsConvertWindowPointsButKeepFullscreenPixels(
 	displayMode: GameDisplayMode,
-	resolution: GameResolution,
+	gamePixelsPerPoint: Int,
 	expected: [String]
 ) {
 	let options = GameLaunchOptions(
 		displayMode: displayMode,
-		resolution: resolution,
+		resolution: .quadHD,
+		windowSize: .defaultWindow,
 		usesGameSettings: false
 	)
 
-	#expect(options.playerArguments == expected)
+	#expect(options.playerArguments(gamePixelsPerPoint: gamePixelsPerPoint) == expected)
+}
+
+@Test(arguments: [
+	// Retina-on launcher overrides stored pixels; keep the window they opened.
+	(#"{"resolution":"2560x1440","usesGameSettings":false}"#, 1280, 720, GameRenderingMode.retina),
+	(
+		#"{"resolution":"1920x1080","usesGameSettings":false,"usesHighResolutionMode":false}"#,
+		1920, 1080, .lightweight
+	),
+	// In-game settings never used the stored resolution, so the window starts at the default.
+	(#"{"resolution":"2560x1440","usesGameSettings":true}"#, 1280, 720, .retina),
+	// Halving below the smallest supported window falls back to the default size.
+	(#"{"resolution":"640x480","usesGameSettings":false}"#, 1280, 720, .retina),
+	(#"{"windowSize":{"width":10,"height":10},"usesGameSettings":false}"#, 1280, 720, .retina),
+])
+func legacyResolutionMigratesToWindowSizeAndRenderingMode(
+	json: String, width: Int, height: Int, renderingMode: GameRenderingMode
+) throws {
+	let options = try JSONDecoder().decode(GameLaunchOptions.self, from: Data(json.utf8))
+
+	#expect(options.windowSize == GameDisplaySize(width: width, height: height))
+	#expect(options.renderingMode == renderingMode)
+}
+
+@Test(arguments: GameRenderingMode.allCases)
+func launchOptionsRoundTripAndKeepTheLegacyRetinaFlag(renderingMode: GameRenderingMode) throws {
+	let options = GameLaunchOptions(
+		displayMode: .borderlessWindow,
+		resolution: .fullHD,
+		windowSize: GameDisplaySize(width: 1600, height: 900),
+		usesGameSettings: false,
+		renderingMode: renderingMode
+	)
+	let data = try JSONEncoder().encode(options)
+	let object = try #require(
+		try JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+	#expect(try JSONDecoder().decode(GameLaunchOptions.self, from: data) == options)
+	#expect(object["usesHighResolutionMode"] as? Bool == (renderingMode == .retina))
 }

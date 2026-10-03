@@ -78,7 +78,7 @@ typed values and applies side effects when a setting changes. The current persis
 | ------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Region and locations     | selected region, one install path per region                                 | A region switch changes the active game path but does not move files                              |
 | Update and communication | automatic launcher/game checks, announcements enabled, seen announcement IDs | Update checks never download game data without an explicit install/update action                  |
-| Launch and display       | launch options, high-resolution override, dynamic theme                      | Launch options are encoded as data; paths and runtime state are not stored in the options blob    |
+| Launch and display       | launch options, rendering mode, display note, dynamic theme                  | Launch options are encoded as data; paths and runtime state are not stored in the options blob    |
 | Personalization          | dynamic-theme accent snapshots, music URL/volume, playback visibility        | A chosen image is copied into `Artwork/Custom`; the user's original remains outside app ownership |
 
 Only the store knows the serialized key names and defaults. A new preference should be added there,

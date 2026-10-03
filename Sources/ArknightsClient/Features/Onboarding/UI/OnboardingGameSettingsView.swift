@@ -6,6 +6,7 @@ struct OnboardingGameSettingsView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	let lifecycle: LauncherLifecycleStore
 	let accentColor: Color
+	@Environment(\.displayScale) private var displayScale
 
 	var body: some View {
 		OnboardingPage(
@@ -13,57 +14,28 @@ struct OnboardingGameSettingsView: View {
 			subtitle: OnboardingStrings.gameSubtitle,
 			accentColor: accentColor
 		) {
-			SettingsPanel(
-				title: OnboardingStrings.displaySettingsPanel, systemImage: "switch.2"
-			) {
-				OnboardingToggleRow(
-					title: OnboardingStrings.useGameDisplaySettings,
-					detail: preferences.launchOptions.usesGameSettings
-						? OnboardingStrings.gameDisplaySettingsDetail
-						: OnboardingStrings.launcherDisplaySettingsDetail,
-					isOn: $preferences.launchOptions.usesGameSettings,
-					accentColor: accentColor
-				)
-			}
-
-			SettingsPanel(
-				title: OnboardingStrings.windowResolutionPanel,
-				systemImage: "rectangle.on.rectangle"
-			) {
-				AdaptiveSegmentedControl(
-					selection: $preferences.launchOptions.displayMode,
-					options: GameDisplayMode.allCases,
-					accentColor: accentColor
-				) { mode in
-					Text(shortTitle(for: mode))
-				}
-				.disabled(preferences.launchOptions.usesGameSettings)
-
-				SettingsHairline()
-				LabeledContent(OnboardingStrings.resolution) {
-					GlassMenuPicker(
-						selection: $preferences.launchOptions.resolution,
-						options: GameResolution.allCases.map { ($0, $0.displayName) },
-						accentColor: accentColor,
-						isDisabled: preferences.launchOptions.usesGameSettings
-					)
-				}
-				Text(OnboardingStrings.higherResolutionDetail)
-					.font(.callout)
-					.foregroundStyle(.secondary)
-			}
-
-			SettingsPanel(
-				title: OnboardingStrings.pixelDensityPanel,
-				systemImage: "sparkles.rectangle.stack"
-			) {
-				OnboardingToggleRow(
-					title: OnboardingStrings.highResolutionTitle,
-					detail: OnboardingStrings.highResolutionDetail,
-					isOn: $preferences.launchOptions.usesHighResolutionMode,
-					accentColor: accentColor
-				)
-			}
+			OnboardingQuestion(
+				question: OnboardingStrings.placementQuestion,
+				systemImage: "macwindow",
+				answers: GamePlacementAnswer.allCases.map(OnboardingStrings.placementAnswer),
+				selection: answerBinding(\.placement),
+				accentColor: accentColor,
+				isDisabled: lifecycle.activity.isGameActive
+			)
+			OnboardingQuestion(
+				question: OnboardingStrings.renderingQuestion,
+				systemImage: "sparkles",
+				answers: GameRenderingMode.allCases.map(OnboardingStrings.renderingAnswer),
+				selection: answerBinding(\.rendering),
+				accentColor: accentColor,
+				isDisabled: lifecycle.activity.isGameActive
+			)
+			Text(displaySummary)
+				.font(.callout)
+				.foregroundStyle(.secondary)
+				.fixedSize(horizontal: false, vertical: true)
+				.padding(.horizontal, LauncherVisuals.Spacing.panel)
+				.onAppear(perform: applyRecommendedAnswers)
 
 			if preferences.canaryFeaturesEnabled {
 				OnboardingCanaryPanel(
@@ -102,8 +74,42 @@ struct OnboardingGameSettingsView: View {
 		}
 	}
 
-	private func shortTitle(for mode: GameDisplayMode) -> String {
-		OnboardingStrings.displayMode(mode)
+	private var answers: GameDisplayAnswers { GameDisplayAnswers(preferences.launchOptions) }
+
+	private func answerBinding<Value>(
+		_ keyPath: WritableKeyPath<GameDisplayAnswers, Value>
+	) -> Binding<Value?> {
+		Binding(
+			get: { answers[keyPath: keyPath] },
+			set: { value in
+				guard let value, let screen = GameScreenMetrics.main else { return }
+				var updated = answers
+				updated[keyPath: keyPath] = value
+				preferences.launchOptions = updated.applied(
+					to: preferences.launchOptions, screen: screen)
+			}
+		)
+	}
+
+	private var displaySummary: String {
+		let options = preferences.launchOptions
+		let plan = GameDisplayPlan(options: options, backingScaleFactor: displayScale)
+		guard let size = plan.renderSize else { return OnboardingStrings.displaySummaryFallback }
+		let fullscreen = options.displayMode == .fullscreen
+		return OnboardingStrings.displaySummary(
+			window: fullscreen ? nil : options.windowSize,
+			render: SettingsStrings.renderSummary(plan, size: size, fullscreen: fullscreen)
+		)
+	}
+
+	/// Untouched defaults start from the recommended answers sized for this screen; earlier
+	/// choices stay as they are.
+	private func applyRecommendedAnswers() {
+		guard preferences.launchOptions == .default, let screen = GameScreenMetrics.main else {
+			return
+		}
+		preferences.launchOptions = GameDisplayAnswers.recommended.applied(
+			to: preferences.launchOptions, screen: screen)
 	}
 
 	private var frameLatencyBinding: Binding<Double> {

@@ -96,7 +96,6 @@ extension GameSessionController {
 		let requestedCanaryFeatures = settings.canaryFeaturesEnabled
 		let requestedFrameLatency = settings.maximumFrameLatency
 		let requestedHardwareCursor = settings.usesHardwareCursor
-		let requestedMetalFXUpscaling = settings.usesMetalFXUpscaling
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let forceDisableRetina = preferences.forceDisableRetina()
 		log.info(
@@ -120,12 +119,9 @@ extension GameSessionController {
 					log.info("Runtime capability fallback: \(diagnostic)")
 				}
 				let displayConfiguration = WineDisplayConfiguration.current(
-					highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
+					renderingMode: requestedLaunchOptions.renderingMode,
 					forceDisabled: forceDisableRetina,
-					metalFXUpscaling: discovery.capabilities.allowsMetalFXUpscaling(
-						canaryFeaturesEnabled: requestedCanaryFeatures,
-						requested: requestedMetalFXUpscaling
-					)
+					metalFXSupported: discovery.capabilities.metalFXSpatialUpscalingSupported
 				)
 				let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
 					for: requestedRegion,
@@ -139,7 +135,8 @@ extension GameSessionController {
 					prefixDirectory: prefixDirectory,
 					gameArguments: ["-logFile", AppPaths.windowsUnityLogPath]
 						+ (installation.configuration?.gameStartParams ?? [])
-						+ requestedLaunchOptions.playerArguments,
+						+ requestedLaunchOptions.playerArguments(
+							gamePixelsPerPoint: displayConfiguration.gamePixelsPerPoint),
 					displayConfiguration: displayConfiguration,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,

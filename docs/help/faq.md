@@ -54,7 +54,7 @@ No. It opens a public GitHub issue with basic details about the error and your M
 
 ## Is Game Mode required?
 
-No. It is an optional experiment, off by default, and needs the full Xcode app to work.
+No. It is optional, off by default, and needs the full Xcode app. Without Xcode, the setting is greyed out.
 
 ## Who helps with accounts and payments?
 

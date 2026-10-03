@@ -27,61 +27,32 @@ struct GeneralSettingsPage: View {
 			SettingsPanel(
 				title: SettingsStrings.displayControls, systemImage: "display"
 			) {
-				SettingsActionRow(
-					title: SettingsStrings.highResolution,
-					detail: SettingsStrings.highResolutionDetail
-				) {
-					SettingsToggle(
-						SettingsStrings.highResolution,
-						isOn: $settings.launchOptions.usesHighResolutionMode,
-						accentColor: accentColor
-					)
-					.disabled(
-						gameSession.isGameActive
-							|| lifecycle.activity == .maintaining(.migratingStorage)
-					)
-				}
+				GameDisplaySettingsRows(
+					settings: settings,
+					isLocked: gameSession.isGameActive
+						|| lifecycle.activity == .maintaining(.migratingStorage),
+					accentColor: accentColor
+				)
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.gameDisplaySettings,
-					detail: SettingsStrings.gameDisplaySettingsDetail
+					title: SettingsStrings.hardwareCursor,
+					detail: SettingsStrings.hardwareCursorDetail,
+					help: SettingsStrings.hardwareCursorHelp
 				) {
 					SettingsToggle(
-						SettingsStrings.gameDisplaySettings,
-						isOn: $settings.launchOptions.usesGameSettings,
+						SettingsStrings.hardwareCursor,
+						isOn: $settings.usesHardwareCursor,
 						accentColor: accentColor
 					)
 					.disabled(gameSession.isGameActive)
 				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: SettingsStrings.windowMode,
-					detail: SettingsStrings.windowModeDetail
-				) {
-					GlassMenuPicker(
-						selection: $settings.launchOptions.displayMode,
-						options: GameDisplayMode.allCases.map {
-							($0, SettingsStrings.displayMode($0))
-						},
-						accentColor: accentColor,
-						isDisabled: settings.launchOptions.usesGameSettings
-							|| gameSession.isGameActive
-					)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: SettingsStrings.resolution,
-					detail: SettingsStrings.resolutionDetail
-				) {
-					GlassMenuPicker(
-						selection: $settings.launchOptions.resolution,
-						options: GameResolution.allCases.map { ($0, $0.displayName) },
-						accentColor: accentColor,
-						isDisabled: settings.launchOptions.usesGameSettings
-							|| gameSession.isGameActive
-					)
-				}
 			}
+
+			GamePerformanceSettingsPanel(
+				settings: settings,
+				isLocked: gameSession.isGameActive,
+				accentColor: accentColor
+			)
 
 			SettingsPanel(title: SettingsStrings.launcher, systemImage: "sparkles") {
 				SettingsActionRow(

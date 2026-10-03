@@ -18,7 +18,6 @@ struct InstallationSettingsPage: View {
 	@State private var confirmsForceMigration = false
 	@State private var confirmsWinePrefixDeletion = false
 	@State private var confirmsSettingsReset = false
-	@State private var showsGameModeUnavailableAlert = false
 
 	var body: some View {
 		SettingsPage(
@@ -110,56 +109,6 @@ struct InstallationSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: SettingsStrings.compatibility,
-				systemImage: "slider.horizontal.2.square"
-			) {
-				SettingsActionRow(
-					title: SettingsStrings.metalHUD,
-					detail: SettingsStrings.metalHUDDetail
-				) {
-					SettingsToggle(
-						SettingsStrings.metalHUD,
-						isOn: $settings.launchOptions.usesMetalPerformanceHUD,
-						accentColor: accentColor
-					)
-					.disabled(gameSession.isGameActive)
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: SettingsStrings.gameMode,
-					detail: SettingsStrings.gameModeDetail
-				) {
-					SettingsToggle(
-						SettingsStrings.gameMode,
-						isOn: gameModeBinding,
-						accentColor: accentColor
-					)
-					.disabled(gameSession.isGameActive)
-					.alert(
-						SettingsStrings.gameModeAlert,
-						isPresented: $showsGameModeUnavailableAlert
-					) {
-					} message: {
-						Text(SettingsStrings.gameModeAlertDetail)
-					}
-				}
-				SettingsHairline()
-				SettingsActionRow(
-					title: SettingsStrings.wineSynchronization,
-					detail: SettingsStrings.wineSynchronizationDetail
-				) {
-					AdaptiveSegmentedControl(
-						selection: $settings.launchOptions.synchronizationMode,
-						options: WineSynchronizationMode.allCases,
-						accentColor: accentColor,
-						isDisabled: gameSession.isGameActive
-					) { mode in
-						Text(mode.displayName)
-					}
-				}
-			}
-
-			SettingsPanel(
 				title: SettingsStrings.canaryFeatures,
 				systemImage: "exclamationmark.triangle.fill",
 				tone: .warning
@@ -184,7 +133,8 @@ struct InstallationSettingsPage: View {
 			DangerZonePanel {
 				SettingsActionRow(
 					title: SettingsStrings.wineSetup,
-					detail: SettingsStrings.forceMigrationDetail
+					detail: SettingsStrings.forceMigrationDetail,
+					help: SettingsStrings.forceMigrationHelp
 				) {
 					CapsuleActionButton(
 						title: SettingsStrings.forceMigrationAction,
@@ -242,7 +192,8 @@ struct InstallationSettingsPage: View {
 				SettingsHairline()
 				SettingsActionRow(
 					title: SettingsStrings.winePrefix,
-					detail: SettingsStrings.winePrefixDetail
+					detail: SettingsStrings.winePrefixDetail,
+					help: SettingsStrings.winePrefixHelp
 				) {
 					CapsuleActionButton(
 						title: SettingsStrings.deleteWinePrefix,
@@ -298,19 +249,6 @@ struct InstallationSettingsPage: View {
 				}
 			}
 		}
-	}
-
-	private var gameModeBinding: Binding<Bool> {
-		Binding(
-			get: { settings.launchOptions.usesGameMode },
-			set: { newValue in
-				if newValue, !GamePolicyControl.isAvailable() {
-					showsGameModeUnavailableAlert = true
-					return
-				}
-				settings.launchOptions.usesGameMode = newValue
-			}
-		)
 	}
 
 	private var gameStatus: String {

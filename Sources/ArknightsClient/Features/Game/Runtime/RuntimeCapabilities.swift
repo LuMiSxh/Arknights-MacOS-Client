@@ -134,9 +134,8 @@ struct RuntimeCapabilities: Equatable, Sendable {
 		maximumFrameLatency: Int,
 		usesHardwareCursor: Bool
 	) -> [String: String] {
-		guard canaryFeaturesEnabled else { return [:] }
 		var overrides: [String: String] = [:]
-		if let latency = dxmtMaximumFrameLatency {
+		if canaryFeaturesEnabled, let latency = dxmtMaximumFrameLatency {
 			overrides[AppConstants.Runtime.dxmtMaximumFrameLatencyEnvironmentKey] = String(
 				min(max(maximumFrameLatency, latency.minimum), latency.maximum)
 			)
@@ -145,10 +144,6 @@ struct RuntimeCapabilities: Equatable, Sendable {
 			overrides[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "1"
 		}
 		return overrides
-	}
-
-	func allowsMetalFXUpscaling(canaryFeaturesEnabled: Bool, requested: Bool) -> Bool {
-		canaryFeaturesEnabled && metalFXSpatialUpscalingSupported && requested
 	}
 
 	private static func validateManifestShape(in data: Data) throws {

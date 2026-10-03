@@ -217,6 +217,8 @@ struct UpdateSettingsRow: View {
 struct SettingsActionRow<Actions: View>: View {
 	let title: String
 	let detail: String
+	/// Technical background shown as a tooltip over the title and detail.
+	var help: String?
 	@ViewBuilder let actions: Actions
 
 	var body: some View {
@@ -253,6 +255,7 @@ struct SettingsActionRow<Actions: View>: View {
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: true)
 		}
+		.help(help.map { Text($0) } ?? Text(verbatim: ""))
 	}
 }
 

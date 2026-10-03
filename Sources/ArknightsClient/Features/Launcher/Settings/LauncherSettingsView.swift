@@ -133,6 +133,7 @@ struct LauncherSettingsView: View {
 					}
 				}
 				.id(selectedSection)
+				.environment(\.simulatesMissingXcode, simulatesMissingXcode)
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
 			}
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -184,6 +185,14 @@ struct LauncherSettingsView: View {
 				hudTintColor: customization.hudTintColor
 			)
 		}
+	}
+
+	private var simulatesMissingXcode: Bool {
+		#if DEBUG
+			developerSimulation?.wrappedValue.xcodeMissing ?? false
+		#else
+			false
+		#endif
 	}
 
 	private var isDeveloperMode: Bool {

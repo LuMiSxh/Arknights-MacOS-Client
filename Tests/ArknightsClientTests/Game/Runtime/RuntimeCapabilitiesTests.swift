@@ -30,7 +30,7 @@ func runtimeCapabilitiesGateOverridesAndClampToAdvertisedRange() throws {
 			canaryFeaturesEnabled: false,
 			maximumFrameLatency: 0,
 			usesHardwareCursor: true
-		) == [:]
+		) == ["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1"]
 	)
 	#expect(
 		RuntimeCapabilities.conservative.environmentOverrides(
@@ -56,7 +56,7 @@ func runtimeCapabilitiesGateOverridesAndClampToAdvertisedRange() throws {
 }
 
 @Test
-func metalFXUpscalingRequiresCanaryRuntimeSupportAndRequest() throws {
+func metalFXUpscalingSupportIsOptionalInTheManifest() throws {
 	let supporting = try RuntimeCapabilities.decode(
 		from: Data(
 			#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true,"metalFXSpatialUpscaling":true}}"#
@@ -65,10 +65,8 @@ func metalFXUpscalingRequiresCanaryRuntimeSupportAndRequest() throws {
 	)
 	let legacy = try RuntimeCapabilities.decode(from: runtimeCapabilityManifest)
 
-	#expect(supporting.allowsMetalFXUpscaling(canaryFeaturesEnabled: true, requested: true))
-	#expect(!supporting.allowsMetalFXUpscaling(canaryFeaturesEnabled: false, requested: true))
-	#expect(!supporting.allowsMetalFXUpscaling(canaryFeaturesEnabled: true, requested: false))
-	#expect(!legacy.allowsMetalFXUpscaling(canaryFeaturesEnabled: true, requested: true))
+	#expect(supporting.metalFXSpatialUpscalingSupported)
+	#expect(!legacy.metalFXSpatialUpscalingSupported)
 	#expect(legacy.hardwareCursorSupported)
 }
 

@@ -22,51 +22,115 @@ enum OnboardingStrings {
 	static let useDefault = "Use Default"
 	static let useDefaults = "Use Defaults"
 
-	static let extrasTitle = "Keep things current and comfortable"
+	static let extrasTitle = "A few last questions"
 	static let extrasSubtitle =
 		"Automatic checks only look for new versions. Downloads still begin when you choose them, except for the installation already started by this setup."
-	static let updatesTitle = "Updates & project notices"
-	static let launcherUpdateTitle = "Check for Launcher Updates"
-	static let launcherUpdateDetail =
-		"Looks for a new launcher release when the app opens. You still choose when to download it."
-	static let gameUpdateTitle = "Check for Game Updates"
-	static let gameUpdateDetail =
-		"Compares your installed files with Yostar's current version and offers Update when needed."
-	static let announcementsTitle = "Show Project Announcements"
-	static let announcementsDetail =
-		"Shows important launcher notices, such as compatibility guidance, once per launch."
-	static let musicTitle = "Launcher music"
-	static let backgroundMusicTitle = "Play Background Music"
-	static let backgroundMusicDetail =
-		"Plays the configured YouTube music while the launcher is open and the game is not running."
+	static let updatesQuestion = "How should the launcher stay up to date?"
+
+	static func updateAnswer(_ answer: UpdateCheckAnswer) -> OnboardingAnswer<UpdateCheckAnswer> {
+		switch answer {
+		case .automatic:
+			OnboardingAnswer(
+				value: answer, title: "Check automatically",
+				detail:
+					"Looks for new launcher and game versions when the app opens, and shows important project notices. You still choose when to download.",
+				systemImage: "checkmark.arrow.trianglehead.counterclockwise", isRecommended: true)
+		case .noticesOnly:
+			OnboardingAnswer(
+				value: answer, title: "Only show important notices",
+				detail:
+					"Skips version checks but still shows compatibility notices, such as when a game update needs a newer launcher.",
+				systemImage: "megaphone")
+		case .manual:
+			OnboardingAnswer(
+				value: answer, title: "I'll check myself",
+				detail:
+					"Never looks for new versions or notices on its own. You can turn checks on later in Settings.",
+				systemImage: "hand.raised")
+		}
+	}
+
+	static let musicQuestion = "Play music while the launcher is open?"
+
+	static func musicAnswer(_ plays: Bool) -> OnboardingAnswer<Bool> {
+		plays
+			? OnboardingAnswer(
+				value: true, title: "Yes, play music",
+				detail: "Plays the configured YouTube music and stops while the game is running.",
+				systemImage: "music.note")
+			: OnboardingAnswer(
+				value: false, title: "No, keep it quiet",
+				detail: "You can turn music on later in Settings.",
+				systemImage: "speaker.slash")
+	}
+
+	static let musicTitle = "Music"
 	static let volume = "Volume"
+	static let recommended = "Recommended"
 	static let nowPlayingTitle = "Show Currently Playing"
 	static let nowPlayingDetail =
 		"Adds the current track and expandable playback controls to the main launcher."
 
-	static let gameTitle = "Tune the game window"
+	static let gameTitle = "How do you like to play?"
 	static let gameSubtitle =
-		"These choices affect the next launch. Start conservatively on base-model Macs; you can raise resolution after confirming smooth gameplay."
-	static let displaySettingsPanel = "Who controls display settings?"
-	static let useGameDisplaySettings = "Use In-Game Display Settings"
-	static let gameDisplaySettingsDetail =
-		"Changes made inside Arknights remain in control after the first successful launch."
-	static let launcherDisplaySettingsDetail =
-		"The launcher overrides window mode and resolution every time the game starts."
-	static let windowResolutionPanel = "Window & resolution"
-	static let resolution = "Resolution"
-	static let higherResolutionDetail =
-		"Higher resolutions increase the work done by both Wine and the graphics translator."
-	static let pixelDensityPanel = "Pixel density"
-	static let highResolutionTitle = "High-Resolution Mode"
-	static let highResolutionDetail =
-		"Makes text sharper on Retina displays, but the larger backing surface can reduce performance. Turn it off first when the game feels uneven."
+		"Your answers set up the game for this screen. The launcher picks the window size and resolution, so the picture stays sharp without any math."
+	static let placementQuestion = "Where should the game appear?"
+
+	static func placementAnswer(_ answer: GamePlacementAnswer) -> OnboardingAnswer<
+		GamePlacementAnswer
+	> {
+		switch answer {
+		case .window:
+			OnboardingAnswer(
+				value: answer, title: "In a window",
+				detail: "Sized to fit your screen, so other apps stay within reach.",
+				systemImage: "macwindow", isRecommended: true)
+		case .fullscreen:
+			OnboardingAnswer(
+				value: answer, title: "Fullscreen",
+				detail:
+					"Fills the whole screen. Often the smoothest, but other apps stay hidden while you play.",
+				systemImage: "arrow.up.left.and.arrow.down.right")
+		}
+	}
+
+	static let renderingQuestion = "What matters most to you?"
+
+	static func renderingAnswer(_ mode: GameRenderingMode) -> OnboardingAnswer<GameRenderingMode> {
+		switch mode {
+		case .retina:
+			OnboardingAnswer(
+				value: mode, title: "The sharpest picture",
+				detail: "Uses every pixel of your display. Most Macs keep battles smooth this way.",
+				systemImage: "sparkles", isRecommended: true)
+		case .metalFX:
+			OnboardingAnswer(
+				value: mode, title: "Smooth play on large screens",
+				detail:
+					"Draws fewer pixels and sharpens them with MetalFX. Choose it for 4K displays or if battles stutter.",
+				systemImage: "gauge.with.dots.needle.67percent")
+		case .lightweight:
+			OnboardingAnswer(
+				value: mode, title: "Less heat and battery use",
+				detail: "Draws the fewest pixels, so text looks a little softer.",
+				systemImage: "leaf")
+		}
+	}
+
+	static let displaySummaryFallback =
+		"Arknights' own settings currently decide the game size. Pick an answer to let the launcher size it instead."
+
+	static func displaySummary(window: GameDisplaySize?, render: String) -> String {
+		let start = window.map { "The game opens in a \($0.displayName) window. " } ?? ""
+		return start + render + " You can fine-tune this later in Settings → General."
+	}
+
 	static let runtimeOptimizations = "Runtime Optimizations"
 	static let maximumFrameLatency = "Maximum Frame Latency"
 	static let maximumFrameLatencyDetail =
-		"At 0, DXMT waits for the current GPU frame before queuing another. This may reduce FPS or make frame pacing less smooth. Applies on the next game launch."
+		"Lower values can make the cursor feel more responsive, but may lower or unsettle the frame rate. Applies on the next game launch."
 
-	static let installationTitle = "Choose where you play"
+	static let installationTitle = "Which server do you play on?"
 	static let installationSubtitle =
 		"Regions use separate game files and accounts. Pick the server you already use; you can install another region later from Settings."
 	static let canaryFeatures = "Canary Features"
@@ -88,7 +152,7 @@ enum OnboardingStrings {
 	static let installDownloadDetail =
 		"Selecting Install & Continue starts a resumable download. Closing the launcher pauses it safely."
 
-	static let iconsTitle = "Choose your Dock icons"
+	static let iconsTitle = "Which operator should your Dock show?"
 	static let iconsSubtitle =
 		"Choose an operator to create a Launcher icon with that character and a Game icon in the original Arknights style."
 	static let dockIcons = "Dock icons"
@@ -100,7 +164,7 @@ enum OnboardingStrings {
 	static let iconGame = "Game"
 	static let iconLauncher = "Launcher"
 
-	static let personalizationTitle = "Make the launcher yours"
+	static let personalizationTitle = "How should the launcher look?"
 	static let personalizationSubtitle =
 		"Artwork fills the launcher window. Dynamic Theme samples that image and carries its color into controls and compatible icon styles."
 	static let artwork = "Launcher artwork"
@@ -123,7 +187,7 @@ enum OnboardingStrings {
 	static let communityDetail =
 		"Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar."
 	static let issueDetail =
-		"If the launcher, Wine runtime, or embedded browser misbehaves, please report it on GitHub with the generated diagnostics."
+		"If the launcher, the game start, or the sign-in window misbehaves, please report it on GitHub. The report includes diagnostic details automatically."
 	static let communitySupport =
 		"For account, payment, or game-service issues, contact Yostar support instead."
 	static let contactSupport = "Contact Yostar Support…"
@@ -159,14 +223,14 @@ enum OnboardingStrings {
 		"Resume the download now or finish setup and continue later from the main launcher."
 
 	static let rosettaIntroduction =
-		"Rosetta 2 is missing. Install Apple’s compatibility layer so the bundled Wine runtime can start."
+		"Rosetta 2 is missing. Install Apple’s compatibility layer so the game can start."
 	static let rosettaInstalling = "Installing Rosetta 2 with Apple’s software update tool…"
 	static let rosettaFailed = "Installation failed"
 	static let rosettaManualInstall = "You can also install Rosetta manually in Terminal:"
 
 	static let welcomeTitle = "Welcome to Arknights Client"
 	static let welcomeSubtitle =
-		"We’ll check the launcher first, then configure the game and the parts you see every day. Your choices apply immediately."
+		"We’ll check the launcher first, then ask a few questions to set up the game and the parts you see every day. Your answers apply immediately."
 	static let launcherCurrent = "This launcher is current. Setup can continue."
 	static let updateDetail =
 		"Install the newer launcher and open it again. Setup stays pending so instructions always match the version you are using."
@@ -175,15 +239,15 @@ enum OnboardingStrings {
 	static let compatibilityPanel = "Intel compatibility"
 	static let compatibilityWaiting =
 		"Intel compatibility will be checked after the launcher update check."
-	static let compatibilityChecking = "Checking whether the bundled Wine runtime can start…"
+	static let compatibilityChecking = "Checking whether this Mac can run the game…"
 	static let compatibilityAvailable =
 		"Compatibility verified. The bundled Wine runtime can start."
 	static let compatibilityGameTestMode =
-		"On macOS 27 beta, Legacy Game Test Mode disables Rosetta, which the bundled Wine runtime requires. Disable the test mode, then restart your Mac:"
+		"On macOS 27 beta, Legacy Game Test Mode disables Rosetta, which the game needs. Disable the test mode, then restart your Mac:"
 	static let compatibilityUnavailable =
 		"macOS could not start an Intel test process. Restart your Mac, then check again. If the problem remains, include the launcher log in a bug report."
 	static let compatibilityUnsupported =
-		"This macOS version no longer provides the general Intel translation required by the bundled Wine runtime."
+		"This macOS version no longer provides the general Intel translation required to run the game."
 	static let skipSetupConfirmationTitle = "Skip setup?"
 	static let skipSetupConfirmationDetail =
 		"Setup reviews your client, display, Canary Features, and important launcher settings. You can run it again from Settings → General."
@@ -227,14 +291,6 @@ enum OnboardingStrings {
 		case .current: "Ready for setup"
 		case .updateRequired: "Update before setup"
 		case .checkFailed: "Update check unavailable"
-		}
-	}
-
-	static func displayMode(_ mode: GameDisplayMode) -> String {
-		switch mode {
-		case .fullscreen: "Fullscreen"
-		case .windowed: "Windowed"
-		case .borderlessWindow: "Borderless"
 		}
 	}
 

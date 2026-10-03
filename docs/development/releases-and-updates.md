@@ -55,7 +55,7 @@ flowchart LR
 The bundled runtime's `RUNTIME.json` may include `interface.runtimeCapabilities`, an optional
 single filename for a capability manifest at the runtime root. Package that sidecar when the runtime
 supports the optional controls; it declares the Frame Latency range, Hardware Cursor support, and
-optional MetalFX Upscaling support.
+optional MetalFX rendering support.
 If the entry or manifest is missing, malformed, unreadable, or unsupported, the client uses
 conservative defaults and keeps saved Canary preferences without sending unsupported overrides. Do
 not infer runtime support from the launcher controls alone.

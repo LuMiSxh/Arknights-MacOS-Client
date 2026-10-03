@@ -27,7 +27,7 @@ struct LauncherPreferencesStore {
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesHardwareCursor = "usesHardwareCursor"
-		static let usesMetalFXUpscaling = "usesMetalFXUpscaling"
+		static let dismissedInGameResolutionNote = "dismissedInGameResolutionNote"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
@@ -244,7 +244,7 @@ struct LauncherPreferencesStore {
 			Key.launcherMusicVolume, Key.usesDynamicTheme, Key.canaryFeaturesEnabled,
 			Key.chinaClientsEnabled, Key.taiwanClientEnabled,
 			Key.acknowledgedACEWarningRegions, Key.maximumFrameLatency, Key.usesHardwareCursor,
-			Key.usesMetalFXUpscaling,
+			Key.dismissedInGameResolutionNote,
 		] {
 			defaults.removeObject(forKey: key)
 		}
@@ -267,12 +267,12 @@ struct LauncherPreferencesStore {
 		defaults.set(value, forKey: Key.usesHardwareCursor)
 	}
 
-	func usesMetalFXUpscaling() -> Bool {
-		bool(for: Key.usesMetalFXUpscaling, defaultValue: false)
+	func dismissedInGameResolutionNote() -> Bool {
+		bool(for: Key.dismissedInGameResolutionNote, defaultValue: false)
 	}
 
-	func setUsesMetalFXUpscaling(_ value: Bool) {
-		defaults.set(value, forKey: Key.usesMetalFXUpscaling)
+	func setDismissedInGameResolutionNote(_ value: Bool) {
+		defaults.set(value, forKey: Key.dismissedInGameResolutionNote)
 	}
 
 	func usesDynamicTheme() -> Bool {

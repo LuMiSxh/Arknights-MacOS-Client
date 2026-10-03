@@ -24,21 +24,30 @@ enum SettingsStrings {
 	static let useDefaults = "Use Defaults"
 
 	static let generalTitle = "General"
-	static let generalSubtitle = "Display and personalization"
+	static let generalSubtitle = "Display, performance, and personalization"
 	static let displayControls = "Display & Controls"
-	static let highResolution = "High-Resolution Mode"
-	static let highResolutionDetail =
-		"Uses the display's full pixel density without enlarging the game window."
-	static let gameDisplaySettings = "Use In-Game Display Settings"
-	static let gameDisplaySettingsDetail =
-		"Lets changes made inside Arknights persist between launches."
+	static let rendering = "Rendering"
+	static let renderingHelp =
+		"Retina: Wine renders at the display's full backing-store resolution.\nMetalFX: Wine renders in macOS points and DXMT upscales every frame 2× with MetalFX spatial scaling. Runtimes without MetalFX support use Lightweight instead.\nLightweight: Wine renders in macOS points and macOS scales the window up.\nApplies on the next game launch."
+	static let launcherDisplayControl = "Let the Launcher Size the Game"
+	static let launcherDisplayControlDetail =
+		"Recommended. The launcher starts the game with the window mode and size below and works out the right resolution for your display. When off, Arknights uses the settings chosen inside the game."
+	static let launcherDisplayControlHelp =
+		"Arknights' own resolution setting counts the pixels the game draws. With Retina rendering, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
+	static let gotIt = "Got It"
 	static let displayModeFullscreen = "Fullscreen"
 	static let displayModeWindowed = "Windowed"
 	static let displayModeBorderlessWindow = "Borderless Window (Recommended)"
 	static let windowMode = "Window Mode"
-	static let windowModeDetail = "Overrides the game window style the next time it starts."
-	static let resolution = "Resolution"
-	static let resolutionDetail = "Overrides the game resolution the next time it starts."
+	static let windowModeDetail = "How the game window appears the next time it starts."
+	static let windowSize = "Window Size"
+	static let windowSizeDetail = "The size of the game window on your screen."
+	static let windowSizeHelp =
+		"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Rendering mode."
+	static let gameResolution = "Game Resolution"
+	static let gameResolutionDetail = "The number of pixels the game draws in fullscreen."
+	static let gameResolutionHelp =
+		"Fullscreen always fills the screen. Higher resolutions look sharper but need more graphics power."
 	static let launcher = "Launcher"
 	static let showGameVersion = "Show Game Version"
 	static let showGameVersionDetail =
@@ -48,7 +57,7 @@ enum SettingsStrings {
 		"Shows the active server time and time until its next daily reset."
 	static let metalHUD = "Metal Performance HUD"
 	static let metalHUDDetail =
-		"Shows Apple's native FPS and GPU overlay during the next game launch."
+		"Shows the frame rate and graphics load in the game window during the next game launch."
 	static let setupAssistant = "Setup Assistant"
 	static let setupAssistantDetail =
 		"Run the guided region, display, and personalization setup again."
@@ -105,25 +114,26 @@ enum SettingsStrings {
 	static let chooseNewLocation = "Choose New Location…"
 	static let locateExisting = "Locate Existing Installation…"
 	static let maintenance = "Maintenance"
-	static let compatibility = "Compatibility"
+	static let performance = "Performance"
 	static let canaryFeatures = "Canary Features"
 	static let canaryFeaturesDetail =
 		"Enables experimental features and reveals separate permissions for Taiwan and China clients. Disabling it switches a selected Canary client to Global."
 	static let chinaClients = "Allow China clients"
 	static let chinaClientsDetail =
-		"Exposes the China clients in the region picker. They stay disabled until you allow them here."
+		"Shows the China and China — Bilibili clients in the region picker."
 	static let taiwanClient = "Allow Taiwan client"
 	static let taiwanClientDetail =
-		"Exposes the Taiwan client in the region picker. It stays disabled until you allow it here."
+		"Shows the Taiwan client in the region picker."
 	static let frameLatency = "Frame Latency"
 	static let frameLatencyDetail =
-		"At 0, DXMT waits for the current GPU frame before queuing another. This may reduce FPS or make frame pacing less smooth. Applies on the next game launch."
-	static let hardwareCursor = "Use Hardware Cursor"
+		"Lower values can make the cursor feel more responsive, but may lower or unsettle the frame rate. Applies on the next game launch."
+	static let frameLatencyHelp =
+		"Sets DXMT's maximum frame latency. At 0, DXMT waits for the current GPU frame before queuing another."
+	static let hardwareCursor = "Use Mac Pointer"
 	static let hardwareCursorDetail =
-		"Experimental: hides the game's PRTS cursor so the macOS hardware cursor can show instead. Its appearance may differ. Applies on the next game launch."
-	static let metalFXUpscaling = "MetalFX Upscaling"
-	static let metalFXUpscalingDetail =
-		"Experimental: renders the game at the selected resolution and upscales it to the display's Retina resolution with MetalFX. Uses less GPU time than High Resolution Mode, but text may look softer. Applies on the next game launch."
+		"Shows the normal Mac pointer instead of the game's PRTS cursor, so it follows the mouse without delay. Applies on the next game launch."
+	static let hardwareCursorHelp =
+		"Asks the runtime to hide the game's software-drawn cursor so the macOS hardware cursor shows instead. Runtimes without this capability keep the game cursor."
 	static let repair = "Repair"
 	static let repairAction = "Repair…"
 	static let repairDetail = "Check every game file and download missing or damaged files again."
@@ -133,33 +143,39 @@ enum SettingsStrings {
 	static let showGameFilesHelp = "Show game files in Finder"
 	static let gameMode = "Game Mode"
 	static let gameModeDetail =
-		"Asks macOS to prioritize the game while it runs. Needs the full Xcode app installed, since only Xcode ships the tool this requires."
-	static let gameModeAlert = "Game Mode Needs Xcode"
-	static let gameModeAlertDetail =
-		"This requires Apple's gamepolicyctl tool, which only ships inside the full Xcode app, not the Command Line Tools. Install Xcode from the App Store to use it."
+		"Asks macOS to give the game priority while it runs. Requires the free Xcode app from the App Store."
+	static let gameModeHelp =
+		"Uses Apple's gamepolicyctl tool, which ships only inside the full Xcode app, not the Command Line Tools."
+	static let gameModeUnavailableDetail =
+		"Not available on this Mac: Game Mode needs the free Xcode app from the App Store. Install it, then reopen Settings."
 	static let wineSynchronization = "Wine Thread Synchronization"
 	static let wineSynchronizationDetail =
-		"Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback. Applies on the next launch."
+		"How the game's background tasks wait for each other. MSYNC runs more smoothly on most Macs; try ESYNC only if the game misbehaves. Applies on the next launch."
+	static let wineSynchronizationHelp =
+		"Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback."
 	static let wineSetup = "Wine Setup"
-	static let forceMigration = "Force Migration"
-	static let forceMigrationAction = "Force Migration…"
-	static let forceMigrationConfirmation = "Force Wine Setup to Run Again?"
+	static let forceMigration = "Run Setup Again"
+	static let forceMigrationAction = "Run Setup Again…"
+	static let forceMigrationConfirmation = "Run Wine Setup Again on the Next Launch?"
 	static let forceMigrationDetail =
-		"Redo Wine initialization, DXMT installation, and registry overrides on the next launch. Game files and saves are untouched; only the next launch takes longer."
+		"Sets up the game's Windows environment again on the next launch. Game files and saves are untouched; only that launch takes longer."
+	static let forceMigrationHelp =
+		"Reruns Wine prefix initialization, DXMT installation, and registry overrides."
 	static let resetSettings = "Reset Settings"
 	static let resetSettingsAction = "Reset All Settings…"
 	static let launcherSettings = "Launcher Settings"
 	static let resetSettingsConfirmation = "Reset All Launcher Settings?"
 	static let resetSettingsDetail =
-		"Reset every toggle and option on this screen to default. The install location and selected region are untouched."
+		"Resets every launcher setting to its default. Game files, the install location, and the selected region are untouched."
 	static let winePrefix = "Wine Prefix"
 	static let winePrefixDetail =
-		"Delete the entire Wine environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else rebuilds on the next launch."
+		"Deletes the game's Windows environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else is rebuilt on the next launch."
+	static let winePrefixHelp = "Deletes the Wine prefix folder shared by this publisher's regions."
 	static let deleteWinePrefix = "Delete Wine Prefix…"
 	static let deleteWinePrefixAction = "Delete Wine Prefix"
 	static let deleteWinePrefixConfirmation = "Delete the Wine Prefix?"
 	static let deleteWinePrefixDetail =
-		"This signs you out of every login saved in the embedded browser. Game files are untouched."
+		"This signs you out of every login saved in the sign-in window. Game files are untouched."
 	static let gameFiles = "Game files"
 	static let gameFilesDetail = "Move the selected game installation to the Trash."
 	static let uninstall = "Uninstall Game…"
@@ -187,7 +203,7 @@ enum SettingsStrings {
 	static let support = "Support"
 	static let launcherIssues = "Launcher Issues"
 	static let launcherIssuesDetail =
-		"Report launcher, Wine runtime, or embedded browser problems with generated diagnostics."
+		"Report problems with the launcher, starting the game, or the sign-in window. The report includes diagnostic details automatically."
 	static let report = "Report…"
 	static let gameAccountIssues = "Game & Account Issues"
 	static let gameAccountIssuesDetail =
@@ -245,6 +261,45 @@ enum SettingsStrings {
 
 	static func audioVolumePercent(_ percentage: Int) -> String {
 		"\(percentage)%"
+	}
+
+	static func renderingMode(_ mode: GameRenderingMode) -> String {
+		switch mode {
+		case .retina: "Retina (Sharpest)"
+		case .metalFX: "MetalFX (Balanced)"
+		case .lightweight: "Lightweight (Fastest)"
+		}
+	}
+
+	static func renderingModeDetail(_ mode: GameRenderingMode) -> String {
+		switch mode {
+		case .retina:
+			"Draws every pixel of a Retina display. The sharpest picture, but it needs the most graphics power."
+		case .metalFX:
+			"Draws fewer pixels and sharpens the picture with Apple's MetalFX. Smoother in battles; text looks slightly softer."
+		case .lightweight:
+			"Draws fewer pixels and lets macOS enlarge them. The lightest load, but the picture looks blurry on Retina displays."
+		}
+	}
+
+	/// Tells players which in-game resolution produces the launcher's window size.
+	static func inGameResolutionNote(window: GameDisplaySize, pixelsPerPoint: Int) -> String {
+		"Resolutions inside Arknights count the pixels the game draws. With Retina rendering, "
+			+ "choose \(window.scaled(by: pixelsPerPoint).displayName) in the game for a "
+			+ "\(window.displayName) window."
+	}
+
+	static func renderSummary(_ plan: GameDisplayPlan, size: GameDisplaySize, fullscreen: Bool)
+		-> String
+	{
+		let target =
+			fullscreen ? "fill the screen" : size.scaled(by: plan.backingScale).displayName
+		let drawn = "The game draws \(size.displayName) pixels"
+		return switch plan.scaling {
+		case .native: fullscreen ? "\(drawn) and fills the screen." : "\(drawn)."
+		case .metalFX: "\(drawn) and MetalFX upscales them to \(target)."
+		case .stretched: "\(drawn) and macOS stretches them to \(target), which looks softer."
+		}
 	}
 
 	static func displayMode(_ mode: GameDisplayMode) -> String {

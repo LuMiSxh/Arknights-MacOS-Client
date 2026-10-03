@@ -347,6 +347,14 @@ import SwiftUI
 						"Rosetta missing", isOn: $simulation.rosettaMissing,
 						accentColor: accentColor)
 				}
+				SettingsActionRow(
+					title: "Xcode unavailable",
+					detail: "Grey out Game Mode as if Xcode were not installed."
+				) {
+					SettingsToggle(
+						"Xcode missing", isOn: $simulation.xcodeMissing,
+						accentColor: accentColor)
+				}
 			}
 		}
 

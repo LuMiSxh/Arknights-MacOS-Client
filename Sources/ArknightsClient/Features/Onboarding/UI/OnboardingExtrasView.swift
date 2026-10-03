@@ -6,50 +6,57 @@ struct OnboardingExtrasView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	let accentColor: Color
 
+	private var updateBinding: Binding<UpdateCheckAnswer?> {
+		Binding(
+			get: {
+				UpdateCheckAnswer(
+					launcherChecks: preferences.automaticallyChecksLauncherUpdates,
+					gameChecks: preferences.automaticallyChecksGameUpdates,
+					announcements: preferences.announcementsEnabled
+				)
+			},
+			set: { answer in
+				guard let answer else { return }
+				preferences.automaticallyChecksLauncherUpdates = answer.checksForUpdates
+				preferences.automaticallyChecksGameUpdates = answer.checksForUpdates
+				preferences.announcementsEnabled = answer.showsAnnouncements
+			}
+		)
+	}
+
+	private var musicBinding: Binding<Bool?> {
+		Binding(
+			get: { preferences.playsLauncherMusic },
+			set: { if let plays = $0 { preferences.playsLauncherMusic = plays } }
+		)
+	}
+
 	var body: some View {
 		OnboardingPage(
 			title: OnboardingStrings.extrasTitle,
 			subtitle: OnboardingStrings.extrasSubtitle,
 			accentColor: accentColor
 		) {
-			SettingsPanel(
-				title: OnboardingStrings.updatesTitle,
-				systemImage: "arrow.trianglehead.2.clockwise"
-			) {
-				OnboardingToggleRow(
-					title: OnboardingStrings.launcherUpdateTitle,
-					detail: OnboardingStrings.launcherUpdateDetail,
-					isOn: $preferences.automaticallyChecksLauncherUpdates,
-					accentColor: accentColor
-				)
-				SettingsHairline()
-				OnboardingToggleRow(
-					title: OnboardingStrings.gameUpdateTitle,
-					detail: OnboardingStrings.gameUpdateDetail,
-					isOn: $preferences.automaticallyChecksGameUpdates,
-					accentColor: accentColor
-				)
-				SettingsHairline()
-				OnboardingToggleRow(
-					title: OnboardingStrings.announcementsTitle,
-					detail: OnboardingStrings.announcementsDetail,
-					isOn: $preferences.announcementsEnabled,
-					accentColor: accentColor
-				)
-			}
+			OnboardingQuestion(
+				question: OnboardingStrings.updatesQuestion,
+				systemImage: "arrow.trianglehead.2.clockwise",
+				answers: UpdateCheckAnswer.allCases.map(OnboardingStrings.updateAnswer),
+				selection: updateBinding,
+				accentColor: accentColor
+			)
 
-			SettingsPanel(
-				title: OnboardingStrings.musicTitle, systemImage: "music.note"
-			) {
-				OnboardingToggleRow(
-					title: OnboardingStrings.backgroundMusicTitle,
-					detail: OnboardingStrings.backgroundMusicDetail,
-					isOn: $preferences.playsLauncherMusic,
-					accentColor: accentColor
-				)
+			OnboardingQuestion(
+				question: OnboardingStrings.musicQuestion,
+				systemImage: "music.note",
+				answers: [true, false].map(OnboardingStrings.musicAnswer),
+				selection: musicBinding,
+				accentColor: accentColor
+			)
 
-				if preferences.playsLauncherMusic {
-					SettingsHairline()
+			if preferences.playsLauncherMusic {
+				SettingsPanel(
+					title: OnboardingStrings.musicTitle, systemImage: "speaker.wave.2"
+				) {
 					LabeledContent(OnboardingStrings.volume) {
 						HStack(spacing: 10) {
 							Image(systemName: "speaker.fill")

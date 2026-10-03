@@ -7,37 +7,41 @@ import Testing
 
 @Test
 func displayConfigurationEnablesRetinaOnlyForScaledDisplays() {
-	#expect(WineDisplayConfiguration(backingScaleFactor: 2).retinaEnabled)
+	let retina = WineDisplayConfiguration(backingScaleFactor: 2)
+	#expect(retina.retinaEnabled)
+	#expect(retina.gamePixelsPerPoint == 2)
 	#expect(!WineDisplayConfiguration(backingScaleFactor: 1).retinaEnabled)
-	#expect(
-		!WineDisplayConfiguration(
-			backingScaleFactor: 2,
-			highResolutionEnabled: false
-		).retinaEnabled
-	)
+	#expect(WineDisplayConfiguration(backingScaleFactor: 1).gamePixelsPerPoint == 1)
+	let lightweight = WineDisplayConfiguration(backingScaleFactor: 2, renderingMode: .lightweight)
+	#expect(!lightweight.retinaEnabled)
+	#expect(!lightweight.metalFXUpscalingEnabled)
+	#expect(lightweight.gamePixelsPerPoint == 1)
 	#expect(
 		!WineDisplayConfiguration(backingScaleFactor: 2, forceDisabled: true).retinaEnabled
 	)
 }
 
 @Test
-func metalFXUpscalingReplacesRetinaOnlyForScaledDisplays() {
-	let upscaled = WineDisplayConfiguration(backingScaleFactor: 2, metalFXUpscaling: true)
+func metalFXRenderingNeedsAScaledDisplayAndRuntimeSupport() {
+	let upscaled = WineDisplayConfiguration(
+		backingScaleFactor: 2, renderingMode: .metalFX, metalFXSupported: true)
 	#expect(upscaled.metalFXUpscalingEnabled)
 	#expect(!upscaled.retinaEnabled)
+	#expect(upscaled.gamePixelsPerPoint == 1)
 	#expect(upscaled.registryValue == "n")
 	#expect(upscaled.browserScaleFactor == 1)
-	#expect(
-		!WineDisplayConfiguration(backingScaleFactor: 1, metalFXUpscaling: true)
-			.metalFXUpscalingEnabled
-	)
-	#expect(
-		!WineDisplayConfiguration(
-			backingScaleFactor: 2,
-			forceDisabled: true,
-			metalFXUpscaling: true
-		).metalFXUpscalingEnabled
-	)
+	for configuration in [
+		WineDisplayConfiguration(
+			backingScaleFactor: 1, renderingMode: .metalFX, metalFXSupported: true),
+		WineDisplayConfiguration(
+			backingScaleFactor: 2, renderingMode: .metalFX, forceDisabled: true,
+			metalFXSupported: true),
+		// Runtimes without the capability fall back to Lightweight rendering, never Retina.
+		WineDisplayConfiguration(backingScaleFactor: 2, renderingMode: .metalFX),
+	] {
+		#expect(!configuration.metalFXUpscalingEnabled)
+		#expect(!configuration.retinaEnabled)
+	}
 }
 
 @Test(arguments: [

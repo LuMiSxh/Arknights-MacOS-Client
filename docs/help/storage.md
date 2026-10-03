@@ -47,7 +47,7 @@ Logs can contain private paths or URLs. Attach only the file a maintainer asks f
 | Action                  | Removes                                                         | Keeps                                      |
 | ----------------------- | --------------------------------------------------------------- | ------------------------------------------ |
 | **Clear Caches**        | Graphics and sign-in window caches (the next start is slower)   | Games, sign-ins, settings                  |
-| **Force Migration…**    | Nothing; reruns the Windows environment setup on the next start | Everything                                 |
+| **Run Setup Again…**    | Nothing; reruns the Windows environment setup on the next start | Everything                                 |
 | **Delete Wine Prefix…** | The publisher's prefix, including sign-ins and Windows settings | All game files and launcher settings       |
 | **Reset All Settings…** | Launcher preferences and launch options                         | Region, installation locations, game files |
 | **Reset Statistics…**   | Playtime totals                                                 | Everything else                            |

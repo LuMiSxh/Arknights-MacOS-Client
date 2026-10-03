@@ -64,36 +64,36 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func experimentalRuntimeTogglesDefaultOffAndPersist() {
+	func runtimeToggleAndDisplayNoteDefaultOffAndPersist() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 
 		#expect(!store.usesHardwareCursor())
-		#expect(!store.usesMetalFXUpscaling())
+		#expect(!store.dismissedInGameResolutionNote())
 
 		store.setUsesHardwareCursor(true)
-		store.setUsesMetalFXUpscaling(true)
+		store.setDismissedInGameResolutionNote(true)
 
 		let reloaded = LauncherPreferencesStore(defaults: defaults)
 		#expect(reloaded.usesHardwareCursor())
-		#expect(reloaded.usesMetalFXUpscaling())
+		#expect(reloaded.dismissedInGameResolutionNote())
 	}
 
 	@Test
-	func resettingPreferencesDisablesExperimentalRuntimeToggles() {
+	func resettingPreferencesRestoresRuntimeToggleAndDisplayNote() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 		let settings = LauncherPreferencesController(store: store)
 		settings.usesHardwareCursor = true
-		settings.usesMetalFXUpscaling = true
+		settings.dismissedInGameResolutionNote = true
 
 		#expect(settings.resetToDefaults(canModifyLaunchOptions: true))
 		#expect(!settings.usesHardwareCursor)
 		#expect(!store.usesHardwareCursor())
-		#expect(!settings.usesMetalFXUpscaling)
-		#expect(!store.usesMetalFXUpscaling())
+		#expect(!settings.dismissedInGameResolutionNote)
+		#expect(!store.dismissedInGameResolutionNote())
 	}
 
 	@Test(arguments: [(-1, 0), (0, 0), (2, 2), (4, 3)])

@@ -30,7 +30,8 @@ extension InstallationSettingsPage {
 		SettingsHairline()
 		SettingsActionRow(
 			title: SettingsStrings.frameLatency,
-			detail: SettingsStrings.frameLatencyDetail
+			detail: SettingsStrings.frameLatencyDetail,
+			help: SettingsStrings.frameLatencyHelp
 		) {
 			HStack(spacing: 10) {
 				SettingsSlider(
@@ -49,30 +50,6 @@ extension InstallationSettingsPage {
 			}
 			.disabled(gameSession.isGameActive)
 		}
-		SettingsHairline()
-		SettingsActionRow(
-			title: SettingsStrings.hardwareCursor,
-			detail: SettingsStrings.hardwareCursorDetail
-		) {
-			SettingsToggle(
-				SettingsStrings.hardwareCursor,
-				isOn: $settings.usesHardwareCursor,
-				accentColor: LauncherVisuals.warning
-			)
-		}
-		.disabled(lifecycle.activity != .idle)
-		SettingsHairline()
-		SettingsActionRow(
-			title: SettingsStrings.metalFXUpscaling,
-			detail: SettingsStrings.metalFXUpscalingDetail
-		) {
-			SettingsToggle(
-				SettingsStrings.metalFXUpscaling,
-				isOn: $settings.usesMetalFXUpscaling,
-				accentColor: LauncherVisuals.warning
-			)
-		}
-		.disabled(lifecycle.activity != .idle)
 	}
 
 	private var frameLatencyBinding: Binding<Double> {

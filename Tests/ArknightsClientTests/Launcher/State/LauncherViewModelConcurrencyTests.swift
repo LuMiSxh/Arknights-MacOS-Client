@@ -164,8 +164,9 @@ struct LauncherViewModelConcurrencyTests {
 		let selectedOptions = GameLaunchOptions(
 			displayMode: .fullscreen,
 			resolution: .quadHD,
+			windowSize: GameDisplaySize(width: 1600, height: 900),
 			usesGameSettings: false,
-			usesHighResolutionMode: false,
+			renderingMode: .metalFX,
 			usesMetalPerformanceHUD: true,
 			usesGameMode: true,
 			synchronizationMode: .esync
@@ -208,7 +209,7 @@ struct LauncherViewModelConcurrencyTests {
 			displayMode: .fullscreen,
 			resolution: .fullHD,
 			usesGameSettings: false,
-			usesHighResolutionMode: true,
+			renderingMode: .lightweight,
 			usesMetalPerformanceHUD: true,
 			usesGameMode: true,
 			synchronizationMode: .esync

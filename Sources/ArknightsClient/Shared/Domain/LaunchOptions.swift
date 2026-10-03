@@ -58,9 +58,12 @@ enum GameResolution: String, CaseIterable, Codable, Sendable {
 
 struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var displayMode: GameDisplayMode
+	/// Fullscreen game resolution in game pixels; matches the official client's choices.
 	var resolution: GameResolution
-	var usesGameSettings: Bool = true
-	var usesHighResolutionMode: Bool = true
+	/// Windowed and borderless window size in macOS points.
+	var windowSize: GameDisplaySize = .defaultWindow
+	var usesGameSettings: Bool = false
+	var renderingMode: GameRenderingMode = .retina
 	var usesMetalPerformanceHUD: Bool = false
 	var usesGameMode: Bool = false
 	var synchronizationMode: WineSynchronizationMode = .msync
@@ -68,31 +71,36 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	static let `default` = GameLaunchOptions(
 		displayMode: .windowed,
 		resolution: .hd,
-		usesGameSettings: true,
-		usesHighResolutionMode: true,
+		windowSize: .defaultWindow,
+		usesGameSettings: false,
+		renderingMode: .retina,
 		usesMetalPerformanceHUD: false,
 		usesGameMode: false,
 		synchronizationMode: .msync
 	)
 
 	private enum CodingKeys: String, CodingKey {
-		case displayMode, resolution, usesGameSettings, usesHighResolutionMode
+		case displayMode, resolution, windowSize, usesGameSettings, renderingMode
 		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode
+		/// Pre-0.6.2 Retina toggle; still written so older launchers keep their pixel density.
+		case usesHighResolutionMode
 	}
 
 	init(
 		displayMode: GameDisplayMode,
 		resolution: GameResolution,
-		usesGameSettings: Bool = true,
-		usesHighResolutionMode: Bool = true,
+		windowSize: GameDisplaySize = .defaultWindow,
+		usesGameSettings: Bool = false,
+		renderingMode: GameRenderingMode = .retina,
 		usesMetalPerformanceHUD: Bool = false,
 		usesGameMode: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
+		self.windowSize = windowSize
 		self.usesGameSettings = usesGameSettings
-		self.usesHighResolutionMode = usesHighResolutionMode
+		self.renderingMode = renderingMode
 		self.usesMetalPerformanceHUD = usesMetalPerformanceHUD
 		self.usesGameMode = usesGameMode
 		self.synchronizationMode = synchronizationMode
@@ -112,21 +120,60 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 		displayMode = value(.displayMode, defaults.displayMode)
 		resolution = value(.resolution, defaults.resolution)
-		usesGameSettings = value(.usesGameSettings, defaults.usesGameSettings)
-		usesHighResolutionMode = value(.usesHighResolutionMode, defaults.usesHighResolutionMode)
+		// Stored options without this key predate it, when Arknights kept its own settings.
+		usesGameSettings = value(.usesGameSettings, true)
 		usesMetalPerformanceHUD = value(
 			.usesMetalPerformanceHUD, defaults.usesMetalPerformanceHUD)
 		usesGameMode = value(.usesGameMode, defaults.usesGameMode)
 		synchronizationMode = value(.synchronizationMode, defaults.synchronizationMode)
+
+		// Before 0.6.2 one resolution served both modes, in pixels while Retina was on.
+		let legacyRetina = value(.usesHighResolutionMode, true)
+		renderingMode = value(.renderingMode, legacyRetina ? .retina : .lightweight)
+		let legacyWindow =
+			!usesGameSettings && container.contains(.resolution)
+			? Self.legacyWindowSize(for: resolution, retina: legacyRetina)
+			: defaults.windowSize
+		windowSize = value(.windowSize, legacyWindow)
 	}
 
-	/// Unity standalone-player arguments supported by the Windows client.
-	var playerArguments: [String] {
+	func encode(to encoder: any Encoder) throws {
+		var container = encoder.container(keyedBy: CodingKeys.self)
+		try container.encode(displayMode, forKey: .displayMode)
+		try container.encode(resolution, forKey: .resolution)
+		try container.encode(windowSize, forKey: .windowSize)
+		try container.encode(usesGameSettings, forKey: .usesGameSettings)
+		try container.encode(renderingMode, forKey: .renderingMode)
+		try container.encode(renderingMode == .retina, forKey: .usesHighResolutionMode)
+		try container.encode(usesMetalPerformanceHUD, forKey: .usesMetalPerformanceHUD)
+		try container.encode(usesGameMode, forKey: .usesGameMode)
+		try container.encode(synchronizationMode, forKey: .synchronizationMode)
+	}
+
+	/// Keeps the window a legacy pixel resolution produced, assuming a 2x Retina display.
+	private static func legacyWindowSize(
+		for resolution: GameResolution, retina: Bool
+	) -> GameDisplaySize {
+		let size = GameDisplaySize(resolution)
+		guard retina else { return size }
+		let halved = GameDisplaySize(width: size.width / 2, height: size.height / 2)
+		guard GameDisplaySize.validDimensions.contains(halved.width),
+			GameDisplaySize.validDimensions.contains(halved.height)
+		else { return .defaultWindow }
+		return halved
+	}
+
+	/// Unity standalone-player arguments supported by the Windows client. Windowed sizes are
+	/// points, so they are multiplied by the game pixels Wine maps onto each point.
+	func playerArguments(gamePixelsPerPoint: Int) -> [String] {
 		guard !usesGameSettings else { return [] }
+		let size =
+			displayMode == .fullscreen
+			? GameDisplaySize(resolution) : windowSize.scaled(by: max(1, gamePixelsPerPoint))
 		var arguments = [
 			"-screen-fullscreen", displayMode == .fullscreen ? "1" : "0",
-			"-screen-width", String(resolution.width),
-			"-screen-height", String(resolution.height),
+			"-screen-width", String(size.width),
+			"-screen-height", String(size.height),
 		]
 		if displayMode == .borderlessWindow { arguments.append("-popupwindow") }
 		return arguments

@@ -20,7 +20,9 @@ private let legacyRuntimeCapabilities = RuntimeCapabilities(
 	(false, false, 0, currentRuntimeCapabilities, nil as String?, nil as String?),
 	(false, false, 2, currentRuntimeCapabilities, nil, nil),
 	(false, false, 3, currentRuntimeCapabilities, nil, nil),
-	(false, true, 3, currentRuntimeCapabilities, nil, nil),
+	// Hardware Cursor is stable; Frame Latency still needs Canary Features.
+	(false, true, 3, currentRuntimeCapabilities, nil, "1"),
+	(false, true, 3, legacyRuntimeCapabilities, nil, nil),
 	(true, false, 0, currentRuntimeCapabilities, "0", nil),
 	(true, false, 3, currentRuntimeCapabilities, "3", nil),
 	(true, true, 3, currentRuntimeCapabilities, "3", "1"),
@@ -28,7 +30,7 @@ private let legacyRuntimeCapabilities = RuntimeCapabilities(
 	(true, true, 0, legacyRuntimeCapabilities, "1", nil),
 ])
 @MainActor
-func runtimeEnvironmentAppliesAdvertisedCanaryCapabilities(
+func runtimeEnvironmentAppliesAdvertisedCapabilities(
 	canaryFeaturesEnabled: Bool,
 	usesHardwareCursor: Bool,
 	maximumFrameLatency: Int,

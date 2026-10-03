@@ -4,30 +4,34 @@ import AppKit
 import Foundation
 
 /// Whether to run the game and its login browser at full backing-store resolution, derived
-/// from the current screen's scale factor, the user's toggle, and a `--no-retina` override.
-/// MetalFX upscaling replaces Retina rendering: Wine keeps point-sized surfaces and DXMT
-/// multiplies the layer's content scale, so its default 2x factor reaches the backing store.
+/// from the current screen's scale factor, the selected rendering mode, and a `--no-retina`
+/// override. MetalFX keeps Wine's point-sized surfaces and lets DXMT multiply the layer's
+/// content scale, so its default 2x factor reaches the backing store; a runtime without
+/// MetalFX support falls back to Lightweight rendering.
 struct WineDisplayConfiguration: Equatable, Sendable {
 	let retinaEnabled: Bool
 	let metalFXUpscalingEnabled: Bool
+	/// Game pixels per macOS point, used to turn a window size into a Unity resolution.
+	let gamePixelsPerPoint: Int
 
 	init(
 		backingScaleFactor: CGFloat,
-		highResolutionEnabled: Bool = true,
+		renderingMode: GameRenderingMode = .retina,
 		forceDisabled: Bool = false,
-		metalFXUpscaling: Bool = false
+		metalFXSupported: Bool = false
 	) {
 		let usesBackingStore = backingScaleFactor > 1 && !forceDisabled
-		metalFXUpscalingEnabled = usesBackingStore && metalFXUpscaling
-		retinaEnabled = usesBackingStore && highResolutionEnabled && !metalFXUpscalingEnabled
+		metalFXUpscalingEnabled = usesBackingStore && renderingMode == .metalFX && metalFXSupported
+		retinaEnabled = usesBackingStore && renderingMode == .retina
+		gamePixelsPerPoint = retinaEnabled ? max(1, Int(backingScaleFactor.rounded())) : 1
 	}
 
 	@MainActor
 	static func current(
-		highResolutionEnabled: Bool,
+		renderingMode: GameRenderingMode,
 		arguments: [String] = ProcessInfo.processInfo.arguments,
 		forceDisabled: Bool = false,
-		metalFXUpscaling: Bool = false
+		metalFXSupported: Bool = false
 	) -> WineDisplayConfiguration {
 		let scale =
 			NSApp.keyWindow?.screen?.backingScaleFactor
@@ -35,9 +39,9 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 			?? 1
 		return WineDisplayConfiguration(
 			backingScaleFactor: scale,
-			highResolutionEnabled: highResolutionEnabled,
+			renderingMode: renderingMode,
 			forceDisabled: forceDisabled || arguments.contains("--no-retina"),
-			metalFXUpscaling: metalFXUpscaling
+			metalFXSupported: metalFXSupported
 		)
 	}
 
