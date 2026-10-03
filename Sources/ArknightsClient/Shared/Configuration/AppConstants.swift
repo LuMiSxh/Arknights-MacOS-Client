@@ -122,6 +122,12 @@ enum AppConstants {
 	enum Presets {
 		static let characterCatalogMaximumBytes = 32 * 1_024 * 1_024
 		static let wallpaperCatalogMaximumBytes = 4 * 1_024 * 1_024
+		static let wallpaperTagsMaximumBytes = 1_024 * 1_024
+		/// The repository's current tag manifest, so tags for new wallpapers ship without a release.
+		static let wallpaperTagsURL = URL(
+			string:
+				"https://raw.githubusercontent.com/LuMiSxh/Arknights-MacOS-Client/main/Sources/ArknightsClient/Resources/WallpaperTags.json"
+		)!
 		static let imageMaximumBytes = 24 * 1_024 * 1_024
 		static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
 		static let imageDownloadAttempts = 2

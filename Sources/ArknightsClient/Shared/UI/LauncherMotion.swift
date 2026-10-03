@@ -49,6 +49,9 @@ enum LauncherMotion {
 	static let staggerStep = 0.045
 	static let pressedScale: CGFloat = 0.95
 	static let hoverScale: CGFloat = 1.025
+	/// Gentler press feedback for large tiles, rows, and dense pills.
+	static let subtlePressedScale: CGFloat = 0.97
+	static let subtleHoverScale: CGFloat = 1.01
 	static let breathingCycle: TimeInterval = 3.2
 
 	static func animation(_ curve: Curve, reduceMotion: Bool) -> Animation? {

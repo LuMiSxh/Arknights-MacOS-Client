@@ -121,45 +121,6 @@ enum WallpaperCategory: String, CaseIterable, Identifiable, Sendable {
 	]
 }
 
-struct WallpaperTagManifest: Decodable, Sendable {
-	let schemaVersion: Int
-	let tags: [String: [String]]
-}
-
-enum WallpaperTagCatalog {
-	static let shared: [String: [String]] = load()
-
-	static func tags(for wallpaperID: String) -> [String] {
-		if let tags = shared[wallpaperID] { return tags }
-		guard wallpaperID.hasPrefix("wp_") else { return [] }
-		return shared["global-" + String(wallpaperID.dropFirst(3))] ?? []
-	}
-
-	private static func load() -> [String: [String]] {
-		// Packaged apps flatten copied resources into Bundle.main; SwiftPM uses its resource bundle.
-		guard
-			let url = Bundle.main.url(forResource: "WallpaperTags", withExtension: "json")
-				?? AppResourceBundle.bundle.url(forResource: "WallpaperTags", withExtension: "json")
-		else {
-			NSLog("ArknightsClient could not find the bundled WallpaperTags.json.")
-			return [:]
-		}
-		do {
-			let manifest = try JSONDecoder().decode(
-				WallpaperTagManifest.self, from: Data(contentsOf: url))
-			guard manifest.schemaVersion == 1 else {
-				NSLog(
-					"ArknightsClient ignored WallpaperTags.json schema \(manifest.schemaVersion).")
-				return [:]
-			}
-			return manifest.tags
-		} catch {
-			NSLog("ArknightsClient could not read WallpaperTags.json: \(error)")
-			return [:]
-		}
-	}
-}
-
 /// An operator identified among a set of wallpapers, with how many of them feature them.
 struct OperatorArtCount: Identifiable, Hashable, Sendable {
 	var id: String { tag }

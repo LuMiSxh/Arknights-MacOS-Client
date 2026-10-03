@@ -25,6 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Game Mode, Wine Thread Synchronization, and the Metal Performance HUD moved from **Settings → Installation** to a new **Performance** section in **Settings → General**.
 - Rewrote technical setting descriptions in plain language; the technical details are now tooltips. **Force Migration…** is now **Run Setup Again…**.
 
+- The Artwork gallery now downloads the latest wallpaper search tags from the project repository, so new wallpapers become searchable by operator or event without a launcher update.
+- Gallery tiles, search pills, Settings sidebar items, and document links now respond to presses with the launcher's press animation.
+
 ### Fixed
 
 - Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.

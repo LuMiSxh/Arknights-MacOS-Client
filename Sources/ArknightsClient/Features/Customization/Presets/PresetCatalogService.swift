@@ -11,22 +11,32 @@ actor PresetCatalogService {
 	let cacheDirectory: URL
 	let cachedAvatarsFile: URL
 	let cachedWallpapersFile: URL
+	let cachedWallpaperTagsFile: URL
+	let wallpaperTagsURL: URL
+	let tagStore: WallpaperTagStore
 	let loader: BoundedHTTPDataLoader
 	let log: LauncherLog
 	var memoryCachedAvatars: [PresetAvatar]?
 	var memoryCachedWallpapers: [PresetWallpaper]?
 	var hasEnforcedImageCacheLimit = false
 	var cacheEpoch: UInt64 = 0
+	var hasLoadedWallpaperTagCache = false
+	var hasRequestedWallpaperTags = false
 
 	init(
 		cacheDirectory: URL,
 		session: URLSession = .shared,
+		wallpaperTagsURL: URL = AppConstants.Presets.wallpaperTagsURL,
+		tagStore: WallpaperTagStore = .shared,
 		log: LauncherLog
 	) {
 		self.log = log
 		self.cacheDirectory = cacheDirectory
 		cachedAvatarsFile = cacheDirectory.appending(path: "avatars_index_v2.json")
 		cachedWallpapersFile = cacheDirectory.appending(path: "wallpapers_index_v1.json")
+		cachedWallpaperTagsFile = cacheDirectory.appending(path: "wallpaper_tags_v1.json")
+		self.wallpaperTagsURL = wallpaperTagsURL
+		self.tagStore = tagStore
 		loader = BoundedHTTPDataLoader(
 			session: session,
 			redirectValidator: Self.isAllowedRemoteAssetURL
@@ -71,6 +81,7 @@ actor PresetCatalogService {
 
 	func fetchWallpapers() async -> [PresetWallpaper] {
 		await enforceImageCacheLimitIfNeeded()
+		await prepareWallpaperTags()
 		let epoch = cacheEpoch
 		if let memoryCachedWallpapers, !memoryCachedWallpapers.isEmpty {
 			return memoryCachedWallpapers
@@ -99,6 +110,9 @@ actor PresetCatalogService {
 		memoryCachedAvatars = nil
 		memoryCachedWallpapers = nil
 		hasEnforcedImageCacheLimit = true
+		hasLoadedWallpaperTagCache = false
+		hasRequestedWallpaperTags = false
+		tagStore.resetToBundled()
 		do {
 			if FileManager.default.fileExists(atPath: cacheDirectory.path) {
 				try FileManager.default.removeItem(at: cacheDirectory)

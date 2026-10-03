@@ -9,12 +9,14 @@ struct PresetGallerySearchBar: View {
 	@Binding var committedTags: [String]
 	@FocusState private var isFocused: Bool
 
-	private static let canonicalTags = Dictionary(
-		WallpaperTagCatalog.shared.values.flatMap(\.self).map {
-			(WallpaperSearch.normalized($0), $0)
-		},
-		uniquingKeysWith: { first, _ in first }
-	)
+	private static var canonicalTags: [String: String] {
+		Dictionary(
+			WallpaperTagCatalog.shared.values.flatMap(\.self).map {
+				(WallpaperSearch.normalized($0), $0)
+			},
+			uniquingKeysWith: { first, _ in first }
+		)
+	}
 	private static let contentHeight: CGFloat = 18
 
 	var body: some View {
@@ -56,7 +58,7 @@ struct PresetGallerySearchBar: View {
 						.frame(width: Self.contentHeight, height: Self.contentHeight)
 						.contentShape(Rectangle())
 				}
-				.buttonStyle(.plain)
+				.buttonStyle(ActionPressStyle())
 				.accessibilityLabel(CustomizationStrings.searchClear)
 			}
 		}
@@ -89,9 +91,9 @@ struct PresetGallerySearchBar: View {
 			.padding(.trailing, 4)
 			.padding(.vertical, 3)
 			.contentShape(Capsule())
+			.adaptiveControlSurface(tint: LauncherVisuals.controlTint, in: Capsule())
 		}
-		.buttonStyle(.plain)
-		.adaptiveControlSurface(tint: LauncherVisuals.controlTint, in: Capsule())
+		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())
 		.frame(height: Self.contentHeight)
 		.accessibilityLabel(CustomizationStrings.searchRemoveTag(tag))

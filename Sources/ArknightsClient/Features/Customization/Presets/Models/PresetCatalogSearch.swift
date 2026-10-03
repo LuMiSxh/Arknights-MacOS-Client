@@ -3,9 +3,9 @@
 import Foundation
 
 enum PresetCatalogSearch {
-	private static let knownWallpaperTags = Set(
-		WallpaperTagCatalog.shared.values.flatMap { $0 }.map(WallpaperSearch.normalized)
-	)
+	private static var knownWallpaperTags: Set<String> {
+		Set(WallpaperTagCatalog.shared.values.flatMap { $0 }.map(WallpaperSearch.normalized))
+	}
 
 	static func avatars(matching query: String, in avatars: [PresetAvatar]) async throws
 		-> [PresetAvatar]

@@ -29,7 +29,11 @@ uv run --locked scripts/scan_untagged_wallpapers.py --dry-run
 ```
 
 Add lowercase tags to the matching `global-<id>` entry in `WallpaperTags.json`, then reference the
-tagging issue from the pull request. The updated tags ship with the next launcher build.
+tagging issue from the pull request. Once merged into `main`, launchers download the updated manifest
+the next time the Artwork gallery opens after a launch, so no launcher release is needed. The bundled
+copy is the offline fallback and is refreshed with each launcher build.
+
+Keep the file at this path: released launchers fetch it from `main` by this exact location.
 
 ```json
 {

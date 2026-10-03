@@ -79,7 +79,7 @@ struct PresetAvatarGrid: View {
 					.contentShape(Rectangle())
 					.opacity(isBlocked ? 0.46 : 1)
 				}
-				.buttonStyle(.plain)
+				.buttonStyle(ActionPressStyle(intensity: .subtle))
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(avatar.name)
@@ -173,7 +173,7 @@ struct PresetWallpaperGrid: View {
 					)
 					.opacity(isBlocked ? 0.46 : 1)
 				}
-				.buttonStyle(.plain)
+				.buttonStyle(ActionPressStyle(intensity: .subtle))
 				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(wp.displayTitle)

@@ -262,6 +262,7 @@ private struct SettingsNavigationButton: View {
 	let isSelected: Bool
 	let accentColor: Color
 	let action: () -> Void
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isHovering = false
 
 	var body: some View {
@@ -285,8 +286,10 @@ private struct SettingsNavigationButton: View {
 			.background(backgroundFill, in: .rect(cornerRadius: LauncherVisuals.Radius.row))
 			.contentShape(.rect)
 			.frame(minHeight: 38)
+			.animation(
+				LauncherMotion.animation(.hover, reduceMotion: reduceMotion), value: isHovering)
 		}
-		.buttonStyle(.plain)
+		.buttonStyle(ActionPressStyle(intensity: .pressOnly))
 		.keyboardFocusIndicator(
 			in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
 		)

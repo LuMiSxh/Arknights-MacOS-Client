@@ -98,7 +98,7 @@ private struct PresetGallerySuggestionChip: View {
 				in: Capsule()
 			)
 		}
-		.buttonStyle(.plain)
+		.buttonStyle(ActionPressStyle())
 		.focused($isFocused)
 		.keyboardFocusIndicator(in: Capsule())
 		.accessibilityLabel(Text(suggestion.accessibilityTitle))

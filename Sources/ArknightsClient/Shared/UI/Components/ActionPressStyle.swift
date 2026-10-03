@@ -5,13 +5,25 @@ import SwiftUI
 /// Shared press and hover feedback for custom launcher action surfaces: a critically damped
 /// press, a springy release, and a small hover lift. Reduce Motion keeps only the opacity dip.
 struct ActionPressStyle: ButtonStyle {
+	enum Intensity {
+		/// Compact buttons and pills.
+		case standard
+		/// Large tiles and cards, where full scaling reads as a jump.
+		case subtle
+		/// List rows the pointer passes over often; they only respond to a press.
+		case pressOnly
+	}
+
+	var intensity = Intensity.standard
+
 	func makeBody(configuration: Configuration) -> some View {
-		ActionPressBody(configuration: configuration)
+		ActionPressBody(configuration: configuration, intensity: intensity)
 	}
 }
 
 private struct ActionPressBody: View {
 	let configuration: ButtonStyleConfiguration
+	let intensity: ActionPressStyle.Intensity
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.isEnabled) private var isEnabled
 	@State private var isHovered = false
@@ -32,8 +44,16 @@ private struct ActionPressBody: View {
 
 	private var scale: CGFloat {
 		guard isEnabled, !reduceMotion else { return 1 }
-		if configuration.isPressed { return LauncherMotion.pressedScale }
-		return isHovered ? LauncherMotion.hoverScale : 1
+		switch intensity {
+		case .standard:
+			if configuration.isPressed { return LauncherMotion.pressedScale }
+			return isHovered ? LauncherMotion.hoverScale : 1
+		case .subtle:
+			if configuration.isPressed { return LauncherMotion.subtlePressedScale }
+			return isHovered ? LauncherMotion.subtleHoverScale : 1
+		case .pressOnly:
+			return configuration.isPressed ? LauncherMotion.subtlePressedScale : 1
+		}
 	}
 
 	private var pressAnimation: Animation? {

@@ -359,6 +359,7 @@ struct DocumentLinkRow: View {
 	let systemImage: String
 	let accentColor: Color
 	let action: () -> Void
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isHovering = false
 
 	var body: some View {
@@ -379,8 +380,10 @@ struct DocumentLinkRow: View {
 				in: .rect(cornerRadius: LauncherVisuals.Radius.row)
 			)
 			.contentShape(.rect)
+			.animation(
+				LauncherMotion.animation(.hover, reduceMotion: reduceMotion), value: isHovering)
 		}
-		.buttonStyle(.plain)
+		.buttonStyle(ActionPressStyle(intensity: .pressOnly))
 		.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
 		.onHover { isHovering = $0 }
 	}
