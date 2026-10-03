@@ -91,8 +91,8 @@ struct OnboardingQuestion<Value: Hashable>: View {
 	}
 }
 
-/// Answer cards span the page, so they only blend colors on hover, press, and selection:
-/// scaling a surface this wide reads as a jump rather than a press.
+/// Answer cards use the shared press and hover motion on a plain surface. A Glass surface is
+/// rebuilt when the selection tint changes, which made the release spring snap to full size.
 private struct OnboardingAnswerStyle<S: InsettableShape>: ButtonStyle {
 	let isSelected: Bool
 	let accentColor: Color
@@ -119,12 +119,19 @@ private struct OnboardingAnswerBody<S: InsettableShape>: View {
 			.background(shape.fill(fill))
 			.overlay(shape.strokeBorder(border, lineWidth: LauncherVisuals.Control.borderWidth))
 			.opacity(isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity)
+			.scaleEffect(scale)
 			.onHover { isHovered = isEnabled && $0 }
 			.animation(curve(.hover), value: isHovered)
 			.animation(
 				curve(configuration.isPressed ? .press : .release), value: configuration.isPressed
 			)
 			.animation(curve(.state), value: isSelected)
+	}
+
+	private var scale: CGFloat {
+		guard isEnabled, !reduceMotion else { return 1 }
+		if configuration.isPressed { return LauncherMotion.pressedScale }
+		return isHovered ? LauncherMotion.hoverScale : 1
 	}
 
 	private var fill: Color {
