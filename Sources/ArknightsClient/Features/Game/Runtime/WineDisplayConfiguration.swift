@@ -5,22 +5,29 @@ import Foundation
 
 /// Whether to run the game and its login browser at full backing-store resolution, derived
 /// from the current screen's scale factor, the user's toggle, and a `--no-retina` override.
+/// MetalFX upscaling replaces Retina rendering: Wine keeps point-sized surfaces and DXMT
+/// multiplies the layer's content scale, so its default 2x factor reaches the backing store.
 struct WineDisplayConfiguration: Equatable, Sendable {
 	let retinaEnabled: Bool
+	let metalFXUpscalingEnabled: Bool
 
 	init(
 		backingScaleFactor: CGFloat,
 		highResolutionEnabled: Bool = true,
-		forceDisabled: Bool = false
+		forceDisabled: Bool = false,
+		metalFXUpscaling: Bool = false
 	) {
-		retinaEnabled = backingScaleFactor > 1 && highResolutionEnabled && !forceDisabled
+		let usesBackingStore = backingScaleFactor > 1 && !forceDisabled
+		metalFXUpscalingEnabled = usesBackingStore && metalFXUpscaling
+		retinaEnabled = usesBackingStore && highResolutionEnabled && !metalFXUpscalingEnabled
 	}
 
 	@MainActor
 	static func current(
 		highResolutionEnabled: Bool,
 		arguments: [String] = ProcessInfo.processInfo.arguments,
-		forceDisabled: Bool = false
+		forceDisabled: Bool = false,
+		metalFXUpscaling: Bool = false
 	) -> WineDisplayConfiguration {
 		let scale =
 			NSApp.keyWindow?.screen?.backingScaleFactor
@@ -29,7 +36,8 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 		return WineDisplayConfiguration(
 			backingScaleFactor: scale,
 			highResolutionEnabled: highResolutionEnabled,
-			forceDisabled: forceDisabled || arguments.contains("--no-retina")
+			forceDisabled: forceDisabled || arguments.contains("--no-retina"),
+			metalFXUpscaling: metalFXUpscaling
 		)
 	}
 

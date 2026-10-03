@@ -121,6 +121,9 @@ enum SettingsStrings {
 	static let hardwareCursor = "Use Hardware Cursor"
 	static let hardwareCursorDetail =
 		"Experimental: hides the game's PRTS cursor so the macOS hardware cursor can show instead. Its appearance may differ. Applies on the next game launch."
+	static let metalFXUpscaling = "MetalFX Upscaling"
+	static let metalFXUpscalingDetail =
+		"Experimental: renders the game at the selected resolution and upscales it to the display's Retina resolution with MetalFX. Uses less GPU time than High Resolution Mode, but text may look softer. Applies on the next game launch."
 	static let repair = "Repair"
 	static let repairAction = "Repair…"
 	static let repairDetail = "Check every game file and download missing or damaged files again."

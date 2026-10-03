@@ -126,6 +126,7 @@ func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
 func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
 	let environment = WineRuntime.bilibiliControllerEnvironment(from: [
 		"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1",
+		"DXMT_METALFX_SPATIAL_SWAPCHAIN": "1",
 		"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
 		"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
 		"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
@@ -134,6 +135,7 @@ func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
 	])
 
 	#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
+	#expect(environment["DXMT_METALFX_SPATIAL_SWAPCHAIN"] == nil)
 	#expect(environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"] == "1")
 	#expect(environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
 	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")

@@ -56,6 +56,23 @@ func runtimeCapabilitiesGateOverridesAndClampToAdvertisedRange() throws {
 }
 
 @Test
+func metalFXUpscalingRequiresCanaryRuntimeSupportAndRequest() throws {
+	let supporting = try RuntimeCapabilities.decode(
+		from: Data(
+			#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true,"metalFXSpatialUpscaling":true}}"#
+				.utf8
+		)
+	)
+	let legacy = try RuntimeCapabilities.decode(from: runtimeCapabilityManifest)
+
+	#expect(supporting.allowsMetalFXUpscaling(canaryFeaturesEnabled: true, requested: true))
+	#expect(!supporting.allowsMetalFXUpscaling(canaryFeaturesEnabled: false, requested: true))
+	#expect(!supporting.allowsMetalFXUpscaling(canaryFeaturesEnabled: true, requested: false))
+	#expect(!legacy.allowsMetalFXUpscaling(canaryFeaturesEnabled: true, requested: true))
+	#expect(legacy.hardwareCursorSupported)
+}
+
+@Test
 func runtimeCapabilitiesRejectUnsupportedSchemaAndLatencyRanges() {
 	let invalidManifests = [
 		#"{"schemaVersion":2,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true}}"#,

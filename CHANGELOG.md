@@ -11,6 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added an off-by-default Canary MetalFX Upscaling option that renders the game at the selected resolution and upscales it to the display's Retina resolution, reducing GPU load on high-resolution displays.
+
+### Fixed
+
+- Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.
+
 ## [0.6.1] - 2026-10-02
 
 ### Added

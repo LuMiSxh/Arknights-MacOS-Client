@@ -20,6 +20,26 @@ func displayConfigurationEnablesRetinaOnlyForScaledDisplays() {
 	)
 }
 
+@Test
+func metalFXUpscalingReplacesRetinaOnlyForScaledDisplays() {
+	let upscaled = WineDisplayConfiguration(backingScaleFactor: 2, metalFXUpscaling: true)
+	#expect(upscaled.metalFXUpscalingEnabled)
+	#expect(!upscaled.retinaEnabled)
+	#expect(upscaled.registryValue == "n")
+	#expect(upscaled.browserScaleFactor == 1)
+	#expect(
+		!WineDisplayConfiguration(backingScaleFactor: 1, metalFXUpscaling: true)
+			.metalFXUpscalingEnabled
+	)
+	#expect(
+		!WineDisplayConfiguration(
+			backingScaleFactor: 2,
+			forceDisabled: true,
+			metalFXUpscaling: true
+		).metalFXUpscalingEnabled
+	)
+}
+
 @Test(arguments: [
 	(
 		"global Mac Driver overrides the executable-specific value",

@@ -36,16 +36,20 @@ struct RuntimeCapabilities: Equatable, Sendable {
 
 	static let conservative = RuntimeCapabilities(
 		dxmtMaximumFrameLatency: nil,
-		hardwareCursorSupported: false
+		hardwareCursorSupported: false,
+		metalFXSpatialUpscalingSupported: false
 	)
 
 	let dxmtMaximumFrameLatency: FrameLatency?
 	let hardwareCursorSupported: Bool
+	let metalFXSpatialUpscalingSupported: Bool
 
 	private struct Manifest: Decodable {
 		struct Capabilities: Decodable {
 			let dxmtMaximumFrameLatency: FrameLatency
 			let hardwareCursor: Bool
+			/// Optional so runtimes published before 0.6.2 keep their other capabilities.
+			let metalFXSpatialUpscaling: Bool?
 		}
 
 		let schemaVersion: Int
@@ -76,7 +80,8 @@ struct RuntimeCapabilities: Equatable, Sendable {
 		}
 		return RuntimeCapabilities(
 			dxmtMaximumFrameLatency: latency,
-			hardwareCursorSupported: manifest.capabilities.hardwareCursor
+			hardwareCursorSupported: manifest.capabilities.hardwareCursor,
+			metalFXSpatialUpscalingSupported: manifest.capabilities.metalFXSpatialUpscaling ?? false
 		)
 	}
 
@@ -142,6 +147,10 @@ struct RuntimeCapabilities: Equatable, Sendable {
 		return overrides
 	}
 
+	func allowsMetalFXUpscaling(canaryFeaturesEnabled: Bool, requested: Bool) -> Bool {
+		canaryFeaturesEnabled && metalFXSpatialUpscalingSupported && requested
+	}
+
 	private static func validateManifestShape(in data: Data) throws {
 		let object: Any
 		do {
@@ -155,7 +164,8 @@ struct RuntimeCapabilities: Equatable, Sendable {
 			let manifest = object as? [String: Any],
 			Set(manifest.keys) == ["schemaVersion", "capabilities"],
 			let capabilities = manifest["capabilities"] as? [String: Any],
-			Set(capabilities.keys) == ["dxmtMaximumFrameLatency", "hardwareCursor"],
+			Set(capabilities.keys).subtracting(["metalFXSpatialUpscaling"])
+				== ["dxmtMaximumFrameLatency", "hardwareCursor"],
 			let frameLatency = capabilities["dxmtMaximumFrameLatency"] as? [String: Any],
 			Set(frameLatency.keys) == ["minimum", "maximum", "defaultValue"]
 		else {

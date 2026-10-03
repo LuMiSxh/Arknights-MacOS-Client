@@ -283,6 +283,9 @@ struct WineRuntime: Sendable {
 		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
 			displayConfiguration.browserScaleFactor
 		)
+		if displayConfiguration.metalFXUpscalingEnabled {
+			environment[AppConstants.Runtime.metalFXSpatialUpscalingEnvironmentKey] = "1"
+		}
 		if metalPerformanceHUDEnabled {
 			environment["MTL_HUD_ENABLED"] = "1"
 		}
@@ -354,6 +357,8 @@ struct WineRuntime: Sendable {
 		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
 		controllerEnvironment.removeValue(
 			forKey: AppConstants.Runtime.hardwareCursorEnvironmentKey)
+		controllerEnvironment.removeValue(
+			forKey: AppConstants.Runtime.metalFXSpatialUpscalingEnvironmentKey)
 		return controllerEnvironment
 	}
 

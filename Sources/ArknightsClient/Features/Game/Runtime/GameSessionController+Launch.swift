@@ -96,11 +96,9 @@ extension GameSessionController {
 		let requestedCanaryFeatures = settings.canaryFeaturesEnabled
 		let requestedFrameLatency = settings.maximumFrameLatency
 		let requestedHardwareCursor = settings.usesHardwareCursor
+		let requestedMetalFXUpscaling = settings.usesMetalFXUpscaling
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
-		let displayConfiguration = WineDisplayConfiguration.current(
-			highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
-			forceDisabled: preferences.forceDisableRetina()
-		)
+		let forceDisableRetina = preferences.forceDisableRetina()
 		log.info(
 			Self.launchDiagnostics(
 				sessionID: gameSessionID,
@@ -121,6 +119,14 @@ extension GameSessionController {
 				if let diagnostic = discovery.diagnostic {
 					log.info("Runtime capability fallback: \(diagnostic)")
 				}
+				let displayConfiguration = WineDisplayConfiguration.current(
+					highResolutionEnabled: requestedLaunchOptions.usesHighResolutionMode,
+					forceDisabled: forceDisableRetina,
+					metalFXUpscaling: discovery.capabilities.allowsMetalFXUpscaling(
+						canaryFeaturesEnabled: requestedCanaryFeatures,
+						requested: requestedMetalFXUpscaling
+					)
+				)
 				let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
 					for: requestedRegion,
 					canaryFeaturesEnabled: requestedCanaryFeatures,

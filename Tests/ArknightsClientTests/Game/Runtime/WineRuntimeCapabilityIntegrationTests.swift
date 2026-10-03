@@ -7,11 +7,13 @@ import Testing
 
 private let currentRuntimeCapabilities = RuntimeCapabilities(
 	dxmtMaximumFrameLatency: .init(minimum: 0, maximum: 3, defaultValue: 3),
-	hardwareCursorSupported: true
+	hardwareCursorSupported: true,
+	metalFXSpatialUpscalingSupported: true
 )
 private let legacyRuntimeCapabilities = RuntimeCapabilities(
 	dxmtMaximumFrameLatency: .init(minimum: 1, maximum: 3, defaultValue: 3),
-	hardwareCursorSupported: false
+	hardwareCursorSupported: false,
+	metalFXSpatialUpscalingSupported: false
 )
 
 @Test(arguments: [
@@ -92,7 +94,7 @@ func runtimeDiscoveryUsesTheSelectedBundlesCapabilityFile(configured: Bool) asyn
 		to: resources.appending(path: "RUNTIME.json")
 	)
 	let manifest = Data(
-		#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true}}"#
+		#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true,"metalFXSpatialUpscaling":true}}"#
 			.utf8
 	)
 	try manifest.write(to: runtimeDirectory.appending(path: "selected-capabilities.json"))

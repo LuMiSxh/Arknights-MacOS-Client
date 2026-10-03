@@ -27,6 +27,7 @@ struct LauncherPreferencesStore {
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesHardwareCursor = "usesHardwareCursor"
+		static let usesMetalFXUpscaling = "usesMetalFXUpscaling"
 		static let usesDynamicTheme = "usesDynamicTheme"
 		static let dynamicThemeAccent = "dynamicThemeAccent"
 		static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
@@ -243,6 +244,7 @@ struct LauncherPreferencesStore {
 			Key.launcherMusicVolume, Key.usesDynamicTheme, Key.canaryFeaturesEnabled,
 			Key.chinaClientsEnabled, Key.taiwanClientEnabled,
 			Key.acknowledgedACEWarningRegions, Key.maximumFrameLatency, Key.usesHardwareCursor,
+			Key.usesMetalFXUpscaling,
 		] {
 			defaults.removeObject(forKey: key)
 		}
@@ -263,6 +265,14 @@ struct LauncherPreferencesStore {
 
 	func setUsesHardwareCursor(_ value: Bool) {
 		defaults.set(value, forKey: Key.usesHardwareCursor)
+	}
+
+	func usesMetalFXUpscaling() -> Bool {
+		bool(for: Key.usesMetalFXUpscaling, defaultValue: false)
+	}
+
+	func setUsesMetalFXUpscaling(_ value: Bool) {
+		defaults.set(value, forKey: Key.usesMetalFXUpscaling)
 	}
 
 	func usesDynamicTheme() -> Bool {

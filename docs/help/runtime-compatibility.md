@@ -41,6 +41,7 @@ Restart the Mac, then choose **Check Again** in the launcher. This command is no
 - **Allow Taiwan client** and **Allow China clients** show the Taiwan, China, and China — Bilibili regions.
 - **Frame Latency** (0–3, default 3) can make the cursor feel more responsive at lower values when the runtime supports it. At 0, DXMT waits for the current GPU frame before queuing another; this may significantly reduce FPS or make frame pacing less smooth.
 - **Use Hardware Cursor** asks a supporting runtime to hide the game's PRTS cursor so the macOS hardware cursor can appear. The cursor may look different, and the setting applies on the next game launch when supported.
+- **MetalFX Upscaling** renders the game at the selected resolution and lets MetalFX upscale it to the display's Retina resolution. It replaces High Resolution Mode while on, uses noticeably less GPU time on 4K and larger displays, and can make text look slightly softer. It has no effect on non-Retina displays and applies on the next game launch when supported.
 
 These preferences are saved, but the launcher passes each override only when the packaged runtime advertises that capability. If a capability is absent or unsupported, the runtime keeps its default behavior.
 

@@ -76,6 +76,9 @@ final class LauncherPreferencesController {
 	var usesHardwareCursor: Bool {
 		didSet { store.setUsesHardwareCursor(usesHardwareCursor) }
 	}
+	var usesMetalFXUpscaling: Bool {
+		didSet { store.setUsesMetalFXUpscaling(usesMetalFXUpscaling) }
+	}
 	var regionAccess: RegionAccess {
 		RegionAccess(
 			canaryFeaturesEnabled: canaryFeaturesEnabled,
@@ -111,6 +114,7 @@ final class LauncherPreferencesController {
 		taiwanClientEnabled = store.taiwanClientEnabled()
 		maximumFrameLatency = store.maximumFrameLatency()
 		usesHardwareCursor = store.usesHardwareCursor()
+		usesMetalFXUpscaling = store.usesMetalFXUpscaling()
 	}
 
 	/// Keeps region and installation locations intact because they point to user files.
@@ -134,6 +138,7 @@ final class LauncherPreferencesController {
 		taiwanClientEnabled = store.taiwanClientEnabled()
 		maximumFrameLatency = store.maximumFrameLatency()
 		usesHardwareCursor = store.usesHardwareCursor()
+		usesMetalFXUpscaling = store.usesMetalFXUpscaling()
 		return true
 	}
 }

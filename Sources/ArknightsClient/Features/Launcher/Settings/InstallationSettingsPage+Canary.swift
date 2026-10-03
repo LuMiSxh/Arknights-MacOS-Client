@@ -61,6 +61,18 @@ extension InstallationSettingsPage {
 			)
 		}
 		.disabled(lifecycle.activity != .idle)
+		SettingsHairline()
+		SettingsActionRow(
+			title: SettingsStrings.metalFXUpscaling,
+			detail: SettingsStrings.metalFXUpscalingDetail
+		) {
+			SettingsToggle(
+				SettingsStrings.metalFXUpscaling,
+				isOn: $settings.usesMetalFXUpscaling,
+				accentColor: LauncherVisuals.warning
+			)
+		}
+		.disabled(lifecycle.activity != .idle)
 	}
 
 	private var frameLatencyBinding: Binding<Double> {

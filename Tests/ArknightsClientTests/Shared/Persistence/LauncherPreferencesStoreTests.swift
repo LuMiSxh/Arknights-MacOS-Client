@@ -64,29 +64,36 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func hardwareCursorPreferenceDefaultsOffAndPersists() {
+	func experimentalRuntimeTogglesDefaultOffAndPersist() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 
 		#expect(!store.usesHardwareCursor())
+		#expect(!store.usesMetalFXUpscaling())
 
 		store.setUsesHardwareCursor(true)
+		store.setUsesMetalFXUpscaling(true)
 
-		#expect(LauncherPreferencesStore(defaults: defaults).usesHardwareCursor())
+		let reloaded = LauncherPreferencesStore(defaults: defaults)
+		#expect(reloaded.usesHardwareCursor())
+		#expect(reloaded.usesMetalFXUpscaling())
 	}
 
 	@Test
-	func resettingPreferencesDisablesHardwareCursor() {
+	func resettingPreferencesDisablesExperimentalRuntimeToggles() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 		let settings = LauncherPreferencesController(store: store)
 		settings.usesHardwareCursor = true
+		settings.usesMetalFXUpscaling = true
 
 		#expect(settings.resetToDefaults(canModifyLaunchOptions: true))
 		#expect(!settings.usesHardwareCursor)
 		#expect(!store.usesHardwareCursor())
+		#expect(!settings.usesMetalFXUpscaling)
+		#expect(!store.usesMetalFXUpscaling())
 	}
 
 	@Test(arguments: [(-1, 0), (0, 0), (2, 2), (4, 3)])
