@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Locally built launchers no longer treat the published release of the same version as an update that blocks setup.
 - Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.
 
 ## [0.6.1] - 2026-10-02

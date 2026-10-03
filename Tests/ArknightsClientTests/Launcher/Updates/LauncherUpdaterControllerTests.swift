@@ -139,6 +139,17 @@ struct LauncherUpdaterControllerTests {
 		#expect(subject.userDriver.phase == .hidden)
 	}
 
+	@Test(arguments: [
+		("0.6.1", "0.6.1" as String?, LauncherUpdateCheckOutcome.current),
+		("0.6.2", "0.6.1", .updateAvailable("0.6.2")),
+		("0.6.1", nil, .updateAvailable("0.6.1")),
+	])
+	func onlyADifferentVersionCountsAsAnUpdate(
+		offered: String, running: String?, expected: LauncherUpdateCheckOutcome
+	) {
+		#expect(LauncherUpdateCheckOutcome.found(version: offered, running: running) == expected)
+	}
+
 	@Test
 	func sparkleNoUpdateErrorCountsAsCurrentForSilentProbe() {
 		let error = NSError(

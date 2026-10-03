@@ -151,7 +151,8 @@ final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
 		userDriver.recordAvailableUpdate(item)
 		if checkKind == .probe {
-			probeOutcome = .updateAvailable(item.displayVersionString)
+			probeOutcome = .found(
+				version: item.displayVersionString, running: Bundle.main.shortVersionString)
 		}
 	}
 
