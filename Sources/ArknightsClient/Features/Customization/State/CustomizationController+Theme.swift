@@ -67,10 +67,8 @@ extension CustomizationController {
 		if usesDynamicTheme(), let hue {
 			let hueChanged = !Self.hueIsUnchanged(
 				hue, from: preferences.lastAppliedDynamicIconHue())
-			if !hueChanged {
-				launcherIconManager.apply(launcherIconManager.currentIcon, persistToBundle: false)
-				return
-			}
+			// Always render: the initial `currentIcon` comes from Finder, which may return the
+			// bundle's custom icon inside the system's legacy-icon frame at a reduced size.
 			guard let tinted = dynamicIconRenderer(hue) else {
 				resetDynamicLauncherIcon()
 				return

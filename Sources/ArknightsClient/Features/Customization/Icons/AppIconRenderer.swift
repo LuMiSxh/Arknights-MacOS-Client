@@ -22,11 +22,26 @@ enum AppIconRenderer {
 		)
 		let drawRect = NSRect(origin: origin, size: contentSize)
 
-		let padded = NSImage(size: canvasSize)
-		padded.lockFocus()
-		NSGraphicsContext.current?.imageInterpolation = .high
+		// `lockFocus` renders at the scale of whichever screen AppKit picks, which differs on
+		// mixed-scale multi-display setups; draw into a fixed-density bitmap instead.
+		let pixels = Int(AppConstants.Icon.canvasDimension * AppConstants.Icon.renderScale)
+		guard
+			let bitmap = NSBitmapImageRep(
+				bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
+				bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+				colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+			)
+		else { return image }
+		// The context derives its point-to-pixel transform from the size set beforehand.
+		bitmap.size = canvasSize
+		guard let context = NSGraphicsContext(bitmapImageRep: bitmap) else { return image }
+		NSGraphicsContext.saveGraphicsState()
+		NSGraphicsContext.current = context
+		context.imageInterpolation = .high
 		image.draw(in: drawRect, from: .zero, operation: .copy, fraction: 1.0)
-		padded.unlockFocus()
+		NSGraphicsContext.restoreGraphicsState()
+		let padded = NSImage(size: canvasSize)
+		padded.addRepresentation(bitmap)
 		return padded
 	}
 

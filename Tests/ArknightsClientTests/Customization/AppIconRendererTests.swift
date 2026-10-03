@@ -101,6 +101,8 @@ func padToAppleGridPreservesAspectRatio() throws {
 	source.unlockFocus()
 
 	let padded = AppIconRenderer.padToAppleGrid(image: source)
+	#expect(padded.representations.count == 1)
+	#expect(padded.representations.first?.pixelsWide == 1_024)
 	let data = try #require(padded.tiffRepresentation)
 	let bitmap = try #require(NSBitmapImageRep(data: data))
 	let scale = Double(bitmap.pixelsWide) / AppConstants.Icon.canvasDimension

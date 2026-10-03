@@ -124,23 +124,25 @@ struct CustomizationControllerTests {
 	}
 
 	@Test
-	func dynamicIconSkipsRenderingWhenPersistedHueIsUnchanged() {
-		var renderCount = 0
-		var runningIconApplyCount = 0
+	func dynamicIconSkipsBundleWriteButRendersWhenPersistedHueIsUnchanged() {
+		let rendered = solidImage(.systemPink)
+		var bundleWriteCount = 0
+		var runningIcon: NSImage?
 		let fixture = makeCustomizationController(
 			usesDynamicTheme: true,
-			dynamicIconRenderer: { _ in
-				renderCount += 1
-				return solidImage(.systemPink)
+			dynamicIconRenderer: { _ in rendered },
+			setBundleIcon: { _ in
+				bundleWriteCount += 1
+				return true
 			},
-			setRunningIcon: { _ in runningIconApplyCount += 1 }
+			setRunningIcon: { runningIcon = $0 }
 		)
 		fixture.preferences.setLastAppliedDynamicIconHue(0.42)
 
 		fixture.controller.updateDynamicAppIcon(hue: 0.42)
 
-		#expect(renderCount == 0)
-		#expect(runningIconApplyCount == 1)
+		#expect(bundleWriteCount == 0)
+		#expect(runningIcon === rendered)
 	}
 
 	@Test
@@ -161,6 +163,7 @@ struct CustomizationControllerTests {
 		fixture.preferences.setLastAppliedDynamicIconHue(0.42)
 		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
 		fixture.controller.setHasCustomAppIcon(true)
+		renderCount = 0
 
 		fixture.controller.resetAppIcon()
 

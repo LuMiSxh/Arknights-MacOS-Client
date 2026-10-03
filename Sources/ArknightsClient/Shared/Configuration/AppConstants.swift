@@ -23,12 +23,16 @@ enum AppConstants {
 		static let dxmtMaximumFrameLatencyEnvironmentKey =
 			"ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"
 		static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
+		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
+		static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
 		static let capabilityManifestMaximumBytes = 4 * 1_024
 	}
 
 	enum Icon {
 		static let canvasDimension: CGFloat = 512
 		static let squircleDimension: CGFloat = 412
+		/// Pixels per point for rendered icons, fixed so output never depends on the focused screen.
+		static let renderScale: CGFloat = 2
 		static let squircleCornerRadius: CGFloat = 92.3
 		static let baseCyanHue: Double = 0.533
 		static let operatorFrameInset: CGFloat = 36
