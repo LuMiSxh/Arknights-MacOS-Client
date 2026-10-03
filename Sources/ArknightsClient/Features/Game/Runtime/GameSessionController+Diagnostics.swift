@@ -13,6 +13,7 @@ extension GameSessionController {
 			+ "usesGameSettings=\(options.usesGameSettings); "
 			+ "displayMode=\(options.displayMode.displayName); "
 			+ "resolution=\(options.resolution.rawValue); "
+			+ "fullscreenResolution=\(options.fullscreenResolution.storageValue); "
 			+ "windowSize=\(options.windowSize.width)x\(options.windowSize.height); "
 			+ "rendering=\(options.renderingMode.rawValue); "
 			+ "metalHUD=\(options.usesMetalPerformanceHUD); "

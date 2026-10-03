@@ -44,7 +44,7 @@ The setup assistant opens on the first start. It saves each choice right away, a
    | **China — Bilibili** | Hypergryph | [Canary Features](#canary-regions) |
 
 3. **Download** — choose **Install & Continue**. The download keeps running while you finish the remaining pages, and closing the launcher only pauses it.
-4. **Display** — answer two questions: whether the game opens in a window or fullscreen, and whether the sharpest picture, smooth play on large screens, or lower battery use matters most. The launcher then picks a window size and resolution that fit your screen.
+4. **Display** — answer two questions: whether the game opens in a window or fullscreen, and whether the sharpest picture, smooth play on large screens, or lower battery use matters most. The launcher then picks a window size that fits your screen, or fullscreen at your display's native resolution.
 5. **Launcher, updates, and audio** — pick artwork and Dock icons, then answer whether the launcher should check for updates and play music.
 
 When the download has finished and been verified, the launcher enables **Play**.

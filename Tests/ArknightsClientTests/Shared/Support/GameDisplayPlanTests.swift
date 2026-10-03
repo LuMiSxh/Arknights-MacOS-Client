@@ -48,6 +48,30 @@ func fullscreenPlansKeepTheGameResolution(renderingMode: GameRenderingMode) {
 	#expect(plan.renderSize == GameDisplaySize(width: 1920, height: 1080))
 }
 
+@Test(arguments: [
+	(GameRenderingMode.retina, 6016, GameDisplayPlan.Scaling.native),
+	(.metalFX, 3008, .metalFX),
+	(.lightweight, 3008, .stretched),
+])
+func nativeFullscreenPlansRenderThePrimaryDisplaySize(
+	renderingMode: GameRenderingMode, renderWidth: Int, scaling: GameDisplayPlan.Scaling
+) {
+	var native = options(renderingMode, displayMode: .fullscreen)
+	native.fullscreenResolution = .native
+	let display = GameFullscreenDisplay(
+		pointSize: GameDisplaySize(width: 3008, height: 1692), backingScale: 2)
+
+	let plan = GameDisplayPlan(options: native, backingScaleFactor: 2, fullscreenDisplay: display)
+
+	#expect(plan.renderSize?.width == renderWidth)
+	#expect(plan.renderSize?.height == renderWidth * 1692 / 3008)
+	#expect(plan.scaling == scaling)
+	// A display without Retina scaling shows its points one to one.
+	let standard = GameFullscreenDisplay(pointSize: display.pointSize, backingScale: 1)
+	#expect(standard.pixelSize == display.pointSize)
+	#expect(standard.drawnSize(showing: display.pointSize, retina: false) == display.pointSize)
+}
+
 @Test
 func inGameSettingsLeaveTheRenderSizeToArknights() {
 	let plan = GameDisplayPlan(
@@ -67,12 +91,12 @@ func renderSummariesNameTheDrawnAndShownSizes() throws {
 	let size = try #require(metalFX.renderSize)
 
 	#expect(
-		SettingsStrings.renderSummary(metalFX, size: size, fullscreen: false)
-			== "The game draws 1280 × 720 pixels and MetalFX upscales them to 2560 × 1440."
+		SettingsStrings.renderSummary(metalFX, size: size, window: .defaultWindow)
+			== "Looks like 1280 × 720. The game draws 1280 × 720 (HD) and MetalFX upscales it to 2560 × 1440 (WQHD)."
 	)
 	#expect(
-		SettingsStrings.renderSummary(metalFX, size: size, fullscreen: true)
-			== "The game draws 1280 × 720 pixels and MetalFX upscales them to fill the screen."
+		SettingsStrings.renderSummary(metalFX, size: size, window: nil)
+			== "The game draws 1280 × 720 (HD) and MetalFX upscales it to fill the screen."
 	)
 }
 

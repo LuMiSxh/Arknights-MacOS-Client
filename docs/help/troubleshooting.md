@@ -82,7 +82,8 @@ If you denied Local Network access, allow **Arknights Client** under **System Se
 
 1. If **Let the Launcher Size the Game** is off, change the display settings inside the game first, or turn it on so the launcher picks a fitting size.
 2. Set **Rendering** to **MetalFX** in **Settings → General**; see [Rendering](runtime-compatibility.md#rendering).
-3. Pick a smaller window size or game resolution, or try **Fullscreen**, which can skip a macOS compositing pass.
+3. Pick a smaller **Window Size** or a lower **Game Resolution**, or try **Fullscreen**, which can skip a macOS compositing pass.
+4. If fullscreen looks grainy, set **Game Resolution** to **Native**, so the game matches your display instead of being stretched by an uneven factor.
 
 If the in-game cursor lags behind the mouse, turning off VSync in the game helps, at the cost of possible tearing.
 

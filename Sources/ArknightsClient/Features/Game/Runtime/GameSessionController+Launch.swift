@@ -136,7 +136,9 @@ extension GameSessionController {
 					gameArguments: ["-logFile", AppPaths.windowsUnityLogPath]
 						+ (installation.configuration?.gameStartParams ?? [])
 						+ requestedLaunchOptions.playerArguments(
-							gamePixelsPerPoint: displayConfiguration.gamePixelsPerPoint),
+							gamePixelsPerPoint: displayConfiguration.gamePixelsPerPoint,
+							fullscreenDisplay: GameFullscreenDisplay.primary
+						),
 					displayConfiguration: displayConfiguration,
 					graphicsDiagnostics: graphicsDiagnosticsEnabled,
 					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,

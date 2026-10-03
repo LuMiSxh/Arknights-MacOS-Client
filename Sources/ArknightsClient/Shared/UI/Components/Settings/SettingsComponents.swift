@@ -271,23 +271,18 @@ struct GlassMenuPicker<Value: Hashable>: View {
 	/// collapsed button's label — lets a caller show detail (e.g. a result count) that's only
 	/// worth the width once the list is actually open.
 	var listTitle: (Value) -> String? = { _ in nil }
+	/// A header above the options inside the open menu, like "Looks like" in Displays settings.
+	var menuTitle: String? = nil
 	/// Additional menu content appended after the plain option list — e.g. a submenu that
 	/// doesn't itself change `selection`. Defaults to nothing, so existing callers are unaffected.
 	var trailingMenuItems: () -> AnyView = { AnyView(EmptyView()) }
 
 	var body: some View {
 		Menu {
-			ForEach(options, id: \.value) { option in
-				Button {
-					selection.wrappedValue = option.value
-				} label: {
-					let title = listTitle(option.value) ?? option.title
-					if option.value == selection.wrappedValue {
-						Label(title, systemImage: "checkmark")
-					} else {
-						Text(title)
-					}
-				}
+			if let menuTitle {
+				Section(menuTitle) { optionButtons }
+			} else {
+				optionButtons
 			}
 			trailingMenuItems()
 		} label: {
@@ -303,6 +298,21 @@ struct GlassMenuPicker<Value: Hashable>: View {
 		.buttonStyle(.plain)
 		.keyboardFocusIndicator(in: Capsule())
 		.disabled(isDisabled)
+	}
+
+	private var optionButtons: some View {
+		ForEach(options, id: \.value) { option in
+			Button {
+				selection.wrappedValue = option.value
+			} label: {
+				let title = listTitle(option.value) ?? option.title
+				if option.value == selection.wrappedValue {
+					Label(title, systemImage: "checkmark")
+				} else {
+					Text(title)
+				}
+			}
+		}
 	}
 
 	private var currentTitle: String {

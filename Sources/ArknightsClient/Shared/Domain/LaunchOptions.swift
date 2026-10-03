@@ -10,8 +10,8 @@ enum GameDisplayMode: String, CaseIterable, Codable, Sendable {
 	var displayName: String {
 		switch self {
 		case .fullscreen: "Fullscreen"
-		case .windowed: "Windowed"
-		case .borderlessWindow: "Borderless Window (Recommended)"
+		case .windowed: "Windowed (Recommended)"
+		case .borderlessWindow: "Borderless Window"
 		}
 	}
 }
@@ -58,8 +58,12 @@ enum GameResolution: String, CaseIterable, Codable, Sendable {
 
 struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var displayMode: GameDisplayMode
-	/// Fullscreen game resolution in game pixels; matches the official client's choices.
+	/// The official resolution closest to `fullscreenResolution`, the only fullscreen size
+	/// launchers before 0.6.2 read, and the fallback when the display is unknown.
 	var resolution: GameResolution
+	/// The resolution fullscreen shows, like a game's output resolution. Native follows the
+	/// fullscreen display, so displays beyond 4K or with uncommon sizes are not scaled unevenly.
+	var fullscreenResolution: GameFullscreenResolution
 	/// Windowed and borderless window size in macOS points.
 	var windowSize: GameDisplaySize = .defaultWindow
 	var usesGameSettings: Bool = false
@@ -80,7 +84,8 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	)
 
 	private enum CodingKeys: String, CodingKey {
-		case displayMode, resolution, windowSize, usesGameSettings, renderingMode
+		case displayMode, resolution, fullscreenResolution, windowSize, usesGameSettings
+		case renderingMode
 		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode
 		/// Pre-0.6.2 Retina toggle; still written so older launchers keep their pixel density.
 		case usesHighResolutionMode
@@ -89,6 +94,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	init(
 		displayMode: GameDisplayMode,
 		resolution: GameResolution,
+		fullscreenResolution: GameFullscreenResolution? = nil,
 		windowSize: GameDisplaySize = .defaultWindow,
 		usesGameSettings: Bool = false,
 		renderingMode: GameRenderingMode = .retina,
@@ -98,6 +104,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
+		self.fullscreenResolution = fullscreenResolution ?? .fixed(GameDisplaySize(resolution))
 		self.windowSize = windowSize
 		self.usesGameSettings = usesGameSettings
 		self.renderingMode = renderingMode
@@ -120,6 +127,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 		displayMode = value(.displayMode, defaults.displayMode)
 		resolution = value(.resolution, defaults.resolution)
+		fullscreenResolution = value(.fullscreenResolution, .fixed(GameDisplaySize(resolution)))
 		// Stored options without this key predate it, when Arknights kept its own settings.
 		usesGameSettings = value(.usesGameSettings, true)
 		usesMetalPerformanceHUD = value(
@@ -141,6 +149,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		var container = encoder.container(keyedBy: CodingKeys.self)
 		try container.encode(displayMode, forKey: .displayMode)
 		try container.encode(resolution, forKey: .resolution)
+		try container.encode(fullscreenResolution, forKey: .fullscreenResolution)
 		try container.encode(windowSize, forKey: .windowSize)
 		try container.encode(usesGameSettings, forKey: .usesGameSettings)
 		try container.encode(renderingMode, forKey: .renderingMode)
@@ -163,18 +172,53 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		return halved
 	}
 
+	/// The resolution fullscreen shows: the display's own when Native is chosen and known,
+	/// otherwise the chosen size.
+	func fullscreenSize(native: GameDisplaySize?) -> GameDisplaySize {
+		switch fullscreenResolution {
+		case .native: native ?? GameDisplaySize(resolution)
+		case .fixed(let size): size
+		}
+	}
+
+	/// The pixels the game draws in fullscreen. MetalFX and Lightweight draw one pixel per point
+	/// and scale up; without a known display the shown size is drawn as is.
+	func fullscreenDrawnSize(on display: GameFullscreenDisplay?, retina: Bool) -> GameDisplaySize {
+		let shown = fullscreenSize(native: display?.pixelSize)
+		return display?.drawnSize(showing: shown, retina: retina) ?? shown
+	}
+
+	/// Picks a fullscreen size and keeps `resolution` on the closest official one.
+	mutating func selectFullscreen(
+		_ choice: GameFullscreenResolution, native: GameDisplaySize?
+	) {
+		fullscreenResolution = choice
+		if let official = GameResolution.largest(fitting: fullscreenSize(native: native)) {
+			resolution = official
+		}
+	}
+
 	/// Unity standalone-player arguments supported by the Windows client. Windowed sizes are
 	/// points, so they are multiplied by the game pixels Wine maps onto each point.
-	func playerArguments(gamePixelsPerPoint: Int) -> [String] {
+	func playerArguments(
+		gamePixelsPerPoint: Int, fullscreenDisplay: GameFullscreenDisplay? = nil
+	) -> [String] {
 		guard !usesGameSettings else { return [] }
+		let fullscreen = displayMode == .fullscreen
 		let size =
-			displayMode == .fullscreen
-			? GameDisplaySize(resolution) : windowSize.scaled(by: max(1, gamePixelsPerPoint))
+			fullscreen
+			? fullscreenDrawnSize(on: fullscreenDisplay, retina: gamePixelsPerPoint > 1)
+			: windowSize.scaled(by: max(1, gamePixelsPerPoint))
 		var arguments = [
-			"-screen-fullscreen", displayMode == .fullscreen ? "1" : "0",
+			"-screen-fullscreen", fullscreen ? "1" : "0",
 			"-screen-width", String(size.width),
 			"-screen-height", String(size.height),
 		]
+		// Native sizes come from the primary display, so keep the game from reopening on the
+		// display Unity remembers from an earlier session.
+		if fullscreen && fullscreenResolution == .native && fullscreenDisplay != nil {
+			arguments += ["-monitor", "1"]
+		}
 		if displayMode == .borderlessWindow { arguments.append("-popupwindow") }
 		return arguments
 	}

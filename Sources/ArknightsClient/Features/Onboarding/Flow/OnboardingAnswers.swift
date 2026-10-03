@@ -32,11 +32,9 @@ struct GameScreenMetrics: Equatable, Sendable {
 
 	/// The official game resolution with the most pixels that the panel can show unscaled.
 	var fullscreenResolution: GameResolution {
-		GameResolution.allCases
-			.filter {
-				CGFloat($0.width) <= pixelSize.width && CGFloat($0.height) <= pixelSize.height
-			}
-			.max { $0.width * $0.height < $1.width * $1.height } ?? .fullHD
+		GameResolution.largest(
+			fitting: GameDisplaySize(width: Int(pixelSize.width), height: Int(pixelSize.height)))
+			?? .fullHD
 	}
 }
 
@@ -72,10 +70,13 @@ struct GameDisplayAnswers: Equatable, Sendable {
 		options.renderingMode = rendering
 		switch placement {
 		case .window:
-			options.displayMode = .borderlessWindow
+			options.displayMode = .windowed
 			options.windowSize = screen.recommendedWindowSize
 		case .fullscreen:
+			// Native is pixel-exact on every display; the official resolution stays as the
+			// fallback for older launchers.
 			options.displayMode = .fullscreen
+			options.fullscreenResolution = .native
 			options.resolution = screen.fullscreenResolution
 		}
 		return options

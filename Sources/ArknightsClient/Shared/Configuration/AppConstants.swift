@@ -16,6 +16,8 @@ enum AppConstants {
 		static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
 		/// Share of the usable screen a recommended game window may cover.
 		static let recommendedWindowScreenShare = 0.8
+		/// Height step between fullscreen sizes generated above 4K for larger displays.
+		static let generatedResolutionHeightStep = 360
 	}
 
 	enum Runtime {

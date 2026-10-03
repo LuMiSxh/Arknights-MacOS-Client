@@ -135,6 +135,65 @@ func launchArgumentsConvertWindowPointsButKeepFullscreenPixels(
 	#expect(options.playerArguments(gamePixelsPerPoint: gamePixelsPerPoint) == expected)
 }
 
+@Test
+func nativeFullscreenRendersTheDisplaySizeOnThePrimaryDisplay() throws {
+	var options = GameLaunchOptions(
+		displayMode: .fullscreen, resolution: .ultraHD, usesGameSettings: false)
+	options.fullscreenResolution = .native
+	let display = GameFullscreenDisplay(
+		pointSize: GameDisplaySize(width: 3008, height: 1692), backingScale: 2)
+
+	#expect(
+		options.playerArguments(gamePixelsPerPoint: 2, fullscreenDisplay: display)
+			== [
+				"-screen-fullscreen", "1", "-screen-width", "6016", "-screen-height", "3384",
+				"-monitor", "1",
+			]
+	)
+	// MetalFX and Lightweight show the same resolution from one pixel per point.
+	#expect(
+		options.playerArguments(gamePixelsPerPoint: 1, fullscreenDisplay: display)
+			== [
+				"-screen-fullscreen", "1", "-screen-width", "3008", "-screen-height", "1692",
+				"-monitor", "1",
+			]
+	)
+	// Without a known display, the official resolution stays in effect.
+	#expect(
+		options.playerArguments(gamePixelsPerPoint: 2)
+			== ["-screen-fullscreen", "1", "-screen-width", "3840", "-screen-height", "2160"]
+	)
+
+	let decoded = try JSONDecoder().decode(
+		GameLaunchOptions.self, from: JSONEncoder().encode(options))
+	#expect(decoded == options)
+	let older = try JSONDecoder().decode(
+		GameLaunchOptions.self, from: Data(#"{"displayMode":"fullscreen"}"#.utf8))
+	#expect(
+		older.fullscreenResolution == .fixed(GameDisplaySize(GameLaunchOptions.default.resolution)))
+	let official = try JSONDecoder().decode(
+		GameLaunchOptions.self, from: Data(#"{"resolution":"2560x1440"}"#.utf8))
+	#expect(official.fullscreenResolution == .fixed(GameDisplaySize(width: 2560, height: 1440)))
+}
+
+@Test
+func fixedFullscreenSizesKeepTheClosestOfficialResolutionForOlderLaunchers() throws {
+	var options = GameLaunchOptions.default
+	options.displayMode = .fullscreen
+	let fiveK = GameDisplaySize(width: 5120, height: 2880)
+	options.selectFullscreen(.fixed(fiveK), native: GameDisplaySize(width: 6016, height: 3384))
+
+	#expect(options.fullscreenResolution == .fixed(fiveK))
+	#expect(options.resolution == .ultraHD)
+	#expect(options.playerArguments(gamePixelsPerPoint: 2).contains("5120"))
+	#expect(!options.playerArguments(gamePixelsPerPoint: 2).contains("-monitor"))
+
+	options.selectFullscreen(.native, native: GameDisplaySize(width: 2940, height: 1912))
+	#expect(options.resolution == .quadHD)
+	let stored = try JSONEncoder().encode(options)
+	#expect(String(decoding: stored, as: UTF8.self).contains(#""fullscreenResolution":"native""#))
+}
+
 @Test(arguments: [
 	// Retina-on launcher overrides stored pixels; keep the window they opened.
 	(#"{"resolution":"2560x1440","usesGameSettings":false}"#, 1280, 720, GameRenderingMode.retina),

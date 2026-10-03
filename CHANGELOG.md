@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Reworked the display settings: windowed and borderless games now use a **Window Size** measured like macOS display resolutions, and the launcher works out the resolution the game draws. Fullscreen keeps a separate **Game Resolution**, and each size shows what the game actually draws. Existing launcher-controlled sizes keep their window size.
 - The launcher now sizes the game by default (**Let the Launcher Size the Game**), and Settings explain why this is recommended. When it is off on a Retina display, the launcher explains once how in-game resolutions map to the window size.
 - Everyone updating to 0.6.2 goes through setup once more to answer the new questions. Returning players who used in-game display settings keep their window mode and rendering, and the launcher takes over sizing.
+- **Windowed** is now the recommended window mode instead of Borderless Window.
 - Setup now asks questions instead of showing settings: window or fullscreen, sharpness or smoothness, how to check for updates, and whether to play music. The answers set up the launcher, and the window size is picked to fit the screen.
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
 - **Use Mac Pointer** (formerly the Canary Hardware Cursor option) is now a regular setting in **Settings → General → Display & Controls**.
@@ -31,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Fullscreen looked grainy on displays larger than 4K or with uncommon sizes, because the game drew an official resolution that macOS stretched by an uneven factor. A new Native resolution, which setup now picks, draws the display's own resolution on the display with the menu bar. Larger displays also get sizes between 4K and their own resolution, and sizes larger than the display are hidden. Game Resolution now names what fullscreen fills the screen at, like other games' output resolution; MetalFX and Lightweight draw half the width and height and scale up. Window Size and Game Resolution share one layout with "Looks like" and "Fills the screen at" headers, well-known resolutions are named (Full HD, WQHD, 4K, …), and the description says what the game draws.
 - Locally built launchers no longer treat the published release of the same version as an update that blocks setup.
 - Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.
 

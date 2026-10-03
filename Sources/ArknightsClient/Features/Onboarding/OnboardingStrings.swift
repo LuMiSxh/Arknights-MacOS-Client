@@ -120,9 +120,8 @@ enum OnboardingStrings {
 	static let displaySummaryFallback =
 		"Arknights' own settings currently decide the game size. Pick an answer to let the launcher size it instead."
 
-	static func displaySummary(window: GameDisplaySize?, render: String) -> String {
-		let start = window.map { "The game opens in a \($0.displayName) window. " } ?? ""
-		return start + render + " You can fine-tune this later in Settings → General."
+	static func displaySummary(render: String) -> String {
+		render + " You can fine-tune this later in Settings → General."
 	}
 
 	static let runtimeOptimizations = "Runtime Optimizations"

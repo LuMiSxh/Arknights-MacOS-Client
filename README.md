@@ -34,7 +34,7 @@ Global, Japan, and Korea are supported by default. Taiwan, China, and China — 
 **Install and play**
 
 - Install, resume, update, repair, and remove regional PC clients, each in its own game directory
-- Run windowed, borderless, or fullscreen at a selected resolution, with HiDPI rendering
+- Run windowed, borderless, or fullscreen, sized for your display (including native fullscreen beyond 4K), with Retina, MetalFX, or Lightweight rendering
 - Sign in through each client's official providers via Wine compatibility helpers
 
 **Native macOS experience**

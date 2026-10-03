@@ -39,10 +39,11 @@ func displayAnswersLetTheLauncherSizeTheGameAndKeepUnrelatedOptions() {
 		#expect(options.usesGameMode)
 		#expect(options.synchronizationMode == .esync)
 	}
-	#expect(window.displayMode == .borderlessWindow && window.renderingMode == .retina)
+	#expect(window.displayMode == .windowed && window.renderingMode == .retina)
 	#expect(window.windowSize == GameDisplaySize(width: 2304, height: 1296))
 	#expect(smooth.renderingMode == .metalFX && smooth.windowSize == window.windowSize)
-	#expect(fullscreen.displayMode == .fullscreen && fullscreen.resolution == .ultraHD)
+	#expect(fullscreen.displayMode == .fullscreen && fullscreen.fullscreenResolution == .native)
+	#expect(fullscreen.resolution == .ultraHD)
 }
 
 @Test(arguments: GamePlacementAnswer.allCases, GameRenderingMode.allCases)

@@ -36,18 +36,52 @@ enum SettingsStrings {
 		"Arknights' own resolution setting counts the pixels the game draws. With Retina rendering, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
 	static let gotIt = "Got It"
 	static let displayModeFullscreen = "Fullscreen"
-	static let displayModeWindowed = "Windowed"
-	static let displayModeBorderlessWindow = "Borderless Window (Recommended)"
+	static let displayModeWindowed = "Windowed (Recommended)"
+	static let displayModeBorderlessWindow = "Borderless Window"
 	static let windowMode = "Window Mode"
 	static let windowModeDetail = "How the game window appears the next time it starts."
 	static let windowSize = "Window Size"
 	static let windowSizeDetail = "The size of the game window on your screen."
+	static let windowSizeMenuTitle = "Looks like"
 	static let windowSizeHelp =
 		"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Rendering mode."
 	static let gameResolution = "Game Resolution"
-	static let gameResolutionDetail = "The number of pixels the game draws in fullscreen."
+	static let gameResolutionDetail = "The resolution fullscreen fills your display at."
+	static let gameResolutionMenuTitle = "Fills the screen at"
 	static let gameResolutionHelp =
-		"Fullscreen always fills the screen. Higher resolutions look sharper but need more graphics power."
+		"Fullscreen fills the display with the menu bar. Native matches that display exactly, the sharpest choice; lower resolutions are scaled up to fill it. With MetalFX or Lightweight, the game draws half the width and height and scales the picture up, so every resolution needs less graphics power."
+	static let nativeResolution = "Native"
+
+	static func fullscreenResolutionTitle(_ choice: GameFullscreenResolution) -> String {
+		switch choice {
+		case .native: nativeResolution
+		case .fixed(let size): size.displayName
+		}
+	}
+
+	/// For example "Native (6016 × 3384)", like games label the display's own resolution.
+	static func nativeResolutionTitle(_ size: GameDisplaySize?) -> String {
+		size.map { "\(nativeResolution) (\($0.displayName))" } ?? nativeResolution
+	}
+
+	/// For example "2560 × 1440 (WQHD)"; resolutions without a common name stay plain.
+	static func resolutionTitle(_ size: GameDisplaySize) -> String {
+		standardName(size).map { "\(size.displayName) (\($0))" } ?? size.displayName
+	}
+
+	/// Common names, only for the exact resolutions they stand for.
+	static func standardName(_ size: GameDisplaySize) -> String? {
+		switch (size.width, size.height) {
+		case (1280, 720): "HD"
+		case (1920, 1080): "Full HD"
+		case (2560, 1440): "WQHD"
+		case (3840, 2160): "4K"
+		case (5120, 2880): "5K"
+		case (6016, 3384): "6K"
+		case (7680, 4320): "8K"
+		default: nil
+		}
+	}
 	static let launcher = "Launcher"
 	static let showGameVersion = "Show Game Version"
 	static let showGameVersionDetail =
@@ -289,16 +323,20 @@ enum SettingsStrings {
 			+ "\(window.displayName) window."
 	}
 
-	static func renderSummary(_ plan: GameDisplayPlan, size: GameDisplaySize, fullscreen: Bool)
+	/// Says what the player sees first, then what the game draws; `window` is nil in fullscreen.
+	static func renderSummary(
+		_ plan: GameDisplayPlan, size: GameDisplaySize, window: GameDisplaySize?
+	)
 		-> String
 	{
+		let looks = window.map { "Looks like \($0.displayName). " } ?? ""
 		let target =
-			fullscreen ? "fill the screen" : size.scaled(by: plan.backingScale).displayName
-		let drawn = "The game draws \(size.displayName) pixels"
+			window == nil ? "fill the screen" : resolutionTitle(size.scaled(by: plan.backingScale))
+		let drawn = "\(looks)The game draws \(resolutionTitle(size))"
 		return switch plan.scaling {
-		case .native: fullscreen ? "\(drawn) and fills the screen." : "\(drawn)."
-		case .metalFX: "\(drawn) and MetalFX upscales them to \(target)."
-		case .stretched: "\(drawn) and macOS stretches them to \(target), which looks softer."
+		case .native: window == nil ? "\(drawn) and fills the screen." : "\(drawn)."
+		case .metalFX: "\(drawn) and MetalFX upscales it to \(target)."
+		case .stretched: "\(drawn) and macOS stretches it to \(target), which looks softer."
 		}
 	}
 

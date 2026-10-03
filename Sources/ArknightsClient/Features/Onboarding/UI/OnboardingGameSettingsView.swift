@@ -93,13 +93,13 @@ struct OnboardingGameSettingsView: View {
 
 	private var displaySummary: String {
 		let options = preferences.launchOptions
-		let plan = GameDisplayPlan(options: options, backingScaleFactor: displayScale)
+		let plan = GameDisplayPlan(
+			options: options, backingScaleFactor: displayScale,
+			fullscreenDisplay: GameFullscreenDisplay.primary)
 		guard let size = plan.renderSize else { return OnboardingStrings.displaySummaryFallback }
-		let fullscreen = options.displayMode == .fullscreen
+		let window = options.displayMode == .fullscreen ? nil : options.windowSize
 		return OnboardingStrings.displaySummary(
-			window: fullscreen ? nil : options.windowSize,
-			render: SettingsStrings.renderSummary(plan, size: size, fullscreen: fullscreen)
-		)
+			render: SettingsStrings.renderSummary(plan, size: size, window: window))
 	}
 
 	/// Untouched defaults start from the recommended answers. Players returning with in-game

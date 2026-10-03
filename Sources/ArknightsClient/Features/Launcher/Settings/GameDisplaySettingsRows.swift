@@ -13,7 +13,9 @@ struct GameDisplaySettingsRows: View {
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var plan: GameDisplayPlan {
-		GameDisplayPlan(options: options, backingScaleFactor: displayScale)
+		GameDisplayPlan(
+			options: options, backingScaleFactor: displayScale,
+			fullscreenDisplay: GameFullscreenDisplay.primary)
 	}
 	private var showsInGameResolutionNote: Bool {
 		options.usesGameSettings && plan.gamePixelsPerPoint > 1
@@ -73,10 +75,14 @@ struct GameDisplaySettingsRows: View {
 				help: SettingsStrings.gameResolutionHelp
 			) {
 				GlassMenuPicker(
-					selection: $settings.launchOptions.resolution,
-					options: GameResolution.allCases.map { ($0, $0.displayName) },
+					selection: fullscreenResolution,
+					options: fullscreenChoices.map {
+						($0, SettingsStrings.fullscreenResolutionTitle($0))
+					},
 					accentColor: accentColor,
-					isDisabled: options.usesGameSettings || isLocked
+					isDisabled: options.usesGameSettings || isLocked,
+					listTitle: { fullscreenListTitle($0) },
+					menuTitle: SettingsStrings.gameResolutionMenuTitle
 				)
 			}
 		} else {
@@ -92,7 +98,8 @@ struct GameDisplaySettingsRows: View {
 						current: options.windowSize
 					).map { ($0, $0.displayName) },
 					accentColor: accentColor,
-					isDisabled: options.usesGameSettings || isLocked
+					isDisabled: options.usesGameSettings || isLocked,
+					menuTitle: SettingsStrings.windowSizeMenuTitle
 				)
 			}
 		}
@@ -105,10 +112,35 @@ struct GameDisplaySettingsRows: View {
 		)
 	}
 
+	private var fullscreenResolution: Binding<GameFullscreenResolution> {
+		Binding(
+			get: { options.fullscreenResolution },
+			set: { settings.launchOptions.selectFullscreen($0, native: nativeFullscreenSize) }
+		)
+	}
+
+	/// Keeps a size picked on another display selectable, like the window size list.
+	private var fullscreenChoices: [GameFullscreenResolution] {
+		let choices = GameFullscreenResolution.choices(native: nativeFullscreenSize)
+		return choices.contains(options.fullscreenResolution)
+			? choices : choices + [options.fullscreenResolution]
+	}
+
+	/// Names well-known resolutions in the open menu; the drawn size is in the description.
+	private func fullscreenListTitle(_ choice: GameFullscreenResolution) -> String {
+		switch choice {
+		case .native: SettingsStrings.nativeResolutionTitle(nativeFullscreenSize)
+		case .fixed(let size): SettingsStrings.resolutionTitle(size)
+		}
+	}
+
+	private var nativeFullscreenSize: GameDisplaySize? { GameFullscreenDisplay.primary?.pixelSize }
+
 	private func sizeDetail(fallback: String) -> String {
 		guard let renderSize = plan.renderSize else { return fallback }
 		return SettingsStrings.renderSummary(
-			plan, size: renderSize, fullscreen: options.displayMode == .fullscreen)
+			plan, size: renderSize,
+			window: options.displayMode == .fullscreen ? nil : options.windowSize)
 	}
 
 	private var inGameResolutionNote: some View {
