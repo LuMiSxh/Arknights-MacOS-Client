@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reworked the display settings: windowed and borderless games now use a **Window Size** measured like macOS display resolutions, and the launcher works out the resolution the game draws. Fullscreen keeps a separate **Game Resolution**, and each size shows what the game actually draws. Existing launcher-controlled sizes keep their window size.
 - The launcher now sizes the game by default (**Let the Launcher Size the Game**), and Settings explain why this is recommended. When it is off on a Retina display, the launcher explains once how in-game resolutions map to the window size.
+- Everyone updating to 0.6.2 goes through setup once more to answer the new questions. Returning players who used in-game display settings keep their window mode and rendering, and the launcher takes over sizing.
 - Setup now asks questions instead of showing settings: window or fullscreen, sharpness or smoothness, how to check for updates, and whether to play music. The answers set up the launcher, and the window size is picked to fit the screen.
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
 - **Use Mac Pointer** (formerly the Canary Hardware Cursor option) is now a regular setting in **Settings → General → Display & Controls**.

@@ -7,7 +7,8 @@ import Foundation
 /// rewriting any user choice.
 @MainActor
 struct OnboardingProgressStore {
-	static let currentSchemaVersion = 1
+	/// 2: launcher 0.6.2 replaced display settings with setup questions, so everyone answers them.
+	static let currentSchemaVersion = 2
 
 	private enum Key {
 		static let completedSchemaVersion = "onboarding.completedSchemaVersion"

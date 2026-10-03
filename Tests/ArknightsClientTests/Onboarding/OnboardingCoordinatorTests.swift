@@ -156,6 +156,19 @@ struct OnboardingCoordinatorTests {
 		}
 	#endif
 
+	@Test
+	func setupFinishedBeforeTheQuestionsRunsAgain() {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = OnboardingProgressStore(defaults: defaults)
+
+		defaults.set(1, forKey: "onboarding.completedSchemaVersion")
+		#expect(store.needsOnboarding)
+
+		store.complete()
+		#expect(!store.needsOnboarding)
+	}
+
 	private func makeDefaults() -> (UserDefaults, String) {
 		let suiteName = "OnboardingCoordinatorTests.\(UUID().uuidString)"
 		return (UserDefaults(suiteName: suiteName)!, suiteName)

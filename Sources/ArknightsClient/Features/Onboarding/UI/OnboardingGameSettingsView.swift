@@ -102,14 +102,18 @@ struct OnboardingGameSettingsView: View {
 		)
 	}
 
-	/// Untouched defaults start from the recommended answers sized for this screen; earlier
-	/// choices stay as they are.
+	/// Untouched defaults start from the recommended answers. Players returning with in-game
+	/// display settings keep their window mode and rendering, but the launcher takes over sizing,
+	/// so the answers shown are the answers in effect.
 	private func applyRecommendedAnswers() {
-		guard preferences.launchOptions == .default, let screen = GameScreenMetrics.main else {
-			return
+		guard let screen = GameScreenMetrics.main else { return }
+		let options = preferences.launchOptions
+		if options == .default {
+			preferences.launchOptions = GameDisplayAnswers.recommended.applied(
+				to: options, screen: screen)
+		} else if options.usesGameSettings {
+			preferences.launchOptions = answers.applied(to: options, screen: screen)
 		}
-		preferences.launchOptions = GameDisplayAnswers.recommended.applied(
-			to: preferences.launchOptions, screen: screen)
 	}
 
 	private var frameLatencyBinding: Binding<Double> {
