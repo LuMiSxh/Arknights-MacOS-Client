@@ -76,11 +76,19 @@ enum SettingsStrings {
 		"Fullscreen fills the display with the menu bar. Full detail matches that display exactly, the sharpest choice; lower resolutions are scaled up to fill it. With the Smooth and Battery picture settings, the game draws half the width and height and scales the picture up, so every resolution needs less graphics power."
 	static let exactResolution = "Exact resolution"
 
-	static func fullscreenDetailTitle(_ detail: GameFullscreenDetail) -> String {
-		switch detail {
-		case .full: "Full detail (recommended)"
-		case .balanced: "Balanced"
-		case .lighter: "Lighter"
+	/// For example "Balanced · 2560 × 1440 (WQHD)".
+	static func fullscreenDetailTitle(
+		_ detail: GameFullscreenDetail, resolution: GameFullscreenResolution
+	) -> String {
+		let size =
+			switch resolution {
+			case .native: nativeResolution
+			case .fixed(let size): resolutionTitle(size)
+			}
+		return switch detail {
+		case .full: "Full detail · \(size) (recommended)"
+		case .balanced: "Balanced · \(size)"
+		case .lighter: "Lighter · \(size)"
 		}
 	}
 
@@ -133,9 +141,9 @@ enum SettingsStrings {
 
 	static func pictureTitle(_ mode: GameRenderingMode) -> String {
 		switch mode {
-		case .retina: "The sharpest picture"
-		case .metalFX: "Smooth play on big screens"
-		case .lightweight: "Longer battery life"
+		case .retina: "The sharpest picture · Retina"
+		case .metalFX: "Smooth play on big screens · MetalFX"
+		case .lightweight: "Longer battery life · Lightweight"
 		}
 	}
 
@@ -155,8 +163,8 @@ enum SettingsStrings {
 
 	static func pointerDetail(usesMacPointer: Bool) -> String {
 		usesMacPointer
-			? "The normal pointer follows your mouse without delay."
-			: "The game draws its own cursor, which can lag slightly."
+			? "The macOS hardware cursor follows your mouse without delay."
+			: "The game draws its own software cursor, which can lag slightly."
 	}
 
 	static let launcherDisplayControl = "Let the launcher size the game"

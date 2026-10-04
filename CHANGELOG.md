@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added a **Picture** setting: **The sharpest picture** (Retina, the default), **Smooth play on big screens** (MetalFX), and **Longer battery life** (Lightweight). MetalFX draws fewer pixels and upscales them to the display's Retina resolution, which keeps battles smoother on 4K and larger displays.
+- Added a **Picture** setting: **The sharpest picture** (Retina, the default), **Smooth play on big screens** (MetalFX), and **Longer battery life** (Lightweight). Setup and Settings show the technical name next to each choice. MetalFX draws fewer pixels and upscales them to the display's Retina resolution, which keeps battles smoother on 4K and larger displays.
 - Added plain window sizes, **Fill my screen** (the screen's usable area, title bar included) and **Leave room for other apps**, and plain fullscreen **Detail** levels: **Full detail**, **Balanced**, and **Lighter**. Exact sizes and resolutions stay available in the same menus.
 
 ### Changed

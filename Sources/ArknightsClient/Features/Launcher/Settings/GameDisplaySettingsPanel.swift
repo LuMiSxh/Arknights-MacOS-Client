@@ -134,7 +134,8 @@ struct GameDisplaySettingsPanel: View {
 		let native = nativeFullscreenSize
 		let detail = GameFullscreenDetail.matching(options.fullscreenResolution, native: native)
 		var choices = GameFullscreenDetail.available(native: native).map {
-			($0.resolution(native: native), SettingsStrings.fullscreenDetailTitle($0))
+			let resolution = $0.resolution(native: native)
+			return (resolution, SettingsStrings.fullscreenDetailTitle($0, resolution: resolution))
 		}
 		// Keeps an exact resolution picked in the submenu, or on another display, selectable.
 		if detail == nil {

@@ -9,6 +9,8 @@ struct OnboardingAnswer<Value: Hashable>: Identifiable {
 	let detail: String
 	let systemImage: String
 	var isRecommended = false
+	/// The technical name, for example "Retina", shown as a quiet label after the title.
+	var technicalName: String?
 	/// Runs when an action card is tapped. Selection questions ignore it.
 	var action: (@MainActor () -> Void)?
 
@@ -132,6 +134,11 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 						Text(answer.title)
 							.font(.body.weight(.semibold))
 							.foregroundStyle(.primary)
+						if let technicalName = answer.technicalName {
+							Text(technicalName)
+								.font(.caption.weight(.medium))
+								.foregroundStyle(.tertiary)
+						}
 						if answer.isRecommended {
 							Text(OnboardingStrings.recommended)
 								.font(.caption2.weight(.semibold))

@@ -181,17 +181,17 @@ enum OnboardingStrings {
 				value: mode, title: "The sharpest picture",
 				detail:
 					"Uses every detail your screen has. Most Macs keep battles smooth this way.",
-				systemImage: "sparkles", isRecommended: true)
+				systemImage: "sparkles", isRecommended: true, technicalName: "Retina")
 		case .metalFX:
 			OnboardingAnswer(
 				value: mode, title: "Smooth play on big screens",
 				detail: "Draws a lighter picture and sharpens it. Pick this if battles stutter.",
-				systemImage: "gauge.with.dots.needle.67percent")
+				systemImage: "gauge.with.dots.needle.67percent", technicalName: "MetalFX")
 		case .lightweight:
 			OnboardingAnswer(
 				value: mode, title: "Longer battery life",
 				detail: "Draws the lightest picture, so text looks a little softer.",
-				systemImage: "leaf")
+				systemImage: "leaf", technicalName: "Lightweight")
 		}
 	}
 
@@ -203,12 +203,12 @@ enum OnboardingStrings {
 			OnboardingAnswer(
 				value: answer, title: "Your Mac's pointer",
 				detail: "Follows your mouse without delay. Applies the next time the game starts.",
-				systemImage: "cursorarrow", isRecommended: true)
+				systemImage: "cursorarrow", isRecommended: true, technicalName: "Hardware cursor")
 		case .gameCursor:
 			OnboardingAnswer(
 				value: answer, title: "Arknights' own cursor",
 				detail: "The game's themed cursor, which can trail your mouse slightly.",
-				systemImage: "scope")
+				systemImage: "scope", technicalName: "Software cursor")
 		}
 	}
 
