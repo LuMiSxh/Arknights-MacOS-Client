@@ -44,14 +44,15 @@ The setup assistant opens on the first start. It saves each choice right away, a
    | **China — Bilibili** | Hypergryph | [Canary Features](#canary-regions) |
 
 3. **Download** — choose **Install & Continue**. The download keeps running while you finish the remaining pages, and closing the launcher only pauses it.
-4. **Display** — answer two questions: whether the game opens in a window or fullscreen, and whether the sharpest picture, smooth play on large screens, or lower battery use matters most. The launcher then picks a window size that fits your screen, or fullscreen at your display's native resolution.
-5. **Launcher, updates, and audio** — pick artwork and Dock icons, then answer whether the launcher should check for updates and play music.
+4. **Display** — answer whether the game opens in a window or fullscreen, how big the window should be, whether the sharpest picture, smooth play on big screens, or longer battery life matters most, and which pointer the game uses. You can pick an exact size in **Settings → Game** any time.
+5. **Look** — pick the artwork, the launcher colors, the operator in your Dock, and what the launcher shows.
+6. **Updates & Audio** — answer how the launcher stays up to date and whether it plays music.
 
 When the download has finished and been verified, the launcher enables **Play**.
 
 ### Canary regions
 
-Taiwan, China, and China — Bilibili are experimental. To show them, turn on **Settings → Installation → Canary Features**, then **Allow Taiwan client** or **Allow China clients**. These regions use ACE Anti-Cheat, and the launcher asks you to confirm before their first start that running them through Wine is unofficial and at your own risk.
+Taiwan, China, and China — Bilibili are experimental. To show them, turn on **Settings → Installation → Canary Features**, then **Allow Taiwan region** or **Allow China regions**. These regions use ACE Anti-Cheat, and the launcher asks you to confirm before their first start that running them through Wine is unofficial and at your own risk.
 
 ## First launch
 

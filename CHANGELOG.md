@@ -13,19 +13,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added a **Rendering** setting with Retina (the default), MetalFX, and Lightweight modes. MetalFX draws fewer pixels and upscales them to the display's Retina resolution, which keeps battles smoother on 4K and larger displays.
+- Added a **Picture** setting: **The sharpest picture** (Retina, the default), **Smooth play on big screens** (MetalFX), and **Longer battery life** (Lightweight). MetalFX draws fewer pixels and upscales them to the display's Retina resolution, which keeps battles smoother on 4K and larger displays.
+- Added plain window sizes, **Fill my screen** (the screen's usable area, title bar included) and **Leave room for other apps**, and plain fullscreen **Detail** levels: **Full detail**, **Balanced**, and **Lighter**. Exact sizes and resolutions stay available in the same menus.
 
 ### Changed
 
-- Reworked the display settings: windowed and borderless games now use a **Window Size** measured like macOS display resolutions, and the launcher works out the resolution the game draws. Fullscreen keeps a separate **Game Resolution**, and each size shows what the game actually draws. Existing launcher-controlled sizes keep their window size.
-- The launcher now sizes the game by default (**Let the Launcher Size the Game**), and Settings explain why this is recommended. When it is off on a Retina display, the launcher explains once how in-game resolutions map to the window size.
+- Reworked the display settings: windowed and borderless games now use a **Window size** measured like macOS display resolutions, and the launcher works out the resolution the game draws. Fullscreen uses a separate **Detail**, and **Settings → Game → Advanced** shows what the game actually draws. Existing launcher-controlled sizes keep their window size.
+- The launcher now sizes the game by default (**Let the launcher size the game**), and Settings explain why this is recommended. When it is off on a Retina display, the launcher explains once how in-game resolutions map to the window size.
 - Everyone updating to 0.6.2 goes through setup once more to answer the new questions. This rerun can't be skipped, and the first step explains what changed. Returning players who used in-game display settings keep their window mode and rendering, and the launcher takes over sizing.
 - **Windowed** is now the recommended window mode instead of Borderless Window.
-- Setup now asks questions instead of showing settings: window or fullscreen, sharpness or smoothness, how to check for updates, and whether to play music. The answers set up the launcher, and the window size is picked to fit the screen.
+- Rebuilt setup around plain questions in six steps: System Check, Region, Display, Look, Updates & Audio, and Ready. Display asks about window or fullscreen, window size, picture, and pointer; Look asks about artwork, colors, the Dock icon, and what the launcher shows. Every answer applies right away.
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
-- **Use Mac Pointer** (formerly the Canary Hardware Cursor option) is now a regular setting in **Settings → General → Display & Controls**.
-- Game Mode, Wine Thread Synchronization, and the Metal Performance HUD moved from **Settings → Installation** to a new **Performance** section in **Settings → General**.
-- Rewrote technical setting descriptions in plain language; the technical details are now tooltips. **Force Migration…** is now **Run Setup Again…**.
+- The Mac pointer (formerly the Canary Hardware Cursor option) is now a regular **Pointer** setting in **Settings → Game**.
+- Regrouped Settings: **General** is replaced by **Game**, which opens first and holds the display settings plus an **Advanced** panel with Game Mode, Wine synchronization, and the Metal performance HUD, and by **Appearance**, which holds artwork, colors, Dock icons, and what the launcher shows.
+- Rewrote Settings in plain language; the technical details are now tooltips. **Force Migration…** is now **Rebuild…** and **Delete Wine Prefix…** is now **Delete Environment…**. **Settings → Installation → Run Setup Again…** opens the setup questions again.
 - The Artwork gallery now downloads the latest wallpaper search tags from the project repository, so new wallpapers become searchable by operator or event without a launcher update.
 - Gallery tiles, search pills, Settings sidebar items, and document links now respond to presses with the launcher's press animation.
 
@@ -35,7 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Fullscreen looked grainy on displays larger than 4K or with uncommon sizes, because the game drew an official resolution that macOS stretched by an uneven factor. A new Native resolution, which setup now picks, draws the display's own resolution on the display with the menu bar. Larger displays also get sizes between 4K and their own resolution, and sizes larger than the display are hidden. Game Resolution now names what fullscreen fills the screen at, like other games' output resolution; MetalFX and Lightweight draw half the width and height and scale up. Window Size and Game Resolution share one layout with "Looks like" and "Fills the screen at" headers, well-known resolutions are named (Full HD, WQHD, 4K, …), and the description says what the game draws.
+- Reworked how the launcher sizes the game window and draws fullscreen, with a new setup step and Settings explanations. The launcher now sizes the game by default, and the game draws at its own resolution in windowed mode. Fullscreen uses a separate detail level, and Settings show what the game actually draws.
 - Locally built launchers no longer treat the published release of the same version as an update that blocks setup.
 - Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.
 - Helper windows that the game opens, such as the China — Bilibili sign-in and console windows, no longer add a separate "wine" Dock entry that could stay behind after the game closes.

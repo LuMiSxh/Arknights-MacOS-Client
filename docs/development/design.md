@@ -74,7 +74,7 @@ For a UI change, exercise the affected state through the debug simulator where p
 
 ## Settings and documents
 
-- Use a compact list navigation rail for General, Audio, Updates, Installation, Storage, and About.
+- Use a compact list navigation rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, and About. Game opens first.
 - Keep the navigation rail quiet. The selected section uses a quiet graphite fill with a dynamic accent marker and selected label/icon; hover remains neutral.
 - Keep links and ordinary controls quiet; use the dynamic accent for progress, the current primary game action, selected state, and intentional interaction highlights.
 - Group related controls in quiet Liquid Glass panels instead of form-style gray boxes. Use native capsules for settings controls and shared neutral capsules for secondary actions.

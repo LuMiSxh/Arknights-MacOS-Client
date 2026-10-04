@@ -86,21 +86,6 @@ func inGameSettingsLeaveTheRenderSizeToArknights() {
 }
 
 @Test
-func renderSummariesNameTheDrawnAndShownSizes() throws {
-	let metalFX = GameDisplayPlan(options: options(.metalFX), backingScaleFactor: 2)
-	let size = try #require(metalFX.renderSize)
-
-	#expect(
-		SettingsStrings.renderSummary(metalFX, size: size, window: .defaultWindow)
-			== "Looks like 1280 × 720. The game draws 1280 × 720 (HD) and MetalFX upscales it to 2560 × 1440 (WQHD)."
-	)
-	#expect(
-		SettingsStrings.renderSummary(metalFX, size: size, window: nil)
-			== "The game draws 1280 × 720 (HD) and MetalFX upscales it to fill the screen."
-	)
-}
-
-@Test
 func windowOptionsFitTheScreenAndKeepTheCurrentSize() {
 	let custom = GameDisplaySize(width: 1000, height: 600)
 	let options = GameDisplaySize.windowOptions(

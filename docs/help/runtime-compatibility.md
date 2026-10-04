@@ -34,24 +34,29 @@ sudo game-test-tool disable
 
 Restart the Mac, then choose **Check Again** in the launcher. This command is not a stable macOS troubleshooting step; the tool is unavailable outside beta releases. See Apple's [macOS 27 release notes](https://developer.apple.com/documentation/macos-release-notes/macos-27-release-notes?changes=l_2).
 
-## Rendering
+## Display
 
-**Settings → General → Rendering** chooses how the game reaches a Retina display. Every mode applies on the next game launch, and all three look the same on non-Retina displays.
+**Settings → Game → Display** decides how the game appears. Every change applies on the next game launch.
 
-- **Retina** draws every pixel of the display. It is the sharpest mode and needs the most GPU time.
-- **MetalFX** draws one pixel per macOS point and lets DXMT upscale each frame 2× with MetalFX spatial scaling. It uses noticeably less GPU time on 4K and larger displays, and text looks slightly softer. A runtime without MetalFX support uses Lightweight instead.
-- **Lightweight** draws one pixel per macOS point and lets macOS stretch the window, which looks blurry on Retina displays.
+**Picture** chooses how the game reaches a Retina display; all three choices look the same on non-Retina displays.
 
-**Window Size** is measured like the "Looks like" sizes in **System Settings → Displays**, so it keeps the same on-screen size in every mode. **Game Resolution** applies to fullscreen and is the resolution the game fills the display at, like the output resolution in other games; with MetalFX or Lightweight the game draws half the width and height and scales the picture up. Both settings' descriptions say what the game draws. **Native**, which setup picks, matches the display with the menu bar pixel for pixel and is read on every launch, so it follows display changes; the other resolutions are the official client's, plus sizes in the display's shape between 4K and a larger display's own resolution. They are scaled to fill the screen, which looks grainy when the display is larger or shaped differently, and sizes larger than the display are hidden. **Let the Launcher Size the Game** is on by default and recommended: the launcher converts the window size into the resolution the game draws, so the picture stays sharp. When it is off, Arknights' own display settings decide, and their resolution counts drawn pixels: with Retina rendering on a 2× display, 2560×1440 opens a 1280×720 window.
+- **The sharpest picture** (Retina) draws every pixel of the display. It is the sharpest choice and needs the most GPU time.
+- **Smooth play on big screens** (MetalFX) draws one pixel per macOS point and lets DXMT upscale each frame 2× with MetalFX spatial scaling. It uses noticeably less GPU time on 4K and larger displays, and text looks slightly softer. A runtime without MetalFX support uses Longer battery life instead.
+- **Longer battery life** (Lightweight) draws one pixel per macOS point and lets macOS stretch the window, which looks blurry on Retina displays.
 
-**Use Mac Pointer** in the same section shows the macOS pointer instead of the game's PRTS cursor, so the cursor follows the mouse without delay. It looks different from the game cursor, applies on the next game launch, and needs a runtime that supports it.
+**Window size** is measured like the "Looks like" sizes in **System Settings → Displays**, so it keeps the same on-screen size with every Picture choice. **Fill my screen** fills the screen's usable area with the title bar visible, **Leave room for other apps** picks a smaller 16:9 window, and the menu also lists exact sizes.
+
+**Detail** applies to fullscreen and is the resolution the game fills the display at, like the output resolution in other games; with Smooth play or Longer battery life the game draws half the width and height and scales the picture up. **Full detail**, which setup picks, matches the display with the menu bar pixel for pixel and is read on every launch, so it follows display changes. **Balanced** and **Lighter** use up to 1440p and 1080p, and **Exact resolution** lists the official client's sizes plus sizes in the display's shape between 4K and a larger display's own resolution. Lower resolutions are scaled to fill the screen, which looks grainy when the display is larger or shaped differently, and sizes larger than the display are hidden.
+
+**Pointer** set to **Your Mac's pointer** shows the macOS pointer instead of the game's PRTS cursor, so the cursor follows the mouse without delay. It looks different from the game cursor and needs a runtime that supports it.
+
+**Settings → Game → Advanced** shows the exact size the game draws. **Let the launcher size the game** is on by default and recommended: the launcher converts the window size into the resolution the game draws, so the picture stays sharp. When it is off, Arknights' own display settings decide, and their resolution counts drawn pixels: with the sharpest picture on a 2× display, 2560×1440 opens a 1280×720 window.
 
 ## Canary Features
 
 **Settings → Installation → Canary Features** turns on experimental options. Turning it off again restores the normal behavior without deleting anything.
 
-- **Allow Taiwan client** and **Allow China clients** show the Taiwan, China, and China — Bilibili regions.
-- **Frame Latency** (0–3, default 3) can make the cursor feel more responsive at lower values when the runtime supports it. At 0, DXMT waits for the current GPU frame before queuing another; this may significantly reduce FPS or make frame pacing less smooth.
+- **Allow Taiwan region** and **Allow China regions** show the Taiwan, China, and China — Bilibili regions.
 
 These preferences are saved, but the launcher passes each override only when the packaged runtime advertises that capability. If a capability is absent or unsupported, the runtime keeps its default behavior.
 

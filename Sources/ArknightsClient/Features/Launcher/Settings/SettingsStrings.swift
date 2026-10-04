@@ -393,21 +393,4 @@ enum SettingsStrings {
 			+ "choose \(window.scaled(by: pixelsPerPoint).displayName) in the game for a "
 			+ "\(window.displayName) window."
 	}
-
-	/// Says what the player sees first, then what the game draws; `window` is nil in fullscreen.
-	static func renderSummary(
-		_ plan: GameDisplayPlan, size: GameDisplaySize, window: GameDisplaySize?
-	)
-		-> String
-	{
-		let looks = window.map { "Looks like \($0.displayName). " } ?? ""
-		let target =
-			window == nil ? "fill the screen" : resolutionTitle(size.scaled(by: plan.backingScale))
-		let drawn = "\(looks)The game draws \(resolutionTitle(size))"
-		return switch plan.scaling {
-		case .native: window == nil ? "\(drawn) and fills the screen." : "\(drawn)."
-		case .metalFX: "\(drawn) and MetalFX upscales it to \(target)."
-		case .stretched: "\(drawn) and macOS stretches it to \(target), which looks softer."
-		}
-	}
 }

@@ -47,18 +47,18 @@ Logs can contain private paths or URLs. Attach only the file a maintainer asks f
 | Action                  | Removes                                                         | Keeps                                      |
 | ----------------------- | --------------------------------------------------------------- | ------------------------------------------ |
 | **Clear Caches**        | Graphics and sign-in window caches (the next start is slower)   | Games, sign-ins, settings                  |
-| **Run Setup Again…**    | Nothing; reruns the Windows environment setup on the next start | Everything                                 |
-| **Delete Wine Prefix…** | The publisher's prefix, including sign-ins and Windows settings | All game files and launcher settings       |
+| **Rebuild…**            | Nothing; reruns the Windows environment setup on the next start | Everything                                 |
+| **Delete Environment…** | The publisher's prefix, including sign-ins and Windows settings | All game files and launcher settings       |
 | **Reset All Settings…** | Launcher preferences and launch options                         | Region, installation locations, game files |
 | **Reset Statistics…**   | Playtime totals                                                 | Everything else                            |
 | **Uninstall Game…**     | The selected region's game folder (moved to the Trash)          | Other regions, the prefix, the launcher    |
 
-Try **Clear Caches** and **Force Migration…** before **Delete Wine Prefix…**. The prefix is rebuilt automatically on the next start.
+Try **Clear Caches** and **Rebuild…** before **Delete Environment…**. The prefix is rebuilt automatically on the next start.
 
 ## Uninstall completely
 
 1. Choose **Uninstall Game…** for each installed region.
-2. Choose **Delete Wine Prefix…** for each publisher you used.
+2. Choose **Delete Environment…** for each publisher you used.
 3. Quit the launcher and move **Arknights Client.app** to the Trash.
 4. Optionally delete the folders listed under [Where files live](#where-files-live).
 

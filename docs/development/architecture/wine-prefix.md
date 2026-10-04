@@ -91,11 +91,11 @@ The constructed environment:
 - keeps GStreamer and DXMT caches below the private home;
 - restricts `PATH` to the bundled runtime, `/usr/bin`, and `/bin`;
 - points the dynamic-library fallback path at the bundled runtime libraries; and
-- adds only launcher-owned synchronization, diagnostics, icon, audio, and frame-latency overrides
+- adds only launcher-owned synchronization, diagnostics, icon, audio, and cursor overrides
   for the current launch.
 
-Launch-scoped options are not prefix migrations. For example, selecting MSYNC or ESYNC and changing
-frame latency alter the next process environment without rewriting migration history. Following the
+Launch-scoped options are not prefix migrations. For example, selecting MSYNC or ESYNC and switching
+the Mac pointer alter the next process environment without rewriting migration history. Following the
 default macOS audio output is always enabled through that same launch environment.
 
 ## Preparation and migrations
@@ -139,17 +139,17 @@ are applied through the same single-script path.
 
 ## Persistent and recreatable state
 
-| State                         | Location                                                                | Lifetime                                          |
-| ----------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
-| Wine registry                 | `<prefix>/*.reg`                                                        | Persistent; removed only with the prefix          |
-| Browser profiles and sessions | `<prefix>/drive_c/users/<profile>`                                      | Persistent; deleting the prefix signs users out   |
-| DXMT libraries                | `<prefix>/drive_c/windows/{system32,syswow64}`                          | Reconciled from the bundled runtime               |
-| DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                             | Recreatable through targeted cache cleanup        |
-| Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`                  | Recreatable through targeted cache cleanup        |
-| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                           | Reset by **Run Setup Again**; recreated on launch |
-| Regional game files           | Outside the prefix under the publisher folder or a selected custom path | Owned by installation, not prefix maintenance     |
-| Runtime binaries              | Outside the prefix in the app bundle                                    | Replaced only with the launcher application       |
-| Runtime and game logs         | Outside the prefix under `~/Library/Logs/com.lumisxh.arknights-client`  | Shared diagnostic destination mapped as `L:`      |
+| State                         | Location                                                                | Lifetime                                        |
+| ----------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
+| Wine registry                 | `<prefix>/*.reg`                                                        | Persistent; removed only with the prefix        |
+| Browser profiles and sessions | `<prefix>/drive_c/users/<profile>`                                      | Persistent; deleting the prefix signs users out |
+| DXMT libraries                | `<prefix>/drive_c/windows/{system32,syswow64}`                          | Reconciled from the bundled runtime             |
+| DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                             | Recreatable through targeted cache cleanup      |
+| Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`                  | Recreatable through targeted cache cleanup      |
+| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                           | Reset by **Rebuild…**; recreated on launch      |
+| Regional game files           | Outside the prefix under the publisher folder or a selected custom path | Owned by installation, not prefix maintenance   |
+| Runtime binaries              | Outside the prefix in the app bundle                                    | Replaced only with the launcher application     |
+| Runtime and game logs         | Outside the prefix under `~/Library/Logs/com.lumisxh.arknights-client`  | Shared diagnostic destination mapped as `L:`    |
 
 Cache discovery accepts only real directories contained by the resolved prefix and does not follow
 symbolic links. Prefix maintenance must preserve the same containment rule.
@@ -188,11 +188,11 @@ files.
 
 ## Maintenance operations
 
-**Run Setup Again** removes only current and legacy migration bookkeeping. The next launch reruns
+**Rebuild…** removes only current and legacy migration bookkeeping. The next launch reruns
 Wine initialization, DXMT installation, and registry configuration while preserving profiles,
 sessions, registry data unrelated to those settings, and game files.
 
-**Delete Wine Prefix** removes the selected region family's complete prefix on a background task.
+**Delete Environment…** removes the selected region family's complete prefix on a background task.
 For Global, Japan, or Korea, that means the shared Yostar prefix and all browser sessions stored in
 it. For Taiwan, it means the Gryphline prefix. For either China client, it means the shared Hypergryph prefix. Game installations,
 launcher preferences, artwork, and central logs remain outside either prefix.

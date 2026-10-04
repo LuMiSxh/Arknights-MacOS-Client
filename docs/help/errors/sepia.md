@@ -15,8 +15,8 @@ The runtime was found, but Wine prefix migration, registry setup, DXMT installat
 
 1. Quit other Wine-based apps that may be using the same files.
 2. Choose **Retry** once.
-3. Choose **Settings → Installation → Force Migration…**, then start the game again. This reruns the setup without deleting anything.
-4. As a last resort, choose **Delete Wine Prefix…**. It keeps your game files but signs you out; see [What cleanup removes](../storage.md#what-cleanup-removes).
+3. Choose **Settings → Installation → Rebuild…**, then start the game again. This sets up the game environment again without deleting anything.
+4. As a last resort, choose **Delete Environment…**. It keeps your game files but signs you out; see [What cleanup removes](../storage.md#what-cleanup-removes).
 
 If the launcher also reports a Rosetta or macOS problem, see [macOS compatibility](../runtime-compatibility.md). Repair checks game files and does not fix this code. If the message mentions Vuplex, PlatformProcess, the Bilibili login window, userenv, or restoring an official game helper, use [ANEMONE](anemone.md) instead.
 
