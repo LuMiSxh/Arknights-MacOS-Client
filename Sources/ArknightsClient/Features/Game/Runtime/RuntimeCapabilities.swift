@@ -130,16 +130,9 @@ struct RuntimeCapabilities: Equatable, Sendable {
 	}
 
 	func environmentOverrides(
-		canaryFeaturesEnabled: Bool,
-		maximumFrameLatency: Int,
 		usesHardwareCursor: Bool
 	) -> [String: String] {
 		var overrides: [String: String] = [:]
-		if canaryFeaturesEnabled, let latency = dxmtMaximumFrameLatency {
-			overrides[AppConstants.Runtime.dxmtMaximumFrameLatencyEnvironmentKey] = String(
-				min(max(maximumFrameLatency, latency.minimum), latency.maximum)
-			)
-		}
 		if hardwareCursorSupported && usesHardwareCursor {
 			overrides[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "1"
 		}

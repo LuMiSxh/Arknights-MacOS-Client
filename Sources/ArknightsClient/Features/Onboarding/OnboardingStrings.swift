@@ -124,11 +124,6 @@ enum OnboardingStrings {
 		render + " You can fine-tune this later in Settings → General."
 	}
 
-	static let runtimeOptimizations = "Runtime Optimizations"
-	static let maximumFrameLatency = "Maximum Frame Latency"
-	static let maximumFrameLatencyDetail =
-		"Lower values can make the cursor feel more responsive, but may lower or unsettle the frame rate. Applies on the next game launch."
-
 	static let installationTitle = "Which server do you play on?"
 	static let installationSubtitle =
 		"Regions use separate game files and accounts. Pick the server you already use; you can install another region later from Settings."

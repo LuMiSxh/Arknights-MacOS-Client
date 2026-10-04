@@ -25,7 +25,6 @@ struct LauncherPreferencesStore {
 		static let chinaClientsEnabled = "chinaClientsEnabled"
 		static let taiwanClientEnabled = "taiwanClientEnabled"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
-		static let maximumFrameLatency = "maximumFrameLatency"
 		static let usesHardwareCursor = "usesHardwareCursor"
 		static let dismissedInGameResolutionNote = "dismissedInGameResolutionNote"
 		static let usesDynamicTheme = "usesDynamicTheme"
@@ -243,20 +242,11 @@ struct LauncherPreferencesStore {
 			Key.playsLauncherMusic, Key.launcherMusicURL, Key.showsPlayingMusic,
 			Key.launcherMusicVolume, Key.usesDynamicTheme, Key.canaryFeaturesEnabled,
 			Key.chinaClientsEnabled, Key.taiwanClientEnabled,
-			Key.acknowledgedACEWarningRegions, Key.maximumFrameLatency, Key.usesHardwareCursor,
+			Key.acknowledgedACEWarningRegions, Key.usesHardwareCursor,
 			Key.dismissedInGameResolutionNote,
 		] {
 			defaults.removeObject(forKey: key)
 		}
-	}
-
-	func maximumFrameLatency() -> Int {
-		guard defaults.object(forKey: Key.maximumFrameLatency) != nil else { return 3 }
-		return min(max(defaults.integer(forKey: Key.maximumFrameLatency), 0), 3)
-	}
-
-	func setMaximumFrameLatency(_ value: Int) {
-		defaults.set(min(max(value, 0), 3), forKey: Key.maximumFrameLatency)
 	}
 
 	func usesHardwareCursor() -> Bool {

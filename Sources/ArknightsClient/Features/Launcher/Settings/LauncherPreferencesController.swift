@@ -70,9 +70,6 @@ final class LauncherPreferencesController {
 			onTaiwanClientChanged?(taiwanClientEnabled)
 		}
 	}
-	var maximumFrameLatency: Int {
-		didSet { store.setMaximumFrameLatency(maximumFrameLatency) }
-	}
 	var usesHardwareCursor: Bool {
 		didSet { store.setUsesHardwareCursor(usesHardwareCursor) }
 	}
@@ -113,7 +110,6 @@ final class LauncherPreferencesController {
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
 		chinaClientsEnabled = store.chinaClientsEnabled()
 		taiwanClientEnabled = store.taiwanClientEnabled()
-		maximumFrameLatency = store.maximumFrameLatency()
 		usesHardwareCursor = store.usesHardwareCursor()
 		dismissedInGameResolutionNote = store.dismissedInGameResolutionNote()
 	}
@@ -137,7 +133,6 @@ final class LauncherPreferencesController {
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
 		chinaClientsEnabled = store.chinaClientsEnabled()
 		taiwanClientEnabled = store.taiwanClientEnabled()
-		maximumFrameLatency = store.maximumFrameLatency()
 		usesHardwareCursor = store.usesHardwareCursor()
 		dismissedInGameResolutionNote = store.dismissedInGameResolutionNote()
 		return true

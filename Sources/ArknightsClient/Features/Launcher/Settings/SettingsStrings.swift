@@ -158,11 +158,6 @@ enum SettingsStrings {
 	static let taiwanClient = "Allow Taiwan client"
 	static let taiwanClientDetail =
 		"Shows the Taiwan client in the region picker."
-	static let frameLatency = "Frame Latency"
-	static let frameLatencyDetail =
-		"Lower values can make the cursor feel more responsive, but may lower or unsettle the frame rate. Applies on the next game launch."
-	static let frameLatencyHelp =
-		"Sets DXMT's maximum frame latency. At 0, DXMT waits for the current GPU frame before queuing another."
 	static let hardwareCursor = "Use Mac Pointer"
 	static let hardwareCursorDetail =
 		"Shows the normal Mac pointer instead of the game's PRTS cursor, so it follows the mouse without delay. Applies on the next game launch."

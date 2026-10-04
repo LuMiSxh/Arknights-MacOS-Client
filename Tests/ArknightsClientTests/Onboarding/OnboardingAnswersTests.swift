@@ -10,14 +10,10 @@ private let laptop = GameScreenMetrics(
 private let scaled4K = GameScreenMetrics(
 	visibleSize: CGSize(width: 3008, height: 1659), pixelSize: CGSize(width: 6016, height: 3384))
 
-@Test(arguments: [
-	(laptop, GameDisplaySize(width: 1152, height: 648), GameResolution.quadHD),
-	(scaled4K, GameDisplaySize(width: 2304, height: 1296), .ultraHD),
-])
-func screenMetricsRecommendAWidescreenWindowAndTheLargestFittingResolution(
-	screen: GameScreenMetrics, window: GameDisplaySize, resolution: GameResolution
+@Test(arguments: [(laptop, GameResolution.quadHD), (scaled4K, .ultraHD)])
+func screenMetricsPickTheLargestFittingResolution(
+	screen: GameScreenMetrics, resolution: GameResolution
 ) {
-	#expect(screen.recommendedWindowSize == window)
 	#expect(screen.fullscreenResolution == resolution)
 }
 
@@ -40,7 +36,7 @@ func displayAnswersLetTheLauncherSizeTheGameAndKeepUnrelatedOptions() {
 		#expect(options.synchronizationMode == .esync)
 	}
 	#expect(window.displayMode == .windowed && window.renderingMode == .retina)
-	#expect(window.windowSize == GameDisplaySize(width: 2304, height: 1296))
+	#expect(window.windowSize == GameDisplaySize(width: 3008, height: 1631))
 	#expect(smooth.renderingMode == .metalFX && smooth.windowSize == window.windowSize)
 	#expect(fullscreen.displayMode == .fullscreen && fullscreen.fullscreenResolution == .native)
 	#expect(fullscreen.resolution == .ultraHD)

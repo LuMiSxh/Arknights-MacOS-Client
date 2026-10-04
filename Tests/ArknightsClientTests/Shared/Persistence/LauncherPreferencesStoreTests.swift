@@ -26,7 +26,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(!store.canaryFeaturesEnabled())
 		#expect(!store.chinaClientsEnabled())
 		#expect(!store.taiwanClientEnabled())
-		#expect(store.maximumFrameLatency() == 3)
 		#expect(store.selectedRegion() == .global)
 		#expect(!store.forceDisableRetina())
 
@@ -43,7 +42,6 @@ struct LauncherPreferencesStoreTests {
 		store.setCanaryFeaturesEnabled(true)
 		store.setChinaClientsEnabled(true)
 		store.setTaiwanClientEnabled(true)
-		store.setMaximumFrameLatency(1)
 		store.setSelectedRegion(.korea)
 
 		#expect(!store.automaticLauncherUpdates())
@@ -59,7 +57,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.canaryFeaturesEnabled())
 		#expect(store.chinaClientsEnabled())
 		#expect(store.taiwanClientEnabled())
-		#expect(store.maximumFrameLatency() == 1)
 		#expect(store.selectedRegion() == .korea)
 	}
 
@@ -94,17 +91,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(!store.usesHardwareCursor())
 		#expect(!settings.dismissedInGameResolutionNote)
 		#expect(!store.dismissedInGameResolutionNote())
-	}
-
-	@Test(arguments: [(-1, 0), (0, 0), (2, 2), (4, 3)])
-	func frameLatencyClampsToSupportedRange(value: Int, expected: Int) {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-
-		store.setMaximumFrameLatency(value)
-
-		#expect(store.maximumFrameLatency() == expected)
 	}
 
 	@Test

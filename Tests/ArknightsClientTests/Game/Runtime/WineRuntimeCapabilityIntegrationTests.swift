@@ -17,32 +17,20 @@ private let legacyRuntimeCapabilities = RuntimeCapabilities(
 )
 
 @Test(arguments: [
-	(false, false, 0, currentRuntimeCapabilities, nil as String?, nil as String?),
-	(false, false, 2, currentRuntimeCapabilities, nil, nil),
-	(false, false, 3, currentRuntimeCapabilities, nil, nil),
-	// Hardware Cursor is stable; Frame Latency still needs Canary Features.
-	(false, true, 3, currentRuntimeCapabilities, nil, "1"),
-	(false, true, 3, legacyRuntimeCapabilities, nil, nil),
-	(true, false, 0, currentRuntimeCapabilities, "0", nil),
-	(true, false, 3, currentRuntimeCapabilities, "3", nil),
-	(true, true, 3, currentRuntimeCapabilities, "3", "1"),
-	(true, true, 0, RuntimeCapabilities.conservative, nil, nil),
-	(true, true, 0, legacyRuntimeCapabilities, "1", nil),
+	(true, currentRuntimeCapabilities, "1"),
+	(false, currentRuntimeCapabilities, nil as String?),
+	(true, legacyRuntimeCapabilities, nil),
+	(true, RuntimeCapabilities.conservative, nil),
 ])
 @MainActor
 func runtimeEnvironmentAppliesAdvertisedCapabilities(
-	canaryFeaturesEnabled: Bool,
 	usesHardwareCursor: Bool,
-	maximumFrameLatency: Int,
 	capabilities: RuntimeCapabilities,
-	expectedFrameLatency: String?,
 	expectedHardwareCursor: String?
 ) {
 	for region in GameRegion.allCases {
 		let environment = GameSessionController.runtimeEnvironmentOverrides(
 			for: region,
-			canaryFeaturesEnabled: canaryFeaturesEnabled,
-			maximumFrameLatency: maximumFrameLatency,
 			usesHardwareCursor: usesHardwareCursor,
 			capabilities: capabilities
 		)
@@ -55,7 +43,7 @@ func runtimeEnvironmentAppliesAdvertisedCapabilities(
 			#expect(environment[key] == region.runtimeEnvironmentOverrides[key])
 		}
 		#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == nil)
-		#expect(environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] == expectedFrameLatency)
+		#expect(environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] == nil)
 		#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == expectedHardwareCursor)
 	}
 }

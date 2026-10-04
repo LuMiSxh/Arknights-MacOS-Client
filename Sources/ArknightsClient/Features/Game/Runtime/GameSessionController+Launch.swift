@@ -5,8 +5,6 @@ import Foundation
 extension GameSessionController {
 	static func runtimeEnvironmentOverrides(
 		for region: GameRegion,
-		canaryFeaturesEnabled: Bool,
-		maximumFrameLatency: Int,
 		usesHardwareCursor: Bool,
 		capabilities: RuntimeCapabilities = .conservative
 	) -> [String: String] {
@@ -16,8 +14,6 @@ extension GameSessionController {
 		environment.merge(region.runtimeEnvironmentOverrides) { _, profileValue in profileValue }
 		environment.merge(
 			capabilities.environmentOverrides(
-				canaryFeaturesEnabled: canaryFeaturesEnabled,
-				maximumFrameLatency: maximumFrameLatency,
 				usesHardwareCursor: usesHardwareCursor
 			)
 		) { _, value in value }
@@ -93,8 +89,6 @@ extension GameSessionController {
 		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
-		let requestedCanaryFeatures = settings.canaryFeaturesEnabled
-		let requestedFrameLatency = settings.maximumFrameLatency
 		let requestedHardwareCursor = settings.usesHardwareCursor
 		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let forceDisableRetina = preferences.forceDisableRetina()
@@ -125,8 +119,6 @@ extension GameSessionController {
 				)
 				let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
 					for: requestedRegion,
-					canaryFeaturesEnabled: requestedCanaryFeatures,
-					maximumFrameLatency: requestedFrameLatency,
 					usesHardwareCursor: requestedHardwareCursor,
 					capabilities: discovery.capabilities
 				)

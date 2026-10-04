@@ -11,48 +11,24 @@ private let runtimeCapabilityManifest = Data(
 )
 
 @Test
-func runtimeCapabilitiesGateOverridesAndClampToAdvertisedRange() throws {
-	let capabilities = try RuntimeCapabilities.decode(from: runtimeCapabilityManifest)
-	let overrides = capabilities.environmentOverrides(
-		canaryFeaturesEnabled: true,
-		maximumFrameLatency: 9,
-		usesHardwareCursor: true
-	)
-
-	#expect(
-		overrides == [
-			"ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY": "3",
-			"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1",
-		]
-	)
-	#expect(
-		capabilities.environmentOverrides(
-			canaryFeaturesEnabled: false,
-			maximumFrameLatency: 0,
-			usesHardwareCursor: true
-		) == ["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1"]
-	)
-	#expect(
-		RuntimeCapabilities.conservative.environmentOverrides(
-			canaryFeaturesEnabled: true,
-			maximumFrameLatency: 1,
-			usesHardwareCursor: true
-		) == [:]
-	)
-
+func runtimeCapabilitiesOnlyOverrideTheHardwareCursorAndNeverSetFrameLatency() throws {
+	let current = try RuntimeCapabilities.decode(from: runtimeCapabilityManifest)
 	let legacyCursor = try RuntimeCapabilities.decode(
 		from: Data(
 			#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":1,"maximum":3,"defaultValue":3},"hardwareCursor":false}}"#
 				.utf8
 		)
 	)
+
 	#expect(
-		legacyCursor.environmentOverrides(
-			canaryFeaturesEnabled: true,
-			maximumFrameLatency: 0,
-			usesHardwareCursor: true
-		) == ["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY": "1"]
+		current.environmentOverrides(usesHardwareCursor: true) == [
+			"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1"
+		]
 	)
+	#expect(current.environmentOverrides(usesHardwareCursor: false) == [:])
+	#expect(legacyCursor.environmentOverrides(usesHardwareCursor: true) == [:])
+	#expect(RuntimeCapabilities.conservative.environmentOverrides(usesHardwareCursor: true) == [:])
+	#expect(current.dxmtMaximumFrameLatency?.maximum == 3)
 }
 
 @Test

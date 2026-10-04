@@ -2,42 +2,6 @@
 
 import AppKit
 
-/// The screen setup answers are sized for: usable area in points and the panel's full pixel size.
-struct GameScreenMetrics: Equatable, Sendable {
-	let visibleSize: CGSize
-	let pixelSize: CGSize
-
-	@MainActor static var main: GameScreenMetrics? {
-		guard let screen = NSScreen.main else { return nil }
-		return GameScreenMetrics(
-			visibleSize: screen.visibleFrame.size,
-			pixelSize: CGSize(
-				width: screen.frame.width * screen.backingScaleFactor,
-				height: screen.frame.height * screen.backingScaleFactor
-			)
-		)
-	}
-
-	/// The largest 16:9 window preset, matching the game's layout, that fits within the
-	/// recommended share of the screen.
-	var recommendedWindowSize: GameDisplaySize {
-		let share = AppConstants.Game.recommendedWindowScreenShare
-		let maximumWidth = visibleSize.width * share
-		let maximumHeight = visibleSize.height * share
-		let widescreen = GameDisplaySize.windowPresets.filter { $0.width * 9 == $0.height * 16 }
-		return widescreen.last {
-			CGFloat($0.width) <= maximumWidth && CGFloat($0.height) <= maximumHeight
-		} ?? widescreen[0]
-	}
-
-	/// The official game resolution with the most pixels that the panel can show unscaled.
-	var fullscreenResolution: GameResolution {
-		GameResolution.largest(
-			fitting: GameDisplaySize(width: Int(pixelSize.width), height: Int(pixelSize.height)))
-			?? .fullHD
-	}
-}
-
 /// Where the game appears, answered during setup.
 enum GamePlacementAnswer: CaseIterable, Sendable {
 	case window
@@ -71,7 +35,7 @@ struct GameDisplayAnswers: Equatable, Sendable {
 		switch placement {
 		case .window:
 			options.displayMode = .windowed
-			options.windowSize = screen.recommendedWindowSize
+			options.windowSize = GameWindowSizeChoice.fillScreen.size(on: screen)
 		case .fullscreen:
 			// Native is pixel-exact on every display; the official resolution stays as the
 			// fallback for older launchers.

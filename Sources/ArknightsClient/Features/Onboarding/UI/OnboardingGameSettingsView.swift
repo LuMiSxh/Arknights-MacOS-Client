@@ -37,40 +37,6 @@ struct OnboardingGameSettingsView: View {
 				.padding(.horizontal, LauncherVisuals.Spacing.panel)
 				.onAppear(perform: applyRecommendedAnswers)
 
-			if preferences.canaryFeaturesEnabled {
-				OnboardingCanaryPanel(
-					title: OnboardingStrings.runtimeOptimizations,
-				) {
-					HStack(alignment: .top, spacing: 18) {
-						VStack(alignment: .leading, spacing: 3) {
-							Text(OnboardingStrings.maximumFrameLatency)
-							Text(OnboardingStrings.maximumFrameLatencyDetail)
-								.font(.caption)
-								.foregroundStyle(.secondary)
-								.fixedSize(horizontal: false, vertical: true)
-						}
-						Spacer(minLength: 18)
-						HStack(spacing: 10) {
-							SettingsSlider(
-								value: frameLatencyBinding,
-								range: 0...3,
-								step: 1,
-								accentColor: LauncherVisuals.warning,
-								width: 120
-							)
-							.accessibilityLabel(
-								OnboardingStrings.maximumFrameLatency
-							)
-							.accessibilityValue(preferences.maximumFrameLatency.formatted())
-							Text(preferences.maximumFrameLatency.formatted())
-								.monospacedDigit()
-								.frame(width: 12)
-								.accessibilityHidden(true)
-						}
-					}
-					.disabled(lifecycle.activity.isGameActive)
-				}
-			}
 		}
 	}
 
@@ -114,12 +80,5 @@ struct OnboardingGameSettingsView: View {
 		} else if options.usesGameSettings {
 			preferences.launchOptions = answers.applied(to: options, screen: screen)
 		}
-	}
-
-	private var frameLatencyBinding: Binding<Double> {
-		Binding(
-			get: { Double(preferences.maximumFrameLatency) },
-			set: { preferences.maximumFrameLatency = Int($0.rounded()) }
-		)
 	}
 }

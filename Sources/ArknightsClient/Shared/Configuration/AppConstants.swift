@@ -14,8 +14,12 @@ enum AppConstants {
 		static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
 		static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
 		static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
-		/// Share of the usable screen a recommended game window may cover.
-		static let recommendedWindowScreenShare = 0.8
+		/// Title bar height assumed when the real one cannot be measured.
+		static let standardWindowTitleBarHeight: CGFloat = 28
+		/// Share of the usable screen the "leave room" game window may cover.
+		static let compactWindowScreenShare = 0.65
+		/// Tallest fullscreen resolution the "balanced" detail level draws.
+		static let balancedFullscreenHeight = 1440
 		/// Height step between fullscreen sizes generated above 4K for larger displays.
 		static let generatedResolutionHeightStep = 360
 	}
@@ -24,8 +28,6 @@ enum AppConstants {
 		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
 		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
 		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
-		static let dxmtMaximumFrameLatencyEnvironmentKey =
-			"ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"
 		static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"

@@ -27,35 +27,5 @@ extension InstallationSettingsPage {
 			)
 		}
 		.disabled(lifecycle.activity != .idle)
-		SettingsHairline()
-		SettingsActionRow(
-			title: SettingsStrings.frameLatency,
-			detail: SettingsStrings.frameLatencyDetail,
-			help: SettingsStrings.frameLatencyHelp
-		) {
-			HStack(spacing: 10) {
-				SettingsSlider(
-					value: frameLatencyBinding,
-					range: 0...3,
-					step: 1,
-					accentColor: LauncherVisuals.warning,
-					width: 120
-				)
-				.accessibilityLabel(SettingsStrings.frameLatency)
-				.accessibilityValue(settings.maximumFrameLatency.formatted())
-				Text(settings.maximumFrameLatency.formatted())
-					.monospacedDigit()
-					.frame(width: 12)
-					.accessibilityHidden(true)
-			}
-			.disabled(gameSession.isGameActive)
-		}
-	}
-
-	private var frameLatencyBinding: Binding<Double> {
-		Binding(
-			get: { Double(settings.maximumFrameLatency) },
-			set: { settings.maximumFrameLatency = Int($0.rounded()) }
-		)
 	}
 }

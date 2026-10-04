@@ -29,6 +29,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The Artwork gallery now downloads the latest wallpaper search tags from the project repository, so new wallpapers become searchable by operator or event without a launcher update.
 - Gallery tiles, search pills, Settings sidebar items, and document links now respond to presses with the launcher's press animation.
 
+### Removed
+
+- Removed the Canary frame latency option; the game always uses the standard setting.
+
 ### Fixed
 
 - Fullscreen looked grainy on displays larger than 4K or with uncommon sizes, because the game drew an official resolution that macOS stretched by an uneven factor. A new Native resolution, which setup now picks, draws the display's own resolution on the display with the menu bar. Larger displays also get sizes between 4K and their own resolution, and sizes larger than the display are hidden. Game Resolution now names what fullscreen fills the screen at, like other games' output resolution; MetalFX and Lightweight draw half the width and height and scale up. Window Size and Game Resolution share one layout with "Looks like" and "Fills the screen at" headers, well-known resolutions are named (Full HD, WQHD, 4K, …), and the description says what the game draws.
