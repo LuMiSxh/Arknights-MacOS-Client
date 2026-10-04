@@ -24,6 +24,14 @@ extension LauncherViewModel {
 		#endif
 	}
 
+	var isRequiredOnboardingPreview: Bool {
+		#if DEBUG
+			developerSimulation?.onboardingRequired == true
+		#else
+			false
+		#endif
+	}
+
 	// MARK: - Region
 
 	func selectRegion(_ newRegion: GameRegion) {

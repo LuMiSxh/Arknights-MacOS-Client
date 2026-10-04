@@ -157,6 +157,50 @@ struct OnboardingCoordinatorTests {
 	#endif
 
 	@Test
+	func requiredSetupCannotBeSkippedUntilFinished() async {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(1, forKey: "onboarding.completedSchemaVersion")
+		let store = OnboardingProgressStore(defaults: defaults)
+		let coordinator = OnboardingCoordinator(store: store)
+
+		await coordinator.startIfNeeded(
+			isDeveloperMode: false,
+			isOnboardingPreview: false,
+			gameIsInstalled: true,
+			checkForUpdates: { .current },
+			checkIntelTranslation: { .available }
+		)
+		#expect(coordinator.requiredSchema == 2)
+
+		coordinator.skip()
+		#expect(coordinator.isPresented)
+		#expect(store.needsOnboarding)
+
+		coordinator.finish()
+		#expect(!store.needsOnboarding)
+		#expect(store.pendingRequiredSchema == nil)
+	}
+
+	@Test
+	func restartedSetupStaysSkippable() async {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(1, forKey: "onboarding.completedSchemaVersion")
+		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
+
+		await coordinator.restart(
+			gameIsInstalled: true,
+			checkForUpdates: { .current },
+			checkIntelTranslation: { .available }
+		)
+		#expect(coordinator.requiredSchema == nil)
+
+		coordinator.skip()
+		#expect(!coordinator.isPresented)
+	}
+
+	@Test
 	func setupFinishedBeforeTheQuestionsRunsAgain() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }

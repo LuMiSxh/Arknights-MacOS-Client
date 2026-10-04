@@ -32,6 +32,27 @@ struct OnboardingProgressStoreTests {
 		#expect(store.needsOnboarding)
 	}
 
+	@Test(
+		arguments: [
+			(0, nil),
+			(1, 2),
+			(2, nil),
+		] as [(Int, Int?)])
+	func requiredSetupAppliesOnlyToReturningPlayersBelowARequiredSchema(
+		completedSchema: Int,
+		expectedRequiredSchema: Int?
+	) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		if completedSchema > 0 {
+			defaults.set(completedSchema, forKey: "onboarding.completedSchemaVersion")
+		}
+
+		#expect(
+			OnboardingProgressStore(defaults: defaults).pendingRequiredSchema
+				== expectedRequiredSchema)
+	}
+
 	private func makeDefaults() -> (UserDefaults, String) {
 		let suiteName = "OnboardingProgressStoreTests.\(UUID().uuidString)"
 		return (UserDefaults(suiteName: suiteName)!, suiteName)

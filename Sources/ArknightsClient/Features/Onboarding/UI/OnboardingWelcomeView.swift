@@ -6,6 +6,7 @@ struct OnboardingWelcomeView: View {
 	let accentColor: Color
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
+	let requiredSchema: Int?
 	let rosettaInstallationState: RosettaInstallationState
 	let retry: () -> Void
 	let retryIntelTranslation: () -> Void
@@ -13,10 +14,23 @@ struct OnboardingWelcomeView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: OnboardingStrings.welcomeTitle,
-			subtitle: OnboardingStrings.welcomeSubtitle,
+			title: requiredSchema == nil
+				? OnboardingStrings.welcomeTitle : OnboardingStrings.requiredWelcomeTitle,
+			subtitle: requiredSchema == nil
+				? OnboardingStrings.welcomeSubtitle : OnboardingStrings.requiredWelcomeSubtitle,
 			accentColor: accentColor
 		) {
+			if let requiredSchema {
+				SettingsPanel(
+					title: OnboardingStrings.requiredSetupPanel,
+					systemImage: "exclamationmark.triangle",
+					tone: .warning
+				) {
+					Text(OnboardingStrings.requiredSetupReason(schema: requiredSchema))
+						.fixedSize(horizontal: false, vertical: true)
+				}
+			}
+
 			SettingsPanel(title: statusTitle, systemImage: statusImage, tone: updatePanelTone) {
 				switch updateState {
 				case .checking:

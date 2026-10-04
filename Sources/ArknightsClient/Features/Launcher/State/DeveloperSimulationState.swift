@@ -193,6 +193,7 @@
 		var customPopupTitle = "Developer preview popup"
 		var customPopupMarkdown = "This popup is injected by the debug simulator."
 		var onboardingPreview = false
+		var onboardingRequired = false
 		var rosettaMissing = false
 		var xcodeMissing = false
 		var longAccessibilityText = false

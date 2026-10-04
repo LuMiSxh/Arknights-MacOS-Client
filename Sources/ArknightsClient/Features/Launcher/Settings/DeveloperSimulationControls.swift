@@ -334,10 +334,12 @@ import SwiftUI
 				}
 				SettingsActionRow(
 					title: "Onboarding preview",
-					detail: "Open the onboarding surface inside the debug path."
+					detail: "Open onboarding in the debug path, optionally as a required rerun."
 				) {
-					SettingsToggle(
-						"Onboarding", isOn: $simulation.onboardingPreview, accentColor: accentColor)
+					VStack(alignment: .trailing, spacing: LauncherVisuals.Spacing.compact) {
+						labeledToggle("Onboarding", isOn: $simulation.onboardingPreview)
+						labeledToggle("Required", isOn: $simulation.onboardingRequired)
+					}
 				}
 				SettingsActionRow(
 					title: "Rosetta unavailable",
@@ -439,13 +441,7 @@ import SwiftUI
 			get: @escaping () -> Int64,
 			set: @escaping (Int64) -> Void
 		) -> Binding<String> {
-			Binding(
-				get: { String(get()) },
-				set: { value in
-					guard let parsed = Int64(value) else { return }
-					set(parsed)
-				}
-			)
+			Binding(get: { String(get()) }, set: { if let parsed = Int64($0) { set(parsed) } })
 		}
 	}
 #endif

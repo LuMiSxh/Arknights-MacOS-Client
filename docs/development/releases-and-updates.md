@@ -136,3 +136,5 @@ Key rotation is deferred. Sparkle 2.9.6's `generate_appcast` does not add an enc
 The setup assistant always performs one silent Sparkle feed check before version-specific onboarding, independent of the automatic-check preference. If a newer release exists, setup remains pending and opens Sparkle's updater; it resumes only after the newer launcher is installed and reopened. A failed network check is recoverable and does not permanently block first-run setup.
 
 To make every existing user go through setup again after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.6.2 for the question-based setup. Preferences are untouched; only setup progress resets.
+
+To make that rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingStrings.requiredSetupReason(schema:)`. Returning players then see why setup is required, and Skip Setup stays hidden until they finish. First-time users can still skip. Schema 2 is required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.

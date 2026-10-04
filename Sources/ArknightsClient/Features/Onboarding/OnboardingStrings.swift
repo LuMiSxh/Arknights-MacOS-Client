@@ -230,6 +230,19 @@ enum OnboardingStrings {
 	static let welcomeTitle = "Welcome to Arknights Client"
 	static let welcomeSubtitle =
 		"We’ll check the launcher first, then ask a few questions to set up the game and the parts you see every day. Your answers apply immediately."
+	static let requiredWelcomeTitle = "Something important changed"
+	static let requiredWelcomeSubtitle =
+		"This launcher version needs you to go through setup once more before you continue. Your existing settings are kept as the starting point."
+	static let requiredSetupPanel = "Why setup is required"
+
+	static func requiredSetupReason(schema: Int) -> String {
+		switch schema {
+		case 2:
+			"Display settings are now set up through a few questions. Answer them once so the launcher can size the game for your screen."
+		default:
+			"The launcher changed how important settings work. Review each step once so everything keeps working as expected."
+		}
+	}
 	static let launcherCurrent = "This launcher is current. Setup can continue."
 	static let updateDetail =
 		"Install the newer launcher and open it again. Setup stays pending so instructions always match the version you are using."

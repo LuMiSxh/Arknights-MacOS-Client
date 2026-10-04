@@ -9,6 +9,9 @@ import Foundation
 struct OnboardingProgressStore {
 	/// 2: launcher 0.6.2 replaced display settings with setup questions, so everyone answers them.
 	static let currentSchemaVersion = 2
+	/// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
+	/// `OnboardingStrings.requiredSetupReason(schema:)`.
+	static let requiredSchemaVersions: Set<Int> = [2]
 
 	private enum Key {
 		static let completedSchemaVersion = "onboarding.completedSchemaVersion"
@@ -23,6 +26,16 @@ struct OnboardingProgressStore {
 
 	var needsOnboarding: Bool {
 		defaults.integer(forKey: Key.completedSchemaVersion) < Self.currentSchemaVersion
+	}
+
+	/// The newest required schema a returning player has not finished. First runs, which have
+	/// no completed schema, can still skip setup.
+	var pendingRequiredSchema: Int? {
+		let completed = defaults.integer(forKey: Key.completedSchemaVersion)
+		guard completed > 0 else { return nil }
+		return Self.requiredSchemaVersions.filter {
+			$0 > completed && $0 <= Self.currentSchemaVersion
+		}.max()
 	}
 
 	var savedStep: OnboardingStep? {

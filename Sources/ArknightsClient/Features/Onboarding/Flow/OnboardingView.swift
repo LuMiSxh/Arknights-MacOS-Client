@@ -37,6 +37,7 @@ struct OnboardingView: View {
 								accentColor: customization.accentColor,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
+								requiredSchema: coordinator.requiredSchema,
 								rosettaInstallationState: lifecycle.rosettaInstallationState,
 								retry: retryUpdateCheck,
 								retryIntelTranslation: retryIntelTranslation,
@@ -99,7 +100,9 @@ struct OnboardingView: View {
 				FloatingActionFooterFade(height: 76)
 
 				FloatingActionBar(tint: customization.hudTintColor) {
-					if coordinator.updateState.allowsSetup && coordinator.step != .finish {
+					if coordinator.updateState.allowsSetup && coordinator.requiredSchema == nil
+						&& coordinator.step != .finish
+					{
 						CapsuleActionButton(
 							title: OnboardingStrings.skipSetup,
 							systemImage: "forward.end",

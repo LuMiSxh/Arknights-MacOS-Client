@@ -17,6 +17,8 @@ final class OnboardingCoordinator {
 	private(set) var step: OnboardingStep = .welcome
 	private(set) var updateState: OnboardingUpdateState = .checking
 	private(set) var intelTranslationState: IntelTranslationState = .waitingForLauncherCheck
+	/// Set while a returning player reruns a required setup schema; Skip Setup stays unavailable.
+	private(set) var requiredSchema: Int?
 
 	init(store: OnboardingProgressStore) {
 		self.store = store
@@ -25,6 +27,7 @@ final class OnboardingCoordinator {
 	func startIfNeeded(
 		isDeveloperMode: Bool,
 		isOnboardingPreview: Bool,
+		simulatesRequiredSetup: Bool = false,
 		gameIsInstalled: Bool,
 		checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,
 		checkIntelTranslation: @escaping @MainActor () async -> IntelTranslationState = {
@@ -32,6 +35,12 @@ final class OnboardingCoordinator {
 		}
 	) async {
 		guard isOnboardingPreview || (!isDeveloperMode && store.needsOnboarding) else { return }
+		if isOnboardingPreview {
+			requiredSchema =
+				simulatesRequiredSetup ? OnboardingProgressStore.currentSchemaVersion : nil
+		} else {
+			requiredSchema = store.pendingRequiredSchema
+		}
 		await begin(
 			gameIsInstalled: gameIsInstalled,
 			checkForUpdates: checkForUpdates,
@@ -47,6 +56,7 @@ final class OnboardingCoordinator {
 		}
 	) async {
 		store.reset()
+		requiredSchema = nil
 		await begin(
 			gameIsInstalled: gameIsInstalled,
 			checkForUpdates: checkForUpdates,
@@ -103,7 +113,7 @@ final class OnboardingCoordinator {
 	}
 
 	func skip() {
-		guard updateState.allowsSetup else { return }
+		guard updateState.allowsSetup, requiredSchema == nil else { return }
 		store.complete()
 		isPresented = false
 	}
@@ -116,6 +126,10 @@ final class OnboardingCoordinator {
 	#if DEBUG
 		func dismissDeveloperPreview() {
 			isPresented = false
+		}
+
+		func simulateRequiredSetup(_ isRequired: Bool) {
+			requiredSchema = isRequired ? OnboardingProgressStore.currentSchemaVersion : nil
 		}
 	#endif
 

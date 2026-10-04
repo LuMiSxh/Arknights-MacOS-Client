@@ -157,6 +157,11 @@ struct ContentView: View {
 				}
 			}
 		}
+		#if DEBUG
+			.onChange(of: model.isRequiredOnboardingPreview) { _, isRequired in
+				if model.isOnboardingPreview { onboarding.simulateRequiredSetup(isRequired) }
+			}
+		#endif
 		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
 			if isPresented {
 				presentation.request(.update)
@@ -335,6 +340,7 @@ struct ContentView: View {
 		await onboarding.startIfNeeded(
 			isDeveloperMode: model.isDeveloperMode,
 			isOnboardingPreview: model.isOnboardingPreview,
+			simulatesRequiredSetup: model.isRequiredOnboardingPreview,
 			gameIsInstalled: model.installation.isInstalled,
 			checkForUpdates: model.launcherUpdateCheckForOnboarding,
 			checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
