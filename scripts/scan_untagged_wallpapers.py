@@ -24,7 +24,7 @@ from lib.github_monitor import (
 from lib.wallpapers import GalleryWallpaper, fetch_gallery_wallpapers, parse_image_field
 
 # GalleryWallpaper and parse_image_field are re-exported for
-# scripts/tests/test_scan_untagged_wallpapers.py, which predates lib.wallpapers.
+# scripts/tests/test_scan_untagged_wallpapers.py.
 __all__ = [
     "GalleryWallpaper",
     "fetch_gallery_wallpapers",

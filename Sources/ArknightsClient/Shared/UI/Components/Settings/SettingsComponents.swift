@@ -274,7 +274,7 @@ struct GlassMenuPicker<Value: Hashable>: View {
 	/// A header above the options inside the open menu, like "Looks like" in Displays settings.
 	var menuTitle: String? = nil
 	/// Additional menu content appended after the plain option list — e.g. a submenu that
-	/// doesn't itself change `selection`. Defaults to nothing, so existing callers are unaffected.
+	/// doesn't itself change `selection`.
 	var trailingMenuItems: () -> AnyView = { AnyView(EmptyView()) }
 
 	var body: some View {

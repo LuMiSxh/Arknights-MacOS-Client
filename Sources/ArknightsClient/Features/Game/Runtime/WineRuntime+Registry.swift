@@ -83,7 +83,7 @@ extension WineRuntime {
 		return lines.joined(separator: "\r\n") + "\r\n"
 	}
 
-	/// `.reg` sections need the long root-key names; `reg.exe` accepted the short aliases.
+	/// `.reg` sections need the long root-key names; only `reg.exe` accepts the short aliases.
 	private static func expandedRootKey(in key: String) -> String {
 		for (alias, expanded) in [
 			("HKCU\\", "HKEY_CURRENT_USER\\"),

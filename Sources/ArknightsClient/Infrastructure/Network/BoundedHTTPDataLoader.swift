@@ -33,8 +33,8 @@ struct BoundedHTTPDataLoader: Sendable {
 		}
 		let effectiveRedirectValidator = redirectValidator ?? self.redirectValidator
 		let sourceURL = request.url ?? URL(filePath: "/invalid-remote-request")
-		// An explicit per-request policy also owns the source URL; initializer-level policies
-		// retain their historical redirect-only behavior for existing callers.
+		// A per-request validator also vets the source URL; the initializer-level one only
+		// vets redirects.
 		if let redirectValidator {
 			guard redirectValidator(sourceURL) else {
 				throw HTTPTransportError.redirectRejected(sourceURL)
