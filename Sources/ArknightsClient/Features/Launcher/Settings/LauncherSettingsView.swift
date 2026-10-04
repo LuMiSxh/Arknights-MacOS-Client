@@ -35,7 +35,7 @@ struct LauncherSettingsView: View {
 	let applyCustomPopup: ((String, String) -> Void)?
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var selectedSection = SettingsSection.general
+	@State private var selectedSection = SettingsSection.initial
 	@State private var presentedDocument: BundledDocument?
 
 	var body: some View {
@@ -51,16 +51,21 @@ struct LauncherSettingsView: View {
 			ZStack(alignment: .bottomTrailing) {
 				Group {
 					switch selectedSection {
-					case .general:
-						GeneralSettingsPage(
+					case .game:
+						GameSettingsPage(
+							settings: settings,
+							gameSession: gameSession,
+							lifecycle: lifecycle,
+							accentColor: customization.accentColor
+						)
+					case .appearance:
+						AppearanceSettingsPage(
 							settings: settings,
 							customization: customization,
-							gameSession: gameSession,
 							lifecycle: lifecycle,
 							presetCatalog: presetCatalog,
 							accentColor: customization.accentColor,
-							resetArtwork: resetArtwork,
-							restartOnboarding: restartOnboarding
+							resetArtwork: resetArtwork
 						)
 					case .audio:
 						AudioSettingsPage(
@@ -90,7 +95,8 @@ struct LauncherSettingsView: View {
 							locateExistingInstallation: locateExistingInstallation,
 							repairGame: repairGame,
 							resetAllLauncherSettings: resetAllLauncherSettings,
-							uninstallGame: uninstallGame
+							uninstallGame: uninstallGame,
+							restartOnboarding: restartOnboarding
 						)
 					case .storage:
 						StorageOverviewPage(
@@ -302,50 +308,5 @@ private struct SettingsNavigationButton: View {
 		if isSelected { return LauncherVisuals.selectedNavigationFill(for: accentColor) }
 		if isHovering { return LauncherVisuals.navigationHoverFill }
 		return .clear
-	}
-}
-
-private enum SettingsSection: String, CaseIterable, Identifiable {
-	case general
-	case audio
-	case updates
-	case installation
-	case storage
-	case statistics
-	case about
-	#if DEBUG
-		case developer
-	#endif
-
-	var id: String { rawValue }
-
-	var title: String {
-		switch self {
-		case .general: SettingsStrings.navigationGeneral
-		case .audio: SettingsStrings.navigationAudio
-		case .updates: SettingsStrings.navigationUpdates
-		case .installation: SettingsStrings.navigationInstallation
-		case .storage: SettingsStrings.navigationStorage
-		case .statistics: SettingsStrings.navigationStatistics
-		case .about: SettingsStrings.navigationAbout
-		#if DEBUG
-			case .developer: SettingsStrings.navigationDeveloper
-		#endif
-		}
-	}
-
-	var systemImage: String {
-		switch self {
-		case .general: "slider.horizontal.3"
-		case .audio: "music.note"
-		case .updates: "arrow.trianglehead.2.clockwise"
-		case .installation: "externaldrive"
-		case .storage: "internaldrive"
-		case .statistics: "chart.bar.xaxis"
-		case .about: "info.circle"
-		#if DEBUG
-			case .developer: "hammer"
-		#endif
-		}
 	}
 }

@@ -94,18 +94,20 @@ struct SettingsPanel<Content: View>: View {
 	let title: String
 	let systemImage: String
 	var tone: SettingsPanelTone = .neutral
+	/// Makes the header a disclosure button that shows or hides the content.
+	var isExpanded: Binding<Bool>?
 	@ViewBuilder let content: Content
 	@Environment(\.colorSchemeContrast) private var contrast
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@Environment(\.accessibilityShowBorders) private var showBorders
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
-			Label(title, systemImage: systemImage)
-				.font(.headline)
-				.foregroundStyle(tone.color(for: contrast))
-				.symbolRenderingMode(.hierarchical)
-			content
+			header
+			if isExpanded?.wrappedValue ?? true {
+				content
+			}
 		}
 		.padding(LauncherVisuals.Spacing.panel)
 		.frame(maxWidth: .infinity, alignment: .leading)
@@ -131,6 +133,37 @@ struct SettingsPanel<Content: View>: View {
 			reduceTransparency: reduceTransparency,
 			showBorders: showBorders
 		)
+	}
+
+	@ViewBuilder
+	private var header: some View {
+		let label = Label(title, systemImage: systemImage)
+			.font(.headline)
+			.foregroundStyle(tone.color(for: contrast))
+			.symbolRenderingMode(.hierarchical)
+		if let isExpanded {
+			Button {
+				withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
+					isExpanded.wrappedValue.toggle()
+				}
+			} label: {
+				HStack {
+					label
+					Spacer(minLength: 0)
+					Image(systemName: "chevron.right")
+						.font(.caption.weight(.semibold))
+						.foregroundStyle(.secondary)
+						.rotationEffect(.degrees(isExpanded.wrappedValue ? 90 : 0))
+						.accessibilityHidden(true)
+				}
+				.contentShape(.rect)
+			}
+			.buttonStyle(.plain)
+			.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+			.accessibilityValue(isExpanded.wrappedValue ? "Expanded" : "Collapsed")
+		} else {
+			label
+		}
 	}
 }
 
@@ -273,6 +306,8 @@ struct GlassMenuPicker<Value: Hashable>: View {
 	var listTitle: (Value) -> String? = { _ in nil }
 	/// A header above the options inside the open menu, like "Looks like" in Displays settings.
 	var menuTitle: String? = nil
+	/// Draws a divider above these options, to set a group of exact choices apart.
+	var dividerBefore: (Value) -> Bool = { _ in false }
 	/// Additional menu content appended after the plain option list — e.g. a submenu that
 	/// doesn't itself change `selection`.
 	var trailingMenuItems: () -> AnyView = { AnyView(EmptyView()) }
@@ -302,6 +337,7 @@ struct GlassMenuPicker<Value: Hashable>: View {
 
 	private var optionButtons: some View {
 		ForEach(options, id: \.value) { option in
+			if dividerBefore(option.value) { Divider() }
 			Button {
 				selection.wrappedValue = option.value
 			} label: {

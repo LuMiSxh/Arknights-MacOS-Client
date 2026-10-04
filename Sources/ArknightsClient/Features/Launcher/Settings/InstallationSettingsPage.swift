@@ -14,6 +14,7 @@ struct InstallationSettingsPage: View {
 	let repairGame: () -> Void
 	let resetAllLauncherSettings: () -> Void
 	let uninstallGame: () -> Void
+	let restartOnboarding: () -> Void
 	@State private var confirmsGameUninstall = false
 	@State private var confirmsForceMigration = false
 	@State private var confirmsWinePrefixDeletion = false
@@ -106,6 +107,18 @@ struct InstallationSettingsPage: View {
 					)
 					.disabled(!installation.isInstalled || !installation.canInstall)
 				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: SettingsStrings.setupAssistant,
+					detail: SettingsStrings.setupAssistantDetail
+				) {
+					CapsuleActionButton(
+						title: SettingsStrings.runAgain, systemImage: "wand.and.stars",
+						tone: .accent(accentColor), presentation: .compact,
+						action: restartOnboarding
+					)
+					.disabled(gameSession.isGameActive)
+				}
 			}
 
 			SettingsPanel(
@@ -191,7 +204,7 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.winePrefix,
+					title: SettingsStrings.winePrefixTitle,
 					detail: SettingsStrings.winePrefixDetail,
 					help: SettingsStrings.winePrefixHelp
 				) {
