@@ -9,23 +9,61 @@ struct OnboardingAnswer<Value: Hashable>: Identifiable {
 	let detail: String
 	let systemImage: String
 	var isRecommended = false
+	/// Runs when an action card is tapped. Selection questions ignore it.
+	var action: (@MainActor () -> Void)?
 
 	var id: Value { value }
 }
 
 /// Asks one setup question and applies the picked answer immediately, so players configure the
-/// launcher by answering instead of reading individual settings.
-struct OnboardingQuestion<Value: Hashable>: View {
+/// launcher by answering instead of reading individual settings. A question picks one answer,
+/// several answers, or offers action cards that open a chooser.
+struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
+	private enum Interaction {
+		case single(Binding<Value?>)
+		case multiple(Binding<Set<Value>>)
+		case action
+	}
+
 	let question: String
 	let systemImage: String
 	let answers: [OnboardingAnswer<Value>]
-	@Binding var selection: Value?
+	private let interaction: Interaction
 	let accentColor: Color
-	var isDisabled = false
+	let isDisabled: Bool
+	let footnote: String?
+	let accessory: Accessory
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+	private init(
+		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
+		interaction: Interaction, accentColor: Color, isDisabled: Bool, footnote: String?,
+		accessory: Accessory
+	) {
+		self.question = question
+		self.systemImage = systemImage
+		self.answers = answers
+		self.interaction = interaction
+		self.accentColor = accentColor
+		self.isDisabled = isDisabled
+		self.footnote = footnote
+		self.accessory = accessory
+	}
+
+	/// Action cards, each with a chevron, that run their own closure. The accessory shows a
+	/// preview of the current choice above the cards.
+	init(
+		question: String, systemImage: String, actions: [OnboardingAnswer<Value>],
+		accentColor: Color, @ViewBuilder accessory: () -> Accessory
+	) {
+		self.init(
+			question: question, systemImage: systemImage, answers: actions, interaction: .action,
+			accentColor: accentColor, isDisabled: false, footnote: nil, accessory: accessory())
+	}
 
 	var body: some View {
 		SettingsPanel(title: question, systemImage: systemImage) {
+			accessory
 			VStack(spacing: LauncherVisuals.Spacing.control) {
 				ForEach(answers) { answer in
 					answerButton(answer)
@@ -33,16 +71,53 @@ struct OnboardingQuestion<Value: Hashable>: View {
 			}
 			.accessibilityElement(children: .contain)
 			.accessibilityLabel(question)
+			if let footnote {
+				Text(footnote)
+					.font(.caption)
+					.foregroundStyle(.secondary)
+					.fixedSize(horizontal: false, vertical: true)
+			}
+		}
+	}
+
+	private func isSelected(_ answer: OnboardingAnswer<Value>) -> Bool {
+		switch interaction {
+		case .single(let selection): selection.wrappedValue == answer.value
+		case .multiple(let selections): selections.wrappedValue.contains(answer.value)
+		case .action: false
+		}
+	}
+
+	private func trailingGlyph(isSelected: Bool) -> String {
+		switch interaction {
+		case .single: isSelected ? "checkmark.circle.fill" : "circle"
+		case .multiple: isSelected ? "checkmark.square.fill" : "square"
+		case .action: "chevron.forward"
+		}
+	}
+
+	private func choose(_ answer: OnboardingAnswer<Value>) {
+		switch interaction {
+		case .single(let selection):
+			selection.wrappedValue = answer.value
+		case .multiple(let selections):
+			if selections.wrappedValue.contains(answer.value) {
+				selections.wrappedValue.remove(answer.value)
+			} else {
+				selections.wrappedValue.insert(answer.value)
+			}
+		case .action:
+			answer.action?()
 		}
 	}
 
 	private func answerButton(_ answer: OnboardingAnswer<Value>) -> some View {
-		let isSelected = selection == answer.value
+		let isSelected = isSelected(answer)
 		let shape = RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row, style: .continuous)
 		return Button {
 			// Answers can reveal follow-up panels or change the summary, so move those too.
 			withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
-				selection = answer.value
+				choose(answer)
 			}
 		} label: {
 			HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
@@ -73,7 +148,7 @@ struct OnboardingQuestion<Value: Hashable>: View {
 						.fixedSize(horizontal: false, vertical: true)
 				}
 				Spacer(minLength: LauncherVisuals.Spacing.content)
-				Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+				Image(systemName: trailingGlyph(isSelected: isSelected))
 					.font(.title3)
 					.foregroundStyle(isSelected ? accentColor : .secondary)
 					.accessibilityHidden(true)
@@ -88,6 +163,31 @@ struct OnboardingQuestion<Value: Hashable>: View {
 		.disabled(isDisabled)
 		.accessibilityElement(children: .combine)
 		.accessibilityAddTraits(isSelected ? .isSelected : [])
+	}
+}
+
+extension OnboardingQuestion where Accessory == EmptyView {
+	/// One answer, applied the moment it is picked. The footnote adds a hint under the cards.
+	init(
+		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
+		selection: Binding<Value?>, accentColor: Color, isDisabled: Bool = false,
+		footnote: String? = nil
+	) {
+		self.init(
+			question: question, systemImage: systemImage, answers: answers,
+			interaction: .single(selection), accentColor: accentColor, isDisabled: isDisabled,
+			footnote: footnote, accessory: EmptyView())
+	}
+
+	/// Any number of answers, each shown with a checkbox.
+	init(
+		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
+		selections: Binding<Set<Value>>, accentColor: Color
+	) {
+		self.init(
+			question: question, systemImage: systemImage, answers: answers,
+			interaction: .multiple(selections), accentColor: accentColor, isDisabled: false,
+			footnote: nil, accessory: EmptyView())
 	}
 }
 

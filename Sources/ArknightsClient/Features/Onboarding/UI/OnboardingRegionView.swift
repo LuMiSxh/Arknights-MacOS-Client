@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-struct OnboardingInstallationView: View {
+struct OnboardingRegionView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	@Bindable var installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
@@ -12,13 +12,21 @@ struct OnboardingInstallationView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: OnboardingStrings.installationTitle,
-			subtitle: OnboardingStrings.installationSubtitle,
+			title: OnboardingStrings.regionTitle,
+			subtitle: OnboardingStrings.regionSubtitle,
 			accentColor: accentColor
 		) {
-			OnboardingCanaryPanel(
-				title: OnboardingStrings.canaryFeatures,
-			) {
+			OnboardingQuestion(
+				question: OnboardingStrings.regionQuestion,
+				systemImage: "globe.asia.australia",
+				answers: preferences.regionAccess.selectableRegions.map(
+					OnboardingStrings.regionAnswer),
+				selection: regionBinding,
+				accentColor: accentColor,
+				isDisabled: !canSwitchRegion
+			)
+
+			OnboardingCanaryPanel(title: OnboardingStrings.canaryFeatures) {
 				OnboardingToggleRow(
 					title: OnboardingStrings.canaryFeatures,
 					detail: OnboardingStrings.canaryFeaturesDetail,
@@ -44,26 +52,7 @@ struct OnboardingInstallationView: View {
 				}
 			}
 
-			SettingsPanel(
-				title: OnboardingStrings.serverRegion,
-				systemImage: "globe.asia.australia"
-			) {
-				AdaptiveSegmentedControl(
-					selection: regionBinding,
-					options: preferences.regionAccess.selectableRegions,
-					accentColor: accentColor
-				) { region in
-					Text(region.displayName)
-				}
-				.disabled(!canSwitchRegion)
-				Text(regionDetail)
-					.font(.callout)
-					.foregroundStyle(.secondary)
-			}
-
-			SettingsPanel(
-				title: OnboardingStrings.officialClient, systemImage: installationImage
-			) {
+			SettingsPanel(title: OnboardingStrings.gameFiles, systemImage: installationImage) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
 						if isLoadingInstallationMetadata {
@@ -105,10 +94,6 @@ struct OnboardingInstallationView: View {
 				}
 			}
 		}
-	}
-
-	private var regionDetail: String {
-		OnboardingStrings.regionDetail(installation.region)
 	}
 
 	private var installationImage: String {
@@ -163,7 +148,12 @@ struct OnboardingInstallationView: View {
 		return configuration.decompressionSize
 	}
 
-	private var regionBinding: Binding<GameRegion> {
-		Binding(get: { installation.region }, set: { selectRegion($0) })
+	private var regionBinding: Binding<GameRegion?> {
+		Binding(
+			get: { installation.region },
+			set: { region in
+				if let region { selectRegion(region) }
+			}
+		)
 	}
 }

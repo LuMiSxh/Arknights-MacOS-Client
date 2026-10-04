@@ -12,18 +12,27 @@ enum GamePlacementAnswer: CaseIterable, Sendable {
 /// the current screen, so players never have to calculate resolutions.
 struct GameDisplayAnswers: Equatable, Sendable {
 	var placement: GamePlacementAnswer
+	var windowSize: GameWindowSizeChoice
 	var rendering: GameRenderingMode
 
 	static let recommended = GameDisplayAnswers(placement: .window, rendering: .retina)
 
-	init(placement: GamePlacementAnswer, rendering: GameRenderingMode) {
+	init(
+		placement: GamePlacementAnswer, windowSize: GameWindowSizeChoice = .fillScreen,
+		rendering: GameRenderingMode
+	) {
 		self.placement = placement
+		self.windowSize = windowSize
 		self.rendering = rendering
 	}
 
 	/// Reads the answers back from saved options, so returning to setup shows earlier choices.
-	init(_ options: GameLaunchOptions) {
+	/// A window size set by hand in Settings reads back as filling the screen.
+	init(_ options: GameLaunchOptions, screen: GameScreenMetrics?) {
 		placement = options.displayMode == .fullscreen ? .fullscreen : .window
+		windowSize =
+			screen.flatMap { GameWindowSizeChoice.matching(options.windowSize, on: $0) }
+			?? .fillScreen
 		rendering = options.renderingMode
 	}
 
@@ -35,7 +44,7 @@ struct GameDisplayAnswers: Equatable, Sendable {
 		switch placement {
 		case .window:
 			options.displayMode = .windowed
-			options.windowSize = GameWindowSizeChoice.fillScreen.size(on: screen)
+			options.windowSize = windowSize.size(on: screen)
 		case .fullscreen:
 			// Native is pixel-exact on every display; the official resolution stays as the
 			// fallback for older launchers.
@@ -44,6 +53,48 @@ struct GameDisplayAnswers: Equatable, Sendable {
 			options.resolution = screen.fullscreenResolution
 		}
 		return options
+	}
+}
+
+/// Which pointer the game shows, answered during setup.
+enum PointerAnswer: CaseIterable, Sendable {
+	case macPointer
+	case gameCursor
+
+	static let recommended = PointerAnswer.macPointer
+
+	var usesHardwareCursor: Bool { self == .macPointer }
+
+	init(usesHardwareCursor: Bool) {
+		self = usesHardwareCursor ? .macPointer : .gameCursor
+	}
+}
+
+extension LauncherPreferencesController {
+	var pointerAnswer: PointerAnswer {
+		get { PointerAnswer(usesHardwareCursor: usesHardwareCursor) }
+		set { usesHardwareCursor = newValue.usesHardwareCursor }
+	}
+}
+
+/// What the launcher shows around the Play button, answered during setup.
+enum LauncherInfoAnswer: CaseIterable, Hashable, Sendable {
+	case gameVersion
+	case serverTime
+}
+
+extension LauncherPreferencesController {
+	var shownLauncherInfo: Set<LauncherInfoAnswer> {
+		get {
+			var shown = Set<LauncherInfoAnswer>()
+			if showsGameVersion { shown.insert(.gameVersion) }
+			if showsServerResetCountdown { shown.insert(.serverTime) }
+			return shown
+		}
+		set {
+			showsGameVersion = newValue.contains(.gameVersion)
+			showsServerResetCountdown = newValue.contains(.serverTime)
+		}
 	}
 }
 

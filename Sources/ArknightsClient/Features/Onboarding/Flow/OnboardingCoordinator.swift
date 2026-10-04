@@ -91,12 +91,12 @@ final class OnboardingCoordinator {
 	func advance() {
 		if step == .welcome {
 			guard updateState.allowsSetup else { return }
-			var target = resumeStep ?? .installation
-			if !gameWasInstalled && target.rawValue > OnboardingStep.installation.rawValue {
-				target = .installation
+			var target = resumeStep ?? .region
+			if !gameWasInstalled && target.rawValue > OnboardingStep.region.rawValue {
+				target = .region
 			}
 			resumeStep = nil
-			move(to: target == .welcome ? .installation : target)
+			move(to: target == .welcome ? .region : target)
 			return
 		}
 

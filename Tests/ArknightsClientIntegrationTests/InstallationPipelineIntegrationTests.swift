@@ -64,7 +64,7 @@ struct InstallationPipelineIntegrationTests {
 		#expect(onboarding.isPresented)
 		#expect(onboarding.step == .welcome)
 		onboarding.advance()
-		#expect(onboarding.step == .installation)
+		#expect(onboarding.step == .region)
 
 		let progress = IntegrationProgressRecorder()
 		model.installation.startInstallation(launchAfterCompletion: false)

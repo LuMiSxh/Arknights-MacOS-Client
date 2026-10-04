@@ -26,7 +26,7 @@ struct OnboardingCoordinatorTests {
 
 		coordinator.advance()
 		coordinator.advance()
-		#expect(coordinator.step == .game)
+		#expect(coordinator.step == .display)
 
 		let resumed = OnboardingCoordinator(store: store)
 		await resumed.startIfNeeded(
@@ -38,15 +38,15 @@ struct OnboardingCoordinatorTests {
 		)
 		resumed.advance()
 
-		#expect(resumed.step == .game)
+		#expect(resumed.step == .display)
 	}
 
 	@Test
-	func missingGameClampsResumeToInstallation() async {
+	func missingGameClampsResumeToRegion() async {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = OnboardingProgressStore(defaults: defaults)
-		store.save(step: .icons)
+		store.save(step: .look)
 		let coordinator = OnboardingCoordinator(store: store)
 
 		await coordinator.startIfNeeded(
@@ -58,7 +58,27 @@ struct OnboardingCoordinatorTests {
 		)
 		coordinator.advance()
 
-		#expect(coordinator.step == .installation)
+		#expect(coordinator.step == .region)
+	}
+
+	@Test
+	func stepSavedByAnEarlierLauncherRestartsAtTheSystemCheck() async {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(5, forKey: "onboarding.currentStep")
+		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
+
+		await coordinator.startIfNeeded(
+			isDeveloperMode: false,
+			isOnboardingPreview: false,
+			gameIsInstalled: true,
+			checkForUpdates: { .current },
+			checkIntelTranslation: { .available }
+		)
+		#expect(coordinator.step == .welcome)
+
+		coordinator.advance()
+		#expect(coordinator.step == .region)
 	}
 
 	@Test(arguments: [
@@ -84,7 +104,7 @@ struct OnboardingCoordinatorTests {
 		)
 		coordinator.advance()
 		#expect(
-			coordinator.step == (updateIsAvailable ? .welcome : .installation),
+			coordinator.step == (updateIsAvailable ? .welcome : .region),
 			Comment(rawValue: caseLabel)
 		)
 		coordinator.skip()

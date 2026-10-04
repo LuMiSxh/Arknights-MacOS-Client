@@ -43,8 +43,8 @@ struct OnboardingView: View {
 								retryIntelTranslation: retryIntelTranslation,
 								installRosetta: installRosetta
 							)
-						case .installation:
-							OnboardingInstallationView(
+						case .region:
+							OnboardingRegionView(
 								preferences: preferences,
 								installation: installation,
 								lifecycle: lifecycle,
@@ -52,22 +52,18 @@ struct OnboardingView: View {
 								canSwitchRegion: canSwitchRegion,
 								selectRegion: actions.selectRegion
 							)
-						case .game:
-							OnboardingGameSettingsView(
+						case .display:
+							OnboardingDisplayView(
 								preferences: preferences,
 								lifecycle: lifecycle,
 								accentColor: customization.accentColor
 							)
-						case .personalization:
-							OnboardingPersonalizationView(
+						case .look:
+							OnboardingLookView(
 								customization: customization,
 								preferences: preferences,
 								resetArtwork: actions.resetArtwork,
-								browseArtwork: { presentedGallery = .artwork }
-							)
-						case .icons:
-							OnboardingIconsView(
-								customization: customization,
+								browseArtwork: { presentedGallery = .artwork },
 								browseOperators: { presentedGallery = .operatorIcons }
 							)
 						case .extras:
@@ -186,7 +182,7 @@ struct OnboardingView: View {
 			case .updateRequired(let version): OnboardingStrings.installUpdate(version)
 			}
 		}
-		if coordinator.step == .installation {
+		if coordinator.step == .region {
 			if installation.isInstalled || installation.isDownloading {
 				return OnboardingStrings.continueSetup
 			}
@@ -209,7 +205,7 @@ struct OnboardingView: View {
 					&& coordinator.intelTranslationState != .waitingForLauncherCheck
 			}
 		}
-		if coordinator.step == .installation {
+		if coordinator.step == .region {
 			return installation.isInstalled || installation.isDownloading
 				|| installation.canInstall
 		}
@@ -220,7 +216,7 @@ struct OnboardingView: View {
 		if coordinator.step == .welcome, case .updateRequired = coordinator.updateState {
 			return "arrow.down.app"
 		}
-		if coordinator.step == .installation && !installation.isInstalled
+		if coordinator.step == .region && !installation.isInstalled
 			&& !installation.isDownloading
 		{
 			return installation.hasPartialDownload ? "arrow.clockwise" : "arrow.down"
@@ -236,7 +232,7 @@ struct OnboardingView: View {
 			actions.openLauncherUpdate()
 			return
 		}
-		if coordinator.step == .installation && !installation.isInstalled
+		if coordinator.step == .region && !installation.isInstalled
 			&& !installation.isDownloading
 		{
 			actions.installOrUpdate()

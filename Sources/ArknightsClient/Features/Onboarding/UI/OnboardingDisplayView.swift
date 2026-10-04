@@ -2,16 +2,15 @@
 
 import SwiftUI
 
-struct OnboardingGameSettingsView: View {
+struct OnboardingDisplayView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	let lifecycle: LauncherLifecycleStore
 	let accentColor: Color
-	@Environment(\.displayScale) private var displayScale
 
 	var body: some View {
 		OnboardingPage(
-			title: OnboardingStrings.gameTitle,
-			subtitle: OnboardingStrings.gameSubtitle,
+			title: OnboardingStrings.displayTitle,
+			subtitle: OnboardingStrings.displaySubtitle,
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
@@ -20,27 +19,51 @@ struct OnboardingGameSettingsView: View {
 				answers: GamePlacementAnswer.allCases.map(OnboardingStrings.placementAnswer),
 				selection: answerBinding(\.placement),
 				accentColor: accentColor,
-				isDisabled: lifecycle.activity.isGameActive
+				isDisabled: isLocked
 			)
+			if answers.placement == .window {
+				OnboardingQuestion(
+					question: OnboardingStrings.windowSizeQuestion,
+					systemImage: "rectangle.expand.diagonal",
+					answers: GameWindowSizeChoice.allCases.map(OnboardingStrings.windowSizeAnswer),
+					selection: answerBinding(\.windowSize),
+					accentColor: accentColor,
+					isDisabled: isLocked,
+					footnote: OnboardingStrings.windowSizeFootnote
+				)
+			}
 			OnboardingQuestion(
 				question: OnboardingStrings.renderingQuestion,
 				systemImage: "sparkles",
 				answers: GameRenderingMode.allCases.map(OnboardingStrings.renderingAnswer),
 				selection: answerBinding(\.rendering),
 				accentColor: accentColor,
-				isDisabled: lifecycle.activity.isGameActive
+				isDisabled: isLocked
 			)
-			Text(displaySummary)
+			// The runtime reports pointer support only while launching, so the question is always
+			// shown; a runtime without it falls back to the game's own cursor at launch.
+			OnboardingQuestion(
+				question: OnboardingStrings.pointerQuestion,
+				systemImage: "cursorarrow.motionlines",
+				answers: PointerAnswer.allCases.map(OnboardingStrings.pointerAnswer),
+				selection: pointerBinding,
+				accentColor: accentColor,
+				isDisabled: isLocked
+			)
+			Text(OnboardingStrings.displaySummary(answers))
 				.font(.callout)
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: true)
 				.padding(.horizontal, LauncherVisuals.Spacing.panel)
 				.onAppear(perform: applyRecommendedAnswers)
-
 		}
 	}
 
-	private var answers: GameDisplayAnswers { GameDisplayAnswers(preferences.launchOptions) }
+	private var isLocked: Bool { lifecycle.activity.isGameActive }
+
+	private var answers: GameDisplayAnswers {
+		GameDisplayAnswers(preferences.launchOptions, screen: GameScreenMetrics.main)
+	}
 
 	private func answerBinding<Value>(
 		_ keyPath: WritableKeyPath<GameDisplayAnswers, Value>
@@ -57,26 +80,24 @@ struct OnboardingGameSettingsView: View {
 		)
 	}
 
-	private var displaySummary: String {
-		let options = preferences.launchOptions
-		let plan = GameDisplayPlan(
-			options: options, backingScaleFactor: displayScale,
-			fullscreenDisplay: GameFullscreenDisplay.primary)
-		guard let size = plan.renderSize else { return OnboardingStrings.displaySummaryFallback }
-		let window = options.displayMode == .fullscreen ? nil : options.windowSize
-		return OnboardingStrings.displaySummary(
-			render: SettingsStrings.renderSummary(plan, size: size, window: window))
+	private var pointerBinding: Binding<PointerAnswer?> {
+		Binding(
+			get: { preferences.pointerAnswer },
+			set: { if let answer = $0 { preferences.pointerAnswer = answer } }
+		)
 	}
 
 	/// Untouched defaults start from the recommended answers. Players returning with in-game
 	/// display settings keep their window mode and rendering, but the launcher takes over sizing,
-	/// so the answers shown are the answers in effect.
+	/// so the answers shown are the answers in effect. The pointer has no untouched marker, so it
+	/// is only recommended alongside untouched display defaults.
 	private func applyRecommendedAnswers() {
 		guard let screen = GameScreenMetrics.main else { return }
 		let options = preferences.launchOptions
 		if options == .default {
 			preferences.launchOptions = GameDisplayAnswers.recommended.applied(
 				to: options, screen: screen)
+			preferences.pointerAnswer = .recommended
 		} else if options.usesGameSettings {
 			preferences.launchOptions = answers.applied(to: options, screen: screen)
 		}

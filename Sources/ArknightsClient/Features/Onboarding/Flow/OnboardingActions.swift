@@ -4,7 +4,7 @@ import Foundation
 
 struct OnboardingActions {
 	let selectRegion: @MainActor @Sendable (GameRegion) -> Void
-	let resetArtwork: () -> Void
+	let resetArtwork: @MainActor () -> Void
 	let installOrUpdate: () -> Void
 	let openLauncherUpdate: () -> Void
 	let retryIntelTranslation: () async -> IntelTranslationState
