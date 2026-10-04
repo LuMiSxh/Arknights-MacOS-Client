@@ -8,15 +8,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 /*
- * Process-local Dock icon policy for the main Arknights Wine process.
+ * Process-local Dock policy for the Arknights Wine process tree.
  *
  * The launcher injects this x86-64 dylib with DYLD_INSERT_LIBRARIES. Wine later asks
  * NSApplication to publish the icon it extracted from Arknights.exe. Intercepting that
  * single public AppKit setter lets the launcher either normalize the extracted icon to
  * the macOS icon grid or replace it with a launcher-owned PNG, without modifying Wine,
  * its prefix, or the game executable.
+ *
+ * Wine passes the injection on to every process the game starts, such as the Bilibili
+ * sign-in helper or a console host. Each of those would otherwise get its own "wine"
+ * Dock tile with a generic executable icon, which macOS can keep among recent apps after
+ * the game exits. Only the launcher's direct child, the game, keeps its Dock tile.
  *
  * This file deliberately does not import or link AppKit/Foundation. Loading an AppKit-
  * linked injected dylib initializes AppKit before Wine has assigned
@@ -47,14 +53,18 @@ typedef struct {
 } AKRect;
 
 typedef void (*SetApplicationIconImageIMP)(id, SEL, id);
+typedef signed char (*SetActivationPolicyIMP)(id, SEL, long);
 
 /* A 412-point content square inside a 512-point canvas is the 80.5% macOS icon grid.
- * The integer enum values mirror NSCompositingOperationCopy and NSImageInterpolationHigh;
- * naming them here avoids loading AppKit merely to obtain those declarations. */
+ * The integer enum values mirror NSCompositingOperationCopy, NSImageInterpolationHigh,
+ * and NSApplicationActivationPolicyRegular/Accessory; naming them here avoids loading
+ * AppKit merely to obtain those declarations. */
 static const double icon_canvas_dimension = 512.0;
 static const double icon_content_dimension = 412.0;
 static const long compositing_operation_copy = 1;
 static const long image_interpolation_high = 3;
+static const long activation_policy_regular = 0;
+static const long activation_policy_accessory = 1;
 
 /* AppKit normally appears very early in Wine startup. Polling every 50ms for at most ten
  * seconds avoids blocking dyld's constructor thread while still installing the hook before
@@ -64,6 +74,8 @@ static const struct timespec appkit_poll_interval = { .tv_sec = 0, .tv_nsec = 50
 static const int appkit_poll_limit = 200;
 
 static SetApplicationIconImageIMP original_set_application_icon_image;
+static SetActivationPolicyIMP original_set_activation_policy;
+static bool is_helper_process;
 static pthread_mutex_t icon_setter_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *custom_game_icon_path;
 static id custom_game_icon;
@@ -197,14 +209,46 @@ static bool install_icon_setter(void) {
 	return original != NULL;
 }
 
-/* Background entry point used solely to observe AppKit availability and install the hook.
+/* Replacement IMP for NSApplication.setActivationPolicy: in helper processes. Wine starts
+ * each process as a UI element and requests Regular when it shows its first window; keeping
+ * that request accessory-only leaves the window usable but never publishes a Dock tile. */
+static signed char set_activation_policy(id application, SEL selector, long policy) {
+	SetActivationPolicyIMP original;
+	if (policy == activation_policy_regular) policy = activation_policy_accessory;
+	pthread_mutex_lock(&icon_setter_lock);
+	original = original_set_activation_policy;
+	pthread_mutex_unlock(&icon_setter_lock);
+	return original != NULL ? original(application, selector, policy) : 0;
+}
+
+static bool install_activation_policy_hook(void) {
+	Class application_class = objc_getClass("NSApplication");
+	if (application_class == Nil) return false;
+
+	Method method =
+		class_getInstanceMethod(application_class, sel_registerName("setActivationPolicy:"));
+	if (method == NULL) return false;
+
+	pthread_mutex_lock(&icon_setter_lock);
+	original_set_activation_policy =
+		(SetActivationPolicyIMP)method_setImplementation(method, (IMP)set_activation_policy);
+	pthread_mutex_unlock(&icon_setter_lock);
+	return original_set_activation_policy != NULL;
+}
+
+/* Background entry point used solely to observe AppKit availability and install the hooks.
  * A timeout is non-fatal—the game keeps Wine's unmodified icon—but is written to stderr,
  * which the launcher already captures in wine.log for diagnosis. */
 static void *wait_for_appkit(void *context) {
 	(void)context;
 	for (int attempt = 0; attempt < appkit_poll_limit; attempt++) {
 		@autoreleasepool {
-			if (install_icon_setter()) return NULL;
+			if (install_icon_setter()) {
+				if (is_helper_process && !install_activation_policy_hook()) {
+					fprintf(stderr, "Arknights Client: failed to keep a helper out of the Dock\n");
+				}
+				return NULL;
+			}
 		}
 		nanosleep(&appkit_poll_interval, NULL);
 	}
@@ -212,8 +256,10 @@ static void *wait_for_appkit(void *context) {
 	return NULL;
 }
 
-/* Dylib entry point. It snapshots the optional custom-icon path before returning from the
- * loader callback, then detaches the observer so dyld can continue Wine startup immediately.
+/* Dylib entry point. It snapshots the optional custom-icon path and whether this process is a
+ * helper before returning from the loader callback, then detaches the observer so dyld can
+ * continue Wine startup immediately. The parent check runs here because the game is still the
+ * launcher's child; a missing or malformed launcher PID keeps the original Dock behavior.
  * Constructor failures are deliberately non-fatal and logged to Wine's captured stderr. */
 __attribute__((constructor)) static void install_game_icon_bridge(void) {
 	const char *custom_path = getenv("ARKNIGHTS_CLIENT_GAME_ICON_PATH");
@@ -222,6 +268,12 @@ __attribute__((constructor)) static void install_game_icon_bridge(void) {
 		if (custom_game_icon_path == NULL) {
 			fprintf(stderr, "Arknights Client: failed to copy custom game icon path\n");
 		}
+	}
+	const char *launcher_pid = getenv("ARKNIGHTS_CLIENT_LAUNCHER_PID");
+	if (launcher_pid != NULL && launcher_pid[0] != '\0') {
+		char *end = NULL;
+		long parent = strtol(launcher_pid, &end, 10);
+		is_helper_process = *end == '\0' && parent > 0 && parent != (long)getppid();
 	}
 
 	pthread_t thread;

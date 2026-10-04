@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fullscreen looked grainy on displays larger than 4K or with uncommon sizes, because the game drew an official resolution that macOS stretched by an uneven factor. A new Native resolution, which setup now picks, draws the display's own resolution on the display with the menu bar. Larger displays also get sizes between 4K and their own resolution, and sizes larger than the display are hidden. Game Resolution now names what fullscreen fills the screen at, like other games' output resolution; MetalFX and Lightweight draw half the width and height and scale up. Window Size and Game Resolution share one layout with "Looks like" and "Fills the screen at" headers, well-known resolutions are named (Full HD, WQHD, 4K, …), and the description says what the game draws.
 - Locally built launchers no longer treat the published release of the same version as an update that blocks setup.
 - Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.
+- Helper windows that the game opens, such as the China — Bilibili sign-in and console windows, no longer add a separate "wine" Dock entry that could stay behind after the game closes.
 
 ## [0.6.1] - 2026-10-02
 

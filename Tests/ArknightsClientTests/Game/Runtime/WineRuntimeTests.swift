@@ -132,6 +132,7 @@ func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
 		"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
 		"DYLD_INSERT_LIBRARIES": "/runtime/bridge.dylib",
 		"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/game/icon.icns",
+		"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
 	])
 
 	#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
@@ -141,6 +142,7 @@ func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
 	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
 	#expect(environment["DYLD_INSERT_LIBRARIES"] == nil)
 	#expect(environment["ARKNIGHTS_CLIENT_GAME_ICON_PATH"] == nil)
+	#expect(environment["ARKNIGHTS_CLIENT_LAUNCHER_PID"] == nil)
 }
 
 @Test
@@ -172,14 +174,19 @@ func gameIconEnvironmentInjectsBridgeAndOptionalCustomIcon() {
 	)
 
 	#expect(
-		runtime.gameIconEnvironment(customIconURL: nil)
-			== ["DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib"]
+		runtime.gameIconEnvironment(customIconURL: nil, launcherProcessIdentifier: 42)
+			== [
+				"DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib",
+				"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
+			]
 	)
 	#expect(
-		runtime.gameIconEnvironment(customIconURL: URL(filePath: "/icons/game.png"))
+		runtime.gameIconEnvironment(
+			customIconURL: URL(filePath: "/icons/game.png"), launcherProcessIdentifier: 42)
 			== [
 				"DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib",
 				"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/icons/game.png",
+				"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
 			]
 	)
 }

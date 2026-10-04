@@ -133,9 +133,17 @@ extension WineRuntime {
 
 	/// Injects the x86-64 bridge that normalizes Wine's extracted executable icon.
 	/// A custom icon path replaces that default image without modifying the game executable.
-	func gameIconEnvironment(customIconURL: URL?) -> [String: String] {
+	/// Wine passes the injection on to every process the game starts; the launcher PID lets
+	/// the bridge keep those helpers out of the Dock while the game, its direct child, stays.
+	func gameIconEnvironment(
+		customIconURL: URL?,
+		launcherProcessIdentifier: Int32 = ProcessInfo.processInfo.processIdentifier
+	) -> [String: String] {
 		guard let gameIconBridgeURL else { return [:] }
-		var environment = ["DYLD_INSERT_LIBRARIES": gameIconBridgeURL.path]
+		var environment = [
+			"DYLD_INSERT_LIBRARIES": gameIconBridgeURL.path,
+			"ARKNIGHTS_CLIENT_LAUNCHER_PID": String(launcherProcessIdentifier),
+		]
 		if let customIconURL {
 			environment["ARKNIGHTS_CLIENT_GAME_ICON_PATH"] = customIconURL.path
 		}

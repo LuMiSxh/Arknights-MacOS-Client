@@ -355,6 +355,7 @@ struct WineRuntime: Sendable {
 		var controllerEnvironment = environment
 		controllerEnvironment.removeValue(forKey: "DYLD_INSERT_LIBRARIES")
 		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_GAME_ICON_PATH")
+		controllerEnvironment.removeValue(forKey: "ARKNIGHTS_CLIENT_LAUNCHER_PID")
 		controllerEnvironment.removeValue(
 			forKey: AppConstants.Runtime.hardwareCursorEnvironmentKey)
 		controllerEnvironment.removeValue(
