@@ -47,6 +47,20 @@ func endingUpdatePresentationAllowsSettingsToOpen() {
 }
 
 @Test
+func popupArrivingDuringSetupWaitsUntilSetupEnds() {
+	let arbiter = LauncherPresentationArbiter()
+
+	#expect(arbiter.showsOnboarding(isOnboardingPresented: true))
+	#expect(
+		arbiter.sheetDestination(
+			isOnboardingPresented: true, isUpdatePresented: false, hasPendingPopup: true) == nil)
+	#expect(
+		arbiter.sheetDestination(
+			isOnboardingPresented: false, isUpdatePresented: false, hasPendingPopup: true) == .popup
+	)
+}
+
+@Test
 func pendingPopupBlocksApplicationQuit() {
 	let arbiter = LauncherPresentationArbiter()
 

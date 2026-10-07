@@ -183,12 +183,10 @@ struct ContentView: View {
 		Binding(
 			get: {
 				guard !isTerminating else { return nil }
-				if let current = presentation.current, current.isSheet { return current }
-				guard presentation.current == nil, !onboarding.isPresented,
-					!model.communication.launcherUpdateUserDriver.isPresented,
-					model.communication.popup != nil
-				else { return nil }
-				return .popup
+				return presentation.sheetDestination(
+					isOnboardingPresented: onboarding.isPresented,
+					isUpdatePresented: model.communication.launcherUpdateUserDriver.isPresented,
+					hasPendingPopup: model.communication.popup != nil)
 			},
 			set: { destination in
 				guard destination == nil else { return }
@@ -209,7 +207,7 @@ struct ContentView: View {
 			set: { if !$0 { confirmation = nil } })
 	}
 	private var onboardingIsPresentable: Bool {
-		onboarding.isPresented && presentation.current == nil && model.communication.popup == nil
+		presentation.showsOnboarding(isOnboardingPresented: onboarding.isPresented)
 	}
 	private var updateOverlayIsPresented: Bool {
 		LauncherUpdateOverlayPresentation.isPresented(

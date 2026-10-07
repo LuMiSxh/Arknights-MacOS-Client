@@ -95,4 +95,18 @@ struct LauncherPresentationArbiter {
 	func blockingDestination(hasPendingPopup: Bool) -> LauncherPresentationDestination? {
 		current ?? (hasPendingPopup ? .popup : nil)
 	}
+
+	func showsOnboarding(isOnboardingPresented: Bool) -> Bool {
+		isOnboardingPresented && current == nil
+	}
+
+	/// Pending popups wait until setup ends; letting either side hide the other left neither visible.
+	func sheetDestination(
+		isOnboardingPresented: Bool, isUpdatePresented: Bool, hasPendingPopup: Bool
+	) -> LauncherPresentationDestination? {
+		if let current, current.isSheet { return current }
+		guard current == nil, !isOnboardingPresented, !isUpdatePresented, hasPendingPopup
+		else { return nil }
+		return .popup
+	}
 }

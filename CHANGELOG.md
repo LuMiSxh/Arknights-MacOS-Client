@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Locally built launchers no longer treat the published release of the same version as an update that blocks setup.
 - Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.
 - Helper windows that the game opens, such as the China — Bilibili sign-in and console windows, no longer add a separate "wine" Dock entry that could stay behind after the game closes.
+- An announcement that arrives during setup no longer hides setup and blocks Settings; it now appears once setup is finished ([#94](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/94)).
 
 ## [0.6.1] - 2026-10-02
 
