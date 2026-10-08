@@ -115,7 +115,8 @@ Migration state lives in `.arknights-runtime-migrations.json`. Its effective run
 The current ordered migration identifiers are:
 
 1. `initialize-wine-prefix` runs `wineboot.exe -u`.
-2. `install-dxmt` copies the bundled x64 and x32 DXMT libraries into `system32` and `syswow64`.
+2. `install-dxmt` copies the bundled x64 DXMT libraries into `system32`. The x32 set is no longer
+   installed or required; copies left by earlier builds are inert and removed by step 5.
 3. `configure-registry` installs stable DLL overrides, disables Wine's crash dialog, and maps the
    Command keys to Control.
 4. `share-runtime-libraries` replaces `system32`/`syswow64` files that are byte-identical to the
@@ -123,6 +124,11 @@ The current ordered migration identifiers are:
    (`WinePrefixLibraryDeduplicator`). It is appended last so prefixes migrated by earlier builds replay
    only this step, and it skips DXMT files. If the volume cannot clone, the copies are kept and launch
    continues.
+5. `remove-legacy-32-bit-libraries` runs only when the runtime has no `lib/wine/i386-windows`
+   (`WinePrefixLegacyLibraryCleaner`, runtime 0.7.0 and later). It removes from `syswow64` only
+   top-level regular files that carry Wine's builtin marker (`Wine builtin DLL` at offset 0x40 of a
+   PE file) and the DXMT library names the launcher installed there; everything else is kept. It is
+   best effort: failures are logged and launch continues, and cancellation leaves the step pending.
 
 Registry work is applied as a single generated `.reg` script run through one `regedit.exe`, not as
 one Windows process per value. The script is written into the prefix's Windows temp directory

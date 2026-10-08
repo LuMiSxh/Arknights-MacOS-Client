@@ -406,7 +406,7 @@ private func makeLaunchFixture(pendingRegistryMigration: Bool = false) throws ->
 		),
 		to: prefixDirectory
 	)
-	for architecture in ["x64", "x32"] {
+	for architecture in ["x64"] {
 		let payloadDirectory = runtimeRoot.appending(
 			path: "DXMT/\(architecture)",
 			directoryHint: .isDirectory

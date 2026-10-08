@@ -85,6 +85,9 @@ struct WineRuntime: Sendable {
 		"mshtml": "",
 	]
 	static let inheritedEnvironmentKeys = ["LANG", "LC_ALL", "LC_CTYPE", "__CF_USER_TEXT_ENCODING"]
+	/// Only the 64-bit payload is installed; 32-bit DXMT left by earlier builds is inert and cleaned up
+	/// by `removeLegacy32BitLibraries` once the runtime stops shipping `i386-windows`.
+	static let dxmtDestinations = [("x64", "system32")]
 	static let dxmtLibraryNames = ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
 	static let crashDialogRegistryKey = "HKCU\\Software\\Wine\\WineDbg"
 	static let crashDialogRegistryValue = "ShowCrashDialog"

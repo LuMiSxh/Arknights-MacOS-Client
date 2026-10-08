@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Updates from the three previous releases download only what changed.
 - Installing a second region reuses identical files from an installed one instead of downloading them again.
 - The installer and full updates are about a third smaller.
+- The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries
 - Windowed games use a **Window size** measured like macOS display resolutions; fullscreen uses a separate **Detail** level.
 - The launcher now sizes the game by default.
 - Everyone updating to 0.7.0 runs setup once more; returning players keep their window mode and rendering.
@@ -32,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
 - The Mac pointer (formerly Canary Hardware Cursor) is now a regular **Pointer** setting.
 - Regrouped Settings into **Game** and **Appearance**, with Game Mode, Wine synchronization, and the Metal HUD under **Game → Advanced**.
-- Rewrote Settings in plain language with technical details in tooltips; **Force Migration…** is now **Rebuild…**, **Delete Wine Prefix…** is now **Delete Environment…**, and **Run Setup Again…** reopens setup.
+- Rewrote Settings in plain language with technical details in tooltips.
 - New wallpapers become searchable by operator or event without a launcher update.
 - Gallery tiles, search pills, sidebar items, and document links now animate when pressed.
 

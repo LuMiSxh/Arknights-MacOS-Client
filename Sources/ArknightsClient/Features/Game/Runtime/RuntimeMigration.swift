@@ -9,6 +9,8 @@ enum RuntimeMigration: String, CaseIterable, Codable, Sendable {
 	case configureRegistry = "configure-registry"
 	/// Appended last so prefixes migrated by earlier builds replay only this step.
 	case shareRuntimeLibraries = "share-runtime-libraries"
+	/// Drops Wine's and the launcher's 32-bit libraries from `syswow64` for 64-bit-only runtimes.
+	case removeLegacy32BitLibraries = "remove-legacy-32-bit-libraries"
 }
 
 struct RuntimeMigrationState: Codable, Equatable, Sendable {

@@ -29,8 +29,7 @@
     "dxmt": {
       "payloadDirectory": "DXMT",
       "destinations": {
-        "x64": "system32",
-        "x32": "syswow64"
+        "x64": "system32"
       },
       "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
     }

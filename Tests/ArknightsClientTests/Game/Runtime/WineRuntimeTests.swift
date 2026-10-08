@@ -192,7 +192,7 @@ func gameIconEnvironmentInjectsBridgeAndOptionalCustomIcon() {
 }
 
 @Test
-func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
+func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	let fileManager = FileManager.default
 	let fixture = try DXMTFixture(fileManager: fileManager)
 	defer { fixture.remove(fileManager: fileManager) }
@@ -200,20 +200,35 @@ func runtimeInstallsBothDXMTPayloadsIntoThePrefix() throws {
 	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
 	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
 
-	for (architecture, windowsDirectory) in [("x64", "system32"), ("x32", "syswow64")] {
-		for library in WineRuntime.dxmtLibraryNames {
-			let installed =
-				fixture.prefix.appending(
-					path: "drive_c/windows/\(windowsDirectory)/\(library)"
-				)
-			#expect(try Data(contentsOf: installed) == Data("\(architecture)-\(library)".utf8))
-		}
+	for library in WineRuntime.dxmtLibraryNames {
+		let installed = fixture.prefix.appending(path: "drive_c/windows/system32/\(library)")
+		#expect(try Data(contentsOf: installed) == Data("x64-\(library)".utf8))
+		#expect(
+			!fileManager.fileExists(
+				atPath: fixture.prefix.appending(path: "drive_c/windows/syswow64/\(library)").path)
+		)
 	}
 
 	try fileManager.removeItem(
 		at: fixture.prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
 	)
 	#expect(!WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+}
+
+@Test
+func dxmtInstallAndCurrencyIgnoreAnAbsentOrStaleX32Payload() throws {
+	let fileManager = FileManager.default
+	let fixture = try DXMTFixture(fileManager: fileManager, architectures: ["x64"])
+	defer { fixture.remove(fileManager: fileManager) }
+	let stale = fixture.prefix.appending(path: "drive_c/windows/syswow64/d3d11.dll")
+	try fileManager.createDirectory(
+		at: stale.deletingLastPathComponent(), withIntermediateDirectories: true)
+	try Data("old-x32".utf8).write(to: stale)
+
+	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
+
+	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+	#expect(try Data(contentsOf: stale) == Data("old-x32".utf8))
 }
 
 @Test
@@ -311,14 +326,14 @@ private struct DXMTFixture {
 	let payload: URL
 	let prefix: URL
 
-	init(fileManager: FileManager) throws {
+	init(fileManager: FileManager, architectures: [String] = ["x64"]) throws {
 		root = fileManager.temporaryDirectory.appending(
 			path: "dxmt-test-\(UUID().uuidString)",
 			directoryHint: .isDirectory
 		)
 		payload = root.appending(path: "DXMT", directoryHint: .isDirectory)
 		prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
-		for architecture in ["x64", "x32"] {
+		for architecture in architectures {
 			for library in WineRuntime.dxmtLibraryNames {
 				let source = payload.appending(path: architecture).appending(path: library)
 				try fileManager.createDirectory(

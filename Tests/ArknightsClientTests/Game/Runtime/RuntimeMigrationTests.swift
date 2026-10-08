@@ -46,7 +46,7 @@ private let migrationPlanCases:
 			),
 			true,
 			[],
-			[.installDXMT, .configureRegistry, .shareRuntimeLibraries]
+			[.installDXMT, .configureRegistry, .shareRuntimeLibraries, .removeLegacy32BitLibraries]
 		),
 		(
 			"prefix migrated before library sharing existed replays only that step",
@@ -56,7 +56,19 @@ private let migrationPlanCases:
 			),
 			true,
 			[],
-			[.shareRuntimeLibraries]
+			[.shareRuntimeLibraries, .removeLegacy32BitLibraries]
+		),
+		(
+			"prefix migrated before legacy cleanup existed replays only the cleanup",
+			RuntimeMigrationState(
+				runtimeRevision: "runtime-prefix-2",
+				completed: [
+					.initializeWinePrefix, .installDXMT, .configureRegistry, .shareRuntimeLibraries,
+				]
+			),
+			true,
+			[],
+			[.removeLegacy32BitLibraries]
 		),
 		(
 			"invalidated migration replays itself and following steps",
@@ -66,7 +78,7 @@ private let migrationPlanCases:
 			),
 			true,
 			[.installDXMT],
-			[.installDXMT, .configureRegistry, .shareRuntimeLibraries]
+			[.installDXMT, .configureRegistry, .shareRuntimeLibraries, .removeLegacy32BitLibraries]
 		),
 	]
 
@@ -209,5 +221,22 @@ func migrationStateWrittenBeforeLibrarySharingDecodesAndRunsOnlyThatStep() throw
 		hasSystemRegistry: true
 	)
 
-	#expect(plan.pending == [.shareRuntimeLibraries])
+	#expect(plan.pending == [.shareRuntimeLibraries, .removeLegacy32BitLibraries])
+}
+
+@Test
+func migrationStateWrittenBeforeLegacyCleanupDecodesAndRunsOnlyThatStep() throws {
+	let json = """
+		{"schemaVersion":1,"runtimeRevision":"runtime-prefix-2",
+		"completed":["initialize-wine-prefix","install-dxmt","configure-registry","share-runtime-libraries"]}
+		"""
+
+	let state = try JSONDecoder().decode(RuntimeMigrationState.self, from: Data(json.utf8))
+	let plan = RuntimeMigrationPlan(
+		expectedRevision: "runtime-prefix-2",
+		installedState: state,
+		hasSystemRegistry: true
+	)
+
+	#expect(plan.pending == [.removeLegacy32BitLibraries])
 }

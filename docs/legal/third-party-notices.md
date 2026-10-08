@@ -37,8 +37,8 @@ decision.
 | DXMT          | 0.80-244-g7c8dee1, `7c8dee1c2d73415301ceb7d1fa810861cef4cd67` | MIT and bundled third-party terms                                                                   | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/7c8dee1c2d73415301ceb7d1fa810861cef4cd67)                     |
 | MoltenVK      | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf`             | Apache-2.0 and bundled third-party terms                                                            | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
 | Wine Gecko    | 2.47.4, `557ea0c2e9f9ebd621323b3dbfbdd18c2528759c`            | MPL/GPL/LGPL terms and Mozilla notices                                                              | [Wine Gecko commit](https://gitlab.winehq.org/wine/wine-gecko/-/tree/557ea0c2e9f9ebd621323b3dbfbdd18c2528759c)         |
-| GStreamer     | 1.26.3, including base, good, bad, and libav plugins          | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer commit](https://github.com/GStreamer/gstreamer/tree/87bc0c6e949e3dcc440658f78ef52aa8088cb62f)               |
-| FFmpeg        | 7.1.1, `db69d06eeeab4f46da15030a80d539efb4503ca8`             | GPL-3.0-or-later for the bundled configuration                                                      | [FFmpeg commit](https://github.com/FFmpeg/FFmpeg/tree/db69d06eeeab4f46da15030a80d539efb4503ca8)                        |
+| GStreamer     | 1.26.3 (no longer bundled from runtime 0.7.0)                 | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer commit](https://github.com/GStreamer/gstreamer/tree/87bc0c6e949e3dcc440658f78ef52aa8088cb62f)               |
+| FFmpeg        | 7.1.1 (no longer bundled from runtime 0.7.0), `db69d06eeeab4f46da15030a80d539efb4503ca8` | GPL-3.0-or-later for the bundled configuration                                                      | [FFmpeg commit](https://github.com/FFmpeg/FFmpeg/tree/db69d06eeeab4f46da15030a80d539efb4503ca8)                        |
 
 ## Runtime build provenance
 
@@ -110,7 +110,7 @@ For each binary release, compare:
    `RUNTIME.json`.
 2. The component commits in `runtime.json` with the source links above.
 3. The runtime's actual files against the declared interface (`bin/wine64`, `bin/wineserver`,
-   `winemetal.dll`, the macOS driver, and both DXMT library sets).
+   `winemetal.dll`, the macOS driver, and the DXMT x64 library set; runtimes before 0.7.0 also ship x32).
 4. The license and notice files in the app bundle against the repository's `licenses/` directory.
 5. The source and notice package supplied for every bundled runtime component.
 

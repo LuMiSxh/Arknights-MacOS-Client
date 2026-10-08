@@ -195,6 +195,8 @@ extension WineRuntime {
 				)
 			case .shareRuntimeLibraries:
 				try await shareRuntimeLibraries(prefixDirectory: prefixDirectory, log: log)
+			case .removeLegacy32BitLibraries:
+				try await removeLegacy32BitLibraries(prefixDirectory: prefixDirectory, log: log)
 			}
 			plan.complete(migration)
 			try store.save(plan.state, to: prefixDirectory)
@@ -237,6 +239,26 @@ extension WineRuntime {
 		}
 		log?.info(
 			"Prefix library sharing: cloned \(report.clonedCount) file(s), \(report.clonedBytes) bytes"
+		)
+	}
+
+	/// Best effort: failures are logged and never block launch, but cancellation leaves the step pending.
+	private func removeLegacy32BitLibraries(prefixDirectory: URL, log: LauncherLog?) async throws {
+		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
+		let report = await Task.detached(priority: .utility) {
+			WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(Self.dxmtLibraryNames))
+				.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+		}.value
+		try Task.checkCancellation()
+		if report.skipped {
+			log?.info("Legacy 32-bit library cleanup skipped: runtime still ships i386-windows")
+			return
+		}
+		for failure in report.failures {
+			log?.error("Legacy 32-bit library cleanup failed for \(failure)")
+		}
+		log?.info(
+			"Legacy 32-bit library cleanup: removed \(report.removedCount) file(s), \(report.removedBytes) bytes"
 		)
 	}
 
@@ -297,7 +319,7 @@ extension WineRuntime {
 		in prefixDirectory: URL,
 		fileManager: FileManager = .default
 	) throws {
-		let destinations = [("x64", "system32"), ("x32", "syswow64")]
+		let destinations = dxmtDestinations
 		let sources = destinations.flatMap { architecture, _ in
 			dxmtLibraryNames.map {
 				payloadDirectory.appending(path: architecture).appending(path: $0)
@@ -333,7 +355,7 @@ extension WineRuntime {
 		in prefixDirectory: URL,
 		fileManager: FileManager = .default
 	) -> Bool {
-		for (architecture, windowsDirectory) in [("x64", "system32"), ("x32", "syswow64")] {
+		for (architecture, windowsDirectory) in dxmtDestinations {
 			for library in dxmtLibraryNames {
 				let source = payloadDirectory.appending(path: architecture).appending(path: library)
 				let destination =
