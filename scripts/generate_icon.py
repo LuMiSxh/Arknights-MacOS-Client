@@ -67,6 +67,27 @@ def compile_arguments(
     ]
 
 
+def write_tint_source(rendered: Path, destination: Path) -> None:
+    """Ship the render as 8-bit PNG; the 16-bit export is 5x larger and is drawn at 8 bits."""
+    if shutil.which("magick") is None:
+        warning(
+            "ImageMagick is unavailable; shipping the unoptimized 16-bit tint source"
+        )
+        shutil.copyfile(rendered, destination)
+        return
+    run(
+        [
+            "magick",
+            rendered,
+            "-depth",
+            "8",
+            "-define",
+            "png:compression-level=9",
+            destination,
+        ]
+    )
+
+
 def generate(configuration: ProjectConfiguration | None = None) -> None:
     configuration = configuration or load_project_configuration()
     project = configuration.project_directory
@@ -119,7 +140,7 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
             ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
             capture=True,
         )
-        shutil.copyfile(rendered, tint_source)
+        write_tint_source(rendered, tint_source)
 
     with spinner("Compiling the native layered icon"):
         result = subprocess.run(
