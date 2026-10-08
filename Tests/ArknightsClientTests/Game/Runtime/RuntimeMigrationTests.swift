@@ -46,7 +46,17 @@ private let migrationPlanCases:
 			),
 			true,
 			[],
-			[.installDXMT, .configureRegistry]
+			[.installDXMT, .configureRegistry, .shareRuntimeLibraries]
+		),
+		(
+			"prefix migrated before library sharing existed replays only that step",
+			RuntimeMigrationState(
+				runtimeRevision: "runtime-prefix-2",
+				completed: [.initializeWinePrefix, .installDXMT, .configureRegistry]
+			),
+			true,
+			[],
+			[.shareRuntimeLibraries]
 		),
 		(
 			"invalidated migration replays itself and following steps",
@@ -56,7 +66,7 @@ private let migrationPlanCases:
 			),
 			true,
 			[.installDXMT],
-			[.installDXMT, .configureRegistry]
+			[.installDXMT, .configureRegistry, .shareRuntimeLibraries]
 		),
 	]
 
@@ -168,7 +178,9 @@ func migrationStoreImportsAndRemovesVersionZeroOneMarkers() throws {
 	)
 	try store.removeLegacyMarkers(from: prefix)
 
-	#expect(imported?.completed == RuntimeMigration.allCases)
+	#expect(
+		imported?.completed == [.initializeWinePrefix, .installDXMT, .configureRegistry]
+	)
 	#expect(
 		!fileManager.fileExists(
 			atPath: prefix.appending(path: RuntimeMigrationStore.legacyRevisionFileName).path
@@ -181,4 +193,21 @@ func migrationStoreImportsAndRemovesVersionZeroOneMarkers() throws {
 			).path
 		)
 	)
+}
+
+@Test
+func migrationStateWrittenBeforeLibrarySharingDecodesAndRunsOnlyThatStep() throws {
+	let json = """
+		{"schemaVersion":1,"runtimeRevision":"runtime-prefix-2",
+		"completed":["initialize-wine-prefix","install-dxmt","configure-registry"]}
+		"""
+
+	let state = try JSONDecoder().decode(RuntimeMigrationState.self, from: Data(json.utf8))
+	let plan = RuntimeMigrationPlan(
+		expectedRevision: "runtime-prefix-2",
+		installedState: state,
+		hasSystemRegistry: true
+	)
+
+	#expect(plan.pending == [.shareRuntimeLibraries])
 }

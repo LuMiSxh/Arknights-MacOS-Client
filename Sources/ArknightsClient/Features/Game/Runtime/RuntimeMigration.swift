@@ -7,6 +7,8 @@ enum RuntimeMigration: String, CaseIterable, Codable, Sendable {
 	case initializeWinePrefix = "initialize-wine-prefix"
 	case installDXMT = "install-dxmt"
 	case configureRegistry = "configure-registry"
+	/// Appended last so prefixes migrated by earlier builds replay only this step.
+	case shareRuntimeLibraries = "share-runtime-libraries"
 }
 
 struct RuntimeMigrationState: Codable, Equatable, Sendable {

@@ -193,6 +193,8 @@ extension WineRuntime {
 					logHandle: logHandle,
 					spawnGate: spawnGate
 				)
+			case .shareRuntimeLibraries:
+				try await shareRuntimeLibraries(prefixDirectory: prefixDirectory, log: log)
 			}
 			plan.complete(migration)
 			try store.save(plan.state, to: prefixDirectory)
@@ -214,6 +216,27 @@ extension WineRuntime {
 			prefixDirectory: prefixDirectory,
 			gameDirectory: gameDirectory,
 			logsDirectory: logsDirectory
+		)
+	}
+
+	/// Clones are APFS-only and best effort: any failure keeps Wine's copies and never blocks launch.
+	private func shareRuntimeLibraries(prefixDirectory: URL, log: LauncherLog?) async throws {
+		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
+		let report = await Task.detached(priority: .utility) {
+			WinePrefixLibraryDeduplicator(excludingNames: Set(Self.dxmtLibraryNames))
+				.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+		}.value
+		try Task.checkCancellation()
+		if let code = report.cloneUnsupportedCode {
+			log?.info(
+				"Prefix library sharing skipped: cloning unsupported (errno \(code)); keeping copies"
+			)
+		}
+		for failure in report.failures {
+			log?.error("Prefix library sharing failed for \(failure)")
+		}
+		log?.info(
+			"Prefix library sharing: cloned \(report.clonedCount) file(s), \(report.clonedBytes) bytes"
 		)
 	}
 

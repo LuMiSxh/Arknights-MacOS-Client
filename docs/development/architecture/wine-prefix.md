@@ -21,14 +21,14 @@ is the only source of prefix locations.
 ## Prefix topology
 
 The stable Yostar regions share one historical prefix. Taiwan uses a separate Gryphline prefix, and
-the China and China — Bilibili clients share a separate Hypergryph prefix, so Windows-side state,
+the China and China (Bilibili) clients share a separate Hypergryph prefix, so Windows-side state,
 login sessions, registry, and runtime processes cannot mix across publisher families.
 
 | Region family              | Default prefix                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------ |
 | Global, Japan, and Korea   | `~/Library/Application Support/com.lumisxh.arknights-client/Yostar/Prefix`     |
 | Taiwan                     | `~/Library/Application Support/com.lumisxh.arknights-client/Gryphline/Prefix`  |
-| China and China — Bilibili | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix` |
+| China and China (Bilibili) | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix` |
 
 Code must resolve the active path through `AppPaths.winePrefix(for:)` instead of selecting a directory
 name itself. Tests and the isolated preview inject temporary `AppPaths` roots and must use the same
@@ -118,6 +118,11 @@ The current ordered migration identifiers are:
 2. `install-dxmt` copies the bundled x64 and x32 DXMT libraries into `system32` and `syswow64`.
 3. `configure-registry` installs stable DLL overrides, disables Wine's crash dialog, and maps the
    Command keys to Control.
+4. `share-runtime-libraries` replaces `system32`/`syswow64` files that are byte-identical to the
+   runtime's `lib/wine/x86_64-windows` and `i386-windows` builtins with APFS clones
+   (`WinePrefixLibraryDeduplicator`). It is appended last so prefixes migrated by earlier builds replay
+   only this step, and it skips DXMT files. If the volume cannot clone, the copies are kept and launch
+   continues.
 
 Registry work is applied as a single generated `.reg` script run through one `regedit.exe`, not as
 one Windows process per value. The script is written into the prefix's Windows temp directory
