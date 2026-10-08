@@ -83,7 +83,17 @@ final class LauncherViewModel {
 			?? GameInstaller(
 				api: api,
 				compatibilityManager: gameCompatibilityManager,
-				log: launcherLog
+				log: launcherLog,
+				reuseSourceDirectories: { [preferences] region in
+					await MainActor.run {
+						preferences.regionAccess().selectableRegions
+							.filter { $0 != region }
+							.map {
+								preferences.installDirectory(
+									for: $0, default: paths.gameInstall(for: $0))
+							}
+					}
+				}
 			)
 		let installation = InstallationController(
 			lifecycle: lifecycle,

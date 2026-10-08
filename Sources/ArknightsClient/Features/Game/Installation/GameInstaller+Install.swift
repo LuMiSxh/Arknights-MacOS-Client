@@ -84,6 +84,8 @@ extension GameInstaller {
 				downloadedFiles: 0, downloadedBytes: 0, installDirectory: installDirectory)
 		}
 		await progress(await counter.current(file: pendingFiles[0].path))
+		let reuse = await reuseSession(for: region, target: installationRoot)
+		try Task.checkCancellation()
 		try await withThrowingTaskGroup(of: Int64.self) { group in
 			var nextIndex = 0
 			let initialCount = min(concurrentDownloads, pendingFiles.count)
@@ -98,6 +100,7 @@ extension GameInstaller {
 					counter: counter,
 					progress: progress,
 					region: region,
+					reuse: reuse,
 					to: &group
 				)
 			}
@@ -115,6 +118,7 @@ extension GameInstaller {
 							counter: counter,
 							progress: progress,
 							region: region,
+							reuse: reuse,
 							to: &group
 						)
 					}
@@ -127,8 +131,11 @@ extension GameInstaller {
 
 		try Task.checkCancellation()
 		try saveState(configuration: configuration, manifest: manifest, to: installationRoot)
+		let reusedFiles = await reuse.tally.files
+		let reusedBytes = await reuse.tally.bytes
 		log?.debug(
-			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes"
+			"Install finished; \(pendingFiles.count) file(s), \(downloadedBytes) bytes; "
+				+ "reused \(reusedFiles) file(s), \(reusedBytes) bytes from other regions"
 		)
 		return InstallResult(
 			downloadedFiles: pendingFiles.count,

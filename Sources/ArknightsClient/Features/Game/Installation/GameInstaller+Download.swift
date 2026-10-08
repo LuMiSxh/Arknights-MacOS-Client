@@ -14,10 +14,20 @@ extension GameInstaller {
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler,
 		region: GameRegion,
+		reuse: ReuseSession,
 		to group: inout ThrowingTaskGroup<Int64, any Error>
 	) {
 		group.addTask {
-			try await downloadWithRetry(
+			if try await reuseFromOtherRegions(
+				item,
+				installDirectory: installDirectory,
+				session: reuse,
+				counter: counter,
+				progress: progress
+			) {
+				return 0
+			}
+			return try await downloadWithRetry(
 				item,
 				source: manifest.source,
 				cdn: cdn,

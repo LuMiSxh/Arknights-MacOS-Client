@@ -49,6 +49,16 @@ actor ProgressCounter {
 		return progress(file: file)
 	}
 
+	/// Counts a file satisfied without the network. The bytes advance progress and the
+	/// completed-file count but not the transfer rate or network total, so the rate and ETA
+	/// keep describing real downloads.
+	func addReused(bytes: Int64, file: String) -> DownloadProgress {
+		downloadedBytes += bytes
+		completedFiles += 1
+		lastEmission = estimatorClockNow
+		return progress(file: file)
+	}
+
 	func add(bytes: Int64, file: String, force: Bool = false) -> DownloadProgress? {
 		downloadedBytes += bytes
 		if bytes > 0 {

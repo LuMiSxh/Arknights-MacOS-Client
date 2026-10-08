@@ -132,6 +132,23 @@ destination intact and retains the resumable `.part`.
 | Normal update                     | A same-size file whose previous installed manifest entry has the expected hash is reused                  | Only changed, missing, or incomplete files are downloaded |
 | Repair                            | Every existing manifest file is checked with its provider checksum, regardless of the previous state file | Missing or damaged files are downloaded again             |
 
+Before a pending file is downloaded, `GameInstaller+Reuse` tries to take it from another region's
+installation, whose directories (including custom locations) come from the preferences store. A
+donor must be a different directory from the target (compared by device and inode), contain
+`Arknights.exe`, and have a decodable installed-state file; the file's manifest path must be listed
+there, have the same size, and have no sibling `.part`. Files that already have resumable `.part`
+bytes are never replaced.
+
+The installer clones the donor file with `fclonefileat` into a private `reuse-*.tmp` in the target's
+staging directory, then passes that inode to `finishDownload` in place of a finished `.part`. It gets
+the same size check, provider checksum, atomic promotion, and failure handling as a download. A clone
+failure (different volume, no APFS, permission, vanished file) or a checksum mismatch discards the clone,
+logs a line, and falls back to the next donor and then the normal download; reuse never fails an
+installation. Donors are only opened read-only for the clone, never locked, moved, or modified, so a
+running donor game is unaffected. Reused bytes advance progress and the file count but not the
+network total or transfer rate, so the ETA reflects real downloads. Each install logs the files and
+bytes reused.
+
 Each transfer starts at the primary CDN. Failed attempts retry with the configured backoff and use
 the fallback CDN on later attempts. A response must be HTTP 200 or 206; resumed responses must match
 the requested byte offset and manifest size, and a changed entity restarts from zero. When a server

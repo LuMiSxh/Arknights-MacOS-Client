@@ -13,6 +13,9 @@ struct GameInstaller: Sendable {
 	let compatibilityManager: GameCompatibilityManager
 	let concurrentDownloads = AppConstants.Network.concurrentDownloads
 	let log: LauncherLog?
+	/// Directories of other regions' installations, resolved per operation so custom
+	/// install locations are honored. `nil` disables cross-region reuse.
+	let reuseSourceDirectories: (@Sendable (GameRegion) async -> [URL])?
 
 	var fileManager: FileManager { .default }
 
@@ -20,12 +23,14 @@ struct GameInstaller: Sendable {
 		api: any LauncherAPIProviding,
 		session: URLSession = .shared,
 		compatibilityManager: GameCompatibilityManager,
-		log: LauncherLog? = nil
+		log: LauncherLog? = nil,
+		reuseSourceDirectories: (@Sendable (GameRegion) async -> [URL])? = nil
 	) {
 		self.api = api
 		chunkSession = HTTPChunkSession(configuration: session.configuration)
 		self.compatibilityManager = compatibilityManager
 		self.log = log
+		self.reuseSourceDirectories = reuseSourceDirectories
 	}
 
 	func download(
