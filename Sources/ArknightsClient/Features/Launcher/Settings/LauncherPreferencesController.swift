@@ -58,12 +58,6 @@ final class LauncherPreferencesController {
 			onCanaryFeaturesChanged?(canaryFeaturesEnabled)
 		}
 	}
-	var chinaClientsEnabled: Bool {
-		didSet {
-			store.setChinaClientsEnabled(chinaClientsEnabled)
-			onChinaClientsChanged?(chinaClientsEnabled)
-		}
-	}
 	var taiwanClientEnabled: Bool {
 		didSet {
 			store.setTaiwanClientEnabled(taiwanClientEnabled)
@@ -80,7 +74,6 @@ final class LauncherPreferencesController {
 	var regionAccess: RegionAccess {
 		RegionAccess(
 			canaryFeaturesEnabled: canaryFeaturesEnabled,
-			chinaClientsEnabled: chinaClientsEnabled,
 			taiwanClientEnabled: taiwanClientEnabled
 		)
 	}
@@ -89,7 +82,6 @@ final class LauncherPreferencesController {
 	@ObservationIgnored var onAnnouncementCheckRequested: (() -> Void)?
 	@ObservationIgnored var onDynamicThemeChanged: (() -> Void)?
 	@ObservationIgnored var onCanaryFeaturesChanged: ((Bool) -> Void)?
-	@ObservationIgnored var onChinaClientsChanged: ((Bool) -> Void)?
 	@ObservationIgnored var onTaiwanClientChanged: ((Bool) -> Void)?
 
 	private let store: LauncherPreferencesStore
@@ -108,7 +100,6 @@ final class LauncherPreferencesController {
 		launcherMusicVolume = store.launcherMusicVolume()
 		usesDynamicTheme = store.usesDynamicTheme()
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
-		chinaClientsEnabled = store.chinaClientsEnabled()
 		taiwanClientEnabled = store.taiwanClientEnabled()
 		usesHardwareCursor = store.usesHardwareCursor()
 		dismissedInGameResolutionNote = store.dismissedInGameResolutionNote()
@@ -131,7 +122,6 @@ final class LauncherPreferencesController {
 		launcherMusicVolume = store.launcherMusicVolume()
 		usesDynamicTheme = store.usesDynamicTheme()
 		canaryFeaturesEnabled = store.canaryFeaturesEnabled()
-		chinaClientsEnabled = store.chinaClientsEnabled()
 		taiwanClientEnabled = store.taiwanClientEnabled()
 		usesHardwareCursor = store.usesHardwareCursor()
 		dismissedInGameResolutionNote = store.dismissedInGameResolutionNote()

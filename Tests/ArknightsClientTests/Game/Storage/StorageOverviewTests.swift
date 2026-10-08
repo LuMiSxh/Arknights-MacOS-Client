@@ -28,7 +28,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 
 	let locations = try StorageOverviewResolver.locations(paths: paths, preferences: preferences)
 
-	#expect(locations.count == 9)
+	#expect(locations.count == 11)
 	#expect(
 		locations.first { $0.category == .game(.japan) }?.urls.first?.path == customJapan.path
 	)
@@ -64,29 +64,27 @@ func storageResolverFiltersChinaAndTaiwanIndependently() throws {
 			region: .global,
 			regionAccess: RegionAccess(
 				canaryFeaturesEnabled: true,
-				chinaClientsEnabled: false,
 				taiwanClientEnabled: true
 			),
 			persistedInstallDirectories: directories
 		)
 	)
 	#expect(taiwanOnly.contains { $0.category == .game(.taiwan) })
-	#expect(!taiwanOnly.contains { $0.category == .game(.china) })
+	#expect(taiwanOnly.contains { $0.category == .game(.china) })
 
-	let chinaOnly = try StorageOverviewResolver.locations(
+	let noCanary = try StorageOverviewResolver.locations(
 		paths: paths,
 		context: StorageOverviewContext(
 			region: .global,
 			regionAccess: RegionAccess(
-				canaryFeaturesEnabled: true,
-				chinaClientsEnabled: true,
+				canaryFeaturesEnabled: false,
 				taiwanClientEnabled: false
 			),
 			persistedInstallDirectories: directories
 		)
 	)
-	#expect(!chinaOnly.contains { $0.category == .game(.taiwan) })
-	#expect(chinaOnly.contains { $0.category == .game(.china) })
+	#expect(!noCanary.contains { $0.category == .game(.taiwan) })
+	#expect(noCanary.contains { $0.category == .game(.china) })
 }
 
 @Test

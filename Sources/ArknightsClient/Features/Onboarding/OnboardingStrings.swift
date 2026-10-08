@@ -89,8 +89,6 @@ enum OnboardingStrings {
 	static let canaryFeatures = "Canary Features"
 	static let canaryFeaturesDetail =
 		"Turns on experimental features and unlocks more servers. Turning it off switches a Canary server back to Global."
-	static let chinaClients = "Allow China clients"
-	static let chinaClientsDetail = "Lets you pick the China servers."
 	static let taiwanClient = "Allow Taiwan client"
 	static let taiwanClientDetail = "Lets you pick the Taiwan server."
 	static let gameFiles = "Game files"

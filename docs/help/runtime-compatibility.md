@@ -56,7 +56,7 @@ Restart the Mac, then choose **Check Again** in the launcher. This command is no
 
 **Settings → Installation → Canary Features** turns on experimental options. Turning it off again restores the normal behavior without deleting anything.
 
-- **Allow Taiwan region** and **Allow China regions** show the Taiwan, China, and China — Bilibili regions.
+- **Allow Taiwan region** shows the Taiwan region.
 
 These preferences are saved, but the launcher passes each override only when the packaged runtime advertises that capability. If a capability is absent or unsupported, the runtime keeps its default behavior.
 
@@ -64,4 +64,4 @@ If a Canary option causes a problem, turn it off and mention it in your [report]
 
 ## Anti-cheat
 
-The Taiwan, China, and China — Bilibili clients use ACE Anti-Cheat. Running them through Wine is unofficial, and the launcher asks you to confirm this before their first start. Your publisher alone decides how it treats accounts that use a third-party launcher.
+The Taiwan, China, and China (Bilibili) clients use ACE Anti-Cheat. Running them through Wine is unofficial, and the launcher asks you to confirm this before their first start. Your publisher alone decides how it treats accounts that use a third-party launcher.

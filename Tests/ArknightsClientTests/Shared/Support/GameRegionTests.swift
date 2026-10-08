@@ -26,75 +26,52 @@ func globalRegionPreservesThePreExistingPreferencesKey() {
 }
 
 @Test
-func canaryRegionSelectionSeparatesTaiwanAndChinaPermissions() {
+func onlyTaiwanSelectionDependsOnCanaryPermissions() {
 	#expect(
 		RegionAccess(
 			canaryFeaturesEnabled: false,
-			chinaClientsEnabled: false,
 			taiwanClientEnabled: false
 		).selectableRegions
-			== GameRegion.yostarCases)
+			== GameRegion.generallyAvailableCases)
 	#expect(
 		RegionAccess(
 			canaryFeaturesEnabled: true,
-			chinaClientsEnabled: false,
 			taiwanClientEnabled: false
 		).selectableRegions
-			== GameRegion.yostarCases)
+			== GameRegion.generallyAvailableCases)
 	#expect(
 		RegionAccess(
 			canaryFeaturesEnabled: true,
-			chinaClientsEnabled: false,
-			taiwanClientEnabled: true
-		).selectableRegions
-			== GameRegion.canaryCases)
-	#expect(
-		RegionAccess(
-			canaryFeaturesEnabled: true,
-			chinaClientsEnabled: true,
-			taiwanClientEnabled: false
-		).selectableRegions
-			== [.global, .japan, .korea, .china, .chinaBilibili])
-	#expect(
-		RegionAccess(
-			canaryFeaturesEnabled: false,
-			chinaClientsEnabled: true,
-			taiwanClientEnabled: true
-		).selectableRegions
-			== GameRegion.yostarCases)
-	#expect(
-		RegionAccess(
-			canaryFeaturesEnabled: true,
-			chinaClientsEnabled: true,
 			taiwanClientEnabled: true
 		).selectableRegions
 			== GameRegion.allCases)
+	#expect(
+		RegionAccess(
+			canaryFeaturesEnabled: false,
+			taiwanClientEnabled: true
+		).selectableRegions
+			== GameRegion.generallyAvailableCases)
 }
 
 @Test(arguments: [
 	(
-		GameRegion.global, GamePublisher.yostar, GameClientVariant.standard, false, false, false,
+		GameRegion.global, GamePublisher.yostar, GameClientVariant.standard, false, false, false
+	),
+	(
+		GameRegion.japan, GamePublisher.yostar, GameClientVariant.standard, false, false, false
+	),
+	(
+		GameRegion.korea, GamePublisher.yostar, GameClientVariant.standard, false, false, false
+	),
+	(
+		GameRegion.china, GamePublisher.hypergryph, GameClientVariant.standard, false, true, false
+	),
+	(
+		GameRegion.chinaBilibili, GamePublisher.hypergryph, GameClientVariant.bilibili, false, true,
 		false
 	),
 	(
-		GameRegion.japan, GamePublisher.yostar, GameClientVariant.standard, false, false, false,
-		false
-	),
-	(
-		GameRegion.korea, GamePublisher.yostar, GameClientVariant.standard, false, false, false,
-		false
-	),
-	(
-		GameRegion.china, GamePublisher.hypergryph, GameClientVariant.standard, true, true, true,
-		false
-	),
-	(
-		GameRegion.chinaBilibili, GamePublisher.hypergryph, GameClientVariant.bilibili, true, true,
-		true, false
-	),
-	(
-		GameRegion.taiwan, GamePublisher.gryphline, GameClientVariant.standard, true, true, false,
-		true
+		GameRegion.taiwan, GamePublisher.gryphline, GameClientVariant.standard, true, true, true
 	),
 ])
 func regionsExposeNeutralPublisherAndClientProfile(
@@ -103,7 +80,6 @@ func regionsExposeNeutralPublisherAndClientProfile(
 	variant: GameClientVariant,
 	requiresCanaryPermission: Bool,
 	requiresACEWarning: Bool,
-	requiresChinaClientPermission: Bool,
 	requiresTaiwanClientPermission: Bool
 ) {
 	#expect(region.publisher == publisher)
@@ -111,7 +87,6 @@ func regionsExposeNeutralPublisherAndClientProfile(
 	#expect(region.requiresCanaryPermission == requiresCanaryPermission)
 	#expect(region.clientProfile.requiresCanaryPermission == requiresCanaryPermission)
 	#expect(region.requiresACEWarning == requiresACEWarning)
-	#expect(region.requiresChinaClientPermission == requiresChinaClientPermission)
 	#expect(region.requiresTaiwanClientPermission == requiresTaiwanClientPermission)
 }
 

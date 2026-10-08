@@ -73,8 +73,8 @@ enum HomeStrings {
 		case .japan: "ARKNIGHTS · JAPAN"
 		case .korea: "ARKNIGHTS · KOREA"
 		case .taiwan: "ARKNIGHTS · TAIWAN"
-		case .china: "China (Canary)"
-		case .chinaBilibili: "China — Bilibili (Canary)"
+		case .china: "ARKNIGHTS · CHINA"
+		case .chinaBilibili: "ARKNIGHTS · CHINA · BILIBILI"
 		}
 	}
 

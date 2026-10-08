@@ -14,8 +14,12 @@
 		{ name: 'Japan', publisher: 'Yostar', status: 'Supported' },
 		{ name: 'Korea', publisher: 'Yostar', status: 'Supported' },
 		{ name: 'Taiwan', publisher: 'Gryphline', status: 'Canary' },
-		{ name: 'China', publisher: 'Hypergryph', status: 'Canary' },
-		{ name: 'China — Bilibili', publisher: 'Hypergryph', status: 'Canary' }
+		{ name: 'China', publisher: 'Hypergryph', status: 'Supported' },
+		{
+			name: 'China (Bilibili)',
+			publisher: 'Hypergryph',
+			status: 'Supported'
+		}
 	] as const;
 	const route = [
 		'Apple Silicon',

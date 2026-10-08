@@ -182,7 +182,6 @@
 		var failureCode: SupportCode = .crux
 		var selectedRegion: GameRegion = .global
 		var canaryFeaturesEnabled = false
-		var chinaClientsEnabled = false
 		var taiwanClientEnabled = false
 		var installedRegions: Set<GameRegion> = [.global]
 		var showStatusPill = false
@@ -217,7 +216,6 @@
 		var selectableRegions: [GameRegion] {
 			RegionAccess(
 				canaryFeaturesEnabled: canaryFeaturesEnabled,
-				chinaClientsEnabled: chinaClientsEnabled,
 				taiwanClientEnabled: taiwanClientEnabled
 			).selectableRegions
 		}

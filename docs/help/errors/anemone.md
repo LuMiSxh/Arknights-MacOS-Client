@@ -9,7 +9,7 @@ domain: runtime
 
 # ANEMONE
 
-The launcher could not safely apply, update, or restore one of the compatibility files it adds to the game folder. These files make the in-game sign-in and Notices windows work under Wine: the embedded browser for Global, Japan, Korea, and China, and Bilibili's own login window for China — Bilibili. Taiwan signs in through your Mac's default browser and does not use them. The launcher stops instead of overwriting a file it does not recognize.
+The launcher could not safely apply, update, or restore one of the compatibility files it adds to the game folder. These files make the in-game sign-in and Notices windows work under Wine: the embedded browser for Global, Japan, Korea, and China, and Bilibili's own login window for China (Bilibili). Taiwan signs in through your Mac's default browser and does not use them. The launcher stops instead of overwriting a file it does not recognize.
 
 ## Try this
 

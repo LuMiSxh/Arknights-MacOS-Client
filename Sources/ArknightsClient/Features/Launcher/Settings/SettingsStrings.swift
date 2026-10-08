@@ -269,8 +269,6 @@ enum SettingsStrings {
 	static let canaryFeatures = "Canary Features"
 	static let canaryFeaturesDetail =
 		"Try experimental features. Turning this off switches a Canary region back to Global."
-	static let chinaClients = "Allow China regions"
-	static let chinaClientsDetail = "Adds the China regions to the region list."
 	static let taiwanClient = "Allow Taiwan region"
 	static let taiwanClientDetail = "Adds the Taiwan region to the region list."
 	static let repair = "Repair"

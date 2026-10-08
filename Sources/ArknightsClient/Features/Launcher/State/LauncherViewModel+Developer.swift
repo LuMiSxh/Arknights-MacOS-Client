@@ -108,7 +108,6 @@
 
 		private func applyDeveloperRegionState(_ simulation: inout DeveloperSimulationState) {
 			settings.canaryFeaturesEnabled = simulation.canaryFeaturesEnabled
-			settings.chinaClientsEnabled = simulation.chinaClientsEnabled
 			settings.taiwanClientEnabled = simulation.taiwanClientEnabled
 			if !simulation.selectableRegions.contains(simulation.selectedRegion) {
 				simulation.selectedRegion = .global

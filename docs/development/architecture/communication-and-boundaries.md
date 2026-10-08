@@ -8,7 +8,7 @@ order: 40
 
 The launcher has no project-owned application server. Its remote inputs are the official publisher
 launcher APIs (Yostar for Global, Japan, and Korea; Gryphline for Taiwan; Hypergryph for China and
-China — Bilibili), the repository-hosted announcements feed, the official branding response, and
+China (Bilibili)), the repository-hosted announcements feed, the official branding response, and
 Sparkle's signed appcast.
 Each source has a separate owner, validation policy, and failure path.
 Keep those channels separate when adding a new message or update surface.
@@ -103,7 +103,7 @@ applied.
 
 - Yostar's Global, Japan, and Korea clients use the Yostar launcher API. The Canary-gated Taiwan
   client uses Gryphline's separate batch metadata and encrypted-manifest infrastructure. The
-  Canary-gated China and China — Bilibili clients use Hypergryph's separate metadata and payload
+  China and China (Bilibili) clients use Hypergryph's separate metadata and payload
   infrastructure.
 - Game files come from first-party HTTPS endpoints and are never included in a release.
 - Manifest paths cannot escape the selected game directory; see [Installation architecture](installation.md#manifest-and-path-safety).

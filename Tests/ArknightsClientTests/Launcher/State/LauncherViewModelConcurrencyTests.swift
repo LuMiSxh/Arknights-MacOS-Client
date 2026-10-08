@@ -21,17 +21,11 @@ struct LauncherViewModelConcurrencyTests {
 			}
 		)
 		await api.waitForBrandingRequest()
-		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
+		#expect(
+			await waitForCondition { model.installation.installedRegions == [.global, .china] })
 
 		model.settings.canaryFeaturesEnabled = true
 		model.settings.taiwanClientEnabled = true
-		#expect(
-			await waitForCondition {
-				model.installation.installedRegions == [.global, .taiwan]
-			}
-		)
-
-		model.settings.chinaClientsEnabled = true
 		#expect(
 			await waitForCondition {
 				model.installation.installedRegions == [.global, .taiwan, .china]
@@ -41,22 +35,15 @@ struct LauncherViewModelConcurrencyTests {
 		#expect(model.installation.selectRegion(.taiwan))
 		model.settings.taiwanClientEnabled = false
 		#expect(await waitForCondition { model.installation.region == .global })
+		#expect(
+			await waitForCondition { model.installation.installedRegions == [.global, .china] })
 
-		model.settings.chinaClientsEnabled = false
-		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
-
-		model.settings.chinaClientsEnabled = true
-		#expect(await waitForCondition { model.installation.installedRegions.contains(.china) })
-		#expect(model.installation.selectRegion(.china))
-		model.settings.chinaClientsEnabled = false
-		#expect(await waitForCondition { model.installation.region == .global })
-
-		model.settings.chinaClientsEnabled = true
-		#expect(await waitForCondition { model.installation.installedRegions.contains(.china) })
+		// China is generally available, so it survives the Canary switch being turned off.
 		#expect(model.installation.selectRegion(.china))
 		model.settings.canaryFeaturesEnabled = false
-		#expect(await waitForCondition { model.installation.region == .global })
-		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
+		#expect(model.installation.region == .china)
+		#expect(
+			await waitForCondition { model.installation.installedRegions == [.global, .china] })
 		await api.resolveBranding()
 	}
 

@@ -15,7 +15,7 @@ CDN URLs for a `GameRegion`. Global, Japan, and Korea use the same Yostar API sh
 algorithm with different base URLs and `game_tag` values. The Canary-gated Taiwan client uses
 Gryphline's batch metadata and web-metadata endpoints with app code `uiCaUeGDB2htwXSv`, channel
 and sub-channel `6`, and launcher app code `TiaytKBUIEdoEwRT`. Its `game_files` response is an
-encrypted JSON-lines manifest whose entries use MD5 checksums. The Canary-gated China clients use
+encrypted JSON-lines manifest whose entries use MD5 checksums. The China clients use
 Hypergryph's batch metadata endpoint with their respective distribution channels.
 The Gryphline adapter accepts only HTTPS responses from `launcher.gryphline.com`,
 `launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, and `gl-utils-public.hg-cdn.com`; it never starts the
@@ -171,7 +171,7 @@ flowchart TB
 	Controller --> Korea[Korea path + state]
 	Controller --> Taiwan[Taiwan path + state]
 	Controller --> China[China path + state]
-	Controller --> Bilibili[China — Bilibili path + state]
+	Controller --> Bilibili[China (Bilibili) path + state]
 	Global --> YostarPrefix[Yostar prefix]
 	Japan --> YostarPrefix
 	Korea --> YostarPrefix

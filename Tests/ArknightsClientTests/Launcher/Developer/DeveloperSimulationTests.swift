@@ -104,7 +104,6 @@ import Testing
 	func developerSimulationUsesExistingRegionAvailabilityRules() {
 		var state = DeveloperSimulationState()
 		state.canaryFeaturesEnabled = true
-		state.chinaClientsEnabled = true
 		state.taiwanClientEnabled = false
 
 		#expect(

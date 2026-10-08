@@ -7,7 +7,7 @@ audience: developers
 
 # Development
 
-These documents describe how Arknights Client is organized, tested, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients by default and gates the Gryphline Taiwan client and Hypergryph's China and China — Bilibili clients behind Canary Features. Taiwan and the two China clients each have a separate permission switch.
+These documents describe how Arknights Client is organized, tested, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients and Hypergryph's China and China (Bilibili) clients by default and gates the Gryphline Taiwan client behind Canary Features. Taiwan has its own permission switch.
 
 Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md) and [Design](design.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
 

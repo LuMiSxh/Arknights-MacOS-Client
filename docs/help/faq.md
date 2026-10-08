@@ -16,7 +16,7 @@ No. The DMG contains only the launcher and the Wine environment it needs. The ga
 
 ## Which regions can I play?
 
-Global, Japan, and Korea by default. Taiwan, China, and China — Bilibili are available as [Canary regions](../installation.md#canary-regions). You can install several regions side by side; each keeps its own files and version.
+Global, Japan, Korea, China, and China (Bilibili) by default. Taiwan is available as a [Canary region](../installation.md#canary-regions). You can install several regions side by side; each keeps its own files and version.
 
 ## Do I need an internet connection?
 

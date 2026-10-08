@@ -38,10 +38,9 @@ struct GameClientProfile: Sendable {
 }
 
 /// The Canary permissions that expose extra regions. This is the single source of truth for
-/// whether a region may be selected, installed, listed, or launched.
+/// whether a region may be selected, installed, listed, or launched. Only Taiwan is still gated.
 struct RegionAccess: Equatable, Sendable {
 	var canaryFeaturesEnabled: Bool
-	var chinaClientsEnabled: Bool
 	var taiwanClientEnabled: Bool
 
 	var selectableRegions: [GameRegion] { GameRegion.allCases.filter(allows) }
@@ -49,7 +48,6 @@ struct RegionAccess: Equatable, Sendable {
 	func allows(_ region: GameRegion) -> Bool {
 		guard region.requiresCanaryPermission else { return true }
 		guard canaryFeaturesEnabled else { return false }
-		if region.requiresChinaClientPermission { return chinaClientsEnabled }
 		if region.requiresTaiwanClientPermission { return taiwanClientEnabled }
 		return true
 	}
@@ -67,14 +65,7 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		.global, .japan, .korea, .taiwan, .china, .chinaBilibili,
 	]
 	static let yostarCases: [GameRegion] = [.global, .japan, .korea]
-	static let canaryCases: [GameRegion] = yostarCases + [.taiwan]
-
-	var requiresChinaClientPermission: Bool {
-		switch self {
-		case .china, .chinaBilibili: true
-		case .global, .japan, .korea, .taiwan: false
-		}
-	}
+	static let generallyAvailableCases: [GameRegion] = yostarCases + [.china, .chinaBilibili]
 
 	var requiresTaiwanClientPermission: Bool {
 		self == .taiwan
@@ -88,8 +79,8 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		case .japan: "Japan"
 		case .korea: "Korea"
 		case .taiwan: "Taiwan (Canary)"
-		case .china: "China (Canary)"
-		case .chinaBilibili: "China — Bilibili (Canary)"
+		case .china: "China"
+		case .chinaBilibili: "China (Bilibili)"
 		}
 	}
 
@@ -121,7 +112,7 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 				runtimeEnvironmentOverrides: [
 					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
 				],
-				requiresCanaryPermission: true,
+				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		case .chinaBilibili:
@@ -133,7 +124,7 @@ enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 					AppConstants.Runtime.cefCompatEnvironmentKey: "1",
 					AppConstants.Runtime.cnCompatEnvironmentKey: "1",
 				],
-				requiresCanaryPermission: true,
+				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		}

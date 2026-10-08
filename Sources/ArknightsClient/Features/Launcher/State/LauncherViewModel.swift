@@ -176,9 +176,6 @@ final class LauncherViewModel {
 		settings.onCanaryFeaturesChanged = { [weak self] _ in
 			self?.refreshInstalledRegionsAfterCanaryChange()
 		}
-		settings.onChinaClientsChanged = { [weak self] _ in
-			self?.refreshInstalledRegionsAfterCanaryChange()
-		}
 		settings.onTaiwanClientChanged = { [weak self] _ in
 			self?.refreshInstalledRegionsAfterCanaryChange()
 		}

@@ -20,7 +20,7 @@ Arknights Client only handles installing and running the game. Accounts, payment
 | ----------------------- | ------------------------------------------------------------- |
 | Global, Japan, or Korea | [Yostar Support](https://account.yo-star.com/contact)         |
 | Taiwan                  | [Gryphline Support](https://www.gryphline.com/en-us/contacts) |
-| China, China — Bilibili | [Hypergryph Support](https://user.hypergryph.com/support)     |
+| China, China (Bilibili) | [Hypergryph Support](https://user.hypergryph.com/support)     |
 
 For an unexpected charge, check with the payment provider shown on the transaction first.
 

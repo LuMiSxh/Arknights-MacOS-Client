@@ -24,7 +24,7 @@
 3. Open the app once. Releases are ad-hoc signed and not notarized, so macOS may block the first launch; the [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) explains how to allow it safely.
 4. Choose your region in the setup assistant and let it download the official game files.
 
-Global, Japan, and Korea are supported by default. Taiwan, China, and China — Bilibili are experimental Canary regions with separate opt-in.
+Global, Japan, Korea, China, and China (Bilibili) are supported by default. Taiwan is an experimental Canary region with a separate opt-in.
 
 > [!NOTE]
 > Arknights Client is an unofficial community project. It is not affiliated with Gryphline, Hypergryph, Yostar, or Bilibili and does not include game files or downloaded artwork in release builds.

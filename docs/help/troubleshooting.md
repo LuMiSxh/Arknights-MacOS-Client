@@ -62,7 +62,7 @@ Wait until no other download is running, then choose **Settings → Installation
 Where you sign in depends on the region:
 
 - **Global, Japan, Korea, and China** use a sign-in window inside the game.
-- **China — Bilibili** uses Bilibili's own login window.
+- **China (Bilibili)** uses Bilibili's own login window.
 - **Taiwan** opens sign-in in your Mac's default browser. If nothing seems to happen, look for a new browser window or tab.
 
 The first time, and after an update or clearing caches, an in-game window can take up to a minute.

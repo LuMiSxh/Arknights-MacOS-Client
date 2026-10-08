@@ -36,13 +36,6 @@ struct OnboardingRegionView: View {
 				.disabled(lifecycle.activity != .idle)
 				if preferences.canaryFeaturesEnabled {
 					OnboardingToggleRow(
-						title: OnboardingStrings.chinaClients,
-						detail: OnboardingStrings.chinaClientsDetail,
-						isOn: $preferences.chinaClientsEnabled,
-						accentColor: LauncherVisuals.warning
-					)
-					.disabled(lifecycle.activity != .idle)
-					OnboardingToggleRow(
 						title: OnboardingStrings.taiwanClient,
 						detail: OnboardingStrings.taiwanClientDetail,
 						isOn: $preferences.taiwanClientEnabled,

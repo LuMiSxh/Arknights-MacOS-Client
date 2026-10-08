@@ -236,20 +236,11 @@ import SwiftUI
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Canary clients",
-					detail: "Reveal Taiwan and China options through the production flags."
+					detail: "Reveal the Taiwan option through the production flags."
 				) {
 					SettingsToggle(
 						"Canary features",
 						isOn: $simulation.canaryFeaturesEnabled,
-						accentColor: accentColor
-					)
-				}
-				SettingsActionRow(
-					title: "China clients", detail: "Allow both China client entries in the picker."
-				) {
-					SettingsToggle(
-						"China clients",
-						isOn: $simulation.chinaClientsEnabled,
 						accentColor: accentColor
 					)
 				}

@@ -115,14 +115,12 @@ struct InstallationRecoveryTests {
 	@Test
 	func regionSelectionUsesIndependentCanaryPermissions() {
 		let fixture = makeInstallationFixture(region: .global)
+		#expect(fixture.controller.selectRegion(.china))
+		#expect(!fixture.controller.selectRegion(.taiwan))
+
 		fixture.preferences.setCanaryFeaturesEnabled(true)
 		fixture.preferences.setTaiwanClientEnabled(true)
-
 		#expect(fixture.controller.selectRegion(.taiwan))
-		#expect(!fixture.controller.selectRegion(.china))
-
-		fixture.preferences.setChinaClientsEnabled(true)
-		#expect(fixture.controller.selectRegion(.china))
 
 		fixture.preferences.setTaiwanClientEnabled(false)
 		#expect(!fixture.controller.selectRegion(.taiwan))

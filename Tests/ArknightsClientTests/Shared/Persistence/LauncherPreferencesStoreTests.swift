@@ -24,7 +24,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.5)
 		#expect(store.usesDynamicTheme())
 		#expect(!store.canaryFeaturesEnabled())
-		#expect(!store.chinaClientsEnabled())
 		#expect(!store.taiwanClientEnabled())
 		#expect(store.selectedRegion() == .global)
 		#expect(!store.forceDisableRetina())
@@ -40,7 +39,6 @@ struct LauncherPreferencesStoreTests {
 		store.setLauncherMusicVolume(0.8)
 		store.setUsesDynamicTheme(false)
 		store.setCanaryFeaturesEnabled(true)
-		store.setChinaClientsEnabled(true)
 		store.setTaiwanClientEnabled(true)
 		store.setSelectedRegion(.korea)
 
@@ -55,7 +53,6 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.launcherMusicVolume() == 0.8)
 		#expect(!store.usesDynamicTheme())
 		#expect(store.canaryFeaturesEnabled())
-		#expect(store.chinaClientsEnabled())
 		#expect(store.taiwanClientEnabled())
 		#expect(store.selectedRegion() == .korea)
 	}
@@ -94,23 +91,32 @@ struct LauncherPreferencesStoreTests {
 	}
 
 	@Test
-	func chinaSelectionFallsBackWhenEitherPermissionIsDisabled() {
+	func chinaSelectionIsIndependentOfCanaryPermissions() {
 		let (defaults, suiteName) = makeDefaults()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 
+		for region in [GameRegion.china, .chinaBilibili] {
+			store.setSelectedRegion(region)
+			#expect(store.selectedRegion() == region)
+		}
+
 		store.setCanaryFeaturesEnabled(true)
-		store.setChinaClientsEnabled(true)
-		store.setSelectedRegion(.china)
-		#expect(store.selectedRegion() == .china)
-
-		store.setChinaClientsEnabled(false)
-		#expect(store.selectedRegion() == .global)
-
-		store.setChinaClientsEnabled(true)
-		store.setSelectedRegion(.china)
 		store.setCanaryFeaturesEnabled(false)
-		#expect(store.selectedRegion() == .global)
+		#expect(store.selectedRegion() == .chinaBilibili)
+	}
+
+	@Test(arguments: [true, false])
+	func legacyChinaPermissionKeysDoNotAffectRegionAccess(legacyChinaPermission: Bool) {
+		let (defaults, suiteName) = makeDefaults()
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(legacyChinaPermission, forKey: "chinaClientsEnabled")
+		defaults.set(true, forKey: "canaryFeaturesEnabled")
+		defaults.set(GameRegion.china.rawValue, forKey: "selectedRegion")
+
+		let store = LauncherPreferencesStore(defaults: defaults)
+		#expect(store.selectedRegion() == .china)
+		#expect(!store.taiwanClientEnabled())
 	}
 
 	@Test
@@ -130,134 +136,6 @@ struct LauncherPreferencesStoreTests {
 
 		store.setTaiwanClientEnabled(false)
 		#expect(store.selectedRegion() == .global)
-	}
-
-	@Test
-	func chinaAndTaiwanSelectionsUseIndependentPermissions() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-
-		store.setCanaryFeaturesEnabled(true)
-		store.setTaiwanClientEnabled(true)
-		store.setSelectedRegion(.taiwan)
-		#expect(store.selectedRegion() == .taiwan)
-
-		store.setSelectedRegion(.china)
-		#expect(store.selectedRegion() == .global)
-
-		store.setChinaClientsEnabled(true)
-		#expect(store.selectedRegion() == .china)
-
-		store.setTaiwanClientEnabled(false)
-		#expect(store.selectedRegion() == .china)
-	}
-
-	@Test(arguments: [
-		(
-			"legacy canary access keeps the saved Yostar region",
-			true,
-			Optional<Bool>.none,
-			GameRegion.global,
-			true,
-			GameRegion.global,
-			true
-		),
-		(
-			"legacy canary access keeps the saved China region",
-			true,
-			Optional<Bool>.none,
-			GameRegion.china,
-			true,
-			GameRegion.china,
-			true
-		),
-		(
-			"legacy canary access keeps the saved Bilibili region",
-			true,
-			Optional<Bool>.none,
-			GameRegion.chinaBilibili,
-			true,
-			GameRegion.chinaBilibili,
-			true
-		),
-		(
-			"an explicit China opt-out survives migration",
-			true,
-			false as Bool?,
-			GameRegion.china,
-			false,
-			GameRegion.global,
-			false
-		),
-		(
-			"an explicit China opt-in survives migration",
-			true,
-			true as Bool?,
-			GameRegion.china,
-			true,
-			GameRegion.china,
-			false
-		),
-		(
-			"a missing legacy canary value grants no China access",
-			Optional<Bool>.none,
-			Optional<Bool>.none,
-			GameRegion.global,
-			false,
-			GameRegion.global,
-			false
-		),
-		(
-			"a disabled legacy canary value grants no China access",
-			false as Bool?,
-			Optional<Bool>.none,
-			GameRegion.global,
-			false,
-			GameRegion.global,
-			false
-		),
-	])
-	func chinaPermissionMigrationKeepsCanaryAndExplicitAccessIndependent(
-		caseLabel: String,
-		legacyCanary: Bool?,
-		legacyChinaPermission: Bool?,
-		selectedRegion: GameRegion,
-		expectedChinaPermission: Bool,
-		expectedRegion: GameRegion,
-		verifyLegacyPermissionOptOut: Bool
-	) {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		if let legacyCanary {
-			defaults.set(legacyCanary, forKey: "canaryFeaturesEnabled")
-		}
-		if let legacyChinaPermission {
-			defaults.set(legacyChinaPermission, forKey: "chinaClientsEnabled")
-		}
-		defaults.set(selectedRegion.rawValue, forKey: "selectedRegion")
-
-		let store = LauncherPreferencesStore(defaults: defaults)
-		#expect(
-			store.chinaClientsEnabled() == expectedChinaPermission, Comment(rawValue: caseLabel))
-		#expect(store.selectedRegion() == expectedRegion, Comment(rawValue: caseLabel))
-		#expect(!store.taiwanClientEnabled())
-		#expect(!store.hasAcknowledgedACEWarning(for: .china))
-		#expect(!store.hasAcknowledgedACEWarning(for: .chinaBilibili))
-
-		store.setCanaryFeaturesEnabled(true)
-		let reopened = LauncherPreferencesStore(defaults: defaults)
-		#expect(
-			reopened.chinaClientsEnabled() == expectedChinaPermission, Comment(rawValue: caseLabel))
-		#expect(reopened.selectedRegion() == expectedRegion, Comment(rawValue: caseLabel))
-		#expect(!reopened.taiwanClientEnabled())
-
-		if verifyLegacyPermissionOptOut {
-			reopened.setChinaClientsEnabled(false)
-			let optedOut = LauncherPreferencesStore(defaults: defaults)
-			#expect(!optedOut.chinaClientsEnabled(), Comment(rawValue: caseLabel))
-			#expect(optedOut.selectedRegion() == .global, Comment(rawValue: caseLabel))
-		}
 	}
 
 	@Test

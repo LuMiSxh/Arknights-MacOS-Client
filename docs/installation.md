@@ -40,8 +40,8 @@ The setup assistant opens on the first start. It saves each choice right away, a
    | **Japan**            | Yostar     | Always                             |
    | **Korea**            | Yostar     | Always                             |
    | **Taiwan**           | Gryphline  | [Canary Features](#canary-regions) |
-   | **China**            | Hypergryph | [Canary Features](#canary-regions) |
-   | **China — Bilibili** | Hypergryph | [Canary Features](#canary-regions) |
+   | **China**            | Hypergryph | Always                             |
+   | **China (Bilibili)** | Hypergryph | Always                             |
 
 3. **Download** — choose **Install & Continue**. The download keeps running while you finish the remaining pages, and closing the launcher only pauses it.
 4. **Display** — answer whether the game opens in a window or fullscreen, how big the window should be, whether the sharpest picture, smooth play on big screens, or longer battery life matters most, and which pointer the game uses. You can pick an exact size in **Settings → Game** any time.
@@ -52,7 +52,7 @@ When the download has finished and been verified, the launcher enables **Play**.
 
 ### Canary regions
 
-Taiwan, China, and China — Bilibili are experimental. To show them, turn on **Settings → Installation → Canary Features**, then **Allow Taiwan region** or **Allow China regions**. These regions use ACE Anti-Cheat, and the launcher asks you to confirm before their first start that running them through Wine is unofficial and at your own risk.
+Taiwan is experimental. To show it, turn on **Settings → Installation → Canary Features**, then **Allow Taiwan region**. This region uses ACE Anti-Cheat, and the launcher asks you to confirm before its first start that running it through Wine is unofficial and at your own risk.
 
 ## First launch
 

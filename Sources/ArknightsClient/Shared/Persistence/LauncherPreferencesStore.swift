@@ -22,7 +22,6 @@ struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		static let selectedRegion = "selectedRegion"
 		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
-		static let chinaClientsEnabled = "chinaClientsEnabled"
 		static let taiwanClientEnabled = "taiwanClientEnabled"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		static let usesHardwareCursor = "usesHardwareCursor"
@@ -37,11 +36,6 @@ struct LauncherPreferencesStore {
 
 	init(defaults: UserDefaults = .standard) {
 		self.defaults = defaults
-		// Preserve the China access granted by the legacy Canary switch once.
-		if defaults.object(forKey: Key.chinaClientsEnabled) == nil {
-			defaults.set(
-				defaults.bool(forKey: Key.canaryFeaturesEnabled), forKey: Key.chinaClientsEnabled)
-		}
 	}
 
 	func automaticLauncherUpdates() -> Bool {
@@ -190,7 +184,6 @@ struct LauncherPreferencesStore {
 	func regionAccess() -> RegionAccess {
 		RegionAccess(
 			canaryFeaturesEnabled: canaryFeaturesEnabled(),
-			chinaClientsEnabled: chinaClientsEnabled(),
 			taiwanClientEnabled: taiwanClientEnabled()
 		)
 	}
@@ -205,14 +198,6 @@ struct LauncherPreferencesStore {
 
 	func setCanaryFeaturesEnabled(_ value: Bool) {
 		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
-	}
-
-	func chinaClientsEnabled() -> Bool {
-		bool(for: Key.chinaClientsEnabled, defaultValue: false)
-	}
-
-	func setChinaClientsEnabled(_ value: Bool) {
-		defaults.set(value, forKey: Key.chinaClientsEnabled)
 	}
 
 	func taiwanClientEnabled() -> Bool {
@@ -241,7 +226,7 @@ struct LauncherPreferencesStore {
 			Key.gameLaunchOptions, Key.showsServerResetCountdown, Key.showsGameVersion,
 			Key.playsLauncherMusic, Key.launcherMusicURL, Key.showsPlayingMusic,
 			Key.launcherMusicVolume, Key.usesDynamicTheme, Key.canaryFeaturesEnabled,
-			Key.chinaClientsEnabled, Key.taiwanClientEnabled,
+			Key.taiwanClientEnabled,
 			Key.acknowledgedACEWarningRegions, Key.usesHardwareCursor,
 			Key.dismissedInGameResolutionNote,
 		] {
