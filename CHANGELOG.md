@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Rewrote Settings in plain language with technical details in tooltips.
 - New wallpapers become searchable by operator or event without a launcher update.
 - Gallery tiles, search pills, sidebar items, and document links now animate when pressed.
+- Rewrote the help pages and guides in Simplified Technical English: shorter and easier to follow.
 
 ### Removed
 

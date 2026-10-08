@@ -6,23 +6,22 @@ order: 60
 
 # Announcements
 
-The launcher can fetch occasional project messages from the repository without a separate server. The feed lives in [`announcements.json`](../../announcements.json) on `main` and is fetched at startup when announcements are enabled. Enabling the setting again also starts a check; users can disable these checks in Settings.
+The launcher fetches project messages from [`announcements.json`](../../announcements.json) on `main` at startup and when the user enables the setting. Users can disable the checks in Settings.
 
-Each announcement is shown once per local preference store. Changing its text does not show it again; use a new `id` when a follow-up message should be presented. See [Architecture § Launcher communication](architecture/communication-and-boundaries.md#launcher-communication) for exactly how announcements are fetched, filtered, and queued alongside launcher status and Yostar's own in-game notices.
+Each announcement shows once per preference store. A text change does not show it again; use a new `id` for a follow-up. See [Architecture § Launcher communication](architecture/communication-and-boundaries.md#launcher-communication) for how the launcher fetches, filters, and queues announcements and Yostar's in-game notices.
 
-Announcements are for short, time-sensitive launcher messages: a maintenance note, a request for feedback, or a link to a project resource. They are not a replacement for the changelog or the troubleshooting guides. Keep the body useful without the action link; users may have links disabled or may read the popup after its display window.
+Use announcements for short, time-sensitive messages. They do not replace the changelog or troubleshooting guides. Keep the body useful without the action link.
 
-The launcher selects the first eligible entry in the array. `just announcement set` inserts or replaces an entry at the top, so put the message that should win when several entries overlap first. An entry is marked seen when the user dismisses its popup, not merely when the feed is downloaded or the popup is queued behind another modal. The preference store retains the latest 100 seen IDs.
+The launcher selects the first eligible entry. `just announcement set` inserts or replaces an entry at the top, so the message that must win goes first. An entry counts as seen when the user dismisses its popup, not when the feed downloads or the popup waits behind another modal. The preference store keeps the latest 100 seen IDs.
 
 ## Previewing a popup
 
-Run the isolated debug simulator, open Settings → Developer, set the **Popup** control under **HUD and popups** to **Custom Markdown**, type the message as Markdown, and press **Show Popup** to see it rendered in the real popup modal:
+1. Run the isolated debug simulator with `just preview`.
+2. Open Settings → Developer.
+3. Under **HUD and popups**, set **Popup** to **Custom Markdown** and type the message.
+4. Press **Show Popup** to see it in the real popup modal.
 
-```sh
-just preview
-```
-
-The preview uses separate temporary paths and preferences. Its game controls intercept installation and launch actions, and its composable controls cover launcher state, download progress, region availability, HUD pills, popups, accessibility/layout, failures, and Rosetta recovery.
+The preview uses separate temporary paths and preferences, and its game controls intercept installation and launch actions.
 
 ## Publishing
 
@@ -37,7 +36,7 @@ just announcement set \
 	https://github.com/LuMiSxh/Arknights-MacOS-Client/issues
 ```
 
-The `just` recipe uses snake-case argument names and writes their camel-case JSON counterparts: `action_title` becomes `actionTitle`, for example. `action_title`/`action_url` may be left empty (`""`), and four more optional positional arguments follow them for a version range and display window: `min_version`, `max_version`, `starts_at`, and `ends_at` (ISO-8601 UTC, ending in `Z`). For example, to show a message only to installed `0.3.0` users between two dates:
+The recipe takes snake-case arguments and writes camel-case JSON (`action_title` becomes `actionTitle`). `action_title` and `action_url` can be `""`. Four more optional arguments set a version range and display window: `min_version`, `max_version`, `starts_at`, and `ends_at` (ISO-8601 UTC, ending in `Z`). This example shows a message only to `0.3.0` users between two dates:
 
 ```sh
 just announcement set \
@@ -49,19 +48,17 @@ just announcement set \
 	2026-08-18T00:00:00Z 2026-08-20T08:00:00Z
 ```
 
-Review the resulting `announcements.json`, commit it to `main`, and push. Removing an entry prevents installations that have not fetched it yet from seeing it:
+Review `announcements.json`, commit it to `main`, and push. Removing an entry hides it from installations that have not fetched it yet:
 
 ```sh
 just announcement remove feedback-2026-08
 ```
 
-Publishing and removing announcements require repository write access. GitHub may briefly cache the contents response, so changes are not guaranteed to reach every client immediately.
-
-The `just announcement` command validates the feed shape and the entry it writes before changing the file. After editing the feed, inspect the JSON diff, run `just check`, and test the popup with the debug simulator. Publishing means merging or committing `announcements.json` to `main`; the launcher reads that branch through the GitHub Contents API. There is no announcement-specific deployment job.
+Publishing and removing require repository write access. GitHub can briefly cache the contents response, so changes may not reach every client immediately. The command validates the feed shape and the entry before it writes. After an edit, inspect the JSON diff, run `just check`, and test the popup in the debug simulator. The launcher reads `main` through the GitHub Contents API. No announcement-specific deployment job exists.
 
 ## Feed schema and eligibility
 
-The feed root must contain `schemaVersion: 1` and an `announcements` array with no more than 20 entries. The launcher rejects a feed larger than 128 KiB. `manage_announcements.py` enforces the field rules below when creating an entry, and the launcher repeats the safety checks before displaying it.
+The feed root needs `schemaVersion: 1` and an `announcements` array of at most 20 entries. The launcher rejects a feed larger than 128 KiB. `manage_announcements.py` enforces the field rules below when it creates an entry, and the launcher repeats the safety checks before it displays one.
 
 | Field                               | Purpose                                                                              |
 | ----------------------------------- | ------------------------------------------------------------------------------------ |
@@ -73,9 +70,9 @@ The feed root must contain `schemaVersion: 1` and an `announcements` array with 
 | `minimumVersion` / `maximumVersion` | Optional inclusive `X.Y.Z` launcher-version range                                    |
 | `startsAt` / `endsAt`               | Optional ISO-8601 UTC window ending in `Z`; the end is exclusive                     |
 
-An entry is eligible only when it is enabled, unseen, inside its date window, and compatible with the running `X.Y.Z` version. `manage_announcements.py` rejects invalid versions, reversed date ranges, non-HTTPS action URLs, or an action title without its URL. The launcher applies the same URL, version, date, and field-length safety checks before displaying an entry. It shows at most one new entry per check and logs a failed fetch without blocking installation or launch.
+An entry is eligible only when it is enabled, unseen, inside its date window, and compatible with the running `X.Y.Z` version. `manage_announcements.py` rejects invalid versions, reversed date ranges, non-HTTPS action URLs, and an action title without its URL. The launcher shows at most one new entry per check and logs a failed fetch without blocking installation or launch.
 
-The command writes all schema fields, including `null` for unused optional values. A minimal resulting entry looks like this:
+The command writes all fields, with `null` for unused optional values:
 
 ```json
 {
@@ -94,7 +91,7 @@ The command writes all schema fields, including `null` for unused optional value
 
 ## Popup Markdown
 
-The popup uses the launcher's small native Markdown parser, not the website renderer. It supports headings, paragraphs, bullet items, tables, fenced code, dividers, inline emphasis, and the five GitHub alert markers. Frontmatter is ignored when present. Keep announcement content simple and verify it in the real popup; advanced Markdown may be displayed as plain text.
+The popup uses the launcher's native Markdown parser, not the website renderer. It supports headings, paragraphs, bullet items, tables, fenced code, dividers, inline emphasis, and the five GitHub alert markers, and ignores frontmatter. Verify content in the real popup. Advanced Markdown can appear as plain text.
 
 > [!WARNING]
-> Remote Markdown is rendered as text and formatting only. It cannot execute HTML, JavaScript, shell commands, or native code.
+> Remote Markdown renders as text and formatting only. It cannot execute HTML, JavaScript, shell commands, or native code.

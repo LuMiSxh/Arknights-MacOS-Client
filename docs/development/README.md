@@ -7,26 +7,27 @@ audience: developers
 
 # Development
 
-These documents describe how Arknights Client is organized, tested, packaged, and maintained. The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar's Global, Japan, and Korea clients and Hypergryph's China and China (Bilibili) clients by default and gates the Gryphline Taiwan client behind Canary Features. Taiwan has its own permission switch.
+The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar Global, Japan, and Korea and Hypergryph China and China (Bilibili) by default. The Gryphline Taiwan client is behind Canary Features and has its own permission switch.
 
-Start with [Architecture](architecture/README.md) for ownership and process boundaries. Before changing behavior, check [Testing architecture](testing.md) and [Design](design.md) as applicable. [Error recovery](error-recovery.md) defines stable support codes, failure presentation, and guarded actions. [Releases and updates](releases-and-updates.md) documents the release and runtime workflow. The user-facing [Runtime compatibility](../help/runtime-compatibility.md) guide is also the runtime contract for development and packaging.
-
-[Wine prefix architecture](architecture/wine-prefix.md) is the developer reference for prefix topology, isolation, migrations, drive mappings, persistent state, and process ownership.
-
-[Wallpaper tagging and search](wallpaper-tagging.md) documents the curated metadata and maintenance workflow for official artwork presets.
+- [Architecture](architecture/README.md): ownership and process boundaries.
+- [Wine prefix architecture](architecture/wine-prefix.md): prefix topology, isolation, migrations, drive mappings, persistent state, and process ownership.
+- [Testing architecture](testing.md) and [Design](design.md): read before you change behavior.
+- [Error recovery](error-recovery.md): stable support codes, failure presentation, and guarded actions.
+- [Releases and updates](releases-and-updates.md): release and runtime workflow.
+- [Wallpaper tagging and search](wallpaper-tagging.md): curated metadata for official artwork presets.
+- [Runtime compatibility](../help/runtime-compatibility.md): a user guide that is also the runtime contract for development and packaging.
 
 ## Before handing off a change
 
-1. Run the narrowest focused check while iterating and add regression coverage where behavior changed.
-2. Update the affected guide or contract and add user-visible changes to `CHANGELOG.md`.
+1. Run the narrowest focused check while you iterate. Add regression coverage where behavior changed.
+2. Update the affected guide or contract. Add user-visible changes to `CHANGELOG.md`.
 3. Run the relevant formatter, inspect its diff, and rerun the focused check.
-4. Run `just ci` before completion. Website and documentation changes additionally require `just check web` and the production site build documented below.
-
-Keep the branch and pull-request strategy proportional to the change; the repository does not require a special branch naming convention.
+4. Run `just ci`.
+5. For website and documentation changes, also run `just check web` and the production site build below.
 
 ## Documentation authoring
 
-The website treats Markdown as a checked content source. Start every published file with a YAML frontmatter block:
+The website treats Markdown as a checked content source. Start every published file with YAML frontmatter:
 
 ```yaml
 ---
@@ -38,19 +39,31 @@ toc: true
 ---
 ```
 
-`title` and `description` are required. `order` is a finite number used for sorting; `hidden`, `draft`, and `toc` are booleans; and `audience` is `all`, `developers`, or `users`. An optional `code` must be one uppercase English word and must be paired with a non-empty `domain`; error codes are unique across documentation files. Public codes are registered in `docs/help/errors/registry.json`, use `/help/errors/<lowercase-code>/`, and must have exactly one matching page. A top-level section with `audience: developers` is listed under **Contributors** in the website sidebar and omitted from the home page, so player-facing pages stay separate; `hidden` removes a page from navigation and `toc` controls the page table of contents. Keep player pages short and task-focused, and put implementation details in these development pages. A `draft: true` file fails the production build rather than silently publishing an unfinished page.
+| Key                      | Rule                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `title`, `description`   | Required.                                                                                  |
+| `order`                  | Finite number for sorting.                                                                 |
+| `hidden`, `draft`, `toc` | Booleans. `hidden` removes the page from navigation. `toc` controls the table of contents. |
+| `audience`               | `all`, `developers`, or `users`.                                                           |
+| `code`                   | Optional. One uppercase English word. Requires a non-empty `domain`.                       |
 
-The site renders the frontmatter title in its page header. A first-level Markdown heading that exactly matches `title` is removed from the body, so use that heading when the same document is also read in the repository or launcher. A different first heading remains visible and is useful only when the page deliberately needs a second title.
+- Error codes are unique across documentation files.
+- Register public codes in `docs/help/errors/registry.json`. They use `/help/errors/<lowercase-code>/` and need exactly one matching page.
+- A top-level section with `audience: developers` appears under **Contributors** in the sidebar and not on the home page.
+- A `draft: true` file fails the production build.
+- Keep player pages short. Put implementation details here.
+
+The site removes a first-level heading that exactly matches `title`, because the page header shows it. A different first heading stays visible.
 
 ### Directories and routes
 
-Use `README.md` for a directory landing page. Its metadata defines the directory title, description, order, visibility, audience, and table-of-contents setting; its body becomes the introduction above the child-page list. Without a README, the build creates a landing page from the directory name and its visible children. Add a README when the section needs context, a recommended reading order, or links that are not represented by child files.
+Use `README.md` for a directory landing page. Its metadata sets the directory title, description, order, visibility, audience, and table of contents. Its body is the introduction above the child-page list. Without a README, the build creates a landing page from the visible children.
 
-`README.md` maps to the directory route (`docs/development/README.md` becomes `/development/`). Do not add `index.md`: the website rejects it so repositories and the generated site use one unambiguous convention. The repository root `README.md` remains a project entry point and is not copied into the docs tree.
+`README.md` maps to the directory route: `docs/development/README.md` becomes `/development/`. Do not add `index.md`. The website rejects it. The root `README.md` is not copied into the docs tree.
 
 ### Alerts
 
-Use GitHub alert markers in uppercase blockquotes. The website and the launcher's bundled Markdown parser recognize the same five markers, but the launcher reduces them to a labeled native text block; do not make the meaning depend on alert color.
+Use uppercase GitHub alert markers in blockquotes. The website and the launcher recognize the same five markers. The launcher shows them as a labeled text block, so meaning must not depend on color.
 
 | Marker         | Use it for                                                          |
 | -------------- | ------------------------------------------------------------------- |
@@ -60,34 +73,34 @@ Use GitHub alert markers in uppercase blockquotes. The website and the launcher'
 | `[!WARNING]`   | A likely failure, data loss, unsafe command, or external dependency |
 | `[!CAUTION]`   | A high-impact release, security, credential, or irreversible action |
 
-Keep alerts short and actionable. Use one marker for one point instead of nesting alerts or using them as visual section headers. All alert variants intentionally share the same geometry and typography on the website; only their semantic color changes.
+Keep alerts short. Use one marker per point. Do not nest alerts or use them as section headers.
 
 ### Mermaid diagrams
 
-Put diagrams in fenced `mermaid` blocks. The website lazy-loads Mermaid only on pages that contain such a block, renders with a strict security level, and keeps the source as a fallback when rendering fails. Use ordinary flowcharts or sequence diagrams with concise labels, keep them readable on the dark-only website theme, and avoid HTML, scripts, external assets, or behavior that requires Mermaid callbacks. The native launcher currently shows fenced code as text, so the surrounding prose must explain the contract without requiring the diagram.
+Put diagrams in fenced `mermaid` blocks. The website loads Mermaid only on pages with such a block, renders at a strict security level, and keeps the source as a fallback. Use flowcharts or sequence diagrams with short labels, readable on the dark theme. Do not use HTML, scripts, external assets, or callbacks. The launcher shows fenced code as text, so the prose must explain the contract without the diagram.
 
 ### Links and content checks
 
-Prefer relative Markdown links for repository documents, with the `.md` suffix. The production website build resolves those links to site routes, validates local targets and heading anchors, rejects unsafe or protocol-relative links, and permits only `https:`/`mailto:` external links. Keep link fragments in sync when renaming headings. Raw HTML is escaped by the website renderer; use Markdown instead.
+Use relative Markdown links with the `.md` suffix. The production build resolves them to site routes, validates local targets and heading anchors, rejects unsafe and protocol-relative links, and permits only `https:` and `mailto:` external links. Update link fragments when you rename headings. The renderer escapes raw HTML.
 
 ## Documentation website
 
-The SvelteKit site in `web/` builds these Markdown files into the project website. Every published document requires YAML frontmatter with at least `title` and `description`; `order`, `hidden`, `audience`, and `toc` refine navigation and presentation.
+The SvelteKit site in `web/` builds these files into the project website. It uses Anasthasia's components and base tokens with a launcher-specific flavour in `web/src/lib/styles/arknights-client.css`. Like the launcher, it is dark-only.
 
-The site uses Anasthasia's components and base tokens with a launcher-specific flavour in `web/src/lib/styles/arknights-client.css`. Like the launcher, the website is dark-only. The home page shows one official Arknights Global wallpaper from `web/static/artwork/`, the repository's only bundled artwork, always uncropped at 16:9; credit the artist, Hypergryph, and Yostar beside it. `--site-signal` is the accent the launcher's `WallpaperColorExtractor` derives from that wallpaper, and `--site-signal-text` is its AA-readable text variant; update both together when the wallpaper changes. Reserve the signal for the primary download action, active navigation, and focus, use tinted fills rather than solid signal fills, and keep secondary controls as quiet neutral capsules.
+- The home page shows one official Arknights Global wallpaper from `web/static/artwork/`, the only artwork the repository bundles. Show it uncropped at 16:9. Credit the artist, Hypergryph, and Yostar beside it.
+- `--site-signal` is the accent that the launcher's `WallpaperColorExtractor` derives from that wallpaper. `--site-signal-text` is its AA-readable text variant. Update both together when the wallpaper changes.
+- Use the signal only for the primary download action, active navigation, and focus. Use tinted fills, not solid ones. Keep secondary controls as quiet neutral capsules.
 
-Use Node 24.14 or newer and the `pnpm` version declared by `web/package.json`; the lockfile is the dependency source of truth. Use `just dev web` for local editing. Before opening a change, run `just format web` if needed and `just check web` for Svelte/type and Prettier checks. The check command does not run the content/prerender build; run the production check explicitly from the website directory:
+Use Node 24.14 or newer and the `pnpm` version in `web/package.json` (the lockfile is the source of truth). Use `just dev web` to edit, `just format web` if needed, and `just check web` for Svelte, type, and Prettier checks. It skips the content build. Run the production build:
 
 ```sh
 cd web
 BASE_PATH=/Arknights-MacOS-Client pnpm build
 ```
 
-That build reads `docs/` and `CHANGELOG.md` at prerender time and fails unless frontmatter, routes,
-links, heading anchors, canonical/social URLs, navigation visibility, accessibility metadata, and
-deployment-base paths are valid. A documentation-only edit does not trigger Pages automatically.
-Pages is built from `main` alongside a manually triggered release or through **Actions → Publish
-website → Run workflow**, defined in `.github/workflows/pages.yml`.
+The build reads `docs/` and `CHANGELOG.md`. It fails unless frontmatter, routes, links, heading anchors, canonical and social URLs, navigation visibility, accessibility metadata, and deployment-base paths are valid.
+
+A documentation-only edit does not trigger Pages. Pages builds from `main` with a manually triggered release or through **Actions → Publish website → Run workflow**, defined in `.github/workflows/pages.yml`.
 
 > [!IMPORTANT]
-> Run the manual Pages workflow from `main`. Other branches fail before deployment, and documentation changes never dispatch it automatically.
+> Run the manual Pages workflow from `main`. Other branches fail before deployment.

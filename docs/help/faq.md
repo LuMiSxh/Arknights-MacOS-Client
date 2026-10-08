@@ -1,6 +1,6 @@
 ---
 title: Frequently asked questions
-description: Answers about the project, game files, regions, updates, and privacy
+description: Answers about the project, regions, updates, and privacy
 order: 10
 ---
 
@@ -8,49 +8,49 @@ order: 10
 
 ## Is this an official launcher?
 
-No. Arknights Client is a community project and is not affiliated with Yostar, Gryphline, Hypergryph, or Bilibili. It downloads the official game from your region's publisher, but it cannot promise how a publisher treats third-party launchers.
+No. It is a community project, not affiliated with Yostar, Gryphline, Hypergryph, or Bilibili. It downloads the official game from your publisher. Publishers can treat third-party launchers as they choose.
 
 ## Does the download include the game?
 
-No. The DMG contains only the launcher and the Wine environment it needs. The game is downloaded from the publisher after you choose a region.
+No. The DMG contains only the launcher and Wine. The launcher downloads the game after you choose a region.
 
 ## Which regions can I play?
 
-Global, Japan, Korea, China, and China (Bilibili) by default. Taiwan is available as a [Canary region](../installation.md#canary-regions). You can install several regions side by side; each keeps its own files and version.
+Global, Japan, Korea, China, and China (Bilibili). Taiwan is a [Canary region](../installation.md#canary-regions). Regions install side by side with separate files and versions.
 
 ## Do I need an internet connection?
 
-Yes, for installing, updating, signing in, and playing. The game has no offline mode.
+Yes. The game has no offline mode.
 
 ## Does the launcher update the game on its own?
 
-No. It checks for updates and shows **Update**, but only downloads when you choose it. Launcher updates work the same way and never touch game files.
+No. It downloads only when you choose **Update**. Launcher updates work the same way and never change game files.
 
 ## What is the difference between update, resume, and repair?
 
-- **Update** downloads only files that changed in the new version.
+- **Update** downloads only changed files.
 - **Resume** continues an interrupted download.
-- **Repair** checks every file and downloads missing or damaged ones again.
+- **Repair** checks every file and downloads missing or damaged files again.
 
 ## Does the launcher change the game files?
 
-It adds a few compatibility files so the game runs under Wine, and restores the originals before every update or repair. Do not replace these files by hand.
+It adds compatibility files for Wine. It restores the originals before every update or repair. Do not replace them.
 
 ## Why does macOS ask for Local Network access?
 
-The game needs it to connect while it runs through Wine. The launcher does not upload anything.
+The game needs it to connect through Wine.
 
 ## Can I quit the launcher while playing?
 
-No. Quitting Arknights Client also quits the game. Closing the launcher window is fine.
+No. Quitting the launcher quits the game. Closing its window does not.
 
 ## Why do notices still appear with announcements turned off?
 
-That setting only covers project announcements. Notices from the publisher come from the game service and still appear.
+The setting covers only project announcements. Publisher notices come from the game.
 
 ## Does “Report a Problem…” upload my logs?
 
-No. It opens a public GitHub issue with basic details about the error and your Mac, which you can review before sending. See [Report a problem](README.md#report-a-problem).
+No. It opens a public GitHub issue with basic error and Mac details. You can review them before sending. See [Report a problem](README.md#report-a-problem).
 
 ## Is Game Mode required?
 
@@ -58,4 +58,4 @@ No. It is optional, off by default, and needs the full Xcode app. Without Xcode,
 
 ## Who helps with accounts and payments?
 
-Your region's publisher. See [Publisher support routing](README.md#publisher-support-routing).
+Your publisher. See [Publisher support routing](README.md#publisher-support-routing).

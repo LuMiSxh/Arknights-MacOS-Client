@@ -6,45 +6,53 @@ order: 20
 
 # Installation architecture
 
-The installation feature turns one region's publisher configuration into a verified game directory.
-[`InstallationController`](../../../Sources/ArknightsClient/Features/Game/Installation/InstallationController.swift)
-owns the selected region, user-selected directory, readiness projection, progress, and task
-lifecycle. [`GameInstaller`](../../../Sources/ArknightsClient/Features/Game/Installation/GameInstaller.swift)
-performs the filesystem and transfer work. `LauncherAPI` obtains the current version, manifest, and
-CDN URLs for a `GameRegion`. Global, Japan, and Korea use the same Yostar API shape and signature
-algorithm with different base URLs and `game_tag` values. The Canary-gated Taiwan client uses
-Gryphline's batch metadata and web-metadata endpoints with app code `uiCaUeGDB2htwXSv`, channel
-and sub-channel `6`, and launcher app code `TiaytKBUIEdoEwRT`. Its `game_files` response is an
-encrypted JSON-lines manifest whose entries use MD5 checksums. The China clients use
-Hypergryph's batch metadata endpoint with their respective distribution channels.
-The Gryphline adapter accepts only HTTPS responses from `launcher.gryphline.com`,
-`launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, and `gl-utils-public.hg-cdn.com`; it never starts the
-vendor launcher. It appends `game_files` to the verified package path, decrypts that response with
-the shared Hypergryph manifest cipher, and passes the resulting files through the same installer
-path-safety and resumable-download checks as every other region.
+- [`InstallationController`](../../../Sources/ArknightsClient/Features/Game/Installation/InstallationController.swift)
+  owns region, directory, readiness, progress, and tasks.
+- [`GameInstaller`](../../../Sources/ArknightsClient/Features/Game/Installation/GameInstaller.swift)
+  does the filesystem and transfer work.
+- `LauncherAPI` gets the version, manifest, and CDN URLs for a `GameRegion`.
+
+Each publisher family has its own API:
+
+| Region                  | API                                                                                                                                                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Global, Japan, Korea    | Same Yostar API shape and signature algorithm. Base URLs and `game_tag` values differ.                                                                                                                                                 |
+| Taiwan (Canary-gated)   | Gryphline batch metadata and web-metadata endpoints: app code `uiCaUeGDB2htwXSv`, channel and sub-channel `6`, launcher app code `TiaytKBUIEdoEwRT`. The `game_files` response is an encrypted JSON-lines manifest with MD5 checksums. |
+| China, China (Bilibili) | Hypergryph batch metadata endpoint with the respective distribution channel.                                                                                                                                                           |
+
+The Gryphline adapter accepts only HTTPS responses from `launcher.gryphline.com`, `launcher.hg-cdn.com`,
+`ak-tw.hg-cdn.com`, and `gl-utils-public.hg-cdn.com`, and never starts the vendor launcher. It appends
+`game_files` to the verified package path and decrypts the response with the shared Hypergryph manifest
+cipher. The files then pass the same path-safety and download checks as every other region.
 
 ## Inputs and ownership
 
-| Input or state                        | Owner                                                    | Role                                                                                                          |
-| ------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Selected region and install directory | `InstallationController` plus `LauncherPreferencesStore` | Selects one of the supported clients and persists one path per region                                         |
-| Game configuration                    | `LauncherRefreshController` and `LauncherAPI`            | Supplies latest version, manifest location, executable name, launch parameters, and reported disk requirement |
-| Manifest and CDN configuration        | `GameInstaller`                                          | Lists relative file paths, expected byte counts, provider checksums (CRC64 or MD5), and download roots        |
-| Installed state                       | `GameInstaller`                                          | Records the manifest that was successfully finalized in `.arknights-client-state.json`                        |
-| Exclusive operation                   | `LauncherLifecycleStore` plus an installer-root `flock`  | Coordinates in-process operations and cooperating installer processes for the same opened install root        |
-| Compatibility files                   | `GameCompatibilityManager`                               | Restores launcher-owned shims before install/update/repair                                                    |
+| Input or state                        | Owner                                                    | Role                                                                                               |
+| ------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Selected region and install directory | `InstallationController` plus `LauncherPreferencesStore` | Selects a client; persists one path per region                                                     |
+| Game configuration                    | `LauncherRefreshController` and `LauncherAPI`            | Supplies version, manifest location, executable name, launch parameters, reported disk requirement |
+| Manifest and CDN configuration        | `GameInstaller`                                          | Lists relative paths, byte counts, provider checksums (CRC64 or MD5), download roots               |
+| Installed state                       | `GameInstaller`                                          | Records the finalized manifest in `.arknights-client-state.json`                                   |
+| Exclusive operation                   | `LauncherLifecycleStore` plus an installer-root `flock`  | Coordinates in-process operations and cooperating installers for one opened install root           |
+| Compatibility files                   | `GameCompatibilityManager`                               | Restores launcher-owned shims before install, update, repair                                       |
 
-The installer does not choose a region, update the UI directly, or infer whether a partial install
-is usable. Those decisions remain with the controller and the lifecycle store.
+The controller and lifecycle store, not the installer, choose the region, update the UI, and judge a
+partial install.
 
 > [!IMPORTANT]
-> A normal update compares the installed and current manifests so unchanged files can be reused. **Repair** deliberately skips that shortcut: it checks every installed file and downloads missing or damaged files again. Installation is exclusive; refreshes, Settings actions, and repeated clicks cannot start a second installer.
 >
-> Each region has its own install directory and installed-state file, so regions install and update independently. Yostar regions share one Wine prefix; Taiwan has its own Gryphline prefix; both Hypergryph regions share another. `WinePrefixConfigurator` re-points the selected family's `G:` drive to the active region's directory on every launch.
+> - A normal update compares the installed and current manifests to reuse unchanged files. **Repair**
+>   skips that shortcut: it checks every installed file and downloads missing or damaged files again.
+> - Installation is exclusive. Refreshes, Settings actions, and repeated clicks cannot start a second
+>   installer.
 
 ## Operation flow
 
-The controller starts one operation only after the lifecycle is idle and the current region's game configuration has already been loaded by the refresh path. That configuration supplies the version, manifest location, executable, and reported space requirement used for the initial capacity check. Once the controller owns the operation token, `GameInstaller` fetches the referenced manifest and CDN configuration and begins validation. The token remains the authority for progress and completion; a cancelled task that finishes late cannot clear a newer operation.
+The controller starts an operation only when the lifecycle is idle and the refresh path has loaded the
+region's game configuration (version, manifest location, executable, reported space requirement for the
+capacity check). Then `GameInstaller` fetches the manifest and CDN configuration and validates them. The
+operation token stays the authority for progress and completion, so a cancelled task that finishes late
+cannot clear a newer operation.
 
 ```mermaid
 sequenceDiagram
@@ -72,15 +80,12 @@ sequenceDiagram
 	Controller->>Controller: Release token and publish readiness
 ```
 
-Each download streams to disk rather than buffering a whole file. A stream holds a bounded
-amount of received-but-unwritten data and suspends its transfer at that ceiling until the
-installer catches up, so a fast connection writing to a slow disk cannot grow in memory without
-limit.
+Each download streams to disk. A stream holds a bounded amount of unwritten data and suspends at that
+limit, so memory stays bounded.
 
-When the operation is cancelled, the current stream and task group are cancelled. Completed final
-files remain valid, while in-progress files keep their `.part` suffix so a later operation can send a
-range request. A successful operation saves state even when every manifest file was already present;
-that repairs a missing state file without downloading the game again.
+On cancellation, the installer cancels the current stream and task group. Completed files stay valid.
+In-progress files keep the `.part` suffix for a later range request. A successful operation saves state
+even when every file already existed, which repairs a missing state file.
 
 ```mermaid
 flowchart LR
@@ -94,91 +99,110 @@ flowchart LR
 
 ## Manifest and path safety
 
-`GameInstaller` validates the complete manifest before it begins downloads. A manifest path may be
-relative or have one leading slash, but it may not contain empty components, `.` or `..`, backslashes,
-newlines, NUL bytes, or an escape from the selected install directory. Paths are compared with
-case-insensitive, canonical Unicode keys so two entries cannot target the same file on macOS.
+`GameInstaller` validates the complete manifest before downloads begin. A path can be relative or have
+one leading slash. It cannot contain empty components, `.` or `..`, backslashes, newlines, NUL bytes, or
+an escape from the install directory. Further rules:
 
-The validation also reserves the state filename and every `.part` destination. A file cannot shadow
-another file's parent directory, and existing symlinks are rejected at every path component. Partial
-files must be regular files with one hard link; this keeps a resumed write from following a link or
-modifying an unrelated inode.
+- Paths compare as case-insensitive, canonical Unicode keys, so no two entries target one file.
+- The validation reserves the state filename and every `.part` destination.
+- A file cannot shadow another file's parent directory.
+- Existing symlinks are rejected at every path component.
+- Partial files must be regular files with one hard link, so a resumed write cannot follow a link or
+  modify an unrelated inode.
 
 > [!CAUTION]
-> Never relax manifest path checks because a current Yostar, Gryphline, or Hypergryph manifest happens to contain
-> only simple names. The manifest is remote input. Path containment, symlink rejection, duplicate detection,
-> and safe partial-file handling are installer invariants, not format niceties.
+> Never relax manifest path checks because a current Yostar, Gryphline, or Hypergryph manifest has only
+> simple names. The manifest is remote input. Path containment, symlink rejection, duplicate detection,
+> and safe partial-file handling are installer invariants, not format preferences.
 
-The installer holds its advisory root lock from manifest fetch through state commit. Directory
-parents are retained as open descriptors, and download bytes stay attached to the opened `.part`
-inode even if its name or a parent pathname changes. Before promotion, the installer clones or
-copies that descriptor into a unique file in owner-only staging, removes inherited ACLs, hashes the
-staged descriptor, and atomically renames that verified inode into the opened destination parent.
-On a volume that enforces ownership and permissions, the private staging namespace prevents other
-UIDs from replacing the verified source name before promotion. On a volume mounted to ignore
-ownership, mode and ACL checks do not isolate staged names: descriptor hashing and atomic rename
-still run, but resistance to hostile other-UID source-name replacement is not guaranteed. The
-installer lock coordinates cooperating installers; it does not stop uncooperative writers or
-hostile same-UID code. Installed-state records are also written and synced in private staging before
-an atomic descriptor-rooted rename into the install root. When filesystem cloning is unavailable,
-staging uses a bounded copy that can fail for lack of free space; failure leaves the previous
-destination intact and retains the resumable `.part`.
+File promotion:
+
+- The installer holds its advisory root lock from manifest fetch through state commit. It keeps directory
+  parents as open descriptors. Download bytes stay on the opened `.part` inode, even if a name or parent
+  pathname changes.
+- Before promotion, it clones or copies that descriptor into a unique owner-only staging file, removes
+  inherited ACLs, and hashes the staged descriptor. Then it atomically renames the verified inode into
+  the opened destination parent.
+- It writes and syncs installed-state records in private staging, then renames them atomically into the
+  install root.
+- Without filesystem cloning, staging uses a bounded copy that can fail for lack of free space. A failure
+  leaves the previous destination intact and keeps the resumable `.part`.
+
+Limits:
+
+- On a volume that enforces ownership and permissions, private staging stops other UIDs from replacing
+  the verified source name before promotion.
+- On a volume mounted to ignore ownership, mode and ACL checks do not isolate staged names. Hashing and
+  atomic rename still run, but protection from source-name replacement by another UID is not guaranteed.
+- The lock coordinates cooperating installers. It does not stop uncooperative writers or hostile
+  same-UID code.
 
 ## Reuse, repair, and resume
 
-| Mode                              | Existing file decision                                                                                    | Network behavior                                          |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Fresh install or incomplete state | A same-size file is checked against the manifest; absent or mismatching files are pending                 | Existing `.part` bytes are resumed when safe              |
-| Normal update                     | A same-size file whose previous installed manifest entry has the expected hash is reused                  | Only changed, missing, or incomplete files are downloaded |
-| Repair                            | Every existing manifest file is checked with its provider checksum, regardless of the previous state file | Missing or damaged files are downloaded again             |
+| Mode                | Existing file decision                                                                  | Network behavior                                    |
+| ------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Fresh or incomplete | Same-size file is checked against the manifest; absent or mismatching files are pending | Existing `.part` bytes are resumed when safe        |
+| Normal update       | Same-size file with the expected hash in the previous installed manifest is reused      | Only changed, missing, or incomplete files download |
+| Repair              | Every existing file is checked with its provider checksum, ignoring the previous state  | Missing or damaged files download again             |
 
-Before a pending file is downloaded, `GameInstaller+Reuse` tries to take it from another region's
-installation, whose directories (including custom locations) come from the preferences store. A
-donor must be a different directory from the target (compared by device and inode), contain
-`Arknights.exe`, and have a decodable installed-state file; the file's manifest path must be listed
-there, have the same size, and have no sibling `.part`. Files that already have resumable `.part`
-bytes are never replaced.
+Before it downloads a pending file, `GameInstaller+Reuse` tries to take it from another region's
+installation. The preferences store supplies those directories, including custom locations. A donor must:
 
-The installer clones the donor file with `fclonefileat` into a private `reuse-*.tmp` in the target's
-staging directory, then passes that inode to `finishDownload` in place of a finished `.part`. It gets
-the same size check, provider checksum, atomic promotion, and failure handling as a download. A clone
-failure (different volume, no APFS, permission, vanished file) or a checksum mismatch discards the clone,
-logs a line, and falls back to the next donor and then the normal download; reuse never fails an
-installation. Donors are only opened read-only for the clone, never locked, moved, or modified, so a
-running donor game is unaffected. Reused bytes advance progress and the file count but not the
-network total or transfer rate, so the ETA reflects real downloads. Each install logs the files and
-bytes reused.
+- be a different directory from the target (compared by device and inode);
+- contain `Arknights.exe`;
+- have a decodable installed-state file that lists the file's manifest path;
+- have the file at the same size, with no sibling `.part`.
 
-Each transfer starts at the primary CDN. Failed attempts retry with the configured backoff and use
-the fallback CDN on later attempts. A response must be HTTP 200 or 206; resumed responses must match
-the requested byte offset and manifest size, and a changed entity restarts from zero. When a server
-answers a range request with 200, the installer safely truncates the partial file and restarts that
-file from zero. An unexpected status, oversized response, size mismatch, or provider-checksum
-mismatch fails that attempt. A checksum failure clears those unverified partial bytes before retrying.
+Files that already have resumable `.part` bytes are never replaced.
 
-Before accepting file bytes, the installer validates both the source URL and every redirect. All
-must use HTTPS and contain no embedded credentials. Global, Japan, and Korea accept any otherwise
-valid HTTPS host from their publisher configuration. China artifact URLs and redirects must omit an
-explicit port and use a hostname ending in `.hycdn.cn`; Taiwan artifact URLs and redirects must omit
-an explicit port and use exactly `launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, or
-`gl-utils-public.hg-cdn.com`. `launcher.gryphline.com` is used by the Taiwan metadata adapter, not
-for game-file downloads.
+1. The installer clones the donor file with `fclonefileat` into a private `reuse-*.tmp` in the target's
+   staging directory.
+2. It passes that inode to `finishDownload` in place of a finished `.part`, with the same size check,
+   provider checksum, atomic promotion, and failure handling as a download.
+3. A clone failure (different volume, no APFS, permission, vanished file) or checksum mismatch discards
+   the clone and logs a line. The installer tries the next donor, then the normal download. Reuse never
+   fails an installation.
+
+- Donors open read-only. The installer never locks, moves, or modifies them, so a running donor game is
+  unaffected.
+- Reused bytes advance progress and file count, not network total or transfer rate, so the ETA reflects
+  real downloads. Each install logs the files and bytes reused.
+
+Retry and validation:
+
+- Each transfer starts at the primary CDN. Failed attempts retry with the configured backoff and use the
+  fallback CDN on later attempts.
+- A response must be HTTP 200 or 206. A resumed response must match the requested byte offset and
+  manifest size. A changed entity restarts from zero.
+- If a server answers a range request with 200, the installer safely truncates the partial file and
+  restarts it from zero.
+- An unexpected status, oversized response, size mismatch, or checksum mismatch fails the attempt. A
+  checksum failure clears the unverified partial bytes before the retry.
+
+The installer validates the source URL and every redirect before it accepts bytes. All must use HTTPS and
+have no embedded credentials. Per region:
+
+| Region               | Allowed hosts                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| Global, Japan, Korea | Any otherwise valid HTTPS host from the publisher configuration                                      |
+| China                | Hostname ending in `.hycdn.cn`, no explicit port                                                     |
+| Taiwan               | Exactly `launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, or `gl-utils-public.hg-cdn.com`, no explicit port |
+
+`launcher.gryphline.com` serves the Taiwan metadata adapter, not game-file downloads.
 
 > [!TIP]
-> If a download is paused, keep the regional directory and its `.part` files in place. Starting
-> **Resume** or **Install/Update** later lets the installer reuse complete files and continue safe
-> partial transfers. Deleting the directory is a full reset, not a repair.
+> To resume a paused download, keep the regional directory and its `.part` files, then select
+> **Resume** or **Install/Update**. Deleting the directory is a full reset, not a repair.
 
 ## Final state and region boundaries
 
-The installed-state file contains the publisher-reported game version and file basis, the manifest
-source, installation timestamp, and the manifest entries used for the successful operation. The
-controller considers a region installed only when both `Arknights.exe` and this state file exist and
-decode successfully. It does not consider a directory with a few game files or a `.part` file to be
-installed.
+The installed-state file holds the publisher-reported game version and file basis, the manifest source,
+the install timestamp, and the manifest entries of the successful operation. A region counts as
+installed only when `Arknights.exe` and this state file both exist and decode. A partial directory or a
+`.part` file is not installed.
 
-Each supported region persists an independent path and state. Regions share a Wine prefix only within
-their publisher family:
+Each region has an independent install directory, installed-state file, and persisted path, so regions
+install and update independently. Regions share a Wine prefix only within their publisher family:
 
 ```mermaid
 flowchart TB
@@ -200,33 +224,30 @@ flowchart TB
 	HypergryphPrefix --> Active
 ```
 
-Selecting another region is blocked during an exclusive activity. When it succeeds, the controller
-clears only the selected region's in-memory readiness and resolves that region's persisted path;
-it does not move, delete, or rewrite another region's files. The selected publisher family's prefix
-is repointed only at launch, after the selected game directory has passed the normal readiness checks.
+The app blocks region selection during an exclusive activity. A selection clears only the selected
+region's in-memory readiness and resolves its persisted path. It never moves, deletes, or rewrites
+another region's files. At launch, after the selected directory passes the readiness checks,
+`WinePrefixConfigurator` re-points the family's `G:` drive to that directory.
 
 ## Compatibility and update hand-off
 
-Before an install, update, or repair, `GameCompatibilityManager.restoreForUpdate` restores the
-official Vuplex and PlatformProcess files that older launches may have wrapped. This gives the
-official updater unmodified helper executables. The compatibility manager applies active components
-again before the next launch and can remove retired components through stable ownership markers.
+Before an install, update, or repair, `GameCompatibilityManager.restoreForUpdate` restores the official
+Vuplex and PlatformProcess files that older launches may have wrapped. The official updater then gets
+unmodified helpers.
 
 > [!WARNING]
-> Do not manually replace or delete unknown files beside the game's helpers while troubleshooting.
-> The compatibility manager restores only files with its ownership markers and deliberately leaves
-> unknown helpers untouched. See [Launch and process lifecycle](launch-and-process-lifecycle.md)
-> for the reconciliation contract.
+> Never replace or delete unknown files beside the game's helpers while you troubleshoot. The manager
+> restores only files with its ownership markers. See
+> [Launch and process lifecycle](launch-and-process-lifecycle.md).
 
 ## Failure handling and diagnostics
 
-Failures release the operation token before publishing the user-facing error. The diagnostic log
-retains the operation context and target path, while progress callbacks are sequence-numbered so
-concurrent downloads cannot move the UI backwards. Cancellation is reported as a paused operation,
-not as a corrupt installation; a real transfer or validation failure keeps the existing partial
-files that remain safe to resume.
+- Failures release the operation token before the app publishes the error.
+- The diagnostic log keeps the operation context and target path.
+- Sequence-numbered progress callbacks stop concurrent downloads from moving the UI backwards.
+- Cancellation shows as a paused operation. A transfer or validation failure keeps safe partial files.
 
-For user-facing recovery steps, link to [Installation](../../installation.md), [Troubleshooting](../../help/troubleshooting.md),
-and [Storage](../../help/storage.md). For regression coverage, see [Testing architecture](../testing.md)
-and the fixture-backed installer tests in
+For user recovery, see [Installation](../../installation.md), [Troubleshooting](../../help/troubleshooting.md),
+and [Storage](../../help/storage.md). For coverage, see [Testing architecture](../testing.md) and the
+fixture-backed tests in
 [`Tests/ArknightsClientTests/Game/Installation`](../../../Tests/ArknightsClientTests/Game/Installation).

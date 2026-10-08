@@ -9,17 +9,17 @@ domain: runtime
 
 # SEPIA
 
-The runtime was found, but Wine prefix migration, registry setup, DXMT installation, or another runtime setup step did not complete.
+The launcher found the runtime, but a setup step failed: Wine prefix migration, registry setup, DXMT installation, or another runtime step.
 
 ## Try this
 
-1. Quit other Wine-based apps that may be using the same files.
+1. Quit other Wine apps.
 2. Choose **Retry** once.
-3. Choose **Settings → Installation → Rebuild…**, then start the game again. This sets up the game environment again without deleting anything.
-4. As a last resort, choose **Delete Environment…**. It keeps your game files but signs you out; see [What cleanup removes](../storage.md#what-cleanup-removes).
+3. Choose **Settings → Installation → Rebuild…**, then start the game. This sets up the game environment again and deletes nothing.
+4. As a last resort, choose **Delete Environment…**. It keeps your game files but signs you out. See [What cleanup removes](../storage.md#what-cleanup-removes).
 
-If the launcher also reports a Rosetta or macOS problem, see [macOS compatibility](../runtime-compatibility.md). Repair checks game files and does not fix this code. If the message mentions Vuplex, PlatformProcess, the Bilibili login window, userenv, or restoring an official game helper, use [ANEMONE](anemone.md) instead.
+Repair cannot fix this code. For a Rosetta or macOS problem, see [macOS compatibility](../runtime-compatibility.md). If the message mentions Vuplex, PlatformProcess, the Bilibili login window, userenv, or restoring an official game helper, use [ANEMONE](anemone.md).
 
 ## Report this problem
 
-Report the code and operation, whether another Wine process was open, and which recovery step failed.
+Report the code, operation, whether another Wine process was open, and which recovery step failed.

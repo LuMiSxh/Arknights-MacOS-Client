@@ -1,25 +1,23 @@
 ---
 title: Troubleshooting
-description: Steps for launcher, runtime, sign-in, graphics, and game-start problems
+description: Fixes for launcher, sign-in, graphics, and start problems
 order: 20
 ---
 
 # Troubleshooting
 
-Find the symptom below and work through the steps in order. Almost everything can be fixed without deleting game files.
-
 > [!IMPORTANT]
-> Do not delete the Wine prefix or the game folder as a first step. Deleting the prefix signs you out; deleting the game folder means downloading it again.
+> Do not delete the Wine prefix or the game folder first. Deleting the prefix signs you out. Deleting the game folder forces a new download.
 
 ## The launcher shows an error code
 
-A short uppercase word such as `PEBBLE` points to a specific fix. Choose **Troubleshooting** next to the message, or look it up in [Error codes](errors/README.md).
+See [Error codes](errors/README.md) for words such as `PEBBLE`.
 
 ## The launcher will not open
 
-If macOS says the developer cannot be verified or Apple cannot check the app for malicious software, first confirm that you downloaded it from [the official GitHub release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest), then try to open it once. If you trust that copy, follow [Apple’s Open Anyway steps](https://support.apple.com/en-au/102445): in **System Settings → Privacy & Security**, choose **Open Anyway**, review the next warning, then choose **Open**. This adds an exception for this app only.
-
-If macOS says the app is damaged, download a fresh DMG from the official release. If the warning persists, stop and report it. If macOS says the app will damage your computer, do not open or override it; report the warning and where you downloaded the app.
+- **Cannot verify the developer, or cannot check for malicious software:** Confirm that you downloaded the app from [the official GitHub release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest). Then follow [Apple’s Open Anyway steps](https://support.apple.com/en-au/102445): in **System Settings → Privacy & Security**, choose **Open Anyway**, then **Open**.
+- **App is damaged:** Download a fresh DMG from the official release. If the warning stays, report it.
+- **App will damage your computer:** Do not open or override it. Report the warning and the download source.
 
 ## Setup says Rosetta is missing or unavailable
 
@@ -30,82 +28,83 @@ If macOS says the app is damaged, download a fresh DMG from the official release
    ```
 
 2. Restart the Mac and choose **Check Again**.
-3. If you are running a macOS 27 beta with Legacy Game Test Mode enabled, turn it off as described in [macOS compatibility](runtime-compatibility.md#legacy-game-test-mode-on-macos-27-beta).
-
-If the check still fails, see [macOS compatibility](runtime-compatibility.md).
+3. On a macOS 27 beta, turn off Legacy Game Test Mode. See [macOS compatibility](runtime-compatibility.md#legacy-game-test-mode-on-macos-27-beta).
 
 ## The download is stuck or fails
 
-1. Wait a moment if it says **Preparing download** or **Waiting for network…**.
+1. Wait while the launcher shows **Preparing download** or **Waiting for network…**.
 2. Check your connection and the free space on the destination drive.
-3. Close and reopen the launcher, then choose **Resume Download**.
-4. If one file keeps failing, try again later; the publisher's servers may be busy.
+3. Reopen the launcher and choose **Resume Download**.
+4. If one file keeps failing, try later.
 
-Finished files are never lost. Do not move or rename the `.part` files next to the game, and do not change the installation location while a download runs.
+Do not move or rename `.part` files or change the installation location during a download.
 
 ## A region shows “Not installed”
 
-Select the region in **Settings → Installation** and choose **Installation Location → Locate Existing Installation…**. Pick the folder that directly contains `Arknights.exe`. If it still shows **Not installed**, the files came from somewhere else; run **Repair…** so the launcher can verify them.
+1. Select the region in **Settings → Installation**.
+2. Choose **Installation Location → Locate Existing Installation…** and select the folder that directly contains `Arknights.exe`.
+3. If the region still shows **Not installed**, run **Repair…**.
 
 ## An update or repair does not finish
 
-Wait until no other download is running, then choose **Settings → Installation → Repair…**. Repair checks every file and downloads only what is missing or broken; your settings and sign-ins stay.
+When no other download runs, choose **Settings → Installation → Repair…**.
 
 ## The game will not start
 
-- **Play is disabled:** finish the download or install the pending update first.
-- **No game window appears:** quit any leftover Arknights process and try once more. If the launcher shows an error code, follow its page.
-- **The game closes right away:** start it once more after an update, since the first start finishes setting things up. If it keeps closing, try another installed region to see whether only one is affected, then [report the problem](README.md#report-a-problem).
+- **Play is disabled:** Finish the download or pending update.
+- **No game window appears:** Quit any leftover Arknights process and try again. If the launcher shows an error code, follow its page.
+- **The game closes right away:** After an update, start it once more. If it keeps closing, try another installed region. Then [report the problem](README.md#report-a-problem).
 
 ## Sign-in or Notices stay blank
 
-Where you sign in depends on the region:
+Sign-in by region:
 
-- **Global, Japan, Korea, and China** use a sign-in window inside the game.
-- **China (Bilibili)** uses Bilibili's own login window.
-- **Taiwan** opens sign-in in your Mac's default browser. If nothing seems to happen, look for a new browser window or tab.
+- **Global, Japan, Korea, and China:** a sign-in window inside the game.
+- **China (Bilibili):** the login window of Bilibili.
+- **Taiwan:** the default browser of your Mac. Look for a new window or tab.
 
-The first time, and after an update or clearing caches, an in-game window can take up to a minute.
+An in-game window can take up to one minute after first start, an update, or cache clearing.
 
-1. Wait that minute without pressing the sign-in button again.
-2. Check your connection and that the Mac's date and time are correct.
-3. For Global, Japan, Korea, or China: quit the game, choose **Settings → Storage → Clear Caches**, and start again.
-4. If the window still stays blank, [report the problem](README.md#report-a-problem) and name the region.
+1. Wait one minute. Do not press sign-in again.
+2. Check your connection and the Mac date and time.
+3. For Global, Japan, Korea, or China: quit the game, choose **Settings → Storage → Clear Caches**, restart.
+4. If the window stays blank, [report the problem](README.md#report-a-problem) with the region.
 
 If the window works but your sign-in is rejected or the account is locked, contact your [publisher](README.md#publisher-support-routing).
 
 ## The game cannot connect
 
-If you denied Local Network access, allow **Arknights Client** under **System Settings → Privacy & Security → Local Network**, then start the game again. If your account or the game service fails outside the launcher too, contact your [publisher](README.md#publisher-support-routing).
+Allow **Arknights Client** in **System Settings → Privacy & Security → Local Network**, then restart the game. If the account or game service also fails outside the launcher, contact your [publisher](README.md#publisher-support-routing).
 
 ## Graphics, window, or performance problems
 
-1. If **Let the launcher size the game** (**Settings → Game → Advanced**) is off, change the display settings inside the game first, or turn it on so the launcher picks a fitting size.
-2. Set **Picture** to **Smooth play on big screens** in **Settings → Game**; see [Display](runtime-compatibility.md#display).
-3. Pick **Leave room for other apps** or a smaller exact **Window size**, a lower fullscreen **Detail**, or try **Fullscreen**, which can skip a macOS compositing pass.
-4. If fullscreen looks grainy, set **Detail** to **Full detail**, so the game matches your display instead of being stretched by an uneven factor.
+1. If **Let the launcher size the game** (**Settings → Game → Advanced**) is off, turn it on or change the display settings in the game.
+2. Set **Picture** to **Smooth play on big screens** in **Settings → Game**. See [Display](runtime-compatibility.md#display).
+3. Pick **Leave room for other apps**, a smaller **Window size**, a lower fullscreen **Detail**, or **Fullscreen** (it can skip a macOS compositing pass).
+4. If fullscreen looks grainy, set **Detail** to **Full detail**.
 
-If the in-game cursor lags behind the mouse, turning off VSync in the game helps, at the cost of possible tearing.
+If the cursor lags, turn off VSync in the game. Tearing can occur.
 
 ## A launcher update is waiting
 
-Launcher updates wait until the game, a download, or a repair has finished. They never remove game files.
-
-After some updates, the first start moves existing game folders to a new layout. Let it finish; nothing is downloaded again. If it reports a conflict, do not delete either folder and see [Storage](storage.md#after-a-launcher-update).
+Launcher updates wait until the game, a download, or a repair finishes. They never remove game files. After some updates, the first start moves game folders to a new layout. If it reports a conflict, do not delete either folder. See [Storage](storage.md#after-a-launcher-update).
 
 ## Advanced diagnostics
 
-Use these only when a maintainer asks for them. They apply to one start; quit and open the app normally afterwards.
+Use these only when a maintainer asks. Each applies to one start.
 
 ```sh
 open "/Applications/Arknights Client.app" --args --graphics-diagnostics
 open "/Applications/Arknights Client.app" --args --no-retina
 ```
 
-`--graphics-diagnostics` writes detailed graphics logs. `--no-retina` starts the game at 1× scaling, which helps when the window has the wrong size on a Retina display. To keep 1× scaling:
+- `--graphics-diagnostics` writes detailed graphics logs.
+- `--no-retina` starts the game at 1× scaling. It fixes a wrong window size on a Retina display.
+
+To keep 1× scaling:
 
 ```sh
 defaults write com.lumisxh.arknights-client forceDisableRetina -bool YES
 ```
 
-Replace `YES` with `NO` to restore the default. Log files are listed in [Storage](storage.md#logs).
+Replace `YES` with `NO` to restore the default. Log files are in [Storage](storage.md#logs).

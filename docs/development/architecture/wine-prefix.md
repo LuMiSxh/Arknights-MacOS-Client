@@ -8,21 +8,22 @@ toc: true
 
 # Wine prefix architecture
 
-A Wine prefix is the mutable Windows environment used by the bundled runtime. It contains Wine's
-registry, Windows user profiles, embedded-browser sessions, installed DXMT libraries, caches, and
-launcher migration state. It is not the runtime itself: the runtime is read-only inside the app
-bundle, while prefixes persist below Application Support across launcher updates.
+A Wine prefix is the mutable Windows environment of the bundled runtime. It holds the Wine registry,
+Windows profiles, embedded-browser sessions, DXMT libraries, caches, and launcher migration state. The
+runtime is read-only in the app bundle. Prefixes persist below Application Support across launcher
+updates.
 
-[`GameSessionController`](../../../Sources/ArknightsClient/Features/Game/Runtime/GameSessionController.swift)
-owns prefix preparation and process lifetime. [`WineRuntime`](../../../Sources/ArknightsClient/Features/Game/Runtime/WineRuntime.swift)
-implements setup and process operations, and [`AppPaths`](../../../Sources/ArknightsClient/Shared/Persistence/AppPaths.swift)
-is the only source of prefix locations.
+- [`GameSessionController`](../../../Sources/ArknightsClient/Features/Game/Runtime/GameSessionController.swift)
+  owns preparation and process lifetime.
+- [`WineRuntime`](../../../Sources/ArknightsClient/Features/Game/Runtime/WineRuntime.swift) implements
+  setup and process operations.
+- [`AppPaths`](../../../Sources/ArknightsClient/Shared/Persistence/AppPaths.swift) is the only source
+  of prefix locations.
 
 ## Prefix topology
 
-The stable Yostar regions share one historical prefix. Taiwan uses a separate Gryphline prefix, and
-the China and China (Bilibili) clients share a separate Hypergryph prefix, so Windows-side state,
-login sessions, registry, and runtime processes cannot mix across publisher families.
+Each publisher family has its own prefix. Windows-side state, logins, registry, and processes never mix
+across families.
 
 | Region family              | Default prefix                                                                 |
 | -------------------------- | ------------------------------------------------------------------------------ |
@@ -30,18 +31,14 @@ login sessions, registry, and runtime processes cannot mix across publisher fami
 | Taiwan                     | `~/Library/Application Support/com.lumisxh.arknights-client/Gryphline/Prefix`  |
 | China and China (Bilibili) | `~/Library/Application Support/com.lumisxh.arknights-client/Hypergryph/Prefix` |
 
-Code must resolve the active path through `AppPaths.winePrefix(for:)` instead of selecting a directory
-name itself. Tests and the isolated preview inject temporary `AppPaths` roots and must use the same
-resolver.
-
-The launcher permits only one install, maintenance operation, or Wine-backed session at a time.
-Changing the selected region cannot transfer an active session to another prefix. The session keeps
-the region and prefix captured at launch until prefix-wide shutdown finishes.
+- Resolve the active path with `AppPaths.winePrefix(for:)`. Never select a directory name in other code.
+- Tests and the isolated preview inject temporary `AppPaths` roots.
+- The launcher permits one install, maintenance operation, or Wine-backed session at a time. A session
+  keeps its launch-time region and prefix until prefix-wide shutdown finishes.
 
 ## Directory and drive contract
 
-Wine creates most of the prefix contents. The launcher owns the following additional structure and
-mappings:
+The launcher owns this structure inside Wine's prefix:
 
 ```text
 {Yostar,Gryphline,Hypergryph}/Prefix/
@@ -62,176 +59,157 @@ mappings:
 ```
 
 [`WinePrefixConfigurator`](../../../Sources/ArknightsClient/Features/Game/Runtime/WinePrefixConfigurator.swift)
-reconciles drive mappings before every launch. It preserves `C:`, points `G:` at only the selected
-region's game directory, points `L:` at the central log directory, and removes every other mapping,
-including Wine's default `Z:` mapping to the macOS filesystem root. A region switch therefore changes
-`G:` without moving or merging game files.
+reconciles drive mappings before every launch:
 
-Wine may seed profiles for both the current macOS username and `crossover`. For both profiles, the
-launcher replaces Wine's default Desktop, Documents, Downloads, Music, Pictures, and Videos links
-with real directories inside the prefix. These paths must never be redirected back into the user's
-macOS home directory.
+- It keeps `C:` inside the prefix, points `G:` at only the selected region's game directory, and points
+  `L:` at the central log directory.
+- It removes every other mapping, including Wine's default `Z:` mapping to the macOS root.
+
+A region switch changes `G:` and moves no game files.
+
+For the current macOS username and for `crossover`, the launcher replaces Wine's default Desktop,
+Documents, Downloads, Music, Pictures, and Videos links with real directories inside the prefix. Never
+redirect them into the user's macOS home.
 
 > [!WARNING]
-> The private home and reduced drive map limit normal Windows-path access, but they are not a macOS
-> sandbox. Wine and native runtime libraries still execute with the launcher's user permissions.
+> The private home and reduced drive map limit Windows-path access. They are not a macOS sandbox. Wine
+> and native runtime libraries run with the launcher user's permissions.
 
 ## Environment isolation
 
 [`WineRuntime+Environment.swift`](../../../Sources/ArknightsClient/Features/Game/Runtime/WineRuntime+Environment.swift)
-constructs the environment from an empty dictionary. It inherits only `LANG`, `LC_ALL`, `LC_CTYPE`,
-and `__CF_USER_TEXT_ENCODING` when present. It does not forward arbitrary variables from the launcher.
+builds the environment from an empty dictionary. It inherits only `LANG`, `LC_ALL`, `LC_CTYPE`, and
+`__CF_USER_TEXT_ENCODING`, when present. It forwards no other launcher variable. It:
 
-The constructed environment:
-
-- assigns `HOME`, `WINEHOMEDIR`, and `CFFIXED_USER_HOME` to `<prefix>/home`;
-- assigns `WINEPREFIX` to the selected prefix;
-- keeps XDG cache, configuration, data, state, and runtime paths below the private home;
-- keeps `TMPDIR`, `TMP`, and `TEMP` below `<prefix>/home/tmp`;
-- keeps GStreamer and DXMT caches below the private home;
+- assigns `HOME`, `WINEHOMEDIR`, and `CFFIXED_USER_HOME` to `<prefix>/home`, and `WINEPREFIX` to the
+  selected prefix;
+- keeps XDG, GStreamer, and DXMT cache, configuration, data, state, and runtime paths below the private
+  home, and `TMPDIR`, `TMP`, and `TEMP` below `<prefix>/home/tmp`;
 - restricts `PATH` to the bundled runtime, `/usr/bin`, and `/bin`;
-- points the dynamic-library fallback path at the bundled runtime libraries; and
-- adds only launcher-owned synchronization, diagnostics, icon, audio, and cursor overrides
-  for the current launch.
+- points the dynamic-library fallback path at the bundled runtime libraries;
+- adds only launcher-owned synchronization, diagnostics, icon, audio, and cursor overrides for the
+  current launch.
 
-Launch-scoped options are not prefix migrations. For example, selecting MSYNC or ESYNC and switching
-the Mac pointer alter the next process environment without rewriting migration history. Following the
-default macOS audio output is always enabled through that same launch environment.
+Launch-scoped options (MSYNC or ESYNC, Mac pointer) change only the next process environment, not
+migrations. The environment always enables the default macOS audio output follow.
 
 ## Preparation and migrations
 
-Before starting the game, `WineRuntime.preparePrefixIfNeeded` performs two kinds of work:
+`WineRuntime.preparePrefixIfNeeded` runs ordered, recorded migrations (below). It also reconciles
+volatile drive mappings and private shell folders on every launch.
 
-1. Ordered, recorded migrations initialize Wine, install DXMT, and configure stable registry
-   overrides.
-2. Reconciliation updates volatile drive mappings and private shell folders on every launch.
-
-Migration state lives in `.arknights-runtime-migrations.json`. Its effective runtime revision is:
+Migration state lives in `.arknights-runtime-migrations.json`. The effective runtime revision is:
 
 ```text
 <runtime archive SHA-256>-prefix-<prefixRevision>
 ```
 
-The current ordered migration identifiers are:
+The plan comes from the bundled runtime, not the game version. The ordered migrations are:
 
 1. `initialize-wine-prefix` runs `wineboot.exe -u`.
-2. `install-dxmt` copies the bundled x64 DXMT libraries into `system32`. The x32 set is no longer
-   installed or required; copies left by earlier builds are inert and removed by step 5.
+2. `install-dxmt` copies the bundled x64 DXMT libraries into `system32`. The launcher no longer
+   installs or needs the x32 set. Step 5 removes copies from earlier builds.
 3. `configure-registry` installs stable DLL overrides, disables Wine's crash dialog, and maps the
    Command keys to Control.
-4. `share-runtime-libraries` replaces `system32`/`syswow64` files that are byte-identical to the
-   runtime's `lib/wine/x86_64-windows` and `i386-windows` builtins with APFS clones
-   (`WinePrefixLibraryDeduplicator`). It is appended last so prefixes migrated by earlier builds replay
-   only this step, and it skips DXMT files. If the volume cannot clone, the copies are kept and launch
-   continues.
-5. `remove-legacy-32-bit-libraries` runs only when the runtime has no `lib/wine/i386-windows`
-   (`WinePrefixLegacyLibraryCleaner`, runtime 0.7.0 and later). It removes from `syswow64` only
-   top-level regular files that carry Wine's builtin marker (`Wine builtin DLL` at offset 0x40 of a
-   PE file) and the DXMT library names the launcher installed there; everything else is kept. It is
-   best effort: failures are logged and launch continues, and cancellation leaves the step pending.
+4. `share-runtime-libraries` (`WinePrefixLibraryDeduplicator`) replaces `system32` and `syswow64` files
+   that are byte-identical to the runtime's `lib/wine/x86_64-windows` and `i386-windows` builtins with
+   APFS clones. It is appended last, so prefixes from earlier builds replay only this step. It skips
+   DXMT files. If the volume cannot clone, the copies stay and launch continues.
+5. `remove-legacy-32-bit-libraries` (`WinePrefixLegacyLibraryCleaner`) runs only when the runtime has
+   no `lib/wine/i386-windows` (runtime 0.7.0 and later). It removes from `syswow64` only top-level regular
+   files with Wine's builtin marker (`Wine builtin DLL` at offset 0x40 of a PE file) and the
+   DXMT library names the launcher installed there. It keeps everything else. It is best effort:
+   failures are logged and launch continues. Cancellation leaves the step pending.
 
-Registry work is applied as a single generated `.reg` script run through one `regedit.exe`, not as
-one Windows process per value. The script is written into the prefix's Windows temp directory
-because `regedit.exe` accepts only Windows paths, and is removed once it has been applied.
+Registry work runs as one generated `.reg` script through one `regedit.exe`. The script lives in the
+prefix's Windows temp directory, because `regedit.exe` accepts only Windows paths, and is removed after use.
 
-Each successful step is written atomically. An interruption resumes at the first incomplete step.
-A different runtime archive checksum or `prefixRevision` starts a complete plan for that runtime;
-missing or stale DXMT files invalidate `install-dxmt` and every later step. Legacy single-file
-markers are imported once and then removed.
+Replay rules:
 
-`prefixRevision` is a prefix-contract revision, not the runtime's version number. Do not increment
-it merely because Wine or DXMT changed: the archive checksum already changes the effective runtime
-revision. Increment it only when unchanged runtime bytes must replay the entire prefix plan because
-the launcher's prefix contract changed.
+- Each step is written atomically. An interruption resumes at the first incomplete step.
+- A different runtime archive checksum or `prefixRevision` starts the complete plan.
+- Missing or stale DXMT files invalidate `install-dxmt` and every later step.
+- A new migration ID runs only that step.
+- Legacy single-file markers (version 0.1) are imported once and removed.
 
-Display settings are reconciled separately. Retina mode, `LogPixels`, and precise scrolling are
-written only when their current registry values differ from the selected launch configuration, and
-are applied through the same single-script path.
+`prefixRevision` is a revision of the prefix contract, not the runtime version. Do not increment it when
+Wine or DXMT changes, because the archive checksum already changes the effective revision. Increment it
+only to replay the whole plan for unchanged runtime bytes.
+
+The launcher writes display settings (Retina mode, `LogPixels`, precise scrolling) separately, through
+the same script path, only when the registry value differs.
 
 ## Persistent and recreatable state
 
-| State                         | Location                                                                | Lifetime                                        |
-| ----------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
-| Wine registry                 | `<prefix>/*.reg`                                                        | Persistent; removed only with the prefix        |
-| Browser profiles and sessions | `<prefix>/drive_c/users/<profile>`                                      | Persistent; deleting the prefix signs users out |
-| DXMT libraries                | `<prefix>/drive_c/windows/{system32,syswow64}`                          | Reconciled from the bundled runtime             |
-| DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                             | Recreatable through targeted cache cleanup      |
-| Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`                  | Recreatable through targeted cache cleanup      |
-| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                           | Reset by **Rebuild…**; recreated on launch      |
-| Regional game files           | Outside the prefix under the publisher folder or a selected custom path | Owned by installation, not prefix maintenance   |
-| Runtime binaries              | Outside the prefix in the app bundle                                    | Replaced only with the launcher application     |
-| Runtime and game logs         | Outside the prefix under `~/Library/Logs/com.lumisxh.arknights-client`  | Shared diagnostic destination mapped as `L:`    |
+| State                         | Location                                                          | Lifetime                             |
+| ----------------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| Wine registry                 | `<prefix>/*.reg`                                                  | Persistent; removed with the prefix  |
+| Browser profiles and sessions | `<prefix>/drive_c/users/<profile>`                                | Persistent; deleting signs users out |
+| DXMT libraries                | `<prefix>/drive_c/windows/{system32,syswow64}`                    | Reconciled from the runtime          |
+| DXMT shader cache             | `<prefix>/home/.cache/dxmt`                                       | Recreatable by cache cleanup         |
+| Browser caches                | `<prefix>/drive_c/users/<profile>/AppData/Local/cache`            | Recreatable by cache cleanup         |
+| Migration state               | `<prefix>/.arknights-runtime-migrations.json`                     | Reset by **Rebuild…**; recreated     |
+| Regional game files           | Publisher folder or custom path, outside the prefix               | Owned by installation                |
+| Runtime binaries              | App bundle, outside the prefix                                    | Replaced with the launcher           |
+| Runtime and game logs         | `~/Library/Logs/com.lumisxh.arknights-client`, outside the prefix | Mapped as `L:`                       |
 
-Cache discovery accepts only real directories contained by the resolved prefix and does not follow
-symbolic links. Prefix maintenance must preserve the same containment rule.
+Cache discovery accepts only real directories inside the resolved prefix and never follows symbolic
+links. Prefix maintenance keeps this rule.
 
 ## Process ownership and shutdown
 
-The direct Wine process and the prefix-wide `wineserver` answer different questions. The direct
-process reports whether game startup failed or `Arknights.exe` exited. `wineserver -k` requests
-prefix shutdown; its exit means the signal request was issued, not that shutdown completed. A
-bounded `wineserver -w` wait blocks on the server lock and completes after wineserver releases it.
-The launcher does not return to Idle merely because the direct process or `-k` exited.
+The direct Wine process and the prefix-wide `wineserver` answer different questions:
 
-Every callback is scoped to the session UUID that captured the region and prefix. A stale callback
-cannot clear a newer session's state. **Stop**, launch cancellation, visible-window timeout, normal
-game exit, and app termination all request prefix-scoped shutdown. For a user stop, the controller
-closes the spawn gate, issues `wineserver -k`, waits for every `Process` registered with the gate to
-exit, then sends a final `-k` and requires a successful `-w` before releasing prefix ownership. One
-20-second deadline covers the sequence. If a child does not retire, a shutdown command times out, or
-the final wait fails or times out, the session stays in **Stopping** with **Retry** for the same UUID,
-region, and prefix; repeated failure keeps that recovery state.
+- The direct process reports if startup failed or `Arknights.exe` exited.
+- `wineserver -k` requests prefix shutdown. Its exit means the request was issued, not completed.
+- A bounded `wineserver -w` wait completes after wineserver releases the server lock.
 
-See [Launch and process lifecycle](launch-and-process-lifecycle.md) for the complete session state
-machine and failure behavior.
+The launcher does not return to Idle when only the direct process or `-k` exits. Every callback is
+scoped to the session UUID that captured the region and prefix. **Stop**, launch cancellation,
+visible-window timeout, normal game exit, and app termination all request prefix-scoped shutdown. See
+[Failure and shutdown behavior](launch-and-process-lifecycle.md#failure-and-shutdown-behavior) for the
+stop sequence, deadline, and retry rules.
 
 ## Compatibility reconciliation
 
-Game-directory compatibility components are intentionally separate from prefix migrations. The
-official updater may replace Vuplex or PlatformProcess at any time, so
-`GameCompatibilityManager` reconciles active components before every launch and restores active or
-retired components before install, update, or repair. Ownership markers allow the launcher to touch
-only its own wrappers, DLLs, and bridges; unknown files remain untouched.
+Game-directory compatibility components are separate from prefix migrations. `GameCompatibilityManager`
+reconciles them before every launch, because the official updater can replace Vuplex or PlatformProcess
+at any time. See [Launch and process lifecycle](launch-and-process-lifecycle.md).
 
-DXMT is prefix-owned and follows the migration path because its Windows DLLs live in `drive_c`.
-Runtime-level Wine and DXMT patches remain in the bundled runtime and are never copied into game
-files.
+DXMT is prefix-owned and follows the migration path, because its Windows DLLs live in `drive_c`. Runtime
+Wine and DXMT patches stay in the bundled runtime. The launcher never copies them into game files.
 
 ## Maintenance operations
 
-**Rebuild…** removes only current and legacy migration bookkeeping. The next launch reruns
-Wine initialization, DXMT installation, and registry configuration while preserving profiles,
-sessions, registry data unrelated to those settings, and game files.
+- **Rebuild…** removes only current and legacy migration bookkeeping. The next launch reruns Wine
+  initialization, DXMT installation, and registry configuration. Profiles, sessions, unrelated registry
+  data, and game files stay.
+- **Delete Environment…** removes the whole prefix of the selected region family on a background task:
+  the shared Yostar prefix (with all its browser sessions) for Global, Japan, or Korea; the Gryphline
+  prefix for Taiwan; the shared Hypergryph prefix for either China client. Game installations,
+  preferences, artwork, and central logs stay outside every prefix.
 
-**Delete Environment…** removes the selected region family's complete prefix on a background task.
-For Global, Japan, or Korea, that means the shared Yostar prefix and all browser sessions stored in
-it. For Taiwan, it means the Gryphline prefix. For either China client, it means the shared Hypergryph prefix. Game installations,
-launcher preferences, artwork, and central logs remain outside either prefix.
-
-Both operations require an idle lifecycle. Do not add a direct filesystem deletion path in UI code;
-route maintenance through `GameSessionController` so lifecycle ownership and error presentation
-remain intact.
+Both operations require an idle lifecycle. Never delete files directly from UI code. Route maintenance
+through `GameSessionController` to keep lifecycle ownership and error presentation.
 
 ## Change checklist
 
-When changing the prefix contract:
+When you change the prefix contract:
 
-1. Keep locations in `AppPaths`; when a path contract changes, define and test an explicit migration.
-2. Decide whether the change is a recorded migration, per-launch reconciliation, or a launch-scoped
-   environment option. Do not use migration state for volatile configuration.
-3. Preserve the migration order and atomic state write. Add a new migration identifier when only
-   new work must run; change `prefixRevision` only when the whole plan must replay without a runtime
-   checksum change.
+1. Keep locations in `AppPaths`. For a path contract change, define and test an explicit migration.
+2. Choose one: recorded migration, per-launch reconciliation, or launch-scoped environment option. Never
+   use migration state for volatile configuration.
+3. Preserve the migration order and atomic state write. Add a migration identifier when only new work
+   must run. Change `prefixRevision` only to replay the whole plan without a checksum change.
 4. Keep the selected prefix and session UUID captured across every suspension and callback.
-5. Preserve private home directories, the `G:` and `L:` mappings, removal of `Z:`, and the rule that
-   unknown files are not overwritten.
+5. Preserve the private homes, the `G:` and `L:` mappings, the removal of `Z:`, and the rule that
+   unknown files are never overwritten.
 6. Keep prefix-wide shutdown as the terminal ownership boundary.
-7. Update [Runtime compatibility](../../help/runtime-compatibility.md),
-   [Storage](../../help/storage.md), and [Data and persistence](data-and-persistence.md) when a
-   user-visible path, reset consequence, or persistence rule changes.
+7. Update [Runtime compatibility](../../help/runtime-compatibility.md), [Storage](../../help/storage.md),
+   and [Data and persistence](data-and-persistence.md) when a user-visible path, reset consequence, or
+   persistence rule changes.
 
-Focused coverage lives in `RuntimeMigrationTests`, `WinePrefixConfiguratorTests`,
-`WineRuntimeTests`, `GameSessionRecoveryTests`, `GameSessionTerminationTests`, `GameCacheCleanerTests`,
-and `AppPathsTests`. Run `just check` for deterministic native and script checks. Changes to the
-runtime archive or live Wine behavior additionally require the manual compatibility matrix in
-[Testing architecture](../testing.md); unit tests do not launch Wine.
+Tests: `RuntimeMigrationTests`, `WinePrefixConfiguratorTests`, `WineRuntimeTests`,
+`GameSessionRecoveryTests`, `GameSessionTerminationTests`, `GameCacheCleanerTests`, and `AppPathsTests`.
+Run `just check`. Runtime archive or live Wine changes also need the manual matrix in
+[Testing architecture](../testing.md). Unit tests do not launch Wine.

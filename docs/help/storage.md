@@ -1,16 +1,16 @@
 ---
 title: Storage
-description: Locations and removal behavior for game files, runtime data, caches, preferences, and logs
+description: File locations, logs, and what cleanup removes
 order: 30
 ---
 
 # Storage
 
-Each region keeps its own game files. Regions from the same publisher share one **Wine prefix**: the Windows environment that holds sign-ins, settings, and caches.
+Each region keeps its own game files. Regions of one publisher share one **Wine prefix**: the Windows environment with sign-ins, settings, and caches.
 
 ## Where files live
 
-All paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` unless noted.
+Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` unless noted.
 
 | What                        | Location                                                             |
 | --------------------------- | -------------------------------------------------------------------- |
@@ -22,16 +22,14 @@ All paths start with `~/Library/Application Support/com.lumisxh.arknights-client
 | Caches                      | `~/Library/Caches/com.lumisxh.arknights-client/`                     |
 | Logs                        | `~/Library/Logs/com.lumisxh.arknights-client/`                       |
 
-A custom installation location replaces only that region's game folder. **Settings → Storage** shows how much space each part uses.
+A custom installation location replaces only the game folder of that region. **Settings → Storage** shows the space each part uses. macOS backups exclude game folders and prefixes.
 
 > [!WARNING]
-> The game can see everything inside its installation folder. If you choose a custom location, use a folder that contains only the game.
-
-Game folders and prefixes are excluded from macOS backups such as Time Machine because they can be downloaded or rebuilt.
+> The game can see everything in its installation folder. For a custom location, use a folder with only the game.
 
 ## Logs
 
-You do not need logs for a first report. **Settings → Storage → Show Logs** opens the folder:
+**Settings → Storage → Show Logs** opens the log folder.
 
 | File                                                                          | Contains                               |
 | ----------------------------------------------------------------------------- | -------------------------------------- |
@@ -40,7 +38,7 @@ You do not need logs for a first report. **Settings → Storage → Show Logs** 
 | `unity.log`                                                                   | Messages from the game itself          |
 | `chromium.log`                                                                | The sign-in window                     |
 
-Logs can contain private paths or URLs. Attach only the file a maintainer asks for.
+Logs can contain private paths or URLs. Attach only the requested file.
 
 ## What cleanup removes
 
@@ -51,21 +49,21 @@ Logs can contain private paths or URLs. Attach only the file a maintainer asks f
 | **Delete Environment…** | The publisher's prefix, including sign-ins and Windows settings | All game files and launcher settings       |
 | **Reset All Settings…** | Launcher preferences and launch options                         | Region, installation locations, game files |
 | **Reset Statistics…**   | Playtime totals                                                 | Everything else                            |
-| **Uninstall Game…**     | The selected region's game folder (moved to the Trash)          | Other regions, the prefix, the launcher    |
+| **Uninstall Game…**     | The game folder of the selected region (moved to the Trash)     | Other regions, the prefix, the launcher    |
 
-Try **Clear Caches** and **Rebuild…** before **Delete Environment…**. The prefix is rebuilt automatically on the next start.
+Try **Clear Caches** and **Rebuild…** before **Delete Environment…**.
 
 ## Uninstall completely
 
 1. Choose **Uninstall Game…** for each installed region.
 2. Choose **Delete Environment…** for each publisher you used.
 3. Quit the launcher and move **Arknights Client.app** to the Trash.
-4. Optionally delete the folders listed under [Where files live](#where-files-live).
+4. Optional: Delete the folders in [Where files live](#where-files-live).
 
-Removing only the app keeps all game files, prefixes, caches, and logs.
+Removing only the app keeps game files, prefixes, caches, and logs.
 
 ## After a launcher update
 
-Some updates move the standard game folders to a new layout on the first start. This is a quick rename on the same drive; nothing is downloaded again, and custom locations are never touched.
+Some updates rename the standard game folders to a new layout on the first start. Nothing downloads again. Custom locations are never touched.
 
-If the launcher reports a conflict, do not delete or merge either folder. [Report the problem](README.md#report-a-problem) with the message the launcher shows.
+If the launcher reports a conflict, do not delete or merge either folder. [Report the problem](README.md#report-a-problem) with the launcher message.

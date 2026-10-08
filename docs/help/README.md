@@ -1,20 +1,20 @@
 ---
 title: Help
-description: Support for installation, sign-in, launch, storage, and runtime problems
+description: Help for common problems
 order: 20
 ---
 
 # Help
 
 - Something does not work → [Troubleshooting](troubleshooting.md)
-- The launcher shows a short word like `PEBBLE` → [Error codes](errors/README.md)
-- Where files live and what cleanup removes → [Storage](storage.md)
-- Which macOS versions work → [macOS compatibility](runtime-compatibility.md)
+- The launcher shows a word such as `PEBBLE` → [Error codes](errors/README.md)
+- File locations and cleanup → [Storage](storage.md)
+- Supported macOS versions → [macOS compatibility](runtime-compatibility.md)
 - General questions → [FAQ](faq.md)
 
 ## Publisher support routing
 
-Arknights Client only handles installing and running the game. Accounts, payments, servers, and in-game data belong to the publisher of your region, even when the page opens inside the game:
+The publisher of your region handles accounts, payments, servers, and in-game data.
 
 | Region                  | Contact                                                       |
 | ----------------------- | ------------------------------------------------------------- |
@@ -22,13 +22,13 @@ Arknights Client only handles installing and running the game. Accounts, payment
 | Taiwan                  | [Gryphline Support](https://www.gryphline.com/en-us/contacts) |
 | China, China (Bilibili) | [Hypergryph Support](https://user.hypergryph.com/support)     |
 
-For an unexpected charge, check with the payment provider shown on the transaction first.
+For an unexpected charge, first contact the payment provider on the transaction.
 
 ## Report a problem
 
-Choose **Report Problem** next to the error, or **Settings → About → Report…**. It opens a GitHub issue that already contains the error code, region, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
+Choose **Report Problem** next to the error, or **Settings → About → Report…**. The launcher opens a GitHub issue with the error code, region, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
 
-Logs are not needed at first. If a maintainer asks for one, open **Settings → Storage → Show Logs** and attach only that file.
+You do not need logs at first. If a maintainer asks, open **Settings → Storage → Show Logs** and attach only that file.
 
 > [!WARNING]
 > GitHub issues are public. Never post passwords, tokens, or payment details.

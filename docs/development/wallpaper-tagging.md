@@ -7,33 +7,23 @@ audience: developers
 
 # Wallpaper tagging and search
 
-The Artwork gallery searches Yostar's official wallpaper titles and the curated operator, faction,
-event, and collaboration tags in
-[`WallpaperTags.json`](../../Sources/ArknightsClient/Resources/WallpaperTags.json). Search terms are
-case- and diacritic-insensitive; every term must match the title or a tag. Once a query exactly names
-a known tag, it matches that tag rather than longer tags with the same prefix.
+The Artwork gallery searches Yostar's official wallpaper titles and the curated operator, faction, event, and collaboration tags in [`WallpaperTags.json`](../../Sources/ArknightsClient/Resources/WallpaperTags.json). Search is case- and diacritic-insensitive. Every term must match the title or a tag. A query that exactly names a tag matches that tag, not longer tags with the same prefix.
 
-The gallery also groups wallpapers as Story, Commemorative, Celebration, or Holiday based on their
-official titles. This classification needs no manifest entry and therefore works for new wallpapers.
+The gallery also groups wallpapers as Story, Commemorative, Celebration, or Holiday from their official titles. This needs no manifest entry.
 
 ## Finding untagged wallpapers
 
-The `wallpaper-tag-scan` workflow runs monthly and can be dispatched manually. It compares the Global
-Fankit gallery with the bundled manifest and open `wallpaper-tagging` issues, then files one issue labelled `automated` and
-`wallpaper-tagging` for each newly discovered wallpaper. It never guesses tags or modifies the manifest.
+The `wallpaper-tag-scan` workflow runs monthly and on manual dispatch. It compares the Global Fankit gallery with the bundled manifest and open `wallpaper-tagging` issues, then files one issue labelled `automated` and `wallpaper-tagging` per new wallpaper. It never guesses tags or edits the manifest.
 
-Run the same scan locally without creating issues:
+Run the scan locally without creating issues:
 
 ```sh
 uv run --locked scripts/scan_untagged_wallpapers.py --dry-run
 ```
 
-Add lowercase tags to the matching `global-<id>` entry in `WallpaperTags.json`, then reference the
-tagging issue from the pull request. Once merged into `main`, launchers download the updated manifest
-the next time the Artwork gallery opens after a launch, so no launcher release is needed. The bundled
-copy is the offline fallback and is refreshed with each launcher build.
+Add lowercase tags to the `global-<id>` entry in `WallpaperTags.json` and reference the issue in the pull request. After the merge into `main`, launchers download the updated manifest when the Artwork gallery next opens after a launch. No launcher release is needed. The bundled copy is the offline fallback, refreshed with each build.
 
-Keep the file at this path: released launchers fetch it from `main` by this exact location.
+Keep the file at this path. Released launchers fetch it from `main` by this location.
 
 ```json
 {
@@ -44,4 +34,4 @@ Keep the file at this path: released launchers fetch it from `main` by this exac
 }
 ```
 
-Changing the manifest shape requires a schema-version bump and matching decoder change.
+Changing the manifest shape requires a schema-version bump and a matching decoder change.
