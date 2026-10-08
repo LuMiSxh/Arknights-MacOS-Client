@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Updates from the three previous releases download only what changed.
 - Installing a second region reuses identical files from an installed one instead of downloading them again.
 - The installer and full updates are about a third smaller.
-- The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries
+- The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries.
 - Windowed games use a **Window size** measured like macOS display resolutions; fullscreen uses a separate **Detail** level.
 - The launcher now sizes the game by default.
 - Everyone updating to 0.7.0 runs setup once more; returning players keep their window mode and rendering.
