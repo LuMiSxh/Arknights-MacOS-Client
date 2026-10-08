@@ -7,7 +7,7 @@ import Foundation
 /// rewriting any user choice.
 @MainActor
 struct OnboardingProgressStore {
-	/// 2: launcher 0.6.2 replaced display settings with setup questions, so everyone answers them.
+	/// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
 	static let currentSchemaVersion = 2
 	/// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
 	/// `OnboardingStrings.requiredSetupReason(schema:)`.

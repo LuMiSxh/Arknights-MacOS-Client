@@ -59,7 +59,7 @@ enum GameResolution: String, CaseIterable, Codable, Sendable {
 struct GameLaunchOptions: Codable, Sendable, Equatable {
 	var displayMode: GameDisplayMode
 	/// The official resolution closest to `fullscreenResolution`, the only fullscreen size
-	/// launchers before 0.6.2 read, and the fallback when the display is unknown.
+	/// launchers before 0.7.0 read, and the fallback when the display is unknown.
 	var resolution: GameResolution
 	/// The resolution fullscreen shows, like a game's output resolution. Native follows the
 	/// fullscreen display, so displays beyond 4K or with uncommon sizes are not scaled unevenly.
@@ -87,7 +87,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		case displayMode, resolution, fullscreenResolution, windowSize, usesGameSettings
 		case renderingMode
 		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode
-		/// Pre-0.6.2 Retina toggle; still written so older launchers keep their pixel density.
+		/// Pre-0.7.0 Retina toggle; still written so older launchers keep their pixel density.
 		case usesHighResolutionMode
 	}
 
@@ -135,7 +135,7 @@ struct GameLaunchOptions: Codable, Sendable, Equatable {
 		usesGameMode = value(.usesGameMode, defaults.usesGameMode)
 		synchronizationMode = value(.synchronizationMode, defaults.synchronizationMode)
 
-		// Before 0.6.2 one resolution served both modes, in pixels while Retina was on.
+		// Before 0.7.0 one resolution served both modes, in pixels while Retina was on.
 		let legacyRetina = value(.usesHighResolutionMode, true)
 		renderingMode = value(.renderingMode, legacyRetina ? .retina : .lightweight)
 		let legacyWindow =

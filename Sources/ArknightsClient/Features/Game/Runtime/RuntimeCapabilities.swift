@@ -48,7 +48,7 @@ struct RuntimeCapabilities: Equatable, Sendable {
 		struct Capabilities: Decodable {
 			let dxmtMaximumFrameLatency: FrameLatency
 			let hardwareCursor: Bool
-			/// Optional so runtimes published before 0.6.2 keep their other capabilities.
+			/// Optional so runtimes published before 0.7.0 keep their other capabilities.
 			let metalFXSpatialUpscaling: Bool?
 		}
 

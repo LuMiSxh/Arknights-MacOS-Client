@@ -13,22 +13,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added a **Picture** setting: **The sharpest picture** (Retina, the default), **Smooth play on big screens** (MetalFX), and **Longer battery life** (Lightweight). Setup and Settings show the technical name next to each choice. MetalFX draws fewer pixels and upscales them to the display's Retina resolution, which keeps battles smoother on 4K and larger displays.
-- Added plain window sizes, **Fill my screen** (the screen's usable area, title bar included) and **Leave room for other apps**, and plain fullscreen **Detail** levels: **Full detail**, **Balanced**, and **Lighter**. Exact sizes and resolutions stay available in the same menus.
+- Added a **Picture** setting: Retina (default), MetalFX for large displays, or Lightweight for battery life.
+- Added plain window sizes (**Fill my screen**, **Leave room for other apps**) and fullscreen **Detail** levels; exact sizes stay available.
 
 ### Changed
 
-- Reworked the display settings: windowed and borderless games now use a **Window size** measured like macOS display resolutions, and the launcher works out the resolution the game draws. Fullscreen uses a separate **Detail**, and **Settings → Game → Advanced** shows what the game actually draws. Existing launcher-controlled sizes keep their window size.
-- The launcher now sizes the game by default (**Let the launcher size the game**), and Settings explain why this is recommended. When it is off on a Retina display, the launcher explains once how in-game resolutions map to the window size.
-- Everyone updating to 0.6.2 goes through setup once more to answer the new questions. This rerun can't be skipped, and the first step explains what changed. Returning players who used in-game display settings keep their window mode and rendering, and the launcher takes over sizing.
-- **Windowed** is now the recommended window mode instead of Borderless Window.
-- Rebuilt setup around plain questions in six steps: System Check, Region, Display, Look, Updates & Audio, and Ready. Display asks about window or fullscreen, window size, picture, and pointer; Look asks about artwork, colors, the Dock icon, and what the launcher shows. Every answer applies right away.
+- China and China (Bilibili) no longer need Canary Features; Taiwan remains a Canary region.
+- Renamed **China — Bilibili** to **China (Bilibili)**.
+- Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
+- Updates from the three previous releases download only what changed.
+- Windowed games use a **Window size** measured like macOS display resolutions; fullscreen uses a separate **Detail** level.
+- The launcher now sizes the game by default.
+- Everyone updating to 0.7.0 runs setup once more; returning players keep their window mode and rendering.
+- **Windowed** is now the recommended window mode.
+- Rebuilt setup around six plain steps whose answers apply right away.
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
-- The Mac pointer (formerly the Canary Hardware Cursor option) is now a regular **Pointer** setting in **Settings → Game**.
-- Regrouped Settings: **General** is replaced by **Game**, which opens first and holds the display settings plus an **Advanced** panel with Game Mode, Wine synchronization, and the Metal performance HUD, and by **Appearance**, which holds artwork, colors, Dock icons, and what the launcher shows.
-- Rewrote Settings in plain language; the technical details are now tooltips. **Force Migration…** is now **Rebuild…** and **Delete Wine Prefix…** is now **Delete Environment…**. **Settings → Installation → Run Setup Again…** opens the setup questions again.
-- The Artwork gallery now downloads the latest wallpaper search tags from the project repository, so new wallpapers become searchable by operator or event without a launcher update.
-- Gallery tiles, search pills, Settings sidebar items, and document links now respond to presses with the launcher's press animation.
+- The Mac pointer (formerly Canary Hardware Cursor) is now a regular **Pointer** setting.
+- Regrouped Settings into **Game** and **Appearance**, with Game Mode, Wine synchronization, and the Metal HUD under **Game → Advanced**.
+- Rewrote Settings in plain language with technical details in tooltips; **Force Migration…** is now **Rebuild…**, **Delete Wine Prefix…** is now **Delete Environment…**, and **Run Setup Again…** reopens setup.
+- New wallpapers become searchable by operator or event without a launcher update.
+- Gallery tiles, search pills, sidebar items, and document links now animate when pressed.
 
 ### Removed
 
@@ -36,11 +40,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Reworked how the launcher sizes the game window and draws fullscreen, with a new setup step and Settings explanations. The launcher now sizes the game by default, and the game draws at its own resolution in windowed mode. Fullscreen uses a separate detail level, and Settings show what the game actually draws.
-- Locally built launchers no longer treat the published release of the same version as an update that blocks setup.
-- Fixed the Dock icon switching to a smaller icon inside a grey frame shortly after launch, notably on Macs with multiple displays at different resolutions.
-- Helper windows that the game opens, such as the China — Bilibili sign-in and console windows, no longer add a separate "wine" Dock entry that could stay behind after the game closes.
-- An announcement that arrives during setup no longer hides setup and blocks Settings; it now appears once setup is finished ([#94](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/94)).
+- Fixed wrong game window sizes and fullscreen resolutions on Retina displays.
+- Locally built launchers no longer treat the same published version as a blocking update.
+- Fixed the Dock icon shrinking into a grey frame shortly after launch on multi-display Macs.
+- Game helper windows, such as the China (Bilibili) sign-in, no longer leave a stray "wine" Dock entry.
+- An announcement arriving during setup no longer hides setup ([#94](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/94)).
 
 ## [0.6.1] - 2026-10-02
 
