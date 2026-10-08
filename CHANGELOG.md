@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Renamed **China — Bilibili** to **China (Bilibili)**.
 - Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
 - Updates from the three previous releases download only what changed.
+- Installing a second region reuses identical files from an installed one instead of downloading them again.
+- The installer and full updates are about a third smaller.
 - Windowed games use a **Window size** measured like macOS display resolutions; fullscreen uses a separate **Detail** level.
 - The launcher now sizes the game by default.
 - Everyone updating to 0.7.0 runs setup once more; returning players keep their window mode and rendering.

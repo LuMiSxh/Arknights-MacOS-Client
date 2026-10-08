@@ -132,10 +132,10 @@ jobs:
           update_name="$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
           update_directory="$RUNNER_TEMP/sparkle-updates"
           mkdir -p "$update_directory"
-          ditto -c -k --sequesterRsrc --keepParent "dist/$app_name" \
-            "$update_directory/$update_name"
+          # Sparkle extracts .tar.xz with /usr/bin/tar, which preserves symlinks, modes, and signatures.
+          tar -C dist -cJf "$update_directory/$update_name" "$app_name"
           cp "$RUNNER_TEMP/release-notes.md" \
-            "$update_directory/${update_name%.zip}.md"
+            "$update_directory/${update_name%.tar.xz}.md"
           delta_sources="$(uv run --locked --no-dev scripts/project_config.py sparkle-delta-sources)"
           # Deltas are an optimization: a failure here only logs a warning and ships the full archive.
           uv run --locked --no-dev scripts/sparkle_deltas.py fetch \
@@ -183,7 +183,7 @@ jobs:
         with:
           subject-path: |
             dist/*.dmg
-            dist/*.zip
+            dist/*.tar.xz
             dist/*.delta
             dist/appcast.xml
             dist/Runtime-Build-Recipe.tar.gz

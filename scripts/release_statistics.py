@@ -12,7 +12,11 @@ from datetime import UTC, datetime
 
 from lib.common import fail, output, require_command, run_main
 from lib.console import spinner
-from lib.project_config import github_asset_stem, load_project_configuration
+from lib.project_config import (
+    github_asset_stem,
+    load_project_configuration,
+    sparkle_archive_names,
+)
 
 
 @dataclass(frozen=True)
@@ -68,7 +72,7 @@ def release_downloads(payload: object, *, display_name: str) -> list[ReleaseDown
             version = tag.removeprefix("v")
             asset_stem = github_asset_stem(display_name).lower()
             dmg_name = f"{asset_stem}.dmg"
-            sparkle_names = {f"{asset_stem}.zip", f"{asset_stem}.{version}.zip"}
+            sparkle_names = sparkle_archive_names(asset_stem, version)
 
             def is_sparkle_asset(
                 name: str, names=sparkle_names, stem=asset_stem

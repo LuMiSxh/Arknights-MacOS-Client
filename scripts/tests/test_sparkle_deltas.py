@@ -12,7 +12,9 @@ import validate_sparkle_keys
 
 REPOSITORY = "owner/repo"
 PREFIX = f"https://github.com/{REPOSITORY}/releases/download"
-UPDATE_NAME = "Example.Client.zip"
+UPDATE_NAME = "Example.Client.tar.xz"
+# `fetch` derives legacy names from the real project's asset stem.
+LEGACY_UPDATE_NAME = "Arknights.Client.zip"
 
 
 def release(version: str, published: str, **overrides: object) -> dict[str, object]:
@@ -98,8 +100,47 @@ def test_download_failure_skips_deltas_without_failing_the_release(
 
     sparkle_deltas.fetch(arguments)
 
-    assert not list(tmp_path.glob("*.zip"))
+    assert not list(tmp_path.iterdir())
     assert "Skipping deltas from 0.5.0" in capsys.readouterr().err
+
+
+class MixedFormatClient:
+    def __init__(self, token: str | None = None) -> None:
+        pass
+
+    def releases(self, repository: str) -> list[object]:
+        legacy = release("0.5.0", "2026-05-01T00:00:00Z")
+        legacy["assets"] = [
+            {
+                "name": LEGACY_UPDATE_NAME,
+                "browser_download_url": f"{PREFIX}/v0.5.0/{LEGACY_UPDATE_NAME}",
+            }
+        ]
+        return [legacy, release("0.6.0", "2026-06-01T00:00:00Z")]
+
+    def download_to_file(self, url: str, destination: Path, maximum: int) -> int:
+        destination.write_bytes(b"archive")
+        return 7
+
+
+def test_fetch_keeps_each_sources_archive_format(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(sparkle_deltas, "GitHubClient", MixedFormatClient)
+    arguments = sparkle_deltas.argparse.Namespace(
+        repository=REPOSITORY,
+        current_version="0.7.0",
+        update_name=UPDATE_NAME,
+        destination=tmp_path,
+        count=3,
+    )
+
+    sparkle_deltas.fetch(arguments)
+
+    names = sorted(path.name for path in tmp_path.iterdir())
+    assert [name.rpartition(".")[2] for name in names] == ["zip", "xz"]
+    assert names[0].endswith(".0.5.0.zip")
+    assert names[1].endswith(".0.6.0.tar.xz")
 
 
 def test_finalize_renames_deltas_rewrites_urls_and_resigns(tmp_path: Path) -> None:

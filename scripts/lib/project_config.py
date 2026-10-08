@@ -16,6 +16,18 @@ from lib.common import PROJECT_DIR, fail, output, require_file
 
 ARCHITECTURE_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 SPARKLE_DELTA_SOURCE_COUNT = 3
+# Releases up to 0.6.x shipped `.zip` update archives; newer ones ship `.tar.xz`.
+# Sparkle 2.9.6, the oldest shipped updater, extracts both.
+SPARKLE_ARCHIVE_SUFFIXES = (".tar.xz", ".zip")
+
+
+def sparkle_archive_names(stem: str, version: str) -> set[str]:
+    """Return every asset name a release's Sparkle update archive may have used."""
+    return {
+        name
+        for suffix in SPARKLE_ARCHIVE_SUFFIXES
+        for name in (f"{stem}{suffix}", f"{stem}.{version}{suffix}")
+    }
 
 
 def github_asset_stem(display_name: str) -> str:
@@ -89,7 +101,7 @@ class ProjectConfiguration:
 
     @property
     def sparkle_update_name(self) -> str:
-        return f"{self.release_asset_stem}.zip"
+        return f"{self.release_asset_stem}.tar.xz"
 
     @property
     def target_directory(self) -> Path:

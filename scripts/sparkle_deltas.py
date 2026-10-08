@@ -25,9 +25,11 @@ from lib.common import PROJECT_DIR, ScriptError, fail, run_main
 from lib.console import info, success, warning
 from lib.github_client import GitHubClient
 from lib.project_config import (
+    SPARKLE_ARCHIVE_SUFFIXES,
     SPARKLE_DELTA_SOURCE_COUNT,
     github_asset_name,
     load_project_configuration,
+    sparkle_archive_names,
 )
 from validate_sparkle_keys import SPARKLE_NAMESPACE, validate_feed_signature
 
@@ -47,7 +49,7 @@ def select_sources(
     *,
     repository: str,
     current_version: str,
-    update_names: dict[str, str],
+    update_names: dict[str, set[str]],
     count: int,
 ) -> list[DeltaSource]:
     """Pick the newest published releases (excluding the current one) with an archive.
@@ -91,7 +93,7 @@ def accepted_archive_names(releases: list[object], stem: str, update_name: str):
     for release in releases:
         if isinstance(release, dict) and isinstance(release.get("tag_name"), str):
             version = release["tag_name"].removeprefix("v")
-            names[version] = {update_name, f"{stem}.{version}.zip"}
+            names[version] = {update_name, *sparkle_archive_names(stem, version)}
     return names
 
 
@@ -119,9 +121,19 @@ def fetch(arguments: argparse.Namespace) -> None:
     arguments.destination.mkdir(parents=True, exist_ok=True)
     fetched = 0
     for source in sources:
+        # `generate_appcast` picks the extractor from the extension, so keep each
+        # source's own format (older releases are zip, newer ones tar.xz).
+        suffix = next(
+            (
+                suffix
+                for suffix in SPARKLE_ARCHIVE_SUFFIXES
+                if urlparse(source.url).path.endswith(suffix)
+            ),
+            ".zip",
+        )
         destination = (
             arguments.destination
-            / f"{configuration.release_asset_stem}.{source.version}.zip"
+            / f"{configuration.release_asset_stem}.{source.version}{suffix}"
         )
         try:
             client.download_to_file(source.url, destination, MAXIMUM_ARCHIVE_BYTES)
