@@ -17,10 +17,11 @@ import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from lib.common import fail, run_main
 from lib.console import success
+from lib.project_config import github_asset_name
 
 PUBLIC_KEY_BYTES = 32
 PRIVATE_SEED_BYTES = 32
@@ -225,8 +226,9 @@ def validate_appcast(
     update_file: Path | None = None,
     public_key: str | None = None,
     openssl: str | None = None,
+    delta_directory: Path | None = None,
 ) -> None:
-    """Reject generated appcasts without Sparkle feed or enclosure signatures."""
+    """Reject generated appcasts without Sparkle feed, enclosure, or delta signatures."""
     if (update_file is None) != (public_key is None):
         fail("Sparkle appcast verification requires both an update file and public key")
     try:
@@ -251,19 +253,34 @@ def validate_appcast(
     except ET.ParseError as error:
         fail(f"could not parse generated Sparkle appcast: {error}")
 
+    delta_elements = [
+        element
+        for container in root.iter(f"{{{SPARKLE_NAMESPACE}}}deltas")
+        for element in container
+    ]
+    delta_ids = {id(element) for element in delta_elements}
     enclosures = [
         element
         for element in root.iter()
         if isinstance(element.tag, str)
         and element.tag.rsplit("}", 1)[-1] == "enclosure"
+        and id(element) not in delta_ids
     ]
     if not enclosures:
         fail("generated Sparkle appcast contains no update enclosures")
     signature_attribute = f"{{{SPARKLE_NAMESPACE}}}edSignature"
     if any(
-        not enclosure.get(signature_attribute, "").strip() for enclosure in enclosures
+        not enclosure.get(signature_attribute, "").strip()
+        for enclosure in (*enclosures, *delta_elements)
     ):
         fail("every Sparkle appcast enclosure must contain an Ed25519 signature")
+    validate_delta_enclosures(
+        delta_elements,
+        enclosures,
+        delta_directory,
+        decoded_public_key,
+        openssl,
+    )
     if update_file is not None:
         if not update_file.is_file():
             fail(f"Sparkle update artifact not found: {update_file}")
@@ -319,6 +336,62 @@ def validate_appcast(
         fail("generated Sparkle appcast contains no release notes")
 
 
+def validate_delta_enclosures(
+    deltas: list[ET.Element],
+    enclosures: list[ET.Element],
+    directory: Path | None,
+    public_key: bytes | None,
+    openssl: str | None,
+) -> None:
+    """Require deltas to be addressable beside the full archive and, when possible, authentic."""
+    from_attribute = f"{{{SPARKLE_NAMESPACE}}}deltaFrom"
+    signature_attribute = f"{{{SPARKLE_NAMESPACE}}}edSignature"
+    archive_locations = {
+        (url.scheme, url.netloc, url.path.rpartition("/")[0])
+        for url in (urlparse(element.get("url", "")) for element in enclosures)
+    }
+    seen_sources: set[str] = set()
+    for delta in deltas:
+        url = urlparse(delta.get("url", ""))
+        filename = Path(unquote(url.path)).name
+        if not filename.endswith(".delta"):
+            fail(f"Sparkle delta enclosure must be a .delta asset: {filename!r}")
+        if (
+            url.scheme,
+            url.netloc,
+            url.path.rpartition("/")[0],
+        ) not in archive_locations:
+            fail(f"Sparkle delta {filename!r} is not hosted beside the update archive")
+        if github_asset_name(filename) != filename or quote(filename) != filename:
+            fail(f"Sparkle delta {filename!r} would be renamed by GitHub on upload")
+        source = delta.get(from_attribute, "").strip()
+        if not source:
+            fail(f"Sparkle delta {filename!r} is missing sparkle:deltaFrom")
+        if source in seen_sources:
+            fail(f"Sparkle appcast has two deltas from version {source!r}")
+        seen_sources.add(source)
+        if directory is None or public_key is None:
+            continue
+        path = directory / filename
+        if not path.is_file():
+            fail(f"Sparkle delta artifact not found: {path}")
+        try:
+            length = int(delta.get("length", ""))
+        except ValueError:
+            fail(f"Sparkle delta {filename!r} has an invalid length")
+        if length != path.stat().st_size:
+            fail(f"Sparkle delta {filename!r} length does not match its artifact")
+        verify_ed25519_signature(
+            public_key,
+            decode_base64(
+                delta.get(signature_attribute, ""), "Sparkle delta Ed25519 signature"
+            ),
+            path,
+            "delta",
+            openssl,
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -341,6 +414,11 @@ def main() -> None:
         type=Path,
         help="cryptographically verify every appcast enclosure against this generated artifact",
     )
+    parser.add_argument(
+        "--delta-directory",
+        type=Path,
+        help="cryptographically verify every appcast delta against files in this directory",
+    )
     arguments = parser.parse_args()
     public_key = public_key_from_plist(arguments.plist)
     private_key = os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", "")
@@ -355,6 +433,7 @@ def main() -> None:
             arguments.update_name,
             update_file=arguments.update_file,
             public_key=base64.b64encode(signing_public_key).decode("ascii"),
+            delta_directory=arguments.delta_directory,
         )
     success("Sparkle Ed25519 key pair validated")
 

@@ -17,6 +17,8 @@ def test_counts_manual_and_sparkle_assets_without_counting_arbitrary_zips() -> N
                 "assets": [
                     {"name": "Arknights.Client.dmg", "download_count": 12},
                     {"name": "Arknights.Client.zip", "download_count": 9},
+                    {"name": "Arknights.Client42-41.delta", "download_count": 6},
+                    {"name": "Other42-41.delta", "download_count": 70},
                     {"name": "Other.dmg", "download_count": 1},
                     {"name": "Other 0.2.0.zip", "download_count": 400},
                     {"name": "unrelated-tool.zip", "download_count": 500},
@@ -38,8 +40,8 @@ def test_counts_manual_and_sparkle_assets_without_counting_arbitrary_zips() -> N
     assert len(releases) == 1
     assert releases[0].version == "0.2.0"
     assert releases[0].dmg_downloads == 12
-    assert releases[0].sparkle_downloads == 9
-    assert releases[0].app_downloads == 21
+    assert releases[0].sparkle_downloads == 15
+    assert releases[0].app_downloads == 27
     assert releases[0].recipe_downloads == 4
 
 

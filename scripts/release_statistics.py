@@ -69,6 +69,14 @@ def release_downloads(payload: object, *, display_name: str) -> list[ReleaseDown
             asset_stem = github_asset_stem(display_name).lower()
             dmg_name = f"{asset_stem}.dmg"
             sparkle_names = {f"{asset_stem}.zip", f"{asset_stem}.{version}.zip"}
+
+            def is_sparkle_asset(
+                name: str, names=sparkle_names, stem=asset_stem
+            ) -> bool:
+                return name in names or (
+                    name.startswith(stem) and name.endswith(".delta")
+                )
+
             releases.append(
                 ReleaseDownloads(
                     version=version,
@@ -76,9 +84,7 @@ def release_downloads(payload: object, *, display_name: str) -> list[ReleaseDown
                     dmg_downloads=_asset_downloads(
                         assets, lambda name, expected=dmg_name: name == expected
                     ),
-                    sparkle_downloads=_asset_downloads(
-                        assets, lambda name, expected=sparkle_names: name in expected
-                    ),
+                    sparkle_downloads=_asset_downloads(assets, is_sparkle_asset),
                     recipe_downloads=_asset_downloads(
                         assets,
                         lambda name: "recipe" in name and name.endswith(".tar.gz"),

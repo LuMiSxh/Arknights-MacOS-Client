@@ -9,7 +9,11 @@ import argparse
 from collections.abc import Callable
 
 from lib.common import run_main
-from lib.project_config import ProjectConfiguration, load_project_configuration
+from lib.project_config import (
+    SPARKLE_DELTA_SOURCE_COUNT,
+    ProjectConfiguration,
+    load_project_configuration,
+)
 
 FIELDS: dict[str, Callable[[ProjectConfiguration], str]] = {
     "app-bundle-name": lambda configuration: configuration.app_bundle_name,
@@ -18,6 +22,7 @@ FIELDS: dict[str, Callable[[ProjectConfiguration], str]] = {
     "executable-name": lambda configuration: configuration.product.executable_name,
     "release-asset-stem": lambda configuration: configuration.release_asset_stem,
     "sparkle-update-name": lambda configuration: configuration.sparkle_update_name,
+    "sparkle-delta-sources": lambda configuration: str(SPARKLE_DELTA_SOURCE_COUNT),
     "marketing-version": lambda configuration: configuration.product.marketing_version,
     "swift-architecture-arguments": lambda configuration: " ".join(
         f"--arch {architecture}"

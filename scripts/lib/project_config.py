@@ -15,6 +15,7 @@ from typing import Any
 from lib.common import PROJECT_DIR, fail, output, require_file
 
 ARCHITECTURE_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
+SPARKLE_DELTA_SOURCE_COUNT = 3
 
 
 def github_asset_stem(display_name: str) -> str:
@@ -23,6 +24,11 @@ def github_asset_stem(display_name: str) -> str:
     if not stem:
         fail("display name must contain a GitHub-safe asset component")
     return stem
+
+
+def github_asset_name(filename: str) -> str:
+    """Return the filename GitHub stores when a release asset is uploaded."""
+    return re.sub(r"[^A-Za-z0-9._-]+", ".", filename)
 
 
 @dataclass(frozen=True)

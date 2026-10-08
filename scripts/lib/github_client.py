@@ -9,6 +9,7 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 from lib.common import ScriptError, fail
@@ -91,6 +92,37 @@ class GitHubClient:
             maximum_bytes=maximum_bytes,
             accept="application/octet-stream",
         )
+
+    def download_to_file(self, url: str, destination: Path, maximum_bytes: int) -> int:
+        """Stream an unauthenticated download to `destination` via a `.part` file."""
+        request = self._url_request(
+            url, method="GET", authenticated=False, accept="application/octet-stream"
+        )
+        partial = destination.with_name(destination.name + ".part")
+        total = 0
+        try:
+            with (
+                urllib.request.urlopen(request, timeout=60) as response,
+                partial.open("wb") as file,
+            ):
+                while chunk := response.read(1_024 * 1_024):
+                    total += len(chunk)
+                    if total > maximum_bytes:
+                        fail(f"download exceeds {maximum_bytes} bytes")
+                    file.write(chunk)
+            partial.replace(destination)
+        except urllib.error.HTTPError as error:
+            raise ScriptError(
+                f"download failed with status {error.code}: {_endpoint_name(url)}"
+            ) from None
+        except (urllib.error.URLError, OSError) as error:
+            reason = getattr(error, "reason", error)
+            raise ScriptError(
+                f"download failed: {_endpoint_name(url)}: {reason}"
+            ) from None
+        finally:
+            partial.unlink(missing_ok=True)
+        return total
 
     def hash_download(self, url: str, maximum_bytes: int) -> str:
         request = self._url_request(

@@ -105,6 +105,7 @@ The draft contains these generated assets:
 | ----------------------------- | --------------------------------------------------- |
 | DMG                           | Installable arm64 application and pinned runtime    |
 | Versioned `.app.zip`          | Complete Sparkle update archive                     |
+| `*.delta`                     | Sparkle binary deltas from recent releases          |
 | `appcast.xml`                 | Signed Sparkle feed with embedded release notes     |
 | `Runtime-Build-Recipe.tar.gz` | Pinned runtime build recipe and provenance metadata |
 | `SHA256SUMS`                  | SHA-256 checksums for the published artifacts       |
@@ -133,8 +134,18 @@ The appcast is published as the `appcast.xml` asset of the latest GitHub release
 
 Key rotation is deferred. Sparkle 2.9.6's `generate_appcast` does not add an enclosure signature when the signing seed does not match the public key embedded in the app, and each installed client authenticates the signed feed using its own key ([Sparkle's signing and rotation guide](https://sparkle-project.org/documentation/#rotating-signing-keys)). A single replacement `appcast.xml` therefore cannot serve both K0 and a new K1. Keep K0 until a bridge release can be signed explicitly with `sign_update`, the K0 and K1 generations have separate authenticated feed routes, and packaged A→B and B→C paths pass tests, including a lagging A client still receiving B after C is published. Since current clients are ad-hoc signed, losing K0 requires an independently authenticated recovery path; it cannot be repaired by assigning a new Apple signing identity after the fact.
 
+### Delta updates
+
+The Wine runtime is most of the app bundle and rarely changes, so the workflow also publishes Sparkle binary deltas. Before `generate_appcast`, `scripts/sparkle_deltas.py fetch` downloads the full update archives of the newest published, non-draft, non-prerelease releases (`SPARKLE_DELTA_SOURCE_COUNT` in `scripts/lib/project_config.py`, currently 3) into the update directory as `<stem>.<version>.zip`. `generate_appcast --maximum-versions 1 --maximum-deltas N` then builds one delta per source and keeps only the new version in the feed; the old archives are inputs and are never uploaded. Clients older than the oldest source, or a delta Sparkle rejects, fall back to the full archive.
+
+Delta generation is best effort. A missing previous release, a failed release listing, or a failed archive download logs a warning and skips that source; the release still ships the complete archive. Deltas never replace the full archive, so a skipped delta only costs users bandwidth.
+
+`generate_appcast` names deltas after the app bundle (`Arknights Client42-41.delta`), but GitHub stores the asset with dots, which would break the appcast URL. `scripts/sparkle_deltas.py finalize` copies the referenced deltas into `dist/` under GitHub-safe names, rewrites their URLs, and signs the feed again with the same K0 seed, since the feed signature covers those URLs. `validate_sparkle_keys.py --delta-directory dist` then verifies every delta's name, host, `sparkle:deltaFrom`, length, and Ed25519 signature. Deltas are part of `SHA256SUMS` and the provenance attestation, and `just stats` counts their downloads as in-app updates.
+
+Sparkle ignores the custom `Icon\r` file that `NSWorkspace.setIcon` writes into the bundle, so the launcher's icon customization does not invalidate deltas. Any other change to the installed bundle makes Sparkle fall back to the full archive.
+
 The setup assistant always performs one silent Sparkle feed check before version-specific onboarding, independent of the automatic-check preference. If a newer release exists, setup remains pending and opens Sparkle's updater; it resumes only after the newer launcher is installed and reopened. A failed network check is recoverable and does not permanently block first-run setup.
 
-To make every existing user go through setup again after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.6.2 for the question-based setup. Preferences are untouched; only setup progress resets.
+To make every existing user go through setup again after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0 for the question-based setup. Preferences are untouched; only setup progress resets.
 
 To make that rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingStrings.requiredSetupReason(schema:)`. Returning players then see why setup is required, and Skip Setup stays hidden until they finish. First-time users can still skip. Schema 2 is required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.
