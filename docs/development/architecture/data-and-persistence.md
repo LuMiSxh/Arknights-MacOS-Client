@@ -64,6 +64,12 @@ Rules:
   start.
 - It finishes before the app publishes normal readiness, so no installer or Wine operation sees a
   half-migrated path set.
+- A failed move does not undo earlier moves. The migrator returns `AppStorageMigrationResult`. It
+  lists the completed moves and the first failure. The model saves the preferences of the completed
+  moves, and no others. It skips the moves that follow the failure.
+- A failure releases the startup activity. The launcher shows a `BASALT` failure with **Retry**,
+  **Troubleshooting**, and **Report a problem**, and blocks game launch. **Retry** runs the migration
+  again for the current failure ID only, then continues the normal startup work.
 
 > [!IMPORTANT]
 > Keep path construction centralized. A new feature receives `AppPaths` or a narrower URL dependency

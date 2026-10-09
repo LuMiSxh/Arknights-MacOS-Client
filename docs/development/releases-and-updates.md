@@ -76,6 +76,8 @@ Download the pinned runtime and build the app with `just dev`. `just dev dmg` co
 
 Packaging compiles only the Swift launcher and the x86-64 components in `RuntimeSupport`, and changes Wine's staged menu shortcut from Option-Command-Q to Command-Q. The attached `Runtime-Build-Recipe.tar.gz` records the runtime build process. It is not a complete corresponding-source bundle for every bundled runtime component.
 
+Packaging writes one compact `ThirdPartyNotices.deflate` file into the app. The website publishes the same content. Run `scripts/licenses.py --check --strict --runtime .build/runtime` before a release. See [License automation](license-automation.md) for the index, `--check`, and strict mode.
+
 The draft contains:
 
 | Asset                         | Purpose                                             |

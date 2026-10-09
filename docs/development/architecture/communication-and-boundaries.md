@@ -35,6 +35,12 @@ status state and the themed Sparkle UI.
   - The feed has at most 20 entries and 128 KB, and must declare schema version 1.
   - The first entry that is enabled, unseen, inside its optional date window and version bounds, under
     the field-length limits, and HTTPS-only in its action becomes the shown announcement.
+- **Third-party preset sources**: `PresetRemoteSources` names every community mirror and the Fankit
+  gallery API that the preset gallery reads. Size limits are in `AppConstants.Presets`.
+  - The operator catalog and avatar images use community mirrors that track `main`. A failed fetch keeps
+    the cached catalog or the curated avatars. A failed gallery fetch keeps the cached wallpapers.
+  - The wallpaper tags file below is app-owned and follows `main` on purpose. It is not pinned.
+  - The China and Taiwan launcher logos have no remote source. The launcher shows its text logo.
 - **Wallpaper tags** (`AppConstants.Presets.wallpaperTagsURL`, the raw
   `Sources/ArknightsClient/Resources/WallpaperTags.json` on `main`): Fetched once per launch, when the
   Artwork gallery first loads.

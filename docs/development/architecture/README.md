@@ -96,6 +96,25 @@ Repository scripts derive their configuration from these sources:
 `scripts/lib/project_config.py` cross-validates the first two sources before builds and checks. Scripts
 must not keep separate lists of app names, executables, platforms, architectures, or package resources.
 
+### Bundled resources
+
+`Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app bundle. Each entry states its path, its kind, its origin, and its encoding.
+
+| Origin    | Staged by                       | Read from                                                    |
+| --------- | ------------------------------- | ------------------------------------------------------------ |
+| `app`     | `scripts/build_app.py`          | `Bundle.main`                                                |
+| `package` | `resources:` in `Package.swift` | `AppResourceBundle.bundle` (`Bundle.module` in SwiftPM runs) |
+
+Use these rules:
+
+- Load a file with `BundledResource.data(in:)`, `text(in:)`, or `decode(_:in:)`. Do not call `Bundle.url(forResource:)` for a bundled resource.
+- The loader throws `BundledResourceError`. `missing` means the bundle has no such resource. `unreadable` means the file system failed. `corrupt` means the content is not valid deflate data, UTF-8, or JSON. The owning feature maps the error.
+- A file that the build copies from the repository stays `identity`: the bundle holds the same bytes as the source. This applies to `LICENSE`, `CHANGELOG.md`, `RUNTIME.json`, and images. A document that the build generates uses `deflate`. Today only `ThirdPartyNotices.deflate` does. Compression would save about 32 KB for `LICENSE` and `CHANGELOG.md`. The saving does not justify unreadable copies in the bundle.
+- `scripts/lib/bundled_resources.py` lists the same resources with their sources. `just check scripts` and `scripts/tests/test_bundled_resources.py` fail when the two lists differ. A new `package` resource also needs an entry in `Package.swift`.
+- `WallpaperTags.json` is the bundled fallback. The remote manifest layers over it and does not change the loader rules.
+
+The app does not load the icon files by name. `Info.plist` names them.
+
 Unit, deterministic integration, and live-contract tests are separate. [Testing architecture](../testing.md)
 covers target ownership, isolation, fixtures, CI cadence, and the manual Wine/game matrix.
 

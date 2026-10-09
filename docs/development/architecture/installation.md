@@ -184,7 +184,7 @@ have no embedded credentials. Per region:
 
 | Region               | Allowed hosts                                                                                        |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
-| Global, Japan, Korea | Any otherwise valid HTTPS host from the publisher configuration                                      |
+| Global, Japan, Korea | Exactly `yo-star.com` or a hostname ending in `.yo-star.com`                                         |
 | China                | Hostname ending in `.hycdn.cn`, no explicit port                                                     |
 | Taiwan               | Exactly `launcher.hg-cdn.com`, `ak-tw.hg-cdn.com`, or `gl-utils-public.hg-cdn.com`, no explicit port |
 

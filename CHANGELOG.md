@@ -15,40 +15,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added a **Picture** setting: Retina (default), MetalFX for large displays, or Lightweight for battery life.
 - Added plain window sizes (**Fill my screen**, **Leave room for other apps**) and fullscreen **Detail** levels; exact sizes stay available.
+- Added an AI assistance note to the About page and the documentation.
+- Added the missing third-party licenses and a script that generates the notices, checks them, and merges the runtime's license index.
 
 ### Changed
 
-- China and China (Bilibili) no longer need Canary Features; Taiwan remains a Canary region.
-- Renamed **China — Bilibili** to **China (Bilibili)**.
-- Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
+- Global, Japan, and Korea downloads now accept only `yo-star.com` hosts, including redirects.
 - Updates from the three previous releases download only what changed.
 - Installing a second region reuses identical files from an installed one instead of downloading them again.
-- The installer and full updates are about a third smaller.
+- Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
 - The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries.
+- **Game Mode** is greyed out with an explanation when Xcode is not installed.
+- China and China (Bilibili) no longer need Canary Features; Taiwan remains a Canary region.
+- Renamed **China — Bilibili** to **China (Bilibili)**.
 - Windowed games use a **Window size** measured like macOS display resolutions; fullscreen uses a separate **Detail** level.
 - The launcher now sizes the game by default.
 - Everyone updating to 0.7.0 runs setup once more; returning players keep their window mode and rendering.
 - **Windowed** is now the recommended window mode.
 - Rebuilt setup around six plain steps whose answers apply right away.
-- **Game Mode** is greyed out with an explanation when Xcode is not installed.
 - The Mac pointer (formerly Canary Hardware Cursor) is now a regular **Pointer** setting.
 - Regrouped Settings into **Game** and **Appearance**, with Game Mode, Wine synchronization, and the Metal HUD under **Game → Advanced**.
 - Rewrote Settings in plain language with technical details in tooltips.
-- New wallpapers become searchable by operator or event without a launcher update.
+- The app bundles one compact, compressed license file instead of many loose files, and the website publishes the full texts.
 - Gallery tiles, search pills, sidebar items, and document links now animate when pressed.
+- New wallpapers become searchable by operator or event without a launcher update.
+- A failed storage migration at startup no longer locks the launcher. The launcher keeps the folders that moved, shows a **Retry** action, and continues startup after a successful retry.
+- The installer and full updates are about a third smaller.
 - Rewrote the help pages and guides in Simplified Technical English: shorter and easier to follow.
 
 ### Removed
 
 - Removed the Canary frame latency option; the game always uses the standard setting.
+- Removed the wiki-hosted logo for the China, China (Bilibili), and Taiwan launchers (they show the text logo) and the test-server fallback wallpapers.
 
 ### Fixed
 
-- Fixed wrong game window sizes and fullscreen resolutions on Retina displays.
-- Locally built launchers no longer treat the same published version as a blocking update.
-- Fixed the Dock icon shrinking into a grey frame shortly after launch on multi-display Macs.
 - Game helper windows, such as the China (Bilibili) sign-in, no longer leave a stray "wine" Dock entry.
+- Fixed wrong game window sizes and fullscreen resolutions on Retina displays.
+- Fixed the Dock icon shrinking into a grey frame shortly after launch on multi-display Macs.
 - An announcement arriving during setup no longer hides setup ([#94](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/94)).
+- Locally built launchers no longer treat the same published version as a blocking update.
 
 ## [0.6.1] - 2026-10-02
 
@@ -58,21 +64,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Imported launcher and game icons keep their aspect ratio instead of being stretched to a square.
-- Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.1.
-- Sped up documentation search and moved preset thumbnail decoding off the main actor so large artwork no longer blocks the interface.
-- Clarified first-launch steps for ad-hoc signed, non-notarized releases, including Apple's app-specific Gatekeeper confirmation.
-- Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
-- Release packaging now rejects Sparkle appcasts and update archives that fail cryptographic verification against the tracked update key.
-- Canary runtime overrides now follow the packaged runtime's declared capabilities, with conservative defaults and saved preferences retained for legacy or unsupported runtimes.
-- One Canary permission check now governs region selection, installation, storage listings, playtime statistics, and setup; playtime region lists show only installed regions.
-- Refined launcher and HUD motion with softer accents and outline pulses during launch, shutdown, updates, and file operations, while respecting Reduce Motion and Dynamic Type.
-- Launcher errors now show recovery steps, with technical details kept in logs; the developer preview uses the same dialogs, actions, and launch availability, replacing inline Rosetta controls.
 - Repair verification progress appears in the HUD, Settings, setup, and developer preview; Pause stops file verification immediately.
-- Launcher log entries are written in call order without suspending launcher work, and installation task ownership follows the active installation state.
-- The developer preview reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
+- Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.1.
+- Clarified that macOS 28 remains blocked by current launcher policy and that Legacy Game Test Mode guidance applies only to macOS betas.
+- Canary runtime overrides now follow the packaged runtime's declared capabilities, with conservative defaults and saved preferences retained for legacy or unsupported runtimes.
 - The Game Mode label no longer says Experimental.
 - Extended the Canary Frame Latency range to 0–3 and kept the default at 3. Value 0 waits for the current GPU frame and may significantly reduce FPS or smoothness.
+- One Canary permission check now governs region selection, installation, storage listings, playtime statistics, and setup; playtime region lists show only installed regions.
+- Refined launcher and HUD motion with softer accents and outline pulses during launch, shutdown, updates, and file operations, while respecting Reduce Motion and Dynamic Type.
+- Imported launcher and game icons keep their aspect ratio instead of being stretched to a square.
+- Sped up documentation search and moved preset thumbnail decoding off the main actor so large artwork no longer blocks the interface.
+- Launcher errors now show recovery steps, with technical details kept in logs; the developer preview uses the same dialogs, actions, and launch availability, replacing inline Rosetta controls.
+- Launcher log entries are written in call order without suspending launcher work, and installation task ownership follows the active installation state.
+- Clarified first-launch steps for ad-hoc signed, non-notarized releases, including Apple's app-specific Gatekeeper confirmation.
+- Release packaging now rejects Sparkle appcasts and update archives that fail cryptographic verification against the tracked update key.
+- The developer preview reuses one cleared preference store and data folder instead of leaving new ones behind on every run.
 - Streamlined GitHub workflows, gave automated issues a shared label and layout, and let Sparkle signature checks accept OpenSSL 3 or newer.
 
 ### Fixed
@@ -80,22 +86,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Large manifests now use bounded file handles; concurrent installs are serialized, resumed ranges and staged files are validated before promotion, and game files are replaced atomically.
 - Paused and partial installations can be moved to Trash from Uninstall Game while idle.
 - Download size labels stay aligned when the displayed percentage changes.
-- Restored focus when dismissing mobile navigation with Escape and made enlarged Mermaid diagrams accessible modal dialogs.
-- Fixed music controls staying disabled after the game interrupts playback, and kept custom music URLs and playlist IDs out of logs.
-- Kept preset launcher, game, and source icons together when a later icon file commit fails.
-- Fixed live contract summaries and monitor alerts rejecting Taiwan metadata checks.
-- Fixed China — Bilibili startup with Hardware Cursor enabled and hid the CN-specific PRTS cursor asset.
+- Hardened networking: Yostar notices no longer load remote images, scripts, or stylesheets, and manifest and game-file requests require credential-free HTTPS. Taiwan requests remain restricted to verified CDN hosts.
 - Fixed Bilibili payment pages getting stuck while loading by correcting Wine's handling of nested CEF windows, and added DirectWrite CJK font fallbacks for macOS systems using another language.
-- Fixed Now Playing artwork not following launcher icon changes after the window was resized.
 - Fixed Stop during Wine preparation and startup; it stays retryable and keeps prefix ownership until processes retire and `wineserver -w` confirms shutdown.
 - Fixed Wine setup helpers and the game starting after app termination had taken ownership of shutdown.
-- Fixed quitting: it now closes open notices, failure details, and Settings, and no longer blocks macOS logout, restart, or shutdown.
 - Fixed all launch options resetting when a single saved value is no longer supported; the remaining options are kept.
-- Fixed older announcements reappearing once more than 100 announcements had been dismissed.
+- Fixed China — Bilibili startup with Hardware Cursor enabled and hid the CN-specific PRTS cursor asset.
 - Fixed China and China — Bilibili reset countdowns to follow China Standard Time (UTC+8), and refreshed countdowns for every installed client each minute while the region list is open.
-- Fixed playtime statistics being overwritten when the saved file cannot be read, for example after a downgrade; the unreadable file is now kept as `playtime.json.unreadable`.
+- Fixed quitting: it now closes open notices, failure details, and Settings, and no longer blocks macOS logout, restart, or shutdown.
+- Kept preset launcher, game, and source icons together when a later icon file commit fails.
+- Fixed music controls staying disabled after the game interrupts playback, and kept custom music URLs and playlist IDs out of logs.
+- Fixed Now Playing artwork not following launcher icon changes after the window was resized.
+- Fixed older announcements reappearing once more than 100 announcements had been dismissed.
 - Fixed announcements counting as seen before they were shown and still appearing after announcements were turned off in Settings.
-- Hardened networking: Yostar notices no longer load remote images, scripts, or stylesheets, and manifest and game-file requests require credential-free HTTPS. Taiwan requests remain restricted to verified CDN hosts.
+- Fixed playtime statistics being overwritten when the saved file cannot be read, for example after a downgrade; the unreadable file is now kept as `playtime.json.unreadable`.
+- Restored focus when dismissing mobile navigation with Escape and made enlarged Mermaid diagrams accessible modal dialogs.
+- Fixed live contract summaries and monitor alerts rejecting Taiwan metadata checks.
 
 ## [0.6.0] - 2026-09-24
 
@@ -107,155 +113,155 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Redesigned the website to match the launcher.
-- Rewrote the installation, troubleshooting, storage, and macOS compatibility guides.
-- Refined launcher controls, Settings, documents, and dialogs with consistent spacing, shared surfaces, dynamic theming, and progress-aware HUD treatment.
-- Improved launcher state feedback and update presentation while pausing decorative motion when the window is inactive.
 - Hardened filesystem cleanup, recovery ownership, and cancellable background work against stale or invalid state.
 - Improved checksum verification performance during repair.
 - Reduced repeated work when preparing Wine prefixes, searching the Artwork gallery, and calculating storage sizes.
-- Improved developer preview controls and centralized builds against the active macOS SDK.
-- Named runtime logs after Arknights and their publisher.
 - Moved Rosetta 2 preflight failures from the home status area into the standard failure modal with Install Rosetta, Retry, troubleshooting, and report actions.
 - Split runtime compatibility controls into independent ACE Compact, shared CEF, and Bilibili CN flags.
-- Improved handling of nested China — Bilibili browser dialogs; payment-flow verification remains pending.
 - Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.6.0.
 - Removed the regressing experimental Wine/DXMT runtime performance toggle; the independent DXMT frame-latency control remains available behind Canary Features.
-
-### Fixed
-
-- Allowed Sparkle to finish installing launcher updates by honoring its quit request once active game and file operations have ended, even while the update dialog is open.
-- Preserved China and China — Bilibili access and region selection when upgrading with Canary Features enabled, while respecting explicitly disabled China access.
-- Prevented the floating Settings footer from covering content.
-- Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).
-- Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
-- Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
-- Fixed macOS 27 SwiftPM resource packaging and test execution so bundled assets remain available and Swift tests run normally.
-- A download on a fast connection can no longer outpace a slow disk and grow in memory without limit.
-- Removed a leak and a per-frame window-server query from the helpers injected into the game and its notice window.
-- Keep native Settings and onboarding toggles on the current macOS geometry by linking app builds against the active SDK while retaining the macOS 15 deployment target.
+- Improved handling of nested China — Bilibili browser dialogs; payment-flow verification remains pending.
+- Refined launcher controls, Settings, documents, and dialogs with consistent spacing, shared surfaces, dynamic theming, and progress-aware HUD treatment.
+- Improved launcher state feedback and update presentation while pausing decorative motion when the window is inactive.
+- Named runtime logs after Arknights and their publisher.
+- Rewrote the installation, troubleshooting, storage, and macOS compatibility guides.
+- Redesigned the website to match the launcher.
+- Improved developer preview controls and centralized builds against the active macOS SDK.
 
 ### Removed
 
 - The launcher now ships in English only; removed German localization and language preferences.
 
+### Fixed
+
+- A download on a fast connection can no longer outpace a slow disk and grow in memory without limit.
+- Fixed the China — Bilibili notice helper lingering as a separate Dock entry after its game window closes (#80).
+- Removed a leak and a per-frame window-server query from the helpers injected into the game and its notice window.
+- Preserved China and China — Bilibili access and region selection when upgrading with Canary Features enabled, while respecting explicitly disabled China access.
+- Prevented the floating Settings footer from covering content.
+- Increased Liquid Glass surface contrast on macOS 27 while preserving accent-colored text on buttons, selects, and inputs (#78).
+- Keep native Settings and onboarding toggles on the current macOS geometry by linking app builds against the active SDK while retaining the macOS 15 deployment target.
+- Allowed Sparkle to finish installing launcher updates by honoring its quit request once active game and file operations have ended, even while the update dialog is open.
+- Selected the Xcode macOS SDK explicitly when compiling the x86_64 PlatformProcess window bridge, avoiding macOS 27 Command Line Tools linker errors.
+- Fixed macOS 27 SwiftPM resource packaging and test execution so bundled assets remain available and Swift tests run normally.
+
 ## [0.5.2] - 2026-09-14
 
 ### Added
 
+- An opt-in Canary toggle for experimental Wine/DXMT runtime performance changes at the next game launch.
 - Wallpaper counts to the Artwork gallery's category filter, plus an Operators submenu listing every operator featured in official wallpapers, sorted by how many they appear in (Thanks to @darkwebdev, #73).
 - The artist and curated tags to a wallpaper's hover tooltip in the Artwork gallery (Thanks to @darkwebdev, #73).
-- An opt-in Canary toggle for experimental Wine/DXMT runtime performance changes at the next game launch.
 
 ### Changed
 
-- Reorganized onboarding around a concise System Check, moved Canary controls into their relevant settings, added loading skeletons, and added confirmation before skipping setup.
 - Updated runtime build inputs to newer WineCX and DXMT revisions and the dappermint 4.6.8 base archive.
-- Replaced the Storage overview's "Calculating…" text and the gallery's loading spinner with a stable-sized neutral skeleton.
-- Reused recent Storage Settings measurements, skipped redundant Dynamic Theme accent/icon work, and debounced background-music URL reloads while editing.
-- Made running games follow macOS audio-output changes by default and removed the Canary toggle.
 - Made the Notices companion modal while open, centering it once over the game and restoring the game's prior input state when it closes.
+- Reorganized onboarding around a concise System Check, moved Canary controls into their relevant settings, added loading skeletons, and added confirmation before skipping setup.
+- Replaced the Storage overview's "Calculating…" text and the gallery's loading spinner with a stable-sized neutral skeleton.
 - Matched the Artwork gallery search field to the type filter's capsule surface and focus treatment.
 - Limited Artwork gallery search suggestions to tag/word completions, no longer suggesting whole wallpaper titles as chips.
+- Made running games follow macOS audio-output changes by default and removed the Canary toggle.
+- Reused recent Storage Settings measurements, skipped redundant Dynamic Theme accent/icon work, and debounced background-music URL reloads while editing.
 
 ### Fixed
 
-- Fixed Canary client install sizes displaying as raw megabyte values and segmented controls expanding to the full settings-row height or using uneven pills when a label wraps.
-- Fixed embedded troubleshooting links to publisher support so they no longer point to the stale `/help/README/` route (#75).
 - Fixed a DXMT device-initialization bug in the local runtime candidate that could crash game startup or leave internal compute pipelines missing.
 - Prevented the Notices helper from briefly showing a separate Dock icon when opening.
 - Fixed China — Bilibili sign-in so its login and captcha windows render, accept input, and stay accessible above the game.
+- Fixed Canary client install sizes displaying as raw megabyte values and segmented controls expanding to the full settings-row height or using uneven pills when a label wraps.
 - Made closing the launcher with the red traffic-light button terminate the app instead of leaving it suspended.
 - Fixed the launcher taking close to a second to show its cached wallpaper and logo on every launch, caused by an unnecessary app icon re-persist and a slow first-time font lookup blocking the main thread.
 - Fixed the Dynamic Theme launcher icon rendering the wrong hue (e.g. blue instead of green) from incorrect color-space math in the icon tinting.
+- Fixed embedded troubleshooting links to publisher support so they no longer point to the stale `/help/README/` route (#75).
 
 ## [0.5.1] - 2026-09-06
 
 ### Added
 
-- Added fuzzy full-text search across project documentation with direct links to matching pages and sections.
 - Added Hypergryph support actions for China and China — Bilibili account, payment, and game-service issues.
+- Added fuzzy full-text search across project documentation with direct links to matching pages and sections.
 
 ### Changed
 
-- Made the daily reset pill show the selected client's reset at a glance and expand to list and switch between every installed client's reset time.
 - Clarified publisher-region ownership, publisher-neutral payment routing, and client-specific embedded login-window guidance.
+- Made the daily reset pill show the selected client's reset at a glance and expand to list and switch between every installed client's reset time.
 - Widened the documentation layout to improve search-result and support-content readability.
 
 ### Fixed
 
-- Made Escape dismiss the launcher update prompt consistently with its Later action (Thanks to @darkwebdev, #69).
-- Reduced wallpaper thumbnail memory and download usage with bounded decoding and the live Fankit CDN resize request (Thanks to @darkwebdev, #67).
 - Allowed quitting while Settings is open without dismissing active prompts (Thanks to @darkwebdev, #68).
-- Prevented Artwork gallery crashes in packaged builds by loading wallpaper tags from app resources (Thanks to @darkwebdev, #70).
 - Made the expanded daily reset pill fit its regional content and removed its inconsistent row-hover backgrounds.
+- Reduced wallpaper thumbnail memory and download usage with bounded decoding and the live Fankit CDN resize request (Thanks to @darkwebdev, #67).
+- Prevented Artwork gallery crashes in packaged builds by loading wallpaper tags from app resources (Thanks to @darkwebdev, #70).
 - Restored removable tag filters in Artwork gallery search (Thanks to @darkwebdev, #71).
+- Made Escape dismiss the launcher update prompt consistently with its Later action (Thanks to @darkwebdev, #69).
 
 ## [0.5.0] - 2026-09-03
 
 ### Added
 
-- An opt-in Canary Features gate in Settings for containing unfinished functionality without changing the default launcher experience.
-- The China and China — Bilibili clients behind Canary Features, with separate installations and the same native install, update, repair, storage, playtime, and launch flow as other regions.
-- Canary controls for following macOS audio-output changes during play and selecting DXMT's one-to-three-frame latency limit.
 - Smoothed game-download speed and remaining-time estimates that account for resumed files, retries, stalls, and checksum recovery (#48).
-- Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
-- A static project website built from the repository documentation, with safe Markdown rendering, base-path-aware navigation, canonical and social metadata, and GitHub Pages release deployment (#56).
-- Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
-- Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
-- Weekly live-contract monitoring for every supported Yostar region (#39).
+- The China and China — Bilibili clients behind Canary Features, with separate installations and the same native install, update, repair, storage, playtime, and launch flow as other regions.
+- Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, localized text fallbacks, and simplified presentation (#37).
+- An opt-in Canary Features gate in Settings for containing unfinished functionality without changing the default launcher experience.
 - Language switchers to onboarding and Settings for the system default, English, and German.
 - A reviewed German translation with English fallback, immediate language redraws, complete native UI coverage, and automatic support for macOS per-app language preferences (#38).
-- A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
-- Region-specific official Global, Japan, and Korea wordmarks with isolated runtime caches, startup restoration, localized text fallbacks, and simplified presentation (#37).
-- Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
-- Storage overview in Settings with independent installed-region rows, right-aligned usage values, shared runtime data, recreatable caches, diagnostic logs, and targeted cleanup actions (#43).
 - Donate button for people who want to support the project.
 - Dock shortcuts for starting an installed regional client or opening Settings (#46).
 - Typo-tolerant preset gallery search with compact suggestions and searchable operator and official-wallpaper metadata.
 - Wallpaper type filters and curated tag and title-word suggestions for official artwork presets, plus a monthly workflow that files newly untagged wallpapers (Thanks to @darkwebdev, #61).
+- Canary controls for following macOS audio-output changes during play and selecting DXMT's one-to-three-frame latency limit.
+- Stable word-based error codes with bundled troubleshooting guides, direct website links, safe report context, and guarded Retry and Repair actions (#57).
+- Local playtime statistics with all-time and per-region totals, seven- and thirty-day summaries, a latest-session view, and confirmed local reset (#50).
+- Storage overview in Settings with independent installed-region rows, right-aligned usage values, shared runtime data, recreatable caches, diagnostic logs, and targeted cleanup actions (#43).
+- Sparkle launcher updates with signed appcast and ZIP release artifacts, while retaining ad-hoc macOS signing (#53).
+- A static project website built from the repository documentation, with safe Markdown rendering, base-path-aware navigation, canonical and social metadata, and GitHub Pages release deployment (#56).
+- Network-isolated Swift unit and integration levels, a fixture-backed onboarding-to-install workflow, uv-locked pytest coverage for repository scripts (#42).
+- Weekly live-contract monitoring for every supported Yostar region (#39).
+- A SwiftPM-compatible String Catalog workflow that validates shipping translations and generated localization resources without requiring an Xcode project (#38).
 
 ### Changed
 
-- Moved standard game and Wine-prefix locations into publisher-based folders and added a resumable, start-blocking migration for existing default paths; custom locations remain unchanged.
+- Made runtime archive downloads size-bounded and safely resumable only while their strong ETag still matches.
+- Allowed larger official manifests within the bounded installation state, and kept shared game-service and fallback errors provider-neutral and in the selected app language.
+- Hardened game configuration and manifest parsing, runtime metadata, compatibility markers, symlink handling, executable names, byte totals, disk-capacity checks, HTTP redirects, and Wine's executable search path.
 - Runtime is now pinned to a custom WineCX and DXMT build from [this repo](https://github.com/LuMiSxh/Arknights-MacOS-Runtime).
 - Moved runtime build, update, and provenance automation into the dedicated runtime repository (#47).
-- Made runtime archive downloads size-bounded and safely resumable only while their strong ETag still matches.
 - Accepted the runtime-owned launcher alias and Wine 11 audio-driver layout when preparing the pinned runtime.
-- Allowed larger official manifests within the bounded installation state, and kept shared game-service and fallback errors provider-neutral and in the selected app language.
-- Refactored the root launcher model into feature controllers with explicit, narrow dependencies and shared game-domain and configuration contracts (#52).
-- Moved expensive artwork processing and installation-state inspection behind bounded background operations with explicit request ownership.
-- Hardened game configuration and manifest parsing, runtime metadata, compatibility markers, symlink handling, executable names, byte totals, disk-capacity checks, HTTP redirects, and Wine's executable search path.
 - Unified launcher presentations through one sheet and overlay arbiter, improved Reduce Transparency and Dynamic Type behavior, and kept new native UI copy translated in English and German.
 - Limited the main activity status to game and runtime operations instead of replacing it with customization, cache, or Settings success messages.
-- Indented subprocess output under its owning repository-script status line.
 - Made launcher modals consistently rounded and responsive to the current window size, and let announcement and launcher-update popups fit their content while preserving scrolling for long messages.
 - Improved keyboard dismissal, VoiceOver labels, reduced-transparency surfaces, reduced-motion feedback, and German text wrapping (#40).
+- Moved expensive artwork processing and installation-state inspection behind bounded background operations with explicit request ownership.
+- Loaded smaller CDN-generated gallery thumbnails when an official wallpaper has no dedicated preview image.
+- Moved standard game and Wine-prefix locations into publisher-based folders and added a resumable, start-blocking migration for existing default paths; custom locations remain unchanged.
+- Split release statistics into manual DMG and Sparkle update downloads, with combined per-release totals and rates.
+- Refactored the root launcher model into feature controllers with explicit, narrow dependencies and shared game-domain and configuration contracts (#52).
+- Indented subprocess output under its owning repository-script status line.
 - Hardened GitHub Actions with per-job timeouts and permissions, stale-run cancellation, dependency caching, workflow linting, and provenance attestations for release artifacts.
 - Centralized product, package, localization, and release metadata in `Info.plist` and the evaluated SwiftPM manifest, and promoted `runtime.json` to schema v2.
 - Consolidated repository scripts into one locked uv project, isolated packaging-only tools in their own dependency group, and removed single-use helpers and low-value wrapper tests.
-- Split release statistics into manual DMG and Sparkle update downloads, with combined per-release totals and rates.
-- Loaded smaller CDN-generated gallery thumbnails when an official wallpaper has no dedicated preview image.
 
 ### Fixed
 
-- Matched the clickable areas of themed text fields and compact version and music HUD pills to their visible surfaces (Thanks to @darkwebdev, #60).
-- Prevented stale artwork, logo, icon, preset-cache, metadata, and theme work from overwriting a newer region or user selection.
 - Kept the shared Wine prefix owned until prefix-wide shutdown, preserved the originating region and failure across retries, and made stop, cancellation, and early process-exit cleanup deterministic.
-- Kept music and Now Playing state isolated from stale player callbacks and private MediaPlayer queues.
+- Prevented stale artwork, logo, icon, preset-cache, metadata, and theme work from overwriting a newer region or user selection.
+- Prevented late branding responses from replacing the selected region's logo (#37).
+- Matched the clickable areas of themed text fields and compact version and music HUD pills to their visible surfaces (Thanks to @darkwebdev, #60).
 - Prevented Settings, onboarding, popup, failure, and Rosetta presentations from masking one another.
 - Rejected incomplete wallpaper downloads instead of displaying partially decoded images.
 - Accepted unusually large official wallpapers while preserving bounded image validation.
 - Restored older official wallpapers whose Fankit entries wrap image URLs in single-element arrays (Thanks to @darkwebdev, #54).
+- Kept music and Now Playing state isolated from stale player callbacks and private MediaPlayer queues.
 - Kept music Play and Pause controls synchronized when the embedded player reports a delayed state from an earlier action (Thanks to @darkwebdev, #51).
-- Prevented late branding responses from replacing the selected region's logo (#37).
 
 ## [0.4.1] - 2026-08-22
 
 ### Changed
 
-- Scrolled the current song title only when it is too wide for the music HUD, while preserving a static truncated title when Reduce Motion is enabled.
 - Locked launch-only display, Metal HUD, Game Mode, and Wine synchronization settings while a game session is starting or running, and recorded the selected launch configuration in diagnostics.
+- Scrolled the current song title only when it is too wide for the music HUD, while preserving a static truncated title when Reduce Motion is enabled.
 - Added the Yostar API operation, region, endpoint, HTTP status, and decoding phase to launcher logs without exposing request authorization or response bodies.
 
 ### Fixed
@@ -268,63 +274,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- A resumable setup assistant for first installs and 0.3.x upgrades, with update preflight, background installation, and guided settings.
-- Dedicated support actions for GitHub launcher reports and Yostar account, payment, or game-service issues.
 - Free-space validation before game installation or updates.
 - Functional Rosetta 2 preflight and guided installation during setup and launch, including macOS 27 upgrade and Legacy Game Test Mode diagnostics (Thanks to @Sorula2079, #33).
 - An optional Metal Performance HUD for native FPS and GPU diagnostics.
 - An experimental Game Mode integration that requires the full Xcode app.
 - An experimental Danger Zone control for switching new game launches between MSYNC and ESYNC.
+- A resumable setup assistant for first installs and 0.3.x upgrades, with update preflight, background installation, and guided settings.
 - A Settings Danger Zone for resets, Wine-prefix maintenance, migration, and game removal.
-- Custom launcher icons with normalized Dock sizing (Thanks to @RadioNoiseE, #24).
-- Drag-and-drop selection for launcher artwork and icons.
 - Optional game-version, server-time, and daily-reset indicators above the Play controls.
-- Cache cleanup for DXMT shaders, the embedded browser, and downloaded gallery assets.
-- Optional YouTube background music with shuffled playlists, synchronized track titles, volume controls, and now-playing links (Thanks to @darkwebdev, #27).
-- Expandable now-playing controls with deterministic playlist navigation and compact mute or volume adjustment (#27).
 - Expandable game-version details with a manual update check.
-- Dynamic Theme colors for controls, HUD elements, and compatible launcher icons.
 - Floating HUD pills for region, game version, reset time, and background music.
 - Native macOS 15–25 fallbacks while preserving Liquid Glass on macOS 26 (Thanks to @Mickhasinsomnia, #29).
+- Custom launcher icons with normalized Dock sizing (Thanks to @RadioNoiseE, #24).
+- Drag-and-drop selection for launcher artwork and icons.
+- Dynamic Theme colors for controls, HUD elements, and compatible launcher icons.
 - Dedicated galleries for official wallpapers and paired Launcher/Game operators, with bounded downloads and caching (Thanks to @darkwebdev, #30; @RadioNoiseE, #24).
 - Linked operator presets with a framed Launcher treatment and a simple character Game icon.
 - Custom game icons and a normalized "Use Default" option that preserves the original Arknights icon.
+- Optional YouTube background music with shuffled playlists, synchronized track titles, volume controls, and now-playing links (Thanks to @darkwebdev, #27).
+- Expandable now-playing controls with deterministic playlist navigation and compact mute or volume adjustment (#27).
+- Dedicated support actions for GitHub launcher reports and Yostar account, payment, or game-service issues.
 - Version-range and display-window options for announcement management.
+- Cache cleanup for DXMT shaders, the embedded browser, and downloaded gallery assets.
 - Recipe-download tracking in release statistics.
 
 ### Changed
 
+- Hardened installer paths, temporary-file handling, and manifest conflict detection.
 - Updated the bundled WineCX 11.15 and DXMT 0.80 runtime to the maintained dappermint build `4.5.118`.
+- Reduced DXMT logging to error-only output outside diagnostics.
 - Matched the launcher's resolution choices to the options offered by the official PC client.
 - Made segmented controls consistently honor dynamic and Danger Zone tint colors across supported macOS versions.
-- Reduced DXMT logging to error-only output outside diagnostics.
 - Reorganized Settings and moved music controls into a dedicated Audio section.
 - Polished Settings with right-aligned actions, clearer descriptions, and better-positioned scrollbars.
 - Attached destructive confirmations directly to their initiating Settings controls.
 - Unified popups and bundled-document sheets with the Settings visual language.
-- Made prominent button text adapt to the sampled accent's luminance.
 - Enlarged the main Settings control.
-- Hardened installer paths, temporary-file handling, and manifest conflict detection.
+- Reworked launcher and music lifecycle handling around explicit hierarchical state machines.
+- Made prominent button text adapt to the sampled accent's luminance.
 - Replaced silent filesystem and process failures with contextual logging or visible errors.
+- Kept potentially private log excerpts out of pre-filled GitHub issue URLs.
 - Split large UI and service types, centralized limits, and expanded runtime documentation.
 - Consolidated development commands, preview scenarios, formatting, and script output.
-- Reworked launcher and music lifecycle handling around explicit hierarchical state machines.
-- Kept potentially private log excerpts out of pre-filled GitHub issue URLs.
 
 ### Fixed
 
+- Prevented repair, relocation, cache maintenance, and uninstall operations from modifying game files while Arknights is active.
+- Made concurrent downloads, Wine helper cancellation, and music player replacement resilient to stale asynchronous work.
 - Kept the Notices window above fullscreen gameplay and synchronized while dragging (Thanks to u/Fukksaks5th, #19).
 - Prevented the first Notices click from briefly flashing the game during focus handoff (#26).
-- Loaded cached artwork immediately, kept it visible while switching regions, and avoided transitions when the server artwork is unchanged.
 - Reapplied normalized Wine scrolling on every launch to prevent excessive trackpad speed (Thanks to @darkwebdev, #28).
-- Matched launcher and game icon Dock footprints to native macOS apps (#24).
-- Corrected the launcher update status shown in Settings.
-- Applied custom launcher icons consistently in the Dock, Finder, Spotlight, and macOS Now Playing surfaces.
-- Prevented repair, relocation, cache maintenance, and uninstall operations from modifying game files while Arknights is active.
 - Kept running games stoppable when a background refresh or unrelated Settings action reports an error.
-- Made concurrent downloads, Wine helper cancellation, and music player replacement resilient to stale asynchronous work.
-- Prevented a launch-time crash when macOS requests Now Playing artwork from its MediaPlayer queue.
 - Left-aligned the expanded version text consistently with the music HUD.
+- Loaded cached artwork immediately, kept it visible while switching regions, and avoided transitions when the server artwork is unchanged.
+- Matched launcher and game icon Dock footprints to native macOS apps (#24).
+- Applied custom launcher icons consistently in the Dock, Finder, Spotlight, and macOS Now Playing surfaces.
+- Prevented a launch-time crash when macOS requests Now Playing artwork from its MediaPlayer queue.
+- Corrected the launcher update status shown in Settings.
 
 ## [0.3.0] - 2026-08-17
 
@@ -332,16 +338,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Support for the Japan and Korea Arknights PC clients alongside Global, each installed, updated, and launched independently. Switch regions from Settings → Installation, or from the region switcher in the main window once more than one region is installed.
 - A "Report a Problem" button in Settings and on launch failures that opens a pre-filled GitHub bug report with your launcher version, macOS and chip details, and a recent log excerpt.
-- New troubleshooting instructions for development to locate logs faster.
 - Separate `unity.log` and `chromium.log` files for the game and its embedded browser, kept apart from `wine.log` and reachable from the same Logs button in Settings.
+- New troubleshooting instructions for development to locate logs faster.
 
 ### Changed
 
-- Expanded launcher and Wine diagnostic logging with clearer detail for troubleshooting, including why a Wine prefix migration ran or was skipped.
-- Redesigned Settings with clearer grouping, consistent glass and cyan-accented controls, and working hover feedback throughout.
 - Restored PayPal browser-challenge compatibility by disabling WebGL, GPU rasterization, and accelerated 2D canvas in the embedded browser, while keeping GPU compositing enabled for rendering speed; credit card and PayPal payments have now both been observed to work (Thanks to @darkwebdev).
-- Centralized scattered timeouts, buffer sizes, and retry counts into a single constants file.
 - Consolidated the Vuplex and PlatformProcess compatibility shims onto one shared file-swap engine, without changing their install or restore behavior.
+- Redesigned Settings with clearer grouping, consistent glass and cyan-accented controls, and working hover feedback throughout.
+- Expanded launcher and Wine diagnostic logging with clearer detail for troubleshooting, including why a Wine prefix migration ran or was skipped.
+- Centralized scattered timeouts, buffer sizes, and retry counts into a single constants file.
 
 ### Fixed
 
@@ -355,22 +361,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- High-resolution rendering for sharper game and login-browser output on HiDPI displays.
 - Native release-note popups
 - Repository hosted one-time announcements
 - Isolated (development) UI-state simulator
-- High-resolution rendering for sharper game and login-browser output on HiDPI displays.
 
 ### Changed
 
-- Replaced the mixed shell and Python build scripts with uv-managed Python tooling and clearer command output.
+- Replaced per-byte game downloads with buffered streaming and loaded independent launcher metadata in parallel.
+- Restored paused downloads as a Resume state and counted existing partial files in progress.
 - Made Wine prefix updates and game compatibility components resumable, idempotent, and removable across launcher versions.
 - Kept DXMT shader data in the isolated persistent cache and added detailed runtime-stage timings to diagnostics.
 - Enabled Chromium GPU compositing while retaining Vuplex's stable CPU texture transfer.
+- Used Arknights cyan consistently for active Settings switches and text links.
 - Filled draft GitHub Release notes from the matching changelog section.
 - Required releases to be built from merged `main` with matching changelog and app-bundle versions.
-- Replaced per-byte game downloads with buffered streaming and loaded independent launcher metadata in parallel.
-- Restored paused downloads as a Resume state and counted existing partial files in progress.
-- Used Arknights cyan consistently for active Settings switches and text links.
+- Replaced the mixed shell and Python build scripts with uv-managed Python tooling and clearer command output.
 
 ### Removed
 
@@ -380,12 +386,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Native Apple Silicon launcher for the official Global PC client on macOS 26 and newer.
 - Resumable game installation, updates, repair, removal, and independent update checks.
 - Self-contained DMG with a verified Wine 11.15 and DXMT 0.80 runtime.
 - Windowed, borderless, and fullscreen launch options with resolution controls.
 - Working in-game web login through a bundled Vuplex compatibility shim.
 - Isolated Wine data, native game controls, `Command-Q` support, and launcher/Wine logs.
+- Native Apple Silicon launcher for the official Global PC client on macOS 26 and newer.
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
