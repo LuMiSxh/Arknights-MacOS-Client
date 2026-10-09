@@ -28,6 +28,8 @@ Global, Japan, Korea, China, and China (Bilibili) are supported by default. Taiw
 
 > [!NOTE]
 > Arknights Client is an unofficial community project. It is not affiliated with Gryphline, Hypergryph, Yostar, or Bilibili. Release builds do not include game files or downloaded artwork.
+>
+> This project uses AI coding assistants. Read [AI assistance](https://lumisxh.github.io/Arknights-MacOS-Client/ai-assistance/).
 
 ## Features
 

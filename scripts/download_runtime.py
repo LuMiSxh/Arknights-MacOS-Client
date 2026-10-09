@@ -27,6 +27,7 @@ from lib.common import (
 )
 from lib.console import Progress, info, spinner, success, warning
 from lib.extract_runtime import extract
+from lib.licenses import stage_runtime_legal
 from lib.project_config import load_project_configuration
 from runtime_config import (
     MAXIMUM_RUNTIME_ARCHIVE_BYTES,
@@ -235,6 +236,8 @@ def prepare_runtime(
             ):
                 fail("runtime capability manifest must be a regular, unlinked file")
             capability_manifest.replace(runtime / layout.capability_manifest_path)
+        if not stage_runtime_legal(libraries, runtime):
+            warning("Runtime archive has no Licenses/ directory")
         launcher = runtime / layout.launcher.path
         launcher.parent.mkdir(parents=True, exist_ok=True)
         if not launcher.exists() and not launcher.is_symlink():

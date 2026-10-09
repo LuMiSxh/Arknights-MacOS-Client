@@ -172,7 +172,8 @@
 		<span>
 			<a href={`${repositoryUrl}/blob/main/LICENSE`}>MPL-2.0</a> ·
 			<a href={repositoryUrl}>Source</a> ·
-			<a href={`${repositoryUrl}/issues`}>Report an issue</a>
+			<a href={`${repositoryUrl}/issues`}>Report an issue</a> ·
+			<a href={resolve('/privacy/')}>Privacy notice</a>
 		</span>
 	</footer>
 {/snippet}

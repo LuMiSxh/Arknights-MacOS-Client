@@ -17,6 +17,7 @@ import tempfile
 from pathlib import Path
 
 from build_compatibility import build as build_compatibility
+from lib.bundled_resources import staged_resources
 from lib.common import (
     BUILD_DIR,
     DIST_DIR,
@@ -30,7 +31,8 @@ from lib.common import (
     run,
     run_main,
 )
-from lib.console import info, spinner, success
+from lib.console import info, spinner, success, warning
+from lib.licenses import stage_bundle
 from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
 from lib.swift_build import run_swift_build
@@ -40,23 +42,6 @@ from runtime_config import (
     runtime_is_valid,
 )
 
-LEGAL_FILES = {
-    "docs/legal/third-party-notices.md": "THIRD_PARTY_NOTICES.md",
-    "LICENSE": "LICENSE",
-    "CHANGELOG.md": "CHANGELOG.md",
-    "runtime.json": "RUNTIME.json",
-    "docs/legal/source-code.md": "SOURCE_CODE.md",
-}
-REQUIRED_LICENSES = (
-    "apache-2.0.txt",
-    "fdk-aac.txt",
-    "gpl-2.0.txt",
-    "gpl-3.0.txt",
-    "lgpl-2.1.txt",
-    "lgpl-3.0.txt",
-    "mit-dxmt.txt",
-    "sparkle.txt",
-)
 SPARKLE_FRAMEWORK_NAME = "Sparkle.framework"
 SPARKLE_PUBLIC_KEY_BYTES = 32
 
@@ -173,17 +158,12 @@ def ensure_framework_rpath(binary: Path) -> None:
 
 
 def app_resources(configuration: ProjectConfiguration) -> tuple[tuple[Path, Path], ...]:
+    """Return the (source, destination) copies of the table in `lib.bundled_resources`."""
     project = configuration.project_directory
-    icon_file = configuration.product.icon_file
-    icon_filename = icon_file if Path(icon_file).suffix else f"{icon_file}.icns"
     entries = [
-        (project / "Resources" / icon_filename, Path(icon_filename)),
-        (project / "Resources/Assets.car", Path("Assets.car")),
-        (project / "docs/help/errors", Path("SupportArticles")),
-        *(
-            (source, Path(source.name))
-            for source in configuration.copied_resource_source_paths
-        ),
+        (project / resource.source, Path(resource.path))
+        for resource in staged_resources(configuration)
+        if resource.source is not None
     ]
     destinations = [destination for _, destination in entries]
     if len(destinations) != len(set(destinations)):
@@ -209,7 +189,8 @@ def copy_runtime(source: Path, destination: Path) -> None:
         relative = Path(directory).relative_to(source)
         ignored = {name for name in names if name.endswith(".wine-original")}
         if relative == Path("."):
-            ignored.add("include")
+            # The compiled notices file replaces the runtime's loose legal files.
+            ignored.update({"include", "Licenses", "NOTICE.md"})
         if relative == Path("share"):
             ignored.add("man")
         if relative == Path("share/wine"):
@@ -294,11 +275,6 @@ def validate_inputs(
     for source, _ in app_resources(configuration):
         if not source.exists():
             fail(f"required resource not found: {source}")
-    for relative in LEGAL_FILES:
-        require_file(project / relative)
-    licenses = require_directory(project / "docs/legal/licenses")
-    for name in REQUIRED_LICENSES:
-        require_file(licenses / name)
     if runtime is not None:
         require_directory(runtime)
         if not runtime_is_valid(runtime, runtime_configuration.layout):
@@ -338,6 +314,7 @@ def build(
     runtime: Path | None,
     configuration: str = "release",
     project_configuration: ProjectConfiguration | None = None,
+    strict_licenses: bool = False,
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
     project = project_configuration.project_directory
@@ -403,14 +380,8 @@ def build(
         )
         ensure_framework_rpath(macos / project_configuration.product.executable_name)
         sign_sparkle_framework(framework)
-        for source, destination in LEGAL_FILES.items():
-            copy_file(project / source, resources / destination)
-        licenses = resources / "ThirdPartyLicenses"
-        license_files = sorted((project / "docs/legal/licenses").glob("*.txt"))
-        if not license_files:
-            fail("no third-party license files found")
-        for license_file in license_files:
-            copy_file(license_file, licenses / license_file.name)
+        for message in stage_bundle(project, resources, runtime, strict_licenses):
+            warning(message)
 
         info("Ad-hoc signing the application bundle")
         run(
@@ -434,8 +405,17 @@ def main() -> None:
     parser.add_argument(
         "--configuration", choices=("debug", "release"), default="release"
     )
+    parser.add_argument(
+        "--strict-licenses",
+        action="store_true",
+        help="fail on unverified licenses or a runtime without license files",
+    )
     arguments = parser.parse_args()
-    build(arguments.runtime, arguments.configuration)
+    build(
+        arguments.runtime,
+        arguments.configuration,
+        strict_licenses=arguments.strict_licenses,
+    )
 
 
 if __name__ == "__main__":

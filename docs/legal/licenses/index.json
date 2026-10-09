@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "textOrigins": {
+    "sparkle.txt": "Sparkle 2.9.6 LICENSE (SwiftPM checkout)",
+    "youtubeplayerkit.txt": "YouTubePlayerKit 2.0.5 LICENSE (SwiftPM checkout)",
+    "marked.txt": "marked LICENSE file in node_modules (version in index)",
+    "marked-gfm-heading-id.txt": "marked-gfm-heading-id LICENSE file in node_modules (version in index)",
+    "mermaid.txt": "mermaid LICENSE file in node_modules (version in index)",
+    "yaml.txt": "yaml LICENSE file in node_modules (version in index)",
+    "svelte.txt": "svelte LICENSE file in node_modules (version in index)",
+    "sveltejs-kit.txt": "@sveltejs/kit LICENSE file in node_modules (version in index)",
+    "anasthasia.txt": "anasthasia LICENSE file in node_modules (version in index)",
+    "apache-2.0.txt": "canonical text, earlier release",
+    "fdk-aac.txt": "Fraunhofer FDK-AAC notice, earlier release",
+    "gpl-2.0.txt": "canonical text, earlier release",
+    "gpl-3.0.txt": "canonical text, earlier release",
+    "lgpl-2.1.txt": "canonical text, earlier release",
+    "lgpl-3.0.txt": "canonical text, earlier release"
+  },
+  "components": [
+    {
+      "name": "Sparkle",
+      "version": "2.9.6",
+      "spdx": "MIT",
+      "source": "https://github.com/sparkle-project/Sparkle/tree/2.9.6",
+      "files": [
+        "sparkle.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-source",
+      "scope": "app",
+      "ecosystem": "swiftpm",
+      "package": "sparkle",
+      "note": "(with bundled bsdiff, sais-lite, ed25519, and signature-verifier notices)"
+    },
+    {
+      "name": "YouTubePlayerKit",
+      "version": "2.0.5",
+      "spdx": "MIT",
+      "source": "https://github.com/SvenTiigi/YouTubePlayerKit/tree/2.0.5",
+      "files": [
+        "youtubeplayerkit.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-source",
+      "scope": "app",
+      "ecosystem": "swiftpm",
+      "package": "youtubeplayerkit"
+    },
+    {
+      "name": "Application icon",
+      "version": "project",
+      "spdx": "MPL-2.0",
+      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Client/tree/main/Resources",
+      "files": [],
+      "status": "verified",
+      "basis": "repository-authored",
+      "scope": "app",
+      "note": "(`just icon` generates it from `Resources/AppIcon.icon`)"
+    },
+    {
+      "name": "Wallpaper tag data",
+      "version": "project",
+      "spdx": "MPL-2.0",
+      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/WallpaperTags.json",
+      "files": [],
+      "status": "verified",
+      "basis": "repository-authored",
+      "scope": "app",
+      "paths": [
+        "WallpaperTags.json"
+      ]
+    },
+    {
+      "name": "App icon tint source image",
+      "version": "project",
+      "spdx": "MPL-2.0",
+      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/AppIconTintSource.png",
+      "files": [],
+      "status": "verified",
+      "scope": "app",
+      "paths": [
+        "AppIconTintSource.png"
+      ],
+      "basis": "repository-authored"
+    },
+    {
+      "name": "Game icon background image",
+      "version": "project",
+      "spdx": "MPL-2.0",
+      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/GameIconBackground.png",
+      "files": [],
+      "status": "verified",
+      "scope": "app",
+      "paths": [
+        "GameIconBackground.png"
+      ],
+      "basis": "repository-authored"
+    },
+    {
+      "name": "Operator icon frame graphic",
+      "version": "project",
+      "spdx": "MPL-2.0",
+      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/OperatorIconFrame.svg",
+      "files": [],
+      "status": "verified",
+      "scope": "app",
+      "paths": [
+        "OperatorIconFrame.svg"
+      ],
+      "basis": "repository-authored"
+    },
+    {
+      "name": "marked",
+      "version": "18.0.11",
+      "spdx": "MIT",
+      "source": "https://github.com/markedjs/marked/tree/v18.0.11",
+      "files": [
+        "marked.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-package",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "marked"
+    },
+    {
+      "name": "marked-gfm-heading-id",
+      "version": "4.1.4",
+      "spdx": "MIT",
+      "source": "https://github.com/markedjs/marked-gfm-heading-id/tree/v4.1.4",
+      "files": [
+        "marked-gfm-heading-id.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-package",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "marked-gfm-heading-id"
+    },
+    {
+      "name": "mermaid",
+      "version": "11.17.2",
+      "spdx": "MIT",
+      "source": "https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.2",
+      "files": [
+        "mermaid.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-package",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "mermaid"
+    },
+    {
+      "name": "yaml",
+      "version": "2.9.0",
+      "spdx": "ISC",
+      "source": "https://github.com/eemeli/yaml/tree/v2.9.0",
+      "files": [
+        "yaml.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-package",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "yaml"
+    },
+    {
+      "name": "svelte",
+      "version": "5.57.0",
+      "spdx": "MIT",
+      "source": "https://github.com/sveltejs/svelte/tree/svelte@5.57.0",
+      "files": [
+        "svelte.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-package",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "svelte"
+    },
+    {
+      "name": "@sveltejs/kit",
+      "version": "2.70.3",
+      "spdx": "MIT",
+      "source": "https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3",
+      "files": [
+        "sveltejs-kit.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-package",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "@sveltejs/kit"
+    },
+    {
+      "name": "anasthasia",
+      "version": "0.2.4",
+      "spdx": "BSD-3-Clause",
+      "source": "https://github.com/LuMiSxh/Anasthasia/tree/v0.2.4",
+      "files": [
+        "anasthasia.txt"
+      ],
+      "status": "verified",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "anasthasia",
+      "basis": "license-file-in-source"
+    },
+    {
+      "name": "Wine",
+      "runtimeComponent": "wine",
+      "spdx": "LGPL-2.1-or-later",
+      "files": [
+        "lgpl-2.1.txt"
+      ],
+      "status": "verified",
+      "scope": "runtime-legacy",
+      "basis": "runtime-index-same-commit"
+    },
+    {
+      "name": "DXMT",
+      "runtimeComponent": "dxmt",
+      "spdx": "LGPL-2.1-or-later",
+      "files": [
+        "lgpl-2.1.txt"
+      ],
+      "status": "verified",
+      "scope": "runtime-legacy",
+      "basis": "upstream-declared"
+    },
+    {
+      "name": "MoltenVK",
+      "runtimeComponent": "moltenvk",
+      "spdx": "Apache-2.0",
+      "files": [
+        "apache-2.0.txt"
+      ],
+      "status": "verified",
+      "scope": "runtime-legacy",
+      "basis": "runtime-index-same-commit"
+    },
+    {
+      "name": "Wine Gecko",
+      "runtimeComponent": "wineGecko",
+      "spdx": "NOASSERTION",
+      "files": [
+        "gpl-2.0.txt",
+        "lgpl-2.1.txt"
+      ],
+      "status": "unverified",
+      "scope": "runtime-legacy",
+      "candidates": [
+        "MPL-1.1",
+        "GPL-2.0-or-later",
+        "LGPL-2.1-or-later"
+      ],
+      "note": "(no MPL text is available in the project)"
+    },
+    {
+      "name": "GStreamer",
+      "runtimeComponent": "gstreamer",
+      "spdx": "NOASSERTION",
+      "files": [
+        "lgpl-2.1.txt",
+        "gpl-2.0.txt"
+      ],
+      "status": "unverified",
+      "scope": "runtime-legacy",
+      "candidates": [
+        "LGPL-2.1-or-later",
+        "GPL-2.0-or-later"
+      ]
+    },
+    {
+      "name": "FFmpeg",
+      "runtimeComponent": "ffmpeg",
+      "spdx": "NOASSERTION",
+      "files": [
+        "gpl-3.0.txt"
+      ],
+      "status": "unverified",
+      "scope": "runtime-legacy",
+      "candidates": [
+        "GPL-3.0-or-later"
+      ]
+    },
+    {
+      "name": "Media and system libraries of runtime 0.6.1",
+      "version": "see runtime",
+      "spdx": "NOASSERTION",
+      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.6.1",
+      "files": [
+        "apache-2.0.txt",
+        "fdk-aac.txt",
+        "gpl-2.0.txt",
+        "gpl-3.0.txt",
+        "lgpl-2.1.txt",
+        "lgpl-3.0.txt"
+      ],
+      "status": "unverified",
+      "scope": "runtime-legacy",
+      "note": "(x264, x265, FDK-AAC, FAAD2, libdvdcss, libdvdnav, libdvdread, OpenH264, libde265, libaom, dav1d, SVT-AV1, libvpx, LAME, OpenMPT, FLAC, Vorbis, Opus, Theora, Speex, libsndfile, and others)"
+    }
+  ]
+}
