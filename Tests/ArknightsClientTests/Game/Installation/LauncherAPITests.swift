@@ -138,7 +138,7 @@ struct LauncherAPITests {
 
 		do {
 			_ = try await api.manifestPayload(
-				at: URL(string: "https://fixtures.invalid/manifest.json")!,
+				at: URL(string: "https://local-cdn.yo-star.com/manifest.json")!,
 				region: .global
 			)
 			Issue.record("Expected the manifest response to exceed its configured limit")
@@ -165,7 +165,7 @@ struct LauncherAPITests {
 
 		await #expect(throws: ContextualLauncherError.self) {
 			try await LauncherAPI(session: session).manifestPayload(
-				at: URL(string: "http://fixtures.invalid/manifest.json")!,
+				at: URL(string: "http://local-cdn.yo-star.com/manifest.json")!,
 				region: .global
 			)
 		}

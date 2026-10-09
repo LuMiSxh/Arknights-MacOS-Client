@@ -78,7 +78,7 @@ private func writeInstalledState(for installation: InstallationController) throw
 	)
 }
 
-private actor ConfigurationRefreshAPI: LauncherAPIProviding {
+actor ConfigurationRefreshAPI: LauncherAPIProviding {
 	enum Outcome: Equatable, Sendable {
 		case success
 		case failure

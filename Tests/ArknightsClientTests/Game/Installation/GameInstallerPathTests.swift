@@ -314,7 +314,7 @@ private struct PathTestAPI: LauncherAPIProviding {
 	}
 
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		let url = URL(string: "https://download.test/")!
+		let url = URL(string: "https://download.yo-star.com/")!
 		return CDNConfiguration(primaryCdn: url, backUpCdn: url)
 	}
 

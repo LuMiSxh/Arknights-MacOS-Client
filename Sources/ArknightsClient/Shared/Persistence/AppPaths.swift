@@ -70,10 +70,7 @@ struct AppPaths: Sendable {
 			path: "Gryphline/Prefix",
 			directoryHint: .isDirectory
 		)
-		bundledRuntimeDirectory = resourceDirectory?.appending(
-			path: "Runtime",
-			directoryHint: .isDirectory
-		)
+		bundledRuntimeDirectory = resourceDirectory.map(BundledResource.runtime.location)
 	}
 
 	func gameInstall(for region: GameRegion) -> URL {

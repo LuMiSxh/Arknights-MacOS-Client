@@ -39,9 +39,9 @@ struct LocalFixtureNetwork: Sendable {
 				url.query() == "version=1.2.3&file_path=fixture-manifest.json"
 			else { throw URLError(.unsupportedURL) }
 			data = manifestLocation
-		case ("fixtures.invalid", "/manifest.json"):
+		case ("local-cdn.yo-star.com", "/manifest.json"):
 			data = manifest
-		case ("local-cdn.invalid", "/fixture-source/Arknights.exe"):
+		case ("local-cdn.yo-star.com", "/fixture-source/Arknights.exe"):
 			data = payload
 		default:
 			throw URLError(.unsupportedURL)

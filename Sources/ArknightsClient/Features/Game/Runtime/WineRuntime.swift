@@ -108,23 +108,29 @@ struct WineRuntime: Sendable {
 		guard let resources = bundle.resourceURL else {
 			throw WineRuntimeDiscoveryError.missingResourceDirectory
 		}
-		let executable = resources.appending(path: "Runtime/bin/Arknights")
+		let executable = BundledResource.runtime.location(in: resources)
+			.appending(path: "bin/Arknights")
 		guard fileManager.isExecutableFile(atPath: executable.path) else {
 			throw WineRuntimeDiscoveryError.missingExecutable(executable)
 		}
-		let configurationURL = resources.appending(path: "RUNTIME.json")
-		let data: Data
-		do {
-			data = try Data(contentsOf: configurationURL)
-		} catch {
-			throw WineRuntimeDiscoveryError.unreadableConfiguration(
-				configurationURL,
-				error.localizedDescription
-			)
-		}
+		let configurationURL = BundledResource.runtimeConfiguration.location(in: resources)
 		let configuration: RuntimeConfiguration
 		do {
-			configuration = try JSONDecoder().decode(RuntimeConfiguration.self, from: data)
+			configuration = try BundledResource.runtimeConfiguration.decode(
+				RuntimeConfiguration.self, in: bundle)
+		} catch let error as BundledResourceError {
+			switch error {
+			case .missing, .unreadable:
+				throw WineRuntimeDiscoveryError.unreadableConfiguration(
+					configurationURL,
+					error.localizedDescription
+				)
+			case .corrupt:
+				throw WineRuntimeDiscoveryError.invalidConfiguration(
+					configurationURL,
+					error.localizedDescription
+				)
+			}
 		} catch {
 			throw WineRuntimeDiscoveryError.invalidConfiguration(
 				configurationURL,

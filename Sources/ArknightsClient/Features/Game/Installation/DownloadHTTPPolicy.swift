@@ -17,12 +17,15 @@ enum DownloadHTTPPolicy {
 		"gl-utils-public.hg-cdn.com",
 	]
 
+	/// Yostar serves launcher packages from subdomains such as `launcher-pkg-ark-en.yo-star.com`.
+	private static let yostarDomain = "yo-star.com"
+
 	static func isAllowedSource(_ url: URL, for region: GameRegion) -> Bool {
 		guard isValidHTTPSURL(url), let host = url.host?.lowercased() else { return false }
 
 		switch region {
 		case .global, .japan, .korea:
-			return true
+			return host == yostarDomain || host.hasSuffix(".\(yostarDomain)")
 		case .china, .chinaBilibili:
 			return url.port == nil && host.hasSuffix(".hycdn.cn")
 		case .taiwan:

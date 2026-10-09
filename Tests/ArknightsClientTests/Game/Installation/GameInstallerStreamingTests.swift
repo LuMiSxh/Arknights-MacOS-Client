@@ -171,7 +171,7 @@ struct GameInstallerStreamingTests {
 		StreamingURLProtocol.handler = { request in
 			#expect(
 				request.url?.absoluteString
-					== "https://download.test/Arknights_JP-36.7.23-game/bin/Arknights.exe"
+					== "https://download.yo-star.com/Arknights_JP-36.7.23-game/bin/Arknights.exe"
 			)
 			return (Self.response(url: request.url!, status: 200), body)
 		}
@@ -267,7 +267,7 @@ struct GameInstallerStreamingTests {
 		relativePath: String = "bin/game.dat",
 		protocolClass: URLProtocol.Type = StreamingURLProtocol.self
 	) throws -> InstallerFixture {
-		let baseURL = URL(string: "https://download.test")!
+		let baseURL = URL(string: "https://download.yo-star.com")!
 		let directory = FileManager.default.temporaryDirectory.appending(
 			path: "GameInstallerStreamingTests-\(UUID().uuidString)",
 			directoryHint: .isDirectory

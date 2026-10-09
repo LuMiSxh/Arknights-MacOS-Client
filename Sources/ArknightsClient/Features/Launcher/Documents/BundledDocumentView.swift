@@ -7,15 +7,6 @@ enum BundledDocument: String, Identifiable {
 	case projectLicense
 	case thirdPartyNotices
 
-	enum LoadError: Error, Equatable, LocalizedError {
-		case missingResource(name: String, fileExtension: String?)
-		case unreadableResource(name: String, reason: String)
-
-		var errorDescription: String? {
-			LauncherStrings.documentUnavailable
-		}
-	}
-
 	var id: String { rawValue }
 
 	var title: String {
@@ -26,53 +17,23 @@ enum BundledDocument: String, Identifiable {
 		}
 	}
 
-	var resource: (name: String, extension: String?) {
+	var resource: BundledResource {
 		switch self {
-		case .changelog: ("CHANGELOG", "md")
-		case .projectLicense: ("LICENSE", nil)
-		case .thirdPartyNotices: ("THIRD_PARTY_NOTICES", "md")
+		case .changelog: .changelog
+		case .projectLicense: .projectLicense
+		case .thirdPartyNotices: .thirdPartyNotices
 		}
 	}
 
-	func load(bundle: Bundle = .main) throws -> String {
-		let url = try resourceURL(bundle: bundle)
-		do {
-			return try String(contentsOf: url, encoding: .utf8)
-		} catch {
-			throw LoadError.unreadableResource(
-				name: resource.name,
-				reason: error.localizedDescription
-			)
-		}
+	func load(bundle: Bundle? = nil) throws -> String {
+		try resource.text(in: bundle)
 	}
 
-	func loadAndParse(bundle: Bundle = .main) async throws -> ParsedMarkdownDocument {
-		let url = try resourceURL(bundle: bundle)
-		do {
-			return try await Task.detached(priority: .utility) {
-				let source = try String(contentsOf: url, encoding: .utf8)
-				return ParsedMarkdownDocument(source: source)
-			}.value
-		} catch is CancellationError {
-			throw CancellationError()
-		} catch {
-			throw LoadError.unreadableResource(
-				name: resource.name,
-				reason: error.localizedDescription
-			)
-		}
-	}
-
-	private func resourceURL(bundle: Bundle) throws -> URL {
+	func loadAndParse(bundle: Bundle? = nil) async throws -> ParsedMarkdownDocument {
 		let resource = resource
-		guard let url = bundle.url(forResource: resource.name, withExtension: resource.extension)
-		else {
-			throw LoadError.missingResource(
-				name: resource.name,
-				fileExtension: resource.extension
-			)
-		}
-		return url
+		return try await Task.detached(priority: .utility) {
+			ParsedMarkdownDocument(source: try resource.text(in: bundle))
+		}.value
 	}
 }
 
@@ -108,7 +69,7 @@ struct ParsedMarkdownDocument: Sendable {
 private enum BundledDocumentLoadState {
 	case loading
 	case loaded(ParsedMarkdownDocument)
-	case failed(BundledDocument.LoadError)
+	case failed(BundledResourceError)
 }
 
 struct BundledDocumentView: View {
@@ -151,14 +112,13 @@ struct BundledDocumentView: View {
 				loadState = .loaded(parsedDocument)
 			} catch is CancellationError {
 				return
-			} catch let error as BundledDocument.LoadError {
+			} catch let error as BundledResourceError {
 				guard !Task.isCancelled else { return }
 				loadState = .failed(error)
 			} catch {
 				guard !Task.isCancelled else { return }
 				loadState = .failed(
-					.unreadableResource(
-						name: document.resource.name, reason: error.localizedDescription)
+					.unreadable(path: document.resource.path, reason: error.localizedDescription)
 				)
 			}
 		}
@@ -166,13 +126,13 @@ struct BundledDocumentView: View {
 }
 
 private struct DocumentLoadErrorView: View {
-	let error: BundledDocument.LoadError
+	let error: BundledResourceError
 
 	var body: some View {
 		ContentUnavailableView {
 			Label(LauncherStrings.documentUnavailable, systemImage: "doc.badge.exclamationmark")
 		} description: {
-			Text(error.localizedDescription)
+			Text(LauncherStrings.documentUnavailable)
 		}
 		.frame(maxWidth: .infinity, minHeight: 180)
 		.pointerStyle(.default)

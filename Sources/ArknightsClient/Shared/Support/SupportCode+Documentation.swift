@@ -3,20 +3,10 @@
 import Foundation
 
 extension SupportCode {
-	func bundledTroubleshootingMarkdown(bundle: Bundle = .main) -> String? {
-		guard
-			let url = bundle.url(
-				forResource: rawValue.lowercased(),
-				withExtension: "md",
-				subdirectory: "SupportArticles"
-			) ?? developmentArticleURL()
-		else {
-			assertionFailure("Missing bundled troubleshooting page for \(rawValue)")
-			return nil
-		}
-
+	func bundledTroubleshootingMarkdown(bundle: Bundle? = nil) -> String? {
+		let article = BundledResource.supportArticles.file("\(rawValue.lowercased()).md")
 		do {
-			let source = try String(contentsOf: url, encoding: .utf8)
+			let source = try loadArticle(article, bundle: bundle)
 			guard let contentStart = source.range(of: "## Try this") else {
 				assertionFailure("Troubleshooting page for \(rawValue) has no recovery section")
 				return nil
@@ -25,6 +15,17 @@ extension SupportCode {
 		} catch {
 			assertionFailure("Could not read troubleshooting page for \(rawValue): \(error)")
 			return nil
+		}
+	}
+
+	private func loadArticle(_ article: BundledResource, bundle: Bundle?) throws -> String {
+		do {
+			return try article.text(in: bundle)
+		} catch BundledResourceError.missing {
+			guard let url = developmentArticleURL() else {
+				throw BundledResourceError.missing(path: article.path)
+			}
+			return try String(contentsOf: url, encoding: .utf8)
 		}
 	}
 

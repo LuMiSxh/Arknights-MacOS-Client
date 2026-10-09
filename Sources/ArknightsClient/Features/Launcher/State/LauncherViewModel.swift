@@ -32,7 +32,10 @@ final class LauncherViewModel {
 		var developerSimulation: DeveloperSimulationState?
 	#endif
 	var pendingACEWarningRegion: GameRegion?
-	@ObservationIgnored private var startupTask: Task<Bool, Never>?
+	let paths: AppPaths
+	@ObservationIgnored var startupTask: Task<Bool, Never>?
+	@ObservationIgnored var startupOptions = StartupOptions()
+	@ObservationIgnored var storageMigrationFailureID: UUID?
 	@ObservationIgnored private var deferredCanaryRefreshTask: Task<Void, Never>?
 	@ObservationIgnored private var canaryRefreshPending = false
 	init(
@@ -56,6 +59,7 @@ final class LauncherViewModel {
 		arguments: [String] = ProcessInfo.processInfo.arguments
 	) {
 		self.preferences = preferences
+		self.paths = paths
 		#if DEBUG
 			self.api = api
 		#endif
@@ -218,59 +222,8 @@ final class LauncherViewModel {
 			}
 		#endif
 
-		let installOnLaunch =
-			arguments.contains("--install") || arguments.contains("--install-and-launch")
-		let launchAfterInstall = arguments.contains("--install-and-launch")
-		let launchOnStart = arguments.contains("--launch")
-		let persistedInstallDirectories = preferences.persistedInstallDirectories()
-		lifecycle.activity = .maintaining(.migratingStorage)
-		lifecycle.setStatus(.migratingStorage)
-		startupTask = Task {
-			do {
-				let migration = try await Task.detached(priority: .utility) {
-					try AppStorageMigrator.migrate(
-						paths: paths,
-						persistedInstallDirectories: persistedInstallDirectories
-					)
-				}.value
-				preferences.updateInstallDirectories(
-					migration.installDirectoriesToUpdate,
-					replacing: persistedInstallDirectories
-				)
-				installation.reloadInstallDirectory()
-				lifecycle.activity = .idle
-				gameSession.refreshRuntime()
-			} catch {
-				let diagnostic = launcherDiagnosticDescription(for: error)
-				lifecycle.show(
-					LauncherError.storageMigrationFailed(diagnostic),
-					context: "Application storage migration",
-					blocksGameLaunch: true
-				)
-				customization.markInitialArtworkLoadComplete()
-				return false
-			}
-			await customization.restoreInitialArtwork(for: installation.region)
-			customization.markInitialArtworkLoadComplete()
-			_ = await customization.loadCustomAppIcon()
-			await installation.updateInstalledState().value
-			_ = await intelTranslation.refreshAvailability()
-			let refreshTask = refreshController.startRefresh()
-			await refreshTask.value
-			if settings.automaticallyChecksLauncherUpdates {
-				_ = await communication.checkLauncherUpdates(presentUpdate: true).value
-			}
-			if settings.announcementsEnabled {
-				communication.checkAnnouncements(isEnabled: true)
-			}
-			if launchOnStart {
-				gameSession.launch()
-			} else if installOnLaunch, installation.canInstall {
-				installation.startInstallation(
-					launchAfterCompletion: launchAfterInstall)
-			}
-			return true
-		}
+		startupOptions = StartupOptions(arguments: arguments)
+		beginStartup()
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
 		log.info("Launcher \(appVersion) started")

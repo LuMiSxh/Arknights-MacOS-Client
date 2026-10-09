@@ -3,10 +3,7 @@
 import Foundation
 
 actor PresetCatalogService {
-	static let characterTableURL = URL(
-		string:
-			"https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData_YoStar@main/en_US/gamedata/excel/character_table.json"
-	)!
+	static let characterTableURL = PresetRemoteSources.characterTable
 
 	let cacheDirectory: URL
 	let cachedAvatarsFile: URL
@@ -91,7 +88,7 @@ actor PresetCatalogService {
 			from: cachedWallpapersFile,
 			maximumBytes: AppConstants.Presets.wallpaperCatalogMaximumBytes
 		) {
-			guard cacheEpoch == epoch else { return fallbackWallpapers }
+			guard cacheEpoch == epoch else { return [] }
 			let validated = cached.filter(Self.isValidWallpaper)
 			if !validated.isEmpty {
 				memoryCachedWallpapers = validated
@@ -101,8 +98,8 @@ actor PresetCatalogService {
 		}
 
 		let remote = await refreshWallpapersFromRemote()
-		guard cacheEpoch == epoch else { return fallbackWallpapers }
-		return !remote.isEmpty ? remote : fallbackWallpapers
+		guard cacheEpoch == epoch else { return [] }
+		return remote
 	}
 
 	func clearCaches() async throws {
@@ -204,28 +201,4 @@ actor PresetCatalogService {
 		]
 	}
 
-	private var fallbackWallpapers: [PresetWallpaper] {
-		[
-			.init(
-				id: "crossing",
-				title: "Crossing",
-				fallbackOrdinal: nil,
-				url: URL(
-					string:
-						"https://webusstatic.yo-star.com/web-cms-test/upload/content/2026/08/17/PAMcBwUl.png"
-				)!,
-				thumbnailURL: nil
-			),
-			.init(
-				id: "x-460k",
-				title: "X 460k Followers",
-				fallbackOrdinal: nil,
-				url: URL(
-					string:
-						"https://webusstatic.yo-star.com/web-cms-test/upload/content/2026/08/13/SlOn1_p6.png"
-				)!,
-				thumbnailURL: nil
-			),
-		]
-	}
 }

@@ -47,8 +47,7 @@ enum AppIconRenderer {
 
 	/// Generates a dynamically tinted version of the bundled app icon for the given hue.
 	static func tintedDefaultIcon(for targetHue: Double) -> NSImage? {
-		guard let iconURL = tintSourceURL(),
-			let baseIcon = NSImage(contentsOf: iconURL),
+		guard let baseIcon = bundledImage(.appIconTintSource),
 			let tiffData = baseIcon.tiffRepresentation,
 			let ciImage = CIImage(data: tiffData)
 		else { return nil }
@@ -71,9 +70,13 @@ enum AppIconRenderer {
 	}
 
 	/// The 1024-pixel render produced by `just icon`; the compiled ICNS tops out at 256 pixels.
-	private static func tintSourceURL() -> URL? {
-		Bundle.main.url(forResource: "AppIconTintSource", withExtension: "png")
-			?? AppResourceBundle.bundle.url(forResource: "AppIconTintSource", withExtension: "png")
+	static func bundledImage(_ resource: BundledResource) -> NSImage? {
+		do {
+			return NSImage(contentsOf: try resource.url())
+		} catch {
+			NSLog("ArknightsClient could not load \(resource.path): \(error)")
+			return nil
+		}
 	}
 
 	/// `CIHueAdjust` rotates hue in `NSColor`'s HSB circle, not YIQ chroma-angle space.

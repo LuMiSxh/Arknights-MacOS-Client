@@ -28,8 +28,8 @@ struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 	private let controllerURL: URL?
 
 	init(bundle: Bundle = .main) {
-		let directory = bundle.resourceURL?.appending(
-			path: "Compatibility/BilibiliPlatform", directoryHint: .isDirectory)
+		let directory = bundle.resourceURL.map(BundledResource.compatibility.location)?
+			.appending(path: "BilibiliPlatform", directoryHint: .isDirectory)
 		controllerURL = directory?.appending(path: Self.controllerName)
 	}
 

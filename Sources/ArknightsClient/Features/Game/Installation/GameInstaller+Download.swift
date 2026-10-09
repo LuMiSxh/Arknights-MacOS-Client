@@ -158,18 +158,17 @@ extension GameInstaller {
 			InstallerFileIdentity(stagedNameStatus) == stagedIdentity
 		else { throw LauncherError.unsafeInstallerTemporaryFile(staged.url) }
 		guard ManifestChecksum.matches(checksum, expected: item.hash) else {
-			guard ftruncate(partialDescriptor, 0) == 0 else {
-				throw POSIXError(.init(rawValue: errno) ?? .EIO)
-			}
-			guard fsync(partialDescriptor) == 0 else {
-				throw POSIXError(.init(rawValue: errno) ?? .EIO)
-			}
-			await progress(
-				await counter.remove(
-					bytes: countedBytes,
-					networkBytes: networkBytes,
-					file: item.path
-				)
+			try await Self.rollBack(
+				FileHandle(fileDescriptor: partialDescriptor, closeOnDealloc: false),
+				of: item,
+				truncatingTo: 0,
+				counted: countedBytes,
+				network: networkBytes,
+				reportsProgress: true,
+				rewinds: false,
+				synchronizes: true,
+				counter: counter,
+				progress: progress
 			)
 			throw LauncherError.checksumMismatch(
 				path: item.path,

@@ -68,6 +68,10 @@ final class LauncherLog: Sendable {
 }
 
 /// Owns the file and formatter; only ever used on `LauncherLog`'s serial queue.
+private enum LogFileError: Error {
+	case cannotCreate(URL)
+}
+
 private final class LauncherLogWriter: @unchecked Sendable {
 	private let fileURL: URL
 	private let fileManager = FileManager.default
@@ -146,7 +150,7 @@ private final class LauncherLogWriter: @unchecked Sendable {
 		if !fileManager.fileExists(atPath: fileURL.path),
 			!fileManager.createFile(atPath: fileURL.path, contents: nil)
 		{
-			throw LauncherError.cannotCreateFile(fileURL)
+			throw LogFileError.cannotCreate(fileURL)
 		}
 	}
 

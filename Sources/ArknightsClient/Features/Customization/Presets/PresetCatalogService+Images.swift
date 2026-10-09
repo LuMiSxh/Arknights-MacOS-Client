@@ -33,19 +33,12 @@ extension PresetCatalogService {
 		}
 
 		var candidates = [url]
-		if url.host?.lowercased() == "cdn.jsdelivr.net" {
+		if url.host?.lowercased() == PresetRemoteSources.primaryAvatarHost {
 			let filename = url.lastPathComponent
-			let fallbackBases = [
-				URL(
-					string:
-						"https://raw.githubusercontent.com/PuppiizSunniiz/Arknight-Images/main/avatars/"
-				)!,
-				URL(
-					string:
-						"https://raw.githubusercontent.com/Aceship/Arknight-Images/main/avatars/"
-				)!,
-			]
-			candidates.append(contentsOf: fallbackBases.map { $0.appending(path: filename) })
+			candidates.append(
+				contentsOf: PresetRemoteSources.fallbackAvatarDirectories.map {
+					$0.appending(path: filename)
+				})
 		}
 
 		var lastError: (any Error)?

@@ -6,14 +6,15 @@ import Testing
 @testable import ArknightsClient
 
 @Test(arguments: [
-	(GameRegion.global, "https://cdn.example", true),
-	(.japan, "https://cdn.example", true),
-	(.korea, "https://cdn.example", true),
+	(GameRegion.global, "https://launcher-pkg-ark-en.yo-star.com", true),
+	(.japan, "https://launcher-pkg-ark-jp.yo-star.com", true),
+	(.korea, "https://launcher-pkg-ark-kr.yo-star.com", true),
+	(.global, "https://cdn.example", false),
 	(.china, "https://ak.hycdn.cn", true),
 	(.chinaBilibili, "https://ak.hycdn.cn", true),
 	(.taiwan, "https://ak-tw.hg-cdn.com", true),
-	(.global, "http://cdn.example", false),
-	(.korea, "https://user@cdn.example", false),
+	(.global, "http://launcher-pkg-ark-en.yo-star.com", false),
+	(.korea, "https://user@launcher-pkg-ark-kr.yo-star.com", false),
 	(.china, "https://evil.example", false),
 	(.china, "http://ak.hycdn.cn", false),
 	(.taiwan, "http://ak-tw.hg-cdn.com", false),

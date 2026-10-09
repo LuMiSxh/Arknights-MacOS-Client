@@ -72,10 +72,8 @@ extension PresetCatalogService {
 
 			for page in 1...AppConstants.Presets.wallpaperPageLimit {
 				guard
-					let pageURL = URL(
-						string:
-							"https://www.arknights.global/api/resource/gallery/list?index=\(page)&size=\(AppConstants.Presets.wallpaperPageSize)"
-					)
+					let pageURL = PresetRemoteSources.wallpaperGalleryPage(
+						index: page, size: AppConstants.Presets.wallpaperPageSize)
 				else { break }
 
 				var request = URLRequest(url: pageURL)

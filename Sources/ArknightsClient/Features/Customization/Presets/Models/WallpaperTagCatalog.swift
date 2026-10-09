@@ -62,16 +62,8 @@ enum WallpaperTagCatalog {
 	}
 
 	fileprivate static func loadBundled() -> [String: [String]] {
-		// Packaged apps flatten copied resources into Bundle.main; SwiftPM uses its resource bundle.
-		guard
-			let url = Bundle.main.url(forResource: "WallpaperTags", withExtension: "json")
-				?? AppResourceBundle.bundle.url(forResource: "WallpaperTags", withExtension: "json")
-		else {
-			NSLog("ArknightsClient could not find the bundled WallpaperTags.json.")
-			return [:]
-		}
 		do {
-			return try decode(Data(contentsOf: url))
+			return try decode(BundledResource.wallpaperTags.data())
 		} catch {
 			NSLog("ArknightsClient could not read WallpaperTags.json: \(error)")
 			return [:]

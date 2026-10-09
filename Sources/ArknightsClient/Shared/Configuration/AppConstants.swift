@@ -128,6 +128,8 @@ enum AppConstants {
 		static let wallpaperCatalogMaximumBytes = 4 * 1_024 * 1_024
 		static let wallpaperTagsMaximumBytes = 1_024 * 1_024
 		/// The repository's current tag manifest, so tags for new wallpapers ship without a release.
+		/// App-owned, so it follows `main` on purpose and is not pinned. Bound: `wallpaperTagsMaximumBytes`.
+		/// Fallback: the bundled and cached tags.
 		static let wallpaperTagsURL = URL(
 			string:
 				"https://raw.githubusercontent.com/LuMiSxh/Arknights-MacOS-Client/main/Sources/ArknightsClient/Resources/WallpaperTags.json"

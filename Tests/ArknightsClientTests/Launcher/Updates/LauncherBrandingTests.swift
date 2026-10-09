@@ -120,18 +120,9 @@ func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
 		ArtworkCache.officialLogoURL(for: .korea)?.absoluteString
 			== "https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
 	)
-	#expect(
-		ArtworkCache.officialLogoURL(for: .china)?.absoluteString
-			== "https://zh.wikifur.com/w/images/b/b3/Arknights_CN_Logo.png"
-	)
-	#expect(
-		ArtworkCache.officialLogoURL(for: .chinaBilibili)?.absoluteString
-			== "https://zh.wikifur.com/w/images/b/b3/Arknights_CN_Logo.png"
-	)
-	#expect(
-		ArtworkCache.officialLogoURL(for: .taiwan)
-			== ArtworkCache.officialLogoURL(for: .china)
-	)
+	#expect(ArtworkCache.officialLogoURL(for: .china) == nil)
+	#expect(ArtworkCache.officialLogoURL(for: .chinaBilibili) == nil)
+	#expect(ArtworkCache.officialLogoURL(for: .taiwan) == nil)
 
 	let directory = FileManager.default.temporaryDirectory.appending(
 		path: "RegionalWordmarkCacheTests.\(UUID().uuidString)",
@@ -156,7 +147,7 @@ func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
 func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 	let taiwanValidator = ArtworkCache.artworkRedirectValidator(for: .taiwan)
 	#expect(taiwanValidator(URL(string: "https://gl-utils-public.hg-cdn.com/background.png")!))
-	#expect(taiwanValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
+	#expect(!taiwanValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
 	#expect(!taiwanValidator(URL(string: "http://gl-utils-public.hg-cdn.com/background.png")!))
 	#expect(!taiwanValidator(URL(string: "https://evil.example/background.png")!))
 	#expect(!taiwanValidator(URL(string: "https://launcher.gryphline.com/background.png")!))
@@ -165,7 +156,7 @@ func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 
 	let chinaValidator = ArtworkCache.artworkRedirectValidator(for: .china)
 	#expect(chinaValidator(URL(string: "https://ak.hycdn.cn/background.png")!))
-	#expect(chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
+	#expect(!chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
 }
 
 private func verifyJapanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {

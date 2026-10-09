@@ -27,7 +27,7 @@ struct GameInstallerProgressTests {
 			to: root.appending(path: pendingItem.path + ".part")
 		)
 		let manifest = GameManifest(source: "payload", file: [reusedItem, pendingItem])
-		let baseURL = URL(string: "https://download.test")!
+		let baseURL = URL(string: "https://download.yo-star.com")!
 		let api = InstallerAPI(
 			manifest: manifest,
 			cdn: CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)

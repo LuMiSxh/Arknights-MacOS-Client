@@ -21,8 +21,8 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 	private let bridgeURL: URL?
 
 	init(bundle: Bundle = .main) {
-		let directory = bundle.resourceURL?
-			.appending(path: "Compatibility/PlatformProcess", directoryHint: .isDirectory)
+		let directory = bundle.resourceURL.map(BundledResource.compatibility.location)?
+			.appending(path: "PlatformProcess", directoryHint: .isDirectory)
 		shimURL = directory?.appending(path: "PlatformProcess.exe")
 		bridgeURL = directory?.appending(path: Self.bridgeName)
 	}

@@ -67,6 +67,19 @@ struct AboutSettingsPage: View {
 							systemImage: "doc.on.doc")
 					}
 				}
+				HStack(spacing: 18) {
+					AccentLink(
+						title: SettingsStrings.viewNoticesOnline,
+						destination: SupportLinks.thirdPartyNotices,
+						accentColor: accentColor
+					)
+					AccentLink(
+						title: SettingsStrings.privacyNotice,
+						destination: SupportLinks.privacyNotice,
+						accentColor: accentColor
+					)
+				}
+				.font(.caption)
 			}
 
 			SettingsPanel(
@@ -111,6 +124,19 @@ struct AboutSettingsPage: View {
 					Text(SettingsStrings.notAffiliated)
 						.font(.caption)
 						.foregroundStyle(.secondary)
+					HStack(spacing: 4) {
+						Text(SettingsStrings.aiAssistance)
+							.foregroundStyle(.secondary)
+						AccentLink(
+							title: SettingsStrings.aiAssistanceLearnMore,
+							destination: URL(
+								string:
+									"https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/docs/ai-assistance.md"
+							)!,
+							accentColor: accentColor
+						)
+					}
+					.font(.caption)
 				}
 			}
 		}

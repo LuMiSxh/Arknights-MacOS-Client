@@ -104,7 +104,7 @@ struct LauncherViewModelConcurrencyTests {
 
 		#expect(!(await model.waitForStartup()))
 		#expect(model.lifecycle.failure?.blocksGameLaunch == true)
-		#expect(model.lifecycle.activity != .idle)
+		#expect(model.lifecycle.activity == .idle)
 		#expect(model.lifecycle.refresh == .checking(requestID: nil))
 		#expect(model.installation.configuration == nil)
 	}

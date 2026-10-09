@@ -330,6 +330,8 @@ enum SettingsStrings {
 	static let changelog = "Changelog"
 	static let license = "MPL-2.0 License"
 	static let thirdPartyNotices = "Third-Party Notices"
+	static let viewNoticesOnline = "View online"
+	static let privacyNotice = "Privacy Notice"
 	static let support = "Support"
 	static let launcherIssues = "Launcher Issues"
 	static let launcherIssuesDetail =
@@ -361,6 +363,8 @@ enum SettingsStrings {
 	static let privacyPolicy = "Privacy Policy"
 	static let notAffiliated =
 		"This launcher is an independent community project and is not affiliated with Hypergryph, its affiliates, or any third-party publisher."
+	static let aiAssistance = "Built with AI assistance."
+	static let aiAssistanceLearnMore = "Learn more"
 
 	static let developerTitle = "Developer"
 	static let developerSubtitle = "Preview launcher states safely"

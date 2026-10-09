@@ -128,6 +128,30 @@ struct HTTPChunkSessionTests {
 
 		#expect(rejected)
 	}
+
+	@Test
+	func yostarPolicyRejectsARedirectToAForeignHost() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(configuration: configuration)
+		let sourceURL = URL(string: "https://launcher-pkg-ark-en.yo-star.com/game.bin")!
+		let foreignURL = URL(string: "https://yo-star.com.evil.test/game.bin")!
+		ChunkedURLProtocol.configureRedirect(to: foreignURL)
+		defer { ChunkedURLProtocol.reset() }
+
+		let stream = session.stream(
+			for: URLRequest(url: sourceURL),
+			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: .global)
+		)
+		var rejectedHost: String?
+		do {
+			for try await _ in stream.events {}
+		} catch HTTPTransportError.redirectRejected(let rejectedURL) {
+			rejectedHost = rejectedURL.host
+		}
+
+		#expect(rejectedHost == "yo-star.com.evil.test")
+	}
 }
 
 private final class ChunkedURLProtocol: URLProtocol, @unchecked Sendable {

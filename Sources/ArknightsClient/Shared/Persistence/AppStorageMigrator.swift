@@ -3,8 +3,17 @@
 import Darwin
 import Foundation
 
+/// The outcome of one migration run. A run can succeed in part: `installDirectoriesToUpdate`
+/// always covers exactly the moves that are complete, and `failure` names the move that stopped
+/// the run. A later run resumes with the remaining moves.
 struct AppStorageMigrationResult: Sendable {
 	let installDirectoriesToUpdate: [GameRegion: URL]
+	let failure: (any Error)?
+
+	init(installDirectoriesToUpdate: [GameRegion: URL], failure: (any Error)? = nil) {
+		self.installDirectoriesToUpdate = installDirectoriesToUpdate
+		self.failure = failure
+	}
 }
 
 enum AppStorageMigrationError: Error, Equatable, Sendable, CustomStringConvertible {
@@ -42,57 +51,80 @@ enum AppStorageMigrator {
 		paths: AppPaths,
 		persistedInstallDirectories: [GameRegion: URL],
 		fileManager: FileManager = .default
-	) throws -> AppStorageMigrationResult {
+	) -> AppStorageMigrationResult {
 		let moves = directoryMoves(for: paths)
 		var states: [(move: DirectoryMove, legacyExists: Bool, currentExists: Bool)] = []
-		for move in moves {
-			try validatePathComponents(of: move.legacy, under: paths.applicationSupportRoot)
-			try validatePathComponents(of: move.current, under: paths.applicationSupportRoot)
-			let legacyExists = try nodeState(at: move.legacy) == .directory
-			let currentExists = try nodeState(at: move.current) == .directory
-			if legacyExists, currentExists {
-				throw AppStorageMigrationError.conflictingDirectories(move.legacy, move.current)
+		do {
+			for move in moves {
+				try validatePathComponents(of: move.legacy, under: paths.applicationSupportRoot)
+				try validatePathComponents(of: move.current, under: paths.applicationSupportRoot)
+				let legacyExists = try nodeState(at: move.legacy) == .directory
+				let currentExists = try nodeState(at: move.current) == .directory
+				if legacyExists, currentExists {
+					throw AppStorageMigrationError.conflictingDirectories(move.legacy, move.current)
+				}
+				states.append((move, legacyExists, currentExists))
 			}
-			states.append((move, legacyExists, currentExists))
+		} catch {
+			// Validation runs before the first move, so nothing changed and nothing is reportable.
+			return AppStorageMigrationResult(installDirectoriesToUpdate: [:], failure: error)
 		}
 
+		var unfinished: Set<URL> = []
+		var failure: (any Error)?
 		for state in states where state.legacyExists && !state.currentExists {
-			try ensureParentDirectory(
-				for: state.move.current,
-				under: paths.applicationSupportRoot,
-				fileManager: fileManager
-			)
+			if failure != nil {
+				unfinished.insert(state.move.legacy)
+				continue
+			}
 			do {
-				try fileManager.moveItem(at: state.move.legacy, to: state.move.current)
-			} catch let moveError {
-				do {
-					if try nodeState(at: state.move.legacy) == .absent,
-						try nodeState(at: state.move.current) == .directory
-					{
-						continue
-					}
-				} catch {
-					throw AppStorageMigrationError.moveFailed(
-						state.move.legacy,
-						state.move.current,
-						"\(moveError.localizedDescription); validation failed: \(error.localizedDescription)"
-					)
-				}
-				throw AppStorageMigrationError.moveFailed(
-					state.move.legacy, state.move.current, moveError.localizedDescription)
+				try perform(
+					state.move, under: paths.applicationSupportRoot, fileManager: fileManager)
+			} catch {
+				failure = error
+				unfinished.insert(state.move.legacy)
 			}
 		}
 
 		let updates = Dictionary(
 			uniqueKeysWithValues: moves.compactMap { move -> (GameRegion, URL)? in
 				guard
+					!unfinished.contains(move.legacy),
 					let region = move.region,
 					let persisted = persistedInstallDirectories[region],
 					persisted.standardizedFileURL.path == move.legacy.standardizedFileURL.path
 				else { return nil }
 				return (region, move.current)
 			})
-		return AppStorageMigrationResult(installDirectoriesToUpdate: updates)
+		return AppStorageMigrationResult(installDirectoriesToUpdate: updates, failure: failure)
+	}
+
+	private static func perform(
+		_ move: DirectoryMove,
+		under root: URL,
+		fileManager: FileManager
+	) throws {
+		try ensureParentDirectory(for: move.current, under: root, fileManager: fileManager)
+		do {
+			try fileManager.moveItem(at: move.legacy, to: move.current)
+		} catch let moveError {
+			do {
+				// Another process may have finished the same move.
+				if try nodeState(at: move.legacy) == .absent,
+					try nodeState(at: move.current) == .directory
+				{
+					return
+				}
+			} catch {
+				throw AppStorageMigrationError.moveFailed(
+					move.legacy,
+					move.current,
+					"\(moveError.localizedDescription); validation failed: \(error.localizedDescription)"
+				)
+			}
+			throw AppStorageMigrationError.moveFailed(
+				move.legacy, move.current, moveError.localizedDescription)
+		}
 	}
 
 	private static func directoryMoves(for paths: AppPaths) -> [DirectoryMove] {

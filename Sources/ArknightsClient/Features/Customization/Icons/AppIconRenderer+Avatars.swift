@@ -58,29 +58,11 @@ extension AppIconRenderer {
 	}
 
 	private static func gameIconBackground() -> NSImage? {
-		if let url = Bundle.main.url(forResource: "GameIconBackground", withExtension: "png") {
-			return NSImage(contentsOf: url)
-		}
-		guard
-			let url = AppResourceBundle.bundle.url(
-				forResource: "GameIconBackground",
-				withExtension: "png"
-			)
-		else { return nil }
-		return NSImage(contentsOf: url)
+		bundledImage(.gameIconBackground)
 	}
 
 	private static func operatorFrame() -> NSImage? {
-		if let url = Bundle.main.url(forResource: "OperatorIconFrame", withExtension: "svg") {
-			return NSImage(contentsOf: url)
-		}
-		guard
-			let url = AppResourceBundle.bundle.url(
-				forResource: "OperatorIconFrame",
-				withExtension: "svg"
-			)
-		else { return nil }
-		return NSImage(contentsOf: url)
+		bundledImage(.operatorIconFrame)
 	}
 
 	private static func drawTintedFrame(_ frame: NSImage, in rect: NSRect, color: NSColor) {
