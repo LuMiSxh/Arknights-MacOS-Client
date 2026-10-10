@@ -366,6 +366,21 @@ def test_missing_or_stale_compiled_notices_fail_the_check(project: Path) -> None
     licenses.check_all(project)
 
 
+def test_runtime_index_http_sources_load_as_https(tmp_path: Path) -> None:
+    runtime = make_runtime(tmp_path)
+    index = runtime / "Licenses/index.json"
+    document = json.loads(index.read_text(encoding="utf-8"))
+    document["components"][0]["source"] = "http://example.org/lib"
+    index.write_text(json.dumps(document), encoding="utf-8")
+    problems: list[str] = []
+
+    legal = licenses.load_runtime_legal(runtime, problems)
+
+    assert problems == []
+    assert legal is not None
+    assert legal.components[0].source == "https://example.org/lib"
+
+
 def test_staging_runtime_legal_rejects_symlinks(tmp_path: Path) -> None:
     archive = tmp_path / "archive"
     (archive / "Licenses").mkdir(parents=True)

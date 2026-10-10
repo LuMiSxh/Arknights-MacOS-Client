@@ -39,6 +39,29 @@ def test_ignores_appledouble_metadata(tmp_path: Path) -> None:
     assert (extracted / "bin/wine64").is_file()
 
 
+def test_license_companions_do_not_count_as_runtime_roots(tmp_path: Path) -> None:
+    archive_path = tmp_path / "runtime.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        add_file(archive, "Libraries/Wine/bin/wine64", b"runtime")
+        add_file(archive, "Licenses/index.json", b"{}")
+        add_file(archive, "NOTICE.md", b"notice")
+
+    extracted = extract_runtime.extract(archive_path, tmp_path / "output")
+
+    assert extracted.name == "Libraries"
+    assert (extracted / "Wine/bin/wine64").read_bytes() == b"runtime"
+
+
+def test_rejects_unknown_second_top_level_entry(tmp_path: Path) -> None:
+    archive_path = tmp_path / "runtime.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        add_file(archive, "Libraries/Wine/bin/wine64", b"runtime")
+        add_file(archive, "Extra/file", b"extra")
+
+    with pytest.raises(RuntimeError):
+        extract_runtime.extract(archive_path, tmp_path / "output")
+
+
 def test_rejects_parent_path(tmp_path: Path) -> None:
     archive_path = tmp_path / "runtime.tar.gz"
     with tarfile.open(archive_path, "w:gz") as archive:

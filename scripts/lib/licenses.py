@@ -251,9 +251,14 @@ def load_runtime_legal(
     ):
         problems.append(f"{label}: schemaVersion must be {SCHEMA_VERSION}")
         return None
-    components = parse_components(
-        document.get("components"), label, (RUNTIME_SCOPE,), problems
-    )
+    raw_components = document.get("components")
+    if isinstance(raw_components, list):
+        # Runtime 0.7.0-rc1 links libpng.org over HTTP; the site serves HTTPS.
+        for entry in raw_components:
+            source = entry.get("source") if isinstance(entry, dict) else None
+            if isinstance(source, str) and source.startswith("http://"):
+                entry["source"] = "https://" + source.removeprefix("http://")
+    components = parse_components(raw_components, label, (RUNTIME_SCOPE,), problems)
     for component in components:
         for relative in (
             *component.files,

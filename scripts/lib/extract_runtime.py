@@ -11,6 +11,9 @@ from pathlib import Path, PurePosixPath
 
 from lib.common import fail, remove_path, run_main
 
+# Runtime 0.7.0 ships its license texts beside the runtime directory.
+RUNTIME_COMPANIONS = frozenset({"Licenses", "NOTICE.md"})
+
 
 def stays_within_root(path: PurePosixPath) -> bool:
     depth = 0
@@ -64,7 +67,11 @@ def extract(archive: Path, destination: Path) -> Path:
         ]
         paths = [path for _, path in validated if not is_platform_metadata(path)]
         top_levels = {
-            path.parts[0] for path in paths if path.parts and path.parts[0] != "."
+            path.parts[0]
+            for path in paths
+            if path.parts
+            and path.parts[0] != "."
+            and path.parts[0] not in RUNTIME_COMPANIONS
         }
         if len(top_levels) != 1:
             fail("runtime archive must contain exactly one top-level directory")

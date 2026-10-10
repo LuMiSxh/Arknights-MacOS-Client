@@ -236,7 +236,7 @@ def prepare_runtime(
             ):
                 fail("runtime capability manifest must be a regular, unlinked file")
             capability_manifest.replace(runtime / layout.capability_manifest_path)
-        if not stage_runtime_legal(libraries, runtime):
+        if not stage_runtime_legal(libraries.parent, runtime):
             warning("Runtime archive has no Licenses/ directory")
         launcher = runtime / layout.launcher.path
         launcher.parent.mkdir(parents=True, exist_ok=True)
