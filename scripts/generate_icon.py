@@ -26,6 +26,7 @@ from lib.project_config import ProjectConfiguration, load_project_configuration
 DEFAULT_ICON_COMPOSER = Path(
     "/Applications/Icon Composer.app/Contents/Executables/ictool"
 )
+RESOURCE_SUBDIRECTORY = Path("Resources")
 
 
 def icon_composer() -> Path:
@@ -103,7 +104,9 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
     rendered = build_directory / f"{icon_name}.png"
     preview = project / f"Resources/{icon_name}.png"
     tint_source = (
-        project / f"Sources/ArknightsClient/Resources/{icon_name}TintSource.png"
+        configuration.resource_target_directory
+        / RESOURCE_SUBDIRECTORY
+        / f"{icon_name}TintSource.png"
     )
     catalog = build_directory / f"{icon_name}.xcassets"
     iconset = catalog / f"{icon_name}.appiconset"

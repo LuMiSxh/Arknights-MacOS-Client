@@ -21,7 +21,8 @@ def test_unit_and_integration_tests_run_without_network() -> None:
             swift_tests._NETWORK_DENY_PROFILE,
         ]
         assert "--skip-build" in command
-        assert f"^{swift_tests.LEVELS[name].target}\\." in command
+        expression = swift_tests.filter_expression(swift_tests.LEVELS[name].targets)
+        assert expression in command
 
 
 def test_live_contracts_are_the_only_level_allowed_to_use_network() -> None:
@@ -53,8 +54,9 @@ def test_test_count_requires_identifiers_from_the_selected_target() -> None:
         "ArknightsClientIntegrationTests.Workflow/example()"
     )
 
-    assert swift_tests.test_count(listing, "ArknightsClientIntegrationTests") == 1
-    assert swift_tests.test_count(listing, "MissingTests") == 0
+    integration = ("ArknightsClientIntegrationTests",)
+    assert swift_tests.test_count(listing, integration) == 1
+    assert swift_tests.test_count(listing, ("MissingTests",)) == 0
 
 
 def test_relevant_success_output_filters_known_swift_test_harness_noise() -> None:
@@ -87,14 +89,47 @@ def test_filter_counts_only_matching_tests_in_the_selected_target() -> None:
         "ArknightsClientIntegrationTests.GameInstallerWorkflow/example()"
     )
 
-    assert swift_tests.test_count(listing, "ArknightsClientTests", "GameInstaller") == 1
-    assert (
-        swift_tests.test_count(
-            listing, "ArknightsClientIntegrationTests", "GameInstaller"
-        )
-        == 1
+    unit = ("ArknightsClientTests",)
+    integration = ("ArknightsClientIntegrationTests",)
+
+    assert swift_tests.test_count(listing, unit, "GameInstaller") == 1
+    assert swift_tests.test_count(listing, integration, "GameInstaller") == 1
+    assert swift_tests.test_count(listing, unit, "Missing") == 0
+
+
+def test_unit_level_covers_every_test_target_except_gated_levels(
+    tmp_path: Path,
+) -> None:
+    package = tmp_path / "Package.swift"
+    package.write_text(
+        """
+        .testTarget(name: "ArknightsClientTests", dependencies: []),
+        .testTarget(name: "ArknightsClientIntegrationTests", dependencies: []),
+        .testTarget(name: "ArknightsClientLiveContractTests", dependencies: []),
+        .testTarget(name: "ModelTests", dependencies: []),
+        .target(name: "Helpers", dependencies: []),
+        """,
+        encoding="utf-8",
     )
-    assert swift_tests.test_count(listing, "ArknightsClientTests", "Missing") == 0
+
+    assert swift_tests.unit_targets(package) == ("ArknightsClientTests", "ModelTests")
+
+
+def test_unit_filter_alternates_every_unit_target() -> None:
+    targets = ("ArknightsClientTests", "ModelTests")
+    listing = (
+        "ArknightsClientTests.Install/example()\n"
+        "ModelTests.Install/example()\n"
+        "ModelTests.Other/example()\n"
+        "ArknightsClientIntegrationTests.Install/example()"
+    )
+
+    assert (
+        swift_tests.filter_expression(targets, "Install")
+        == r"^(?:ArknightsClientTests|ModelTests)\..*Install"
+    )
+    assert swift_tests.test_count(listing, targets, "Install") == 2
+    assert swift_tests.test_count(listing, targets) == 3
 
 
 def test_run_level_fails_when_filter_matches_no_test(

@@ -155,3 +155,67 @@ def test_rejects_unsafe_architecture_arguments(tmp_path: Path) -> None:
             {**plist(), "LSArchitecturePriority": ["arm64 --verbose"]},
             package_dump(),
         )
+
+
+def target(
+    name: str, kind: str, resources: list[dict[str, object]]
+) -> dict[str, object]:
+    return {
+        "name": name,
+        "type": kind,
+        "path": f"Sources/{name}",
+        "resources": resources,
+    }
+
+
+COPY_ICON = [{"path": "Resources/Icon.png", "rule": {"copy": {}}}]
+
+
+def test_reports_executable_as_resource_target(tmp_path: Path) -> None:
+    configuration = load_configuration(tmp_path, plist(), package_dump())
+
+    assert configuration.package.resource_target_name == "Client"
+    assert configuration.package.resource_target_path == Path("Sources/Client")
+
+
+def test_library_may_hold_resources_while_executable_has_none(tmp_path: Path) -> None:
+    dump = {
+        **package_dump(),
+        "targets": [
+            target("Client", "executable", []),
+            target("Core", "regular", COPY_ICON),
+            target("CoreTests", "test", COPY_ICON),
+        ],
+    }
+
+    configuration = load_configuration(tmp_path, plist(), dump)
+
+    assert configuration.package.resource_target_name == "Core"
+    assert configuration.package.resource_target_path == Path("Sources/Core")
+    assert configuration.package.target_path == Path("Sources/Client")
+    assert configuration.copied_resource_source_paths == (
+        tmp_path.resolve() / "Sources/Core/Resources/Icon.png",
+    )
+
+
+@pytest.mark.parametrize(
+    "targets",
+    [
+        pytest.param(
+            [
+                target("Client", "executable", COPY_ICON),
+                target("Core", "regular", COPY_ICON),
+            ],
+            id="two-resource-targets",
+        ),
+        pytest.param(
+            [target("Client", "executable", []), target("Core", "regular", [])],
+            id="no-resource-target",
+        ),
+    ],
+)
+def test_rejects_other_than_one_resource_target(
+    tmp_path: Path, targets: list[dict[str, object]]
+) -> None:
+    with pytest.raises(ScriptError, match="exactly one non-test target"):
+        load_configuration(tmp_path, plist(), {**package_dump(), "targets": targets})

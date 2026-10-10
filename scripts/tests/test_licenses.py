@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from lib import licenses
 from lib.common import PROJECT_DIR, ScriptError
+from lib.project_config import ProjectConfiguration, load_project_configuration
 
 
 def component(**overrides: object) -> dict[str, object]:
@@ -23,6 +25,23 @@ def component(**overrides: object) -> dict[str, object]:
     }
     entry.update(overrides)
     return entry
+
+
+@pytest.fixture(scope="module")
+def base_configuration() -> ProjectConfiguration:
+    return load_project_configuration()
+
+
+@pytest.fixture(autouse=True)
+def route_configuration(
+    monkeypatch: pytest.MonkeyPatch, base_configuration: ProjectConfiguration
+) -> None:
+    """Load the repository's package metadata for each test tree."""
+    monkeypatch.setattr(
+        licenses,
+        "load_project_configuration",
+        lambda root: replace(base_configuration, project_directory=root),
+    )
 
 
 @pytest.fixture

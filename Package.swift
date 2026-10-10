@@ -10,6 +10,12 @@ let appResources: [Resource] = [
 	.copy("Resources/WallpaperTags.json"),
 ]
 
+/// Builds the Swift settings for one target. Extra settings are appended
+/// after the package-wide defaults so every target starts from the same list.
+func swiftSettings(_ extra: [SwiftSetting] = []) -> [SwiftSetting] {
+	[] + extra
+}
+
 let package = Package(
 	name: "ArknightsClient",
 	platforms: [
@@ -34,8 +40,9 @@ let package = Package(
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
 				.product(name: "Sparkle", package: "Sparkle"),
 			],
-			path: "Sources/ArknightsClient",
-			resources: appResources
+				path: "Sources/ArknightsClient",
+				resources: appResources,
+				swiftSettings: swiftSettings()
 		),
 		.testTarget(
 			name: "ArknightsClientTests",

@@ -32,8 +32,8 @@ def test_compatibility_manifest_declares_native_sources_once() -> None:
     assert len(outputs) == len(set(outputs))
 
 
-def write_swift(root: Path, relative: str, source: str) -> None:
-    path = root / relative
+def write_swift(root: Path, relative: str, source: str, target: str = "App") -> None:
+    path = root / target / relative
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(source, encoding="utf-8")
 
@@ -81,6 +81,20 @@ def test_layering_check_passes_clean_core(tmp_path: Path) -> None:
     )
 
     assert checks.layering_violations(tmp_path) == []
+
+
+def test_layering_check_scans_every_target_folder(tmp_path: Path) -> None:
+    write_swift(tmp_path, "Features/Game/Thing.swift", "struct FeatureThing {}\n")
+    write_swift(
+        tmp_path,
+        "Infrastructure/Net/Client.swift",
+        "let value = FeatureThing()\n",
+        target="Engine",
+    )
+
+    assert checks.layering_violations(tmp_path) == [
+        "Infrastructure/Net/Client.swift:1: FeatureThing"
+    ]
 
 
 def test_project_sources_respect_layering() -> None:

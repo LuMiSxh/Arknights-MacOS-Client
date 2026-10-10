@@ -67,7 +67,8 @@
 - Do not launch previews or the app for UI work unless the user authorizes it.
 - Do not install, launch, download, uninstall, or alter the user's game/runtime unless explicitly requested.
 - Run Python through the root `pyproject.toml`/`uv.lock` with `uv run --locked`; reuse `scripts/lib` and test changed behavior.
-- Derive product/package metadata through `scripts/lib/project_config.py` and runtime layout through `runtime.json`.
+- Derive product/package metadata and per-target resources (icons, bundles, and other multi-target assets) through `scripts/lib/project_config.py`, and runtime layout through `runtime.json`.
+- Scripts never hard-code source paths; read them from `project_config`.
 - Record user-visible changes in `CHANGELOG.md`; follow `docs/development/releases-and-updates.md` for releases.
 - Follow existing commit style, never mention agent/model vendors, and push only with explicit consent.
 

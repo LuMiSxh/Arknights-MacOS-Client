@@ -189,6 +189,139 @@ the same region, installer, display, artwork, icon, update, and audio actions as
 - Interrupted setup resumes at its saved step.
 - If the game is absent, setup returns to Region & Install before later steps.
 
+## Targets
+
+The package splits into SwiftPM targets in stages. The `Status` column shows the current state. Until a
+row says `done`, its folders still build inside the `ArknightsClient` target and the same rules apply
+as folder rules.
+
+### Target map
+
+A target depends only on targets with a lower number. A dependency on a higher number is a cycle. The
+compiler rejects a cycle.
+
+| No. | Target                    | Source folders                                                                                  | Depends on                                           | Linked products       | Status  |
+| --- | ------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------- | ------- |
+| 1   | `ArknightsInfrastructure` | `Infrastructure`                                                                                | none                                                 | none                  | planned |
+| 2   | `ArknightsCore`           | `Shared`, `Core`, `Resources`                                                                   | 1                                                    | none                  | planned |
+| 3   | `ArknightsCustomization`  | `Features/Customization`                                                                        | 1, 2                                                 | none                  | planned |
+| 4   | `ArknightsGameInstallation` | `Features/Game/Installation`, `Features/Game/Compatibility`                                   | 1, 2, 3                                              | `CCommonCrypto`       | planned |
+| 5   | `ArknightsGameRuntime`    | `Features/Game/Runtime`, `Features/Game/Playtime`, `Features/Game/Storage`                      | 1, 2, 3, 4                                           | none                  | planned |
+| 6   | `ArknightsAudio`          | `Features/Audio`                                                                                | 2, 3                                                 | `YouTubePlayerKit`    | planned |
+| 7   | `ArknightsOnboarding`     | `Features/Onboarding`                                                                           | 2, 3, 4, 5                                           | none                  | planned |
+| 8   | `ArknightsLauncherUI`     | `Features/Launcher` (including `LauncherViewModel`)                                             | 1, 2, 3, 4, 5, 6, 7                                  | `Sparkle`             | planned |
+| 9   | `ArknightsClient`         | `Application`                                                                                   | 2, 6, 7, 8                                           | none                  | current |
+
+Changes from the first plan:
+
+- `ArknightsCustomization` moves from number 5 to number 3. Installation, Runtime, and Audio use
+  Customization types (see the evidence below). Customization uses none of them.
+- `ArknightsGameInstallation` and `ArknightsGameRuntime` stay in this order. Runtime uses Installation.
+  Installation must not use Runtime (see cycle 2).
+
+The scan found no other cross-folder reference that breaks this direction. These references are the
+allowed ones:
+
+| From                  | To                                  | Types that cross the boundary                                                                                     |
+| --------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `Infrastructure`      | `Shared`                            | `AppConstants` in `HTTPChunkSession.swift:70`. C15 removes it by injecting the limit.                              |
+| `Core`, `Shared`      | none                                | `Shared` names no `Core` or feature type. `Core` names only `Shared` types (`LauncherLog`, `SupportCode`).          |
+| Installation          | `Core`, `Shared`, `Infrastructure`, Customization | `LauncherBranding` and `CustomizationError` (`LauncherAPI.swift:58`, `InstallationSupportFailure.swift:60`). |
+| Runtime               | Installation, Customization         | `InstallationController`, `GameCompatibilityManager` (`GameSessionController.swift:38,44`), `PresetCatalogService` (`StorageMaintenanceController.swift:13`). |
+| Audio                 | Customization                       | `LauncherIconManager` (`BackgroundMusicController.swift:48`).                                                      |
+| Onboarding            | Customization, Installation, Runtime | `CustomizationController`, `InstallationController`, `RosettaAvailability` (`OnboardingCoordinator.swift:34`).     |
+| `LauncherUI`          | every other library                 | Composition. `LauncherViewModel` builds all controllers.                                                           |
+| `ArknightsClient`     | `LauncherUI`, Audio, Onboarding, `Core` | `ArknightsClientApp.swift:8,104,199,200`.                                                                      |
+
+### Known cycles
+
+> [!WARNING]
+> Two cycles block Stage 4. Remove each cycle before the checkpoint that creates the lower target.
+> Delete this subsection when both cycles are gone.
+
+**Cycle 1: lower features use types that `Features/Launcher` owns.** `ArknightsLauncherUI` is the top
+target. These references point up to it:
+
+| From                            | Launcher type                                  | Evidence                                                                                                                  |
+| ------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Customization                   | `LauncherStrings`                              | `CustomizationController+Artwork.swift:11,12`, `CustomizationController+Icons.swift:10,17,200`                              |
+| Installation                    | `LauncherStrings`                              | `InstallationController+Files.swift:10,11,29,30`                                                                          |
+| Runtime                         | `LauncherPreferencesController`                | `GameSessionController.swift:39,61`                                                                                       |
+| Runtime                         | `LauncherStrings`, `SettingsStrings`           | `RosettaInstallationConfirmationModifier.swift:11-18`, `PlaytimeStatisticsPage.swift:99`, `StorageStrings.swift:26-45`     |
+| Audio                           | `LauncherPreferencesController`                | `BackgroundMusicController.swift:20,47`, `BackgroundMusicView.swift:9`, `MusicHUDPill.swift:7`, `AudioSettingsPage.swift:6` |
+| Audio                           | `SettingsStrings`                              | `AudioSettingsPage.swift:11-89`                                                                                           |
+| Onboarding                      | `LauncherPreferencesController`                | `OnboardingAnswers.swift:73,86`, `OnboardingDisplayView.swift`, `OnboardingRegionView.swift`, `OnboardingLookView.swift`, `OnboardingExtrasView.swift`, `OnboardingView.swift` |
+| Onboarding                      | `LauncherUpdateCheckOutcome`                   | `OnboardingCoordinator.swift:32,53,68,138,159`                                                                            |
+
+Planned fix:
+
+1. Move `LauncherPreferencesController` (`Features/Launcher/Settings/LauncherPreferencesController.swift`)
+   and `LauncherUpdateCheckOutcome` (`Features/Launcher/Updates/LauncherUpdateCheckOutcome.swift`) to
+   `Core`. Both depend only on `Shared` types.
+2. Give each feature its own strings. Move the file-picker strings from `LauncherStrings` to
+   `CustomizationStrings` and the Installation strings. Move the Rosetta strings to the Runtime
+   strings. Move the `audio*` entries of `SettingsStrings` to an `AudioStrings` namespace. Move the
+   storage and Playtime entries to the Runtime strings.
+
+**Cycle 2: Installation and Runtime use each other.** Runtime uses Installation. Installation uses
+Runtime through one type, `GameRuntimeError`:
+
+| Direction              | Evidence                                                                                                                                  |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Installation to Runtime | `GameRuntimeError.gameCompatibility` in `BilibiliPlatformCompatibility.swift:120,184`, `GameCompatibilityManager.swift:100,106,107`, `PlatformProcessCompatibility.swift:58,78`, `VuplexCompatibility.swift:72,188,248`, `InstallationSupportFailure.swift:72` |
+| Runtime to Installation | `InstallationController` (`GameSessionController.swift:38`), `GameCompatibilityManager` (`GameSessionController.swift:44`, `WineRuntime.swift:49`), `InstallerError` (`WineRuntime.swift:227`, `GameSessionSupportFailure.swift:98`), `BilibiliPlatformCompatibility` (`WineRuntime.swift:327`), `DownloadProgressFormatting` (`StorageOverviewPage.swift:158`) |
+
+Planned fix: the Compatibility folder throws its own error type, which the Installation target owns.
+Map that error to `GameRuntimeError` at the Runtime boundary. Update `GameSessionSupportFailure.swift:90`
+and `InstallationSupportFailure.swift:72` so the support codes stay the same. `SupportCodeStabilityTests`
+pins the codes.
+
+### Direction rules
+
+- A target imports only targets with a lower number in the table.
+- `ArknightsInfrastructure` imports no other target. It receives limits and policy as init arguments.
+- `ArknightsCore` names no feature type. `Shared` and `Core` stay together because `Core` names
+  `Shared` types and `Shared` names no `Core` type.
+- A feature target never imports `ArknightsLauncherUI`. Composition code passes values and closures down.
+- Only these targets link an external product: Installation (`CCommonCrypto`, used by
+  `HypergryphManifestCipher.swift`), Audio (`YouTubePlayerKit`, six files), and `LauncherUI`
+  (`Sparkle`, used by `LauncherUpdateUserDriver.swift` and `LauncherUpdaterController.swift`).
+- A symbol that another target uses gets `package` access. A symbol that only its own target uses
+  stays `internal`. The compiler then enforces the direction. The `checks.py` layering check stays
+  on until the last checkpoint proves that the compiler enforces every rule.
+
+### Isolation settings
+
+Rule R1 sets the default isolation for each target. Rule R2 sets `NonisolatedNonsendingByDefault`.
+
+| Target                      | Default isolation                | `NonisolatedNonsendingByDefault`                                  | Reason                                                                                          |
+| --------------------------- | -------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `ArknightsInfrastructure`   | nonisolated                      | After audit of `BoundedFileReader` and `HTTPChunkSession` callers  | Network, file, and hashing code must not run on the main actor.                                 |
+| `ArknightsCore`             | nonisolated                      | After audit                                                        | Mixed content. `LauncherLifecycleStore` and views keep explicit `@MainActor`.                    |
+| `ArknightsCustomization`    | nonisolated                      | After the `Task.detached` offloads are `@concurrent`               | Image I/O runs off the main actor (12 `Task.detached` sites, `CustomizationImageIO.swift`).      |
+| `ArknightsGameInstallation` | nonisolated                      | After the `@concurrent` audit                                      | Installer, hashing, and compatibility code run off the main actor. Controllers keep `@MainActor`. |
+| `ArknightsGameRuntime`      | nonisolated                      | After the `@concurrent` audit                                      | Wine and prefix work run off the main actor. The Playtime and Storage views keep `@MainActor`.   |
+| `ArknightsAudio`            | `.defaultIsolation(MainActor.self)` | After audit                                                     | The controller, `YouTubePlayerKit` calls, and the views run on the main actor. Confirm at C20.   |
+| `ArknightsOnboarding`       | `.defaultIsolation(MainActor.self)` | After audit                                                     | The coordinator and the step views run on the main actor. `OnboardingProgressStore` may need `nonisolated`. Confirm at C21. |
+| `ArknightsLauncherUI`       | `.defaultIsolation(MainActor.self)` | After audit                                                     | Views, `LauncherViewModel`, and Sparkle callbacks run on the main actor.                         |
+| `ArknightsClient`           | `.defaultIsolation(MainActor.self)` | After audit                                                     | The app entry point and the delegate run on the main actor.                                      |
+
+Rules:
+
+- Turn on `NonisolatedNonsendingByDefault` for one target at a time. First mark each function that
+  must leave the caller's actor `@concurrent`. Record each changed function in the checkpoint.
+- Replace each `Task.detached(priority:) { … }.value` offload with a `@concurrent` function in the
+  target that owns it.
+- Do not turn on `.defaultIsolation(MainActor.self)` for a target that holds `Sendable` value types
+  or off-main work, unless each such type is marked `nonisolated`.
+
+### Resource owner
+
+`ArknightsCore` owns the SwiftPM resources (decision O-3). `AppResourceBundle` moves into this target
+and uses this target's `Bundle.module`. `Resources/` moves with it. `scripts/lib/project_config.py`
+reports the one target that declares resources. Scripts read the resource path from `project_config`.
+They never hard-code `Sources/ArknightsClient/...`.
+
 ## Platform boundary
 
 The native side runs on Apple Silicon and macOS 15 or newer. The packaged Wine runtime is x86-64.

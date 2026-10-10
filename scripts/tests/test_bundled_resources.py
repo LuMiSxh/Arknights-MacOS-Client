@@ -50,9 +50,8 @@ def test_parser_reads_single_and_multi_line_declarations() -> None:
 def test_drift_reports_missing_extra_and_changed_resources(
     configuration: ProjectConfiguration,
 ) -> None:
-    source = (
-        configuration.project_directory / bundled_resources.SWIFT_REGISTRY
-    ).read_text(encoding="utf-8")
+    registry = bundled_resources.swift_registry_path(configuration)
+    source = (configuration.project_directory / registry).read_text(encoding="utf-8")
 
     without_license = source.replace('file: "LICENSE"', 'file: "LICENSE.txt"')
     problems = registry_drift(configuration, without_license)

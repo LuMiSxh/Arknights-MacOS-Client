@@ -20,7 +20,7 @@ from pathlib import Path
 from lib.licenses import BUNDLE_NOTICES_NAME
 from lib.project_config import ProjectConfiguration
 
-SWIFT_REGISTRY = Path("Sources/ArknightsClient/Shared/Resources/BundledResource.swift")
+SWIFT_REGISTRY_SUBPATH = Path("Shared/Resources/BundledResource.swift")
 
 ORIGIN_APP = "app"
 ORIGIN_PACKAGE = "package"
@@ -106,6 +106,11 @@ def staged_resources(configuration: ProjectConfiguration) -> tuple[StagedResourc
     return (*icons, *FIXED_RESOURCES, *package)
 
 
+def swift_registry_path(configuration: ProjectConfiguration) -> Path:
+    """Return the repository path of `BundledResource.swift`."""
+    return configuration.package.resource_target_path / SWIFT_REGISTRY_SUBPATH
+
+
 def swift_registry(source: str) -> tuple[ResourceKey, ...]:
     """Parse the resource declarations of `BundledResource.swift`."""
     return tuple(
@@ -123,15 +128,16 @@ def registry_drift(
     configuration: ProjectConfiguration, swift_source: str | None = None
 ) -> list[str]:
     """Return the differences between the Swift registry and the staging table."""
+    registry = swift_registry_path(configuration)
     if swift_source is None:
-        swift_source = (configuration.project_directory / SWIFT_REGISTRY).read_text(
+        swift_source = (configuration.project_directory / registry).read_text(
             encoding="utf-8"
         )
     declared = swift_registry(swift_source)
     problems: list[str] = []
     paths = [entry[0] for entry in declared]
     if len(paths) != len(set(paths)):
-        problems.append(f"{SWIFT_REGISTRY} declares a path more than once")
+        problems.append(f"{registry} declares a path more than once")
 
     staged = staged_resources(configuration)
     staged_paths = [resource.path for resource in staged]
@@ -141,10 +147,10 @@ def registry_drift(
     expected = {resource.key for resource in staged if resource.swift_reads}
     for entry in sorted(set(declared) - expected):
         problems.append(
-            f"{SWIFT_REGISTRY} lists a resource the build does not stage: {entry}"
+            f"{registry} lists a resource the build does not stage: {entry}"
         )
     for entry in sorted(expected - set(declared)):
         problems.append(
-            f"the build stages a resource {SWIFT_REGISTRY} does not list: {entry}"
+            f"the build stages a resource {registry} does not list: {entry}"
         )
     return problems

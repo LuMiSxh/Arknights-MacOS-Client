@@ -38,7 +38,7 @@ def swift_sources() -> list[Path]:
     return [*sources, *tests]
 
 
-SWIFT_SOURCE_DIR = PROJECT_DIR / "Sources" / "ArknightsClient"
+SWIFT_SOURCES_ROOT = PROJECT_DIR / "Sources"
 LOWER_LAYERS = ("Core", "Shared", "Infrastructure")
 TYPE_DECLARATION = re.compile(
     r"^(?:(?:public|internal|final|indirect|nonisolated|@\w+(?:\([^)]*\))?)\s+)*"
@@ -59,24 +59,38 @@ def declared_types(root: Path) -> set[str]:
     return names
 
 
-def layering_violations(source_dir: Path = SWIFT_SOURCE_DIR) -> list[str]:
+def target_folders(sources_root: Path) -> list[Path]:
+    """Return every SwiftPM target folder directly under the sources root."""
+    return sorted(path for path in sources_root.iterdir() if path.is_dir())
+
+
+def layering_violations(sources_root: Path = SWIFT_SOURCES_ROOT) -> list[str]:
     """Return `file:line: Type` entries where a lower layer names a Features type."""
+    targets = target_folders(sources_root)
     lower_names = set().union(
-        *(declared_types(source_dir / name) for name in LOWER_LAYERS)
+        *(
+            declared_types(target / layer)
+            for target in targets
+            for layer in LOWER_LAYERS
+        )
     )
-    feature_names = declared_types(source_dir / "Features") - lower_names
+    feature_names = (
+        set().union(*(declared_types(target / "Features") for target in targets))
+        - lower_names
+    )
     if not feature_names:
         return []
     pattern = re.compile(r"\b(" + "|".join(sorted(feature_names)) + r")\b")
     violations: list[str] = []
-    for layer in LOWER_LAYERS:
-        for path in sorted((source_dir / layer).rglob("*.swift")):
-            source = strip_comments(path.read_text("utf-8"))
-            for number, line in enumerate(source.splitlines(), start=1):
-                for match in pattern.finditer(line):
-                    violations.append(
-                        f"{path.relative_to(source_dir)}:{number}: {match.group(1)}"
-                    )
+    for target in targets:
+        for layer in LOWER_LAYERS:
+            for path in sorted((target / layer).rglob("*.swift")):
+                source = strip_comments(path.read_text("utf-8"))
+                for number, line in enumerate(source.splitlines(), start=1):
+                    for match in pattern.finditer(line):
+                        violations.append(
+                            f"{path.relative_to(target)}:{number}: {match.group(1)}"
+                        )
     return violations
 
 

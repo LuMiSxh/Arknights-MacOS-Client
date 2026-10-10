@@ -24,6 +24,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from lib.common import ScriptError, fail, safe_relative_path
+from lib.project_config import load_project_configuration
 
 SCHEMA_VERSION = 1
 VERIFIED = "verified"
@@ -43,7 +44,7 @@ LICENSE_TEXTS_DOCUMENT = Path("docs/legal/license-texts.md")
 COMPILED_NOTICES = Path("docs/legal/ThirdPartyNotices.deflate")
 BUNDLE_NOTICES_NAME = "ThirdPartyNotices.deflate"
 SITE_URL = "https://lumisxh.github.io/Arknights-MacOS-Client/"
-RESOURCE_DIRECTORY = Path("Sources/ArknightsClient/Resources")
+RESOURCE_SUBDIRECTORY = Path("Resources")
 RUNTIME_LICENSE_DIRECTORY = "Licenses"
 RUNTIME_NOTICE_FILE = "NOTICE.md"
 
@@ -383,14 +384,18 @@ def check_inventory(root: Path, components: tuple[Component, ...]) -> list[str]:
             )
 
     covered = {path for component in components for path in component.paths}
-    resources = root / RESOURCE_DIRECTORY
+    configuration = load_project_configuration(root)
+    resource_directory = (
+        configuration.package.resource_target_path / RESOURCE_SUBDIRECTORY
+    )
+    resources = root / resource_directory
     problems.extend(
-        f"{RESOURCE_DIRECTORY}/{path.name}: bundled resource has no index entry"
+        f"{resource_directory}/{path.name}: bundled resource has no index entry"
         for path in sorted(resources.iterdir())
         if path.name not in covered
     )
     problems.extend(
-        f"{CLIENT_INDEX}: {name} is not in {RESOURCE_DIRECTORY}"
+        f"{CLIENT_INDEX}: {name} is not in {resource_directory}"
         for name in sorted(covered - {path.name for path in resources.iterdir()})
     )
 

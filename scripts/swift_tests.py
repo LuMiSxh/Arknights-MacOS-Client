@@ -30,19 +30,36 @@ _SWIFT_TEST_HARNESS_PREFIXES = (
 
 @dataclass(frozen=True)
 class SwiftTestLevel:
-    target: str
+    targets: tuple[str, ...]
     gate: tuple[str, str] | None
     allows_network: bool
 
 
+_INTEGRATION_TARGET = "ArknightsClientIntegrationTests"
+_LIVE_TARGET = "ArknightsClientLiveContractTests"
+_PACKAGE_TEST_TARGET = re.compile(r'\.testTarget\(\s*name:\s*"([^"]+)"')
+
+
+def unit_targets(package: Path = PROJECT_DIR / "Package.swift") -> tuple[str, ...]:
+    """Return every `*Tests` target except the gated integration and live targets."""
+    excluded = {_INTEGRATION_TARGET, _LIVE_TARGET}
+    declared = _PACKAGE_TEST_TARGET.findall(package.read_text("utf-8"))
+    targets = tuple(
+        name for name in declared if name.endswith("Tests") and name not in excluded
+    )
+    if not targets:
+        fail(f"no unit test targets declared in {package}")
+    return targets
+
+
 LEVELS = {
     "unit": SwiftTestLevel(
-        target="ArknightsClientTests",
+        targets=unit_targets(),
         gate=None,
         allows_network=False,
     ),
     "integration": SwiftTestLevel(
-        target="ArknightsClientIntegrationTests",
+        targets=(_INTEGRATION_TARGET,),
         gate=(
             "ARKNIGHTS_CLIENT_INTEGRATION_TESTS",
             "RUN_DETERMINISTIC_INTEGRATION_TESTS",
@@ -50,7 +67,7 @@ LEVELS = {
         allows_network=False,
     ),
     "live": SwiftTestLevel(
-        target="ArknightsClientLiveContractTests",
+        targets=(_LIVE_TARGET,),
         gate=(
             "ARKNIGHTS_CLIENT_LIVE_CONTRACT_TESTS",
             "RUN_YOSTAR_PUBLIC_NETWORK_SMOKE_TESTS",
@@ -75,11 +92,18 @@ def build_command(architectures: list[str]) -> list[str]:
     return ["swift", "build", "-q", "--build-tests", *architectures]
 
 
-def filter_expression(target: str, pattern: str | None = None) -> str:
-    """Return the SwiftPM filter that selects one target's tests."""
+def target_alternation(targets: tuple[str, ...]) -> str:
+    """Return a regex that matches exactly one of the given target names."""
+    names = "|".join(re.escape(target) for target in targets)
+    return f"(?:{names})" if len(targets) > 1 else names
+
+
+def filter_expression(targets: tuple[str, ...], pattern: str | None = None) -> str:
+    """Return the SwiftPM filter that selects the given targets' tests."""
+    alternation = target_alternation(targets)
     if pattern is None:
-        return rf"^{target}\."
-    return rf"^{target}\..*{pattern}"
+        return rf"^{alternation}\."
+    return rf"^{alternation}\..*{pattern}"
 
 
 def test_command(
@@ -96,7 +120,7 @@ def test_command(
         "--disable-sandbox",
         "--disable-automatic-resolution",
         "--filter",
-        filter_expression(level.target, pattern),
+        filter_expression(level.targets, pattern),
         *architectures,
     ]
     if level.allows_network:
@@ -121,9 +145,11 @@ def list_command(architectures: list[str]) -> list[str]:
     ]
 
 
-def test_count(output: str, target: str, pattern: str | None = None) -> int:
+def test_count(
+    output: str, targets: tuple[str, ...], pattern: str | None = None
+) -> int:
     """Count listed tests that the same filter would select when run."""
-    expression = re.compile(filter_expression(target, pattern))
+    expression = re.compile(filter_expression(targets, pattern))
     return sum(bool(expression.search(line)) for line in output.splitlines())
 
 
@@ -175,12 +201,13 @@ def run_level(name: str, pattern: str | None = None) -> None:
     listed_tests = run(
         list_command(architectures), cwd=PROJECT_DIR, capture=True
     ).stdout
-    test_total = test_count(listed_tests, level.target, pattern)
+    test_total = test_count(listed_tests, level.targets, pattern)
     if test_total == 0:
+        names = ", ".join(level.targets)
         if pattern is None:
-            reason = f"target contains no discoverable tests: {level.target}"
+            reason = f"target contains no discoverable tests: {names}"
         else:
-            reason = f"target has no tests matching {pattern!r}: {level.target}"
+            reason = f"target has no tests matching {pattern!r}: {names}"
         fail(f"Swift {name} test {reason}")
 
     with tempfile.TemporaryDirectory(prefix=f"arknights-{name}-tests-") as directory:

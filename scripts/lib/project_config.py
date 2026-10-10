@@ -67,6 +67,8 @@ class PackageMetadata:
     executable_product_name: str
     executable_target_name: str
     target_path: Path
+    resource_target_name: str
+    resource_target_path: Path
     excluded_paths: tuple[Path, ...]
     copy_resource_paths: tuple[Path, ...]
     processed_resource_paths: tuple[Path, ...]
@@ -110,8 +112,13 @@ class ProjectConfiguration:
     @property
     def copied_resource_source_paths(self) -> tuple[Path, ...]:
         return tuple(
-            self.target_directory / path for path in self.package.copy_resource_paths
+            self.resource_target_directory / path
+            for path in self.package.copy_resource_paths
         )
+
+    @property
+    def resource_target_directory(self) -> Path:
+        return self.project_directory / self.package.resource_target_path
 
 
 def load_project_configuration(
@@ -210,21 +217,38 @@ def _package_metadata(dump: Mapping[str, Any]) -> PackageMetadata:
             f"package must declare exactly one executable target named {target_name!r}"
         )
     target = matching[0]
-    copy_resources, processed_resources = _resources(target)
+    resource_target = _resource_target(targets)
+    copy_resources, processed_resources = _resources(resource_target)
     return PackageMetadata(
         name=_safe_component(_string(dump, "name"), "package name"),
         macos_version=_macos_version(dump),
         executable_product_name=product_name,
         executable_target_name=target_name,
         target_path=_safe_relative_path(_string(target, "path"), "target path"),
+        resource_target_name=_safe_component(
+            _string(resource_target, "name"), "resource target name"
+        ),
+        resource_target_path=_safe_relative_path(
+            _string(resource_target, "path"), "resource target path"
+        ),
         excluded_paths=tuple(
             _safe_relative_path(value, "excluded path")
-            for value in _optional_strings(target, "exclude")
+            for value in _optional_strings(resource_target, "exclude")
         ),
         copy_resource_paths=copy_resources,
         processed_resource_paths=processed_resources,
         exact_dependency_versions=_exact_dependency_versions(dump),
     )
+
+
+def _resource_target(targets: list[Mapping[str, Any]]) -> Mapping[str, Any]:
+    """Return the single non-test target that declares resources."""
+    owners = [
+        item for item in targets if item.get("type") != "test" and item.get("resources")
+    ]
+    if len(owners) != 1:
+        fail("package must declare resources on exactly one non-test target")
+    return owners[0]
 
 
 def _exact_dependency_versions(
