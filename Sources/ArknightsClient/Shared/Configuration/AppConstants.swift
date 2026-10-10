@@ -84,6 +84,14 @@ enum AppConstants {
 		static let overviewCacheLifetime: TimeInterval = 30
 	}
 
+	enum Settings {
+		static let minWidth: Double = 760
+		static let minHeight: Double = 520
+		static let maxWidth: Double = 820
+		static let maxHeight: Double = 570
+		static let windowMargin: Double = 24
+	}
+
 	enum HUD {
 		static let collapsedVersionMaxWidth: Double = 150
 		static let collapsedVersionTitleMaxWidth: Double = 100

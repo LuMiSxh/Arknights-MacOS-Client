@@ -397,6 +397,14 @@ enum SettingsStrings {
 		"\(percentage)%"
 	}
 
+	static func operationStrip(label: String, percentage: Int) -> String {
+		"\(label) · \(percentage)%"
+	}
+
+	static func operationPercentValue(_ percentage: Int) -> String {
+		"\(percentage) percent"
+	}
+
 	/// Tells players which in-game resolution produces the launcher's window size.
 	static func inGameResolutionNote(window: GameDisplaySize, pixelsPerPoint: Int) -> String {
 		"Resolutions inside Arknights count the pixels the game draws. With the sharpest picture, "

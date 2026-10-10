@@ -116,6 +116,8 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 
 - Use a compact list navigation rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, and About. Game opens first.
 - Keep the rail quiet: the selected section uses a graphite fill with a dynamic accent marker and selected label and icon. Hover stays neutral.
+- The Settings sheet adapts to the window size. Its minimum size is 760 by 520 points. Its ideal and maximum size is 820 by 570 points. The sheet fits within the window.
+- The navigation rail has an operation strip at its foot. The strip shows the current operation and its percentage, for example a download. The strip is hidden when no operation runs.
 - Group related controls in quiet Liquid Glass panels, not form-style gray boxes. Use native capsules for settings controls and shared neutral capsules for secondary actions.
 - Switch Settings pages immediately, without scale, card, or other page transitions.
 - Warning and danger panels keep neutral backgrounds. Semantic color is limited to the header, icon, edge, and relevant actions: danger for destructive settings and failure codes, warning for cautionary state, success for completed state, and the dynamic accent for the primary operation and intentional selection or highlight.

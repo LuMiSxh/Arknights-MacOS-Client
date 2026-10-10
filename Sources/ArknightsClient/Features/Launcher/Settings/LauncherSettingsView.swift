@@ -33,17 +33,31 @@ struct LauncherSettingsView: View {
 	let requestLauncherUpdateCheck: () -> Void
 	let developerSimulation: DeveloperSimulationBinding?
 	let applyCustomPopup: ((String, String) -> Void)?
+	let windowSize: CGSize
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var selectedSection = SettingsSection.initial
 	@State private var presentedDocument: BundledDocument?
+
+	private var sheetSize: CGSize {
+		let margin = AppConstants.Settings.windowMargin * 2
+		return CGSize(
+			width: min(
+				max(windowSize.width - margin, AppConstants.Settings.minWidth),
+				AppConstants.Settings.maxWidth),
+			height: min(
+				max(windowSize.height - margin, AppConstants.Settings.minHeight),
+				AppConstants.Settings.maxHeight))
+	}
 
 	var body: some View {
 		HStack(spacing: 0) {
 			SettingsNavigationRail(
 				selection: $selectedSection,
 				isDeveloperMode: isDeveloperMode,
-				accentColor: customization.accentColor
+				accentColor: customization.accentColor,
+				lifecycle: lifecycle,
+				installation: installation
 			)
 			Divider()
 				.overlay(LauncherVisuals.hairline)
@@ -183,7 +197,8 @@ struct LauncherSettingsView: View {
 			value: customization.dynamicThemeHue
 		)
 		.onExitCommand(perform: dismiss.callAsFunction)
-		.frame(width: 820, height: 570)
+		.frame(width: sheetSize.width, height: sheetSize.height)
+		.presentationSizing(.fitted)
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
 				document: document,
@@ -214,6 +229,8 @@ private struct SettingsNavigationRail: View {
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
 	let accentColor: Color
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
@@ -239,6 +256,9 @@ private struct SettingsNavigationRail: View {
 			.padding(.horizontal, 10)
 
 			Spacer()
+
+			SettingsOperationStrip(lifecycle: lifecycle, installation: installation)
+				.padding(.horizontal, 18)
 
 			HStack(spacing: LauncherVisuals.Spacing.control) {
 				Rectangle()

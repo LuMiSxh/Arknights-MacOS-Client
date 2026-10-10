@@ -16,6 +16,7 @@ struct ContentView: View {
 	@State var repairFailureID: UUID?
 	@State var decorativeMotionVisibility = DecorativeMotionVisibility()
 	@State private var isTerminating = false
+	@State private var windowSize = CGSize.zero
 
 	init(
 		model: LauncherViewModel,
@@ -111,6 +112,7 @@ struct ContentView: View {
 					retryUpdateCheck: retryOnboardingUpdateCheck)
 			}
 		}
+		.onGeometryChange(for: CGSize.self, of: \.size) { windowSize = $0 }
 		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) { sheetContent(for: $0) }
 		.overlay {
 			if updateOverlayIsPresented {
@@ -244,7 +246,7 @@ struct ContentView: View {
 				restartOnboarding: restartOnboarding,
 				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
 				developerSimulation: developerSimulationBinding,
-				applyCustomPopup: developerPopup)
+				applyCustomPopup: developerPopup, windowSize: windowSize)
 		case .failure(let failure):
 			LauncherFailureDetailView(
 				failure: failure, accentColor: model.customization.accentColor,
