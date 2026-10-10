@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 /// Morphs the now-playing HUD into an in-place controller without covering the launcher.

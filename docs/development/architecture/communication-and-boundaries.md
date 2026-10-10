@@ -42,7 +42,7 @@ status state and the themed Sparkle UI.
   - The wallpaper tags file below is app-owned and follows `main` on purpose. It is not pinned.
   - The China and Taiwan launcher logos have no remote source. The launcher shows its text logo.
 - **Wallpaper tags** (`AppConstants.Presets.wallpaperTagsURL`, the raw
-  `Sources/ArknightsClient/Resources/WallpaperTags.json` on `main`): Fetched once per launch, when the
+  `Sources/ArknightsCore/Resources/WallpaperTags.json` on `main`): Fetched once per launch, when the
   Artwork gallery first loads.
   - The manifest has at most 1 MB and must declare schema version 1. Its entries replace bundled
     entries with the same ID.

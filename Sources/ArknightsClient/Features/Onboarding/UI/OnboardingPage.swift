@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 /// Gives every setup step the same title rule and content rhythm as a launcher Settings page.

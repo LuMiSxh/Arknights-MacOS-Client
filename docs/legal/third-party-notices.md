@@ -60,10 +60,10 @@ These components ship inside the app. `Not yet verified` means that the project 
 | [Sparkle](https://github.com/sparkle-project/Sparkle/tree/2.9.6) (with bundled bsdiff, sais-lite, ed25519, and signature-verifier notices) | 2.9.6 | `MIT` | Verified | [`sparkle.txt`](licenses/sparkle.txt) |
 | [YouTubePlayerKit](https://github.com/SvenTiigi/YouTubePlayerKit/tree/2.0.5) | 2.0.5 | `MIT` | Verified | [`youtubeplayerkit.txt`](licenses/youtubeplayerkit.txt) |
 | [Application icon](https://github.com/LuMiSxh/Arknights-MacOS-Client/tree/main/Resources) (`just icon` generates it from `Resources/AppIcon.icon`) | project | `MPL-2.0` | Verified | None |
-| [Wallpaper tag data](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/WallpaperTags.json) | project | `MPL-2.0` | Verified | None |
-| [App icon tint source image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/AppIconTintSource.png) | project | `MPL-2.0` | Verified | None |
-| [Game icon background image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/GameIconBackground.png) | project | `MPL-2.0` | Verified | None |
-| [Operator icon frame graphic](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/OperatorIconFrame.svg) | project | `MPL-2.0` | Verified | None |
+| [Wallpaper tag data](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsCore/Resources/WallpaperTags.json) | project | `MPL-2.0` | Verified | None |
+| [App icon tint source image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsCore/Resources/AppIconTintSource.png) | project | `MPL-2.0` | Verified | None |
+| [Game icon background image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsCore/Resources/GameIconBackground.png) | project | `MPL-2.0` | Verified | None |
+| [Operator icon frame graphic](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsCore/Resources/OperatorIconFrame.svg) | project | `MPL-2.0` | Verified | None |
 <!-- licenses:end launcher -->
 
 <!-- licenses:begin website -->

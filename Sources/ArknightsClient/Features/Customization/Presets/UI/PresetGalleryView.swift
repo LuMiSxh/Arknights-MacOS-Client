@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+import ArknightsCore
 import SwiftUI
 
 struct PresetGalleryView: View {

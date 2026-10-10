@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// Drives macOS Game Mode around a Wine-run session. Game Mode can't see the actual

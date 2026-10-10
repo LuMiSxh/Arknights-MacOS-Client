@@ -5,6 +5,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsCore
 
 private let laptop = GameScreenMetrics(
 	visibleSize: CGSize(width: 1470, height: 919), pixelSize: CGSize(width: 2940, height: 1912))

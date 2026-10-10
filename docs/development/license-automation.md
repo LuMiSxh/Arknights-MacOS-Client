@@ -17,7 +17,7 @@ audience: developers
 | `docs/legal/licenses/*.txt`          | The license texts that the client index names.                               |
 | `Package.resolved`                   | The exact SwiftPM versions.                                                  |
 | `web/package.json`                   | The packages that the website embeds.                                        |
-| `Sources/ArknightsClient/Resources/` | The resource files that the app bundles.                                     |
+| `Sources/ArknightsCore/Resources/`   | The resource files that the app bundles.                                     |
 | `runtime.json`                       | The runtime pins and the source URLs.                                        |
 | `Licenses/index.json` in the runtime | The runtime components. Runtime 0.7.0 and newer ship it.                     |
 
@@ -33,7 +33,7 @@ Each entry in the client index has these fields.
 | `status`                    | `verified` or `unverified`. A `verified` entry needs `basis`. An `unverified` entry can list `candidates`.                                               |
 | `scope`                     | `app` (default), `website`, or `runtime-fallback`.                                                                                                       |
 | `ecosystem`, `package`      | `swiftpm` or `npm`, and the package identity. The check compares the version with the lock data.                                                         |
-| `paths`                     | Resource file names in `Sources/ArknightsClient/Resources/`.                                                                                             |
+| `paths`                     | Resource file names in `Sources/ArknightsCore/Resources/`.                                                                                               |
 | `runtimeComponent`          | A key of `components` in `runtime.json`. The script derives `version` and `source` from it.                                                              |
 | `runtimeRelease`            | `true` for the entry of the runtime release. The script derives `version` and `source` from the pinned tag. A `{version}` in `name` becomes the version. |
 | `libraries`                 | The Nixpkgs libraries of the runtime release, as `name version` strings. The runtime table of the notices shows them.                                    |

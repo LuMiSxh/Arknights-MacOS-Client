@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// Failures raised while applying or restoring game-file compatibility components.

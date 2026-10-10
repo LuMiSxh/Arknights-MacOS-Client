@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import ArknightsCore
 import SwiftUI
 
 /// The dominant hue extracted from hero artwork, rendered two ways: a legible signal color

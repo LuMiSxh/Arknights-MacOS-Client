@@ -2,7 +2,7 @@
 
 """The table of resources that the app bundle holds.
 
-`Sources/ArknightsClient/Shared/Resources/BundledResource.swift` names the resources
+`Sources/ArknightsCore/Shared/Resources/BundledResource.swift` names the resources
 that the app reads. This table names the same resources with their sources and
 formats. `registry_drift` reports every difference between the two.
 

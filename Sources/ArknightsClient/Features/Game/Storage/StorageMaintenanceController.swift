@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import ArknightsCore
 import Foundation
 
 /// Owns existing cache measurement and targeted cleanup operations.

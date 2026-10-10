@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// Everything the controller owns for one game session. Finishing a session cancels its tasks

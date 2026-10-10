@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 extension GameSessionController {
@@ -9,17 +10,22 @@ extension GameSessionController {
 		options: GameLaunchOptions,
 		graphicsDiagnosticsEnabled: Bool
 	) -> String {
-		"Game launch requested; session=\(sessionID.uuidString); region=\(region.displayName); "
-			+ "usesGameSettings=\(options.usesGameSettings); "
-			+ "displayMode=\(options.displayMode.displayName); "
-			+ "resolution=\(options.resolution.rawValue); "
-			+ "fullscreenResolution=\(options.fullscreenResolution.storageValue); "
-			+ "windowSize=\(options.windowSize.width)x\(options.windowSize.height); "
-			+ "rendering=\(options.renderingMode.rawValue); "
-			+ "metalHUD=\(options.usesMetalPerformanceHUD); "
-			+ "gameMode=\(options.usesGameMode); "
-			+ "synchronization=\(options.synchronizationMode.displayName); "
-			+ "graphicsDiagnostics=\(graphicsDiagnosticsEnabled)"
+		// One long `+` chain exceeds the type checker's budget once the option types are imported.
+		let fields = [
+			"session=\(sessionID.uuidString)",
+			"region=\(region.displayName)",
+			"usesGameSettings=\(options.usesGameSettings)",
+			"displayMode=\(options.displayMode.displayName)",
+			"resolution=\(options.resolution.rawValue)",
+			"fullscreenResolution=\(options.fullscreenResolution.storageValue)",
+			"windowSize=\(options.windowSize.width)x\(options.windowSize.height)",
+			"rendering=\(options.renderingMode.rawValue)",
+			"metalHUD=\(options.usesMetalPerformanceHUD)",
+			"gameMode=\(options.usesGameMode)",
+			"synchronization=\(options.synchronizationMode.displayName)",
+			"graphicsDiagnostics=\(graphicsDiagnosticsEnabled)",
+		]
+		return "Game launch requested; " + fields.joined(separator: "; ")
 	}
 
 	nonisolated static func launchDuration(since start: Date, now: Date = .now) -> String {

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// DXMT's shader cache and the embedded browser's cache both rebuild automatically, so

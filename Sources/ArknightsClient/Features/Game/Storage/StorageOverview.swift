@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// A user-visible storage bucket. The runtime is global; prefix storage is shared by publisher family.

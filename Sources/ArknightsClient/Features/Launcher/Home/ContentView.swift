@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 struct ContentView: View {
@@ -35,7 +36,8 @@ struct ContentView: View {
 		self.registerQuitDismissal = registerQuitDismissal
 	}
 
-	var body: some View {
+	// The chain is split in two: as one expression it exceeds the type checker's budget.
+	private var presentedContent: some View {
 		ZStack {
 			BackgroundMusicView(
 				lifecycle: model.lifecycle, settings: model.settings, controller: musicController)
@@ -114,76 +116,89 @@ struct ContentView: View {
 		}
 		.onGeometryChange(for: CGSize.self, of: \.size) { windowSize = $0 }
 		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) { sheetContent(for: $0) }
-		.overlay {
-			if updateOverlayIsPresented {
-				LauncherUpdateOverlay(
-					driver: model.communication.launcherUpdateUserDriver,
-					accentColor: model.customization.accentColor,
-					hudTintColor: model.customization.hudTintColor,
-					reduceTransparency: reduceTransparency,
-					checkForUpdates: { model.actions.openLauncherUpdate() })
+		.overlay { updateOverlay }
+	}
+
+	var body: some View {
+		presentedContent
+			.confirmsRosettaInstallation(
+				isPresented: rosettaConfirmationBinding, install: installRosetta
+			)
+			.confirmationDialog(
+				HomeStrings.repairConfirmationTitle,
+				isPresented: repairConfirmationBinding,
+				titleVisibility: .visible
+			) {
+				Button(HomeStrings.repairConfirmationAction, action: confirmRepair)
+				Button(LauncherStrings.cancel, role: .cancel, action: cancelRepair)
+			} message: {
+				Text(HomeStrings.repairConfirmationDetail)
 			}
-		}
-		.confirmsRosettaInstallation(
-			isPresented: rosettaConfirmationBinding, install: installRosetta
-		)
-		.confirmationDialog(
-			HomeStrings.repairConfirmationTitle,
-			isPresented: repairConfirmationBinding,
-			titleVisibility: .visible
-		) {
-			Button(HomeStrings.repairConfirmationAction, action: confirmRepair)
-			Button(LauncherStrings.cancel, role: .cancel, action: cancelRepair)
-		} message: {
-			Text(HomeStrings.repairConfirmationDetail)
-		}
-		.aceWarningConfirmation(model: model)
-		.onAppear {
-			registerOpenSettings(requestSettings)
-			registerQuitPresentationQuery {
-				presentation.blockingDestination(
-					hasPendingPopup: model.communication.popup != nil)
+			.aceWarningConfirmation(model: model)
+			.onAppear {
+				registerOpenSettings(requestSettings)
+				registerQuitPresentationQuery {
+					presentation.blockingDestination(
+						hasPendingPopup: model.communication.popup != nil)
+				}
+				registerQuitDismissal(dismissPresentationForQuit)
 			}
-			registerQuitDismissal(dismissPresentationForQuit)
-		}
-		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
-		.onChange(of: model.lifecycle.activity.isGameProcessRunning, initial: true) { _, isActive in
-			gameActivityDidChange(isActive)
-		}
-		.onChange(of: onboarding.isPresented) { _, isPresented in
-			onboardingPresentationDidChange(isPresented)
-		}
-		.onChange(of: model.isOnboardingPreview) { _, isEnabled in
-			Task {
-				if isEnabled {
-					await startOnboardingIfNeeded()
-				} else {
-					#if DEBUG
-						onboarding.dismissDeveloperPreview()
-					#endif
+			.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
+			.onChange(of: model.lifecycle.activity.isGameProcessRunning, initial: true) {
+				_, isActive in
+				gameActivityDidChange(isActive)
+			}
+			.onChange(of: onboarding.isPresented) { _, isPresented in
+				onboardingPresentationDidChange(isPresented)
+			}
+			.onChange(of: model.isOnboardingPreview) { _, isEnabled in
+				Task {
+					if isEnabled {
+						await startOnboardingIfNeeded()
+					} else {
+						#if DEBUG
+							onboarding.dismissDeveloperPreview()
+						#endif
+					}
 				}
 			}
-		}
-		#if DEBUG
-			.onChange(of: model.isRequiredOnboardingPreview) { _, isRequired in
-				if model.isOnboardingPreview { onboarding.simulateRequiredSetup(isRequired) }
+			#if DEBUG
+				.onChange(of: model.isRequiredOnboardingPreview) { _, isRequired in
+					if model.isOnboardingPreview { onboarding.simulateRequiredSetup(isRequired) }
+				}
+			#endif
+			.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) {
+				_, isPresented in
+				if isPresented {
+					presentation.request(.update)
+				} else {
+					launcherUpdateDidDismiss()
+				}
 			}
-		#endif
-		.onChange(of: model.communication.launcherUpdateUserDriver.isPresented) { _, isPresented in
-			if isPresented {
-				presentation.request(.update)
-			} else {
-				launcherUpdateDidDismiss()
-			}
+			.task { await startOnboardingIfNeeded() }
+			.overlay { initialArtworkCover }
+			// Keep this last so every sheet and overlay inherits the visibility gate.
+			.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
+	}
+
+	// Split out of `body`: the full modifier chain exceeds the type checker's budget.
+	@ViewBuilder
+	private var updateOverlay: some View {
+		if updateOverlayIsPresented {
+			LauncherUpdateOverlay(
+				driver: model.communication.launcherUpdateUserDriver,
+				accentColor: model.customization.accentColor,
+				hudTintColor: model.customization.hudTintColor,
+				reduceTransparency: reduceTransparency,
+				checkForUpdates: { model.actions.openLauncherUpdate() })
 		}
-		.task { await startOnboardingIfNeeded() }
-		.overlay {
-			if !model.customization.hasCompletedInitialArtworkLoad {
-				Color.black.ignoresSafeArea()
-			}
+	}
+
+	@ViewBuilder
+	private var initialArtworkCover: some View {
+		if !model.customization.hasCompletedInitialArtworkLoad {
+			Color.black.ignoresSafeArea()
 		}
-		// Keep this last so every sheet and overlay inherits the visibility gate.
-		.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
 	}
 
 	var sheetPresentation: Binding<LauncherPresentationDestination?> {

@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import Foundation
+
+package enum RecoveryActionDisposition: Sendable {
+	case completed
+	case repairConfirmationRequired
+	case rosettaConfirmationRequired
+	case ignored
+}

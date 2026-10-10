@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// Swaps the embedded browser's helper with one that disables accelerated paint and stubs

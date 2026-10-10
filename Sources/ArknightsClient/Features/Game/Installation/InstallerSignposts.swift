@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import OSLog
 
 /// Signposts for installer phases. Intervals appear in Instruments' Points of Interest lane.

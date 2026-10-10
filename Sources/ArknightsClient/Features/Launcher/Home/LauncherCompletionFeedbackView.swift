@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 /// Briefly draws the verified-installation checkmark without delaying the next action.

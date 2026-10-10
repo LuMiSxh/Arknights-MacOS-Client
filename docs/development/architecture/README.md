@@ -21,8 +21,8 @@ flow that matches your change:
   files.
 
 The primary composition and ownership sources are [`LauncherViewModel`](../../../Sources/ArknightsClient/Features/Launcher/State/LauncherViewModel.swift),
-[`LauncherState`](../../../Sources/ArknightsClient/Core/Lifecycle/LauncherState.swift),
-and [`AppPaths`](../../../Sources/ArknightsClient/Shared/Persistence/AppPaths.swift).
+[`LauncherState`](../../../Sources/ArknightsCore/Core/Lifecycle/LauncherState.swift),
+and [`AppPaths`](../../../Sources/ArknightsCore/Shared/Persistence/AppPaths.swift).
 
 ## System map
 
@@ -203,7 +203,7 @@ compiler rejects a cycle.
 | No. | Target                    | Source folders                                                                                  | Depends on                                           | Linked products       | Status  |
 | --- | ------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------- | ------- |
 | 1   | `ArknightsInfrastructure` | `Infrastructure`                                                                                | none                                                 | none                  | done    |
-| 2   | `ArknightsCore`           | `Shared`, `Core`, `Resources`                                                                   | 1                                                    | none                  | planned |
+| 2   | `ArknightsCore`           | `Shared`, `Core`, `Resources`                                                                   | 1                                                    | none                  | done    |
 | 3   | `ArknightsCustomization`  | `Features/Customization`                                                                        | 1, 2                                                 | none                  | planned |
 | 4   | `ArknightsGameInstallation` | `Features/Game/Installation`, `Features/Game/Compatibility`                                   | 1, 2, 3                                              | `CCommonCrypto`       | planned |
 | 5   | `ArknightsGameRuntime`    | `Features/Game/Runtime`, `Features/Game/Playtime`, `Features/Game/Storage`                      | 1, 2, 3, 4                                           | none                  | planned |

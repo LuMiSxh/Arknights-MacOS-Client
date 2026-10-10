@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// CRC-64/XZ, the checksum Yostar's manifest uses to verify each downloaded file.

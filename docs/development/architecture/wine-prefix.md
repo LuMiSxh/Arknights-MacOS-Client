@@ -17,7 +17,7 @@ updates.
   owns preparation and process lifetime.
 - [`WineRuntime`](../../../Sources/ArknightsClient/Features/Game/Runtime/WineRuntime.swift) implements
   setup and process operations.
-- [`AppPaths`](../../../Sources/ArknightsClient/Shared/Persistence/AppPaths.swift) is the only source
+- [`AppPaths`](../../../Sources/ArknightsCore/Shared/Persistence/AppPaths.swift) is the only source
   of prefix locations.
 
 ## Prefix topology

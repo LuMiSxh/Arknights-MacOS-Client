@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// One binary-swap fix applied to the game install (see `VuplexCompatibility`,

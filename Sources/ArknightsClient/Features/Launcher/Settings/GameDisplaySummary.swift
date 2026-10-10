@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
+
 /// Says in plain words what the saved display choices will show, without any numbers.
 enum GameDisplaySummary {
 	static func text(

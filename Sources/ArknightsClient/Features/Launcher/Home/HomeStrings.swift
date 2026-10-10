@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
+
 enum HomeStrings {
 	static let settings = "Settings"
 	static let settingsHelp = "Open launcher settings"

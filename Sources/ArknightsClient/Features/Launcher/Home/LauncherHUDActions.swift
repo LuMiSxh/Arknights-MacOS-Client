@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 /// The actions the launcher HUD can trigger, grouped so adding one does not widen every

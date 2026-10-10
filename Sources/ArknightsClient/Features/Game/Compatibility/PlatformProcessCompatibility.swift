@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// Swaps the Notices helper (`PlatformProcess.exe`) for a shim that loads

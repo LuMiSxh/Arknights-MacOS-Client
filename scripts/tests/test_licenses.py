@@ -50,8 +50,8 @@ def project(tmp_path: Path) -> Path:
     root = tmp_path
     (root / "docs/legal/licenses").mkdir(parents=True)
     (root / "docs/legal/licenses/example.txt").write_text("MIT text", encoding="utf-8")
-    (root / "Sources/ArknightsClient/Resources").mkdir(parents=True)
-    (root / "Sources/ArknightsClient/Resources/Art.png").touch()
+    (root / "Sources/ArknightsCore/Resources").mkdir(parents=True)
+    (root / "Sources/ArknightsCore/Resources/Art.png").touch()
     (root / "web").mkdir()
     (root / "web/package.json").write_text(
         json.dumps({"dependencies": {"lib": "1.2.3"}, "devDependencies": {}}),
@@ -170,7 +170,7 @@ def test_new_website_dependency_and_resource_fail(project: Path) -> None:
         json.dumps({"dependencies": {"lib": "1.2.3", "other": "1.0.0"}}),
         encoding="utf-8",
     )
-    (project / "Sources/ArknightsClient/Resources/New.svg").touch()
+    (project / "Sources/ArknightsCore/Resources/New.svg").touch()
     with pytest.raises(ScriptError) as error:
         licenses.check_all(project)
     assert "other has no index entry" in str(error.value)
@@ -310,7 +310,7 @@ def test_strict_fails_on_unverified_runtime_component(
     project: Path, tmp_path: Path
 ) -> None:
     rewrite(project, lambda document: document["components"].pop())
-    (project / "Sources/ArknightsClient/Resources/Art.png").unlink()
+    (project / "Sources/ArknightsCore/Resources/Art.png").unlink()
     runtime = make_runtime(tmp_path, status="unverified")
     regenerate(project, runtime)
 

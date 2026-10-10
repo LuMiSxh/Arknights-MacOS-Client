@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import ArknightsCore
 import Foundation
 
 /// Whether to run the game and its login browser at full backing-store resolution, derived

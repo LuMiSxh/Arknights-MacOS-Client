@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
+
 /// English text owned by the launcher settings experience. Titles and details speak to players;
 /// technical background lives in `*Help` tooltips and the Advanced game panel.
 enum SettingsStrings {

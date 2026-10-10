@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 /// Where the game appears, how big it is, and how its picture and pointer behave, in plain terms.

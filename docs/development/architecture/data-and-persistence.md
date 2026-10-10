@@ -30,7 +30,7 @@ selected region's game directory. All other locations stay app-owned.
 | Launcher and runtime logs   | `~/Library/Logs/com.lumisxh.arknights-client`                                                                                                 | `LauncherLog` and runtime process output   | `launcher.log`, publisher logs including `arknights-gryphline.log`, `unity.log`, `chromium.log`; **Show Logs** prepares them |
 | Preferences                 | `UserDefaults`                                                                                                                                | `LauncherPreferencesStore`                 | Small settings and selected paths only                                                                                       |
 
-The table mirrors [`AppPaths.swift`](../../../Sources/ArknightsClient/Shared/Persistence/AppPaths.swift)
+The table mirrors [`AppPaths.swift`](../../../Sources/ArknightsCore/Shared/Persistence/AppPaths.swift)
 and [`StorageOverviewResolver`](../../../Sources/ArknightsClient/Features/Game/Storage/StorageOverview.swift).
 When the implementation changes, update the [Storage](../../help/storage.md) guide in the same change.
 

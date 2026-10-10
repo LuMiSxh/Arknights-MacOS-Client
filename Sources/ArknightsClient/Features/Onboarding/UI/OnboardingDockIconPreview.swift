@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import ArknightsCore
 import SwiftUI
 
 /// Shows the launcher and game Dock icons as they are right now, so choosing an operator has a

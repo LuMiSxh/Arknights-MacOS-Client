@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
+
 /// Setup copy for players who are not technical: say what they will notice, keep numbers and
 /// rendering terms out of titles, answers, and summaries, and put exact values in Settings.
 enum OnboardingStrings {

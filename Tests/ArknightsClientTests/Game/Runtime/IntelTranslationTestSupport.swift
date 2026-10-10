@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
+
 @testable import ArknightsClient
 
 actor TranslationCheckSequence {

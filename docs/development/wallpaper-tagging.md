@@ -7,7 +7,7 @@ audience: developers
 
 # Wallpaper tagging and search
 
-The Artwork gallery searches Yostar's official wallpaper titles and the curated operator, faction, event, and collaboration tags in [`WallpaperTags.json`](../../Sources/ArknightsClient/Resources/WallpaperTags.json). Search is case- and diacritic-insensitive. Every term must match the title or a tag. A query that exactly names a tag matches that tag, not longer tags with the same prefix.
+The Artwork gallery searches Yostar's official wallpaper titles and the curated operator, faction, event, and collaboration tags in [`WallpaperTags.json`](../../Sources/ArknightsCore/Resources/WallpaperTags.json). Search is case- and diacritic-insensitive. Every term must match the title or a tag. A query that exactly names a tag matches that tag, not longer tags with the same prefix.
 
 The gallery also groups wallpapers as Story, Commemorative, Celebration, or Holiday from their official titles. This needs no manifest entry.
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// Arknights servers reset daily at 04:00 server time. Server time is a fixed UTC offset,
