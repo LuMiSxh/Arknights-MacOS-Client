@@ -4,14 +4,14 @@ import ArknightsCore
 import Foundation
 
 /// Failures raised while loading remote artwork and applying custom images or app icons.
-enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
+package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case invalidRemoteAsset(URL)
 	case invalidPresetImage(URL)
 	case invalidCustomImage(URL)
 	case cannotEncodeAppIcon
 	case cannotSetAppIcon
 
-	var errorDescription: String? {
+	package var errorDescription: String? {
 		switch self {
 		case .invalidRemoteAsset:
 			"The requested content uses an unsupported download address. Check for a launcher update and try again."
@@ -26,7 +26,7 @@ enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 		}
 	}
 
-	var diagnosticDescription: String {
+	package var diagnosticDescription: String {
 		switch self {
 		case .invalidRemoteAsset(let url):
 			"Refused an unsupported remote asset URL: \(url.absoluteString)"

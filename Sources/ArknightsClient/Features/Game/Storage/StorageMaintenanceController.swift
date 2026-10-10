@@ -2,6 +2,7 @@
 
 import AppKit
 import ArknightsCore
+import ArknightsCustomization
 import Foundation
 
 /// Owns existing cache measurement and targeted cleanup operations.

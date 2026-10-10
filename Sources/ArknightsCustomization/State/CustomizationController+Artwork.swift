@@ -7,7 +7,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 extension CustomizationController {
-	func chooseCustomArtwork() {
+	package func chooseCustomArtwork() {
 		let panel = NSOpenPanel()
 		panel.title = CustomizationStrings.pickerLauncherArtwork
 		panel.prompt = CustomizationStrings.pickerChoose
@@ -19,7 +19,7 @@ extension CustomizationController {
 		applyCustomArtwork(from: selected)
 	}
 
-	func applyCustomArtwork(from url: URL) {
+	package func applyCustomArtwork(from url: URL) {
 		let operationID = beginArtworkMutation()
 		let dataLoader = self.dataLoader
 		Task { [weak self] in
@@ -42,7 +42,7 @@ extension CustomizationController {
 
 	/// Removes the saved artwork and delegates the replacement refresh to the caller that owns
 	/// the active region's metadata request.
-	func resetArtwork(
+	package func resetArtwork(
 		isDeveloperMode: Bool = false,
 		isDownloading: Bool,
 		restartRefresh: @escaping @MainActor () -> Void
@@ -67,7 +67,7 @@ extension CustomizationController {
 		restartRefresh()
 	}
 
-	func applyDirectCustomArtwork(data: Data) async {
+	package func applyDirectCustomArtwork(data: Data) async {
 		let operationID = beginArtworkMutation()
 		await applyDirectCustomArtwork(data: data, operationID: operationID)
 	}
@@ -100,7 +100,7 @@ extension CustomizationController {
 		finishArtworkMutation(operationID)
 	}
 
-	func loadCustomArtwork() async -> Bool {
+	package func loadCustomArtwork() async -> Bool {
 		guard let (operationID, generation) = beginPassiveArtworkLoad() else { return false }
 		let artworkURL = paths.customArtwork
 		do {
@@ -134,7 +134,7 @@ extension CustomizationController {
 
 	/// Restores local artwork before the first SwiftUI frame, keeping cached Dynamic Theme colors
 	/// available while the active region refreshes in the background.
-	func restoreInitialArtwork(for region: GameRegion) async {
+	package func restoreInitialArtwork(for region: GameRegion) async {
 		let hasCustomArtwork = await loadCustomArtwork()
 		if !hasCustomArtwork, !hasPersistedCustomArtwork, !artworkMutationInFlight,
 			let (operationID, generation) = beginPassiveArtworkLoad()
@@ -150,7 +150,7 @@ extension CustomizationController {
 
 	/// Clears any previous region's wordmark before a refresh can load the selected region's asset.
 	@discardableResult
-	func restoreOfficialLogo(for region: GameRegion) -> Task<Void, Never> {
+	package func restoreOfficialLogo(for region: GameRegion) -> Task<Void, Never> {
 		let operationID = UUID()
 		officialLogoOperationID = operationID
 		officialLogo = nil

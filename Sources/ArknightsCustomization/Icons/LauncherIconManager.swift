@@ -10,19 +10,19 @@ import Observation
 /// here prevents icon sources from drifting as themes and persisted choices are reapplied.
 @MainActor
 @Observable
-final class LauncherIconManager {
-	typealias BundleIconSetter = (NSImage?) -> Bool
-	typealias RunningIconSetter = (NSImage?) -> Void
-	typealias DefaultIconProvider = () -> NSImage
+package final class LauncherIconManager {
+	package typealias BundleIconSetter = (NSImage?) -> Bool
+	package typealias RunningIconSetter = (NSImage?) -> Void
+	package typealias DefaultIconProvider = () -> NSImage
 
 	private let setBundleIcon: BundleIconSetter
 	private let setRunningIcon: RunningIconSetter
 	private let defaultIcon: DefaultIconProvider
 
-	private(set) var currentIcon: NSImage
-	@ObservationIgnored var iconDidChange: ((NSImage) -> Void)?
+	package private(set) var currentIcon: NSImage
+	@ObservationIgnored package var iconDidChange: ((NSImage) -> Void)?
 
-	convenience init(bundle: Bundle = .main, workspace: NSWorkspace = .shared) {
+	package convenience init(bundle: Bundle = .main, workspace: NSWorkspace = .shared) {
 		let bundlePath = bundle.bundlePath
 		let hasApplicationBundle = bundle.bundleURL.pathExtension == "app"
 		self.init(
@@ -35,7 +35,7 @@ final class LauncherIconManager {
 		)
 	}
 
-	init(
+	package init(
 		setBundleIcon: @escaping BundleIconSetter,
 		setRunningIcon: @escaping RunningIconSetter,
 		defaultIcon: @escaping DefaultIconProvider

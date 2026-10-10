@@ -4,7 +4,7 @@ import ArknightsCore
 import ArknightsInfrastructure
 import Foundation
 
-actor PresetCatalogService {
+package actor PresetCatalogService {
 	static let characterTableURL = PresetRemoteSources.characterTable
 
 	let cacheDirectory: URL
@@ -22,7 +22,7 @@ actor PresetCatalogService {
 	var hasLoadedWallpaperTagCache = false
 	var hasRequestedWallpaperTags = false
 
-	init(
+	package init(
 		cacheDirectory: URL,
 		session: URLSession = .shared,
 		wallpaperTagsURL: URL = AppConstants.Presets.wallpaperTagsURL,
@@ -105,7 +105,7 @@ actor PresetCatalogService {
 		return remote
 	}
 
-	func clearCaches() async throws {
+	package func clearCaches() async throws {
 		cacheEpoch &+= 1
 		memoryCachedAvatars = nil
 		memoryCachedWallpapers = nil

@@ -5,14 +5,14 @@ import ArknightsCore
 import ArknightsInfrastructure
 import Foundation
 
-struct LauncherBranding: Decodable, Sendable {
-	let launcherBackgroundImage: URL?
-	let launcherBackgroundImageCRC64: String?
-	let copyrightInformation: String?
-	let privacyPolicy: URL?
-	let userAgreement: URL?
-	let noticePopOpen: Bool?
-	let noticeContent: String?
+package struct LauncherBranding: Decodable, Sendable {
+	package let launcherBackgroundImage: URL?
+	package let launcherBackgroundImageCRC64: String?
+	package let copyrightInformation: String?
+	package let privacyPolicy: URL?
+	package let userAgreement: URL?
+	package let noticePopOpen: Bool?
+	package let noticeContent: String?
 
 	enum CodingKeys: String, CodingKey {
 		case launcherBackgroundImage = "launcherBackgroundImg"
@@ -24,7 +24,7 @@ struct LauncherBranding: Decodable, Sendable {
 		case noticeContent
 	}
 
-	init(
+	package init(
 		launcherBackgroundImage: URL?,
 		launcherBackgroundImageCRC64: String?,
 		copyrightInformation: String?,
@@ -42,7 +42,7 @@ struct LauncherBranding: Decodable, Sendable {
 		self.noticeContent = noticeContent
 	}
 
-	init(from decoder: any Decoder) throws {
+	package init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
 
 		launcherBackgroundImage = try container.decodeIfPresent(
@@ -68,12 +68,12 @@ struct LauncherBranding: Decodable, Sendable {
 
 /// Downloads and disk-caches launcher artwork and the active region's official wordmark, so
 /// unchanged assets across launches or branding refreshes don't refetch.
-actor ArtworkCache {
+package actor ArtworkCache {
 	private let loader: BoundedHTTPDataLoader
 	private nonisolated let directory: URL
 	private var activeImageRequestIDs: [GameRegion: UUID] = [:]
 
-	init(
+	package init(
 		session: URLSession = .shared,
 		directory: URL
 	) {
@@ -84,13 +84,14 @@ actor ArtworkCache {
 		self.directory = directory
 	}
 
-	nonisolated func cachedActiveImageData(for region: GameRegion) throws -> (String, Data)? {
+	package nonisolated func cachedActiveImageData(for region: GameRegion) throws -> (String, Data)?
+	{
 		guard let cacheKey = try cachedActiveCacheKey(for: region) else { return nil }
 		let data = try Data(contentsOf: cachedImageURL(for: cacheKey), options: .mappedIfSafe)
 		return data.isEmpty ? nil : (cacheKey, data)
 	}
 
-	nonisolated func cachedActiveCacheKey(for region: GameRegion) throws -> String? {
+	package nonisolated func cachedActiveCacheKey(for region: GameRegion) throws -> String? {
 		let pointerURL = activeCacheKeyURL(for: region)
 		guard FileManager.default.fileExists(atPath: pointerURL.path) else { return nil }
 		let cacheKey = try String(contentsOf: pointerURL, encoding: .utf8)
@@ -98,21 +99,22 @@ actor ArtworkCache {
 		return cacheKey
 	}
 
-	nonisolated func cacheKey(for branding: LauncherBranding) -> String? {
+	package nonisolated func cacheKey(for branding: LauncherBranding) -> String? {
 		guard let sourceURL = branding.launcherBackgroundImage else { return nil }
 		let rawKey = branding.launcherBackgroundImageCRC64 ?? sourceURL.lastPathComponent
 		let cacheKey = Self.safeCacheKey(rawKey)
 		return cacheKey.isEmpty ? nil : cacheKey
 	}
 
-	nonisolated func cachedOfficialLogoData(for region: GameRegion) throws -> Data? {
+	package nonisolated func cachedOfficialLogoData(for region: GameRegion) throws -> Data? {
 		let cacheURL = officialLogoCacheURL(for: region)
 		guard FileManager.default.fileExists(atPath: cacheURL.path) else { return nil }
 		let data = try Data(contentsOf: cacheURL, options: .mappedIfSafe)
 		return data.isEmpty ? nil : data
 	}
 
-	func imageData(for branding: LauncherBranding, region: GameRegion) async throws -> Data? {
+	package func imageData(for branding: LauncherBranding, region: GameRegion) async throws -> Data?
+	{
 		let requestID = UUID()
 		activeImageRequestIDs[region] = requestID
 		guard let sourceURL = branding.launcherBackgroundImage else {
@@ -152,7 +154,7 @@ actor ArtworkCache {
 		activeImageRequestIDs[region] == requestID
 	}
 
-	func officialLogoData(for region: GameRegion) async throws -> Data? {
+	package func officialLogoData(for region: GameRegion) async throws -> Data? {
 		let cachedURL = officialLogoCacheURL(for: region)
 		do {
 			let data = try Data(contentsOf: cachedURL, options: .mappedIfSafe)
@@ -240,7 +242,7 @@ actor ArtworkCache {
 		)
 	}
 
-	nonisolated static func artworkRedirectValidator(
+	package nonisolated static func artworkRedirectValidator(
 		for region: GameRegion
 	) -> @Sendable (URL) -> Bool {
 		let allowedHosts: Set<String> =
@@ -291,7 +293,7 @@ actor ArtworkCache {
 		}
 	}
 
-	nonisolated static func officialLogoURL(for region: GameRegion) -> URL? {
+	package nonisolated static func officialLogoURL(for region: GameRegion) -> URL? {
 		switch region {
 		case .global:
 			URL(

@@ -5,7 +5,7 @@ import ArknightsCore
 import Foundation
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsCustomization
 
 struct CustomizationImageIOTests {
 	@Test

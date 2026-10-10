@@ -45,11 +45,18 @@ let package = Package(
 			resources: appResources,
 			swiftSettings: swiftSettings()
 		),
+		.target(
+			name: "ArknightsCustomization",
+			dependencies: ["ArknightsInfrastructure", "ArknightsCore"],
+			path: "Sources/ArknightsCustomization",
+			swiftSettings: swiftSettings()
+		),
 		.executableTarget(
 			name: "ArknightsClient",
 			dependencies: [
 				"ArknightsInfrastructure",
 				"ArknightsCore",
+				"ArknightsCustomization",
 				"CCommonCrypto",
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
 				.product(name: "Sparkle", package: "Sparkle"),
@@ -66,6 +73,11 @@ let package = Package(
 			name: "ArknightsCoreTests",
 			dependencies: ["ArknightsCore"],
 			path: "Tests/ArknightsCoreTests"
+		),
+		.testTarget(
+			name: "ArknightsCustomizationTests",
+			dependencies: ["ArknightsCustomization", "ArknightsCore", "ArknightsInfrastructure"],
+			path: "Tests/ArknightsCustomizationTests"
 		),
 		.testTarget(
 			name: "ArknightsInfrastructureTests",

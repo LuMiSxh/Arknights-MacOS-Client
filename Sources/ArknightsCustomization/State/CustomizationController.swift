@@ -9,7 +9,7 @@ import SwiftUI
 /// Owns launcher artwork, Dynamic Theme, and launcher/game icon customizations.
 @MainActor
 @Observable
-final class CustomizationController {
+package final class CustomizationController {
 	typealias DataLoader = @Sendable (URL) async throws -> Data
 	typealias DataStager = @Sendable (Data, URL) async throws -> Void
 	typealias IconCommitter = @Sendable (URL, URL) throws -> Void
@@ -20,32 +20,32 @@ final class CustomizationController {
 	typealias DynamicIconRenderer = @MainActor (Double) -> NSImage?
 
 	let lifecycle: LauncherLifecycleStore
-	let paths: AppPaths
+	package let paths: AppPaths
 	let preferences: LauncherPreferencesStore
-	let log: LauncherLog
-	let artworkCache: ArtworkCache
-	let launcherIconManager: LauncherIconManager
+	package let log: LauncherLog
+	package let artworkCache: ArtworkCache
+	package let launcherIconManager: LauncherIconManager
 	let region: @MainActor () -> GameRegion
 	let usesDynamicTheme: @MainActor () -> Bool
 
-	var heroArtwork: NSImage? {
+	package var heroArtwork: NSImage? {
 		didSet { updateThemeColor() }
 	}
-	var officialLogo: NSImage?
-	private(set) var hasCustomAppIcon = false
-	private(set) var hasCustomGameIcon = false
+	package var officialLogo: NSImage?
+	package private(set) var hasCustomAppIcon = false
+	package private(set) var hasCustomGameIcon = false
 	/// Flips once `restoreInitialArtwork(for:)` finishes, so the launcher window can stay
 	/// hidden until it has real wallpaper/logo to show instead of a placeholder.
-	private(set) var hasCompletedInitialArtworkLoad = false
-	var dynamicThemeHue: Double?
-	var accentColor: Color = LauncherVisuals.cyan
-	var hudTintColor: Color = LauncherVisuals.hudGlassTint
-	private(set) var activeThemeCacheKey: String?
+	package private(set) var hasCompletedInitialArtworkLoad = false
+	package var dynamicThemeHue: Double?
+	package var accentColor: Color = LauncherVisuals.cyan
+	package var hudTintColor: Color = LauncherVisuals.hudGlassTint
+	package private(set) var activeThemeCacheKey: String?
 	/// Increments only when the persisted custom artwork changes. Branding refreshes use this
 	/// generation to reject an official image that was already in flight when the user chose a
 	/// custom image.
-	private(set) var customArtworkGeneration: UInt64 = 0
-	private(set) var hasPersistedCustomArtwork = false
+	package private(set) var customArtworkGeneration: UInt64 = 0
+	package private(set) var hasPersistedCustomArtwork = false
 	let dataLoader: DataLoader
 	let dataStager: DataStager
 	let iconCommitter: IconCommitter
@@ -79,10 +79,34 @@ final class CustomizationController {
 		hasCustomGameIcon = value
 	}
 
-	func markInitialArtworkLoadComplete() {
+	package func markInitialArtworkLoadComplete() {
 		hasCompletedInitialArtworkLoad = true
 	}
 
+	package convenience init(
+		lifecycle: LauncherLifecycleStore,
+		paths: AppPaths,
+		preferences: LauncherPreferencesStore,
+		log: LauncherLog? = nil,
+		artworkCache: ArtworkCache? = nil,
+		launcherIconManager: LauncherIconManager,
+		region: @escaping @MainActor () -> GameRegion,
+		usesDynamicTheme: @escaping @MainActor () -> Bool
+	) {
+		self.init(
+			lifecycle: lifecycle,
+			paths: paths,
+			preferences: preferences,
+			log: log,
+			artworkCache: artworkCache,
+			launcherIconManager: launcherIconManager,
+			region: region,
+			usesDynamicTheme: usesDynamicTheme,
+			dataLoader: nil
+		)
+	}
+
+	/// Designated initializer. Tests inject the I/O and rendering seams through it.
 	init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,
@@ -117,11 +141,13 @@ final class CustomizationController {
 		self.dynamicIconRenderer = dynamicIconRenderer ?? AppIconRenderer.tintedDefaultIcon
 	}
 
-	static func officialThemeCacheKey(for region: GameRegion, artworkCacheKey: String) -> String {
+	package static func officialThemeCacheKey(for region: GameRegion, artworkCacheKey: String)
+		-> String
+	{
 		"official.\(region.rawValue).\(artworkCacheKey)"
 	}
 
-	func setHeroArtwork(_ image: NSImage?, themeCacheKey: String?) {
+	package func setHeroArtwork(_ image: NSImage?, themeCacheKey: String?) {
 		guard heroArtwork == nil || activeThemeCacheKey != themeCacheKey else { return }
 		activeThemeCacheKey = themeCacheKey
 		heroArtwork = image

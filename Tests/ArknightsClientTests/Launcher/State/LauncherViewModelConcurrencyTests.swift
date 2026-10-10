@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import ArknightsCustomization
 import Foundation
 import Testing
 

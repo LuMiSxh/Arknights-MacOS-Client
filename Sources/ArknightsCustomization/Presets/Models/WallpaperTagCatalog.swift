@@ -12,7 +12,7 @@ struct WallpaperTagManifest: Decodable, Sendable {
 /// Holds the current wallpaper tags: the bundled manifest as the offline baseline, plus the
 /// repository's current manifest once the gallery downloads it, so tags for new wallpapers reach
 /// players without a launcher release.
-final class WallpaperTagStore: Sendable {
+package final class WallpaperTagStore: Sendable {
 	static let shared = WallpaperTagStore(bundled: WallpaperTagCatalog.loadBundled())
 
 	private let bundled: [String: [String]]

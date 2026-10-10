@@ -2,6 +2,7 @@
 
 import AppKit
 import ArknightsCore
+import ArknightsCustomization
 import Foundation
 import Testing
 

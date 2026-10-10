@@ -47,41 +47,38 @@ enum CustomizationImageIO {
 		}
 	}
 
+	@concurrent
 	static func load(_ url: URL) async throws -> Data {
-		try await Task.detached(priority: .userInitiated) {
-			let values = try url.resourceValues(forKeys: [
-				.fileSizeKey, .totalFileAllocatedSizeKey, .isRegularFileKey,
-			])
-			guard values.isRegularFile == true else {
-				throw CustomizationError.invalidCustomImage(url)
-			}
-			let allocatedSize = values.totalFileAllocatedSize ?? values.fileSize ?? 0
-			guard
-				allocatedSize > 0,
-				allocatedSize <= AppConstants.Artwork.launcherMaximumBytes
-			else { throw CustomizationError.invalidCustomImage(url) }
-			let data = try Data(contentsOf: url, options: .mappedIfSafe)
-			try validate(data, source: url)
-			return data
-		}.value
+		let values = try url.resourceValues(forKeys: [
+			.fileSizeKey, .totalFileAllocatedSizeKey, .isRegularFileKey,
+		])
+		guard values.isRegularFile == true else {
+			throw CustomizationError.invalidCustomImage(url)
+		}
+		let allocatedSize = values.totalFileAllocatedSize ?? values.fileSize ?? 0
+		guard
+			allocatedSize > 0,
+			allocatedSize <= AppConstants.Artwork.launcherMaximumBytes
+		else { throw CustomizationError.invalidCustomImage(url) }
+		let data = try Data(contentsOf: url, options: .mappedIfSafe)
+		try validate(data, source: url)
+		return data
 	}
 
+	@concurrent
 	static func prepareArtwork(_ data: Data, source: URL) async throws -> String {
-		try await Task.detached(priority: .userInitiated) {
-			try validate(data, source: source)
-			let digest = SHA256.hash(data: data)
-			return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
-		}.value
+		try validate(data, source: source)
+		let digest = SHA256.hash(data: data)
+		return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
 	}
 
+	@concurrent
 	static func stage(_ data: Data, at url: URL) async throws {
-		try await Task.detached(priority: .userInitiated) {
-			try FileManager.default.createDirectory(
-				at: url.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			try data.write(to: url, options: .atomic)
-		}.value
+		try FileManager.default.createDirectory(
+			at: url.deletingLastPathComponent(),
+			withIntermediateDirectories: true
+		)
+		try data.write(to: url, options: .atomic)
 	}
 
 	static func stagedURL(for destination: URL, operationID: UUID) -> URL {
@@ -97,40 +94,39 @@ enum CustomizationImageIO {
 		}
 	}
 
+	@concurrent
 	static func preparePublication(
 		_ destinations: [URL],
 		operationID: UUID,
 		log: LauncherLog
 	) async throws -> PreparedPublication {
-		try await Task.detached(priority: .userInitiated) {
-			let identities = try fileIdentities(for: destinations)
-			var backupURLs = [URL?](repeating: nil, count: destinations.count)
-			do {
-				for (index, destination) in destinations.enumerated()
-				where identities[index] != nil {
-					let backupURL = destination.appendingPathExtension(
-						"backup.\(operationID.uuidString).\(index)"
-					)
-					backupURLs[index] = backupURL
-					try FileManager.default.copyItem(at: destination, to: backupURL)
-				}
-				// Reject a mixed backup set if another icon publication raced these copies.
-				guard try fileIdentities(for: destinations) == identities else {
-					throw IconPublicationSnapshotError(
-						diagnosticDescription:
-							"Icon files changed while backups were being prepared."
-					)
-				}
-				return PreparedPublication(
-					destinations: destinations,
-					identities: identities,
-					backupURLs: backupURLs
+		let identities = try fileIdentities(for: destinations)
+		var backupURLs = [URL?](repeating: nil, count: destinations.count)
+		do {
+			for (index, destination) in destinations.enumerated()
+			where identities[index] != nil {
+				let backupURL = destination.appendingPathExtension(
+					"backup.\(operationID.uuidString).\(index)"
 				)
-			} catch {
-				cleanupBackups(backupURLs, preserving: [], log: log)
-				throw error
+				backupURLs[index] = backupURL
+				try FileManager.default.copyItem(at: destination, to: backupURL)
 			}
-		}.value
+			// Reject a mixed backup set if another icon publication raced these copies.
+			guard try fileIdentities(for: destinations) == identities else {
+				throw IconPublicationSnapshotError(
+					diagnosticDescription:
+						"Icon files changed while backups were being prepared."
+				)
+			}
+			return PreparedPublication(
+				destinations: destinations,
+				identities: identities,
+				backupURLs: backupURLs
+			)
+		} catch {
+			cleanupBackups(backupURLs, preserving: [], log: log)
+			throw error
+		}
 	}
 
 	static func publish(
@@ -237,27 +233,26 @@ enum CustomizationImageIO {
 		}
 	}
 
+	@concurrent
 	static func encodePNG(fromTIFF data: Data) async throws -> Data {
-		try await Task.detached(priority: .userInitiated) {
-			guard
-				let source = CGImageSourceCreateWithData(data as CFData, nil),
-				let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-			else { throw CustomizationError.cannotEncodeAppIcon }
-			let output = NSMutableData()
-			guard
-				let destination = CGImageDestinationCreateWithData(
-					output,
-					UTType.png.identifier as CFString,
-					1,
-					nil
-				)
-			else { throw CustomizationError.cannotEncodeAppIcon }
-			CGImageDestinationAddImage(destination, image, nil)
-			guard CGImageDestinationFinalize(destination) else {
-				throw CustomizationError.cannotEncodeAppIcon
-			}
-			return output as Data
-		}.value
+		guard
+			let source = CGImageSourceCreateWithData(data as CFData, nil),
+			let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+		else { throw CustomizationError.cannotEncodeAppIcon }
+		let output = NSMutableData()
+		guard
+			let destination = CGImageDestinationCreateWithData(
+				output,
+				UTType.png.identifier as CFString,
+				1,
+				nil
+			)
+		else { throw CustomizationError.cannotEncodeAppIcon }
+		CGImageDestinationAddImage(destination, image, nil)
+		guard CGImageDestinationFinalize(destination) else {
+			throw CustomizationError.cannotEncodeAppIcon
+		}
+		return output as Data
 	}
 
 	static func validate(_ data: Data, source: URL) throws {

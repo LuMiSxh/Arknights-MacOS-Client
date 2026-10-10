@@ -7,7 +7,7 @@ import SwiftUI
 extension CustomizationController {
 	/// Keeps Dynamic Theme state aligned with the current artwork and the region supplied by the
 	/// caller, while rejecting a delayed extraction for artwork that is no longer visible.
-	func updateThemeColor() {
+	package func updateThemeColor() {
 		let themeOperationID = UUID()
 		self.themeOperationID = themeOperationID
 		guard usesDynamicTheme(), let heroArtwork else {

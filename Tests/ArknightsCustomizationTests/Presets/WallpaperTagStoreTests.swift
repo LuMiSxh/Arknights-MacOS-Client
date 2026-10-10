@@ -4,7 +4,7 @@ import ArknightsCore
 import Foundation
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsCustomization
 
 private let remoteManifest = Data(
 	#"{"schemaVersion":1,"tags":{"global-1":["amiya","kal'tsit"],"global-9999":["new event"]}}"#

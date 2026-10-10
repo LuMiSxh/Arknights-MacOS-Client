@@ -2,11 +2,11 @@
 
 import Foundation
 
-enum PresetGalleryDestination: String, Identifiable, Sendable {
+package enum PresetGalleryDestination: String, Identifiable, Sendable {
 	case artwork
 	case operatorIcons
 
-	var id: String { rawValue }
+	package var id: String { rawValue }
 
 	var title: String {
 		switch self {

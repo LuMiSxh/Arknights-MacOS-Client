@@ -6,21 +6,21 @@ import Foundation
 import UniformTypeIdentifiers
 
 extension CustomizationController {
-	func chooseCustomAppIcon() {
+	package func chooseCustomAppIcon() {
 		chooseCustomIcon(
 			title: CustomizationStrings.pickerLauncherIcon,
 			apply: applyCustomAppIcon(from:)
 		)
 	}
 
-	func chooseCustomGameIcon() {
+	package func chooseCustomGameIcon() {
 		chooseCustomIcon(
 			title: CustomizationStrings.pickerGameIcon,
 			apply: applyCustomGameIcon(from:)
 		)
 	}
 
-	func resetGameIcon() {
+	package func resetGameIcon() {
 		invalidateIconOperations()
 		do {
 			if FileManager.default.fileExists(atPath: paths.customGameIcon.path) {
@@ -40,7 +40,7 @@ extension CustomizationController {
 		return launcherIconManager.reset()
 	}
 
-	func resetAppIcon() {
+	package func resetAppIcon() {
 		invalidateIconOperations()
 		do {
 			if FileManager.default.fileExists(atPath: paths.customAppIcon.path) {
@@ -57,7 +57,7 @@ extension CustomizationController {
 	}
 
 	@discardableResult
-	func loadCustomAppIcon() async -> Bool {
+	package func loadCustomAppIcon() async -> Bool {
 		guard let (operationID, generation) = beginIconRestore() else { return false }
 		let iconURL = paths.customAppIcon
 		guard isCurrentIconRestore(operationID, generation: generation) else { return false }
@@ -88,7 +88,7 @@ extension CustomizationController {
 		}
 	}
 
-	func resetOperatorIcons() {
+	package func resetOperatorIcons() {
 		invalidateIconOperations()
 		do {
 			for url in [paths.customAppIcon, paths.customGameIcon, paths.operatorPresetAvatar]
@@ -239,11 +239,11 @@ extension CustomizationController {
 		operatorIconOperationID = UUID()
 	}
 
-	func applyCustomAppIcon(from url: URL) {
+	package func applyCustomAppIcon(from url: URL) {
 		let id = beginIconOperation()
 		loadAndApplyCustomIcon(from: url, operationID: id, isAppIcon: true)
 	}
-	func applyCustomGameIcon(from url: URL) {
+	package func applyCustomGameIcon(from url: URL) {
 		let id = beginIconOperation()
 		loadAndApplyCustomIcon(from: url, operationID: id, isAppIcon: false)
 	}

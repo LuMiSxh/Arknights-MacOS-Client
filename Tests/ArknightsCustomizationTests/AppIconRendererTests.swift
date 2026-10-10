@@ -5,7 +5,7 @@ import ArknightsCore
 import CoreImage
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsCustomization
 
 @MainActor
 @Test

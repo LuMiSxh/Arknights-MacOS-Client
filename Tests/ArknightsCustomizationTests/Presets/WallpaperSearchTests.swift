@@ -3,7 +3,7 @@
 import Foundation
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsCustomization
 
 @Suite("WallpaperSearch matching")
 struct WallpaperSearchTests {

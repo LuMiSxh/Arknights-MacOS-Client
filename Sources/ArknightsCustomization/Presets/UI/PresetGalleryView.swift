@@ -2,7 +2,7 @@
 import ArknightsCore
 import SwiftUI
 
-struct PresetGalleryView: View {
+package struct PresetGalleryView: View {
 	let catalog: PresetCatalogService
 	let customization: CustomizationController
 	let lifecycle: LauncherLifecycleStore
@@ -23,7 +23,7 @@ struct PresetGalleryView: View {
 	@State private var isLoading = true
 	@State private var applyingItemID: String?
 	@State private var showsIconStylePreview = false
-	init(
+	package init(
 		catalog: PresetCatalogService,
 		customization: CustomizationController,
 		lifecycle: LauncherLifecycleStore,
@@ -34,7 +34,7 @@ struct PresetGalleryView: View {
 		self.lifecycle = lifecycle
 		self.destination = destination
 	}
-	var body: some View {
+	package var body: some View {
 		let hasSearchQuery = !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 		ZStack(alignment: .bottomTrailing) {
 			VStack(spacing: 0) {

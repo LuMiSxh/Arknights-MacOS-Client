@@ -3,7 +3,7 @@
 import AppKit
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsCustomization
 
 @MainActor
 struct LauncherIconManagerTests {

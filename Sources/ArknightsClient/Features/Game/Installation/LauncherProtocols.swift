@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsCustomization
 import Foundation
 
 /// The Yostar network surface used by refresh and installation flows; lets tests substitute a
