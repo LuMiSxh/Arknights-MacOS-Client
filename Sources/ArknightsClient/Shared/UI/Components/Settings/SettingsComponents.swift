@@ -184,7 +184,7 @@ enum SettingsPanelTone {
 
 	func color(for contrast: ColorSchemeContrast) -> Color {
 		if case .danger = self, contrast == .increased {
-			return Color(red: 1, green: 0.55, blue: 0.60)
+			return LauncherVisuals.dangerForegroundHighContrast
 		}
 		return color
 	}
@@ -324,7 +324,7 @@ struct GlassMenuPicker<Value: Hashable>: View {
 			HStack(spacing: LauncherVisuals.Spacing.tight) {
 				Text(currentTitle)
 				Image(systemName: "chevron.up.chevron.down")
-					.font(.system(size: 9, weight: .bold))
+					.font(LauncherVisuals.Typography.menuChevron)
 					.accessibilityHidden(true)
 			}
 			.settingsControlCapsule(tint: accentColor, isDisabled: isDisabled)
@@ -373,7 +373,7 @@ struct GlassActionMenu<Content: View>: View {
 					.accessibilityHidden(true)
 				Text(title)
 				Image(systemName: "chevron.up.chevron.down")
-					.font(.system(size: 9, weight: .bold))
+					.font(LauncherVisuals.Typography.menuChevron)
 					.accessibilityHidden(true)
 			}
 			.settingsControlCapsule(tint: accentColor, isDisabled: isDisabled)

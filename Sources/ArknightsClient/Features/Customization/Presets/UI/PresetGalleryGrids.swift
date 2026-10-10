@@ -35,8 +35,8 @@ struct PresetAvatarGrid: View {
 							.background(
 								LinearGradient(
 									colors: [
-										Color(red: 0.16, green: 0.17, blue: 0.19),
-										Color(red: 0.06, green: 0.06, blue: 0.07),
+										LauncherVisuals.galleryPlateTop,
+										LauncherVisuals.galleryPlateBottom,
 									],
 									startPoint: .top,
 									endPoint: .bottom

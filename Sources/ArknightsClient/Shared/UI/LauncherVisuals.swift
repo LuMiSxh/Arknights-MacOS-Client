@@ -8,11 +8,13 @@ enum LauncherVisuals {
 	static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
 	static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
 	/// A quieter neutral for secondary controls and macOS 27's high-contrast borders.
-	static let macOS27NeutralControlTint = Color(red: 0.58, green: 0.61, blue: 0.65)
+	static let quietControlTint = Color(red: 0.58, green: 0.61, blue: 0.65)
 	static let hairline = Color.white.opacity(0.12)
 	static let danger = Color(red: 0.69, green: 0.141, blue: 0.231)
 	/// Bright semantic foreground for destructive actions; `danger` remains a dark surface tint.
 	static let dangerForeground = Color(red: 0.98, green: 0.42, blue: 0.48)
+	/// Brighter destructive foreground used when the system requests increased contrast.
+	static let dangerForegroundHighContrast = Color(red: 1, green: 0.55, blue: 0.60)
 	static let warning = Color(red: 0.91, green: 0.61, blue: 0.21)
 	static let success = Color(red: 0.28, green: 0.78, blue: 0.55)
 	static let disabled = Color.white.opacity(0.42)
@@ -21,6 +23,13 @@ enum LauncherVisuals {
 	static let navigationRailBackground = Color.black.opacity(0.28)
 	static let panelBorder = Color.white.opacity(0.08)
 	static let navigationHoverFill = Color.white.opacity(0.06)
+	/// Black scrim opacity behind modal overlays such as the update sheet.
+	static let overlayDim = 0.55
+	/// Near-black backdrop shown when artwork is unavailable.
+	static let artworkFallback = Color(red: 0.035, green: 0.04, blue: 0.045)
+	/// Top and bottom stops of the plate behind preset gallery thumbnails.
+	static let galleryPlateTop = Color(red: 0.16, green: 0.17, blue: 0.19)
+	static let galleryPlateBottom = Color(red: 0.06, green: 0.06, blue: 0.07)
 
 	static func selectedNavigationFill(for accent: Color) -> Color {
 		accent.opacity(0.13)
@@ -31,6 +40,17 @@ enum LauncherVisuals {
 	}
 
 	static let modalCornerRadius = Radius.modal
+
+	enum Typography {
+		static let statusTitle = Font.system(size: 14, weight: .semibold)
+		static let statusPercent = Font.system(size: 16, weight: .semibold)
+		static let completionLabel = Font.system(size: 15, weight: .semibold)
+		static let hudControlGlyph = Font.system(size: 13, weight: .semibold)
+		static let hudProminentGlyph = Font.system(size: 16, weight: .semibold)
+		static let menuChevron = Font.system(size: 9, weight: .bold)
+		static let tagGlyph = Font.system(size: 10, weight: .bold)
+		static let fallbackWordmark = Font.system(size: 440, weight: .black)
+	}
 
 	enum Spacing {
 		static let hairline: CGFloat = 1

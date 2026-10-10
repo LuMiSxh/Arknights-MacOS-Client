@@ -27,6 +27,7 @@ The launcher must feel like a current macOS app first and an Arknights launcher 
 - Identical controls, surfaces, spacing, radii, and states come from `Shared/UI` tokens and components. Feature views provide state and semantics only.
 - Neutral panels carry ordinary content. Success, warning, and danger tones mark only the state they explain.
 - Avoid fake window chrome, decorative metadata, large status slogans, and rounded card grids. The Endfield launcher is only a layout reference; do not use its yellow palette.
+- Get all colors and fonts from `LauncherVisuals` tokens. Use the color tokens in `LauncherVisuals` and `LauncherVisuals.Typography`. Do not write `Color(red:` or `.system(size:` in views.
 
 ### Motion
 

@@ -43,7 +43,7 @@ struct LauncherUpdateOverlay: View {
 	}
 
 	private var backgroundDim: some View {
-		(reduceTransparency ? Color.black : Color.black.opacity(0.55))
+		(reduceTransparency ? Color.black : Color.black.opacity(LauncherVisuals.overlayDim))
 			.ignoresSafeArea()
 			.opacity(isVisible ? 1 : 0)
 			.animation(backgroundAnimation, value: isVisible)

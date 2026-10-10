@@ -83,7 +83,7 @@ struct PresetGallerySearchBar: View {
 					.font(.caption.weight(.semibold))
 					.lineLimit(1)
 				Image(systemName: "xmark")
-					.font(.system(size: 10, weight: .bold))
+					.font(LauncherVisuals.Typography.tagGlyph)
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
 			.adaptiveControlForeground(.secondary, disabledTint: .secondary.opacity(0.44))

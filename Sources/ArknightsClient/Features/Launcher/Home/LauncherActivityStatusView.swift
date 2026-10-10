@@ -108,7 +108,7 @@ struct LauncherActivityStatusView: View {
 					LauncherCompletionFeedbackView(feedbackID: completionFeedback.id)
 					Text(HomeStrings.installationComplete)
 				}
-				.font(.system(size: 14, weight: .semibold))
+				.font(LauncherVisuals.Typography.statusTitle)
 				.accessibilityElement(children: .combine)
 				.accessibilityLabel(Text(HomeStrings.installationComplete))
 			} else if showsDownloadSnapshot {
@@ -134,7 +134,7 @@ struct LauncherActivityStatusView: View {
 			} else {
 				VStack(alignment: .leading, spacing: 2) {
 					Text(statusTitle)
-						.font(.system(size: 14, weight: .semibold))
+						.font(LauncherVisuals.Typography.statusTitle)
 						.contentTransition(.opacity)
 					if let detail = statusDetail {
 						Text(detail)
@@ -277,12 +277,12 @@ struct LauncherActivityStatusView: View {
 						? HomeStrings.pausedDownloadPercentage(100)
 						: HomeStrings.downloadPercentage(100)
 			)
-			.font(.system(size: 16, weight: .semibold))
+			.font(LauncherVisuals.Typography.statusPercent)
 			.monospacedDigit()
 			.hidden()
 			.accessibilityHidden(true)
 			Text(statusTitle)
-				.font(.system(size: 16, weight: .semibold))
+				.font(LauncherVisuals.Typography.statusPercent)
 				.monospacedDigit()
 				.contentTransition(reduceMotion ? .identity : .numericText())
 				.animation(

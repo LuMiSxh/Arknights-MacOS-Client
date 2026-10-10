@@ -15,7 +15,11 @@ struct MusicPlayerControlButton: View {
 			controlSurface(
 				Label(title, systemImage: systemImage)
 					.labelStyle(.iconOnly)
-					.font(.system(size: isProminent ? 16 : 13, weight: .semibold))
+					.font(
+						isProminent
+							? LauncherVisuals.Typography.hudProminentGlyph
+							: LauncherVisuals.Typography.hudControlGlyph
+					)
 					.adaptiveControlForeground(
 						isProminent ? accentColor : LauncherVisuals.controlTint,
 						disabledTint: LauncherVisuals.disabled,

@@ -305,7 +305,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		let green = Double(resolved.green)
 		let blue = Double(resolved.blue)
 		let chroma = max(red, green, blue) - min(red, green, blue)
-		guard chroma > 0.08 else { return LauncherVisuals.macOS27NeutralControlTint }
+		guard chroma > 0.08 else { return LauncherVisuals.quietControlTint }
 		return Color(.sRGB, red: red, green: green, blue: blue)
 	}
 

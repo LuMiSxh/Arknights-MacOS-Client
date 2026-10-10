@@ -51,9 +51,9 @@ struct LauncherArtworkView: View {
 
 	private var fallbackArtwork: some View {
 		ZStack {
-			Color(red: 0.035, green: 0.04, blue: 0.045)
+			LauncherVisuals.artworkFallback
 			Text("A")
-				.font(.system(size: 440, weight: .black))
+				.font(LauncherVisuals.Typography.fallbackWordmark)
 				.foregroundStyle(.white.opacity(0.07))
 			Rectangle()
 				.fill(accentColor.opacity(0.4))

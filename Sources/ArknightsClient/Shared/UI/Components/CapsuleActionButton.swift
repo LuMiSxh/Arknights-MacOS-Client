@@ -29,7 +29,7 @@ enum CapsuleActionTone {
 	func foregroundColor(for contrast: ColorSchemeContrast) -> Color {
 		let color = color
 		if case .danger = self, contrast == .increased {
-			return Color(red: 1, green: 0.55, blue: 0.60)
+			return LauncherVisuals.dangerForegroundHighContrast
 		}
 		return color
 	}

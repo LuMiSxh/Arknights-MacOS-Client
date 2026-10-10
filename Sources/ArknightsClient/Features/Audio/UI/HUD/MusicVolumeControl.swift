@@ -19,7 +19,7 @@ struct MusicVolumeControl: View {
 			Button(action: toggleMute) {
 				Label(muteButtonTitle, systemImage: speakerSymbol)
 					.labelStyle(.iconOnly)
-					.font(.system(size: 13, weight: .semibold))
+					.font(LauncherVisuals.Typography.hudControlGlyph)
 					.adaptiveControlForeground(
 						LauncherVisuals.controlTint,
 						disabledTint: LauncherVisuals.disabled,
