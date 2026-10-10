@@ -46,7 +46,7 @@ extension CustomizationController {
 				try FileManager.default.removeItem(at: paths.customAppIcon)
 			}
 			try CustomizationImageIO.removeIfPresent(paths.operatorPresetAvatar)
-			guard restoreLauncherIcon() else { throw LauncherError.cannotSetAppIcon }
+			guard restoreLauncherIcon() else { throw CustomizationError.cannotSetAppIcon }
 			setHasCustomAppIcon(false)
 			preferences.setLastAppliedDynamicIconHue(nil)
 			updateThemeColor()
@@ -94,7 +94,7 @@ extension CustomizationController {
 			where FileManager.default.fileExists(atPath: url.path) {
 				try FileManager.default.removeItem(at: url)
 			}
-			guard restoreLauncherIcon() else { throw LauncherError.cannotSetAppIcon }
+			guard restoreLauncherIcon() else { throw CustomizationError.cannotSetAppIcon }
 			setHasCustomAppIcon(false)
 			setHasCustomGameIcon(false)
 			preferences.setLastAppliedDynamicIconHue(nil)
@@ -129,7 +129,7 @@ extension CustomizationController {
 					),
 					let launcherTIFF = icons.launcher.tiffRepresentation,
 					let gameTIFF = icons.game.tiffRepresentation
-				else { throw LauncherError.cannotEncodeAppIcon }
+				else { throw CustomizationError.cannotEncodeAppIcon }
 				async let launcherPNG = CustomizationImageIO.encodePNG(fromTIFF: launcherTIFF)
 				async let gamePNG = CustomizationImageIO.encodePNG(fromTIFF: gameTIFF)
 				let encodedIcons = try await (launcherPNG, gamePNG)
@@ -174,7 +174,7 @@ extension CustomizationController {
 					log: log
 				)
 				guard self.launcherIconManager.apply(icons.launcher) else {
-					throw LauncherError.cannotSetAppIcon
+					throw CustomizationError.cannotSetAppIcon
 				}
 				self.setHasCustomAppIcon(true)
 				self.setHasCustomGameIcon(true)
@@ -260,7 +260,7 @@ extension CustomizationController {
 					from: data, accentHue: dynamicThemeHue),
 				let launcherTIFF = icons.launcher.tiffRepresentation,
 				let gameTIFF = icons.game.tiffRepresentation
-			else { throw LauncherError.cannotEncodeAppIcon }
+			else { throw CustomizationError.cannotEncodeAppIcon }
 			async let launcher = CustomizationImageIO.encodePNG(fromTIFF: launcherTIFF)
 			async let game = CustomizationImageIO.encodePNG(fromTIFF: gameTIFF)
 			let encoded = try await (launcher, game)
@@ -301,7 +301,7 @@ extension CustomizationController {
 				log: log
 			)
 			guard launcherIconManager.apply(icons.launcher) else {
-				throw LauncherError.cannotSetAppIcon
+				throw CustomizationError.cannotSetAppIcon
 			}
 			setHasCustomAppIcon(true)
 			setHasCustomGameIcon(true)
@@ -321,7 +321,7 @@ extension CustomizationController {
 				let data = try await load(url)
 				guard self.operatorIconOperationID == id else { return }
 				guard let raw = NSImage(data: data) else {
-					self.lifecycle.show(LauncherError.invalidCustomImage(url))
+					self.lifecycle.show(CustomizationError.invalidCustomImage(url))
 					return
 				}
 				try CustomizationImageIO.removeIfPresent(self.paths.operatorPresetAvatar)
@@ -338,7 +338,7 @@ extension CustomizationController {
 	private func persistCustomIcon(_ image: NSImage, operationID id: UUID, isAppIcon: Bool) async {
 		do {
 			guard let tiff = image.tiffRepresentation else {
-				throw LauncherError.cannotEncodeAppIcon
+				throw CustomizationError.cannotEncodeAppIcon
 			}
 			let png = try await CustomizationImageIO.encodePNG(fromTIFF: tiff)
 			guard operatorIconOperationID == id else { return }
@@ -351,7 +351,9 @@ extension CustomizationController {
 			}
 			try CustomizationImageIO.commit(staged, to: destination)
 			if isAppIcon {
-				guard launcherIconManager.apply(image) else { throw LauncherError.cannotSetAppIcon }
+				guard launcherIconManager.apply(image) else {
+					throw CustomizationError.cannotSetAppIcon
+				}
 				setHasCustomAppIcon(true)
 			} else {
 				setHasCustomGameIcon(true)

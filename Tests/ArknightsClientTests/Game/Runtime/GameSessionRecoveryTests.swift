@@ -19,7 +19,7 @@ struct GameSessionRecoveryTests {
 		}
 		let failureID = UUID()
 		model.gameSession.presentRuntimeFailure(
-			LauncherError.runtimeExited(
+			GameRuntimeError.runtimeExited(
 				status: 1,
 				log: model.installation.paths.runtimeLogFile(for: region)
 			),
@@ -50,7 +50,7 @@ struct GameSessionRecoveryTests {
 		model.beginTestGameSession(
 			.runningGame(sessionID: sessionID, processIdentifier: 42), region: .global)
 		model.gameSession.presentRuntimeFailure(
-			LauncherError.runtimeConfiguration("test"),
+			GameRuntimeError.runtimeConfiguration("test"),
 			id: sessionID,
 			operation: .runtimeStop,
 			region: .global

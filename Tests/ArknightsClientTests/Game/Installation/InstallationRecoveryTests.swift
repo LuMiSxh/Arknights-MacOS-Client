@@ -131,7 +131,7 @@ struct InstallationRecoveryTests {
 		let fixture = makeInstallationFixture(region: region)
 		let failureID = UUID()
 		fixture.controller.presentInstallationFailure(
-			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
 			id: failureID,
 			operation: .install,
 			region: region
@@ -152,7 +152,7 @@ struct InstallationRecoveryTests {
 		fixture.controller.isInstalled = true
 		let failureID = UUID()
 		fixture.controller.presentInstallationFailure(
-			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
 			id: failureID,
 			operation: .repair,
 			region: .global
@@ -185,7 +185,7 @@ struct InstallationRecoveryTests {
 		fixture.controller.lifecycle.simulateActivity(.idle)
 		let failureID = UUID()
 		fixture.controller.presentInstallationFailure(
-			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
 			id: failureID,
 			operation: .uninstall,
 			region: .global
@@ -198,7 +198,7 @@ struct InstallationRecoveryTests {
 		let fixture = makeInstallationFixture(region: .global)
 		let failureID = UUID()
 		fixture.controller.presentInstallationFailure(
-			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
 			id: failureID,
 			operation: .install,
 			region: .global
@@ -215,7 +215,7 @@ struct InstallationRecoveryTests {
 
 		let currentFailureID = UUID()
 		fixture.controller.presentInstallationFailure(
-			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
 			id: currentFailureID,
 			operation: .install,
 			region: .global
@@ -239,7 +239,7 @@ struct InstallationRecoveryTests {
 		model.installation.isInstalled = true
 		let failureID = UUID()
 		model.installation.presentInstallationFailure(
-			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
 			id: failureID,
 			operation: .update,
 			region: .global
@@ -269,7 +269,7 @@ struct InstallationRecoveryTests {
 		model.installation.isInstalled = true
 		let wrongRegionID = UUID()
 		model.installation.presentInstallationFailure(
-			LauncherError.gameCompatibility("test"),
+			GameRuntimeError.gameCompatibility("test"),
 			id: wrongRegionID,
 			operation: .launch,
 			region: .japan
@@ -279,7 +279,7 @@ struct InstallationRecoveryTests {
 
 		let changedStateID = UUID()
 		model.installation.presentInstallationFailure(
-			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
 			id: changedStateID,
 			operation: .update,
 			region: .global

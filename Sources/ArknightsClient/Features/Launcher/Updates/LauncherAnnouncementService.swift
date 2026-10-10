@@ -86,14 +86,7 @@ struct LauncherAnnouncementService: Sendable {
 		return feed.announcements
 	}
 
-	private static func mapTransportError(_ error: HTTPTransportError) -> LauncherError {
-		switch error {
-		case .responseTooLarge(let url, let maximumBytes):
-			.remoteContentTooLarge(url, maximumBytes: maximumBytes)
-		case .responseSizeMismatch(let url, let expected, let actual):
-			.downloadedSizeMismatch(path: url.absoluteString, expected: expected, actual: actual)
-		case .invalidResponse, .redirectRejected:
-			.invalidResponse
-		}
+	private static func mapTransportError(_ error: HTTPTransportError) -> any Error {
+		GameInstaller.launcherError(for: error)
 	}
 }

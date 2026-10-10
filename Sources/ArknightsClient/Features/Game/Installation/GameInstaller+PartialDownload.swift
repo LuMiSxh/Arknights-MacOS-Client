@@ -160,7 +160,7 @@ extension GameInstaller {
 			fileStatus.st_size >= 0
 		else {
 			_ = close(descriptor)
-			throw LauncherError.unsafeInstallerTemporaryFile(partial.url)
+			throw InstallerError.unsafeInstallerTemporaryFile(partial.url)
 		}
 		return PartialDownload(
 			item: item,

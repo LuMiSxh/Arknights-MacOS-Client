@@ -53,7 +53,7 @@ extension WineRuntime {
 			spawnGate: spawnGate
 		)
 		guard status == 0 else {
-			throw LauncherError.runtimeConfiguration(
+			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not apply the \(description) (status \(status))."
 			)
 		}

@@ -20,7 +20,7 @@ extension WineRuntime: WineRuntimeSessionControlling {}
 extension WineRuntime {
 	func waitUntilStopped(prefixDirectory: URL) async throws {
 		guard let wineserverURL else {
-			throw LauncherError.runtimeConfiguration(
+			throw GameRuntimeError.runtimeConfiguration(
 				"wineserver is missing from the bundled runtime.")
 		}
 		let status = try await runAndWait(
@@ -30,7 +30,7 @@ extension WineRuntime {
 			output: .nullDevice
 		)
 		guard status == 0 else {
-			throw LauncherError.runtimeConfiguration(
+			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not monitor the game process (status \(status)).")
 		}
 	}
@@ -65,7 +65,7 @@ extension WineRuntime {
 		spawnGate: WineProcessSpawnGate?
 	) async throws {
 		guard let wineserverURL else {
-			throw LauncherError.runtimeConfiguration(
+			throw GameRuntimeError.runtimeConfiguration(
 				"wineserver is missing from the bundled runtime.")
 		}
 		let clock = ContinuousClock()
@@ -100,14 +100,14 @@ extension WineRuntime {
 				timeout: remainingShutdownTime(clock: clock, deadline: deadline)
 			)
 			guard waitStatus == 0 else {
-				throw LauncherError.runtimeConfiguration(
+				throw GameRuntimeError.runtimeConfiguration(
 					"Wine could not finish stopping Arknights (status \(waitStatus)).")
 			}
 		} catch is WineProcessWaitTimeout {
-			throw LauncherError.runtimeConfiguration(
+			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not finish stopping Arknights before the shutdown deadline.")
 		} catch is WineProcessRetirementTimeout {
-			throw LauncherError.runtimeConfiguration(
+			throw GameRuntimeError.runtimeConfiguration(
 				"Wine launch processes did not exit before the shutdown deadline.")
 		}
 	}

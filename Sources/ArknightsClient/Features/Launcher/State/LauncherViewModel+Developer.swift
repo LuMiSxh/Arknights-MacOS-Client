@@ -160,10 +160,11 @@
 			} else {
 				failureID = UUID()
 			}
-			let error: LauncherError =
+			let error: any LauncherDiagnosticError =
 				isConfiguration
-				? .invalidResponse
-				: .runtimeExited(status: 1, log: gameSession.paths.runtimeLogFile(for: region))
+				? LauncherError.invalidResponse
+				: GameRuntimeError.runtimeExited(
+					status: 1, log: gameSession.paths.runtimeLogFile(for: region))
 			lifecycle.presentation.failure = LauncherFailurePresentation(
 				id: failureID,
 				message: launcherUserMessage(for: error),

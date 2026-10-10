@@ -197,7 +197,7 @@ final class IntelTranslationController {
 			&& !lifecycle.rosettaInstallationState.isInstalling
 	}
 
-	var launchError: LauncherError {
+	var launchError: GameRuntimeError {
 		switch lifecycle.intelTranslationState {
 		case .rosettaMissing:
 			.rosettaMissing

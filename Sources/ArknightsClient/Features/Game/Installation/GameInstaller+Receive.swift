@@ -93,7 +93,7 @@ extension GameInstaller {
 	) async throws {
 		let item = download.item
 		guard response.statusCode == 200 || response.statusCode == 206 else {
-			throw LauncherError.invalidDownloadResponse(
+			throw InstallerError.invalidDownloadResponse(
 				status: response.statusCode,
 				path: item.path
 			)
@@ -175,7 +175,7 @@ extension GameInstaller {
 				counted: accumulatedBytes,
 				network: transfer.newlyDownloaded
 			)
-			throw LauncherError.downloadedSizeMismatch(
+			throw InstallerError.downloadedSizeMismatch(
 				path: item.path,
 				expected: item.byteCount,
 				actual: overflow ? Int64.max : receivedBytes

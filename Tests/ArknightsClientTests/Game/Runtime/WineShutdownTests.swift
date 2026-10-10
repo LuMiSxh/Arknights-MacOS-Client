@@ -126,7 +126,7 @@ func wineserverWaitTimeoutFailsShutdownWithoutWaitingForAChildTask() async throw
 			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
 			timeout: .milliseconds(500)
 		)
-	} catch is LauncherError {
+	} catch is GameRuntimeError {
 		didTimeOut = true
 	} catch {
 		Issue.record("Wine shutdown failed with an unexpected error: \(error)")
@@ -214,7 +214,7 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 			timeout: .seconds(1),
 			spawnGate: spawnGate
 		)
-	} catch is LauncherError {
+	} catch is GameRuntimeError {
 		firstStopFailed = true
 	}
 	#expect(firstStopFailed)

@@ -138,7 +138,7 @@ struct PresetCatalogServiceTests {
 
 	@Test
 	func imageValidationRejectsUnrecognizedAndTruncatedPayloads() throws {
-		#expect(throws: LauncherError.self) {
+		#expect(throws: CustomizationError.self) {
 			try PresetCatalogService.validateImageData(
 				Data("not an image".utf8),
 				source: URL(string: "https://cdn.jsdelivr.net/image.png")!
@@ -153,7 +153,7 @@ struct PresetCatalogServiceTests {
 		)
 		data.removeLast(2)
 
-		#expect(throws: LauncherError.self) {
+		#expect(throws: CustomizationError.self) {
 			try PresetCatalogService.validateImageData(
 				data,
 				source: URL(string: "https://webusstatic.yo-star.com/image.jpg")!
@@ -178,7 +178,7 @@ struct PresetCatalogServiceTests {
 		let service = PresetCatalogService(cacheDirectory: root, session: session, log: log)
 		let url = URL(string: "https://webusstatic.yo-star.com/invalid.png")!
 
-		await #expect(throws: LauncherError.self) {
+		await #expect(throws: CustomizationError.self) {
 			_ = try await service.imageData(for: url, cacheKey: "invalid")
 		}
 		await log.flush()

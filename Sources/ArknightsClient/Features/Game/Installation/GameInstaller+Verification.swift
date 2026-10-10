@@ -41,7 +41,7 @@ extension GameInstaller {
 			guard status.st_mode & S_IFMT == S_IFREG, status.st_nlink == 1,
 				status.st_size >= 0
 			else {
-				throw LauncherError.unsafeInstallerTemporaryFile(destination.url)
+				throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
 			}
 			candidates.append(
 				(item, relativePath, Int64(status.st_size), InstallerFileIdentity(status))
@@ -84,7 +84,7 @@ extension GameInstaller {
 							before.st_nlink == 1,
 							InstallerFileIdentity(before) == candidate.identity
 						else {
-							throw LauncherError.unsafeInstallerTemporaryFile(
+							throw InstallerError.unsafeInstallerTemporaryFile(
 								destination.url
 							)
 						}
@@ -100,7 +100,7 @@ extension GameInstaller {
 							let current = try destination.stat(),
 							InstallerFileIdentity(current) == InstallerFileIdentity(before)
 						else {
-							throw LauncherError.unsafeInstallerTemporaryFile(
+							throw InstallerError.unsafeInstallerTemporaryFile(
 								destination.url
 							)
 						}

@@ -75,7 +75,7 @@ extension GameSessionController {
 			processIdentifier: lifecycle.activity.gameProcessIdentifier,
 			region: region,
 			terminalFailure: GameSessionTerminalFailure(
-				error: LauncherError.runtimeWindowTimeout,
+				error: GameRuntimeError.runtimeWindowTimeout,
 				operation: .launch,
 				blocksGameLaunch: true
 			)

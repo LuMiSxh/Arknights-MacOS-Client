@@ -14,16 +14,16 @@ struct LauncherLifecycleStoreTests {
 		let lease = lifecycle.begin(.runningGame(sessionID: sessionID, processIdentifier: 42))
 		#expect(lease != nil)
 
-		lifecycle.show(LauncherError.cannotSetAppIcon)
+		lifecycle.show(CustomizationError.cannotSetAppIcon)
 
 		#expect(lifecycle.activity == .runningGame(sessionID: sessionID, processIdentifier: 42))
-		#expect(lifecycle.failureMessage == LauncherError.cannotSetAppIcon.errorDescription)
+		#expect(lifecycle.failureMessage == CustomizationError.cannotSetAppIcon.errorDescription)
 	}
 
 	@Test
 	func statusClearsFailuresUnlessTheCallerPreservesThem() {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.show(LauncherError.cannotSetAppIcon)
+		lifecycle.show(CustomizationError.cannotSetAppIcon)
 
 		lifecycle.setStatus(.ready, clearsFailure: false)
 		#expect(lifecycle.failureMessage != nil)

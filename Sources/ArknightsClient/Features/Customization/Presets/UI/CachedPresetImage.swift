@@ -51,7 +51,7 @@ struct CachedPresetImage: View {
 				)
 				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
 				guard let thumbnail = await Self.decodedThumbnail(from: data) else {
-					throw LauncherError.invalidPresetImage(url)
+					throw CustomizationError.invalidPresetImage(url)
 				}
 				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
 				image = NSImage(cgImage: thumbnail, size: .zero)

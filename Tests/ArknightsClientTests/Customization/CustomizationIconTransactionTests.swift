@@ -30,7 +30,7 @@ struct CustomizationIconTransactionTests {
 					where backup.lastPathComponent.hasPrefix("app-icon.backup.") {
 						try FileManager.default.removeItem(at: backup)
 					}
-					throw LauncherError.cannotSetAppIcon
+					throw CustomizationError.cannotSetAppIcon
 				}
 				throw CocoaError(.fileWriteUnknown)
 			},

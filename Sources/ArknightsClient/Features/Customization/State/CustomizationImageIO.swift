@@ -52,13 +52,13 @@ enum CustomizationImageIO {
 				.fileSizeKey, .totalFileAllocatedSizeKey, .isRegularFileKey,
 			])
 			guard values.isRegularFile == true else {
-				throw LauncherError.invalidCustomImage(url)
+				throw CustomizationError.invalidCustomImage(url)
 			}
 			let allocatedSize = values.totalFileAllocatedSize ?? values.fileSize ?? 0
 			guard
 				allocatedSize > 0,
 				allocatedSize <= AppConstants.Artwork.launcherMaximumBytes
-			else { throw LauncherError.invalidCustomImage(url) }
+			else { throw CustomizationError.invalidCustomImage(url) }
 			let data = try Data(contentsOf: url, options: .mappedIfSafe)
 			try validate(data, source: url)
 			return data
@@ -241,7 +241,7 @@ enum CustomizationImageIO {
 			guard
 				let source = CGImageSourceCreateWithData(data as CFData, nil),
 				let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-			else { throw LauncherError.cannotEncodeAppIcon }
+			else { throw CustomizationError.cannotEncodeAppIcon }
 			let output = NSMutableData()
 			guard
 				let destination = CGImageDestinationCreateWithData(
@@ -250,10 +250,10 @@ enum CustomizationImageIO {
 					1,
 					nil
 				)
-			else { throw LauncherError.cannotEncodeAppIcon }
+			else { throw CustomizationError.cannotEncodeAppIcon }
 			CGImageDestinationAddImage(destination, image, nil)
 			guard CGImageDestinationFinalize(destination) else {
-				throw LauncherError.cannotEncodeAppIcon
+				throw CustomizationError.cannotEncodeAppIcon
 			}
 			return output as Data
 		}.value
@@ -270,7 +270,7 @@ enum CustomizationImageIO {
 			let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
 			let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue,
 			dimensionsAreSafe(width: width, height: height)
-		else { throw LauncherError.invalidCustomImage(source) }
+		else { throw CustomizationError.invalidCustomImage(source) }
 	}
 
 	static func dimensionsAreSafe(width: Int, height: Int) -> Bool {

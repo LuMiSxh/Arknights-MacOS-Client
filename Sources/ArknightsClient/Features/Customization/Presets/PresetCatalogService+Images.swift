@@ -24,7 +24,7 @@ extension PresetCatalogService {
 		await enforceImageCacheLimitIfNeeded()
 		let epoch = cacheEpoch
 		guard Self.isAllowedRemoteAssetURL(url) else {
-			throw LauncherError.invalidRemoteAsset(url)
+			throw CustomizationError.invalidRemoteAsset(url)
 		}
 		let cachedFile = cacheFileURL(for: cacheKey)
 		if let data = await cachedImageData(from: cachedFile, epoch: epoch) {
@@ -57,7 +57,7 @@ extension PresetCatalogService {
 				}
 			}
 		}
-		let finalError = lastError ?? LauncherError.invalidPresetImage(url)
+		let finalError = lastError ?? CustomizationError.invalidPresetImage(url)
 		guard cacheEpoch == epoch else { throw CancellationError() }
 		log.error(
 			"Failed to load preset image from \(url.absoluteString): \(launcherDiagnosticDescription(for: finalError))"
@@ -81,7 +81,7 @@ extension PresetCatalogService {
 
 	private func fetchImageData(from url: URL) async throws -> Data {
 		guard Self.isAllowedRemoteAssetURL(url) else {
-			throw LauncherError.invalidRemoteAsset(url)
+			throw CustomizationError.invalidRemoteAsset(url)
 		}
 		var request = URLRequest(
 			url: url,
@@ -207,7 +207,7 @@ extension PresetCatalogService {
 			height <= AppConstants.Presets.imageMaximumDimension,
 			width <= AppConstants.Presets.imageMaximumPixels / height
 		else {
-			throw LauncherError.invalidPresetImage(source)
+			throw CustomizationError.invalidPresetImage(source)
 		}
 	}
 

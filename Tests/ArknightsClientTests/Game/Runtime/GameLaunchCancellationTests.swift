@@ -117,7 +117,7 @@ struct GameLaunchCancellationTests {
 				processIdentifier: Int32.max - 1, timeout: timeout, pollInterval: pollInterval,
 				clock: clock)
 		} throws: { error in
-			if case LauncherError.runtimeWindowTimeout = error { true } else { false }
+			if case GameRuntimeError.runtimeWindowTimeout = error { true } else { false }
 		}
 
 		#expect(clock.now.offset >= timeout)

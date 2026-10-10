@@ -78,24 +78,24 @@ extension GameSessionController {
 			return .whelk
 		}
 		return switch error {
-		case LauncherError.wineRuntimeMissing:
+		case GameRuntimeError.wineRuntimeMissing:
 			.whelk
-		case LauncherError.rosettaMissing,
-			LauncherError.rosettaDisabledByGameTestMode,
-			LauncherError.intelTranslationUnavailable,
-			LauncherError.intelTranslationUnsupported:
+		case GameRuntimeError.rosettaMissing,
+			GameRuntimeError.rosettaDisabledByGameTestMode,
+			GameRuntimeError.intelTranslationUnavailable,
+			GameRuntimeError.intelTranslationUnsupported:
 			.limpet
-		case LauncherError.runtimeConfiguration:
+		case GameRuntimeError.runtimeConfiguration:
 			.sepia
-		case LauncherError.gameCompatibility, is GameShimRollbackError:
+		case GameRuntimeError.gameCompatibility, is GameShimRollbackError:
 			.anemone
-		case LauncherError.runtimeWindowTimeout:
+		case GameRuntimeError.runtimeWindowTimeout:
 			.narwhal
-		case LauncherError.runtimeExited:
+		case GameRuntimeError.runtimeExited:
 			.crux
-		case LauncherError.gameNotInstalled:
+		case GameRuntimeError.gameNotInstalled:
 			.pebble
-		case LauncherError.cannotCreateFile:
+		case InstallerError.cannotCreateFile:
 			.basalt
 		case is BoundedFileReadError:
 			.sepia

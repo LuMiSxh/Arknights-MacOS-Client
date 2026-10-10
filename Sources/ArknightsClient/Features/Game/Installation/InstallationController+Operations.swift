@@ -25,7 +25,7 @@ extension InstallationController {
 			?? (verifyAllExistingFiles ? .repair : (isInstalled ? .update : .install))
 		guard let configuration else {
 			presentInstallationFailure(
-				LauncherError.missingConfiguration,
+				InstallerError.missingConfiguration,
 				id: installationID,
 				operation: operation,
 				region: requestedRegion
@@ -46,7 +46,7 @@ extension InstallationController {
 			let available = try GameInstaller.availableCapacityBytes(at: targetDirectory)
 			if available < required {
 				presentInstallationFailure(
-					LauncherError.insufficientDiskSpace(required: required, available: available),
+					InstallerError.insufficientDiskSpace(required: required, available: available),
 					id: installationID,
 					operation: operation,
 					region: requestedRegion

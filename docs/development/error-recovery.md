@@ -22,6 +22,23 @@ Every user-initiated failure opens the shared detail modal once. A launch-blocki
 > [!IMPORTANT]
 > User-facing messages explain the failure. They are never identifiers and never decide the code, recovery action, retry target, or report contents.
 
+## Error types
+
+Each feature owns one error type. The type describes the failures of that feature.
+
+- `InstallerError` belongs to `Features/Game/Installation`.
+- `GameRuntimeError` belongs to `Features/Game/Runtime`.
+- `CustomizationError` belongs to `Features/Customization`.
+- `LauncherError` belongs to `Core/Errors`. It holds cross-feature failures: invalid response, server error, content too large, and storage migration.
+
+The owning feature maps its error to a support code:
+
+- `InstallationController.supportCode(for:)` maps `InstallerError`.
+- `GameSessionController.supportCode(for:)` maps `GameRuntimeError`.
+- `LauncherLifecycleStore` reads the code of a `LauncherError` through `SupportCodeProviding`.
+
+Support codes and messages are a stable contract. `Tests/ArknightsClientTests/Shared/Support/SupportCodeStabilityTests.swift` pins them.
+
 ## Recovery invariants
 
 **Retry** repeats the recorded operation only while its failure ID is current, the owning controller is idle, and the region still matches. The model consumes the failure before it starts work, so duplicate clicks cannot start concurrent operations. A region change clears the failure, so switching back cannot revive stale work.

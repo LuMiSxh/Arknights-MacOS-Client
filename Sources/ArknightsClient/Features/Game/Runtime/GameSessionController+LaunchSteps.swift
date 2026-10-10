@@ -85,7 +85,7 @@ extension GameSessionController {
 	{
 		guard preflight.executableExists else {
 			presentLaunchFailure(
-				LauncherError.gameNotInstalled(request.executable), request: request)
+				GameRuntimeError.gameNotInstalled(request.executable), request: request)
 			return nil
 		}
 		let runtime: WineRuntime
@@ -171,7 +171,7 @@ extension GameSessionController {
 				processIdentifier: lifecycle.activity.gameProcessIdentifier,
 				region: context.request.region
 			)
-		} catch LauncherError.runtimeWindowTimeout {
+		} catch GameRuntimeError.runtimeWindowTimeout {
 			guard !applicationTerminationRequested else { return }
 			await handleWindowTimeout(
 				runtime: context.runtime,
@@ -183,7 +183,7 @@ extension GameSessionController {
 			let launchError: any Error
 			if RosettaAvailability.isBadCPUType(error) {
 				lifecycle.intelTranslationState = .unavailable
-				launchError = LauncherError.intelTranslationUnavailable
+				launchError = GameRuntimeError.intelTranslationUnavailable
 			} else {
 				launchError = error
 			}

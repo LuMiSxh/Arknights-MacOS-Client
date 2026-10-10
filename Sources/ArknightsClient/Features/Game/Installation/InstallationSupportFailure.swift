@@ -43,33 +43,33 @@ extension InstallationController {
 
 	static func supportCode(for error: any Error) -> SupportCode? {
 		switch error {
-		case LauncherError.invalidManifestPath,
-			LauncherError.duplicateManifestPath,
-			LauncherError.conflictingManifestPaths:
+		case InstallerError.invalidManifestPath,
+			InstallerError.duplicateManifestPath,
+			InstallerError.conflictingManifestPaths:
 			.gabbro
-		case LauncherError.symbolicLinkInInstallPath,
-			LauncherError.cannotCreateFile,
-			LauncherError.unsafeInstallerTemporaryFile,
-			LauncherError.installDirectoryInUse:
+		case InstallerError.symbolicLinkInInstallPath,
+			InstallerError.cannotCreateFile,
+			InstallerError.unsafeInstallerTemporaryFile,
+			InstallerError.installDirectoryInUse:
 			.basalt
-		case LauncherError.insufficientDiskSpace:
+		case InstallerError.insufficientDiskSpace:
 			.scree
 		case is DiskCapacityError:
 			.basalt
 		case LauncherError.invalidResponse,
-			LauncherError.invalidRemoteAsset,
+			CustomizationError.invalidRemoteAsset,
 			LauncherError.remoteContentTooLarge,
-			LauncherError.invalidDownloadResponse,
-			LauncherError.downloadedSizeMismatch,
-			LauncherError.checksumMismatch,
+			InstallerError.invalidDownloadResponse,
+			InstallerError.downloadedSizeMismatch,
+			InstallerError.checksumMismatch,
 			is HTTPTransportError,
 			is URLError:
 			.pebble
 		case LauncherError.server,
-			LauncherError.missingConfiguration,
+			InstallerError.missingConfiguration,
 			is ContextualLauncherError:
 			.virga
-		case LauncherError.gameCompatibility, is GameShimRollbackError:
+		case GameRuntimeError.gameCompatibility, is GameShimRollbackError:
 			.anemone
 		case is CocoaError, is POSIXError:
 			.basalt
@@ -95,7 +95,7 @@ extension InstallationController {
 	}
 
 	private static func isMissingConfiguration(_ error: any Error) -> Bool {
-		if case LauncherError.missingConfiguration = error { return true }
+		if case InstallerError.missingConfiguration = error { return true }
 		return false
 	}
 }

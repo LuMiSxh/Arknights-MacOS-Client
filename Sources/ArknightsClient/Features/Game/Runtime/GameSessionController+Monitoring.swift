@@ -161,7 +161,7 @@ extension GameSessionController {
 					processIdentifier: launch.processIdentifier,
 					region: region,
 					terminalFailure: GameSessionTerminalFailure(
-						error: LauncherError.runtimeExited(status: exit.status, log: logURL),
+						error: GameRuntimeError.runtimeExited(status: exit.status, log: logURL),
 						operation: .runtimeExit,
 						blocksGameLaunch: true
 					)
@@ -188,7 +188,7 @@ extension GameSessionController {
 					exit.status == 0 && exit.reason == .exit
 					? nil
 					: GameSessionTerminalFailure(
-						error: LauncherError.runtimeExited(status: exit.status, log: logURL),
+						error: GameRuntimeError.runtimeExited(status: exit.status, log: logURL),
 						operation: .runtimeExit,
 						blocksGameLaunch: false
 					)

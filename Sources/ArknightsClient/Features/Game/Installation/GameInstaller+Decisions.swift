@@ -16,14 +16,15 @@ extension GameInstaller {
 		}
 	}
 
-	static func launcherError(for transportError: HTTPTransportError) -> LauncherError {
+	static func launcherError(for transportError: HTTPTransportError) -> any Error {
 		switch transportError {
 		case .responseTooLarge(let url, let maximumBytes):
-			.remoteContentTooLarge(url, maximumBytes: maximumBytes)
+			LauncherError.remoteContentTooLarge(url, maximumBytes: maximumBytes)
 		case .responseSizeMismatch(let url, let expected, let actual):
-			.downloadedSizeMismatch(path: url.absoluteString, expected: expected, actual: actual)
+			InstallerError.downloadedSizeMismatch(
+				path: url.absoluteString, expected: expected, actual: actual)
 		case .invalidResponse, .redirectRejected:
-			.invalidResponse
+			LauncherError.invalidResponse
 		}
 	}
 

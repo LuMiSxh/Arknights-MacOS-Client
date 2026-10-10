@@ -97,14 +97,14 @@ struct GameCompatibilityManager: Sendable {
 	private func validateIdentifiers() throws {
 		let identifiers = (active + retired).map(\.identifier)
 		guard Set(identifiers).count == identifiers.count else {
-			throw LauncherError.gameCompatibility(
+			throw GameRuntimeError.gameCompatibility(
 				"Game compatibility component identifiers must be unique."
 			)
 		}
 	}
 
-	private static func compatibilityError(from error: any Error) -> LauncherError {
-		if case LauncherError.gameCompatibility(let message) = error {
+	private static func compatibilityError(from error: any Error) -> GameRuntimeError {
+		if case GameRuntimeError.gameCompatibility(let message) = error {
 			return .gameCompatibility(message)
 		}
 		return .gameCompatibility(launcherDiagnosticDescription(for: error))

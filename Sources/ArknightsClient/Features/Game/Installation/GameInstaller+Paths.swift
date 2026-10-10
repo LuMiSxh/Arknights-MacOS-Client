@@ -26,7 +26,7 @@ extension GameInstaller {
 		for (index, path) in paths.enumerated() {
 			let key = Self.manifestPathKey(path)
 			guard originalPathByKey[key] == nil else {
-				throw LauncherError.duplicateManifestPath(manifest.file[index].path)
+				throw InstallerError.duplicateManifestPath(manifest.file[index].path)
 			}
 			originalPathByKey[key] = manifest.file[index].path
 		}
@@ -43,7 +43,7 @@ extension GameInstaller {
 				Self.manifestPathKey(String($0))
 					== Self.manifestPathKey(AppConstants.Game.installerStagingDirectoryName)
 			}) {
-				throw LauncherError.conflictingManifestPaths(
+				throw InstallerError.conflictingManifestPaths(
 					AppConstants.Game.installerStagingDirectoryName,
 					originalPath
 				)
@@ -51,7 +51,7 @@ extension GameInstaller {
 			for installerPath in [path, path + ".part"] {
 				let key = Self.manifestPathKey(installerPath)
 				if let existingOwner = ownerByInstallerPathKey[key] {
-					throw LauncherError.conflictingManifestPaths(existingOwner, originalPath)
+					throw InstallerError.conflictingManifestPaths(existingOwner, originalPath)
 				}
 				ownerByInstallerPathKey[key] = originalPath
 			}
@@ -62,7 +62,7 @@ extension GameInstaller {
 			while let separator = parent.lastIndex(of: "/") {
 				parent = String(parent[..<separator])
 				if let parentOwner = ownerByInstallerPathKey[parent] {
-					throw LauncherError.conflictingManifestPaths(
+					throw InstallerError.conflictingManifestPaths(
 						parentOwner,
 						ownerByInstallerPathKey[child] ?? child
 					)
@@ -99,7 +99,7 @@ extension GameInstaller {
 					&& !component.contains(where: { $0.isNewline || $0.asciiValue == 0 })
 			})
 		else {
-			throw LauncherError.invalidManifestPath(input)
+			throw InstallerError.invalidManifestPath(input)
 		}
 		return components.joined(separator: "/")
 	}
@@ -107,14 +107,14 @@ extension GameInstaller {
 	func assertSafeExistingPartialFile(at partial: InstallerFilePath) throws {
 		guard let attributes = try partial.stat() else { return }
 		guard attributes.st_mode & S_IFMT == S_IFREG, attributes.st_nlink == 1 else {
-			throw LauncherError.unsafeInstallerTemporaryFile(partial.url)
+			throw InstallerError.unsafeInstallerTemporaryFile(partial.url)
 		}
 	}
 
 	func assertRegularDestinationIfPresent(_ destination: InstallerFilePath) throws {
 		guard let attributes = try destination.stat() else { return }
 		guard attributes.st_mode & S_IFMT == S_IFREG else {
-			throw LauncherError.unsafeInstallerTemporaryFile(destination.url)
+			throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
 		}
 	}
 
@@ -145,7 +145,7 @@ extension GameInstaller {
 	func fileSize(at file: InstallerFilePath) throws -> Int64? {
 		guard let attributes = try file.stat() else { return nil }
 		guard attributes.st_mode & S_IFMT == S_IFREG, attributes.st_size >= 0 else {
-			throw LauncherError.unsafeInstallerTemporaryFile(file.url)
+			throw InstallerError.unsafeInstallerTemporaryFile(file.url)
 		}
 		return Int64(attributes.st_size)
 	}
@@ -153,11 +153,11 @@ extension GameInstaller {
 	func mapInstallerFileSystemError(_ error: any Error) -> any Error {
 		guard let error = error as? InstallerFileSystemError else { return error }
 		return switch error {
-		case .invalidPath(let path): LauncherError.invalidManifestPath(path)
-		case .symbolicLink(let url): LauncherError.symbolicLinkInInstallPath(url)
+		case .invalidPath(let path): InstallerError.invalidManifestPath(path)
+		case .symbolicLink(let url): InstallerError.symbolicLinkInInstallPath(url)
 		case .unsafeFile(let url), .unsafeDirectory(let url):
-			LauncherError.unsafeInstallerTemporaryFile(url)
-		case .directoryInUse(let url): LauncherError.installDirectoryInUse(url)
+			InstallerError.unsafeInstallerTemporaryFile(url)
+		case .directoryInUse(let url): InstallerError.installDirectoryInUse(url)
 		}
 	}
 

@@ -93,11 +93,11 @@ extension GameInstaller {
 			sourceStatus.st_mode & S_IFMT == S_IFREG,
 			sourceStatus.st_nlink == 0 || sourceStatus.st_nlink == 1
 		else {
-			throw LauncherError.unsafeInstallerTemporaryFile(partial.url)
+			throw InstallerError.unsafeInstallerTemporaryFile(partial.url)
 		}
 		let actualSize = Int64(sourceStatus.st_size)
 		guard actualSize == item.byteCount else {
-			throw LauncherError.downloadedSizeMismatch(
+			throw InstallerError.downloadedSizeMismatch(
 				path: item.path,
 				expected: item.byteCount,
 				actual: actualSize
@@ -147,7 +147,7 @@ extension GameInstaller {
 			beforeHash.st_mode & S_IFMT == S_IFREG,
 			beforeHash.st_nlink == 1,
 			beforeHash.st_size == item.byteCount
-		else { throw LauncherError.unsafeInstallerTemporaryFile(staged.url) }
+		else { throw InstallerError.unsafeInstallerTemporaryFile(staged.url) }
 		stagedIdentity = InstallerFileIdentity(beforeHash)
 		let checksum = try InstallerSignposts.measure("Hash") {
 			try ManifestChecksum.checksum(
@@ -161,7 +161,7 @@ extension GameInstaller {
 			afterHash.st_size == beforeHash.st_size,
 			let stagedNameStatus = try staged.stat(),
 			InstallerFileIdentity(stagedNameStatus) == stagedIdentity
-		else { throw LauncherError.unsafeInstallerTemporaryFile(staged.url) }
+		else { throw InstallerError.unsafeInstallerTemporaryFile(staged.url) }
 		guard ManifestChecksum.matches(checksum, expected: item.hash) else {
 			try await Self.rollBack(
 				FileHandle(fileDescriptor: partialDescriptor, closeOnDealloc: false),
@@ -175,7 +175,7 @@ extension GameInstaller {
 				counter: counter,
 				progress: progress
 			)
-			throw LauncherError.checksumMismatch(
+			throw InstallerError.checksumMismatch(
 				path: item.path,
 				expected: item.hash,
 				actual: checksum
@@ -195,7 +195,7 @@ extension GameInstaller {
 		guard let installedStatus = try destination.stat(),
 			InstallerFileIdentity(installedStatus) == stagedIdentity,
 			installedStatus.st_size == item.byteCount
-		else { throw LauncherError.unsafeInstallerTemporaryFile(destination.url) }
+		else { throw InstallerError.unsafeInstallerTemporaryFile(destination.url) }
 
 		do {
 			try retirePartial(
@@ -227,7 +227,7 @@ extension GameInstaller {
 		guard fstat(rootStagingDirectory.descriptor, &rootStatus) == 0,
 			fstat(destination.directory.descriptor, &destinationStatus) == 0,
 			sourceStatus.st_dev == destinationStatus.st_dev
-		else { throw LauncherError.unsafeInstallerTemporaryFile(destination.url) }
+		else { throw InstallerError.unsafeInstallerTemporaryFile(destination.url) }
 		if sourceStatus.st_dev == rootStatus.st_dev { return rootStagingDirectory }
 		return try destination.directory.stagingDirectory(
 			named: AppConstants.Game.installerStagingDirectoryName
@@ -268,7 +268,7 @@ extension GameInstaller {
 		guard fstat(source, &initialStatus) == 0,
 			initialStatus.st_mode & S_IFMT == S_IFREG,
 			initialStatus.st_size == expectedSize
-		else { throw LauncherError.unsafeInstallerTemporaryFile(sourceURL) }
+		else { throw InstallerError.unsafeInstallerTemporaryFile(sourceURL) }
 		let output = try destination.open(
 			flags: O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW,
 			mode: S_IRUSR | S_IWUSR
@@ -326,7 +326,7 @@ extension GameInstaller {
 			finalStatus.st_mtimespec.tv_nsec == initialStatus.st_mtimespec.tv_nsec,
 			finalStatus.st_ctimespec.tv_sec == initialStatus.st_ctimespec.tv_sec,
 			finalStatus.st_ctimespec.tv_nsec == initialStatus.st_ctimespec.tv_nsec
-		else { throw LauncherError.unsafeInstallerTemporaryFile(sourceURL) }
+		else { throw InstallerError.unsafeInstallerTemporaryFile(sourceURL) }
 		guard fsync(output) == 0 else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}

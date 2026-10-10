@@ -224,7 +224,7 @@ struct WineRuntime: Sendable {
 		)
 		if !fileManager.fileExists(atPath: logURL.path) {
 			guard fileManager.createFile(atPath: logURL.path, contents: nil) else {
-				throw LauncherError.cannotCreateFile(logURL)
+				throw InstallerError.cannotCreateFile(logURL)
 			}
 		}
 		let logHandle = try FileHandle(forWritingTo: logURL)

@@ -30,7 +30,7 @@ struct WineWindowReadiness {
 			&& NSRunningApplication(processIdentifier: processIdentifier)?.activationPolicy
 				!= .regular
 		{
-			guard clock.now < deadline else { throw LauncherError.runtimeWindowTimeout }
+			guard clock.now < deadline else { throw GameRuntimeError.runtimeWindowTimeout }
 			try await clock.sleep(for: pollInterval)
 		}
 	}

@@ -84,7 +84,7 @@ struct GameInstallerPathTests {
 			"", "/", "//bin/game.dat", "bin//game.dat", "bin/game.dat/", ".",
 			"../game.dat", "bin/../game.dat", "bin\\game.dat", "bin/game\n.dat",
 		] {
-			#expect(throws: LauncherError.self) {
+			#expect(throws: InstallerError.self) {
 				_ = try GameInstaller.safeRelativePath(path)
 			}
 		}
@@ -107,7 +107,7 @@ struct GameInstallerPathTests {
 		),
 	])
 	func manifestRejectsInvalidFileSets(scenario: String, paths: [String]) {
-		#expect(throws: LauncherError.self) {
+		#expect(throws: InstallerError.self) {
 			try validateManifest(makeManifest(paths: paths))
 		}
 	}
@@ -141,7 +141,7 @@ struct GameInstallerPathTests {
 				configuration: PathTestAPI.configuration, region: .global, into: root,
 				progress: { _ in })
 			Issue.record("Expected the symbolic destination to be rejected")
-		} catch LauncherError.symbolicLinkInInstallPath(let url) {
+		} catch InstallerError.symbolicLinkInInstallPath(let url) {
 			#expect(url.lastPathComponent == "bin")
 		} catch {
 			Issue.record("Unexpected installer error: \(error)")
@@ -178,7 +178,7 @@ struct GameInstallerPathTests {
 				configuration: PathTestAPI.configuration, region: .global, into: root,
 				progress: { _ in })
 			Issue.record("Expected the symbolic partial file to be rejected")
-		} catch LauncherError.symbolicLinkInInstallPath(let url) {
+		} catch InstallerError.symbolicLinkInInstallPath(let url) {
 			#expect(url.lastPathComponent == "game.dat.part")
 		} catch {
 			Issue.record("Unexpected installer error: \(error)")
@@ -215,7 +215,7 @@ struct GameInstallerPathTests {
 				configuration: PathTestAPI.configuration, region: .global, into: root,
 				progress: { _ in })
 			Issue.record("Expected the symbolic destination file to be rejected")
-		} catch LauncherError.symbolicLinkInInstallPath(let url) {
+		} catch InstallerError.symbolicLinkInInstallPath(let url) {
 			#expect(url.lastPathComponent == "game.dat")
 		} catch {
 			Issue.record("Unexpected installer error: \(error)")
@@ -256,7 +256,7 @@ struct GameInstallerPathTests {
 				configuration: PathTestAPI.configuration, region: .global, into: root,
 				progress: { _ in })
 			Issue.record("Expected the multiply linked partial file to be rejected")
-		} catch LauncherError.unsafeInstallerTemporaryFile(let url) {
+		} catch InstallerError.unsafeInstallerTemporaryFile(let url) {
 			#expect(url.lastPathComponent == "game.dat.part")
 		} catch {
 			Issue.record("Unexpected installer error: \(error)")

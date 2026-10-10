@@ -69,7 +69,7 @@ func vuplexShimDoesNotReplaceAnUnknownUserenvDLL() throws {
 	try Data("launcher-shim".utf8).write(to: shim)
 	let compatibility = try testCompatibility(shimURL: shim, root: root)
 
-	#expect(throws: LauncherError.self) {
+	#expect(throws: GameRuntimeError.self) {
 		try compatibility.installIfSupported(in: root)
 	}
 	#expect(try Data(contentsOf: helper) == officialData)
@@ -125,7 +125,7 @@ func vuplexShimUpgradeRejectsAMissingOfficialHelper() throws {
 	try Data("new-launcher-shim".utf8).write(to: newShim)
 
 	let compatibility = try testCompatibility(shimURL: newShim, root: root)
-	#expect(throws: LauncherError.self) {
+	#expect(throws: GameRuntimeError.self) {
 		try compatibility.installIfSupported(in: root)
 	}
 }

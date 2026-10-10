@@ -28,7 +28,7 @@ extension CustomizationController {
 				let data = try await dataLoader(url)
 				guard self.artworkOperationID == operationID else { return }
 				guard NSImage(data: data) != nil else {
-					lifecycle.show(LauncherError.invalidCustomImage(url))
+					lifecycle.show(CustomizationError.invalidCustomImage(url))
 					return
 				}
 				await applyDirectCustomArtwork(data: data, operationID: operationID)
@@ -81,7 +81,7 @@ extension CustomizationController {
 			)
 			guard artworkOperationID == operationID else { return }
 			guard let image = NSImage(data: data) else {
-				throw LauncherError.invalidCustomImage(destination)
+				throw CustomizationError.invalidCustomImage(destination)
 			}
 			try await dataStager(data, stagedURL)
 			guard artworkOperationID == operationID else {

@@ -275,7 +275,7 @@ extension WineRuntime {
 			spawnGate: spawnGate
 		)
 		guard exitStatus == 0 else {
-			throw LauncherError.runtimeConfiguration(
+			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not initialize its prefix (status \(exitStatus))."
 			)
 		}
@@ -326,7 +326,7 @@ extension WineRuntime {
 			}
 		}
 		guard sources.allSatisfy({ fileManager.fileExists(atPath: $0.path) }) else {
-			throw LauncherError.runtimeConfiguration("The bundled DXMT payload is incomplete.")
+			throw GameRuntimeError.runtimeConfiguration("The bundled DXMT payload is incomplete.")
 		}
 
 		for (architecture, windowsDirectory) in destinations {

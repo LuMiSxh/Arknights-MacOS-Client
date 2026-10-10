@@ -67,7 +67,7 @@ struct GameInstallerRollbackTests {
 		do {
 			_ = try await Self.download(fixture, baseline: 2)
 			Issue.record("Expected the 404 response to be rejected")
-		} catch LauncherError.invalidDownloadResponse(let status, let path) {
+		} catch InstallerError.invalidDownloadResponse(let status, let path) {
 			#expect(status == 404)
 			#expect(path == fixture.item.path)
 		} catch {
@@ -141,7 +141,7 @@ struct GameInstallerRollbackTests {
 		do {
 			_ = try await Self.download(fixture, baseline: 2, recorder: recorder)
 			Issue.record("Expected the corrupted file to fail verification")
-		} catch LauncherError.checksumMismatch(let path, _, _) {
+		} catch InstallerError.checksumMismatch(let path, _, _) {
 			#expect(path == fixture.item.path)
 		} catch {
 			Issue.record("Unexpected installer error: \(error)")
