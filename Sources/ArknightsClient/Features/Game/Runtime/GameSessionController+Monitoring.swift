@@ -6,15 +6,15 @@ extension GameSessionController {
 	func stopGame() {
 		guard let sessionID = activeGameSessionID, canStopGame else { return }
 		let processIdentifier = lifecycle.activity.gameProcessIdentifier
-		let region = activeGameRegion ?? installation.region
+		let region = session?.region ?? installation.region
 		guard let processIdentifier else {
 			// Wine is still being prepared or spawned; the launch task owns cleanup so a game
 			// process that spawns concurrently is still stopped afterwards.
-			activeWineProcessSpawnGate?.denyFurtherSpawns()
+			session?.spawnGate.denyFurtherSpawns()
 			updateSessionActivity(.stoppingGame(sessionID: sessionID, processIdentifier: nil))
 			lifecycle.setStatus(.stoppingGame)
 			log.info("Game stop requested during launch")
-			launchTask?.cancel()
+			session?.launchTask?.cancel()
 			return
 		}
 		let runtime: any WineRuntimeSessionControlling
@@ -39,8 +39,8 @@ extension GameSessionController {
 
 	func retryFailedRuntimeStop(sessionID: UUID, region: GameRegion) {
 		guard activeGameSessionID == sessionID,
-			activeGameRegion == region,
-			runtimeStopAttemptSessionID != sessionID,
+			session?.region == region,
+			session?.isRuntimeStopInFlight != true,
 			lifecycle.activity.activeGameSessionID == sessionID
 		else { return }
 		let processIdentifier = lifecycle.activity.gameProcessIdentifier
@@ -70,16 +70,16 @@ extension GameSessionController {
 		processIdentifier: Int32?,
 		region: GameRegion
 	) {
-		activeWineProcessSpawnGate?.denyFurtherSpawns()
+		session?.spawnGate.denyFurtherSpawns()
 		updateSessionActivity(
 			.stoppingGame(
 				sessionID: sessionID,
 				processIdentifier: processIdentifier
 			))
 		lifecycle.setStatus(.stoppingGame)
-		launchTask?.cancel()
-		gameMonitorTask?.cancel()
-		gameMonitorTask = Task { [weak self] in
+		session?.launchTask?.cancel()
+		session?.monitorTask?.cancel()
+		session?.monitorTask = Task { [weak self] in
 			guard let self else { return }
 			log.info("Game stop requested")
 			guard activeGameSessionID == sessionID else { return }
@@ -109,17 +109,15 @@ extension GameSessionController {
 			return
 		}
 		runtime.stopSynchronously(
-			prefixDirectory: paths.winePrefix(for: activeGameRegion ?? installation.region),
+			prefixDirectory: paths.winePrefix(for: session?.region ?? installation.region),
 			log: log
 		)
 	}
 
 	func prepareForApplicationTermination() {
 		applicationTerminationRequested = true
-		activeWineProcessSpawnGate?.denyFurtherSpawns()
-		launchTask?.cancel()
-		gameMonitorTask?.cancel()
-		gameProcessMonitorTask?.cancel()
+		session?.spawnGate.denyFurtherSpawns()
+		session?.cancelTasks()
 		if let sessionID = activeGameSessionID {
 			updateSessionActivity(
 				.stoppingGame(
@@ -135,13 +133,13 @@ extension GameSessionController {
 		runtime: any WineRuntimeSessionControlling,
 		sessionID: UUID
 	) {
-		gameMonitorTask?.cancel()
-		gameProcessMonitorTask?.cancel()
-		let logURL = paths.runtimeLogFile(for: activeGameRegion ?? installation.region)
-		gameProcessMonitorTask = Task { [weak self, log, logURL] in
+		session?.monitorTask?.cancel()
+		session?.processMonitorTask?.cancel()
+		let logURL = paths.runtimeLogFile(for: session?.region ?? installation.region)
+		session?.processMonitorTask = Task { [weak self, log, logURL] in
 			let exit = await launch.waitUntilExit()
 			guard let self, !Task.isCancelled else { return }
-			let region = activeGameRegion ?? installation.region
+			let region = session?.region ?? installation.region
 			switch Self.directWineProcessExitAction(
 				activity: lifecycle.activity,
 				sessionID: sessionID
@@ -150,7 +148,7 @@ extension GameSessionController {
 				return
 			case .startupFailure:
 				markGameSessionStopping(sessionID, processIdentifier: launch.processIdentifier)
-				launchTask?.cancel()
+				session?.launchTask?.cancel()
 				let since = gameRunningSince
 				let diagnostics = await Task.detached(priority: .utility) {
 					Self.exitDiagnostics(exit, since: since, logURL: logURL)
@@ -209,9 +207,9 @@ extension GameSessionController {
 		using runtime: any WineRuntimeSessionControlling,
 		sessionID: UUID
 	) {
-		gameMonitorTask?.cancel()
-		let prefixDirectory = paths.winePrefix(for: activeGameRegion ?? installation.region)
-		gameMonitorTask = Task { [weak self, log, prefixDirectory] in
+		session?.monitorTask?.cancel()
+		let prefixDirectory = paths.winePrefix(for: session?.region ?? installation.region)
+		session?.monitorTask = Task { [weak self, log, prefixDirectory] in
 			do {
 				try await runtime.waitUntilStopped(prefixDirectory: prefixDirectory)
 			} catch {
@@ -225,12 +223,14 @@ extension GameSessionController {
 					using: runtime,
 					sessionID: sessionID,
 					processIdentifier: lifecycle.activity.gameProcessIdentifier,
-					region: activeGameRegion ?? installation.region
+					region: session?.region ?? installation.region
 				)
 				return
 			}
 			guard let self, !Task.isCancelled, activeGameSessionID == sessionID else { return }
-			if let gameProcessMonitorTask { await gameProcessMonitorTask.value }
+			if let processMonitorTask = session?.processMonitorTask {
+				await processMonitorTask.value
+			}
 			guard !Task.isCancelled, activeGameSessionID == sessionID else { return }
 			finishGameSession(sessionID)
 		}
@@ -244,14 +244,14 @@ extension GameSessionController {
 		terminalFailure: GameSessionTerminalFailure? = nil
 	) async {
 		guard activeGameSessionID == sessionID else { return }
-		guard runtimeStopAttemptSessionID != sessionID else { return }
-		runtimeStopAttemptSessionID = sessionID
+		guard session?.isRuntimeStopInFlight != true else { return }
+		session?.isRuntimeStopInFlight = true
 		defer {
-			if runtimeStopAttemptSessionID == sessionID {
-				runtimeStopAttemptSessionID = nil
+			if session?.id == sessionID {
+				session?.isRuntimeStopInFlight = false
 			}
 		}
-		let spawnGate = activeWineProcessSpawnGate
+		let spawnGate = session?.spawnGate
 		spawnGate?.denyFurtherSpawns()
 		rememberTerminalFailure(terminalFailure, for: sessionID)
 		markGameSessionStopping(sessionID, processIdentifier: processIdentifier)
@@ -278,18 +278,14 @@ extension GameSessionController {
 	func finishGameSession(_ sessionID: UUID) {
 		guard activeGameSessionID == sessionID else { return }
 		let terminalFailure = takeTerminalFailure(for: sessionID)
-		let sessionRegion = activeGameRegion ?? installation.region
+		let sessionRegion = session?.region ?? installation.region
 		playtimeStatistics.finish(sessionID: sessionID)
-		if let lease = sessionLease {
+		if let lease = session?.lease {
 			lifecycle.end(lease)
-			sessionLease = nil
 		}
-		launchTask?.cancel()
-		gameMonitorTask?.cancel()
-		gameProcessMonitorTask?.cancel()
-		activeWineProcessSpawnGate = nil
 		disableActiveGameMode()
-		activeGameRegion = nil
+		session?.cancelTasks()
+		session = nil
 		lifecycle.setStatus(installation.isGameUpdateAvailable ? .updateAvailable : .ready)
 		if let terminalFailure {
 			presentRuntimeFailure(
@@ -315,13 +311,13 @@ extension GameSessionController {
 
 	/// Changes the session activity through the session lease. Without a lease it changes nothing.
 	func updateSessionActivity(_ activity: LauncherActivity, lease: ActivityLease? = nil) {
-		guard let lease = lease ?? sessionLease else { return }
+		guard let lease = lease ?? session?.lease else { return }
 		lifecycle.update(lease, to: activity)
 	}
 
 	func disableActiveGameMode() {
-		guard activeGameModeEnabled else { return }
-		activeGameModeEnabled = false
+		guard session?.usesGameMode == true else { return }
+		session?.usesGameMode = false
 		GamePolicyControl.setGameMode(on: false, log: log)
 	}
 }

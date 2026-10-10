@@ -45,9 +45,8 @@ struct GameSessionRecoveryTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
 		let sessionID = UUID()
-		model.gameSession.sessionLease = model.lifecycle.begin(
-			.runningGame(sessionID: sessionID, processIdentifier: 42))
-		model.gameSession.activeGameRegion = .global
+		model.beginTestGameSession(
+			.runningGame(sessionID: sessionID, processIdentifier: 42), region: .global)
 		model.gameSession.presentRuntimeFailure(
 			LauncherError.runtimeConfiguration("test"),
 			id: sessionID,

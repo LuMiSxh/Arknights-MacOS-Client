@@ -15,11 +15,6 @@ struct GameSessionTerminalFailure {
 	let blocksGameLaunch: Bool
 }
 
-private struct PendingGameSessionTerminalFailure {
-	let sessionID: UUID
-	let failure: GameSessionTerminalFailure
-}
-
 /// Owns Wine discovery, launch, process monitoring, and prefix maintenance.
 @MainActor
 @Observable
@@ -52,18 +47,11 @@ final class GameSessionController {
 	@ObservationIgnored var customGameIconURL: () -> URL? = { nil }
 	@ObservationIgnored var runtimeSessionControllerProvider:
 		@MainActor () throws -> any WineRuntimeSessionControlling
-	@ObservationIgnored var launchTask: Task<Void, Never>?
-	/// Lease for the current game session. It ends only after prefix-wide shutdown completes.
-	@ObservationIgnored var sessionLease: ActivityLease?
-	@ObservationIgnored var gameMonitorTask: Task<Void, Never>?
-	@ObservationIgnored var gameProcessMonitorTask: Task<Void, Never>?
-	@ObservationIgnored var activeGameModeEnabled = false
-	@ObservationIgnored var activeGameRegion: GameRegion?
-	@ObservationIgnored var activeWineProcessSpawnGate: WineProcessSpawnGate?
+	@ObservationIgnored var session: ActiveGameSession?
 	@ObservationIgnored var applicationTerminationRequested = false
-	@ObservationIgnored var runtimeStopAttemptSessionID: UUID?
-	@ObservationIgnored private var pendingTerminalFailure: PendingGameSessionTerminalFailure?
 	var gameRunningSince: Date?
+	var sessionLease: ActivityLease? { session?.lease }
+	var activeGameRegion: GameRegion? { session?.region }
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -93,9 +81,7 @@ final class GameSessionController {
 	}
 
 	deinit {
-		launchTask?.cancel()
-		gameMonitorTask?.cancel()
-		gameProcessMonitorTask?.cancel()
+		session?.cancelTasks()
 	}
 
 	static func canStopGame(for activity: LauncherActivity) -> Bool {
@@ -122,20 +108,13 @@ final class GameSessionController {
 		_ failure: GameSessionTerminalFailure?,
 		for sessionID: UUID
 	) {
-		guard let failure else { return }
-		pendingTerminalFailure = PendingGameSessionTerminalFailure(
-			sessionID: sessionID,
-			failure: failure
-		)
+		guard let failure, session?.id == sessionID else { return }
+		session?.pendingTerminalFailure = failure
 	}
 
 	func takeTerminalFailure(for sessionID: UUID) -> GameSessionTerminalFailure? {
-		guard pendingTerminalFailure?.sessionID == sessionID else { return nil }
-		defer { pendingTerminalFailure = nil }
-		return pendingTerminalFailure?.failure
-	}
-
-	func resetTerminalFailure() {
-		pendingTerminalFailure = nil
+		guard session?.id == sessionID else { return nil }
+		defer { session?.pendingTerminalFailure = nil }
+		return session?.pendingTerminalFailure
 	}
 }

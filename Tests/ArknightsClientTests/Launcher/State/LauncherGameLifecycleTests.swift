@@ -35,8 +35,7 @@ struct LauncherGameLifecycleTests {
 		let launch = Task<Void, Never> {
 			while !Task.isCancelled { await Task.yield() }
 		}
-		model.gameSession.sessionLease = model.lifecycle.begin(.preparingGame(sessionID: sessionID))
-		model.gameSession.launchTask = launch
+		model.beginTestGameSession(.preparingGame(sessionID: sessionID), launchTask: launch)
 
 		model.gameSession.stopGame()
 		await launch.value
@@ -82,9 +81,7 @@ struct LauncherGameLifecycleTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
 		let sessionID = UUID()
-		model.gameSession.sessionLease = model.lifecycle.begin(
-			.runningGame(sessionID: sessionID, processIdentifier: 42)
-		)
+		model.beginTestGameSession(.runningGame(sessionID: sessionID, processIdentifier: 42))
 		model.playtimeStatistics.start(sessionID: sessionID, region: .japan)
 
 		model.gameSession.finishGameSession(sessionID)

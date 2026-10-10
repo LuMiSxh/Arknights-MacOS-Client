@@ -38,7 +38,7 @@ extension GameSessionController {
 	func retryRuntimeFailure(id: UUID) -> Bool {
 		guard let failure = lifecycle.failure, failure.id == id else { return false }
 		guard failure.actions.contains(.retry) else { return false }
-		let activeRegion = activeGameRegion
+		let activeRegion = session?.region
 		switch failure.context.operation {
 		case .prefixMigration, .prefixDeletion:
 			guard failure.context.region == installation.region.supportRegion,
@@ -47,7 +47,7 @@ extension GameSessionController {
 		case .runtimeStop:
 			guard activeRegion?.supportRegion == failure.context.region,
 				lifecycle.activity.activeGameSessionID == failure.id,
-				runtimeStopAttemptSessionID != failure.id
+				session?.isRuntimeStopInFlight != true
 			else { return false }
 		case .launch, .runtimeExit, .runtimeDiscovery:
 			guard failure.context.region == installation.region.supportRegion else { return false }

@@ -60,7 +60,7 @@ struct GameSessionTerminationTests {
 		fixture.model.gameSession.runtimeSessionControllerProvider = { fixture.runtime }
 		fixture.model.gameSession.stopGame()
 		#expect(await fixture.runtime.waitForStop(attempt: 1))
-		let firstCleanup = fixture.model.gameSession.gameMonitorTask
+		let firstCleanup = fixture.model.gameSession.session?.monitorTask
 		await fixture.runtime.failStop(attempt: 1)
 		await firstCleanup?.value
 
@@ -84,7 +84,7 @@ struct GameSessionTerminationTests {
 		}
 		let retryCount = await fixture.runtime.stopAttemptCount()
 		#expect(retryCount == 2)
-		let retryCleanup = fixture.model.gameSession.gameMonitorTask
+		let retryCleanup = fixture.model.gameSession.session?.monitorTask
 		#expect(
 			await fixture.runtime.stopDirectories() == [
 				fixture.model.installation.paths.winePrefix(for: .korea),
@@ -126,7 +126,15 @@ struct GameSessionTerminationTests {
 		#expect(await fixture.runtime.waitForStop(attempt: 1))
 		fixture.model.lifecycle.simulateActivity(
 			.runningGame(sessionID: replacementSessionID, processIdentifier: 99))
-		fixture.model.gameSession.activeGameRegion = .global
+		if let lease = fixture.model.gameSession.session?.lease {
+			fixture.model.gameSession.session = ActiveGameSession(
+				id: replacementSessionID,
+				lease: lease,
+				region: .global,
+				spawnGate: WineProcessSpawnGate(),
+				usesGameMode: false
+			)
+		}
 		await fixture.runtime.succeedStop(attempt: 1)
 		await cleanup.value
 
@@ -148,9 +156,8 @@ private func makeFixture(region: GameRegion) async -> SessionFixture {
 		_ = model.installation.selectRegion(region)
 	}
 	let sessionID = UUID()
-	model.gameSession.sessionLease = model.lifecycle.begin(
-		.runningGame(sessionID: sessionID, processIdentifier: 42))
-	model.gameSession.activeGameRegion = region
+	model.beginTestGameSession(
+		.runningGame(sessionID: sessionID, processIdentifier: 42), region: region)
 	return SessionFixture(
 		api: api, model: model, runtime: BlockingSessionRuntime(), sessionID: sessionID)
 }

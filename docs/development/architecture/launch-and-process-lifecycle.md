@@ -260,6 +260,25 @@ Vuplex, PlatformProcess, and the Bilibili platform component use this reconcilia
 migration state, because the official updater can replace these helpers at any time. Ownership markers
 mean upgrades and retirement never rely only on the current bundled bytes.
 
+### Game session state
+
+`ActiveGameSession` is one value. It holds all state of the current game session:
+
+- The session ID.
+- The activity lease.
+- The region and the Game Mode flag.
+- The spawn gate and the stop-attempt marker.
+- The pending terminal failure.
+- The launch, monitor, and process-monitor tasks.
+
+The session controller replaces the value as a whole. It does not change single fields.
+
+When a session finishes, the controller cancels its tasks and sets the value to `nil`.
+
+A stale session ID cannot finish a newer session.
+
+`Idle` still comes only after prefix-wide shutdown completes.
+
 ## Prefix boundary and process ownership
 
 See [Directory and drive contract](wine-prefix.md#directory-and-drive-contract) for the `G:` target.

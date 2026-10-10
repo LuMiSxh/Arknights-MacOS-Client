@@ -79,15 +79,11 @@ extension GameSessionController {
 			? .preparingGame(sessionID: gameSessionID)
 			: .launchingGame(sessionID: gameSessionID, processIdentifier: nil)
 		guard let lease = lifecycle.begin(initialActivity) else { return }
-		sessionLease = lease
-		activeGameRegion = requestedRegion
-		resetTerminalFailure()
 		lifecycle.setStatus(hasPendingMigration ? .preparingWine : .startingGame)
 		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
 		let requestedHardwareCursor = settings.usesHardwareCursor
-		activeGameModeEnabled = requestedLaunchOptions.usesGameMode
 		let forceDisableRetina = preferences.forceDisableRetina()
 		log.info(
 			Self.launchDiagnostics(
@@ -97,10 +93,15 @@ extension GameSessionController {
 				graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
 			)
 		)
-		launchTask?.cancel()
 		let spawnGate = WineProcessSpawnGate()
-		activeWineProcessSpawnGate = spawnGate
-		launchTask = Task { [weak self] in
+		session = ActiveGameSession(
+			id: gameSessionID,
+			lease: lease,
+			region: requestedRegion,
+			spawnGate: spawnGate,
+			usesGameMode: requestedLaunchOptions.usesGameMode
+		)
+		session?.launchTask = Task { [weak self] in
 			guard let self else { return }
 			do {
 				let discovery = await runtime.discoverCapabilities()
