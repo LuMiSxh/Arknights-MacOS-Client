@@ -25,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Installing a second region reuses identical files from an installed one instead of downloading them again.
 - Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
 - The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries.
-- Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.7.0-rc1, which carries its own license texts and notices.
+- Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.7.0-rc2, which carries its own license texts and notices.
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
 - China and China (Bilibili) no longer need Canary Features; Taiwan remains a Canary region.
 - Renamed **China — Bilibili** to **China (Bilibili)**.

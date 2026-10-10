@@ -12,7 +12,7 @@ import pytest
 from lib import licenses, runtime_update
 from lib.common import PROJECT_DIR, ScriptError
 
-NEW_TAG = "v0.7.0-rc2"
+NEW_TAG = "v0.7.0-rc3"
 NEW_WINE_COMMIT = "1" * 40
 NEW_SOURCE_COMMIT = "2" * 40
 FIXTURE_FILES = (
@@ -151,7 +151,7 @@ def test_update_rewrites_manifest_and_blocks(project: Path) -> None:
         runtime_update.NOTICES_DOCUMENT,
     ]
     assert manifest["runtime"] == {
-        "name": "Arknights macOS Runtime 0.7.0-rc2",
+        "name": "Arknights macOS Runtime 0.7.0-rc3",
         "url": base + archive,
         "sha256": "a" * 64,
     }
@@ -169,7 +169,7 @@ def test_update_rewrites_manifest_and_blocks(project: Path) -> None:
     assert manifest["provenance"]["baseArchiveSha256"] == "c" * 64
     notices = (project / runtime_update.NOTICES_DOCUMENT).read_text(encoding="utf-8")
     assert NEW_TAG in notices
-    assert "v0.7.0-rc1" not in notices
+    assert "v0.7.0-rc2" not in notices
     assert f"Wine 11.18, `{NEW_WINE_COMMIT}`" in notices
     assert "Whisky base libraries | v4.7.0," in notices
     runtime_update.check(project)
@@ -197,7 +197,7 @@ def test_second_update_changes_nothing(project: Path) -> None:
 
 def test_repinning_the_current_release_is_a_no_op(project: Path) -> None:
     manifest = manifest_of(project)
-    provenance = release_provenance("v0.7.0-rc1")
+    provenance = release_provenance("v0.7.0-rc2")
     lock = provenance["runtimeLock"]["contents"]
     provenance["runtimeArchive"]["sha256"] = manifest["runtime"]["sha256"]
     provenance["correspondingSourceArchive"]["sha256"] = manifest["buildRecipe"][
@@ -221,7 +221,7 @@ def test_repinning_the_current_release_is_a_no_op(project: Path) -> None:
     }
 
     changed = runtime_update.update(
-        project, "v0.7.0-rc1", release_fetch("v0.7.0-rc1", provenance)
+        project, "v0.7.0-rc2", release_fetch("v0.7.0-rc2", provenance)
     )
 
     assert changed == []
@@ -252,7 +252,7 @@ def test_checksum_file_for_another_asset_fails(project: Path) -> None:
 
 def test_provenance_for_another_tag_fails(project: Path) -> None:
     provenance = release_provenance(NEW_TAG)
-    provenance["releaseTag"] = "v0.7.0-rc3"
+    provenance["releaseTag"] = "v0.7.0-rc2"
 
     with pytest.raises(ScriptError, match="does not describe"):
         runtime_update.update(project, NEW_TAG, release_fetch(provenance=provenance))
@@ -365,13 +365,13 @@ def test_license_blocks_ignore_runtime_markers_and_follow_the_pin(
 ) -> None:
     components = licenses.load_client_components(project, [])
     libraries = next(c for c in components if c.runtime_release)
-    assert libraries.name == "Libraries of runtime 0.7.0-rc1"
+    assert libraries.name == "Libraries of runtime 0.7.0-rc2"
 
     runtime_update.update(project, NEW_TAG, release_fetch())
 
     components = licenses.load_client_components(project, [])
     libraries = next(c for c in components if c.runtime_release)
-    assert libraries.name == "Libraries of runtime 0.7.0-rc2"
+    assert libraries.name == "Libraries of runtime 0.7.0-rc3"
     assert libraries.source.endswith(f"/tree/{NEW_TAG}")
     text = "<!-- runtime:begin build -->\nold\n<!-- runtime:end build -->\n"
     assert licenses.apply_blocks(text, {}, True) == text

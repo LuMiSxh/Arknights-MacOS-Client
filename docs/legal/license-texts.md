@@ -400,7 +400,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ## Runtime components
 
 > [!WARNING]
-> This page does not list the runtime license index. The components below come from `runtime.json` and the project's own records. They are not a complete component list. The runtime archive carries its own license texts in `Licenses/`. See the [runtime release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.7.0-rc1).
+> This page does not list the runtime license index. The components below come from `runtime.json` and the project's own records. They are not a complete component list. The runtime archive carries its own license texts in `Licenses/`. See the [runtime release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.7.0-rc2).
 
 ### Wine
 
@@ -915,7 +915,7 @@ That's all there is to it!
 
 ### DXMT
 
-Version 0.80-244-g7c8dee1. `LGPL-2.1-or-later`. [Source](https://github.com/3Shain/dxmt/tree/7c8dee1c2d73415301ceb7d1fa810861cef4cd67).
+Version 0.80-262-ge94c312. `LGPL-2.1-or-later`. [Source](https://github.com/3Shain/dxmt/tree/e94c312f5c054263acf261cfa109edf13e757587).
 
 The text of `lgpl-2.1.txt` is under [Wine](#wine).
 
@@ -1129,9 +1129,9 @@ Text: `apache-2.0.txt`
    limitations under the License.
 ```
 
-### Libraries of runtime 0.7.0-rc1
+### Libraries of runtime 0.7.0-rc2
 
-Version 0.7.0-rc1. `LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6`. [Source](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc1).
+Version 0.7.0-rc2. `LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6`. [Source](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc2).
 
 The text of `lgpl-2.1.txt` is under [Wine](#wine).
 

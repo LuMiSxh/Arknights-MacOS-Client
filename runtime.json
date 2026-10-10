@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.7.0-rc1",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc1/Arknights-MacOS-Runtime-v0.7.0-rc1.tar.gz",
-    "sha256": "4884d997d69afefff32dc55586c88d071e4646b58bba1f56accff3a46dfe1066"
+    "name": "Arknights macOS Runtime 0.7.0-rc2",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc2/Arknights-MacOS-Runtime-v0.7.0-rc2.tar.gz",
+    "sha256": "cbf10ec67c05dace75bc4c39deaf8f1020791cfdcc323d0cfde8a03881e98cf9"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc1/Arknights-MacOS-Runtime-v0.7.0-rc1-source.tar.gz",
-    "sha256": "d6e6370fa1694feaf9d4f4995545227a71b7697b2b8c8283350cb79eb24cdc54"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc2/Arknights-MacOS-Runtime-v0.7.0-rc2-source.tar.gz",
+    "sha256": "d666c767a77dfad97404fa381cbd095b83201477c4b4af3285ae52b200007215"
   },
   "interface": {
     "archive": {
@@ -36,23 +36,23 @@
   },
   "components": {
     "wine": "11.17",
-    "dxmt": "0.80-244-g7c8dee1",
+    "dxmt": "0.80-262-ge94c312",
     "moltenvk": "1.4.2"
   },
   "provenance": {
     "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "f8f4bbb21cf020d26e2a94ec29b4085cecdc2a6a",
+    "buildCommit": "9778c6d89e1c1d63dcc239e493dfb6ad4796c233",
     "wineRepository": "https://github.com/dappermint/winecx",
     "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
-    "dxmtCommit": "7c8dee1c2d73415301ceb7d1fa810861cef4cd67",
+    "dxmtCommit": "e94c312f5c054263acf261cfa109edf13e757587",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
     "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
     "baseRecipeRepository": "https://github.com/dappermint/winecx-gptk",
-    "baseRecipeCommit": "f374f5bae40631a466c03c59180ca34605091efd",
-    "baseArchiveUrl": "https://github.com/dappermint/Whisky/releases/download/v4.6.8/Libraries.tar.gz",
-    "baseArchiveSha256": "19b9d7942b8cfd4871eee2a8f81abc7c849307c7858873f9b504c24c1bb6b25d"
+    "baseRecipeCommit": "0bf3eabc2f0d95154282eb86b11205cbbaae6c65",
+    "baseArchiveUrl": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
+    "baseArchiveSha256": "a4b5d63493f80698cce5cad8e7212d9a51c8292037b00c478f4652636fcfd331"
   }
 }
