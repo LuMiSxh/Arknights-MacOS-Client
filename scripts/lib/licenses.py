@@ -30,9 +30,9 @@ VERIFIED = "verified"
 UNVERIFIED = "unverified"
 APP_SCOPE = "app"
 WEBSITE_SCOPE = "website"
-LEGACY_RUNTIME_SCOPE = "runtime-legacy"
+FALLBACK_RUNTIME_SCOPE = "runtime-fallback"
 RUNTIME_SCOPE = "runtime"
-CLIENT_SCOPES = (APP_SCOPE, WEBSITE_SCOPE, LEGACY_RUNTIME_SCOPE)
+CLIENT_SCOPES = (APP_SCOPE, WEBSITE_SCOPE, FALLBACK_RUNTIME_SCOPE)
 ECOSYSTEMS = ("swiftpm", "npm")
 
 LICENSE_DIRECTORY = Path("docs/legal/licenses")
@@ -584,7 +584,7 @@ def render_license_texts(
                 "complete component list. The runtime archive carries its own license "
                 f"texts in `{RUNTIME_LICENSE_DIRECTORY}/`. See the "
                 f"[runtime release]({release}).",
-                (c for c in components if c.scope == LEGACY_RUNTIME_SCOPE),
+                (c for c in components if c.scope == FALLBACK_RUNTIME_SCOPE),
                 directory,
             )
         )
@@ -695,7 +695,7 @@ def render_compiled_notices(
         else [
             (c, root / LICENSE_DIRECTORY)
             for c in components
-            if c.scope == LEGACY_RUNTIME_SCOPE
+            if c.scope == FALLBACK_RUNTIME_SCOPE
         ]
     )
     members += [("Runtime components", c, d) for c, d in runtime_members]
@@ -792,7 +792,7 @@ def stage_bundle(
 
     shipped = [c for c in components if c.scope == APP_SCOPE]
     if legal is None:
-        shipped.extend(c for c in components if c.scope == LEGACY_RUNTIME_SCOPE)
+        shipped.extend(c for c in components if c.scope == FALLBACK_RUNTIME_SCOPE)
     else:
         shipped.extend(legal.components)
     warnings = _unverified_warnings(shipped)

@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.6.1",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1.tar.gz",
-    "sha256": "56e5d3448ad18446b824ec1f7eda266f836bdd3d05b99dcadc0c69a9c0a1dc6d"
+    "name": "Arknights macOS Runtime 0.7.0-rc1",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc1/Arknights-MacOS-Runtime-v0.7.0-rc1.tar.gz",
+    "sha256": "4884d997d69afefff32dc55586c88d071e4646b58bba1f56accff3a46dfe1066"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1-source.tar.gz",
-    "sha256": "55889cdbda123751ab5b7e9ea0dc34c8afd8ee95e548f84d6a390fdc5c5e70d2"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc1/Arknights-MacOS-Runtime-v0.7.0-rc1-source.tar.gz",
+    "sha256": "d6e6370fa1694feaf9d4f4995545227a71b7697b2b8c8283350cb79eb24cdc54"
   },
   "interface": {
     "archive": {
@@ -37,26 +37,17 @@
   "components": {
     "wine": "11.17",
     "dxmt": "0.80-244-g7c8dee1",
-    "gstreamer": "1.26.3",
-    "ffmpeg": "7.1.1",
-    "moltenvk": "1.4.2",
-    "wineGecko": "2.47.4"
+    "moltenvk": "1.4.2"
   },
   "provenance": {
     "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "e53f807f6567209482fa0be134b8fee85d01e60c",
+    "buildCommit": "f8f4bbb21cf020d26e2a94ec29b4085cecdc2a6a",
     "wineRepository": "https://github.com/dappermint/winecx",
     "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
     "dxmtCommit": "7c8dee1c2d73415301ceb7d1fa810861cef4cd67",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
-    "gstreamerRepository": "https://github.com/GStreamer/gstreamer",
-    "gstreamerCommit": "87bc0c6e949e3dcc440658f78ef52aa8088cb62f",
-    "ffmpegRepository": "https://github.com/FFmpeg/FFmpeg",
-    "ffmpegCommit": "db69d06eeeab4f46da15030a80d539efb4503ca8",
-    "wineGeckoRepository": "https://gitlab.winehq.org/wine/wine-gecko",
-    "wineGeckoCommit": "557ea0c2e9f9ebd621323b3dbfbdd18c2528759c",
     "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
     "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d"
   }

@@ -11,11 +11,16 @@
     "sveltejs-kit.txt": "@sveltejs/kit LICENSE file in node_modules (version in index)",
     "anasthasia.txt": "anasthasia LICENSE file in node_modules (version in index)",
     "apache-2.0.txt": "canonical text, earlier release",
-    "fdk-aac.txt": "Fraunhofer FDK-AAC notice, earlier release",
     "gpl-2.0.txt": "canonical text, earlier release",
     "gpl-3.0.txt": "canonical text, earlier release",
     "lgpl-2.1.txt": "canonical text, earlier release",
-    "lgpl-3.0.txt": "canonical text, earlier release"
+    "lgpl-3.0.txt": "canonical text, earlier release",
+    "mit.txt": "runtime repository LICENSES/runtime/MIT.txt (SPDX license-list-data v3.29.0)",
+    "zlib.txt": "runtime repository LICENSES/runtime/Zlib.txt (SPDX license-list-data v3.29.0)",
+    "libpng-2.0.txt": "runtime repository LICENSES/runtime/libpng-2.0.txt (SPDX license-list-data v3.29.0)",
+    "bzip2-1.0.6.txt": "runtime repository LICENSES/runtime/bzip2-1.0.6.txt (SPDX license-list-data v3.29.0)",
+    "ftl.txt": "runtime repository LICENSES/runtime/FTL.txt (SPDX license-list-data v3.29.0)",
+    "bsd-3-clause.txt": "runtime repository LICENSES/runtime/BSD-3-Clause.txt (SPDX license-list-data v3.29.0)"
   },
   "components": [
     {
@@ -216,7 +221,7 @@
         "lgpl-2.1.txt"
       ],
       "status": "verified",
-      "scope": "runtime-legacy",
+      "scope": "runtime-fallback",
       "basis": "runtime-index-same-commit"
     },
     {
@@ -227,7 +232,7 @@
         "lgpl-2.1.txt"
       ],
       "status": "verified",
-      "scope": "runtime-legacy",
+      "scope": "runtime-fallback",
       "basis": "upstream-declared"
     },
     {
@@ -238,70 +243,30 @@
         "apache-2.0.txt"
       ],
       "status": "verified",
-      "scope": "runtime-legacy",
+      "scope": "runtime-fallback",
       "basis": "runtime-index-same-commit"
     },
     {
-      "name": "Wine Gecko",
-      "runtimeComponent": "wineGecko",
-      "spdx": "NOASSERTION",
-      "files": [
-        "gpl-2.0.txt",
-        "lgpl-2.1.txt"
-      ],
-      "status": "unverified",
-      "scope": "runtime-legacy",
-      "candidates": [
-        "MPL-1.1",
-        "GPL-2.0-or-later",
-        "LGPL-2.1-or-later"
-      ],
-      "note": "(no MPL text is available in the project)"
-    },
-    {
-      "name": "GStreamer",
-      "runtimeComponent": "gstreamer",
-      "spdx": "NOASSERTION",
+      "name": "Libraries of runtime 0.7.0-rc1",
+      "version": "0.7.0-rc1",
+      "spdx": "LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6",
+      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc1",
       "files": [
         "lgpl-2.1.txt",
-        "gpl-2.0.txt"
-      ],
-      "status": "unverified",
-      "scope": "runtime-legacy",
-      "candidates": [
-        "LGPL-2.1-or-later",
-        "GPL-2.0-or-later"
-      ]
-    },
-    {
-      "name": "FFmpeg",
-      "runtimeComponent": "ffmpeg",
-      "spdx": "NOASSERTION",
-      "files": [
-        "gpl-3.0.txt"
-      ],
-      "status": "unverified",
-      "scope": "runtime-legacy",
-      "candidates": [
-        "GPL-3.0-or-later"
-      ]
-    },
-    {
-      "name": "Media and system libraries of runtime 0.6.1",
-      "version": "see runtime",
-      "spdx": "NOASSERTION",
-      "source": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.6.1",
-      "files": [
-        "apache-2.0.txt",
-        "fdk-aac.txt",
         "gpl-2.0.txt",
+        "lgpl-3.0.txt",
         "gpl-3.0.txt",
-        "lgpl-2.1.txt",
-        "lgpl-3.0.txt"
+        "ftl.txt",
+        "bsd-3-clause.txt",
+        "mit.txt",
+        "zlib.txt",
+        "libpng-2.0.txt",
+        "bzip2-1.0.6.txt"
       ],
-      "status": "unverified",
-      "scope": "runtime-legacy",
-      "note": "(x264, x265, FDK-AAC, FAAD2, libdvdcss, libdvdnav, libdvdread, OpenH264, libde265, libaom, dav1d, SVT-AV1, libvpx, LAME, OpenMPT, FLAC, Vorbis, Opus, Theora, Speex, libsndfile, and others)"
+      "status": "verified",
+      "scope": "runtime-fallback",
+      "basis": "runtime-index-same-commit",
+      "note": "(libpng-apng 1.6.46, libunistring 1.3, libffi 39, GMP 6.3.0, Brotli 1.1.0, GnuTLS 3.8.9, zlib 1.3.1, Nettle 3.10.1, libiconv 1.17, bzip2 1.0.8, FreeType 2.13.3, p11-kit 0.25.5, libidn2 2.3.8, gettext 0.22.5, and libtasn1 4.20.0 from Nixpkgs; the Licenses/ directory and NOTICE.md of the runtime archive carry the texts)"
     }
   ]
 }

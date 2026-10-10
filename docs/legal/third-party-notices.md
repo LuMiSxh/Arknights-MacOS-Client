@@ -24,66 +24,61 @@ This page is an inventory and release-review aid. It does not relicense a compon
 | WineCX / Wine | Wine 11.17, `e0aa380780b73e20fabcfe78fd42713b94929a53`                                   | LGPL-2.1-or-later and bundled third-party terms                                                     | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/e0aa380780b73e20fabcfe78fd42713b94929a53)         |
 | DXMT          | 0.80-244-g7c8dee1, `7c8dee1c2d73415301ceb7d1fa810861cef4cd67`                            | LGPL-2.1-or-later and bundled third-party terms                                                     | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/7c8dee1c2d73415301ceb7d1fa810861cef4cd67)                     |
 | MoltenVK      | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf`                                        | Apache-2.0 and bundled third-party terms                                                            | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
-| Wine Gecko    | 2.47.4, `557ea0c2e9f9ebd621323b3dbfbdd18c2528759c`                                       | MPL/GPL/LGPL terms and Mozilla notices                                                              | [Wine Gecko commit](https://gitlab.winehq.org/wine/wine-gecko/-/tree/557ea0c2e9f9ebd621323b3dbfbdd18c2528759c)         |
-| GStreamer     | 1.26.3 (no longer bundled from runtime 0.7.0)                                            | Mostly LGPL-2.1-or-later; selected plugins and dependencies are GPL-2.0-or-later or use other terms | [GStreamer commit](https://github.com/GStreamer/gstreamer/tree/87bc0c6e949e3dcc440658f78ef52aa8088cb62f)               |
-| FFmpeg        | 7.1.1 (no longer bundled from runtime 0.7.0), `db69d06eeeab4f46da15030a80d539efb4503ca8` | GPL-3.0-or-later for the bundled configuration                                                      | [FFmpeg commit](https://github.com/FFmpeg/FFmpeg/tree/db69d06eeeab4f46da15030a80d539efb4503ca8)                        |
+| Nix libraries | libpng-apng 1.6.46, libunistring 1.3, libffi 39, GMP 6.3.0, Brotli 1.1.0, GnuTLS 3.8.9, zlib 1.3.1, Nettle 3.10.1, libiconv 1.17, bzip2 1.0.8, FreeType 2.13.3, p11-kit 0.25.5, libidn2 2.3.8, gettext 0.22.5, libtasn1 4.20.0 | LGPL-2.1-or-later, GPL-2.0-or-later OR LGPL-3.0-or-later, FTL OR GPL-2.0-only, BSD-3-Clause, MIT, Zlib, libpng-2.0, and bzip2-1.0.6 | [Runtime v0.7.0-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc1), Nixpkgs `ac62194c3917d5f474c1a844b6fd6da2db95077d` |
+
+The runtime 0.7.0-rc1 archive has no media stack. It has no Wine Gecko, GStreamer, FFmpeg, or media codec libraries. The `Licenses/` directory and `NOTICE.md` in the archive carry the license texts of every component.
 
 ## Runtime build provenance
 
-The v0.6.1 runtime was built from the release commit and exact inputs below. The base archive and Nixpkgs revision are build inputs, not independently selected runtime components. They remain part of the release's corresponding-source record.
+The v0.7.0-rc1 runtime was built from the release tag and exact inputs below. The base archive and Nixpkgs revision are build inputs, not independently selected runtime components. They remain part of the release's corresponding-source record.
 
 | Build input             | Version or revision                                                                        | Exact provenance source                                                                                                                                                                                      |
 | ----------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Runtime build           | Arknights macOS Runtime v0.6.1, `e53f807f6567209482fa0be134b8fee85d01e60c`                 | [Runtime v0.6.1 commit](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/e53f807f6567209482fa0be134b8fee85d01e60c), [release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.6.1) |
+| Runtime build           | Arknights macOS Runtime v0.7.0-rc1                                                         | [Runtime v0.7.0-rc1 tag](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc1), [release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.7.0-rc1) |
 | Whisky base libraries   | v4.6.8, `19b9d7942b8cfd4871eee2a8f81abc7c849307c7858873f9b504c24c1bb6b25d` archive SHA-256 | [Whisky v4.6.8 release](https://github.com/dappermint/Whisky/releases/tag/v4.6.8)                                                                                                                            |
 | WineCX GPTK base recipe | `f374f5bae40631a466c03c59180ca34605091efd`                                                 | [winecx-gptk commit](https://github.com/dappermint/winecx-gptk/tree/f374f5bae40631a466c03c59180ca34605091efd)                                                                                                |
 | Nixpkgs                 | `ac62194c3917d5f474c1a844b6fd6da2db95077d`                                                 | [Nixpkgs commit](https://github.com/NixOS/nixpkgs/tree/ac62194c3917d5f474c1a844b6fd6da2db95077d)                                                                                                             |
 
 > [!IMPORTANT]
-> The runtime also contains dynamically linked libraries for media, text, networking, compression, and X11 compatibility. Notable media dependencies include x264, x265, FDK-AAC, FAAD2, libdvdcss, libdvdnav, libdvdread, OpenH264, libde265, libaom, dav1d, SVT-AV1, libvpx, LAME, OpenMPT, FLAC, Vorbis, Opus, Theora, Speex, and libsndfile. Their own licenses and patent terms continue to apply.
+> The runtime also contains dynamically linked libraries for text, networking, cryptography, and compression. Their own licenses continue to apply.
 
 ## Generated inventory
 
 A script generates the component lists in this page. The script reads `docs/legal/licenses/index.json`, `Package.resolved`, `web/package.json`, and `runtime.json`. Do not edit the lists between the `licenses:begin` and `licenses:end` markers by hand. The developer guide `docs/development/license-automation.md` describes the process.
 
 <!-- licenses:begin launcher -->
-
 ## Launcher components
 
 These components ship inside the app. `Not yet verified` means that the project has not confirmed the license of the component.
 
-| Component                                                                                                                                          | Version | License   | Status   | Text                                                    |
-| -------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- | -------- | ------------------------------------------------------- |
-| [Sparkle](https://github.com/sparkle-project/Sparkle/tree/2.9.6) (with bundled bsdiff, sais-lite, ed25519, and signature-verifier notices)         | 2.9.6   | `MIT`     | Verified | [`sparkle.txt`](licenses/sparkle.txt)                   |
-| [YouTubePlayerKit](https://github.com/SvenTiigi/YouTubePlayerKit/tree/2.0.5)                                                                       | 2.0.5   | `MIT`     | Verified | [`youtubeplayerkit.txt`](licenses/youtubeplayerkit.txt) |
-| [Application icon](https://github.com/LuMiSxh/Arknights-MacOS-Client/tree/main/Resources) (`just icon` generates it from `Resources/AppIcon.icon`) | project | `MPL-2.0` | Verified | None                                                    |
-| [Wallpaper tag data](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/WallpaperTags.json)             | project | `MPL-2.0` | Verified | None                                                    |
-| [App icon tint source image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/AppIconTintSource.png)  | project | `MPL-2.0` | Verified | None                                                    |
-| [Game icon background image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/GameIconBackground.png) | project | `MPL-2.0` | Verified | None                                                    |
-| [Operator icon frame graphic](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/OperatorIconFrame.svg) | project | `MPL-2.0` | Verified | None                                                    |
-
+| Component | Version | License | Status | Text |
+| --- | --- | --- | --- | --- |
+| [Sparkle](https://github.com/sparkle-project/Sparkle/tree/2.9.6) (with bundled bsdiff, sais-lite, ed25519, and signature-verifier notices) | 2.9.6 | `MIT` | Verified | [`sparkle.txt`](licenses/sparkle.txt) |
+| [YouTubePlayerKit](https://github.com/SvenTiigi/YouTubePlayerKit/tree/2.0.5) | 2.0.5 | `MIT` | Verified | [`youtubeplayerkit.txt`](licenses/youtubeplayerkit.txt) |
+| [Application icon](https://github.com/LuMiSxh/Arknights-MacOS-Client/tree/main/Resources) (`just icon` generates it from `Resources/AppIcon.icon`) | project | `MPL-2.0` | Verified | None |
+| [Wallpaper tag data](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/WallpaperTags.json) | project | `MPL-2.0` | Verified | None |
+| [App icon tint source image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/AppIconTintSource.png) | project | `MPL-2.0` | Verified | None |
+| [Game icon background image](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/GameIconBackground.png) | project | `MPL-2.0` | Verified | None |
+| [Operator icon frame graphic](https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/Sources/ArknightsClient/Resources/OperatorIconFrame.svg) | project | `MPL-2.0` | Verified | None |
 <!-- licenses:end launcher -->
 
 <!-- licenses:begin website -->
-
 ## Website components
 
 The documentation website embeds these packages. They are not part of the app. The website build also embeds the transitive dependencies of these packages. Each dependency keeps its own license.
 
-| Component                                                                              | Version | License        | Status   | Text                                                              |
-| -------------------------------------------------------------------------------------- | ------- | -------------- | -------- | ----------------------------------------------------------------- |
-| [marked](https://github.com/markedjs/marked/tree/v18.0.11)                             | 18.0.11 | `MIT`          | Verified | [`marked.txt`](licenses/marked.txt)                               |
-| [marked-gfm-heading-id](https://github.com/markedjs/marked-gfm-heading-id/tree/v4.1.4) | 4.1.4   | `MIT`          | Verified | [`marked-gfm-heading-id.txt`](licenses/marked-gfm-heading-id.txt) |
-| [mermaid](https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.2)                  | 11.17.2 | `MIT`          | Verified | [`mermaid.txt`](licenses/mermaid.txt)                             |
-| [yaml](https://github.com/eemeli/yaml/tree/v2.9.0)                                     | 2.9.0   | `ISC`          | Verified | [`yaml.txt`](licenses/yaml.txt)                                   |
-| [svelte](https://github.com/sveltejs/svelte/tree/svelte@5.57.0)                        | 5.57.0  | `MIT`          | Verified | [`svelte.txt`](licenses/svelte.txt)                               |
-| [@sveltejs/kit](https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3)             | 2.70.3  | `MIT`          | Verified | [`sveltejs-kit.txt`](licenses/sveltejs-kit.txt)                   |
-| [anasthasia](https://github.com/LuMiSxh/Anasthasia/tree/v0.2.4)                        | 0.2.4   | `BSD-3-Clause` | Verified | [`anasthasia.txt`](licenses/anasthasia.txt)                       |
-
+| Component | Version | License | Status | Text |
+| --- | --- | --- | --- | --- |
+| [marked](https://github.com/markedjs/marked/tree/v18.0.11) | 18.0.11 | `MIT` | Verified | [`marked.txt`](licenses/marked.txt) |
+| [marked-gfm-heading-id](https://github.com/markedjs/marked-gfm-heading-id/tree/v4.1.4) | 4.1.4 | `MIT` | Verified | [`marked-gfm-heading-id.txt`](licenses/marked-gfm-heading-id.txt) |
+| [mermaid](https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.2) | 11.17.2 | `MIT` | Verified | [`mermaid.txt`](licenses/mermaid.txt) |
+| [yaml](https://github.com/eemeli/yaml/tree/v2.9.0) | 2.9.0 | `ISC` | Verified | [`yaml.txt`](licenses/yaml.txt) |
+| [svelte](https://github.com/sveltejs/svelte/tree/svelte@5.57.0) | 5.57.0 | `MIT` | Verified | [`svelte.txt`](licenses/svelte.txt) |
+| [@sveltejs/kit](https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3) | 2.70.3 | `MIT` | Verified | [`sveltejs-kit.txt`](licenses/sveltejs-kit.txt) |
+| [anasthasia](https://github.com/LuMiSxh/Anasthasia/tree/v0.2.4) | 0.2.4 | `BSD-3-Clause` | Verified | [`anasthasia.txt`](licenses/anasthasia.txt) |
 <!-- licenses:end website -->
 
 <!-- licenses:begin runtime -->
-
 ## Runtime components
 
 The runtime archive lists its components and their licenses in `Licenses/index.json`. The [license texts](license-texts.md) page merges that list with the launcher components when the maintainer generates it with a prepared runtime.
@@ -95,7 +90,7 @@ The runtime lists above can include notices that need more than a short label. A
 > A component with the status `Not yet verified` has no confirmed license. A public binary release needs a verified license for every component that ships. Keep the GitHub release in draft until the review of each such component is complete.
 
 > [!CAUTION]
-> Media codecs and related libraries can carry obligations or patent considerations that a short license label does not capture. Do not remove a notice because a component is dynamically linked. Do not assume that this inventory answers patent or distribution questions.
+> A library can carry obligations that a short license label does not capture. Do not remove a notice because a component is dynamically linked. Do not assume that this inventory answers patent or distribution questions.
 
 ## Included and excluded material
 

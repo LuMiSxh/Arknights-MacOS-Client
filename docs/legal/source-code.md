@@ -23,15 +23,14 @@ The tag contains the source for the launcher executable, project compatibility w
 The release workflow attaches `Runtime-Build-Recipe.tar.gz`. It contains the pinned runtime build recipe and is useful for provenance. It is not a complete corresponding-source archive for every binary in the prebuilt runtime. Do not describe its presence as a replacement for the upstream source and notice obligations of those components.
 
 <!-- licenses:begin offer -->
-
 ## Written offer for LGPL and GPL components
 
 The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is one example. You can ask for the corresponding source of any such component in a release that you received. To ask, open an issue in the [Arknights Client repository](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues). Name the version of the app and the component. The maintainer then sends the source or the exact public location of the source.
 
 ### What this offer covers today
 
-- The runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.6.1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.6.1).
-- The pinned build recipe archive: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1-source.tar.gz](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1-source.tar.gz). Its SHA-256 is `55889cdbda123751ab5b7e9ea0dc34c8afd8ee95e548f84d6a390fdc5c5e70d2`.
+- The runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.7.0-rc1](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.7.0-rc1).
+- The pinned build recipe archive: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc1/Arknights-MacOS-Runtime-v0.7.0-rc1-source.tar.gz](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc1/Arknights-MacOS-Runtime-v0.7.0-rc1-source.tar.gz). Its SHA-256 is `d6e6370fa1694feaf9d4f4995545227a71b7697b2b8c8283350cb79eb24cdc54`.
 - The pinned source trees of the runtime components, as `runtime.json` records them. [Third-party notices](third-party-notices.md) links each tree.
 - The pinned [Nixpkgs revision](https://github.com/NixOS/nixpkgs/tree/ac62194c3917d5f474c1a844b6fd6da2db95077d). It names the exact source of each library that the runtime copies from Nixpkgs.
 
@@ -40,7 +39,6 @@ The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is o
 - The build recipe archive is a provenance record. It is not a complete corresponding-source archive.
 - The project has not yet published one source archive for the libraries that the runtime copies from Nixpkgs. The runtime repository still has this work open. Until the project publishes that archive, the written offer for these libraries uses the issue process above.
 - This text does not fix a period of validity for the offer. The maintainer must set that period before a public binary release.
-
 <!-- licenses:end offer -->
 
 > [!IMPORTANT]

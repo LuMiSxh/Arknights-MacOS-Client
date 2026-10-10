@@ -31,14 +31,14 @@ Each entry in the client index has these fields.
 | `spdx`                      | An SPDX expression. Use `NOASSERTION` when the license is not known.                                       |
 | `files`                     | License texts in `docs/legal/licenses/`. A project-authored resource can have none.                        |
 | `status`                    | `verified` or `unverified`. A `verified` entry needs `basis`. An `unverified` entry can list `candidates`. |
-| `scope`                     | `app` (default), `website`, or `runtime-legacy`.                                                           |
+| `scope`                     | `app` (default), `website`, or `runtime-fallback`.                                                         |
 | `ecosystem`, `package`      | `swiftpm` or `npm`, and the package identity. The check compares the version with the lock data.           |
 | `paths`                     | Resource file names in `Sources/ArknightsClient/Resources/`.                                               |
 | `runtimeComponent`          | A key of `components` in `runtime.json`. The script derives `version` and `source` from it.                |
 
 The key `textOrigins` records where each license text came from. Take a text from the package checkout or `node_modules` first. If neither has it, copy the canonical SPDX text from the `spdx/license-list-data` repository and record the tag. Never mark a license `verified` without a text or a project record that proves it.
 
-The scope `runtime-legacy` lists the components of a runtime that has no `Licenses/index.json`. The script uses these entries only for such a runtime.
+The scope `runtime-fallback` lists the components of the pinned runtime. The script uses these entries only when no prepared runtime supplies a `Licenses/index.json`. Keep them equal to the runtime inventory of the pinned release. A grouped entry can name several libraries in `note`.
 
 ## Add a dependency
 
@@ -68,7 +68,7 @@ For a new resource file, add its name to `paths` of an entry. Mark the entry `un
 
 `docs/legal/license-texts.md` holds the full text of every license in the client index. Each component has its own heading. A text that two components share appears once. The website publishes the page at `/legal/license-texts/`.
 
-Without a prepared runtime, the page lists the `runtime-legacy` entries. To merge the runtime index into the page, run `uv run --locked scripts/licenses.py --runtime .build/runtime`. Then commit the result. Run `--check` with the same `--runtime` option to find a stale page.
+Without a prepared runtime, the page lists the `runtime-fallback` entries. To merge the runtime index into the page, run `uv run --locked scripts/licenses.py --runtime .build/runtime`. Then commit the result. Run `--check` with the same `--runtime` option to find a stale page.
 
 ## Build the app
 
@@ -80,7 +80,7 @@ Compression saves about 80 KB of the 115 KB document. The runtime texts increase
 
 The app bundle also keeps `LICENSE`, `CHANGELOG.md`, and `RUNTIME.json` as plain copies. The build generates only the notices, so only the notices use deflate. [Bundled resources](architecture/README.md#bundled-resources) states the rule. The bundle does not contain `Licenses/` or `NOTICE.md` of the runtime. `scripts/download_runtime.py` keeps them in `.build/runtime` for the checks and the merge.
 
-A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-legacy` entries.
+A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-fallback` entries.
 
 ## Strict mode
 
