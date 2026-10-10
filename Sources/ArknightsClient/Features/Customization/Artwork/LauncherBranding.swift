@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
+import ArknightsInfrastructure
 import Foundation
 
 struct LauncherBranding: Decodable, Sendable {
@@ -75,7 +76,10 @@ actor ArtworkCache {
 		session: URLSession = .shared,
 		directory: URL
 	) {
-		loader = BoundedHTTPDataLoader(session: session)
+		loader = BoundedHTTPDataLoader(
+			session: session,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 		self.directory = directory
 	}
 

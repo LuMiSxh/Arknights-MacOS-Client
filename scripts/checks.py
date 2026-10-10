@@ -41,7 +41,7 @@ def swift_sources() -> list[Path]:
 SWIFT_SOURCES_ROOT = PROJECT_DIR / "Sources"
 LOWER_LAYERS = ("Core", "Shared", "Infrastructure")
 TYPE_DECLARATION = re.compile(
-    r"^(?:(?:public|internal|final|indirect|nonisolated|@\w+(?:\([^)]*\))?)\s+)*"
+    r"^(?:(?:public|package|internal|final|indirect|nonisolated|@\w+(?:\([^)]*\))?)\s+)*"
     r"(?:struct|class|enum|protocol|actor|typealias)\s+([A-Z]\w*)",
     re.MULTILINE,
 )

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Foundation
 
 actor PresetCatalogService {
@@ -36,6 +37,7 @@ actor PresetCatalogService {
 		self.tagStore = tagStore
 		loader = BoundedHTTPDataLoader(
 			session: session,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes,
 			redirectValidator: Self.isAllowedRemoteAssetURL
 		)
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import CryptoKit
 import Foundation
 
@@ -24,7 +25,10 @@ actor LauncherAPI {
 		maximumAPIResponseBytes: Int = AppConstants.Network.yostarAPIResponseMaximumBytes,
 		maximumManifestResponseBytes: Int = AppConstants.Network.yostarManifestMaximumBytes
 	) {
-		loader = BoundedHTTPDataLoader(session: session)
+		loader = BoundedHTTPDataLoader(
+			session: session,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 		hypergryph = HypergryphLauncherAPI(

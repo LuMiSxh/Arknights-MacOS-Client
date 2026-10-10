@@ -3,6 +3,7 @@
 import Foundation
 
 @testable import ArknightsClient
+@testable import ArknightsInfrastructure
 
 /// Holds the install lease for `root` while `body` runs, then releases it before returning or throwing.
 func withTestInstallDirectory<R>(

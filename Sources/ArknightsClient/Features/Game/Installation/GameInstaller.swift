@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Darwin
 import Foundation
 
@@ -27,7 +28,10 @@ struct GameInstaller: Sendable {
 		reuseSourceDirectories: (@Sendable (GameRegion) async -> [URL])? = nil
 	) {
 		self.api = api
-		chunkSession = HTTPChunkSession(configuration: session.configuration)
+		chunkSession = HTTPChunkSession(
+			configuration: session.configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 		self.compatibilityManager = compatibilityManager
 		self.log = log
 		self.reuseSourceDirectories = reuseSourceDirectories

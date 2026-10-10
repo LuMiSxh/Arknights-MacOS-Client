@@ -4,6 +4,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsInfrastructure
 
 @Suite(.serialized)
 struct HTTPChunkSessionTests {
@@ -11,7 +12,10 @@ struct HTTPChunkSessionTests {
 	func chunkSessionStreamsResponseAndBodyWithoutPerByteIteration() async throws {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [ChunkedURLProtocol.self]
-		let session = HTTPChunkSession(configuration: configuration)
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 		let url = URL(string: "https://download.test/game.bin")!
 		let expected = Data(repeating: 0xA5, count: 512 * 1_024)
 		ChunkedURLProtocol.response = HTTPURLResponse(
@@ -77,7 +81,10 @@ struct HTTPChunkSessionTests {
 	func chunkSessionCreatesConcurrentStreamsWithoutRacingSessionSetup() async throws {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [ChunkedURLProtocol.self]
-		let session = HTTPChunkSession(configuration: configuration)
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 		let url = URL(string: "https://download.test/game.bin")!
 		let expected = Data(repeating: 0x5A, count: 4_096)
 		ChunkedURLProtocol.response = HTTPURLResponse(
@@ -110,7 +117,10 @@ struct HTTPChunkSessionTests {
 	func chunkSessionRejectsAStreamRedirectOutsideItsPolicy() async throws {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [ChunkedURLProtocol.self]
-		let session = HTTPChunkSession(configuration: configuration)
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 		let sourceURL = URL(string: "https://download.test/game.bin")!
 		ChunkedURLProtocol.configureRedirect(to: URL(string: "https://evil.test/game.bin")!)
 		defer { ChunkedURLProtocol.reset() }
@@ -133,7 +143,10 @@ struct HTTPChunkSessionTests {
 	func yostarPolicyRejectsARedirectToAForeignHost() async throws {
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [ChunkedURLProtocol.self]
-		let session = HTTPChunkSession(configuration: configuration)
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 		let sourceURL = URL(string: "https://launcher-pkg-ark-en.yo-star.com/game.bin")!
 		let foreignURL = URL(string: "https://yo-star.com.evil.test/game.bin")!
 		ChunkedURLProtocol.configureRedirect(to: foreignURL)

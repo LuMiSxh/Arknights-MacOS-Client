@@ -33,9 +33,15 @@ let package = Package(
 			name: "CCommonCrypto",
 			path: "RuntimeSupport/CommonCrypto"
 		),
+		.target(
+			name: "ArknightsInfrastructure",
+			path: "Sources/ArknightsInfrastructure",
+			swiftSettings: swiftSettings()
+		),
 		.executableTarget(
 			name: "ArknightsClient",
 			dependencies: [
+				"ArknightsInfrastructure",
 				"CCommonCrypto",
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
 				.product(name: "Sparkle", package: "Sparkle"),
@@ -48,6 +54,11 @@ let package = Package(
 			name: "ArknightsClientTests",
 			dependencies: ["ArknightsClient"],
 			path: "Tests/ArknightsClientTests"
+		),
+		.testTarget(
+			name: "ArknightsInfrastructureTests",
+			dependencies: ["ArknightsInfrastructure"],
+			path: "Tests/ArknightsInfrastructureTests"
 		),
 		.testTarget(
 			name: "ArknightsClientIntegrationTests",

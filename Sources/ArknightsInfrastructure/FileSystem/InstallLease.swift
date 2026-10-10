@@ -7,8 +7,8 @@ import Foundation
 ///
 /// The lease owns a separate lock descriptor whose device and inode match the pinned root.
 /// Call ``release()`` to unlock and close deterministically; `deinit` only backs that up.
-struct InstallLease: ~Copyable, Sendable {
-	let directory: InstallerInstallDirectory
+package struct InstallLease: ~Copyable, Sendable {
+	package let directory: InstallerInstallDirectory
 	private let lockDescriptor: Int32
 
 	/// Pins the install root and takes its lock, or throws `directoryInUse` while another holder has it.
@@ -27,7 +27,7 @@ struct InstallLease: ~Copyable, Sendable {
 }
 
 /// Runs `body` while holding the install lease, and releases it before returning or throwing.
-func withInstallLease<R>(
+package func withInstallLease<R>(
 	at url: URL,
 	_ body: (borrowing InstallLease) throws -> R
 ) throws -> R {
@@ -42,7 +42,7 @@ func withInstallLease<R>(
 	}
 }
 
-func withInstallLease<R>(
+package func withInstallLease<R>(
 	at url: URL,
 	isolation: isolated (any Actor)? = #isolation,
 	_ body: (borrowing InstallLease) async throws -> R

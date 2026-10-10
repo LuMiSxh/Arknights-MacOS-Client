@@ -6,6 +6,7 @@ import Synchronization
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsInfrastructure
 
 struct GameInstallerParallelVerificationTests {
 	private struct Fixture {

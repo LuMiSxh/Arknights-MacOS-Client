@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Foundation
 
 /// Adapts Hypergryph's launcher metadata and per-file manifest to the launcher's normal
@@ -27,6 +28,7 @@ actor HypergryphLauncherAPI {
 	) {
 		loader = BoundedHTTPDataLoader(
 			session: session,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes,
 			redirectValidator: Self.isAllowedMetadataURL
 		)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes

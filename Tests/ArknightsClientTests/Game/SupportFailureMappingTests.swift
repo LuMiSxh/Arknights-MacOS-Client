@@ -4,6 +4,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsInfrastructure
 
 @MainActor
 struct SupportFailureMappingTests {

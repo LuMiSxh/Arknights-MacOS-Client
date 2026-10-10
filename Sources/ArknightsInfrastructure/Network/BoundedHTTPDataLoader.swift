@@ -3,12 +3,13 @@
 import Foundation
 
 /// Streams an HTTP response into memory while enforcing a hard byte limit before appending.
-struct BoundedHTTPDataLoader: Sendable {
+package struct BoundedHTTPDataLoader: Sendable {
 	private let session: HTTPChunkSession
 	private let redirectValidator: (@Sendable (URL) -> Bool)?
 
-	init(
+	package init(
 		session: URLSession = .shared,
+		maximumBufferedBytes: Int,
 		redirectValidator: @escaping @Sendable (URL) -> Bool = {
 			$0.scheme?.lowercased() == "https"
 		}
@@ -16,11 +17,12 @@ struct BoundedHTTPDataLoader: Sendable {
 		self.redirectValidator = redirectValidator
 		self.session = HTTPChunkSession(
 			configuration: session.configuration,
-			redirectValidator: redirectValidator
+			redirectValidator: redirectValidator,
+			maximumBufferedBytes: maximumBufferedBytes
 		)
 	}
 
-	func data(
+	package func data(
 		for request: URLRequest,
 		maximumBytes: Int,
 		redirectValidator: (@Sendable (URL) -> Bool)? = nil

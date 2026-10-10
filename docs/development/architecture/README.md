@@ -202,7 +202,7 @@ compiler rejects a cycle.
 
 | No. | Target                    | Source folders                                                                                  | Depends on                                           | Linked products       | Status  |
 | --- | ------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------- | ------- |
-| 1   | `ArknightsInfrastructure` | `Infrastructure`                                                                                | none                                                 | none                  | planned |
+| 1   | `ArknightsInfrastructure` | `Infrastructure`                                                                                | none                                                 | none                  | done    |
 | 2   | `ArknightsCore`           | `Shared`, `Core`, `Resources`                                                                   | 1                                                    | none                  | planned |
 | 3   | `ArknightsCustomization`  | `Features/Customization`                                                                        | 1, 2                                                 | none                  | planned |
 | 4   | `ArknightsGameInstallation` | `Features/Game/Installation`, `Features/Game/Compatibility`                                   | 1, 2, 3                                              | `CCommonCrypto`       | planned |
@@ -224,7 +224,6 @@ allowed ones:
 
 | From                  | To                                  | Types that cross the boundary                                                                                     |
 | --------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `Infrastructure`      | `Shared`                            | `AppConstants` in `HTTPChunkSession.swift:70`. C15 removes it by injecting the limit.                              |
 | `Core`, `Shared`      | none                                | `Shared` names no `Core` or feature type. `Core` names only `Shared` types (`LauncherLog`, `SupportCode`).          |
 | Installation          | `Core`, `Shared`, `Infrastructure`, Customization | `LauncherBranding` and `CustomizationError` (`LauncherAPI.swift:58`, `InstallationSupportFailure.swift:60`). |
 | Runtime               | Installation, Customization         | `InstallationController`, `GameCompatibilityManager` (`GameSessionController.swift:38,44`), `PresetCatalogService` (`StorageMaintenanceController.swift:13`). |

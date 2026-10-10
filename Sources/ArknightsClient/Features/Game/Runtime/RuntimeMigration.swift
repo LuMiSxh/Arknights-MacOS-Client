@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Foundation
 
 /// One-time Wine prefix setup step, recorded so it isn't replayed on every launch.

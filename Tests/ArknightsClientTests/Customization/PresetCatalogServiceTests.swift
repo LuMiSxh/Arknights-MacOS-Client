@@ -4,6 +4,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsInfrastructure
 
 @Suite(.serialized)
 struct PresetCatalogServiceTests {
@@ -208,6 +209,7 @@ struct PresetCatalogServiceTests {
 		defer { BoundedDataURLProtocol.reset() }
 		let loader = BoundedHTTPDataLoader(
 			session: URLSession(configuration: configuration),
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes,
 			redirectValidator: PresetCatalogService.isAllowedRemoteAssetURL
 		)
 		let request = URLRequest(url: URL(string: "https://cdn.jsdelivr.net/image.png")!)

@@ -5,6 +5,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsInfrastructure
 
 struct GameInstallerPathTests {
 	@Test

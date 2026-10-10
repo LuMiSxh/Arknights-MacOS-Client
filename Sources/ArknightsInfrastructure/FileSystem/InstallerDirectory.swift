@@ -3,7 +3,7 @@
 import Darwin
 import Foundation
 
-enum InstallerFileSystemError: Error, Sendable {
+package enum InstallerFileSystemError: Error, Sendable {
 	case invalidPath(String)
 	case symbolicLink(URL)
 	case unsafeFile(URL)
@@ -11,11 +11,11 @@ enum InstallerFileSystemError: Error, Sendable {
 	case directoryInUse(URL)
 }
 
-struct InstallerFileIdentity: Equatable, Sendable {
+package struct InstallerFileIdentity: Equatable, Sendable {
 	let device: dev_t
 	let inode: ino_t
 
-	init(_ status: stat) {
+	package init(_ status: stat) {
 		device = status.st_dev
 		inode = status.st_ino
 	}
@@ -23,11 +23,11 @@ struct InstallerFileIdentity: Equatable, Sendable {
 
 /// Pins the install root. ``InstallLease`` owns the cross-process lock; the legacy `init(at:)`
 /// still locks until deallocation for callers that have not moved to the lease yet.
-final class InstallerInstallDirectory: @unchecked Sendable {
-	let root: InstallerDirectoryHandle
+package final class InstallerInstallDirectory: @unchecked Sendable {
+	package let root: InstallerDirectoryHandle
 	private let legacyLockDescriptor: Int32?
 
-	var url: URL { root.url }
+	package var url: URL { root.url }
 
 	/// Legacy locking initializer; it takes the same lock as ``InstallLease`` on its own descriptor.
 	convenience init(at url: URL) throws {
@@ -121,7 +121,7 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 		return InstallerDirectoryHandle(descriptor: descriptor, url: canonicalURL)
 	}
 
-	func directory(at relativePath: String, createParents: Bool = false) throws
+	package func directory(at relativePath: String, createParents: Bool = false) throws
 		-> InstallerDirectoryHandle
 	{
 		let components = try Self.pathComponents(relativePath)
@@ -132,7 +132,7 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 		return directory
 	}
 
-	func file(at relativePath: String, createParents: Bool = false) throws
+	package func file(at relativePath: String, createParents: Bool = false) throws
 		-> InstallerFilePath
 	{
 		let components = try Self.pathComponents(relativePath)
@@ -146,7 +146,7 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 		return directory.file(named: name)
 	}
 
-	func stagingDirectory(named name: String) throws -> InstallerDirectoryHandle {
+	package func stagingDirectory(named name: String) throws -> InstallerDirectoryHandle {
 		try root.stagingDirectory(named: name)
 	}
 
@@ -168,7 +168,7 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 		try requireNoExtendedACL(on: descriptor, at: url)
 	}
 
-	static func makePrivateRegularFile(_ descriptor: Int32, at url: URL) throws {
+	package static func makePrivateRegularFile(_ descriptor: Int32, at url: URL) throws {
 		var status = stat()
 		guard fstat(descriptor, &status) == 0,
 			status.st_mode & S_IFMT == S_IFREG,
@@ -188,7 +188,7 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 		try requireNoExtendedACL(on: descriptor, at: url)
 	}
 
-	static func validateTrustedStateFile(_ descriptor: Int32, at url: URL) throws {
+	package static func validateTrustedStateFile(_ descriptor: Int32, at url: URL) throws {
 		var status = stat()
 		guard fstat(descriptor, &status) == 0,
 			status.st_mode & S_IFMT == S_IFREG,
@@ -239,8 +239,8 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 }
 
 /// An open directory reached relative to the pinned install root or private staging directory.
-final class InstallerDirectoryHandle: @unchecked Sendable {
-	let descriptor: Int32
+package final class InstallerDirectoryHandle: @unchecked Sendable {
+	package let descriptor: Int32
 	let url: URL
 
 	init(descriptor: Int32, url: URL) {
@@ -252,7 +252,7 @@ final class InstallerDirectoryHandle: @unchecked Sendable {
 		_ = close(descriptor)
 	}
 
-	func file(named name: String) -> InstallerFilePath {
+	package func file(named name: String) -> InstallerFilePath {
 		InstallerFilePath(directory: self, name: name, url: url.appending(path: name))
 	}
 
@@ -298,7 +298,7 @@ final class InstallerDirectoryHandle: @unchecked Sendable {
 	/// Other-UID isolation of staged names depends on the volume enforcing ownership and mode bits.
 	/// Descriptor hashing and atomic rename still apply elsewhere, but cannot block hostile
 	/// source-name replacement on ownership-ignored volumes.
-	func stagingDirectory(named name: String) throws -> InstallerDirectoryHandle {
+	package func stagingDirectory(named name: String) throws -> InstallerDirectoryHandle {
 		let directory = try openDirectory(named: name, create: true, mode: 0o700)
 		var status = stat()
 		guard fstat(directory.descriptor, &status) == 0,
@@ -370,16 +370,16 @@ final class InstallerDirectoryHandle: @unchecked Sendable {
 
 /// A file name paired with its already-open parent directory, so later operations do not
 /// resolve mutable parent path components again.
-struct InstallerFilePath: @unchecked Sendable {
-	let directory: InstallerDirectoryHandle
-	let name: String
-	let url: URL
+package struct InstallerFilePath: @unchecked Sendable {
+	package let directory: InstallerDirectoryHandle
+	package let name: String
+	package let url: URL
 
-	func sibling(named name: String) -> InstallerFilePath {
+	package func sibling(named name: String) -> InstallerFilePath {
 		directory.file(named: name)
 	}
 
-	func open(flags: Int32, mode: mode_t = 0) throws -> Int32 {
+	package func open(flags: Int32, mode: mode_t = 0) throws -> Int32 {
 		try InstallerDirectoryHandle.validateLeaf(name)
 		let descriptor = openat(directory.descriptor, name, flags | O_NONBLOCK, mode)
 		guard descriptor >= 0 else {
@@ -389,15 +389,15 @@ struct InstallerFilePath: @unchecked Sendable {
 		return descriptor
 	}
 
-	func stat() throws -> stat? {
+	package func stat() throws -> stat? {
 		try directory.statFile(named: name)
 	}
 
-	func rename(to destination: InstallerFilePath) throws {
+	package func rename(to destination: InstallerFilePath) throws {
 		try directory.renameFile(named: name, to: destination.directory, as: destination.name)
 	}
 
-	func renameExclusively(to destination: InstallerFilePath) throws {
+	package func renameExclusively(to destination: InstallerFilePath) throws {
 		try InstallerDirectoryHandle.validateLeaf(name)
 		try InstallerDirectoryHandle.validateLeaf(destination.name)
 		guard
@@ -411,7 +411,7 @@ struct InstallerFilePath: @unchecked Sendable {
 		else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
 	}
 
-	func unlink() throws {
+	package func unlink() throws {
 		try directory.unlinkFile(named: name)
 	}
 }

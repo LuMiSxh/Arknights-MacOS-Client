@@ -3,14 +3,14 @@
 import Darwin
 import Foundation
 
-enum BoundedFileReadError: Error, Sendable {
+package enum BoundedFileReadError: Error, Sendable {
 	case invalidMaximum(Int)
 	case notRegularFile(URL)
 	case tooLarge(URL, maximumBytes: Int)
 }
 
-enum BoundedFileReader {
-	static func readRegularFile(at url: URL, maximumBytes: Int) throws -> Data {
+package enum BoundedFileReader {
+	package static func readRegularFile(at url: URL, maximumBytes: Int) throws -> Data {
 		guard maximumBytes >= 0, maximumBytes < Int.max else {
 			throw BoundedFileReadError.invalidMaximum(maximumBytes)
 		}
@@ -26,7 +26,7 @@ enum BoundedFileReader {
 		)
 	}
 
-	static func readRegularFile(
+	package static func readRegularFile(
 		fileDescriptor descriptor: Int32,
 		at url: URL,
 		maximumBytes: Int

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Foundation
 
 struct LauncherAnnouncementFeed: Decodable, Sendable {
@@ -51,7 +52,10 @@ struct LauncherAnnouncementService: Sendable {
 	private let loader: BoundedHTTPDataLoader
 
 	init(session: URLSession = .shared) {
-		loader = BoundedHTTPDataLoader(session: session)
+		loader = BoundedHTTPDataLoader(
+			session: session,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
 	}
 
 	func announcements(from endpoint: URL) async throws -> [LauncherAnnouncement] {

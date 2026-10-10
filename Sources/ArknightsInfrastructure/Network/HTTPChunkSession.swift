@@ -2,20 +2,20 @@
 
 import Foundation
 
-enum HTTPTransportError: Error, Sendable {
+package enum HTTPTransportError: Error, Sendable {
 	case invalidResponse(URL?)
 	case responseTooLarge(URL, maximumBytes: Int)
 	case responseSizeMismatch(URL, expected: Int64, actual: Int64)
 	case redirectRejected(URL)
 }
 
-enum HTTPChunkEvent: Sendable {
+package enum HTTPChunkEvent: Sendable {
 	case response(HTTPURLResponse)
 	case data(Data)
 }
 
-struct HTTPChunkStream: Sendable {
-	let events: AsyncThrowingStream<HTTPChunkEvent, any Error>
+package struct HTTPChunkStream: Sendable {
+	package let events: AsyncThrowingStream<HTTPChunkEvent, any Error>
 	private let cancelHandler: @Sendable () -> Void
 	private let acknowledgeHandler: @Sendable (Int) -> Void
 
@@ -29,13 +29,13 @@ struct HTTPChunkStream: Sendable {
 		self.acknowledgeHandler = acknowledgeHandler
 	}
 
-	func cancel() {
+	package func cancel() {
 		cancelHandler()
 	}
 
 	/// Releases a consumed chunk's bytes from the stream's ceiling. Every consumer must call
 	/// this for every chunk, or the stream stays suspended once the ceiling is reached.
-	func acknowledge(_ byteCount: Int) {
+	package func acknowledge(_ byteCount: Int) {
 		acknowledgeHandler(byteCount)
 	}
 }
@@ -46,7 +46,7 @@ struct HTTPChunkStream: Sendable {
 ///
 /// `AsyncThrowingStream` has no backpressure, so each stream counts its unacknowledged bytes
 /// and suspends its task at the ceiling, letting TCP flow control slow the server down.
-final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Sendable {
 	private typealias Continuation = AsyncThrowingStream<HTTPChunkEvent, any Error>.Continuation
 
 	private struct Subscriber {
@@ -64,10 +64,10 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 	private var subscribers: [Int: Subscriber] = [:]
 	private var session: URLSession!
 
-	init(
+	package init(
 		configuration: URLSessionConfiguration,
 		redirectValidator: (@Sendable (URL) -> Bool)? = nil,
-		maximumBufferedBytes: Int = AppConstants.Network.maximumBufferedStreamBytes
+		maximumBufferedBytes: Int
 	) {
 		self.redirectValidator = redirectValidator
 		self.maximumBufferedBytes = maximumBufferedBytes
@@ -84,7 +84,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		)
 	}
 
-	func stream(
+	package func stream(
 		for request: URLRequest,
 		redirectValidator: (@Sendable (URL) -> Bool)? = nil
 	) -> HTTPChunkStream {
@@ -112,7 +112,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		)
 	}
 
-	func urlSession(
+	package func urlSession(
 		_ session: URLSession,
 		dataTask: URLSessionDataTask,
 		didReceive response: URLResponse,
@@ -130,7 +130,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		completionHandler(.allow)
 	}
 
-	func urlSession(
+	package func urlSession(
 		_ session: URLSession,
 		task: URLSessionTask,
 		willPerformHTTPRedirection response: HTTPURLResponse,
@@ -153,7 +153,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		completionHandler(request)
 	}
 
-	func urlSession(
+	package func urlSession(
 		_ session: URLSession,
 		dataTask: URLSessionDataTask,
 		didReceive data: Data
@@ -184,7 +184,7 @@ final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @unchecked Senda
 		}
 	}
 
-	func urlSession(
+	package func urlSession(
 		_ session: URLSession,
 		task: URLSessionTask,
 		didCompleteWithError error: (any Error)?

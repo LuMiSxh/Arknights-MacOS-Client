@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsInfrastructure
 import Foundation
 
 /// Reads the traditional-Chinese Windows client contract exposed by Gryphline's launcher.
@@ -29,6 +30,7 @@ actor GryphlineLauncherAPI {
 	) {
 		loader = BoundedHTTPDataLoader(
 			session: session,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes,
 			redirectValidator: Self.isAllowedMetadataURL
 		)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
