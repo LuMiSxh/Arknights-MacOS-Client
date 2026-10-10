@@ -37,19 +37,6 @@ extension GameInstaller {
 		}
 		let stream = chunkSession.stream(for: request, redirectValidator: redirectValidator)
 		defer { stream.cancel() }
-		let counter = download.counter
-		let report = download.progress
-		let progressMonitor = Task {
-			do {
-				while !Task.isCancelled {
-					try await Task.sleep(for: AppConstants.Network.transferRateMonitorInterval)
-					guard !Task.isCancelled else { break }
-					await report(await counter.refresh(file: item.path))
-				}
-			} catch {
-				// The monitor's sleep ends when the stream completes or installation pauses.
-			}
-		}
 		var transfer = ReceivedTransfer(rangeBaseBytes: download.existingBytes)
 		do {
 			try await withTaskCancellationHandler(
@@ -72,16 +59,12 @@ extension GameInstaller {
 					stream.cancel()
 				})
 		} catch {
-			progressMonitor.cancel()
-			await progressMonitor.value
 			if Task.isCancelled { throw CancellationError() }
 			if let transportError = error as? HTTPTransportError {
 				throw Self.launcherError(for: transportError)
 			}
 			throw error
 		}
-		progressMonitor.cancel()
-		await progressMonitor.value
 		try await validateCompletedTransfer(transfer, for: download)
 		return transfer.newlyDownloaded
 	}

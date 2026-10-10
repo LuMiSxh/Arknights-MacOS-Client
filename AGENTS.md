@@ -52,6 +52,9 @@
 - Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add concise DocC for public APIs and complex domain models.
 - Test behavior by regression impact; share fixtures and parameterize equivalent cases without deleting path, persistence, migration, isolation, cancellation, or concurrency contracts.
 - Keep developer simulation in `SimulatedLauncherActions` (`#if DEBUG`); production action bodies never branch on developer mode.
+- Bound parallel file work with a windowed task group and an `AppConstants` limit.
+- Hash from the read buffer; no per-block `Data` copies.
+- Only a small leaf view reads per-tick progress.
 
 ## Verification and Safety
 

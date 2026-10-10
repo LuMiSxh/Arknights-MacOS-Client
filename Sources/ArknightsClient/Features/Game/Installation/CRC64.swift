@@ -29,36 +29,39 @@ struct CRC64: Sendable {
 	private(set) var value = UInt64.max
 
 	mutating func update(_ data: Data) {
-		data.withUnsafeBytes { rawBuffer in
-			let bytes = rawBuffer.bindMemory(to: UInt8.self)
-			guard var cursor = bytes.baseAddress else { return }
-			var remaining = bytes.count
-			var current = value
-			Self.tables.withUnsafeBufferPointer { tables in
-				// Reflected CRC-64: the block's lowest byte is the earliest one in the stream.
-				while remaining >= 8 {
-					let block = current ^ UInt64(littleEndian: loadUnalignedUInt64(from: cursor))
-					current =
-						tables[7][Int(block & 0xFF)]
-						^ tables[6][Int((block >> 8) & 0xFF)]
-						^ tables[5][Int((block >> 16) & 0xFF)]
-						^ tables[4][Int((block >> 24) & 0xFF)]
-						^ tables[3][Int((block >> 32) & 0xFF)]
-						^ tables[2][Int((block >> 40) & 0xFF)]
-						^ tables[1][Int((block >> 48) & 0xFF)]
-						^ tables[0][Int(block >> 56)]
-					cursor = cursor.advanced(by: 8)
-					remaining -= 8
-				}
-				while remaining > 0 {
-					current =
-						tables[0][Int((current ^ UInt64(cursor.pointee)) & 0xFF)] ^ (current >> 8)
-					cursor = cursor.advanced(by: 1)
-					remaining -= 1
-				}
+		data.withUnsafeBytes { update($0) }
+	}
+
+	/// Folds `bytes` into the running checksum. Callers may split the stream at any boundary.
+	mutating func update(_ bytes: UnsafeRawBufferPointer) {
+		guard let base = bytes.baseAddress else { return }
+		var cursor = base.assumingMemoryBound(to: UInt8.self)
+		var remaining = bytes.count
+		var current = value
+		Self.tables.withUnsafeBufferPointer { tables in
+			// Reflected CRC-64: the block's lowest byte is the earliest one in the stream.
+			while remaining >= 8 {
+				let block = current ^ UInt64(littleEndian: loadUnalignedUInt64(from: cursor))
+				current =
+					tables[7][Int(block & 0xFF)]
+					^ tables[6][Int((block >> 8) & 0xFF)]
+					^ tables[5][Int((block >> 16) & 0xFF)]
+					^ tables[4][Int((block >> 24) & 0xFF)]
+					^ tables[3][Int((block >> 32) & 0xFF)]
+					^ tables[2][Int((block >> 40) & 0xFF)]
+					^ tables[1][Int((block >> 48) & 0xFF)]
+					^ tables[0][Int(block >> 56)]
+				cursor = cursor.advanced(by: 8)
+				remaining -= 8
 			}
-			value = current
+			while remaining > 0 {
+				current =
+					tables[0][Int((current ^ UInt64(cursor.pointee)) & 0xFF)] ^ (current >> 8)
+				cursor = cursor.advanced(by: 1)
+				remaining -= 1
+			}
 		}
+		value = current
 	}
 
 	var decimalString: String {

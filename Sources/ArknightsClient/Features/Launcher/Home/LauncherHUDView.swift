@@ -38,6 +38,20 @@ struct LauncherHUDView: View {
 	}
 
 	private var controlBar: some View {
+		HUDProgressSurface(
+			lifecycle: lifecycle,
+			installation: installation,
+			tint: hudTintColor,
+			progressTint: accentColor
+		) {
+			controlBarContent
+		}
+		.animation(stateAnimation, value: installation.isDownloading)
+		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
+		.animation(stateAnimation, value: lifecycle.failure?.id)
+	}
+
+	private var controlBarContent: some View {
 		HStack(spacing: 16) {
 			LauncherActivityStatusView(
 				lifecycle: lifecycle,
@@ -86,24 +100,6 @@ struct LauncherHUDView: View {
 			}
 		}
 		.padding(16)
-		.hudPillSurface(
-			progress: LauncherDownloadProgressPresentation.outlineFraction(
-				for: installation.progress,
-				status: lifecycle.presentation.status,
-				hasPartialDownload: installation.hasPartialDownload,
-				hasFailure: lifecycle.failure != nil
-			),
-			isProgressActive: LauncherDownloadProgressPresentation.showsActiveProgressEffect(
-				for: installation.progress,
-				status: lifecycle.presentation.status,
-				hasFailure: lifecycle.failure != nil
-			),
-			tint: hudTintColor,
-			progressTint: accentColor
-		)
-		.animation(stateAnimation, value: installation.isDownloading)
-		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
-		.animation(stateAnimation, value: lifecycle.failure?.id)
 	}
 
 	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill

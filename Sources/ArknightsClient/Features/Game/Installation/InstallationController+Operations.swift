@@ -101,12 +101,13 @@ extension InstallationController {
 						}
 						self.progressSequence = update.sequence
 						self.progress = update
-						self.lifecycle.update(
-							lease,
-							to: .installing(
-								id: installationID,
-								stage: update.isVerifying ? .verifying : .downloading
-							))
+						let activity = LauncherActivity.installing(
+							id: installationID,
+							stage: update.isVerifying ? .verifying : .downloading
+						)
+						if self.lifecycle.activity != activity {
+							self.lifecycle.update(lease, to: activity)
+						}
 						let status: LauncherStatus =
 							update.isVerifying ? .verifyingInstallation : .downloading
 						if self.lifecycle.presentation.status != status {

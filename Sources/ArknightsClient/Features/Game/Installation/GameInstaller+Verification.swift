@@ -19,23 +19,20 @@ extension GameInstaller {
 		installDirectory: InstallerInstallDirectory,
 		previousFiles: [String: ManifestFile]?,
 		verifyAllExistingFiles: Bool,
-		progress: @escaping ProgressHandler
+		progress: @escaping ProgressHandler,
+		willHash: @escaping @Sendable (String) -> Void = { _ in },
+		didRead: @escaping @Sendable (Int) -> Void = { _ in }
 	) async throws -> PendingDownloads {
 		let checkPass = InstallerSignposts.signposter.beginInterval(
 			"Check pass", id: InstallerSignposts.signposter.makeSignpostID())
 		defer { InstallerSignposts.signposter.endInterval("Check pass", checkPass) }
-		var candidates:
-			[(
-				item: ManifestFile, relativePath: String, size: Int64?,
-				identity: InstallerFileIdentity?
-			)] =
-				[]
+		var candidates: [VerificationCandidate] = []
 		for item in manifest.file {
 			try Task.checkCancellation()
 			let relativePath = try Self.safeRelativePath(item.path)
 			let destination = try installFile(at: relativePath, inside: installDirectory)
 			guard let status = try destination.stat() else {
-				candidates.append((item, relativePath, nil, nil))
+				candidates.append(VerificationCandidate(item: item, relativePath: relativePath))
 				continue
 			}
 			guard status.st_mode & S_IFMT == S_IFREG, status.st_nlink == 1,
@@ -44,7 +41,12 @@ extension GameInstaller {
 				throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
 			}
 			candidates.append(
-				(item, relativePath, Int64(status.st_size), InstallerFileIdentity(status))
+				VerificationCandidate(
+					item: item,
+					relativePath: relativePath,
+					size: Int64(status.st_size),
+					identity: InstallerFileIdentity(status)
+				)
 			)
 		}
 		let hashedFiles = candidates.filter {
@@ -59,56 +61,41 @@ extension GameInstaller {
 
 		var pending: [ManifestFile] = []
 		do {
-			for candidate in candidates {
-				try Task.checkCancellation()
-				let item = candidate.item
-				tally.begin(file: item.path)
-				let needsDownload = try Self.needsDownload(
-					item,
-					destinationSize: candidate.size,
-					previousFile: previousFiles?[item.path],
-					verifyAllExistingFiles: verifyAllExistingFiles,
-					checksum: {
-						defer { tally.finishFile() }
-						let destination = try installFile(
-							at: candidate.relativePath,
-							inside: installDirectory
+			let decisions = try await withThrowingTaskGroup(of: (Int, Bool).self) { group in
+				var decisions = [Bool](repeating: false, count: candidates.count)
+				var nextIndex = 0
+				func addNext() {
+					guard nextIndex < candidates.count else { return }
+					let index = nextIndex
+					nextIndex += 1
+					let candidate = candidates[index]
+					let previousFile = previousFiles?[candidate.item.path]
+					group.addTask {
+						let needsDownload = try await self.needsDownload(
+							candidate,
+							previousFile: previousFile,
+							verifyAllExistingFiles: verifyAllExistingFiles,
+							installDirectory: installDirectory,
+							tally: tally,
+							willHash: willHash,
+							didRead: didRead
 						)
-						let descriptor = try destination.open(
-							flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW
-						)
-						defer { _ = close(descriptor) }
-						var before = stat()
-						guard fstat(descriptor, &before) == 0,
-							before.st_mode & S_IFMT == S_IFREG,
-							before.st_nlink == 1,
-							InstallerFileIdentity(before) == candidate.identity
-						else {
-							throw InstallerError.unsafeInstallerTemporaryFile(
-								destination.url
-							)
-						}
-						let checksum = try ManifestChecksum.checksum(
-							ofFileDescriptor: descriptor,
-							expected: item.hash,
-							onRead: tally.add(bytes:)
-						)
-						var after = stat()
-						guard fstat(descriptor, &after) == 0,
-							InstallerFileIdentity(after) == InstallerFileIdentity(before),
-							after.st_size == before.st_size,
-							let current = try destination.stat(),
-							InstallerFileIdentity(current) == InstallerFileIdentity(before)
-						else {
-							throw InstallerError.unsafeInstallerTemporaryFile(
-								destination.url
-							)
-						}
-						return checksum
+						return (index, needsDownload)
 					}
-				)
-				if needsDownload { pending.append(item) }
+				}
+				for _ in 0..<AppConstants.IO.verificationConcurrency { addNext() }
+				do {
+					while let (index, needsDownload) = try await group.next() {
+						decisions[index] = needsDownload
+						addNext()
+					}
+				} catch {
+					group.cancelAll()
+					throw error
+				}
+				return decisions
 			}
+			pending = zip(candidates, decisions).filter(\.1).map(\.0.item)
 		} catch {
 			monitor?.cancel()
 			_ = await monitor?.value
@@ -120,6 +107,66 @@ extension GameInstaller {
 		let sequence = await monitor.value + 1
 		await progress(tally.snapshot(sequence: sequence))
 		return PendingDownloads(files: pending, lastSequence: sequence)
+	}
+
+	/// Hashes on the concurrent pool so synchronous file reads never occupy the caller's
+	/// executor. Every identity check stays with the file it protects.
+	@concurrent
+	private func needsDownload(
+		_ candidate: VerificationCandidate,
+		previousFile: ManifestFile?,
+		verifyAllExistingFiles: Bool,
+		installDirectory: InstallerInstallDirectory,
+		tally: VerificationTally,
+		willHash: @escaping @Sendable (String) -> Void,
+		didRead: @escaping @Sendable (Int) -> Void
+	) async throws -> Bool {
+		let item = candidate.item
+		tally.begin(file: item.path)
+		return try Self.needsDownload(
+			item,
+			destinationSize: candidate.size,
+			previousFile: previousFile,
+			verifyAllExistingFiles: verifyAllExistingFiles,
+			checksum: {
+				defer { tally.finishFile() }
+				willHash(item.path)
+				let destination = try installFile(
+					at: candidate.relativePath,
+					inside: installDirectory
+				)
+				let descriptor = try destination.open(
+					flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW
+				)
+				defer { _ = close(descriptor) }
+				var before = stat()
+				guard fstat(descriptor, &before) == 0,
+					before.st_mode & S_IFMT == S_IFREG,
+					before.st_nlink == 1,
+					InstallerFileIdentity(before) == candidate.identity
+				else {
+					throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
+				}
+				let checksum = try ManifestChecksum.checksum(
+					ofFileDescriptor: descriptor,
+					expected: item.hash,
+					onRead: { count in
+						tally.add(bytes: count)
+						didRead(count)
+					}
+				)
+				var after = stat()
+				guard fstat(descriptor, &after) == 0,
+					InstallerFileIdentity(after) == InstallerFileIdentity(before),
+					after.st_size == before.st_size,
+					let current = try destination.stat(),
+					InstallerFileIdentity(current) == InstallerFileIdentity(before)
+				else {
+					throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
+				}
+				return checksum
+			}
+		)
 	}
 
 	/// Emits verification snapshots on the progress cadence until cancelled; returns the last
@@ -144,7 +191,15 @@ extension GameInstaller {
 	}
 }
 
-/// Thread-safe verification counters written by the synchronous hashing loop and read by the
+/// A manifest file with the destination state observed before hashing.
+struct VerificationCandidate: Sendable {
+	let item: ManifestFile
+	let relativePath: String
+	var size: Int64?
+	var identity: InstallerFileIdentity?
+}
+
+/// Thread-safe verification counters written by the concurrent hashing tasks and read by the
 /// progress monitor.
 final class VerificationTally: Sendable {
 	private struct State {

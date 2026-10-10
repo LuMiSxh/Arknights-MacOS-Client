@@ -58,11 +58,13 @@ enum ManifestChecksum {
 				throw POSIXError(.init(rawValue: errno) ?? .EIO)
 			}
 			guard count > 0 else { break }
-			let data = Data(buffer.prefix(count))
-			if isMD5(expected) {
-				md5.update(data: data)
-			} else {
-				crc64.update(data)
+			buffer.withUnsafeBytes { bytes in
+				let chunk = UnsafeRawBufferPointer(rebasing: bytes.prefix(count))
+				if isMD5(expected) {
+					md5.update(bufferPointer: chunk)
+				} else {
+					crc64.update(chunk)
+				}
 			}
 			offset += off_t(count)
 			onRead?(count)

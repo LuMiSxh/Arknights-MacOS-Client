@@ -10,6 +10,25 @@ extension GameInstaller {
 		verifyAllExistingFiles: Bool = false,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
+		try await install(
+			configuration: configuration,
+			region: region,
+			into: installDirectory,
+			verifyAllExistingFiles: verifyAllExistingFiles,
+			monitorClock: ContinuousClock(),
+			progress: progress
+		)
+	}
+
+	/// `monitorClock` paces the install-wide progress monitor; tests inject a manual clock.
+	func install(
+		configuration: GameConfiguration,
+		region: GameRegion,
+		into installDirectory: URL,
+		verifyAllExistingFiles: Bool,
+		monitorClock: any Clock<Duration>,
+		progress: @escaping ProgressHandler
+	) async throws -> InstallResult {
 		// Only lease acquisition gets the lease mapping; body errors keep their per-step mapping.
 		var leaseAcquired = false
 		do {
@@ -21,6 +40,7 @@ extension GameInstaller {
 					into: installDirectory,
 					installationRoot: lease.directory,
 					verifyAllExistingFiles: verifyAllExistingFiles,
+					monitorClock: monitorClock,
 					progress: progress
 				)
 			}
@@ -36,6 +56,7 @@ extension GameInstaller {
 		into installDirectory: URL,
 		installationRoot: InstallerInstallDirectory,
 		verifyAllExistingFiles: Bool,
+		monitorClock: any Clock<Duration>,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
 		let (manifest, cdn) = try await Self.fetchRemoteResources {
@@ -76,7 +97,9 @@ extension GameInstaller {
 			verifyAllExistingFiles: verifyAllExistingFiles,
 			progress: progress
 		)
-		let pendingFiles = verification.files
+		let pendingFiles = try Self.downloadOrder(verification.files) { item in
+			try partialByteCount(of: item, in: installationRoot)
+		}
 		let downloadedBytes = try Self.totalByteCount(of: pendingFiles)
 		log?.debug(
 			"Manifest has \(manifest.file.count) files; \(pendingFiles.count) need download "
@@ -87,10 +110,7 @@ extension GameInstaller {
 			pendingFiles: pendingFiles,
 			isIncompleteInstallation: previousFiles == nil
 		) { item in
-			let relativePath = try Self.safeRelativePath(item.path)
-			let destination = try installFile(at: relativePath, inside: installationRoot)
-			let partial = destination.sibling(named: destination.name + ".part")
-			return try fileSize(at: partial) ?? 0
+			try partialByteCount(of: item, in: installationRoot)
 		}
 		let counter = ProgressCounter(
 			totalBytes: progressBaseline.totalBytes,
@@ -108,46 +128,53 @@ extension GameInstaller {
 		await progress(await counter.current(file: pendingFiles[0].path))
 		let reuse = await reuseSession(for: region, target: installationRoot)
 		try Task.checkCancellation()
-		try await withThrowingTaskGroup(of: Int64.self) { group in
-			var nextIndex = 0
-			let initialCount = min(concurrentDownloads, pendingFiles.count)
-			for _ in 0..<initialCount {
-				let item = pendingFiles[nextIndex]
-				nextIndex += 1
-				addDownload(
-					item,
-					manifest: manifest,
-					cdn: cdn,
-					installDirectory: installationRoot,
-					counter: counter,
-					progress: progress,
-					region: region,
-					reuse: reuse,
-					to: &group
-				)
-			}
-
-			do {
-				while try await group.next() != nil {
-					if nextIndex < pendingFiles.count {
-						let item = pendingFiles[nextIndex]
-						nextIndex += 1
-						addDownload(
-							item,
-							manifest: manifest,
-							cdn: cdn,
-							installDirectory: installationRoot,
-							counter: counter,
-							progress: progress,
-							region: region,
-							reuse: reuse,
-							to: &group
-						)
-					}
+		try await InstallProgressMonitor.run(
+			counter: counter,
+			fallbackFile: pendingFiles[0].path,
+			clock: monitorClock,
+			progress: progress
+		) {
+			try await withThrowingTaskGroup(of: Int64.self) { group in
+				var nextIndex = 0
+				let initialCount = min(concurrentDownloads, pendingFiles.count)
+				for _ in 0..<initialCount {
+					let item = pendingFiles[nextIndex]
+					nextIndex += 1
+					addDownload(
+						item,
+						manifest: manifest,
+						cdn: cdn,
+						installDirectory: installationRoot,
+						counter: counter,
+						progress: progress,
+						region: region,
+						reuse: reuse,
+						to: &group
+					)
 				}
-			} catch {
-				group.cancelAll()
-				throw error
+
+				do {
+					while try await group.next() != nil {
+						if nextIndex < pendingFiles.count {
+							let item = pendingFiles[nextIndex]
+							nextIndex += 1
+							addDownload(
+								item,
+								manifest: manifest,
+								cdn: cdn,
+								installDirectory: installationRoot,
+								counter: counter,
+								progress: progress,
+								region: region,
+								reuse: reuse,
+								to: &group
+							)
+						}
+					}
+				} catch {
+					group.cancelAll()
+					throw error
+				}
 			}
 		}
 

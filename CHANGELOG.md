@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Global, Japan, and Korea downloads now accept only `yo-star.com` hosts, including redirects.
 - Updates from the three previous releases download only what changed.
+- Repair and first-time file checks verify several files at once and finish faster.
+- Downloads resume partial files first and start large files early, so the end of a download no longer waits on one large file.
 - Installing a second region reuses identical files from an installed one instead of downloading them again.
 - Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
 - The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries.

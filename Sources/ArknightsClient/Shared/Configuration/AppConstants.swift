@@ -152,6 +152,8 @@ enum AppConstants {
 
 	enum IO {
 		static let checksumBufferSize = 4 * 1024 * 1024
+		/// Files hashed at once during the check pass; bounds open descriptors and read buffers.
+		static let verificationConcurrency = 4
 		static let processDiagnosticMaximumBytes = 16 * 1_024
 		static let processDiagnosticMaximumCharacters = 4_096
 	}

@@ -11,6 +11,8 @@ actor ProgressCounter {
 	private var completedFiles = 0
 	private var sequence: UInt64 = 0
 	private var estimator: TransferRateEstimator
+	/// The file that most recently received network bytes; the install-wide monitor reports it.
+	private(set) var lastActiveFile: String?
 	// Chunk callbacks can fire far faster than SwiftUI needs to redraw a progress bar;
 	// throttling emissions to 10/s keeps updates smooth without flooding the UI.
 	private var lastEmission: ContinuousClock.Instant
@@ -63,6 +65,7 @@ actor ProgressCounter {
 		downloadedBytes += bytes
 		if bytes > 0 {
 			networkDownloadedBytes += bytes
+			lastActiveFile = file
 			estimator.add(bytes: bytes)
 		}
 		if force {
@@ -110,5 +113,59 @@ actor ProgressCounter {
 
 	private var estimatorClockNow: ContinuousClock.Instant {
 		clock.now
+	}
+}
+
+/// One install-wide ticker that keeps stall detection and the displayed rate fresh while
+/// bytes are not arriving.
+///
+/// Every in-flight file shares the counter's estimator, so a single tick reporting the most
+/// recently active file covers 1 to N concurrent downloads.
+enum InstallProgressMonitor {
+	/// Runs `operation` with the monitor ticking beside it. The monitor is cancelled and awaited
+	/// on every exit path, so no progress callback outlives the call.
+	static func run<Result>(
+		counter: ProgressCounter,
+		fallbackFile: String,
+		interval: Duration = AppConstants.Network.transferRateMonitorInterval,
+		clock: any Clock<Duration> = ContinuousClock(),
+		progress: @escaping GameInstaller.ProgressHandler,
+		operation: () async throws -> Result
+	) async rethrows -> Result {
+		let monitor = Task {
+			await tick(
+				counter: counter, fallbackFile: fallbackFile, interval: interval, clock: clock,
+				progress: progress)
+		}
+		let result: Result
+		do {
+			result = try await operation()
+		} catch {
+			monitor.cancel()
+			await monitor.value
+			throw error
+		}
+		monitor.cancel()
+		await monitor.value
+		return result
+	}
+
+	private static func tick(
+		counter: ProgressCounter,
+		fallbackFile: String,
+		interval: Duration,
+		clock: any Clock<Duration>,
+		progress: GameInstaller.ProgressHandler
+	) async {
+		do {
+			while !Task.isCancelled {
+				try await clock.sleep(for: interval, tolerance: interval / 10)
+				guard !Task.isCancelled else { return }
+				let file = await counter.lastActiveFile ?? fallbackFile
+				await progress(await counter.refresh(file: file))
+			}
+		} catch {
+			// Only cancellation ends the sleep: the install finished, failed, or paused.
+		}
 	}
 }

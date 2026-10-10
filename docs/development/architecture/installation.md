@@ -107,6 +107,27 @@ flowchart LR
 	Installer --> State
 ```
 
+## Parallel verification and download order
+
+File checks run in parallel. `GameInstaller.pendingDownloads` uses a windowed task group. At most
+`AppConstants.IO.verificationConcurrency` checks run at one time. The installer stores each result
+in manifest order. The download list does not depend on which check finishes first.
+
+The download order comes from `GameInstaller.downloadOrder` in `GameInstaller+Scheduling.swift`:
+
+1. Files with a non-empty `.part` file come first. Interrupted downloads finish before new ones start.
+2. The remaining files follow, largest first.
+3. Files with equal size sort by path.
+
+## Progress reporting
+
+One install-wide monitor reports transfer rate and stalls. `InstallProgressMonitor.run` starts it
+in `install`. It ticks every `AppConstants.Network.transferRateMonitorInterval` and reports the most
+recently active file. `run` cancels the monitor and waits for it before `install` returns.
+
+The HUD progress leaf, `HUDProgressSurface`, reads per-tick progress. Keep per-tick reads in this
+leaf view. Do not pass per-tick values through other views.
+
 ## Manifest and path safety
 
 `GameInstaller` validates the complete manifest before downloads begin. A path can be relative or have
@@ -249,6 +270,30 @@ unmodified helpers.
 > Never replace or delete unknown files beside the game's helpers while you troubleshoot. The manager
 > restores only files with its ownership markers. See
 > [Launch and process lifecycle](launch-and-process-lifecycle.md).
+
+## Signposts and profiling
+
+`InstallerSignposts` emits `OSSignposter` intervals. The values come from `AppConstants.Logging`:
+
+- Subsystem: `com.lumisxh.arknights-client` (`bundleIdentifier`).
+- Category: `Installer` (`installerSignpostCategory`).
+
+The installer emits these intervals:
+
+- `Check pass`: file verification.
+- `Clone`: copy of the retained `.part` file into private staging.
+- `Hash`: provider checksum of the staged file.
+- `Receive`: one download stream.
+- `First byte`: time until the first data chunk arrives.
+
+To record the intervals with Instruments, run this command. Replace the path with the app executable:
+
+```bash
+xcrun xctrace record --template 'os_signpost' --output installer.trace --time-limit 60s \
+	--launch -- /path/to/ArknightsClient
+```
+
+Open `installer.trace` in Instruments. Filter by the subsystem to show installer intervals.
 
 ## Failure handling and diagnostics
 
