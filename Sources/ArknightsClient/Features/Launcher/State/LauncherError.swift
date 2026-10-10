@@ -29,6 +29,12 @@ func launcherUserMessage(for error: any Error) -> String {
 	return "The operation could not be completed because of an unexpected error."
 }
 
+extension LauncherError: SupportCodeProviding {
+	var supportCode: SupportCode? {
+		if case .storageMigrationFailed = self { .basalt } else { nil }
+	}
+}
+
 enum LauncherError: LocalizedError, LauncherDiagnosticError {
 	case invalidResponse
 	case server(code: Int, message: String)

@@ -21,7 +21,7 @@ flow that matches your change:
   files.
 
 The primary composition and ownership sources are [`LauncherViewModel`](../../../Sources/ArknightsClient/Features/Launcher/State/LauncherViewModel.swift),
-[`LauncherState`](../../../Sources/ArknightsClient/Features/Launcher/State/LauncherState.swift),
+[`LauncherState`](../../../Sources/ArknightsClient/Core/Lifecycle/LauncherState.swift),
 and [`AppPaths`](../../../Sources/ArknightsClient/Shared/Persistence/AppPaths.swift).
 
 ## System map
@@ -59,6 +59,7 @@ download.
 | Folder           | Responsibility                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------- |
 | `Application`    | App entry point, dependency composition, macOS lifecycle                                    |
+| `Core`           | Cross-feature lifecycle state and launcher activity leases in `Core/Lifecycle`              |
 | `Features`       | Feature-owned UI, state, domain models, services, external work                             |
 | `Infrastructure` | Feature-independent network and system I/O primitives                                       |
 | `Shared`         | Cross-feature domain, configuration, persistence, diagnostics, support, shared UI contracts |
@@ -214,6 +215,7 @@ Before you change behavior, find its owner and external contract:
 | Compatibility wrapper or bridge        | `Features/Game/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
 | Publisher endpoint, refresh            | `LauncherAPI` and `LauncherRefreshController`      | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting, app-owned path      | `LauncherPreferencesStore` or `AppPaths`           | [Data and persistence](data-and-persistence.md), storage tests                                                                |
+| Launcher activity or lifecycle state   | `Core/Lifecycle`                                   | [Launch and process lifecycle](launch-and-process-lifecycle.md), lease tests                                                  |
 | User-facing copy                       | owning feature's `…Strings` namespace              | English literals and accessibility review                                                                                     |
 
 Run focused checks while you iterate. Follow [Testing architecture](../testing.md) before a full

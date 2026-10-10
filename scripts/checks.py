@@ -39,7 +39,7 @@ def swift_sources() -> list[Path]:
 
 
 SWIFT_SOURCE_DIR = PROJECT_DIR / "Sources" / "ArknightsClient"
-LOWER_LAYERS = ("Shared", "Infrastructure")
+LOWER_LAYERS = ("Core", "Shared", "Infrastructure")
 TYPE_DECLARATION = re.compile(
     r"^(?:(?:public|internal|final|indirect|nonisolated|@\w+(?:\([^)]*\))?)\s+)*"
     r"(?:struct|class|enum|protocol|actor|typealias)\s+([A-Z]\w*)",
@@ -81,12 +81,12 @@ def layering_violations(source_dir: Path = SWIFT_SOURCE_DIR) -> list[str]:
 
 
 def check_layering() -> None:
-    info("Checking that Shared and Infrastructure do not reference Features types")
+    layers = ", ".join(LOWER_LAYERS[:-1]) + " and " + LOWER_LAYERS[-1]
+    info(f"Checking that {layers} do not reference Features types")
     violations = layering_violations()
     if violations:
         raise SystemExit(
-            "Shared and Infrastructure must not reference Features types:\n"
-            + "\n".join(violations)
+            f"{layers} must not reference Features types:\n" + "\n".join(violations)
         )
 
 

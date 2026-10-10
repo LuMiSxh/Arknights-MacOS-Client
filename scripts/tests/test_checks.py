@@ -62,5 +62,26 @@ def test_layering_check_ignores_names_also_declared_in_lower_layers(
     assert checks.layering_violations(tmp_path) == []
 
 
+def test_layering_check_flags_core_naming_feature_types(tmp_path: Path) -> None:
+    write_swift(tmp_path, "Features/Game/Thing.swift", "struct FeatureThing {}\n")
+    write_swift(tmp_path, "Core/Domain/Clean.swift", "struct CoreThing {}\n")
+    write_swift(tmp_path, "Core/Domain/Bad.swift", "let value = FeatureThing()\n")
+
+    assert checks.layering_violations(tmp_path) == [
+        "Core/Domain/Bad.swift:1: FeatureThing"
+    ]
+
+
+def test_layering_check_passes_clean_core(tmp_path: Path) -> None:
+    write_swift(tmp_path, "Features/Game/Thing.swift", "struct FeatureThing {}\n")
+    write_swift(
+        tmp_path,
+        "Core/Domain/Clean.swift",
+        "struct CoreThing {}\nlet value = CoreThing()\n",
+    )
+
+    assert checks.layering_violations(tmp_path) == []
+
+
 def test_project_sources_respect_layering() -> None:
     assert checks.layering_violations() == []

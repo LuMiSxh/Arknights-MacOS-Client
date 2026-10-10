@@ -173,9 +173,9 @@ final class LauncherLifecycleStore {
 
 	private static func supportCode(for error: any Error) -> SupportCode? {
 		switch error {
-		case LauncherError.storageMigrationFailed,
-			is CocoaError,
-			is POSIXError:
+		case let provider as any SupportCodeProviding:
+			provider.supportCode
+		case is CocoaError, is POSIXError:
 			.basalt
 		default:
 			nil
