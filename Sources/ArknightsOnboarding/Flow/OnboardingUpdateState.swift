@@ -2,7 +2,7 @@
 
 import Foundation
 
-enum OnboardingUpdateState: Equatable, Sendable {
+nonisolated enum OnboardingUpdateState: Equatable, Sendable {
 	case checking
 	case current
 	case updateRequired(String)

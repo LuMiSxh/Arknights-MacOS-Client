@@ -3,6 +3,7 @@
 import ArknightsAudio
 import ArknightsCore
 import ArknightsGameInstallation
+import ArknightsOnboarding
 import SwiftUI
 
 struct ContentView: View {

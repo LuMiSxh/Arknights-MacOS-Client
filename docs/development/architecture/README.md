@@ -208,7 +208,7 @@ compiler rejects a cycle.
 | 4   | `ArknightsGameInstallation` | `Features/Game/Installation`, `Features/Game/Compatibility`                                   | 1, 2, 3                                              | `CCommonCrypto`       | done    |
 | 5   | `ArknightsGameRuntime`    | `Features/Game/Runtime`, `Features/Game/Playtime`, `Features/Game/Storage`                      | 1, 2, 3, 4                                           | none                  | done    |
 | 6   | `ArknightsAudio`          | `Features/Audio`                                                                                | 2, 3                                                 | `YouTubePlayerKit`    | done    |
-| 7   | `ArknightsOnboarding`     | `Features/Onboarding`                                                                           | 2, 3, 4, 5                                           | none                  | planned |
+| 7   | `ArknightsOnboarding`     | `Features/Onboarding`                                                                           | 2, 3, 4, 5                                           | none                  | done    |
 | 8   | `ArknightsLauncherUI`     | `Features/Launcher` (including `LauncherViewModel`)                                             | 1, 2, 3, 4, 5, 6, 7                                  | `Sparkle`             | planned |
 | 9   | `ArknightsClient`         | `Application`                                                                                   | 2, 6, 7, 8                                           | none                  | current |
 
@@ -281,7 +281,7 @@ Rule R1 sets the default isolation for each target. Rule R2 sets `NonisolatedNon
 | `ArknightsGameInstallation` | nonisolated                      | After the `@concurrent` audit                                      | Installer, hashing, and compatibility code run off the main actor. Controllers keep `@MainActor`. |
 | `ArknightsGameRuntime`      | nonisolated                      | After the `@concurrent` audit                                      | Wine and prefix work run off the main actor. The Playtime and Storage views keep `@MainActor`.   |
 | `ArknightsAudio`            | `.defaultIsolation(MainActor.self)` | After audit                                                     | The controller, `YouTubePlayerKit` calls, and the views run on the main actor. Confirm at C20.   |
-| `ArknightsOnboarding`       | `.defaultIsolation(MainActor.self)` | After audit                                                     | The coordinator and the step views run on the main actor. `OnboardingProgressStore` may need `nonisolated`. Confirm at C21. |
+| `ArknightsOnboarding`       | `.defaultIsolation(MainActor.self)` | After audit                                                     | The coordinator and the step views run on the main actor. The answer enums, `OnboardingStep`, and `OnboardingUpdateState` are `nonisolated` value types. `OnboardingProgressStore` stays `@MainActor`. |
 | `ArknightsLauncherUI`       | `.defaultIsolation(MainActor.self)` | After audit                                                     | Views, `LauncherViewModel`, and Sparkle callbacks run on the main actor.                         |
 | `ArknightsClient`           | `.defaultIsolation(MainActor.self)` | After audit                                                     | The app entry point and the delegate run on the main actor.                                      |
 

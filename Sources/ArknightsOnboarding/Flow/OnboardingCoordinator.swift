@@ -10,23 +10,23 @@ import Observation
 /// coordinator never duplicates installation, networking, or asset persistence.
 @MainActor
 @Observable
-final class OnboardingCoordinator {
+package final class OnboardingCoordinator {
 	private let store: OnboardingProgressStore
 	private var resumeStep: OnboardingStep?
 	private var gameWasInstalled = false
 
-	private(set) var isPresented = false
-	private(set) var step: OnboardingStep = .welcome
+	package private(set) var isPresented = false
+	package private(set) var step: OnboardingStep = .welcome
 	private(set) var updateState: OnboardingUpdateState = .checking
 	private(set) var intelTranslationState: IntelTranslationState = .waitingForLauncherCheck
 	/// Set while a returning player reruns a required setup schema; Skip Setup stays unavailable.
 	private(set) var requiredSchema: Int?
 
-	init(store: OnboardingProgressStore) {
+	package init(store: OnboardingProgressStore) {
 		self.store = store
 	}
 
-	func startIfNeeded(
+	package func startIfNeeded(
 		isDeveloperMode: Bool,
 		isOnboardingPreview: Bool,
 		simulatesRequiredSetup: Bool = false,
@@ -50,7 +50,7 @@ final class OnboardingCoordinator {
 		)
 	}
 
-	func restart(
+	package func restart(
 		gameIsInstalled: Bool,
 		checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,
 		checkIntelTranslation: @escaping @MainActor () async -> IntelTranslationState = {
@@ -66,7 +66,7 @@ final class OnboardingCoordinator {
 		)
 	}
 
-	func retryUpdateCheck(
+	package func retryUpdateCheck(
 		_ checkForUpdates: @escaping @MainActor () async -> LauncherUpdateCheckOutcome,
 		checkIntelTranslation: @escaping @MainActor () async -> IntelTranslationState = {
 			(await RosettaAvailability.check()).state
@@ -90,7 +90,7 @@ final class OnboardingCoordinator {
 		intelTranslationState = await checkIntelTranslation()
 	}
 
-	func advance() {
+	package func advance() {
 		if step == .welcome {
 			guard updateState.allowsSetup else { return }
 			var target = resumeStep ?? .region
@@ -126,11 +126,11 @@ final class OnboardingCoordinator {
 	}
 
 	#if DEBUG
-		func dismissDeveloperPreview() {
+		package func dismissDeveloperPreview() {
 			isPresented = false
 		}
 
-		func simulateRequiredSetup(_ isRequired: Bool) {
+		package func simulateRequiredSetup(_ isRequired: Bool) {
 			requiredSchema = isRequired ? OnboardingProgressStore.currentSchemaVersion : nil
 		}
 	#endif

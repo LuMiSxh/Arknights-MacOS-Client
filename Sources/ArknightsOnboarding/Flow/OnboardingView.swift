@@ -5,7 +5,7 @@ import ArknightsCustomization
 import ArknightsGameInstallation
 import SwiftUI
 
-struct OnboardingView: View {
+package struct OnboardingView: View {
 	let preferences: LauncherPreferencesController
 	let customization: CustomizationController
 	let installation: InstallationController
@@ -21,7 +21,29 @@ struct OnboardingView: View {
 
 	let retryUpdateCheck: () -> Void
 
-	var body: some View {
+	package init(
+		preferences: LauncherPreferencesController,
+		customization: CustomizationController,
+		installation: InstallationController,
+		lifecycle: LauncherLifecycleStore,
+		presetCatalog: PresetCatalogService,
+		canSwitchRegion: Bool,
+		coordinator: OnboardingCoordinator,
+		actions: OnboardingActions,
+		retryUpdateCheck: @escaping () -> Void
+	) {
+		self.preferences = preferences
+		self.customization = customization
+		self.installation = installation
+		self.lifecycle = lifecycle
+		self.presetCatalog = presetCatalog
+		self.canSwitchRegion = canSwitchRegion
+		self.coordinator = coordinator
+		self.actions = actions
+		self.retryUpdateCheck = retryUpdateCheck
+	}
+
+	package var body: some View {
 		HStack(spacing: 0) {
 			OnboardingProgressRail(
 				currentStep: coordinator.step,

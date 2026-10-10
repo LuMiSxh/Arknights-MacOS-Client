@@ -4,6 +4,7 @@ import AppKit
 import ArknightsAudio
 import ArknightsCore
 import ArknightsGameInstallation
+import ArknightsOnboarding
 import SwiftUI
 
 @MainActor

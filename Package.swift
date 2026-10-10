@@ -83,6 +83,17 @@ let package = Package(
 			path: "Sources/ArknightsAudio",
 			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
 		),
+		.target(
+			name: "ArknightsOnboarding",
+			dependencies: [
+				"ArknightsCore",
+				"ArknightsCustomization",
+				"ArknightsGameInstallation",
+				"ArknightsGameRuntime",
+			],
+			path: "Sources/ArknightsOnboarding",
+			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+		),
 		.executableTarget(
 			name: "ArknightsClient",
 			dependencies: [
@@ -92,6 +103,7 @@ let package = Package(
 				"ArknightsGameInstallation",
 				"ArknightsGameRuntime",
 				"ArknightsAudio",
+				"ArknightsOnboarding",
 				.product(name: "Sparkle", package: "Sparkle"),
 			],
 			path: "Sources/ArknightsClient",
@@ -143,6 +155,18 @@ let package = Package(
 				"ArknightsInfrastructure",
 			],
 			path: "Tests/ArknightsGameRuntimeTests"
+		),
+		.testTarget(
+			name: "ArknightsOnboardingTests",
+			dependencies: [
+				"ArknightsOnboarding",
+				"ArknightsGameRuntime",
+				"ArknightsGameInstallation",
+				"ArknightsCustomization",
+				"ArknightsCore",
+				"ArknightsInfrastructure",
+			],
+			path: "Tests/ArknightsOnboardingTests"
 		),
 		.testTarget(
 			name: "ArknightsInfrastructureTests",

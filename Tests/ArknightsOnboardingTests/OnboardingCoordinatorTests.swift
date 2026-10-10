@@ -3,7 +3,7 @@
 import Foundation
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsOnboarding
 
 @MainActor
 struct OnboardingCoordinatorTests {

@@ -4,14 +4,14 @@ import AppKit
 import ArknightsCore
 
 /// Where the game appears, answered during setup.
-enum GamePlacementAnswer: CaseIterable, Sendable {
+nonisolated enum GamePlacementAnswer: CaseIterable, Sendable {
 	case window
 	case fullscreen
 }
 
 /// The setup assistant's display questions. Every answer lets the launcher size the game for
 /// the current screen, so players never have to calculate resolutions.
-struct GameDisplayAnswers: Equatable, Sendable {
+nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	var placement: GamePlacementAnswer
 	var windowSize: GameWindowSizeChoice
 	var rendering: GameRenderingMode
@@ -58,7 +58,7 @@ struct GameDisplayAnswers: Equatable, Sendable {
 }
 
 /// Which pointer the game shows, answered during setup.
-enum PointerAnswer: CaseIterable, Sendable {
+nonisolated enum PointerAnswer: CaseIterable, Sendable {
 	case macPointer
 	case gameCursor
 
@@ -79,7 +79,7 @@ extension LauncherPreferencesController {
 }
 
 /// What the launcher shows around the Play button, answered during setup.
-enum LauncherInfoAnswer: CaseIterable, Hashable, Sendable {
+nonisolated enum LauncherInfoAnswer: CaseIterable, Hashable, Sendable {
 	case gameVersion
 	case serverTime
 }
@@ -100,7 +100,7 @@ extension LauncherPreferencesController {
 }
 
 /// How the launcher keeps up with new versions and project notices, answered during setup.
-enum UpdateCheckAnswer: CaseIterable, Sendable {
+nonisolated enum UpdateCheckAnswer: CaseIterable, Sendable {
 	case automatic
 	case noticesOnly
 	case manual

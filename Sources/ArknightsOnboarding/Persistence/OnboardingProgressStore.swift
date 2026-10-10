@@ -6,7 +6,7 @@ import Foundation
 /// by their existing stores, so bumping the schema can rerun onboarding without migrating or
 /// rewriting any user choice.
 @MainActor
-struct OnboardingProgressStore {
+package struct OnboardingProgressStore {
 	/// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
 	static let currentSchemaVersion = 2
 	/// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
@@ -20,11 +20,11 @@ struct OnboardingProgressStore {
 
 	private let defaults: UserDefaults
 
-	init(defaults: UserDefaults = .standard) {
+	package init(defaults: UserDefaults = .standard) {
 		self.defaults = defaults
 	}
 
-	var needsOnboarding: Bool {
+	package var needsOnboarding: Bool {
 		defaults.integer(forKey: Key.completedSchemaVersion) < Self.currentSchemaVersion
 	}
 

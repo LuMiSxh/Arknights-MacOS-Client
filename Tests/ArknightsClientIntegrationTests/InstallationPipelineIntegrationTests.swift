@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsGameRuntime
+import ArknightsOnboarding
 import Foundation
 import Testing
 
