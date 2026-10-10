@@ -23,7 +23,7 @@
 
 ## Architecture and Swift
 
-- Use Swift 6.2. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
+- Use Swift 6.4. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
 - Never import feature-owned types from `Shared` or `Infrastructure`; map infrastructure errors at the owning feature boundary.
 - Keep components feature-local unless multiple features share the same presentation contract.
 - Declare reusable identical controls, surfaces, and design tokens centrally in `Shared/UI`; keep feature-specific semantics and state local. Do not duplicate local button or panel styles.

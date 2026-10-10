@@ -49,7 +49,7 @@ The publisher of your region handles account, payment, and in-game problems. See
 
 ## Development
 
-You need Swift 6.2, the matching Xcode command-line tools, [`just`](https://github.com/casey/just), and [`uv`](https://docs.astral.sh/uv/).
+You need Swift 6.4, the matching Xcode command-line tools, [`just`](https://github.com/casey/just), and [`uv`](https://docs.astral.sh/uv/).
 
 ```sh
 git clone https://github.com/LuMiSxh/Arknights-MacOS-Client.git
