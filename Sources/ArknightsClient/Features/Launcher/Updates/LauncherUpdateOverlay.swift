@@ -5,10 +5,7 @@ import SwiftUI
 enum LauncherUpdateOverlayPresentation {
 	enum Motion: Equatable {
 		case immediate
-		case animated(
-			backgroundDuration: TimeInterval,
-			dialogDuration: TimeInterval,
-			initialDialogScale: CGFloat)
+		case animated(initialDialogScale: CGFloat)
 	}
 
 	static func isPresented(
@@ -20,10 +17,7 @@ enum LauncherUpdateOverlayPresentation {
 
 	static func motion(reduceMotion: Bool) -> Motion {
 		guard !reduceMotion else { return .immediate }
-		return .animated(
-			backgroundDuration: 0.24,
-			dialogDuration: 0.50,
-			initialDialogScale: 0.90)
+		return .animated(initialDialogScale: 0.90)
 	}
 }
 
@@ -77,7 +71,7 @@ struct LauncherUpdateOverlay: View {
 	}
 
 	private var initialDialogScale: CGFloat {
-		if case .animated(_, _, let scale) = motion { return scale }
+		if case .animated(let scale) = motion { return scale }
 		return 1
 	}
 
@@ -93,16 +87,10 @@ struct LauncherUpdateOverlay: View {
 	}
 
 	private var backgroundAnimation: Animation? {
-		if case .animated(let duration, _, _) = motion {
-			return .easeOut(duration: duration)
-		}
-		return nil
+		LauncherMotion.animation(.backdrop, reduceMotion: reduceMotion)
 	}
 
 	private var dialogAnimation: Animation? {
-		if case .animated(_, let duration, _) = motion {
-			return .spring(duration: duration, bounce: 0.24)
-		}
-		return nil
+		LauncherMotion.animation(.present, reduceMotion: reduceMotion)
 	}
 }

@@ -58,6 +58,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Fixed the Dock icon shrinking into a grey frame shortly after launch on multi-display Macs.
 - An announcement arriving during setup no longer hides setup ([#94](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/94)).
 - Locally built launchers no longer treat the same published version as a blocking update.
+- Setup steps slide in as intended, and each new step starts scrolled to the top.
 
 ## [0.6.1] - 2026-10-02
 

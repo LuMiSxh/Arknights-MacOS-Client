@@ -30,15 +30,46 @@ The launcher must feel like a current macOS app first and an Arknights launcher 
 
 ### Motion
 
-- Motion must feel physical and springy, never decorative for its own sake. Pick a semantic curve from `LauncherMotion` (`press`, `release`, `hover`, `state`, `morph`, `expansion`, `reveal`, `present`, `dismiss`, `crossfade`), not a raw duration. Every curve resolves to no animation under Reduce Motion. `LauncherMotion.fade` keeps a quiet opacity change where a state change would otherwise be missed.
-- Controls answer touch immediately: a critically damped press to `LauncherMotion.pressedScale`, a springy release that slightly overshoots, and a small hover lift. Prominent capsule actions add a pointer-following sheen tinted by their foreground. Reduce Motion keeps only the opacity dip and centers the sheen. Reduce Transparency removes it.
-- The primary operation morphs between states: the capsule springs to the new width and the glyph uses Magic Replace. A ready Play shows a slow breathing accent halo. Download progress draws a soft glow at the outline's leading edge. Work without measurable progress circles an accent glint around an outline that breathes on the Play halo's cycle. A finished installation sends one success ripple from its checkmark.
-- HUD pills rise out of the control bar with a staggered blur-and-scale entrance and leave faster. On macOS 26 they share one glass group.
-- Status, version, and music HUDs keep the shared `expansion` spring. Expanded content materialises from the top trailing corner. Sibling pills recede while one panel is open.
-- Overlays such as the update dialog spring in from a softened, slightly lower and smaller state and dismiss quickly. Native sheets keep their platform lifecycle. `ThemedModalView` content fades up from a soft blur while the accent rule draws across the header.
-- Artwork and theme colors use `crossfade`; new artwork resolves from a light blur. Settings pages do not animate card insertion, progress stays linear, and frequent search-result updates use a quiet transition.
-- Continuous decorative motion (breathing halo, progress sweep) runs only through `DecorativeMotionClock` while `decorativeMotionEnabled` is true. It pauses when the window is hidden, occluded, or inactive and never exceeds 30 frames per second.
+`LauncherMotion` is the only motion source. Feature code does not use raw curves, springs, or durations.
 
+Curves (`LauncherMotion.Curve`):
+
+- `press`: pressed feedback. Critically damped.
+- `release`: settle after a press. Springy, with a slight overshoot.
+- `hover`: hover lift and pointer highlights.
+- `state`: structural layout changes, status swaps, and content revealed inside a visible surface.
+- `morph`: primary action shape and label changes.
+- `present`: popups, overlays, and HUD pill expansion.
+- `dismiss`: popups and overlays that leave. Faster than `present`.
+- `crossfade`: artwork, wordmark, and theme changes.
+- `select`: selection changes in lists and segmented controls.
+- `page`: page and step transitions.
+- `progress`: determinate progress fill changes. Linear.
+- `backdrop`: dimming behind popups.
+- `ripple`: expanding ripple on completion.
+- `settle`: quick ease-in as an element leaves.
+- `disclosure`: inline detail content.
+
+Every curve returns no animation under Reduce Motion. `LauncherMotion.fade(reduceMotion:)` is the exception. It keeps a short opacity change so a state change is not missed.
+
+Timing constants (`LauncherMotion.Cycle`) set looping and one-shot motion:
+
+- `breathing`: period of the breathing halo, in seconds.
+- `completionFeedback`: duration of the completion feedback.
+- `progressSweepFadeIn`, `progressSweepTravel`, `progressSweepFadeOut`, `progressSweepPause`: phases of the progress sweep, in seconds.
+- `indeterminateOrbitLaps`: laps of the indeterminate glint.
+- `indeterminateGlintLength`: length of the indeterminate glint.
+
+Use `LauncherMotion.staggered` for siblings that enter together. Use `pressedScale` and `hoverScale` for control feedback.
+
+- Motion must feel physical and springy. It must not decorate for its own sake. Use `fade` where a state change would otherwise be missed.
+- Controls respond at once. A held control uses `press` to scale to `LauncherMotion.pressedScale`. Release uses `release`. Hover uses `hover` for a small lift. Prominent capsule actions show a pointer-following sheen tinted by their foreground. Reduce Motion keeps only the opacity dip and centers the sheen. Reduce Transparency removes the sheen.
+- The primary operation changes shape with `morph`. The capsule changes width, and the glyph uses Magic Replace. A ready Play button shows a breathing accent halo. Download progress draws a soft glow at the leading edge of the outline. Work without measurable progress circles an accent glint around the outline. A finished installation sends one success ripple from its checkmark.
+- HUD pills rise out of the control bar with a staggered blur-and-scale entrance. They leave faster. On macOS 26, they share one glass group.
+- Status, version, and music HUDs use `present` to expand. Expanded content materializes from the top trailing corner. Sibling pills recede while one panel is open.
+- Overlays, such as the update dialog, use `present` to enter from a softened, slightly lower, and smaller state. They leave with `dismiss`. Native sheets keep their platform lifecycle. `ThemedModalView` content fades up from a soft blur while the accent rule draws across the header.
+- Artwork and theme colors use `crossfade`. New artwork resolves from a light blur. Settings pages do not animate card insertion. Determinate progress stays linear. Frequent search-result updates use a quiet transition.
+- Continuous decorative motion (breathing halo, progress sweep) runs only through `DecorativeMotionClock` while `decorativeMotionEnabled` is true. It pauses when the window is hidden, occluded, or inactive and never exceeds 30 frames per second.
 ## Interaction contract
 
 The home screen exposes one primary operation at a time. The current state selects its action:

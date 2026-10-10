@@ -94,11 +94,11 @@ private struct HUDPillShape: Shape {
 
 enum HUDPillMotion {
 	static func progressAnimation(reduceMotion: Bool) -> Animation? {
-		reduceMotion ? nil : .linear(duration: 0.20)
+		LauncherMotion.animation(.progress, reduceMotion: reduceMotion)
 	}
 
 	static func expansionAnimation(reduceMotion: Bool) -> Animation? {
-		LauncherMotion.animation(.expansion, reduceMotion: reduceMotion)
+		LauncherMotion.animation(.present, reduceMotion: reduceMotion)
 	}
 
 	static func expandedContentTransition(reduceMotion: Bool) -> AnyTransition {
@@ -111,7 +111,7 @@ enum HUDPillMotion {
 				offsetY: 6,
 				anchor: .topTrailing
 			)
-			.animation(LauncherMotion.Curve.reveal.animation.delay(0.06)),
+			.animation(LauncherMotion.Curve.state.animation.delay(0.06)),
 			removal: .materialize(reduceMotion: false, scale: 0.96, blur: 4, anchor: .topTrailing)
 				.animation(LauncherMotion.Curve.dismiss.animation)
 		)

@@ -76,7 +76,6 @@ enum AppConstants {
 		static let prominentControlDimension: Double = 38
 		static let volumeControlExpandedWidth: Double = 132
 		static let volumeSliderWidth: Double = 82
-		static let playerExpansionDuration: Double = 0.3
 	}
 
 	enum Storage {
@@ -96,7 +95,6 @@ enum AppConstants {
 		static let downloadSpeedDetailMinWidth: Double = 84
 		static let expandedVersionWidth: Double = 260
 		static let expandedVersionHeight: Double = 72
-		static let expansionDuration: Double = 0.3
 		static let pillRowTrailingInset: Double = 2
 	}
 

@@ -37,6 +37,7 @@
 - Use tabs with width four and follow `.swift-format`.
 - Keep observable/UI/AppKit state on `@MainActor`; move synchronous network, hashing, extraction, and file work off it.
 - Use `@Observable`; keep `LauncherViewModel` at composition and inject narrow dependencies into features and views.
+- `LauncherMotion` (curves and `Cycle`) is the only motion source; no raw `.easeInOut`, `.spring` or durations in views.
 - After suspension, revalidate request/session/generation ownership before publishing UI state or committing identity-sensitive file/process state.
 - Increment a cache/request epoch before clearing or replacing state so suspended work cannot republish stale results.
 - Keep the shared Wine prefix owned until prefix-wide shutdown completes; direct game-process exit alone never means Idle.

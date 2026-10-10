@@ -96,20 +96,6 @@ enum LauncherVisuals {
 		}
 	}
 
-	enum Motion {
-		static let control = 0.12
-		static let primaryAction = 0.18
-		static let selection = 0.16
-		static let page = 0.22
-		static let completionFeedback: Duration = .milliseconds(400)
-		static let progressSweepFadeIn = 0.12
-		static let progressSweepTravel = 1.40
-		static let progressSweepFadeOut = 0.25
-		static let progressSweepPause = 0.55
-		static let indeterminateOrbitLaps = 2.0
-		static let indeterminateGlintLength = 0.14
-	}
-
 	/// Raises the contrast of a chromatic foreground while retaining its hue. macOS 27's
 	/// Liquid Glass can blend a tint into the surface until the original accent is too close
 	/// to the fill, so controls use this only for their foreground and keep the raw tint on

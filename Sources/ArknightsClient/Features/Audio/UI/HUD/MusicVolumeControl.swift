@@ -73,12 +73,7 @@ struct MusicVolumeControl: View {
 		.clipped()
 		.onHover { isHovering = $0 }
 		.animation(
-			reduceMotion
-				? nil
-				: .snappy(
-					duration: AppConstants.Music.playerExpansionDuration,
-					extraBounce: 0
-				),
+			LauncherMotion.animation(.disclosure, reduceMotion: reduceMotion),
 			value: isExpanded
 		)
 	}

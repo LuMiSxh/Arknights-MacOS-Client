@@ -14,6 +14,7 @@ struct OnboardingView: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var presentedGallery: PresetGalleryDestination?
 	@State private var isSkipConfirmationPresented = false
+	@State private var scrollPosition = ScrollPosition(edge: .top)
 
 	let retryUpdateCheck: () -> Void
 
@@ -91,7 +92,10 @@ struct OnboardingView: View {
 				.contentMargins(.top, 14, for: .scrollIndicators)
 				.contentMargins(.bottom, 22, for: .scrollIndicators)
 				.scrollIndicators(.automatic)
-				.id(coordinator.step)
+				.scrollPosition($scrollPosition)
+				.onChange(of: coordinator.step) {
+					scrollPosition.scrollTo(edge: .top)
+				}
 
 				FloatingActionFooterFade(height: 76)
 
@@ -155,7 +159,7 @@ struct OnboardingView: View {
 		.tint(customization.accentColor)
 		.preferredColorScheme(.dark)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: LauncherVisuals.Motion.page),
+			LauncherMotion.animation(.page, reduceMotion: reduceMotion),
 			value: coordinator.step
 		)
 		.animation(

@@ -71,7 +71,7 @@ struct SettingsPage<Content: View>: View {
 				if reduceMotion {
 					proxy.scrollTo(focusedID, anchor: .center)
 				} else {
-					withAnimation(.easeInOut(duration: LauncherVisuals.Motion.selection)) {
+					withAnimation(LauncherMotion.animation(.select, reduceMotion: reduceMotion)) {
 						proxy.scrollTo(focusedID, anchor: .center)
 					}
 				}

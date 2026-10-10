@@ -80,7 +80,7 @@ struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 		)
 		.disabled(isDisabled)
 		.animation(
-			reduceMotion ? nil : .easeInOut(duration: LauncherVisuals.Motion.selection),
+			LauncherMotion.animation(.select, reduceMotion: reduceMotion),
 			value: selection
 		)
 	}

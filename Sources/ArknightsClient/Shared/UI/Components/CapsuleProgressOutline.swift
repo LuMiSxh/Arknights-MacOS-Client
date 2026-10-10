@@ -69,10 +69,10 @@ private struct CapsuleProgressSweep: View {
 	@State private var motionClock = DecorativeMotionClock()
 
 	private var cycleDuration: TimeInterval {
-		LauncherVisuals.Motion.progressSweepFadeIn
-			+ LauncherVisuals.Motion.progressSweepTravel
-			+ LauncherVisuals.Motion.progressSweepFadeOut
-			+ LauncherVisuals.Motion.progressSweepPause
+		LauncherMotion.Cycle.progressSweepFadeIn
+			+ LauncherMotion.Cycle.progressSweepTravel
+			+ LauncherMotion.Cycle.progressSweepFadeOut
+			+ LauncherMotion.Cycle.progressSweepPause
 	}
 
 	var body: some View {
@@ -122,9 +122,9 @@ private struct CapsuleProgressSweep: View {
 	}
 
 	private func sweepValues(for phase: Double) -> (head: Double, opacity: Double) {
-		let fadeIn = LauncherVisuals.Motion.progressSweepFadeIn
-		let travel = LauncherVisuals.Motion.progressSweepTravel
-		let fadeOut = LauncherVisuals.Motion.progressSweepFadeOut
+		let fadeIn = LauncherMotion.Cycle.progressSweepFadeIn
+		let travel = LauncherMotion.Cycle.progressSweepTravel
+		let fadeOut = LauncherMotion.Cycle.progressSweepFadeOut
 		let elapsed = phase * cycleDuration
 		if elapsed < fadeIn {
 			let fraction = smoothstep(elapsed / fadeIn)
@@ -155,7 +155,7 @@ private struct CapsuleIndeterminatePulse: View {
 	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
 	@State private var motionClock = DecorativeMotionClock()
 
-	private var cycle: TimeInterval { LauncherMotion.breathingCycle }
+	private var cycle: TimeInterval { LauncherMotion.Cycle.breathing }
 
 	var body: some View {
 		Group {
@@ -183,11 +183,11 @@ private struct CapsuleIndeterminatePulse: View {
 
 	private func pulse(phase: Double) -> some View {
 		let breath = (1 - cos(phase * 2 * .pi)) / 2
-		let laps = LauncherVisuals.Motion.indeterminateOrbitLaps
+		let laps = LauncherMotion.Cycle.indeterminateOrbitLaps
 		let lap = (phase * laps).truncatingRemainder(dividingBy: 1)
 		// Blend linear travel with an eased lap so the glint surges and settles but never halts.
 		let head = 0.6 * lap + 0.4 * smoothstep(lap)
-		let tail = LauncherVisuals.Motion.indeterminateGlintLength
+		let tail = LauncherMotion.Cycle.indeterminateGlintLength
 		return ZStack {
 			outline
 				.stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))

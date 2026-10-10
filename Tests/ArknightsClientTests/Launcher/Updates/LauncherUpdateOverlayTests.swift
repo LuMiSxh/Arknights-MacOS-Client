@@ -22,15 +22,10 @@ func updateOverlayRequiresTheUpdateDestinationAndVisibleDriver() {
 }
 
 @Test
-func updateOverlayMotionKeepsDialogAndDimDurationsSeparate() {
+func updateOverlayMotionUsesPresentationCurvesAndInitialDialogScale() {
 	let motion = LauncherUpdateOverlayPresentation.motion(reduceMotion: false)
 
-	#expect(
-		motion
-			== .animated(
-				backgroundDuration: 0.24,
-				dialogDuration: 0.50,
-				initialDialogScale: 0.90))
+	#expect(motion == .animated(initialDialogScale: 0.90))
 	#expect(LauncherUpdateOverlayPresentation.motion(reduceMotion: true) == .immediate)
 }
 

@@ -166,7 +166,7 @@ struct LauncherActivityStatusView: View {
 				return
 			}
 			do {
-				try await Task.sleep(for: LauncherVisuals.Motion.completionFeedback)
+				try await Task.sleep(for: LauncherMotion.Cycle.completionFeedback)
 			} catch {
 				return
 			}
@@ -286,7 +286,7 @@ struct LauncherActivityStatusView: View {
 				.monospacedDigit()
 				.contentTransition(reduceMotion ? .identity : .numericText())
 				.animation(
-					LauncherMotion.animation(.reveal, reduceMotion: reduceMotion),
+					LauncherMotion.animation(.state, reduceMotion: reduceMotion),
 					value: statusTitle
 				)
 				.fixedSize(horizontal: true, vertical: false)

@@ -34,7 +34,7 @@ private struct BreathingGlowHalo<S: Shape>: View {
 	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
 	@State private var motionClock = DecorativeMotionClock()
 
-	private var cycle: TimeInterval { LauncherMotion.breathingCycle }
+	private var cycle: TimeInterval { LauncherMotion.Cycle.breathing }
 
 	var body: some View {
 		Group {

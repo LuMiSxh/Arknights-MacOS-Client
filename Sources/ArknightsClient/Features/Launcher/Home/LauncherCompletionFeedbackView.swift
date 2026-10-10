@@ -37,13 +37,13 @@ struct LauncherCompletionFeedbackView: View {
 				return
 			}
 			isRippling = false
-			withAnimation(.easeOut(duration: 0.9)) {
+			withAnimation(LauncherMotion.animation(.ripple, reduceMotion: reduceMotion)) {
 				isRippling = true
 			}
 			if #available(macOS 26, *) {
 				isVisible = true
 			} else {
-				withAnimation(.easeIn(duration: LauncherVisuals.Motion.primaryAction)) {
+				withAnimation(LauncherMotion.animation(.settle, reduceMotion: reduceMotion)) {
 					isVisible = true
 				}
 			}
