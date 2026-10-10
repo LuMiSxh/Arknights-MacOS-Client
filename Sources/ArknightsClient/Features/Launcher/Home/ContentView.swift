@@ -62,12 +62,12 @@ struct ContentView: View {
 					musicController: musicController,
 					actions: LauncherHUDActions(
 						openLauncherUpdate: requestLauncherUpdateCheck,
-						checkGameUpdates: model.checkGameUpdates,
-						selectRegion: { model.selectRegion($0) },
-						installOrUpdate: model.installOrUpdate,
-						cancelDownload: model.cancelDownload,
-						launch: model.launch,
-						stopGame: model.stopGame,
+						checkGameUpdates: { model.actions.checkGameUpdates() },
+						selectRegion: { model.actions.selectRegion($0) },
+						installOrUpdate: { model.actions.installOrUpdate() },
+						cancelDownload: { model.actions.cancelDownload() },
+						launch: { model.actions.launch() },
+						stopGame: { model.actions.stopGame() },
 						showFailureDetails: showFailureDetails
 					),
 					developerExpandedPill: developerExpandedPillID
@@ -98,14 +98,14 @@ struct ContentView: View {
 					canSwitchRegion: model.refreshController.canSwitchRegion,
 					coordinator: onboarding,
 					actions: OnboardingActions(
-						selectRegion: model.selectRegion,
-						resetArtwork: model.resetArtwork,
-						installOrUpdate: model.installOrUpdate,
-						openLauncherUpdate: model.openLauncherUpdate,
+						selectRegion: { model.actions.selectRegion($0) },
+						resetArtwork: { model.actions.resetArtwork() },
+						installOrUpdate: { model.actions.installOrUpdate() },
+						openLauncherUpdate: { model.actions.openLauncherUpdate() },
 						retryIntelTranslation: {
-							await model.refreshIntelTranslationForUI(force: true)
+							await model.actions.refreshIntelTranslationForUI(force: true)
 						},
-						installRosetta: model.installRosetta),
+						installRosetta: { await model.actions.installRosetta() }),
 					retryUpdateCheck: retryOnboardingUpdateCheck)
 			}
 		}
@@ -117,7 +117,7 @@ struct ContentView: View {
 					accentColor: model.customization.accentColor,
 					hudTintColor: model.customization.hudTintColor,
 					reduceTransparency: reduceTransparency,
-					checkForUpdates: model.openLauncherUpdate)
+					checkForUpdates: { model.actions.openLauncherUpdate() })
 			}
 		}
 		.confirmsRosettaInstallation(
@@ -228,13 +228,14 @@ struct ContentView: View {
 				playtimeStatistics: model.playtimeStatistics, presetCatalog: model.presetCatalog,
 				launcherIconManager: model.launcherIconManager,
 				branding: model.refreshController.branding,
-				resetArtwork: model.resetArtwork, checkGameUpdates: model.checkGameUpdates,
-				selectRegion: { model.selectRegion($0) },
-				chooseInstallDirectory: model.chooseInstallDirectory,
-				locateExistingInstallation: model.locateExistingInstallation,
-				repairGame: model.repairGame,
-				resetAllLauncherSettings: model.resetAllLauncherSettings,
-				uninstallGame: model.uninstallGame,
+				resetArtwork: { model.actions.resetArtwork() },
+				checkGameUpdates: { model.actions.checkGameUpdates() },
+				selectRegion: { model.actions.selectRegion($0) },
+				chooseInstallDirectory: { model.actions.chooseInstallDirectory() },
+				locateExistingInstallation: { model.actions.locateExistingInstallation() },
+				repairGame: { model.actions.repairGame() },
+				resetAllLauncherSettings: { model.actions.resetAllLauncherSettings() },
+				uninstallGame: { model.actions.uninstallGame() },
 				restartOnboarding: restartOnboarding,
 				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
 				developerSimulation: developerSimulationBinding,
@@ -289,7 +290,7 @@ struct ContentView: View {
 		isTerminating = true
 		confirmation = nil
 		repairFailureID = nil
-		model.cancelACEWarning()
+		model.actions.cancelACEWarning()
 		presentation.dismissCurrent()
 	}
 
@@ -303,16 +304,16 @@ struct ContentView: View {
 		let hadCurrentPresentation = presentation.current != nil
 		presentation.request(.update)
 		if !hadCurrentPresentation, presentation.current == .update {
-			model.openLauncherUpdate()
+			model.actions.openLauncherUpdate()
 		}
 	}
 	private func presentationDidDismiss() {
 		presentation.didDismiss()
-		if presentation.current == .update { model.openLauncherUpdate() }
+		if presentation.current == .update { model.actions.openLauncherUpdate() }
 	}
 	private func launcherUpdateDidDismiss() {
 		presentation.didDismiss(.update)
-		if presentation.current == .update { model.openLauncherUpdate() }
+		if presentation.current == .update { model.actions.openLauncherUpdate() }
 	}
 	private func presentFailure(_ failure: LauncherFailurePresentation?) {
 		if onboarding.isPresented,
@@ -340,15 +341,15 @@ struct ContentView: View {
 			isOnboardingPreview: model.isOnboardingPreview,
 			simulatesRequiredSetup: model.isRequiredOnboardingPreview,
 			gameIsInstalled: model.installation.isInstalled,
-			checkForUpdates: model.launcherUpdateCheckForOnboarding,
-			checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
+			checkForUpdates: { await model.actions.launcherUpdateCheckForOnboarding() },
+			checkIntelTranslation: { await model.actions.refreshIntelTranslationForUI() })
 		if onboarding.isPresented { presentation.removeRosettaPreflightFailures() }
 	}
 	private func retryOnboardingUpdateCheck() {
 		Task {
 			await onboarding.retryUpdateCheck(
-				model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
+				{ await model.actions.launcherUpdateCheckForOnboarding() },
+				checkIntelTranslation: { await model.actions.refreshIntelTranslationForUI() })
 		}
 	}
 	private func restartOnboarding() {
@@ -360,13 +361,13 @@ struct ContentView: View {
 			}
 			await onboarding.restart(
 				gameIsInstalled: model.installation.isInstalled,
-				checkForUpdates: model.launcherUpdateCheckForOnboarding,
-				checkIntelTranslation: { await model.refreshIntelTranslationForUI() })
+				checkForUpdates: { await model.actions.launcherUpdateCheckForOnboarding() },
+				checkIntelTranslation: { await model.actions.refreshIntelTranslationForUI() })
 		}
 	}
 	private func installRosetta() {
 		confirmation = nil
-		Task { _ = await model.installRosetta() }
+		Task { _ = await model.actions.installRosetta() }
 	}
 	private func showFailureDetails() {
 		if let failure = model.lifecycle.failure { presentation.request(.failure(failure)) }

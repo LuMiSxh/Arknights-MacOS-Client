@@ -17,16 +17,16 @@ private struct ACEWarningConfirmationModifier: ViewModifier {
 			isPresented: Binding(
 				get: { model.pendingACEWarningRegion != nil },
 				set: { isPresented in
-					if !isPresented { model.cancelACEWarning() }
+					if !isPresented { model.actions.cancelACEWarning() }
 				}
 			),
 			titleVisibility: .visible
 		) {
 			Button(LauncherStrings.aceWarningAction, role: .destructive) {
-				model.confirmACEWarningAndLaunch()
+				model.actions.confirmACEWarningAndLaunch()
 			}
 			Button(LauncherStrings.cancel, role: .cancel) {
-				model.cancelACEWarning()
+				model.actions.cancelACEWarning()
 			}
 		} message: {
 			Text(LauncherStrings.aceWarningDetail)

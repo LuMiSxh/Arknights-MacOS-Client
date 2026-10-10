@@ -176,13 +176,13 @@ final class LauncherViewModel {
 		self.gameSession = gameSession
 
 		settings.onLauncherUpdateCheckRequested = { [weak self] in
-			self?.checkLauncherUpdates()
+			self?.actions.checkLauncherUpdates()
 		}
 		settings.onGameUpdateCheckRequested = { [weak self] in
-			self?.checkGameUpdates()
+			self?.actions.checkGameUpdates()
 		}
 		settings.onAnnouncementCheckRequested = { [weak self] in
-			self?.checkAnnouncements()
+			self?.actions.checkAnnouncements()
 		}
 		settings.onDynamicThemeChanged = { [weak customization] in
 			customization?.updateThemeColor()

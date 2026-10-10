@@ -15,7 +15,7 @@ struct LauncherRefreshRecoveryTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		#expect(await model.waitForStartup())
 		if region != .global {
-			model.selectRegion(region)
+			model.actions.selectRegion(region)
 		}
 
 		await model.refreshController.waitForCurrentRefresh()

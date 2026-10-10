@@ -39,12 +39,12 @@ struct LauncherDockLaunchTests {
 		)
 
 		model.lifecycle.simulateActivity(.runningGame(sessionID: UUID(), processIdentifier: 42))
-		#expect(!(await model.launchFromDock(region: .japan)))
+		#expect(!(await model.actions.launchFromDock(region: .japan)))
 		#expect(model.installation.region == .global)
 
 		model.lifecycle.simulateActivity(.idle)
 		model.lifecycle.intelTranslationState = .unavailable
-		let launch = Task { await model.launchFromDock(region: .japan) }
+		let launch = Task { await model.actions.launchFromDock(region: .japan) }
 		await api.waitForBrandingRequests(2)
 		#expect(model.installation.region == .japan)
 		#expect(model.lifecycle.refresh.isChecking)

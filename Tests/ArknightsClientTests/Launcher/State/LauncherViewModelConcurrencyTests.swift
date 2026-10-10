@@ -71,7 +71,7 @@ struct LauncherViewModelConcurrencyTests {
 		)
 
 		model.lifecycle.simulateActivity(.installing(id: UUID(), stage: .downloading))
-		model.resetAllLauncherSettings()
+		model.actions.resetAllLauncherSettings()
 		#expect(model.settings.canaryFeaturesEnabled)
 		#expect(model.settings.taiwanClientEnabled)
 		model.settings.taiwanClientEnabled = false
@@ -115,7 +115,7 @@ struct LauncherViewModelConcurrencyTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
 
-		let probeTask = Task { await model.launcherUpdateCheckForOnboarding() }
+		let probeTask = Task { await model.actions.launcherUpdateCheckForOnboarding() }
 		await Task.yield()
 		#expect(model.lifecycle.refresh != .idle)
 		#expect(!model.communication.isCheckingLauncherUpdates)
@@ -163,7 +163,7 @@ struct LauncherViewModelConcurrencyTests {
 		#expect(!model.gameSession.isGameActive)
 		model.lifecycle.simulateActivity(.preparingGame(sessionID: sessionID))
 		#expect(model.gameSession.isGameActive)
-		model.resetAllLauncherSettings()
+		model.actions.resetAllLauncherSettings()
 		#expect(model.settings.launchOptions == selectedOptions)
 		model.lifecycle.simulateActivity(
 			.launchingGame(sessionID: sessionID, processIdentifier: nil))
@@ -203,7 +203,7 @@ struct LauncherViewModelConcurrencyTests {
 			synchronizationMode: .esync
 		)
 
-		model.resetAllLauncherSettings()
+		model.actions.resetAllLauncherSettings()
 
 		#expect(model.settings.automaticallyChecksLauncherUpdates)
 		#expect(model.settings.automaticallyChecksGameUpdates)
@@ -300,7 +300,7 @@ struct LauncherViewModelConcurrencyTests {
 		let globalLogo = NSImage(size: NSSize(width: 32, height: 32))
 		model.customization.officialLogo = globalLogo
 
-		model.selectRegion(.japan)
+		model.actions.selectRegion(.japan)
 		await api.waitForBrandingRequests(2)
 
 		#expect(model.installation.region == .japan)
@@ -366,11 +366,11 @@ struct LauncherViewModelConcurrencyTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequests(1)
 
-		model.resetArtwork()
+		model.actions.resetArtwork()
 		await api.waitForCancellations(1)
 		await api.waitForBrandingRequests(2)
 
-		model.selectRegion(.japan)
+		model.actions.selectRegion(.japan)
 		await api.waitForCancellations(2)
 		await api.waitForBrandingRequests(3)
 		#expect(model.installation.region == .japan)

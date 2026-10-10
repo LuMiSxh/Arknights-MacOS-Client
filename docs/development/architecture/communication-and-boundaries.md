@@ -108,6 +108,14 @@ sequenceDiagram
 Queue->>Queue: Show now, or append to pendingPopups and dedup by id
 ```
 
+## Launcher actions
+
+Views call `LauncherActions`, a protocol. Views reach it through `model.actions`.
+
+- `LiveLauncherActions` runs the production behavior.
+- `SimulatedLauncherActions` runs the developer simulation. It exists only in DEBUG builds. It never reaches live controllers.
+- Release builds contain no simulation code.
+
 ## Refresh concurrency
 
 `LauncherRefreshController` starts the game configuration and branding requests for the current region

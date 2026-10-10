@@ -35,12 +35,12 @@ struct LauncherACEWarningTests {
 		await api.waitForBrandingRequest()
 		model.installation.region = .china
 
-		model.launch()
+		model.actions.launch()
 
 		#expect(model.pendingACEWarningRegion == .china)
 		#expect(!model.preferences.hasAcknowledgedACEWarning(for: .china))
 
-		model.confirmACEWarningAndLaunch()
+		model.actions.confirmACEWarningAndLaunch()
 
 		#expect(model.pendingACEWarningRegion == nil)
 		#expect(model.preferences.hasAcknowledgedACEWarning(for: .china))

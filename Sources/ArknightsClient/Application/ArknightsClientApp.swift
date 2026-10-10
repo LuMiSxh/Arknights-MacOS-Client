@@ -141,7 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				)
 				item.target = self
 				item.representedObject = region.rawValue
-				item.isEnabled = model.canRequestDockLaunch
+				item.isEnabled = model.actions.canRequestDockLaunch
 				menu.addItem(item)
 			}
 			if !installedRegions.isEmpty {
@@ -171,7 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			return
 		}
 		Task {
-			if !(await model.launchFromDock(region: region)) {
+			if !(await model.actions.launchFromDock(region: region)) {
 				showMainWindow()
 			}
 		}
@@ -277,7 +277,7 @@ struct ArknightsClientApp: App {
 			.onAppear {
 				appDelegate.model = model
 				appDelegate.launcherUpdater = model.communication.launcherUpdater
-				appDelegate.stopGame = model.stopGameForApplicationTermination
+				appDelegate.stopGame = { model.actions.stopGameForApplicationTermination() }
 				NSApp.activate(ignoringOtherApps: true)
 			}
 		}
