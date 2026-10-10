@@ -69,7 +69,7 @@ Use `LauncherMotion.staggered` for siblings that enter together. Use `pressedSca
 - Status, version, and music HUDs use `present` to expand. Expanded content materializes from the top trailing corner. Sibling pills recede while one panel is open.
 - Overlays, such as the update dialog, use `present` to enter from a softened, slightly lower, and smaller state. They leave with `dismiss`. Native sheets keep their platform lifecycle. `ThemedModalView` content fades up from a soft blur while the accent rule draws across the header.
 - Artwork and theme colors use `crossfade`. New artwork resolves from a light blur. Settings pages do not animate card insertion. Determinate progress stays linear. Frequent search-result updates use a quiet transition.
-- Continuous decorative motion (breathing halo, progress sweep) runs only through `DecorativeMotionClock` while `decorativeMotionEnabled` is true. It pauses when the window is hidden, occluded, or inactive and never exceeds 30 frames per second.
+- Continuous decorative motion (breathing halo, progress sweep) uses `ContinuousMotion` only. Loops pause when the window is hidden, occluded, or inactive. On the home layer, loops also pause when a sheet, the update overlay, or onboarding covers the layer. Loops also pause while the game runs and in Low Power Mode. Sheets and overlays keep running when the game is not active. Only the home layer applies the covered gate. Loops never exceed 30 frames per second.
 ## Interaction contract
 
 The home screen exposes one primary operation at a time. The current state selects its action:

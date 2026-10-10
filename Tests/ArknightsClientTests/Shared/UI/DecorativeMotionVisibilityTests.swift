@@ -107,6 +107,74 @@ func decorativeMotionVisibilityRemovesObserversWhenDetached() {
 }
 
 @Test
+func decorativeMotionStopsWhileTheGameIsActiveOrLowPowerModeIsOn() {
+	func enabled(game: Bool, lowPower: Bool) -> Bool {
+		DecorativeMotionVisibilityPolicy.isEnabled(
+			applicationIsActive: true,
+			applicationIsHidden: false,
+			windowIsVisible: true,
+			windowIsMiniaturized: false,
+			windowIsOccluded: false,
+			isGameActive: game,
+			isLowPowerModeEnabled: lowPower
+		)
+	}
+	#expect(enabled(game: false, lowPower: false))
+	#expect(!enabled(game: true, lowPower: false))
+	#expect(!enabled(game: false, lowPower: true))
+	#expect(!enabled(game: true, lowPower: true))
+}
+
+@Test
+func decorativeMotionHomeLayerPausesOnlyWhenCovered() {
+	#expect(DecorativeMotionVisibilityPolicy.homeLayerEnabled(base: true, isCovered: false))
+	#expect(!DecorativeMotionVisibilityPolicy.homeLayerEnabled(base: true, isCovered: true))
+	#expect(!DecorativeMotionVisibilityPolicy.homeLayerEnabled(base: false, isCovered: false))
+}
+
+@Test
+@MainActor
+func decorativeMotionVisibilityTracksGameActivity() {
+	let subject = DecorativeMotionVisibility(
+		notificationCenter: NotificationCenter(),
+		lowPowerModeProvider: { false }
+	)
+	subject.setGameActive(true)
+	#expect(!subject.isEnabled)
+	subject.setGameActive(false)
+	#expect(subject.isEnabled)
+}
+
+@Test
+@MainActor
+func decorativeMotionVisibilityFollowsPowerStateNotifications() {
+	let center = NotificationCenter()
+	nonisolated(unsafe) var lowPower = false
+	let subject = DecorativeMotionVisibility(
+		notificationCenter: center,
+		lowPowerModeProvider: { lowPower }
+	)
+	let window = NSWindow(
+		contentRect: .zero,
+		styleMask: .borderless,
+		backing: .buffered,
+		defer: true
+	)
+	subject.attach(to: window)
+
+	lowPower = true
+	center.post(name: .NSProcessInfoPowerStateDidChange, object: nil)
+	#expect(subject.isLowPowerModeEnabled)
+	#expect(!subject.isEnabled)
+
+	subject.detach()
+	lowPower = false
+	center.post(name: .NSProcessInfoPowerStateDidChange, object: nil)
+	#expect(subject.isLowPowerModeEnabled)
+	#expect(!subject.isObserving)
+}
+
+@Test
 func decorativeMotionClockPreservesItsPhaseAcrossAVisibilityPause() {
 	var clock = DecorativeMotionClock()
 	let start = Date(timeIntervalSince1970: 100)

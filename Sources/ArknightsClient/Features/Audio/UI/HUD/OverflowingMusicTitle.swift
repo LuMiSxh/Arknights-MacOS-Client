@@ -7,10 +7,8 @@ struct OverflowingMusicTitle: View {
 	let title: String
 
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
 	@State private var availableWidth: Double = 0
 	@State private var textWidth: Double = 0
-	@State private var motionClock = DecorativeMotionClock()
 	@State private var isScrollingReady = false
 	@State private var scrollCycleDuration = 1.0
 
@@ -26,17 +24,13 @@ struct OverflowingMusicTitle: View {
 					.fixedSize(horizontal: true, vertical: false)
 
 				GeometryReader { _ in
-					if decorativeMotionEnabled && isScrollingReady {
-						TimelineView(.animation(minimumInterval: 1 / 30)) { context in
-							marqueeContent(
-								phase: motionClock.phase(
-									at: context.date,
-									cycleDuration: scrollCycleDuration
-								)
-							)
+					// Mounted only after the delay so each run gets a fresh clock and its final cycle.
+					if isScrollingReady {
+						ContinuousMotion(cycle: scrollCycleDuration, framesPerSecond: 30) { phase in
+							marqueeContent(phase: phase)
 						}
 					} else {
-						marqueeContent(phase: motionClock.pausedPhase)
+						marqueeContent(phase: 0)
 					}
 				}
 				.background {
@@ -58,34 +52,18 @@ struct OverflowingMusicTitle: View {
 				.clipped()
 				.task(id: animationID) {
 					isScrollingReady = false
-					motionClock = DecorativeMotionClock()
 					guard textWidth > availableWidth else { return }
-					try? await Task.sleep(for: AppConstants.Music.titleScrollDelay)
-					guard !Task.isCancelled else { return }
+					do {
+						try await Task.sleep(for: AppConstants.Music.titleScrollDelay)
+					} catch {
+						return
+					}
 					scrollCycleDuration = max(
 						AppConstants.Music.titleScrollMinimumDuration,
 						(textWidth + AppConstants.Music.titleScrollGap)
 							/ AppConstants.Music.titleScrollSpeed
 					)
 					isScrollingReady = true
-					if decorativeMotionEnabled {
-						motionClock.begin(at: .now, cycleDuration: scrollCycleDuration)
-					} else {
-						motionClock.pause(at: .now, cycleDuration: scrollCycleDuration)
-					}
-				}
-				.onAppear {
-					if decorativeMotionEnabled {
-						motionClock.begin(at: .now, cycleDuration: scrollCycleDuration)
-					}
-				}
-				.onChange(of: decorativeMotionEnabled) { _, isEnabled in
-					guard isScrollingReady else { return }
-					if isEnabled {
-						motionClock.resume(at: .now, cycleDuration: scrollCycleDuration)
-					} else {
-						motionClock.pause(at: .now, cycleDuration: scrollCycleDuration)
-					}
 				}
 				.accessibilityElement(children: .ignore)
 				.accessibilityLabel(title)

@@ -11,40 +11,18 @@ struct SkeletonValue: View {
 	var pulses = false
 
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
-	@State private var motionClock = DecorativeMotionClock()
 
 	private let pulseCycleDuration = 1.8
 
 	var body: some View {
 		Group {
+			// Reduce Motion keeps the static baseline; the pulse only runs when motion is allowed.
 			if pulses && !reduceMotion {
-				if decorativeMotionEnabled {
-					TimelineView(.animation(minimumInterval: 1 / 30)) { context in
-						placeholder(
-							opacity: pulseOpacity(
-								at: motionClock.phase(
-									at: context.date,
-									cycleDuration: pulseCycleDuration
-								)))
-					}
-				} else {
-					placeholder(opacity: pulseOpacity(at: motionClock.pausedPhase))
+				ContinuousMotion(cycle: pulseCycleDuration, framesPerSecond: 30) { phase in
+					placeholder(opacity: pulseOpacity(at: phase))
 				}
 			} else {
 				placeholder(opacity: SkeletonValue.baselineOpacity)
-			}
-		}
-		.onAppear {
-			if decorativeMotionEnabled {
-				motionClock.begin(at: .now, cycleDuration: pulseCycleDuration)
-			}
-		}
-		.onChange(of: decorativeMotionEnabled) { _, isEnabled in
-			if isEnabled {
-				motionClock.resume(at: .now, cycleDuration: pulseCycleDuration)
-			} else {
-				motionClock.pause(at: .now, cycleDuration: pulseCycleDuration)
 			}
 		}
 	}

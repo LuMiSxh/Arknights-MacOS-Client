@@ -14,7 +14,7 @@ struct ContentView: View {
 	@State var presentation = LauncherPresentationArbiter()
 	@State var confirmation: LauncherConfirmation?
 	@State var repairFailureID: UUID?
-	@State private var decorativeMotionVisibility = DecorativeMotionVisibility()
+	@State var decorativeMotionVisibility = DecorativeMotionVisibility()
 	@State private var isTerminating = false
 
 	init(
@@ -44,6 +44,7 @@ struct ContentView: View {
 				accentColor: model.customization.accentColor
 			)
 			.ignoresSafeArea(.container, edges: .top)
+			.environment(\.decorativeMotionEnabled, homeLayerMotionEnabled)
 			LauncherReadabilityField().ignoresSafeArea(.container, edges: .top).allowsHitTesting(
 				false)
 			VStack(spacing: 0) {
@@ -73,6 +74,7 @@ struct ContentView: View {
 					developerExpandedPill: developerExpandedPillID
 				)
 			}
+			.environment(\.decorativeMotionEnabled, homeLayerMotionEnabled)
 		}
 		.disabled(updateOverlayIsPresented)
 		.allowsHitTesting(!updateOverlayIsPresented)
@@ -143,6 +145,9 @@ struct ContentView: View {
 			registerQuitDismissal(dismissPresentationForQuit)
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
+		.onChange(of: model.gameSession.isGameActive, initial: true) { _, isActive in
+			gameActivityDidChange(isActive)
+		}
 		.onChange(of: onboarding.isPresented) { _, isPresented in
 			onboardingPresentationDidChange(isPresented)
 		}
@@ -179,7 +184,7 @@ struct ContentView: View {
 		.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
 	}
 
-	private var sheetPresentation: Binding<LauncherPresentationDestination?> {
+	var sheetPresentation: Binding<LauncherPresentationDestination?> {
 		Binding(
 			get: {
 				guard !isTerminating else { return nil }
@@ -206,10 +211,10 @@ struct ContentView: View {
 			get: { if case .repair = confirmation { true } else { false } },
 			set: { if !$0 { confirmation = nil } })
 	}
-	private var onboardingIsPresentable: Bool {
+	var onboardingIsPresentable: Bool {
 		presentation.showsOnboarding(isOnboardingPresented: onboarding.isPresented)
 	}
-	private var updateOverlayIsPresented: Bool {
+	var updateOverlayIsPresented: Bool {
 		LauncherUpdateOverlayPresentation.isPresented(
 			destination: presentation.current,
 			driverIsPresented: model.communication.launcherUpdateUserDriver.isPresented)

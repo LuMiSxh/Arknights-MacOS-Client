@@ -45,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A failed storage migration at startup no longer locks the launcher. The launcher keeps the folders that moved, shows a **Retry** action, and continues startup after a successful retry.
 - The installer and full updates are about a third smaller.
 - Rewrote the help pages and guides in Simplified Technical English: shorter and easier to follow.
+- Launcher animations pause behind Settings and dialogs, while the game runs, and in Low Power Mode.
 
 ### Removed
 

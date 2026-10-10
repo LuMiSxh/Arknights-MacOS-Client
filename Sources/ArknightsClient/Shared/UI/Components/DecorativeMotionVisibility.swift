@@ -13,9 +13,19 @@ final class DecorativeMotionVisibility {
 	private var observers: [NSObjectProtocol] = []
 
 	private(set) var isEnabled = true
+	private(set) var isGameActive = false
+	private(set) var isLowPowerModeEnabled: Bool
+	private let lowPowerModeProvider: @MainActor () -> Bool
 
-	init(notificationCenter: NotificationCenter = .default) {
+	init(
+		notificationCenter: NotificationCenter = .default,
+		lowPowerModeProvider: @escaping @MainActor () -> Bool = {
+			ProcessInfo.processInfo.isLowPowerModeEnabled
+		}
+	) {
 		self.notificationCenter = notificationCenter
+		self.lowPowerModeProvider = lowPowerModeProvider
+		isLowPowerModeEnabled = lowPowerModeProvider()
 	}
 
 	isolated deinit {
@@ -45,6 +55,7 @@ final class DecorativeMotionVisibility {
 		observe(NSWindow.didMiniaturizeNotification, object: window)
 		observe(NSWindow.didDeminiaturizeNotification, object: window)
 		observe(NSWindow.didChangeOcclusionStateNotification, object: window)
+		observe(.NSProcessInfoPowerStateDidChange)
 		refreshWindowState()
 	}
 
@@ -54,7 +65,13 @@ final class DecorativeMotionVisibility {
 		}
 		observers.removeAll(keepingCapacity: false)
 		window = nil
-		isEnabled = true
+		refreshWindowState()
+	}
+
+	/// Applies to every decorative loop, including those inside sheets.
+	func setGameActive(_ isActive: Bool) {
+		isGameActive = isActive
+		refreshWindowState()
 	}
 
 	func update(
@@ -62,14 +79,20 @@ final class DecorativeMotionVisibility {
 		applicationIsHidden: Bool,
 		windowIsVisible: Bool,
 		windowIsMiniaturized: Bool,
-		windowIsOccluded: Bool
+		windowIsOccluded: Bool,
+		isGameActive: Bool? = nil,
+		isLowPowerModeEnabled: Bool? = nil
 	) {
+		self.isGameActive = isGameActive ?? self.isGameActive
+		self.isLowPowerModeEnabled = isLowPowerModeEnabled ?? self.isLowPowerModeEnabled
 		isEnabled = DecorativeMotionVisibilityPolicy.isEnabled(
 			applicationIsActive: applicationIsActive,
 			applicationIsHidden: applicationIsHidden,
 			windowIsVisible: windowIsVisible,
 			windowIsMiniaturized: windowIsMiniaturized,
-			windowIsOccluded: windowIsOccluded
+			windowIsOccluded: windowIsOccluded,
+			isGameActive: self.isGameActive,
+			isLowPowerModeEnabled: self.isLowPowerModeEnabled
 		)
 	}
 
@@ -87,13 +110,15 @@ final class DecorativeMotionVisibility {
 	}
 
 	private func refreshWindowState() {
+		let lowPower = lowPowerModeProvider()
 		guard let window else {
 			update(
 				applicationIsActive: true,
 				applicationIsHidden: false,
 				windowIsVisible: true,
 				windowIsMiniaturized: false,
-				windowIsOccluded: false
+				windowIsOccluded: false,
+				isLowPowerModeEnabled: lowPower
 			)
 			return
 		}
@@ -102,7 +127,8 @@ final class DecorativeMotionVisibility {
 			applicationIsHidden: NSApp.isHidden,
 			windowIsVisible: window.isVisible,
 			windowIsMiniaturized: window.isMiniaturized,
-			windowIsOccluded: !window.occlusionState.contains(.visible)
+			windowIsOccluded: !window.occlusionState.contains(.visible),
+			isLowPowerModeEnabled: lowPower
 		)
 	}
 }
@@ -113,10 +139,17 @@ enum DecorativeMotionVisibilityPolicy {
 		applicationIsHidden: Bool,
 		windowIsVisible: Bool,
 		windowIsMiniaturized: Bool,
-		windowIsOccluded: Bool
+		windowIsOccluded: Bool,
+		isGameActive: Bool = false,
+		isLowPowerModeEnabled: Bool = false
 	) -> Bool {
 		applicationIsActive && !applicationIsHidden && windowIsVisible && !windowIsMiniaturized
-			&& !windowIsOccluded
+			&& !windowIsOccluded && !isGameActive && !isLowPowerModeEnabled
+	}
+
+	/// The covered gate applies to the home layer only; sheets keep animating.
+	static func homeLayerEnabled(base: Bool, isCovered: Bool) -> Bool {
+		base && !isCovered
 	}
 }
 

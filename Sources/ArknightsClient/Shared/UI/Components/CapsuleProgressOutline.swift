@@ -65,8 +65,6 @@ struct CapsuleProgressOutline: View {
 private struct CapsuleProgressSweep: View {
 	let progress: Double
 	let lineWidth: CGFloat
-	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
-	@State private var motionClock = DecorativeMotionClock()
 
 	private var cycleDuration: TimeInterval {
 		LauncherMotion.Cycle.progressSweepFadeIn
@@ -76,26 +74,8 @@ private struct CapsuleProgressSweep: View {
 	}
 
 	var body: some View {
-		Group {
-			if decorativeMotionEnabled {
-				TimelineView(.animation(minimumInterval: 1 / 30)) { context in
-					sweep(phase: motionClock.phase(at: context.date, cycleDuration: cycleDuration))
-				}
-			} else {
-				sweep(phase: motionClock.pausedPhase)
-			}
-		}
-		.onAppear {
-			if decorativeMotionEnabled {
-				motionClock.begin(at: .now, cycleDuration: cycleDuration)
-			}
-		}
-		.onChange(of: decorativeMotionEnabled) { _, isEnabled in
-			if isEnabled {
-				motionClock.resume(at: .now, cycleDuration: cycleDuration)
-			} else {
-				motionClock.pause(at: .now, cycleDuration: cycleDuration)
-			}
+		ContinuousMotion(cycle: cycleDuration, framesPerSecond: 30) { phase in
+			sweep(phase: phase)
 		}
 	}
 
@@ -152,32 +132,12 @@ private struct CapsuleProgressSweep: View {
 private struct CapsuleIndeterminatePulse: View {
 	let tint: Color
 	let lineWidth: CGFloat
-	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
-	@State private var motionClock = DecorativeMotionClock()
 
 	private var cycle: TimeInterval { LauncherMotion.Cycle.breathing }
 
 	var body: some View {
-		Group {
-			if decorativeMotionEnabled {
-				TimelineView(.animation(minimumInterval: 1 / 30)) { context in
-					pulse(phase: motionClock.phase(at: context.date, cycleDuration: cycle))
-				}
-			} else {
-				pulse(phase: motionClock.pausedPhase)
-			}
-		}
-		.onAppear {
-			if decorativeMotionEnabled {
-				motionClock.begin(at: .now, cycleDuration: cycle)
-			}
-		}
-		.onChange(of: decorativeMotionEnabled) { _, isEnabled in
-			if isEnabled {
-				motionClock.resume(at: .now, cycleDuration: cycle)
-			} else {
-				motionClock.pause(at: .now, cycleDuration: cycle)
-			}
+		ContinuousMotion(cycle: cycle, framesPerSecond: 30) { phase in
+			pulse(phase: phase)
 		}
 	}
 
