@@ -15,6 +15,7 @@
 | Task                  | Command                                                  |
 | --------------------- | -------------------------------------------------------- |
 | Focused native checks | `just check`                                             |
+| Focused unit tests    | `just test FILTER`                                       |
 | Native CI             | `just ci`                                                |
 | Integration tests     | `just integration`                                       |
 | Website checks        | `just check web`                                         |
@@ -49,6 +50,7 @@
 
 - Run focused checks while iterating, `just check web` plus the production build for website changes, and `just ci` before completion.
 - Keep unit/integration tests offline and fixture-backed; live contracts run only through `just live-contracts`.
+- Acquire and release install leases explicitly in tests; never rely on deallocation to unlock.
 - Do not launch previews or the app for UI work unless the user authorizes it.
 - Do not install, launch, download, uninstall, or alter the user's game/runtime unless explicitly requested.
 - Run Python through the root `pyproject.toml`/`uv.lock` with `uv run --locked`; reuse `scripts/lib` and test changed behavior.

@@ -16,7 +16,7 @@ struct GameInstallerRollbackTests {
 			body: body, protocolClass: RollbackURLProtocol.self)
 		defer { fixture.remove() }
 		try Data("ga".utf8).write(to: fixture.partial)
-		try Self.writeMetadata(manifestHash: "0", for: fixture)
+		try await Self.writeMetadata(manifestHash: "0", for: fixture)
 		RollbackURLProtocol.handler = { request in
 			#expect(request.value(forHTTPHeaderField: "Range") == nil)
 			return (GameInstallerStreamingTests.response(url: request.url!, status: 200), body)
@@ -183,17 +183,17 @@ struct GameInstallerRollbackTests {
 			body: Data("game".utf8), protocolClass: RollbackURLProtocol.self)
 		defer { fixture.remove() }
 		let escaping = ManifestFile(path: "../escape.dat", hash: fixture.item.hash, size: "4")
-		let installDirectory = try InstallerInstallDirectory(at: fixture.directory)
-
 		await #expect(throws: (any Error).self) {
-			try await fixture.installer.download(
-				escaping,
-				source: fixture.source,
-				baseURL: fixture.baseURL,
-				installDirectory: installDirectory,
-				counter: ProgressCounter(totalBytes: 4, totalFiles: 1),
-				progress: { _ in }
-			)
+			try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
+				try await fixture.installer.download(
+					escaping,
+					source: fixture.source,
+					baseURL: fixture.baseURL,
+					installDirectory: installDirectory,
+					counter: ProgressCounter(totalBytes: 4, totalFiles: 1),
+					progress: { _ in }
+				)
+			}
 		}
 
 		let parent = fixture.directory.deletingLastPathComponent()
@@ -207,36 +207,39 @@ struct GameInstallerRollbackTests {
 		baseline: Int,
 		recorder: ProgressRecorder = ProgressRecorder()
 	) async throws -> Int64 {
-		try await fixture.installer.download(
-			fixture.item,
-			source: fixture.source,
-			baseURL: fixture.baseURL,
-			installDirectory: try InstallerInstallDirectory(at: fixture.directory),
-			counter: ProgressCounter(
-				totalBytes: fixture.item.byteCount,
-				totalFiles: 1,
-				downloadedBytes: Int64(baseline)
-			),
-			progress: { update in await recorder.record(update) }
-		)
+		try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
+			try await fixture.installer.download(
+				fixture.item,
+				source: fixture.source,
+				baseURL: fixture.baseURL,
+				installDirectory: installDirectory,
+				counter: ProgressCounter(
+					totalBytes: fixture.item.byteCount,
+					totalFiles: 1,
+					downloadedBytes: Int64(baseline)
+				),
+				progress: { update in await recorder.record(update) }
+			)
+		}
 	}
 
 	private static func writeMetadata(
 		manifestHash: String,
 		for fixture: InstallerFixture
-	) throws {
-		let installDirectory = try InstallerInstallDirectory(at: fixture.directory)
-		let staging = try installDirectory.stagingDirectory(
-			named: AppConstants.Game.installerStagingDirectoryName
-		)
-		try fixture.installer.writeResumeMetadata(
-			InstallerResumeMetadata(
-				manifestHash: manifestHash,
-				entityTag: "\"v0\"",
-				lastModified: nil
-			),
-			to: fixture.installer.resumeMetadataFile(for: fixture.item.path, in: staging)
-		)
+	) async throws {
+		try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
+			let staging = try installDirectory.stagingDirectory(
+				named: AppConstants.Game.installerStagingDirectoryName
+			)
+			try fixture.installer.writeResumeMetadata(
+				InstallerResumeMetadata(
+					manifestHash: manifestHash,
+					entityTag: "\"v0\"",
+					lastModified: nil
+				),
+				to: fixture.installer.resumeMetadataFile(for: fixture.item.path, in: staging)
+			)
+		}
 	}
 }
 

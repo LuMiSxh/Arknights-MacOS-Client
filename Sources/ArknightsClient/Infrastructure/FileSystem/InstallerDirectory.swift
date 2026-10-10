@@ -21,15 +21,73 @@ struct InstallerFileIdentity: Equatable, Sendable {
 	}
 }
 
-/// Pins the install root and holds its cross-process advisory lease until deallocation.
+/// Pins the install root. ``InstallLease`` owns the cross-process lock; the legacy `init(at:)`
+/// still locks until deallocation for callers that have not moved to the lease yet.
 final class InstallerInstallDirectory: @unchecked Sendable {
 	let root: InstallerDirectoryHandle
-	private let fileManager = FileManager.default
+	private let legacyLockDescriptor: Int32?
 
 	var url: URL { root.url }
 
-	init(at url: URL) throws {
-		try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
+	/// Legacy locking initializer; it takes the same lock as ``InstallLease`` on its own descriptor.
+	convenience init(at url: URL) throws {
+		let root = try Self.pinRoot(at: url)
+		let descriptor = try Self.acquireLock(on: root)
+		self.init(root: root, legacyLockDescriptor: descriptor)
+	}
+
+	/// Pins the root without locking. Used by ``InstallLease``, which owns the lock.
+	convenience init(pinningAt url: URL) throws {
+		self.init(root: try Self.pinRoot(at: url), legacyLockDescriptor: nil)
+	}
+
+	private init(root: InstallerDirectoryHandle, legacyLockDescriptor: Int32?) {
+		self.root = root
+		self.legacyLockDescriptor = legacyLockDescriptor
+	}
+
+	deinit {
+		if let legacyLockDescriptor { Self.releaseLock(legacyLockDescriptor) }
+	}
+
+	static func releaseLock(_ descriptor: Int32) {
+		_ = flock(descriptor, LOCK_UN)
+		_ = close(descriptor)
+	}
+
+	/// Opens a second descriptor on the root and locks it. `flock` binds to the open file
+	/// description, so a second acquire conflicts even inside this process. The identity check
+	/// rejects a root path that was swapped between pinning and locking.
+	static func acquireLock(on root: InstallerDirectoryHandle) throws -> Int32 {
+		let descriptor = open(root.url.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+		guard descriptor >= 0 else {
+			if errno == ELOOP { throw InstallerFileSystemError.symbolicLink(root.url) }
+			throw POSIXError(.init(rawValue: errno) ?? .EIO)
+		}
+		var lockStatus = stat()
+		var rootStatus = stat()
+		guard fstat(descriptor, &lockStatus) == 0, fstat(root.descriptor, &rootStatus) == 0 else {
+			let error = errno
+			_ = close(descriptor)
+			throw POSIXError(.init(rawValue: error) ?? .EIO)
+		}
+		guard InstallerFileIdentity(lockStatus) == InstallerFileIdentity(rootStatus) else {
+			_ = close(descriptor)
+			throw InstallerFileSystemError.unsafeDirectory(root.url)
+		}
+		guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
+			let error = errno
+			_ = close(descriptor)
+			if error == EWOULDBLOCK || error == EAGAIN {
+				throw InstallerFileSystemError.directoryInUse(root.url)
+			}
+			throw POSIXError(.init(rawValue: error) ?? .EIO)
+		}
+		return descriptor
+	}
+
+	private static func pinRoot(at url: URL) throws -> InstallerDirectoryHandle {
+		try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
 		let rootURL = url.standardizedFileURL
 		let descriptor = open(
 			rootURL.path,
@@ -38,14 +96,6 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 		guard descriptor >= 0 else {
 			if errno == ELOOP { throw InstallerFileSystemError.symbolicLink(rootURL) }
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
-		}
-		guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
-			let error = errno
-			_ = close(descriptor)
-			if error == EWOULDBLOCK || error == EAGAIN {
-				throw InstallerFileSystemError.directoryInUse(rootURL)
-			}
-			throw POSIXError(.init(rawValue: error) ?? .EIO)
 		}
 
 		var status = stat()
@@ -68,7 +118,7 @@ final class InstallerInstallDirectory: @unchecked Sendable {
 		)
 		let canonicalURL = URL(fileURLWithPath: canonicalPathString, isDirectory: true)
 			.standardizedFileURL
-		root = InstallerDirectoryHandle(descriptor: descriptor, url: canonicalURL)
+		return InstallerDirectoryHandle(descriptor: descriptor, url: canonicalURL)
 	}
 
 	func directory(at relativePath: String, createParents: Bool = false) throws

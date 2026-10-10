@@ -107,14 +107,15 @@ struct GameInstallerResourceTests {
 			api: api,
 			compatibilityManager: GameCompatibilityManager()
 		)
-		let installDirectory = try InstallerInstallDirectory(at: root)
-		let pending = try await installer.pendingDownloads(
-			in: manifest,
-			installDirectory: installDirectory,
-			previousFiles: nil,
-			verifyAllExistingFiles: verifyAll,
-			progress: { _ in }
-		)
+		let pending = try await withTestInstallDirectory(at: root) { installDirectory in
+			try await installer.pendingDownloads(
+				in: manifest,
+				installDirectory: installDirectory,
+				previousFiles: nil,
+				verifyAllExistingFiles: verifyAll,
+				progress: { _ in }
+			)
+		}
 		guard pending.files.count == pendingCount else {
 			throw ResourceTestError.unexpectedPendingCount(
 				name: name,

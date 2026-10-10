@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -74,7 +75,18 @@ def build_command(architectures: list[str]) -> list[str]:
     return ["swift", "build", "-q", "--build-tests", *architectures]
 
 
-def test_command(level: SwiftTestLevel, architectures: list[str]) -> list[str]:
+def filter_expression(target: str, pattern: str | None = None) -> str:
+    """Return the SwiftPM filter that selects one target's tests."""
+    if pattern is None:
+        return rf"^{target}\."
+    return rf"^{target}\..*{pattern}"
+
+
+def test_command(
+    level: SwiftTestLevel,
+    architectures: list[str],
+    pattern: str | None = None,
+) -> list[str]:
     command = [
         "swift",
         "test",
@@ -84,7 +96,7 @@ def test_command(level: SwiftTestLevel, architectures: list[str]) -> list[str]:
         "--disable-sandbox",
         "--disable-automatic-resolution",
         "--filter",
-        rf"^{level.target}\.",
+        filter_expression(level.target, pattern),
         *architectures,
     ]
     if level.allows_network:
@@ -109,9 +121,10 @@ def list_command(architectures: list[str]) -> list[str]:
     ]
 
 
-def test_count(output: str, target: str) -> int:
-    prefix = f"{target}."
-    return sum(line.startswith(prefix) for line in output.splitlines())
+def test_count(output: str, target: str, pattern: str | None = None) -> int:
+    """Count listed tests that the same filter would select when run."""
+    expression = re.compile(filter_expression(target, pattern))
+    return sum(bool(expression.search(line)) for line in output.splitlines())
 
 
 def relevant_success_output(output: str) -> list[str]:
@@ -150,7 +163,7 @@ def isolated_environment(root: Path, level: SwiftTestLevel) -> dict[str, str]:
     return environment
 
 
-def run_level(name: str) -> None:
+def run_level(name: str, pattern: str | None = None) -> None:
     level = LEVELS[name]
     configuration = load_project_configuration()
     architectures = architecture_arguments(configuration)
@@ -162,13 +175,17 @@ def run_level(name: str) -> None:
     listed_tests = run(
         list_command(architectures), cwd=PROJECT_DIR, capture=True
     ).stdout
-    test_total = test_count(listed_tests, level.target)
+    test_total = test_count(listed_tests, level.target, pattern)
     if test_total == 0:
-        fail(f"Swift {name} test target contains no discoverable tests: {level.target}")
+        if pattern is None:
+            reason = f"target contains no discoverable tests: {level.target}"
+        else:
+            reason = f"target has no tests matching {pattern!r}: {level.target}"
+        fail(f"Swift {name} test {reason}")
 
     with tempfile.TemporaryDirectory(prefix=f"arknights-{name}-tests-") as directory:
         result = run(
-            test_command(level, architectures),
+            test_command(level, architectures, pattern),
             cwd=PROJECT_DIR,
             capture=True,
             environment=isolated_environment(Path(directory), level),
@@ -182,8 +199,14 @@ def run_level(name: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("level", choices=LEVELS)
+    parser.add_argument(
+        "--filter",
+        dest="pattern",
+        metavar="PATTERN",
+        help="run only tests whose identifier matches this regex",
+    )
     arguments = parser.parse_args()
-    run_level(arguments.level)
+    run_level(arguments.level, arguments.pattern)
 
 
 if __name__ == "__main__":

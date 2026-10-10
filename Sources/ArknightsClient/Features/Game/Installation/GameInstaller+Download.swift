@@ -2,6 +2,7 @@
 
 import Darwin
 import Foundation
+import OSLog
 
 /// One manifest file from request to installed byte: retrying across CDNs, then verifying
 /// a private staged inode before atomic promotion.
@@ -127,12 +128,14 @@ extension GameInstaller {
 			}
 		}
 
-		try cloneOrCopy(
-			from: partialDescriptor,
-			to: staged,
-			expectedSize: item.byteCount,
-			sourceURL: partial.url
-		)
+		try InstallerSignposts.measure("Clone") {
+			try cloneOrCopy(
+				from: partialDescriptor,
+				to: staged,
+				expectedSize: item.byteCount,
+				sourceURL: partial.url
+			)
+		}
 		let stagedDescriptor = try staged.open(flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
 		defer { _ = close(stagedDescriptor) }
 		try InstallerInstallDirectory.makePrivateRegularFile(
@@ -146,10 +149,12 @@ extension GameInstaller {
 			beforeHash.st_size == item.byteCount
 		else { throw LauncherError.unsafeInstallerTemporaryFile(staged.url) }
 		stagedIdentity = InstallerFileIdentity(beforeHash)
-		let checksum = try ManifestChecksum.checksum(
-			ofFileDescriptor: stagedDescriptor,
-			expected: item.hash
-		)
+		let checksum = try InstallerSignposts.measure("Hash") {
+			try ManifestChecksum.checksum(
+				ofFileDescriptor: stagedDescriptor,
+				expected: item.hash
+			)
+		}
 		var afterHash = stat()
 		guard fstat(stagedDescriptor, &afterHash) == 0,
 			InstallerFileIdentity(afterHash) == stagedIdentity,
@@ -178,11 +183,15 @@ extension GameInstaller {
 		}
 
 		try Task.checkCancellation()
-		try staged.rename(to: destination)
+		try InstallerSignposts.measure("Promote") {
+			try staged.rename(to: destination)
+		}
 		didPromote = true
-		guard fsync(publicationDirectory.descriptor) == 0,
-			fsync(destination.directory.descriptor) == 0
-		else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
+		try InstallerSignposts.measure("Fsync") {
+			guard fsync(publicationDirectory.descriptor) == 0,
+				fsync(destination.directory.descriptor) == 0
+			else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
+		}
 		guard let installedStatus = try destination.stat(),
 			InstallerFileIdentity(installedStatus) == stagedIdentity,
 			installedStatus.st_size == item.byteCount

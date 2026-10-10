@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 import swift_tests
+from lib.common import ScriptError
 
 
 def test_unit_and_integration_tests_run_without_network() -> None:
@@ -65,3 +68,49 @@ A warning from the test process that needs attention
     assert swift_tests.relevant_success_output(output) == [
         "A warning from the test process that needs attention"
     ]
+
+
+def test_filter_composes_one_regex_inside_the_selected_target() -> None:
+    command = swift_tests.test_command(swift_tests.LEVELS["unit"], [], "GameInstaller")
+
+    assert command.count("--filter") == 1
+    assert (
+        command[command.index("--filter") + 1]
+        == "^ArknightsClientTests\\..*GameInstaller"
+    )
+
+
+def test_filter_counts_only_matching_tests_in_the_selected_target() -> None:
+    listing = (
+        "ArknightsClientTests.GameInstallerTests/example()\n"
+        "ArknightsClientTests.UnitSuite/example()\n"
+        "ArknightsClientIntegrationTests.GameInstallerWorkflow/example()"
+    )
+
+    assert swift_tests.test_count(listing, "ArknightsClientTests", "GameInstaller") == 1
+    assert (
+        swift_tests.test_count(
+            listing, "ArknightsClientIntegrationTests", "GameInstaller"
+        )
+        == 1
+    )
+    assert swift_tests.test_count(listing, "ArknightsClientTests", "Missing") == 0
+
+
+def test_run_level_fails_when_filter_matches_no_test(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    listing = "ArknightsClientTests.UnitSuite/example()"
+    monkeypatch.setattr(swift_tests, "load_project_configuration", lambda: None)
+    monkeypatch.setattr(
+        swift_tests, "architecture_arguments", lambda configuration=None: []
+    )
+    monkeypatch.setattr(swift_tests, "require_command", lambda name: None)
+    monkeypatch.setattr(
+        swift_tests,
+        "run",
+        lambda command, **kwargs: SimpleNamespace(stdout=listing, stderr=""),
+    )
+
+    with pytest.raises(ScriptError, match="no tests matching"):
+        swift_tests.run_level("unit", "Missing")

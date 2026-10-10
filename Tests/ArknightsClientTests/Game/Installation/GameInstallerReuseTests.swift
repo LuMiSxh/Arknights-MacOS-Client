@@ -98,12 +98,12 @@ struct GameInstallerReuseTests {
 		_ = try world.writeInstalledRegion(at: world.target, body: Self.body)
 		let alias = world.root.appending(path: "alias", directoryHint: .isDirectory)
 		try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: world.target)
-		let root = try InstallerInstallDirectory(at: world.target)
+		try await withTestInstallDirectory(at: world.target) { root in
+			let session = await world.installer(donors: [world.target, alias])
+				.reuseSession(for: .global, target: root)
 
-		let session = await world.installer(donors: [world.target, alias])
-			.reuseSession(for: .global, target: root)
-
-		#expect(session.sources.isEmpty)
+			#expect(session.sources.isEmpty)
+		}
 	}
 
 	@Test

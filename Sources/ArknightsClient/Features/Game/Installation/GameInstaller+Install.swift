@@ -10,12 +10,34 @@ extension GameInstaller {
 		verifyAllExistingFiles: Bool = false,
 		progress: @escaping ProgressHandler
 	) async throws -> InstallResult {
-		let installationRoot: InstallerInstallDirectory
+		// Only lease acquisition gets the lease mapping; body errors keep their per-step mapping.
+		var leaseAcquired = false
 		do {
-			installationRoot = try InstallerInstallDirectory(at: installDirectory)
+			return try await withInstallLease(at: installDirectory) { lease in
+				leaseAcquired = true
+				return try await installHoldingLease(
+					configuration: configuration,
+					region: region,
+					into: installDirectory,
+					installationRoot: lease.directory,
+					verifyAllExistingFiles: verifyAllExistingFiles,
+					progress: progress
+				)
+			}
 		} catch {
-			throw mapInstallerFileSystemError(error)
+			throw leaseAcquired ? error : mapInstallerFileSystemError(error)
 		}
+	}
+
+	/// Runs the install while the caller holds the install lease on `installationRoot`.
+	private func installHoldingLease(
+		configuration: GameConfiguration,
+		region: GameRegion,
+		into installDirectory: URL,
+		installationRoot: InstallerInstallDirectory,
+		verifyAllExistingFiles: Bool,
+		progress: @escaping ProgressHandler
+	) async throws -> InstallResult {
 		let (manifest, cdn) = try await Self.fetchRemoteResources {
 			try await (
 				api.manifest(for: configuration, region: region),

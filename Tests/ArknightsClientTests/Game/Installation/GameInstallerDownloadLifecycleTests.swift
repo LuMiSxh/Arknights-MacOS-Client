@@ -19,34 +19,35 @@ struct GameInstallerDownloadLifecycleTests {
 			protocolClass: LifecycleURLProtocol.self
 		)
 		defer { fixture.remove() }
-		let installDirectory = try InstallerInstallDirectory(at: fixture.directory)
-		let monitorGate = ProgressCallbackGate()
-		let completion = DownloadCompletion()
-		let operation = Task {
-			do {
-				_ = try await fixture.installer.download(
-					fixture.item,
-					source: fixture.source,
-					baseURL: fixture.baseURL,
-					installDirectory: installDirectory,
-					counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
-					progress: { update in await monitorGate.record(update) }
-				)
-				await completion.record(failed: false)
-			} catch {
-				await completion.record(failed: true)
+		try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
+			let monitorGate = ProgressCallbackGate()
+			let completion = DownloadCompletion()
+			let operation = Task {
+				do {
+					_ = try await fixture.installer.download(
+						fixture.item,
+						source: fixture.source,
+						baseURL: fixture.baseURL,
+						installDirectory: installDirectory,
+						counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
+						progress: { update in await monitorGate.record(update) }
+					)
+					await completion.record(failed: false)
+				} catch {
+					await completion.record(failed: true)
+				}
 			}
-		}
 
-		await monitorGate.waitUntilEntered()
-		if outcome == .cancellation {
-			operation.cancel()
+			await monitorGate.waitUntilEntered()
+			if outcome == .cancellation {
+				operation.cancel()
+			}
+			#expect(!(await completion.finished))
+			await monitorGate.release()
+			await operation.value
+			#expect(await completion.finished)
+			#expect(await completion.failed)
 		}
-		#expect(!(await completion.finished))
-		await monitorGate.release()
-		await operation.value
-		#expect(await completion.finished)
-		#expect(await completion.failed)
 	}
 }
 

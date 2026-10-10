@@ -67,14 +67,16 @@ struct GameInstallerStreamingTests {
 		defer { StreamingURLProtocol.handler = nil }
 
 		await #expect(throws: (any Error).self) {
-			try await fixture.installer.download(
-				fixture.item,
-				source: fixture.source,
-				baseURL: fixture.baseURL,
-				installDirectory: try InstallerInstallDirectory(at: fixture.directory),
-				counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
-				progress: { _ in }
-			)
+			try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
+				try await fixture.installer.download(
+					fixture.item,
+					source: fixture.source,
+					baseURL: fixture.baseURL,
+					installDirectory: installDirectory,
+					counter: ProgressCounter(totalBytes: fixture.item.byteCount, totalFiles: 1),
+					progress: { _ in }
+				)
+			}
 		}
 
 		#expect(try Data(contentsOf: fixture.destination) == previous)
@@ -201,17 +203,19 @@ struct GameInstallerStreamingTests {
 		defer { StreamingURLProtocol.handler = nil }
 
 		do {
-			_ = try await fixture.installer.download(
-				fixture.item,
-				source: fixture.source,
-				baseURL: fixture.baseURL,
-				installDirectory: try InstallerInstallDirectory(at: fixture.directory),
-				counter: ProgressCounter(
-					totalBytes: fixture.item.byteCount,
-					totalFiles: 1
-				),
-				progress: { _ in }
-			)
+			_ = try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
+				try await fixture.installer.download(
+					fixture.item,
+					source: fixture.source,
+					baseURL: fixture.baseURL,
+					installDirectory: installDirectory,
+					counter: ProgressCounter(
+						totalBytes: fixture.item.byteCount,
+						totalFiles: 1
+					),
+					progress: { _ in }
+				)
+			}
 			Issue.record("Expected the oversized response to be rejected")
 		} catch LauncherError.downloadedSizeMismatch(_, let expected, let actual) {
 			#expect(expected == Int64(body.count))

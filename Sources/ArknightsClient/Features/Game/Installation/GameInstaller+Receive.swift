@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import Foundation
+import OSLog
 
 /// What one response stream has delivered so far.
 struct ReceivedTransfer {
@@ -22,6 +23,18 @@ extension GameInstaller {
 		into download: PartialDownload
 	) async throws -> Int64 {
 		let item = download.item
+		let signpostID = InstallerSignposts.signposter.makeSignpostID()
+		let receiveInterval = InstallerSignposts.signposter.beginInterval(
+			"Receive", id: signpostID, "\(item.path)")
+		defer { InstallerSignposts.signposter.endInterval("Receive", receiveInterval) }
+		var firstByteInterval: OSSignpostIntervalState? =
+			InstallerSignposts.signposter.beginInterval(
+				"First byte", id: signpostID, "\(item.path)")
+		defer {
+			if let interval = firstByteInterval {
+				InstallerSignposts.signposter.endInterval("First byte", interval)
+			}
+		}
 		let stream = chunkSession.stream(for: request, redirectValidator: redirectValidator)
 		defer { stream.cancel() }
 		let counter = download.counter
@@ -47,6 +60,10 @@ extension GameInstaller {
 						case .response(let response):
 							try await acceptResponse(response, for: download, transfer: &transfer)
 						case .data(let data):
+							if let interval = firstByteInterval {
+								InstallerSignposts.signposter.endInterval("First byte", interval)
+								firstByteInterval = nil
+							}
 							try await write(data, from: stream, to: download, transfer: &transfer)
 						}
 					}

@@ -61,13 +61,14 @@ struct GameInstallerPromotionTests {
 		#expect(try Data(contentsOf: movedParent.appending(path: "game.dat")) == body)
 		#expect(try Data(contentsOf: movedParent.appending(path: "game.dat.part")) == sentinel)
 		#expect(try FileManager.default.contentsOfDirectory(atPath: outside.path).isEmpty)
-		let installed = try InstallerInstallDirectory(at: fixture.directory)
-		let installedFile = try installed.file(at: "bin-moved/game.dat")
-		let descriptor = try installedFile.open(flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
-		defer { _ = close(descriptor) }
-		let acl = acl_get_fd_np(descriptor, ACL_TYPE_EXTENDED)
-		#expect(acl == nil)
-		#expect(errno == ENOENT)
+		try await withTestInstallDirectory(at: fixture.directory) { installed in
+			let installedFile = try installed.file(at: "bin-moved/game.dat")
+			let descriptor = try installedFile.open(flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+			defer { _ = close(descriptor) }
+			let acl = acl_get_fd_np(descriptor, ACL_TYPE_EXTENDED)
+			#expect(acl == nil)
+			#expect(errno == ENOENT)
+		}
 	}
 }
 

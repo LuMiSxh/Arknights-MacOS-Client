@@ -40,19 +40,20 @@ struct GameInstallerProgressTests {
 			compatibilityManager: GameCompatibilityManager()
 		)
 		if hasStaleManifestMetadata {
-			let install = try InstallerInstallDirectory(at: root)
-			let staging = try install.stagingDirectory(
-				named: AppConstants.Game.installerStagingDirectoryName
-			)
-			let metadata = installer.resumeMetadataFile(for: pendingItem.path, in: staging)
-			try installer.writeResumeMetadata(
-				InstallerResumeMetadata(
-					manifestHash: "old-manifest",
-					entityTag: nil,
-					lastModified: nil
-				),
-				to: metadata
-			)
+			try await withTestInstallDirectory(at: root) { install in
+				let staging = try install.stagingDirectory(
+					named: AppConstants.Game.installerStagingDirectoryName
+				)
+				let metadata = installer.resumeMetadataFile(for: pendingItem.path, in: staging)
+				try installer.writeResumeMetadata(
+					InstallerResumeMetadata(
+						manifestHash: "old-manifest",
+						entityTag: nil,
+						lastModified: nil
+					),
+					to: metadata
+				)
+			}
 		}
 
 		ProgressBaselineURLProtocol.handler = { request in

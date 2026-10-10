@@ -41,6 +41,11 @@ build:
 integration:
     {{ uv }} scripts/swift_tests.py integration
 
+# Run unit tests whose identifier matches FILTER (a regex inside the unit target).
+[group('Checks')]
+test filter:
+    {{ uv }} scripts/swift_tests.py unit --filter {{ quote(filter) }}
+
 # Run read-only contracts against live Yostar and Gryphline services; never part of normal source checks.
 [group('Checks')]
 live-contracts:

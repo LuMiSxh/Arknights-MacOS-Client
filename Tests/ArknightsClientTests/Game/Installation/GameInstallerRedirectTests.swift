@@ -45,15 +45,17 @@ func installerAdmitsOnlyAllowedPublisherSources(
 	checksum.update(DownloadAdmissionURLProtocol.body)
 	let item = ManifestFile(path: "nested/game.dat", hash: checksum.decimalString, size: "4")
 	do {
-		_ = try await installer.download(
-			item,
-			source: "game",
-			baseURL: try #require(URL(string: source)),
-			installDirectory: try InstallerInstallDirectory(at: root),
-			counter: ProgressCounter(totalBytes: 4, totalFiles: 1),
-			progress: { _ in },
-			region: region
-		)
+		_ = try await withTestInstallDirectory(at: root) { installDirectory in
+			try await installer.download(
+				item,
+				source: "game",
+				baseURL: try #require(URL(string: source)),
+				installDirectory: installDirectory,
+				counter: ProgressCounter(totalBytes: 4, totalFiles: 1),
+				progress: { _ in },
+				region: region
+			)
+		}
 		#expect(allowed)
 	} catch LauncherError.invalidResponse {
 		#expect(!allowed)

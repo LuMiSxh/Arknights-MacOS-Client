@@ -17,22 +17,23 @@ struct InstallerResumeTests {
 		defer { fixture.remove() }
 		try Data(body.prefix(2)).write(to: fixture.partial)
 		do {
-			let installDirectory = try InstallerInstallDirectory(at: fixture.directory)
-			let staging = try installDirectory.stagingDirectory(
-				named: AppConstants.Game.installerStagingDirectoryName
-			)
-			let metadata = fixture.installer.resumeMetadataFile(
-				for: fixture.item.path,
-				in: staging
-			)
-			try fixture.installer.writeResumeMetadata(
-				InstallerResumeMetadata(
-					manifestHash: fixture.item.hash,
-					entityTag: "\"v1\"",
-					lastModified: "Mon, 01 Jan 2024 00:00:00 GMT"
-				),
-				to: metadata
-			)
+			try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
+				let staging = try installDirectory.stagingDirectory(
+					named: AppConstants.Game.installerStagingDirectoryName
+				)
+				let metadata = fixture.installer.resumeMetadataFile(
+					for: fixture.item.path,
+					in: staging
+				)
+				try fixture.installer.writeResumeMetadata(
+					InstallerResumeMetadata(
+						manifestHash: fixture.item.hash,
+						entityTag: "\"v1\"",
+						lastModified: "Mon, 01 Jan 2024 00:00:00 GMT"
+					),
+					to: metadata
+				)
+			}
 		}
 
 		var requestCount = 0

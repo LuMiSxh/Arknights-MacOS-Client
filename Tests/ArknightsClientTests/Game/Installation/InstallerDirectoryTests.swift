@@ -16,15 +16,66 @@ struct InstallerDirectoryTests {
 		)
 		defer { try? FileManager.default.removeItem(at: root) }
 
-		try withLease(at: root) {
+		try withInstallLease(at: root) { _ in
 			let lockAttempt = try childLockAttempt(at: root, killAfterAcquire: false)
 			#expect(lockAttempt == .blocked)
 		}
 
 		let killedChild = try childLockAttempt(at: root, killAfterAcquire: true)
 		#expect(killedChild == .killed)
-		let leaseAfterChildExit = try InstallerInstallDirectory(at: root)
-		#expect(leaseAfterChildExit.url == root.standardizedFileURL)
+		try withInstallLease(at: root) { lease in
+			#expect(lease.directory.url == root.standardizedFileURL)
+		}
+	}
+
+	@Test
+	func leaseCanBeReleasedAndReacquiredInOneProcess() throws {
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "InstallerDirectoryTests-reacquire-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		defer { try? FileManager.default.removeItem(at: root) }
+
+		let first = try InstallLease.acquire(at: root)
+		first.release()
+		let second = try InstallLease.acquire(at: root)
+		second.release()
+		try withInstallLease(at: root) { _ in }
+	}
+
+	@Test
+	func secondAcquireWhileHeldThrowsDirectoryInUse() throws {
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "InstallerDirectoryTests-busy-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		defer { try? FileManager.default.removeItem(at: root) }
+
+		let held = try InstallLease.acquire(at: root)
+		do {
+			_ = try InstallLease.acquire(at: root)
+			Issue.record("Expected the second acquire to throw directoryInUse")
+		} catch InstallerFileSystemError.directoryInUse {
+		} catch {
+			Issue.record("Unexpected error: \(error)")
+		}
+		held.release()
+		try withInstallLease(at: root) { _ in }
+	}
+
+	@Test
+	func scopedLeaseIsReleasedWhenTheBodyThrows() throws {
+		struct Failure: Error {}
+		let root = FileManager.default.temporaryDirectory.appending(
+			path: "InstallerDirectoryTests-throw-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		defer { try? FileManager.default.removeItem(at: root) }
+
+		#expect(throws: Failure.self) {
+			try withInstallLease(at: root) { _ in throw Failure() }
+		}
+		try withInstallLease(at: root) { _ in }
 	}
 
 	@Test
@@ -168,12 +219,6 @@ struct InstallerDirectoryTests {
 		let stateACL = acl_get_fd_np(stateDescriptor, ACL_TYPE_EXTENDED)
 		#expect(stateACL == nil)
 		#expect(errno == ENOENT)
-	}
-
-	private func withLease(at root: URL, operation: () throws -> Void) throws {
-		let lease = try InstallerInstallDirectory(at: root)
-		try operation()
-		withExtendedLifetime(lease) {}
 	}
 
 	private enum LockProbeResult: Equatable {

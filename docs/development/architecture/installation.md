@@ -46,6 +46,16 @@ partial install.
 > - Installation is exclusive. Refreshes, Settings actions, and repeated clicks cannot start a second
 >   installer.
 
+## Install lease
+
+The install lease is an exclusive lock on one install root. The lease owns the lock. An operation must hold a lease before it writes to the install root.
+
+- The lease is scoped. Its holder uses it only inside the scope.
+- Release the lease explicitly with `consuming release()`, or let the scope end.
+- Do not rely on deallocation to release a lease. The `deinit` is a backstop against leaks. It is not the release contract.
+- The lease stays exclusive across processes. A second installer cannot acquire the same install root while a lease is held.
+- Tests own and release their lease. Each test acquires its lease, releases it explicitly, and uses a per-test UUID temporary directory.
+
 ## Operation flow
 
 The controller starts an operation only when the lifecycle is idle and the refresh path has loaded the

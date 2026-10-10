@@ -34,6 +34,19 @@ Use the smallest level that proves the changed contract:
 
 Swift suites use Swift Testing (`import Testing`), not XCTest. Keep tests offline and fixture-backed unless they are in the live-contract target. Do not add a test runner for the website; it has no Vitest suite.
 
+## Focused tests
+
+Run `just test FILTER` to run a group of Swift unit tests. `FILTER` is a regular expression. The recipe runs only the unit tests whose names match `FILTER`.
+
+```bash
+just test GameInstaller
+just test 'InstallerDirectory|GameInstallerRollback'
+```
+
+- Use `just test` while you change code.
+- Run `just ci` before you finish.
+- `just test` does not run integration or live-contract tests.
+
 ## Isolation contract
 
 Swift unit and integration tests run in the macOS sandbox with network denied. SwiftPM builds test targets before it enters the sandbox. Python unit tests use `pytest-socket` to reject socket and DNS access.

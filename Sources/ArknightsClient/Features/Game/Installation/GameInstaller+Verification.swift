@@ -2,6 +2,7 @@
 
 import Darwin
 import Foundation
+import OSLog
 import Synchronization
 
 /// Selects the manifest files that must be downloaded. Existing files the previous manifest
@@ -20,6 +21,9 @@ extension GameInstaller {
 		verifyAllExistingFiles: Bool,
 		progress: @escaping ProgressHandler
 	) async throws -> PendingDownloads {
+		let checkPass = InstallerSignposts.signposter.beginInterval(
+			"Check pass", id: InstallerSignposts.signposter.makeSignpostID())
+		defer { InstallerSignposts.signposter.endInterval("Check pass", checkPass) }
 		var candidates:
 			[(
 				item: ManifestFile, relativePath: String, size: Int64?,

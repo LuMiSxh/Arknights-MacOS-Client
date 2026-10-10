@@ -157,6 +157,9 @@ enum AppConstants {
 	}
 
 	enum Logging {
+		/// Matches `AppPaths.bundleIdentifier`; keep both in sync.
+		static let bundleIdentifier = "com.lumisxh.arknights-client"
+		static let installerSignpostCategory = "Installer"
 		static let maximumFileSize = 4 * 1_024 * 1_024
 		static let maximumMessageBytes = 16 * 1_024
 		static let truncationMarker = " [trunc]"
