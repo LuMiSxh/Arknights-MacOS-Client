@@ -38,11 +38,11 @@ struct LauncherDockLaunchTests {
 			to: japanDirectory.appending(path: AppConstants.Game.installedStateFileName)
 		)
 
-		model.lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+		model.lifecycle.simulateActivity(.runningGame(sessionID: UUID(), processIdentifier: 42))
 		#expect(!(await model.launchFromDock(region: .japan)))
 		#expect(model.installation.region == .global)
 
-		model.lifecycle.activity = .idle
+		model.lifecycle.simulateActivity(.idle)
 		model.lifecycle.intelTranslationState = .unavailable
 		let launch = Task { await model.launchFromDock(region: .japan) }
 		await api.waitForBrandingRequests(2)

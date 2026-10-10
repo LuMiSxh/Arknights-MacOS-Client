@@ -24,7 +24,7 @@
 			communication.launcherUpdateStatus = projection.launcherUpdateStatus
 			communication.isCheckingLauncherUpdates = false
 			lifecycle.refresh = .idle
-			lifecycle.activity = simulatedActivity(for: simulation)
+			lifecycle.simulateActivity(simulatedActivity(for: simulation))
 			lifecycle.setStatus(projection.status, clearsFailure: projection.failureCode == nil)
 			applyDeveloperPreferences(simulation)
 			applyDeveloperFailure(projection, region: simulation.selectedRegion)
@@ -113,7 +113,7 @@
 				simulation.selectedRegion = .global
 			}
 			if installation.region != simulation.selectedRegion {
-				lifecycle.activity = .idle
+				lifecycle.simulateActivity(.idle)
 				_ = installation.selectRegion(simulation.selectedRegion)
 			}
 			for region in GameRegion.allCases {

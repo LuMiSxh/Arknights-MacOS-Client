@@ -13,22 +13,56 @@ final class LauncherLifecycleStore {
 	let log: LauncherLog
 	private(set) var isLauncherUpdatePending = false
 	private var activityObservers: [UUID: () -> Void] = [:]
+	private var currentLease: ActivityLease?
 
 	var activity: LauncherActivity {
-		get {
-			if isLauncherUpdatePending, state.activity == .idle {
-				return .maintaining(.updatingLauncher)
-			}
-			return state.activity
+		if isLauncherUpdatePending, state.activity == .idle {
+			return .maintaining(.updatingLauncher)
 		}
-		set {
-			guard state.activity != newValue else { return }
-			state.activity = newValue
-			for observer in Array(activityObservers.values) {
-				observer()
-			}
+		return state.activity
+	}
+
+	private func applyActivity(_ newValue: LauncherActivity) {
+		guard state.activity != newValue else { return }
+		state.activity = newValue
+		for observer in Array(activityObservers.values) {
+			observer()
 		}
 	}
+
+	/// Claims the exclusive activity. Returns nil while another activity or a launcher update runs.
+	func begin(_ activity: LauncherActivity) -> ActivityLease? {
+		guard canBeginExclusiveActivity else { return nil }
+		let lease = ActivityLease()
+		currentLease = lease
+		applyActivity(activity)
+		return lease
+	}
+
+	/// Changes the activity for the lease holder. A stale lease changes nothing and returns false.
+	@discardableResult
+	func update(_ lease: ActivityLease, to activity: LauncherActivity) -> Bool {
+		guard currentLease == lease else { return false }
+		applyActivity(activity)
+		return true
+	}
+
+	/// Releases the activity for the lease holder. A stale lease changes nothing and returns false.
+	@discardableResult
+	func end(_ lease: ActivityLease) -> Bool {
+		guard currentLease == lease else { return false }
+		currentLease = nil
+		applyActivity(.idle)
+		return true
+	}
+
+	#if DEBUG
+		/// Sets the activity without a lease and invalidates any lease. For developer simulation and tests.
+		func simulateActivity(_ activity: LauncherActivity) {
+			currentLease = nil
+			applyActivity(activity)
+		}
+	#endif
 
 	/// The underlying activity excludes the Sparkle update gate itself.
 	var hasActiveActivity: Bool { state.activity != .idle }

@@ -64,7 +64,7 @@ struct LauncherStorageMigrationRecoveryTests {
 		#expect(await model.waitForStartup() == false)
 		let failure = try #require(model.lifecycle.failure)
 
-		model.lifecycle.activity = .maintaining(.clearingCache)
+		model.lifecycle.simulateActivity(.maintaining(.clearingCache))
 
 		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .ignored)
 		#expect(model.lifecycle.failure?.id == failure.id)

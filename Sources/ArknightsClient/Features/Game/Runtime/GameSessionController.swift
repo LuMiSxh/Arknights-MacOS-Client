@@ -53,6 +53,8 @@ final class GameSessionController {
 	@ObservationIgnored var runtimeSessionControllerProvider:
 		@MainActor () throws -> any WineRuntimeSessionControlling
 	@ObservationIgnored var launchTask: Task<Void, Never>?
+	/// Lease for the current game session. It ends only after prefix-wide shutdown completes.
+	@ObservationIgnored var sessionLease: ActivityLease?
 	@ObservationIgnored var gameMonitorTask: Task<Void, Never>?
 	@ObservationIgnored var gameProcessMonitorTask: Task<Void, Never>?
 	@ObservationIgnored var activeGameModeEnabled = false

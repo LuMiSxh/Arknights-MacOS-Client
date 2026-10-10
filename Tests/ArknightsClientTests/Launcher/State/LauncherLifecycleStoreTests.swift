@@ -11,7 +11,8 @@ struct LauncherLifecycleStoreTests {
 	func presentationChangesDoNotReplaceActiveGameActivity() {
 		let lifecycle = makeLifecycleStore()
 		let sessionID = UUID()
-		lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		let lease = lifecycle.begin(.runningGame(sessionID: sessionID, processIdentifier: 42))
+		#expect(lease != nil)
 
 		lifecycle.show(LauncherError.cannotSetAppIcon)
 
@@ -57,8 +58,10 @@ struct LauncherLifecycleStoreTests {
 		let sessionID = UUID()
 		let gameActivity = LauncherActivity.runningGame(
 			sessionID: sessionID, processIdentifier: 42)
+		var gameLease: ActivityLease?
 		if scenario == .gameRunning {
-			lifecycle.activity = gameActivity
+			gameLease = lifecycle.begin(gameActivity)
+			#expect(gameLease != nil)
 		}
 
 		#expect(lifecycle.canBeginExclusiveActivity == (scenario == .idle))
@@ -69,7 +72,7 @@ struct LauncherLifecycleStoreTests {
 		if scenario == .gameRunning {
 			#expect(lifecycle.hasActiveActivity)
 			#expect(lifecycle.activity == gameActivity)
-			lifecycle.activity = .idle
+			#expect(gameLease.map { lifecycle.end($0) } == true)
 		}
 		#expect(lifecycle.activity == .maintaining(.updatingLauncher))
 		#expect(!lifecycle.canBeginExclusiveActivity)
@@ -89,6 +92,23 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.consumeFailure(id: UUID()) == nil)
 		#expect(lifecycle.consumeFailure(id: failure.id) == failure)
 		#expect(lifecycle.consumeFailure(id: failure.id) == nil)
+	}
+
+	@Test
+	func staleLeaseEndDoesNotIdleANewerOperation() {
+		let lifecycle = makeLifecycleStore()
+		let earlier = lifecycle.begin(.maintaining(.clearingCache))
+		#expect(earlier != nil)
+		lifecycle.simulateActivity(.idle)
+		let newer = lifecycle.begin(.installing(id: UUID(), stage: .downloading))
+		#expect(newer != nil)
+
+		#expect(earlier.map { lifecycle.end($0) } == false)
+		#expect(earlier.map { lifecycle.update($0, to: .idle) } == false)
+
+		#expect(lifecycle.hasActiveActivity)
+		#expect(newer.map { lifecycle.end($0) } == true)
+		#expect(lifecycle.activity == .idle)
 	}
 }
 

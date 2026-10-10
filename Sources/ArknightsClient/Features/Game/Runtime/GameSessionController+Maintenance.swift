@@ -37,7 +37,7 @@ extension GameSessionController {
 		let prefixDirectory = paths.winePrefix(for: region)
 		guard FileManager.default.fileExists(atPath: prefixDirectory.path) else { return }
 		let operationID = UUID()
-		lifecycle.activity = .maintaining(.deletingWinePrefix)
+		guard let lease = lifecycle.begin(.maintaining(.deletingWinePrefix)) else { return }
 		lifecycle.setStatus(.deletingWinePrefix)
 		Task { [weak self] in
 			guard let self else { return }
@@ -45,11 +45,11 @@ extension GameSessionController {
 				try await Task.detached(priority: .userInitiated) {
 					try FileManager.default.removeItem(at: prefixDirectory)
 				}.value
-				lifecycle.activity = .idle
+				lifecycle.end(lease)
 				lifecycle.setStatus(.winePrefixDeleted)
 				log.info("Wine prefix deleted on request")
 			} catch {
-				lifecycle.activity = .idle
+				lifecycle.end(lease)
 				presentRuntimeMaintenanceFailure(
 					error,
 					id: operationID,

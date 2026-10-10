@@ -74,7 +74,7 @@ struct AppDelegateQuitTests {
 	func installationWaitsForTheEntireActiveOperation(activity: LauncherActivity) {
 		let fixture = QuitFixture()
 		fixture.prepareUpdateInstallation()
-		fixture.lifecycle.activity = activity
+		fixture.lifecycle.simulateActivity(activity)
 		// The lifecycle gate must also hold when the update presentation is hidden.
 		fixture.delegate.blockingPresentationForQuit = { nil }
 		fixture.updater.userDriver.showInstallingUpdate(withApplicationTerminated: false) {
@@ -86,7 +86,7 @@ struct AppDelegateQuitTests {
 		fixture.updater.userDriver.retryTerminationRequest()
 		#expect(fixture.terminationCount == 0)
 
-		fixture.lifecycle.activity = .idle
+		fixture.lifecycle.simulateActivity(.idle)
 
 		#expect(fixture.terminationCount == 1)
 	}
@@ -103,7 +103,7 @@ struct AppDelegateQuitTests {
 				let activity = LauncherActivity.stoppingGame(
 					sessionID: UUID(), processIdentifier: 42)
 				stoppingActivity = activity
-				fixture?.lifecycle.activity = activity
+				fixture?.lifecycle.simulateActivity(activity)
 			}
 		case .updateWasReplaced:
 			fixture.delegate.dismissPresentationForQuit = { [weak fixture] in

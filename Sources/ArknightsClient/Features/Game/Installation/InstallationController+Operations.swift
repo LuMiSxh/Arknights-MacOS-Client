@@ -67,10 +67,14 @@ extension InstallationController {
 		clearCompletionFeedback()
 		progress = nil
 		progressSequence = 0
-		lifecycle.activity = .installing(
-			id: installationID,
-			stage: verifyAllExistingFiles ? .verifying : .preparing
-		)
+		guard
+			let lease = lifecycle.begin(
+				.installing(
+					id: installationID,
+					stage: verifyAllExistingFiles ? .verifying : .preparing
+				))
+		else { return }
+		activityLease = lease
 		hasPartialDownload = false
 		lifecycle.setStatus(
 			verifyAllExistingFiles ? .verifyingInstallation : .preparingInstallation)
@@ -97,10 +101,12 @@ extension InstallationController {
 						}
 						self.progressSequence = update.sequence
 						self.progress = update
-						self.lifecycle.activity = .installing(
-							id: installationID,
-							stage: update.isVerifying ? .verifying : .downloading
-						)
+						self.lifecycle.update(
+							lease,
+							to: .installing(
+								id: installationID,
+								stage: update.isVerifying ? .verifying : .downloading
+							))
 						let status: LauncherStatus =
 							update.isVerifying ? .verifyingInstallation : .downloading
 						if self.lifecycle.presentation.status != status {
@@ -171,7 +177,9 @@ extension InstallationController {
 	func cancelDownload() {
 		guard isDownloading else { return }
 		guard case .installing(let installationID, _) = lifecycle.activity else { return }
-		lifecycle.activity = .installing(id: installationID, stage: .pausing)
+		if let lease = activityLease {
+			lifecycle.update(lease, to: .installing(id: installationID, stage: .pausing))
+		}
 		lifecycle.setStatus(.pausing)
 		log.info("Installation pause requested")
 		installationTask?.cancel()
@@ -186,9 +194,10 @@ extension InstallationController {
 
 	@discardableResult
 	func finishInstallation(_ installationID: UUID) -> Bool {
-		guard ownsInstallation(installationID) else { return false }
+		guard ownsInstallation(installationID), let lease = activityLease else { return false }
 		installationTask = nil
-		lifecycle.activity = .idle
+		activityLease = nil
+		lifecycle.end(lease)
 		return true
 	}
 }

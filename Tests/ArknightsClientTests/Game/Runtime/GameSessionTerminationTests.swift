@@ -124,10 +124,8 @@ struct GameSessionTerminationTests {
 		}
 
 		#expect(await fixture.runtime.waitForStop(attempt: 1))
-		fixture.model.lifecycle.activity = .runningGame(
-			sessionID: replacementSessionID,
-			processIdentifier: 99
-		)
+		fixture.model.lifecycle.simulateActivity(
+			.runningGame(sessionID: replacementSessionID, processIdentifier: 99))
 		fixture.model.gameSession.activeGameRegion = .global
 		await fixture.runtime.succeedStop(attempt: 1)
 		await cleanup.value
@@ -150,7 +148,8 @@ private func makeFixture(region: GameRegion) async -> SessionFixture {
 		_ = model.installation.selectRegion(region)
 	}
 	let sessionID = UUID()
-	model.lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+	model.gameSession.sessionLease = model.lifecycle.begin(
+		.runningGame(sessionID: sessionID, processIdentifier: 42))
 	model.gameSession.activeGameRegion = region
 	return SessionFixture(
 		api: api, model: model, runtime: BlockingSessionRuntime(), sessionID: sessionID)

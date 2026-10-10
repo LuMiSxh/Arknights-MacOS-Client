@@ -29,22 +29,24 @@ final class StorageMaintenanceController {
 	}
 
 	func clearGameCache() {
-		guard lifecycle.activity == .idle else { return }
+		guard let lease = lifecycle.begin(.maintaining(.clearingCache)) else { return }
 		let operationID = UUID()
-		lifecycle.activity = .maintaining(.clearingCache)
 		let region = regionProvider()
 		let winePrefix = paths.winePrefix(for: region)
-		Task { [weak self] in
-			guard let self else { return }
+		Task { [weak self, lifecycle = self.lifecycle] in
+			guard let self else {
+				lifecycle.end(lease)
+				return
+			}
 			do {
 				try await Task.detached(priority: .utility) {
 					try GameCacheCleaner.clear(winePrefix: winePrefix)
 				}.value
-				lifecycle.activity = .idle
+				lifecycle.end(lease)
 				onStorageOverviewChanged?()
 				log.info("Shader and browser caches cleared")
 			} catch {
-				lifecycle.activity = .idle
+				lifecycle.end(lease)
 				presentCacheFailure(error, id: operationID, region: region)
 			}
 		}
@@ -65,17 +67,19 @@ final class StorageMaintenanceController {
 	}
 
 	func clearPresetGalleryCache() {
-		guard lifecycle.activity == .idle else { return }
-		lifecycle.activity = .maintaining(.clearingCache)
-		Task { [weak self] in
-			guard let self else { return }
+		guard let lease = lifecycle.begin(.maintaining(.clearingCache)) else { return }
+		Task { [weak self, lifecycle = self.lifecycle] in
+			guard let self else {
+				lifecycle.end(lease)
+				return
+			}
 			do {
 				try await presetCatalog.clearCaches()
-				lifecycle.activity = .idle
+				lifecycle.end(lease)
 				onStorageOverviewChanged?()
 				log.info("Preset gallery caches cleared")
 			} catch {
-				lifecycle.activity = .idle
+				lifecycle.end(lease)
 				lifecycle.show(error)
 			}
 		}

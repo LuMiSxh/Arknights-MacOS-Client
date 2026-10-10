@@ -11,7 +11,7 @@ extension GameSessionController {
 			// Wine is still being prepared or spawned; the launch task owns cleanup so a game
 			// process that spawns concurrently is still stopped afterwards.
 			activeWineProcessSpawnGate?.denyFurtherSpawns()
-			lifecycle.activity = .stoppingGame(sessionID: sessionID, processIdentifier: nil)
+			updateSessionActivity(.stoppingGame(sessionID: sessionID, processIdentifier: nil))
 			lifecycle.setStatus(.stoppingGame)
 			log.info("Game stop requested during launch")
 			launchTask?.cancel()
@@ -71,10 +71,11 @@ extension GameSessionController {
 		region: GameRegion
 	) {
 		activeWineProcessSpawnGate?.denyFurtherSpawns()
-		lifecycle.activity = .stoppingGame(
-			sessionID: sessionID,
-			processIdentifier: processIdentifier
-		)
+		updateSessionActivity(
+			.stoppingGame(
+				sessionID: sessionID,
+				processIdentifier: processIdentifier
+			))
 		lifecycle.setStatus(.stoppingGame)
 		launchTask?.cancel()
 		gameMonitorTask?.cancel()
@@ -120,10 +121,11 @@ extension GameSessionController {
 		gameMonitorTask?.cancel()
 		gameProcessMonitorTask?.cancel()
 		if let sessionID = activeGameSessionID {
-			lifecycle.activity = .stoppingGame(
-				sessionID: sessionID,
-				processIdentifier: lifecycle.activity.gameProcessIdentifier
-			)
+			updateSessionActivity(
+				.stoppingGame(
+					sessionID: sessionID,
+					processIdentifier: lifecycle.activity.gameProcessIdentifier
+				))
 			lifecycle.setStatus(.stoppingGame)
 		}
 	}
@@ -278,7 +280,10 @@ extension GameSessionController {
 		let terminalFailure = takeTerminalFailure(for: sessionID)
 		let sessionRegion = activeGameRegion ?? installation.region
 		playtimeStatistics.finish(sessionID: sessionID)
-		lifecycle.activity = .idle
+		if let lease = sessionLease {
+			lifecycle.end(lease)
+			sessionLease = nil
+		}
 		launchTask?.cancel()
 		gameMonitorTask?.cancel()
 		gameProcessMonitorTask?.cancel()
@@ -300,11 +305,18 @@ extension GameSessionController {
 
 	private func markGameSessionStopping(_ sessionID: UUID, processIdentifier: Int32?) {
 		guard activeGameSessionID == sessionID else { return }
-		lifecycle.activity = .stoppingGame(
-			sessionID: sessionID,
-			processIdentifier: processIdentifier ?? lifecycle.activity.gameProcessIdentifier
-		)
+		updateSessionActivity(
+			.stoppingGame(
+				sessionID: sessionID,
+				processIdentifier: processIdentifier ?? lifecycle.activity.gameProcessIdentifier
+			))
 		lifecycle.setStatus(.stoppingGame)
+	}
+
+	/// Changes the session activity through the session lease. Without a lease it changes nothing.
+	func updateSessionActivity(_ activity: LauncherActivity, lease: ActivityLease? = nil) {
+		guard let lease = lease ?? sessionLease else { return }
+		lifecycle.update(lease, to: activity)
 	}
 
 	func disableActiveGameMode() {

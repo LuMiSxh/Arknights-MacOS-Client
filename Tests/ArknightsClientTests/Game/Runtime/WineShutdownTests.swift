@@ -250,10 +250,10 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 		continueSpawn.wait()
 	}
 	let sessionID = UUID()
-	model.lifecycle.activity = .launchingGame(
-		sessionID: sessionID,
-		processIdentifier: nil
+	model.gameSession.sessionLease = model.lifecycle.begin(
+		.launchingGame(sessionID: sessionID, processIdentifier: nil)
 	)
+	#expect(model.gameSession.sessionLease != nil)
 	model.gameSession.activeGameRegion = .global
 	model.gameSession.activeWineProcessSpawnGate = spawnGate
 	let launch = Task.detached {

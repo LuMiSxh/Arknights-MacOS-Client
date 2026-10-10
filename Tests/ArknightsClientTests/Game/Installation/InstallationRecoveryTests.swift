@@ -176,13 +176,13 @@ struct InstallationRecoveryTests {
 		fixture.controller.hasPartialDownload = true
 		#expect(fixture.controller.canUninstallGame)
 
-		fixture.controller.lifecycle.activity = .installing(id: UUID(), stage: .downloading)
+		fixture.controller.lifecycle.simulateActivity(.installing(id: UUID(), stage: .downloading))
 		#expect(!fixture.controller.canUninstallGame)
-		fixture.controller.lifecycle.activity = .runningGame(
-			sessionID: UUID(), processIdentifier: 42)
+		fixture.controller.lifecycle.simulateActivity(
+			.runningGame(sessionID: UUID(), processIdentifier: 42))
 		#expect(!fixture.controller.canUninstallGame)
 
-		fixture.controller.lifecycle.activity = .idle
+		fixture.controller.lifecycle.simulateActivity(.idle)
 		let failureID = UUID()
 		fixture.controller.presentInstallationFailure(
 			LauncherError.checksumMismatch(path: "test", expected: "a", actual: "b"),

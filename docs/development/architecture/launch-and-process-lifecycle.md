@@ -204,6 +204,21 @@ does not reset an active launch or installation.
 | `Running`        | **Running**                                               | The visible game window has been observed                 |
 | `Stopping`       | **Stopping**                                              | Prefix-wide shutdown is in progress                       |
 
+### Activity leases
+
+`LauncherLifecycleStore` controls the launcher activity. Only a lease owner changes it.
+
+1. The owner calls `begin(_:)`. The store returns an `ActivityLease`. It returns `nil` when the
+   launcher cannot start exclusive work.
+2. The owner calls `update(_:to:)` to change the activity.
+3. The owner calls `end(_:)` when the work finishes.
+
+Each call checks the lease token.
+
+- A stale lease is a no-op. It cannot change the activity or set `Idle`.
+- After a game session, `Idle` comes only after prefix-wide shutdown completes. A direct game-process
+  exit does not set `Idle`.
+
 The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` name the main macOS process. Packaging applies
 one reviewed patch to the staged Wine macOS driver to enable `Command-Q`.
 

@@ -155,10 +155,8 @@ struct BackgroundMusicControllerTests {
 		#expect(controller.isManuallyPaused == false)
 		#expect(controller.isChangingPlayback)
 
-		controller.lifecycle.activity = .runningGame(
-			sessionID: UUID(),
-			processIdentifier: 42
-		)
+		controller.lifecycle.simulateActivity(
+			.runningGame(sessionID: UUID(), processIdentifier: 42))
 		controller.gameRunningDidChange(to: true)
 		let gamePauseFade = try #require(controller.fadeTask)
 		await gamePauseFade.value
@@ -173,7 +171,7 @@ struct BackgroundMusicControllerTests {
 
 		#expect(!controller.isChangingPlayback)
 
-		controller.lifecycle.activity = .idle
+		controller.lifecycle.simulateActivity(.idle)
 		controller.gameRunningDidChange(to: false)
 		let resumeExpectation = try #require(controller.playbackExpectation)
 		#expect(resumeExpectation.intent == .playing)

@@ -54,6 +54,7 @@ final class InstallationController {
 	@ObservationIgnored var onLaunchRequested: (() -> Void)?
 	@ObservationIgnored var onMetadataRefreshCancellationRequested: (() -> Void)?
 	@ObservationIgnored var installationTask: Task<Void, Never>?
+	@ObservationIgnored var activityLease: ActivityLease?
 	@ObservationIgnored private var stateRefreshTask: Task<Void, Never>?
 	@ObservationIgnored private var stateRefreshID: UUID?
 

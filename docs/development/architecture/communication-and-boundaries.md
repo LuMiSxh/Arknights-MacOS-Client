@@ -65,6 +65,8 @@ status state and the themed Sparkle UI.
 - The feature-local SwiftUI driver supplies the accessible, themed presentation.
 - The wrapper rejects checks while the lifecycle is installing, migrating, launching, or running the
   game. It postpones a pending relaunch until idle.
+- Lifecycle activity gates these checks. A stale activity lease cannot change that gate. See
+  [Activity leases](launch-and-process-lifecycle.md#activity-leases).
 
 Announcements and Yostar notices share one queue (`enqueuePopup`):
 

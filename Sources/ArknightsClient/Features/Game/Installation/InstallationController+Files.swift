@@ -66,13 +66,13 @@ extension InstallationController {
 		}
 		let operationID = UUID()
 		let requestedRegion = region
-		lifecycle.activity = .maintaining(.uninstalling)
+		guard let lease = lifecycle.begin(.maintaining(.uninstalling)) else { return }
 		lifecycle.setStatus(.movingToTrash)
 		log.info("Game uninstall requested")
 		NSWorkspace.shared.recycle([installDirectory]) { [weak self] _, error in
 			Task { @MainActor in
 				guard let self else { return }
-				self.lifecycle.activity = .idle
+				self.lifecycle.end(lease)
 				if let error {
 					self.presentInstallationFailure(
 						error,

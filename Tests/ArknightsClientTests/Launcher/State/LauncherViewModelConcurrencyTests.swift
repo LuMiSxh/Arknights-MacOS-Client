@@ -70,7 +70,7 @@ struct LauncherViewModelConcurrencyTests {
 			}
 		)
 
-		model.lifecycle.activity = .installing(id: UUID(), stage: .downloading)
+		model.lifecycle.simulateActivity(.installing(id: UUID(), stage: .downloading))
 		model.resetAllLauncherSettings()
 		#expect(model.settings.canaryFeaturesEnabled)
 		#expect(model.settings.taiwanClientEnabled)
@@ -78,7 +78,7 @@ struct LauncherViewModelConcurrencyTests {
 		await Task.yield()
 		#expect(model.installation.installedRegions == [.global, .taiwan])
 
-		model.lifecycle.activity = .idle
+		model.lifecycle.simulateActivity(.idle)
 		#expect(
 			await waitForCondition {
 				model.installation.installedRegions == [.global]
@@ -131,7 +131,7 @@ struct LauncherViewModelConcurrencyTests {
 		let installer = ControllableInstaller()
 		let model = makeModel(api: api, installer: installer)
 		await api.waitForBrandingRequest()
-		model.lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+		model.lifecycle.simulateActivity(.runningGame(sessionID: UUID(), processIdentifier: 42))
 
 		model.installation.repairGame()
 
@@ -161,17 +161,18 @@ struct LauncherViewModelConcurrencyTests {
 		model.settings.launchOptions = selectedOptions
 
 		#expect(!model.gameSession.isGameActive)
-		model.lifecycle.activity = .preparingGame(sessionID: sessionID)
+		model.lifecycle.simulateActivity(.preparingGame(sessionID: sessionID))
 		#expect(model.gameSession.isGameActive)
 		model.resetAllLauncherSettings()
 		#expect(model.settings.launchOptions == selectedOptions)
-		model.lifecycle.activity = .launchingGame(sessionID: sessionID, processIdentifier: nil)
+		model.lifecycle.simulateActivity(
+			.launchingGame(sessionID: sessionID, processIdentifier: nil))
 		#expect(model.gameSession.isGameActive)
-		model.lifecycle.activity = .runningGame(sessionID: sessionID, processIdentifier: 42)
+		model.lifecycle.simulateActivity(.runningGame(sessionID: sessionID, processIdentifier: 42))
 		#expect(model.gameSession.isGameActive)
-		model.lifecycle.activity = .stoppingGame(sessionID: sessionID, processIdentifier: 42)
+		model.lifecycle.simulateActivity(.stoppingGame(sessionID: sessionID, processIdentifier: 42))
 		#expect(model.gameSession.isGameActive)
-		model.lifecycle.activity = .idle
+		model.lifecycle.simulateActivity(.idle)
 		#expect(!model.gameSession.isGameActive)
 
 		await api.resolveBranding()

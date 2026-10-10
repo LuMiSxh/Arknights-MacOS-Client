@@ -22,7 +22,8 @@ extension LauncherViewModel {
 	func beginStartup() {
 		let persistedInstallDirectories = preferences.persistedInstallDirectories()
 		storageMigrationFailureID = nil
-		lifecycle.activity = .maintaining(.migratingStorage)
+		// Startup runs from idle. Without a lease the migration still runs, as before.
+		let activityLease = lifecycle.begin(.maintaining(.migratingStorage))
 		lifecycle.setStatus(.migratingStorage)
 		startupTask = Task { [paths] in
 			let migration = await Task.detached(priority: .utility) {
@@ -37,7 +38,7 @@ extension LauncherViewModel {
 				replacing: persistedInstallDirectories
 			)
 			installation.reloadInstallDirectory()
-			lifecycle.activity = .idle
+			if let activityLease { lifecycle.end(activityLease) }
 			if let failure = migration.failure {
 				presentStorageMigrationFailure(failure)
 				customization.markInitialArtworkLoadComplete()

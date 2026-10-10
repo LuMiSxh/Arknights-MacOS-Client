@@ -185,7 +185,8 @@ func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 		presetCatalog: catalog,
 		log: log
 	)
-	lifecycle.activity = .installing(id: UUID(), stage: .downloading)
+	let lease = lifecycle.begin(.installing(id: UUID(), stage: .downloading))
+	#expect(lease != nil)
 
 	storage.clearPresetGalleryCache()
 

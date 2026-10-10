@@ -74,18 +74,15 @@ extension GameSessionController {
 			return
 		}
 		let gameSessionID = launchID
+		let initialActivity: LauncherActivity =
+			hasPendingMigration
+			? .preparingGame(sessionID: gameSessionID)
+			: .launchingGame(sessionID: gameSessionID, processIdentifier: nil)
+		guard let lease = lifecycle.begin(initialActivity) else { return }
+		sessionLease = lease
 		activeGameRegion = requestedRegion
 		resetTerminalFailure()
-		if hasPendingMigration {
-			lifecycle.activity = .preparingGame(sessionID: gameSessionID)
-			lifecycle.setStatus(.preparingWine)
-		} else {
-			lifecycle.activity = .launchingGame(
-				sessionID: gameSessionID,
-				processIdentifier: nil
-			)
-			lifecycle.setStatus(.startingGame)
-		}
+		lifecycle.setStatus(hasPendingMigration ? .preparingWine : .startingGame)
 		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
 		let launchRequestedAt = Date.now
 		let requestedLaunchOptions = settings.launchOptions
@@ -161,20 +158,22 @@ extension GameSessionController {
 				if requestedLaunchOptions.usesGameMode {
 					GamePolicyControl.setGameMode(on: true, log: log)
 				}
-				lifecycle.activity = .launchingGame(
-					sessionID: gameSessionID,
-					processIdentifier: launch.processIdentifier
-				)
+				updateSessionActivity(
+					.launchingGame(
+						sessionID: gameSessionID,
+						processIdentifier: launch.processIdentifier
+					), lease: lease)
 				lifecycle.setStatus(.startingGame)
 				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
 				try await WineWindowReadiness.wait(processIdentifier: launch.processIdentifier)
 				guard activeGameSessionID == gameSessionID, isGameActive,
 					!applicationTerminationRequested
 				else { return }
-				lifecycle.activity = .runningGame(
-					sessionID: gameSessionID,
-					processIdentifier: launch.processIdentifier
-				)
+				updateSessionActivity(
+					.runningGame(
+						sessionID: gameSessionID,
+						processIdentifier: launch.processIdentifier
+					), lease: lease)
 				lifecycle.setStatus(.running)
 				gameRunningSince = .now
 				playtimeStatistics.start(

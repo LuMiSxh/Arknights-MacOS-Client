@@ -13,7 +13,7 @@ struct LauncherUpdaterControllerTests {
 		scenario: UpdateLifecycleScenario
 	) throws {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.activity = scenario.activity
+		lifecycle.simulateActivity(scenario.activity)
 		let subject = LauncherUpdaterController(
 			lifecycle: lifecycle,
 			log: lifecycle.log
@@ -73,7 +73,7 @@ struct LauncherUpdaterControllerTests {
 		scenario: UpdateLifecycleScenario
 	) {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.activity = scenario.activity
+		lifecycle.simulateActivity(scenario.activity)
 		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		let sparkle = makeSparkleUpdater()
 		var installCalled = false
@@ -85,7 +85,7 @@ struct LauncherUpdaterControllerTests {
 
 		#expect(postponed == scenario.isBusy)
 		if scenario.isBusy {
-			lifecycle.activity = .idle
+			lifecycle.simulateActivity(.idle)
 			#expect(installCalled)
 		}
 	}
@@ -93,7 +93,7 @@ struct LauncherUpdaterControllerTests {
 	@Test
 	func terminationRetryResumesWhenLifecycleBecomesIdle() {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.activity = .runningGame(sessionID: UUID(), processIdentifier: 42)
+		let lease = lifecycle.begin(.runningGame(sessionID: UUID(), processIdentifier: 42))
 		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		var retryCount = 0
 
@@ -102,7 +102,7 @@ struct LauncherUpdaterControllerTests {
 		}
 		#expect(retryCount == 0)
 
-		lifecycle.activity = .idle
+		#expect(lease.map { lifecycle.end($0) } == true)
 
 		#expect(retryCount == 1)
 	}
