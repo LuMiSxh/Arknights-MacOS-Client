@@ -4,7 +4,7 @@ import AppKit
 import MediaPlayer
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsAudio
 
 @MainActor
 struct NowPlayingCoordinatorTests {

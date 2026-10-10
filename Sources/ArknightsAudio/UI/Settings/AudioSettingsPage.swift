@@ -3,11 +3,16 @@
 import ArknightsCore
 import SwiftUI
 
-struct AudioSettingsPage: View {
+package struct AudioSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
 	let accentColor: Color
 
-	var body: some View {
+	package init(settings: LauncherPreferencesController, accentColor: Color) {
+		self.settings = settings
+		self.accentColor = accentColor
+	}
+
+	package var body: some View {
 		SettingsPage(
 			title: AudioStrings.settingsTitle,
 			subtitle: AudioStrings.settingsSubtitle,

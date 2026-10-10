@@ -5,12 +5,22 @@ import SwiftUI
 import YouTubePlayerKit
 
 /// Keeps the controller's WebKit player mounted while wiring launcher lifecycle changes.
-struct BackgroundMusicView: View {
+package struct BackgroundMusicView: View {
 	let lifecycle: LauncherLifecycleStore
 	let settings: LauncherPreferencesController
 	let controller: BackgroundMusicController
 
-	var body: some View {
+	package init(
+		lifecycle: LauncherLifecycleStore,
+		settings: LauncherPreferencesController,
+		controller: BackgroundMusicController
+	) {
+		self.lifecycle = lifecycle
+		self.settings = settings
+		self.controller = controller
+	}
+
+	package var body: some View {
 		Group {
 			// Keep the WebKit view mounted as long as music is enabled in preferences,
 			// even when the game is running. Unmounting it would dismantle the WKWebView

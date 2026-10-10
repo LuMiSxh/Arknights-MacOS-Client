@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsAudio
 import ArknightsCore
 import ArknightsGameInstallation
 import SwiftUI

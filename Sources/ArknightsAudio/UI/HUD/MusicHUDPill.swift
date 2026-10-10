@@ -4,7 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 /// Morphs the now-playing HUD into an in-place controller without covering the launcher.
-struct MusicHUDPill: View {
+package struct MusicHUDPill: View {
 	@Bindable var settings: LauncherPreferencesController
 	let musicTitle: String?
 	let accentColor: Color
@@ -18,7 +18,25 @@ struct MusicHUDPill: View {
 	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
 		AppConstants.Music.collapsedPlayerHeight
 
-	var body: some View {
+	package init(
+		settings: LauncherPreferencesController,
+		musicTitle: String?,
+		accentColor: Color,
+		hudTintColor: Color,
+		openCurrentMusicURL: @escaping () -> Void,
+		controller: BackgroundMusicController,
+		isExpanded: Binding<Bool>
+	) {
+		self.settings = settings
+		self.musicTitle = musicTitle
+		self.accentColor = accentColor
+		self.hudTintColor = hudTintColor
+		self.openCurrentMusicURL = openCurrentMusicURL
+		self.controller = controller
+		_isExpanded = isExpanded
+	}
+
+	package var body: some View {
 		if let musicTitle {
 			VStack(alignment: .leading, spacing: isExpanded ? 9 : 0) {
 				Button(action: toggleExpansion) {

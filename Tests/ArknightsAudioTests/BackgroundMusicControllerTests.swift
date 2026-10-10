@@ -7,7 +7,7 @@ import Foundation
 import Testing
 import YouTubePlayerKit
 
-@testable import ArknightsClient
+@testable import ArknightsAudio
 
 @MainActor
 struct BackgroundMusicControllerTests {
@@ -109,7 +109,7 @@ struct BackgroundMusicControllerTests {
 	}
 
 	@Test
-	func sourceChangesWaitForEditingToSettleBeforeReloading() async {
+	func sourceChangesWaitForEditingToSettleBeforeReloading() async throws {
 		let (controller, settings, defaults, suiteName, _) = makeController()
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 
@@ -122,11 +122,9 @@ struct BackgroundMusicControllerTests {
 		controller.sourceDidChange()
 		#expect(controller.currentSource == .video(id: "first"))
 
-		#expect(
-			await waitForCondition {
-				controller.currentSource == .video(id: "second")
-			}
-		)
+		let debounce = try #require(controller.sourceChangeTask)
+		await debounce.value
+		#expect(controller.currentSource == .video(id: "second"))
 	}
 
 	@Test

@@ -73,6 +73,16 @@ let package = Package(
 			path: "Sources/ArknightsGameRuntime",
 			swiftSettings: swiftSettings()
 		),
+		.target(
+			name: "ArknightsAudio",
+			dependencies: [
+				"ArknightsCore",
+				"ArknightsCustomization",
+				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
+			],
+			path: "Sources/ArknightsAudio",
+			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+		),
 		.executableTarget(
 			name: "ArknightsClient",
 			dependencies: [
@@ -81,7 +91,7 @@ let package = Package(
 				"ArknightsCustomization",
 				"ArknightsGameInstallation",
 				"ArknightsGameRuntime",
-				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
+				"ArknightsAudio",
 				.product(name: "Sparkle", package: "Sparkle"),
 			],
 			path: "Sources/ArknightsClient",
@@ -91,6 +101,17 @@ let package = Package(
 			name: "ArknightsClientTests",
 			dependencies: ["ArknightsClient"],
 			path: "Tests/ArknightsClientTests"
+		),
+		.testTarget(
+			name: "ArknightsAudioTests",
+			dependencies: [
+				"ArknightsAudio",
+				"ArknightsCustomization",
+				"ArknightsCore",
+				"ArknightsInfrastructure",
+				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
+			],
+			path: "Tests/ArknightsAudioTests"
 		),
 		.testTarget(
 			name: "ArknightsCoreTests",

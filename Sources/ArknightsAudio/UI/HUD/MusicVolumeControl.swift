@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsGameInstallation
 import SwiftUI
 
 /// Keeps volume secondary to playback: hovering or focusing reveals the level, while the

@@ -11,7 +11,7 @@ import YouTubePlayerKit
 /// Owns the hidden YouTube player and coordinates launcher, game, and user playback actions.
 @MainActor
 @Observable
-final class BackgroundMusicController {
+package final class BackgroundMusicController {
 	var player: YouTubePlayer?
 	var playbackState: YouTubePlayer.PlaybackState?
 	var isMuted = false
@@ -23,7 +23,7 @@ final class BackgroundMusicController {
 	let nowPlaying: NowPlayingCoordinator
 	let playerCommands: BackgroundMusicPlayerCommands
 	let openURL: (URL) -> Void
-	var currentMusicTitle: String?
+	package var currentMusicTitle: String?
 	var currentMusicVideoID: String?
 	var currentSource: YouTubePlayer.Source?
 	var isManuallyPaused = false
@@ -42,6 +42,23 @@ final class BackgroundMusicController {
 
 	deinit {
 		sourceChangeTask?.cancel()
+	}
+
+	package convenience init(
+		lifecycle: LauncherLifecycleStore,
+		settings: LauncherPreferencesController,
+		launcherIconManager: LauncherIconManager,
+		initialMusicTitle: String? = nil,
+		openURL: @escaping (URL) -> Void
+	) {
+		self.init(
+			lifecycle: lifecycle,
+			settings: settings,
+			launcherIconManager: launcherIconManager,
+			initialMusicTitle: initialMusicTitle,
+			playerCommands: .live,
+			openURL: openURL
+		)
 	}
 
 	init(
@@ -267,7 +284,7 @@ final class BackgroundMusicController {
 		return "custom URL"
 	}
 
-	func openCurrentMusicURL() {
+	package func openCurrentMusicURL() {
 		if let currentMusicVideoID,
 			let url = URL(string: "https://www.youtube.com/watch?v=\(currentMusicVideoID)")
 		{

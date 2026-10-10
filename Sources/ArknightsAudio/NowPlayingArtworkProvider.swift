@@ -6,7 +6,7 @@ import Foundation
 import ImageIO
 
 /// Stores encoded immutable artwork and creates a fresh AppKit image per callback.
-final class NowPlayingArtworkProvider: Sendable {
+nonisolated final class NowPlayingArtworkProvider: Sendable {
 	private let encodedImageData: Data
 	private let defaultSize: CGSize
 
