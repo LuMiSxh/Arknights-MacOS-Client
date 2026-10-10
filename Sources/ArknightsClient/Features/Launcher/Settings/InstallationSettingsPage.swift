@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 struct InstallationSettingsPage: View {

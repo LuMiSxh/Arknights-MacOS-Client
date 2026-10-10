@@ -6,6 +6,7 @@ import Testing
 
 @testable import ArknightsClient
 @testable import ArknightsGameInstallation
+@testable import ArknightsGameRuntime
 
 @MainActor
 @Suite("Game compatibility error")

@@ -6,6 +6,7 @@ import Testing
 
 @testable import ArknightsClient
 @testable import ArknightsCore
+@testable import ArknightsGameRuntime
 
 @Test
 @MainActor

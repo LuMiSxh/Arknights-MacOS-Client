@@ -7,6 +7,7 @@ import Testing
 
 @testable import ArknightsClient
 @testable import ArknightsGameInstallation
+@testable import ArknightsGameRuntime
 
 @Test
 func asynchronousStopWaitsForWineServerToReleaseThePrefix() async throws {

@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsGameRuntime
 
 #if DEBUG
 	import AppKit

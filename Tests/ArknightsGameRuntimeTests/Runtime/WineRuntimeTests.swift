@@ -1,0 +1,354 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import ArknightsCore
+import CoreGraphics
+import Foundation
+import Testing
+
+@testable import ArknightsGameInstallation
+@testable import ArknightsGameRuntime
+@testable import ArknightsInfrastructure
+
+@Test
+func gameExecutableUsesTheIsolatedWindowsDrive() {
+	let executable = URL(filePath: "/Applications/Support/Arknights-Global/Arknights.exe")
+
+	#expect(WineRuntime.windowsGamePath(for: executable) == "G:\\Arknights.exe")
+}
+
+@Test
+func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
+	let prefix = URL(filePath: "/isolated/prefix", directoryHint: .isDirectory)
+	let environment = WineRuntime.isolatedEnvironment(
+		prefixDirectory: prefix,
+		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
+		baseEnvironment: [
+			"LANG": "en_US.UTF-8",
+			"SSH_AUTH_SOCK": "/host/private/agent.sock",
+			"AWS_SECRET_ACCESS_KEY": "secret",
+		],
+		userName: "tester"
+	)
+
+	#expect(environment["HOME"] == "/isolated/prefix/home")
+	#expect(environment["TMPDIR"] == "/isolated/prefix/home/tmp")
+	#expect(environment["XDG_CONFIG_HOME"] == "/isolated/prefix/home/.config")
+	#expect(environment["WINEPREFIX"] == "/isolated/prefix")
+	#expect(environment["WINEPRELOADERAPPNAME"] == "Arknights")
+	#expect(environment["CFFIXED_USER_HOME"] == "/isolated/prefix/home")
+	#expect(environment["DXMT_SHADER_CACHE"] == "1")
+	#expect(environment["DXMT_SHADER_CACHE_PATH"] == "/isolated/prefix/home/.cache/dxmt")
+	#expect(environment["DXMT_LOG_LEVEL"] == "error")
+	#expect(environment["WINEDEBUG"] == "-all,err+all")
+	#expect(environment["WINEMSYNC"] == "1")
+	#expect(environment["WINEESYNC"] == nil)
+	#expect(environment["DYLD_FALLBACK_LIBRARY_PATH"] == "/runtime/lib")
+	#expect(environment["USER"] == "tester")
+	#expect(environment["LANG"] == "en_US.UTF-8")
+	#expect(environment["SSH_AUTH_SOCK"] == nil)
+	#expect(environment["AWS_SECRET_ACCESS_KEY"] == nil)
+	#expect(environment["PATH"] == "/runtime/bin:/usr/bin:/bin")
+}
+
+@Test
+func runtimeProvidesOnlyPrivateUnixUserDirectoriesToWineboot() throws {
+	let fileManager = FileManager.default
+	let root = fileManager.temporaryDirectory.appending(
+		path: "wine-environment-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: root) }
+
+	for directory in WineRuntime.isolatedEnvironmentDirectories(prefixDirectory: root) {
+		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+	}
+	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+
+	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
+	let originalFileNumber =
+		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
+			.systemFileNumber
+		] as? NSNumber
+	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+	let preservedFileNumber =
+		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
+			.systemFileNumber
+		] as? NSNumber
+	let configuration = try String(contentsOf: configurationURL, encoding: .utf8)
+	#expect(preservedFileNumber == originalFileNumber)
+	#expect(configuration == WineRuntime.isolatedUserDirectoryConfiguration)
+	#expect(configuration.contains("XDG_DOCUMENTS_DIR=\"$HOME/Documents\""))
+	#expect(configuration.contains("XDG_DOWNLOAD_DIR=\"$HOME/Downloads\""))
+	for name in WineRuntime.isolatedUserDirectoryNames {
+		#expect(fileManager.fileExists(atPath: root.appending(path: "home/\(name)").path))
+	}
+}
+
+@Test(arguments: ["oversized", "malformed"])
+func runtimeRejectsInvalidUserDirectoryConfiguration(_ kind: String) throws {
+	let fileManager = FileManager.default
+	let root = fileManager.temporaryDirectory.appending(
+		path: "wine-environment-\(kind)-test-\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? fileManager.removeItem(at: root) }
+	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
+	try fileManager.createDirectory(
+		at: configurationURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+	let data =
+		kind == "oversized"
+		? Data(repeating: 0x41, count: AppConstants.Game.userDirectoryConfigurationMaximumBytes + 1)
+		: Data([0xC3, 0x28])
+	try data.write(to: configurationURL)
+	if kind == "oversized" {
+		#expect(throws: BoundedFileReadError.self) {
+			try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+		}
+	} else {
+		#expect(throws: Error.self) {
+			try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+		}
+	}
+}
+
+@Test
+func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
+	let environment = WineRuntime.isolatedEnvironment(
+		prefixDirectory: URL(filePath: "/prefix", directoryHint: .isDirectory),
+		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
+		baseEnvironment: ["WINEMSYNC": "host", "WINEESYNC": "host"],
+		userName: "tester",
+		synchronizationMode: .esync
+	)
+
+	#expect(environment["WINEMSYNC"] == nil)
+	#expect(environment["WINEESYNC"] == "1")
+}
+
+@Test
+func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
+	let environment = WineRuntime.bilibiliControllerEnvironment(from: [
+		"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1",
+		"DXMT_METALFX_SPATIAL_SWAPCHAIN": "1",
+		"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
+		"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
+		"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
+		"DYLD_INSERT_LIBRARIES": "/runtime/bridge.dylib",
+		"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/game/icon.icns",
+		"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
+	])
+
+	#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
+	#expect(environment["DXMT_METALFX_SPATIAL_SWAPCHAIN"] == nil)
+	#expect(environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
+	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
+	#expect(environment["DYLD_INSERT_LIBRARIES"] == nil)
+	#expect(environment["ARKNIGHTS_CLIENT_GAME_ICON_PATH"] == nil)
+	#expect(environment["ARKNIGHTS_CLIENT_LAUNCHER_PID"] == nil)
+}
+
+@Test
+func graphicsDiagnosticsExposeMacDriverAndDXMTInformation() {
+	let runtime = WineRuntime(
+		executableURL: URL(filePath: "/runtime/bin/Arknights"),
+		displayName: "Test",
+		revision: "test",
+		compatibilityManager: GameCompatibilityManager()
+	)
+	let environment = runtime.runtimeEnvironment(
+		prefixDirectory: URL(filePath: "/prefix", directoryHint: .isDirectory),
+		graphicsDiagnostics: true
+	)
+
+	#expect(environment["WINEDEBUG"]?.contains("+macdrv") == true)
+	#expect(environment["DXMT_LOG_LEVEL"] == "info")
+	#expect(environment["DXMT_LOG_PATH"] == "none")
+}
+
+@Test
+func gameIconEnvironmentInjectsBridgeAndOptionalCustomIcon() {
+	let runtime = WineRuntime(
+		executableURL: URL(filePath: "/runtime/bin/Arknights"),
+		displayName: "Test",
+		revision: "test",
+		gameIconBridgeURL: URL(filePath: "/runtime/GameIconBridge.dylib"),
+		compatibilityManager: GameCompatibilityManager()
+	)
+
+	#expect(
+		runtime.gameIconEnvironment(customIconURL: nil, launcherProcessIdentifier: 42)
+			== [
+				"DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib",
+				"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
+			]
+	)
+	#expect(
+		runtime.gameIconEnvironment(
+			customIconURL: URL(filePath: "/icons/game.png"), launcherProcessIdentifier: 42)
+			== [
+				"DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib",
+				"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/icons/game.png",
+				"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
+			]
+	)
+}
+
+@Test
+func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
+	let fileManager = FileManager.default
+	let fixture = try DXMTFixture(fileManager: fileManager)
+	defer { fixture.remove(fileManager: fileManager) }
+
+	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
+	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+
+	for library in WineRuntime.dxmtLibraryNames {
+		let installed = fixture.prefix.appending(path: "drive_c/windows/system32/\(library)")
+		#expect(try Data(contentsOf: installed) == Data("x64-\(library)".utf8))
+		#expect(
+			!fileManager.fileExists(
+				atPath: fixture.prefix.appending(path: "drive_c/windows/syswow64/\(library)").path)
+		)
+	}
+
+	try fileManager.removeItem(
+		at: fixture.prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
+	)
+	#expect(!WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+}
+
+@Test
+func dxmtInstallAndCurrencyIgnoreAnAbsentOrStaleX32Payload() throws {
+	let fileManager = FileManager.default
+	let fixture = try DXMTFixture(fileManager: fileManager, architectures: ["x64"])
+	defer { fixture.remove(fileManager: fileManager) }
+	let stale = fixture.prefix.appending(path: "drive_c/windows/syswow64/d3d11.dll")
+	try fileManager.createDirectory(
+		at: stale.deletingLastPathComponent(), withIntermediateDirectories: true)
+	try Data("old-x32".utf8).write(to: stale)
+
+	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
+
+	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
+	#expect(try Data(contentsOf: stale) == Data("old-x32".utf8))
+}
+
+@Test
+func hasPendingMigrationReflectsSavedStateForTheCurrentRevision() throws {
+	let fileManager = FileManager.default
+	let fixture = try DXMTFixture(fileManager: fileManager)
+	defer { fixture.remove(fileManager: fileManager) }
+	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
+	try Data().write(to: fixture.prefix.appending(path: "system.reg"))
+	let runtime = WineRuntime(
+		executableURL: fixture.root.appending(path: "bin/Arknights"),
+		displayName: "Test",
+		revision: "test-revision",
+		compatibilityManager: GameCompatibilityManager()
+	)
+
+	#expect(try runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
+
+	try RuntimeMigrationStore(fileManager: fileManager).save(
+		RuntimeMigrationState(
+			runtimeRevision: "test-revision", completed: RuntimeMigration.allCases),
+		to: fixture.prefix
+	)
+
+	#expect(try !runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
+}
+
+@Test
+func gameWindowReadinessRequiresALargeVisibleWindowForTheRuntimeProcess() {
+	let processIdentifier: Int32 = 42
+	let helperWindow: [String: Any] = [
+		kCGWindowOwnerPID as String: processIdentifier,
+		kCGWindowLayer as String: 0,
+		kCGWindowIsOnscreen as String: true,
+		kCGWindowAlpha as String: 1,
+		kCGWindowBounds as String: ["Width": 1, "Height": 1],
+	]
+	let gameWindow: [String: Any] = [
+		kCGWindowOwnerPID as String: processIdentifier,
+		kCGWindowLayer as String: 0,
+		kCGWindowIsOnscreen as String: true,
+		kCGWindowAlpha as String: 1,
+		kCGWindowBounds as String: ["Width": 1280, "Height": 720],
+	]
+
+	#expect(
+		!WineWindowReadiness.isVisible(
+			processIdentifier: processIdentifier,
+			windows: [helperWindow]
+		))
+	#expect(
+		WineWindowReadiness.isVisible(
+			processIdentifier: processIdentifier,
+			windows: [helperWindow, gameWindow]
+		))
+}
+
+@Test
+func gameWindowReadinessTimesOutWhenTheRuntimeNeverCreatesAWindow() async {
+	await #expect(throws: GameRuntimeError.self) {
+		try await WineWindowReadiness.wait(
+			processIdentifier: Int32.max,
+			timeout: .milliseconds(2),
+			pollInterval: .milliseconds(1)
+		)
+	}
+}
+
+@Test
+func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
+	let runtime = WineRuntime(
+		executableURL: URL(filePath: "/runtime/bin/Arknights"),
+		displayName: "Test",
+		revision: "test",
+		compatibilityManager: GameCompatibilityManager()
+	)
+	let task = Task {
+		try await runtime.runAndWait(
+			executable: URL(filePath: "/bin/sh"),
+			arguments: ["-c", "exec sleep 30"],
+			environment: ProcessInfo.processInfo.environment,
+			output: .nullDevice
+		)
+	}
+	try await Task.sleep(for: .milliseconds(50))
+	task.cancel()
+
+	await #expect(throws: CancellationError.self) {
+		try await task.value
+	}
+}
+
+private struct DXMTFixture {
+	let root: URL
+	let payload: URL
+	let prefix: URL
+
+	init(fileManager: FileManager, architectures: [String] = ["x64"]) throws {
+		root = fileManager.temporaryDirectory.appending(
+			path: "dxmt-test-\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		payload = root.appending(path: "DXMT", directoryHint: .isDirectory)
+		prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
+		for architecture in architectures {
+			for library in WineRuntime.dxmtLibraryNames {
+				let source = payload.appending(path: architecture).appending(path: library)
+				try fileManager.createDirectory(
+					at: source.deletingLastPathComponent(),
+					withIntermediateDirectories: true
+				)
+				try Data("\(architecture)-\(library)".utf8).write(to: source)
+			}
+		}
+	}
+
+	func remove(fileManager: FileManager) {
+		try? fileManager.removeItem(at: root)
+	}
+}

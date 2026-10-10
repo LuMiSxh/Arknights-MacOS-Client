@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 /// Collapsed by default: who sizes the game, the exact size it draws, and the performance and

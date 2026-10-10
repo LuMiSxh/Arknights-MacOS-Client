@@ -5,6 +5,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsGameRuntime
 
 extension LauncherViewModel {
 	/// Begins `activity` and installs the matching `ActiveGameSession` on the game controller.

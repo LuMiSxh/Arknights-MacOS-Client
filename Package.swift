@@ -62,6 +62,17 @@ let package = Package(
 			path: "Sources/ArknightsGameInstallation",
 			swiftSettings: swiftSettings()
 		),
+		.target(
+			name: "ArknightsGameRuntime",
+			dependencies: [
+				"ArknightsInfrastructure",
+				"ArknightsCore",
+				"ArknightsCustomization",
+				"ArknightsGameInstallation",
+			],
+			path: "Sources/ArknightsGameRuntime",
+			swiftSettings: swiftSettings()
+		),
 		.executableTarget(
 			name: "ArknightsClient",
 			dependencies: [
@@ -69,6 +80,7 @@ let package = Package(
 				"ArknightsCore",
 				"ArknightsCustomization",
 				"ArknightsGameInstallation",
+				"ArknightsGameRuntime",
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
 				.product(name: "Sparkle", package: "Sparkle"),
 			],
@@ -99,6 +111,17 @@ let package = Package(
 				"ArknightsInfrastructure",
 			],
 			path: "Tests/ArknightsGameInstallationTests"
+		),
+		.testTarget(
+			name: "ArknightsGameRuntimeTests",
+			dependencies: [
+				"ArknightsGameRuntime",
+				"ArknightsGameInstallation",
+				"ArknightsCustomization",
+				"ArknightsCore",
+				"ArknightsInfrastructure",
+			],
+			path: "Tests/ArknightsGameRuntimeTests"
 		),
 		.testTarget(
 			name: "ArknightsInfrastructureTests",

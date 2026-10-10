@@ -3,6 +3,7 @@
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
+import ArknightsGameRuntime
 import Foundation
 import Observation
 

@@ -7,6 +7,7 @@ import Testing
 
 @testable import ArknightsClient
 @testable import ArknightsGameInstallation
+@testable import ArknightsGameRuntime
 
 private let presentationFixtures: [(any LauncherDiagnosticError & Sendable, [String])] = [
 	(

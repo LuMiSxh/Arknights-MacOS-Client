@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameRuntime
 import SwiftUI
 
 struct GameSettingsPage: View {

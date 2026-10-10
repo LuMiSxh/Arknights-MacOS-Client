@@ -7,6 +7,7 @@ import Testing
 @testable import ArknightsClient
 @testable import ArknightsCore
 @testable import ArknightsGameInstallation
+@testable import ArknightsGameRuntime
 
 // Edit only this table when a `LauncherError` case changes. Each row pins the
 // support code, `errorDescription`, and `diagnosticDescription` of one case.

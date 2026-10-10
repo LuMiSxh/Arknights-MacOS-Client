@@ -3,6 +3,7 @@
 import ArknightsCore
 
 @testable import ArknightsClient
+@testable import ArknightsGameRuntime
 
 actor TranslationCheckSequence {
 	private var states: [IntelTranslationState]
