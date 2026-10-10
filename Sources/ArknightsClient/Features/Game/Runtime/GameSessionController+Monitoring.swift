@@ -256,10 +256,12 @@ extension GameSessionController {
 		rememberTerminalFailure(terminalFailure, for: sessionID)
 		markGameSessionStopping(sessionID, processIdentifier: processIdentifier)
 		do {
-			try await runtime.stop(
-				prefixDirectory: paths.winePrefix(for: region),
-				spawnGate: spawnGate
-			)
+			let prefixDirectory = paths.winePrefix(for: region)
+			// Cancelling the owning task must not skip prefix shutdown; the wineserver wait runs inside stop.
+			// An unstructured task does not inherit cancellation, and `withTaskCancellationShield` needs macOS 27.
+			try await Task {
+				try await runtime.stop(prefixDirectory: prefixDirectory, spawnGate: spawnGate)
+			}.value
 		} catch {
 			guard activeGameSessionID == sessionID else { return }
 			log.error("Runtime cleanup failed: \(launcherDiagnosticDescription(for: error))")

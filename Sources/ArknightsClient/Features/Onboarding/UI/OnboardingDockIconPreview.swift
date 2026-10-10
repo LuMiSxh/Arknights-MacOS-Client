@@ -48,7 +48,17 @@ struct OnboardingDockIconPreview: View {
 		}
 		let url = customization.paths.customGameIcon
 		// An unreadable file keeps the placeholder, which is what players see without a custom icon.
-		let data = await Task.detached { try? Data(contentsOf: url) }.value
+		let log = customization.log
+		let data = await Task.detached { () -> Data? in
+			do {
+				return try Data(contentsOf: url)
+			} catch {
+				log.error(
+					"Failed to read custom game icon at \(url.path): \(error.localizedDescription)"
+				)
+				return nil
+			}
+		}.value
 		gameIcon = data.flatMap(NSImage.init(data:))
 	}
 }

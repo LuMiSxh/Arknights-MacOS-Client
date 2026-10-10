@@ -39,6 +39,9 @@
 - Increment a cache/request epoch before clearing or replacing state so suspended work cannot republish stale results.
 - Keep the shared Wine prefix owned until prefix-wide shutdown completes; direct game-process exit alone never means Idle.
 - Change launcher activity only through `LauncherLifecycleStore` lease `begin`, `update`, and `end`; a stale lease must not set idle.
+- Launch work rechecks the session ID and lease after every suspension.
+- Cleanup that must outlive cancellation runs in an uncancelled task (use `withTaskCancellationShield` once the deployment target allows it) or an `await` in `defer`; never skip prefix shutdown on cancel.
+- Timed code takes an injected `Clock`; tests use a manual clock and never sleep for real.
 - Treat installation as exclusive, preserve resumable `.part` files, and validate every manifest path before writing.
 - Define persisted locations through `AppPaths`; preserve paths, keys, and serialized formats unless a migration is explicit.
 - Centralize application-owned fixed keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.

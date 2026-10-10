@@ -21,222 +21,33 @@ extension GameSessionController {
 	}
 
 	func launch() {
-		guard lifecycle.activity == .idle, !applicationTerminationRequested else { return }
-		let launchID = UUID()
-		let requestedRegion = installation.region
-		let executable = installation.installDirectory.appending(
-			path: installation.configuration?.executableName ?? "Arknights.exe"
+		guard lifecycle.activity == .idle, !applicationTerminationRequested,
+			pendingLaunchID == nil
+		else { return }
+		let region = installation.region
+		let request = LaunchRequest(
+			id: UUID(),
+			region: region,
+			executable: installation.installDirectory.appending(
+				path: installation.configuration?.executableName ?? "Arknights.exe"
+			),
+			prefixDirectory: paths.winePrefix(for: region),
+			options: settings.launchOptions,
+			usesHardwareCursor: settings.usesHardwareCursor,
+			forceDisableRetina: preferences.forceDisableRetina(),
+			requestedAt: .now
 		)
-		guard FileManager.default.fileExists(atPath: executable.path) else {
-			presentRuntimeFailure(
-				LauncherError.gameNotInstalled(executable),
-				id: launchID,
-				operation: .launch,
-				region: requestedRegion
-			)
-			return
-		}
-		let runtime: WineRuntime
-		do {
-			runtime = try discoverRuntime()
-		} catch {
-			runtimeName = nil
-			log.error("Runtime discovery failed: \(error.localizedDescription)")
-			presentRuntimeFailure(
-				error,
-				id: launchID,
-				operation: .runtimeDiscovery,
-				region: requestedRegion
-			)
-			return
-		}
-		guard lifecycle.intelTranslationState.allowsWine else {
-			presentRuntimeFailure(
-				intelTranslation.launchError,
-				id: launchID,
-				operation: .launch,
-				region: requestedRegion
-			)
-			return
-		}
-
-		let prefixDirectory = paths.winePrefix(for: requestedRegion)
-		let hasPendingMigration: Bool
-		do {
-			hasPendingMigration = try runtime.hasPendingMigration(prefixDirectory: prefixDirectory)
-		} catch {
-			presentRuntimeFailure(
-				error,
-				id: launchID,
-				operation: .runtimeDiscovery,
-				region: requestedRegion
-			)
-			return
-		}
-		let gameSessionID = launchID
-		let initialActivity: LauncherActivity =
-			hasPendingMigration
-			? .preparingGame(sessionID: gameSessionID)
-			: .launchingGame(sessionID: gameSessionID, processIdentifier: nil)
-		guard let lease = lifecycle.begin(initialActivity) else { return }
-		lifecycle.setStatus(hasPendingMigration ? .preparingWine : .startingGame)
-		log.debug("Pending Wine prefix migration check: \(hasPendingMigration)")
-		let launchRequestedAt = Date.now
-		let requestedLaunchOptions = settings.launchOptions
-		let requestedHardwareCursor = settings.usesHardwareCursor
-		let forceDisableRetina = preferences.forceDisableRetina()
-		log.info(
-			Self.launchDiagnostics(
-				sessionID: gameSessionID,
-				region: requestedRegion,
-				options: requestedLaunchOptions,
-				graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
-			)
-		)
-		let spawnGate = WineProcessSpawnGate()
-		session = ActiveGameSession(
-			id: gameSessionID,
-			lease: lease,
-			region: requestedRegion,
-			spawnGate: spawnGate,
-			usesGameMode: requestedLaunchOptions.usesGameMode
-		)
-		session?.launchTask = Task { [weak self] in
-			guard let self else { return }
-			do {
-				let discovery = await runtime.discoverCapabilities()
-				try Task.checkCancellation()
-				guard activeGameSessionID == gameSessionID else { return }
-				if let diagnostic = discovery.diagnostic {
-					log.info("Runtime capability fallback: \(diagnostic)")
-				}
-				let displayConfiguration = WineDisplayConfiguration.current(
-					renderingMode: requestedLaunchOptions.renderingMode,
-					forceDisabled: forceDisableRetina,
-					metalFXSupported: discovery.capabilities.metalFXSpatialUpscalingSupported
-				)
-				let runtimeEnvironment = Self.runtimeEnvironmentOverrides(
-					for: requestedRegion,
-					usesHardwareCursor: requestedHardwareCursor,
-					capabilities: discovery.capabilities
-				)
-				let launch = try await runtime.launch(
-					gameExecutable: executable,
-					prefixDirectory: prefixDirectory,
-					gameArguments: ["-logFile", AppPaths.windowsUnityLogPath]
-						+ (installation.configuration?.gameStartParams ?? [])
-						+ requestedLaunchOptions.playerArguments(
-							gamePixelsPerPoint: displayConfiguration.gamePixelsPerPoint,
-							fullscreenDisplay: GameFullscreenDisplay.primary
-						),
-					displayConfiguration: displayConfiguration,
-					graphicsDiagnostics: graphicsDiagnosticsEnabled,
-					metalPerformanceHUDEnabled: requestedLaunchOptions.usesMetalPerformanceHUD,
-					synchronizationMode: requestedLaunchOptions.synchronizationMode,
-					runtimeEnvironmentOverrides: runtimeEnvironment,
-					clientVariant: requestedRegion.clientVariant,
-					publisher: requestedRegion.publisher,
-					gameIconURL: customGameIconURL(),
-					logURL: paths.runtimeLogFile(for: requestedRegion),
-					log: log,
-					spawnGate: spawnGate
-				)
-				log.info(
-					"Game runtime started; session=\(gameSessionID.uuidString); pid=\(launch.processIdentifier); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
-				)
-				guard activeGameSessionID == gameSessionID, !applicationTerminationRequested else {
-					return
-				}
-				if Task.isCancelled {
-					await stopAfterCancelledLaunch(
-						runtime: runtime,
-						sessionID: gameSessionID,
-						processIdentifier: launch.processIdentifier,
-						region: requestedRegion
-					)
-					return
-				}
-				if requestedLaunchOptions.usesGameMode {
-					GamePolicyControl.setGameMode(on: true, log: log)
-				}
-				updateSessionActivity(
-					.launchingGame(
-						sessionID: gameSessionID,
-						processIdentifier: launch.processIdentifier
-					), lease: lease)
-				lifecycle.setStatus(.startingGame)
-				monitorGame(launch: launch, runtime: runtime, sessionID: gameSessionID)
-				try await WineWindowReadiness.wait(processIdentifier: launch.processIdentifier)
-				guard activeGameSessionID == gameSessionID, isGameActive,
-					!applicationTerminationRequested
-				else { return }
-				updateSessionActivity(
-					.runningGame(
-						sessionID: gameSessionID,
-						processIdentifier: launch.processIdentifier
-					), lease: lease)
-				lifecycle.setStatus(.running)
-				gameRunningSince = .now
-				playtimeStatistics.start(
-					sessionID: gameSessionID,
-					region: requestedRegion
-				)
-				monitorGamePrefix(using: runtime, sessionID: gameSessionID)
-				log.info(
-					"Game window became visible; session=\(gameSessionID.uuidString); elapsed=\(Self.launchDuration(since: launchRequestedAt))"
-				)
-			} catch is CancellationError {
-				guard activeGameSessionID == gameSessionID, !applicationTerminationRequested else {
-					return
-				}
-				// Stop owns cleanup once the game process is known.
-				if case .stoppingGame(let sessionID, .some) = lifecycle.activity,
-					sessionID == gameSessionID
-				{
-					return
-				}
-				await stopAfterCancelledLaunch(
-					runtime: runtime,
-					sessionID: gameSessionID,
-					processIdentifier: lifecycle.activity.gameProcessIdentifier,
-					region: requestedRegion
-				)
-			} catch LauncherError.runtimeWindowTimeout {
-				guard !applicationTerminationRequested else { return }
-				await handleWindowTimeout(
-					runtime: runtime,
-					sessionID: gameSessionID,
-					region: requestedRegion
-				)
-			} catch {
-				guard activeGameSessionID == gameSessionID, !applicationTerminationRequested else {
-					return
-				}
-				let launchError: any Error
-				if RosettaAvailability.isBadCPUType(error) {
-					lifecycle.intelTranslationState = .unavailable
-					launchError = LauncherError.intelTranslationUnavailable
-				} else {
-					launchError = error
-				}
-				await stopAndFinishGameSession(
-					using: runtime,
-					sessionID: gameSessionID,
-					processIdentifier: lifecycle.activity.gameProcessIdentifier,
-					region: requestedRegion,
-					terminalFailure: GameSessionTerminalFailure(
-						error: launchError,
-						operation: .launch,
-						blocksGameLaunch: true
-					)
-				)
-			}
+		// The session does not exist until the preflight finishes. This marker keeps a second
+		// Play click from starting a second launch in that window.
+		pendingLaunchID = request.id
+		Task { [weak self] in
+			await self?.startLaunch(request)
 		}
 	}
 
 	/// Cleans up from a cancelled launch task without inheriting its cancellation, which would
 	/// otherwise abort the `wineserver -k` call itself.
-	private func stopAfterCancelledLaunch(
+	func stopAfterCancelledLaunch(
 		runtime: WineRuntime,
 		sessionID: UUID,
 		processIdentifier: Int32?,

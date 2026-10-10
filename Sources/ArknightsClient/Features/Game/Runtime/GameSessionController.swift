@@ -49,6 +49,8 @@ final class GameSessionController {
 		@MainActor () throws -> any WineRuntimeSessionControlling
 	@ObservationIgnored var session: ActiveGameSession?
 	@ObservationIgnored var applicationTerminationRequested = false
+	/// Launch that passed the click guard but has no session yet. Blocks a second launch.
+	@ObservationIgnored var pendingLaunchID: UUID?
 	var gameRunningSince: Date?
 	var sessionLease: ActivityLease? { session?.lease }
 	var activeGameRegion: GameRegion? { session?.region }

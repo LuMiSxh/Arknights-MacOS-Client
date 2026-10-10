@@ -11,16 +11,27 @@ struct WineWindowReadiness {
 	static func wait(
 		processIdentifier: Int32,
 		timeout: Duration = AppConstants.Timeouts.windowReadiness,
-		pollInterval: Duration = AppConstants.Timeouts.windowPollInterval
+		pollInterval: Duration = AppConstants.Timeouts.windowPollInterval,
+		clock: any Clock<Duration> = ContinuousClock()
 	) async throws {
-		let clock = ContinuousClock()
+		try await poll(
+			processIdentifier: processIdentifier, timeout: timeout, pollInterval: pollInterval,
+			clock: clock)
+	}
+
+	private static func poll<C: Clock>(
+		processIdentifier: Int32,
+		timeout: Duration,
+		pollInterval: Duration,
+		clock: C
+	) async throws where C.Duration == Duration {
 		let deadline = clock.now.advanced(by: timeout)
 		while !isVisible(processIdentifier: processIdentifier, windows: currentWindows())
 			&& NSRunningApplication(processIdentifier: processIdentifier)?.activationPolicy
 				!= .regular
 		{
 			guard clock.now < deadline else { throw LauncherError.runtimeWindowTimeout }
-			try await Task.sleep(for: pollInterval)
+			try await clock.sleep(for: pollInterval)
 		}
 	}
 

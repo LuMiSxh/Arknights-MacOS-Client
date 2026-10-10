@@ -162,6 +162,38 @@ versions replace or restore only files this project created.
 - The launcher skips an unsupported official helper.
 - A conflicting unmarked file produces an actionable runtime-configuration error. It is not overwritten.
 
+### Launch steps
+
+The controller runs the launch in fixed steps. The source is in
+[`GameSessionController+LaunchSteps.swift`](../../../Sources/ArknightsClient/Features/Game/Runtime/GameSessionController+LaunchSteps.swift).
+
+1. `launch()` runs on the main actor and does not suspend. It checks that the launcher is idle and
+   that termination is not requested. It then records a pending launch ID. The session does not exist
+   yet. The pending ID stops a second **Play** click from starting a second launch.
+2. `startLaunch` runs `preflight`. `preflight` is `@concurrent`, so it runs off the main actor. It
+   checks that the executable exists, discovers the runtime, and checks for a pending prefix migration.
+3. `beginLease` maps the preflight result to a failure or a launch. It does not suspend between the
+   idle check and the lease claim. It fails if the launcher is not idle or termination was requested.
+   On success, it claims the lease and creates the session.
+4. `runLaunch` runs in the session's `launchTask`. It runs three steps:
+   - `prepareRuntime` discovers runtime capabilities and builds the display settings and environment.
+   - `spawn` starts `Arknights.exe` through `WineRuntime`.
+   - `monitor` waits for the visible game window and then publishes **Running**.
+
+Each step checks the session ID and the lease after every `await`. A step stops when a newer session
+owns the launch. `WineWindowReadiness` takes an injected `Clock`. The default is `ContinuousClock`.
+
+### Cancellation shield
+
+Cancelling the launch task must not skip prefix shutdown. `stopAndFinishGameSession` runs
+`runtime.stop` in an unstructured `Task`. This task includes the `wineserver` wait. An unstructured
+task does not inherit cancellation. `stopAfterCancelledLaunch` uses the same pattern.
+
+`withTaskCancellationShield` states this intent directly, but it needs macOS 27. Use that API when
+the deployment target allows it.
+
+`finishGameSession` is the only path that publishes **Idle**. It runs only after the prefix stopped.
+
 ## Process lifecycle
 
 The launcher monitors the direct Wine process and the prefix-wide `wineserver`. Closing the game
