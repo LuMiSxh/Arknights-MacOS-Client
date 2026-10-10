@@ -9,7 +9,7 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-XX
 
 ### Added
 
@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Installing a second region reuses identical files from an installed one instead of downloading them again.
 - Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
 - The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries.
+- Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.7.0-rc1, which carries its own license texts and notices.
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
 - China and China (Bilibili) no longer need Canary Features; Taiwan remains a Canary region.
 - Renamed **China — Bilibili** to **China (Bilibili)**.
@@ -395,7 +396,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.6.1...HEAD
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.0
 [0.6.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.1
 [0.6.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.0
 [0.5.2]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.5.2
