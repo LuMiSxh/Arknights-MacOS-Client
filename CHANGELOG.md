@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The installer and full updates are about a third smaller.
 - Rewrote the help pages and guides in Simplified Technical English: shorter and easier to follow.
 - Launcher animations pause behind Settings and dialogs, while the game runs, and in Low Power Mode.
+- Play shows a still glow with one pulse when it becomes ready, instead of a continuous breathing glow.
 
 ### Removed
 

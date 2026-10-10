@@ -57,6 +57,7 @@
 - Bound parallel file work with a windowed task group and an `AppConstants` limit.
 - Hash from the read buffer; no per-block `Data` copies.
 - Only a small leaf view reads per-tick progress.
+- The primary action shows at most one ambient effect: a static halo with one arrival pulse.
 
 ## Verification and Safety
 

@@ -22,9 +22,10 @@ struct LauncherPrimaryActionView: View {
 			action: action
 		)
 		.controlSize(.large)
-		.breathingGlow(
+		.accentHalo(
 			tint: accentColor,
-			isActive: actionKind == .play && !actionIsDisabled,
+			isActive: LauncherPrimaryActionPresentation.showsHalo(
+				kind: actionKind, isDisabled: actionIsDisabled),
 			in: Capsule()
 		)
 		.disabled(actionIsDisabled)
@@ -110,11 +111,20 @@ struct LauncherPrimaryActionView: View {
 		return .play
 	}
 
-	private enum ActionKind {
+	private typealias ActionKind = LauncherPrimaryActionPresentation.Kind
+}
+
+enum LauncherPrimaryActionPresentation {
+	enum Kind: CaseIterable {
 		case stop
 		case pause
 		case install
 		case update
 		case play
+	}
+
+	/// The halo is the only ambient effect and shows only for an enabled Play.
+	static func showsHalo(kind: Kind, isDisabled: Bool) -> Bool {
+		kind == .play && !isDisabled
 	}
 }

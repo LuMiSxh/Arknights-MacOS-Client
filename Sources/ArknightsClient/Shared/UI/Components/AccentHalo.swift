@@ -2,9 +2,9 @@
 
 import SwiftUI
 
-/// A slow accent halo behind the current primary operation. The breathing cycle only runs
-/// while decorative motion is visible; Reduce Motion and hidden windows keep a static halo.
-private struct BreathingGlowModifier<S: Shape>: ViewModifier {
+/// A still accent halo behind the current primary operation. It plays one pulse when it
+/// appears, unless Reduce Motion or the decorative motion gate forbids it.
+private struct AccentHaloModifier<S: Shape>: ViewModifier {
 	let tint: Color
 	let isActive: Bool
 	let shape: S
@@ -16,7 +16,7 @@ private struct BreathingGlowModifier<S: Shape>: ViewModifier {
 			.background {
 				ZStack {
 					if isActive && !reduceTransparency {
-						BreathingGlowHalo(tint: tint, shape: shape)
+						AccentHalo(tint: tint, shape: shape)
 							.transition(.opacity)
 							.allowsHitTesting(false)
 							.accessibilityHidden(true)
@@ -27,57 +27,41 @@ private struct BreathingGlowModifier<S: Shape>: ViewModifier {
 	}
 }
 
-private struct BreathingGlowHalo<S: Shape>: View {
+private struct AccentHalo<S: Shape>: View {
+	static var restingIntensity: Double { 0.5 }
+
 	let tint: Color
 	let shape: S
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
-	@State private var motionClock = DecorativeMotionClock()
+	@State private var pulseCount = 0
 
 	private var cycle: TimeInterval { LauncherMotion.Cycle.breathing }
 
 	var body: some View {
-		Group {
-			if decorativeMotionEnabled && !reduceMotion {
-				TimelineView(.animation(minimumInterval: 1 / 24)) { context in
-					let phase = motionClock.phase(at: context.date, cycleDuration: cycle)
-					halo(intensity: intensity(at: phase))
-				}
-			} else {
-				halo(intensity: reduceMotion ? 0.5 : intensity(at: motionClock.pausedPhase))
-			}
-		}
-		.onAppear {
-			if decorativeMotionEnabled {
-				motionClock.begin(at: .now, cycleDuration: cycle)
-			}
-		}
-		.onChange(of: decorativeMotionEnabled) { _, isEnabled in
-			if isEnabled {
-				motionClock.resume(at: .now, cycleDuration: cycle)
-			} else {
-				motionClock.pause(at: .now, cycleDuration: cycle)
-			}
-		}
-	}
-
-	private func halo(intensity: Double) -> some View {
 		shape
 			.fill(tint)
-			.scaleEffect(0.94 + 0.08 * intensity)
-			.blur(radius: 12 + 8 * intensity)
-			.opacity(0.18 + 0.22 * intensity)
-	}
-
-	/// Eased sine so the halo lingers at both ends of a breath.
-	private func intensity(at phase: Double) -> Double {
-		(1 - cos(phase * 2 * .pi)) / 2
+			.keyframeAnimator(initialValue: Self.restingIntensity, trigger: pulseCount) {
+				content, intensity in
+				content
+					.scaleEffect(0.94 + 0.08 * intensity)
+					.blur(radius: 12 + 8 * intensity)
+					.opacity(0.18 + 0.22 * intensity)
+			} keyframes: { _ in
+				CubicKeyframe(1, duration: cycle / 2)
+				CubicKeyframe(Self.restingIntensity, duration: cycle / 2)
+			}
+			.onAppear {
+				if decorativeMotionEnabled && !reduceMotion {
+					pulseCount += 1
+				}
+			}
 	}
 }
 
 extension View {
-	/// Adds the shared breathing accent halo behind `shape` while `isActive` is true.
-	func breathingGlow<S: Shape>(tint: Color, isActive: Bool, in shape: S) -> some View {
-		modifier(BreathingGlowModifier(tint: tint, isActive: isActive, shape: shape))
+	/// Adds the shared accent halo behind `shape` while `isActive` is true.
+	func accentHalo<S: Shape>(tint: Color, isActive: Bool, in shape: S) -> some View {
+		modifier(AccentHaloModifier(tint: tint, isActive: isActive, shape: shape))
 	}
 }
