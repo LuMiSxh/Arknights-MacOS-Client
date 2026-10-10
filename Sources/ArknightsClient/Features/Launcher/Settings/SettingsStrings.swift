@@ -16,7 +16,6 @@ enum SettingsStrings {
 	static let dangerZone = "Danger Zone"
 	static let game = "Game"
 	static let checkNow = "Check Now"
-	static let calculating = "Calculating…"
 	static let cancel = "Cancel"
 	static let choose = "Choose…"
 	static let chooseImage = "Choose Image…"
@@ -228,22 +227,6 @@ enum SettingsStrings {
 		"Shows the installed version and an update check above the Play button."
 	static let serverTime = "Server time & reset countdown"
 	static let serverTimeDetail = "Shows the server clock and the time until its next daily reset."
-
-	static let audioTitle = "Audio"
-	static let audioSubtitle = "Music while the launcher is open"
-	static let audioMusic = "Music"
-	static let audioBackgroundMusic = "Play background music"
-	static let audioBackgroundMusicDetail =
-		"Plays music while the launcher is open and the game is closed."
-	static let audioURL = "Music URL"
-	static let audioURLDetail = "A YouTube video or playlist link."
-	static let audioURLPrompt = "https://www.youtube.com/playlist?..."
-	static let audioVolume = "Volume"
-	static let audioVolumeDetail = "How loud the launcher music plays."
-	static let audioCurrentlyPlaying = "Show what's playing"
-	static let audioCurrentlyPlayingDetail =
-		"Shows the current track and playback controls on the launcher."
-
 	static let updatesTitle = "Updates"
 	static let updatesSubtitle = "Keep the launcher and the game up to date"
 	static let automaticChecks = "Automatic Checks"
@@ -275,9 +258,6 @@ enum SettingsStrings {
 	static let repairAction = "Repair…"
 	static let repairDetail =
 		"Check the game files and download anything missing or damaged again."
-	static let cacheGallery = "Preset Gallery Caches"
-	static let logs = "Logs"
-	static let showLogs = "Show Logs"
 	static let showGameFilesHelp = "Show game files in Finder"
 	static let setupAssistant = "Setup assistant"
 	static let setupAssistantDetail = "Go through the first-run questions again."
@@ -296,7 +276,6 @@ enum SettingsStrings {
 	static let resetSettingsConfirmation = "Reset All Launcher Settings?"
 	static let resetSettingsDetail =
 		"Puts every launcher setting back to its default. Game files, the install location, and the region are untouched."
-	static let winePrefix = "Game Environment"
 	static let winePrefixTitle = "Logins & environment"
 	static let winePrefixDetail =
 		"Deletes the game's Windows environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else is rebuilt on the next start."
@@ -392,10 +371,6 @@ enum SettingsStrings {
 	}
 
 	static let downloadWaiting = "Waiting for network…"
-
-	static func audioVolumePercent(_ percentage: Int) -> String {
-		"\(percentage)%"
-	}
 
 	static func operationStrip(label: String, percentage: Int) -> String {
 		"\(label) · \(percentage)%"

@@ -69,7 +69,7 @@ extension InstallationController {
 			InstallerError.missingConfiguration,
 			is ContextualLauncherError:
 			.virga
-		case GameRuntimeError.gameCompatibility, is GameShimRollbackError:
+		case is GameCompatibilityError, is GameShimRollbackError:
 			.anemone
 		case is CocoaError, is POSIXError:
 			.basalt

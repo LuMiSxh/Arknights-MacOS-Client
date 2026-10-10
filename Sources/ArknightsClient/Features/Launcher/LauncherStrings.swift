@@ -8,13 +8,6 @@ enum LauncherStrings {
 	static let documentNotices = "Third-Party Notices"
 	static let documentLoading = "Loading document"
 	static let documentUnavailable = "This document is unavailable in the current build."
-	static let pickerChoose = "Choose"
-	static let pickerGameIcon = "Choose a game icon"
-	static let pickerInstallDirectory = "Choose where to install Arknights"
-	static let pickerLauncherArtwork = "Choose launcher artwork"
-	static let pickerLauncherIcon = "Choose an app icon"
-	static let pickerLocateInstallation = "Choose the folder containing Arknights.exe"
-	static let pickerUseFolder = "Use Folder"
 	static let popupDone = "Done"
 	static let popupNotice = "Notice"
 	static let aceWarningTitle = "ACE Anti-Cheat client"
@@ -58,11 +51,6 @@ enum LauncherStrings {
 		"Version \(version)"
 	}
 	static let rosettaInstall = "Install Rosetta 2"
-	static let rosettaCancel = "Cancel"
-	static let rosettaConfirmationMessage =
-		"Rosetta 2 is Apple system software that lets this Apple silicon Mac run the bundled Intel-based Wine runtime. Continuing runs Apple’s software update tool and accepts Apple’s Rosetta license."
-	static let rosettaConfirmationTitle = "Install Rosetta 2?"
-
 	static func serverReset(hours: Int, minutes: Int) -> String {
 		let minuteText = minutes < 10 ? "0\(minutes)" : "\(minutes)"
 		return "Reset in \(hours)h \(minuteText)m"

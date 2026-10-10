@@ -8,8 +8,8 @@ import UniformTypeIdentifiers
 extension CustomizationController {
 	func chooseCustomArtwork() {
 		let panel = NSOpenPanel()
-		panel.title = LauncherStrings.pickerLauncherArtwork
-		panel.prompt = LauncherStrings.pickerChoose
+		panel.title = CustomizationStrings.pickerLauncherArtwork
+		panel.prompt = CustomizationStrings.pickerChoose
 		panel.allowedContentTypes = [.image]
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true

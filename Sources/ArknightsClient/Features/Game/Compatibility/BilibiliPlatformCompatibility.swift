@@ -117,7 +117,7 @@ struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 
 		if helperIsLegacyShim {
 			guard originalExists else {
-				throw GameRuntimeError.gameCompatibility(
+				throw GameCompatibilityError.setupFailed(
 					"The official Bilibili platform helper is missing. Repair the game before launching."
 				)
 			}
@@ -181,7 +181,7 @@ struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		guard fileManager.fileExists(atPath: paths.controller.path),
 			try !containsMarker(Self.launcherControllerMarker, at: paths.controller)
 		else { return }
-		throw GameRuntimeError.gameCompatibility(
+		throw GameCompatibilityError.setupFailed(
 			"The game directory contains an unknown Bilibili window controller.")
 	}
 

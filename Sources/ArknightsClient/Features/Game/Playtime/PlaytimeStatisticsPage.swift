@@ -96,7 +96,7 @@ struct PlaytimeStatisticsPage: View {
 							role: .destructive,
 							action: controller.reset
 						)
-						Button(SettingsStrings.cancel, role: .cancel) {}
+						Button(PlaytimeStrings.cancel, role: .cancel) {}
 					} message: {
 						Text(PlaytimeStrings.resetDetail)
 					}

@@ -233,48 +233,28 @@ allowed ones:
 | `LauncherUI`          | every other library                 | Composition. `LauncherViewModel` builds all controllers.                                                           |
 | `ArknightsClient`     | `LauncherUI`, Audio, Onboarding, `Core` | `ArknightsClientApp.swift:8,104,199,200`.                                                                      |
 
-### Known cycles
+### Resolved cycles
 
-> [!WARNING]
-> Two cycles block Stage 4. Remove each cycle before the checkpoint that creates the lower target.
-> Delete this subsection when both cycles are gone.
+Both cycles that blocked Stage 4 are removed from the code. This subsection records the current state.
 
-**Cycle 1: lower features use types that `Features/Launcher` owns.** `ArknightsLauncherUI` is the top
-target. These references point up to it:
+**Cycle 1: lower features used types that `Features/Launcher` owns. Resolved.**
 
-| From                            | Launcher type                                  | Evidence                                                                                                                  |
-| ------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Customization                   | `LauncherStrings`                              | `CustomizationController+Artwork.swift:11,12`, `CustomizationController+Icons.swift:10,17,200`                              |
-| Installation                    | `LauncherStrings`                              | `InstallationController+Files.swift:10,11,29,30`                                                                          |
-| Runtime                         | `LauncherPreferencesController`                | `GameSessionController.swift:39,61`                                                                                       |
-| Runtime                         | `LauncherStrings`, `SettingsStrings`           | `RosettaInstallationConfirmationModifier.swift:11-18`, `PlaytimeStatisticsPage.swift:99`, `StorageStrings.swift:26-45`     |
-| Audio                           | `LauncherPreferencesController`                | `BackgroundMusicController.swift:20,47`, `BackgroundMusicView.swift:9`, `MusicHUDPill.swift:7`, `AudioSettingsPage.swift:6` |
-| Audio                           | `SettingsStrings`                              | `AudioSettingsPage.swift:11-89`                                                                                           |
-| Onboarding                      | `LauncherPreferencesController`                | `OnboardingAnswers.swift:73,86`, `OnboardingDisplayView.swift`, `OnboardingRegionView.swift`, `OnboardingLookView.swift`, `OnboardingExtrasView.swift`, `OnboardingView.swift` |
-| Onboarding                      | `LauncherUpdateCheckOutcome`                   | `OnboardingCoordinator.swift:32,53,68,138,159`                                                                            |
+- `LauncherPreferencesController` and `LauncherUpdateCheckOutcome` live in `Core/Preferences`. They use
+  only `Shared` types.
+- Each feature has its own strings type. No lower feature uses `LauncherStrings` or `SettingsStrings`:
+  - Customization uses `CustomizationStrings`.
+  - Installation uses `InstallationStrings`.
+  - Runtime uses `RuntimeStrings`, `StorageStrings`, and `PlaytimeStrings`.
+  - Audio uses `AudioStrings`.
 
-Planned fix:
+**Cycle 2: Installation and Runtime used each other. Resolved.**
 
-1. Move `LauncherPreferencesController` (`Features/Launcher/Settings/LauncherPreferencesController.swift`)
-   and `LauncherUpdateCheckOutcome` (`Features/Launcher/Updates/LauncherUpdateCheckOutcome.swift`) to
-   `Core`. Both depend only on `Shared` types.
-2. Give each feature its own strings. Move the file-picker strings from `LauncherStrings` to
-   `CustomizationStrings` and the Installation strings. Move the Rosetta strings to the Runtime
-   strings. Move the `audio*` entries of `SettingsStrings` to an `AudioStrings` namespace. Move the
-   storage and Playtime entries to the Runtime strings.
-
-**Cycle 2: Installation and Runtime use each other.** Runtime uses Installation. Installation uses
-Runtime through one type, `GameRuntimeError`:
-
-| Direction              | Evidence                                                                                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Installation to Runtime | `GameRuntimeError.gameCompatibility` in `BilibiliPlatformCompatibility.swift:120,184`, `GameCompatibilityManager.swift:100,106,107`, `PlatformProcessCompatibility.swift:58,78`, `VuplexCompatibility.swift:72,188,248`, `InstallationSupportFailure.swift:72` |
-| Runtime to Installation | `InstallationController` (`GameSessionController.swift:38`), `GameCompatibilityManager` (`GameSessionController.swift:44`, `WineRuntime.swift:49`), `InstallerError` (`WineRuntime.swift:227`, `GameSessionSupportFailure.swift:98`), `BilibiliPlatformCompatibility` (`WineRuntime.swift:327`), `DownloadProgressFormatting` (`StorageOverviewPage.swift:158`) |
-
-Planned fix: the Compatibility folder throws its own error type, which the Installation target owns.
-Map that error to `GameRuntimeError` at the Runtime boundary. Update `GameSessionSupportFailure.swift:90`
-and `InstallationSupportFailure.swift:72` so the support codes stay the same. `SupportCodeStabilityTests`
-pins the codes.
+- Installation and Compatibility throw `GameCompatibilityError`, which lives in
+  `Features/Game/Compatibility`. The Installation target owns this type.
+- Runtime maps `GameCompatibilityError` to `GameRuntimeError` in
+  `GameRuntimeError.mappingCompatibilityFailure(_:)`. `WineRuntime.launch` calls this mapping.
+- Runtime still uses Installation. This direction is allowed.
+- Support codes do not change. `SupportCodeStabilityTests` pins them.
 
 ### Direction rules
 

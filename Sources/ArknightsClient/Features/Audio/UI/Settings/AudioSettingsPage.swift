@@ -8,17 +8,17 @@ struct AudioSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: SettingsStrings.audioTitle,
-			subtitle: SettingsStrings.audioSubtitle,
+			title: AudioStrings.settingsTitle,
+			subtitle: AudioStrings.settingsSubtitle,
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: SettingsStrings.audioMusic, systemImage: "music.note") {
+			SettingsPanel(title: AudioStrings.settingsMusic, systemImage: "music.note") {
 				SettingsActionRow(
-					title: SettingsStrings.audioBackgroundMusic,
-					detail: SettingsStrings.audioBackgroundMusicDetail
+					title: AudioStrings.settingsBackgroundMusic,
+					detail: AudioStrings.settingsBackgroundMusicDetail
 				) {
 					SettingsToggle(
-						SettingsStrings.audioBackgroundMusic,
+						AudioStrings.settingsBackgroundMusic,
 						isOn: $settings.playsLauncherMusic,
 						accentColor: accentColor
 					)
@@ -27,12 +27,12 @@ struct AudioSettingsPage: View {
 				if settings.playsLauncherMusic {
 					SettingsHairline()
 					SettingsActionRow(
-						title: SettingsStrings.audioURL,
-						detail: SettingsStrings.audioURLDetail
+						title: AudioStrings.settingsURL,
+						detail: AudioStrings.settingsURLDetail
 					) {
 						ThemedTextField(
-							SettingsStrings.audioURL,
-							prompt: SettingsStrings.audioURLPrompt,
+							AudioStrings.settingsURL,
+							prompt: AudioStrings.settingsURLPrompt,
 							text: $settings.launcherMusicURL,
 							systemImage: "link",
 							accentColor: accentColor
@@ -41,8 +41,8 @@ struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: SettingsStrings.audioVolume,
-						detail: SettingsStrings.audioVolumeDetail
+						title: AudioStrings.settingsVolume,
+						detail: AudioStrings.settingsVolumeDetail
 					) {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")
@@ -56,11 +56,11 @@ struct AudioSettingsPage: View {
 								accentColor: accentColor,
 								width: 140
 							)
-							.accessibilityLabel(SettingsStrings.audioVolume)
+							.accessibilityLabel(AudioStrings.settingsVolume)
 							.accessibilityValue(
 								Text(
 
-									SettingsStrings.audioVolumePercent(
+									AudioStrings.settingsVolumePercent(
 										Int(settings.launcherMusicVolume * 100)
 									)
 								)
@@ -71,7 +71,7 @@ struct AudioSettingsPage: View {
 								.accessibilityHidden(true)
 							Text(
 
-								SettingsStrings.audioVolumePercent(
+								AudioStrings.settingsVolumePercent(
 									Int(settings.launcherMusicVolume * 100)
 								)
 							)
@@ -82,11 +82,11 @@ struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: SettingsStrings.audioCurrentlyPlaying,
-						detail: SettingsStrings.audioCurrentlyPlayingDetail
+						title: AudioStrings.settingsCurrentlyPlaying,
+						detail: AudioStrings.settingsCurrentlyPlayingDetail
 					) {
 						SettingsToggle(
-							SettingsStrings.audioCurrentlyPlaying,
+							AudioStrings.settingsCurrentlyPlaying,
 							isOn: $settings.showsPlayingMusic,
 							accentColor: accentColor
 						)

@@ -7,8 +7,8 @@ extension InstallationController {
 	func chooseInstallDirectory() {
 		guard lifecycle.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = LauncherStrings.pickerInstallDirectory
-		panel.prompt = LauncherStrings.pickerChoose
+		panel.title = InstallationStrings.pickerInstallDirectory
+		panel.prompt = InstallationStrings.pickerChoose
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.canCreateDirectories = true
@@ -26,8 +26,8 @@ extension InstallationController {
 	func locateExistingInstallation() {
 		guard lifecycle.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = LauncherStrings.pickerLocateInstallation
-		panel.prompt = LauncherStrings.pickerUseFolder
+		panel.title = InstallationStrings.pickerLocateInstallation
+		panel.prompt = InstallationStrings.pickerUseFolder
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.allowsMultipleSelection = false

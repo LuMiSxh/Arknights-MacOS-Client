@@ -79,7 +79,7 @@ func compatibilityManagerRejectsDuplicateComponentIdentifiers() {
 	)
 	let manager = GameCompatibilityManager(active: [component], retired: [component])
 
-	#expect(throws: GameRuntimeError.self) {
+	#expect(throws: GameCompatibilityError.self) {
 		try manager.prepareForLaunch(in: URL(filePath: "/game"))
 	}
 }
@@ -95,7 +95,7 @@ func compatibilityManagerWrapsComponentIOFailures(isLaunch: Bool) {
 			_ = try manager.restoreForUpdate(in: URL(filePath: "/game"))
 		}
 		Issue.record("Expected compatibility failure")
-	} catch GameRuntimeError.gameCompatibility(let diagnostic) {
+	} catch GameCompatibilityError.setupFailed(let diagnostic) {
 		#expect(!diagnostic.isEmpty)
 	} catch {
 		Issue.record("Unexpected error type: \(error)")

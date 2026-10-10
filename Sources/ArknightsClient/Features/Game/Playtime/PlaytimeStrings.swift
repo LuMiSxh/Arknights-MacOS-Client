@@ -23,4 +23,5 @@ enum PlaytimeStrings {
 	static let resetConfirm = "Reset Statistics"
 	static let resetConfirmation = "Reset playtime statistics?"
 	static let lessThanMinute = "< 1 min"
+	static let cancel = "Cancel"
 }

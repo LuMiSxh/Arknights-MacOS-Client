@@ -232,9 +232,14 @@ struct WineRuntime: Sendable {
 		try logHandle.seekToEnd()
 		RuntimePerformanceLog.write(
 			stage: "filesystem", since: launchStarted, to: logHandle)
-		let compatibilityChanges = try compatibilityManager.prepareForLaunch(
-			in: gameExecutable.deletingLastPathComponent()
-		)
+		let compatibilityChanges: GameCompatibilityChanges
+		do {
+			compatibilityChanges = try compatibilityManager.prepareForLaunch(
+				in: gameExecutable.deletingLastPathComponent()
+			)
+		} catch {
+			throw GameRuntimeError.mappingCompatibilityFailure(error)
+		}
 		for identifier in compatibilityChanges.installed {
 			try? logHandle.write(
 				contentsOf: Data(

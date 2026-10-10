@@ -269,7 +269,7 @@ struct InstallationRecoveryTests {
 		model.installation.isInstalled = true
 		let wrongRegionID = UUID()
 		model.installation.presentInstallationFailure(
-			GameRuntimeError.gameCompatibility("test"),
+			GameCompatibilityError.setupFailed("test"),
 			id: wrongRegionID,
 			operation: .launch,
 			region: .japan

@@ -27,6 +27,10 @@ enum CustomizationStrings {
 	static let iconPreviewUnavailable = "Icon previews unavailable"
 	static let iconPreviewSubtitle = "Your operator is applied to both icons."
 	static let iconPreviewTitle = "Generated Icon Styles"
+	static let pickerChoose = "Choose"
+	static let pickerGameIcon = "Choose a game icon"
+	static let pickerLauncherArtwork = "Choose launcher artwork"
+	static let pickerLauncherIcon = "Choose an app icon"
 
 	static func operatorApplyHelp(_ name: String) -> String {
 		"Use \(name) for both Dock icons"

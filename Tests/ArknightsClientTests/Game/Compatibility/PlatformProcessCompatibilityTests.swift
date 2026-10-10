@@ -123,7 +123,7 @@ func platformProcessComponentRejectsUnknownBridge() throws {
 	let unknownBridge = Data("unrelated dynamic library".utf8)
 	try unknownBridge.write(to: fixture.installedBridge)
 
-	#expect(throws: GameRuntimeError.self) {
+	#expect(throws: GameCompatibilityError.self) {
 		try fixture.component.installIfSupported(in: fixture.root)
 	}
 	#expect(try Data(contentsOf: fixture.installedBridge) == unknownBridge)

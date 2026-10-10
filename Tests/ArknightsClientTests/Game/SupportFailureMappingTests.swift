@@ -29,7 +29,7 @@ struct SupportFailureMappingTests {
 			),
 			(URLError(.networkConnectionLost) as any Error, .pebble),
 			(CocoaError(.fileWriteNoPermission) as any Error, .basalt),
-			(GameRuntimeError.gameCompatibility("test") as any Error, .anemone),
+			(GameCompatibilityError.setupFailed("test") as any Error, .anemone),
 			(
 				HTTPTransportError.responseTooLarge(
 					URL(string: "https://cdn.example/game.bin")!, maximumBytes: 1

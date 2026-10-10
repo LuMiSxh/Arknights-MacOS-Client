@@ -55,6 +55,12 @@ enum GameRuntimeError: LocalizedError, LauncherDiagnosticError, Sendable {
 		}
 	}
 
+	/// Maps a compatibility failure into the runtime error domain; other errors pass through.
+	static func mappingCompatibilityFailure(_ error: any Error) -> any Error {
+		guard case GameCompatibilityError.setupFailed(let message) = error else { return error }
+		return GameRuntimeError.gameCompatibility(message)
+	}
+
 	private static var windowTimeoutText: String {
 		"\(AppConstants.Timeouts.windowReadiness.components.seconds) seconds"
 	}

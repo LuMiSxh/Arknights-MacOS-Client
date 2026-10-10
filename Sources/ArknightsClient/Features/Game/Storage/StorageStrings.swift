@@ -15,6 +15,11 @@ enum StorageStrings {
 		"Compatibility Runtime"
 	static let dxmtCache = "DXMT Shader Cache"
 	static let browserCache = "Embedded Browser Data"
+	static let calculating = "Calculating…"
+	static let logs = "Logs"
+	static let showLogs = "Show Logs"
+	static let winePrefix = "Game Environment"
+	static let cacheGallery = "Preset Gallery Caches"
 
 	static func copy() -> StorageOverviewCopy {
 		StorageOverviewCopy(
@@ -23,12 +28,12 @@ enum StorageStrings {
 			installationsTitle: installations,
 			sharedTitle: shared,
 			cachesTitle: caches,
-			logsTitle: SettingsStrings.logs,
-			calculating: SettingsStrings.calculating,
+			logsTitle: logs,
+			calculating: calculating,
 			unavailable: unavailable,
 			clearCaches: clearCaches,
 			clearGalleryCache: clearGalleryCache,
-			showLogs: SettingsStrings.showLogs,
+			showLogs: showLogs,
 			categoryTitle: categoryTitle,
 			categoryDetail: categoryDetail
 		)
@@ -37,12 +42,12 @@ enum StorageStrings {
 	private static func categoryTitle(_ category: StorageCategory) -> String {
 		switch category {
 		case .game(let region): region.displayName
-		case .winePrefix: SettingsStrings.winePrefix
+		case .winePrefix: winePrefix
 		case .compatibilityRuntime: compatibilityRuntime
 		case .dxmtCache: dxmtCache
 		case .browserCache: browserCache
-		case .galleryCache: SettingsStrings.cacheGallery
-		case .logs: SettingsStrings.logs
+		case .galleryCache: cacheGallery
+		case .logs: logs
 		}
 	}
 
