@@ -2,6 +2,7 @@
 
 import AppKit
 import ArknightsCore
+import ArknightsGameInstallation
 import SwiftUI
 
 struct LauncherUpdateView: View {

@@ -3,6 +3,7 @@
 import AppKit
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsGameInstallation
 import Foundation
 import Observation
 

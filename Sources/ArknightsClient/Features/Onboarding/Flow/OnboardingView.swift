@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsGameInstallation
 import SwiftUI
 
 struct OnboardingView: View {

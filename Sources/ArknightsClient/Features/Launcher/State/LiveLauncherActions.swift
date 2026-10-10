@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsGameInstallation
 import Foundation
 
 /// Production launcher actions. They hold only the controllers they drive and never

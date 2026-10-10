@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import SwiftUI
 
 /// Collapsed by default: who sizes the game, the exact size it draws, and the performance and

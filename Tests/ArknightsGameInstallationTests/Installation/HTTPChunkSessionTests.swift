@@ -1,0 +1,220 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import ArknightsCore
+import Foundation
+import Testing
+
+@testable import ArknightsGameInstallation
+@testable import ArknightsInfrastructure
+
+@Suite(.serialized)
+struct HTTPChunkSessionTests {
+	@Test
+	func chunkSessionStreamsResponseAndBodyWithoutPerByteIteration() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
+		let url = URL(string: "https://download.test/game.bin")!
+		let expected = Data(repeating: 0xA5, count: 512 * 1_024)
+		ChunkedURLProtocol.response = HTTPURLResponse(
+			url: url,
+			statusCode: 206,
+			httpVersion: "HTTP/1.1",
+			headerFields: ["Content-Length": String(expected.count)]
+		)!
+		ChunkedURLProtocol.chunks = [
+			expected.subdata(in: 0..<(128 * 1_024)),
+			expected.subdata(in: (128 * 1_024)..<(384 * 1_024)),
+			expected.subdata(in: (384 * 1_024)..<expected.count),
+		]
+		defer { ChunkedURLProtocol.reset() }
+
+		let stream = session.stream(for: URLRequest(url: url))
+		var status: Int?
+		var received = Data()
+		for try await event in stream.events {
+			switch event {
+			case .response(let response):
+				status = response.statusCode
+			case .data(let data):
+				received.append(data)
+			}
+		}
+
+		#expect(status == 206)
+		#expect(received == expected)
+	}
+
+	/// Reaching the ceiling must delay bytes, never drop them.
+	@Test
+	func chunkSessionDeliversEveryByteWhenTheBufferCeilingIsReached() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(configuration: configuration, maximumBufferedBytes: 4_096)
+		let url = URL(string: "https://download.test/game.bin")!
+		let expected = Data(repeating: 0x33, count: 64 * 1_024)
+		ChunkedURLProtocol.response = HTTPURLResponse(
+			url: url,
+			statusCode: 206,
+			httpVersion: "HTTP/1.1",
+			headerFields: ["Content-Length": String(expected.count)]
+		)!
+		ChunkedURLProtocol.chunks = stride(from: 0, to: expected.count, by: 4_096).map {
+			expected.subdata(in: $0..<min($0 + 4_096, expected.count))
+		}
+		defer { ChunkedURLProtocol.reset() }
+
+		let stream = session.stream(for: URLRequest(url: url))
+		var received = Data()
+		for try await event in stream.events {
+			guard case .data(let chunk) = event else { continue }
+			received.append(chunk)
+			stream.acknowledge(chunk.count)
+		}
+
+		#expect(received == expected)
+	}
+
+	@Test
+	func chunkSessionCreatesConcurrentStreamsWithoutRacingSessionSetup() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
+		let url = URL(string: "https://download.test/game.bin")!
+		let expected = Data(repeating: 0x5A, count: 4_096)
+		ChunkedURLProtocol.response = HTTPURLResponse(
+			url: url,
+			statusCode: 206,
+			httpVersion: "HTTP/1.1",
+			headerFields: ["Content-Length": String(expected.count)]
+		)!
+		ChunkedURLProtocol.chunks = [expected]
+		defer { ChunkedURLProtocol.reset() }
+
+		let bodies = try await withThrowingTaskGroup(of: Data.self) { group in
+			for _ in 0..<16 {
+				group.addTask {
+					let stream = session.stream(for: URLRequest(url: url))
+					return try await stream.events.reduce(into: Data()) { body, event in
+						if case .data(let chunk) = event {
+							body.append(chunk)
+						}
+					}
+				}
+			}
+			return try await group.reduce(into: []) { $0.append($1) }
+		}
+
+		#expect(bodies == Array(repeating: expected, count: 16))
+	}
+
+	@Test
+	func chunkSessionRejectsAStreamRedirectOutsideItsPolicy() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
+		let sourceURL = URL(string: "https://download.test/game.bin")!
+		ChunkedURLProtocol.configureRedirect(to: URL(string: "https://evil.test/game.bin")!)
+		defer { ChunkedURLProtocol.reset() }
+
+		let stream = session.stream(
+			for: URLRequest(url: sourceURL),
+			redirectValidator: { $0.host == "download.test" }
+		)
+		var rejected = false
+		do {
+			for try await _ in stream.events {}
+		} catch HTTPTransportError.redirectRejected(let rejectedURL) {
+			rejected = rejectedURL.host == "evil.test"
+		}
+
+		#expect(rejected)
+	}
+
+	@Test
+	func yostarPolicyRejectsARedirectToAForeignHost() async throws {
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		let session = HTTPChunkSession(
+			configuration: configuration,
+			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		)
+		let sourceURL = URL(string: "https://launcher-pkg-ark-en.yo-star.com/game.bin")!
+		let foreignURL = URL(string: "https://yo-star.com.evil.test/game.bin")!
+		ChunkedURLProtocol.configureRedirect(to: foreignURL)
+		defer { ChunkedURLProtocol.reset() }
+
+		let stream = session.stream(
+			for: URLRequest(url: sourceURL),
+			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: .global)
+		)
+		var rejectedHost: String?
+		do {
+			for try await _ in stream.events {}
+		} catch HTTPTransportError.redirectRejected(let rejectedURL) {
+			rejectedHost = rejectedURL.host
+		}
+
+		#expect(rejectedHost == "yo-star.com.evil.test")
+	}
+}
+
+private final class ChunkedURLProtocol: URLProtocol, @unchecked Sendable {
+	nonisolated(unsafe) static var response: HTTPURLResponse?
+	nonisolated(unsafe) static var chunks: [Data] = []
+	nonisolated(unsafe) static var redirectURL: URL?
+	nonisolated(unsafe) static var didRedirect = false
+
+	override class func canInit(with request: URLRequest) -> Bool { true }
+	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+	override func startLoading() {
+		if let redirectURL = Self.redirectURL, !Self.didRedirect {
+			Self.didRedirect = true
+			let redirectResponse = HTTPURLResponse(
+				url: request.url!,
+				statusCode: 302,
+				httpVersion: "HTTP/1.1",
+				headerFields: ["Location": redirectURL.absoluteString]
+			)!
+			client?.urlProtocol(
+				self,
+				wasRedirectedTo: URLRequest(url: redirectURL),
+				redirectResponse: redirectResponse
+			)
+			return
+		}
+		guard let response = Self.response else {
+			client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+			return
+		}
+		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+		for chunk in Self.chunks {
+			client?.urlProtocol(self, didLoad: chunk)
+		}
+		client?.urlProtocolDidFinishLoading(self)
+	}
+
+	override func stopLoading() {}
+
+	static func reset() {
+		response = nil
+		chunks = []
+		redirectURL = nil
+		didRedirect = false
+	}
+
+	static func configureRedirect(to url: URL) {
+		redirectURL = url
+		didRedirect = false
+	}
+}

@@ -4,6 +4,7 @@ import ArknightsCore
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsGameInstallation
 
 @Test
 func launcherDownloadProgressDoesNotInventPercentageWithoutKnownTotal() {
@@ -239,5 +240,38 @@ func indeterminateWorkPulsesAFullOutline(status: LauncherStatus) {
 			status: status,
 			hasFailure: true
 		)
+	)
+}
+
+@Test
+func verificationProgressFillsTheOutlineWithItsOwnFraction() {
+	let verifying = DownloadProgress(
+		downloadedBytes: 25,
+		totalBytes: 100,
+		completedFiles: 1,
+		totalFiles: 4,
+		currentFile: "client.dat",
+		isVerifying: true
+	)
+
+	#expect(
+		LauncherDownloadProgressPresentation.outlineFraction(
+			for: verifying,
+			status: .verifyingInstallation,
+			hasPartialDownload: false,
+			hasFailure: false
+		) == 0.25
+	)
+	#expect(
+		LauncherDownloadProgressPresentation.outlineFraction(
+			for: nil,
+			status: .verifyingInstallation,
+			hasPartialDownload: false,
+			hasFailure: false
+		) == 1
+	)
+	#expect(
+		LauncherDownloadProgressPresentation.title(for: verifying, isPaused: false)
+			== "Verifying · 25%"
 	)
 }

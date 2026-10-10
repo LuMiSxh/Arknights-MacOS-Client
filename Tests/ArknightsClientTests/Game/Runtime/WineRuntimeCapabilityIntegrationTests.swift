@@ -5,6 +5,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsGameInstallation
 
 private let currentRuntimeCapabilities = RuntimeCapabilities(
 	dxmtMaximumFrameLatency: .init(minimum: 0, maximum: 3, defaultValue: 3),

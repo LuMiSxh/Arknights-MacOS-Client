@@ -4,6 +4,7 @@ import Foundation
 import Synchronization
 
 @testable import ArknightsClient
+@testable import ArknightsGameInstallation
 
 /// A session runtime whose `stop` and `waitUntilStopped` calls finish only when the test says so.
 final class ControlledLaunchRuntime: WineRuntimeSessionControlling, @unchecked Sendable {

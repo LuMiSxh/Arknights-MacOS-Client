@@ -6,6 +6,7 @@ import Foundation
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsGameInstallation
 
 @MainActor
 struct LauncherRefreshRecoveryTests {

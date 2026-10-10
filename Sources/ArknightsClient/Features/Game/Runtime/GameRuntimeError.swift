@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsGameInstallation
 import Foundation
 
 /// Failures raised while preparing, starting, and monitoring the Windows runtime and game process.

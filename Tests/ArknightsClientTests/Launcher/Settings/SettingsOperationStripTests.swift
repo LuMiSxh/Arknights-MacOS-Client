@@ -4,6 +4,7 @@ import ArknightsCore
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsGameInstallation
 
 @Suite
 struct SettingsOperationStripTests {

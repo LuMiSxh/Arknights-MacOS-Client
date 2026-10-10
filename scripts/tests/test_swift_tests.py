@@ -78,7 +78,7 @@ def test_filter_composes_one_regex_inside_the_selected_target() -> None:
     assert command.count("--filter") == 1
     assert (
         command[command.index("--filter") + 1]
-        == "^(?:ArknightsClientTests|ArknightsCoreTests|ArknightsCustomizationTests|ArknightsInfrastructureTests)\\..*GameInstaller"
+        == "^(?:ArknightsClientTests|ArknightsCoreTests|ArknightsCustomizationTests|ArknightsGameInstallationTests|ArknightsInfrastructureTests)\\..*GameInstaller"
     )
 
 

@@ -5,6 +5,7 @@ import Testing
 
 @testable import ArknightsClient
 @testable import ArknightsCore
+@testable import ArknightsGameInstallation
 
 @MainActor
 struct InstallationRecoveryTests {

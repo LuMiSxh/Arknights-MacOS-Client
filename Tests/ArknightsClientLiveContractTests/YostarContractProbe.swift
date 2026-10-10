@@ -4,6 +4,7 @@ import ArknightsCore
 import Foundation
 
 @testable import ArknightsClient
+@testable import ArknightsGameInstallation
 
 struct YostarContractProbe {
 	private static let attempts = 3
