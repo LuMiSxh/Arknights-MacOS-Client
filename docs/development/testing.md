@@ -20,13 +20,13 @@ order: 40
 > [!IMPORTANT]
 > `just ci` runs unit checks, deterministic integration tests, and the release Swift build. It never downloads the Wine runtime or game files and never launches the app or Wine. On a fresh checkout, uv and SwiftPM can resolve pinned dependencies before tests run; test processes stay network-denied.
 
-Scripts resolve from the root `pyproject.toml` and `uv.lock`. Python tests use `pytest` from the default group. DMG and compatibility builds use the `packaging` group. Swift levels are SwiftPM test targets: `ArknightsClientTests`, `ArknightsClientIntegrationTests`, and `ArknightsClientLiveContractTests`. Integration and live-contract suites also have environment gates, so a plain `swift test` cannot contact public services.
+Scripts resolve from the root `pyproject.toml` and `uv.lock`. Python tests use `pytest` from the default group. DMG and compatibility builds use the `packaging` group. Swift levels are SwiftPM test targets. Each unit test target sits beside its source target: `ArknightsCoreTests`, `ArknightsInfrastructureTests`, `ArknightsCustomizationTests`, `ArknightsGameInstallationTests`, `ArknightsGameRuntimeTests`, `ArknightsAudioTests`, `ArknightsOnboardingTests`, `ArknightsLauncherUITests`, and `ArknightsClientTests` (the `Application` layer only). The gated levels are `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests`. Helpers that more than one test target uses live in the `ArknightsTestSupport` library target. Integration and live-contract suites also have environment gates, so a plain `swift test` cannot contact public services.
 
 Use the smallest level that proves the changed contract:
 
 | Change                                                                                   | Add or update                                                                                             |
 | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Parser, state transition, path rule, persistence value, renderer, or controller decision | A focused test in `ArknightsClientTests` using local values and fixtures                                  |
+| Parser, state transition, path rule, persistence value, renderer, or controller decision | A focused test in the unit test target of the owning source target, using local values and fixtures       |
 | Flow across onboarding, API decoding, installation, progress, or persisted state         | `ArknightsClientIntegrationTests` with an isolated `IntegrationTestEnvironment` and `LocalFixtureNetwork` |
 | Yostar or Gryphline endpoint, response shape, manifest, or signing contract              | A live probe, plus a fixture regression test when the decoder changes                                     |
 | `runtime.json` or a new packaged runtime release                                         | `just check`, `just runtime`, and the manual compatibility matrix                                         |

@@ -1,0 +1,405 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import AppKit
+import ArknightsCustomization
+import ArknightsTestSupport
+import Foundation
+import Testing
+
+@testable import ArknightsCore
+@testable import ArknightsGameInstallation
+@testable import ArknightsLauncherUI
+
+@MainActor
+struct LauncherViewModelConcurrencyTests {
+	@Test
+	func canaryGateChangesRefreshInstalledRegionsWhileGlobalIsActive() async throws {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			prepareStorage: { paths in
+				for region in [GameRegion.global, .taiwan, .china] {
+					try! writeInstalledRegion(region, paths: paths)
+				}
+			}
+		)
+		await api.waitForBrandingRequest()
+		#expect(
+			await waitForCondition { model.installation.installedRegions == [.global, .china] })
+
+		model.settings.canaryFeaturesEnabled = true
+		model.settings.taiwanClientEnabled = true
+		#expect(
+			await waitForCondition {
+				model.installation.installedRegions == [.global, .taiwan, .china]
+			}
+		)
+
+		#expect(model.installation.selectRegion(.taiwan))
+		model.settings.taiwanClientEnabled = false
+		#expect(await waitForCondition { model.installation.region == .global })
+		#expect(
+			await waitForCondition { model.installation.installedRegions == [.global, .china] })
+
+		// China is generally available, so it survives the Canary switch being turned off.
+		#expect(model.installation.selectRegion(.china))
+		model.settings.canaryFeaturesEnabled = false
+		#expect(model.installation.region == .china)
+		#expect(
+			await waitForCondition { model.installation.installedRegions == [.global, .china] })
+		await api.resolveBranding()
+	}
+
+	@Test
+	func canaryGateChangesDuringExclusiveActivityRefreshAfterIdle() async throws {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			prepareStorage: { paths in
+				for region in [GameRegion.global, .taiwan] {
+					try! writeInstalledRegion(region, paths: paths)
+				}
+			}
+		)
+		await api.waitForBrandingRequest()
+		#expect(await waitForCondition { model.installation.installedRegions == [.global] })
+
+		model.settings.canaryFeaturesEnabled = true
+		model.settings.taiwanClientEnabled = true
+		#expect(
+			await waitForCondition {
+				model.installation.installedRegions == [.global, .taiwan]
+			}
+		)
+
+		model.lifecycle.simulateActivity(.installing(id: UUID(), stage: .downloading))
+		model.actions.resetAllLauncherSettings()
+		#expect(model.settings.canaryFeaturesEnabled)
+		#expect(model.settings.taiwanClientEnabled)
+		model.settings.taiwanClientEnabled = false
+		await Task.yield()
+		#expect(model.installation.installedRegions == [.global, .taiwan])
+
+		model.lifecycle.simulateActivity(.idle)
+		#expect(
+			await waitForCondition {
+				model.installation.installedRegions == [.global]
+			}
+		)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func storageMigrationFailureBlocksNormalStartup() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			prepareStorage: { paths in
+				let fileManager = FileManager.default
+				let legacy = paths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
+				try! fileManager.createDirectory(at: legacy, withIntermediateDirectories: true)
+				try! fileManager.createDirectory(
+					at: paths.gameInstall(for: .global), withIntermediateDirectories: true)
+			}
+		)
+
+		#expect(!(await model.waitForStartup()))
+		#expect(model.lifecycle.failure?.blocksGameLaunch == true)
+		#expect(model.lifecycle.activity == .idle)
+		#expect(model.lifecycle.refresh == .checking(requestID: nil))
+		#expect(model.installation.configuration == nil)
+	}
+
+	@Test
+	func onboardingProbeWaitsForInitialRefreshToReachIdle() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+
+		let probeTask = Task { await model.actions.launcherUpdateCheckForOnboarding() }
+		await Task.yield()
+		#expect(model.lifecycle.refresh != .idle)
+		#expect(!model.communication.isCheckingLauncherUpdates)
+
+		await api.resolveBranding()
+		_ = await probeTask.value
+		#expect(model.lifecycle.refresh == .idle)
+	}
+
+	@Test
+	func activeGameSessionRejectsInstallationAndGameFileMaintenance() async {
+		let api = BlockingBrandingAPI()
+		let installer = ControllableInstaller()
+		let model = makeModel(api: api, installer: installer)
+		await api.waitForBrandingRequest()
+		model.lifecycle.simulateActivity(.runningGame(sessionID: UUID(), processIdentifier: 42))
+
+		model.installation.repairGame()
+
+		#expect(!model.installation.canInstall)
+		#expect(!model.installation.canModifyGameFiles)
+		#expect(model.gameSession.isGameActive)
+		#expect(await installer.installationCount() == 0)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func launchOptionsStayLockedForTheEntireGameSession() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		let sessionID = UUID()
+		let selectedOptions = GameLaunchOptions(
+			displayMode: .fullscreen,
+			resolution: .quadHD,
+			windowSize: GameDisplaySize(width: 1600, height: 900),
+			usesGameSettings: false,
+			renderingMode: .metalFX,
+			usesMetalPerformanceHUD: true,
+			usesGameMode: true,
+			synchronizationMode: .esync
+		)
+		model.settings.launchOptions = selectedOptions
+
+		#expect(!model.gameSession.isGameActive)
+		model.lifecycle.simulateActivity(.preparingGame(sessionID: sessionID))
+		#expect(model.gameSession.isGameActive)
+		model.actions.resetAllLauncherSettings()
+		#expect(model.settings.launchOptions == selectedOptions)
+		model.lifecycle.simulateActivity(
+			.launchingGame(sessionID: sessionID, processIdentifier: nil))
+		#expect(model.gameSession.isGameActive)
+		model.lifecycle.simulateActivity(.runningGame(sessionID: sessionID, processIdentifier: 42))
+		#expect(model.gameSession.isGameActive)
+		model.lifecycle.simulateActivity(.stoppingGame(sessionID: sessionID, processIdentifier: 42))
+		#expect(model.gameSession.isGameActive)
+		model.lifecycle.simulateActivity(.idle)
+		#expect(!model.gameSession.isGameActive)
+
+		await api.resolveBranding()
+	}
+
+	@Test
+	func resettingLauncherSettingsRestoresEveryUserFacingPreference() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		model.settings.automaticallyChecksLauncherUpdates = false
+		model.settings.automaticallyChecksGameUpdates = false
+		model.settings.announcementsEnabled = false
+		model.settings.showsServerResetCountdown = true
+		model.settings.showsGameVersion = false
+		model.settings.playsLauncherMusic = false
+		model.settings.launcherMusicURL = "https://example.com/custom"
+		model.settings.showsPlayingMusic = true
+		model.settings.launcherMusicVolume = 0.1
+		model.settings.usesDynamicTheme = false
+		model.settings.launchOptions = GameLaunchOptions(
+			displayMode: .fullscreen,
+			resolution: .fullHD,
+			usesGameSettings: false,
+			renderingMode: .lightweight,
+			usesMetalPerformanceHUD: true,
+			usesGameMode: true,
+			synchronizationMode: .esync
+		)
+
+		model.actions.resetAllLauncherSettings()
+
+		#expect(model.settings.automaticallyChecksLauncherUpdates)
+		#expect(model.settings.automaticallyChecksGameUpdates)
+		#expect(model.settings.announcementsEnabled)
+		#expect(!model.settings.showsServerResetCountdown)
+		#expect(model.settings.showsGameVersion)
+		#expect(model.settings.playsLauncherMusic)
+		#expect(model.settings.launcherMusicURL == AppConstants.Music.defaultLauncherMusicURL)
+		#expect(!model.settings.showsPlayingMusic)
+		#expect(model.settings.launcherMusicVolume == 0.5)
+		#expect(model.settings.usesDynamicTheme)
+		#expect(model.settings.launchOptions == .default)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func launchRequiresAWorkingIntelTranslationProbe() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequest()
+		model.installation.isInstalled = true
+		model.gameSession.runtimeName = "Test Runtime"
+
+		model.lifecycle.intelTranslationState = .rosettaMissing
+		#expect(!model.gameSession.canLaunch)
+
+		model.lifecycle.intelTranslationState = .gameTestModeEnabled
+		#expect(!model.gameSession.canLaunch)
+
+		model.lifecycle.intelTranslationState = .available
+		#expect(model.gameSession.canLaunch)
+
+		await api.resolveBranding()
+	}
+
+	@Test
+	func staleRefreshThatIgnoresCancellationDoesNotHideInstallationProgress() async throws {
+		let api = BlockingBrandingAPI()
+		let installer = ControllableInstaller()
+		let model = makeModel(api: api, installer: installer)
+
+		await api.waitForBrandingRequest()
+		model.installation.installOrUpdate()
+		await installer.waitForInstallationStart()
+		await installer.sendProgress()
+
+		#expect(model.installation.isDownloading)
+		#expect(model.lifecycle.phase == .downloading)
+		#expect(model.installation.progress?.downloadedBytes == 50)
+
+		await api.resolveBranding()
+		await Task.yield()
+
+		#expect(model.installation.isDownloading)
+		#expect(model.lifecycle.phase == .downloading)
+		#expect(model.installation.progress?.downloadedBytes == 50)
+
+		await installer.completeSuccessfully()
+		await waitForDownloadToStop(model)
+	}
+
+	@Test
+	func secondInstallIsRejectedUntilCancelledInstallerAcknowledgesCancellation() async throws {
+		let api = BlockingBrandingAPI()
+		let installer = ControllableInstaller()
+		let model = makeModel(api: api, installer: installer)
+
+		await api.waitForBrandingRequest()
+		model.installation.installOrUpdate()
+		await installer.waitForInstallationStart()
+
+		model.installation.installOrUpdate()
+		#expect(await installer.installationCount() == 1)
+
+		model.installation.cancelDownload()
+		await installer.waitForCancellationRequest()
+		model.installation.installOrUpdate()
+		#expect(await installer.installationCount() == 1)
+		#expect(model.installation.isDownloading)
+
+		await installer.acknowledgeCancellation()
+		await waitForDownloadToStop(model)
+		#expect(!model.lifecycle.activityMessage.isEmpty)
+		await api.resolveBranding()
+	}
+
+	@Test
+	func regionSwitchKeepsCurrentArtworkUntilReplacementLoads() async {
+		let api = BlockingBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequests(1)
+		let artwork = NSImage(size: NSSize(width: 32, height: 32))
+		model.customization.heroArtwork = artwork
+		let globalLogo = NSImage(size: NSSize(width: 32, height: 32))
+		model.customization.officialLogo = globalLogo
+
+		model.actions.selectRegion(.japan)
+		await api.waitForBrandingRequests(2)
+
+		#expect(model.installation.region == .japan)
+		#expect(model.customization.heroArtwork === artwork)
+		#expect(model.customization.officialLogo == nil)
+		await api.resolveBranding()
+		let logoLoaded = await waitForCondition { model.customization.officialLogo != nil }
+		#expect(logoLoaded)
+	}
+
+	@Test
+	func customArtworkWinsWhenOfficialArtworkWasAlreadyInFlight() async {
+		let directory = FileManager.default.temporaryDirectory.appending(
+			path: "BrandingRaceCache.\(UUID().uuidString)",
+			directoryHint: .isDirectory
+		)
+		defer { try? FileManager.default.removeItem(at: directory) }
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [BlockingArtworkURLProtocol.self]
+		let cache = ArtworkCache(
+			session: URLSession(configuration: configuration),
+			directory: directory
+		)
+		let api = BlockingBrandingAPI()
+		let model = makeModel(
+			api: api,
+			installer: ControllableInstaller(),
+			artworkCache: cache
+		)
+		defer {
+			BlockingArtworkURLProtocol.releaseArtwork()
+			BlockingArtworkURLProtocol.reset()
+		}
+		await api.waitForBrandingRequest()
+
+		let branding = LauncherBranding(
+			launcherBackgroundImage: URL(string: "https://www.arknights.global/japan-artwork.png"),
+			launcherBackgroundImageCRC64: "japan-artwork",
+			copyrightInformation: nil,
+			privacyPolicy: nil,
+			userAgreement: nil,
+			noticePopOpen: nil,
+			noticeContent: nil
+		)
+		await api.resolveBranding(branding)
+		let artworkStarted = await waitForCondition {
+			BlockingArtworkURLProtocol.isArtworkRequestStarted
+		}
+		#expect(artworkStarted)
+
+		let customData = BlockingArtworkURLProtocol.imageData
+		await model.customization.applyDirectCustomArtwork(data: customData)
+		BlockingArtworkURLProtocol.releaseArtwork()
+		let customArtworkApplied = await waitForCondition {
+			model.customization.activeThemeCacheKey?.hasPrefix("custom.") == true
+		}
+		#expect(customArtworkApplied)
+	}
+
+	@Test
+	func artworkResetRefreshRemainsTrackedAcrossARegionChange() async {
+		let api = CancellableBrandingAPI()
+		let model = makeModel(api: api, installer: ControllableInstaller())
+		await api.waitForBrandingRequests(1)
+
+		model.actions.resetArtwork()
+		await api.waitForCancellations(1)
+		await api.waitForBrandingRequests(2)
+
+		model.actions.selectRegion(.japan)
+		await api.waitForCancellations(2)
+		await api.waitForBrandingRequests(3)
+		#expect(model.installation.region == .japan)
+
+		model.refreshController.cancelRefresh()
+		await api.waitForCancellations(3)
+	}
+
+}
+
+@MainActor
+private func writeInstalledRegion(_ region: GameRegion, paths: AppPaths) throws {
+	let directory = paths.gameInstall(for: region)
+	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+	try Data().write(to: directory.appending(path: "Arknights.exe"))
+	let state = InstalledState(
+		version: "1.0.0",
+		basis: "test",
+		source: "test",
+		installedAt: .now,
+		files: nil
+	)
+	let encoder = JSONEncoder()
+	encoder.dateEncodingStrategy = .iso8601
+	try encoder.encode(state).write(
+		to: directory.appending(path: AppConstants.Game.installedStateFileName)
+	)
+}

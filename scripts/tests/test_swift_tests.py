@@ -76,10 +76,12 @@ def test_filter_composes_one_regex_inside_the_selected_target() -> None:
     command = swift_tests.test_command(swift_tests.LEVELS["unit"], [], "GameInstaller")
 
     assert command.count("--filter") == 1
+    expected = "|".join(swift_tests.unit_targets())
     assert (
-        command[command.index("--filter") + 1]
-        == "^(?:ArknightsClientTests|ArknightsAudioTests|ArknightsCoreTests|ArknightsCustomizationTests|ArknightsGameInstallationTests|ArknightsGameRuntimeTests|ArknightsOnboardingTests|ArknightsInfrastructureTests)\\..*GameInstaller"
+        command[command.index("--filter") + 1] == f"^(?:{expected})\\..*GameInstaller"
     )
+    assert "ArknightsLauncherUITests" in expected
+    assert "ArknightsTestSupport" not in expected
 
 
 def test_filter_counts_only_matching_tests_in_the_selected_target() -> None:

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -38,75 +37,8 @@ def swift_sources() -> list[Path]:
     return [*sources, *tests]
 
 
-SWIFT_SOURCES_ROOT = PROJECT_DIR / "Sources"
-LOWER_LAYERS = ("Core", "Shared", "Infrastructure")
-TYPE_DECLARATION = re.compile(
-    r"^(?:(?:public|package|internal|final|indirect|nonisolated|@\w+(?:\([^)]*\))?)\s+)*"
-    r"(?:struct|class|enum|protocol|actor|typealias)\s+([A-Z]\w*)",
-    re.MULTILINE,
-)
-SWIFT_COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.DOTALL)
-
-
-def strip_comments(source: str) -> str:
-    return SWIFT_COMMENT.sub(lambda match: re.sub(r"[^\n]", "", match.group()), source)
-
-
-def declared_types(root: Path) -> set[str]:
-    names: set[str] = set()
-    for path in root.rglob("*.swift"):
-        names.update(TYPE_DECLARATION.findall(strip_comments(path.read_text("utf-8"))))
-    return names
-
-
-def target_folders(sources_root: Path) -> list[Path]:
-    """Return every SwiftPM target folder directly under the sources root."""
-    return sorted(path for path in sources_root.iterdir() if path.is_dir())
-
-
-def layering_violations(sources_root: Path = SWIFT_SOURCES_ROOT) -> list[str]:
-    """Return `file:line: Type` entries where a lower layer names a Features type."""
-    targets = target_folders(sources_root)
-    lower_names = set().union(
-        *(
-            declared_types(target / layer)
-            for target in targets
-            for layer in LOWER_LAYERS
-        )
-    )
-    feature_names = (
-        set().union(*(declared_types(target / "Features") for target in targets))
-        - lower_names
-    )
-    if not feature_names:
-        return []
-    pattern = re.compile(r"\b(" + "|".join(sorted(feature_names)) + r")\b")
-    violations: list[str] = []
-    for target in targets:
-        for layer in LOWER_LAYERS:
-            for path in sorted((target / layer).rglob("*.swift")):
-                source = strip_comments(path.read_text("utf-8"))
-                for number, line in enumerate(source.splitlines(), start=1):
-                    for match in pattern.finditer(line):
-                        violations.append(
-                            f"{path.relative_to(target)}:{number}: {match.group(1)}"
-                        )
-    return violations
-
-
-def check_layering() -> None:
-    layers = ", ".join(LOWER_LAYERS[:-1]) + " and " + LOWER_LAYERS[-1]
-    info(f"Checking that {layers} do not reference Features types")
-    violations = layering_violations()
-    if violations:
-        raise SystemExit(
-            f"{layers} must not reference Features types:\n" + "\n".join(violations)
-        )
-
-
 def check_swift() -> None:
     info("Linting Swift sources")
-    check_layering()
     run(
         [
             "swift",

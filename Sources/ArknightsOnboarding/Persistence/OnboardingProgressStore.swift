@@ -24,7 +24,7 @@ package struct OnboardingProgressStore {
 		self.defaults = defaults
 	}
 
-	package var needsOnboarding: Bool {
+	var needsOnboarding: Bool {
 		defaults.integer(forKey: Key.completedSchemaVersion) < Self.currentSchemaVersion
 	}
 

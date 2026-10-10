@@ -94,8 +94,8 @@ let package = Package(
 			path: "Sources/ArknightsOnboarding",
 			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
 		),
-		.executableTarget(
-			name: "ArknightsClient",
+		.target(
+			name: "ArknightsLauncherUI",
 			dependencies: [
 				"ArknightsInfrastructure",
 				"ArknightsCore",
@@ -106,13 +106,49 @@ let package = Package(
 				"ArknightsOnboarding",
 				.product(name: "Sparkle", package: "Sparkle"),
 			],
+			path: "Sources/ArknightsLauncherUI",
+			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+		),
+		.executableTarget(
+			name: "ArknightsClient",
+			dependencies: [
+				"ArknightsCore",
+				"ArknightsAudio",
+				"ArknightsOnboarding",
+				"ArknightsLauncherUI",
+			],
 			path: "Sources/ArknightsClient",
+			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+		),
+		.target(
+			name: "ArknightsTestSupport",
+			dependencies: ["ArknightsCore", "ArknightsGameRuntime"],
+			path: "Tests/ArknightsTestSupport",
 			swiftSettings: swiftSettings()
 		),
 		.testTarget(
 			name: "ArknightsClientTests",
-			dependencies: ["ArknightsClient"],
+			dependencies: [
+				"ArknightsClient",
+				"ArknightsLauncherUI",
+				"ArknightsCore",
+				.product(name: "Sparkle", package: "Sparkle"),
+			],
 			path: "Tests/ArknightsClientTests"
+		),
+		.testTarget(
+			name: "ArknightsLauncherUITests",
+			dependencies: [
+				"ArknightsLauncherUI",
+				"ArknightsTestSupport",
+				"ArknightsGameRuntime",
+				"ArknightsGameInstallation",
+				"ArknightsCustomization",
+				"ArknightsCore",
+				"ArknightsInfrastructure",
+				.product(name: "Sparkle", package: "Sparkle"),
+			],
+			path: "Tests/ArknightsLauncherUITests"
 		),
 		.testTarget(
 			name: "ArknightsAudioTests",
@@ -132,7 +168,12 @@ let package = Package(
 		),
 		.testTarget(
 			name: "ArknightsCustomizationTests",
-			dependencies: ["ArknightsCustomization", "ArknightsCore", "ArknightsInfrastructure"],
+			dependencies: [
+				"ArknightsCustomization",
+				"ArknightsTestSupport",
+				"ArknightsCore",
+				"ArknightsInfrastructure",
+			],
 			path: "Tests/ArknightsCustomizationTests"
 		),
 		.testTarget(
@@ -149,6 +190,7 @@ let package = Package(
 			name: "ArknightsGameRuntimeTests",
 			dependencies: [
 				"ArknightsGameRuntime",
+				"ArknightsTestSupport",
 				"ArknightsGameInstallation",
 				"ArknightsCustomization",
 				"ArknightsCore",
@@ -175,13 +217,23 @@ let package = Package(
 		),
 		.testTarget(
 			name: "ArknightsClientIntegrationTests",
-			dependencies: ["ArknightsClient"],
+			dependencies: [
+				"ArknightsLauncherUI",
+				"ArknightsOnboarding",
+				"ArknightsGameRuntime",
+				"ArknightsGameInstallation",
+				"ArknightsCore",
+				"ArknightsInfrastructure",
+			],
 			path: "Tests/ArknightsClientIntegrationTests",
 			resources: [.copy("Fixtures")]
 		),
 		.testTarget(
 			name: "ArknightsClientLiveContractTests",
-			dependencies: ["ArknightsClient"],
+			dependencies: [
+				"ArknightsGameInstallation",
+				"ArknightsCore",
+			],
 			path: "Tests/ArknightsClientLiveContractTests"
 		),
 	]

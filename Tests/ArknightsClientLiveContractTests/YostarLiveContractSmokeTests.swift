@@ -3,8 +3,6 @@
 import Foundation
 import Testing
 
-@testable import ArknightsClient
-
 @Suite(
 	"Publisher launcher live contract",
 	.enabled(if: LiveContractGate.isEnabled, Comment(rawValue: LiveContractGate.disabledComment)),

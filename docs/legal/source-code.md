@@ -14,7 +14,7 @@ The tag contains the source for the launcher executable, project compatibility w
 
 | Release material               | Corresponding source or record                                                                                                                                                                        |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Native launcher                | Swift sources under `Sources/ArknightsClient/` at the matching tag                                                                                                                                    |
+| Native launcher                | Swift sources under `Sources/` at the matching tag                                                                                                                                    |
 | Native compatibility helpers   | C/Objective-C sources under `RuntimeSupport/` at the matching tag                                                                                                                                     |
 | Bundled Wine + DXMT runtime    | The exact archive checksum, component revisions, and interface in [`runtime.json`](../../runtime.json), plus the upstream source repositories listed in [Third-party notices](third-party-notices.md) |
 | Packaging and runtime patching | `scripts/build_app.py`, `scripts/build_compatibility.py`, and the pinned build recipe record                                                                                                          |

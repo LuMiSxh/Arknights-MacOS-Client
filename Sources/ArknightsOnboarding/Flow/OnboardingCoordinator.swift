@@ -16,7 +16,7 @@ package final class OnboardingCoordinator {
 	private var gameWasInstalled = false
 
 	package private(set) var isPresented = false
-	package private(set) var step: OnboardingStep = .welcome
+	private(set) var step: OnboardingStep = .welcome
 	private(set) var updateState: OnboardingUpdateState = .checking
 	private(set) var intelTranslationState: IntelTranslationState = .waitingForLauncherCheck
 	/// Set while a returning player reruns a required setup schema; Skip Setup stays unavailable.
@@ -90,7 +90,7 @@ package final class OnboardingCoordinator {
 		intelTranslationState = await checkIntelTranslation()
 	}
 
-	package func advance() {
+	func advance() {
 		if step == .welcome {
 			guard updateState.allowsSetup else { return }
 			var target = resumeStep ?? .region

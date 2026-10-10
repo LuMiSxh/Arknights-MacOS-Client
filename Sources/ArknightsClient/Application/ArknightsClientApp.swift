@@ -3,7 +3,7 @@
 import AppKit
 import ArknightsAudio
 import ArknightsCore
-import ArknightsGameInstallation
+import ArknightsLauncherUI
 import ArknightsOnboarding
 import SwiftUI
 
@@ -259,7 +259,11 @@ struct ArknightsClientApp: App {
 				)
 			}
 		#endif
-		return LauncherViewModel(arguments: arguments)
+		return LauncherViewModel(
+			paths: AppPaths(),
+			preferences: LauncherPreferencesStore(),
+			arguments: arguments
+		)
 	}
 
 	var body: some Scene {

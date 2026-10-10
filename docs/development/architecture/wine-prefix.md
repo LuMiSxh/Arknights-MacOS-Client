@@ -13,9 +13,9 @@ Windows profiles, embedded-browser sessions, DXMT libraries, caches, and launche
 runtime is read-only in the app bundle. Prefixes persist below Application Support across launcher
 updates.
 
-- [`GameSessionController`](../../../Sources/ArknightsClient/Features/Game/Runtime/GameSessionController.swift)
+- [`GameSessionController`](../../../Sources/ArknightsGameRuntime/Runtime/GameSessionController.swift)
   owns preparation and process lifetime.
-- [`WineRuntime`](../../../Sources/ArknightsClient/Features/Game/Runtime/WineRuntime.swift) implements
+- [`WineRuntime`](../../../Sources/ArknightsGameRuntime/Runtime/WineRuntime.swift) implements
   setup and process operations.
 - [`AppPaths`](../../../Sources/ArknightsCore/Shared/Persistence/AppPaths.swift) is the only source
   of prefix locations.
@@ -58,7 +58,7 @@ The launcher owns this structure inside Wine's prefix:
     └── tmp/
 ```
 
-[`WinePrefixConfigurator`](../../../Sources/ArknightsClient/Features/Game/Runtime/WinePrefixConfigurator.swift)
+[`WinePrefixConfigurator`](../../../Sources/ArknightsGameRuntime/Runtime/WinePrefixConfigurator.swift)
 reconciles drive mappings before every launch:
 
 - It keeps `C:` inside the prefix, points `G:` at only the selected region's game directory, and points
@@ -77,7 +77,7 @@ redirect them into the user's macOS home.
 
 ## Environment isolation
 
-[`WineRuntime+Environment.swift`](../../../Sources/ArknightsClient/Features/Game/Runtime/WineRuntime+Environment.swift)
+[`WineRuntime+Environment.swift`](../../../Sources/ArknightsGameRuntime/Runtime/WineRuntime+Environment.swift)
 builds the environment from an empty dictionary. It inherits only `LANG`, `LC_ALL`, `LC_CTYPE`, and
 `__CF_USER_TEXT_ENCODING`, when present. It forwards no other launcher variable. It:
 

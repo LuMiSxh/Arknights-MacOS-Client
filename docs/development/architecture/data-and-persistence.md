@@ -7,7 +7,7 @@ order: 50
 # Data and persistence
 
 `AppPaths` is the single resolver for locations the launcher writes on macOS. Controllers receive an
-`AppPaths` value from [`LauncherViewModel`](../../../Sources/ArknightsClient/Features/Launcher/State/LauncherViewModel.swift).
+`AppPaths` value from [`LauncherViewModel`](../../../Sources/ArknightsLauncherUI/State/LauncherViewModel.swift).
 They never build paths from the working directory or a hard-coded repository path. Tests and the
 isolated preview inject temporary roots through the same initializer.
 
@@ -31,7 +31,7 @@ selected region's game directory. All other locations stay app-owned.
 | Preferences                 | `UserDefaults`                                                                                                                                | `LauncherPreferencesStore`                 | Small settings and selected paths only                                                                                       |
 
 The table mirrors [`AppPaths.swift`](../../../Sources/ArknightsCore/Shared/Persistence/AppPaths.swift)
-and [`StorageOverviewResolver`](../../../Sources/ArknightsClient/Features/Game/Storage/StorageOverview.swift).
+and [`StorageOverviewResolver`](../../../Sources/ArknightsGameRuntime/Storage/StorageOverview.swift).
 When the implementation changes, update the [Storage](../../help/storage.md) guide in the same change.
 
 ## Application Support layout migration

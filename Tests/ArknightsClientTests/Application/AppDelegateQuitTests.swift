@@ -6,6 +6,7 @@ import Sparkle
 import Testing
 
 @testable import ArknightsClient
+@testable import ArknightsLauncherUI
 
 @MainActor
 struct AppDelegateQuitTests {

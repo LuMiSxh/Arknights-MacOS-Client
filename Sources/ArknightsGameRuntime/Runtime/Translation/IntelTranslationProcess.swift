@@ -6,6 +6,11 @@ import Foundation
 package struct IntelTranslationProcessResult: Equatable, Sendable {
 	let status: Int32
 	let output: String
+
+	package init(status: Int32, output: String) {
+		self.status = status
+		self.output = output
+	}
 }
 
 enum IntelTranslationProcess {

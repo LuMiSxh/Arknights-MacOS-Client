@@ -2,13 +2,13 @@
 
 import ArknightsCore
 import ArknightsGameRuntime
-import ArknightsOnboarding
 import Foundation
 import Testing
 
-@testable import ArknightsClient
 @testable import ArknightsGameInstallation
 @testable import ArknightsInfrastructure
+@testable import ArknightsLauncherUI
+@testable import ArknightsOnboarding
 
 @Suite(
 	"Fresh onboarding and installation",

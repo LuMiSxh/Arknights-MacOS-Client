@@ -3,8 +3,6 @@
 import Foundation
 import Testing
 
-@testable import ArknightsClient
-
 @Test
 func gryphlinePackageValidationChecksTheAbsoluteURLAndItsPathSeparately() throws {
 	try YostarContractProbe.validateGameConfigurationPath(

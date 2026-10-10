@@ -6,9 +6,9 @@ order: 20
 
 # Installation architecture
 
-- [`InstallationController`](../../../Sources/ArknightsClient/Features/Game/Installation/InstallationController.swift)
+- [`InstallationController`](../../../Sources/ArknightsGameInstallation/Installation/InstallationController.swift)
   owns region, directory, readiness, progress, and tasks.
-- [`GameInstaller`](../../../Sources/ArknightsClient/Features/Game/Installation/GameInstaller.swift)
+- [`GameInstaller`](../../../Sources/ArknightsGameInstallation/Installation/GameInstaller.swift)
   does the filesystem and transfer work.
 - `LauncherAPI` gets the version, manifest, and CDN URLs for a `GameRegion`.
 
@@ -305,4 +305,4 @@ Open `installer.trace` in Instruments. Filter by the subsystem to show installer
 For user recovery, see [Installation](../../installation.md), [Troubleshooting](../../help/troubleshooting.md),
 and [Storage](../../help/storage.md). For coverage, see [Testing architecture](../testing.md) and the
 fixture-backed tests in
-[`Tests/ArknightsClientTests/Game/Installation`](../../../Tests/ArknightsClientTests/Game/Installation).
+[`Tests/ArknightsGameInstallationTests/Installation`](../../../Tests/ArknightsGameInstallationTests/Installation).

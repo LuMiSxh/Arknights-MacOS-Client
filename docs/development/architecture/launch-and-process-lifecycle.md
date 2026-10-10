@@ -6,7 +6,7 @@ order: 30
 
 # Launch and process lifecycle
 
-[`GameSessionController`](../../../Sources/ArknightsClient/Features/Game/Runtime/GameSessionController.swift)
+[`GameSessionController`](../../../Sources/ArknightsGameRuntime/Runtime/GameSessionController.swift)
 owns one Wine-backed session at a time.
 
 - A successful `Process.run()` does not mean the game runs. Launch stays in **Starting** until the
@@ -165,7 +165,7 @@ versions replace or restore only files this project created.
 ### Launch steps
 
 The controller runs the launch in fixed steps. The source is in
-[`GameSessionController+LaunchSteps.swift`](../../../Sources/ArknightsClient/Features/Game/Runtime/GameSessionController+LaunchSteps.swift).
+[`GameSessionController+LaunchSteps.swift`](../../../Sources/ArknightsGameRuntime/Runtime/GameSessionController+LaunchSteps.swift).
 
 1. `launch()` runs on the main actor and does not suspend. It checks that the launcher is idle and
    that termination is not requested. It then records a pending launch ID. The session does not exist

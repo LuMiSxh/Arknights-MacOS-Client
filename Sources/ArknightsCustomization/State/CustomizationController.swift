@@ -33,10 +33,10 @@ package final class CustomizationController {
 	}
 	package var officialLogo: NSImage?
 	package private(set) var hasCustomAppIcon = false
+	package private(set) var hasCompletedInitialArtworkLoad = false
 	package private(set) var hasCustomGameIcon = false
 	/// Flips once `restoreInitialArtwork(for:)` finishes, so the launcher window can stay
 	/// hidden until it has real wallpaper/logo to show instead of a placeholder.
-	package private(set) var hasCompletedInitialArtworkLoad = false
 	package var dynamicThemeHue: Double?
 	package var accentColor: Color = LauncherVisuals.cyan
 	package var hudTintColor: Color = LauncherVisuals.hudGlassTint

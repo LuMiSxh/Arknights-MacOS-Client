@@ -24,10 +24,11 @@
 
 ## Architecture and Swift
 
-- Use Swift 6.4. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
-- Never import feature-owned types from `Shared` or `Infrastructure`; map infrastructure errors at the owning feature boundary.
+- Use Swift 6.4. Keep app composition in `Sources/ArknightsClient/Application` (the only code in the executable), feature work in its feature target, cross-feature primitives and configuration in `ArknightsCore`, and feature-independent I/O in `ArknightsInfrastructure`. Follow the target table in `docs/development/architecture/README.md#targets`.
+- Give a symbol that another target uses `package` access; keep the rest `internal`. Do not add `public`. Map infrastructure errors at the owning feature boundary.
+- Only `ArknightsLauncherUI` links Sparkle. Put shared test helpers in `Tests/ArknightsTestSupport`; do not copy them between test targets.
 - Each feature owns its error type; support codes and messages are a stable contract pinned by `SupportCodeStabilityTests`.
-- `Core` holds cross-feature lifecycle state; `Core`, `Shared` and `Infrastructure` never name feature types.
+- `Core` holds cross-feature lifecycle state.
 - Keep components feature-local unless multiple features share the same presentation contract.
 - Declare reusable identical controls, surfaces, and design tokens centrally in `Shared/UI`; keep feature-specific semantics and state local. Do not duplicate local button or panel styles.
 - Dynamic artwork or theme accents are intentionally allowed for the current primary operation, progress, selection, and interaction highlights. Preserve those highlights instead of replacing them with hardcoded neutrals.

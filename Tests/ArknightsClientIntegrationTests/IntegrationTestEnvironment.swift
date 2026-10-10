@@ -4,7 +4,7 @@ import ArknightsCore
 import Foundation
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsLauncherUI
 
 @MainActor
 struct IntegrationTestEnvironment {

@@ -47,8 +47,24 @@ enum CustomizationImageIO {
 		}
 	}
 
-	@concurrent
+	// Startup-critical: the launcher stays covered until the cached artwork and its Dynamic Theme
+	// accent are restored. `@concurrent` would run at the caller's priority, so these two keep an
+	// explicit `.userInitiated` task to avoid queueing behind other startup work.
 	static func load(_ url: URL) async throws -> Data {
+		try await Task.detached(priority: .userInitiated) {
+			try readValidatedArtwork(at: url)
+		}.value
+	}
+
+	static func prepareArtwork(_ data: Data, source: URL) async throws -> String {
+		try await Task.detached(priority: .userInitiated) {
+			try validate(data, source: source)
+			let digest = SHA256.hash(data: data)
+			return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
+		}.value
+	}
+
+	private static func readValidatedArtwork(at url: URL) throws -> Data {
 		let values = try url.resourceValues(forKeys: [
 			.fileSizeKey, .totalFileAllocatedSizeKey, .isRegularFileKey,
 		])
@@ -63,13 +79,6 @@ enum CustomizationImageIO {
 		let data = try Data(contentsOf: url, options: .mappedIfSafe)
 		try validate(data, source: url)
 		return data
-	}
-
-	@concurrent
-	static func prepareArtwork(_ data: Data, source: URL) async throws -> String {
-		try validate(data, source: source)
-		let digest = SHA256.hash(data: data)
-		return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
 	}
 
 	@concurrent

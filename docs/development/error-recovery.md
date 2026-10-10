@@ -26,9 +26,9 @@ Every user-initiated failure opens the shared detail modal once. A launch-blocki
 
 Each feature owns one error type. The type describes the failures of that feature.
 
-- `InstallerError` belongs to `Features/Game/Installation`.
-- `GameRuntimeError` belongs to `Features/Game/Runtime`.
-- `CustomizationError` belongs to `Features/Customization`.
+- `InstallerError` belongs to `ArknightsGameInstallation`.
+- `GameRuntimeError` belongs to `ArknightsGameRuntime`.
+- `CustomizationError` belongs to `ArknightsCustomization`.
 - `LauncherError` belongs to `Core/Errors`. It holds cross-feature failures: invalid response, server error, content too large, and storage migration.
 
 The owning feature maps its error to a support code:
@@ -37,7 +37,7 @@ The owning feature maps its error to a support code:
 - `GameSessionController.supportCode(for:)` maps `GameRuntimeError`.
 - `LauncherLifecycleStore` reads the code of a `LauncherError` through `SupportCodeProviding`.
 
-Support codes and messages are a stable contract. `Tests/ArknightsClientTests/Shared/Support/SupportCodeStabilityTests.swift` pins them.
+Support codes and messages are a stable contract. `Tests/ArknightsGameRuntimeTests/SupportCodeStabilityTests.swift` pins them.
 
 ## Recovery invariants
 
