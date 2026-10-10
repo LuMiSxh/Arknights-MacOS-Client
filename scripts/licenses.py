@@ -21,11 +21,9 @@ from pathlib import Path
 from lib.common import PROJECT_DIR, run_main
 from lib.console import info, success, warning
 from lib.licenses import (
-    COMPILED_NOTICES,
     check_all,
-    generate_documents,
+    regenerate,
     stage_bundle,
-    write_compiled_notices,
 )
 
 
@@ -55,13 +53,8 @@ def main() -> None:
             warning(message)
         success("Wrote the compiled notices")
         return
-    if write_compiled_notices(PROJECT_DIR, runtime):
-        info(f"Updated {COMPILED_NOTICES}")
-    for path, text in generate_documents(PROJECT_DIR, runtime).items():
-        target = PROJECT_DIR / path
-        if target.read_text(encoding="utf-8") != text:
-            target.write_text(text, encoding="utf-8")
-            info(f"Updated {path}")
+    for path in regenerate(PROJECT_DIR, runtime):
+        info(f"Updated {path}")
     success("Generated blocks are current")
 
 

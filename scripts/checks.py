@@ -16,6 +16,7 @@ from lib.common import PROJECT_DIR, run, run_main
 from lib.console import info, success, warning
 from lib.licenses import check_all
 from lib.project_config import load_project_configuration
+from lib.runtime_update import check as check_runtime_pin
 from runtime_config import validate_config
 from swift_tests import run_level as run_swift_test_level
 
@@ -139,6 +140,8 @@ def check_scripts() -> None:
     info("Checking the third-party license inventory")
     for message in check_all(PROJECT_DIR):
         warning(message)
+    info("Checking the runtime pin and its generated blocks")
+    check_runtime_pin(PROJECT_DIR)
     info("Linting GitHub Actions workflows")
     run(
         ["actionlint", *workflow_files()],

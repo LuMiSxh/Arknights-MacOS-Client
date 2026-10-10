@@ -60,7 +60,7 @@ Release automation uses no repository variables for these values. The [Arknights
 
 A runtime refresh is a compatibility change, not a dependency bump:
 
-1. Start from a published, checksum-verified Arknights macOS Runtime release. Update the metadata and checksums in [`runtime.json`](../../runtime.json).
+1. Start from a published Arknights macOS Runtime release. Run `just runtime update TAG`. The command rewrites [`runtime.json`](../../runtime.json) and every generated mention of the pin from the release assets. [Runtime updates](runtime-updates.md) describes the command and its manual steps.
 2. Run `uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json`, then `just runtime` to download, hash, extract, and validate the archive.
 3. Test a fresh and an existing prefix through install/update, each client's web-login path where provided, game start, and clean exit.
 4. Add or update prefix migrations when the runtime state contract requires them.

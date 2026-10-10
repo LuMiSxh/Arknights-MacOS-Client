@@ -25,16 +25,18 @@ audience: developers
 
 Each entry in the client index has these fields.
 
-| Field                       | Rule                                                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `name`, `version`, `source` | Required. `source` is an HTTPS URL.                                                                        |
-| `spdx`                      | An SPDX expression. Use `NOASSERTION` when the license is not known.                                       |
-| `files`                     | License texts in `docs/legal/licenses/`. A project-authored resource can have none.                        |
-| `status`                    | `verified` or `unverified`. A `verified` entry needs `basis`. An `unverified` entry can list `candidates`. |
-| `scope`                     | `app` (default), `website`, or `runtime-fallback`.                                                         |
-| `ecosystem`, `package`      | `swiftpm` or `npm`, and the package identity. The check compares the version with the lock data.           |
-| `paths`                     | Resource file names in `Sources/ArknightsClient/Resources/`.                                               |
-| `runtimeComponent`          | A key of `components` in `runtime.json`. The script derives `version` and `source` from it.                |
+| Field                       | Rule                                                                                                                                                     |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`, `version`, `source` | Required. `source` is an HTTPS URL.                                                                                                                      |
+| `spdx`                      | An SPDX expression. Use `NOASSERTION` when the license is not known.                                                                                     |
+| `files`                     | License texts in `docs/legal/licenses/`. A project-authored resource can have none.                                                                      |
+| `status`                    | `verified` or `unverified`. A `verified` entry needs `basis`. An `unverified` entry can list `candidates`.                                               |
+| `scope`                     | `app` (default), `website`, or `runtime-fallback`.                                                                                                       |
+| `ecosystem`, `package`      | `swiftpm` or `npm`, and the package identity. The check compares the version with the lock data.                                                         |
+| `paths`                     | Resource file names in `Sources/ArknightsClient/Resources/`.                                                                                             |
+| `runtimeComponent`          | A key of `components` in `runtime.json`. The script derives `version` and `source` from it.                                                              |
+| `runtimeRelease`            | `true` for the entry of the runtime release. The script derives `version` and `source` from the pinned tag. A `{version}` in `name` becomes the version. |
+| `libraries`                 | The Nixpkgs libraries of the runtime release, as `name version` strings. The runtime table of the notices shows them.                                    |
 
 The key `textOrigins` records where each license text came from. Take a text from the package checkout or `node_modules` first. If neither has it, copy the canonical SPDX text from the `spdx/license-list-data` repository and record the tag. Never mark a license `verified` without a text or a project record that proves it.
 

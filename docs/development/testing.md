@@ -108,7 +108,7 @@ A failure means an external schema or endpoint may have changed. Nothing rewrite
 > [!IMPORTANT]
 > The Arknights macOS Runtime repository owns upstream source monitoring, source pins, patch application, and runtime release construction. This repository owns the client-selected runtime release and validates its archive contract through `runtime.json`.
 
-Runtime source checks do not run in client CI and never rewrite `runtime.json`. When you promote a runtime release, update the URL, checksum, versions, source provenance, required layout, and prefix revision as one reviewed change. `just runtime` then downloads and hashes the archive, extracts it safely, and validates its executable and DXMT layout. The release workflow packages only that runtime. It never chooses among channels or combines independently updated Wine and DXMT components.
+Runtime source checks do not run in client CI and never rewrite `runtime.json`. When you promote a runtime release, update the URL, checksum, versions, source provenance, required layout, and prefix revision as one reviewed change. `just runtime update TAG` rewrites the release-derived fields; see [Runtime updates](runtime-updates.md). `just runtime` then downloads and hashes the archive, extracts it safely, and validates its executable and DXMT layout. The release workflow packages only that runtime. It never chooses among channels or combines independently updated Wine and DXMT components.
 
 ## Manual compatibility matrix
 

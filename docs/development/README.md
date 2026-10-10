@@ -15,6 +15,7 @@ The launcher targets Apple Silicon and macOS 15 or newer. It supports Yostar Glo
 - [Error recovery](error-recovery.md): stable support codes, failure presentation, and guarded actions.
 - [Releases and updates](releases-and-updates.md): release and runtime workflow.
 - [License automation](license-automation.md): third-party license index, checks, and packaging.
+- [Runtime updates](runtime-updates.md): pin a runtime release and update every mention of it.
 - [Wallpaper tagging and search](wallpaper-tagging.md): curated metadata for official artwork presets.
 - [Runtime compatibility](../help/runtime-compatibility.md): a user guide that is also the runtime contract for development and packaging.
 

@@ -49,6 +49,10 @@
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
-    "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d"
+    "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
+    "baseRecipeRepository": "https://github.com/dappermint/winecx-gptk",
+    "baseRecipeCommit": "f374f5bae40631a466c03c59180ca34605091efd",
+    "baseArchiveUrl": "https://github.com/dappermint/Whisky/releases/download/v4.6.8/Libraries.tar.gz",
+    "baseArchiveSha256": "19b9d7942b8cfd4871eee2a8f81abc7c849307c7858873f9b504c24c1bb6b25d"
   }
 }

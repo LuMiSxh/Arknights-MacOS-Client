@@ -50,10 +50,10 @@ live-contracts:
 [group('Checks')]
 ci: check integration build
 
-# Download the runtime pinned in runtime.json to .build/runtime.
+# Download the pinned runtime (default), pin a release with update (tag or latest; add prerelease to allow prereleases), or verify the pin with check.
 [group('Runtime')]
-runtime:
-    {{ uv }} scripts/download_runtime.py
+runtime action='download' tag='latest' prerelease='':
+    @case {{ quote(action) }} in download) {{ uv }} scripts/download_runtime.py;; check) {{ uv }} scripts/update_runtime.py --check;; update) if [[ {{ quote(prerelease) }} == "prerelease" ]]; then {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --include-prerelease; else {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }}; fi;; *) echo "unknown action: "{{ quote(action) }}"; use download, update, or check" >&2; exit 2;; esac
 
 # Build the application bundle; optionally embed a Wine runtime directory.
 [group('Packaging')]

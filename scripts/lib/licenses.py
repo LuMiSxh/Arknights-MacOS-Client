@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from lib.common import fail, safe_relative_path
+from lib.common import ScriptError, fail, safe_relative_path
 
 SCHEMA_VERSION = 1
 VERIFIED = "verified"
@@ -47,9 +47,19 @@ RESOURCE_DIRECTORY = Path("Sources/ArknightsClient/Resources")
 RUNTIME_LICENSE_DIRECTORY = "Licenses"
 RUNTIME_NOTICE_FILE = "NOTICE.md"
 
-BLOCK_PATTERN = re.compile(
-    r"<!-- licenses:begin (?P<name>[a-z-]+) -->\n(?P<body>.*?)<!-- licenses:end (?P=name) -->\n",
-    re.DOTALL,
+
+def block_pattern(namespace: str) -> re.Pattern[str]:
+    """Match the generated blocks `<!-- NAMESPACE:begin NAME -->` to `:end NAME`."""
+    return re.compile(
+        rf"<!-- {re.escape(namespace)}:begin (?P<name>[a-z-]+) -->\n(?P<body>.*?)"
+        rf"<!-- {re.escape(namespace)}:end (?P=name) -->\n",
+        re.DOTALL,
+    )
+
+
+RELEASE_ASSET_PATTERN = re.compile(
+    r"(?P<repository>https://github\.com/[^/]+/[^/]+)/releases/download/"
+    r"(?P<tag>v[^/]+)/[^/]+"
 )
 
 
@@ -71,6 +81,9 @@ class Component:
     package: str | None = None
     paths: tuple[str, ...] = ()
     note: str | None = None
+    runtime_release: bool = False
+    runtime_component: str | None = None
+    libraries: tuple[str, ...] = ()
 
     @property
     def is_verified(self) -> bool:
@@ -96,8 +109,40 @@ def read_json(path: Path) -> Any:
 def runtime_source(manifest: Mapping[str, Any], key: str) -> str:
     """Return the pinned source tree URL of a `runtime.json` component."""
     provenance = manifest["provenance"]
-    repository = provenance[f"{key}Repository"]
-    commit = provenance[f"{key}Commit"]
+    return tree_url(provenance[f"{key}Repository"], provenance[f"{key}Commit"])
+
+
+@dataclass(frozen=True)
+class RuntimeRelease:
+    """The release of the Arknights macOS Runtime that `runtime.json` pins."""
+
+    repository: str
+    tag: str
+
+    @property
+    def version(self) -> str:
+        return self.tag.removeprefix("v")
+
+    @property
+    def tree(self) -> str:
+        return f"{self.repository}/tree/{self.tag}"
+
+    @property
+    def page(self) -> str:
+        return f"{self.repository}/releases/tag/{self.tag}"
+
+
+def runtime_release(manifest: Mapping[str, Any]) -> RuntimeRelease:
+    """Derive the pinned release from the runtime archive URL in `runtime.json`."""
+    url = manifest["runtime"]["url"]
+    match = RELEASE_ASSET_PATTERN.fullmatch(url)
+    if match is None:
+        fail(f"cannot derive the runtime release from {url}")
+    return RuntimeRelease(match["repository"], match["tag"])
+
+
+def tree_url(repository: str, commit: str) -> str:
+    """Return the browsable source tree URL of a commit."""
     tree = (
         "/-/tree/" if urlparse(repository).hostname == "gitlab.winehq.org" else "/tree/"
     )
@@ -132,6 +177,21 @@ def parse_components(
         derived = _text(entry, "runtimeComponent", where, problems)
         version = _text(entry, "version", where, problems)
         source = _text(entry, "source", where, problems)
+        release_flag = entry.get("runtimeRelease", False)
+        if not isinstance(release_flag, bool):
+            problems.append(f"{where}: runtimeRelease must be true or false")
+            release_flag = False
+        if release_flag and manifest is not None:
+            try:
+                release = runtime_release(manifest)
+            except ScriptError as error:
+                problems.append(f"{where}: {error}")
+            else:
+                version = version or release.version
+                source = source or release.tree
+                if text["name"]:
+                    text["name"] = text["name"].replace("{version}", release.version)
+        libraries = _strings(entry.get("libraries", []), "libraries", where, problems)
         if derived is not None:
             try:
                 assert manifest is not None
@@ -178,6 +238,9 @@ def parse_components(
                     package=package,
                     paths=paths,
                     note=text["note"],
+                    runtime_release=release_flag,
+                    runtime_component=derived,
+                    libraries=libraries,
                 )
             )
     names = [component.name for component in components]
@@ -463,7 +526,12 @@ def render_source_offer(manifest: Mapping[str, Any]) -> str:
     )
 
 
-def apply_blocks(text: str, blocks: Mapping[str, str], keep_markers: bool) -> str:
+def apply_blocks(
+    text: str,
+    blocks: Mapping[str, str],
+    keep_markers: bool,
+    namespace: str = "licenses",
+) -> str:
     """Replace the body of each generated block; fail on a missing or unknown block."""
     seen: set[str] = set()
 
@@ -475,9 +543,9 @@ def apply_blocks(text: str, blocks: Mapping[str, str], keep_markers: bool) -> st
         body = blocks[name]
         if not keep_markers:
             return body
-        return f"<!-- licenses:begin {name} -->\n{body}<!-- licenses:end {name} -->\n"
+        return f"<!-- {namespace}:begin {name} -->\n{body}<!-- {namespace}:end {name} -->\n"
 
-    result = BLOCK_PATTERN.sub(replace, text)
+    result = block_pattern(namespace).sub(replace, text)
     missing = sorted(set(blocks) - seen)
     if missing:
         fail(f"generated block not found in document: {', '.join(missing)}")
@@ -777,6 +845,19 @@ def write_compiled_notices(root: Path, runtime: Path | None = None) -> bool:
         return False
     target.write_bytes(compress_notices(text))
     return True
+
+
+def regenerate(root: Path, runtime: Path | None = None) -> list[Path]:
+    """Rewrite the compiled notices and the generated blocks; return changed paths."""
+    changed: list[Path] = []
+    if write_compiled_notices(root, runtime):
+        changed.append(COMPILED_NOTICES)
+    for path, text in generate_documents(root, runtime).items():
+        target = root / path
+        if target.read_text(encoding="utf-8") != text:
+            target.write_text(text, encoding="utf-8")
+            changed.append(path)
+    return changed
 
 
 def stage_bundle(
