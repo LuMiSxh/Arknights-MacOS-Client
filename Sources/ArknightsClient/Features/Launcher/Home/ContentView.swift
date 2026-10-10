@@ -145,7 +145,7 @@ struct ContentView: View {
 			registerQuitDismissal(dismissPresentationForQuit)
 		}
 		.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
-		.onChange(of: model.gameSession.isGameActive, initial: true) { _, isActive in
+		.onChange(of: model.lifecycle.activity.isGameProcessRunning, initial: true) { _, isActive in
 			gameActivityDidChange(isActive)
 		}
 		.onChange(of: onboarding.isPresented) { _, isPresented in

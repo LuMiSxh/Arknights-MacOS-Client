@@ -66,7 +66,7 @@ final class BackgroundMusicController {
 		return playbackState == .playing || playbackState == .buffering
 	}
 
-	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }
+	var isGameProcessRunning: Bool { lifecycle.activity.hasGameProcess }
 
 	var isChangingTrack: Bool { operation.isChangingTrack }
 
@@ -83,7 +83,7 @@ final class BackgroundMusicController {
 	}
 
 	var controlsAreDisabled: Bool {
-		return player == nil || lifecycle.activity.isGameProcessRunning || isChangingTrack
+		return player == nil || lifecycle.activity.hasGameProcess || isChangingTrack
 			|| isChangingPlayback
 	}
 
@@ -94,7 +94,7 @@ final class BackgroundMusicController {
 	func startIfNeeded() {
 		guard lifecycle.phase != .checking,
 			settings.playsLauncherMusic,
-			!lifecycle.activity.isGameProcessRunning
+			!lifecycle.activity.hasGameProcess
 		else { return }
 		setupPlayer()
 	}
@@ -105,7 +105,7 @@ final class BackgroundMusicController {
 	}
 
 	func sourceDidChange() {
-		guard settings.playsLauncherMusic, !lifecycle.activity.isGameProcessRunning else { return }
+		guard settings.playsLauncherMusic, !lifecycle.activity.hasGameProcess else { return }
 		sourceChangeTask?.cancel()
 		sourceChangeTask = Task { [weak self] in
 			do {
@@ -115,7 +115,7 @@ final class BackgroundMusicController {
 			}
 			guard let self, !Task.isCancelled else { return }
 			sourceChangeTask = nil
-			guard settings.playsLauncherMusic, !lifecycle.activity.isGameProcessRunning else {
+			guard settings.playsLauncherMusic, !lifecycle.activity.hasGameProcess else {
 				return
 			}
 			if let source = parsedYouTubeSource, player != nil, currentSource == source { return }
@@ -297,7 +297,7 @@ final class BackgroundMusicController {
 
 				if state == .cued || state == .unstarted {
 					if settings.playsLauncherMusic
-						&& !lifecycle.activity.isGameProcessRunning
+						&& !lifecycle.activity.hasGameProcess
 						&& !isManuallyPaused
 					{
 						performFadeIn(on: targetPlayer)

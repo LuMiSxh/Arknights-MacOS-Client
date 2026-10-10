@@ -44,6 +44,9 @@ enum LauncherActivity: Equatable, Sendable {
 		}
 	}
 
+	/// True from the moment the game process spawns, before its window is ready.
+	var hasGameProcess: Bool { gameProcessIdentifier != nil }
+
 	var isInstalling: Bool {
 		if case .installing = self { return true }
 		return false

@@ -45,7 +45,7 @@ struct BackgroundMusicView: View {
 			controller.volumeDidChange(to: newVolume)
 		}
 		.onChange(of: lifecycle.activity) { _, activity in
-			controller.gameRunningDidChange(to: activity.isGameProcessRunning)
+			controller.gameRunningDidChange(to: activity.hasGameProcess)
 		}
 		.onDisappear {
 			controller.stop()
