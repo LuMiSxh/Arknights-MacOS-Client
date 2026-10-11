@@ -38,14 +38,14 @@ Sign-in differs per client:
 
 | Client                      | Sign-in path                                                                                                                                                                                                                                                                                                      |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Global, Japan, Korea, China | Chromium-based Vuplex helper. Before launch, the launcher moves the official helper beside a wrapper. The wrapper keeps the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the AppContainer SID function that the tested Wine build lacks. |
+| Global, Japan, Korea, China | Chromium-based Vuplex helper. Before launch, the launcher moves the official helper beside a Vuplex compatibility component. The component keeps the game's arguments and starts the untouched helper with the system DNS resolver. A process-local `userenv.dll` supplies the AppContainer SID function that the tested Wine build lacks. |
 | China (Bilibili)            | Bilibili's own CEF login window (`BLPlatform64/PCGamePlatform.exe` with `BLWebBrowser`). `BilibiliPlatformCompatibility` installs a launcher-owned window controller and AppKit bridge beside it. It does not replace Bilibili's platform helper.                                                                 |
 | Taiwan                      | macOS default browser. No embedded helper. No sign-in path inspects credentials or bypasses provider challenges.                                                                                                                                                                                                  |
 
 Notices use a separate Qt WebEngine helper, `PlatformProcess.exe`. It runs as a top-level companion
 process. The implementation does not modify the game process.
 
-- A wrapper launches the untouched helper, clears its Win32 frame and `WS_EX_NOACTIVATE` style, and
+- A PlatformProcess compatibility component launches the untouched helper, clears its Win32 frame and `WS_EX_NOACTIVATE` style, and
   follows the game in Wine's coordinate system.
 - An AppKit bridge keeps the helper's `NSPanel` non-activating, keeps Wine's first-click input path,
   removes the separate Dock presence, and applies companion-window presentation while Arknights is active.
@@ -110,10 +110,10 @@ flowchart LR
 		Wine[Wine runtime]
 		Game[Arknights.exe]
 		DXMT[DXMT]
-		Shim[Vuplex wrapper]
+		VuplexComponent[Vuplex compatibility component]
 		CEF[Official Vuplex / CEF]
 		Userenv[userenv compatibility DLL]
-		PlatformShim[PlatformProcess wrapper]
+		PlatformComponent[PlatformProcess compatibility component]
 		Platform[Official PlatformProcess / Qt WebEngine]
 	end
 	Bridge[Process-local AppKit bridge]
@@ -124,14 +124,14 @@ flowchart LR
 	Wine --> Game
 	Game -->|Direct3D 11| DXMT
 	DXMT --> Metal
-	Game -->|starts web helper| Shim
-	Shim --> CEF
+	Game -->|starts web helper| VuplexComponent
+	VuplexComponent --> CEF
 	Userenv -. process-local override .-> CEF
 	CEF -->|HTTPS login and game pages| Web[Official web services]
-	Game -->|opens Notices| PlatformShim
-	PlatformShim --> Platform
-	PlatformShim -. injects .-> Bridge
-	PlatformShim -->|Win32 position tracking| WindowSystem
+	Game -->|opens Notices| PlatformComponent
+	PlatformComponent --> Platform
+	PlatformComponent -. injects .-> Bridge
+	PlatformComponent -->|Win32 position tracking| WindowSystem
 	Bridge -->|Dock, activation, and Spaces policy| WindowSystem
 	Platform -->|HTTPS notices| Web
 ```
@@ -139,23 +139,23 @@ flowchart LR
 Helper limits under Wine:
 
 - On the tested DXMT path, Vuplex and Chromium cannot coordinate write access to the accelerated
-  off-screen surface that Vuplex shares through D3D11. The wrapper uses Vuplex's CPU `OnPaint` transfer
+  off-screen surface that Vuplex shares through D3D11. The Vuplex compatibility component uses Vuplex's CPU `OnPaint` transfer
   and keeps Chromium's internal GPU compositor enabled.
-- CEF's asynchronous DNS path calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement. The wrapper
+- CEF's asynchronous DNS path calls `SIO_ADDRESS_LIST_SORT`, which Wine does not implement. The Vuplex compatibility component
   disables that path, so CEF uses Wine's system resolver.
 - Social login starts a separate Chromium process. First use can take several seconds.
-- The Notices helper stays a separate process. Its wrapper tracks the game's absolute position. Fast
+- The Notices helper stays a separate process. Its compatibility component tracks the game's absolute position. Fast
   window dragging can show a small delay. Clicking between the game and the helper can briefly show the
   macOS focus transition. The launcher accepts this to keep coordination code out of the game process.
 
 > [!IMPORTANT]
 > Install, update, and repair restore the official Vuplex and PlatformProcess executables before they
-> change game files. The next launch installs the wrappers again, only when each official helper still
+> change game files. The next launch installs the compatibility components again, only when each official helper still
 > carries its expected signature. The launcher leaves unknown helpers, unrelated `userenv.dll` files,
 > and unknown native bridges untouched.
 
 An "expected signature" is a bounded byte marker in the supported official helper, not a code-signing
-identity. Launcher-owned wrappers, DLLs, and bridges carry their own stable marker strings. Later
+identity. Launcher-owned compatibility components, DLLs, and bridges carry their own stable marker strings. Later
 versions replace or restore only files this project created.
 
 - A missing official backup produces a repair error.
@@ -281,11 +281,11 @@ Normal launches inspect migration, registry, drive, and private-home state witho
 files. Diagnostics record cumulative timings for filesystem setup, compatibility reconciliation, prefix
 preparation, display configuration, process creation, and the first visible game window.
 
-Game-directory shims implement `GameCompatibilityComponent` and register with `GameCompatibilityManager`.
+Game-directory compatibility components implement `GameCompatibilityComponent` and register with `GameCompatibilityManager`.
 
 - The manager reconciles active components before every launch.
 - It restores all active and retired components before install, update, or repair.
-- To remove a shim, move its component from the active list to the retired list for one supported
+- To remove a compatibility component, move it from the active list to the retired list for one supported
   upgrade cycle. The launcher then cleans up its files even without bundled assets.
 
 Vuplex, PlatformProcess, and the Bilibili platform component use this reconciliation, not one-time
@@ -324,7 +324,7 @@ See [Directory and drive contract](wine-prefix.md#directory-and-drive-contract) 
 | `wineserver`                            | Wine runtime                                            | Prefix-wide synchronization and process lifetime | `GameSessionController`                  |
 | Native icon/window bridges              | Runtime environment injection                           | AppKit presentation only                         | Process termination                      |
 
-The wrappers keep the official helper's arguments and content. They are not a proxy for browser data
+The compatibility components keep the official helper's arguments and content. They are not a proxy for browser data
 or credentials.
 
 > [!WARNING]
@@ -379,8 +379,8 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
 - **Window wait:** After Wine starts the executable, the launcher waits up to 90 seconds for a visible
   game window. Then it stops the timed-out runtime and reports `NARWHAL`.
 - **Compatibility profiles:** `GameRegion.clientProfile` sets the runtime flags. Taiwan and both China
-  clients enable ACE Compact. China (Bilibili) also enables the CEF and CN flags for its login window.
-  Taiwan and standard China keep the ACE-only profile.
+  clients set `ARKNIGHTS_RUNTIME_ACE_COMPACT=1`, which gates the ACE compatibility patches in the runtime. China (Bilibili) also sets the CEF and CN flags for its login window.
+  Taiwan and standard China set only the ACE flag.
 - **Backups:** Game directories and prefixes set `isExcludedFromBackup`.
 
 ## Diagnostics
@@ -389,7 +389,7 @@ The launch directs Wine, Unity, and Chromium diagnostics to the central macOS lo
 
 - Wine writes the selected publisher's runtime log directly: `arknights-yostar.log` (Yostar),
   `arknights-gryphline.log` (Taiwan), or `arknights-hypergryph.log` (Hypergryph).
-- `L:` maps that directory. Unity receives `-logFile L:\unity.log`. The Vuplex wrapper
+- `L:` maps that directory. Unity receives `-logFile L:\unity.log`. The Vuplex compatibility component
   adds `--log-file=L:\chromium.log`.
 - [Storage](../../help/storage.md#logs) lists the macOS paths.
 

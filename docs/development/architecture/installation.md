@@ -34,7 +34,7 @@ cipher. The files then pass the same path-safety and download checks as every ot
 | Manifest and CDN configuration        | `GameInstaller`                                          | Lists relative paths, byte counts, provider checksums (CRC64 or MD5), download roots               |
 | Installed state                       | `GameInstaller`                                          | Records the finalized manifest in `.arknights-client-state.json`                                   |
 | Exclusive operation                   | `LauncherLifecycleStore` plus an installer-root `flock`  | Coordinates in-process operations and cooperating installers for one opened install root           |
-| Compatibility files                   | `GameCompatibilityManager`                               | Restores launcher-owned shims before install, update, repair                                       |
+| Compatibility files                   | `GameCompatibilityManager`                               | Restores launcher-owned compatibility components before install, update, repair                                       |
 
 The controller and lifecycle store, not the installer, choose the region, update the UI, and judge a
 partial install.

@@ -115,7 +115,7 @@ Installation, update, repair, prefix preparation, and game launch share one excl
 
 Each region owns its game directory and installed manifest. The home action and status capsule show only the active region. Regions share the Wine prefix only within their publisher family. Launching a region must first repoint that family's `G:` drive. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md).
 
-Present failures in the shared failure dialog with actionable guidance and matching recovery actions. For blocking failures, the status capsule shows **Needs Attention** and **Details** and does not duplicate error text, support codes, or Rosetta recovery controls. During onboarding, keep Rosetta prerequisites and installation recovery in the setup step. Do not turn a transient check failure into an install or play action.
+Show a failure in the shared failure dialog. Give actionable guidance and matching recovery actions. For a blocking failure, the status capsule shows **Needs attention** and a **Show Details** action. The capsule does not repeat the error text, the support code, or the Rosetta recovery controls. During onboarding, keep the Rosetta prerequisites and the installation recovery in the setup step. Do not turn a transient check failure into an install or play action.
 
 ## Accessibility and input
 
@@ -141,7 +141,7 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 ## Settings and documents
 
 - Use a compact list navigation rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, and About. Debug builds add a Developer page. Game opens first.
-- Keep the rail quiet: the selected section uses a graphite fill with a dynamic accent marker and selected label and icon. Hover stays neutral.
+- Keep the rail quiet. The selected section uses a faint dynamic accent fill (13% opacity), an accent marker, and an accent label and icon. Hover uses a neutral white fill.
 - The Settings sheet adapts to the window size. It leaves a 24-point margin on each side. Its minimum size is 760 by 520 points. Its maximum size is 820 by 570 points. The sizes come from `AppConstants.Settings`.
 - The navigation rail has an operation strip at its foot. The strip shows the current operation and, when known, its percentage, for example a download. The strip is hidden when no operation runs.
 - Group related controls in quiet Liquid Glass panels. Do not use form-style gray boxes. Use native capsules for settings controls and shared neutral capsules for secondary actions.
@@ -155,9 +155,9 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 
 ## Dock menu
 
-- Offer Play only for installed regions. Disable every Play entry during refreshes and other launcher or game operations.
-- Route Dock launches through the normal refresh and launch guards. Open the main window when an update, Rosetta, or another recovery step needs attention.
-- Keep Settings available as a native, keyboard-accessible menu action.
+- Show a Play entry only for each installed region. Disable every Play entry while a refresh or another launcher or game operation runs.
+- Route a Dock launch through the normal refresh and launch guards. Open the main window when the launch does not start, for example when an update, Rosetta, or another recovery step needs attention.
+- Keep Settings in the menu as a native action with the Command-Comma shortcut.
 
 ## First-run setup
 
@@ -166,7 +166,7 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 - Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 beta-only Legacy Game Test Mode recovery without presenting it as a stable-OS step.
 - Let the game download continue while the user configures display, artwork, theme, icons, updates, and audio. Do not duplicate installer progress or cancellation in setup.
 - Walk through System Check, Region, Display, Look, Updates & Audio, and Ready. Ask each question as answer cards (`OnboardingQuestion`): one answer, several answers with checkboxes, or action cards with a chevron that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
-- Write copy for non-technical players. Titles, answers, and summaries describe what the player notices and contain no numbers. A technical name such as Retina or MetalFX can follow as a quiet secondary label. Exact values belong in Settings and `help:` tooltips.
+- Write copy for non-technical players. Titles, answers, and summaries describe what the player notices. A technical name such as Retina or MetalFX can follow as a quiet secondary label. Exact values belong in Settings.
 - Apply choices immediately through the same actions as Settings. Users can reopen a skipped or completed assistant from Settings → Installation.
 - Save the current step with raw values from 10 upward. Earlier launcher steps no longer decode, so setup resumes at System Check.
 - When a release requires returning players to rerun setup, open with a "Something important changed" briefing that explains why, and hide Skip Setup until they finish. First runs stay skippable.
@@ -192,7 +192,7 @@ The source icon is an Icon Composer document with separate structure, glass glyp
 
 An operator preset applies a matched pair, a Launcher icon and a Game icon from the same avatar. The Launcher gallery uses a dark navy plate, signal corner, and glass facet around the operator. The Game gallery places the operator over the bundled crystalline launcher background. Dynamic Theme recolors only a Launcher operator preset, never the Game icon. A local image overrides one destination and ends automatic preset refreshes. Imported images keep their aspect ratio, centered inside the 412/512 canvas. Gallery controls use Settings' neutral search, filter, preview, and dismissal language. Semantic system icons carry meaning without decorative color.
 
-Settings gives Launcher Icon and Game Icon separate operator and local-image actions. Each opens an isolated picker that previews only the icon that changes. Artwork stays a separate gallery destination without a mode switch.
+Settings offers one **Choose Operator…** action. It opens the operator gallery and sets the Launcher icon and the Game icon together. A separate **Your own images** row has one menu for the Launcher icon and one for the Game icon. Each menu chooses a local image or restores the default. Artwork stays a separate gallery destination without a mode switch.
 
 > [!IMPORTANT]
 > For **Use Default**, the Wine game process uses the original executable icon, scaled to the same 412/512 visual grid as the launcher and native Dock icons. Preset and custom game icons use the same canvas. Never patch icon resources inside `Arknights.exe`.

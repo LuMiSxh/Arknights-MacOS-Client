@@ -183,7 +183,7 @@ fields, and [Releases and updates](../releases-and-updates.md) for release order
 
 The launcher sends the region and the signed request metadata that the publisher API needs. It fetches
 announcements when enabled and checks Sparkle updates per Settings. It collects no project telemetry.
-The embedded browser stays an official game helper. The compatibility wrappers never inspect login,
+The embedded browser stays an official game helper. The compatibility components never inspect login,
 payment, or page contents.
 
 Logs are local app-owned files. Diagnostics can include endpoint hosts, versions, process IDs,

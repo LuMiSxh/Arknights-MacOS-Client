@@ -222,13 +222,13 @@ allowed ones:
 
 | From                  | To                                  | Types that cross the boundary                                                                                     |
 | --------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `Core`, `Shared`      | none                                | `Shared` names no `Core` or feature type. `Core` names only `Shared` types (`LauncherLog`, `SupportCode`).          |
-| Installation          | `Core`, `Shared`, `Infrastructure`, Customization | `LauncherBranding` and `CustomizationError` (`LauncherAPI.swift:64`, `InstallationSupportFailure.swift:63`). |
-| Runtime               | Installation, Customization         | `InstallationController`, `GameCompatibilityManager` (`GameSessionController.swift:46,68`), `PresetCatalogService` (`StorageMaintenanceController.swift:15`). |
-| Audio                 | Customization                       | `LauncherIconManager` (`BackgroundMusicController.swift:50`).                                                      |
-| Onboarding            | Customization, Installation, Runtime | `CustomizationController`, `InstallationController`, `RosettaAvailability` (`OnboardingCoordinator.swift:36`).     |
-| `LauncherUI`          | every other library                 | Composition. `LauncherViewModel` builds all controllers.                                                           |
-| `ArknightsClient`     | `LauncherUI`, Audio, Onboarding, `Core` | `ArknightsClientApp.swift:4-7` (imports).                                                                      |
+| `ArknightsCore` (`Core`, `Shared`) | none | `Shared` names no `Core` or feature type. `Core` names only `Shared` types (`LauncherLog`, `SupportCode`). |
+| `ArknightsGameInstallation` | `ArknightsCore`, `ArknightsInfrastructure`, `ArknightsCustomization` | `LauncherBranding` and `CustomizationError` (`LauncherAPI.branding`, `InstallationController.supportCode`). |
+| `ArknightsGameRuntime` | `ArknightsGameInstallation`, `ArknightsCustomization` | `InstallationController`, `GameCompatibilityManager` (`GameSessionController.gameCompatibilityManager`, `GameSessionController.init`), `PresetCatalogService` (`StorageMaintenanceController.presetCatalog`). |
+| `ArknightsAudio` | `ArknightsCustomization` | `LauncherIconManager` (`BackgroundMusicController`). |
+| `ArknightsOnboarding` | `ArknightsCustomization`, `ArknightsGameInstallation`, `ArknightsGameRuntime` | `CustomizationController`, `InstallationController`, `RosettaAvailability` (`OnboardingCoordinator.startIfNeeded`). |
+| `ArknightsLauncherUI` | every other library | Composition. `LauncherViewModel` builds all controllers. |
+| `ArknightsClient` | `ArknightsLauncherUI`, `ArknightsAudio`, `ArknightsOnboarding`, `ArknightsCore` | Imports in `ArknightsClientApp.swift`. |
 
 ### Resolved cycles
 
@@ -261,7 +261,7 @@ Both cycles that blocked the split are removed from the code. This subsection re
   `Shared` types and `Shared` names no `Core` type.
 - A feature target never imports `ArknightsLauncherUI`. Composition code passes values and closures down.
 - Only these targets link an external product: Installation (`CCommonCrypto`, used by
-  `HypergryphManifestCipher.swift`), Audio (`YouTubePlayerKit`, six files), and `LauncherUI`
+  `HypergryphManifestCipher.swift`), Audio (`YouTubePlayerKit`, six files), and `ArknightsLauncherUI`
   (`Sparkle`, used by `LauncherUpdateUserDriver.swift` and `LauncherUpdaterController.swift`).
 - A symbol that another target uses gets `package` access. A symbol that only its own target uses
   stays `internal`. The compiler then enforces the direction.
@@ -327,7 +327,7 @@ Before you change behavior, find its owner and external contract:
 | -------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Game files, manifests, paths           | `ArknightsGameInstallation/Installation`           | [Installation architecture](installation.md), installer tests                                                                 |
 | Wine startup, prefix, process, display | `ArknightsGameRuntime/Runtime`                     | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Runtime compatibility](../../help/runtime-compatibility.md) |
-| Compatibility wrapper or bridge        | `ArknightsGameInstallation/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
+| Compatibility component or native bridge | `ArknightsGameInstallation/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
 | Publisher endpoint, refresh            | `LauncherAPI` and `LauncherRefreshController`      | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting, app-owned path      | `LauncherPreferencesStore` or `AppPaths`           | [Data and persistence](data-and-persistence.md), storage tests                                                                |
 | Launcher activity or lifecycle state   | `ArknightsCore/Core/Lifecycle`                     | [Launch and process lifecycle](launch-and-process-lifecycle.md), lease tests                                                  |
