@@ -53,15 +53,15 @@ package final class CustomizationController {
 	let accentExtractor: AccentExtractor
 	let dynamicIconRenderer: DynamicIconRenderer
 	@ObservationIgnored var artworkOperationID: UUID?
-	@ObservationIgnored var passiveArtworkOperationID: UUID?
+	@ObservationIgnored let passiveArtworkLoad = TaskSlot()
 	@ObservationIgnored var artworkMutationInFlight = false
 	@ObservationIgnored var themeOperationID: UUID?
 	@ObservationIgnored var operatorIconOperationID: UUID?
-	@ObservationIgnored var passiveOperatorIconOperationID: UUID?
+	@ObservationIgnored let passiveIconRefresh = TaskSlot()
 	@ObservationIgnored var iconMutationGeneration: UInt64 = 0
 	@ObservationIgnored var iconMutationInFlight = false
-	@ObservationIgnored var iconRestoreOperationID: UUID?
-	@ObservationIgnored var officialLogoOperationID: UUID?
+	@ObservationIgnored let iconRestore = TaskSlot()
+	@ObservationIgnored let officialLogoLoad = TaskSlot()
 
 	func customArtworkDidChange() {
 		customArtworkGeneration &+= 1

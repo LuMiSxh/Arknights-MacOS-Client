@@ -57,7 +57,7 @@ extension CustomizationController {
 			return
 		}
 		artworkOperationID = nil
-		passiveArtworkOperationID = nil
+		passiveArtworkLoad.invalidate()
 		artworkMutationInFlight = false
 		setHasPersistedCustomArtwork(false)
 		customArtworkDidChange()
@@ -101,17 +101,13 @@ extension CustomizationController {
 	}
 
 	package func loadCustomArtwork() async -> Bool {
-		guard let (operationID, generation) = beginPassiveArtworkLoad() else { return false }
+		guard let token = beginPassiveArtworkLoad() else { return false }
 		let artworkURL = paths.customArtwork
 		do {
 			let data = try await dataLoader(artworkURL)
-			guard isCurrentPassiveArtworkLoad(operationID, generation: generation) else {
-				return false
-			}
+			guard ownsPassiveArtworkLoad(token) else { return false }
 			let cacheKey = try await CustomizationImageIO.prepareArtwork(data, source: artworkURL)
-			guard isCurrentPassiveArtworkLoad(operationID, generation: generation) else {
-				return false
-			}
+			guard ownsPassiveArtworkLoad(token) else { return false }
 			guard let image = NSImage(data: data) else {
 				log.error("Custom launcher artwork is not a valid image")
 				return false
@@ -120,9 +116,7 @@ extension CustomizationController {
 			setHeroArtwork(image, themeCacheKey: cacheKey)
 			return true
 		} catch {
-			guard isCurrentPassiveArtworkLoad(operationID, generation: generation) else {
-				return false
-			}
+			guard ownsPassiveArtworkLoad(token) else { return false }
 			setHasPersistedCustomArtwork(false)
 			if (error as? CocoaError)?.code == .fileReadNoSuchFile { return false }
 			log.error(
@@ -137,13 +131,9 @@ extension CustomizationController {
 	package func restoreInitialArtwork(for region: GameRegion) async {
 		let hasCustomArtwork = await loadCustomArtwork()
 		if !hasCustomArtwork, !hasPersistedCustomArtwork, !artworkMutationInFlight,
-			let (operationID, generation) = beginPassiveArtworkLoad()
+			let token = beginPassiveArtworkLoad()
 		{
-			await restoreInitialOfficialArtwork(
-				for: region,
-				operationID: operationID,
-				generation: generation
-			)
+			await restoreInitialOfficialArtwork(for: region, token: token)
 		}
 		await restoreOfficialLogo(for: region).value
 	}
@@ -151,23 +141,22 @@ extension CustomizationController {
 	/// Clears any previous region's wordmark before a refresh can load the selected region's asset.
 	@discardableResult
 	package func restoreOfficialLogo(for region: GameRegion) -> Task<Void, Never> {
-		let operationID = UUID()
-		officialLogoOperationID = operationID
+		officialLogoLoad.invalidate()
 		officialLogo = nil
 		let artworkCache = self.artworkCache
-		return Task { [weak self, log] in
+		return officialLogoLoad.replace { [weak self, log] token in
 			do {
 				let data = try await Task.detached(priority: .utility) {
 					try artworkCache.cachedOfficialLogoData(for: region)
 				}.value
 				guard
 					let self,
-					self.officialLogoOperationID == operationID,
+					self.officialLogoLoad.owns(token),
 					self.region() == region
 				else { return }
 				self.officialLogo = data.flatMap { NSImage(data: $0) }
 			} catch {
-				guard self?.officialLogoOperationID == operationID else { return }
+				guard self?.officialLogoLoad.owns(token) == true else { return }
 				log.error(
 					"Failed to load cached logo for \(region.displayName): \(error.localizedDescription)"
 				)
@@ -177,14 +166,13 @@ extension CustomizationController {
 
 	private func restoreInitialOfficialArtwork(
 		for region: GameRegion,
-		operationID: UUID,
-		generation: UInt64
+		token: TaskSlot.Token
 	) async {
 		do {
 			let cached = try await Task.detached(priority: .utility) { [artworkCache] in
 				try artworkCache.cachedActiveImageData(for: region)
 			}.value
-			guard isCurrentPassiveArtworkLoad(operationID, generation: generation),
+			guard ownsPassiveArtworkLoad(token),
 				self.region() == region,
 				!hasPersistedCustomArtwork,
 				let (cacheKey, data) = cached,
@@ -211,7 +199,7 @@ extension CustomizationController {
 	private func beginArtworkMutation() -> UUID {
 		let operationID = UUID()
 		artworkOperationID = operationID
-		passiveArtworkOperationID = nil
+		passiveArtworkLoad.invalidate()
 		artworkMutationInFlight = true
 		customArtworkDidChange()
 		return operationID
@@ -222,17 +210,13 @@ extension CustomizationController {
 		artworkMutationInFlight = false
 	}
 
-	private func beginPassiveArtworkLoad() -> (UUID, UInt64)? {
+	private func beginPassiveArtworkLoad() -> TaskSlot.Token? {
 		guard !artworkMutationInFlight else { return nil }
-		let operationID = UUID()
-		passiveArtworkOperationID = operationID
-		return (operationID, customArtworkGeneration)
+		return passiveArtworkLoad.begin()
 	}
 
-	private func isCurrentPassiveArtworkLoad(_ operationID: UUID, generation: UInt64) -> Bool {
-		passiveArtworkOperationID == operationID
-			&& customArtworkGeneration == generation
-			&& !artworkMutationInFlight
+	private func ownsPassiveArtworkLoad(_ token: TaskSlot.Token) -> Bool {
+		passiveArtworkLoad.owns(token) && !artworkMutationInFlight
 	}
 
 	private func commitStagedArtwork(from stagedURL: URL, to destination: URL) throws {

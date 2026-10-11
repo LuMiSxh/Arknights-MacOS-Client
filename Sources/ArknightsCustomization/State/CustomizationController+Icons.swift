@@ -58,13 +58,12 @@ extension CustomizationController {
 
 	@discardableResult
 	package func loadCustomAppIcon() async -> Bool {
-		guard let (operationID, generation) = beginIconRestore() else { return false }
+		guard let token = beginIconRestore() else { return false }
 		let iconURL = paths.customAppIcon
-		guard isCurrentIconRestore(operationID, generation: generation) else { return false }
 		setHasCustomGameIcon(FileManager.default.fileExists(atPath: paths.customGameIcon.path))
 		do {
 			let data = try await dataLoader(iconURL)
-			guard isCurrentIconRestore(operationID, generation: generation) else { return false }
+			guard ownsIconRestore(token) else { return false }
 			guard let image = NSImage(data: data) else {
 				log.error("Saved launcher icon is not a valid image")
 				setHasCustomAppIcon(false)
@@ -75,11 +74,11 @@ extension CustomizationController {
 				setHasCustomAppIcon(false)
 				return false
 			}
-			guard isCurrentIconRestore(operationID, generation: generation) else { return false }
+			guard ownsIconRestore(token) else { return false }
 			setHasCustomAppIcon(true)
 			return true
 		} catch {
-			guard isCurrentIconRestore(operationID, generation: generation) else { return false }
+			guard ownsIconRestore(token) else { return false }
 			setHasCustomAppIcon(false)
 			if (error as? CocoaError)?.code == .fileReadNoSuchFile { return false }
 			log.error(
@@ -113,16 +112,13 @@ extension CustomizationController {
 	func startOperatorPresetIconRefresh(hue: Double?) -> Task<Void, Never> {
 		guard !iconMutationInFlight else { return Task {} }
 		let operationID = UUID()
-		passiveOperatorIconOperationID = operationID
-		let generation = iconMutationGeneration
 		let sourceURL = paths.operatorPresetAvatar
 		let dataLoader = self.dataLoader
-		return Task { [weak self, log] in
+		return passiveIconRefresh.replace { [weak self, log] token in
 			guard let self else { return }
 			do {
 				let data = try await dataLoader(sourceURL)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else { return }
+				guard self.ownsPassiveIconRefresh(token) else { return }
 				guard
 					let icons = AppIconRenderer.createPresetIconPair(
 						from: data,
@@ -134,8 +130,7 @@ extension CustomizationController {
 				async let launcherPNG = CustomizationImageIO.encodePNG(fromTIFF: launcherTIFF)
 				async let gamePNG = CustomizationImageIO.encodePNG(fromTIFF: gameTIFF)
 				let encodedIcons = try await (launcherPNG, gamePNG)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else { return }
+				guard self.ownsPassiveIconRefresh(token) else { return }
 				let launcherStage = CustomizationImageIO.stagedURL(
 					for: self.paths.customAppIcon,
 					operationID: operationID
@@ -149,11 +144,9 @@ extension CustomizationController {
 					CustomizationImageIO.discard(gameStage, log: log)
 				}
 				try await self.dataStager(encodedIcons.0, launcherStage)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else { return }
+				guard self.ownsPassiveIconRefresh(token) else { return }
 				try await self.dataStager(encodedIcons.1, gameStage)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else { return }
+				guard self.ownsPassiveIconRefresh(token) else { return }
 				let replacements = [
 					(staged: launcherStage, destination: self.paths.customAppIcon),
 					(staged: gameStage, destination: self.paths.customGameIcon),
@@ -163,8 +156,7 @@ extension CustomizationController {
 					operationID,
 					log
 				)
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else {
+				guard self.ownsPassiveIconRefresh(token) else {
 					prepared.discard(log: log)
 					return
 				}
@@ -180,15 +172,12 @@ extension CustomizationController {
 				self.setHasCustomAppIcon(true)
 				self.setHasCustomGameIcon(true)
 			} catch {
-				guard self.isCurrentPassiveOperatorIconRefresh(operationID, generation: generation)
-				else { return }
+				guard self.ownsPassiveIconRefresh(token) else { return }
 				if (error as? CocoaError)?.code == .fileReadNoSuchFile { return }
 				log.error(
 					"Failed to refresh operator icons for Dynamic Theme: \(launcherDiagnosticDescription(for: error))"
 				)
 			}
-			guard self.passiveOperatorIconOperationID == operationID else { return }
-			self.passiveOperatorIconOperationID = nil
 		}
 	}
 
@@ -207,35 +196,24 @@ extension CustomizationController {
 		apply(selected)
 	}
 
-	private func beginIconRestore() -> (UUID, UInt64)? {
+	private func beginIconRestore() -> TaskSlot.Token? {
 		guard !iconMutationInFlight else { return nil }
-		let operationID = UUID()
-		iconRestoreOperationID = operationID
-		return (operationID, iconMutationGeneration)
+		return iconRestore.begin()
 	}
 
-	private func isCurrentIconRestore(_ operationID: UUID, generation: UInt64) -> Bool {
-		iconRestoreOperationID == operationID
-			&& iconMutationGeneration == generation
-			&& !iconMutationInFlight
-			&& !Task.isCancelled
+	private func ownsIconRestore(_ token: TaskSlot.Token) -> Bool {
+		iconRestore.owns(token) && !iconMutationInFlight && !Task.isCancelled
 	}
 
-	private func isCurrentPassiveOperatorIconRefresh(
-		_ operationID: UUID,
-		generation: UInt64
-	) -> Bool {
-		passiveOperatorIconOperationID == operationID
-			&& iconMutationGeneration == generation
-			&& !iconMutationInFlight
-			&& !Task.isCancelled
+	private func ownsPassiveIconRefresh(_ token: TaskSlot.Token) -> Bool {
+		passiveIconRefresh.owns(token) && !iconMutationInFlight && !Task.isCancelled
 	}
 
 	func invalidateIconOperations() {
 		iconMutationGeneration &+= 1
 		iconMutationInFlight = false
-		iconRestoreOperationID = nil
-		passiveOperatorIconOperationID = nil
+		iconRestore.invalidate()
+		passiveIconRefresh.invalidate()
 		operatorIconOperationID = UUID()
 	}
 
@@ -367,8 +345,8 @@ extension CustomizationController {
 	private func beginIconOperation() -> UUID {
 		let id = UUID()
 		operatorIconOperationID = id
-		passiveOperatorIconOperationID = nil
-		iconRestoreOperationID = nil
+		passiveIconRefresh.invalidate()
+		iconRestore.invalidate()
 		iconMutationGeneration &+= 1
 		iconMutationInFlight = true
 		return id
