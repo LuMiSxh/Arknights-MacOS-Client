@@ -20,7 +20,7 @@ order: 40
 > [!IMPORTANT]
 > `just ci` runs unit checks, deterministic integration tests, and the release Swift build. It never downloads the Wine runtime or game files and never launches the app or Wine. On a fresh checkout, uv and SwiftPM can resolve pinned dependencies before tests run; test processes stay network-denied.
 
-Scripts resolve from the root `pyproject.toml` and `uv.lock`. Python tests use `pytest` from the default group. DMG and compatibility builds use the `packaging` group. Swift levels are SwiftPM test targets. Each unit test target sits beside its source target: `ArknightsCoreTests`, `ArknightsInfrastructureTests`, `ArknightsCustomizationTests`, `ArknightsGameInstallationTests`, `ArknightsGameRuntimeTests`, `ArknightsAudioTests`, `ArknightsOnboardingTests`, `ArknightsLauncherUITests`, and `ArknightsClientTests` (the `Application` layer only). The gated levels are `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests`. Helpers that more than one test target uses live in the `ArknightsTestSupport` library target. Integration and live-contract suites also have environment gates, so a plain `swift test` cannot contact public services.
+Scripts resolve from the root `pyproject.toml` and `uv.lock`. Python tests use `pytest` from the default group. DMG and compatibility builds use the `packaging` group. Swift levels are SwiftPM test targets. The unit level runs every `*Tests` target in `Package.swift` except the two gated targets. Each unit test target sits beside its source target: `ArknightsCoreTests`, `ArknightsInfrastructureTests`, `ArknightsCustomizationTests`, `ArknightsGameInstallationTests`, `ArknightsGameRuntimeTests`, `ArknightsAudioTests`, `ArknightsOnboardingTests`, `ArknightsLauncherUITests`, and `ArknightsClientTests` (the `Application` layer only). The gated levels are `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests`. Helpers that more than one test target uses live in the `ArknightsTestSupport` library target. Integration and live-contract suites also have environment gates, so a plain `swift test` cannot contact public services.
 
 Use the smallest level that proves the changed contract:
 
@@ -36,13 +36,15 @@ Swift suites use Swift Testing (`import Testing`), not XCTest. Keep tests offlin
 
 ## Focused tests
 
-Run `just test FILTER` to run a group of Swift unit tests. `FILTER` is a regular expression. The recipe runs only the unit tests whose names match `FILTER`.
+Run `just test FILTER` to run a group of Swift unit tests. `FILTER` is a case-sensitive regular expression. The recipe runs only the unit tests whose identifier matches `FILTER`. The identifier contains the suite or type name, so match on those names. A pattern that matches no test fails the recipe.
 
 ```bash
 just test GameInstaller
 just test 'InstallerDirectory|GameInstallerRollback'
 ```
 
+- `just test gameinstaller` matches nothing, because the match is case-sensitive.
+- A free-function `@Test` runs under `just test` only when a `@Suite` type wraps it. Add the wrapper before you filter on that test.
 - Use `just test` while you change code.
 - Run `just ci` before you finish.
 - `just test` does not run integration or live-contract tests.
@@ -57,6 +59,18 @@ Swift unit and integration tests run in the macOS sandbox with network denied. S
 HTTP tests use an ephemeral `URLSession` whose `URLProtocol` accepts only recorded fixture routes. An unknown URL fails the test. Fixtures must be small, deterministic, reviewable, and generated locally. Downloaded game, runtime, and artwork files stay forbidden.
 
 Static `URLProtocol` handlers need serialized suites and a cleanup reset. Parameterize equivalent Global, Japan, Korea, and Taiwan behavior when the region changes the contract.
+
+## Shared helpers, clocks, and leases
+
+Helpers that more than one test target uses live in the `ArknightsTestSupport` library target. Add a shared helper there once. Do not copy it into another test target. A test target depends on `ArknightsTestSupport` only when it uses a helper from it.
+
+Timed code takes an injected `Clock` (`any Clock<Duration>`). Tests pass a manual clock and advance it explicitly. A test never sleeps for real time.
+
+Each test owns its state:
+
+- Create a temporary directory with a unique UUID name for each test. Remove it in `defer`.
+- Acquire the install lease explicitly, and release it explicitly before the test returns. Never rely on deallocation to unlock it.
+- Use `.serialized` only as a last resort. Use it when shared static state, such as a static `URLProtocol` handler, cannot be isolated per test.
 
 ## Deterministic workflows
 

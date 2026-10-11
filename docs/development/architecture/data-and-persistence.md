@@ -96,9 +96,9 @@ preference as a file marker or migration state: those need different recovery an
 
 The installer and runtime use small files to make long-running work restartable:
 
-1. The installer downloads a manifest file to a sibling path with the `.part` suffix.
+1. The installer downloads a game file to a sibling path with the `.part` suffix.
 2. It verifies the size and provider checksum (CRC64 or MD5), then moves the file to its destination.
-3. After every manifest entry completes, it writes the version, source, install time, and manifest files
+3. After all manifest entries pass verification, it writes the version, source, install time, and manifest files
    to `.arknights-client-state.json` atomically.
 4. Prefix setup records each completed migration in `.arknights-runtime-migrations.json` atomically. A
    runtime archive checksum or `prefixRevision` change invalidates the plan. The next launch reconciles
@@ -128,7 +128,7 @@ User data, game data, runtime state, and recreatable caches stay separate for ta
   prefix. It does not remove saves, installed game files, or the prefix.
 - **Clear gallery cache** removes preset catalog and image cache data. It does not remove app-owned
   copies of selected artwork or icon sources, generated icons, or the user's original files.
-- **Delete Wine prefix** removes the shared Windows runtime state of the selected publisher family.
+- **Delete Environment…** removes the shared Windows runtime state of the selected publisher family.
   The next launch recreates it and reruns Wine initialization, DXMT installation, and registry
   configuration.
 - **Reset Statistics** removes local playtime totals, the latest session, and recent daily

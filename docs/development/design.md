@@ -24,24 +24,25 @@ The launcher must feel like a current macOS app first and an Arknights launcher 
 - Primary and download actions use native capsule shapes. Branding stays rectangular.
 - Install, Update, and Play use the dynamic artwork accent as a prominent Liquid Glass tint. Dynamic accents can also mark progress, selection, and interaction highlights. Secondary actions use quiet filled neutral surfaces with a restrained macOS 26-style border.
 - Disabled controls use the muted surface, border, and foreground from the shared control matrix. A disabled default action must differ from a normal secondary or danger action.
-- Identical controls, surfaces, spacing, radii, and states come from `Shared/UI` tokens and components. Feature views provide state and semantics only.
+- Identical controls, surfaces, spacing, radii, and states come from the tokens and components in `Sources/ArknightsCore/Shared/UI`. Feature views provide state and semantics only.
 - Neutral panels carry ordinary content. Success, warning, and danger tones mark only the state they explain.
 - Avoid fake window chrome, decorative metadata, large status slogans, and rounded card grids. The Endfield launcher is only a layout reference; do not use its yellow palette.
-- Get all colors and fonts from `LauncherVisuals` tokens. Use the color tokens in `LauncherVisuals` and `LauncherVisuals.Typography`. Do not write `Color(red:` or `.system(size:` in views.
+- Get all colors and fonts from `LauncherVisuals` (color tokens) and `LauncherVisuals.Typography` (font tokens). Do not write `Color(red:` or `.system(size:` in views.
+- Use `LauncherVisuals.cyan` only as the fallback accent. Do not use a fixed cyan value anywhere else.
 
 ### Motion
 
-`LauncherMotion` is the only motion source. Feature code does not use raw curves, springs, or durations.
+`LauncherMotion` (`Sources/ArknightsCore/Shared/UI/LauncherMotion.swift`) is the only motion source. Feature code does not use raw curves, springs, or durations.
 
-Curves (`LauncherMotion.Curve`):
+Select a curve (`LauncherMotion.Curve`) by purpose:
 
-- `press`: pressed feedback. Critically damped.
+- `press`: feedback while a control is held. Critically damped.
 - `release`: settle after a press. Springy, with a slight overshoot.
 - `hover`: hover lift and pointer highlights.
 - `state`: structural layout changes, status swaps, and content revealed inside a visible surface.
-- `morph`: primary action shape and label changes.
-- `present`: popups, overlays, and HUD pill expansion.
-- `dismiss`: popups and overlays that leave. Faster than `present`.
+- `morph`: shape and label changes of the primary action.
+- `present`: entrance of popups, overlays, and HUD pill expansion.
+- `dismiss`: exit of popups and overlays. Faster than `present`.
 - `crossfade`: artwork, wordmark, and theme changes.
 - `select`: selection changes in lists and segmented controls.
 - `page`: page and step transitions.
@@ -51,26 +52,51 @@ Curves (`LauncherMotion.Curve`):
 - `settle`: quick ease-in as an element leaves.
 - `disclosure`: inline detail content.
 
-Every curve returns no animation under Reduce Motion. `LauncherMotion.fade(reduceMotion:)` is the exception. It keeps a short opacity change so a state change is not missed.
+Under Reduce Motion, every curve returns no animation. `LauncherMotion.fade(reduceMotion:)` is the exception. It keeps a short opacity change, so the user sees the state change.
 
-Timing constants (`LauncherMotion.Cycle`) set looping and one-shot motion:
+`LauncherMotion.Cycle` holds the timing constants for looping and one-shot motion:
 
-- `breathing`: period of the breathing halo, in seconds.
+- `breathing`: period of the halo pulse and the indeterminate pulse, in seconds.
 - `completionFeedback`: duration of the completion feedback.
 - `progressSweepFadeIn`, `progressSweepTravel`, `progressSweepFadeOut`, `progressSweepPause`: phases of the progress sweep, in seconds.
-- `indeterminateOrbitLaps`: laps of the indeterminate glint.
+- `indeterminateOrbitLaps`: number of laps of the indeterminate glint.
 - `indeterminateGlintLength`: length of the indeterminate glint.
 
-Use `LauncherMotion.staggered` for siblings that enter together. Use `pressedScale` and `hoverScale` for control feedback.
+Use `LauncherMotion.staggered` for siblings that enter together. Use `pressedScale` and `hoverScale` for control feedback. Use `subtlePressedScale` and `subtleHoverScale` for quieter controls.
 
-- Motion must feel physical and springy. It must not decorate for its own sake. Use `fade` where a state change would otherwise be missed.
-- Controls respond at once. A held control uses `press` to scale to `LauncherMotion.pressedScale`. Release uses `release`. Hover uses `hover` for a small lift. Prominent capsule actions show a pointer-following sheen tinted by their foreground. Reduce Motion keeps only the opacity dip and centers the sheen. Reduce Transparency removes the sheen.
-- The primary operation changes shape with `morph`. The capsule changes width, and the glyph uses Magic Replace. The primary action shows at most one ambient effect. Play shows a static halo (`accentHalo`, `Shared/UI/Components/AccentHalo.swift`) with one arrival pulse. There is no breathing loop. The indeterminate pulse keeps `LauncherMotion.Cycle.breathing`. Download progress draws a soft glow at the leading edge of the outline. Work without measurable progress circles an accent glint around the outline. A finished installation sends one success ripple from its checkmark.
+Rules:
+
+- Motion must feel physical and springy. Do not add motion for decoration alone.
+- Controls respond at once. A held control uses `press` to scale to `pressedScale`. A released control uses `release`. A hovered control uses `hover` for a small lift.
+- Prominent capsule actions show a pointer-following sheen tinted by their foreground. Reduce Motion keeps only the opacity dip and centers the sheen. Reduce Transparency removes the sheen.
+- The primary action changes shape with `morph`. The capsule changes width. The glyph uses Magic Replace.
+- The primary action shows at most one ambient effect. Play shows a static accent halo with one arrival pulse. There is no breathing loop.
+- Apply the halo with `accentHalo(tint:isActive:in:)` (`Sources/ArknightsCore/Shared/UI/Components/AccentHalo.swift`). The pulse runs once when the halo appears and uses `LauncherMotion.Cycle.breathing`. The pulse does not run under Reduce Motion or when the motion gate is closed. Reduce Transparency removes the halo.
+- Download progress draws a soft glow at the leading edge of the outline. Work without measurable progress circles an accent glint around the outline. A finished installation sends one success ripple from its checkmark.
 - HUD pills rise out of the control bar with a staggered blur-and-scale entrance. They leave faster. On macOS 26, they share one glass group.
-- Status, version, and music HUDs use `present` to expand. Expanded content materializes from the top trailing corner. Sibling pills recede while one panel is open.
-- Overlays, such as the update dialog, use `present` to enter from a softened, slightly lower, and smaller state. They leave with `dismiss`. Native sheets keep their platform lifecycle. `ThemedModalView` content fades up from a soft blur while the accent rule draws across the header.
-- Artwork and theme colors use `crossfade`. New artwork resolves from a light blur. Settings pages do not animate card insertion. Determinate progress stays linear. Frequent search-result updates use a quiet transition.
-- Continuous decorative motion (progress sweep, indeterminate pulse) uses `ContinuousMotion` only. Loops pause when the window is hidden, occluded, or inactive. On the home layer, loops also pause when a sheet, the update overlay, or onboarding covers the layer. Loops also pause while the game runs and in Low Power Mode. Sheets and overlays keep running when the game is not active. Only the home layer applies the covered gate. Loops never exceed 30 frames per second.
+- Status, version, and music HUDs expand with `present`. Expanded content materializes from the top trailing corner. Sibling pills recede while one panel is open.
+- Overlays, such as the update dialog, enter with `present` from a softened, slightly lower, and smaller state. They leave with `dismiss`. Native sheets keep their platform lifecycle.
+- `ThemedModalView` content fades up from a soft blur while the accent rule draws across the header.
+- Artwork and theme colors use `crossfade`. New artwork resolves from a light blur.
+- Settings pages do not animate card insertion. Determinate progress stays linear. Frequent search-result updates use a quiet transition.
+
+### Motion gating
+
+`ContinuousMotion` (`Sources/ArknightsCore/Shared/UI/Components/ContinuousMotion.swift`) drives all continuous decorative motion, such as the progress sweep and the indeterminate pulse. It updates at most 30 times per second. Do not use another timer or animation loop for decorative motion.
+
+`DecorativeMotionVisibility` closes the motion gate in these cases:
+
+- The app is inactive or hidden.
+- The window is not visible, is miniaturized, or is occluded.
+- The game runs. This rule applies to every loop, including loops inside sheets.
+- Low Power Mode is on.
+
+Rules:
+
+- A closed gate freezes the phase of each loop. The loop resumes from the same phase when the gate opens.
+- Reduce Motion also freezes the loop. A caller can set a fixed phase for Reduce Motion.
+- The covered gate applies to the home layer only. The home layer also pauses its loops while a sheet, the update overlay, or onboarding covers it. Loops inside sheets and overlays keep running when the other conditions allow it.
+
 ## Interaction contract
 
 The home screen exposes one primary operation at a time. The current state selects its action:
@@ -102,7 +128,7 @@ Present failures in the shared failure dialog with actionable guidance and match
 
 ## Feedback and review
 
-Use native controls and the shared action families in `Shared/UI/Components` before you add a feature-local variant. Only a different interaction contract justifies a custom control, not padding or tint. Keep primary emphasis on the current game action; secondary links, settings, diagnostics, and legal text stay quiet.
+Use native controls and the shared action families in `Sources/ArknightsCore/Shared/UI/Components` before you add a feature-local variant. Only a different interaction contract justifies a custom control, not padding or tint. Keep primary emphasis on the current game action. Keep secondary links, settings, diagnostics, and legal text quiet.
 
 For a UI change, use the debug simulator to check an empty and an installed region, an active operation, and a failure and recovery path. Repeat with keyboard navigation, VoiceOver, Reduce Motion, and normal and large text. The release matrix is in [Testing architecture](testing.md#manual-compatibility-matrix).
 
@@ -114,12 +140,12 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 
 ## Settings and documents
 
-- Use a compact list navigation rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, and About. Game opens first.
+- Use a compact list navigation rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, and About. Debug builds add a Developer page. Game opens first.
 - Keep the rail quiet: the selected section uses a graphite fill with a dynamic accent marker and selected label and icon. Hover stays neutral.
-- The Settings sheet adapts to the window size. Its minimum size is 760 by 520 points. Its ideal and maximum size is 820 by 570 points. The sheet fits within the window.
-- The navigation rail has an operation strip at its foot. The strip shows the current operation and its percentage, for example a download. The strip is hidden when no operation runs.
-- Group related controls in quiet Liquid Glass panels, not form-style gray boxes. Use native capsules for settings controls and shared neutral capsules for secondary actions.
-- Switch Settings pages immediately, without scale, card, or other page transitions.
+- The Settings sheet adapts to the window size. It leaves a 24-point margin on each side. Its minimum size is 760 by 520 points. Its maximum size is 820 by 570 points. The sizes come from `AppConstants.Settings`.
+- The navigation rail has an operation strip at its foot. The strip shows the current operation and, when known, its percentage, for example a download. The strip is hidden when no operation runs.
+- Group related controls in quiet Liquid Glass panels. Do not use form-style gray boxes. Use native capsules for settings controls and shared neutral capsules for secondary actions.
+- Switch Settings pages at once. Do not add scale, card, or other page transitions.
 - Warning and danger panels keep neutral backgrounds. Semantic color is limited to the header, icon, edge, and relevant actions: danger for destructive settings and failure codes, warning for cautionary state, success for completed state, and the dynamic accent for the primary operation and intentional selection or highlight.
 - Explain destructive or expensive actions in user terms, for example: Repair checks every game file and downloads missing or damaged files again.
 - Keep developer terminology out of the interface. Diagnostics can name launcher and Wine logs, which users need when they report a problem.

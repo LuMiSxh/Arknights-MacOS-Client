@@ -12,7 +12,7 @@ surface.
 
 ## Launcher communication
 
-Six read-only channels feed the launcher. Each runs independently at launch, on its own precondition,
+Read-only channels feed the launcher. Each runs independently at launch, on its own precondition,
 with no order between them. Announcements and Yostar notices can enqueue a popup. Launcher updates use
 status state and the themed Sparkle UI.
 
@@ -172,8 +172,8 @@ Remote requests fail closed for the feature they serve:
 - Game configuration request fails: actionable when no game is installed. Logged and tolerated when an
   installed game has enough state.
 - Announcements feed is unavailable: no popup. Launch is not blocked.
-- Sparkle check fails: the launcher records the failure. The running launcher and normal game use
-  continue. The onboarding preflight has its own update gate.
+- Sparkle check fails: the launcher records the failure. The running launcher and the game continue.
+  The onboarding preflight has its own update gate.
 
 Never make an optional message or metadata source a lifecycle dependency without updating the state
 model and recovery contract. See [Announcements](../announcements.md) for request limits and feed
@@ -182,8 +182,9 @@ fields, and [Releases and updates](../releases-and-updates.md) for release order
 ## Privacy and support boundary
 
 The launcher sends the region and the signed request metadata that the publisher API needs. It fetches
-announcements when enabled and checks Sparkle updates per Settings. It collects no project telemetry. The embedded browser stays an official game helper. The compatibility wrappers never
-inspect login, payment, or page contents.
+announcements when enabled and checks Sparkle updates per Settings. It collects no project telemetry.
+The embedded browser stays an official game helper. The compatibility wrappers never inspect login,
+payment, or page contents.
 
 Logs are local app-owned files. Diagnostics can include endpoint hosts, versions, process IDs,
 termination status, and bounded runtime output. Before you share a log, remove account identifiers,

@@ -318,8 +318,8 @@ See [Directory and drive contract](wine-prefix.md#directory-and-drive-contract) 
 | Process or helper                       | Started by                                              | Responsibility                                   | Shutdown owner                           |
 | --------------------------------------- | ------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------- |
 | `Arknights.exe` through `bin/Arknights` | `WineRuntime`                                           | Main Unity game                                  | `GameSessionController` via `wineserver` |
-| Vuplex / Chromium helper                | Official game helper through `VuplexShim`               | Account and in-game web pages                    | Wine prefix cleanup                      |
-| `PlatformProcess.exe`                   | Official game notice flow through `PlatformProcessShim` | Separate Qt WebEngine Notices window             | Wine prefix cleanup                      |
+| Vuplex / Chromium helper                | Official game helper through `VuplexCompatibility`      | Account and in-game web pages                    | Wine prefix cleanup                      |
+| `PlatformProcess.exe`                   | Official game notice flow through `PlatformProcessCompatibility` | Separate Qt WebEngine Notices window    | Wine prefix cleanup                      |
 | Bilibili `PCGamePlatform.exe`           | Official Bilibili client with the launcher's controller | Bilibili's own CEF login window                  | Wine prefix cleanup                      |
 | `wineserver`                            | Wine runtime                                            | Prefix-wide synchronization and process lifetime | `GameSessionController`                  |
 | Native icon/window bridges              | Runtime environment injection                           | AppKit presentation only                         | Process termination                      |

@@ -189,8 +189,7 @@ the same region, installer, display, artwork, icon, update, and audio actions as
 
 ## Targets
 
-The package builds as nine SwiftPM targets. The `Status` column shows the state of each split. Every row
-says `done`.
+The package builds as nine SwiftPM targets. The `Status` column records the split state of each row.
 
 ### Target map
 
@@ -199,18 +198,17 @@ compiler rejects a cycle.
 
 | No. | Target                    | Source folders                                                                                  | Depends on                                           | Linked products       | Status  |
 | --- | ------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------- | ------- |
-| 1   | `ArknightsInfrastructure` | `Infrastructure`                                                                                | none                                                 | none                  | done    |
-| 2   | `ArknightsCore`           | `Shared`, `Core`, `Resources`                                                                   | 1                                                    | none                  | done    |
-| 3   | `ArknightsCustomization`  | `Features/Customization`                                                                        | 1, 2                                                 | none                  | done    |
-| 4   | `ArknightsGameInstallation` | `Features/Game/Installation`, `Features/Game/Compatibility`                                   | 1, 2, 3                                              | `CCommonCrypto`       | done    |
-| 5   | `ArknightsGameRuntime`    | `Features/Game/Runtime`, `Features/Game/Playtime`, `Features/Game/Storage`                      | 1, 2, 3, 4                                           | none                  | done    |
-| 6   | `ArknightsAudio`          | `Features/Audio`                                                                                | 2, 3                                                 | `YouTubePlayerKit`    | done    |
-| 7   | `ArknightsOnboarding`     | `Features/Onboarding`                                                                           | 2, 3, 4, 5                                           | none                  | done    |
-| 8   | `ArknightsLauncherUI`     | `Documents`, `Home`, `Settings`, `State`, `Updates` (including `LauncherViewModel`)             | 1, 2, 3, 4, 5, 6, 7                                  | `Sparkle`             | done    |
-| 9   | `ArknightsClient`         | `Application`                                                                                   | 2, 6, 7, 8                                           | none                  | done    |
+| 1   | `ArknightsInfrastructure` | `Sources/ArknightsInfrastructure` (`FileSystem`, `Network`)                                     | none                                                 | none                  | done    |
+| 2   | `ArknightsCore`           | `Sources/ArknightsCore` (`Shared`, `Core`, `Resources`)                                         | 1                                                    | none                  | done    |
+| 3   | `ArknightsCustomization`  | `Sources/ArknightsCustomization` (`Artwork`, `Icons`, `Presets`, `State`)                       | 1, 2                                                 | none                  | done    |
+| 4   | `ArknightsGameInstallation` | `Sources/ArknightsGameInstallation` (`Installation`, `Compatibility`)                          | 1, 2, 3                                              | `CCommonCrypto`       | done    |
+| 5   | `ArknightsGameRuntime`    | `Sources/ArknightsGameRuntime` (`Runtime`, `Playtime`, `Storage`)                               | 1, 2, 3, 4                                           | none                  | done    |
+| 6   | `ArknightsAudio`          | `Sources/ArknightsAudio`                                                                        | 2, 3                                                 | `YouTubePlayerKit`    | done    |
+| 7   | `ArknightsOnboarding`     | `Sources/ArknightsOnboarding` (`Flow`, `Persistence`, `UI`)                                     | 2, 3, 4, 5                                           | none                  | done    |
+| 8   | `ArknightsLauncherUI`     | `Sources/ArknightsLauncherUI` (`Documents`, `Home`, `Settings`, `State`, `Updates`)             | 1, 2, 3, 4, 5, 6, 7                                  | `Sparkle`             | done    |
+| 9   | `ArknightsClient`         | `Sources/ArknightsClient` (`Application`)                                                       | 2, 6, 7, 8                                           | none                  | done    |
 
-The older rows keep their former `Features/...` names. Each target folder now holds the same subfolders
-without the `Features/` prefix.
+Each row lists the folders under `Sources/<target>`. No target folder uses a `Features/` prefix.
 
 Changes from the first plan:
 
@@ -225,18 +223,18 @@ allowed ones:
 | From                  | To                                  | Types that cross the boundary                                                                                     |
 | --------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `Core`, `Shared`      | none                                | `Shared` names no `Core` or feature type. `Core` names only `Shared` types (`LauncherLog`, `SupportCode`).          |
-| Installation          | `Core`, `Shared`, `Infrastructure`, Customization | `LauncherBranding` and `CustomizationError` (`LauncherAPI.swift:58`, `InstallationSupportFailure.swift:60`). |
-| Runtime               | Installation, Customization         | `InstallationController`, `GameCompatibilityManager` (`GameSessionController.swift:38,44`), `PresetCatalogService` (`StorageMaintenanceController.swift:13`). |
-| Audio                 | Customization                       | `LauncherIconManager` (`BackgroundMusicController.swift:48`).                                                      |
-| Onboarding            | Customization, Installation, Runtime | `CustomizationController`, `InstallationController`, `RosettaAvailability` (`OnboardingCoordinator.swift:34`).     |
+| Installation          | `Core`, `Shared`, `Infrastructure`, Customization | `LauncherBranding` and `CustomizationError` (`LauncherAPI.swift:64`, `InstallationSupportFailure.swift:63`). |
+| Runtime               | Installation, Customization         | `InstallationController`, `GameCompatibilityManager` (`GameSessionController.swift:46,68`), `PresetCatalogService` (`StorageMaintenanceController.swift:15`). |
+| Audio                 | Customization                       | `LauncherIconManager` (`BackgroundMusicController.swift:50`).                                                      |
+| Onboarding            | Customization, Installation, Runtime | `CustomizationController`, `InstallationController`, `RosettaAvailability` (`OnboardingCoordinator.swift:36`).     |
 | `LauncherUI`          | every other library                 | Composition. `LauncherViewModel` builds all controllers.                                                           |
-| `ArknightsClient`     | `LauncherUI`, Audio, Onboarding, `Core` | `ArknightsClientApp.swift:8,104,199,200`.                                                                      |
+| `ArknightsClient`     | `LauncherUI`, Audio, Onboarding, `Core` | `ArknightsClientApp.swift:4-7` (imports).                                                                      |
 
 ### Resolved cycles
 
-Both cycles that blocked Stage 4 are removed from the code. This subsection records the current state.
+Both cycles that blocked the split are removed from the code. This subsection records the current state.
 
-**Cycle 1: lower features used types that `Features/Launcher` owns. Resolved.**
+**Cycle 1: lower features used types that `ArknightsLauncherUI` owned. Resolved.**
 
 - `LauncherPreferencesController` and `LauncherUpdateCheckOutcome` live in `Core/Preferences`. They use
   only `Shared` types.
@@ -249,7 +247,7 @@ Both cycles that blocked Stage 4 are removed from the code. This subsection reco
 **Cycle 2: Installation and Runtime used each other. Resolved.**
 
 - Installation and Compatibility throw `GameCompatibilityError`, which lives in
-  `Features/Game/Compatibility`. The Installation target owns this type.
+  `ArknightsGameInstallation/Compatibility`. The Installation target owns this type.
 - Runtime maps `GameCompatibilityError` to `GameRuntimeError` in
   `GameRuntimeError.mappingCompatibilityFailure(_:)`. `WineRuntime.launch` calls this mapping.
 - Runtime still uses Installation. This direction is allowed.
@@ -332,7 +330,7 @@ Before you change behavior, find its owner and external contract:
 | Compatibility wrapper or bridge        | `ArknightsGameInstallation/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
 | Publisher endpoint, refresh            | `LauncherAPI` and `LauncherRefreshController`      | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting, app-owned path      | `LauncherPreferencesStore` or `AppPaths`           | [Data and persistence](data-and-persistence.md), storage tests                                                                |
-| Launcher activity or lifecycle state   | `Core/Lifecycle`                                   | [Launch and process lifecycle](launch-and-process-lifecycle.md), lease tests                                                  |
+| Launcher activity or lifecycle state   | `ArknightsCore/Core/Lifecycle`                     | [Launch and process lifecycle](launch-and-process-lifecycle.md), lease tests                                                  |
 | User-facing copy                       | owning feature's `…Strings` namespace              | English literals and accessibility review                                                                                     |
 
 Run focused checks while you iterate. Follow [Testing architecture](../testing.md) before a full
