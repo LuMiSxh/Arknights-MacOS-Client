@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import base64
+import json
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -75,21 +77,30 @@ def test_first_release_has_no_sources() -> None:
     )
 
 
-class FailingClient:
-    def __init__(self, token: str | None = None) -> None:
-        pass
+def fake_gh(
+    releases: list[object], download: Callable[[list[str]], None]
+) -> Callable[..., subprocess.CompletedProcess[str]]:
+    def run(command, *, capture=False, **_):
+        if command[1] == "api":
+            return subprocess.CompletedProcess(command, 0, json.dumps(releases), "")
+        download(command)
+        return subprocess.CompletedProcess(command, 0, "", "")
 
-    def releases(self, repository: str) -> list[object]:
-        return [release("0.5.0", "2026-05-01T00:00:00Z")]
+    return run
 
-    def download_to_file(self, url: str, destination: Path, maximum: int) -> int:
-        raise sparkle_deltas.ScriptError("download failed with status 500")
+
+def fail_download(command: list[str]) -> None:
+    raise sparkle_deltas.ScriptError("download failed with status 500")
 
 
 def test_download_failure_skips_deltas_without_failing_the_release(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(sparkle_deltas, "GitHubClient", FailingClient)
+    monkeypatch.setattr(
+        sparkle_deltas,
+        "run",
+        fake_gh([release("0.5.0", "2026-05-01T00:00:00Z")], fail_download),
+    )
     arguments = sparkle_deltas.argparse.Namespace(
         repository=REPOSITORY,
         current_version="0.6.0",
@@ -104,29 +115,25 @@ def test_download_failure_skips_deltas_without_failing_the_release(
     assert "Skipping deltas from 0.5.0" in capsys.readouterr().err
 
 
-class MixedFormatClient:
-    def __init__(self, token: str | None = None) -> None:
-        pass
-
-    def releases(self, repository: str) -> list[object]:
-        legacy = release("0.5.0", "2026-05-01T00:00:00Z")
-        legacy["assets"] = [
-            {
-                "name": LEGACY_UPDATE_NAME,
-                "browser_download_url": f"{PREFIX}/v0.5.0/{LEGACY_UPDATE_NAME}",
-            }
-        ]
-        return [legacy, release("0.6.0", "2026-06-01T00:00:00Z")]
-
-    def download_to_file(self, url: str, destination: Path, maximum: int) -> int:
-        destination.write_bytes(b"archive")
-        return 7
+def write_download(command: list[str]) -> None:
+    Path(command[command.index("--output") + 1]).write_bytes(b"archive")
 
 
 def test_fetch_keeps_each_sources_archive_format(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(sparkle_deltas, "GitHubClient", MixedFormatClient)
+    legacy = release("0.5.0", "2026-05-01T00:00:00Z")
+    legacy["assets"] = [
+        {
+            "name": LEGACY_UPDATE_NAME,
+            "browser_download_url": f"{PREFIX}/v0.5.0/{LEGACY_UPDATE_NAME}",
+        }
+    ]
+    monkeypatch.setattr(
+        sparkle_deltas,
+        "run",
+        fake_gh([legacy, release("0.6.0", "2026-06-01T00:00:00Z")], write_download),
+    )
     arguments = sparkle_deltas.argparse.Namespace(
         repository=REPOSITORY,
         current_version="0.7.0",

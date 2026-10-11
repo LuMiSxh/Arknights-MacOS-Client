@@ -1,6 +1,11 @@
 name: Publish website
 
 on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'docs/**'
+      - .github/workflows/pages.yml
   workflow_call:
   workflow_dispatch:
 
@@ -8,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: github-pages
+  group: github-pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
   cancel-in-progress: false
 
 jobs:
@@ -20,6 +25,7 @@ jobs:
       contents: read
     steps:
       - name: Require main for Pages deployments
+        if: github.event_name != 'pull_request'
         run: |
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
             echo "Website deployments must be triggered from main." >&2
@@ -61,12 +67,14 @@ jobs:
         run: pnpm run build
 
       - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: web/build
 
   deploy:
     name: Deploy website
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10

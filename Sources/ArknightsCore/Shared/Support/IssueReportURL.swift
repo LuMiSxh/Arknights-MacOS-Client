@@ -20,7 +20,7 @@ package enum IssueReportURL {
 		var components = URLComponents(
 			string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new")!
 		var items = [
-			URLQueryItem(name: "template", value: "bug-report.yml"),
+			URLQueryItem(name: "template", value: "problem-report.yml"),
 			URLQueryItem(name: "version", value: appVersion),
 			URLQueryItem(name: "environment", value: environment),
 		]

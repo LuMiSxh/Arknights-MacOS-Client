@@ -16,11 +16,6 @@ from pathlib import Path
 
 from lib.common import fail, output, require_command, run, run_main
 from lib.console import info, success
-from lib.github_monitor import (
-    AUTOMATED_LABEL,
-    AUTOMATED_LABEL_COLOR,
-    AUTOMATED_LABEL_DESCRIPTION,
-)
 from lib.project_config import load_project_configuration
 from lib.wallpapers import GalleryWallpaper, fetch_gallery_wallpapers, parse_image_field
 
@@ -34,6 +29,9 @@ __all__ = [
 ]
 
 RESOURCE_SUBDIRECTORY = Path("Resources")
+AUTOMATED_LABEL = "automated"
+AUTOMATED_LABEL_COLOR = "B60205"
+AUTOMATED_LABEL_DESCRIPTION = "Created by repository automation"
 TAGGING_LABEL = "wallpaper-tagging"
 TAGGING_LABEL_COLOR = "d4c5f9"
 TAGGING_LABEL_DESCRIPTION = (

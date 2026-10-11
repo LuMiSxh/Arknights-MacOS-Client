@@ -61,7 +61,7 @@ The draft contains:
 
 The workflow attaches GitHub build-provenance attestations for the DMG, runtime recipe, and checksum file. Do not copy assets from `dist/` into the repository.
 
-GitHub Actions dependencies use immutable commit pins with version comments. Every workflow declares bounded job runtimes and job-specific token permissions. Write access is limited to release publication, contract-alert reconciliation, and wallpaper-tag issue filing.
+GitHub Actions dependencies use immutable commit pins with version comments. Every workflow declares bounded job runtimes and job-specific token permissions. Write access is limited to release publication, Pages deployment, live-contract failure issues, and wallpaper-tag issue filing.
 
 ## Release review
 

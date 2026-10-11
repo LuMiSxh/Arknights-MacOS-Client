@@ -47,7 +47,7 @@ The scope `runtime-fallback` lists the components of the pinned runtime. The scr
 1. Add the package to `Package.swift` or `web/package.json`.
 2. Add its license text to `docs/legal/licenses/`.
 3. Add an entry to `docs/legal/licenses/index.json`. Add a `textOrigins` entry for the text.
-4. Run `uv run --locked scripts/licenses.py`. This updates the generated blocks in `docs/legal/third-party-notices.md`, `docs/legal/source-code.md`, and `docs/legal/license-texts.md`. It also rewrites `docs/legal/ThirdPartyNotices.deflate`.
+4. Run `uv run --locked scripts/licenses.py`. This updates the generated blocks in `docs/legal/third-party-notices.md`, `docs/legal/source-code.md`, and `docs/legal/license-texts.md`.
 5. Run `uv run --locked scripts/licenses.py --check`.
 
 For a new resource file, add its name to `paths` of an entry. Mark the entry `unverified` if the origin or the license of the file is not known.
@@ -62,7 +62,6 @@ For a new resource file, add its name to `paths` of an entry. Mark the entry `un
 - A bundled resource has no entry.
 - A listed text file is missing, a text file has no entry, or `textOrigins` has no record for it.
 - A generated block in `docs/legal/` is stale. This includes the license-text page.
-- `docs/legal/ThirdPartyNotices.deflate` is missing or stale.
 
 `just check scripts` runs it through `scripts/tests/test_licenses.py`. A component with the status `unverified` is a warning, not an error. Add `--runtime DIR` to check the license index of a prepared runtime. Add `--strict` to turn warnings into errors.
 
@@ -76,7 +75,7 @@ Without a prepared runtime, the page lists the `runtime-fallback` entries. To me
 
 `scripts/build_app.py` calls the same code with `--bundle`. It writes `Contents/Resources/ThirdPartyNotices.deflate`, a raw-deflate file of one Markdown document. The document has a table of the app components and the merged runtime components. Each distinct license text appears once. The website components are not in the file. The app decodes the file with the Compression framework when the user opens **Third-Party Notices** in **Settings → About**.
 
-The repository keeps a copy at `docs/legal/ThirdPartyNotices.deflate` for `--check`. That copy has no runtime components unless you generate it with `--runtime`. A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-fallback` entries. [Bundled resources](architecture/README.md#bundled-resources) states which other files the bundle keeps.
+The repository does not keep a copy of the file. A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-fallback` entries. [Bundled resources](architecture/README.md#bundled-resources) states which other files the bundle keeps.
 
 ## Generated blocks
 

@@ -27,10 +27,10 @@ from runtime_config import (
     load_runtime_config,
 )
 
+from lib import generated_blocks
 from lib.common import fail
 from lib.licenses import (
     Component,
-    apply_blocks,
     load_client_components,
     read_json,
     runtime_release,
@@ -371,12 +371,7 @@ def render_documents(root: Path) -> dict[Path, str]:
             "build": render_build_block(manifest),
         }
     }
-    return {
-        path: apply_blocks(
-            (root / path).read_text(encoding="utf-8"), values, True, BLOCK_NAMESPACE
-        )
-        for path, values in blocks.items()
-    }
+    return generated_blocks.render_documents(root, blocks, BLOCK_NAMESPACE)
 
 
 def manifest_problems(manifest: Mapping[str, Any]) -> list[str]:
@@ -412,8 +407,7 @@ def check(root: Path) -> None:
     if not problems:
         problems.extend(
             f"{path}: runtime blocks are stale; run scripts/update_runtime.py"
-            for path, text in render_documents(root).items()
-            if (root / path).read_text(encoding="utf-8") != text
+            for path in generated_blocks.stale_documents(root, render_documents(root))
         )
     if problems:
         fail("\n".join(problems))
@@ -445,8 +439,4 @@ def update(
     except BaseException:
         target.write_text(original, encoding="utf-8")
         raise
-    for path, document in documents.items():
-        if (root / path).read_text(encoding="utf-8") != document:
-            (root / path).write_text(document, encoding="utf-8")
-            changed.append(path)
-    return changed
+    return [*changed, *generated_blocks.write_documents(root, documents)]

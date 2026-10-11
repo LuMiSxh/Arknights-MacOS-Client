@@ -8,7 +8,8 @@ bundled resources. The runtime index is `Licenses/index.json` inside the runtime
 archive. The generator fills the generated blocks of the notice, source-offer, and
 license-text documents that the website publishes. It also compiles one compact
 notices file for the app bundle: each distinct license text appears once, and the
-whole file is raw-deflate compressed.
+whole file is raw-deflate compressed. The app build generates that file; the
+repository does not commit it.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from lib.common import ScriptError, fail, safe_relative_path
+from lib.generated_blocks import render_documents, stale_documents, write_documents
 from lib.project_config import load_project_configuration
 
 SCHEMA_VERSION = 1
@@ -41,21 +43,11 @@ CLIENT_INDEX = LICENSE_DIRECTORY / "index.json"
 NOTICES_DOCUMENT = Path("docs/legal/third-party-notices.md")
 SOURCE_DOCUMENT = Path("docs/legal/source-code.md")
 LICENSE_TEXTS_DOCUMENT = Path("docs/legal/license-texts.md")
-COMPILED_NOTICES = Path("docs/legal/ThirdPartyNotices.deflate")
 BUNDLE_NOTICES_NAME = "ThirdPartyNotices.deflate"
 SITE_URL = "https://lumisxh.github.io/Arknights-MacOS-Client/"
 RESOURCE_SUBDIRECTORY = Path("Resources")
 RUNTIME_LICENSE_DIRECTORY = "Licenses"
 RUNTIME_NOTICE_FILE = "NOTICE.md"
-
-
-def block_pattern(namespace: str) -> re.Pattern[str]:
-    """Match the generated blocks `<!-- NAMESPACE:begin NAME -->` to `:end NAME`."""
-    return re.compile(
-        rf"<!-- {re.escape(namespace)}:begin (?P<name>[a-z-]+) -->\n(?P<body>.*?)"
-        rf"<!-- {re.escape(namespace)}:end (?P=name) -->\n",
-        re.DOTALL,
-    )
 
 
 RELEASE_ASSET_PATTERN = re.compile(
@@ -531,32 +523,6 @@ def render_source_offer(manifest: Mapping[str, Any]) -> str:
     )
 
 
-def apply_blocks(
-    text: str,
-    blocks: Mapping[str, str],
-    keep_markers: bool,
-    namespace: str = "licenses",
-) -> str:
-    """Replace the body of each generated block; fail on a missing or unknown block."""
-    seen: set[str] = set()
-
-    def replace(match: re.Match[str]) -> str:
-        name = match["name"]
-        if name not in blocks:
-            fail(f"unknown generated block: {name}")
-        seen.add(name)
-        body = blocks[name]
-        if not keep_markers:
-            return body
-        return f"<!-- {namespace}:begin {name} -->\n{body}<!-- {namespace}:end {name} -->\n"
-
-    result = block_pattern(namespace).sub(replace, text)
-    missing = sorted(set(blocks) - seen)
-    if missing:
-        fail(f"generated block not found in document: {', '.join(missing)}")
-    return result
-
-
 def document_blocks(
     components: tuple[Component, ...], manifest: Mapping[str, Any]
 ) -> tuple[dict[str, str], dict[str, str]]:
@@ -685,13 +651,21 @@ def render_license_texts(
     return "".join(parts).rstrip("\n") + "\n"
 
 
-def generate_documents(root: Path, runtime: Path | None = None) -> dict[Path, str]:
-    """Return the repository documents with up-to-date generated blocks."""
+def load_legal(
+    root: Path, runtime: Path | None
+) -> tuple[tuple[Component, ...], RuntimeLegal | None]:
+    """Load the client components and the license index of a prepared runtime."""
     problems: list[str] = []
     components = load_client_components(root, problems)
     legal = load_runtime_legal(runtime, problems)
     if problems:
         fail("\n".join(problems))
+    return components, legal
+
+
+def generate_documents(root: Path, runtime: Path | None = None) -> dict[Path, str]:
+    """Return the repository documents with up-to-date generated blocks."""
+    components, legal = load_legal(root, runtime)
     manifest = read_json(root / "runtime.json")
     notices, source = document_blocks(components, manifest)
     texts = {"texts": render_license_texts(root, components, legal)}
@@ -700,10 +674,7 @@ def generate_documents(root: Path, runtime: Path | None = None) -> dict[Path, st
         (SOURCE_DOCUMENT, source),
         (LICENSE_TEXTS_DOCUMENT, texts),
     )
-    return {
-        path: apply_blocks((root / path).read_text(encoding="utf-8"), blocks, True)
-        for path, blocks in documents
-    }
+    return render_documents(root, dict(documents), "licenses")
 
 
 def check_all(
@@ -714,24 +685,13 @@ def check_all(
     Strict mode also fails on an unverified component and on a runtime without a
     license index or notice.
     """
-    problems: list[str] = []
-    components = load_client_components(root, problems)
-    legal = load_runtime_legal(runtime, problems)
+    components, legal = load_legal(root, runtime)
+    problems = check_inventory(root, components)
     if not problems:
-        problems.extend(check_inventory(root, components))
-    if not problems:
-        for path, expected in generate_documents(root, runtime).items():
-            if (root / path).read_text(encoding="utf-8") != expected:
-                problems.append(
-                    f"{path}: generated blocks are stale; run scripts/licenses.py"
-                )
-        if compiled_text(root / COMPILED_NOTICES) != render_compiled_notices(
-            root, components, legal
-        ):
-            problems.append(
-                f"{COMPILED_NOTICES}: compiled notices are missing or stale; "
-                "run scripts/licenses.py"
-            )
+        problems.extend(
+            f"{path}: generated blocks are stale; run scripts/licenses.py"
+            for path in stale_documents(root, generate_documents(root, runtime))
+        )
     warnings = _unverified_warnings([*components, *(legal.components if legal else ())])
     if runtime is not None and legal is None:
         warnings.insert(0, f"the runtime has no {RUNTIME_LICENSE_DIRECTORY}/index.json")
@@ -829,40 +789,9 @@ def compress_notices(text: str) -> bytes:
     return compressor.compress(text.encode("utf-8")) + compressor.flush()
 
 
-def compiled_text(path: Path) -> str | None:
-    """Return the text inside a compiled notices file; None if it is missing or bad."""
-    try:
-        return zlib.decompress(path.read_bytes(), -15).decode("utf-8")
-    except OSError, zlib.error, UnicodeDecodeError:
-        return None
-
-
-def write_compiled_notices(root: Path, runtime: Path | None = None) -> bool:
-    """Rewrite the committed compiled file when it differs; return True if changed."""
-    problems: list[str] = []
-    components = load_client_components(root, problems)
-    legal = load_runtime_legal(runtime, problems)
-    if problems:
-        fail("\n".join(problems))
-    text = render_compiled_notices(root, components, legal)
-    target = root / COMPILED_NOTICES
-    if compiled_text(target) == text:
-        return False
-    target.write_bytes(compress_notices(text))
-    return True
-
-
 def regenerate(root: Path, runtime: Path | None = None) -> list[Path]:
-    """Rewrite the compiled notices and the generated blocks; return changed paths."""
-    changed: list[Path] = []
-    if write_compiled_notices(root, runtime):
-        changed.append(COMPILED_NOTICES)
-    for path, text in generate_documents(root, runtime).items():
-        target = root / path
-        if target.read_text(encoding="utf-8") != text:
-            target.write_text(text, encoding="utf-8")
-            changed.append(path)
-    return changed
+    """Rewrite the generated blocks; return the changed paths."""
+    return write_documents(root, generate_documents(root, runtime))
 
 
 def stage_bundle(
@@ -873,11 +802,8 @@ def stage_bundle(
     Return the warnings. In strict mode a missing runtime index, a missing runtime
     notice, or an unverified component in the app or runtime fails the build.
     """
-    problems: list[str] = []
-    components = load_client_components(root, problems)
-    legal = load_runtime_legal(runtime, problems)
-    if not problems:
-        problems.extend(check_inventory(root, components))
+    components, legal = load_legal(root, runtime)
+    problems = check_inventory(root, components)
     if problems:
         fail("\n".join(problems))
 

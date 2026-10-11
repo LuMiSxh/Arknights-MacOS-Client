@@ -50,9 +50,6 @@ jobs:
           prune-cache: true
           cache-dependency-glob: uv.lock
 
-      - name: Validate runtime configuration
-        run: uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json
-
       - name: Set up just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
 
@@ -70,45 +67,48 @@ jobs:
             echo "Releases must be triggered from main after the release branch is merged." >&2
             exit 1
           fi
-          uv run --locked --no-dev scripts/release_validation.py "$RELEASE_VERSION"
+          uv run --locked --no-dev scripts/release.py validate "$RELEASE_VERSION"
           release_tag="v$RELEASE_VERSION"
-          set +e
-          git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null
-          tag_status=$?
-          set -e
-          if [[ "$tag_status" -eq 0 ]]; then
+          if git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null; then
             echo "Tag $release_tag already exists." >&2
             exit 1
+          else
+            tag_status=$?
+            if [[ "$tag_status" -ne 2 ]]; then
+              echo "Unable to check whether tag $release_tag exists." >&2
+              exit "$tag_status"
+            fi
           fi
-          if [[ "$tag_status" -ne 2 ]]; then
-            echo "Unable to check whether tag $release_tag exists." >&2
-            exit "$tag_status"
-          fi
-          release_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$release_tag")"
-          if [[ "$release_status" == "200" ]]; then
+          if release_output="$(gh release view "$release_tag" 2>&1)"; then
             echo "Release $release_tag already exists." >&2
             exit 1
-          fi
-          if [[ "$release_status" != "404" ]]; then
-            echo "Unable to check release $release_tag (HTTP $release_status)." >&2
+          elif [[ "$release_output" != *"release not found"* ]]; then
+            echo "Unable to check release $release_tag: $release_output" >&2
             exit 1
           fi
+
+      - name: Resolve project names
+        run: |
+          {
+            echo "APP_NAME=$(uv run --locked --no-dev scripts/project_config.py app-bundle-name)"
+            echo "DISPLAY_NAME=$(uv run --locked --no-dev scripts/project_config.py display-name)"
+            echo "DMG_NAME=$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
+            echo "UPDATE_NAME=$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
+            echo "DELTA_SOURCES=$(uv run --locked --no-dev scripts/project_config.py sparkle-delta-sources)"
+          } >> "$GITHUB_ENV"
 
       - name: Test source
         run: just ci
 
       - name: Prepare release notes
-        run: uv run --locked --no-dev scripts/extract_changelog.py "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
+        run: uv run --locked --no-dev scripts/release.py notes "$RELEASE_VERSION" > "$RUNNER_TEMP/release-notes.md"
 
       - name: Download runtime and build recipe
         run: |
           mkdir -p dist
           build_recipe="$RUNNER_TEMP/Runtime-Build-Recipe.tar.gz"
-          build_recipe_url="$(uv run --locked --no-dev scripts/runtime_config.py runtime.json buildRecipe.url)"
-          build_recipe_sha256="$(uv run --locked --no-dev scripts/runtime_config.py runtime.json buildRecipe.sha256)"
+          build_recipe_url="$(plutil -extract buildRecipe.url raw runtime.json)"
+          build_recipe_sha256="$(plutil -extract buildRecipe.sha256 raw runtime.json)"
           uv run --locked --no-dev scripts/download_runtime.py
           curl --fail --location --proto '=https' --tlsv1.2 "$build_recipe_url" --output "$build_recipe"
           echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
@@ -128,22 +128,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          app_name="$(uv run --locked --no-dev scripts/project_config.py app-bundle-name)"
-          update_name="$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
           update_directory="$RUNNER_TEMP/sparkle-updates"
           mkdir -p "$update_directory"
           # Sparkle extracts .tar.xz with /usr/bin/tar, which preserves symlinks, modes, and signatures.
-          tar -C dist -cJf "$update_directory/$update_name" "$app_name"
+          tar -C dist -cJf "$update_directory/$UPDATE_NAME" "$APP_NAME"
           cp "$RUNNER_TEMP/release-notes.md" \
-            "$update_directory/${update_name%.tar.xz}.md"
-          delta_sources="$(uv run --locked --no-dev scripts/project_config.py sparkle-delta-sources)"
+            "$update_directory/${UPDATE_NAME%.tar.xz}.md"
           # Deltas are an optimization: a failure here only logs a warning and ships the full archive.
           uv run --locked --no-dev scripts/sparkle_deltas.py fetch \
             --repository "$GITHUB_REPOSITORY" \
             --current-version "$RELEASE_VERSION" \
-            --update-name "$update_name" \
+            --update-name "$UPDATE_NAME" \
             --destination "$update_directory" \
-            --count "$delta_sources"
+            --count "$DELTA_SOURCES"
           generate_appcast="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
             -type f -path '*/Sparkle/bin/generate_appcast' -perm -111 -print -quit)"
           if [[ -z "$generate_appcast" ]]; then
@@ -156,24 +153,23 @@ jobs:
             --download-url-prefix "$release_prefix" \
             --embed-release-notes \
             --maximum-versions 1 \
-            --maximum-deltas "$delta_sources" \
+            --maximum-deltas "$DELTA_SOURCES" \
             "$update_directory"
           uv run --locked --no-dev scripts/sparkle_deltas.py finalize \
             --directory "$update_directory" \
             --appcast "$update_directory/appcast.xml" \
             --output dist
           uv run --locked --no-dev scripts/validate_sparkle_keys.py \
-            --plist "dist/$app_name/Contents/Info.plist" \
+            --plist "dist/$APP_NAME/Contents/Info.plist" \
             --appcast "$update_directory/appcast.xml" \
-            --update-name "$update_name" \
-            --update-file "$update_directory/$update_name" \
+            --update-name "$UPDATE_NAME" \
+            --update-file "$update_directory/$UPDATE_NAME" \
             --delta-directory dist
-          cp "$update_directory/$update_name" "dist/$update_name"
+          cp "$update_directory/$UPDATE_NAME" "dist/$UPDATE_NAME"
           cp "$update_directory/appcast.xml" dist/appcast.xml
-          dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
           deltas=(dist/*.delta)
-          shasum -a 256 "dist/$dmg_name" \
-            "dist/$update_name" "${deltas[@]}" \
+          shasum -a 256 "dist/$DMG_NAME" \
+            "dist/$UPDATE_NAME" "${deltas[@]}" \
             dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
 
       - name: Attest release provenance
@@ -195,13 +191,10 @@ jobs:
         run: |
           shopt -s nullglob
           release_tag="v$RELEASE_VERSION"
-          display_name="$(uv run --locked --no-dev scripts/project_config.py display-name)"
-          dmg_name="$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
-          update_name="$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
           deltas=(dist/*.delta)
           gh release create "$release_tag" \
-            "dist/$dmg_name" \
-            "dist/$update_name" \
+            "dist/$DMG_NAME" \
+            "dist/$UPDATE_NAME" \
             "${deltas[@]}" \
             dist/appcast.xml \
             dist/Runtime-Build-Recipe.tar.gz \
@@ -209,4 +202,4 @@ jobs:
             --draft \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             --target "$GITHUB_SHA" \
-            --title "$display_name $release_tag"
+            --title "$DISPLAY_NAME $release_tag"

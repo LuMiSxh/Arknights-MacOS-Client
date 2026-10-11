@@ -65,13 +65,8 @@ class PackageMetadata:
     name: str
     macos_version: str
     executable_product_name: str
-    executable_target_name: str
-    target_path: Path
-    resource_target_name: str
     resource_target_path: Path
-    excluded_paths: tuple[Path, ...]
     copy_resource_paths: tuple[Path, ...]
-    processed_resource_paths: tuple[Path, ...]
     exact_dependency_versions: tuple[tuple[str, str], ...]
 
     def exact_dependency_version(self, identity: str) -> str:
@@ -104,10 +99,6 @@ class ProjectConfiguration:
     @property
     def sparkle_update_name(self) -> str:
         return f"{self.release_asset_stem}.tar.xz"
-
-    @property
-    def target_directory(self) -> Path:
-        return self.project_directory / self.package.target_path
 
     @property
     def copied_resource_source_paths(self) -> tuple[Path, ...]:
@@ -203,40 +194,15 @@ def _package_metadata(dump: Mapping[str, Any]) -> PackageMetadata:
     product_name = _safe_component(
         _string(executable_product, "name"), "executable product name"
     )
-    product_targets = _strings(executable_product, "targets")
-    if len(product_targets) != 1:
-        fail("executable product must reference exactly one target")
-    target_name = _safe_component(product_targets[0], "executable target name")
-    matching = [
-        item
-        for item in targets
-        if item.get("name") == target_name and item.get("type") == "executable"
-    ]
-    if len(matching) != 1:
-        fail(
-            f"package must declare exactly one executable target named {target_name!r}"
-        )
-    target = matching[0]
     resource_target = _resource_target(targets)
-    copy_resources, processed_resources = _resources(resource_target)
     return PackageMetadata(
         name=_safe_component(_string(dump, "name"), "package name"),
         macos_version=_macos_version(dump),
         executable_product_name=product_name,
-        executable_target_name=target_name,
-        target_path=_safe_relative_path(_string(target, "path"), "target path"),
-        resource_target_name=_safe_component(
-            _string(resource_target, "name"), "resource target name"
-        ),
         resource_target_path=_safe_relative_path(
             _string(resource_target, "path"), "resource target path"
         ),
-        excluded_paths=tuple(
-            _safe_relative_path(value, "excluded path")
-            for value in _optional_strings(resource_target, "exclude")
-        ),
-        copy_resource_paths=copy_resources,
-        processed_resource_paths=processed_resources,
+        copy_resource_paths=_copied_resources(resource_target),
         exact_dependency_versions=_exact_dependency_versions(dump),
     )
 
@@ -254,31 +220,13 @@ def _resource_target(targets: list[Mapping[str, Any]]) -> Mapping[str, Any]:
 def _exact_dependency_versions(
     dump: Mapping[str, Any],
 ) -> tuple[tuple[str, str], ...]:
-    versions: list[tuple[str, str]] = []
-    for dependency in _objects(dump, "dependencies"):
-        if "sourceControl" not in dependency:
-            continue
-        source_controls = dependency["sourceControl"]
-        if not isinstance(source_controls, list) or len(source_controls) != 1:
-            fail("source-control dependency metadata must contain one entry")
-        source = source_controls[0]
-        if not isinstance(source, Mapping):
-            fail("source-control dependency metadata must be a dictionary")
-        requirement = _object(source, "requirement")
-        if "exact" not in requirement:
-            continue
-        exact = requirement["exact"]
-        if (
-            not isinstance(exact, list)
-            or len(exact) != 1
-            or not isinstance(exact[0], str)
-            or not exact[0]
-        ):
-            fail("exact package dependency version metadata is invalid")
-        versions.append((_string(source, "identity"), exact[0]))
-    if len({identity for identity, _ in versions}) != len(versions):
-        fail("package contains duplicate exact dependency identities")
-    return tuple(versions)
+    """Read `.exact` source-control requirements; SwiftPM guarantees the structure."""
+    return tuple(
+        (source["identity"], source["requirement"]["exact"][0])
+        for dependency in _objects(dump, "dependencies")
+        for source in dependency.get("sourceControl", [])
+        if "exact" in source["requirement"]
+    )
 
 
 def _validate_agreement(
@@ -294,17 +242,12 @@ def _validate_agreement(
         fail("package macOS platform must match LSMinimumSystemVersion")
 
 
-def _resources(target: Mapping[str, Any]) -> tuple[tuple[Path, ...], tuple[Path, ...]]:
-    copied: list[Path] = []
-    processed: list[Path] = []
-    for resource in _objects(target, "resources"):
-        path = _safe_relative_path(_string(resource, "path"), "resource path")
-        rule = _object(resource, "rule")
-        if "copy" in rule:
-            copied.append(path)
-        elif "process" in rule:
-            processed.append(path)
-    return tuple(copied), tuple(processed)
+def _copied_resources(target: Mapping[str, Any]) -> tuple[Path, ...]:
+    return tuple(
+        _safe_relative_path(_string(resource, "path"), "resource path")
+        for resource in _objects(target, "resources")
+        if "copy" in _object(resource, "rule")
+    )
 
 
 def _macos_version(dump: Mapping[str, Any]) -> str:
@@ -339,10 +282,6 @@ def _unique_strings(value: Mapping[str, Any], key: str) -> list[str]:
     if len(items) != len(set(items)):
         fail(f"{key} must not contain duplicates")
     return items
-
-
-def _optional_strings(value: Mapping[str, Any], key: str) -> list[str]:
-    return [] if key not in value else _strings(value, key)
 
 
 def _objects(value: Mapping[str, Any], key: str) -> list[Mapping[str, Any]]:

@@ -23,7 +23,6 @@ The tag contains the source for the launcher executable, compatibility wrappers,
 The release attaches `Runtime-Build-Recipe.tar.gz`. It is a provenance record. It does not replace the upstream source and notice obligations of the runtime components.
 
 <!-- licenses:begin offer -->
-
 ## Written offer for LGPL and GPL components
 
 The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is one example. You can ask for the corresponding source of any such component in a release that you received. To ask, open an issue in the [Arknights Client repository](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues). Name the version of the app and the component. The maintainer then sends the source or the exact public location of the source.
@@ -40,7 +39,6 @@ The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is o
 - The build recipe archive is a provenance record. It is not a complete corresponding-source archive.
 - The project has not yet published one source archive for the libraries that the runtime copies from Nixpkgs. The runtime repository still has this work open. Until the project publishes that archive, the written offer for these libraries uses the issue process above.
 - This text does not fix a period of validity for the offer. The maintainer must set that period before a public binary release.
-
 <!-- licenses:end offer -->
 
 > [!IMPORTANT]

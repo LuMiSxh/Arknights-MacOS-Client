@@ -5,6 +5,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 uv := "uv run --locked --no-dev"
 uv_dev := "uv run --locked"
 uv_packaging := "uv run --locked --no-dev --group packaging"
+just := quote(just_executable()) + " --justfile " + quote(justfile())
 
 # List the available commands.
 default:
@@ -13,43 +14,144 @@ default:
 # Run the focused isolated debug simulator for safe launcher UI states.
 [group('Development')]
 preview:
-	{{ uv }} scripts/swift_build.py --configuration debug --sdk macosx27.0
-	binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --sdk macosx27.0 --show-bin-path)"; executable_name="$({{ uv }} scripts/project_config.py executable-name)"; "$binary_dir/$executable_name" --developer-preview
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ uv }} scripts/swift_build.py --configuration debug
+    binary_dir="$({{ uv }} scripts/swift_build.py --configuration debug --show-bin-path)"
+    "$binary_dir/$({{ uv }} scripts/project_config.py executable-name)" --developer-preview
 
 # Start the website or download the verified runtime and build a local app bundle or dmg; add run to open app artifacts (default: app).
 [group('Development')]
 dev target='app' run='':
-    @if [[ {{ quote(target) }} == "web" ]]; then cd web && pnpm dev; else runtime_dir="$({{ uv }} scripts/download_runtime.py)"; if [[ {{ quote(target) }} == "dmg" ]]; then {{ uv_packaging }} scripts/build_dmg.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py dmg-name)"; else {{ uv_packaging }} scripts/build_app.py --runtime "$runtime_dir"; artifact_name="$({{ uv }} scripts/project_config.py app-bundle-name)"; fi; path="dist/$artifact_name"; if [[ {{ quote(run) }} == "run" ]]; then open "$path"; fi; fi
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case {{ quote(target) }} in
+        web) cd web && exec pnpm dev ;;
+        app) name="$({{ uv }} scripts/project_config.py app-bundle-name)" ;;
+        dmg) name="$({{ uv }} scripts/project_config.py dmg-name)" ;;
+        *) echo "unknown target: "{{ quote(target) }}"; use app, dmg, or web" >&2; exit 2 ;;
+    esac
+    {{ just }} runtime
+    {{ just }} {{ quote(target) }} .build/runtime
+    if [[ {{ quote(run) }} == "run" ]]; then open "dist/$name"; fi
 
-# Check core sources (default: all) or the website separately.
+# Check core sources (default: all) or one of swift, scripts, shim, web.
 [group('Checks')]
 check target='all':
-    {{ uv_dev }} scripts/checks.py check {{ quote(target) }}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    check_swift() {
+        find Sources Tests -name '*.swift' -print0 | xargs -0 swift format lint --configuration .swift-format --strict
+        {{ just }} swift-tests unit
+    }
+    check_scripts() {
+        {{ uv_dev }} ruff check scripts
+        {{ uv_dev }} ruff format --check scripts
+        {{ uv_dev }} scripts/consistency.py
+        {{ uv_dev }} actionlint .github/workflows/*.yml
+        {{ uv_dev }} pytest -q
+    }
+    check_shim() {
+        find RuntimeSupport \( -name '*.c' -o -name '*.m' \) -print0 | xargs -0 xcrun clang-format --dry-run --Werror
+    }
+    check_web() {
+        (cd web && pnpm check && pnpm format:check)
+    }
+    target={{ quote(target) }}
+    for name in $([[ $target == all ]] && echo swift scripts shim || echo "$target"); do
+        [[ $name =~ ^(swift|scripts|shim|web)$ ]] || { echo "unknown target: $name; use all, swift, scripts, shim, or web" >&2; exit 2; }
+        "check_$name"
+    done
+    echo "check complete ($target)"
 
-# Format core sources (default: all) or the website separately.
+# Format core sources (default: all) or one of swift, scripts, shim, web.
 [group('Checks')]
 format target='all':
-    {{ uv_dev }} scripts/checks.py format {{ quote(target) }}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    format_swift() {
+        find Sources Tests -name '*.swift' -print0 | xargs -0 swift format format --configuration .swift-format --in-place
+    }
+    format_scripts() {
+        {{ uv_dev }} ruff format scripts
+    }
+    format_shim() {
+        find RuntimeSupport \( -name '*.c' -o -name '*.m' \) -print0 | xargs -0 xcrun clang-format -i
+    }
+    format_web() {
+        (cd web && pnpm format)
+    }
+    target={{ quote(target) }}
+    for name in $([[ $target == all ]] && echo swift scripts shim || echo "$target"); do
+        [[ $name =~ ^(swift|scripts|shim|web)$ ]] || { echo "unknown target: $name; use all, swift, scripts, shim, or web" >&2; exit 2; }
+        "format_$name"
+    done
+    echo "format complete ($target)"
 
 # Build the Apple Silicon release binary.
 [group('Checks')]
 build:
-	{{ uv }} scripts/swift_build.py --configuration release
+    {{ uv }} scripts/swift_build.py --configuration release
 
 # Run deterministic onboarding, API, installer, and persistence workflows without public network access.
 [group('Checks')]
-integration:
-    {{ uv }} scripts/swift_tests.py integration
+integration: (swift-tests 'integration')
 
 # Run unit tests whose identifier matches FILTER (a regex inside the unit target).
 [group('Checks')]
-test filter:
-    {{ uv }} scripts/swift_tests.py unit --filter {{ quote(filter) }}
+test filter: (swift-tests 'unit' filter)
 
 # Run read-only contracts against live Yostar and Gryphline services; never part of normal source checks.
 [group('Checks')]
-live-contracts:
-    {{ uv }} scripts/swift_tests.py live
+live-contracts: (swift-tests 'live')
+
+# Build, then run one Swift test level (unit, integration, live) with isolated HOME and TMPDIR; only live may use the network.
+[private]
+swift-tests level filter='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    level={{ quote(level) }}
+    filter={{ quote(filter) }}
+    integration=ArknightsClientIntegrationTests
+    live=ArknightsClientLiveContractTests
+    gate=""
+    case "$level" in
+        unit)
+            targets="$(perl -0ne 'print "$1\n" while /\.testTarget\(\s*name:\s*"([^"]+)"/g' Package.swift | grep -E 'Tests$' | grep -vxE "$integration|$live" | paste -sd'|' -)"
+            ;;
+        integration)
+            targets="$integration"
+            gate=ARKNIGHTS_CLIENT_INTEGRATION_TESTS=RUN_DETERMINISTIC_INTEGRATION_TESTS
+            ;;
+        live)
+            targets="$live"
+            gate=ARKNIGHTS_CLIENT_LIVE_CONTRACT_TESTS=RUN_YOSTAR_PUBLIC_NETWORK_SMOKE_TESTS
+            ;;
+        *) echo "unknown test level: $level" >&2; exit 2 ;;
+    esac
+    [[ -n $targets ]] || { echo "no test targets declared for $level in Package.swift" >&2; exit 1; }
+    expression="^($targets)\\."
+    [[ -z $filter ]] || expression+=".*$filter"
+    read -ra architectures <<<"$({{ uv }} scripts/project_config.py swift-architecture-arguments)"
+    swift build -q --build-tests "${architectures[@]}"
+    listing="$(swift test list --skip-build --disable-sandbox --disable-automatic-resolution "${architectures[@]}")"
+    count="$(grep -cE "$expression" <<<"$listing" || true)"
+    if [[ $count -eq 0 ]]; then
+        echo "Swift $level tests: no tests match ${filter:-$targets}" >&2
+        exit 1
+    fi
+    scratch="$(mktemp -d "${TMPDIR:-/tmp}/arknights-$level-tests-XXXXXX")"
+    trap 'rm -rf "$scratch"' EXIT
+    mkdir "$scratch/home" "$scratch/tmp"
+    run=(env HOME="$scratch/home" CFFIXED_USER_HOME="$scratch/home" TMPDIR="$scratch/tmp/" $gate
+        swift test -q --disable-xctest --skip-build --disable-sandbox --disable-automatic-resolution
+        --filter "$expression" "${architectures[@]}")
+    if [[ $level == live ]]; then
+        "${run[@]}"
+    else
+        /usr/bin/sandbox-exec -p '(version 1) (allow default) (deny network*)' "${run[@]}"
+    fi
+    echo "Swift $level tests passed ($count tests)"
 
 # Run deterministic validation, integration tests, and build the release binary.
 [group('Checks')]
@@ -63,7 +165,7 @@ runtime action='download' tag='latest' prerelease='':
 # Build the application bundle; optionally embed a Wine runtime directory.
 [group('Packaging')]
 app runtime='':
-    if [[ -n {{ quote(runtime) }} ]]; then {{ uv_packaging }} scripts/build_app.py --runtime {{ quote(runtime) }}; else {{ uv_packaging }} scripts/build_app.py; fi
+    {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }}
 
 # Build a DMG with the required Wine runtime directory.
 [group('Packaging')]
@@ -83,7 +185,18 @@ announcement mode id title='' body_file='' action_title='' action_url='' min_ver
 # Trigger a draft release for the required X.Y.Z version. Requires repository write access.
 [group('Owner')]
 release version:
-    {{ uv }} scripts/trigger_release.py {{ quote(version) }}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    die() { echo "$1" >&2; exit 1; }
+    {{ uv }} scripts/release.py validate {{ quote(version) }}
+    [[ -z "$(git status --porcelain)" ]] || die "the working tree must be clean"
+    [[ "$(git branch --show-current)" == main ]] || die "releases must be triggered from main after the release branch is merged"
+    git fetch --quiet
+    upstream="$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null)" || die "main has no upstream"
+    [[ "$(git rev-parse HEAD)" == "$(git rev-parse "$upstream")" ]] || die "main must match $upstream"
+    gh auth status >/dev/null
+    gh workflow run release.yml --ref main --field version={{ quote(version) }}
+    echo "Triggered draft release v"{{ quote(version) }}
 
 # Show manual and Sparkle app-download statistics for published releases. Requires GitHub CLI access.
 [group('Owner')]

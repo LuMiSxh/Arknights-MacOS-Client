@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import zlib
 from dataclasses import replace
 from pathlib import Path
 
@@ -102,9 +103,7 @@ def project(tmp_path: Path) -> Path:
 
 
 def regenerate(root: Path, runtime: Path | None = None) -> None:
-    for path, text in licenses.generate_documents(root, runtime).items():
-        (root / path).write_text(text, encoding="utf-8")
-    licenses.write_compiled_notices(root, runtime)
+    licenses.regenerate(root, runtime)
 
 
 def write_index(root: Path, components: list[dict[str, object]]) -> None:
@@ -336,8 +335,8 @@ def test_bundle_writes_one_compiled_file_with_runtime_components(
     warnings = licenses.stage_bundle(project, resources, runtime, strict=False)
 
     assert [path.name for path in resources.iterdir()] == ["ThirdPartyNotices.deflate"]
-    notices = licenses.compiled_text(resources / "ThirdPartyNotices.deflate")
-    assert notices is not None
+    compressed = (resources / "ThirdPartyNotices.deflate").read_bytes()
+    notices = zlib.decompress(compressed, -15).decode("utf-8")
     assert "[Lib](" in notices
     assert "Runtime notice" in notices
     assert "licenses:begin" not in notices
@@ -370,19 +369,6 @@ def test_compiled_notices_exclude_website_components(project: Path) -> None:
 
     assert "[lib](" not in notices
     assert "[pkg](" in notices
-
-
-def test_missing_or_stale_compiled_notices_fail_the_check(project: Path) -> None:
-    compiled = project / licenses.COMPILED_NOTICES
-    compiled.write_bytes(licenses.compress_notices("old"))
-    with pytest.raises(ScriptError, match="compiled notices are missing or stale"):
-        licenses.check_all(project)
-    compiled.unlink()
-    with pytest.raises(ScriptError, match="compiled notices are missing or stale"):
-        licenses.check_all(project)
-    assert licenses.write_compiled_notices(project)
-    assert not licenses.write_compiled_notices(project)
-    licenses.check_all(project)
 
 
 def test_runtime_index_http_sources_load_as_https(tmp_path: Path) -> None:

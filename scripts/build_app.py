@@ -12,7 +12,7 @@ import os
 import plistlib
 import shutil
 import stat
-import struct
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -200,41 +200,20 @@ def copy_runtime(source: Path, destination: Path) -> None:
     shutil.copytree(source, destination, symlinks=True, ignore=ignore)
 
 
-# Mach-O fat header layout (all fields big-endian on disk).
-_FAT_MAGIC = 0xCAFEBABE
-_FAT_MAGIC_64 = 0xCAFEBABF
-_CPU_TYPE_X86_64 = 0x01000007
-_CPU_TYPE_ARM64 = 0x0100000C
-_MAXIMUM_FAT_ARCHITECTURES = 64
+# Big-endian fat headers (32 and 64 bit). Most runtime files are not fat Mach-O,
+# so this check avoids a `lipo` process for each of them.
+_FAT_MAGICS = (b"\xca\xfe\xba\xbe", b"\xca\xfe\xba\xbf")
 
 
-def _fat_cpu_types(path: Path) -> set[int]:
-    # Reads only the fat header instead of shelling out to `lipo -archs`, since
-    # most runtime files (fonts, configs, thin binaries) aren't fat Mach-O at
-    # all and don't deserve a subprocess spawn just to find that out.
+def _fat_architectures(path: Path) -> set[str]:
     with path.open("rb") as handle:
-        header = handle.read(8)
-        if len(header) < 8:
+        if handle.read(4) not in _FAT_MAGICS:
             return set()
-        magic, count = struct.unpack(">II", header)
-        if magic == _FAT_MAGIC:
-            entry_size, entry_format = 20, ">ii"
-        elif magic == _FAT_MAGIC_64:
-            entry_size, entry_format = 32, ">ii"
-        else:
-            return set()
-        if (
-            count > _MAXIMUM_FAT_ARCHITECTURES
-            or count * entry_size > path.stat().st_size - len(header)
-        ):
-            return set()
-        body = handle.read(count * entry_size)
-        if len(body) != count * entry_size:
-            return set()
-    return {
-        struct.unpack_from(entry_format, body, index * entry_size)[0]
-        for index in range(count)
-    }
+    # A Java class file shares the magic; `lipo` rejects it, so it counts as thin.
+    result = subprocess.run(
+        ["lipo", "-archs", path], capture_output=True, text=True, check=False
+    )
+    return set(result.stdout.split()) if result.returncode == 0 else set()
 
 
 def thin_universal_files(runtime: Path) -> int:
@@ -242,8 +221,7 @@ def thin_universal_files(runtime: Path) -> int:
     for path in runtime.rglob("*"):
         if not path.is_file() or path.is_symlink():
             continue
-        cpu_types = _fat_cpu_types(path)
-        if not {_CPU_TYPE_X86_64, _CPU_TYPE_ARM64} <= cpu_types:
+        if not {"x86_64", "arm64"} <= _fat_architectures(path):
             continue
         temporary = path.with_name(f"{path.name}.x86_64")
         mode = stat.S_IMODE(path.stat().st_mode)

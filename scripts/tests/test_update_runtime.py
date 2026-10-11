@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 from lib import licenses, runtime_update
 from lib.common import PROJECT_DIR, ScriptError
+from lib.generated_blocks import apply_blocks
 
 NEW_TAG = "v0.7.0-rc3"
 NEW_WINE_COMMIT = "1" * 40
@@ -374,4 +375,4 @@ def test_license_blocks_ignore_runtime_markers_and_follow_the_pin(
     assert libraries.name == "Libraries of runtime 0.7.0-rc3"
     assert libraries.source.endswith(f"/tree/{NEW_TAG}")
     text = "<!-- runtime:begin build -->\nold\n<!-- runtime:end build -->\n"
-    assert licenses.apply_blocks(text, {}, True) == text
+    assert apply_blocks(text, {}, "licenses") == text

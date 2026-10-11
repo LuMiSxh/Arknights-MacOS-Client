@@ -12,7 +12,7 @@ func issueReportURLIncludesOnlyApprovedFailureContext() {
 	#expect(emptyContext.host == "github.com")
 	#expect(emptyContext.path == "/LuMiSxh/Arknights-MacOS-Client/issues/new")
 	#expect(
-		emptyContext.queryItems?.first { $0.name == "template" }?.value == "bug-report.yml")
+		emptyContext.queryItems?.first { $0.name == "template" }?.value == "problem-report.yml")
 	#expect(emptyContext.queryItems?.contains { $0.name == "logs" } == false)
 	#expect(
 		Set(emptyContext.queryItems?.map(\.name) ?? []) == ["template", "version", "environment"],

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import plistlib
-import struct
+import subprocess
 from dataclasses import replace
 from pathlib import Path
 
@@ -69,25 +69,42 @@ def test_runtime_copy_excludes_development_payloads(tmp_path: Path) -> None:
     assert not (destination / "bin/backup.wine-original").exists()
 
 
-def test_detects_universal_x86_64_and_arm64(tmp_path: Path) -> None:
-    header = struct.pack(">II", build_app._FAT_MAGIC, 2)
-    arches = struct.pack(
-        ">iiIII", build_app._CPU_TYPE_X86_64, 0, 0x1000, 0x100, 12
-    ) + struct.pack(">iiIII", build_app._CPU_TYPE_ARM64, 0, 0x2000, 0x100, 14)
+def fake_lipo(
+    monkeypatch: pytest.MonkeyPatch, stdout: str, returncode: int = 0
+) -> list[object]:
+    calls: list[object] = []
+
+    def run(command: list[object], **_: object) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        return subprocess.CompletedProcess(command, returncode, stdout, "")
+
+    monkeypatch.setattr(build_app.subprocess, "run", run)
+    return calls
+
+
+def test_detects_universal_x86_64_and_arm64(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     path = tmp_path / "universal"
-    path.write_bytes(header + arches)
+    path.write_bytes(b"\xca\xfe\xba\xbe\0\0\0\2")
+    calls = fake_lipo(monkeypatch, "x86_64 arm64\n")
 
-    assert build_app._fat_cpu_types(path) == {
-        build_app._CPU_TYPE_X86_64,
-        build_app._CPU_TYPE_ARM64,
-    }
+    assert build_app._fat_architectures(path) == {"x86_64", "arm64"}
+    assert calls == [["lipo", "-archs", path]]
 
 
-def test_ignores_non_mach_o_files(tmp_path: Path) -> None:
-    path = tmp_path / "plain.txt"
-    path.write_text("not a binary", encoding="utf-8")
+def test_ignores_files_without_a_fat_header_and_rejected_fat_magic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plain = tmp_path / "plain.txt"
+    plain.write_text("not a binary", encoding="utf-8")
+    java = tmp_path / "Thing.class"
+    java.write_bytes(b"\xca\xfe\xba\xbe\0\0\0\x41")
+    calls = fake_lipo(monkeypatch, "", returncode=1)
 
-    assert build_app._fat_cpu_types(path) == set()
+    assert build_app._fat_architectures(plain) == set()
+    assert calls == []
+    assert build_app._fat_architectures(java) == set()
 
 
 def test_bundle_retains_tracked_sparkle_key(tmp_path: Path) -> None:

@@ -12,6 +12,7 @@ feed again, because the feed signature covers those URLs.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -21,9 +22,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
-from lib.common import PROJECT_DIR, ScriptError, fail, run_main
+from lib.common import PROJECT_DIR, ScriptError, fail, run, run_main
 from lib.console import info, success, warning
-from lib.github_client import GitHubClient
 from lib.project_config import (
     SPARKLE_ARCHIVE_SUFFIXES,
     SPARKLE_DELTA_SOURCE_COUNT,
@@ -32,8 +32,6 @@ from lib.project_config import (
     sparkle_archive_names,
 )
 from validate_sparkle_keys import SPARKLE_NAMESPACE, validate_feed_signature
-
-MAXIMUM_ARCHIVE_BYTES = 1_024 * 1_024 * 1_024
 
 
 @dataclass(frozen=True)
@@ -100,11 +98,18 @@ def accepted_archive_names(releases: list[object], stem: str, update_name: str):
 def fetch(arguments: argparse.Namespace) -> None:
     """Download previous archives; every failure only costs deltas, never the release."""
     configuration = load_project_configuration()
-    client = GitHubClient(os.environ.get("GH_TOKEN") or None)
     try:
-        releases = client.releases(arguments.repository)
+        releases = json.loads(
+            run(
+                ["gh", "api", f"repos/{arguments.repository}/releases?per_page=100"],
+                capture=True,
+            ).stdout
+        )
     except (ScriptError, ValueError) as error:
         warning(f"Skipping Sparkle deltas: could not list releases: {error}")
+        return
+    if not isinstance(releases, list):
+        warning("Skipping Sparkle deltas: GitHub returned an invalid release list")
         return
     sources = select_sources(
         releases,
@@ -136,7 +141,23 @@ def fetch(arguments: argparse.Namespace) -> None:
             / f"{configuration.release_asset_stem}.{source.version}{suffix}"
         )
         try:
-            client.download_to_file(source.url, destination, MAXIMUM_ARCHIVE_BYTES)
+            tag, asset = urlparse(source.url).path.split("/")[-2:]
+            run(
+                [
+                    "gh",
+                    "release",
+                    "download",
+                    unquote(tag),
+                    "--repo",
+                    arguments.repository,
+                    "--pattern",
+                    unquote(asset),
+                    "--output",
+                    destination,
+                    "--clobber",
+                ],
+                capture=True,
+            )
         except ScriptError as error:
             warning(f"Skipping deltas from {source.version}: {error}")
             continue

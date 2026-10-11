@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from lib.console import child_output, error, styled
+from lib.console import child_output, error, warning
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 BUILD_DIR = PROJECT_DIR / ".build"
@@ -122,7 +122,7 @@ def run_main[T](main: Callable[[], T]) -> None:
         error(str(script_error))
         raise SystemExit(1) from None
     except KeyboardInterrupt:
-        print(f"\n{styled('cancelled', '33;1')}", file=sys.stderr)
+        warning("cancelled")
         raise SystemExit(130) from None
 
 

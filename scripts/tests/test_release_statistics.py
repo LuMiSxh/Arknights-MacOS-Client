@@ -2,105 +2,55 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from release_statistics import release_downloads, render_statistics
 
+NAME = "Arknights Client"
 
-def test_counts_manual_and_sparkle_assets_without_counting_arbitrary_zips() -> None:
-    payload = [
+
+def release(tag: str, assets: dict[str, int], *, draft: bool = False) -> dict:
+    return {
+        "tag_name": tag,
+        "draft": draft,
+        "assets": [{"name": n, "download_count": c} for n, c in assets.items()],
+    }
+
+
+def test_splits_dmg_sparkle_and_recipe_without_counting_other_assets() -> None:
+    pages = [
         [
-            {
-                "tag_name": "v0.2.0",
-                "published_at": "2026-08-16T10:00:00Z",
-                "draft": False,
-                "assets": [
-                    {"name": "Arknights.Client.dmg", "download_count": 12},
-                    {"name": "Arknights.Client.zip", "download_count": 9},
-                    {"name": "Arknights.Client.tar.xz", "download_count": 2},
-                    {"name": "Arknights.Client42-41.delta", "download_count": 6},
-                    {"name": "Other42-41.delta", "download_count": 70},
-                    {"name": "Other.dmg", "download_count": 1},
-                    {"name": "Other 0.2.0.zip", "download_count": 400},
-                    {"name": "unrelated-tool.zip", "download_count": 500},
-                    {"name": "Runtime-Build-Recipe.tar.gz", "download_count": 4},
-                    {"name": "SHA256SUMS", "download_count": 3},
-                ],
-            },
-            {
-                "tag_name": "v0.3.0",
-                "published_at": "2026-08-17T10:00:00Z",
-                "draft": True,
-                "assets": [{"name": "Arknights.Client.dmg", "download_count": 99}],
-            },
+            release(
+                "v0.2.0",
+                {
+                    "Arknights.Client.dmg": 12,
+                    "Arknights.Client.zip": 9,
+                    "Arknights.Client.tar.xz": 2,
+                    "Arknights.Client42-41.delta": 6,
+                    "Other42-41.delta": 70,
+                    "Other.dmg": 1,
+                    "Other 0.2.0.zip": 400,
+                    "Runtime-Build-Recipe.tar.gz": 4,
+                    "SHA256SUMS": 3,
+                },
+            ),
+            release("v0.3.0", {"Arknights.Client.dmg": 99}, draft=True),
         ]
     ]
 
-    releases = release_downloads(payload, display_name="Arknights Client")
-
-    assert len(releases) == 1
-    assert releases[0].version == "0.2.0"
-    assert releases[0].dmg_downloads == 12
-    assert releases[0].sparkle_downloads == 17
-    assert releases[0].app_downloads == 29
-    assert releases[0].recipe_downloads == 4
-
-
-def test_renders_totals_rates_and_latest_share() -> None:
-    releases = release_downloads(
-        [
-            [
-                {
-                    "tag_name": "v0.1.0",
-                    "published_at": "2026-08-14T12:00:00Z",
-                    "draft": False,
-                    "assets": [
-                        {"name": "Arknights.Client.dmg", "download_count": 30},
-                        {"name": "Arknights.Client.zip", "download_count": 5},
-                    ],
-                },
-                {
-                    "tag_name": "v0.2.0",
-                    "published_at": "2026-08-16T12:00:00Z",
-                    "draft": False,
-                    "assets": [
-                        {"name": "Arknights.Client.dmg", "download_count": 10},
-                        {"name": "Arknights.Client.zip", "download_count": 20},
-                    ],
-                },
-            ]
-        ],
-        display_name="Arknights Client",
-    )
-
-    output = render_statistics(releases, datetime(2026, 8, 17, 12, tzinfo=UTC))
-
-    assert "Total app deliveries: 65" in output
-    assert "Total DMG/manual package downloads: 40" in output
-    assert "Total Sparkle update downloads: 25" in output
-    assert "Total recipe downloads: 0" in output
-    assert "Latest-version delivery share (0.2.0 vs 0.1.0): 46.2%" in output
-    assert "GitHub counts asset downloads" in output
+    assert release_downloads(pages, display_name=NAME) == [("0.2.0", 12, 17, 4)]
 
 
 def test_counts_legacy_versioned_sparkle_asset() -> None:
-    releases = release_downloads(
-        [
-            [
-                {
-                    "tag_name": "v0.1.0",
-                    "published_at": "2026-08-14T12:00:00Z",
-                    "draft": False,
-                    "assets": [
-                        {
-                            "name": "Arknights.Client.0.1.0.zip",
-                            "download_count": 5,
-                        }
-                    ],
-                }
-            ]
-        ],
-        display_name="Arknights Client",
-    )
+    pages = [[release("v0.1.0", {"Arknights.Client.0.1.0.zip": 5})]]
 
-    assert releases[0].sparkle_downloads == 5
+    assert release_downloads(pages, display_name=NAME) == [("0.1.0", 0, 5, 0)]
+
+
+def test_renders_rows_and_totals() -> None:
+    output = render_statistics([("0.2.0", 10, 20, 1), ("0.1.0", 30, 5, 0)])
+
+    assert "0.2.0" in output
+    assert "Total app deliveries: 65" in output
+    assert "Total DMG/manual package downloads: 40" in output
+    assert "Total Sparkle update downloads: 25" in output
+    assert "Total recipe downloads: 1" in output
+    assert render_statistics([]) == "No published releases found."

@@ -92,13 +92,7 @@ Move a test that needs a real runtime, game download, or public network to the m
 
 Each run checks branding, game configuration, CDN configuration, manifest location, and the complete manifest for Global, Japan, and Korea through the production request signing and decoders. For Taiwan it checks only Gryphline branding, metadata, and CDN hosts. It never reads the encrypted game manifest or a game package. It requires credential-free HTTPS URLs, bounded response time and manifest size, safe non-conflicting paths, parseable CRC64 or MD5 values, and nonnegative file sizes. It retries network and HTTP failures three times, not decoding or validation failures.
 
-> [!IMPORTANT]
-> A second job with `issues: write` reconciles scheduled alerts. The probe has read-only repository access.
->
-> - A contract must fail in two consecutive scheduled reports before the workflow creates or reopens its single `automated` issue.
-> - An unchanged failure updates the issue timestamp without a comment. A changed failure adds a comment.
-> - Two consecutive healthy reports add a recovery comment and close only the issue with that contract's monitor marker.
-> - Manual runs never change issues.
+A failed scheduled run emails the repository owner. If no issue titled "Live contract failure" is open, the workflow opens one. Manual runs never open issues. The owner closes the issue by hand.
 
 A failure means an upstream schema or endpoint may have changed. Nothing rewrites fixtures or code automatically. Update decoding and fixtures together.
 

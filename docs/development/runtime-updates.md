@@ -16,7 +16,7 @@ Wine and DXMT are one tested unit. Do not combine arbitrary latest versions. A r
 1. Run `just runtime update TAG`. For example, `just runtime update v0.7.0-rc2`.
 2. Read the changed files with `git diff`.
 3. Run `just check scripts`.
-4. Run `uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json`. Then run `just runtime` to download, hash, extract, and validate the archive.
+4. Run `just runtime` to download, hash, extract, and validate the archive.
 5. Test a fresh and an existing prefix through install or update, each client's web-login path where provided, game start, and clean exit.
 6. Add or update prefix migrations when the runtime state contract requires them.
 
@@ -56,7 +56,7 @@ The script fails and writes nothing in these cases:
 | `runtime.json`                                                               | `runtime`, `buildRecipe`, `components`, and every field of `provenance`.                     |
 | `docs/legal/third-party-notices.md`                                          | The `runtime` blocks `components` and `build`.                                               |
 | `docs/legal/licenses/index.json`                                             | Nothing. The entry with `runtimeRelease` derives its name, version, and source from the pin. |
-| `docs/legal/source-code.md`, `license-texts.md`, `ThirdPartyNotices.deflate` | The script calls `scripts/licenses.py`. That script regenerates them.                        |
+| `docs/legal/source-code.md`, `license-texts.md`                              | The script calls `scripts/licenses.py`. That script regenerates them.                        |
 
 A second run with the same tag changes nothing.
 
