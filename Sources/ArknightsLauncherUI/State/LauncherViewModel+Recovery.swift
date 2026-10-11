@@ -82,7 +82,9 @@ extension LauncherViewModel {
 			return .completed
 		case .reportProblem:
 			NSWorkspace.shared.open(
-				IssueReportURL.build(code: failure.code, context: failure.context)
+				IssueReportURL.build(
+					runtimeName: gameSession.runtimeName, code: failure.code,
+					context: failure.context)
 			)
 			logRecovery(action: action, result: "opened")
 			return .completed

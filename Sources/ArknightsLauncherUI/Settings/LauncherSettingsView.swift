@@ -139,6 +139,7 @@ struct LauncherSettingsView: View {
 					case .about:
 						AboutSettingsPage(
 							region: installation.region,
+							runtimeName: lifecycle.readiness.runtimeName,
 							accentColor: customization.accentColor,
 							launcherIconManager: launcherIconManager,
 							branding: branding,

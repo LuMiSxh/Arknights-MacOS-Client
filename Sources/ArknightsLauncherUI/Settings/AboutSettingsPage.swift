@@ -7,6 +7,7 @@ import SwiftUI
 
 struct AboutSettingsPage: View {
 	let region: GameRegion
+	let runtimeName: String?
 	let accentColor: Color
 	let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
@@ -194,7 +195,7 @@ struct AboutSettingsPage: View {
 	}
 
 	private func reportLauncherProblem() {
-		NSWorkspace.shared.open(IssueReportURL.build())
+		NSWorkspace.shared.open(IssueReportURL.build(runtimeName: runtimeName))
 	}
 
 	private func contactPublisher() {

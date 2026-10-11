@@ -25,6 +25,7 @@ struct WineLaunch: Sendable {
 
 struct RuntimeConfiguration: Decodable, Sendable {
 	struct Archive: Decodable, Sendable {
+		let name: String
 		let sha256: String
 	}
 	struct Interface: Decodable, Sendable {
@@ -153,7 +154,7 @@ struct WineRuntime: Sendable {
 		}
 		return WineRuntime(
 			executableURL: executable,
-			displayName: "Bundled Wine + DXMT",
+			displayName: configuration.runtime.name,
 			revision: configuration.revision,
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"

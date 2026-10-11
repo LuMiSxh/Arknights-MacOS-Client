@@ -16,7 +16,11 @@ extension Bundle {
 package enum IssueReportURL {
 	package static let appVersion: String = Bundle.main.shortVersionString ?? "Development"
 
-	package static func build(code: SupportCode? = nil, context: SupportContext? = nil) -> URL {
+	package static func build(
+		runtimeName: String?,
+		code: SupportCode? = nil,
+		context: SupportContext? = nil
+	) -> URL {
 		var components = URLComponents(
 			string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new")!
 		var items = [
@@ -24,6 +28,9 @@ package enum IssueReportURL {
 			URLQueryItem(name: "version", value: appVersion),
 			URLQueryItem(name: "environment", value: environment),
 		]
+		if let runtimeName {
+			items.append(URLQueryItem(name: "runtime", value: runtimeName))
+		}
 		if let code {
 			items.append(URLQueryItem(name: "code", value: code.rawValue))
 		}

@@ -8,7 +8,7 @@ import Testing
 @Test
 func issueReportURLIncludesOnlyApprovedFailureContext() {
 	let emptyContext = URLComponents(
-		url: IssueReportURL.build(), resolvingAgainstBaseURL: false)!
+		url: IssueReportURL.build(runtimeName: nil), resolvingAgainstBaseURL: false)!
 	#expect(emptyContext.host == "github.com")
 	#expect(emptyContext.path == "/LuMiSxh/Arknights-MacOS-Client/issues/new")
 	#expect(
@@ -21,16 +21,20 @@ func issueReportURLIncludesOnlyApprovedFailureContext() {
 
 	let failureContext = URLComponents(
 		url: IssueReportURL.build(
+			runtimeName: "Arknights macOS Runtime 0.7.0-rc2",
 			code: .pebble,
 			context: SupportContext(operation: .repair, region: .japan)
 		), resolvingAgainstBaseURL: false)!
 
 	#expect(failureContext.queryItems?.first { $0.name == "code" }?.value == "PEBBLE")
+	#expect(
+		failureContext.queryItems?.first { $0.name == "runtime" }?.value
+			== "Arknights macOS Runtime 0.7.0-rc2")
 	#expect(failureContext.queryItems?.first { $0.name == "operation" }?.value == "repair")
 	#expect(failureContext.queryItems?.first { $0.name == "region" }?.value == "japan")
 	#expect(
 		Set(failureContext.queryItems?.map(\.name) ?? []) == [
-			"template", "version", "environment", "code", "operation", "region",
+			"template", "version", "runtime", "environment", "code", "operation", "region",
 		],
 		"failure context"
 	)

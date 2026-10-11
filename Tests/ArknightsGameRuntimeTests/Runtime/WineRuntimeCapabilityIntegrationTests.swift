@@ -77,7 +77,7 @@ func runtimeDiscoveryUsesTheSelectedBundlesCapabilityFile(configured: Bool) asyn
 	).write(to: contents.appending(path: "Info.plist"))
 	var configuration: [String: Any] = [
 		"prefixRevision": 1,
-		"runtime": ["sha256": String(repeating: "a", count: 64)],
+		"runtime": ["name": "Fixture Runtime", "sha256": String(repeating: "a", count: 64)],
 	]
 	if configured {
 		configuration["interface"] = ["runtimeCapabilities": "selected-capabilities.json"]

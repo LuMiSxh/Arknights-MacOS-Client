@@ -92,7 +92,7 @@ struct OnboardingFinishView: View {
 	}
 
 	private func reportProblem() {
-		NSWorkspace.shared.open(IssueReportURL.build())
+		NSWorkspace.shared.open(IssueReportURL.build(runtimeName: lifecycle.readiness.runtimeName))
 	}
 
 	private func contactPublisher() {
