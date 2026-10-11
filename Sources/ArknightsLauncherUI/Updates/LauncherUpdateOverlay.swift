@@ -25,7 +25,7 @@ enum LauncherUpdateOverlayPresentation {
 
 struct LauncherUpdateOverlay: View {
 	let driver: LauncherUpdateUserDriver
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
 	let reduceTransparency: Bool
 	let checkForUpdates: () -> Void

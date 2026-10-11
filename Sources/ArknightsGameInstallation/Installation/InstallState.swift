@@ -2,7 +2,7 @@
 
 import Foundation
 
-struct InstalledState: Codable, Sendable {
+package struct InstalledState: Codable, Sendable {
 	let version: String
 	let basis: String
 	let source: String

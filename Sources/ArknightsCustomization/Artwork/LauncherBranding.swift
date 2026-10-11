@@ -275,9 +275,10 @@ package actor ArtworkCache {
 					"launcher.hg-cdn.com",
 					"ak-tw.hg-cdn.com",
 					"gl-utils-public.hg-cdn.com",
+					"zh.wikifur.com",
 				]
 			case .china, .chinaBilibili:
-				[]
+				["zh.wikifur.com"]
 			}
 
 		return { url in
@@ -311,8 +312,8 @@ package actor ArtworkCache {
 					"https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
 			)!
 		case .taiwan, .china, .chinaBilibili:
-			// No first-party logo URL is known. The launcher shows its text fallback.
-			nil
+			// No first-party logo exists, so these regions use the community wiki logo.
+			URL(string: "https://zh.wikifur.com/w/images/b/b3/Arknights_CN_Logo.png")!
 		}
 	}
 }

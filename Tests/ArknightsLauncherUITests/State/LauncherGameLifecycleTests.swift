@@ -46,7 +46,9 @@ struct LauncherGameLifecycleTests {
 			model.lifecycle.activity
 				== .stoppingGame(sessionID: sessionID, processIdentifier: nil)
 		)
-		#expect(model.lifecycle.activityMessage == LauncherStatus.stoppingGame.message)
+		#expect(
+			model.lifecycle.state.presentation.status.message == LauncherStatus.stoppingGame.message
+		)
 		#expect(!model.lifecycle.canBeginExclusiveActivity)
 		#expect(!model.lifecycle.activity.isGameProcessRunning)
 		await api.resolveBranding()

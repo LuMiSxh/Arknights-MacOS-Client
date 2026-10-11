@@ -204,7 +204,7 @@ func launcherDownloadProgressDoesNotInventPercentageWithoutKnownTotal() {
 		LauncherDownloadProgressPresentation.transferDetail(
 			for: pausedUnknown,
 			isPaused: false
-		) == HomeStrings.downloadWaiting
+		) == "Waiting for network…"
 	)
 	#expect(
 		LauncherDownloadProgressPresentation.accessibilityValue(

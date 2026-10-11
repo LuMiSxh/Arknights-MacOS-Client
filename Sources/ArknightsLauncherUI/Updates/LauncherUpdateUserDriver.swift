@@ -157,7 +157,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		releaseNotesFormat = downloadData.mimeType == "text/plain" ? "plain-text" : "html"
 	}
 	func showUpdateReleaseNotesFailedToDownloadWithError(_ error: Error) {
-		message = LauncherStrings.updateReleaseNotesUnavailable
+		message = "Release notes are unavailable."
 	}
 	func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
@@ -251,7 +251,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		hide()
 		cancellation()
 	}
-	func cancelDownload() {
+	package func cancelDownload() {
 		guard let cancellation = takeAction(&downloadCancellation) else { return }
 		hide()
 		cancellation()

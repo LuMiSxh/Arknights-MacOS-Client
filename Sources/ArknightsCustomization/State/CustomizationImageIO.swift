@@ -29,7 +29,7 @@ struct IconRollbackFailure: LauncherDiagnosticError {
 		"The icon update failed, and the previous icons could not be fully restored. Check the launcher log."
 	}
 
-	var diagnosticDescription: String {
+	package var diagnosticDescription: String {
 		let details = rollbackErrors.map(\.localizedDescription).joined(separator: "; ")
 		return
 			"Icon publication failed: \(original.localizedDescription). Rollback failures: \(details)"
@@ -229,10 +229,8 @@ enum CustomizationImageIO {
 
 	static func discard(_ url: URL, log: LauncherLog) {
 		guard FileManager.default.fileExists(atPath: url.path) else { return }
-		do {
+		log.attempt("Failed to remove temporary icon file at \(url.path)") {
 			try FileManager.default.removeItem(at: url)
-		} catch {
-			log.error("Failed to remove temporary icon file at \(url.path): \(error)")
 		}
 	}
 

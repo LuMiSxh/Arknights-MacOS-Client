@@ -7,8 +7,8 @@ extension InstallationController {
 	package func chooseInstallDirectory() {
 		guard lifecycle.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = InstallationStrings.pickerInstallDirectory
-		panel.prompt = InstallationStrings.pickerChoose
+		panel.title = "Choose where to install Arknights"
+		panel.prompt = "Choose"
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.canCreateDirectories = true
@@ -26,8 +26,8 @@ extension InstallationController {
 	package func locateExistingInstallation() {
 		guard lifecycle.activity == .idle else { return }
 		let panel = NSOpenPanel()
-		panel.title = InstallationStrings.pickerLocateInstallation
-		panel.prompt = InstallationStrings.pickerUseFolder
+		panel.title = "Choose the folder containing Arknights.exe"
+		panel.prompt = "Use Folder"
 		panel.canChooseDirectories = true
 		panel.canChooseFiles = false
 		panel.allowsMultipleSelection = false
@@ -94,7 +94,9 @@ extension InstallationController {
 
 	@discardableResult
 	package func retryUninstallFailure(id: UUID) -> Bool {
-		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard let failure = lifecycle.state.presentation.failure, failure.id == id else {
+			return false
+		}
 		guard failure.context.operation == .uninstall else { return false }
 		guard failure.context.region == region.supportRegion else { return false }
 		guard failure.actions.contains(.retry), canUninstallGame else { return false }

@@ -78,7 +78,7 @@ extension View {
 private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 	let tint: Color
 	let isDisabled: Bool
-	let presentation: ControlSurfacePresentation
+	package let presentation: ControlSurfacePresentation
 	let isInteractive: Bool
 	let borderOpacity: Double?
 	let shape: ShapeType

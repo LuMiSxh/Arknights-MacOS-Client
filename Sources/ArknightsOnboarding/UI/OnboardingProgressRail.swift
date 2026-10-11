@@ -10,7 +10,7 @@ struct OnboardingProgressRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text(OnboardingStrings.setupAssistant)
+			Text("SETUP ASSISTANT")
 				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
@@ -54,7 +54,7 @@ struct OnboardingProgressRail: View {
 				Rectangle()
 					.fill(accentColor)
 					.frame(width: 28, height: 2)
-				Text(OnboardingStrings.progressVersion(appVersion))
+				Text("Launcher v\(appVersion)")
 					.font(.caption.monospaced())
 					.foregroundStyle(.tertiary)
 			}

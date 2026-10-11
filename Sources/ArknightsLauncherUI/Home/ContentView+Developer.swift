@@ -13,7 +13,7 @@ extension ContentView {
 		var developerExpandedPillID: String? {
 			model.developerSimulation?.expandedPill.rawValue
 		}
-		var developerAccessibilityMusicTitle: String? {
+		package var developerAccessibilityMusicTitle: String? {
 			guard model.isDeveloperMode else { return nil }
 			return model.developerAccessibilityMusicTitle
 		}
@@ -26,7 +26,7 @@ extension ContentView {
 	#else
 		var developerSimulationBinding: DeveloperSimulationBinding? { nil }
 		var developerExpandedPillID: String? { nil }
-		var developerAccessibilityMusicTitle: String? { nil }
+		package var developerAccessibilityMusicTitle: String? { nil }
 		var developerPopup: ((String, String) -> Void)? { nil }
 	#endif
 }

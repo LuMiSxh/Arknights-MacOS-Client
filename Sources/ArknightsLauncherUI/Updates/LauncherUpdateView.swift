@@ -7,14 +7,14 @@ import SwiftUI
 
 struct LauncherUpdateView: View {
 	let driver: LauncherUpdateUserDriver
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
 	let checkForUpdates: () -> Void
 	@State private var contentHeight: CGFloat = 0
 
 	var body: some View {
 		ThemedModalView(
-			title: LauncherStrings.updateTitle,
+			title: "Launcher Update",
 			hudTintColor: hudTintColor,
 			width: modalWidth,
 			height: modalHeight
@@ -46,7 +46,7 @@ struct LauncherUpdateView: View {
 	private var statusHeader: some View {
 		VStack(alignment: .leading, spacing: 6) {
 			if let version = driver.version {
-				Text(LauncherStrings.updateVersion(version))
+				Text("Version \(version)")
 					.font(.headline)
 			}
 			Text(statusText)
@@ -64,7 +64,7 @@ struct LauncherUpdateView: View {
 			ProgressView()
 				.controlSize(.large)
 				.frame(maxWidth: .infinity, alignment: .center)
-				.accessibilityLabel(Text(LauncherStrings.updateChecking))
+				.accessibilityLabel(Text("Checking for updates…"))
 		case .available:
 			availableContent
 		case .downloading:
@@ -72,7 +72,7 @@ struct LauncherUpdateView: View {
 		case .extracting:
 			extractionContent
 		case .readyToInstall:
-			Text(LauncherStrings.updateReadyDetail)
+			Text("The update can be installed now.")
 				.foregroundStyle(.secondary)
 		case .installing:
 			installingContent
@@ -80,13 +80,13 @@ struct LauncherUpdateView: View {
 			Text(
 
 				driver.relaunched
-					? LauncherStrings.updateRelaunchDetail
-					: LauncherStrings.updateInstalledDetail
+					? "The launcher was restarted."
+					: "The update was installed."
 
 			)
 			.foregroundStyle(.secondary)
 		case .noUpdate:
-			Text(LauncherStrings.updateNoUpdateDetail)
+			Text("No newer version was found.")
 				.foregroundStyle(.secondary)
 		case .failed:
 			Text(driver.message ?? LauncherStrings.updateErrorDetail)
@@ -105,11 +105,11 @@ struct LauncherUpdateView: View {
 						.textSelection(.enabled)
 				}
 			} else {
-				Text(LauncherStrings.updateReleaseNotesUnavailable)
+				Text("Release notes are unavailable.")
 					.foregroundStyle(.secondary)
 			}
 			if driver.informationOnly {
-				Text(LauncherStrings.updateInformationOnlyDetail)
+				Text("This version is informational only and cannot be installed by the launcher.")
 					.foregroundStyle(.secondary)
 			}
 		}
@@ -119,7 +119,7 @@ struct LauncherUpdateView: View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView(value: downloadProgress)
 				.tint(accentColor)
-				.accessibilityLabel(Text(LauncherStrings.updateDownloading))
+				.accessibilityLabel(Text("Downloading update…"))
 				.accessibilityValue(Text(downloadProgressText))
 			Text(downloadProgressText)
 				.font(.caption.monospacedDigit())
@@ -131,7 +131,7 @@ struct LauncherUpdateView: View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView(value: driver.extractionProgress)
 				.tint(accentColor)
-				.accessibilityLabel(Text(LauncherStrings.updateExtracting))
+				.accessibilityLabel(Text("Preparing update…"))
 				.accessibilityValue(Text(percentageText))
 			Text(percentageText)
 				.font(.caption.monospacedDigit())
@@ -146,10 +146,10 @@ struct LauncherUpdateView: View {
 			Text(
 				driver.message
 					?? (driver.gameIsRunning
-						? LauncherStrings.updateQuitDetail
+						? "Close the game to finish the launcher update. Installation continues automatically afterward."
 						: driver.terminationBlocked
-							? LauncherStrings.updateWaitingDetail
-							: LauncherStrings.updateInstallingDetail)
+							? "The launcher is waiting for its current activity to finish."
+							: "The launcher will close and reopen automatically to finish the update.")
 			)
 			.foregroundStyle(.secondary)
 		}
@@ -160,27 +160,27 @@ struct LauncherUpdateView: View {
 		switch driver.phase {
 		case .checking:
 			CapsuleActionButton(
-				title: LauncherStrings.updateCancel,
+				title: "Cancel",
 				tone: .neutral,
 				action: driver.cancelCheck
 			)
 		case .available:
 			CapsuleActionButton(
-				title: LauncherStrings.updateLater,
+				title: "Later",
 				tone: .neutral,
 				action: { driver.choose(.dismiss) }
 			)
 			if driver.informationOnly {
 				if let informationURL = driver.informationURL {
 					CapsuleActionButton(
-						title: LauncherStrings.updateMoreInformation,
+						title: "More Information",
 						systemImage: "arrow.up.right",
 						tone: .neutral
 					) { NSWorkspace.shared.open(informationURL) }
 				}
 			} else {
 				CapsuleActionButton(
-					title: LauncherStrings.updateInstall,
+					title: "Install Update",
 					systemImage: "arrow.down.app",
 					tone: .accent(accentColor),
 					action: { driver.choose(.install) }
@@ -189,7 +189,7 @@ struct LauncherUpdateView: View {
 			}
 		case .downloading:
 			CapsuleActionButton(
-				title: LauncherStrings.updateCancel,
+				title: "Cancel",
 				tone: .neutral,
 				action: driver.cancelDownload
 			)
@@ -197,12 +197,12 @@ struct LauncherUpdateView: View {
 			EmptyView()
 		case .readyToInstall:
 			CapsuleActionButton(
-				title: LauncherStrings.updateLater,
+				title: "Later",
 				tone: .neutral,
 				action: { driver.choose(.dismiss) }
 			)
 			CapsuleActionButton(
-				title: LauncherStrings.updateInstallNow,
+				title: "Install Now",
 				systemImage: "arrow.down.app",
 				tone: .accent(accentColor),
 				action: { driver.choose(.install) }
@@ -211,7 +211,7 @@ struct LauncherUpdateView: View {
 		case .installing:
 			if !driver.applicationTerminated {
 				CapsuleActionButton(
-					title: LauncherStrings.updateRetryQuit,
+					title: "Try Quitting Again",
 					systemImage: "arrow.clockwise",
 					tone: .accent(accentColor),
 					action: driver.retryTerminationRequest
@@ -225,7 +225,7 @@ struct LauncherUpdateView: View {
 			)
 		case .noUpdate:
 			CapsuleActionButton(
-				title: LauncherStrings.updateCheckAgain,
+				title: "Check Again",
 				systemImage: "arrow.clockwise",
 				tone: .accent(accentColor),
 				action: retryUpdate
@@ -237,7 +237,7 @@ struct LauncherUpdateView: View {
 			)
 		case .failed:
 			CapsuleActionButton(
-				title: LauncherStrings.updateTryAgain,
+				title: "Try Again",
 				systemImage: "arrow.clockwise",
 				tone: .accent(accentColor),
 				action: retryUpdate
@@ -256,23 +256,23 @@ struct LauncherUpdateView: View {
 	private var statusText: String {
 		switch driver.phase {
 		case .hidden: ""
-		case .checking: LauncherStrings.updateChecking
+		case .checking: "Checking for updates…"
 		case .available: availableStatusText
-		case .downloading: LauncherStrings.updateDownloading
-		case .extracting: LauncherStrings.updateExtracting
-		case .readyToInstall: LauncherStrings.updateReady
+		case .downloading: "Downloading update…"
+		case .extracting: "Preparing update…"
+		case .readyToInstall: "Update is ready."
 		case .installing: LauncherStrings.updateInstalling
-		case .installed: LauncherStrings.updateInstalled
-		case .noUpdate: LauncherStrings.updateNoUpdate
-		case .failed: LauncherStrings.updateFailed
+		case .installed: "Update installed"
+		case .noUpdate: "The launcher is up to date."
+		case .failed: "Couldn’t check for updates"
 		}
 	}
 
 	private var availableStatusText: String {
 		switch driver.updateStage {
-		case .downloaded: LauncherStrings.updateReady
+		case .downloaded: "Update is ready."
 		case .installing: LauncherStrings.updateInstalling
-		default: LauncherStrings.updateAvailable
+		default: "An update is available."
 		}
 	}
 

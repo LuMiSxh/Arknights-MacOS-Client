@@ -46,20 +46,20 @@ package final class IntelTranslationController {
 	}
 
 	package var state: IntelTranslationState {
-		lifecycle.intelTranslationState
+		lifecycle.state.readiness.intelTranslation
 	}
 	package var allowsWine: Bool { state.allowsWine }
 
 	@discardableResult
 	package func refreshAvailability(force: Bool = false) async -> IntelTranslationState {
 		if !force,
-			lifecycle.intelTranslationState != .checking,
-			lifecycle.intelTranslationState != .waitingForLauncherCheck
+			lifecycle.state.readiness.intelTranslation != .checking,
+			lifecycle.state.readiness.intelTranslation != .waitingForLauncherCheck
 		{
-			return lifecycle.intelTranslationState
+			return lifecycle.state.readiness.intelTranslation
 		}
 
-		lifecycle.intelTranslationState = .checking
+		lifecycle.state.readiness.intelTranslation = .checking
 		let task: Task<IntelTranslationCheck, Never>
 		if let checkTask {
 			task = checkTask
@@ -76,9 +76,9 @@ package final class IntelTranslationController {
 
 	/// Applies real and simulated probe results through the same recovery presentation.
 	package func applyAvailabilityCheck(_ check: IntelTranslationCheck) {
-		lifecycle.intelTranslationState = check.state
+		lifecycle.state.readiness.intelTranslation = check.state
 		if check.state != .rosettaMissing {
-			lifecycle.rosettaInstallationState = .idle
+			lifecycle.state.readiness.rosettaInstallation = .idle
 		}
 		updatePreflightFailure(for: check)
 		log.info(
@@ -88,13 +88,13 @@ package final class IntelTranslationController {
 
 	@discardableResult
 	package func installRosetta() async -> IntelTranslationState {
-		guard lifecycle.intelTranslationState == .rosettaMissing else {
-			return lifecycle.intelTranslationState
+		guard lifecycle.state.readiness.intelTranslation == .rosettaMissing else {
+			return lifecycle.state.readiness.intelTranslation
 		}
 
 		let operationID = installationID ?? UUID()
 		installationID = operationID
-		lifecycle.rosettaInstallationState = .installing
+		lifecycle.state.readiness.rosettaInstallation = .installing
 		let task: Task<IntelTranslationProcessResult, any Error>
 		if let installationTask {
 			task = installationTask
@@ -115,40 +115,42 @@ package final class IntelTranslationController {
 			guard result.status == 0 else {
 				let message =
 					"Apple’s installer exited with status \(String(result.status)). Use the Terminal command below or check the launcher log for details."
-				lifecycle.rosettaInstallationState = .failed(message)
+				lifecycle.state.readiness.rosettaInstallation = .failed(message)
 				presentRosettaFailure(
 					message: message,
 					diagnostic: "Rosetta installer exited with status \(result.status): \(output)",
 					id: operationID
 				)
-				return lifecycle.intelTranslationState
+				return lifecycle.state.readiness.intelTranslation
 			}
-			lifecycle.rosettaInstallationState = .idle
+			lifecycle.state.readiness.rosettaInstallation = .idle
 			return await refreshAvailability(force: true)
 		} catch is CancellationError {
 			installationTask = nil
 			installationID = nil
-			lifecycle.rosettaInstallationState = .idle
-			return lifecycle.intelTranslationState
+			lifecycle.state.readiness.rosettaInstallation = .idle
+			return lifecycle.state.readiness.intelTranslation
 		} catch {
 			installationTask = nil
 			installationID = nil
 			let message =
 				"Apple’s Rosetta installer could not start. Use the Terminal command below or check the launcher log for details."
-			lifecycle.rosettaInstallationState = .failed(message)
+			lifecycle.state.readiness.rosettaInstallation = .failed(message)
 			log.error("Rosetta installation failed: \(error.localizedDescription)")
 			presentRosettaFailure(
 				message: message,
 				diagnostic: error.localizedDescription,
 				id: operationID
 			)
-			return lifecycle.intelTranslationState
+			return lifecycle.state.readiness.intelTranslation
 		}
 	}
 
 	@discardableResult
 	package func retryRosettaFailure(id: UUID) -> Bool {
-		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard let failure = lifecycle.state.presentation.failure, failure.id == id else {
+			return false
+		}
 		guard failure.context.operation == .rosettaInstallation else { return false }
 		guard failure.actions.contains(.retry), canInstallRosetta else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
@@ -161,7 +163,9 @@ package final class IntelTranslationController {
 
 	@discardableResult
 	package func retryAvailabilityFailure(id: UUID) -> Bool {
-		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard let failure = lifecycle.state.presentation.failure, failure.id == id else {
+			return false
+		}
 		guard failure.context.operation == .intelTranslationPreflight else { return false }
 		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
 		guard lifecycle.consumeFailure(id: id) != nil else { return false }
@@ -173,11 +177,13 @@ package final class IntelTranslationController {
 	}
 
 	package var statusDetail: String? {
-		if lifecycle.rosettaInstallationState.isInstalling {
+		if lifecycle.state.readiness.rosettaInstallation.isInstalling {
 			return "Apple’s software update tool is installing the Intel compatibility layer."
 		}
-		if let failure = lifecycle.rosettaInstallationState.failureMessage { return failure }
-		return switch lifecycle.intelTranslationState {
+		if let failure = lifecycle.state.readiness.rosettaInstallation.failureMessage {
+			return failure
+		}
+		return switch lifecycle.state.readiness.intelTranslation {
 		case .waitingForLauncherCheck, .checking:
 			"The launcher is verifying that the bundled Wine runtime can start."
 		case .available:
@@ -194,12 +200,12 @@ package final class IntelTranslationController {
 	}
 
 	package var canInstallRosetta: Bool {
-		lifecycle.intelTranslationState == .rosettaMissing
-			&& !lifecycle.rosettaInstallationState.isInstalling
+		lifecycle.state.readiness.intelTranslation == .rosettaMissing
+			&& !lifecycle.state.readiness.rosettaInstallation.isInstalling
 	}
 
 	var launchError: GameRuntimeError {
-		switch lifecycle.intelTranslationState {
+		switch lifecycle.state.readiness.intelTranslation {
 		case .rosettaMissing:
 			.rosettaMissing
 		case .gameTestModeEnabled:
@@ -219,24 +225,26 @@ package final class IntelTranslationController {
 
 	private func updatePreflightFailure(for check: IntelTranslationCheck) {
 		if check.state == .available {
-			if lifecycle.failure?.context.operation == .intelTranslationPreflight {
+			if lifecycle.state.presentation.failure?.context.operation == .intelTranslationPreflight
+			{
 				lifecycle.clearFailure()
 			}
 			return
 		}
-		guard lifecycle.readiness.isInstalled else { return }
+		guard lifecycle.state.readiness.isInstalled else { return }
 		guard check.state != .waitingForLauncherCheck, check.state != .checking else { return }
 		guard
-			lifecycle.failure == nil
-				|| lifecycle.failure?.context.operation == .intelTranslationPreflight
+			lifecycle.state.presentation.failure == nil
+				|| lifecycle.state.presentation.failure?.context.operation
+					== .intelTranslationPreflight
 		else { return }
 
 		let error = launchError
 		var actions: [RecoveryAction] = [.retry, .openTroubleshooting, .reportProblem]
 		if check.state == .rosettaMissing { actions.insert(.installRosetta, at: 0) }
 		let existingID =
-			lifecycle.failure?.message == error.errorDescription
-			? lifecycle.failure?.id
+			lifecycle.state.presentation.failure?.message == error.errorDescription
+			? lifecycle.state.presentation.failure?.id
 			: nil
 		lifecycle.presentFailure(
 			LauncherFailurePresentation(

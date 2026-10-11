@@ -12,9 +12,7 @@ extension InstallationSettingsPage {
 				if let rate = progress.transferRateBytesPerSecond {
 					Text(
 
-						SettingsStrings.downloadSpeed(
-							DownloadProgressFormatting.byteRate(rate)
-						)
+						DownloadProgressFormatting.byteRate(rate)
 
 					)
 					.monospacedDigit()
@@ -23,7 +21,7 @@ extension InstallationSettingsPage {
 						alignment: .trailing
 					)
 				} else if progress.isTransferStalled {
-					Text(SettingsStrings.downloadWaiting)
+					Text("Waiting for network…")
 						.frame(
 							minWidth: AppConstants.HUD.downloadSpeedDetailMinWidth,
 							alignment: .trailing

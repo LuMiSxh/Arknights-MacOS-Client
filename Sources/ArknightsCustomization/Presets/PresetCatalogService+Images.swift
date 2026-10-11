@@ -9,19 +9,15 @@ extension PresetCatalogService {
 	func enforceImageCacheLimitIfNeeded() async {
 		guard !hasEnforcedImageCacheLimit else { return }
 		hasEnforcedImageCacheLimit = true
-		do {
+		log.attempt("Failed to enforce the preset image cache limit at \(cacheDirectory.path)") {
 			try pruneImageCache(
 				incomingBytes: 0,
 				preserving: cacheDirectory.appending(path: ".cache-limit-check")
 			)
-		} catch {
-			log.error(
-				"Failed to enforce the preset image cache limit at \(cacheDirectory.path): \(error.localizedDescription)"
-			)
 		}
 	}
 
-	func imageData(for url: URL, cacheKey: String) async throws -> Data {
+	package func imageData(for url: URL, cacheKey: String) async throws -> Data {
 		await enforceImageCacheLimitIfNeeded()
 		let epoch = cacheEpoch
 		guard Self.isAllowedRemoteAssetURL(url) else {

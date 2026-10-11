@@ -42,6 +42,16 @@ package final class LauncherLog: Sendable {
 		enqueue(.error, message)
 	}
 
+	/// Runs best-effort work and logs a failure with `context`; the caller continues either way.
+	/// Use it only when the error is neither handled nor rethrown.
+	package func attempt(_ context: String, _ work: () throws -> Void) {
+		do {
+			try work()
+		} catch {
+			self.error("\(context): \(launcherDiagnosticDescription(for: error))")
+		}
+	}
+
 	/// Ensures the log file exists after every earlier entry has been written.
 	package func prepare() async {
 		await perform { $0.prepare() }
@@ -86,7 +96,7 @@ private final class LauncherLogWriter: @unchecked Sendable {
 		formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 	}
 
-	func prepare() {
+	package func prepare() {
 		do {
 			try prepareFile(forAppending: 0)
 		} catch {

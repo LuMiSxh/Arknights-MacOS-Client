@@ -18,7 +18,7 @@ import ArknightsCore
 		}
 
 		var canRequestDockLaunch: Bool {
-			model.lifecycle.activity == .idle && !model.lifecycle.refresh.isChecking
+			model.lifecycle.activity == .idle && !model.lifecycle.state.refresh.isChecking
 		}
 
 		// MARK: - Region
@@ -109,7 +109,7 @@ import ArknightsCore
 
 		func launch() {
 			guard model.gameSession.canLaunch,
-				model.lifecycle.failure?.blocksGameLaunch != true
+				model.lifecycle.state.presentation.failure?.blocksGameLaunch != true
 			else { return }
 			model.updateDeveloperSimulation {
 				$0.failure = .none
@@ -140,7 +140,7 @@ import ArknightsCore
 				simulation.isInstalled,
 				!simulation.hasPartialDownload,
 				!simulation.updateAvailable,
-				model.lifecycle.failure?.blocksGameLaunch != true
+				model.lifecycle.state.presentation.failure?.blocksGameLaunch != true
 			else { return false }
 			simulation.selectedRegion = region
 			simulation.failure = .none
@@ -175,10 +175,10 @@ import ArknightsCore
 			guard simulation?.rosettaMissing == true else {
 				return await refreshIntelTranslationForUI(force: false)
 			}
-			model.lifecycle.rosettaInstallationState = .installing
+			model.lifecycle.state.readiness.rosettaInstallation = .installing
 			await Task.yield()
-			model.lifecycle.rosettaInstallationState = .idle
-			model.lifecycle.intelTranslationState = .available
+			model.lifecycle.state.readiness.rosettaInstallation = .idle
+			model.lifecycle.state.readiness.intelTranslation = .available
 			model.updateDeveloperSimulation { $0.rosettaMissing = false }
 			return .available
 		}

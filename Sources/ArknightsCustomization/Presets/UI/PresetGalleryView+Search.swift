@@ -5,7 +5,7 @@ import SwiftUI
 
 struct PresetGallerySearchBar: View {
 	let destination: PresetGalleryDestination
-	let accentColor: Color
+	package let accentColor: Color
 	@Binding var searchText: String
 	@Binding var committedTags: [String]
 	@FocusState private var isFocused: Bool
@@ -40,7 +40,7 @@ struct PresetGallerySearchBar: View {
 				.textFieldStyle(.plain)
 				.focused($isFocused)
 				.frame(height: Self.contentHeight)
-				.accessibilityLabel(CustomizationStrings.searchLabel)
+				.accessibilityLabel("Search gallery")
 				.onKeyPress(.delete) {
 					guard searchText.isEmpty, !committedTags.isEmpty else { return .ignored }
 					committedTags.removeLast()
@@ -60,7 +60,7 @@ struct PresetGallerySearchBar: View {
 						.contentShape(Rectangle())
 				}
 				.buttonStyle(ActionPressStyle())
-				.accessibilityLabel(CustomizationStrings.searchClear)
+				.accessibilityLabel("Clear search")
 			}
 		}
 		.font(.callout)
@@ -97,7 +97,7 @@ struct PresetGallerySearchBar: View {
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())
 		.frame(height: Self.contentHeight)
-		.accessibilityLabel(CustomizationStrings.searchRemoveTag(tag))
+		.accessibilityLabel("Remove \(tag) tag")
 	}
 
 	private func promoteTrailingTag() {

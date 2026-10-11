@@ -5,15 +5,15 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct GameSettingsPage: View {
-	let settings: LauncherPreferencesController
+	package let settings: LauncherPreferencesController
 	let gameSession: GameSessionController
-	let lifecycle: LauncherLifecycleStore
-	let accentColor: Color
+	package let lifecycle: LauncherLifecycleStore
+	package let accentColor: Color
 
 	var body: some View {
 		SettingsPage(
-			title: SettingsStrings.gameTitle,
-			subtitle: SettingsStrings.gameSubtitle,
+			title: "Game",
+			subtitle: "How Arknights looks and plays",
 			accentColor: accentColor
 		) {
 			GameDisplaySettingsPanel(

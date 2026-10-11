@@ -8,14 +8,14 @@ import UniformTypeIdentifiers
 extension CustomizationController {
 	package func chooseCustomAppIcon() {
 		chooseCustomIcon(
-			title: CustomizationStrings.pickerLauncherIcon,
+			title: "Choose an app icon",
 			apply: applyCustomAppIcon(from:)
 		)
 	}
 
 	package func chooseCustomGameIcon() {
 		chooseCustomIcon(
-			title: CustomizationStrings.pickerGameIcon,
+			title: "Choose a game icon",
 			apply: applyCustomGameIcon(from:)
 		)
 	}
@@ -198,7 +198,7 @@ extension CustomizationController {
 	) {
 		let panel = NSOpenPanel()
 		panel.title = title
-		panel.prompt = CustomizationStrings.pickerChoose
+		panel.prompt = "Choose"
 		panel.allowedContentTypes = [.image]
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true

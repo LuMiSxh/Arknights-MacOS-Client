@@ -34,14 +34,14 @@ struct GameClientProfile: Sendable {
 	let variant: GameClientVariant
 	let runtimeEnvironmentOverrides: [String: String]
 	let requiresCanaryPermission: Bool
-	let requiresACEWarning: Bool
+	package let requiresACEWarning: Bool
 }
 
 /// The Canary permissions that expose extra regions. This is the single source of truth for
 /// whether a region may be selected, installed, listed, or launched. Only Taiwan is still gated.
 package struct RegionAccess: Equatable, Sendable {
-	var canaryFeaturesEnabled: Bool
-	var taiwanClientEnabled: Bool
+	package var canaryFeaturesEnabled: Bool
+	package var taiwanClientEnabled: Bool
 
 	package init(canaryFeaturesEnabled: Bool, taiwanClientEnabled: Bool) {
 		self.canaryFeaturesEnabled = canaryFeaturesEnabled

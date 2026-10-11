@@ -6,7 +6,7 @@ import Foundation
 actor ProgressCounter {
 	private let totalBytes: Int64
 	private let totalFiles: Int
-	private let clock: any DownloadClock
+	private let clock: ElapsedTime
 	private var downloadedBytes: Int64
 	private var networkDownloadedBytes: Int64 = 0
 	private var completedFiles = 0
@@ -16,7 +16,7 @@ actor ProgressCounter {
 	private(set) var lastActiveFile: String?
 	// Chunk callbacks can fire far faster than SwiftUI needs to redraw a progress bar;
 	// throttling emissions to 10/s keeps updates smooth without flooding the UI.
-	private var lastEmission: ContinuousClock.Instant
+	private var lastEmission: Duration
 
 	init(
 		totalBytes: Int64,
@@ -24,16 +24,17 @@ actor ProgressCounter {
 		downloadedBytes: Int64 = 0,
 		completedFiles: Int = 0,
 		sequence: UInt64 = 0,
-		clock: any DownloadClock = ContinuousDownloadClock()
+		clock: any Clock<Duration> = ContinuousClock()
 	) {
 		self.totalBytes = totalBytes
 		self.totalFiles = totalFiles
-		self.clock = clock
+		let elapsed = ElapsedTime(clock)
+		self.clock = elapsed
 		self.downloadedBytes = downloadedBytes
 		self.completedFiles = completedFiles
 		self.sequence = sequence
 		estimator = TransferRateEstimator(clock: clock)
-		lastEmission = clock.now
+		lastEmission = elapsed.now
 	}
 
 	func current(file: String) -> DownloadProgress {
@@ -48,7 +49,7 @@ actor ProgressCounter {
 		downloadedBytes = max(0, downloadedBytes - bytes)
 		networkDownloadedBytes = max(0, networkDownloadedBytes - networkBytes)
 		estimator.reset()
-		lastEmission = estimatorClockNow
+		lastEmission = clock.now
 		return progress(file: file)
 	}
 
@@ -58,7 +59,7 @@ actor ProgressCounter {
 	func addReused(bytes: Int64, file: String) -> DownloadProgress {
 		downloadedBytes += bytes
 		completedFiles += 1
-		lastEmission = estimatorClockNow
+		lastEmission = clock.now
 		return progress(file: file)
 	}
 
@@ -73,10 +74,10 @@ actor ProgressCounter {
 			completedFiles += 1
 		}
 
-		let now = estimatorClockNow
+		let now = clock.now
 		guard
 			force
-				|| lastEmission.duration(to: now) >= AppConstants.Network.progressEmissionInterval
+				|| now - lastEmission >= AppConstants.Network.progressEmissionInterval
 		else {
 			return nil
 		}
@@ -88,7 +89,7 @@ actor ProgressCounter {
 	/// a CDN retry or a stalled stream starts a new network attempt.
 	func resetRate(file: String) -> DownloadProgress {
 		estimator.reset()
-		lastEmission = estimatorClockNow
+		lastEmission = clock.now
 		return progress(file: file)
 	}
 
@@ -110,10 +111,6 @@ actor ProgressCounter {
 			isTransferStalled: snapshot.isStalled,
 			sequence: sequence
 		)
-	}
-
-	private var estimatorClockNow: ContinuousClock.Instant {
-		clock.now
 	}
 }
 

@@ -25,7 +25,7 @@ package struct BundledResource: Hashable, Sendable {
 	}
 
 	/// How the staged bytes relate to the content that the app reads.
-	enum Encoding: String, Sendable {
+	package enum Encoding: String, Sendable {
 		/// The file holds the content as is.
 		case identity
 		/// The file holds raw deflate data, which Apple's Compression framework reads as zlib.
@@ -53,7 +53,7 @@ package struct BundledResource: Hashable, Sendable {
 	}
 
 	/// A file inside this directory resource. The file keeps the directory's origin.
-	func file(_ name: String, encoding: Encoding = .identity) -> BundledResource {
+	package func file(_ name: String, encoding: Encoding = .identity) -> BundledResource {
 		precondition(kind == .directory, "Only a directory resource contains files.")
 		return BundledResource(file: "\(path)/\(name)", origin: origin, encoding: encoding)
 	}

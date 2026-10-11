@@ -14,7 +14,7 @@ package actor PresetCatalogService {
 	let wallpaperTagsURL: URL
 	let tagStore: WallpaperTagStore
 	let loader: BoundedHTTPDataLoader
-	let log: LauncherLog
+	package let log: LauncherLog
 	var memoryCachedAvatars: [PresetAvatar]?
 	var memoryCachedWallpapers: [PresetWallpaper]?
 	var hasEnforcedImageCacheLimit = false
@@ -42,14 +42,10 @@ package actor PresetCatalogService {
 			redirectValidator: Self.isAllowedRemoteAssetURL
 		)
 
-		do {
+		log.attempt("Failed to create preset cache directory at \(cacheDirectory.path)") {
 			try FileManager.default.createDirectory(
 				at: cacheDirectory,
 				withIntermediateDirectories: true
-			)
-		} catch {
-			log.error(
-				"Failed to create preset cache directory at \(cacheDirectory.path): \(error.localizedDescription)"
 			)
 		}
 	}

@@ -110,7 +110,7 @@ func pointerAnswersWriteTheHardwareCursorPreference(answer: PointerAnswer) {
 	preferences.pointerAnswer = answer
 
 	#expect(preferences.usesHardwareCursor == (answer == .macPointer))
-	#expect(store.usesHardwareCursor() == (answer == .macPointer))
+	#expect(store.value(LauncherPreferencesStore.Key.usesHardwareCursor) == (answer == .macPointer))
 	#expect(preferences.pointerAnswer == answer)
 }
 

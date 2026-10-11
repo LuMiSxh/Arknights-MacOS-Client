@@ -41,7 +41,7 @@ enum LauncherConfirmation: Equatable, Identifiable {
 	}
 }
 
-struct LauncherPresentationArbiter {
+package struct LauncherPresentationArbiter {
 	private(set) var current: LauncherPresentationDestination?
 	private(set) var queued: LauncherPresentationDestination?
 

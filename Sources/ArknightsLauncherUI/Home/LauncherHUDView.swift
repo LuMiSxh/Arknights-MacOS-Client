@@ -7,17 +7,17 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct LauncherHUDView: View {
-	let lifecycle: LauncherLifecycleStore
-	let settings: LauncherPreferencesController
-	let installation: InstallationController
+	package let lifecycle: LauncherLifecycleStore
+	package let settings: LauncherPreferencesController
+	package let installation: InstallationController
 	let gameSession: GameSessionController
-	let intelTranslation: IntelTranslationController
-	let communication: LauncherCommunicationController
+	package let intelTranslation: IntelTranslationController
+	package let communication: LauncherCommunicationController
 	let canSwitchRegion: Bool
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
 	let musicController: BackgroundMusicController
-	let actions: LauncherHUDActions
+	package let actions: LauncherHUDActions
 	let developerExpandedPill: String?
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var expandedPill: ExpandedPill?
@@ -52,7 +52,7 @@ struct LauncherHUDView: View {
 		}
 		.animation(stateAnimation, value: installation.isDownloading)
 		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
-		.animation(stateAnimation, value: lifecycle.failure?.id)
+		.animation(stateAnimation, value: lifecycle.state.presentation.failure?.id)
 	}
 
 	private var controlBarContent: some View {
@@ -69,19 +69,19 @@ struct LauncherHUDView: View {
 			HStack(spacing: 8) {
 				if communication.shouldShowLauncherUpdateButton {
 					CapsuleActionButton(
-						title: HomeStrings.launcherUpdate,
+						title: "Install Update",
 						systemImage: "arrow.down.app",
 						tone: .neutral,
 						action: actions.openLauncherUpdate
 					)
 					.disabled(!communication.canOpenLauncherUpdate)
 					.transition(primaryActionTransition)
-					.help(HomeStrings.launcherUpdateHelp)
+					.help("Install the latest launcher update")
 				}
 
-				if lifecycle.failure?.blocksGameLaunch == true {
+				if lifecycle.state.presentation.failure?.blocksGameLaunch == true {
 					CapsuleActionButton(
-						title: HomeStrings.recoveryDetails,
+						title: "Show Details",
 						systemImage: "info.circle",
 						tone: .neutral,
 						action: actions.showFailureDetails
@@ -100,7 +100,7 @@ struct LauncherHUDView: View {
 					launch: actions.launch,
 					stopGame: actions.stopGame
 				)
-				.disabled(lifecycle.failure?.blocksGameLaunch == true)
+				.disabled(lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 			}
 		}
 		.padding(16)

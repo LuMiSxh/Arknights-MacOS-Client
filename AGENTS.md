@@ -26,27 +26,30 @@
 
 - Use Swift 6.4. Follow the target table in `docs/development/architecture/README.md#targets`.
 - Keep app composition in `Sources/ArknightsClient/Application` (the only code in the executable), feature work in its feature target, cross-feature primitives and configuration in `ArknightsCore`, and feature-independent I/O in `ArknightsInfrastructure`.
-- Give a symbol that another target uses `package` access (with an explicit `package init` when another target constructs the type); keep the rest `internal`. Do not add `public`.
+- Give a symbol `package` access only when another production target uses it (with an explicit `package init` when that target constructs the type); keep the rest `internal`. Tests use `@testable import`: do not widen access or add a `package init` for tests. Do not add `public`.
+- Write UI copy as literals at the view. Do not add `*Strings` files. Extract a constant only when two or more sites share it.
 - Map infrastructure errors at the owning feature boundary. Each feature owns its error type; support codes and messages are a stable contract pinned by `SupportCodeStabilityTests`.
 - Only `ArknightsLauncherUI` links Sparkle. Only `ArknightsAudio` links YouTubePlayerKit.
 - `Core` holds cross-feature lifecycle state and names no feature type.
 - Use `@Observable`; keep `LauncherViewModel` at composition and inject narrow dependencies into features and views.
+- Add a presentation or policy type only when it holds real branching. Do not extract a one-expression policy.
 - Define persisted locations through `AppPaths`; preserve paths, keys, and serialized formats unless a migration is explicit.
 - Centralize application-owned fixed keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.
-- Keep handwritten production Swift and Swift tests below 450 lines. Native C/Objective-C shims and scripts are exempt.
+- Keep handwritten production Swift below 800 lines and Swift tests below 450 lines. Do not split a type into `+Aspect` files only to meet the limit. Native C/Objective-C shims and scripts are exempt.
 - Use tabs with width four and follow `.swift-format`.
-- Avoid silent `try?` for filesystem, process, and network work. Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
-- Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add concise DocC for `package` APIs and complex domain models.
-- Keep developer simulation in `SimulatedLauncherActions` (`#if DEBUG`); production action bodies never branch on developer mode.
-- Treat installation as exclusive, preserve resumable `.part` files, and validate every manifest path before writing.
+- Avoid silent `try?` for filesystem, process, and network work. For best-effort cleanup, use `log.attempt("context") { try … }`, which logs the failure. Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
+- Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add DocC only to `package` APIs whose behavior the name does not state.
+- Keep developer simulation in `SimulatedLauncherActions` (`#if DEBUG`); production action bodies never branch on developer mode. Drive it from `CaseIterable` state with generic pickers, not per-knob controls.
+- Treat installation as exclusive, preserve resumable `.part` files, and validate every manifest path before writing. Path-based I/O is enough: check each manifest path lexically, reject symlinks per component, write `.part`, hash, then rename atomically. Do not add inode-identity rechecks.
 
 ## Concurrency
 
 - Set default isolation per target: `.defaultIsolation(MainActor.self)` only for UI and composition targets; Infrastructure, installation, hashing, and runtime stay nonisolated. Keep observable/UI/AppKit state on `@MainActor`.
 - Mark offloads `@concurrent`; do not add `Task.detached`. Enable `NonisolatedNonsendingByDefault` per target only after every function that must leave the caller's actor is `@concurrent`.
 - Use `Mutex` for small synchronous leaf state; use an actor for multi-step state machines. Never `await` while holding a lock.
-- Capture an identity (session ID, lease, epoch) before `await` and compare it after. Cancellation alone is not ownership.
-- Increment an epoch or end the lease before clearing or replacing state, so suspended work cannot republish stale results.
+- Capture an identity (session ID, lease, token) before `await` and compare it after. Cancellation alone is not ownership.
+- Guard stale async results with `TaskSlot` (cancel on replace, `owns(token)`, `invalidate()`), not hand-written epoch counters. Hand-write identities only for leases and game sessions.
+- Call `invalidate()` or end the lease before clearing or replacing state, so suspended work cannot republish stale results.
 - Change launcher activity only through `LauncherLifecycleStore` lease `begin`, `update`, and `end`; a stale lease must not set idle. Launch work rechecks the session ID and lease after every suspension.
 - Keep the shared Wine prefix owned until prefix-wide shutdown completes; direct game-process exit alone never means Idle.
 - Bound parallel work with a windowed task group (seed N, add one per completion) and an `AppConstants` limit. Never call `addTask` in an unbounded loop.
@@ -77,7 +80,10 @@
 - Put shared test helpers in `Tests/ArknightsTestSupport`; do not copy them between test targets.
 - Timed code takes an injected `Clock`; tests use a manual clock and never sleep for real.
 - Give each test its own UUID temp directory, cleaned in `defer`. Use `.serialized` only as a last resort.
-- Test behavior by regression impact; share fixtures and parameterize equivalent cases without deleting path, persistence, migration, isolation, cancellation, or concurrency contracts.
+- Write one test per contract, not one per edge case. Parameterize equivalent cases. Test a contract at the cheapest layer that fails; do not repeat it in view-model or composition tests.
+- Add a regression test only when users would notice the bug and no type, compiler check, or existing test catches it. Prefer a type change (enum, value type, exhaustive `switch`) to a new test.
+- Do not test constants, strings, mappings, getters, log text, presentation, or framework behavior.
+- Keep at least one test for each critical contract: install exclusivity, activity lease, prefix ownership, launch cancellation, `.part` resume, manifest paths, download hosts, migrations, support codes, privacy, stale-result checks, and update safety.
 
 ## Verification and Safety
 

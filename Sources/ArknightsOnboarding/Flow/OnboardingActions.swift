@@ -4,7 +4,7 @@ import ArknightsCore
 import Foundation
 
 package struct OnboardingActions {
-	let selectRegion: @MainActor @Sendable (GameRegion) -> Void
+	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 	let resetArtwork: @MainActor () -> Void
 	let installOrUpdate: () -> Void
 	let openLauncherUpdate: () -> Void

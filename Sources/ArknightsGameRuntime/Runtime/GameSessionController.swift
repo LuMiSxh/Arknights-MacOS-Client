@@ -13,7 +13,7 @@ enum GameProcessExitAction: Equatable {
 
 struct GameSessionTerminalFailure {
 	let error: any Error
-	let operation: SupportOperation
+	package let operation: SupportOperation
 	let blocksGameLaunch: Bool
 }
 
@@ -22,8 +22,8 @@ struct GameSessionTerminalFailure {
 @Observable
 package final class GameSessionController {
 	package var runtimeName: String? {
-		get { lifecycle.readiness.runtimeName }
-		set { lifecycle.readiness.runtimeName = newValue }
+		get { lifecycle.state.readiness.runtimeName }
+		set { lifecycle.state.readiness.runtimeName = newValue }
 	}
 	package var isGameActive: Bool { lifecycle.activity.isGameActive }
 	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }

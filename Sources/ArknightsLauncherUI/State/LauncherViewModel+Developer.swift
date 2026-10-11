@@ -27,7 +27,7 @@ import ArknightsGameRuntime
 			communication.launcherUpdateVersion = projection.launcherUpdateVersion
 			communication.launcherUpdateStatus = projection.launcherUpdateStatus
 			communication.isCheckingLauncherUpdates = false
-			lifecycle.refresh = .idle
+			lifecycle.state.refresh = .idle
 			lifecycle.simulateActivity(simulatedActivity(for: simulation))
 			lifecycle.setStatus(projection.status, clearsFailure: projection.failureCode == nil)
 			applyDeveloperPreferences(simulation)
@@ -145,7 +145,8 @@ import ArknightsGameRuntime
 		) {
 			guard let code = projection.failureCode, let operation = projection.failureOperation
 			else {
-				if lifecycle.failure?.context.operation != .intelTranslationPreflight
+				if lifecycle.state.presentation.failure?.context.operation
+					!= .intelTranslationPreflight
 					|| !installation.isInstalled
 				{
 					lifecycle.clearFailure()
@@ -153,7 +154,7 @@ import ArknightsGameRuntime
 				return
 			}
 			let isConfiguration = operation == .configurationRefresh
-			let existingFailure = lifecycle.failure
+			let existingFailure = lifecycle.state.presentation.failure
 			let failureID: UUID
 			if let existingFailure,
 				existingFailure.code == code,
@@ -169,7 +170,7 @@ import ArknightsGameRuntime
 				? LauncherError.invalidResponse
 				: GameRuntimeError.runtimeExited(
 					status: 1, log: gameSession.paths.runtimeLogFile(for: region))
-			lifecycle.presentation.failure = LauncherFailurePresentation(
+			lifecycle.state.presentation.failure = LauncherFailurePresentation(
 				id: failureID,
 				message: launcherUserMessage(for: error),
 				code: code,

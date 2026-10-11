@@ -23,10 +23,11 @@ struct LauncherSupportCodeTests {
 			blocksGameLaunch: true
 		)
 
-		#expect(lifecycle.failure?.code == .basalt)
-		#expect(lifecycle.failure?.actions.contains(.openTroubleshooting) == true)
-		#expect(lifecycle.failure?.actions.contains(.reportProblem) == true)
-		#expect(lifecycle.failure?.blocksGameLaunch == true)
+		#expect(lifecycle.state.presentation.failure?.code == .basalt)
+		#expect(
+			lifecycle.state.presentation.failure?.actions.contains(.openTroubleshooting) == true)
+		#expect(lifecycle.state.presentation.failure?.actions.contains(.reportProblem) == true)
+		#expect(lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 	}
 
 	@Test

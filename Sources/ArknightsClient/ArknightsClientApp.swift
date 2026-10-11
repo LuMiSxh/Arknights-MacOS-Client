@@ -139,7 +139,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			let installedRegions = model.installation.installedRegions
 			for region in installedRegions {
 				let item = NSMenuItem(
-					title: ApplicationStrings.play(region.displayName),
+					title: "Play \(region.displayName)",
 					action: #selector(playRegion(_:)),
 					keyEquivalent: ""
 				)
@@ -154,7 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		}
 
 		let settingsItem = NSMenuItem(
-			title: ApplicationStrings.settings,
+			title: "Settings…",
 			action: #selector(showSettings),
 			keyEquivalent: ","
 		)

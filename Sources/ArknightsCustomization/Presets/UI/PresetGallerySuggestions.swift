@@ -28,7 +28,7 @@ private enum PresetGallerySuggestion: Identifiable {
 
 struct PresetGallerySuggestions: View {
 	let destination: PresetGalleryDestination
-	let accentColor: Color
+	package let accentColor: Color
 	let avatars: [PresetAvatar]
 	let wallpaperTerms: [String]
 	let onSelect: (String) -> Void
@@ -68,7 +68,7 @@ struct PresetGallerySuggestions: View {
 
 private struct PresetGallerySuggestionChip: View {
 	let destination: PresetGalleryDestination
-	let accentColor: Color
+	package let accentColor: Color
 	let suggestion: PresetGallerySuggestion
 	let onSelect: (String) -> Void
 	@FocusState private var isFocused: Bool
@@ -103,7 +103,7 @@ private struct PresetGallerySuggestionChip: View {
 		.focused($isFocused)
 		.keyboardFocusIndicator(in: Capsule())
 		.accessibilityLabel(Text(suggestion.accessibilityTitle))
-		.accessibilityHint(Text(CustomizationStrings.searchSuggestionSelect))
+		.accessibilityHint(Text("Select and use this exact title in the search"))
 		.transition(.opacity)
 	}
 }

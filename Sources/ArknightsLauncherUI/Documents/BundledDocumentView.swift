@@ -13,9 +13,9 @@ enum BundledDocument: String, Identifiable {
 
 	var title: String {
 		switch self {
-		case .changelog: LauncherStrings.documentChangelog
-		case .projectLicense: LauncherStrings.documentLicense
-		case .thirdPartyNotices: LauncherStrings.documentNotices
+		case .changelog: "Changelog"
+		case .projectLicense: "MPL-2.0 License"
+		case .thirdPartyNotices: "Third-Party Notices"
 		}
 	}
 
@@ -76,7 +76,7 @@ private enum BundledDocumentLoadState {
 
 struct BundledDocumentView: View {
 	let document: BundledDocument
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
 	@State private var loadState = BundledDocumentLoadState.loading
 	@Environment(\.dismiss) private var dismiss
@@ -93,7 +93,7 @@ struct BundledDocumentView: View {
 				ProgressView()
 					.controlSize(.large)
 					.frame(maxWidth: .infinity, minHeight: 180)
-					.accessibilityLabel(Text(LauncherStrings.documentLoading))
+					.accessibilityLabel(Text("Loading document"))
 			case .loaded(let parsedDocument):
 				MarkdownDocument(parsed: parsedDocument, accentColor: accentColor)
 					.textSelection(.enabled)
@@ -132,9 +132,11 @@ private struct DocumentLoadErrorView: View {
 
 	var body: some View {
 		ContentUnavailableView {
-			Label(LauncherStrings.documentUnavailable, systemImage: "doc.badge.exclamationmark")
+			Label(
+				"This document is unavailable in the current build.",
+				systemImage: "doc.badge.exclamationmark")
 		} description: {
-			Text(LauncherStrings.documentUnavailable)
+			Text("This document is unavailable in the current build.")
 		}
 		.frame(maxWidth: .infinity, minHeight: 180)
 		.pointerStyle(.default)
@@ -142,7 +144,7 @@ private struct DocumentLoadErrorView: View {
 }
 
 struct MarkdownDocument: View {
-	let accentColor: Color
+	package let accentColor: Color
 	private let initialDocument: ParsedMarkdownDocument?
 	private let source: String?
 	@State private var loadedDocument: ParsedMarkdownDocument?
@@ -175,7 +177,7 @@ struct MarkdownDocument: View {
 				ProgressView()
 					.controlSize(.small)
 					.frame(maxWidth: .infinity, minHeight: 80)
-					.accessibilityLabel(Text(LauncherStrings.documentLoading))
+					.accessibilityLabel(Text("Loading document"))
 			}
 		}
 		.tint(accentColor)
@@ -194,7 +196,7 @@ struct MarkdownDocument: View {
 
 private struct MarkdownBlockView: View {
 	let block: MarkdownBlock
-	let accentColor: Color
+	package let accentColor: Color
 	let columnWidths: [CGFloat]
 
 	@ViewBuilder
@@ -250,7 +252,7 @@ private struct MarkdownBlockView: View {
 
 private struct MarkdownTable: View {
 	let rows: [[String]]
-	let accentColor: Color
+	package let accentColor: Color
 	let columnWidths: [CGFloat]
 
 	var body: some View {

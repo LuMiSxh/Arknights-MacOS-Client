@@ -302,7 +302,9 @@ package struct PresetGalleryView: View {
 		}
 	}
 
-	private func isCurrentApplication(id: String, destination expected: PresetGalleryDestination)
+	private func isCurrentApplication(
+		id: String, destination expected: PresetGalleryDestination
+	)
 		-> Bool
 	{
 		!Task.isCancelled && destination == expected && applyingItemID == id

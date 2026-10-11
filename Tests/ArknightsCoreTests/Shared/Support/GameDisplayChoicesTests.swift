@@ -5,7 +5,9 @@ import Testing
 
 @testable import ArknightsCore
 
-private func screen(_ width: Double, _ height: Double, titleBar: Double = 28)
+private func screen(
+	_ width: Double, _ height: Double, titleBar: Double = 28
+)
 	-> GameScreenMetrics
 {
 	GameScreenMetrics(

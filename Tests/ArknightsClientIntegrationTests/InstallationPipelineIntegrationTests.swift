@@ -10,6 +10,8 @@ import Testing
 @testable import ArknightsLauncherUI
 @testable import ArknightsOnboarding
 
+private typealias Key = LauncherPreferencesStore.Key
+
 @Suite(
 	"Fresh onboarding and installation",
 	.enabled(
@@ -32,10 +34,10 @@ struct InstallationPipelineIntegrationTests {
 		let installDirectory = environment.paths.gameInstall(for: .global)
 		environment.preferences.setSelectedRegion(.global)
 		environment.preferences.setInstallDirectory(installDirectory, for: .global)
-		environment.preferences.setAutomaticGameUpdates(false)
-		environment.preferences.setAutomaticLauncherUpdates(false)
-		environment.preferences.setAnnouncementsEnabled(false)
-		environment.preferences.setPlaysLauncherMusic(false)
+		environment.preferences.set(false, for: Key.automaticGameUpdates)
+		environment.preferences.set(false, for: Key.automaticLauncherUpdates)
+		environment.preferences.set(false, for: Key.announcementsEnabled)
+		environment.preferences.set(false, for: Key.playsLauncherMusic)
 
 		let api = LauncherAPI(session: environment.session)
 		let installer = GameInstaller(

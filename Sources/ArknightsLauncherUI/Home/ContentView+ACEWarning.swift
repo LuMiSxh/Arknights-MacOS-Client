@@ -13,7 +13,7 @@ private struct ACEWarningConfirmationModifier: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content.confirmationDialog(
-			LauncherStrings.aceWarningTitle,
+			"ACE Anti-Cheat client",
 			isPresented: Binding(
 				get: { model.pendingACEWarningRegion != nil },
 				set: { isPresented in
@@ -22,14 +22,16 @@ private struct ACEWarningConfirmationModifier: ViewModifier {
 			),
 			titleVisibility: .visible
 		) {
-			Button(LauncherStrings.aceWarningAction, role: .destructive) {
+			Button("Play at my own risk", role: .destructive) {
 				model.actions.confirmACEWarningAndLaunch()
 			}
-			Button(LauncherStrings.cancel, role: .cancel) {
+			Button("Cancel", role: .cancel) {
 				model.actions.cancelACEWarning()
 			}
 		} message: {
-			Text(LauncherStrings.aceWarningDetail)
+			Text(
+				"This client uses ACE Anti-Cheat. Running it through Wine is unofficial and may cause compatibility issues or consequences for your account or the service. If you continue, you play at your own risk."
+			)
 		}
 	}
 }

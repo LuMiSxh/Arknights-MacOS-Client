@@ -70,7 +70,7 @@ static const long activation_policy_accessory = 1;
  * seconds avoids blocking dyld's constructor thread while still installing the hook before
  * Wine publishes its executable icon, without keeping the CPU out of its idle states.
  * objc_getClass only observes runtime state; it does not cause AppKit to load. */
-static const struct timespec appkit_poll_interval = { .tv_sec = 0, .tv_nsec = 50000000 };
+static const struct timespec appkit_poll_interval = {.tv_sec = 0, .tv_nsec = 50000000};
 static const int appkit_poll_limit = 200;
 
 static SetApplicationIconImageIMP original_set_application_icon_image;
@@ -108,9 +108,9 @@ static AKSize send_size(id receiver, SEL selector) {
 }
 
 static void send_draw_message(
-	id receiver, SEL selector, AKRect destination, AKRect source, long operation, double fraction) {
+    id receiver, SEL selector, AKRect destination, AKRect source, long operation, double fraction) {
 	((void (*)(id, SEL, AKRect, AKRect, long, double))objc_msgSend)(
-		receiver, selector, destination, source, operation, fraction);
+	    receiver, selector, destination, source, operation, fraction);
 }
 
 /* Resolves the optional launcher-owned PNG only after Wine has initialized AppKit.
@@ -118,21 +118,23 @@ static void send_draw_message(
  * lifetime: Wine sets its application icon once, and retaining these objects prevents
  * an autorelease-pool boundary from invalidating the replacement before AppKit consumes it. */
 static id load_custom_game_icon(void) {
-	if (custom_game_icon != nil || custom_game_icon_path == NULL) return custom_game_icon;
+	if (custom_game_icon != nil || custom_game_icon_path == NULL)
+		return custom_game_icon;
 
 	Class string_class = objc_getClass("NSString");
 	Class image_class = objc_getClass("NSImage");
-	if (string_class == Nil || image_class == Nil) return nil;
+	if (string_class == Nil || image_class == Nil)
+		return nil;
 
 	id path = ((id (*)(id, SEL, const char *))objc_msgSend)(
-		(id)string_class, sel_registerName("stringWithUTF8String:"), custom_game_icon_path);
+	    (id)string_class, sel_registerName("stringWithUTF8String:"), custom_game_icon_path);
 	id image = send_id((id)image_class, sel_registerName("alloc"));
 	custom_game_icon = send_id_with_id(image, sel_registerName("initWithContentsOfFile:"), path);
 	if (custom_game_icon == nil) {
 		fprintf(
-			stderr,
-			"Arknights Client: failed to load custom game icon: %s\n",
-			custom_game_icon_path);
+		    stderr,
+		    "Arknights Client: failed to load custom game icon: %s\n",
+		    custom_game_icon_path);
 	}
 	return custom_game_icon;
 }
@@ -142,32 +144,35 @@ static id load_custom_game_icon(void) {
  * handling can never prevent the game from presenting its Dock tile. Drawing uses the
  * current AppKit graphics context on Wine's setter-calling thread, not the polling thread. */
 static id normalized_game_icon(id source) {
-	if (source == nil) return nil;
+	if (source == nil)
+		return nil;
 
 	Class image_class = objc_getClass("NSImage");
 	Class graphics_context_class = objc_getClass("NSGraphicsContext");
-	if (image_class == Nil || graphics_context_class == Nil) return source;
+	if (image_class == Nil || graphics_context_class == Nil)
+		return source;
 
-	AKSize canvas_size = { icon_canvas_dimension, icon_canvas_dimension };
+	AKSize canvas_size = {icon_canvas_dimension, icon_canvas_dimension};
 	id result = send_id((id)image_class, sel_registerName("alloc"));
 	result = send_id_with_size(result, sel_registerName("initWithSize:"), canvas_size);
-	if (result == nil) return source;
+	if (result == nil)
+		return source;
 
 	send_void(result, sel_registerName("lockFocus"));
 	id context = send_id((id)graphics_context_class, sel_registerName("currentContext"));
 	send_void_with_integer(
-		context, sel_registerName("setImageInterpolation:"), image_interpolation_high);
+	    context, sel_registerName("setImageInterpolation:"), image_interpolation_high);
 
 	double inset = (icon_canvas_dimension - icon_content_dimension) / 2.0;
-	AKRect destination = { { inset, inset }, { icon_content_dimension, icon_content_dimension } };
-	AKRect source_rect = { { 0.0, 0.0 }, send_size(source, sel_registerName("size")) };
+	AKRect destination = {{inset, inset}, {icon_content_dimension, icon_content_dimension}};
+	AKRect source_rect = {{0.0, 0.0}, send_size(source, sel_registerName("size"))};
 	send_draw_message(
-		source,
-		sel_registerName("drawInRect:fromRect:operation:fraction:"),
-		destination,
-		source_rect,
-		compositing_operation_copy,
-		1.0);
+	    source,
+	    sel_registerName("drawInRect:fromRect:operation:fraction:"),
+	    destination,
+	    source_rect,
+	    compositing_operation_copy,
+	    1.0);
 	send_void(result, sel_registerName("unlockFocus"));
 	return result;
 }
@@ -181,11 +186,13 @@ static void set_application_icon_image(id application, SEL selector, id image) {
 	@autoreleasepool {
 		SetApplicationIconImageIMP original;
 		id resolved = load_custom_game_icon();
-		if (resolved == nil) resolved = normalized_game_icon(image);
+		if (resolved == nil)
+			resolved = normalized_game_icon(image);
 		pthread_mutex_lock(&icon_setter_lock);
 		original = original_set_application_icon_image;
 		pthread_mutex_unlock(&icon_setter_lock);
-		if (original != NULL) original(application, selector, resolved);
+		if (original != NULL)
+			original(application, selector, resolved);
 	}
 }
 
@@ -195,15 +202,17 @@ static void set_application_icon_image(id application, SEL selector, id image) {
 static bool install_icon_setter(void) {
 	Class application_class = objc_getClass("NSApplication");
 	SetApplicationIconImageIMP original;
-	if (application_class == Nil) return false;
+	if (application_class == Nil)
+		return false;
 
 	SEL selector = sel_registerName("setApplicationIconImage:");
 	Method method = class_getInstanceMethod(application_class, selector);
-	if (method == NULL) return false;
+	if (method == NULL)
+		return false;
 
 	pthread_mutex_lock(&icon_setter_lock);
 	original = (SetApplicationIconImageIMP)method_setImplementation(
-		method, (IMP)set_application_icon_image);
+	    method, (IMP)set_application_icon_image);
 	original_set_application_icon_image = original;
 	pthread_mutex_unlock(&icon_setter_lock);
 	return original != NULL;
@@ -214,7 +223,8 @@ static bool install_icon_setter(void) {
  * that request accessory-only leaves the window usable but never publishes a Dock tile. */
 static signed char set_activation_policy(id application, SEL selector, long policy) {
 	SetActivationPolicyIMP original;
-	if (policy == activation_policy_regular) policy = activation_policy_accessory;
+	if (policy == activation_policy_regular)
+		policy = activation_policy_accessory;
 	pthread_mutex_lock(&icon_setter_lock);
 	original = original_set_activation_policy;
 	pthread_mutex_unlock(&icon_setter_lock);
@@ -223,15 +233,17 @@ static signed char set_activation_policy(id application, SEL selector, long poli
 
 static bool install_activation_policy_hook(void) {
 	Class application_class = objc_getClass("NSApplication");
-	if (application_class == Nil) return false;
+	if (application_class == Nil)
+		return false;
 
 	Method method =
-		class_getInstanceMethod(application_class, sel_registerName("setActivationPolicy:"));
-	if (method == NULL) return false;
+	    class_getInstanceMethod(application_class, sel_registerName("setActivationPolicy:"));
+	if (method == NULL)
+		return false;
 
 	pthread_mutex_lock(&icon_setter_lock);
 	original_set_activation_policy =
-		(SetActivationPolicyIMP)method_setImplementation(method, (IMP)set_activation_policy);
+	    (SetActivationPolicyIMP)method_setImplementation(method, (IMP)set_activation_policy);
 	pthread_mutex_unlock(&icon_setter_lock);
 	return original_set_activation_policy != NULL;
 }

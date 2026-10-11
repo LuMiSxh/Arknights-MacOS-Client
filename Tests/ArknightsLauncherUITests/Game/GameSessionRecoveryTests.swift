@@ -31,17 +31,17 @@ struct GameSessionRecoveryTests {
 			operation: .runtimeExit,
 			region: region
 		)
-		#expect(model.lifecycle.failure?.context.region == region.supportRegion)
-		#expect(model.lifecycle.failure?.blocksGameLaunch == false)
+		#expect(model.lifecycle.state.presentation.failure?.context.region == region.supportRegion)
+		#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == false)
 
 		#expect(model.gameSession.retryRuntimeFailure(id: failureID))
 		#expect(!model.gameSession.retryRuntimeFailure(id: failureID))
 		// The launch preflight is asynchronous, so the failure appears after the retry returns.
-		#expect(await waitForCondition { model.lifecycle.failure != nil })
-		#expect(model.lifecycle.failure?.code == .pebble)
-		#expect(model.lifecycle.failure?.context.operation == .launch)
-		#expect(model.lifecycle.failure?.context.region == region.supportRegion)
-		#expect(model.lifecycle.failure?.blocksGameLaunch == true)
+		#expect(await waitForCondition { model.lifecycle.state.presentation.failure != nil })
+		#expect(model.lifecycle.state.presentation.failure?.code == .pebble)
+		#expect(model.lifecycle.state.presentation.failure?.context.operation == .launch)
+		#expect(model.lifecycle.state.presentation.failure?.context.region == region.supportRegion)
+		#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 		await api.resolveBranding()
 	}
 
@@ -59,15 +59,15 @@ struct GameSessionRecoveryTests {
 			operation: .runtimeStop,
 			region: .global
 		)
-		#expect(model.lifecycle.failure?.blocksGameLaunch == false)
+		#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == false)
 
 		#expect(model.gameSession.retryRuntimeFailure(id: sessionID))
 		#expect(
 			model.lifecycle.activity
 				== .runningGame(sessionID: sessionID, processIdentifier: 42)
 		)
-		#expect(model.lifecycle.failure?.code == .whelk)
-		#expect(model.lifecycle.failure?.context.operation == .runtimeStop)
+		#expect(model.lifecycle.state.presentation.failure?.code == .whelk)
+		#expect(model.lifecycle.state.presentation.failure?.context.operation == .runtimeStop)
 		#expect(!model.gameSession.retryRuntimeFailure(id: UUID()))
 		await api.resolveBranding()
 	}
@@ -78,7 +78,7 @@ struct GameSessionRecoveryTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()
 		let failureID = UUID()
-		model.lifecycle.presentation.failure = LauncherFailurePresentation(
+		model.lifecycle.state.presentation.failure = LauncherFailurePresentation(
 			id: failureID,
 			message: "Prefix migration failed",
 			code: .sepia,
@@ -88,7 +88,7 @@ struct GameSessionRecoveryTests {
 		)
 
 		#expect(model.gameSession.retryRuntimeFailure(id: failureID))
-		#expect(model.lifecycle.failure == nil)
+		#expect(model.lifecycle.state.presentation.failure == nil)
 		await api.resolveBranding()
 	}
 
@@ -99,7 +99,7 @@ struct GameSessionRecoveryTests {
 		await api.waitForBrandingRequest()
 		#expect(model.installation.selectRegion(.japan))
 		let failureID = UUID()
-		model.lifecycle.presentation.failure = LauncherFailurePresentation(
+		model.lifecycle.state.presentation.failure = LauncherFailurePresentation(
 			id: failureID,
 			message: "Prefix deletion failed",
 			code: .sepia,
@@ -109,7 +109,7 @@ struct GameSessionRecoveryTests {
 		)
 
 		#expect(!model.gameSession.retryRuntimeFailure(id: failureID))
-		#expect(model.lifecycle.failure?.id == failureID)
+		#expect(model.lifecycle.state.presentation.failure?.id == failureID)
 		await api.resolveBranding()
 	}
 }

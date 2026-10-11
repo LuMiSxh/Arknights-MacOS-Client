@@ -39,7 +39,9 @@ extension GameSessionController {
 
 	@discardableResult
 	package func retryRuntimeFailure(id: UUID) -> Bool {
-		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard let failure = lifecycle.state.presentation.failure, failure.id == id else {
+			return false
+		}
 		guard failure.actions.contains(.retry) else { return false }
 		let activeRegion = session?.region
 		switch failure.context.operation {

@@ -48,7 +48,9 @@ package final class LauncherCommunicationController {
 	}
 
 	@discardableResult
-	func checkLauncherUpdates(presentUpdate: Bool = false)
+	package func checkLauncherUpdates(
+		presentUpdate: Bool = false
+	)
 		-> Task<LauncherUpdateCheckOutcome, Never>
 	{
 		let task = startLauncherUpdateCheck()
@@ -65,7 +67,7 @@ package final class LauncherCommunicationController {
 	}
 
 	/// Reuses an active request so onboarding and the automatic check cannot race.
-	func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
+	package func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
 		if let startupProbeOutcome {
 			self.startupProbeOutcome = nil
 			return startupProbeOutcome
@@ -73,7 +75,7 @@ package final class LauncherCommunicationController {
 		return await startLauncherUpdateCheck().value
 	}
 
-	func openLauncherUpdate() {
+	package func openLauncherUpdate() {
 		launcherUpdater.checkForUpdates()
 	}
 
@@ -87,7 +89,7 @@ package final class LauncherCommunicationController {
 		launcherUpdater.userDriver
 	}
 
-	func checkAnnouncements(isEnabled: Bool) {
+	package func checkAnnouncements(isEnabled: Bool) {
 		guard isEnabled else {
 			announcementTask?.cancel()
 			announcementTask = nil
@@ -147,7 +149,7 @@ package final class LauncherCommunicationController {
 		enqueuePopup(
 			LauncherPopup(
 				id: "yostar-notice-\(formattedNotice.id.uuidString)",
-				title: LauncherStrings.popupNotice,
+				title: "Notice",
 				content: .attributed(formattedNotice.content),
 				dismissTitle: LauncherStrings.popupDone,
 				actionTitle: nil,

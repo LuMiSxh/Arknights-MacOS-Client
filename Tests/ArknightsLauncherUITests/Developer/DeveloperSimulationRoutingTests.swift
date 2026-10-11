@@ -54,11 +54,11 @@ import Testing
 			var simulation = model.developerSimulation!
 			simulation.failure = .runtime
 			model.applyDeveloperSimulation(simulation)
-			let firstID = model.lifecycle.failure?.id
+			let firstID = model.lifecycle.state.presentation.failure?.id
 			model.applyDeveloperSimulation(simulation)
 
 			#expect(firstID != nil)
-			#expect(model.lifecycle.failure?.id == firstID)
+			#expect(model.lifecycle.state.presentation.failure?.id == firstID)
 		}
 
 		@Test
@@ -75,7 +75,7 @@ import Testing
 			var simulation = model.developerSimulation!
 			simulation.failure = .configuration
 			model.applyDeveloperSimulation(simulation)
-			let failureID = model.lifecycle.failure!.id
+			let failureID = model.lifecycle.state.presentation.failure!.id
 
 			#expect(model.performRecoveryAction(.retry, failureID: failureID) == .completed)
 			#expect(model.developerSimulation?.failure == DeveloperPreviewFailure.none)
@@ -97,11 +97,11 @@ import Testing
 					$0.isInstalled = true
 					$0.lifecycle = .ready
 				}
-				let failure = try #require(model.lifecycle.failure)
+				let failure = try #require(model.lifecycle.state.presentation.failure)
 				#expect(!failure.blocksGameLaunch)
 				#expect(!failure.message.contains("status 1"))
 				#expect(await model.actions.launchFromDock(region: .global))
-				#expect(model.lifecycle.failure == nil)
+				#expect(model.lifecycle.state.presentation.failure == nil)
 				#expect(model.developerSimulation?.failure == DeveloperPreviewFailure.none)
 				model.actions.stopGame()
 			}
@@ -110,7 +110,7 @@ import Testing
 				$0.failure = .configuration
 				$0.isInstalled = false
 			}
-			#expect(model.lifecycle.failure?.blocksGameLaunch == true)
+			#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 			#expect(await model.actions.launchFromDock(region: .global) == false)
 		}
 
@@ -123,7 +123,7 @@ import Testing
 			await api.resolveBranding()
 
 			model.updateDeveloperSimulation { $0.rosettaMissing = true }
-			let failure = try #require(model.lifecycle.failure)
+			let failure = try #require(model.lifecycle.state.presentation.failure)
 			#expect(failure.code == .limpet)
 			#expect(failure.context.operation == .intelTranslationPreflight)
 			#expect(failure.context.region == nil)
@@ -132,13 +132,15 @@ import Testing
 				failure.actions == [.installRosetta, .retry, .openTroubleshooting, .reportProblem])
 
 			model.updateDeveloperSimulation { $0.showVersionPill.toggle() }
-			#expect(model.lifecycle.failure?.id == failure.id)
+			#expect(model.lifecycle.state.presentation.failure?.id == failure.id)
 			model.updateDeveloperSimulation { $0.isInstalled = false }
-			#expect(model.lifecycle.failure == nil)
+			#expect(model.lifecycle.state.presentation.failure == nil)
 			model.updateDeveloperSimulation { $0.isInstalled = true }
-			#expect(model.lifecycle.failure?.context.operation == .intelTranslationPreflight)
+			#expect(
+				model.lifecycle.state.presentation.failure?.context.operation
+					== .intelTranslationPreflight)
 			model.updateDeveloperSimulation { $0.rosettaMissing = false }
-			#expect(model.lifecycle.failure == nil)
+			#expect(model.lifecycle.state.presentation.failure == nil)
 		}
 
 		@Test
@@ -154,19 +156,23 @@ import Testing
 			await api.resolveBranding()
 
 			model.updateDeveloperSimulation { $0.rosettaMissing = true }
-			let failureID = try #require(model.lifecycle.failure?.id)
+			let failureID = try #require(model.lifecycle.state.presentation.failure?.id)
 			model.actions.launch()
 			#expect(model.lifecycle.activity == .idle)
 			#expect(await model.actions.launchFromDock(region: .global) == false)
 			#expect(model.performRecoveryAction(.retry, failureID: failureID) == .completed)
 			#expect(model.lifecycle.activity == .idle)
-			#expect(model.lifecycle.intelTranslationState == .rosettaMissing)
-			#expect(model.lifecycle.failure?.context.operation == .intelTranslationPreflight)
+			#expect(model.lifecycle.state.readiness.intelTranslation == .rosettaMissing)
+			#expect(
+				model.lifecycle.state.presentation.failure?.context.operation
+					== .intelTranslationPreflight)
 
 			model.lifecycle.clearFailure()
 			#expect(
 				await model.actions.refreshIntelTranslationForUI(force: true) == .rosettaMissing)
-			#expect(model.lifecycle.failure?.context.operation == .intelTranslationPreflight)
+			#expect(
+				model.lifecycle.state.presentation.failure?.context.operation
+					== .intelTranslationPreflight)
 			#expect(await checks.count == 0)
 		}
 
@@ -190,7 +196,7 @@ import Testing
 
 			#expect(result == .available)
 			#expect(model.developerSimulation?.rosettaMissing == false)
-			#expect(model.lifecycle.failure == nil)
+			#expect(model.lifecycle.state.presentation.failure == nil)
 			#expect(await checks.count == 0)
 			#expect(await installer.count == 0)
 		}

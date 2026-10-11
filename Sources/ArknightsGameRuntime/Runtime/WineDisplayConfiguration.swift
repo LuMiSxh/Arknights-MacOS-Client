@@ -13,7 +13,7 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 	let retinaEnabled: Bool
 	let metalFXUpscalingEnabled: Bool
 	/// Game pixels per macOS point, used to turn a window size into a Unity resolution.
-	let gamePixelsPerPoint: Int
+	package let gamePixelsPerPoint: Int
 
 	init(
 		backingScaleFactor: CGFloat,

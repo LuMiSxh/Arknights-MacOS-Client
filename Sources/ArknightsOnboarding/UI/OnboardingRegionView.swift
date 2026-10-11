@@ -10,16 +10,17 @@ struct OnboardingRegionView: View {
 	let lifecycle: LauncherLifecycleStore
 	let accentColor: Color
 	let canSwitchRegion: Bool
-	let selectRegion: @MainActor @Sendable (GameRegion) -> Void
+	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
 	var body: some View {
 		OnboardingPage(
-			title: OnboardingStrings.regionTitle,
-			subtitle: OnboardingStrings.regionSubtitle,
+			title: "Your server",
+			subtitle:
+				"Each server has its own game files and accounts. Pick the one you already play on; you can add another later in Settings.",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
-				question: OnboardingStrings.regionQuestion,
+				question: "Which server do you play on?",
 				systemImage: "globe.asia.australia",
 				answers: preferences.regionAccess.selectableRegions.map(
 					OnboardingStrings.regionAnswer),
@@ -28,18 +29,19 @@ struct OnboardingRegionView: View {
 				isDisabled: !canSwitchRegion
 			)
 
-			OnboardingCanaryPanel(title: OnboardingStrings.canaryFeatures) {
+			OnboardingCanaryPanel(title: "Canary Features") {
 				OnboardingToggleRow(
-					title: OnboardingStrings.canaryFeatures,
-					detail: OnboardingStrings.canaryFeaturesDetail,
+					title: "Canary Features",
+					detail:
+						"Turns on experimental features and unlocks more servers. Turning it off switches a Canary server back to Global.",
 					isOn: $preferences.canaryFeaturesEnabled,
 					accentColor: LauncherVisuals.warning
 				)
 				.disabled(lifecycle.activity != .idle)
 				if preferences.canaryFeaturesEnabled {
 					OnboardingToggleRow(
-						title: OnboardingStrings.taiwanClient,
-						detail: OnboardingStrings.taiwanClientDetail,
+						title: "Allow Taiwan client",
+						detail: "Lets you pick the Taiwan server.",
 						isOn: $preferences.taiwanClientEnabled,
 						accentColor: LauncherVisuals.warning
 					)
@@ -47,7 +49,7 @@ struct OnboardingRegionView: View {
 				}
 			}
 
-			SettingsPanel(title: OnboardingStrings.gameFiles, systemImage: installationImage) {
+			SettingsPanel(title: "Game files", systemImage: installationImage) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
 						if isLoadingInstallationMetadata {
@@ -62,7 +64,7 @@ struct OnboardingRegionView: View {
 						}
 					}
 					Spacer()
-					if installation.lifecycle.refresh.isChecking {
+					if installation.lifecycle.state.refresh.isChecking {
 						ProgressView()
 					} else if installation.isInstalled && !installation.isDownloading {
 						Image(systemName: "checkmark.circle.fill")
@@ -83,7 +85,7 @@ struct OnboardingRegionView: View {
 				}
 
 				if !installation.isInstalled && !installation.isDownloading {
-					Text(OnboardingStrings.installDownloadDetail)
+					Text("Continue to start the download. Closing the launcher pauses it safely.")
 						.font(.callout)
 						.foregroundStyle(.secondary)
 				}
@@ -100,35 +102,38 @@ struct OnboardingRegionView: View {
 	}
 
 	private var installationTitle: String {
-		if installation.isDownloading { return lifecycle.activityMessage }
-		if installation.isInstalled { return OnboardingStrings.existingTitle }
-		if installation.hasPartialDownload { return OnboardingStrings.partialTitle }
-		return OnboardingStrings.readyToInstall(installation.region.displayName)
+		if installation.isDownloading { return lifecycle.state.presentation.status.message }
+		if installation.isInstalled { return "Game already installed" }
+		if installation.hasPartialDownload { return "Download paused" }
+		return "Ready to install \(installation.region.displayName)"
 	}
 
 	private var installationDetail: String {
 		if installation.isDownloading {
 			return isVerifying
-				? OnboardingStrings.verifyingDetail : OnboardingStrings.downloadingDetail
+				? "You can keep going while the game files are checked."
+				: "You can keep going while the game downloads."
 		}
 		if installation.isInstalled {
-			return OnboardingStrings.installationExisting(
-				version: installation.installedVersion
-					?? installation.configuration?.gameLatestVersion ?? "—",
-				directory: installation.installDirectory.lastPathComponent
-			)
+			let version =
+				installation.installedVersion ?? installation.configuration?.gameLatestVersion
+				?? "—"
+			return
+				"Arknights \(version) is ready in \(installation.installDirectory.lastPathComponent)."
 		}
-		if installation.hasPartialDownload { return OnboardingStrings.partialDetail }
-		return OnboardingStrings.installationSize(installationSize)
+		if installation.hasPartialDownload {
+			return "Setup continues from where the download stopped."
+		}
+		return "Needs about \(installationSize) of space once installed."
 	}
 
 	private var isVerifying: Bool {
-		lifecycle.presentation.status == .verifyingInstallation
+		lifecycle.state.presentation.status == .verifyingInstallation
 			|| installation.progress?.isVerifying == true
 	}
 
 	private var isLoadingInstallationMetadata: Bool {
-		installation.lifecycle.refresh.isChecking
+		installation.lifecycle.state.refresh.isChecking
 			&& installation.configuration == nil
 			&& !installation.isInstalled
 			&& !installation.hasPartialDownload

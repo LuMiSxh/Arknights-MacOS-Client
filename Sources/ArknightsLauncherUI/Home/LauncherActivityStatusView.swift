@@ -13,11 +13,11 @@ enum LauncherDownloadProgressPresentation {
 	static func title(for progress: DownloadProgress?, isPaused: Bool) -> String? {
 		guard let percentage = percentage(for: progress) else { return nil }
 		if progress?.isVerifying == true {
-			return HomeStrings.verificationPercentage(percentage)
+			return "Verifying · \(percentage)%"
 		}
 		return isPaused
-			? HomeStrings.pausedDownloadPercentage(percentage)
-			: HomeStrings.downloadPercentage(percentage)
+			? "Paused · \(percentage)%"
+			: "\(percentage)%"
 	}
 
 	static func fraction(
@@ -79,9 +79,9 @@ enum LauncherDownloadProgressPresentation {
 	) -> String? {
 		guard !isPaused, let progress else { return nil }
 		if let rate = progress.transferRateBytesPerSecond {
-			return HomeStrings.downloadSpeed(DownloadProgressFormatting.byteRate(rate))
+			return DownloadProgressFormatting.byteRate(rate)
 		}
-		if progress.isTransferStalled { return HomeStrings.downloadWaiting }
+		if progress.isTransferStalled { return "Waiting for network…" }
 		return nil
 	}
 
@@ -100,9 +100,9 @@ enum LauncherDownloadProgressPresentation {
 }
 
 struct LauncherActivityStatusView: View {
-	let lifecycle: LauncherLifecycleStore
-	let installation: InstallationController
-	let accentColor: Color
+	package let lifecycle: LauncherLifecycleStore
+	package let installation: InstallationController
+	package let accentColor: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var completionFeedback: InstallationCompletionFeedback?
 
@@ -111,11 +111,11 @@ struct LauncherActivityStatusView: View {
 			if let completionFeedback, showsCompletionFeedback {
 				HStack(spacing: 6) {
 					LauncherCompletionFeedbackView(feedbackID: completionFeedback.id)
-					Text(HomeStrings.installationComplete)
+					Text("Installation complete")
 				}
 				.font(LauncherVisuals.Typography.statusTitle)
 				.accessibilityElement(children: .combine)
-				.accessibilityLabel(Text(HomeStrings.installationComplete))
+				.accessibilityLabel(Text("Installation complete"))
 			} else if showsDownloadSnapshot {
 				VStack(alignment: .leading, spacing: 4) {
 					ViewThatFits(in: .horizontal) {
@@ -155,7 +155,7 @@ struct LauncherActivityStatusView: View {
 		.onChange(of: installation.completionFeedback?.id) { _, _ in
 			consumeCompletionFeedback()
 		}
-		.onChange(of: lifecycle.failure?.id) { _, failureID in
+		.onChange(of: lifecycle.state.presentation.failure?.id) { _, failureID in
 			if failureID != nil { completionFeedback = nil }
 		}
 		.onChange(of: lifecycle.activity) { _, activity in
@@ -179,7 +179,7 @@ struct LauncherActivityStatusView: View {
 				completionFeedback == displayedFeedback,
 				displayedFeedback.region == installation.region,
 				lifecycle.activity == .idle,
-				lifecycle.failure == nil
+				lifecycle.state.presentation.failure == nil
 			else {
 				completionFeedback = nil
 				return
@@ -194,7 +194,7 @@ struct LauncherActivityStatusView: View {
 			completionFeedback,
 			currentRegion: installation.region,
 			activity: lifecycle.activity,
-			hasFailure: lifecycle.failure != nil
+			hasFailure: lifecycle.state.presentation.failure != nil
 		)
 	}
 
@@ -204,7 +204,9 @@ struct LauncherActivityStatusView: View {
 	}
 
 	private var statusTitle: String {
-		if lifecycle.presentation.status == .pausing { return lifecycle.activityMessage }
+		if lifecycle.state.presentation.status == .pausing {
+			return lifecycle.state.presentation.status.message
+		}
 		if showsDownloadSnapshot,
 			let title = LauncherDownloadProgressPresentation.title(
 				for: installation.progress,
@@ -213,10 +215,10 @@ struct LauncherActivityStatusView: View {
 		{
 			return title
 		}
-		if lifecycle.failure?.blocksGameLaunch == true {
-			return HomeStrings.needsAttention
+		if lifecycle.state.presentation.failure?.blocksGameLaunch == true {
+			return "Needs attention"
 		}
-		return lifecycle.activityMessage
+		return lifecycle.state.presentation.status.message
 	}
 
 	private var statusDetail: String? {
@@ -226,7 +228,7 @@ struct LauncherActivityStatusView: View {
 			let downloaded = DownloadProgressFormatting.byteCount(progress.downloadedBytes)
 			let total = DownloadProgressFormatting.byteCount(progress.totalBytes)
 			return
-				HomeStrings.downloadProgress(downloaded: downloaded, total: total)
+				"\(downloaded) of \(total)"
 
 		}
 		return nil
@@ -241,15 +243,15 @@ struct LauncherActivityStatusView: View {
 	}
 
 	private var isPausedDownload: Bool {
-		lifecycle.presentation.status == .paused
+		lifecycle.state.presentation.status == .paused
 			&& installation.hasPartialDownload
-			&& lifecycle.failure == nil
+			&& lifecycle.state.presentation.failure == nil
 	}
 
 	private var showsDownloadSnapshot: Bool {
-		guard lifecycle.failure == nil else { return false }
-		return lifecycle.presentation.status == .downloading
-			|| (lifecycle.presentation.status == .verifyingInstallation
+		guard lifecycle.state.presentation.failure == nil else { return false }
+		return lifecycle.state.presentation.status == .downloading
+			|| (lifecycle.state.presentation.status == .verifyingInstallation
 				&& installation.progress?.isVerifying == true)
 			|| (isPausedDownload
 				&& LauncherDownloadProgressPresentation.fraction(
@@ -277,10 +279,10 @@ struct LauncherActivityStatusView: View {
 		ZStack(alignment: .leading) {
 			Text(
 				installation.progress?.isVerifying == true
-					? HomeStrings.verificationPercentage(100)
+					? "Verifying · \(100)%"
 					: isPausedDownload
-						? HomeStrings.pausedDownloadPercentage(100)
-						: HomeStrings.downloadPercentage(100)
+						? "Paused · \(100)%"
+						: "\(100)%"
 			)
 			.font(LauncherVisuals.Typography.statusPercent)
 			.monospacedDigit()

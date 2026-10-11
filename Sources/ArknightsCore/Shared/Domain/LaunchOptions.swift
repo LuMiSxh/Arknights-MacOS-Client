@@ -39,7 +39,7 @@ package enum GameResolution: String, CaseIterable, Codable, Sendable {
 	case ntscWide = "720x480"
 	case sd = "640x480"
 
-	var displayName: String { rawValue.replacing("x", with: " × ") }
+	package var displayName: String { rawValue.replacing("x", with: " × ") }
 
 	var width: Int { dimensions.width }
 	var height: Int { dimensions.height }
@@ -91,7 +91,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		case usesHighResolutionMode
 	}
 
-	package init(
+	init(
 		displayMode: GameDisplayMode,
 		resolution: GameResolution,
 		fullscreenResolution: GameFullscreenResolution? = nil,

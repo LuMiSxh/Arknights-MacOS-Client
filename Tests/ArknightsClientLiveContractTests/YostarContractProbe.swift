@@ -200,7 +200,9 @@ struct YostarContractProbe {
 		)
 	}
 
-	private func blocked(_ region: GameRegion, _ contract: String, by dependency: String)
+	private func blocked(
+		_ region: GameRegion, _ contract: String, by dependency: String
+	)
 		-> LiveContractCheck
 	{
 		LiveContractCheck(

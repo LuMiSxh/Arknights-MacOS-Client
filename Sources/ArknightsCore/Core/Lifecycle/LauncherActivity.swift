@@ -52,3 +52,18 @@ package enum LauncherActivity: Equatable, Sendable {
 		return false
 	}
 }
+
+package enum InstallationStage: Equatable, Sendable {
+	case preparing
+	case verifying
+	case downloading
+	case pausing
+}
+
+package enum MaintenanceActivity: Equatable, Sendable {
+	case clearingCache
+	case deletingWinePrefix
+	case uninstalling
+	case updatingLauncher
+	case migratingStorage
+}

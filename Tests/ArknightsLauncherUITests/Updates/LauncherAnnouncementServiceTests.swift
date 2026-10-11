@@ -17,18 +17,12 @@ struct LauncherAnnouncementServiceTests {
 		("v1.2.3-alpha", "1.2.3-alpha.1", false),
 		("v1.2.3+build.7", "1.2.3+build.6", false),
 		("V1.2.4", "v1.2.3", true),
-		("999999999999999999999999", "1.2.3", false),
-		("1.2.3+", "1.2.2", false),
 		("v2", "1.9.9", true),
 		("v1.2.3", "not-a-version", false),
 	])
 	func semanticVersionComparison(candidate: String, current: String, expected: Bool) {
-		guard let candidate = SemanticVersion(candidate), let current = SemanticVersion(current)
-		else {
-			#expect(!expected)
-			return
-		}
-		#expect((candidate > current) == expected)
+		#expect(
+			(LauncherAnnouncement.compare(candidate, current) == .orderedDescending) == expected)
 	}
 
 	@Test

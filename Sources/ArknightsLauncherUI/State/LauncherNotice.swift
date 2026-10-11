@@ -5,7 +5,7 @@ import Foundation
 
 struct LauncherNotice: Identifiable {
 	let id = UUID()
-	let content: AttributedString
+	package let content: AttributedString
 }
 
 enum LauncherNoticeFormatter {

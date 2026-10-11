@@ -10,7 +10,7 @@ package struct GameScreenMetrics: Equatable, Sendable {
 	/// Height of a standard window title bar, which a windowed game's content area gives up.
 	package var titleBarHeight = AppConstants.Game.standardWindowTitleBarHeight
 
-	package init(
+	init(
 		visibleSize: CGSize,
 		pixelSize: CGSize,
 		titleBarHeight: CGFloat = AppConstants.Game.standardWindowTitleBarHeight
@@ -103,7 +103,9 @@ package enum GameFullscreenDetail: CaseIterable, Sendable {
 	}
 
 	/// The detail level that draws `resolution` on this display, or nil for a custom size.
-	package static func matching(_ resolution: GameFullscreenResolution, native: GameDisplaySize?)
+	package static func matching(
+		_ resolution: GameFullscreenResolution, native: GameDisplaySize?
+	)
 		-> Self?
 	{
 		available(native: native).first { $0.resolution(native: native) == resolution }

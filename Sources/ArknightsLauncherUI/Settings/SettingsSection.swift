@@ -21,16 +21,16 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var title: String {
 		switch self {
-		case .game: SettingsStrings.navigationGame
-		case .appearance: SettingsStrings.navigationAppearance
-		case .audio: SettingsStrings.navigationAudio
-		case .updates: SettingsStrings.navigationUpdates
-		case .installation: SettingsStrings.navigationInstallation
-		case .storage: SettingsStrings.navigationStorage
-		case .statistics: SettingsStrings.navigationStatistics
-		case .about: SettingsStrings.navigationAbout
+		case .game: "Game"
+		case .appearance: "Appearance"
+		case .audio: "Audio"
+		case .updates: "Updates"
+		case .installation: "Installation"
+		case .storage: "Storage"
+		case .statistics: "Playtime"
+		case .about: "About"
 		#if DEBUG
-			case .developer: SettingsStrings.navigationDeveloper
+			case .developer: "Developer"
 		#endif
 		}
 	}

@@ -6,7 +6,9 @@ import Darwin
 import Foundation
 
 extension GameInstaller {
-	func validateManifest(_ manifest: GameManifest, in installDirectory: InstallerInstallDirectory)
+	func validateManifest(
+		_ manifest: GameManifest, in installDirectory: InstallerInstallDirectory
+	)
 		throws
 	{
 		try validateManifestPaths(manifest)

@@ -23,7 +23,7 @@ extension GameInstaller {
 	}
 
 	/// `monitorClock` paces the install-wide progress monitor; tests inject a manual clock.
-	func install(
+	package func install(
 		configuration: GameConfiguration,
 		region: GameRegion,
 		into installDirectory: URL,

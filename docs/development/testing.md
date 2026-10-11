@@ -39,7 +39,7 @@ Add a regression test only when users would notice the bug and no type, compiler
 
 Do not test constants, strings, mappings, getters, log text, presentation details, or framework behavior.
 
-These contracts always keep at least one test: install exclusivity, activity lease, prefix ownership, launch cancellation, `.part` resume, manifest paths, download hosts, migrations, support codes, privacy, stale-epoch checks, and update safety.
+These contracts always keep at least one test: install exclusivity, activity lease, prefix ownership, launch cancellation, `.part` resume, manifest paths, download hosts, migrations, support codes, privacy, stale-result checks, and update safety.
 
 ## Focused tests
 

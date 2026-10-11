@@ -52,8 +52,9 @@ struct GameSessionTerminationTests {
 		await cleanup.value
 
 		#expect(fixture.model.lifecycle.activity == .idle)
-		#expect(fixture.model.lifecycle.failure?.context.operation == .runtimeExit)
-		#expect(fixture.model.lifecycle.failure?.context.region == .japan)
+		#expect(
+			fixture.model.lifecycle.state.presentation.failure?.context.operation == .runtimeExit)
+		#expect(fixture.model.lifecycle.state.presentation.failure?.context.region == .japan)
 		await fixture.api.resolveBranding()
 	}
 
@@ -71,10 +72,12 @@ struct GameSessionTerminationTests {
 			fixture.model.lifecycle.activity
 				== .stoppingGame(sessionID: fixture.sessionID, processIdentifier: 42)
 		)
-		#expect(fixture.model.lifecycle.failure?.id == fixture.sessionID)
-		#expect(fixture.model.lifecycle.failure?.context.operation == .runtimeStop)
-		#expect(fixture.model.lifecycle.failure?.context.region == .korea)
-		#expect(fixture.model.lifecycle.failure?.actions.contains(.retry) == true)
+		#expect(fixture.model.lifecycle.state.presentation.failure?.id == fixture.sessionID)
+		#expect(
+			fixture.model.lifecycle.state.presentation.failure?.context.operation == .runtimeStop)
+		#expect(fixture.model.lifecycle.state.presentation.failure?.context.region == .korea)
+		#expect(
+			fixture.model.lifecycle.state.presentation.failure?.actions.contains(.retry) == true)
 		#expect(await fixture.runtime.stopAttemptCount() == 1)
 
 		#expect(fixture.model.gameSession.retryRuntimeFailure(id: fixture.sessionID))
@@ -100,10 +103,12 @@ struct GameSessionTerminationTests {
 			fixture.model.lifecycle.activity
 				== .stoppingGame(sessionID: fixture.sessionID, processIdentifier: 42)
 		)
-		#expect(fixture.model.lifecycle.failure?.id == fixture.sessionID)
-		#expect(fixture.model.lifecycle.failure?.context.operation == .runtimeStop)
-		#expect(fixture.model.lifecycle.failure?.context.region == .korea)
-		#expect(fixture.model.lifecycle.failure?.actions.contains(.retry) == true)
+		#expect(fixture.model.lifecycle.state.presentation.failure?.id == fixture.sessionID)
+		#expect(
+			fixture.model.lifecycle.state.presentation.failure?.context.operation == .runtimeStop)
+		#expect(fixture.model.lifecycle.state.presentation.failure?.context.region == .korea)
+		#expect(
+			fixture.model.lifecycle.state.presentation.failure?.actions.contains(.retry) == true)
 		#expect(await fixture.runtime.stopAttemptCount() == 2)
 		await fixture.api.resolveBranding()
 	}
@@ -145,7 +150,7 @@ struct GameSessionTerminationTests {
 			fixture.model.lifecycle.activity
 				== .runningGame(sessionID: replacementSessionID, processIdentifier: 99)
 		)
-		#expect(fixture.model.lifecycle.failure == nil)
+		#expect(fixture.model.lifecycle.state.presentation.failure == nil)
 		await fixture.api.resolveBranding()
 	}
 }

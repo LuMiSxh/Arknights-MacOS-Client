@@ -11,3 +11,10 @@ package enum RecoveryAction: String, CaseIterable, Identifiable, Sendable {
 
 	package var id: String { rawValue }
 }
+
+package enum RecoveryActionDisposition: Sendable {
+	case completed
+	case repairConfirmationRequired
+	case rosettaConfirmationRequired
+	case ignored
+}

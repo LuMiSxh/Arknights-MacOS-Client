@@ -25,8 +25,8 @@ struct IntelTranslationControllerTests {
 		let state = await controller.installRosetta()
 
 		#expect(state == .available)
-		#expect(lifecycle.intelTranslationState == .available)
-		#expect(lifecycle.rosettaInstallationState == .idle)
+		#expect(lifecycle.state.readiness.intelTranslation == .available)
+		#expect(lifecycle.state.readiness.rosettaInstallation == .idle)
 		#expect(await checks.count == 2)
 		#expect(await installer.count == 1)
 	}
@@ -43,7 +43,7 @@ struct IntelTranslationControllerTests {
 		state: IntelTranslationState
 	) async throws {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.readiness.isInstalled = true
+		lifecycle.state.readiness.isInstalled = true
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			checkIntelTranslation: {
@@ -55,7 +55,7 @@ struct IntelTranslationControllerTests {
 		)
 
 		#expect(await controller.refreshAvailability(force: true) == state)
-		let failure = try #require(lifecycle.failure)
+		let failure = try #require(lifecycle.state.presentation.failure)
 
 		#expect(failure.code == .limpet)
 		#expect(failure.blocksGameLaunch)
@@ -73,7 +73,7 @@ struct IntelTranslationControllerTests {
 		let checks = TranslationCheckSequence(states: [.rosettaMissing, .available])
 		let installer = RosettaInstallationRecorder(status: 0)
 		let lifecycle = makeLifecycleStore()
-		lifecycle.readiness.isInstalled = true
+		lifecycle.state.readiness.isInstalled = true
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			checkIntelTranslation: { await checks.next() },
@@ -81,12 +81,13 @@ struct IntelTranslationControllerTests {
 		)
 
 		_ = await controller.refreshAvailability(force: true)
-		let failureID = try #require(lifecycle.failure?.id)
+		let failureID = try #require(lifecycle.state.presentation.failure?.id)
 
 		#expect(controller.retryAvailabilityFailure(id: failureID))
 		#expect(!controller.retryAvailabilityFailure(id: failureID))
 		let cleared = await waitForCondition {
-			lifecycle.intelTranslationState == .available && lifecycle.failure == nil
+			lifecycle.state.readiness.intelTranslation == .available
+				&& lifecycle.state.presentation.failure == nil
 		}
 		#expect(cleared)
 		#expect(await checks.count == 2)
@@ -114,7 +115,7 @@ struct IntelTranslationControllerTests {
 		message: String
 	) async {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.readiness.isInstalled = true
+		lifecycle.state.readiness.isInstalled = true
 		let existingFailure = LauncherFailurePresentation(
 			id: UUID(),
 			message: message,
@@ -133,14 +134,15 @@ struct IntelTranslationControllerTests {
 
 		_ = await controller.refreshAvailability(force: true)
 
-		#expect(lifecycle.failure == existingFailure, Comment(rawValue: caseName))
+		#expect(
+			lifecycle.state.presentation.failure == existingFailure, Comment(rawValue: caseName))
 	}
 
 	@Test
 	func failedInstallationKeepsLaunchBlockedAndExposesRecovery() async {
 		let installer = RosettaInstallationRecorder(status: 7)
 		let lifecycle = makeLifecycleStore()
-		lifecycle.intelTranslationState = .rosettaMissing
+		lifecycle.state.readiness.intelTranslation = .rosettaMissing
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			checkIntelTranslation: {
@@ -157,16 +159,16 @@ struct IntelTranslationControllerTests {
 			return
 		}
 		#expect(controller.canInstallRosetta)
-		#expect(lifecycle.failure?.actions.contains(.retry) == true)
-		#expect(lifecycle.rosettaInstallationState.failureMessage?.contains("7") == true)
-		#expect(lifecycle.failure?.blocksGameLaunch == true)
+		#expect(lifecycle.state.presentation.failure?.actions.contains(.retry) == true)
+		#expect(lifecycle.state.readiness.rosettaInstallation.failureMessage?.contains("7") == true)
+		#expect(lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 	}
 
 	@Test
 	func concurrentAvailabilityRequestsShareOneProbe() async {
 		let checks = TranslationCheckSequence(states: [.available])
 		let lifecycle = makeLifecycleStore()
-		lifecycle.intelTranslationState = .checking
+		lifecycle.state.readiness.intelTranslation = .checking
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			checkIntelTranslation: { await checks.next() }
@@ -195,19 +197,19 @@ struct IntelTranslationControllerTests {
 		fixture: (IntelTranslationState, SupportCode?)
 	) {
 		let lifecycle = makeLifecycleStore()
-		lifecycle.readiness.isInstalled = true
+		lifecycle.state.readiness.isInstalled = true
 		let controller = IntelTranslationController(lifecycle: lifecycle)
 		controller.applyAvailabilityCheck(
 			IntelTranslationCheck(state: fixture.0, diagnostics: "test"))
 
-		#expect(lifecycle.failure?.code == fixture.1)
+		#expect(lifecycle.state.presentation.failure?.code == fixture.1)
 	}
 
 	@Test
 	func cancelledCallerDoesNotDiscardTheSharedProbeResult() async {
 		let probe = BlockingTranslationProbe()
 		let lifecycle = makeLifecycleStore()
-		lifecycle.intelTranslationState = .checking
+		lifecycle.state.readiness.intelTranslation = .checking
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			checkIntelTranslation: { await probe.waitForResult() }
@@ -219,14 +221,14 @@ struct IntelTranslationControllerTests {
 		await probe.resolve(IntelTranslationCheck(state: .available, diagnostics: "test"))
 		_ = await request.value
 
-		#expect(lifecycle.intelTranslationState == .available)
+		#expect(lifecycle.state.readiness.intelTranslation == .available)
 	}
 
 	@Test
 	func retryConsumesOnlyTheCurrentRosettaFailure() async throws {
 		let installer = RosettaInstallationRecorder(status: 7)
 		let lifecycle = makeLifecycleStore()
-		lifecycle.intelTranslationState = .rosettaMissing
+		lifecycle.state.readiness.intelTranslation = .rosettaMissing
 		let controller = IntelTranslationController(
 			lifecycle: lifecycle,
 			checkIntelTranslation: {
@@ -235,7 +237,7 @@ struct IntelTranslationControllerTests {
 			installRosettaSystemSoftware: { await installer.install() }
 		)
 		_ = await controller.installRosetta()
-		let failureID = try #require(lifecycle.failure?.id)
+		let failureID = try #require(lifecycle.state.presentation.failure?.id)
 
 		#expect(!controller.retryRosettaFailure(id: UUID()))
 		#expect(controller.retryRosettaFailure(id: failureID))

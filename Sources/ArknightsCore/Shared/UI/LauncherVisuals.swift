@@ -109,7 +109,9 @@ package enum LauncherVisuals {
 				: disabledForegroundOpacity
 		}
 
-		static func disabledNeutralForegroundOpacity(for contrast: ColorSchemeContrast)
+		static func disabledNeutralForegroundOpacity(
+			for contrast: ColorSchemeContrast
+		)
 			-> Double
 		{
 			contrast == .increased

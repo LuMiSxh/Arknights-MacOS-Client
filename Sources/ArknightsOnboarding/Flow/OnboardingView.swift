@@ -64,7 +64,8 @@ package struct OnboardingView: View {
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
 								requiredSchema: coordinator.requiredSchema,
-								rosettaInstallationState: lifecycle.rosettaInstallationState,
+								rosettaInstallationState: lifecycle.state.readiness
+									.rosettaInstallation,
 								retry: retryUpdateCheck,
 								retryIntelTranslation: retryIntelTranslation,
 								installRosetta: installRosetta
@@ -129,7 +130,7 @@ package struct OnboardingView: View {
 						&& coordinator.step != .finish
 					{
 						CapsuleActionButton(
-							title: OnboardingStrings.skipSetup,
+							title: "Skip Setup",
 							systemImage: "forward.end",
 							tone: .neutral
 						) {
@@ -137,22 +138,24 @@ package struct OnboardingView: View {
 						}
 						.controlSize(.large)
 						.alert(
-							OnboardingStrings.skipSetupConfirmationTitle,
+							"Skip setup?",
 							isPresented: $isSkipConfirmationPresented
 						) {
-							Button(OnboardingStrings.continueSetup, role: .cancel) {}
+							Button("Continue Setup", role: .cancel) {}
 								.keyboardShortcut(.defaultAction)
-							Button(OnboardingStrings.skipAnyway, role: .destructive) {
+							Button("Skip Anyway", role: .destructive) {
 								coordinator.skip()
 							}
 						} message: {
-							Text(OnboardingStrings.skipSetupConfirmationDetail)
+							Text(
+								"Setup picks your server, how the game looks on your screen, and how the launcher behaves. You can run it again from Settings → Installation."
+							)
 						}
 					}
 					Spacer()
 					if coordinator.step != .welcome {
 						CapsuleActionButton(
-							title: OnboardingStrings.back,
+							title: "Back",
 							systemImage: "chevron.backward",
 							tone: .neutral,
 							action: coordinator.goBack
@@ -208,17 +211,17 @@ package struct OnboardingView: View {
 			case .current, .checkFailed:
 				coordinator.intelTranslationState == .checking
 					? OnboardingStrings.checking : OnboardingStrings.continue
-			case .updateRequired(let version): OnboardingStrings.installUpdate(version)
+			case .updateRequired(let version): "Install Update \(version)"
 			}
 		}
 		if coordinator.step == .region {
 			if installation.isInstalled || installation.isDownloading {
-				return OnboardingStrings.continueSetup
+				return "Continue Setup"
 			}
 			return installation.hasPartialDownload
-				? OnboardingStrings.resumeAndContinue : OnboardingStrings.installAndContinue
+				? "Resume & Continue" : "Install & Continue"
 		}
-		if coordinator.step == .finish { return OnboardingStrings.finishSetup }
+		if coordinator.step == .finish { return "Finish Setup" }
 		return OnboardingStrings.continue
 	}
 

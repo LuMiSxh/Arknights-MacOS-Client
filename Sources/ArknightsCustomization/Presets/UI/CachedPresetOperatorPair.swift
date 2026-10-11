@@ -6,7 +6,7 @@ import SwiftUI
 struct CachedPresetOperatorPair: View {
 	let catalog: PresetCatalogService
 	let url: URL
-	let cacheKey: String
+	package let cacheKey: String
 	let accentHue: Double?
 	var iconDimension: CGFloat = 82
 	var itemWidth: CGFloat = 104
@@ -23,7 +23,7 @@ struct CachedPresetOperatorPair: View {
 				}
 			} else if hasFailed {
 				Label(
-					CustomizationStrings.iconPreviewUnavailable,
+					"Icon previews unavailable",
 					systemImage: "person.crop.square.fill"
 				)
 				.labelStyle(.iconOnly)
@@ -36,7 +36,7 @@ struct CachedPresetOperatorPair: View {
 		}
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(
-			CustomizationStrings.iconPreviewPairAccessibilityLabel
+			"Launcher and game icon previews"
 		)
 		.task(id: renderIdentifier) {
 			let taskIdentifier = renderIdentifier

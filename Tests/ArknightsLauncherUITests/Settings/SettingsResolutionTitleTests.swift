@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsCore
 import Testing
 
+@testable import ArknightsCore
 @testable import ArknightsLauncherUI
 
 @MainActor

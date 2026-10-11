@@ -10,12 +10,13 @@ struct OnboardingDisplayView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: OnboardingStrings.displayTitle,
-			subtitle: OnboardingStrings.displaySubtitle,
+			title: "How do you like to play?",
+			subtitle:
+				"Your answers set the game up for this screen, so there is nothing to calculate.",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
-				question: OnboardingStrings.placementQuestion,
+				question: "Where should the game appear?",
 				systemImage: "macwindow",
 				answers: GamePlacementAnswer.allCases.map(OnboardingStrings.placementAnswer),
 				selection: answerBinding(\.placement),
@@ -24,17 +25,17 @@ struct OnboardingDisplayView: View {
 			)
 			if answers.placement == .window {
 				OnboardingQuestion(
-					question: OnboardingStrings.windowSizeQuestion,
+					question: "How big should the window be?",
 					systemImage: "rectangle.expand.diagonal",
 					answers: GameWindowSizeChoice.allCases.map(OnboardingStrings.windowSizeAnswer),
 					selection: answerBinding(\.windowSize),
 					accentColor: accentColor,
 					isDisabled: isLocked,
-					footnote: OnboardingStrings.windowSizeFootnote
+					footnote: "You can pick an exact size in Settings any time."
 				)
 			}
 			OnboardingQuestion(
-				question: OnboardingStrings.renderingQuestion,
+				question: "What matters most to you?",
 				systemImage: "sparkles",
 				answers: GameRenderingMode.allCases.map(OnboardingStrings.renderingAnswer),
 				selection: answerBinding(\.rendering),
@@ -44,7 +45,7 @@ struct OnboardingDisplayView: View {
 			// The runtime reports pointer support only while launching, so the question is always
 			// shown; a runtime without it falls back to the game's own cursor at launch.
 			OnboardingQuestion(
-				question: OnboardingStrings.pointerQuestion,
+				question: "Which pointer should the game use?",
 				systemImage: "cursorarrow.motionlines",
 				answers: PointerAnswer.allCases.map(OnboardingStrings.pointerAnswer),
 				selection: pointerBinding,

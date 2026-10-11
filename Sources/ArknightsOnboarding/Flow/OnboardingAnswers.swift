@@ -82,6 +82,7 @@ extension LauncherPreferencesController {
 nonisolated enum LauncherInfoAnswer: CaseIterable, Hashable, Sendable {
 	case gameVersion
 	case serverTime
+	case branding
 }
 
 extension LauncherPreferencesController {
@@ -90,11 +91,13 @@ extension LauncherPreferencesController {
 			var shown = Set<LauncherInfoAnswer>()
 			if showsGameVersion { shown.insert(.gameVersion) }
 			if showsServerResetCountdown { shown.insert(.serverTime) }
+			if showsBranding { shown.insert(.branding) }
 			return shown
 		}
 		set {
 			showsGameVersion = newValue.contains(.gameVersion)
 			showsServerResetCountdown = newValue.contains(.serverTime)
+			showsBranding = newValue.contains(.branding)
 		}
 	}
 }

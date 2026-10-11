@@ -10,38 +10,38 @@ package enum PresetGalleryDestination: String, Identifiable, Sendable {
 
 	var title: String {
 		switch self {
-		case .artwork: CustomizationStrings.artworkTitle
-		case .operatorIcons: CustomizationStrings.operatorTitle
+		case .artwork: "Artwork Gallery"
+		case .operatorIcons: "Choose an Operator"
 		}
 	}
 
 	var subtitle: String {
 		switch self {
 		case .artwork:
-			CustomizationStrings.artworkSubtitle
+			"Choose a background for the launcher."
 		case .operatorIcons:
-			CustomizationStrings.operatorSubtitle
+			"Choose one operator for both Dock icons."
 		}
 	}
 
 	var searchPlaceholder: String {
 		switch self {
-		case .artwork: CustomizationStrings.artworkSearchPlaceholder
-		case .operatorIcons: CustomizationStrings.operatorSearchPlaceholder
+		case .artwork: "Search artwork…"
+		case .operatorIcons: "Search operators…"
 		}
 	}
 
 	var loadingText: String {
 		switch self {
-		case .artwork: CustomizationStrings.artworkLoading
-		case .operatorIcons: CustomizationStrings.operatorLoading
+		case .artwork: "Loading official wallpapers…"
+		case .operatorIcons: "Loading operators…"
 		}
 	}
 
 	var emptyText: String {
 		switch self {
-		case .artwork: CustomizationStrings.artworkEmpty
-		case .operatorIcons: CustomizationStrings.operatorEmpty
+		case .artwork: "No matching artwork"
+		case .operatorIcons: "No matching operators"
 		}
 	}
 }

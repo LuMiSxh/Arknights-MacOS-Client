@@ -9,8 +9,8 @@ import UniformTypeIdentifiers
 extension CustomizationController {
 	package func chooseCustomArtwork() {
 		let panel = NSOpenPanel()
-		panel.title = CustomizationStrings.pickerLauncherArtwork
-		panel.prompt = CustomizationStrings.pickerChoose
+		panel.title = "Choose launcher artwork"
+		panel.prompt = "Choose"
 		panel.allowedContentTypes = [.image]
 		panel.canChooseDirectories = false
 		panel.canChooseFiles = true
@@ -63,7 +63,7 @@ extension CustomizationController {
 		customArtworkDidChange()
 		setHeroArtwork(nil, themeCacheKey: nil)
 		guard !isDownloading else { return }
-		lifecycle.refresh = .idle
+		lifecycle.state.refresh = .idle
 		restartRefresh()
 	}
 
@@ -246,12 +246,8 @@ extension CustomizationController {
 
 	private func discardStagedArtwork(at url: URL) {
 		guard FileManager.default.fileExists(atPath: url.path) else { return }
-		do {
+		log.attempt("Failed to remove staged custom artwork at \(url.path)") {
 			try FileManager.default.removeItem(at: url)
-		} catch {
-			log.error(
-				"Failed to remove staged custom artwork at \(url.path): \(error.localizedDescription)"
-			)
 		}
 	}
 }

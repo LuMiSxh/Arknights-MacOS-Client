@@ -85,13 +85,17 @@ struct PresetAvatarGrid: View {
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(avatar.name)
 				.accessibilityHint(
-					CustomizationStrings.operatorApplyHelp(avatar.name)
+					applyHint(for: avatar)
 				)
 				.accessibilityValue(
 					isApplying ? Text(CustomizationStrings.applying) : Text("")
 				)
 			}
 		}
+	}
+
+	private func applyHint(for avatar: PresetAvatar) -> String {
+		"Use \(avatar.name) for both Dock icons"
 	}
 }
 
@@ -179,7 +183,7 @@ struct PresetWallpaperGrid: View {
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(wp.displayTitle)
 				.accessibilityHint(
-					CustomizationStrings.wallpaperApplyHelp(wp.displayTitle)
+					applyHint(for: wp)
 				)
 				.accessibilityValue(
 					isApplying ? Text(CustomizationStrings.applying) : Text("")
@@ -189,11 +193,15 @@ struct PresetWallpaperGrid: View {
 		}
 	}
 
+	private func applyHint(for wp: PresetWallpaper) -> String {
+		"Use \(wp.displayTitle) as the launcher background"
+	}
+
 	private func hoverText(for wp: PresetWallpaper) -> String {
 		let tags = WallpaperTagCatalog.tags(for: wp.id).joined(separator: ", ")
 		return [
-			wp.author.map { CustomizationStrings.wallpaperHoverArtist($0) },
-			tags.isEmpty ? nil : CustomizationStrings.wallpaperHoverTags(tags),
+			wp.author.map { "Artist: \($0)" },
+			tags.isEmpty ? nil : "Tags: \(tags)",
 			wp.description,
 		]
 		.compactMap { $0 }

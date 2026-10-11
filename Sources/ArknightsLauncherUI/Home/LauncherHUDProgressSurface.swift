@@ -9,25 +9,25 @@ import SwiftUI
 /// This leaf is the only HUD view that reads the per-tick `installation.progress`,
 /// so progress updates do not invalidate the parent's body. The parent builds `content`.
 struct HUDProgressSurface<Content: View>: View {
-	let lifecycle: LauncherLifecycleStore
-	let installation: InstallationController
+	package let lifecycle: LauncherLifecycleStore
+	package let installation: InstallationController
 	let tint: Color
 	let progressTint: Color
-	@ViewBuilder let content: () -> Content
+	@ViewBuilder package let content: () -> Content
 
 	var body: some View {
 		content()
 			.hudPillSurface(
 				progress: LauncherDownloadProgressPresentation.outlineFraction(
 					for: installation.progress,
-					status: lifecycle.presentation.status,
+					status: lifecycle.state.presentation.status,
 					hasPartialDownload: installation.hasPartialDownload,
-					hasFailure: lifecycle.failure != nil
+					hasFailure: lifecycle.state.presentation.failure != nil
 				),
 				isProgressActive: LauncherDownloadProgressPresentation.showsActiveProgressEffect(
 					for: installation.progress,
-					status: lifecycle.presentation.status,
-					hasFailure: lifecycle.failure != nil
+					status: lifecycle.state.presentation.status,
+					hasFailure: lifecycle.state.presentation.failure != nil
 				),
 				tint: tint,
 				progressTint: progressTint

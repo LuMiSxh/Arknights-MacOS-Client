@@ -74,7 +74,7 @@ package final class DecorativeMotionVisibility {
 		refreshWindowState()
 	}
 
-	func update(
+	package func update(
 		applicationIsActive: Bool,
 		applicationIsHidden: Bool,
 		windowIsVisible: Bool,
@@ -157,7 +157,7 @@ struct DecorativeMotionClock {
 	private(set) var pausedPhase = 0.0
 	private var startDate: Date?
 
-	mutating func begin(at date: Date, cycleDuration: TimeInterval) {
+	package mutating func begin(at date: Date, cycleDuration: TimeInterval) {
 		guard startDate == nil else { return }
 		startDate = date.addingTimeInterval(-pausedPhase * cycleDuration)
 	}
@@ -211,12 +211,12 @@ package final class WindowVisibilityTrackingView: NSView {
 		fatalError("init(coder:) has not been implemented")
 	}
 
-	override package func viewDidMoveToWindow() {
+	package override func viewDidMoveToWindow() {
 		super.viewDidMoveToWindow()
 		attachIfNeeded()
 	}
 
-	override package func removeFromSuperview() {
+	package override func removeFromSuperview() {
 		visibility.detach()
 		observedWindow = nil
 		super.removeFromSuperview()

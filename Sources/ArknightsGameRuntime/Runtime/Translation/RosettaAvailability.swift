@@ -5,7 +5,7 @@ import Foundation
 
 package struct IntelTranslationCheck: Equatable, Sendable {
 	package let state: IntelTranslationState
-	let diagnostics: String
+	package let diagnostics: String
 
 	package init(state: IntelTranslationState, diagnostics: String) {
 		self.state = state

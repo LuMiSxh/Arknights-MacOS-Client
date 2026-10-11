@@ -7,16 +7,16 @@ import SwiftUI
 
 struct InstallationSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
-	let installation: InstallationController
+	package let installation: InstallationController
 	let gameSession: GameSessionController
-	let lifecycle: LauncherLifecycleStore
-	let accentColor: Color
-	let selectRegion: (GameRegion) -> Void
-	let chooseInstallDirectory: () -> Void
-	let locateExistingInstallation: () -> Void
-	let repairGame: () -> Void
-	let resetAllLauncherSettings: () -> Void
-	let uninstallGame: () -> Void
+	package let lifecycle: LauncherLifecycleStore
+	package let accentColor: Color
+	package let selectRegion: (GameRegion) -> Void
+	package let chooseInstallDirectory: () -> Void
+	package let locateExistingInstallation: () -> Void
+	package let repairGame: () -> Void
+	package let resetAllLauncherSettings: () -> Void
+	package let uninstallGame: () -> Void
 	let restartOnboarding: () -> Void
 	@State private var confirmsGameUninstall = false
 	@State private var confirmsForceMigration = false
@@ -25,14 +25,14 @@ struct InstallationSettingsPage: View {
 
 	var body: some View {
 		SettingsPage(
-			title: SettingsStrings.installationTitle,
-			subtitle: SettingsStrings.installationSubtitle,
+			title: "Installation",
+			subtitle: "Region, game files, and repairs",
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: SettingsStrings.region, systemImage: "globe") {
+			SettingsPanel(title: "Region", systemImage: "globe") {
 				SettingsActionRow(
-					title: SettingsStrings.region,
-					detail: SettingsStrings.regionDetail
+					title: "Region",
+					detail: "Each region keeps its own game files and updates."
 				) {
 					GlassMenuPicker(
 						selection: regionBinding,
@@ -46,11 +46,11 @@ struct InstallationSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: SettingsStrings.location, systemImage: "externaldrive"
+				title: "Location", systemImage: "externaldrive"
 			) {
 				SettingsActionRow(
-					title: SettingsStrings.status,
-					detail: SettingsStrings.statusDetail
+					title: "Status",
+					detail: "Whether the game is installed for this region."
 				) {
 					VStack(alignment: .trailing, spacing: 2) {
 						Text(gameStatus)
@@ -61,33 +61,33 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.folder,
+					title: "Folder",
 					detail: installation.installDirectory.lastPathComponent
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.show, systemImage: "folder",
+						title: "Show", systemImage: "folder",
 						tone: .neutral, presentation: .compact,
 						action: installation.revealInstallDirectory
 					)
 					.disabled(!installation.isInstalled)
-					.help(SettingsStrings.showGameFilesHelp)
+					.help("Show game files in Finder")
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.installationLocation,
-					detail: SettingsStrings.installationLocationDetail
+					title: "Installation location",
+					detail: "Move the game to a new folder, or point to a copy you already have."
 				) {
 					GlassActionMenu(
-						title: SettingsStrings.change,
+						title: "Change…",
 						systemImage: "arrow.triangle.swap",
 						accentColor: accentColor,
 						isDisabled: !installation.canModifyGameFiles
 					) {
 						Button(
-							SettingsStrings.chooseNewLocation,
+							"Choose New Location…",
 							action: chooseInstallDirectory)
 						Button(
-							SettingsStrings.locateExisting,
+							"Locate Existing Installation…",
 							action: locateExistingInstallation
 						)
 					}
@@ -95,15 +95,15 @@ struct InstallationSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: SettingsStrings.maintenance,
+				title: "Maintenance",
 				systemImage: "wrench.and.screwdriver"
 			) {
 				SettingsActionRow(
-					title: SettingsStrings.repair,
-					detail: SettingsStrings.repairDetail
+					title: "Repair",
+					detail: "Check the game files and download anything missing or damaged again."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.repairAction,
+						title: "Repair…",
 						systemImage: "wrench.and.screwdriver",
 						tone: .accent(accentColor), presentation: .compact,
 						action: repairGame
@@ -112,11 +112,11 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.setupAssistant,
-					detail: SettingsStrings.setupAssistantDetail
+					title: "Setup assistant",
+					detail: "Go through the first-run questions again."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.runAgain, systemImage: "wand.and.stars",
+						title: "Run Setup Again…", systemImage: "wand.and.stars",
 						tone: .accent(accentColor), presentation: .compact,
 						action: restartOnboarding
 					)
@@ -131,7 +131,8 @@ struct InstallationSettingsPage: View {
 			) {
 				SettingsActionRow(
 					title: SettingsStrings.canaryFeatures,
-					detail: SettingsStrings.canaryFeaturesDetail
+					detail:
+						"Try experimental features. Turning this off switches a Canary region back to Global."
 				) {
 					SettingsToggle(
 						SettingsStrings.canaryFeatures,
@@ -148,12 +149,14 @@ struct InstallationSettingsPage: View {
 
 			DangerZonePanel {
 				SettingsActionRow(
-					title: SettingsStrings.wineSetup,
-					detail: SettingsStrings.forceMigrationDetail,
-					help: SettingsStrings.forceMigrationHelp
+					title: "Environment setup",
+					detail:
+						"Sets up the game's Windows environment again the next time you start the game. Game files and saves are untouched; that start just takes longer.",
+					help:
+						"Reruns Wine prefix initialization, DXMT installation, and registry overrides."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.forceMigrationAction,
+						title: "Rebuild…",
 						systemImage: "arrow.triangle.2.circlepath",
 						tone: .danger,
 						presentation: .compact,
@@ -163,26 +166,29 @@ struct InstallationSettingsPage: View {
 					}
 					.disabled(!installation.canModifyGameFiles)
 					.confirmationDialog(
-						SettingsStrings.forceMigrationConfirmation,
+						"Rebuild the Game Environment?",
 						isPresented: $confirmsForceMigration,
 						titleVisibility: .visible
 					) {
 						Button(
-							SettingsStrings.forceMigration, role: .destructive,
+							"Rebuild Environment", role: .destructive,
 							action: gameSession.forcePrefixMigration
 						)
 						Button(SettingsStrings.cancel, role: .cancel) {}
 					} message: {
-						Text(SettingsStrings.forceMigrationDetail)
+						Text(
+							"Sets up the game's Windows environment again the next time you start the game. Game files and saves are untouched; that start just takes longer."
+						)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.launcherSettings,
-					detail: SettingsStrings.resetSettingsDetail
+					title: "Launcher settings",
+					detail:
+						"Puts every launcher setting back to its default. Game files, the install location, and the region are untouched."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.resetSettingsAction,
+						title: "Reset All Settings…",
 						systemImage: "arrow.counterclockwise",
 						tone: .danger,
 						presentation: .compact,
@@ -192,27 +198,30 @@ struct InstallationSettingsPage: View {
 					}
 					.disabled(gameSession.isGameActive || lifecycle.activity != .idle)
 					.confirmationDialog(
-						SettingsStrings.resetSettingsConfirmation,
+						"Reset All Launcher Settings?",
 						isPresented: $confirmsSettingsReset,
 						titleVisibility: .visible
 					) {
 						Button(
-							SettingsStrings.resetSettings, role: .destructive,
+							"Reset Settings", role: .destructive,
 							action: resetAllLauncherSettings
 						)
 						Button(SettingsStrings.cancel, role: .cancel) {}
 					} message: {
-						Text(SettingsStrings.resetSettingsDetail)
+						Text(
+							"Puts every launcher setting back to its default. Game files, the install location, and the region are untouched."
+						)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.winePrefixTitle,
-					detail: SettingsStrings.winePrefixDetail,
-					help: SettingsStrings.winePrefixHelp
+					title: "Logins & environment",
+					detail:
+						"Deletes the game's Windows environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else is rebuilt on the next start.",
+					help: "Deletes the Wine prefix folder shared by this publisher's regions."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.deleteWinePrefix,
+						title: "Delete Environment…",
 						systemImage: "trash",
 						tone: .danger,
 						presentation: .compact,
@@ -222,26 +231,28 @@ struct InstallationSettingsPage: View {
 					}
 					.disabled(!installation.canModifyGameFiles)
 					.confirmationDialog(
-						SettingsStrings.deleteWinePrefixConfirmation,
+						"Delete the Game Environment?",
 						isPresented: $confirmsWinePrefixDeletion,
 						titleVisibility: .visible
 					) {
 						Button(
-							SettingsStrings.deleteWinePrefixAction, role: .destructive,
+							"Delete Environment", role: .destructive,
 							action: gameSession.deleteWinePrefix
 						)
 						Button(SettingsStrings.cancel, role: .cancel) {}
 					} message: {
-						Text(SettingsStrings.deleteWinePrefixDetail)
+						Text(
+							"This signs you out of every login saved in the sign-in window. Game files are untouched."
+						)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.gameFiles,
-					detail: SettingsStrings.gameFilesDetail
+					title: "Game files",
+					detail: "Move the game for this region to the Trash."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.uninstall,
+						title: "Uninstall Game…",
 						systemImage: "trash",
 						tone: .danger,
 						presentation: .compact,
@@ -251,16 +262,16 @@ struct InstallationSettingsPage: View {
 					}
 					.disabled(!installation.canUninstallGame)
 					.confirmationDialog(
-						SettingsStrings.uninstallConfirmation,
+						"Uninstall Arknights?",
 						isPresented: $confirmsGameUninstall,
 						titleVisibility: .visible
 					) {
 						Button(
-							SettingsStrings.moveGameToTrash, role: .destructive,
+							"Move Game to Trash", role: .destructive,
 							action: uninstallGame)
 						Button(SettingsStrings.cancel, role: .cancel) {}
 					} message: {
-						Text(SettingsStrings.uninstallDetail)
+						Text("The launcher stays installed.")
 					}
 				}
 			}
@@ -271,12 +282,12 @@ struct InstallationSettingsPage: View {
 		if installation.isDownloading, let progress = installation.progress {
 			let percentage = Int(progress.fraction * 100)
 			return progress.isVerifying
-				? SettingsStrings.verifying(percentage) : SettingsStrings.downloading(percentage)
+				? "Verifying \(percentage)%" : "Downloading \(percentage)%"
 		}
-		if installation.isDownloading { return SettingsStrings.preparingDownload }
-		if installation.isInstalled { return SettingsStrings.installed }
+		if installation.isDownloading { return "Preparing download" }
+		if installation.isInstalled { return "Installed" }
 		return
-			installation.hasPartialDownload ? SettingsStrings.paused : SettingsStrings.notInstalled
+			installation.hasPartialDownload ? "Paused" : "Not installed"
 	}
 
 	private var regionBinding: Binding<GameRegion> {

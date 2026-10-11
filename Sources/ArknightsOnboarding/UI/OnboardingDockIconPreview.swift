@@ -16,8 +16,8 @@ struct OnboardingDockIconPreview: View {
 		HStack(spacing: LauncherVisuals.Spacing.panel) {
 			iconTile(
 				Image(nsImage: customization.launcherIconManager.currentIcon),
-				title: OnboardingStrings.dockLauncherIcon)
-			iconTile(gameIconImage, title: OnboardingStrings.dockGameIcon)
+				title: "Launcher")
+			iconTile(gameIconImage, title: "Game")
 			Spacer(minLength: 0)
 		}
 		// The game icon only exists as a file once an operator or custom image is chosen.

@@ -7,7 +7,7 @@ import SwiftUI
 package struct PlaytimeStatisticsPage: View {
 	let controller: PlaytimeStatisticsController
 	let regions: [GameRegion]
-	let accentColor: Color
+	package let accentColor: Color
 	@State private var confirmsReset = false
 
 	package init(
@@ -20,27 +20,27 @@ package struct PlaytimeStatisticsPage: View {
 
 	package var body: some View {
 		SettingsPage(
-			title: PlaytimeStrings.title,
-			subtitle: PlaytimeStrings.subtitle,
+			title: "Playtime",
+			subtitle: "How long the game has been running on this Mac",
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: PlaytimeStrings.overview,
+				title: "Overview",
 				systemImage: "clock"
 			) {
 				HStack(spacing: 0) {
 					metric(
-						PlaytimeStrings.total,
+						"All time",
 						duration: controller.totalDuration
 					)
 					metricDivider
 					metric(
-						PlaytimeStrings.sevenDays,
+						"7 days",
 						duration: controller.duration(inLast: 7)
 					)
 					metricDivider
 					metric(
-						PlaytimeStrings.thirtyDays,
+						"30 days",
 						duration: controller.duration(inLast: 30)
 					)
 				}
@@ -50,7 +50,7 @@ package struct PlaytimeStatisticsPage: View {
 
 			if !regions.isEmpty {
 				SettingsPanel(
-					title: PlaytimeStrings.regions,
+					title: "Regions",
 					systemImage: "globe"
 				) {
 					ForEach(Array(regions.enumerated()), id: \.element.id) {
@@ -62,29 +62,31 @@ package struct PlaytimeStatisticsPage: View {
 			}
 
 			SettingsPanel(
-				title: PlaytimeStrings.about,
+				title: "About playtime",
 				systemImage: "info.circle"
 			) {
 				explanation(
-					title: PlaytimeStrings.measurement,
-					detail: PlaytimeStrings.measurementDetail,
+					title: "What counts",
+					detail:
+						"Time starts when the game window becomes visible and ends with the game process. Menus, pauses, and idle time are included.",
 					systemImage: "clock.badge.checkmark"
 				)
 				SettingsHairline()
 				explanation(
-					title: PlaytimeStrings.privacy,
-					detail: PlaytimeStrings.privacyDetail,
+					title: "Local only",
+					detail:
+						"Statistics stay on this Mac. They are not associated with an account, synced, or sent anywhere.",
 					systemImage: "lock"
 				)
 			}
 
 			DangerZonePanel {
 				SettingsActionRow(
-					title: PlaytimeStrings.reset,
-					detail: PlaytimeStrings.resetDetail
+					title: "Playtime statistics",
+					detail: "Deletes all local totals and daily data. This cannot be undone."
 				) {
 					CapsuleActionButton(
-						title: PlaytimeStrings.resetAction,
+						title: "Reset Statistics…",
 						systemImage: "trash",
 						tone: .danger,
 						presentation: .compact,
@@ -97,18 +99,18 @@ package struct PlaytimeStatisticsPage: View {
 							&& controller.statistics.activeSession == nil
 					)
 					.confirmationDialog(
-						PlaytimeStrings.resetConfirmation,
+						"Reset playtime statistics?",
 						isPresented: $confirmsReset,
 						titleVisibility: .visible
 					) {
 						Button(
-							PlaytimeStrings.resetConfirm,
+							"Reset Statistics",
 							role: .destructive,
 							action: controller.reset
 						)
-						Button(PlaytimeStrings.cancel, role: .cancel) {}
+						Button("Cancel", role: .cancel) {}
 					} message: {
-						Text(PlaytimeStrings.resetDetail)
+						Text("Deletes all local totals and daily data. This cannot be undone.")
 					}
 				}
 			}
@@ -130,7 +132,7 @@ package struct PlaytimeStatisticsPage: View {
 		Group {
 			if let session = controller.statistics.latestSession {
 				SettingsActionRow(
-					title: PlaytimeStrings.latest,
+					title: "Latest session",
 					detail:
 						"\(session.region.displayName) · \(dateText(session.startedAt))"
 				) {
@@ -139,8 +141,8 @@ package struct PlaytimeStatisticsPage: View {
 				}
 			} else {
 				SettingsActionRow(
-					title: PlaytimeStrings.latest,
-					detail: PlaytimeStrings.noSessions
+					title: "Latest session",
+					detail: "No completed session yet"
 				) {
 					EmptyView()
 				}
@@ -198,7 +200,7 @@ package struct PlaytimeStatisticsPage: View {
 					.locale(locale)
 			)
 		}
-		guard duration >= 60 else { return PlaytimeStrings.lessThanMinute }
+		guard duration >= 60 else { return "< 1 min" }
 		return Duration.seconds(duration).formatted(
 			.units(
 				allowed: [.hours, .minutes],

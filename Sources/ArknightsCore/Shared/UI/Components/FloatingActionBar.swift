@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Shared fade behind floating footer controls so scroll content remains legible.
 package struct FloatingActionFooterFade: View {
-	let height: CGFloat?
+	package let height: CGFloat?
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
 	package init(height: CGFloat? = nil) {
@@ -34,7 +34,7 @@ package struct FloatingActionFooterFade: View {
 package struct FloatingActionBar<Content: View>: View {
 	let tint: Color
 	var spacing: CGFloat = 12
-	@ViewBuilder let content: Content
+	@ViewBuilder package let content: Content
 	@State private var contentHeight: CGFloat = 0
 
 	package init(tint: Color, spacing: CGFloat = 12, @ViewBuilder content: () -> Content) {
@@ -87,7 +87,7 @@ private struct FloatingActionBarHeightPreferenceKey: PreferenceKey {
 /// Standard confirmation action used by floating modal footers.
 package struct FloatingDoneButton: View {
 	var title = "Done"
-	let accentColor: Color
+	package let accentColor: Color
 	let action: () -> Void
 
 	package init(title: String = "Done", accentColor: Color, action: @escaping () -> Void) {

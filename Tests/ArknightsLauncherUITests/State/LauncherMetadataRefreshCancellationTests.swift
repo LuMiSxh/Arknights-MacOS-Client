@@ -15,13 +15,13 @@ struct LauncherMetadataRefreshCancellationTests {
 		model.refreshController.cancelRefresh()
 
 		let task = model.refreshController.startRefresh()
-		let requestID = model.lifecycle.refresh.requestID
+		let requestID = model.lifecycle.state.refresh.requestID
 		#expect(requestID != nil)
 
 		model.refreshController.cancelRefresh()
-		#expect(model.lifecycle.refresh == .idle)
+		#expect(model.lifecycle.state.refresh == .idle)
 		await task.value
-		#expect(model.lifecycle.refresh == .idle)
+		#expect(model.lifecycle.state.refresh == .idle)
 	}
 
 	@Test
@@ -30,12 +30,12 @@ struct LauncherMetadataRefreshCancellationTests {
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		model.refreshController.cancelRefresh()
 		let task = model.refreshController.startRefresh()
-		#expect(model.lifecycle.refresh.requestID != nil)
+		#expect(model.lifecycle.state.refresh.requestID != nil)
 
 		model.refreshController.cancelForInstallationStart()
-		#expect(model.lifecycle.refresh == .idle)
+		#expect(model.lifecycle.state.refresh == .idle)
 		await task.value
-		#expect(model.lifecycle.refresh == .idle)
+		#expect(model.lifecycle.state.refresh == .idle)
 	}
 
 	@Test

@@ -5,13 +5,13 @@ import SwiftUI
 /// A shared surface for compact HUD pills and their expanded detail panels. Callers own the
 /// interactive content insets so Button hit targets stay aligned with the visible surface.
 /// Progress is drawn as an outer contour and never supplies a second full track.
-package struct HUDPillSurface<Content: View>: View {
+struct HUDPillSurface<Content: View>: View {
 	let progress: Double?
 	let isProgressActive: Bool
 	let isExpanded: Bool
 	let tint: Color
 	let progressTint: Color
-	@ViewBuilder let content: Content
+	@ViewBuilder package let content: Content
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	package init(

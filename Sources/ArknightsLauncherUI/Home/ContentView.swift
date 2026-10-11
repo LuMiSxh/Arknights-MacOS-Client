@@ -15,7 +15,7 @@ package struct ContentView: View {
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-	@State var presentation = LauncherPresentationArbiter()
+	@State package var presentation = LauncherPresentationArbiter()
 	@State var confirmation: LauncherConfirmation?
 	@State var repairFailureID: UUID?
 	@State var decorativeMotionVisibility = DecorativeMotionVisibility()
@@ -128,14 +128,16 @@ package struct ContentView: View {
 				isPresented: rosettaConfirmationBinding, install: installRosetta
 			)
 			.confirmationDialog(
-				HomeStrings.repairConfirmationTitle,
+				"Repair game files?",
 				isPresented: repairConfirmationBinding,
 				titleVisibility: .visible
 			) {
-				Button(HomeStrings.repairConfirmationAction, action: confirmRepair)
-				Button(LauncherStrings.cancel, role: .cancel, action: cancelRepair)
+				Button("Start Repair", action: confirmRepair)
+				Button("Cancel", role: .cancel, action: cancelRepair)
 			} message: {
-				Text(HomeStrings.repairConfirmationDetail)
+				Text(
+					"Every game file for this region will be checked. Missing or damaged files will be downloaded again and may use substantial data. Launcher settings and the Wine prefix are preserved."
+				)
 			}
 			.aceWarningConfirmation(model: model)
 			.onAppear {
@@ -146,7 +148,9 @@ package struct ContentView: View {
 				}
 				registerQuitDismissal(dismissPresentationForQuit)
 			}
-			.onChange(of: model.lifecycle.failure) { _, failure in presentFailure(failure) }
+			.onChange(of: model.lifecycle.state.presentation.failure) { _, failure in
+				presentFailure(failure)
+			}
 			.onChange(of: model.lifecycle.activity.isGameProcessRunning, initial: true) {
 				_, isActive in
 				gameActivityDidChange(isActive)
@@ -287,12 +291,14 @@ package struct ContentView: View {
 
 	private var topBar: some View {
 		HStack(alignment: .top) {
-			ArknightsWordmark(
-				logo: model.customization.officialLogo, region: model.installation.region
-			).padding(.top, 34)
+			if model.settings.showsBranding {
+				ArknightsWordmark(
+					logo: model.customization.officialLogo, region: model.installation.region
+				).padding(.top, 34)
+			}
 			Spacer()
 			IconActionButton(
-				title: HomeStrings.settings,
+				title: "Settings",
 				systemImage: "gearshape",
 				tone: .neutral,
 				foreground: .primary,
@@ -304,8 +310,8 @@ package struct ContentView: View {
 			)
 			.frame(minWidth: 44, minHeight: 44)
 			.keyboardShortcut(",", modifiers: .command)
-			.accessibilityHint(Text(HomeStrings.settingsHelp))
-			.help(HomeStrings.settingsHelp)
+			.accessibilityHint(Text("Open launcher settings"))
+			.help("Open launcher settings")
 		}
 		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
 	}
@@ -395,16 +401,22 @@ package struct ContentView: View {
 		Task { _ = await model.actions.installRosetta() }
 	}
 	private func showFailureDetails() {
-		if let failure = model.lifecycle.failure { presentation.request(.failure(failure)) }
+		if let failure = model.lifecycle.state.presentation.failure {
+			presentation.request(.failure(failure))
+		}
 	}
 	private func failureDetailsDidDismiss() {
 		guard repairFailureID == nil else { return }
-		if model.lifecycle.failure?.blocksGameLaunch == false { model.lifecycle.clearFailure() }
+		if model.lifecycle.state.presentation.failure?.blocksGameLaunch == false {
+			model.lifecycle.clearFailure()
+		}
 	}
 	private func cancelRepair() {
 		confirmation = nil
 		repairFailureID = nil
-		if model.lifecycle.failure?.blocksGameLaunch == false { model.lifecycle.clearFailure() }
+		if model.lifecycle.state.presentation.failure?.blocksGameLaunch == false {
+			model.lifecycle.clearFailure()
+		}
 	}
 	private func confirmRepair() {
 		guard let id = repairFailureID else { return }

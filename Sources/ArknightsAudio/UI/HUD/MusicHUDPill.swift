@@ -7,7 +7,7 @@ import SwiftUI
 package struct MusicHUDPill: View {
 	@Bindable var settings: LauncherPreferencesController
 	let musicTitle: String?
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
 	let openCurrentMusicURL: () -> Void
 	let controller: BackgroundMusicController
@@ -82,12 +82,12 @@ package struct MusicHUDPill: View {
 				.buttonStyle(ActionPressStyle())
 				.keyboardFocusIndicator(in: Capsule())
 				.accessibilityLabel(
-					isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
+					isExpanded ? "Hide music controls" : "Show music controls"
 				)
 				.accessibilityValue(Text(musicTitle))
 				.help(
 
-					isExpanded ? AudioStrings.hideControls : AudioStrings.showControls
+					isExpanded ? "Hide music controls" : "Show music controls"
 
 				)
 
@@ -95,7 +95,7 @@ package struct MusicHUDPill: View {
 					HStack(spacing: 6) {
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: AudioStrings.previousTrack,
+								title: "Previous Track",
 								systemImage: "backward.end.fill",
 								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
@@ -105,7 +105,7 @@ package struct MusicHUDPill: View {
 
 						MusicPlayerControlButton(
 							title:
-								controller.isPlaying ? AudioStrings.pause : AudioStrings.play,
+								controller.isPlaying ? "Pause" : "Play",
 							systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
 							accentColor: accentColor,
 							isProminent: true,
@@ -115,7 +115,7 @@ package struct MusicHUDPill: View {
 
 						if controller.canNavigatePlaylist {
 							MusicPlayerControlButton(
-								title: AudioStrings.nextTrack,
+								title: "Next Track",
 								systemImage: "forward.end.fill",
 								accentColor: accentColor,
 								isDisabled: controller.controlsAreDisabled,
@@ -134,7 +134,7 @@ package struct MusicHUDPill: View {
 						Spacer(minLength: 0)
 
 						MusicPlayerControlButton(
-							title: AudioStrings.openYouTube,
+							title: "Open on YouTube",
 							systemImage: "arrow.up.right.square",
 							accentColor: accentColor,
 							isDisabled: controller.controlsAreDisabled,
@@ -174,9 +174,9 @@ package struct MusicHUDPill: View {
 	}
 
 	private var playbackStatus: String {
-		if controller.isGameProcessRunning { return AudioStrings.pausedForGame }
-		if controller.isChangingTrack { return AudioStrings.changingTrack }
-		return controller.isPlaying ? AudioStrings.playing : AudioStrings.paused
+		if controller.isGameProcessRunning { return "Paused while the game is running" }
+		if controller.isChangingTrack { return "Changing track…" }
+		return controller.isPlaying ? "Playing" : "Paused"
 	}
 
 	private var disclosureImage: String {

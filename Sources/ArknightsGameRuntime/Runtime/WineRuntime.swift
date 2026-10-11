@@ -25,7 +25,7 @@ struct WineLaunch: Sendable {
 
 struct RuntimeConfiguration: Decodable, Sendable {
 	struct Archive: Decodable, Sendable {
-		let name: String
+		package let name: String
 		let sha256: String
 	}
 	struct Interface: Decodable, Sendable {
@@ -173,7 +173,7 @@ struct WineRuntime: Sendable {
 		)
 	}
 
-	func launch(
+	package func launch(
 		gameExecutable: URL,
 		prefixDirectory: URL,
 		gameArguments: [String] = [],
@@ -378,4 +378,22 @@ struct WineRuntime: Sendable {
 		return controllerEnvironment
 	}
 
+}
+
+enum RuntimePerformanceLog {
+	static func write(
+		stage: String,
+		since start: ContinuousClock.Instant,
+		to handle: FileHandle,
+		now: ContinuousClock.Instant = .now
+	) {
+		let components = start.duration(to: now).components
+		let seconds = Double(components.seconds) + Double(components.attoseconds) / 1e18
+		let line = String(
+			format: "Arknights Client timing: %@=%.3fs\n",
+			stage,
+			max(0, seconds)
+		)
+		try? handle.write(contentsOf: Data(line.utf8))
+	}
 }

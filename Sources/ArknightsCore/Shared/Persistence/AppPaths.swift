@@ -24,7 +24,7 @@ package struct AppPaths: Sendable {
 	package let applicationSupportRoot: URL
 	let cacheRoot: URL
 	let logRoot: URL
-	let winePrefix: URL
+	package let winePrefix: URL
 	let chinaWinePrefix: URL
 	let gryphlineWinePrefix: URL
 	package let bundledRuntimeDirectory: URL?

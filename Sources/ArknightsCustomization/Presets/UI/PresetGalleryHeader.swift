@@ -23,7 +23,7 @@ struct PresetGalleryHeader: View {
 			Spacer()
 			if destination == .operatorIcons {
 				CapsuleActionButton(
-					title: CustomizationStrings.previewStyles,
+					title: "Preview Styles",
 					systemImage: "dock.rectangle",
 					tone: .neutral
 				) {

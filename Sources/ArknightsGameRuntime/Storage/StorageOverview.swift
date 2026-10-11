@@ -40,15 +40,15 @@ struct StorageUsage: Equatable, Identifiable, Sendable {
 	var id: String { location.category.id }
 }
 
-struct StorageOverviewContext: Equatable, Sendable {
-	let region: GameRegion
-	let regionAccess: RegionAccess
+package struct StorageOverviewContext: Equatable, Sendable {
+	package let region: GameRegion
+	package let regionAccess: RegionAccess
 	let persistedInstallDirectories: [GameRegion: URL]
 }
 
 enum StorageOverviewResolver {
 	@MainActor
-	static func context(
+	package static func context(
 		preferences: LauncherPreferencesStore,
 		region: GameRegion
 	) -> StorageOverviewContext {

@@ -19,7 +19,7 @@ struct OnboardingRosettaRecoveryView: View {
 			case .idle:
 				recoveryIntroduction
 				CapsuleActionButton(
-					title: OnboardingStrings.installRosetta,
+					title: "Install Rosetta 2…",
 					systemImage: "arrow.down.circle",
 					tone: .accent(accentColor)
 				) {
@@ -28,27 +28,27 @@ struct OnboardingRosettaRecoveryView: View {
 			case .installing:
 				HStack(spacing: 12) {
 					ProgressView()
-					Text(OnboardingStrings.rosettaInstalling)
+					Text("Installing Rosetta 2 with Apple’s software update tool…")
 						.foregroundStyle(.secondary)
 				}
 			case .failed(let message):
 				recoveryIntroduction
 				Label(
-					OnboardingStrings.rosettaFailed,
+					"Installation failed",
 					systemImage: "exclamationmark.triangle.fill"
 				)
 				.foregroundStyle(LauncherVisuals.warning)
 				Text(message)
 					.foregroundStyle(.secondary)
 					.fixedSize(horizontal: false, vertical: true)
-				Text(OnboardingStrings.rosettaManualInstall)
+				Text("You can also install Rosetta manually in Terminal:")
 					.foregroundStyle(.secondary)
 				Text("softwareupdate --install-rosetta --agree-to-license")
 					.font(.callout.monospaced())
 					.textSelection(.enabled)
 				HStack(spacing: 10) {
 					CapsuleActionButton(
-						title: OnboardingStrings.tryInstallationAgain,
+						title: "Try Installation Again…",
 						systemImage: "arrow.clockwise",
 						tone: .accent(accentColor)
 					) {
@@ -69,7 +69,7 @@ struct OnboardingRosettaRecoveryView: View {
 	}
 
 	private var recoveryIntroduction: some View {
-		Text(OnboardingStrings.rosettaIntroduction)
+		Text("Rosetta 2 is missing. Install Apple’s compatibility layer so the game can start.")
 			.foregroundStyle(.secondary)
 			.fixedSize(horizontal: false, vertical: true)
 	}

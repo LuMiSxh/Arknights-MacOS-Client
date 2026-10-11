@@ -7,12 +7,12 @@ import SwiftUI
 
 /// Expands the installed game version into an independent manual update check.
 struct VersionHUDPill: View {
-	let lifecycle: LauncherLifecycleStore
-	let installation: InstallationController
+	package let lifecycle: LauncherLifecycleStore
+	package let installation: InstallationController
 	let gameSession: GameSessionController
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
-	let checkGameUpdates: () -> Void
+	package let checkGameUpdates: () -> Void
 	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -52,13 +52,13 @@ struct VersionHUDPill: View {
 			.keyboardFocusIndicator(in: Capsule())
 			.accessibilityLabel(
 
-				isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+				isExpanded ? "Hide version details" : "Show version details"
 
 			)
 			.accessibilityValue(Text(versionText))
 			.help(
 
-				isExpanded ? HomeStrings.versionHideDetails : HomeStrings.versionShowDetails
+				isExpanded ? "Hide version details" : "Show version details"
 
 			)
 
@@ -72,7 +72,7 @@ struct VersionHUDPill: View {
 						.fixedSize(horizontal: false, vertical: true)
 					Spacer()
 					CapsuleActionButton(
-						title: HomeStrings.versionCheckNow,
+						title: "Check Now",
 						systemImage: "arrow.clockwise",
 						tone: .accent(accentColor), presentation: .hud,
 						action: checkGameUpdates
@@ -113,7 +113,7 @@ struct VersionHUDPill: View {
 
 	private var cannotCheck: Bool {
 		!lifecycle.canBeginExclusiveActivity
-			|| lifecycle.refresh.isChecking
+			|| lifecycle.state.refresh.isChecking
 			|| installation.isDownloading
 			|| gameSession.isGameActive
 	}
@@ -123,17 +123,17 @@ struct VersionHUDPill: View {
 	}
 
 	private var updateStatus: String {
-		if lifecycle.refresh.isChecking { return HomeStrings.versionChecking }
+		if lifecycle.state.refresh.isChecking { return "Checking…" }
 		if installation.isGameUpdateAvailable,
 			let latest = installation.configuration?.gameLatestVersion
 		{
-			return HomeStrings.versionAvailable(latest)
+			return "\(latest) available"
 		}
-		return HomeStrings.versionUpToDate
+		return "Up to date"
 	}
 
 	private var updateStatusIcon: String {
-		if lifecycle.refresh.isChecking { return "arrow.trianglehead.2.clockwise" }
+		if lifecycle.state.refresh.isChecking { return "arrow.trianglehead.2.clockwise" }
 		return installation.isGameUpdateAvailable ? "arrow.down.circle" : "checkmark.circle"
 	}
 

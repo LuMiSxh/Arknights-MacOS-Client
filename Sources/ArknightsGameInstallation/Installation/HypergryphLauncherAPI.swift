@@ -37,7 +37,7 @@ actor HypergryphLauncherAPI {
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 	}
 
-	func gameConfiguration(channel: String) async throws -> GameConfiguration {
+	package func gameConfiguration(channel: String) async throws -> GameConfiguration {
 		let latest = try await latestGame(channel: channel)
 		latestPackages[channel] = latest.package
 		guard let totalBytes = Int64(latest.package.totalSize), totalBytes >= 0 else {
@@ -55,7 +55,7 @@ actor HypergryphLauncherAPI {
 		)
 	}
 
-	func branding(channel: String) async throws -> LauncherBranding {
+	package func branding(channel: String) async throws -> LauncherBranding {
 		let payload = HypergryphBatchRequest(
 			sequence: Self.sequence,
 			requests: [
@@ -90,13 +90,13 @@ actor HypergryphLauncherAPI {
 		)
 	}
 
-	func cdnConfiguration(channel: String) async throws -> CDNConfiguration {
+	package func cdnConfiguration(channel: String) async throws -> CDNConfiguration {
 		let package = try await package(channel: channel)
 		let baseURL = try Self.cdnOrigin(for: package.filePath)
 		return CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
 	}
 
-	func manifest(for configuration: GameConfiguration) async throws -> GameManifest {
+	package func manifest(for configuration: GameConfiguration) async throws -> GameManifest {
 		guard let fileBaseURL = URL(string: configuration.gameLatestFilePath) else {
 			throw LauncherError.invalidResponse
 		}

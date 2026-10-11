@@ -22,7 +22,9 @@ struct InstallerResumeMetadata: Codable, Sendable {
 				|| lastModified == response.lastModified)
 	}
 
-	func preservingValidatorsOmitted(by response: InstallerResumeMetadata)
+	func preservingValidatorsOmitted(
+		by response: InstallerResumeMetadata
+	)
 		-> InstallerResumeMetadata
 	{
 		InstallerResumeMetadata(

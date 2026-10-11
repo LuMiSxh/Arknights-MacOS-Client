@@ -10,7 +10,7 @@ enum LauncherPopupContent {
 struct LauncherPopup: Identifiable {
 	let id: String
 	let title: String
-	let content: LauncherPopupContent
+	package let content: LauncherPopupContent
 	let dismissTitle: String
 	let actionTitle: String?
 	let actionURL: URL?

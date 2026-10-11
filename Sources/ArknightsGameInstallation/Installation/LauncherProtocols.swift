@@ -10,7 +10,9 @@ package protocol LauncherAPIProviding: Sendable {
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration
 	func branding(region: GameRegion) async throws -> LauncherBranding
 	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration
-	func manifest(for configuration: GameConfiguration, region: GameRegion) async throws
+	func manifest(
+		for configuration: GameConfiguration, region: GameRegion
+	) async throws
 		-> GameManifest
 }
 

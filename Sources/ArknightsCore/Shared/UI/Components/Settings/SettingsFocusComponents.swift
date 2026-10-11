@@ -5,7 +5,7 @@ import SwiftUI
 package struct SettingsToggle: View {
 	let title: String
 	@Binding var isOn: Bool
-	let accentColor: Color
+	package let accentColor: Color
 
 	package init(_ title: String, isOn: Binding<Bool>, accentColor: Color) {
 		self.title = title
@@ -26,8 +26,8 @@ package struct SettingsSlider: View {
 	@Binding var value: Double
 	let range: ClosedRange<Double>
 	let step: Double
-	let accentColor: Color
-	let width: CGFloat
+	package let accentColor: Color
+	package let width: CGFloat
 
 	package init(
 		value: Binding<Double>,

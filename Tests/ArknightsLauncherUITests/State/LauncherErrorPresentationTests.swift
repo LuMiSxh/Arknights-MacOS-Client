@@ -102,7 +102,7 @@ struct LauncherErrorPresentationTests {
 		lifecycle.show(fixture.0)
 		await log.flush()
 
-		let message = try #require(lifecycle.failureMessage)
+		let message = try #require(lifecycle.state.presentation.failure?.message)
 		let diagnostic = try String(contentsOf: fileURL, encoding: .utf8)
 		try FileManager.default.removeItem(at: fileURL)
 		#expect(!message.isEmpty)

@@ -45,11 +45,11 @@ struct LauncherDockLaunchTests {
 		#expect(model.installation.region == .global)
 
 		model.lifecycle.simulateActivity(.idle)
-		model.lifecycle.intelTranslationState = .unavailable
+		model.lifecycle.state.readiness.intelTranslation = .unavailable
 		let launch = Task { await model.actions.launchFromDock(region: .japan) }
 		await api.waitForBrandingRequests(2)
 		#expect(model.installation.region == .japan)
-		#expect(model.lifecycle.refresh.isChecking)
+		#expect(model.lifecycle.state.refresh.isChecking)
 
 		await api.resolveBranding()
 		#expect(!(await launch.value))

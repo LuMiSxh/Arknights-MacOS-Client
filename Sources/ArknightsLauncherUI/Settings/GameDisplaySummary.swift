@@ -7,7 +7,9 @@ enum GameDisplaySummary {
 	static func text(
 		for options: GameLaunchOptions, screen: GameScreenMetrics?, native: GameDisplaySize?
 	) -> String {
-		guard !options.usesGameSettings else { return SettingsStrings.displayHandledInGame }
+		guard !options.usesGameSettings else {
+			return "The game uses the display settings chosen inside Arknights."
+		}
 		let placement = placement(for: options, screen: screen, native: native)
 		return "\(placement) \(picture(options.renderingMode))."
 	}

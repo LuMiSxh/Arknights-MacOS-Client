@@ -6,9 +6,9 @@ import SwiftUI
 package struct ThemedTextField: View {
 	let title: String
 	let prompt: String
-	@Binding var text: String
+	@Binding package var text: String
 	var systemImage: String?
-	let accentColor: Color
+	package let accentColor: Color
 
 	@FocusState private var isFocused: Bool
 

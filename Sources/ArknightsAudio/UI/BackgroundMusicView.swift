@@ -43,8 +43,8 @@ package struct BackgroundMusicView: View {
 		.task {
 			controller.startIfNeeded()
 		}
-		.onChange(of: lifecycle.phase) { oldPhase, newPhase in
-			controller.phaseDidChange(from: oldPhase, to: newPhase)
+		.onChange(of: lifecycle.state.refresh.isChecking) { _, isChecking in
+			controller.refreshDidChange(isChecking: isChecking)
 		}
 		.onChange(of: settings.launcherMusicURL) { _, _ in
 			controller.sourceDidChange()

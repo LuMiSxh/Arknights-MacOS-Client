@@ -64,7 +64,7 @@ package struct CapsuleActionButton: View {
 	let title: String
 	var systemImage: String?
 	let tone: CapsuleActionTone
-	var presentation = CapsuleActionPresentation.standard
+	package var presentation = CapsuleActionPresentation.standard
 	var role: ButtonRole?
 	var showsTitle = true
 	var labelMotion = CapsuleActionLabelMotion.none
@@ -154,7 +154,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 	let foreground: Color
 	let disabledForeground: Color
 	let surfaceTint: Color
-	let presentation: CapsuleActionPresentation
+	package let presentation: CapsuleActionPresentation
 	let controlSize: ControlSize
 
 	@ViewBuilder

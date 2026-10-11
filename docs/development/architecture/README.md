@@ -140,7 +140,8 @@ Direction rules:
 - `ArknightsCore` names no feature type. `Core` names only `Shared` types. `Shared` names no `Core` type.
 - A feature target never imports `ArknightsLauncherUI`. Composition code passes values and closures
   down.
-- A symbol that another target uses gets `package` access. Other symbols stay `internal`.
+- A symbol that another production target uses gets `package` access. Other symbols stay `internal`.
+  Tests use `@testable import` and need no `package` access.
 - Feature-specific components stay in their feature target. `Shared/UI/Components` holds only
   presentation contracts that multiple features use.
 - A feature maps transport and storage errors at its own boundary.
@@ -194,4 +195,4 @@ Before you change behavior, find its owner and external contract:
 | Publisher endpoint, refresh              | `LauncherAPI` and `LauncherRefreshController`                  | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
 | Persisted setting, app-owned path        | `LauncherPreferencesStore` or `AppPaths`                       | [Data and persistence](data-and-persistence.md), storage tests                                                                |
 | Launcher activity or lifecycle state     | `ArknightsCore/Core/Lifecycle`                                 | [Launch and process lifecycle](launch-and-process-lifecycle.md), lease tests                                                  |
-| User-facing copy                         | owning feature's `…Strings` namespace                          | English literals and accessibility review                                                                                     |
+| User-facing copy                         | the view that shows it (literals)                              | English literals and accessibility review                                                                                     |

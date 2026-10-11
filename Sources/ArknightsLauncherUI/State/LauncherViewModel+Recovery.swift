@@ -9,7 +9,7 @@ extension LauncherViewModel {
 		_ action: RecoveryAction,
 		failureID: UUID
 	) -> RecoveryActionDisposition {
-		guard let failure = lifecycle.failure, failure.id == failureID else {
+		guard let failure = lifecycle.state.presentation.failure, failure.id == failureID else {
 			logRecovery(action: action, result: "ignored-stale")
 			return .ignored
 		}
@@ -92,7 +92,7 @@ extension LauncherViewModel {
 			return .repairConfirmationRequired
 		case .installRosetta:
 			guard failure.context.operation == .intelTranslationPreflight,
-				lifecycle.intelTranslationState == .rosettaMissing,
+				lifecycle.state.readiness.intelTranslation == .rosettaMissing,
 				intelTranslation.canInstallRosetta
 			else {
 				logRecovery(action: action, result: "ignored-ineligible")
@@ -104,7 +104,7 @@ extension LauncherViewModel {
 	}
 
 	func confirmRepair(failureID: UUID) {
-		guard let failure = lifecycle.failure, failure.id == failureID else {
+		guard let failure = lifecycle.state.presentation.failure, failure.id == failureID else {
 			logRecovery(action: .repair, result: "ignored-stale")
 			return
 		}

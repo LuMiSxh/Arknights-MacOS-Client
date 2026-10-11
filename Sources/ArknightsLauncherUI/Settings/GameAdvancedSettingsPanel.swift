@@ -10,7 +10,7 @@ import SwiftUI
 struct GameAdvancedSettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool
-	let accentColor: Color
+	package let accentColor: Color
 	@Environment(\.simulatesMissingXcode) private var simulatesMissingXcode
 	@Environment(\.displayScale) private var displayScale
 	@State private var isExpanded = false
@@ -30,16 +30,18 @@ struct GameAdvancedSettingsPanel: View {
 
 	var body: some View {
 		SettingsPanel(
-			title: SettingsStrings.advancedPanel, systemImage: "gearshape.2",
+			title: "Advanced", systemImage: "gearshape.2",
 			isExpanded: $isExpanded
 		) {
 			SettingsActionRow(
-				title: SettingsStrings.launcherDisplayControl,
-				detail: SettingsStrings.launcherDisplayControlDetail,
-				help: SettingsStrings.launcherDisplayControlHelp
+				title: "Let the launcher size the game",
+				detail:
+					"Recommended. The launcher starts the game with the display choices above. When off, Arknights uses the settings chosen inside the game.",
+				help:
+					"Arknights' own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
 			) {
 				SettingsToggle(
-					SettingsStrings.launcherDisplayControl,
+					"Let the launcher size the game",
 					isOn: launcherDisplayControl,
 					accentColor: accentColor
 				)
@@ -51,19 +53,21 @@ struct GameAdvancedSettingsPanel: View {
 			if let renderSize = plan.renderSize {
 				SettingsHairline()
 				SettingsActionRow(
-					title: SettingsStrings.gameDraws(renderSize),
+					title: "Game draws \(renderSize.displayName)",
 					detail: SettingsStrings.scalingDetail(plan.scaling)
 				) {}
 			}
 			SettingsHairline()
 			SettingsActionRow(
-				title: SettingsStrings.gameMode,
+				title: "Game Mode",
 				detail: isGameModeAvailable
-					? SettingsStrings.gameModeDetail : SettingsStrings.gameModeUnavailableDetail,
-				help: SettingsStrings.gameModeHelp
+					? "Asks macOS to give the game priority while it runs. Needs the free Xcode app from the App Store."
+					: "Not available on this Mac: Game Mode needs the free Xcode app from the App Store. Install it, then reopen Settings.",
+				help:
+					"Uses Apple's gamepolicyctl tool, which ships only inside the full Xcode app, not the Command Line Tools."
 			) {
 				SettingsToggle(
-					SettingsStrings.gameMode,
+					"Game Mode",
 					isOn: $settings.launchOptions.usesGameMode,
 					accentColor: accentColor
 				)
@@ -73,9 +77,11 @@ struct GameAdvancedSettingsPanel: View {
 			.onAppear { isXcodeInstalled = GamePolicyControl.isAvailable() }
 			SettingsHairline()
 			SettingsActionRow(
-				title: SettingsStrings.wineSynchronization,
-				detail: SettingsStrings.wineSynchronizationDetail,
-				help: SettingsStrings.wineSynchronizationHelp
+				title: "Wine synchronization",
+				detail:
+					"How the game's background tasks wait for each other. MSYNC suits most Macs; try ESYNC if the game misbehaves. Applies on the next start.",
+				help:
+					"Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback."
 			) {
 				AdaptiveSegmentedControl(
 					selection: $settings.launchOptions.synchronizationMode,
@@ -88,11 +94,12 @@ struct GameAdvancedSettingsPanel: View {
 			}
 			SettingsHairline()
 			SettingsActionRow(
-				title: SettingsStrings.metalHUD,
-				detail: SettingsStrings.metalHUDDetail
+				title: "Metal performance HUD",
+				detail:
+					"Shows the frame rate and graphics load over the game the next time it starts."
 			) {
 				SettingsToggle(
-					SettingsStrings.metalHUD,
+					"Metal performance HUD",
 					isOn: $settings.launchOptions.usesMetalPerformanceHUD,
 					accentColor: accentColor
 				)
@@ -122,7 +129,7 @@ struct GameAdvancedSettingsPanel: View {
 			.fixedSize(horizontal: false, vertical: true)
 			.frame(maxWidth: .infinity, alignment: .leading)
 			CapsuleActionButton(
-				title: SettingsStrings.gotIt, systemImage: "checkmark",
+				title: "Got It", systemImage: "checkmark",
 				tone: .neutral, presentation: .compact
 			) {
 				settings.dismissedInGameResolutionNote = true

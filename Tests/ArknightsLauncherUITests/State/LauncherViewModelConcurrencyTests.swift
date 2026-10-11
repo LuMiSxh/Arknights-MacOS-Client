@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
-import ArknightsCustomization
 import ArknightsTestSupport
 import Foundation
 import Testing
 
 @testable import ArknightsCore
+@testable import ArknightsCustomization
 @testable import ArknightsGameInstallation
 @testable import ArknightsLauncherUI
 
@@ -107,9 +107,9 @@ struct LauncherViewModelConcurrencyTests {
 		)
 
 		#expect(!(await model.waitForStartup()))
-		#expect(model.lifecycle.failure?.blocksGameLaunch == true)
+		#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 		#expect(model.lifecycle.activity == .idle)
-		#expect(model.lifecycle.refresh == .checking(requestID: nil))
+		#expect(model.lifecycle.state.refresh == .checking(requestID: nil))
 		#expect(model.installation.configuration == nil)
 	}
 
@@ -121,12 +121,12 @@ struct LauncherViewModelConcurrencyTests {
 
 		let probeTask = Task { await model.actions.launcherUpdateCheckForOnboarding() }
 		await Task.yield()
-		#expect(model.lifecycle.refresh != .idle)
+		#expect(model.lifecycle.state.refresh != .idle)
 		#expect(!model.communication.isCheckingLauncherUpdates)
 
 		await api.resolveBranding()
 		_ = await probeTask.value
-		#expect(model.lifecycle.refresh == .idle)
+		#expect(model.lifecycle.state.refresh == .idle)
 	}
 
 	@Test
@@ -231,13 +231,13 @@ struct LauncherViewModelConcurrencyTests {
 		model.installation.isInstalled = true
 		model.gameSession.runtimeName = "Test Runtime"
 
-		model.lifecycle.intelTranslationState = .rosettaMissing
+		model.lifecycle.state.readiness.intelTranslation = .rosettaMissing
 		#expect(!model.gameSession.canLaunch)
 
-		model.lifecycle.intelTranslationState = .gameTestModeEnabled
+		model.lifecycle.state.readiness.intelTranslation = .gameTestModeEnabled
 		#expect(!model.gameSession.canLaunch)
 
-		model.lifecycle.intelTranslationState = .available
+		model.lifecycle.state.readiness.intelTranslation = .available
 		#expect(model.gameSession.canLaunch)
 
 		await api.resolveBranding()
@@ -255,14 +255,14 @@ struct LauncherViewModelConcurrencyTests {
 		await installer.sendProgress()
 
 		#expect(model.installation.isDownloading)
-		#expect(model.lifecycle.phase == .downloading)
+		#expect(model.lifecycle.activity.isInstalling)
 		#expect(model.installation.progress?.downloadedBytes == 50)
 
 		await api.resolveBranding()
 		await Task.yield()
 
 		#expect(model.installation.isDownloading)
-		#expect(model.lifecycle.phase == .downloading)
+		#expect(model.lifecycle.activity.isInstalling)
 		#expect(model.installation.progress?.downloadedBytes == 50)
 
 		await installer.completeSuccessfully()
@@ -290,7 +290,7 @@ struct LauncherViewModelConcurrencyTests {
 
 		await installer.acknowledgeCancellation()
 		await waitForDownloadToStop(model)
-		#expect(!model.lifecycle.activityMessage.isEmpty)
+		#expect(!model.lifecycle.state.presentation.status.message.isEmpty)
 		await api.resolveBranding()
 	}
 

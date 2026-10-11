@@ -15,7 +15,7 @@ package final class BackgroundMusicController {
 	var player: YouTubePlayer?
 	var playbackState: YouTubePlayer.PlaybackState?
 	var isMuted = false
-	var operation: BackgroundMusicOperation = .idle
+	package var operation: BackgroundMusicOperation = .idle
 	var playbackExpectation: BackgroundMusicPlaybackExpectation?
 
 	let lifecycle: LauncherLifecycleStore
@@ -111,15 +111,15 @@ package final class BackgroundMusicController {
 	}
 
 	func startIfNeeded() {
-		guard lifecycle.phase != .checking,
+		guard !lifecycle.state.refresh.isChecking,
 			settings.playsLauncherMusic,
 			!lifecycle.activity.hasGameProcess
 		else { return }
 		setupPlayer()
 	}
 
-	func phaseDidChange(from oldPhase: LauncherPhase, to newPhase: LauncherPhase) {
-		guard oldPhase == .checking, newPhase != .checking, player == nil else { return }
+	func refreshDidChange(isChecking: Bool) {
+		guard !isChecking, player == nil else { return }
 		startIfNeeded()
 	}
 

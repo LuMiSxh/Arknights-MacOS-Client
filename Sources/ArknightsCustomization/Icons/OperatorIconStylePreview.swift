@@ -7,14 +7,14 @@ struct OperatorIconStylePreview: View {
 	let catalog: PresetCatalogService
 	let avatar: PresetAvatar?
 	let accentHue: Double?
-	let accentColor: Color
+	package let accentColor: Color
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
 			VStack(alignment: .leading, spacing: 3) {
-				Text(CustomizationStrings.iconPreviewTitle)
+				Text("Generated Icon Styles")
 					.font(.headline)
-				Text(CustomizationStrings.iconPreviewSubtitle)
+				Text("Your operator is applied to both icons.")
 					.font(.caption)
 					.foregroundStyle(.secondary)
 			}
@@ -28,16 +28,16 @@ struct OperatorIconStylePreview: View {
 				)
 				HStack(spacing: 16) {
 					styleLabel(
-						CustomizationStrings.launcherStyleTitle,
-						detail: CustomizationStrings.launcherStyleDetail
+						"Launcher",
+						detail: "Launcher style"
 					)
 					styleLabel(
-						CustomizationStrings.gameStyleTitle,
-						detail: CustomizationStrings.gameStyleDetail
+						"Game",
+						detail: "Original Arknights style"
 					)
 				}
 			} else {
-				ProgressView(CustomizationStrings.iconPreviewLoading)
+				ProgressView("Loading preview…")
 					.frame(maxWidth: .infinity, minHeight: 82)
 			}
 		}
@@ -47,7 +47,9 @@ struct OperatorIconStylePreview: View {
 		.preferredColorScheme(.dark)
 	}
 
-	private func styleLabel(_ title: String, detail: String)
+	private func styleLabel(
+		_ title: String, detail: String
+	)
 		-> some View
 	{
 		VStack(spacing: 2) {

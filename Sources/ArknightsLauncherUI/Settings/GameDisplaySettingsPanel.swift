@@ -8,7 +8,7 @@ import SwiftUI
 struct GameDisplaySettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool
-	let accentColor: Color
+	package let accentColor: Color
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var isSizeLocked: Bool { options.usesGameSettings || isLocked }
@@ -16,11 +16,11 @@ struct GameDisplaySettingsPanel: View {
 	private var nativeFullscreenSize: GameDisplaySize? { GameFullscreenDisplay.primary?.pixelSize }
 
 	var body: some View {
-		SettingsPanel(title: SettingsStrings.displayPanel, systemImage: "display") {
+		SettingsPanel(title: "Display", systemImage: "display") {
 			SettingsActionRow(
-				title: SettingsStrings.showTheGame,
+				title: "Show the game",
 				detail: SettingsStrings.displayModeDetail(options.displayMode),
-				help: SettingsStrings.showTheGameHelp
+				help: "Applies the next time the game starts."
 			) {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.displayMode,
@@ -37,9 +37,10 @@ struct GameDisplaySettingsPanel: View {
 			}
 			SettingsHairline()
 			SettingsActionRow(
-				title: SettingsStrings.picture,
+				title: "Picture",
 				detail: SettingsStrings.pictureDetail(options.renderingMode),
-				help: SettingsStrings.pictureHelp
+				help:
+					"Retina: Wine renders at the display's full backing-store resolution.\nMetalFX: Wine renders in macOS points and DXMT upscales every frame 2× with MetalFX spatial scaling. Runtimes without MetalFX support use Lightweight instead.\nLightweight: Wine renders in macOS points and macOS scales the window up.\nApplies on the next game launch."
 			) {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.renderingMode,
@@ -52,9 +53,10 @@ struct GameDisplaySettingsPanel: View {
 			}
 			SettingsHairline()
 			SettingsActionRow(
-				title: SettingsStrings.pointer,
+				title: "Pointer",
 				detail: SettingsStrings.pointerDetail(usesMacPointer: settings.usesHardwareCursor),
-				help: SettingsStrings.pointerHelp
+				help:
+					"Asks the runtime to hide the game's software-drawn cursor so the macOS hardware cursor shows instead. Runtimes without this capability keep the game cursor. Applies on the next game launch."
 			) {
 				AdaptiveSegmentedControl(
 					selection: $settings.usesHardwareCursor,
@@ -62,7 +64,7 @@ struct GameDisplaySettingsPanel: View {
 					accentColor: accentColor,
 					isDisabled: isLocked
 				) { usesMacPointer in
-					Text(usesMacPointer ? SettingsStrings.macPointer : SettingsStrings.gamePointer)
+					Text(usesMacPointer ? "Your Mac's pointer" : "Arknights' cursor")
 				}
 			}
 			SettingsHairline()
@@ -90,9 +92,10 @@ struct GameDisplaySettingsPanel: View {
 		let choices =
 			screen == nil ? [] : GameWindowSizeChoice.allCases.map(WindowSizeSelection.choice)
 		return SettingsActionRow(
-			title: SettingsStrings.windowSize,
+			title: "Window size",
 			detail: SettingsStrings.windowSizeDetail(choice),
-			help: SettingsStrings.windowSizeHelp
+			help:
+				"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Picture setting."
 		) {
 			GlassMenuPicker(
 				selection: windowSizeSelection,
@@ -147,9 +150,10 @@ struct GameDisplaySettingsPanel: View {
 				))
 		}
 		return SettingsActionRow(
-			title: SettingsStrings.fullscreenDetail,
+			title: "Detail",
 			detail: SettingsStrings.fullscreenDetailDetail(detail),
-			help: SettingsStrings.fullscreenDetailHelp
+			help:
+				"Fullscreen fills the display with the menu bar. Full detail matches that display exactly, the sharpest choice; lower resolutions are scaled up to fill it. With the Smooth and Battery picture settings, the game draws half the width and height and scales the picture up, so every resolution needs less graphics power."
 		) {
 			GlassMenuPicker(
 				selection: fullscreenResolution,
@@ -162,7 +166,7 @@ struct GameDisplaySettingsPanel: View {
 	}
 
 	private var exactResolutionMenu: some View {
-		Menu(SettingsStrings.exactResolution) {
+		Menu("Exact resolution") {
 			ForEach(GameFullscreenResolution.choices(native: nativeFullscreenSize), id: \.self) {
 				choice in
 				Button {

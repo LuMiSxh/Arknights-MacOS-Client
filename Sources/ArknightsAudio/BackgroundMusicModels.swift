@@ -29,7 +29,7 @@ struct BackgroundMusicPlayerCommands {
 /// The value types the background-music controller passes between its track, playback, and
 /// fade paths.
 
-enum PlaybackIntent {
+package enum PlaybackIntent {
 	case playing
 	case paused
 }
@@ -41,7 +41,7 @@ enum BackgroundMusicOperationKind {
 
 /// Identifies one in-flight track or playback change, so a result arriving after the player
 /// was replaced can be recognized as stale and discarded.
-struct BackgroundMusicOperationToken {
+package struct BackgroundMusicOperationToken {
 	let id = UUID()
 	let generation: UUID
 	let player: YouTubePlayer
@@ -73,7 +73,7 @@ struct BackgroundMusicPlaybackExpectation {
 	}
 }
 
-enum BackgroundMusicOperation {
+package enum BackgroundMusicOperation {
 	case idle
 	case trackChange(BackgroundMusicOperationToken)
 	case playbackChange(BackgroundMusicOperationToken, PlaybackIntent)

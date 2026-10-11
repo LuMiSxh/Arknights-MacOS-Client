@@ -5,7 +5,7 @@ import Foundation
 /// A lightweight operator avatar representation for the gallery.
 struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 	let id: String
-	let name: String
+	package let name: String
 	let filename: String
 	let rarity: String?
 	let appellation: String?
@@ -84,7 +84,7 @@ struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	}
 
 	var displayTitle: String {
-		fallbackOrdinal.map { CustomizationStrings.wallpaperFallbackTitle($0) }
+		fallbackOrdinal.map { "Wallpaper \($0)" }
 			?? title
 	}
 
@@ -128,7 +128,7 @@ struct OperatorArtCount: Identifiable, Hashable, Sendable {
 
 /// Decodes identity fields from `character_table.json`.
 struct RawCharacterEntry: Decodable {
-	let name: String
+	package let name: String
 	let isNotObtainable: Bool?
 	let rarity: String?
 	let appellation: String?

@@ -7,7 +7,7 @@ import SwiftUI
 /// compact speaker remains a direct mute toggle and restores the last audible setting.
 struct MusicVolumeControl: View {
 	@Binding var volume: Double
-	let accentColor: Color
+	package let accentColor: Color
 	let isMuted: Bool
 	let isDisabled: Bool
 	let toggleMute: () -> Void
@@ -38,7 +38,7 @@ struct MusicVolumeControl: View {
 			.keyboardFocusIndicator(isFocused: focusedElement == .speaker, in: Circle())
 			.disabled(isDisabled)
 			.accessibilityValue(
-				isMuted ? AudioStrings.muted : volumeAccessibilityValue
+				isMuted ? "Muted" : volumeAccessibilityValue
 			)
 			.help(muteButtonTitle)
 
@@ -52,7 +52,7 @@ struct MusicVolumeControl: View {
 						isFocused: focusedElement == .slider,
 						in: Capsule()
 					)
-					.accessibilityLabel(AudioStrings.volume)
+					.accessibilityLabel("Music volume")
 					.accessibilityValue(volumeAccessibilityValue)
 					.disabled(isDisabled)
 					.transition(.opacity.combined(with: .move(edge: .leading)))
@@ -84,7 +84,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var muteButtonTitle: String {
-		isMuted ? AudioStrings.unmute : AudioStrings.mute
+		isMuted ? "Unmute music" : "Mute music"
 	}
 
 	private var speakerSymbol: String {
@@ -98,7 +98,7 @@ struct MusicVolumeControl: View {
 	}
 
 	private var volumeAccessibilityValue: String {
-		AudioStrings.volumePercent(Int(volume * 100))
+		"\(Int(volume * 100)) percent"
 	}
 
 	private enum FocusedElement: Hashable {

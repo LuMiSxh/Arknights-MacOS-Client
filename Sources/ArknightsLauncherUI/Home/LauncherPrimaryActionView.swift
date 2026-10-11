@@ -6,14 +6,14 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct LauncherPrimaryActionView: View {
-	let installation: InstallationController
+	package let installation: InstallationController
 	let gameSession: GameSessionController
-	let intelTranslation: IntelTranslationController
-	let accentColor: Color
-	let installOrUpdate: () -> Void
-	let cancelDownload: () -> Void
-	let launch: () -> Void
-	let stopGame: () -> Void
+	package let intelTranslation: IntelTranslationController
+	package let accentColor: Color
+	package let installOrUpdate: () -> Void
+	package let cancelDownload: () -> Void
+	package let launch: () -> Void
+	package let stopGame: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {
@@ -51,15 +51,15 @@ struct LauncherPrimaryActionView: View {
 
 	private var actionTitle: String {
 		switch actionKind {
-		case .stop: HomeStrings.actionStop
-		case .pause: HomeStrings.actionPause
+		case .stop: "Stop"
+		case .pause: "Pause"
 		case .install:
 
 			installation.hasPartialDownload
-				? HomeStrings.actionResume : HomeStrings.actionInstall
+				? "Resume" : "Install"
 
-		case .update: HomeStrings.actionUpdate
-		case .play: HomeStrings.actionPlay
+		case .update: "Update"
+		case .play: "Play"
 		}
 	}
 
@@ -91,17 +91,17 @@ struct LauncherPrimaryActionView: View {
 
 	private var actionHelp: String {
 		switch actionKind {
-		case .stop: return HomeStrings.actionStopHelp
-		case .pause: return HomeStrings.actionPauseHelp
+		case .stop: return "Stop Arknights and its Windows runtime"
+		case .pause: return "Pause the download; it resumes from partial files later"
 		case .install:
 			if installation.hasPartialDownload {
-				return HomeStrings.actionResumeHelp
+				return "Continue downloading from the partial files"
 			}
 			return
-				HomeStrings.actionInstallHelp(region: installation.region.displayName)
+				"Download and verify the official \(installation.region.displayName) PC files"
 
-		case .update: return HomeStrings.actionUpdateHelp
-		case .play: return intelTranslation.statusDetail ?? HomeStrings.actionPlayHelp
+		case .update: return "Download the changed game files"
+		case .play: return intelTranslation.statusDetail ?? "Start Arknights"
 		}
 	}
 

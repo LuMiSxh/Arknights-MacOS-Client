@@ -4,8 +4,8 @@ import ArknightsCore
 import SwiftUI
 
 struct LauncherFailureDetailView: View {
-	let failure: LauncherFailurePresentation
-	let accentColor: Color
+	package let failure: LauncherFailurePresentation
+	package let accentColor: Color
 	let hudTintColor: Color
 	let perform: (RecoveryAction, UUID) -> Void
 	private let troubleshootingMarkdown: String?
@@ -26,7 +26,7 @@ struct LauncherFailureDetailView: View {
 
 	var body: some View {
 		ThemedModalView(
-			title: HomeStrings.needsAttention,
+			title: "Needs attention",
 			hudTintColor: hudTintColor,
 			width: failure.code == nil ? 620 : 820,
 			height: failure.code == nil ? 430 : 600,
@@ -89,7 +89,7 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.installRosetta) {
 			recoveryButton(
 				action: .installRosetta,
-				title: LauncherStrings.rosettaInstall,
+				title: "Install Rosetta 2",
 				systemImage: "arrow.down.circle",
 				tone: .accent(accentColor)
 			)
@@ -97,7 +97,7 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.retry) {
 			recoveryButton(
 				action: .retry,
-				title: HomeStrings.retry,
+				title: "Retry",
 				systemImage: "arrow.clockwise",
 				tone: .accent(accentColor)
 			)
@@ -105,7 +105,7 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.repair) {
 			recoveryButton(
 				action: .repair,
-				title: HomeStrings.repair,
+				title: "Repair",
 				systemImage: "wrench.and.screwdriver",
 				tone: failure.actions.contains(.retry) ? .neutral : .accent(accentColor)
 			)
@@ -147,14 +147,14 @@ struct LauncherFailureDetailView: View {
 			if failure.actions.contains(.openTroubleshooting) {
 				supportAction(
 					.openTroubleshooting,
-					title: HomeStrings.openTroubleshooting,
+					title: "Open on Website",
 					systemImage: "arrow.up.right.square"
 				)
 			}
 			if failure.actions.contains(.reportProblem) {
 				supportAction(
 					.reportProblem,
-					title: HomeStrings.reportProblem,
+					title: "Report Problem",
 					systemImage: "ladybug"
 				)
 			}

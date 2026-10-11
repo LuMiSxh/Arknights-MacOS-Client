@@ -5,7 +5,7 @@ import Foundation
 
 /// Every action the launcher UI can trigger. Views call these rather than the controllers,
 /// because each one carries policy: the ACE warning and the guards that keep checks from
-/// firing during a storage migration. `LiveLauncherActions` drives the real controllers.
+/// firing during a storage migration. `LauncherViewModel` drives the real controllers.
 /// In debug builds, `SimulatedLauncherActions` replaces it while a developer simulation runs.
 @MainActor
 package protocol LauncherActions {
@@ -44,7 +44,7 @@ package protocol LauncherActions {
 
 extension LauncherActions {
 	@discardableResult
-	func refreshIntelTranslationForUI() async -> IntelTranslationState {
+	package func refreshIntelTranslationForUI() async -> IntelTranslationState {
 		await refreshIntelTranslationForUI(force: false)
 	}
 }

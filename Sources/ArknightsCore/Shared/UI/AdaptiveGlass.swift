@@ -357,7 +357,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 /// disappear, or resize next to each other. Earlier systems render the content unchanged.
 package struct AdaptiveGlassGroup<Content: View>: View {
 	let spacing: CGFloat
-	@ViewBuilder let content: Content
+	@ViewBuilder package let content: Content
 
 	package init(spacing: CGFloat, @ViewBuilder content: () -> Content) {
 		self.spacing = spacing

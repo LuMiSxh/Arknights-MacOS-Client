@@ -6,26 +6,26 @@ import SwiftUI
 
 struct UpdatesSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
-	let communication: LauncherCommunicationController
-	let installation: InstallationController
-	let lifecycle: LauncherLifecycleStore
-	let accentColor: Color
+	package let communication: LauncherCommunicationController
+	package let installation: InstallationController
+	package let lifecycle: LauncherLifecycleStore
+	package let accentColor: Color
 	let appVersion: String
-	let checkLauncherUpdates: () -> Void
-	let checkGameUpdates: () -> Void
+	package let checkLauncherUpdates: () -> Void
+	package let checkGameUpdates: () -> Void
 
 	var body: some View {
 		SettingsPage(
-			title: SettingsStrings.updatesTitle,
-			subtitle: SettingsStrings.updatesSubtitle,
+			title: "Updates",
+			subtitle: "Keep the launcher and the game up to date",
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: SettingsStrings.automaticChecks,
+				title: "Automatic Checks",
 				systemImage: "arrow.trianglehead.2.clockwise"
 			) {
 				UpdateSettingsRow(
-					title: SettingsStrings.launcher,
+					title: "Launcher",
 					status: launcherStatusText,
 					isEnabled: $settings.automaticallyChecksLauncherUpdates,
 					isChecking: communication.isCheckingLauncherUpdates,
@@ -38,8 +38,8 @@ struct UpdatesSettingsPage: View {
 					title: "Arknights",
 					status: gameStatusText,
 					isEnabled: $settings.automaticallyChecksGameUpdates,
-					isChecking: lifecycle.refresh.isChecking,
-					isDisabled: lifecycle.refresh.isChecking
+					isChecking: lifecycle.state.refresh.isChecking,
+					isDisabled: lifecycle.state.refresh.isChecking
 						|| !lifecycle.canBeginExclusiveActivity,
 					accentColor: accentColor,
 					check: checkGameUpdates
@@ -51,7 +51,7 @@ struct UpdatesSettingsPage: View {
 			) {
 				SettingsActionRow(
 					title: SettingsStrings.announcements,
-					detail: SettingsStrings.announcementsDetail
+					detail: "Show an occasional message from the project, once each."
 				) {
 					SettingsToggle(
 						SettingsStrings.announcements,
@@ -66,10 +66,10 @@ struct UpdatesSettingsPage: View {
 
 	private var launcherStatusText: String {
 		if communication.isCheckingLauncherUpdates {
-			return SettingsStrings.checking
+			return "Checking…"
 		}
 		if communication.launcherUpdateVersion != nil {
-			return SettingsStrings.updateAvailable
+			return "Update available"
 		}
 		return "v\(appVersion)"
 	}
@@ -79,11 +79,11 @@ struct UpdatesSettingsPage: View {
 	}
 
 	private var gameStatusText: String {
-		if lifecycle.refresh.isChecking {
-			return SettingsStrings.checking
+		if lifecycle.state.refresh.isChecking {
+			return "Checking…"
 		}
 		if installation.isGameUpdateAvailable {
-			return SettingsStrings.updateAvailable
+			return "Update available"
 		}
 		return versionText
 	}

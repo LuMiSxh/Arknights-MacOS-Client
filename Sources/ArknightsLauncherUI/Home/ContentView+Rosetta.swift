@@ -7,7 +7,7 @@ extension ContentView {
 	func onboardingPresentationDidChange(_ isPresented: Bool) {
 		if isPresented {
 			presentation.removeRosettaPreflightFailures()
-		} else if let failure = model.lifecycle.failure {
+		} else if let failure = model.lifecycle.state.presentation.failure {
 			presentation.request(.failure(failure))
 		}
 	}

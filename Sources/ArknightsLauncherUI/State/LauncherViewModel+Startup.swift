@@ -65,7 +65,7 @@ extension LauncherViewModel {
 	@discardableResult
 	func retryStorageMigration(failureID: UUID) -> Bool {
 		guard storageMigrationFailureID == failureID,
-			lifecycle.failure?.id == failureID,
+			lifecycle.state.presentation.failure?.id == failureID,
 			lifecycle.canBeginExclusiveActivity,
 			lifecycle.consumeFailure(id: failureID) != nil
 		else { return false }

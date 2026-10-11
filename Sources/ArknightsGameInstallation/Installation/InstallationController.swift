@@ -19,24 +19,24 @@ package final class InstallationController {
 	@ObservationIgnored var progressSequence: UInt64 = 0
 
 	package var configuration: GameConfiguration? {
-		get { lifecycle.readiness.configuration }
-		set { lifecycle.readiness.configuration = newValue }
+		get { lifecycle.state.readiness.configuration }
+		set { lifecycle.state.readiness.configuration = newValue }
 	}
 	package var isInstalled: Bool {
-		get { lifecycle.readiness.isInstalled }
-		set { lifecycle.readiness.isInstalled = newValue }
+		get { lifecycle.state.readiness.isInstalled }
+		set { lifecycle.state.readiness.isInstalled = newValue }
 	}
 	package var hasPartialDownload: Bool {
-		get { lifecycle.readiness.hasPartialDownload }
-		set { lifecycle.readiness.hasPartialDownload = newValue }
+		get { lifecycle.state.readiness.hasPartialDownload }
+		set { lifecycle.state.readiness.hasPartialDownload = newValue }
 	}
 	package var installedVersion: String? {
-		get { lifecycle.readiness.installedVersion }
-		set { lifecycle.readiness.installedVersion = newValue }
+		get { lifecycle.state.readiness.installedVersion }
+		set { lifecycle.state.readiness.installedVersion = newValue }
 	}
 	package var isGameUpdateAvailable: Bool {
-		get { lifecycle.readiness.isGameUpdateAvailable }
-		set { lifecycle.readiness.isGameUpdateAvailable = newValue }
+		get { lifecycle.state.readiness.isGameUpdateAvailable }
+		set { lifecycle.state.readiness.isGameUpdateAvailable = newValue }
 	}
 
 	package var isDownloading: Bool { lifecycle.activity.isInstalling }
@@ -210,7 +210,9 @@ package final class InstallationController {
 		await installationTask?.value
 	}
 
-	package func consumeCompletionFeedback(for region: GameRegion)
+	package func consumeCompletionFeedback(
+		for region: GameRegion
+	)
 		-> InstallationCompletionFeedback?
 	{
 		guard let completionFeedback, completionFeedback.region == region else { return nil }

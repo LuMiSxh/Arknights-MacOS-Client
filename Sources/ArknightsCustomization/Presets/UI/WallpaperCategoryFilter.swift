@@ -5,7 +5,7 @@ import SwiftUI
 
 struct WallpaperCategoryFilter: View {
 	@Binding var selection: WallpaperCategory?
-	let accentColor: Color
+	package let accentColor: Color
 	/// Wallpaper counts for each category (and, under the `nil` key, the total across every
 	/// category) among whatever's currently in play — the active search text and tag pills —
 	/// so a count reflects what picking that option would actually show, not the whole catalog.
@@ -22,18 +22,16 @@ struct WallpaperCategoryFilter: View {
 			accentColor: accentColor,
 			listTitle: { category in
 
-				CustomizationStrings.wallpaperFilterOption(
-					title(for: category), count: counts[category] ?? 0)
+				"\(title(for: category)) (\(counts[category] ?? 0))"
 			},
 			trailingMenuItems: {
 				guard !operatorCounts.isEmpty else { return AnyView(EmptyView()) }
 				return AnyView(
-					Menu(CustomizationStrings.wallpaperFilterOperators) {
+					Menu("Operators") {
 						ForEach(operatorCounts) { entry in
 							Button(
 
-								CustomizationStrings.wallpaperFilterOption(
-									entry.displayName, count: entry.count)
+								"\(entry.displayName) (\(entry.count))"
 							) {
 								onSelectOperator(entry.tag)
 							}
@@ -42,7 +40,7 @@ struct WallpaperCategoryFilter: View {
 				)
 			}
 		)
-		.accessibilityLabel(Text(CustomizationStrings.wallpaperFilterLabel))
+		.accessibilityLabel(Text("Wallpaper type"))
 	}
 
 	private var options: [(value: WallpaperCategory?, title: String)] {
@@ -51,6 +49,6 @@ struct WallpaperCategoryFilter: View {
 
 	private func title(for category: WallpaperCategory?) -> String {
 		category.map { CustomizationStrings.wallpaperCategory($0) }
-			?? CustomizationStrings.wallpaperFilterAll
+			?? "All Types"
 	}
 }

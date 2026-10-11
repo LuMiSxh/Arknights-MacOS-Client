@@ -18,25 +18,25 @@ struct OnboardingLookView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: OnboardingStrings.lookTitle,
-			subtitle: OnboardingStrings.lookSubtitle,
+			title: "How should the launcher look?",
+			subtitle: "Pick the artwork, colors, and Dock icon. Every change shows up right away.",
 			accentColor: customization.accentColor
 		) {
 			OnboardingQuestion(
-				question: OnboardingStrings.artworkQuestion,
+				question: "Which artwork should fill the launcher?",
 				systemImage: "photo.on.rectangle.angled",
 				actions: [
 					OnboardingAnswer(
-						value: Action.defaultArtwork, title: OnboardingStrings.defaultArtwork,
-						detail: OnboardingStrings.defaultArtworkDetail,
+						value: Action.defaultArtwork, title: "Default artwork",
+						detail: "The official artwork for your server.",
 						systemImage: "arrow.counterclockwise", action: resetArtwork),
 					OnboardingAnswer(
-						value: .preset, title: OnboardingStrings.pickPreset,
-						detail: OnboardingStrings.pickPresetDetail,
+						value: .preset, title: "Pick a preset…",
+						detail: "Browse ready-made artwork.",
 						systemImage: "square.grid.2x2", action: browseArtwork),
 					OnboardingAnswer(
-						value: .ownImage, title: OnboardingStrings.chooseOwnImage,
-						detail: OnboardingStrings.chooseOwnImageDetail,
+						value: .ownImage, title: "Choose my own image…",
+						detail: "Use any picture from your Mac.",
 						systemImage: "photo.badge.plus", action: customization.chooseCustomArtwork),
 				],
 				accentColor: customization.accentColor
@@ -45,7 +45,7 @@ struct OnboardingLookView: View {
 			}
 
 			OnboardingQuestion(
-				question: OnboardingStrings.colorsQuestion,
+				question: "Which colors should the launcher use?",
 				systemImage: "paintpalette",
 				answers: [true, false].map(OnboardingStrings.colorsAnswer),
 				selection: colorsBinding,
@@ -53,7 +53,7 @@ struct OnboardingLookView: View {
 			)
 
 			OnboardingQuestion(
-				question: OnboardingStrings.dockQuestion,
+				question: "Which operator should your Dock show?",
 				systemImage: "dock.rectangle",
 				actions: dockActions,
 				accentColor: customization.accentColor
@@ -62,7 +62,7 @@ struct OnboardingLookView: View {
 			}
 
 			OnboardingQuestion(
-				question: OnboardingStrings.infoQuestion,
+				question: "What should the launcher show?",
 				systemImage: "rectangle.bottomthird.inset.filled",
 				answers: LauncherInfoAnswer.allCases.map(OnboardingStrings.infoAnswer),
 				selections: $preferences.shownLauncherInfo,
@@ -74,15 +74,15 @@ struct OnboardingLookView: View {
 	private var dockActions: [OnboardingAnswer<Action>] {
 		var actions: [OnboardingAnswer<Action>] = [
 			OnboardingAnswer(
-				value: Action.operatorIcons, title: OnboardingStrings.chooseOperator,
-				detail: OnboardingStrings.chooseOperatorDetail,
+				value: Action.operatorIcons, title: "Choose Operator…",
+				detail: "Gives the launcher and the game a matching Dock icon.",
 				systemImage: "person.2.crop.square.stack", action: browseOperators)
 		]
 		if customization.hasCustomAppIcon || customization.hasCustomGameIcon {
 			actions.append(
 				OnboardingAnswer(
-					value: .standardIcons, title: OnboardingStrings.standardIcons,
-					detail: OnboardingStrings.standardIconsDetail,
+					value: .standardIcons, title: "Use the standard icons",
+					detail: "Go back to the icons the launcher and the game came with.",
 					systemImage: "arrow.counterclockwise",
 					action: customization.resetOperatorIcons))
 		}
@@ -102,7 +102,7 @@ struct OnboardingLookView: View {
 				Image(nsImage: artwork)
 					.resizable()
 					.scaledToFill()
-					.accessibilityLabel(OnboardingStrings.currentArtworkAccessibility)
+					.accessibilityLabel("Current launcher artwork")
 			} else {
 				ZStack {
 					Color.black.opacity(0.35)

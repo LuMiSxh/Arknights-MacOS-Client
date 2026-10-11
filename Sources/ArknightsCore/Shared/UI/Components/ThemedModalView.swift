@@ -6,12 +6,12 @@ import SwiftUI
 package struct ThemedModalView<Content: View, Actions: View>: View {
 	let title: String
 	let hudTintColor: Color
-	let width: CGFloat
-	let height: CGFloat
+	package let width: CGFloat
+	package let height: CGFloat
 	let minimumWidth: CGFloat
 	let minimumHeight: CGFloat
-	@ViewBuilder let content: Content
-	@ViewBuilder let actions: Actions
+	@ViewBuilder package let content: Content
+	@ViewBuilder package let actions: Actions
 	@Environment(\.launcherWindowSize) private var launcherWindowSize
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var hasEntered = false

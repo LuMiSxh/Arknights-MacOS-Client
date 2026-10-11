@@ -8,7 +8,9 @@ enum PresetCatalogSearch {
 		Set(WallpaperTagCatalog.shared.values.flatMap { $0 }.map(WallpaperSearch.normalized))
 	}
 
-	static func avatars(matching query: String, in avatars: [PresetAvatar]) async throws
+	static func avatars(
+		matching query: String, in avatars: [PresetAvatar]
+	) async throws
 		-> [PresetAvatar]
 	{
 		await Task.yield()

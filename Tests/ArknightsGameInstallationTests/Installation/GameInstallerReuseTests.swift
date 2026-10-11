@@ -245,7 +245,9 @@ private struct ReuseWorld {
 	}
 
 	@discardableResult
-	func writeInstalledRegion(at directory: URL, body: Data, listedPath: String? = nil) throws
+	func writeInstalledRegion(
+		at directory: URL, body: Data, listedPath: String? = nil
+	) throws
 		-> URL
 	{
 		let file = directory.appending(path: fixture.item.path)

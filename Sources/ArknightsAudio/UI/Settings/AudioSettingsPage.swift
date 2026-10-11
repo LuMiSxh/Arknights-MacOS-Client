@@ -5,7 +5,7 @@ import SwiftUI
 
 package struct AudioSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
-	let accentColor: Color
+	package let accentColor: Color
 
 	package init(settings: LauncherPreferencesController, accentColor: Color) {
 		self.settings = settings
@@ -14,17 +14,17 @@ package struct AudioSettingsPage: View {
 
 	package var body: some View {
 		SettingsPage(
-			title: AudioStrings.settingsTitle,
-			subtitle: AudioStrings.settingsSubtitle,
+			title: "Audio",
+			subtitle: "Music while the launcher is open",
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: AudioStrings.settingsMusic, systemImage: "music.note") {
+			SettingsPanel(title: "Music", systemImage: "music.note") {
 				SettingsActionRow(
-					title: AudioStrings.settingsBackgroundMusic,
-					detail: AudioStrings.settingsBackgroundMusicDetail
+					title: "Play background music",
+					detail: "Plays music while the launcher is open and the game is closed."
 				) {
 					SettingsToggle(
-						AudioStrings.settingsBackgroundMusic,
+						"Play background music",
 						isOn: $settings.playsLauncherMusic,
 						accentColor: accentColor
 					)
@@ -33,12 +33,12 @@ package struct AudioSettingsPage: View {
 				if settings.playsLauncherMusic {
 					SettingsHairline()
 					SettingsActionRow(
-						title: AudioStrings.settingsURL,
-						detail: AudioStrings.settingsURLDetail
+						title: "Music URL",
+						detail: "A YouTube video or playlist link."
 					) {
 						ThemedTextField(
-							AudioStrings.settingsURL,
-							prompt: AudioStrings.settingsURLPrompt,
+							"Music URL",
+							prompt: "https://www.youtube.com/playlist?...",
 							text: $settings.launcherMusicURL,
 							systemImage: "link",
 							accentColor: accentColor
@@ -47,8 +47,8 @@ package struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: AudioStrings.settingsVolume,
-						detail: AudioStrings.settingsVolumeDetail
+						title: "Volume",
+						detail: "How loud the launcher music plays."
 					) {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")
@@ -62,13 +62,11 @@ package struct AudioSettingsPage: View {
 								accentColor: accentColor,
 								width: 140
 							)
-							.accessibilityLabel(AudioStrings.settingsVolume)
+							.accessibilityLabel("Volume")
 							.accessibilityValue(
 								Text(
 
-									AudioStrings.settingsVolumePercent(
-										Int(settings.launcherMusicVolume * 100)
-									)
+									"\(Int(settings.launcherMusicVolume * 100))%"
 								)
 							)
 							Image(systemName: "speaker.wave.3.fill")
@@ -77,9 +75,7 @@ package struct AudioSettingsPage: View {
 								.accessibilityHidden(true)
 							Text(
 
-								AudioStrings.settingsVolumePercent(
-									Int(settings.launcherMusicVolume * 100)
-								)
+								"\(Int(settings.launcherMusicVolume * 100))%"
 							)
 							.font(.caption.monospacedDigit())
 							.foregroundStyle(.secondary)
@@ -88,11 +84,11 @@ package struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: AudioStrings.settingsCurrentlyPlaying,
-						detail: AudioStrings.settingsCurrentlyPlayingDetail
+						title: "Show what's playing",
+						detail: "Shows the current track and playback controls on the launcher."
 					) {
 						SettingsToggle(
-							AudioStrings.settingsCurrentlyPlaying,
+							"Show what's playing",
 							isOn: $settings.showsPlayingMusic,
 							accentColor: accentColor
 						)

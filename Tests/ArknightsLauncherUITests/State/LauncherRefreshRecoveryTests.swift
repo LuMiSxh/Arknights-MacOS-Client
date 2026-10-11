@@ -22,8 +22,8 @@ struct LauncherRefreshRecoveryTests {
 		}
 
 		await model.refreshController.waitForCurrentRefresh()
-		#expect(model.lifecycle.failure?.code == .virga)
-		let failure = try #require(model.lifecycle.failure)
+		#expect(model.lifecycle.state.presentation.failure?.code == .virga)
+		let failure = try #require(model.lifecycle.state.presentation.failure)
 		#expect(failure.context.operation == .configurationRefresh)
 		#expect(failure.context.region == region.supportRegion)
 		#expect(failure.blocksGameLaunch)
@@ -48,13 +48,14 @@ struct LauncherRefreshRecoveryTests {
 		#expect(model.installation.isInstalled)
 
 		await model.refreshController.startRefresh().value
-		#expect(model.lifecycle.failure == nil)
+		#expect(model.lifecycle.state.presentation.failure == nil)
 
 		model.refreshController.checkGameUpdates()
 		await model.refreshController.waitForCurrentRefresh()
-		#expect(model.lifecycle.failure?.code == .virga)
-		#expect(model.lifecycle.failure?.context.operation == .configurationRefresh)
-		#expect(model.lifecycle.failure?.blocksGameLaunch == false)
+		#expect(model.lifecycle.state.presentation.failure?.code == .virga)
+		#expect(
+			model.lifecycle.state.presentation.failure?.context.operation == .configurationRefresh)
+		#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == false)
 	}
 }
 

@@ -142,7 +142,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 								.foregroundStyle(.tertiary)
 						}
 						if answer.isRecommended {
-							Text(OnboardingStrings.recommended)
+							Text("Recommended")
 								.font(.caption2.weight(.semibold))
 								.foregroundStyle(.secondary)
 								.padding(.horizontal, LauncherVisuals.Spacing.tight)
@@ -215,7 +215,7 @@ private struct OnboardingAnswerStyle<S: InsettableShape>: ButtonStyle {
 }
 
 private struct OnboardingAnswerBody<S: InsettableShape>: View {
-	let configuration: ButtonStyleConfiguration
+	package let configuration: ButtonStyleConfiguration
 	let isSelected: Bool
 	let accentColor: Color
 	let shape: S

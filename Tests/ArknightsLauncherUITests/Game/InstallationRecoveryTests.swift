@@ -20,7 +20,7 @@ struct InstallationRecoveryTests {
 
 		let feedback = fixture.controller.completionFeedback
 		#expect(feedback?.region == .global)
-		#expect(fixture.controller.lifecycle.presentation.status == .ready)
+		#expect(fixture.controller.lifecycle.state.presentation.status == .ready)
 		#expect(
 			fixture.controller.consumeCompletionFeedback(for: .global)?.id == feedback?.id
 		)
@@ -121,11 +121,11 @@ struct InstallationRecoveryTests {
 		#expect(fixture.controller.selectRegion(.china))
 		#expect(!fixture.controller.selectRegion(.taiwan))
 
-		fixture.preferences.setCanaryFeaturesEnabled(true)
-		fixture.preferences.setTaiwanClientEnabled(true)
+		fixture.preferences.set(true, for: LauncherPreferencesStore.Key.canaryFeaturesEnabled)
+		fixture.preferences.set(true, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
 		#expect(fixture.controller.selectRegion(.taiwan))
 
-		fixture.preferences.setTaiwanClientEnabled(false)
+		fixture.preferences.set(false, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
 		#expect(!fixture.controller.selectRegion(.taiwan))
 	}
 
@@ -139,7 +139,7 @@ struct InstallationRecoveryTests {
 			operation: .install,
 			region: region
 		)
-		#expect(fixture.controller.lifecycle.failure?.blocksGameLaunch == true)
+		#expect(fixture.controller.lifecycle.state.presentation.failure?.blocksGameLaunch == true)
 
 		#expect(fixture.controller.retryInstallationFailure(id: failureID))
 		await fixture.installer.waitForInstallationStart()
@@ -301,7 +301,7 @@ struct InstallationRecoveryTests {
 			decompressionSize: "not a size")
 		fixture.controller.startInstallation(launchAfterCompletion: false)
 		#expect(fixture.controller.lifecycle.activity == .idle)
-		#expect(fixture.controller.lifecycle.failure != nil)
+		#expect(fixture.controller.lifecycle.state.presentation.failure != nil)
 	}
 
 	@Test
@@ -359,8 +359,8 @@ struct InstallationRecoveryTests {
 		let defaults = try #require(
 			UserDefaults(suiteName: "InstallationStateGateTests.\(UUID().uuidString)"))
 		let preferences = LauncherPreferencesStore(defaults: defaults)
-		preferences.setCanaryFeaturesEnabled(true)
-		preferences.setTaiwanClientEnabled(true)
+		preferences.set(true, for: LauncherPreferencesStore.Key.canaryFeaturesEnabled)
+		preferences.set(true, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
 		let gate = ControlledRequestGate<InstallationStateSnapshot, InstallationStateRequest>()
 		let log = LauncherLog(fileURL: paths.launcherLogFile)
 		let controller = InstallationController(
@@ -370,7 +370,7 @@ struct InstallationRecoveryTests {
 
 		let refresh = controller.updateInstalledState()
 		await gate.waitForRequestCount(1)
-		preferences.setTaiwanClientEnabled(false)
+		preferences.set(false, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
 		await gate.resolve(
 			0,
 			with: InstallationStateSnapshot(

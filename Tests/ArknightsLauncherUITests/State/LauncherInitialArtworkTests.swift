@@ -27,9 +27,9 @@ struct LauncherInitialArtworkTests {
 			UserDefaults(suiteName: "LauncherInitialArtworkTests.\(UUID().uuidString)")
 		)
 		let preferences = LauncherPreferencesStore(defaults: defaults)
-		preferences.setAutomaticGameUpdates(false)
-		preferences.setAutomaticLauncherUpdates(false)
-		preferences.setAnnouncementsEnabled(false)
+		preferences.set(false, for: LauncherPreferencesStore.Key.automaticGameUpdates)
+		preferences.set(false, for: LauncherPreferencesStore.Key.automaticLauncherUpdates)
+		preferences.set(false, for: LauncherPreferencesStore.Key.announcementsEnabled)
 
 		let imageData = try #require(
 			Data(

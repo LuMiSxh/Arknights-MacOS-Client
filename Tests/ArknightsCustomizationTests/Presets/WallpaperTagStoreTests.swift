@@ -70,7 +70,9 @@ private func temporaryPresetRoot() -> URL {
 		path: "WallpaperTagStoreTests-\(UUID().uuidString)", directoryHint: .isDirectory)
 }
 
-private func tagService(root: URL, path: String, store: WallpaperTagStore)
+private func tagService(
+	root: URL, path: String, store: WallpaperTagStore
+)
 	-> PresetCatalogService
 {
 	let configuration = URLSessionConfiguration.ephemeral

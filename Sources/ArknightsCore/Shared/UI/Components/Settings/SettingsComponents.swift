@@ -23,7 +23,7 @@ extension EnvironmentValues {
 package struct SectionPageHeader: View {
 	let title: String
 	let subtitle: String
-	let accentColor: Color
+	package let accentColor: Color
 	var fixesSubtitleHeight = false
 
 	package init(
@@ -59,8 +59,8 @@ package struct SectionPageHeader: View {
 package struct SettingsPage<Content: View>: View {
 	let title: String
 	let subtitle: String
-	let accentColor: Color
-	@ViewBuilder let content: Content
+	package let accentColor: Color
+	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
@@ -123,7 +123,7 @@ package struct SettingsPanel<Content: View>: View {
 	var tone: SettingsPanelTone = .neutral
 	/// Makes the header a disclosure button that shows or hides the content.
 	var isExpanded: Binding<Bool>?
-	@ViewBuilder let content: Content
+	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
@@ -248,7 +248,7 @@ package enum SettingsPanelTone {
 /// Same quiet panel geometry as `SettingsPanel`, reserved for destructive actions.
 package struct DangerZonePanel<Content: View>: View {
 	let title: String
-	@ViewBuilder let content: Content
+	@ViewBuilder package let content: Content
 
 	package init(title: String = "Danger Zone", @ViewBuilder content: () -> Content) {
 		self.title = title
@@ -265,12 +265,12 @@ package struct DangerZonePanel<Content: View>: View {
 package struct UpdateSettingsRow: View {
 	let title: String
 	package let status: String
-	@Binding var isEnabled: Bool
+	@Binding package var isEnabled: Bool
 	let isChecking: Bool
 	var isDisabled = false
-	let accentColor: Color
+	package let accentColor: Color
 	var checkTitle = "Check Now"
-	let check: () -> Void
+	package let check: () -> Void
 
 	package init(
 		title: String,
@@ -314,7 +314,7 @@ package struct SettingsActionRow<Actions: View>: View {
 	let detail: String
 	/// Technical background shown as a tooltip over the title and detail.
 	var help: String?
-	@ViewBuilder let actions: Actions
+	@ViewBuilder package let actions: Actions
 
 	package init(
 		title: String,

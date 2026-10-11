@@ -7,12 +7,12 @@ import SwiftUI
 /// Floating pill above the main control bar showing the active client's server reset countdown.
 /// Expands to show reset information for every installed client when region switching is useful.
 struct StatusHUDPill: View {
-	let settings: LauncherPreferencesController
-	let installation: InstallationController
+	package let settings: LauncherPreferencesController
+	package let installation: InstallationController
 	let canSwitchRegion: Bool
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
-	let selectRegion: (GameRegion) -> Void
+	package let selectRegion: (GameRegion) -> Void
 	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -77,13 +77,13 @@ struct StatusHUDPill: View {
 			.keyboardFocusIndicator(in: Capsule())
 			.accessibilityLabel(
 
-				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
+				isExpanded ? "Hide reset details" : "Show reset details"
 
 			)
 			.accessibilityValue(Text(countdown(for: installation.region, now: now)))
 			.help(
 
-				isExpanded ? HomeStrings.resetHideDetails : HomeStrings.resetShowDetails
+				isExpanded ? "Hide reset details" : "Show reset details"
 
 			)
 		} else {
@@ -154,7 +154,7 @@ struct StatusHUDPill: View {
 				.accessibilityAddTraits(
 					region == installation.region ? .isSelected : []
 				)
-				.accessibilityHint(Text(HomeStrings.switchRegionHelp))
+				.accessibilityHint(Text("Switch between installed regions"))
 			}
 		}
 		.padding(.horizontal, LauncherVisuals.Spacing.control)

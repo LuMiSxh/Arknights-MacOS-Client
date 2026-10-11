@@ -63,7 +63,9 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 		return report
 	}
 
-	private func deduplicate(_ directory: URL, against runtimeDirectory: URL, report: inout Report)
+	private func deduplicate(
+		_ directory: URL, against runtimeDirectory: URL, report: inout Report
+	)
 		throws
 	{
 		var isDirectory: ObjCBool = false

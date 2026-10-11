@@ -21,33 +21,15 @@ package struct InstallerFileIdentity: Equatable, Sendable {
 	}
 }
 
-/// Pins the install root. ``InstallLease`` owns the cross-process lock; the legacy `init(at:)`
-/// still locks until deallocation for callers that have not moved to the lease yet.
+/// Pins the install root. ``InstallLease`` owns the cross-process lock.
 package final class InstallerInstallDirectory: @unchecked Sendable {
 	package let root: InstallerDirectoryHandle
-	private let legacyLockDescriptor: Int32?
 
 	package var url: URL { root.url }
 
-	/// Legacy locking initializer; it takes the same lock as ``InstallLease`` on its own descriptor.
-	convenience init(at url: URL) throws {
-		let root = try Self.pinRoot(at: url)
-		let descriptor = try Self.acquireLock(on: root)
-		self.init(root: root, legacyLockDescriptor: descriptor)
-	}
-
 	/// Pins the root without locking. Used by ``InstallLease``, which owns the lock.
-	convenience init(pinningAt url: URL) throws {
-		self.init(root: try Self.pinRoot(at: url), legacyLockDescriptor: nil)
-	}
-
-	private init(root: InstallerDirectoryHandle, legacyLockDescriptor: Int32?) {
-		self.root = root
-		self.legacyLockDescriptor = legacyLockDescriptor
-	}
-
-	deinit {
-		if let legacyLockDescriptor { Self.releaseLock(legacyLockDescriptor) }
+	init(pinningAt url: URL) throws {
+		root = try Self.pinRoot(at: url)
 	}
 
 	static func releaseLock(_ descriptor: Int32) {
@@ -121,7 +103,9 @@ package final class InstallerInstallDirectory: @unchecked Sendable {
 		return InstallerDirectoryHandle(descriptor: descriptor, url: canonicalURL)
 	}
 
-	package func directory(at relativePath: String, createParents: Bool = false) throws
+	package func directory(
+		at relativePath: String, createParents: Bool = false
+	) throws
 		-> InstallerDirectoryHandle
 	{
 		let components = try Self.pathComponents(relativePath)
@@ -132,7 +116,9 @@ package final class InstallerInstallDirectory: @unchecked Sendable {
 		return directory
 	}
 
-	package func file(at relativePath: String, createParents: Bool = false) throws
+	package func file(
+		at relativePath: String, createParents: Bool = false
+	) throws
 		-> InstallerFilePath
 	{
 		let components = try Self.pathComponents(relativePath)
@@ -241,7 +227,7 @@ package final class InstallerInstallDirectory: @unchecked Sendable {
 /// An open directory reached relative to the pinned install root or private staging directory.
 package final class InstallerDirectoryHandle: @unchecked Sendable {
 	package let descriptor: Int32
-	let url: URL
+	package let url: URL
 
 	init(descriptor: Int32, url: URL) {
 		self.descriptor = descriptor
@@ -336,7 +322,9 @@ package final class InstallerDirectoryHandle: @unchecked Sendable {
 		return status
 	}
 
-	func renameFile(named name: String, to directory: InstallerDirectoryHandle, as newName: String)
+	func renameFile(
+		named name: String, to directory: InstallerDirectoryHandle, as newName: String
+	)
 		throws
 	{
 		try Self.validateLeaf(name)

@@ -59,7 +59,9 @@ package final class StorageMaintenanceController {
 
 	@discardableResult
 	package func retryCacheFailure(id: UUID) -> Bool {
-		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard let failure = lifecycle.state.presentation.failure, failure.id == id else {
+			return false
+		}
 		guard failure.context.operation == .cacheClearing else { return false }
 		guard failure.context.region == regionProvider().supportRegion,
 			lifecycle.activity == .idle

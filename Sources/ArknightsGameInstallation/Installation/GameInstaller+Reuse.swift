@@ -42,7 +42,9 @@ extension GameInstaller {
 	/// Resolves the other regions that can donate files to `target`. A candidate must be a
 	/// different directory from the target and have both `Arknights.exe` and a readable
 	/// installed-state file, the same definition of an installed region the launcher uses.
-	func reuseSession(for region: GameRegion, target: InstallerInstallDirectory) async
+	func reuseSession(
+		for region: GameRegion, target: InstallerInstallDirectory
+	) async
 		-> ReuseSession
 	{
 		guard let reuseSourceDirectories else { return .none }

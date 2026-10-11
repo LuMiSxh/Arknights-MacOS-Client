@@ -16,14 +16,15 @@ struct OnboardingWelcomeView: View {
 	var body: some View {
 		OnboardingPage(
 			title: requiredSchema == nil
-				? OnboardingStrings.welcomeTitle : OnboardingStrings.requiredWelcomeTitle,
+				? "Welcome to Arknights Client" : "Something important changed",
 			subtitle: requiredSchema == nil
-				? OnboardingStrings.welcomeSubtitle : OnboardingStrings.requiredWelcomeSubtitle,
+				? "First we'll check that everything is ready, then ask a few quick questions. Your answers apply right away."
+				: "This version of the launcher needs you to go through setup once more. Your current settings are kept as the starting point.",
 			accentColor: accentColor
 		) {
 			if let requiredSchema {
 				SettingsPanel(
-					title: OnboardingStrings.requiredSetupPanel,
+					title: "Why setup is required",
 					systemImage: "exclamationmark.triangle",
 					tone: .warning
 				) {
@@ -42,24 +43,28 @@ struct OnboardingWelcomeView: View {
 					}
 				case .current:
 					Label(
-						OnboardingStrings.launcherCurrent,
+						"This launcher is up to date. Setup can continue.",
 						systemImage: "checkmark.circle.fill"
 					)
 					.foregroundStyle(accentColor)
 				case .updateRequired(let version):
 					VStack(alignment: .leading, spacing: 8) {
-						Text(OnboardingStrings.versionAvailable(version))
+						Text("Version \(version) is available.")
 							.bold()
-						Text(OnboardingStrings.updateDetail)
-							.foregroundStyle(.secondary)
-							.fixedSize(horizontal: false, vertical: true)
+						Text(
+							"Install the newer launcher and open it again. Setup waits so its instructions match the version you use."
+						)
+						.foregroundStyle(.secondary)
+						.fixedSize(horizontal: false, vertical: true)
 					}
 				case .checkFailed:
 					VStack(alignment: .leading, spacing: 10) {
-						Text(OnboardingStrings.updateCheckFailedDetail)
-							.foregroundStyle(.secondary)
+						Text(
+							"The launcher could not look for updates. You can continue now; it will try again later."
+						)
+						.foregroundStyle(.secondary)
 						CapsuleActionButton(
-							title: OnboardingStrings.tryAgain,
+							title: "Try Again",
 							systemImage: "arrow.clockwise",
 							tone: .accent(accentColor), action: retry
 						)
@@ -69,23 +74,23 @@ struct OnboardingWelcomeView: View {
 
 			if updateState.allowsSetup {
 				SettingsPanel(
-					title: OnboardingStrings.compatibilityPanel,
+					title: "Your Mac",
 					systemImage: translationImage,
 					tone: compatibilityPanelTone
 				) {
 					switch intelTranslationState {
 					case .waitingForLauncherCheck:
-						Text(OnboardingStrings.compatibilityWaiting)
+						Text("Your Mac is checked right after the launcher update check.")
 							.foregroundStyle(.secondary)
 					case .checking:
 						HStack(spacing: 12) {
 							ProgressView()
-							Text(OnboardingStrings.compatibilityChecking)
+							Text("Checking that your Mac can run the game…")
 								.foregroundStyle(.secondary)
 						}
 					case .available:
 						Label(
-							OnboardingStrings.compatibilityAvailable,
+							"Your Mac can run the game.",
 							systemImage: "checkmark.circle.fill"
 						)
 						.foregroundStyle(accentColor)
@@ -98,9 +103,11 @@ struct OnboardingWelcomeView: View {
 						)
 					case .gameTestModeEnabled:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(OnboardingStrings.compatibilityGameTestMode)
-								.foregroundStyle(.secondary)
-								.fixedSize(horizontal: false, vertical: true)
+							Text(
+								"On macOS 27 beta, Legacy Game Test Mode stops the game from running. Turn the test mode off, then restart your Mac:"
+							)
+							.foregroundStyle(.secondary)
+							.fixedSize(horizontal: false, vertical: true)
 							Text("sudo game-test-tool disable")
 								.font(.callout.monospaced())
 								.textSelection(.enabled)
@@ -113,9 +120,11 @@ struct OnboardingWelcomeView: View {
 						}
 					case .unavailable:
 						VStack(alignment: .leading, spacing: 10) {
-							Text(OnboardingStrings.compatibilityUnavailable)
-								.foregroundStyle(.secondary)
-								.fixedSize(horizontal: false, vertical: true)
+							Text(
+								"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
+							)
+							.foregroundStyle(.secondary)
+							.fixedSize(horizontal: false, vertical: true)
 							CapsuleActionButton(
 								title: OnboardingStrings.checkAgain,
 								systemImage: "arrow.clockwise",
@@ -124,7 +133,7 @@ struct OnboardingWelcomeView: View {
 							)
 						}
 					case .unsupportedOS:
-						Text(OnboardingStrings.compatibilityUnsupported)
+						Text("This version of macOS can no longer run the game.")
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
 					}

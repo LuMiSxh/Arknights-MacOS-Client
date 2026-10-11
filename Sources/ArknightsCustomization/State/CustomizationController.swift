@@ -25,8 +25,8 @@ package final class CustomizationController {
 	package let log: LauncherLog
 	package let artworkCache: ArtworkCache
 	package let launcherIconManager: LauncherIconManager
-	let region: @MainActor () -> GameRegion
-	let usesDynamicTheme: @MainActor () -> Bool
+	package let region: @MainActor () -> GameRegion
+	package let usesDynamicTheme: @MainActor () -> Bool
 
 	package var heroArtwork: NSImage? {
 		didSet { updateThemeColor() }
@@ -141,7 +141,9 @@ package final class CustomizationController {
 		self.dynamicIconRenderer = dynamicIconRenderer ?? AppIconRenderer.tintedDefaultIcon
 	}
 
-	package static func officialThemeCacheKey(for region: GameRegion, artworkCacheKey: String)
+	package static func officialThemeCacheKey(
+		for region: GameRegion, artworkCacheKey: String
+	)
 		-> String
 	{
 		"official.\(region.rawValue).\(artworkCacheKey)"

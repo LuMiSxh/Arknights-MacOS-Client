@@ -81,18 +81,6 @@ private actor UpdateLog {
 	}
 }
 
-private struct ControlledDownloadClock: DownloadClock {
-	let box = Box()
-	final class Box: @unchecked Sendable {
-		let lock = NSLock()
-		var instant = ContinuousClock().now
-	}
-	var now: ContinuousClock.Instant { box.lock.withLock { box.instant } }
-	func advance(by duration: Duration) {
-		box.lock.withLock { box.instant = box.instant.advanced(by: duration) }
-	}
-}
-
 struct InstallProgressMonitorTests {
 	@Test
 	func oneMonitorTicksForAllConcurrentFiles() async throws {
@@ -134,7 +122,7 @@ struct InstallProgressMonitorTests {
 
 	@Test
 	func tickReportsAStallWhenNoBytesArrive() async {
-		let downloadClock = ControlledDownloadClock()
+		let downloadClock = AdvancingClock()
 		let counter = ProgressCounter(totalBytes: 100, totalFiles: 2, clock: downloadClock)
 		let monitorClock = ManualTickClock()
 		let log = UpdateLog()

@@ -15,7 +15,7 @@ enum RuntimeMigration: String, CaseIterable, Codable, Sendable {
 	case removeLegacy32BitLibraries = "remove-legacy-32-bit-libraries"
 }
 
-struct RuntimeMigrationState: Codable, Equatable, Sendable {
+package struct RuntimeMigrationState: Codable, Equatable, Sendable {
 	static let currentSchemaVersion = 1
 
 	let schemaVersion: Int
@@ -45,7 +45,7 @@ struct RuntimeMigrationState: Codable, Equatable, Sendable {
 /// missing system registry, or an explicitly invalidated step all restart from that point
 /// forward, rather than replaying every step unconditionally.
 struct RuntimeMigrationPlan: Sendable {
-	private(set) var state: RuntimeMigrationState
+	package private(set) var state: RuntimeMigrationState
 	let pending: [RuntimeMigration]
 
 	init(

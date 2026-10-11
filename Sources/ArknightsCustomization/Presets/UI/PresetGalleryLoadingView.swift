@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct PresetGalleryLoadingView: View {
-	let text: String
+	package let text: String
 
 	var body: some View {
 		VStack(spacing: 12) {

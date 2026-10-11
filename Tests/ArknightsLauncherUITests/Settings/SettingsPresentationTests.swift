@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsCore
 import CoreGraphics
 import Testing
 
+@testable import ArknightsCore
 @testable import ArknightsLauncherUI
 
 private let screen = GameScreenMetrics(
@@ -12,15 +12,6 @@ private let screen = GameScreenMetrics(
 	titleBarHeight: 28
 )
 private let native = GameDisplaySize(width: 3840, height: 2160)
-
-@MainActor
-@Test
-func settingsOpenOnGameAndNoLongerOfferGeneral() {
-	let sections = SettingsSection.allCases.map(\.rawValue)
-	#expect(SettingsSection.initial == .game)
-	#expect(Array(sections.prefix(3)) == ["game", "appearance", "audio"])
-	#expect(!sections.contains("general"))
-}
 
 @MainActor
 @Test
@@ -65,5 +56,5 @@ func summaryDescribesFullscreenDetailAndGameControlledDisplay() {
 	options.usesGameSettings = true
 	#expect(
 		GameDisplaySummary.text(for: options, screen: screen, native: native)
-			== SettingsStrings.displayHandledInGame)
+			== "The game uses the display settings chosen inside Arknights.")
 }

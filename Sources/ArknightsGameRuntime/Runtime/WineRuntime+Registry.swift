@@ -11,7 +11,7 @@ struct WineRegistryEntry {
 	}
 
 	let key: String
-	let name: String
+	package let name: String
 	let kind: Kind
 }
 

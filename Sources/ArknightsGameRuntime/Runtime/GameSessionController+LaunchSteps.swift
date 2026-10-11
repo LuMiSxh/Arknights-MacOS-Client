@@ -7,7 +7,7 @@ import Foundation
 /// Everything captured when the user asks to play, before the first suspension.
 struct LaunchRequest {
 	let id: UUID
-	let region: GameRegion
+	package let region: GameRegion
 	let executable: URL
 	let prefixDirectory: URL
 	let options: GameLaunchOptions
@@ -102,7 +102,7 @@ extension GameSessionController {
 		case nil:
 			return nil
 		}
-		guard lifecycle.intelTranslationState.allowsWine else {
+		guard lifecycle.state.readiness.intelTranslation.allowsWine else {
 			presentLaunchFailure(intelTranslation.launchError, request: request)
 			return nil
 		}
@@ -184,7 +184,7 @@ extension GameSessionController {
 			guard activeGameSessionID == id, !applicationTerminationRequested else { return }
 			let launchError: any Error
 			if RosettaAvailability.isBadCPUType(error) {
-				lifecycle.intelTranslationState = .unavailable
+				lifecycle.state.readiness.intelTranslation = .unavailable
 				launchError = GameRuntimeError.intelTranslationUnavailable
 			} else {
 				launchError = error
@@ -226,7 +226,9 @@ extension GameSessionController {
 	}
 
 	/// Starts the game process. Returns nil when the session no longer owns the launch.
-	private func spawn(_ context: LaunchContext, prepared: PreparedLaunch) async throws
+	private func spawn(
+		_ context: LaunchContext, prepared: PreparedLaunch
+	) async throws
 		-> WineLaunch?
 	{
 		let request = context.request

@@ -25,7 +25,7 @@ struct GameLaunchOwnershipTests {
 		#expect(model.gameSession.pendingLaunchID == pendingID)
 		// The game is not installed, so the one launch ends with a single failure for its ID.
 		#expect(await waitForCondition { model.gameSession.pendingLaunchID == nil })
-		#expect(model.lifecycle.failure?.id == pendingID)
+		#expect(model.lifecycle.state.presentation.failure?.id == pendingID)
 		#expect(model.gameSession.session == nil)
 		#expect(model.lifecycle.activity == .idle)
 		await api.resolveBranding()

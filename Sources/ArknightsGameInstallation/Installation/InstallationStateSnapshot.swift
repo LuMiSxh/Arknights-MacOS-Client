@@ -11,10 +11,10 @@ package struct InstallationStateRequest: Sendable {
 }
 
 package struct InstallationStateSnapshot: Sendable {
-	let isInstalled: Bool
-	let hasPartialDownload: Bool
+	package let isInstalled: Bool
+	package let hasPartialDownload: Bool
 	let installedVersion: String?
-	let installedRegions: [GameRegion]
+	package let installedRegions: [GameRegion]
 	let diagnostic: String?
 }
 

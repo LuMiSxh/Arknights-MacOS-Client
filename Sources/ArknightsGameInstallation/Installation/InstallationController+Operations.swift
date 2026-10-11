@@ -64,7 +64,7 @@ extension InstallationController {
 			return
 		}
 		onMetadataRefreshCancellationRequested?()
-		lifecycle.refresh = .idle
+		lifecycle.state.refresh = .idle
 		clearCompletionFeedback()
 		progress = nil
 		progressSequence = 0
@@ -111,7 +111,7 @@ extension InstallationController {
 						}
 						let status: LauncherStatus =
 							update.isVerifying ? .verifyingInstallation : .downloading
-						if self.lifecycle.presentation.status != status {
+						if self.lifecycle.state.presentation.status != status {
 							self.lifecycle.setStatus(status)
 						}
 					}
@@ -149,7 +149,9 @@ extension InstallationController {
 
 	@discardableResult
 	package func retryInstallationFailure(id: UUID) -> Bool {
-		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard let failure = lifecycle.state.presentation.failure, failure.id == id else {
+			return false
+		}
 		guard failure.actions.contains(.retry), lifecycle.activity == .idle else { return false }
 		guard failure.context.region == region.supportRegion else { return false }
 		guard

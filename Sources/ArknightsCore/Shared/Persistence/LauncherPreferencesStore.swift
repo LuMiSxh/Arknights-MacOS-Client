@@ -7,26 +7,51 @@ import Foundation
 /// and write through here rather than touching `UserDefaults` directly, so reset behavior and
 /// tests have one place to reason about persisted state.
 package struct LauncherPreferencesStore {
-	private enum Key {
-		static let automaticLauncherUpdates = "automaticLauncherUpdates"
-		static let automaticGameUpdates = "automaticGameUpdates"
-		static let announcementsEnabled = "announcementsEnabled"
-		static let showsServerResetCountdown = "showsServerResetCountdown"
-		static let showsGameVersion = "showsGameVersion"
-		static let playsLauncherMusic = "playsLauncherMusic"
-		static let launcherMusicURL = "launcherMusicURL"
-		static let showsPlayingMusic = "showsPlayingMusic"
-		static let launcherMusicVolume = "launcherMusicVolume"
+	/// A scalar `UserDefaults` preference with its single default; `sanitize` runs on every read and write.
+	package struct ScalarKey<Value: Sendable>: Sendable {
+		package let name: String
+		let defaultValue: Value
+		let sanitize: @Sendable (Value) -> Value
+
+		init(
+			_ name: String,
+			default defaultValue: Value,
+			sanitize: @escaping @Sendable (Value) -> Value = { $0 }
+		) {
+			self.name = name
+			self.defaultValue = defaultValue
+			self.sanitize = sanitize
+		}
+	}
+
+	package enum Key {
+		package static let automaticLauncherUpdates = ScalarKey(
+			"automaticLauncherUpdates", default: true)
+		package static let automaticGameUpdates = ScalarKey("automaticGameUpdates", default: true)
+		package static let announcementsEnabled = ScalarKey("announcementsEnabled", default: true)
+		package static let showsServerResetCountdown = ScalarKey(
+			"showsServerResetCountdown", default: false)
+		package static let showsGameVersion = ScalarKey("showsGameVersion", default: true)
+		package static let showsBranding = ScalarKey("showsBranding", default: true)
+		package static let playsLauncherMusic = ScalarKey("playsLauncherMusic", default: true)
+		package static let launcherMusicURL = ScalarKey(
+			"launcherMusicURL", default: AppConstants.Music.defaultLauncherMusicURL)
+		package static let showsPlayingMusic = ScalarKey("showsPlayingMusic", default: false)
+		package static let launcherMusicVolume = ScalarKey("launcherMusicVolume", default: 0.5) {
+			$0.isFinite ? min(max($0, 0), 1) : 0.5
+		}
+		package static let canaryFeaturesEnabled = ScalarKey(
+			"canaryFeaturesEnabled", default: false)
+		package static let taiwanClientEnabled = ScalarKey("taiwanClientEnabled", default: false)
+		package static let usesHardwareCursor = ScalarKey("usesHardwareCursor", default: false)
+		package static let dismissedInGameResolutionNote = ScalarKey(
+			"dismissedInGameResolutionNote", default: false)
+		package static let usesDynamicTheme = ScalarKey("usesDynamicTheme", default: true)
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
 		static let gameLaunchOptions = "gameLaunchOptions"
 		static let installPath = "installPath"
 		package static let selectedRegion = "selectedRegion"
-		static let canaryFeaturesEnabled = "canaryFeaturesEnabled"
-		static let taiwanClientEnabled = "taiwanClientEnabled"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
-		static let usesHardwareCursor = "usesHardwareCursor"
-		static let dismissedInGameResolutionNote = "dismissedInGameResolutionNote"
-		static let usesDynamicTheme = "usesDynamicTheme"
 		package static let dynamicThemeAccent = "dynamicThemeAccent"
 		package static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
 		static let forceDisableRetina = "forceDisableRetina"
@@ -38,78 +63,12 @@ package struct LauncherPreferencesStore {
 		self.defaults = defaults
 	}
 
-	func automaticLauncherUpdates() -> Bool {
-		bool(for: Key.automaticLauncherUpdates, defaultValue: true)
+	package func value<Value>(_ key: ScalarKey<Value>) -> Value {
+		key.sanitize(defaults.object(forKey: key.name) as? Value ?? key.defaultValue)
 	}
 
-	package func setAutomaticLauncherUpdates(_ value: Bool) {
-		defaults.set(value, forKey: Key.automaticLauncherUpdates)
-	}
-
-	func automaticGameUpdates() -> Bool {
-		bool(for: Key.automaticGameUpdates, defaultValue: true)
-	}
-
-	package func setAutomaticGameUpdates(_ value: Bool) {
-		defaults.set(value, forKey: Key.automaticGameUpdates)
-	}
-
-	func announcementsEnabled() -> Bool {
-		bool(for: Key.announcementsEnabled, defaultValue: true)
-	}
-
-	package func setAnnouncementsEnabled(_ value: Bool) {
-		defaults.set(value, forKey: Key.announcementsEnabled)
-	}
-
-	func showsServerResetCountdown() -> Bool {
-		bool(for: Key.showsServerResetCountdown, defaultValue: false)
-	}
-
-	func setShowsServerResetCountdown(_ value: Bool) {
-		defaults.set(value, forKey: Key.showsServerResetCountdown)
-	}
-
-	func showsGameVersion() -> Bool {
-		bool(for: Key.showsGameVersion, defaultValue: true)
-	}
-
-	func setShowsGameVersion(_ value: Bool) {
-		defaults.set(value, forKey: Key.showsGameVersion)
-	}
-
-	func playsLauncherMusic() -> Bool {
-		bool(for: Key.playsLauncherMusic, defaultValue: true)
-	}
-
-	package func setPlaysLauncherMusic(_ value: Bool) {
-		defaults.set(value, forKey: Key.playsLauncherMusic)
-	}
-
-	func launcherMusicURL() -> String {
-		defaults.string(forKey: Key.launcherMusicURL)
-			?? AppConstants.Music.defaultLauncherMusicURL
-	}
-
-	func setLauncherMusicURL(_ value: String) {
-		defaults.set(value, forKey: Key.launcherMusicURL)
-	}
-
-	func showsPlayingMusic() -> Bool {
-		bool(for: Key.showsPlayingMusic, defaultValue: false)
-	}
-
-	func setShowsPlayingMusic(_ value: Bool) {
-		defaults.set(value, forKey: Key.showsPlayingMusic)
-	}
-
-	func launcherMusicVolume() -> Double {
-		guard defaults.object(forKey: Key.launcherMusicVolume) != nil else { return 0.5 }
-		return normalizedMusicVolume(defaults.double(forKey: Key.launcherMusicVolume))
-	}
-
-	func setLauncherMusicVolume(_ value: Double) {
-		defaults.set(normalizedMusicVolume(value), forKey: Key.launcherMusicVolume)
+	package func set<Value>(_ value: Value, for key: ScalarKey<Value>) {
+		defaults.set(key.sanitize(value), forKey: key.name)
 	}
 
 	package func seenAnnouncementIDs() -> Set<String> {
@@ -132,7 +91,7 @@ package struct LauncherPreferencesStore {
 		return options
 	}
 
-	func setLaunchOptions(_ options: GameLaunchOptions) {
+	package func setLaunchOptions(_ options: GameLaunchOptions) {
 		guard let data = try? JSONEncoder().encode(options) else { return }
 		defaults.set(data, forKey: Key.gameLaunchOptions)
 	}
@@ -183,29 +142,13 @@ package struct LauncherPreferencesStore {
 
 	package func regionAccess() -> RegionAccess {
 		RegionAccess(
-			canaryFeaturesEnabled: canaryFeaturesEnabled(),
-			taiwanClientEnabled: taiwanClientEnabled()
+			canaryFeaturesEnabled: value(Key.canaryFeaturesEnabled),
+			taiwanClientEnabled: value(Key.taiwanClientEnabled)
 		)
 	}
 
 	package func setSelectedRegion(_ region: GameRegion) {
 		defaults.set(region.rawValue, forKey: Key.selectedRegion)
-	}
-
-	func canaryFeaturesEnabled() -> Bool {
-		bool(for: Key.canaryFeaturesEnabled, defaultValue: false)
-	}
-
-	func setCanaryFeaturesEnabled(_ value: Bool) {
-		defaults.set(value, forKey: Key.canaryFeaturesEnabled)
-	}
-
-	func taiwanClientEnabled() -> Bool {
-		bool(for: Key.taiwanClientEnabled, defaultValue: false)
-	}
-
-	func setTaiwanClientEnabled(_ value: Bool) {
-		defaults.set(value, forKey: Key.taiwanClientEnabled)
 	}
 
 	package func hasAcknowledgedACEWarning(for region: GameRegion) -> Bool {
@@ -222,40 +165,16 @@ package struct LauncherPreferencesStore {
 	/// Region, install locations, announcement history, and theme caches are kept.
 	func removeResettablePreferences() {
 		for key in [
-			Key.automaticLauncherUpdates, Key.automaticGameUpdates, Key.announcementsEnabled,
-			Key.gameLaunchOptions, Key.showsServerResetCountdown, Key.showsGameVersion,
-			Key.playsLauncherMusic, Key.launcherMusicURL, Key.showsPlayingMusic,
-			Key.launcherMusicVolume, Key.usesDynamicTheme, Key.canaryFeaturesEnabled,
-			Key.taiwanClientEnabled,
-			Key.acknowledgedACEWarningRegions, Key.usesHardwareCursor,
-			Key.dismissedInGameResolutionNote,
+			Key.automaticLauncherUpdates.name, Key.automaticGameUpdates.name,
+			Key.announcementsEnabled.name, Key.gameLaunchOptions,
+			Key.showsServerResetCountdown.name, Key.showsGameVersion.name, Key.showsBranding.name,
+			Key.playsLauncherMusic.name, Key.launcherMusicURL.name, Key.showsPlayingMusic.name,
+			Key.launcherMusicVolume.name, Key.usesDynamicTheme.name, Key.canaryFeaturesEnabled.name,
+			Key.taiwanClientEnabled.name, Key.acknowledgedACEWarningRegions,
+			Key.usesHardwareCursor.name, Key.dismissedInGameResolutionNote.name,
 		] {
 			defaults.removeObject(forKey: key)
 		}
-	}
-
-	func usesHardwareCursor() -> Bool {
-		bool(for: Key.usesHardwareCursor, defaultValue: false)
-	}
-
-	func setUsesHardwareCursor(_ value: Bool) {
-		defaults.set(value, forKey: Key.usesHardwareCursor)
-	}
-
-	func dismissedInGameResolutionNote() -> Bool {
-		bool(for: Key.dismissedInGameResolutionNote, defaultValue: false)
-	}
-
-	func setDismissedInGameResolutionNote(_ value: Bool) {
-		defaults.set(value, forKey: Key.dismissedInGameResolutionNote)
-	}
-
-	func usesDynamicTheme() -> Bool {
-		bool(for: Key.usesDynamicTheme, defaultValue: true)
-	}
-
-	func setUsesDynamicTheme(_ value: Bool) {
-		defaults.set(value, forKey: Key.usesDynamicTheme)
 	}
 
 	package func forceDisableRetina() -> Bool {
@@ -304,16 +223,6 @@ package struct LauncherPreferencesStore {
 			return
 		}
 		defaults.set(hue, forKey: Key.lastAppliedDynamicIconHue)
-	}
-
-	private func bool(for key: String, defaultValue: Bool) -> Bool {
-		guard defaults.object(forKey: key) != nil else { return defaultValue }
-		return defaults.bool(forKey: key)
-	}
-
-	private func normalizedMusicVolume(_ value: Double) -> Double {
-		guard value.isFinite else { return 0.5 }
-		return min(max(value, 0), 1)
 	}
 
 	private func acknowledgedACEWarningRegions() -> Set<String> {

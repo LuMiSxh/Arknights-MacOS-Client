@@ -41,8 +41,8 @@ package struct StorageOverviewActions {
 package struct StorageOverviewPage: View {
 	let controller: StorageOverviewController
 	let copy: StorageOverviewCopy
-	let actions: StorageOverviewActions
-	let accentColor: Color
+	package let actions: StorageOverviewActions
+	package let accentColor: Color
 
 	package init(
 		controller: StorageOverviewController,

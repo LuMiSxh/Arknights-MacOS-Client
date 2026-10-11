@@ -8,7 +8,7 @@ import Testing
 struct TransferRateEstimatorTests {
 	@Test
 	func smoothsConsecutiveRateSamples() {
-		let clock = TestDownloadClock()
+		let clock = AdvancingClock()
 		var estimator = TransferRateEstimator(
 			clock: clock,
 			sampleInterval: .seconds(1),
@@ -29,7 +29,7 @@ struct TransferRateEstimatorTests {
 
 	@Test
 	func marksAnInitialNoDataStreamStalledAtExactlyTheTimeout() {
-		let clock = TestDownloadClock()
+		let clock = AdvancingClock()
 		var estimator = TransferRateEstimator(
 			clock: clock,
 			stallTimeout: .seconds(5)
@@ -43,7 +43,7 @@ struct TransferRateEstimatorTests {
 
 	@Test
 	func restartsSamplingAfterAStallInsteadOfBlendingTheIdleGap() {
-		let clock = TestDownloadClock()
+		let clock = AdvancingClock()
 		var estimator = TransferRateEstimator(
 			clock: clock,
 			sampleInterval: .seconds(1),
@@ -65,7 +65,7 @@ struct TransferRateEstimatorTests {
 
 	@Test
 	func stallsAndResetsWithoutSleeping() {
-		let clock = TestDownloadClock()
+		let clock = AdvancingClock()
 		var estimator = TransferRateEstimator(
 			clock: clock,
 			sampleInterval: .seconds(1),
@@ -92,7 +92,7 @@ struct TransferRateEstimatorTests {
 
 	@Test
 	func counterExcludesResumeBaselineAndRollsBackNetworkBytes() async throws {
-		let clock = TestDownloadClock()
+		let clock = AdvancingClock()
 		let counter = ProgressCounter(
 			totalBytes: 10_000,
 			totalFiles: 1,
@@ -122,7 +122,7 @@ struct TransferRateEstimatorTests {
 
 	@Test
 	func retryResetPreservesNetworkBaselineButHidesOldRate() async throws {
-		let clock = TestDownloadClock()
+		let clock = AdvancingClock()
 		let counter = ProgressCounter(totalBytes: 10_000, totalFiles: 1, clock: clock)
 		_ = await counter.add(bytes: 1_000, file: "game.dat")
 		clock.advance(by: .milliseconds(300))
@@ -137,10 +137,26 @@ struct TransferRateEstimatorTests {
 	}
 }
 
-private final class TestDownloadClock: DownloadClock, @unchecked Sendable {
-	var now = ContinuousClock.now
+/// A clock that moves only when a test advances it. Sleeping is unsupported.
+final class AdvancingClock: Clock, @unchecked Sendable {
+	struct Instant: InstantProtocol {
+		var offset: Duration
+		func advanced(by duration: Duration) -> Instant { Instant(offset: offset + duration) }
+		func duration(to other: Instant) -> Duration { other.offset - offset }
+		static func < (lhs: Instant, rhs: Instant) -> Bool { lhs.offset < rhs.offset }
+	}
+
+	private let lock = NSLock()
+	private var elapsed = Duration.zero
+
+	var now: Instant { lock.withLock { Instant(offset: elapsed) } }
+	var minimumResolution: Duration { .zero }
 
 	func advance(by duration: Duration) {
-		now = now.advanced(by: duration)
+		lock.withLock { elapsed += duration }
+	}
+
+	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
+		throw CancellationError()
 	}
 }

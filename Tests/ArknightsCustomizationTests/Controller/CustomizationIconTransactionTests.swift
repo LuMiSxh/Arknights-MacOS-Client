@@ -56,7 +56,8 @@ struct CustomizationIconTransactionTests {
 		if failRollback {
 			#expect(try Data(contentsOf: fixture.paths.customAppIcon) != previous.launcher)
 			#expect(
-				fixture.controller.lifecycle.failureMessage?.contains("could not be fully restored")
+				fixture.controller.lifecycle.state.presentation.failure?.message.contains(
+					"could not be fully restored")
 					== true
 			)
 			await fixture.controller.log.flush()
@@ -72,7 +73,7 @@ struct CustomizationIconTransactionTests {
 			#expect(try Data(contentsOf: fixture.paths.customAppIcon) == previous.launcher)
 			#expect(try Data(contentsOf: fixture.paths.customGameIcon) == previous.game)
 			#expect(try Data(contentsOf: fixture.paths.operatorPresetAvatar) == previous.source)
-			#expect(fixture.controller.lifecycle.failure != nil)
+			#expect(fixture.controller.lifecycle.state.presentation.failure != nil)
 		}
 		#expect(fixture.controller.hasCustomAppIcon)
 		#expect(fixture.controller.hasCustomGameIcon)
@@ -157,7 +158,7 @@ struct CustomizationIconTransactionTests {
 		#expect(try Data(contentsOf: fixture.paths.customGameIcon) == publishedGameIcon)
 		#expect(fixture.controller.hasCustomAppIcon)
 		#expect(fixture.controller.hasCustomGameIcon)
-		#expect(fixture.controller.lifecycle.failure == nil)
+		#expect(fixture.controller.lifecycle.state.presentation.failure == nil)
 		#expect(runningIconApplyCount == 1)
 		let files = try FileManager.default.contentsOfDirectory(
 			atPath: fixture.paths.customAppIcon.deletingLastPathComponent().path)
@@ -234,7 +235,9 @@ struct CustomizationIconTransactionTests {
 }
 
 @MainActor
-private func writeOperatorIconSet(_ paths: AppPaths) throws -> (
+private func writeOperatorIconSet(
+	_ paths: AppPaths
+) throws -> (
 	launcher: Data, game: Data, source: Data
 ) {
 	let directory = paths.customAppIcon.deletingLastPathComponent()

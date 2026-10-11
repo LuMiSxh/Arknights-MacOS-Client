@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added a **Branding** option in Settings and in setup. Turn it off to hide the server logo and its backdrop.
 - Added a **Picture** setting: Retina (default), MetalFX for large displays, or Lightweight for battery life.
 - Added plain window sizes (**Fill my screen**, **Leave room for other apps**) and fullscreen **Detail** levels; exact sizes stay available.
 - Added an AI assistance note to the About page and the documentation.
@@ -52,7 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Removed
 
 - Removed the Canary frame latency option; the game always uses the standard setting.
-- Removed the wiki-hosted logo for the China, China (Bilibili), and Taiwan launchers (they show the text logo) and the test-server fallback wallpapers.
+- Removed the test-server fallback wallpapers.
 
 ### Fixed
 

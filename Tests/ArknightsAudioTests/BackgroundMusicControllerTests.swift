@@ -238,9 +238,9 @@ struct BackgroundMusicControllerTests {
 		)
 		let defaults = UserDefaults(suiteName: identifier)!
 		let preferences = LauncherPreferencesStore(defaults: defaults)
-		preferences.setAutomaticGameUpdates(false)
-		preferences.setAutomaticLauncherUpdates(false)
-		preferences.setAnnouncementsEnabled(false)
+		preferences.set(false, for: LauncherPreferencesStore.Key.automaticGameUpdates)
+		preferences.set(false, for: LauncherPreferencesStore.Key.automaticLauncherUpdates)
+		preferences.set(false, for: LauncherPreferencesStore.Key.announcementsEnabled)
 		let paths = AppPaths(
 			applicationSupportDirectory: root.appending(path: "Support"),
 			cachesDirectory: root.appending(path: "Caches"),

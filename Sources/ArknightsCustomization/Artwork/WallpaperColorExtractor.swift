@@ -10,7 +10,7 @@ struct ExtractedAccent: Sendable {
 	let hue: Double
 	let saturation: Double
 	let brightness: Double
-	let accentColor: Color
+	package let accentColor: Color
 
 	init(hue: Double, saturation: Double, brightness: Double) {
 		self.hue = hue
@@ -137,7 +137,9 @@ private func bestAccentColor(in pixels: [UInt8]) -> ExtractedAccent? {
 	)
 }
 
-private func hsb(red: Double, green: Double, blue: Double) -> (
+private func hsb(
+	red: Double, green: Double, blue: Double
+) -> (
 	hue: Double, saturation: Double, brightness: Double
 ) {
 	let maxValue = max(red, green, blue)

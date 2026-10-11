@@ -15,7 +15,7 @@ package final class LauncherViewModel {
 	package let settings: LauncherPreferencesController
 	package let installation: InstallationController
 	let gameSession: GameSessionController
-	let intelTranslation: IntelTranslationController
+	package let intelTranslation: IntelTranslationController
 	let customization: CustomizationController
 	package let communication: LauncherCommunicationController
 	let refreshController: LauncherRefreshController

@@ -58,8 +58,6 @@ package struct SkeletonValue: View {
 
 	static let baselineOpacity = 0.12
 	static let pulseHighOpacity = 0.22
-	/// Minimum time shown, so a near-instant measurement doesn't read as a flicker.
-	static let minimumDuration: Duration = .milliseconds(120)
 }
 
 #Preview("Skeleton") {

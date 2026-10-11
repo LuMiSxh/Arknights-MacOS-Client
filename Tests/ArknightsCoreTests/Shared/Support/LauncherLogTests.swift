@@ -32,6 +32,28 @@ func launcherLogWritesSanitizedAndBoundedDiagnosticLines() async throws {
 }
 
 @Test
+func launcherLogAttemptLogsFailuresWithContextAndRunsSuccessfulWorkSilently() async throws {
+	struct Failure: Error {}
+	let directory = FileManager.default.temporaryDirectory.appending(
+		path: "LauncherLogTests.\(UUID().uuidString)",
+		directoryHint: .isDirectory
+	)
+	defer { try? FileManager.default.removeItem(at: directory) }
+	let fileURL = directory.appending(path: "launcher.log")
+	let log = LauncherLog(fileURL: fileURL)
+	var ran = false
+
+	log.attempt("Quiet step") { ran = true }
+	log.attempt("Failing step") { throw Failure() }
+	await log.flush()
+
+	let content = try String(contentsOf: fileURL, encoding: .utf8)
+	#expect(ran)
+	#expect(content.contains("[ERROR] Failing step: "))
+	#expect(!content.contains("Quiet step"))
+}
+
+@Test
 func launcherLogRotatesBeforeAnAppendingEntryExceedsItsLimit() async throws {
 	let directory = FileManager.default.temporaryDirectory.appending(
 		path: "LauncherLogTests.\(UUID().uuidString)",

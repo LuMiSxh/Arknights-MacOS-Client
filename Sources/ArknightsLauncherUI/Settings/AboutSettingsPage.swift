@@ -6,21 +6,21 @@ import ArknightsCustomization
 import SwiftUI
 
 struct AboutSettingsPage: View {
-	let region: GameRegion
-	let runtimeName: String?
-	let accentColor: Color
-	let launcherIconManager: LauncherIconManager
+	package let region: GameRegion
+	package let runtimeName: String?
+	package let accentColor: Color
+	package let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
 	let revealApplication: () -> Void
 	@Binding var presentedDocument: BundledDocument?
 
 	var body: some View {
 		SettingsPage(
-			title: SettingsStrings.aboutTitle,
-			subtitle: "\(SettingsStrings.application) \(appVersion)",
+			title: "About",
+			subtitle: "\("Arknights Client") \(appVersion)",
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: SettingsStrings.application, systemImage: "info.circle") {
+			SettingsPanel(title: "Arknights Client", systemImage: "info.circle") {
 				ViewThatFits(in: .horizontal) {
 					HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
 						identitySummary
@@ -37,47 +37,47 @@ struct AboutSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: SettingsStrings.documents, systemImage: "doc.text") {
+			SettingsPanel(title: "Documents", systemImage: "doc.text") {
 				ViewThatFits(in: .horizontal) {
 					HStack(spacing: LauncherVisuals.Spacing.tight) {
 						documentLink(
-							.changelog, title: SettingsStrings.changelog,
+							.changelog, title: "Changelog",
 							systemImage: "clock.arrow.circlepath"
 						)
 						.frame(maxWidth: .infinity)
 						documentLink(
-							.projectLicense, title: SettingsStrings.license,
+							.projectLicense, title: "MPL-2.0 License",
 							systemImage: "checkmark.seal"
 						)
 						.frame(maxWidth: .infinity)
 						documentLink(
-							.thirdPartyNotices, title: SettingsStrings.thirdPartyNotices,
+							.thirdPartyNotices, title: "Third-Party Notices",
 							systemImage: "doc.on.doc"
 						)
 						.frame(maxWidth: .infinity)
 					}
 					VStack(spacing: 0) {
 						documentLink(
-							.changelog, title: SettingsStrings.changelog,
+							.changelog, title: "Changelog",
 							systemImage: "clock.arrow.circlepath")
 						SettingsHairline()
 						documentLink(
-							.projectLicense, title: SettingsStrings.license,
+							.projectLicense, title: "MPL-2.0 License",
 							systemImage: "checkmark.seal")
 						SettingsHairline()
 						documentLink(
-							.thirdPartyNotices, title: SettingsStrings.thirdPartyNotices,
+							.thirdPartyNotices, title: "Third-Party Notices",
 							systemImage: "doc.on.doc")
 					}
 				}
 				HStack(spacing: 18) {
 					AccentLink(
-						title: SettingsStrings.viewNoticesOnline,
+						title: "View online",
 						destination: SupportLinks.thirdPartyNotices,
 						accentColor: accentColor
 					)
 					AccentLink(
-						title: SettingsStrings.privacyNotice,
+						title: "Privacy Notice",
 						destination: SupportLinks.privacyNotice,
 						accentColor: accentColor
 					)
@@ -86,14 +86,15 @@ struct AboutSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: SettingsStrings.support, systemImage: "questionmark.circle"
+				title: "Support", systemImage: "questionmark.circle"
 			) {
 				SettingsActionRow(
-					title: SettingsStrings.launcherIssues,
-					detail: SettingsStrings.launcherIssuesDetail
+					title: "Launcher Issues",
+					detail:
+						"Report problems with the launcher, starting the game, or the sign-in window. The report includes diagnostic details automatically."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.report, systemImage: "ladybug",
+						title: "Report…", systemImage: "ladybug",
 						tone: .neutral, presentation: .compact,
 						action: reportLauncherProblem
 					)
@@ -102,7 +103,7 @@ struct AboutSettingsPage: View {
 				SettingsHairline()
 
 				SettingsActionRow(
-					title: SettingsStrings.gameAccountIssues,
+					title: "Game & Account Issues",
 					detail: SettingsStrings.gameAccountIssuesDetail(region: region)
 				) {
 					CapsuleActionButton(
@@ -124,14 +125,16 @@ struct AboutSettingsPage: View {
 							publisherLinks
 						}
 					}
-					Text(SettingsStrings.notAffiliated)
-						.font(.caption)
-						.foregroundStyle(.secondary)
+					Text(
+						"This launcher is an independent community project and is not affiliated with Hypergryph, its affiliates, or any third-party publisher."
+					)
+					.font(.caption)
+					.foregroundStyle(.secondary)
 					HStack(spacing: 4) {
-						Text(SettingsStrings.aiAssistance)
+						Text("Built with AI assistance.")
 							.foregroundStyle(.secondary)
 						AccentLink(
-							title: SettingsStrings.aiAssistanceLearnMore,
+							title: "Learn more",
 							destination: URL(
 								string:
 									"https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/docs/ai-assistance.md"
@@ -155,7 +158,7 @@ struct AboutSettingsPage: View {
 				.frame(width: 76, height: 76)
 				.accessibilityHidden(true)
 			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.tight) {
-				Text(SettingsStrings.unofficialLauncher)
+				Text("Unofficial macOS launcher")
 					.foregroundStyle(.secondary)
 				AccentLink(
 					title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
@@ -170,27 +173,27 @@ struct AboutSettingsPage: View {
 	private var identityActions: some View {
 		HStack(spacing: LauncherVisuals.Spacing.tight) {
 			CapsuleActionButton(
-				title: SettingsStrings.openFinder, systemImage: "folder",
+				title: "Show in Finder", systemImage: "folder",
 				tone: .neutral, showsTitle: false,
 				action: revealApplication
 			)
-			.help(SettingsStrings.openFinderHelp)
+			.help("Reveal the launcher application in Finder")
 			CapsuleActionButton(
-				title: SettingsStrings.github, tone: .neutral
+				title: "GitHub", tone: .neutral
 			) {
 				NSWorkspace.shared.open(
 					URL(string: "https://github.com/LuMiSxh/Arknights-MacOS-Client")!
 				)
 			}
-			.help(SettingsStrings.githubHelp)
+			.help("Open project repository")
 			CapsuleActionButton(
-				title: SettingsStrings.donate,
+				title: "Donate",
 				systemImage: "heart.fill",
 				tone: .neutral
 			) {
 				NSWorkspace.shared.open(SupportLinks.donate)
 			}
-			.help(SettingsStrings.donateHelp)
+			.help("Support the project on Ko-fi")
 		}
 	}
 
@@ -221,14 +224,14 @@ struct AboutSettingsPage: View {
 	private var publisherLinks: some View {
 		if let agreement = branding?.userAgreement {
 			AccentLink(
-				title: SettingsStrings.userAgreement,
+				title: "User Agreement",
 				destination: agreement,
 				accentColor: accentColor
 			)
 		}
 		if let privacy = branding?.privacyPolicy {
 			AccentLink(
-				title: SettingsStrings.privacyPolicy,
+				title: "Privacy Policy",
 				destination: privacy,
 				accentColor: accentColor
 			)

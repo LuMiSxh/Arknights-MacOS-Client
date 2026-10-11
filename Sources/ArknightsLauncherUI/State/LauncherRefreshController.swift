@@ -61,7 +61,7 @@ final class LauncherRefreshController {
 		let refreshID = UUID()
 		metadataRequestID = refreshID
 		brandingRequestID = refreshID
-		lifecycle.refresh = .checking(requestID: refreshID)
+		lifecycle.state.refresh = .checking(requestID: refreshID)
 		let task = Task { [weak self] in
 			guard let self else { return }
 			await refresh(forceGameUpdateCheck: forceGameUpdateCheck, refreshID: refreshID)
@@ -77,7 +77,7 @@ final class LauncherRefreshController {
 		brandingAssetTask?.cancel()
 		brandingAssetTask = nil
 		brandingRequestID = nil
-		lifecycle.refresh = .idle
+		lifecycle.state.refresh = .idle
 	}
 
 	func waitForCurrentRefresh() async {
@@ -91,18 +91,20 @@ final class LauncherRefreshController {
 		refreshTask?.cancel()
 		refreshTask = nil
 		metadataRequestID = nil
-		lifecycle.refresh = .idle
+		lifecycle.state.refresh = .idle
 	}
 
-	func checkGameUpdates() {
+	package func checkGameUpdates() {
 		guard lifecycle.canBeginExclusiveActivity, !installation.isDownloading else { return }
-		lifecycle.refresh = .idle
+		lifecycle.state.refresh = .idle
 		startRefresh(forceGameUpdateCheck: true)
 	}
 
 	@discardableResult
 	func retryConfigurationFailure(id: UUID) -> Bool {
-		guard let failure = lifecycle.failure, failure.id == id else { return false }
+		guard let failure = lifecycle.state.presentation.failure, failure.id == id else {
+			return false
+		}
 		guard failure.actions.contains(.retry), lifecycle.canBeginExclusiveActivity else {
 			return false
 		}
@@ -112,15 +114,15 @@ final class LauncherRefreshController {
 		log.info(
 			"Recovery selected; action=retry operation=configuration-refresh region=\(installation.region.rawValue)"
 		)
-		lifecycle.refresh = .idle
+		lifecycle.state.refresh = .idle
 		startRefresh(forceGameUpdateCheck: true)
 		return true
 	}
 
 	@discardableResult
-	func selectRegion(_ newRegion: GameRegion) -> Bool {
+	package func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard installation.selectRegion(newRegion) else { return false }
-		lifecycle.refresh = .checking(requestID: nil)
+		lifecycle.state.refresh = .checking(requestID: nil)
 		refreshTask?.cancel()
 		branding = nil
 		customization.restoreOfficialLogo(for: newRegion)
@@ -172,7 +174,7 @@ final class LauncherRefreshController {
 				guard isCurrentRefresh(refreshID) else { return }
 				if !installation.isInstalled || forceGameUpdateCheck {
 					metadataRequestID = nil
-					lifecycle.refresh = .idle
+					lifecycle.state.refresh = .idle
 					presentConfigurationFailure(
 						error,
 						id: refreshID,
@@ -211,7 +213,7 @@ final class LauncherRefreshController {
 		}
 
 		metadataRequestID = nil
-		lifecycle.refresh = .idle
+		lifecycle.state.refresh = .idle
 		if lifecycle.activity == .idle {
 			lifecycle.setStatus(
 				installation.isGameUpdateAvailable
@@ -220,7 +222,7 @@ final class LauncherRefreshController {
 						? .ready : (installation.hasPartialDownload ? .paused : .install))
 			)
 		}
-		let completedState = lifecycle.activityMessage
+		let completedState = lifecycle.state.presentation.status.message
 		log.info("Refresh completed; state=\(completedState)")
 	}
 
@@ -247,7 +249,7 @@ final class LauncherRefreshController {
 	}
 
 	func isCurrentRefresh(_ refreshID: UUID) -> Bool {
-		metadataRequestID == refreshID && lifecycle.refresh.requestID == refreshID
+		metadataRequestID == refreshID && lifecycle.state.refresh.requestID == refreshID
 			&& !Task.isCancelled
 			&& !installation.isDownloading
 	}

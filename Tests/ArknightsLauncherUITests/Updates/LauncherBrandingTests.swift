@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import AppKit
-import ArknightsCustomization
+import ArknightsCore
 import Foundation
 import Testing
 
+@testable import ArknightsCustomization
 @testable import ArknightsLauncherUI
 
 @Test
@@ -121,9 +122,6 @@ func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
 		ArtworkCache.officialLogoURL(for: .korea)?.absoluteString
 			== "https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
 	)
-	#expect(ArtworkCache.officialLogoURL(for: .china) == nil)
-	#expect(ArtworkCache.officialLogoURL(for: .chinaBilibili) == nil)
-	#expect(ArtworkCache.officialLogoURL(for: .taiwan) == nil)
 
 	let directory = FileManager.default.temporaryDirectory.appending(
 		path: "RegionalWordmarkCacheTests.\(UUID().uuidString)",
@@ -148,7 +146,7 @@ func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
 func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 	let taiwanValidator = ArtworkCache.artworkRedirectValidator(for: .taiwan)
 	#expect(taiwanValidator(URL(string: "https://gl-utils-public.hg-cdn.com/background.png")!))
-	#expect(!taiwanValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
+	#expect(taiwanValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
 	#expect(!taiwanValidator(URL(string: "http://gl-utils-public.hg-cdn.com/background.png")!))
 	#expect(!taiwanValidator(URL(string: "https://evil.example/background.png")!))
 	#expect(!taiwanValidator(URL(string: "https://launcher.gryphline.com/background.png")!))
@@ -157,7 +155,13 @@ func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 
 	let chinaValidator = ArtworkCache.artworkRedirectValidator(for: .china)
 	#expect(chinaValidator(URL(string: "https://ak.hycdn.cn/background.png")!))
-	#expect(!chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
+	#expect(chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
+}
+
+@Test(arguments: GameRegion.allCases)
+func everyRegionHasAnAllowedOfficialLogoURL(region: GameRegion) throws {
+	let url = try #require(ArtworkCache.officialLogoURL(for: region))
+	#expect(ArtworkCache.artworkRedirectValidator(for: region)(url))
 }
 
 private func verifyJapanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {

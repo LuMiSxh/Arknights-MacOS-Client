@@ -3,7 +3,7 @@
 import Foundation
 
 struct APIEnvelope<Value: Decodable>: Decodable {
-	let code: Int
+	package let code: Int
 	let data: Value
 	let msg: String?
 }
@@ -25,7 +25,7 @@ package struct GameManifest: Codable, Sendable {
 	let file: [ManifestFile]
 }
 
-package struct ManifestFile: Codable, Hashable, Sendable {
+struct ManifestFile: Codable, Hashable, Sendable {
 	let path: String
 	let hash: String
 	let byteCount: Int64

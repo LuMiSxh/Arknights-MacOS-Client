@@ -4,6 +4,7 @@ import ArknightsCore
 import ArknightsGameInstallation
 import ArknightsInfrastructure
 import Foundation
+internal import Sparkle
 
 nonisolated struct LauncherAnnouncementFeed: Decodable, Sendable {
 	let schemaVersion: Int
@@ -32,19 +33,46 @@ nonisolated struct LauncherAnnouncement: Decodable, Sendable, Equatable, Identif
 		}
 		if let startsAt, now < startsAt { return false }
 		if let endsAt, now >= endsAt { return false }
-		guard let current = SemanticVersion(currentVersion) else { return false }
 		if let minimumVersion {
-			guard let minimum = SemanticVersion(minimumVersion), current >= minimum else {
-				return false
-			}
+			guard let order = Self.compare(currentVersion, minimumVersion),
+				order != .orderedAscending
+			else { return false }
 		}
 		if let maximumVersion {
-			guard let maximum = SemanticVersion(maximumVersion), current <= maximum else {
-				return false
-			}
+			guard let order = Self.compare(currentVersion, maximumVersion),
+				order != .orderedDescending
+			else { return false }
 		}
+		guard Self.normalized(currentVersion) != nil else { return false }
 		if let actionURL, actionURL.scheme?.lowercased() != "https" { return false }
 		return true
+	}
+
+	/// Orders two release tags with Sparkle's comparator. Sparkle ignores a "-prerelease" suffix,
+	/// so the core versions compare first, then a prerelease sorts before its release. A leading
+	/// "v" and "+build" metadata are ignored. Returns nil for a non-version.
+	static func compare(_ lhs: String, _ rhs: String) -> ComparisonResult? {
+		guard let lhs = normalized(lhs), let rhs = normalized(rhs) else { return nil }
+		let comparator = SUStandardVersionComparator()
+		let left = lhs.split(separator: "-", maxSplits: 1).map(String.init)
+		let right = rhs.split(separator: "-", maxSplits: 1).map(String.init)
+		let core = comparator.compareVersion(left[0], toVersion: right[0])
+		guard core == .orderedSame else { return core }
+		switch (left.dropFirst().first, right.dropFirst().first) {
+		case (nil, nil): return .orderedSame
+		case (nil, _): return .orderedDescending
+		case (_, nil): return .orderedAscending
+		case (let leftPrerelease?, let rightPrerelease?):
+			return comparator.compareVersion(leftPrerelease, toVersion: rightPrerelease)
+		}
+	}
+
+	private static func normalized(_ version: String) -> String? {
+		var trimmed = Substring(version.trimmingCharacters(in: .whitespacesAndNewlines))
+		if trimmed.first?.lowercased() == "v" { trimmed = trimmed.dropFirst() }
+		let core = trimmed.prefix { $0 != "+" }
+		guard core.first?.isASCII == true, core.first?.isNumber == true else { return nil }
+		return String(core)
 	}
 }
 

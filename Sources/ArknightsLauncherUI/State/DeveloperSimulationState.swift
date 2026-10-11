@@ -72,7 +72,7 @@ import ArknightsGameInstallation
 			}
 		}
 
-		var state: InstallationStage {
+		package var state: InstallationStage {
 			switch self {
 			case .preparing: .preparing
 			case .verifying: .verifying
@@ -329,7 +329,7 @@ import ArknightsGameInstallation
 	}
 
 	struct DeveloperSimulationProjection: Equatable, Sendable {
-		let lifecycle: DeveloperPreviewLifecycle
+		package let lifecycle: DeveloperPreviewLifecycle
 		let status: LauncherStatus
 		let isInstalled: Bool
 		let hasPartialDownload: Bool

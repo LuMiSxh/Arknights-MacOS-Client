@@ -6,7 +6,7 @@ import SwiftUI
 
 struct ArknightsWordmark: View {
 	let logo: NSImage?
-	let region: GameRegion
+	package let region: GameRegion
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -46,7 +46,7 @@ struct ArknightsWordmark: View {
 		.animation(wordmarkAnimation, value: wordmarkIdentity)
 		.accessibilityElement(children: .ignore)
 		.accessibilityLabel(
-			HomeStrings.wordmarkAccessibility(region: region.displayName)
+			"Arknights \(region.displayName) macOS client"
 		)
 	}
 
@@ -81,7 +81,7 @@ struct ArknightsWordmark: View {
 
 struct LauncherPopupView: View {
 	let popup: LauncherPopup
-	let accentColor: Color
+	package let accentColor: Color
 	let hudTintColor: Color
 	let dismiss: () -> Void
 	let openAction: () -> Void

@@ -34,12 +34,13 @@ struct OnboardingExtrasView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: OnboardingStrings.extrasTitle,
-			subtitle: OnboardingStrings.extrasSubtitle,
+			title: "A few last questions",
+			subtitle:
+				"Looking for updates never downloads anything by itself, apart from the game files you chose to install.",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
-				question: OnboardingStrings.updatesQuestion,
+				question: "How should the launcher stay up to date?",
 				systemImage: "arrow.trianglehead.2.clockwise",
 				answers: UpdateCheckAnswer.allCases.map(OnboardingStrings.updateAnswer),
 				selection: updateBinding,
@@ -47,7 +48,7 @@ struct OnboardingExtrasView: View {
 			)
 
 			OnboardingQuestion(
-				question: OnboardingStrings.musicQuestion,
+				question: "Play music while the launcher is open?",
 				systemImage: "music.note",
 				answers: [true, false].map(OnboardingStrings.musicAnswer),
 				selection: musicBinding,
@@ -56,16 +57,16 @@ struct OnboardingExtrasView: View {
 
 			if preferences.playsLauncherMusic {
 				SettingsPanel(
-					title: OnboardingStrings.musicTitle, systemImage: "speaker.wave.2"
+					title: "Music", systemImage: "speaker.wave.2"
 				) {
-					LabeledContent(OnboardingStrings.volume) {
+					LabeledContent("Volume") {
 						HStack(spacing: 10) {
 							Image(systemName: "speaker.fill")
 								.foregroundStyle(.secondary)
 								.accessibilityHidden(true)
 							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
 								.tint(accentColor)
-								.accessibilityLabel(OnboardingStrings.volume)
+								.accessibilityLabel("Volume")
 							Text(
 								preferences.launcherMusicVolume,
 								format: .percent.precision(.fractionLength(0))
@@ -78,8 +79,8 @@ struct OnboardingExtrasView: View {
 					}
 					SettingsHairline()
 					OnboardingToggleRow(
-						title: OnboardingStrings.nowPlayingTitle,
-						detail: OnboardingStrings.nowPlayingDetail,
+						title: "Show what's playing",
+						detail: "Adds the current track and playback controls to the launcher.",
 						isOn: $preferences.showsPlayingMusic,
 						accentColor: accentColor
 					)

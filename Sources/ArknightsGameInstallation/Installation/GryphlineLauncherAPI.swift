@@ -39,7 +39,7 @@ actor GryphlineLauncherAPI {
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
 	}
 
-	func gameConfiguration() async throws -> GameConfiguration {
+	package func gameConfiguration() async throws -> GameConfiguration {
 		let latest = try await latestGame()
 		latestPackage = latest.package
 		guard let totalBytes = Int64(latest.package.totalSize), totalBytes >= 0 else {
@@ -57,7 +57,7 @@ actor GryphlineLauncherAPI {
 		)
 	}
 
-	func branding() async throws -> LauncherBranding {
+	package func branding() async throws -> LauncherBranding {
 		let payload = GryphlineBatchRequest(
 			sequence: Self.sequence,
 			requests: [
@@ -92,13 +92,13 @@ actor GryphlineLauncherAPI {
 		)
 	}
 
-	func cdnConfiguration() async throws -> CDNConfiguration {
+	package func cdnConfiguration() async throws -> CDNConfiguration {
 		let package = try await package()
 		let baseURL = try Self.cdnOrigin(for: package.filePath)
 		return CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
 	}
 
-	func manifest(for configuration: GameConfiguration) async throws -> GameManifest {
+	package func manifest(for configuration: GameConfiguration) async throws -> GameManifest {
 		guard let fileBaseURL = URL(string: configuration.gameLatestFilePath) else {
 			throw LauncherError.invalidResponse
 		}

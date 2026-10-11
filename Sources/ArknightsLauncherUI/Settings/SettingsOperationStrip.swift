@@ -10,7 +10,7 @@ enum SettingsOperationStripPresentation {
 	static func text(status: LauncherStatus, progress: DownloadProgress?) -> String? {
 		guard let label = label(for: status) else { return nil }
 		guard let percentage = percentage(status: status, progress: progress) else { return label }
-		return SettingsStrings.operationStrip(label: label, percentage: percentage)
+		return "\(label) · \(percentage)%"
 	}
 
 	static func accessibilityLabel(for status: LauncherStatus) -> String? {
@@ -19,7 +19,7 @@ enum SettingsOperationStripPresentation {
 
 	static func accessibilityValue(status: LauncherStatus, progress: DownloadProgress?) -> String {
 		percentage(status: status, progress: progress)
-			.map(SettingsStrings.operationPercentValue) ?? ""
+			.map { "\($0) percent" } ?? ""
 	}
 
 	private static func label(for status: LauncherStatus) -> String? {
@@ -50,11 +50,11 @@ enum SettingsOperationStripPresentation {
 /// One-line operation summary for the Settings sidebar. Only this leaf reads the per-tick
 /// installation progress, so the rest of the sheet does not re-render on every update.
 struct SettingsOperationStrip: View {
-	let lifecycle: LauncherLifecycleStore
-	let installation: InstallationController
+	package let lifecycle: LauncherLifecycleStore
+	package let installation: InstallationController
 
 	var body: some View {
-		let status = lifecycle.presentation.status
+		let status = lifecycle.state.presentation.status
 		let progress = installation.progress
 		if let text = SettingsOperationStripPresentation.text(status: status, progress: progress) {
 			Text(text)

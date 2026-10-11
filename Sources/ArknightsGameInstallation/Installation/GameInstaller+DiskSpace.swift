@@ -12,7 +12,7 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 		"Disk capacity could not be determined for the selected location."
 	}
 
-	var diagnosticDescription: String {
+	package var diagnosticDescription: String {
 		switch self {
 		case .noExistingAncestor(let url):
 			"No existing directory was found for disk-capacity inspection: \(url.path)"
@@ -27,7 +27,9 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 extension GameInstaller {
 	/// Walks up to the nearest existing ancestor since `url` (e.g. a not-yet-created
 	/// install directory) may not exist yet.
-	static func availableCapacityBytes(at url: URL, fileManager: FileManager = .default) throws
+	static func availableCapacityBytes(
+		at url: URL, fileManager: FileManager = .default
+	) throws
 		-> Int64
 	{
 		var directory = url

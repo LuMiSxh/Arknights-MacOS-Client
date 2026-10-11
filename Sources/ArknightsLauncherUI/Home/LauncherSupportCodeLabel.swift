@@ -14,10 +14,7 @@ struct LauncherSupportCodeLabel: View {
 			.accessibilityLabel(
 				Text(
 
-					HomeStrings.errorCodeAccessibility(
-						code: code.rawValue,
-						spelling: code.rawValue.map(String.init).joined(separator: " ")
-					)
+					"Error code \(code.rawValue), spelled \(code.rawValue.map(String.init).joined(separator: " "))"
 				)
 			)
 	}

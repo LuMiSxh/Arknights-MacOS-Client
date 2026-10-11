@@ -3,18 +3,21 @@
 import ArknightsCore
 import Foundation
 
-/// A monotonic time source used by `TransferRateEstimator`.
-///
-/// Keeping the clock as a small dependency makes rate behavior testable without
-/// sleeping in unit tests, while production uses `ContinuousClock` rather than wall time.
-protocol DownloadClock: Sendable {
-	var now: ContinuousClock.Instant { get }
-}
+/// Reads elapsed time from any `Clock<Duration>`. The clock's instant type is erased, so the
+/// reader keeps its start instant inside the closure and reports offsets from it.
+struct ElapsedTime {
+	private let read: () -> Duration
 
-struct ContinuousDownloadClock: DownloadClock {
-	private let clock = ContinuousClock()
+	init(_ clock: any Clock<Duration>) {
+		self.init(opening: clock)
+	}
 
-	var now: ContinuousClock.Instant { clock.now }
+	private init<C: Clock<Duration>>(opening clock: C) {
+		let start = clock.now
+		read = { start.duration(to: clock.now) }
+	}
+
+	var now: Duration { read() }
 }
 
 struct TransferRateSnapshot: Sendable, Equatable {
@@ -28,25 +31,26 @@ struct TransferRateSnapshot: Sendable, Equatable {
 /// or file moves. Its caller supplies only bytes received from the current network stream;
 /// resetting it at a retry or failed validation prevents invalid samples from contaminating
 /// the next display rate.
-struct TransferRateEstimator: Sendable {
-	private let clock: any DownloadClock
+struct TransferRateEstimator {
+	private let clock: ElapsedTime
 	private let sampleInterval: Duration
 	private let stallTimeout: Duration
 	private let smoothingFactor: Double
-	private var sampleStartedAt: ContinuousClock.Instant?
+	private var sampleStartedAt: Duration?
 	private var pendingBytes: Int64 = 0
-	private var lastNetworkActivityAt: ContinuousClock.Instant?
+	private var lastNetworkActivityAt: Duration?
 	private var smoothedRate: Double?
 	private var isStalledState = false
 
 	init(
-		clock: any DownloadClock = ContinuousDownloadClock(),
+		clock: any Clock<Duration> = ContinuousClock(),
 		sampleInterval: Duration = AppConstants.Network.transferRateSampleInterval,
 		stallTimeout: Duration = AppConstants.Network.transferRateStallTimeout,
 		smoothingFactor: Double = AppConstants.Network.transferRateSmoothingFactor
 	) {
-		let operationStartedAt = clock.now
-		self.clock = clock
+		let elapsed = ElapsedTime(clock)
+		let operationStartedAt = elapsed.now
+		self.clock = elapsed
 		self.sampleInterval = sampleInterval
 		self.stallTimeout = stallTimeout
 		self.smoothingFactor = min(1, max(0, smoothingFactor))
@@ -59,7 +63,7 @@ struct TransferRateEstimator: Sendable {
 		let now = clock.now
 		let timedOut =
 			lastNetworkActivityAt.map {
-				$0.duration(to: now) >= stallTimeout
+				now - $0 >= stallTimeout
 			} ?? false
 		if isStalledState || timedOut {
 			clearRateState()
@@ -70,10 +74,10 @@ struct TransferRateEstimator: Sendable {
 		pendingBytes += bytes
 
 		guard let sampleStartedAt,
-			sampleStartedAt.duration(to: now) >= sampleInterval
+			now - sampleStartedAt >= sampleInterval
 		else { return }
 
-		let seconds = durationInSeconds(sampleStartedAt.duration(to: now))
+		let seconds = durationInSeconds(now - sampleStartedAt)
 		guard seconds > 0 else { return }
 		let measuredRate = Double(pendingBytes) / seconds
 		pendingBytes = 0
@@ -104,7 +108,7 @@ struct TransferRateEstimator: Sendable {
 		let now = clock.now
 		let isStalled =
 			if let lastNetworkActivityAt {
-				lastNetworkActivityAt.duration(to: now) >= stallTimeout
+				now - lastNetworkActivityAt >= stallTimeout
 			} else {
 				false
 			}

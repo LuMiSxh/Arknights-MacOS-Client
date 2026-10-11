@@ -5,6 +5,8 @@ import Testing
 
 @testable import ArknightsCore
 
+private typealias Key = LauncherPreferencesStore.Key
+
 @MainActor
 struct LauncherPreferencesStoreTests {
 	@Test
@@ -13,47 +15,50 @@ struct LauncherPreferencesStoreTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 
-		#expect(store.automaticLauncherUpdates())
-		#expect(store.automaticGameUpdates())
-		#expect(store.announcementsEnabled())
-		#expect(!store.showsServerResetCountdown())
-		#expect(store.showsGameVersion())
-		#expect(store.playsLauncherMusic())
-		#expect(!store.showsPlayingMusic())
-		#expect(store.launcherMusicURL() == AppConstants.Music.defaultLauncherMusicURL)
-		#expect(store.launcherMusicVolume() == 0.5)
-		#expect(store.usesDynamicTheme())
-		#expect(!store.canaryFeaturesEnabled())
-		#expect(!store.taiwanClientEnabled())
+		#expect(store.value(Key.automaticLauncherUpdates))
+		#expect(store.value(Key.automaticGameUpdates))
+		#expect(store.value(Key.announcementsEnabled))
+		#expect(!store.value(Key.showsServerResetCountdown))
+		#expect(store.value(Key.showsGameVersion))
+		#expect(store.value(Key.showsBranding))
+		#expect(store.value(Key.playsLauncherMusic))
+		#expect(!store.value(Key.showsPlayingMusic))
+		#expect(store.value(Key.launcherMusicURL) == AppConstants.Music.defaultLauncherMusicURL)
+		#expect(store.value(Key.launcherMusicVolume) == 0.5)
+		#expect(store.value(Key.usesDynamicTheme))
+		#expect(!store.value(Key.canaryFeaturesEnabled))
+		#expect(!store.value(Key.taiwanClientEnabled))
 		#expect(store.selectedRegion() == .global)
 		#expect(!store.forceDisableRetina())
 
-		store.setAutomaticLauncherUpdates(false)
-		store.setAutomaticGameUpdates(false)
-		store.setAnnouncementsEnabled(false)
-		store.setShowsServerResetCountdown(true)
-		store.setShowsGameVersion(false)
-		store.setPlaysLauncherMusic(false)
-		store.setShowsPlayingMusic(true)
-		store.setLauncherMusicURL("https://youtube.com/playlist?list=123")
-		store.setLauncherMusicVolume(0.8)
-		store.setUsesDynamicTheme(false)
-		store.setCanaryFeaturesEnabled(true)
-		store.setTaiwanClientEnabled(true)
+		store.set(false, for: Key.automaticLauncherUpdates)
+		store.set(false, for: Key.automaticGameUpdates)
+		store.set(false, for: Key.announcementsEnabled)
+		store.set(true, for: Key.showsServerResetCountdown)
+		store.set(false, for: Key.showsGameVersion)
+		store.set(false, for: Key.showsBranding)
+		store.set(false, for: Key.playsLauncherMusic)
+		store.set(true, for: Key.showsPlayingMusic)
+		store.set("https://youtube.com/playlist?list=123", for: Key.launcherMusicURL)
+		store.set(0.8, for: Key.launcherMusicVolume)
+		store.set(false, for: Key.usesDynamicTheme)
+		store.set(true, for: Key.canaryFeaturesEnabled)
+		store.set(true, for: Key.taiwanClientEnabled)
 		store.setSelectedRegion(.korea)
 
-		#expect(!store.automaticLauncherUpdates())
-		#expect(!store.automaticGameUpdates())
-		#expect(!store.announcementsEnabled())
-		#expect(store.showsServerResetCountdown())
-		#expect(!store.showsGameVersion())
-		#expect(!store.playsLauncherMusic())
-		#expect(store.showsPlayingMusic())
-		#expect(store.launcherMusicURL() == "https://youtube.com/playlist?list=123")
-		#expect(store.launcherMusicVolume() == 0.8)
-		#expect(!store.usesDynamicTheme())
-		#expect(store.canaryFeaturesEnabled())
-		#expect(store.taiwanClientEnabled())
+		#expect(!store.value(Key.automaticLauncherUpdates))
+		#expect(!store.value(Key.automaticGameUpdates))
+		#expect(!store.value(Key.announcementsEnabled))
+		#expect(store.value(Key.showsServerResetCountdown))
+		#expect(!store.value(Key.showsGameVersion))
+		#expect(!store.value(Key.showsBranding))
+		#expect(!store.value(Key.playsLauncherMusic))
+		#expect(store.value(Key.showsPlayingMusic))
+		#expect(store.value(Key.launcherMusicURL) == "https://youtube.com/playlist?list=123")
+		#expect(store.value(Key.launcherMusicVolume) == 0.8)
+		#expect(!store.value(Key.usesDynamicTheme))
+		#expect(store.value(Key.canaryFeaturesEnabled))
+		#expect(store.value(Key.taiwanClientEnabled))
 		#expect(store.selectedRegion() == .korea)
 	}
 
@@ -63,15 +68,15 @@ struct LauncherPreferencesStoreTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 
-		#expect(!store.usesHardwareCursor())
-		#expect(!store.dismissedInGameResolutionNote())
+		#expect(!store.value(Key.usesHardwareCursor))
+		#expect(!store.value(Key.dismissedInGameResolutionNote))
 
-		store.setUsesHardwareCursor(true)
-		store.setDismissedInGameResolutionNote(true)
+		store.set(true, for: Key.usesHardwareCursor)
+		store.set(true, for: Key.dismissedInGameResolutionNote)
 
 		let reloaded = LauncherPreferencesStore(defaults: defaults)
-		#expect(reloaded.usesHardwareCursor())
-		#expect(reloaded.dismissedInGameResolutionNote())
+		#expect(reloaded.value(Key.usesHardwareCursor))
+		#expect(reloaded.value(Key.dismissedInGameResolutionNote))
 	}
 
 	@Test
@@ -85,9 +90,9 @@ struct LauncherPreferencesStoreTests {
 
 		#expect(settings.resetToDefaults(canModifyLaunchOptions: true))
 		#expect(!settings.usesHardwareCursor)
-		#expect(!store.usesHardwareCursor())
+		#expect(!store.value(Key.usesHardwareCursor))
 		#expect(!settings.dismissedInGameResolutionNote)
-		#expect(!store.dismissedInGameResolutionNote())
+		#expect(!store.value(Key.dismissedInGameResolutionNote))
 	}
 
 	@Test
@@ -101,8 +106,8 @@ struct LauncherPreferencesStoreTests {
 			#expect(store.selectedRegion() == region)
 		}
 
-		store.setCanaryFeaturesEnabled(true)
-		store.setCanaryFeaturesEnabled(false)
+		store.set(true, for: Key.canaryFeaturesEnabled)
+		store.set(false, for: Key.canaryFeaturesEnabled)
 		#expect(store.selectedRegion() == .chinaBilibili)
 	}
 
@@ -116,7 +121,7 @@ struct LauncherPreferencesStoreTests {
 
 		let store = LauncherPreferencesStore(defaults: defaults)
 		#expect(store.selectedRegion() == .china)
-		#expect(!store.taiwanClientEnabled())
+		#expect(!store.value(Key.taiwanClientEnabled))
 	}
 
 	@Test
@@ -128,13 +133,13 @@ struct LauncherPreferencesStoreTests {
 		store.setSelectedRegion(.taiwan)
 		#expect(store.selectedRegion() == .global)
 
-		store.setCanaryFeaturesEnabled(true)
+		store.set(true, for: Key.canaryFeaturesEnabled)
 		#expect(store.selectedRegion() == .global)
 
-		store.setTaiwanClientEnabled(true)
+		store.set(true, for: Key.taiwanClientEnabled)
 		#expect(store.selectedRegion() == .taiwan)
 
-		store.setTaiwanClientEnabled(false)
+		store.set(false, for: Key.taiwanClientEnabled)
 		#expect(store.selectedRegion() == .global)
 	}
 
@@ -207,14 +212,14 @@ struct LauncherPreferencesStoreTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 
-		store.setLauncherMusicVolume(-0.25)
-		#expect(store.launcherMusicVolume() == 0)
+		store.set(-0.25, for: Key.launcherMusicVolume)
+		#expect(store.value(Key.launcherMusicVolume) == 0)
 
-		store.setLauncherMusicVolume(1.25)
-		#expect(store.launcherMusicVolume() == 1)
+		store.set(1.25, for: Key.launcherMusicVolume)
+		#expect(store.value(Key.launcherMusicVolume) == 1)
 
-		store.setLauncherMusicVolume(.infinity)
-		#expect(store.launcherMusicVolume() == 0.5)
+		store.set(.infinity, for: Key.launcherMusicVolume)
+		#expect(store.value(Key.launcherMusicVolume) == 0.5)
 	}
 
 	@Test

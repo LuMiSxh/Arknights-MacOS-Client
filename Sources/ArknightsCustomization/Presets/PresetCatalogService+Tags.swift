@@ -10,12 +10,8 @@ extension PresetCatalogService {
 		if !hasLoadedWallpaperTagCache {
 			hasLoadedWallpaperTagCache = true
 			if let data = await readBoundedCache(at: cachedWallpaperTagsFile) {
-				do {
+				log.attempt("Ignored cached wallpaper tags") {
 					tagStore.apply(try WallpaperTagCatalog.decode(data))
-				} catch {
-					log.error(
-						"Ignored cached wallpaper tags: \(launcherDiagnosticDescription(for: error))"
-					)
 				}
 			}
 		}
@@ -44,11 +40,8 @@ extension PresetCatalogService {
 			let tags = try WallpaperTagCatalog.decode(data)
 			tagStore.apply(tags)
 			log.info("Loaded \(tags.count) wallpaper tag entries from the repository")
-			do {
+			log.attempt("Failed to cache wallpaper tags") {
 				try data.write(to: cachedWallpaperTagsFile, options: .atomic)
-			} catch {
-				log.error(
-					"Failed to cache wallpaper tags: \(launcherDiagnosticDescription(for: error))")
 			}
 			return true
 		} catch {

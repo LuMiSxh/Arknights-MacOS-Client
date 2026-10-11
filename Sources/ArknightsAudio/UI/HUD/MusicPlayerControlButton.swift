@@ -6,7 +6,7 @@ import SwiftUI
 struct MusicPlayerControlButton: View {
 	let title: String
 	let systemImage: String
-	let accentColor: Color
+	package let accentColor: Color
 	var isProminent = false
 	var isDisabled = false
 	let action: () -> Void

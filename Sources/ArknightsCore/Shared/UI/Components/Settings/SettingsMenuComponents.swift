@@ -8,7 +8,7 @@ import SwiftUI
 package struct GlassMenuPicker<Value: Hashable>: View {
 	let selection: Binding<Value>
 	let options: [(value: Value, title: String)]
-	let accentColor: Color
+	package let accentColor: Color
 	var isDisabled = false
 	/// Overrides an option's displayed text inside the open menu only, leaving `title` as the
 	/// collapsed button's label — lets a caller show detail (e.g. a result count) that's only
@@ -90,9 +90,9 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 package struct GlassActionMenu<Content: View>: View {
 	let title: String
 	let systemImage: String
-	let accentColor: Color
+	package let accentColor: Color
 	var isDisabled = false
-	@ViewBuilder let content: Content
+	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
@@ -133,7 +133,7 @@ package struct GlassActionMenu<Content: View>: View {
 package struct AccentLink: View {
 	let title: String
 	let destination: URL
-	let accentColor: Color
+	package let accentColor: Color
 
 	package init(title: String, destination: URL, accentColor: Color) {
 		self.title = title
@@ -154,7 +154,7 @@ package struct AccentLink: View {
 package struct DocumentLinkRow: View {
 	let title: String
 	let systemImage: String
-	let accentColor: Color
+	package let accentColor: Color
 	let action: () -> Void
 
 	package init(

@@ -9,7 +9,7 @@ import Observation
 @MainActor
 @Observable
 package final class LauncherLifecycleStore {
-	var state: LauncherState
+	package var state: LauncherState
 	package let log: LauncherLog
 	package private(set) var isLauncherUpdatePending = false
 	private var activityObservers: [UUID: () -> Void] = [:]
@@ -67,51 +67,6 @@ package final class LauncherLifecycleStore {
 	/// The underlying activity excludes the Sparkle update gate itself.
 	package var hasActiveActivity: Bool { state.activity != .idle }
 	package var canBeginExclusiveActivity: Bool { !hasActiveActivity && !isLauncherUpdatePending }
-
-	package var refresh: LauncherRefreshState {
-		get { state.refresh }
-		set { state.refresh = newValue }
-	}
-
-	package var readiness: LauncherReadinessState {
-		get { state.readiness }
-		set { state.readiness = newValue }
-	}
-
-	package var presentation: LauncherPresentationState {
-		get { state.presentation }
-		set { state.presentation = newValue }
-	}
-
-	package var intelTranslationState: IntelTranslationState {
-		get { state.readiness.intelTranslation }
-		set { state.readiness.intelTranslation = newValue }
-	}
-
-	package var rosettaInstallationState: RosettaInstallationState {
-		get { state.readiness.rosettaInstallation }
-		set { state.readiness.rosettaInstallation = newValue }
-	}
-
-	package var activityMessage: String { state.presentation.status.message }
-	package var failure: LauncherFailurePresentation? { state.presentation.failure }
-	package var failureMessage: String? { state.presentation.failure?.message }
-	package var phase: LauncherPhase {
-		switch state.activity {
-		case .installing:
-			.downloading
-		case .preparingGame:
-			.migrating
-		case .launchingGame:
-			.launching
-		case .runningGame(_, let processIdentifier):
-			.running(processIdentifier: processIdentifier)
-		case .stoppingGame(_, let processIdentifier):
-			processIdentifier.map { .running(processIdentifier: $0) } ?? .launching
-		case .idle, .maintaining:
-			state.refresh.isChecking ? .checking : .ready
-		}
-	}
 
 	package init(
 		state: LauncherState = LauncherState(),
@@ -205,5 +160,20 @@ package final class LauncherLifecycleStore {
 		guard state.presentation.failure?.id == id else { return nil }
 		defer { state.presentation.failure = nil }
 		return state.presentation.failure
+	}
+}
+
+/// An error that knows which support code describes it, so lifecycle code need not name feature errors.
+protocol SupportCodeProviding: Error {
+	var supportCode: SupportCode? { get }
+}
+
+/// Proof that one operation owns the launcher's exclusive activity.
+/// `LauncherLifecycleStore` rejects any change that carries a lease it did not issue last.
+package struct ActivityLease: Hashable, Sendable {
+	let token: UUID
+
+	init(token: UUID = UUID()) {
+		self.token = token
 	}
 }

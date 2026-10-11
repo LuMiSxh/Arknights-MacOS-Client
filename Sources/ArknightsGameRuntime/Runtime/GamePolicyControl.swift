@@ -31,12 +31,8 @@ package enum GamePolicyControl {
 				"gamepolicyctl exited with status \(process.terminationStatus) while setting Game Mode \(on ? "on" : "auto")"
 			)
 		}
-		do {
+		log.attempt("Failed to start gamepolicyctl for Game Mode \(on ? "on" : "auto")") {
 			try process.run()
-		} catch {
-			log.error(
-				"Failed to start gamepolicyctl for Game Mode \(on ? "on" : "auto"): \(error.localizedDescription)"
-			)
 		}
 	}
 }

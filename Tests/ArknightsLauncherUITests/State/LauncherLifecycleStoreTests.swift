@@ -19,7 +19,9 @@ struct LauncherLifecycleStoreTests {
 		lifecycle.show(CustomizationError.cannotSetAppIcon)
 
 		#expect(lifecycle.activity == .runningGame(sessionID: sessionID, processIdentifier: 42))
-		#expect(lifecycle.failureMessage == CustomizationError.cannotSetAppIcon.errorDescription)
+		#expect(
+			lifecycle.state.presentation.failure?.message
+				== CustomizationError.cannotSetAppIcon.errorDescription)
 	}
 
 	@Test
@@ -28,11 +30,11 @@ struct LauncherLifecycleStoreTests {
 		lifecycle.show(CustomizationError.cannotSetAppIcon)
 
 		lifecycle.setStatus(.ready, clearsFailure: false)
-		#expect(lifecycle.failureMessage != nil)
+		#expect(lifecycle.state.presentation.failure?.message != nil)
 
 		lifecycle.setStatus(.running)
-		#expect(lifecycle.failureMessage == nil)
-		#expect(!lifecycle.activityMessage.isEmpty)
+		#expect(lifecycle.state.presentation.failure?.message == nil)
+		#expect(!lifecycle.state.presentation.status.message.isEmpty)
 	}
 
 	@Test
@@ -51,7 +53,7 @@ struct LauncherLifecycleStoreTests {
 		lifecycle.setStatus(.checking)
 		lifecycle.setStatus(.ready)
 
-		#expect(lifecycle.failure == failure)
+		#expect(lifecycle.state.presentation.failure == failure)
 	}
 
 	@Test(arguments: LauncherUpdateStartScenario.allCases)

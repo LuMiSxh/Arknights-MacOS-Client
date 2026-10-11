@@ -10,7 +10,7 @@ package struct ContinuousMotion<Content: View>: View {
 	let cycle: TimeInterval
 	let framesPerSecond: Double
 	let reducedMotionPhase: Double?
-	let content: (Double) -> Content
+	package let content: (Double) -> Content
 
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled

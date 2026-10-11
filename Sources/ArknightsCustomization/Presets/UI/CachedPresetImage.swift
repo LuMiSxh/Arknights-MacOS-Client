@@ -8,7 +8,7 @@ import SwiftUI
 struct CachedPresetImage: View {
 	let catalog: PresetCatalogService
 	let url: URL
-	let cacheKey: String
+	package let cacheKey: String
 	var contentMode: ContentMode = .fill
 	var placeholderIcon: String = "photo"
 

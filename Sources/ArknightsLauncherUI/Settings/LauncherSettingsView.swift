@@ -14,26 +14,26 @@ import SwiftUI
 #endif
 
 struct LauncherSettingsView: View {
-	let settings: LauncherPreferencesController
+	package let settings: LauncherPreferencesController
 	let customization: CustomizationController
-	let communication: LauncherCommunicationController
-	let installation: InstallationController
+	package let communication: LauncherCommunicationController
+	package let installation: InstallationController
 	let gameSession: GameSessionController
-	let lifecycle: LauncherLifecycleStore
+	package let lifecycle: LauncherLifecycleStore
 	let storage: StorageMaintenanceController
 	let storageOverview: StorageOverviewController
 	let playtimeStatistics: PlaytimeStatisticsController
 	let presetCatalog: PresetCatalogService
-	let launcherIconManager: LauncherIconManager
+	package let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
-	let resetArtwork: () -> Void
-	let checkGameUpdates: () -> Void
-	let selectRegion: (GameRegion) -> Void
-	let chooseInstallDirectory: () -> Void
-	let locateExistingInstallation: () -> Void
-	let repairGame: () -> Void
-	let resetAllLauncherSettings: () -> Void
-	let uninstallGame: () -> Void
+	package let resetArtwork: () -> Void
+	package let checkGameUpdates: () -> Void
+	package let selectRegion: (GameRegion) -> Void
+	package let chooseInstallDirectory: () -> Void
+	package let locateExistingInstallation: () -> Void
+	package let repairGame: () -> Void
+	package let resetAllLauncherSettings: () -> Void
+	package let uninstallGame: () -> Void
 	let restartOnboarding: () -> Void
 	let requestLauncherUpdateCheck: () -> Void
 	let developerSimulation: DeveloperSimulationBinding?
@@ -139,7 +139,7 @@ struct LauncherSettingsView: View {
 					case .about:
 						AboutSettingsPage(
 							region: installation.region,
-							runtimeName: lifecycle.readiness.runtimeName,
+							runtimeName: lifecycle.state.readiness.runtimeName,
 							accentColor: customization.accentColor,
 							launcherIconManager: launcherIconManager,
 							branding: branding,
@@ -234,13 +234,13 @@ struct LauncherSettingsView: View {
 private struct SettingsNavigationRail: View {
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
-	let accentColor: Color
-	let lifecycle: LauncherLifecycleStore
-	let installation: InstallationController
+	package let accentColor: Color
+	package let lifecycle: LauncherLifecycleStore
+	package let installation: InstallationController
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text(SettingsStrings.navigationLabel)
+			Text("SETTINGS")
 				.font(.caption.monospaced().weight(.semibold))
 				.tracking(1.4)
 				.foregroundStyle(.tertiary)
@@ -292,7 +292,7 @@ private struct SettingsNavigationRail: View {
 private struct SettingsNavigationButton: View {
 	let section: SettingsSection
 	let isSelected: Bool
-	let accentColor: Color
+	package let accentColor: Color
 	let action: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isHovering = false

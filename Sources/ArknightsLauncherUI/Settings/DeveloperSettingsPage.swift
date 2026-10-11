@@ -9,12 +9,10 @@ import SwiftUI
 		@Binding var simulation: DeveloperSimulationState
 		let accentColor: Color
 		let applyCustomPopup: (String, String) -> Void
-		@State private var isComponentLabPresented = false
-
 		var body: some View {
 			SettingsPage(
-				title: SettingsStrings.developerTitle,
-				subtitle: SettingsStrings.developerSubtitle,
+				title: "Developer",
+				subtitle: "Preview launcher states safely",
 				accentColor: accentColor
 			) {
 				DeveloperSimulationControls(
@@ -24,11 +22,11 @@ import SwiftUI
 
 				if simulation.popup == .custom {
 					SettingsPanel(
-						title: SettingsStrings.developerCustomPopup,
+						title: "Custom Popup",
 						systemImage: "text.bubble"
 					) {
 						TextField(
-							SettingsStrings.developerCustomPopupTitle,
+							"Title",
 							text: $simulation.customPopupTitle
 						)
 						.textFieldStyle(.roundedBorder)
@@ -39,7 +37,7 @@ import SwiftUI
 							.frame(height: 140)
 							.background(.black.opacity(0.2), in: .rect(cornerRadius: 8))
 						CapsuleActionButton(
-							title: SettingsStrings.developerShowPopup,
+							title: "Show Popup",
 							tone: .accent(accentColor)
 						) {
 							applyCustomPopup(
@@ -52,33 +50,14 @@ import SwiftUI
 				}
 
 				SettingsPanel(
-					title: SettingsStrings.developerIsolation,
+					title: "Isolation",
 					systemImage: "lock.shield"
 				) {
-					Text(SettingsStrings.developerIsolationDetail)
-						.foregroundStyle(.secondary)
-				}
-
-				SettingsPanel(
-					title: "Temporary Component Design Lab",
-					systemImage: "testtube.2"
-				) {
 					Text(
-						"Compare the shared control states, surfaces, and spacing used by the launcher."
+						"Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
 					)
 					.foregroundStyle(.secondary)
-					CapsuleActionButton(
-						title: "Open Component Lab",
-						systemImage: "rectangle.3.group",
-						tone: .neutral,
-						presentation: .compact
-					) {
-						isComponentLabPresented = true
-					}
 				}
-			}
-			.sheet(isPresented: $isComponentLabPresented) {
-				DeveloperComponentLabPage(accentColor: accentColor)
 			}
 		}
 	}
