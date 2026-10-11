@@ -17,12 +17,10 @@ import os
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
-from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
-from lib.common import PROJECT_DIR, ScriptError, fail, run, run_main
+from lib.common import ScriptError, fail, run, run_main
 from lib.console import info, success, warning
 from lib.project_config import (
     SPARKLE_ARCHIVE_SUFFIXES,
@@ -31,73 +29,47 @@ from lib.project_config import (
     load_project_configuration,
     sparkle_archive_names,
 )
-from validate_sparkle_keys import SPARKLE_NAMESPACE, validate_feed_signature
 
-
-@dataclass(frozen=True)
-class DeltaSource:
-    """A published update archive that deltas can be generated from."""
-
-    version: str
-    url: str
+DELTAS_TAG = "{http://www.andymatuschak.org/xml-namespaces/sparkle}deltas"
 
 
 def select_sources(
-    releases: list[object],
+    releases: list[dict],
     *,
-    repository: str,
     current_version: str,
-    update_names: dict[str, set[str]],
+    stem: str,
+    update_name: str,
     count: int,
-) -> list[DeltaSource]:
-    """Pick the newest published releases (excluding the current one) with an archive.
+) -> list[tuple[str, str, str]]:
+    """Return `(version, tag, asset)` for the newest published releases with an archive.
 
-    `update_names` maps a release version to the asset names its archive may use.
+    The current release, drafts, and prereleases never count as sources.
     """
-    candidates: list[tuple[str, str, DeltaSource]] = []
-    download_prefix = f"https://github.com/{repository}/releases/download/"
-    for release in releases:
-        if not isinstance(release, dict):
-            continue
-        if release.get("draft") or release.get("prerelease"):
-            continue
-        tag = release.get("tag_name")
-        published = release.get("published_at")
-        assets = release.get("assets")
-        if not (
-            isinstance(tag, str)
-            and isinstance(published, str)
-            and isinstance(assets, list)
-        ):
-            continue
-        version = tag.removeprefix("v")
-        if version == current_version:
-            continue
-        accepted = update_names[version]
-        for asset in assets:
-            if not isinstance(asset, dict) or asset.get("name") not in accepted:
-                continue
-            url = asset.get("browser_download_url")
-            if isinstance(url, str) and url.startswith(download_prefix):
-                candidates.append((published, version, DeltaSource(version, url)))
-                break
-    candidates.sort(key=lambda candidate: candidate[0], reverse=True)
-    return [source for _, _, source in candidates[:count]]
-
-
-def accepted_archive_names(releases: list[object], stem: str, update_name: str):
-    """Map each release version to its legitimate update archive names."""
-    names: dict[str, set[str]] = {}
-    for release in releases:
-        if isinstance(release, dict) and isinstance(release.get("tag_name"), str):
-            version = release["tag_name"].removeprefix("v")
-            names[version] = {update_name, *sparkle_archive_names(stem, version)}
-    return names
+    published = sorted(
+        (
+            release
+            for release in releases
+            if not (release["draft"] or release["prerelease"])
+            and release["tag_name"].removeprefix("v") != current_version
+        ),
+        key=lambda release: release["published_at"],
+        reverse=True,
+    )
+    sources: list[tuple[str, str, str]] = []
+    for release in published:
+        version = release["tag_name"].removeprefix("v")
+        accepted = {update_name, *sparkle_archive_names(stem, version)}
+        asset = next(
+            (a["name"] for a in release["assets"] if a["name"] in accepted), None
+        )
+        if asset is not None:
+            sources.append((version, release["tag_name"], asset))
+    return sources[:count]
 
 
 def fetch(arguments: argparse.Namespace) -> None:
     """Download previous archives; every failure only costs deltas, never the release."""
-    configuration = load_project_configuration()
+    stem = load_project_configuration().release_asset_stem
     try:
         releases = json.loads(
             run(
@@ -105,165 +77,111 @@ def fetch(arguments: argparse.Namespace) -> None:
                 capture=True,
             ).stdout
         )
-    except (ScriptError, ValueError) as error:
+        sources = select_sources(
+            releases,
+            current_version=arguments.current_version,
+            stem=stem,
+            update_name=arguments.update_name,
+            count=arguments.count,
+        )
+    except (ScriptError, ValueError, KeyError, TypeError) as error:
         warning(f"Skipping Sparkle deltas: could not list releases: {error}")
-        return
-    if not isinstance(releases, list):
-        warning("Skipping Sparkle deltas: GitHub returned an invalid release list")
-        return
-    sources = select_sources(
-        releases,
-        repository=arguments.repository,
-        current_version=arguments.current_version,
-        update_names=accepted_archive_names(
-            releases, configuration.release_asset_stem, arguments.update_name
-        ),
-        count=arguments.count,
-    )
-    if not sources:
-        info("No previous published release archives; the release has no deltas.")
         return
     arguments.destination.mkdir(parents=True, exist_ok=True)
     fetched = 0
-    for source in sources:
+    for version, tag, asset in sources:
         # `generate_appcast` picks the extractor from the extension, so keep each
         # source's own format (older releases are zip, newer ones tar.xz).
-        suffix = next(
-            (
-                suffix
-                for suffix in SPARKLE_ARCHIVE_SUFFIXES
-                if urlparse(source.url).path.endswith(suffix)
-            ),
-            ".zip",
-        )
-        destination = (
-            arguments.destination
-            / f"{configuration.release_asset_stem}.{source.version}{suffix}"
-        )
+        suffix = next(s for s in SPARKLE_ARCHIVE_SUFFIXES if asset.endswith(s))
         try:
-            tag, asset = urlparse(source.url).path.split("/")[-2:]
             run(
                 [
                     "gh",
                     "release",
                     "download",
-                    unquote(tag),
+                    tag,
                     "--repo",
                     arguments.repository,
                     "--pattern",
-                    unquote(asset),
+                    asset,
                     "--output",
-                    destination,
+                    arguments.destination / f"{stem}.{version}{suffix}",
                     "--clobber",
                 ],
                 capture=True,
             )
         except ScriptError as error:
-            warning(f"Skipping deltas from {source.version}: {error}")
+            warning(f"Skipping deltas from {version}: {error}")
             continue
         fetched += 1
-        info(f"Fetched {source.version} as a delta source.")
+        info(f"Fetched {version} as a delta source.")
     if fetched < len(sources):
         warning(f"Fetched {fetched} of {len(sources)} delta sources.")
+    elif not sources:
+        info("No previous published release archives; the release has no deltas.")
 
 
-def delta_enclosures(root: ET.Element) -> list[ET.Element]:
-    return [
-        enclosure
-        for deltas in root.iter(f"{{{SPARKLE_NAMESPACE}}}deltas")
-        for enclosure in deltas
-        if enclosure.tag == "enclosure"
-    ]
+def sign_appcast(sign_update: Path, private_key: str, appcast: Path) -> None:
+    """Replace the feed's signature block with `sign_update`.
 
-
-def find_sign_update() -> Path:
-    """Locate Sparkle's `sign_update` the way the release workflow finds `generate_appcast`."""
-    root = PROJECT_DIR / ".build" / "artifacts" / "sparkle"
-    for candidate in sorted(root.glob("**/Sparkle/bin/sign_update")):
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return candidate
-    fail("Sparkle sign_update tool not found.")
-
-
-def sign_feed_with_sparkle(
-    private_key: str, sign_update: Path
-) -> Callable[[Path], None]:
-    """Return a signer that replaces a feed's signature block via `sign_update`.
-
-    `sign_update` strips the existing trailing block itself and re-signs the remaining
-    bytes; the signing warning `generate_appcast` embedded is already present, so none
-    is added. The key goes through standard input so it never appears in arguments.
+    `sign_update` strips the old trailing block itself. The key goes through
+    standard input so it never appears in arguments.
     """
-
-    def sign(appcast: Path) -> None:
-        result = subprocess.run(
-            [
-                str(sign_update),
-                "--ed-key-file",
-                "-",
-                "--disable-signing-warning",
-                str(appcast),
-            ],
-            input=private_key.encode(),
-            capture_output=True,
-            check=False,
+    result = subprocess.run(
+        [sign_update, "--ed-key-file", "-", "--disable-signing-warning", appcast],
+        input=private_key.encode(),
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        fail(
+            "sign_update could not sign the Sparkle appcast: "
+            + result.stdout.decode(errors="replace").strip()
         )
-        if result.returncode != 0:
-            fail(
-                "sign_update could not sign the Sparkle appcast: "
-                + result.stdout.decode(errors="replace").strip()
-            )
-
-    return sign
 
 
 def finalize_deltas(
-    directory: Path,
-    appcast: Path,
-    output: Path,
-    sign: Callable[[Path], None] | None,
+    directory: Path, appcast: Path, output: Path, sign_update: Path, private_key: str
 ) -> list[Path]:
     """Publish referenced deltas under GitHub-safe names and refresh the feed signature."""
-    data = appcast.read_bytes()
-    content, _ = validate_feed_signature(data)
+    content = appcast.read_bytes()
     try:
         root = ET.fromstring(content)
     except ET.ParseError as error:
         fail(f"could not parse generated Sparkle appcast: {error}")
-    renames: dict[str, str] = {}
-    for enclosure in delta_enclosures(root):
-        name = Path(unquote(urlparse(enclosure.get("url", "")).path)).name
-        if not name.endswith(".delta") or not (directory / name).is_file():
-            fail(f"Sparkle appcast references a missing delta file: {name!r}")
-        renames[name] = github_asset_name(name)
-    if not renames:
+    names = [
+        Path(unquote(urlparse(enclosure.get("url", "")).path)).name
+        for deltas in root.iter(DELTAS_TAG)
+        for enclosure in deltas
+    ]
+    if not names:
         return []
-    if sign is None:
+    if not private_key:
         fail("SPARKLE_ED25519_PRIVATE_KEY is required to sign the delta appcast")
     output.mkdir(parents=True, exist_ok=True)
     published: list[Path] = []
-    for name, safe_name in renames.items():
+    for name in names:
+        if not name.endswith(".delta") or not (directory / name).is_file():
+            fail(f"Sparkle appcast references a missing delta file: {name!r}")
+        safe_name = github_asset_name(name)
         shutil.copyfile(directory / name, output / safe_name)
         published.append(output / safe_name)
         if safe_name != name:
-            old_reference = quote(name).encode()
-            if old_reference not in content:
+            if quote(name).encode() not in content:
                 fail(f"could not locate delta URL for {name!r} in the appcast")
-            content = content.replace(old_reference, safe_name.encode())
+            content = content.replace(quote(name).encode(), safe_name.encode())
     appcast.write_bytes(content)
-    sign(appcast)
+    sign_appcast(sign_update, private_key, appcast)
     return published
 
 
 def finalize(arguments: argparse.Namespace) -> None:
-    private_key = os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", "")
-    sign = (
-        sign_feed_with_sparkle(private_key, arguments.sign_update or find_sign_update())
-        if private_key
-        else None
-    )
     published = finalize_deltas(
-        arguments.directory, arguments.appcast, arguments.output, sign
+        arguments.directory,
+        arguments.appcast,
+        arguments.output,
+        arguments.sign_update,
+        os.environ.get("SPARKLE_ED25519_PRIVATE_KEY", ""),
     )
     if published:
         success(f"Published {len(published)} Sparkle delta update(s)")
@@ -289,9 +207,7 @@ def main() -> None:
     finalize_parser.add_argument("--directory", type=Path, required=True)
     finalize_parser.add_argument("--appcast", type=Path, required=True)
     finalize_parser.add_argument("--output", type=Path, required=True)
-    finalize_parser.add_argument(
-        "--sign-update", type=Path, help="Sparkle sign_update path"
-    )
+    finalize_parser.add_argument("--sign-update", type=Path, required=True)
     finalize_parser.set_defaults(handler=finalize)
     arguments = parser.parse_args()
     arguments.handler(arguments)

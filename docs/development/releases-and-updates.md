@@ -61,6 +61,8 @@ The draft contains:
 
 The workflow attaches GitHub build-provenance attestations for the DMG, runtime recipe, and checksum file. Do not copy assets from `dist/` into the repository.
 
+To test the release path without publishing, start **Draft release** from any branch with **dry_run** enabled. The run builds, signs, and verifies everything, including the Sparkle deltas. It skips the website deploy, the attestation, and the draft release. It uploads the files as the `dry-run-vX.Y.Z` workflow artifact, which expires after three days. Inspect that artifact before a real release.
+
 GitHub Actions dependencies use immutable commit pins with version comments. Every workflow declares bounded job runtimes and job-specific token permissions. Write access is limited to release publication, Pages deployment, live-contract failure issues, and wallpaper-tag issue filing.
 
 ## Release review
@@ -94,7 +96,7 @@ The launcher checks for updates silently when it opens (the user can disable thi
 
 Clients read the appcast through the stable `releases/latest/download/appcast.xml` URL. Each release has a complete `.tar.xz` update archive (up to 0.6.x: `.zip`). Sparkle 2.9.6, the oldest shipped updater, extracts both.
 
-The workflow creates the archives from the fully packaged app, preserving bundle symlinks and executable modes. It generates and signs the appcast with Sparkle's `generate_appcast`. Before it creates the draft, it validates the key pair and verifies the signed appcast bytes and every enclosure against the generated archive, including basename and byte length. This rejects a bad signature, tampered archive, wrong asset filename, or length mismatch before publication.
+The workflow creates the archives from the fully packaged app, preserving bundle symlinks and executable modes. It generates and signs the appcast with Sparkle's `generate_appcast`. Before it creates the draft, it validates the key pair and runs Sparkle's `sign_update --verify` on the appcast, the archive, and every delta. This rejects a bad signature or a tampered file before publication.
 
 The workflow also checks that the bundle contains Sparkle.framework with symlinks and nested XPC and helper code intact, an `@executable_path/../Frameworks` rpath, inside-out ad-hoc signatures, and a final outer-bundle verification. For a release candidate, install the DMG, start a newer signed update from the launcher, and confirm the themed update UI and the download and restart flow. Repeat during an active game or installation to verify that replacement is deferred.
 
@@ -105,7 +107,7 @@ The workflow also checks that the bundle contains Sparkle.framework with symlink
 > - Export a current Sparkle `generate_keys -x` seed of exactly 32 decoded bytes. The workflow rejects legacy 96-byte key-pair exports.
 > - Release validation derives the public key from the seed and compares it with K0 before upload.
 > - Keep the private key in the macOS login Keychain and one separate encrypted offline recovery copy. Never commit it.
-> - Local `just ci` and release signature verification need OpenSSL 3 or newer with Ed25519 support. macOS system LibreSSL lacks it. Install `openssl@3` locally and put its `bin` directory before the system tools in `PATH`.
+> - The release workflow needs OpenSSL 3 or newer with Ed25519 support to derive the public key. macOS system LibreSSL lacks it. The workflow installs `openssl@3`. Unit tests do not need it.
 
 Key rotation is deferred. Sparkle 2.9.6's `generate_appcast` adds no enclosure signature when the signing seed does not match the embedded public key. Each installed client authenticates the signed feed with its own key ([Sparkle's guide](https://sparkle-project.org/documentation/#rotating-signing-keys)). One replacement `appcast.xml` cannot serve both K0 and a new K1. Keep K0 until all of these are true:
 
@@ -121,7 +123,7 @@ The Wine runtime is most of the bundle and rarely changes, so the workflow also 
 
 Delta generation is best effort. A missing release, failed listing, or failed download logs a warning and skips that source. The complete archive still ships.
 
-`generate_appcast` names deltas after the app bundle, but GitHub stores the asset with dots, which breaks the URL. `scripts/sparkle_deltas.py finalize` copies the referenced deltas into `dist/` under GitHub-safe names, rewrites their URLs, and signs the feed again with the K0 seed, because the signature covers those URLs. `validate_sparkle_keys.py --delta-directory dist` then verifies every delta's name, host, `sparkle:deltaFrom`, length, and Ed25519 signature. Deltas are in `SHA256SUMS` and the attestation.
+`generate_appcast` names deltas after the app bundle, but GitHub stores the asset with dots, which breaks the URL. `scripts/sparkle_deltas.py finalize` copies the referenced deltas into `dist/` under GitHub-safe names, rewrites their URLs, and signs the feed again with the K0 seed, because the signature covers those URLs. `validate_sparkle_keys.py --delta-directory dist` then verifies every delta with `sign_update --verify`. Deltas are in `SHA256SUMS` and the attestation.
 
 Sparkle ignores the custom `Icon\r` file that `NSWorkspace.setIcon` writes into the bundle, so icon customization does not invalidate deltas. Any other bundle change makes Sparkle use the full archive.
 

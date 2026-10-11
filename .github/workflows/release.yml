@@ -7,6 +7,11 @@ on:
         description: Release version (X.Y.Z)
         required: true
         type: string
+      dry_run:
+        description: Build, sign, and verify everything, but publish nothing (no draft, no Pages deploy, no attestation)
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -20,6 +25,7 @@ jobs:
   # but must not prevent the package job from creating its draft release.
   pages:
     name: Publish website
+    if: ${{ !inputs.dry_run }}
     permissions:
       contents: read
       pages: write
@@ -62,8 +68,9 @@ jobs:
       - name: Validate release inputs
         env:
           GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+          if [[ "$DRY_RUN" != "true" && "$GITHUB_REF" != "refs/heads/main" ]]; then
             echo "Releases must be triggered from main after the release branch is merged." >&2
             exit 1
           fi
@@ -143,8 +150,10 @@ jobs:
             --count "$DELTA_SOURCES"
           generate_appcast="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
             -type f -path '*/Sparkle/bin/generate_appcast' -perm -111 -print -quit)"
-          if [[ -z "$generate_appcast" ]]; then
-            echo "Sparkle generate_appcast tool not found." >&2
+          sign_update="$(find "$GITHUB_WORKSPACE/.build/artifacts/sparkle" \
+            -type f -path '*/Sparkle/bin/sign_update' -perm -111 -print -quit)"
+          if [[ -z "$generate_appcast" || -z "$sign_update" ]]; then
+            echo "Sparkle generate_appcast or sign_update tool not found." >&2
             exit 1
           fi
           release_prefix="https://github.com/$GITHUB_REPOSITORY/releases/download/v$RELEASE_VERSION/"
@@ -158,11 +167,12 @@ jobs:
           uv run --locked --no-dev scripts/sparkle_deltas.py finalize \
             --directory "$update_directory" \
             --appcast "$update_directory/appcast.xml" \
-            --output dist
+            --output dist \
+            --sign-update "$sign_update"
           uv run --locked --no-dev scripts/validate_sparkle_keys.py \
             --plist "dist/$APP_NAME/Contents/Info.plist" \
+            --sign-update "$sign_update" \
             --appcast "$update_directory/appcast.xml" \
-            --update-name "$UPDATE_NAME" \
             --update-file "$update_directory/$UPDATE_NAME" \
             --delta-directory dist
           cp "$update_directory/$UPDATE_NAME" "dist/$UPDATE_NAME"
@@ -173,6 +183,7 @@ jobs:
             dist/appcast.xml dist/Runtime-Build-Recipe.tar.gz > dist/SHA256SUMS
 
       - name: Attest release provenance
+        if: ${{ !inputs.dry_run }}
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         env:
           GH_TOKEN: ${{ github.token }}
@@ -185,7 +196,22 @@ jobs:
             dist/Runtime-Build-Recipe.tar.gz
             dist/SHA256SUMS
 
+      - name: Upload dry-run files for inspection
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dry-run-v${{ inputs.version }}
+          path: |
+            dist/*.dmg
+            dist/*.tar.xz
+            dist/*.delta
+            dist/appcast.xml
+            dist/Runtime-Build-Recipe.tar.gz
+            dist/SHA256SUMS
+          retention-days: 3
+
       - name: Create draft release
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
