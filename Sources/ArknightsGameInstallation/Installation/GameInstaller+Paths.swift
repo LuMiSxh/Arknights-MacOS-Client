@@ -7,7 +7,7 @@ import Foundation
 
 extension GameInstaller {
 	func validateManifest(
-		_ manifest: GameManifest, in installDirectory: InstallerInstallDirectory
+		_ manifest: GameManifest, in installDirectory: InstallerDirectory
 	)
 		throws
 	{
@@ -108,14 +108,14 @@ extension GameInstaller {
 		return components.joined(separator: "/")
 	}
 
-	func assertSafeExistingPartialFile(at partial: InstallerFilePath) throws {
+	func assertSafeExistingPartialFile(at partial: InstallerFile) throws {
 		guard let attributes = try partial.stat() else { return }
 		guard attributes.st_mode & S_IFMT == S_IFREG, attributes.st_nlink == 1 else {
 			throw InstallerError.unsafeInstallerTemporaryFile(partial.url)
 		}
 	}
 
-	func assertRegularDestinationIfPresent(_ destination: InstallerFilePath) throws {
+	func assertRegularDestinationIfPresent(_ destination: InstallerFile) throws {
 		guard let attributes = try destination.stat() else { return }
 		guard attributes.st_mode & S_IFMT == S_IFREG else {
 			throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
@@ -124,9 +124,9 @@ extension GameInstaller {
 
 	func installFile(
 		at relativePath: String,
-		inside installDirectory: InstallerInstallDirectory,
+		inside installDirectory: InstallerDirectory,
 		createParents: Bool = false
-	) throws -> InstallerFilePath {
+	) throws -> InstallerFile {
 		do {
 			return try installDirectory.file(at: relativePath, createParents: createParents)
 		} catch {
@@ -134,19 +134,17 @@ extension GameInstaller {
 		}
 	}
 
-	func installDirectory(
-		at relativePath: String,
-		inside installDirectory: InstallerInstallDirectory,
-		createParents: Bool = false
-	) throws -> InstallerDirectoryHandle {
+	func stagingDirectory(in installDirectory: InstallerDirectory) throws -> InstallerDirectory {
 		do {
-			return try installDirectory.directory(at: relativePath, createParents: createParents)
+			return try installDirectory.stagingDirectory(
+				named: AppConstants.Game.installerStagingDirectoryName
+			)
 		} catch {
 			throw mapInstallerFileSystemError(error)
 		}
 	}
 
-	func fileSize(at file: InstallerFilePath) throws -> Int64? {
+	func fileSize(at file: InstallerFile) throws -> Int64? {
 		guard let attributes = try file.stat() else { return nil }
 		guard attributes.st_mode & S_IFMT == S_IFREG, attributes.st_size >= 0 else {
 			throw InstallerError.unsafeInstallerTemporaryFile(file.url)
@@ -159,8 +157,6 @@ extension GameInstaller {
 		return switch error {
 		case .invalidPath(let path): InstallerError.invalidManifestPath(path)
 		case .symbolicLink(let url): InstallerError.symbolicLinkInInstallPath(url)
-		case .unsafeFile(let url), .unsafeDirectory(let url):
-			InstallerError.unsafeInstallerTemporaryFile(url)
 		case .directoryInUse(let url): InstallerError.installDirectoryInUse(url)
 		}
 	}

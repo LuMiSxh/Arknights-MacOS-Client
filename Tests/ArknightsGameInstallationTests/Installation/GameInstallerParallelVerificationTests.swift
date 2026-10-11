@@ -30,7 +30,7 @@ struct GameInstallerParallelVerificationTests {
 		) async throws -> GameInstaller.PendingDownloads {
 			try await installer.pendingDownloads(
 				in: manifest,
-				installDirectory: try InstallerInstallDirectory(pinningAt: directory),
+				installDirectory: InstallerDirectory(at: directory),
 				previousFiles: nil,
 				verifyAllExistingFiles: true,
 				progress: progress,
@@ -109,37 +109,6 @@ struct GameInstallerParallelVerificationTests {
 		#expect(last.completedFiles == 6)
 		#expect(last.totalFiles == 6)
 		#expect(result.lastSequence == last.sequence)
-	}
-
-	@Test
-	func identityChangeWhileHashingIsRejected() async throws {
-		let fixture = try Self.makeFixture(bodies: Self.bodies(count: 1, size: 64 * 1_024))
-		defer { fixture.remove() }
-		let target = fixture.directory.appending(path: "file-0.dat")
-		let swapped = Mutex(false)
-
-		await #expect {
-			try await fixture.pending(willHash: { _ in
-				guard
-					!swapped.withLock({
-						let was = $0
-						$0 = true
-						return was
-					})
-				else { return }
-				let replacement = target.appendingPathExtension("swap")
-				do {
-					try Data(repeating: 0x01, count: 64 * 1_024).write(to: replacement)
-					try FileManager.default.removeItem(at: target)
-					try FileManager.default.moveItem(at: replacement, to: target)
-				} catch {
-					Issue.record("Could not swap the file: \(error)")
-				}
-			})
-		} throws: { error in
-			guard case InstallerError.unsafeInstallerTemporaryFile = error else { return false }
-			return true
-		}
 	}
 
 	@Test

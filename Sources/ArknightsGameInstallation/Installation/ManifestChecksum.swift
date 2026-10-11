@@ -33,17 +33,17 @@ enum ManifestChecksum {
 			: actual == expected
 	}
 
-	/// Hashes an already-open inode without resolving its pathname again.
+	/// Hashes an already-open regular file with one hard link.
 	static func checksum(
 		ofFileDescriptor descriptor: Int32,
 		expected: String,
 		onRead: ((Int) -> Void)? = nil
 	) throws -> String {
-		var before = stat()
-		guard fstat(descriptor, &before) == 0 else {
+		var status = stat()
+		guard fstat(descriptor, &status) == 0 else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
-		guard before.st_mode & S_IFMT == S_IFREG, before.st_nlink == 1 else {
+		guard status.st_mode & S_IFMT == S_IFREG, status.st_nlink == 1 else {
 			throw POSIXError(.EINVAL)
 		}
 		var md5 = Insecure.MD5()
@@ -71,17 +71,6 @@ enum ManifestChecksum {
 			offset += off_t(count)
 			onRead?(count)
 		}
-		var after = stat()
-		guard fstat(descriptor, &after) == 0 else {
-			throw POSIXError(.init(rawValue: errno) ?? .EIO)
-		}
-		guard InstallerFileIdentity(after) == InstallerFileIdentity(before),
-			after.st_size == before.st_size,
-			after.st_mtimespec.tv_sec == before.st_mtimespec.tv_sec,
-			after.st_mtimespec.tv_nsec == before.st_mtimespec.tv_nsec,
-			after.st_ctimespec.tv_sec == before.st_ctimespec.tv_sec,
-			after.st_ctimespec.tv_nsec == before.st_ctimespec.tv_nsec
-		else { throw POSIXError(.EBUSY) }
 		return isMD5(expected)
 			? md5.finalize().map { String(format: "%02x", $0) }.joined()
 			: crc64.decimalString

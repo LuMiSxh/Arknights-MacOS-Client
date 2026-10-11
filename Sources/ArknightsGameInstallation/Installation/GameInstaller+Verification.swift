@@ -18,7 +18,7 @@ extension GameInstaller {
 
 	func pendingDownloads(
 		in manifest: GameManifest,
-		installDirectory: InstallerInstallDirectory,
+		installDirectory: InstallerDirectory,
 		previousFiles: [String: ManifestFile]?,
 		verifyAllExistingFiles: Bool,
 		progress: @escaping ProgressHandler,
@@ -46,8 +46,7 @@ extension GameInstaller {
 				VerificationCandidate(
 					item: item,
 					relativePath: relativePath,
-					size: Int64(status.st_size),
-					identity: InstallerFileIdentity(status)
+					size: Int64(status.st_size)
 				)
 			)
 		}
@@ -112,13 +111,13 @@ extension GameInstaller {
 	}
 
 	/// Hashes on the concurrent pool so synchronous file reads never occupy the caller's
-	/// executor. Every identity check stays with the file it protects.
+	/// executor.
 	@concurrent
 	private func needsDownload(
 		_ candidate: VerificationCandidate,
 		previousFile: ManifestFile?,
 		verifyAllExistingFiles: Bool,
-		installDirectory: InstallerInstallDirectory,
+		installDirectory: InstallerDirectory,
 		tally: VerificationTally,
 		willHash: @escaping @Sendable (String) -> Void,
 		didRead: @escaping @Sendable (Int) -> Void
@@ -141,15 +140,7 @@ extension GameInstaller {
 					flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW
 				)
 				defer { _ = close(descriptor) }
-				var before = stat()
-				guard fstat(descriptor, &before) == 0,
-					before.st_mode & S_IFMT == S_IFREG,
-					before.st_nlink == 1,
-					InstallerFileIdentity(before) == candidate.identity
-				else {
-					throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
-				}
-				let checksum = try ManifestChecksum.checksum(
+				return try ManifestChecksum.checksum(
 					ofFileDescriptor: descriptor,
 					expected: item.hash,
 					onRead: { count in
@@ -157,16 +148,6 @@ extension GameInstaller {
 						didRead(count)
 					}
 				)
-				var after = stat()
-				guard fstat(descriptor, &after) == 0,
-					InstallerFileIdentity(after) == InstallerFileIdentity(before),
-					after.st_size == before.st_size,
-					let current = try destination.stat(),
-					InstallerFileIdentity(current) == InstallerFileIdentity(before)
-				else {
-					throw InstallerError.unsafeInstallerTemporaryFile(destination.url)
-				}
-				return checksum
 			}
 		)
 	}
@@ -198,7 +179,6 @@ struct VerificationCandidate: Sendable {
 	let item: ManifestFile
 	let relativePath: String
 	var size: Int64?
-	var identity: InstallerFileIdentity?
 }
 
 /// Thread-safe verification counters written by the concurrent hashing tasks and read by the

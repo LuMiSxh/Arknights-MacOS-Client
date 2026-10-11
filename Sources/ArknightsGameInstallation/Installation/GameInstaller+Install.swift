@@ -56,7 +56,7 @@ extension GameInstaller {
 		configuration: GameConfiguration,
 		region: GameRegion,
 		into installDirectory: URL,
-		installationRoot: InstallerInstallDirectory,
+		installationRoot: InstallerDirectory,
 		verifyAllExistingFiles: Bool,
 		monitorClock: any Clock<Duration>,
 		progress: @escaping ProgressHandler

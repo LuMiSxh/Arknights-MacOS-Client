@@ -5,16 +5,30 @@ import Foundation
 
 /// Exclusive cross-process advisory lease on an install root.
 ///
-/// The lease owns a separate lock descriptor whose device and inode match the pinned root.
+/// The lease owns a descriptor on the root with an `flock`. `flock` binds to the open file
+/// description, so a second acquire conflicts even inside this process.
 /// Call ``release()`` to unlock and close deterministically; `deinit` only backs that up.
 package struct InstallLease: ~Copyable, Sendable {
-	package let directory: InstallerInstallDirectory
+	package let directory: InstallerDirectory
 	private let lockDescriptor: Int32
 
-	/// Pins the install root and takes its lock, or throws `directoryInUse` while another holder has it.
+	/// Creates the install root and takes its lock, or throws `directoryInUse` while another holder has it.
 	static func acquire(at url: URL) throws -> InstallLease {
-		let directory = try InstallerInstallDirectory(pinningAt: url)
-		let descriptor = try InstallerInstallDirectory.acquireLock(on: directory.root)
+		try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+		let directory = InstallerDirectory(at: url)
+		let descriptor = open(directory.url.path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW)
+		guard descriptor >= 0 else {
+			if errno == ELOOP { throw InstallerFileSystemError.symbolicLink(directory.url) }
+			throw POSIXError(.init(rawValue: errno) ?? .EIO)
+		}
+		guard flock(descriptor, LOCK_EX | LOCK_NB) == 0 else {
+			let error = errno
+			_ = close(descriptor)
+			if error == EWOULDBLOCK || error == EAGAIN {
+				throw InstallerFileSystemError.directoryInUse(directory.url)
+			}
+			throw POSIXError(.init(rawValue: error) ?? .EIO)
+		}
 		return InstallLease(directory: directory, lockDescriptor: descriptor)
 	}
 
@@ -22,7 +36,8 @@ package struct InstallLease: ~Copyable, Sendable {
 	consuming func release() {}
 
 	deinit {
-		InstallerInstallDirectory.releaseLock(lockDescriptor)
+		_ = flock(lockDescriptor, LOCK_UN)
+		_ = close(lockDescriptor)
 	}
 }
 

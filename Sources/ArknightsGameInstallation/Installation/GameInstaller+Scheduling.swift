@@ -29,7 +29,7 @@ extension GameInstaller {
 	/// Returns the size of the `.part` file for `item`, or 0 when none exists.
 	func partialByteCount(
 		of item: ManifestFile,
-		in installationRoot: InstallerInstallDirectory
+		in installationRoot: InstallerDirectory
 	) throws -> Int64 {
 		let relativePath = try Self.safeRelativePath(item.path)
 		let destination = try installFile(at: relativePath, inside: installationRoot)

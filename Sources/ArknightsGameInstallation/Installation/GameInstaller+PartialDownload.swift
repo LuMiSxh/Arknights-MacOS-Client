@@ -11,10 +11,9 @@ import Foundation
 /// out of `GameInstaller.download` leaks it. Not `Sendable`: one attempt uses it serially.
 final class PartialDownload {
 	let item: ManifestFile
-	let partial: InstallerFilePath
-	let destination: InstallerFilePath
-	let stagingDirectory: InstallerDirectoryHandle
-	let metadataFile: InstallerFilePath
+	let partial: InstallerFile
+	let destination: InstallerFile
+	let metadataFile: InstallerFile
 	let descriptor: Int32
 	let handle: FileHandle
 	let counter: ProgressCounter
@@ -26,10 +25,9 @@ final class PartialDownload {
 
 	init(
 		item: ManifestFile,
-		partial: InstallerFilePath,
-		destination: InstallerFilePath,
-		stagingDirectory: InstallerDirectoryHandle,
-		metadataFile: InstallerFilePath,
+		partial: InstallerFile,
+		destination: InstallerFile,
+		metadataFile: InstallerFile,
 		descriptor: Int32,
 		existingBytes: Int64,
 		counter: ProgressCounter,
@@ -38,7 +36,6 @@ final class PartialDownload {
 		self.item = item
 		self.partial = partial
 		self.destination = destination
-		self.stagingDirectory = stagingDirectory
 		self.metadataFile = metadataFile
 		self.descriptor = descriptor
 		handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
@@ -120,11 +117,11 @@ extension GameInstaller {
 }
 
 extension GameInstaller {
-	/// Validates the manifest path and destination, then opens the private regular `.part`
-	/// file without following links.
+	/// Validates the manifest path and destination, then opens the regular `.part` file without
+	/// following links.
 	func openPartialDownload(
 		_ item: ManifestFile,
-		installDirectory: InstallerInstallDirectory,
+		installDirectory: InstallerDirectory,
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler
 	) throws -> PartialDownload {
@@ -137,15 +134,10 @@ extension GameInstaller {
 		let partial = destination.sibling(named: destination.name + ".part")
 		try assertRegularDestinationIfPresent(destination)
 		try assertSafeExistingPartialFile(at: partial)
-		let stagingDirectory: InstallerDirectoryHandle
-		do {
-			stagingDirectory = try installDirectory.stagingDirectory(
-				named: AppConstants.Game.installerStagingDirectoryName
-			)
-		} catch {
-			throw mapInstallerFileSystemError(error)
-		}
-		let metadataFile = resumeMetadataFile(for: relativePath, in: stagingDirectory)
+		let metadataFile = resumeMetadataFile(
+			for: relativePath,
+			in: try stagingDirectory(in: installDirectory)
+		)
 		let descriptor: Int32
 		do {
 			descriptor = try partial.open(
@@ -168,7 +160,6 @@ extension GameInstaller {
 			item: item,
 			partial: partial,
 			destination: destination,
-			stagingDirectory: stagingDirectory,
 			metadataFile: metadataFile,
 			descriptor: descriptor,
 			existingBytes: Int64(fileStatus.st_size),

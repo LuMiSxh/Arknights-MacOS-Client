@@ -45,7 +45,7 @@ package struct GameInstaller: Sendable {
 		_ item: ManifestFile,
 		source: String,
 		baseURL: URL,
-		installDirectory: InstallerInstallDirectory,
+		installDirectory: InstallerDirectory,
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler,
 		region: GameRegion = .global
@@ -91,7 +91,6 @@ package struct GameInstaller: Sendable {
 			partial: download.partial,
 			partialDescriptor: download.descriptor,
 			destination: download.destination,
-			stagingDirectory: download.stagingDirectory,
 			metadataFile: download.metadataFile,
 			countedBytes: download.existingBytes + networkBytes,
 			networkBytes: networkBytes,

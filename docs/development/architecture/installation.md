@@ -80,9 +80,8 @@ sequenceDiagram
 	Installer->>Disk: Restore owned compatibility files
 	par Up to configured concurrent downloads
 		Installer->>Disk: Write or resume file.part
-		Installer->>Disk: Clone or copy retained part into private staging
-		Installer->>Installer: Verify staged size and provider checksum
-		Installer->>Disk: Atomically rename verified staged file to final path
+		Installer->>Installer: Verify part size and provider checksum
+		Installer->>Disk: Atomically rename verified part to final path
 	end
 	Installer->>Disk: Atomically save installed state
 	Disk-->>Controller: InstallResult
@@ -132,25 +131,20 @@ an escape from the install directory. Further rules:
 
 File promotion:
 
-- The installer holds its advisory root lock from manifest fetch through state commit. It keeps
-  directory parents as open descriptors. Download bytes stay on the opened `.part` inode, even if a
-  name or parent pathname changes.
-- Before promotion, it clones or copies that descriptor into a unique owner-only staging file, removes
-  inherited ACLs, and hashes the staged descriptor. Then it atomically renames the verified inode into
-  the opened destination parent.
-- It writes and syncs installed-state records in private staging, then renames them atomically into the
-  install root.
-- Without filesystem cloning, staging uses a bounded copy that can fail for lack of free space. A
-  failure leaves the previous destination intact and keeps the resumable `.part`.
+- The installer holds its advisory root lock from manifest fetch through state commit.
+- Before it writes, it checks every path component with `lstat` and rejects symlinks. It opens files
+  with `O_NOFOLLOW`.
+- When the download is complete, it hashes the `.part` file. Then it atomically renames the verified
+  file to the destination. A failed hash keeps the destination intact.
+- It writes and syncs installed-state records in the staging directory, then renames them atomically
+  into the install root.
 
 Limits:
 
-- On a volume that enforces ownership and permissions, private staging stops other UIDs from replacing
-  the verified source name before promotion.
-- On a volume mounted to ignore ownership, mode and ACL checks do not isolate staged names. Hashing and
-  atomic rename still run, but protection from source-name replacement by another UID is not guaranteed.
+- The installer uses paths, not open directory descriptors. It does not re-check file identity after
+  it hashes or renames a file.
 - The lock coordinates cooperating installers. It does not stop uncooperative writers or hostile
-  same-UID code.
+  same-UID code, or another user who can write to the install directory.
 
 ## Reuse, repair, and resume
 
@@ -163,18 +157,18 @@ Limits:
 Before it downloads a pending file, `GameInstaller+Reuse` tries to take it from another region's
 installation, including custom locations. A donor must:
 
-- be a different directory from the target (compared by device and inode);
+- be a different directory from the target (compared after symlink resolution);
 - contain `Arknights.exe`;
 - have a decodable installed-state file that lists the file's manifest path;
 - have the file at the same size, with no sibling `.part`.
 
 Files that already have resumable `.part` bytes are never replaced.
 
-1. The installer clones the donor file with `fclonefileat` into a private `reuse-*.tmp` in the target's
-   staging directory.
-2. It passes that inode to `finishDownload` in place of a finished `.part`, with the same size check,
+1. The installer copies the donor file with `FileManager.copyItem` into a `reuse-*.tmp` file in the
+   target's staging directory. APFS makes this copy a clone.
+2. It passes that file to `finishDownload` in place of a finished `.part`, with the same size check,
    provider checksum, atomic promotion, and failure handling as a download.
-3. A clone failure or checksum mismatch discards the clone and logs a line. The installer tries the
+3. A copy failure or checksum mismatch discards the copy and logs a line. The installer tries the
    next donor, then the normal download. Reuse never fails an installation.
 
 Donors open read-only. The installer never locks, moves, or modifies them, so a running donor game is

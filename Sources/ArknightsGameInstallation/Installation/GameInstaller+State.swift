@@ -9,7 +9,7 @@ extension GameInstaller {
 	func saveState(
 		configuration: GameConfiguration,
 		manifest: GameManifest,
-		to installDirectory: InstallerInstallDirectory
+		to installDirectory: InstallerDirectory
 	) throws {
 		let state = InstalledState(
 			version: configuration.gameLatestVersion,
@@ -26,11 +26,8 @@ extension GameInstaller {
 		guard data.count <= AppConstants.Game.installedStateMaximumBytes else {
 			throw LauncherError.invalidResponse
 		}
-		let name = AppConstants.Game.installedStateFileName
-		let stagingDirectory = try installDirectory.stagingDirectory(
-			named: AppConstants.Game.installerStagingDirectoryName
-		)
-		let temporary = stagingDirectory.file(named: "state-\(UUID().uuidString).tmp")
+		let temporary = try stagingDirectory(in: installDirectory)
+			.file(named: "state-\(UUID().uuidString).tmp")
 		let descriptor = try temporary.open(
 			flags: O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW,
 			mode: S_IRUSR | S_IWUSR
@@ -46,35 +43,21 @@ extension GameInstaller {
 				}
 			}
 		}
-		try InstallerInstallDirectory.makePrivateRegularFile(descriptor, at: temporary.url)
 		try Self.write(data, to: descriptor)
 		guard fsync(descriptor) == 0 else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
-		guard
-			renameat(
-				stagingDirectory.descriptor,
-				temporary.name,
-				installDirectory.root.descriptor,
-				name
-			) == 0
-		else {
-			throw POSIXError(.init(rawValue: errno) ?? .EIO)
-		}
+		let stateFile = installDirectory.file(named: AppConstants.Game.installedStateFileName)
+		try temporary.rename(to: stateFile)
 		temporaryExists = false
-		guard fsync(stagingDirectory.descriptor) == 0,
-			fsync(installDirectory.root.descriptor) == 0
-		else {
-			throw POSIXError(.init(rawValue: errno) ?? .EIO)
-		}
+		try stateFile.synchronizeParent()
 	}
 
-	func loadState(from installDirectory: InstallerInstallDirectory) throws -> InstalledState? {
-		let file = installDirectory.root.file(named: AppConstants.Game.installedStateFileName)
+	func loadState(from installDirectory: InstallerDirectory) throws -> InstalledState? {
+		let file = installDirectory.file(named: AppConstants.Game.installedStateFileName)
 		guard try file.stat() != nil else { return nil }
 		let descriptor = try file.open(flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
 		defer { _ = close(descriptor) }
-		try InstallerInstallDirectory.validateTrustedStateFile(descriptor, at: file.url)
 		let data = try BoundedFileReader.readRegularFile(
 			fileDescriptor: descriptor,
 			at: file.url,

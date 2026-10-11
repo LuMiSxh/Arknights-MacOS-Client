@@ -7,8 +7,8 @@ import Foundation
 
 /// A complete installation of another region whose files may be cloned instead of downloaded.
 ///
-/// Sources are only read: the installer never opens them through `InstallerInstallDirectory`,
-/// so it takes no lock and no file in them is modified, moved, or held open beyond one clone.
+/// Sources are only read: the installer never opens them through `InstallerDirectory`,
+/// so it takes no lock and no file in them is modified, moved, or held open beyond one copy.
 struct ReuseSource: Sendable {
 	let directory: URL
 	/// Paths the source's own installed state lists, or `nil` for a state recorded before
@@ -43,24 +43,20 @@ extension GameInstaller {
 	/// different directory from the target and have both `Arknights.exe` and a readable
 	/// installed-state file, the same definition of an installed region the launcher uses.
 	func reuseSession(
-		for region: GameRegion, target: InstallerInstallDirectory
+		for region: GameRegion, target: InstallerDirectory
 	) async
 		-> ReuseSession
 	{
 		guard let reuseSourceDirectories else { return .none }
 		let candidates = await reuseSourceDirectories(region)
-		var targetStatus = stat()
-		guard fstat(target.root.descriptor, &targetStatus) == 0 else { return .none }
-		var seen = [InstallerFileIdentity(targetStatus)]
+		var seen: Set<String> = [target.url.resolvingSymlinksInPath().path]
 		var sources: [ReuseSource] = []
 		for candidate in candidates where !Task.isCancelled {
 			var status = stat()
 			guard stat(candidate.path, &status) == 0, status.st_mode & S_IFMT == S_IFDIR else {
 				continue
 			}
-			let identity = InstallerFileIdentity(status)
-			guard !seen.contains(identity) else { continue }
-			seen.append(identity)
+			guard seen.insert(candidate.resolvingSymlinksInPath().path).inserted else { continue }
 			do {
 				sources.append(try loadReuseSource(at: candidate))
 			} catch {
@@ -95,7 +91,7 @@ extension GameInstaller {
 	/// means the caller must download. A failing donor never fails the installation.
 	func reuseFromOtherRegions(
 		_ item: ManifestFile,
-		installDirectory: InstallerInstallDirectory,
+		installDirectory: InstallerDirectory,
 		session: ReuseSession,
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler
@@ -111,14 +107,7 @@ extension GameInstaller {
 		// Resumable bytes are worth more than a donor clone of unknown provenance.
 		let partialSize = try fileSize(at: partial) ?? 0
 		guard partialSize == 0 else { return false }
-		let stagingDirectory: InstallerDirectoryHandle
-		do {
-			stagingDirectory = try installDirectory.stagingDirectory(
-				named: AppConstants.Game.installerStagingDirectoryName
-			)
-		} catch {
-			throw mapInstallerFileSystemError(error)
-		}
+		let stagingDirectory = try stagingDirectory(in: installDirectory)
 		for source in session.sources where source.mayContain(relativePath) {
 			try Task.checkCancellation()
 			do {
@@ -127,7 +116,6 @@ extension GameInstaller {
 						of: item,
 						relativePath: relativePath,
 						from: source,
-						partial: partial,
 						destination: destination,
 						stagingDirectory: stagingDirectory,
 						counter: counter,
@@ -149,45 +137,30 @@ extension GameInstaller {
 		return false
 	}
 
-	/// `CLONE_NOFOLLOW | CLONE_NOOWNCOPY` from `<sys/attr.h>`; the latter is not imported into
-	/// Swift. The clone belongs to this user even when the donor file is owned by another.
-	private static let cloneFlags: UInt32 = 0x0001 | 0x0002
-
 	private func adoptClone(
 		of item: ManifestFile,
 		relativePath: String,
 		from source: ReuseSource,
-		partial: InstallerFilePath,
-		destination: InstallerFilePath,
-		stagingDirectory: InstallerDirectoryHandle,
+		destination: InstallerFile,
+		stagingDirectory: InstallerDirectory,
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler
 	) async throws -> Bool {
 		let sourceURL = source.directory.appending(path: relativePath)
-		let sourceDescriptor = open(sourceURL.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)
-		guard sourceDescriptor >= 0 else {
+		var sourceStatus = stat()
+		var siblingPart = stat()
+		guard lstat(sourceURL.path, &sourceStatus) == 0 else {
 			if errno == ENOENT { return false }
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
-		defer { _ = close(sourceDescriptor) }
-		var sourceStatus = stat()
-		var siblingPart = stat()
-		guard fstat(sourceDescriptor, &sourceStatus) == 0,
-			sourceStatus.st_mode & S_IFMT == S_IFREG,
+		guard sourceStatus.st_mode & S_IFMT == S_IFREG,
 			Int64(sourceStatus.st_size) == item.byteCount,
 			// A donor file with a sibling `.part` is mid-update and not a settled copy.
-			stat(sourceURL.path + ".part", &siblingPart) != 0
+			lstat(sourceURL.path + ".part", &siblingPart) != 0
 		else { return false }
 
 		let clone = stagingDirectory.file(named: "reuse-\(UUID().uuidString).tmp")
-		guard
-			fclonefileat(
-				sourceDescriptor,
-				stagingDirectory.descriptor,
-				clone.name,
-				Self.cloneFlags
-			) == 0
-		else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
+		try FileManager.default.copyItem(at: sourceURL, to: clone.url)
 		defer {
 			do {
 				try clone.unlink()
@@ -199,16 +172,14 @@ extension GameInstaller {
 		}
 		let cloneDescriptor = try clone.open(flags: O_RDWR | O_CLOEXEC | O_NOFOLLOW)
 		defer { _ = close(cloneDescriptor) }
-		try InstallerInstallDirectory.makePrivateRegularFile(cloneDescriptor, at: clone.url)
 
-		// The clone takes the place of a finished `.part`, so it gets the same size check,
+		// The copy takes the place of a finished `.part`, so it gets the same size check,
 		// checksum, atomic promotion, and failure handling as a download.
 		try await finishDownload(
 			item,
-			partial: partial,
+			partial: clone,
 			partialDescriptor: cloneDescriptor,
 			destination: destination,
-			stagingDirectory: stagingDirectory,
 			metadataFile: resumeMetadataFile(for: relativePath, in: stagingDirectory),
 			countedBytes: 0,
 			networkBytes: 0,
@@ -220,7 +191,7 @@ extension GameInstaller {
 		return true
 	}
 
-	private func removeEmptyPartial(_ partial: InstallerFilePath) {
+	private func removeEmptyPartial(_ partial: InstallerFile) {
 		do {
 			if let status = try partial.stat(), status.st_size == 0 { try partial.unlink() }
 		} catch {

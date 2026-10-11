@@ -93,8 +93,8 @@ extension GameInstaller {
 
 	func resumeMetadataFile(
 		for relativePath: String,
-		in stagingDirectory: InstallerDirectoryHandle
-	) -> InstallerFilePath {
+		in stagingDirectory: InstallerDirectory
+	) -> InstallerFile {
 		let digest = SHA256.hash(data: Data(relativePath.utf8))
 			.map { String(format: "%02x", $0) }
 			.joined()
@@ -102,7 +102,7 @@ extension GameInstaller {
 	}
 
 	func readResumeMetadata(
-		at file: InstallerFilePath
+		at file: InstallerFile
 	) throws -> InstallerResumeMetadata? {
 		guard let status = try file.stat() else { return nil }
 		guard status.st_mode & S_IFMT == S_IFREG, status.st_nlink == 1 else {
@@ -126,7 +126,7 @@ extension GameInstaller {
 
 	func writeResumeMetadata(
 		_ metadata: InstallerResumeMetadata,
-		to file: InstallerFilePath
+		to file: InstallerFile
 	) throws {
 		let encoder = JSONEncoder()
 		encoder.outputFormatting = [.sortedKeys]
@@ -135,61 +135,6 @@ extension GameInstaller {
 		guard data.count <= AppConstants.Game.installerResumeMetadataMaximumBytes else {
 			throw LauncherError.invalidResponse
 		}
-		let temporary = file.directory.file(named: "metadata-\(UUID().uuidString).tmp")
-		let descriptor = try temporary.open(
-			flags: O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW,
-			mode: S_IRUSR | S_IWUSR
-		)
-		var temporaryExists = true
-		defer {
-			_ = close(descriptor)
-			if temporaryExists {
-				do {
-					try temporary.unlink()
-				} catch {
-					log?.error(
-						"Failed to clean resume metadata temporary file: \(error.localizedDescription)"
-					)
-				}
-			}
-		}
-		try Self.writeAll(data, to: descriptor)
-		guard fsync(descriptor) == 0 else {
-			throw POSIXError(.init(rawValue: errno) ?? .EIO)
-		}
-		guard
-			renameat(
-				file.directory.descriptor,
-				temporary.name,
-				file.directory.descriptor,
-				file.name
-			) == 0
-		else {
-			throw POSIXError(.init(rawValue: errno) ?? .EIO)
-		}
-		temporaryExists = false
-		guard fsync(file.directory.descriptor) == 0 else {
-			throw POSIXError(.init(rawValue: errno) ?? .EIO)
-		}
-	}
-
-	private static func writeAll(_ data: Data, to descriptor: Int32) throws {
-		try data.withUnsafeBytes { buffer in
-			guard let baseAddress = buffer.baseAddress else { return }
-			var offset = 0
-			while offset < buffer.count {
-				let count = Darwin.write(
-					descriptor,
-					baseAddress.advanced(by: offset),
-					buffer.count - offset
-				)
-				if count < 0 {
-					if errno == EINTR { continue }
-					throw POSIXError(.init(rawValue: errno) ?? .EIO)
-				}
-				guard count > 0 else { throw POSIXError(.EIO) }
-				offset += count
-			}
-		}
+		try data.write(to: file.url, options: .atomic)
 	}
 }
