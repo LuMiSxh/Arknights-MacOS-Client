@@ -22,13 +22,10 @@ final class LauncherRefreshController {
 	private let api: any LauncherAPIProviding
 	private let log: LauncherLog
 	@ObservationIgnored private var refreshTask: Task<Void, Never>?
-	/// Metadata results are accepted only while this token owns the observable refresh state.
-	/// The token is updated synchronously, before a newly-created task can suspend or run.
-	@ObservationIgnored private var metadataRequestID: UUID?
-	@ObservationIgnored private var brandingAssetTask: Task<Void, Never>?
-	/// Asset results are accepted only for the currently active metadata refresh generation.
-	/// Starting or cancelling a refresh invalidates the token before any older task can finish.
-	@ObservationIgnored private var brandingRequestID: UUID?
+	/// Metadata results are accepted only while this slot owns the observable refresh state.
+	@ObservationIgnored private let metadataSlot = TaskSlot()
+	/// Starting or cancelling a refresh invalidates the slot before any older asset task can finish.
+	@ObservationIgnored private let brandingSlot = TaskSlot()
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -50,33 +47,26 @@ final class LauncherRefreshController {
 
 	deinit {
 		refreshTask?.cancel()
-		brandingAssetTask?.cancel()
 	}
 
 	@discardableResult
 	func startRefresh(forceGameUpdateCheck: Bool = false) -> Task<Void, Never> {
-		refreshTask?.cancel()
-		brandingAssetTask?.cancel()
-		brandingAssetTask = nil
+		brandingSlot.invalidate()
 		let refreshID = UUID()
-		metadataRequestID = refreshID
-		brandingRequestID = refreshID
 		lifecycle.state.refresh = .checking(requestID: refreshID)
-		let task = Task { [weak self] in
+		let task = metadataSlot.replace { [weak self] token in
 			guard let self else { return }
-			await refresh(forceGameUpdateCheck: forceGameUpdateCheck, refreshID: refreshID)
+			await refresh(
+				forceGameUpdateCheck: forceGameUpdateCheck, refreshID: refreshID, token: token)
 		}
 		refreshTask = task
 		return task
 	}
 
 	func cancelRefresh() {
-		refreshTask?.cancel()
+		metadataSlot.invalidate()
+		brandingSlot.invalidate()
 		refreshTask = nil
-		metadataRequestID = nil
-		brandingAssetTask?.cancel()
-		brandingAssetTask = nil
-		brandingRequestID = nil
 		lifecycle.state.refresh = .idle
 	}
 
@@ -88,9 +78,8 @@ final class LauncherRefreshController {
 	/// lifecycle state. The current region's already-started branding task remains valid and
 	/// may finish applying its assets before the next normal refresh replaces it.
 	func cancelForInstallationStart() {
-		refreshTask?.cancel()
+		metadataSlot.invalidate()
 		refreshTask = nil
-		metadataRequestID = nil
 		lifecycle.state.refresh = .idle
 	}
 
@@ -123,7 +112,6 @@ final class LauncherRefreshController {
 	package func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard installation.selectRegion(newRegion) else { return false }
 		lifecycle.state.refresh = .checking(requestID: nil)
-		refreshTask?.cancel()
 		branding = nil
 		customization.restoreOfficialLogo(for: newRegion)
 		communication.resetPresentedNotice()
@@ -133,15 +121,17 @@ final class LauncherRefreshController {
 		return true
 	}
 
-	private func refresh(forceGameUpdateCheck: Bool, refreshID: UUID) async {
-		guard isCurrentRefresh(refreshID) else { return }
+	private func refresh(
+		forceGameUpdateCheck: Bool, refreshID: UUID, token: TaskSlot.Token
+	) async {
+		guard isCurrentRefresh(refreshID, token) else { return }
 		log.info("Refreshing game and branding state")
 		let region = installation.region
 		await installation.updateInstalledState().value
-		guard isCurrentRefresh(refreshID) else { return }
+		guard isCurrentRefresh(refreshID, token) else { return }
 		if lifecycle.activity == .idle { lifecycle.setStatus(.checking) }
 		_ = await customization.loadCustomArtwork()
-		guard isCurrentRefresh(refreshID) else { return }
+		guard isCurrentRefresh(refreshID, token) else { return }
 		let customArtworkGeneration = customization.customArtworkGeneration
 		let brandingTask = Task<LauncherBranding?, Never> { [api, log] in
 			do {
@@ -162,7 +152,7 @@ final class LauncherRefreshController {
 		{
 			do {
 				let fetchedConfiguration = try await api.gameConfiguration(region: region)
-				guard isCurrentRefresh(refreshID) else { return }
+				guard isCurrentRefresh(refreshID, token) else { return }
 				installation.configuration = fetchedConfiguration
 				installation.updateGameAvailability()
 				log.info(
@@ -171,9 +161,9 @@ final class LauncherRefreshController {
 			} catch is CancellationError {
 				return
 			} catch {
-				guard isCurrentRefresh(refreshID) else { return }
+				guard isCurrentRefresh(refreshID, token) else { return }
 				if !installation.isInstalled || forceGameUpdateCheck {
-					metadataRequestID = nil
+					metadataSlot.invalidate()
 					lifecycle.state.refresh = .idle
 					presentConfigurationFailure(
 						error,
@@ -193,26 +183,25 @@ final class LauncherRefreshController {
 		} onCancel: {
 			brandingTask.cancel()
 		}
-		guard isCurrentRefresh(refreshID) else { return }
+		guard isCurrentRefresh(refreshID, token) else { return }
 		if let currentBranding = fetchedBranding {
 			branding = currentBranding
 			communication.presentNoticeIfNeeded(currentBranding)
 			log.info(
 				"Branding loaded; noticeEnabled=\(currentBranding.noticePopOpen == true)"
 			)
-			let assetTask = Task { [weak self] in
+			brandingSlot.replace { [weak self] brandingToken in
 				guard let self else { return }
 				await loadBrandingAssets(
 					currentBranding,
 					region: region,
 					customArtworkGeneration: customArtworkGeneration,
-					refreshID: refreshID
+					token: brandingToken
 				)
 			}
-			brandingAssetTask = assetTask
 		}
 
-		metadataRequestID = nil
+		metadataSlot.invalidate()
 		lifecycle.state.refresh = .idle
 		if lifecycle.activity == .idle {
 			lifecycle.setStatus(
@@ -248,8 +237,8 @@ final class LauncherRefreshController {
 		)
 	}
 
-	func isCurrentRefresh(_ refreshID: UUID) -> Bool {
-		metadataRequestID == refreshID && lifecycle.state.refresh.requestID == refreshID
+	func isCurrentRefresh(_ refreshID: UUID, _ token: TaskSlot.Token) -> Bool {
+		metadataSlot.owns(token) && lifecycle.state.refresh.requestID == refreshID
 			&& !Task.isCancelled
 			&& !installation.isDownloading
 	}
@@ -258,10 +247,10 @@ final class LauncherRefreshController {
 		_ branding: LauncherBranding,
 		region: GameRegion,
 		customArtworkGeneration: UInt64,
-		refreshID: UUID
+		token: TaskSlot.Token
 	) async {
 		let customArtworkWasPersisted = customization.hasPersistedCustomArtwork
-		guard isCurrentBrandingAssetLoad(refreshID, region: region), !customArtworkWasPersisted
+		guard isCurrentBrandingAssetLoad(token, region: region), !customArtworkWasPersisted
 		else { return }
 		let artworkCache = customization.artworkCache
 		let logoTask = Task<Data?, Never> { [artworkCache, log] in
@@ -290,7 +279,7 @@ final class LauncherRefreshController {
 		} onCancel: {
 			logoTask.cancel()
 		}
-		guard isCurrentBrandingAssetLoad(refreshID, region: region) else {
+		guard isCurrentBrandingAssetLoad(token, region: region) else {
 			artworkTask.cancel()
 			return
 		}
@@ -300,7 +289,7 @@ final class LauncherRefreshController {
 			artworkTask.cancel()
 		}
 		guard
-			isCurrentBrandingAssetLoad(refreshID, region: region)
+			isCurrentBrandingAssetLoad(token, region: region)
 		else { return }
 		if let logoData, let logo = NSImage(data: logoData) {
 			customization.officialLogo = logo
@@ -323,7 +312,7 @@ final class LauncherRefreshController {
 		}
 	}
 
-	private func isCurrentBrandingAssetLoad(_ refreshID: UUID, region: GameRegion) -> Bool {
-		brandingRequestID == refreshID && installation.region == region && !Task.isCancelled
+	private func isCurrentBrandingAssetLoad(_ token: TaskSlot.Token, region: GameRegion) -> Bool {
+		brandingSlot.owns(token) && installation.region == region && !Task.isCancelled
 	}
 }

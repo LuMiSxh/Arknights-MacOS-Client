@@ -17,8 +17,7 @@ package final class StorageOverviewController {
 	private let preferences: LauncherPreferencesStore
 	private let log: LauncherLog
 	private let regionProvider: @MainActor () -> GameRegion
-	@ObservationIgnored private var measurementTask: Task<Void, Never>?
-	@ObservationIgnored private var measurementEpoch: UInt64 = 0
+	@ObservationIgnored private let measurementSlot = TaskSlot()
 	@ObservationIgnored private var lastMeasuredContext: StorageOverviewContext?
 	@ObservationIgnored private var lastMeasuredAt: Date?
 
@@ -35,10 +34,6 @@ package final class StorageOverviewController {
 		self.log = log
 		self.regionProvider = regionProvider
 		usages = []
-	}
-
-	deinit {
-		measurementTask?.cancel()
 	}
 
 	var canModifyStorage: Bool {
@@ -72,9 +67,6 @@ package final class StorageOverviewController {
 			if hasFreshMeasurement(for: context) { return }
 		}
 
-		measurementEpoch &+= 1
-		let epoch = measurementEpoch
-		measurementTask?.cancel()
 		if lastMeasuredContext != context {
 			usages = StorageOverviewResolver.placeholderLocations(context: context).map {
 				StorageUsage(location: $0, byteCount: nil, exists: false)
@@ -84,23 +76,20 @@ package final class StorageOverviewController {
 		let paths = self.paths
 		let log = self.log
 
-		measurementTask = Task { [weak self, log] in
+		measurementSlot.replace { [weak self, log] token in
 			do {
 				let measured = try await Self.measure(paths: paths, context: context)
-				guard !Task.isCancelled, let self, self.measurementEpoch == epoch else { return }
+				guard !Task.isCancelled, let self, self.measurementSlot.owns(token) else { return }
 				self.usages = measured
 				self.lastMeasuredContext = context
 				self.lastMeasuredAt = Date()
 				self.isMeasuring = false
-				self.measurementTask = nil
 			} catch is CancellationError {
-				guard let self, self.measurementEpoch == epoch else { return }
+				guard let self, self.measurementSlot.owns(token) else { return }
 				self.isMeasuring = false
-				self.measurementTask = nil
 			} catch {
-				guard let self, self.measurementEpoch == epoch else { return }
+				guard let self, self.measurementSlot.owns(token) else { return }
 				self.isMeasuring = false
-				self.measurementTask = nil
 				log.error("Failed to measure launcher storage: \(error.localizedDescription)")
 			}
 		}
