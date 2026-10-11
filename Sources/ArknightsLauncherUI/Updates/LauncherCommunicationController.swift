@@ -79,12 +79,6 @@ package final class LauncherCommunicationController {
 		launcherUpdater.checkForUpdates()
 	}
 
-	#if DEBUG
-		func presentDeveloperLauncherUpdate(version: String?, failed: Bool) {
-			launcherUpdater.userDriver.showDeveloperPreview(version: version, failed: failed)
-		}
-	#endif
-
 	var launcherUpdateUserDriver: LauncherUpdateUserDriver {
 		launcherUpdater.userDriver
 	}

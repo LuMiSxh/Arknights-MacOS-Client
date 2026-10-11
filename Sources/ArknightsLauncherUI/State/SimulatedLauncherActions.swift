@@ -21,8 +21,6 @@ import ArknightsCore
 			model.lifecycle.activity == .idle && !model.lifecycle.state.refresh.isChecking
 		}
 
-		// MARK: - Region
-
 		func selectRegion(_ newRegion: GameRegion) {
 			model.updateDeveloperSimulation { simulation in
 				if simulation.selectableRegions.contains(newRegion) {
@@ -31,17 +29,9 @@ import ArknightsCore
 			}
 		}
 
-		// MARK: - Installation
-
-		func installOrUpdate() {
-			startSimulatedInstallation()
-		}
+		func installOrUpdate() { repairGame() }
 
 		func repairGame() {
-			startSimulatedInstallation()
-		}
-
-		private func startSimulatedInstallation() {
 			model.updateDeveloperSimulation {
 				$0.failure = .none
 				$0.lifecycle = .installing
@@ -57,8 +47,6 @@ import ArknightsCore
 				$0.hasPartialDownload = true
 			}
 		}
-
-		// MARK: - Update and announcement checks
 
 		func checkGameUpdates() {
 			guard !isMigratingStorage else { return }
@@ -79,23 +67,38 @@ import ArknightsCore
 
 		func checkAnnouncements() {
 			guard !isMigratingStorage else { return }
-			model.updateDeveloperSimulation { $0.popup = .announcement }
+			model.updateDeveloperSimulation { $0.announcement = true }
 		}
 
 		func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
 			switch simulation?.launcherUpdate {
-			case .current, .none: return .current
-			case .available: return .updateAvailable("0.6.1")
-			case .failed: return .failed
+			case .current, .none: .current
+			case .available: .updateAvailable(DeveloperSimulationState.launcherUpdateVersion)
+			case .failed: .failed
 			}
 		}
 
+		/// Shows the real update dialog with a fixture instead of starting Sparkle.
 		func openLauncherUpdate() {
-			guard let simulation else { return }
-			model.communication.presentDeveloperLauncherUpdate(
-				version: simulation.launcherUpdate == .available ? "0.6.1" : nil,
-				failed: simulation.launcherUpdate == .failed
-			)
+			let driver = model.communication.launcherUpdateUserDriver
+			let dismiss: () -> Void = { [weak driver] in driver?.dismissUpdateInstallation() }
+			switch simulation?.launcherUpdate {
+			case .failed:
+				driver.showUpdaterError(
+					NSError(domain: "Developer", code: 1), acknowledgement: dismiss)
+			case .available:
+				driver.dismissUpdateInstallation()
+				driver.version = DeveloperSimulationState.launcherUpdateVersion
+				driver.phase = .available
+				driver.pendingReply = .choice { [weak driver] choice in
+					guard choice == .install else { return }
+					driver?.showReady { _ in dismiss() }
+				}
+			case .current, .none:
+				driver.showUpdateNotFoundWithError(
+					NSError(domain: "Developer", code: 1), acknowledgement: dismiss)
+				driver.message = nil
+			}
 		}
 
 		func refreshIntelTranslationForUI(force: Bool) async -> IntelTranslationState {
@@ -104,8 +107,6 @@ import ArknightsCore
 			}
 			return model.intelTranslation.state
 		}
-
-		// MARK: - Launching and stopping
 
 		func launch() {
 			guard model.gameSession.canLaunch,
@@ -149,8 +150,6 @@ import ArknightsCore
 			return true
 		}
 
-		// MARK: - Files and settings
-
 		func chooseInstallDirectory() {}
 
 		func locateExistingInstallation() {}
@@ -168,8 +167,6 @@ import ArknightsCore
 		func uninstallGame() {}
 
 		func resetArtwork() {}
-
-		// MARK: - Rosetta
 
 		func installRosetta() async -> IntelTranslationState {
 			guard simulation?.rosettaMissing == true else {

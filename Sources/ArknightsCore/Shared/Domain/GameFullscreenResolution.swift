@@ -8,26 +8,22 @@ package enum GameFullscreenResolution: Hashable, Sendable {
 	case native
 	case fixed(GameDisplaySize)
 
-	/// Stored as "native" or "WIDTHxHEIGHT", like `GameResolution`.
+	/// Stored as "native" or "WIDTHxHEIGHT", like `GameLaunchOptions.resolution`.
 	package var storageValue: String {
 		switch self {
 		case .native: "native"
-		case .fixed(let size): "\(size.width)x\(size.height)"
+		case .fixed(let size): size.storageValue
 		}
 	}
 
 	package init?(storageValue: String) {
 		if storageValue == "native" {
 			self = .native
-			return
+		} else if let size = GameDisplaySize(storageValue: storageValue) {
+			self = .fixed(size)
+		} else {
+			return nil
 		}
-		let components = storageValue.split(separator: "x")
-		guard components.count == 2, let width = Int(components[0]),
-			let height = Int(components[1]),
-			GameDisplaySize.validDimensions.contains(width),
-			GameDisplaySize.validDimensions.contains(height)
-		else { return nil }
-		self = .fixed(GameDisplaySize(width: width, height: height))
 	}
 
 	/// Native first, then sizes between 4K and a larger display's own size, then the official
@@ -35,7 +31,7 @@ package enum GameFullscreenResolution: Hashable, Sendable {
 	/// than the display are left out; they would only cost graphics power.
 	package static func choices(native: GameDisplaySize?) -> [GameFullscreenResolution] {
 		let generated = native.map(generatedSizes(native:)) ?? []
-		let official = GameResolution.allCases.map(GameDisplaySize.init)
+		let official = GameDisplaySize.officialResolutions
 			.filter { size in native.map(size.fits(in:)) ?? true }
 		return [.native] + (generated + official).map(Self.fixed)
 	}
@@ -43,7 +39,7 @@ package enum GameFullscreenResolution: Hashable, Sendable {
 	/// Fills the gap between the largest official resolution and a larger display with sizes in
 	/// the display's shape, stepping by `generatedResolutionHeightStep` like 1440p, 2160p, 2880p.
 	static func generatedSizes(native: GameDisplaySize) -> [GameDisplaySize] {
-		let largest = GameDisplaySize(GameResolution.largestOfficial)
+		let largest = GameDisplaySize.ultraHD
 		guard native.pixelCount > largest.pixelCount else { return [] }
 		let step = AppConstants.Game.generatedResolutionHeightStep
 		let aspectRatio = Double(native.width) / Double(native.height)
@@ -55,7 +51,6 @@ package enum GameFullscreenResolution: Hashable, Sendable {
 			.filter { $0.pixelCount > largest.pixelCount }
 			.reversed()
 	}
-
 }
 
 extension GameFullscreenResolution: Codable {
@@ -72,18 +67,5 @@ extension GameFullscreenResolution: Codable {
 	package func encode(to encoder: any Encoder) throws {
 		var container = encoder.singleValueContainer()
 		try container.encode(storageValue)
-	}
-}
-
-extension GameResolution {
-	static var largestOfficial: GameResolution {
-		allCases.max { $0.width * $0.height < $1.width * $1.height } ?? .ultraHD
-	}
-
-	/// The official resolution with the most pixels that fits within `size`.
-	static func largest(fitting size: GameDisplaySize) -> GameResolution? {
-		allCases
-			.filter { GameDisplaySize($0).fits(in: size) }
-			.max { $0.width * $0.height < $1.width * $1.height }
 	}
 }

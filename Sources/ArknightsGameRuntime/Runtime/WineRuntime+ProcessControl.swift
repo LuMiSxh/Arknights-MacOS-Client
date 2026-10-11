@@ -104,7 +104,7 @@ extension WineRuntime {
 				throw GameRuntimeError.runtimeConfiguration(
 					"Wine could not finish stopping Arknights (status \(waitStatus)).")
 			}
-		} catch is WineProcessWaitTimeout {
+		} catch is ChildProcessTimeout {
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not finish stopping Arknights before the shutdown deadline.")
 		} catch is WineProcessRetirementTimeout {
@@ -179,13 +179,13 @@ extension WineRuntime {
 		timeout: Duration? = nil,
 		spawnGate: WineProcessSpawnGate? = nil
 	) async throws -> Int32 {
-		try await WineProcessWaiter(
+		try await ChildProcess(
 			executable: executable,
 			arguments: arguments,
 			environment: environment,
-			output: output,
+			output: .file(output),
 			spawnGate: spawnGate
-		).wait(timeout: timeout)
+		).run(timeout: timeout).status
 	}
 
 	private func remainingShutdownTime(

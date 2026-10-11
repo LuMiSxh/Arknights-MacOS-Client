@@ -108,7 +108,6 @@ package struct SettingsPage<Content: View>: View {
 /// A subtle row separator matching the nav rail's hairline, used instead of the stock
 /// `Divider()` inside glass panels so rows read as one soft surface, not a bordered form.
 package struct SettingsHairline: View {
-
 	package init() {}
 	package var body: some View {
 		Rectangle()
@@ -269,7 +268,6 @@ package struct UpdateSettingsRow: View {
 	let isChecking: Bool
 	var isDisabled = false
 	package let accentColor: Color
-	var checkTitle = "Check Now"
 	package let check: () -> Void
 
 	package init(
@@ -279,7 +277,6 @@ package struct UpdateSettingsRow: View {
 		isChecking: Bool,
 		isDisabled: Bool = false,
 		accentColor: Color,
-		checkTitle: String = "Check Now",
 		check: @escaping () -> Void
 	) {
 		self.title = title
@@ -288,7 +285,6 @@ package struct UpdateSettingsRow: View {
 		self.isChecking = isChecking
 		self.isDisabled = isDisabled
 		self.accentColor = accentColor
-		self.checkTitle = checkTitle
 		self.check = check
 	}
 
@@ -298,7 +294,7 @@ package struct UpdateSettingsRow: View {
 				SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
 					.disabled(isDisabled)
 				CapsuleActionButton(
-					title: checkTitle,
+					title: "Check Now",
 					tone: .accent(accentColor),
 					presentation: .compact,
 					action: check

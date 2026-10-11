@@ -23,7 +23,7 @@ struct PresetCatalogSearchTests {
 			tagList: ["Support"]
 		)
 
-		let matches = try await PresetCatalogSearch.avatars(matching: "support", in: [avatar])
+		let matches = try await PresetSearch.avatars(matching: "support", in: [avatar])
 
 		#expect(matches == [avatar])
 	}
@@ -60,7 +60,7 @@ struct PresetCatalogSearchTests {
 			rarity: "TIER_6"
 		)
 
-		let avatarMatches = try await PresetCatalogSearch.avatars(
+		let avatarMatches = try await PresetSearch.avatars(
 			matching: "Amiyaa", in: [unrelatedAvatar, closestAvatar])
 		#expect(avatarMatches.first == closestAvatar, "operator query")
 
@@ -78,7 +78,7 @@ struct PresetCatalogSearchTests {
 			url: URL(string: "https://arknights.global/summer.png")!,
 			thumbnailURL: nil
 		)
-		let wallpaperMatches = try await PresetCatalogSearch.wallpapers(
+		let wallpaperMatches = try await PresetSearch.wallpapers(
 			matching: "Rhina", in: [unrelatedWallpaper, closestWallpaper])
 		#expect(wallpaperMatches.first == closestWallpaper, "wallpaper query")
 	}
@@ -96,7 +96,7 @@ struct PresetCatalogSearchTests {
 			thumbnailURL: nil
 		)
 
-		let matches = try await PresetCatalogSearch.wallpapers(matching: query, in: [wallpaper])
+		let matches = try await PresetSearch.wallpapers(matching: query, in: [wallpaper])
 
 		#expect(matches == [wallpaper])
 	}
@@ -111,7 +111,7 @@ struct PresetCatalogSearchTests {
 			thumbnailURL: nil
 		)
 
-		let matches = try await PresetCatalogSearch.wallpapers(matching: "z", in: [wallpaper])
+		let matches = try await PresetSearch.wallpapers(matching: "z", in: [wallpaper])
 
 		#expect(matches.isEmpty)
 	}
@@ -161,7 +161,7 @@ struct PresetCatalogSearchTests {
 
 		for query in ["yostar", "illustration"] {
 			#expect(
-				try await PresetCatalogSearch.wallpapers(matching: query, in: [wallpaper])
+				try await PresetSearch.wallpapers(matching: query, in: [wallpaper])
 					== [wallpaper])
 		}
 	}

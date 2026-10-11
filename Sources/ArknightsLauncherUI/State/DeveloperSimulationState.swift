@@ -4,196 +4,58 @@ import ArknightsCore
 import ArknightsGameInstallation
 
 #if DEBUG
-	import Foundation
-
-	enum DeveloperPreviewLifecycle: String, CaseIterable, Equatable, Identifiable, Sendable {
-		case ready
-		case installing
-		case paused
-		case launching
-		case running
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .ready: "Ready"
-			case .installing: "Installing"
-			case .paused: "Paused"
-			case .launching: "Launching"
-			case .running: "Running"
-			}
-		}
-	}
-
-	enum DeveloperPreviewProgressMode: String, CaseIterable, Equatable, Identifiable, Sendable {
-		case known
-		case unknown
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .known: "Known values"
-			case .unknown: "Unknown values"
-			}
-		}
-	}
-
-	enum DeveloperPreviewTransferRateMode: String, CaseIterable, Equatable, Identifiable, Sendable {
-		case known
-		case unknown
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .known: "Known speed"
-			case .unknown: "Unknown speed"
-			}
-		}
-	}
-
-	enum DeveloperPreviewInstallationPhase: String, CaseIterable, Equatable, Identifiable, Sendable
-	{
-		case preparing
-		case verifying
-		case downloading
-		case pausing
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .preparing: "Preparing"
-			case .verifying: "Verifying"
-			case .downloading: "Downloading"
-			case .pausing: "Pausing"
-			}
-		}
-
-		package var state: InstallationStage {
-			switch self {
-			case .preparing: .preparing
-			case .verifying: .verifying
-			case .downloading: .downloading
-			case .pausing: .pausing
-			}
-		}
-
-		var status: LauncherStatus {
-			switch self {
-			case .preparing: .preparingInstallation
-			case .verifying: .verifyingInstallation
-			case .downloading: .downloading
-			case .pausing: .pausing
-			}
-		}
-	}
-
-	enum DeveloperPreviewLauncherUpdate: String, CaseIterable, Equatable, Identifiable, Sendable {
-		case current
-		case available
-		case failed
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .current: "Current"
-			case .available: "Update available"
-			case .failed: "Check failed"
-			}
-		}
-	}
-
-	enum DeveloperPreviewFailure: String, CaseIterable, Equatable, Identifiable, Sendable {
-		case none
-		case runtime
-		case configuration
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .none: "No failure"
-			case .runtime: "Runtime failure"
-			case .configuration: "Configuration failure"
-			}
-		}
-
-		var operation: SupportOperation? {
-			switch self {
-			case .none: nil
-			case .runtime: .runtimeExit
-			case .configuration: .configurationRefresh
-			}
-		}
-	}
-
-	enum DeveloperPreviewPopup: String, CaseIterable, Equatable, Identifiable, Sendable {
-		case none
-		case announcement
-		case custom
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .none: "Hidden"
-			case .announcement: "Announcement"
-			case .custom: "Custom Markdown"
-			}
-		}
-	}
-
-	enum DeveloperPreviewPill: String, CaseIterable, Equatable, Identifiable, Sendable {
-		case none
-		case music
-		case version
-		case status
-
-		var id: String { rawValue }
-
-		var title: String {
-			switch self {
-			case .none: "Collapsed"
-			case .music: "Music"
-			case .version: "Version"
-			case .status: "Server reset"
-			}
-		}
-	}
-
 	package struct DeveloperSimulationState: Equatable, Sendable {
-		var lifecycle: DeveloperPreviewLifecycle = .ready
-		var isInstalled = true
+		// String raw values keep these CaseIterable choices usable by the generic developer picker.
+		enum Lifecycle: String, CaseIterable { case ready, installing, paused, launching, running }
+		enum Phase: String, CaseIterable { case preparing, verifying, downloading, pausing }
+		enum Progress: String, CaseIterable {
+			case unknown, early, half, late
+
+			var fraction: Double {
+				switch self {
+				case .unknown: 0
+				case .early: 0.15
+				case .half: 0.42
+				case .late: 0.9
+				}
+			}
+		}
+		enum Transfer: String, CaseIterable { case known, unknown, stalled }
+		enum LauncherUpdate: String, CaseIterable { case current, available, failed }
+		enum Failure: String, CaseIterable {
+			case none, runtime, configuration
+
+			var operation: SupportOperation? {
+				switch self {
+				case .none: nil
+				case .runtime: .runtimeExit
+				case .configuration: .configurationRefresh
+				}
+			}
+		}
+		/// The raw value is the pill identifier `LauncherHUDView` expands.
+		enum Pill: String, CaseIterable { case none, music, version, status }
+
+		static let launcherUpdateVersion = "0.6.1"
+
+		var lifecycle = Lifecycle.ready
+		var phase = Phase.downloading
+		var progress = Progress.half
+		var transfer = Transfer.known
 		var hasPartialDownload = false
-		var installationPhase: DeveloperPreviewInstallationPhase = .downloading
-		var progressMode: DeveloperPreviewProgressMode = .known
-		var transferRateMode: DeveloperPreviewTransferRateMode = .known
-		var transferRateBytesPerSecond: Double = 3_500_000
-		var transferStalled = false
-		var downloadedBytes: Int64 = 15_210_000_000
-		var totalBytes: Int64 = 22_280_000_000
-		var completedFiles = 128
-		var totalFiles = 291
-		var currentFile = "Arknights_Data/data.unity3d"
 		var updateAvailable = false
-		var launcherUpdate: DeveloperPreviewLauncherUpdate = .current
-		var failure: DeveloperPreviewFailure = .none
-		var failureCode: SupportCode = .crux
-		var selectedRegion: GameRegion = .global
+		var launcherUpdate = LauncherUpdate.current
+		var failure = Failure.none
+		var failureCode = SupportCode.crux
+		var selectedRegion = GameRegion.global
+		var installedRegions: Set<GameRegion> = [.global]
 		var canaryFeaturesEnabled = false
 		var taiwanClientEnabled = false
-		var installedRegions: Set<GameRegion> = [.global]
 		var showStatusPill = false
 		var showVersionPill = true
 		var showMusicPill = false
-		var expandedPill: DeveloperPreviewPill = .none
-		var popup: DeveloperPreviewPopup = .none
-		var customPopupTitle = "Developer preview popup"
-		var customPopupMarkdown = "This popup is injected by the debug simulator."
+		var expandedPill = Pill.none
+		var announcement = false
 		var onboardingPreview = false
 		var onboardingRequired = false
 		var rosettaMissing = false
@@ -201,19 +63,20 @@ import ArknightsGameInstallation
 		var longAccessibilityText = false
 		var usesDynamicTheme = true
 
-		var progressPercent: Double {
-			get {
-				guard totalBytes > 0 else { return 0 }
-				return min(1, max(0, Double(downloadedBytes) / Double(totalBytes)))
-			}
-			set {
-				let fraction = min(max(newValue, 0), 1)
-				downloadedBytes = Int64(Double(max(totalBytes, 1)) * fraction)
-			}
-		}
-
 		package static func isPreviewArgument(_ arguments: [String]) -> Bool {
 			arguments.contains("--developer-preview")
+		}
+
+		/// Whether the selected region is installed.
+		var isInstalled: Bool {
+			get { installedRegions.contains(selectedRegion) }
+			set {
+				if newValue {
+					installedRegions.insert(selectedRegion)
+				} else {
+					installedRegions.remove(selectedRegion)
+				}
+			}
 		}
 
 		var selectableRegions: [GameRegion] {
@@ -223,122 +86,90 @@ import ArknightsGameInstallation
 			).selectableRegions
 		}
 
-		/// Keeps combinations shown by the simulator meaningful before they reach production
-		/// controllers. This is deliberately a value transform so bindings can apply it once.
+		/// Removes combinations the launcher cannot reach, so controllers never see them.
 		func normalized() -> Self {
 			var normalized = self
-			let selectable = Set(normalized.selectableRegions)
-			if !selectable.contains(normalized.selectedRegion) {
-				normalized.selectedRegion = .global
-			}
+			let selectable = Set(selectableRegions)
+			if !selectable.contains(selectedRegion) { normalized.selectedRegion = .global }
 			normalized.installedRegions.formIntersection(selectable)
-			normalized.totalBytes = max(normalized.totalBytes, 1)
-			normalized.downloadedBytes = min(
-				max(normalized.downloadedBytes, 0), normalized.totalBytes)
-			normalized.completedFiles = max(normalized.completedFiles, 0)
-			normalized.totalFiles = max(normalized.totalFiles, normalized.completedFiles)
-			if normalized.currentFile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-				normalized.currentFile = "Arknights_Data/data.unity3d"
-			}
-			normalized.transferRateBytesPerSecond = max(
-				normalized.transferRateBytesPerSecond.isFinite
-					? normalized.transferRateBytesPerSecond
-					: 0,
-				0
-			)
-			if normalized.lifecycle == .paused {
-				normalized.hasPartialDownload = true
-			}
-			if normalized.isInstalled {
-				normalized.installedRegions.insert(normalized.selectedRegion)
-			} else {
-				normalized.installedRegions.remove(normalized.selectedRegion)
-				normalized.updateAvailable = false
-			}
-			if normalized.lifecycle == .launching || normalized.lifecycle == .running {
+			if lifecycle == .paused { normalized.hasPartialDownload = true }
+			if lifecycle == .launching || lifecycle == .running {
 				normalized.isInstalled = true
-				normalized.installedRegions.insert(normalized.selectedRegion)
 				normalized.hasPartialDownload = false
+			}
+			if !normalized.isInstalled || lifecycle == .launching || lifecycle == .running {
 				normalized.updateAvailable = false
 			}
 			return normalized
 		}
 
-		func projection() -> DeveloperSimulationProjection {
-			let progress: DownloadProgress?
+		var downloadProgress: DownloadProgress? {
+			let isVerifying = phase == .verifying
 			// A stopped verification pass does not represent partial-download progress.
-			if progressMode == .known,
-				installationPhase != .verifying || lifecycle == .installing,
+			guard progress != .unknown, !isVerifying || lifecycle == .installing,
 				lifecycle == .installing || lifecycle == .paused
 					|| (lifecycle == .ready && hasPartialDownload)
-			{
-				let total = max(totalBytes, 1)
-				let downloaded = min(max(downloadedBytes, 0), total)
-				let isVerifying = installationPhase == .verifying
-				progress = DownloadProgress(
-					downloadedBytes: downloaded,
-					totalBytes: total,
-					completedFiles: max(completedFiles, 0),
-					totalFiles: max(totalFiles, 0),
-					currentFile: currentFile,
-					transferRateBytesPerSecond: !isVerifying && transferRateMode == .known
-						? transferRateBytesPerSecond
-						: nil,
-					isTransferStalled: !isVerifying && transferStalled,
-					isVerifying: isVerifying
-				)
-			} else {
-				progress = nil
-			}
-
-			let status: LauncherStatus
-			switch lifecycle {
-			case .ready:
-				status =
-					updateAvailable
-					? .updateAvailable
-					: (isInstalled ? .ready : (hasPartialDownload ? .paused : .install))
-			case .installing: status = installationPhase.status
-			case .paused: status = .paused
-			case .launching: status = .startingGame
-			case .running: status = .running
-			}
-
-			let launcherUpdateVersion = launcherUpdate == .available ? "0.6.1" : nil
-			let launcherUpdateStatus: String
-			switch launcherUpdate {
-			case .current: launcherUpdateStatus = "Up to date"
-			case .available: launcherUpdateStatus = "Version 0.6.1 available"
-			case .failed: launcherUpdateStatus = "Couldn’t check for updates"
-			}
-
-			return DeveloperSimulationProjection(
-				lifecycle: lifecycle,
-				status: status,
-				isInstalled: isInstalled,
-				hasPartialDownload: hasPartialDownload,
-				installedVersion: isInstalled ? (updateAvailable ? "041.2.0" : "042.0.0") : nil,
-				isGameUpdateAvailable: updateAvailable,
-				progress: progress,
-				launcherUpdateVersion: launcherUpdateVersion,
-				launcherUpdateStatus: launcherUpdateStatus,
-				failureCode: failure == .none ? nil : failureCode,
-				failureOperation: failure.operation
+			else { return nil }
+			let totalBytes: Int64 = 22_280_000_000
+			let totalFiles = 291
+			return DownloadProgress(
+				downloadedBytes: Int64((Double(totalBytes) * progress.fraction).rounded()),
+				totalBytes: totalBytes,
+				completedFiles: Int(Double(totalFiles) * progress.fraction),
+				totalFiles: totalFiles,
+				currentFile: "Arknights_Data/data.unity3d",
+				transferRateBytesPerSecond: !isVerifying && transfer == .known ? 3_500_000 : nil,
+				isTransferStalled: !isVerifying && transfer == .stalled,
+				isVerifying: isVerifying
 			)
 		}
-	}
 
-	struct DeveloperSimulationProjection: Equatable, Sendable {
-		package let lifecycle: DeveloperPreviewLifecycle
-		let status: LauncherStatus
-		let isInstalled: Bool
-		let hasPartialDownload: Bool
-		let installedVersion: String?
-		let isGameUpdateAvailable: Bool
-		let progress: DownloadProgress?
-		let launcherUpdateVersion: String?
-		let launcherUpdateStatus: String
-		let failureCode: SupportCode?
-		let failureOperation: SupportOperation?
+		var status: LauncherStatus {
+			switch lifecycle {
+			case .ready:
+				if updateAvailable {
+					.updateAvailable
+				} else if isInstalled {
+					.ready
+				} else {
+					hasPartialDownload ? .paused : .install
+				}
+			case .installing:
+				switch phase {
+				case .preparing: .preparingInstallation
+				case .verifying: .verifyingInstallation
+				case .downloading: .downloading
+				case .pausing: .pausing
+				}
+			case .paused: .paused
+			case .launching: .startingGame
+			case .running: .running
+			}
+		}
+
+		var installedVersion: String? {
+			isInstalled ? (updateAvailable ? "041.2.0" : "042.0.0") : nil
+		}
+
+		var launcherUpdateVersion: String? {
+			launcherUpdate == .available ? Self.launcherUpdateVersion : nil
+		}
+
+		var launcherUpdateStatus: String {
+			switch launcherUpdate {
+			case .current: "Up to date"
+			case .available: "Version \(Self.launcherUpdateVersion) available"
+			case .failed: "Couldn’t check for updates"
+			}
+		}
+
+		var installationStage: InstallationStage {
+			switch phase {
+			case .preparing: .preparing
+			case .verifying: .verifying
+			case .downloading: .downloading
+			case .pausing: .pausing
+			}
+		}
 	}
 #endif

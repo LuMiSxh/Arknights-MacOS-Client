@@ -14,8 +14,6 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 	/// collapsed button's label — lets a caller show detail (e.g. a result count) that's only
 	/// worth the width once the list is actually open.
 	var listTitle: (Value) -> String? = { _ in nil }
-	/// A header above the options inside the open menu, like "Looks like" in Displays settings.
-	var menuTitle: String? = nil
 	/// Draws a divider above these options, to set a group of exact choices apart.
 	var dividerBefore: (Value) -> Bool = { _ in false }
 	/// Additional menu content appended after the plain option list — e.g. a submenu that
@@ -28,7 +26,6 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 		accentColor: Color,
 		isDisabled: Bool = false,
 		listTitle: @escaping (Value) -> String? = { _ in nil },
-		menuTitle: String? = nil,
 		dividerBefore: @escaping (Value) -> Bool = { _ in false },
 		trailingMenuItems: @escaping () -> AnyView = { AnyView(EmptyView()) }
 	) {
@@ -37,32 +34,17 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 		self.accentColor = accentColor
 		self.isDisabled = isDisabled
 		self.listTitle = listTitle
-		self.menuTitle = menuTitle
 		self.dividerBefore = dividerBefore
 		self.trailingMenuItems = trailingMenuItems
 	}
 
 	package var body: some View {
-		Menu {
-			if let menuTitle {
-				Section(menuTitle) { optionButtons }
-			} else {
-				optionButtons
-			}
+		GlassCapsuleMenu(accentColor: accentColor, isDisabled: isDisabled) {
+			optionButtons
 			trailingMenuItems()
 		} label: {
-			HStack(spacing: LauncherVisuals.Spacing.tight) {
-				Text(currentTitle)
-				Image(systemName: "chevron.up.chevron.down")
-					.font(LauncherVisuals.Typography.menuChevron)
-					.accessibilityHidden(true)
-			}
-			.settingsControlCapsule(tint: accentColor, isDisabled: isDisabled)
+			Text(currentTitle)
 		}
-		.menuStyle(.button)
-		.buttonStyle(.plain)
-		.keyboardFocusIndicator(in: Capsule())
-		.disabled(isDisabled)
 	}
 
 	private var optionButtons: some View {
@@ -109,13 +91,29 @@ package struct GlassActionMenu<Content: View>: View {
 	}
 
 	package var body: some View {
-		Menu {
+		GlassCapsuleMenu(accentColor: accentColor, isDisabled: isDisabled) {
 			content
 		} label: {
+			Image(systemName: systemImage)
+				.accessibilityHidden(true)
+			Text(title)
+		}
+	}
+}
+
+/// The capsule menu chrome shared by `GlassMenuPicker` and `GlassActionMenu`.
+private struct GlassCapsuleMenu<Items: View, Label: View>: View {
+	let accentColor: Color
+	let isDisabled: Bool
+	@ViewBuilder let items: Items
+	@ViewBuilder let label: Label
+
+	var body: some View {
+		Menu {
+			items
+		} label: {
 			HStack(spacing: LauncherVisuals.Spacing.tight) {
-				Image(systemName: systemImage)
-					.accessibilityHidden(true)
-				Text(title)
+				label
 				Image(systemName: "chevron.up.chevron.down")
 					.font(LauncherVisuals.Typography.menuChevron)
 					.accessibilityHidden(true)

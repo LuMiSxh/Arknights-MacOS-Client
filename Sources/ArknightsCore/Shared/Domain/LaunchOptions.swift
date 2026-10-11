@@ -16,51 +16,11 @@ package enum GameDisplayMode: String, CaseIterable, Codable, Sendable {
 	}
 }
 
-package enum GameResolution: String, CaseIterable, Codable, Sendable {
-	case ultraHD = "3840x2160"
-	case quadHD = "2560x1440"
-	case cinemaFullHD = "2048x1080"
-	case wuxga = "1920x1200"
-	case fullHD = "1920x1080"
-	case wsxgaPlus = "1680x1050"
-	case uxga = "1600x1200"
-	case wsxga = "1600x1024"
-	case hdPlus = "1600x900"
-	case hdFourThree = "1440x1080"
-	case hdWide = "1360x768"
-	case sxgaPlus = "1280x960"
-	case wxga = "1280x800"
-	case wxgaWide = "1280x768"
-	case hd = "1280x720"
-	case scaledHD = "1176x664"
-	case xgaPlus = "1152x864"
-	case xga = "1024x768"
-	case svga = "800x600"
-	case ntscWide = "720x480"
-	case sd = "640x480"
-
-	package var displayName: String { rawValue.replacing("x", with: " × ") }
-
-	var width: Int { dimensions.width }
-	var height: Int { dimensions.height }
-
-	private var dimensions: (width: Int, height: Int) {
-		let components = rawValue.split(separator: "x")
-		guard components.count == 2,
-			let width = Int(components[0]),
-			let height = Int(components[1])
-		else {
-			preconditionFailure("Invalid built-in game resolution: \(rawValue)")
-		}
-		return (width, height)
-	}
-}
-
 package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	package var displayMode: GameDisplayMode
 	/// The official resolution closest to `fullscreenResolution`, the only fullscreen size
 	/// launchers before 0.7.0 read, and the fallback when the display is unknown.
-	package var resolution: GameResolution
+	package var resolution: GameDisplaySize
 	/// The resolution fullscreen shows, like a game's output resolution. Native follows the
 	/// fullscreen display, so displays beyond 4K or with uncommon sizes are not scaled unevenly.
 	package var fullscreenResolution: GameFullscreenResolution
@@ -93,7 +53,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 
 	init(
 		displayMode: GameDisplayMode,
-		resolution: GameResolution,
+		resolution: GameDisplaySize,
 		fullscreenResolution: GameFullscreenResolution? = nil,
 		windowSize: GameDisplaySize = .defaultWindow,
 		usesGameSettings: Bool = false,
@@ -104,7 +64,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
-		self.fullscreenResolution = fullscreenResolution ?? .fixed(GameDisplaySize(resolution))
+		self.fullscreenResolution = fullscreenResolution ?? .fixed(resolution)
 		self.windowSize = windowSize
 		self.usesGameSettings = usesGameSettings
 		self.renderingMode = renderingMode
@@ -126,8 +86,13 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 			}
 		}
 		displayMode = value(.displayMode, defaults.displayMode)
-		resolution = value(.resolution, defaults.resolution)
-		fullscreenResolution = value(.fullscreenResolution, .fixed(GameDisplaySize(resolution)))
+		let storedResolution = GameDisplaySize(
+			storageValue: value(.resolution, defaults.resolution.storageValue))
+		resolution =
+			storedResolution.flatMap {
+				GameDisplaySize.officialResolutions.contains($0) ? $0 : nil
+			} ?? defaults.resolution
+		fullscreenResolution = value(.fullscreenResolution, .fixed(resolution))
 		// Stored options without this key predate it, when Arknights kept its own settings.
 		usesGameSettings = value(.usesGameSettings, true)
 		usesMetalPerformanceHUD = value(
@@ -148,7 +113,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	package func encode(to encoder: any Encoder) throws {
 		var container = encoder.container(keyedBy: CodingKeys.self)
 		try container.encode(displayMode, forKey: .displayMode)
-		try container.encode(resolution, forKey: .resolution)
+		try container.encode(resolution.storageValue, forKey: .resolution)
 		try container.encode(fullscreenResolution, forKey: .fullscreenResolution)
 		try container.encode(windowSize, forKey: .windowSize)
 		try container.encode(usesGameSettings, forKey: .usesGameSettings)
@@ -161,9 +126,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 
 	/// Keeps the window a legacy pixel resolution produced, assuming a 2x Retina display.
 	private static func legacyWindowSize(
-		for resolution: GameResolution, retina: Bool
+		for size: GameDisplaySize, retina: Bool
 	) -> GameDisplaySize {
-		let size = GameDisplaySize(resolution)
 		guard retina else { return size }
 		let halved = GameDisplaySize(width: size.width / 2, height: size.height / 2)
 		guard GameDisplaySize.validDimensions.contains(halved.width),
@@ -176,7 +140,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	/// otherwise the chosen size.
 	func fullscreenSize(native: GameDisplaySize?) -> GameDisplaySize {
 		switch fullscreenResolution {
-		case .native: native ?? GameDisplaySize(resolution)
+		case .native: native ?? resolution
 		case .fixed(let size): size
 		}
 	}
@@ -193,7 +157,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		_ choice: GameFullscreenResolution, native: GameDisplaySize?
 	) {
 		fullscreenResolution = choice
-		if let official = GameResolution.largest(fitting: fullscreenSize(native: native)) {
+		if let official = GameDisplaySize.largestOfficial(fitting: fullscreenSize(native: native)) {
 			resolution = official
 		}
 	}

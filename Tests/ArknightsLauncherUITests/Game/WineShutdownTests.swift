@@ -179,20 +179,20 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 		read ignored < '\(fifo.path)'
 		: > '\(delayedConnection.path)'
 		"""
-	let waiter = WineProcessWaiter(
+	let waiter = ChildProcess(
 		executable: URL(filePath: "/bin/sh"),
 		arguments: ["-c", script],
 		environment: [:],
-		output: .nullDevice,
+		output: .file(.nullDevice),
 		spawnGate: spawnGate
 	)
 	let clock = ContinuousClock()
 	let startedWaiting = clock.now
 	let wait = Task {
 		do {
-			_ = try await waiter.wait(timeout: .milliseconds(500))
+			_ = try await waiter.run(timeout: .milliseconds(500))
 			return false
-		} catch is WineProcessWaitTimeout {
+		} catch is ChildProcessTimeout {
 			return true
 		} catch {
 			Issue.record("The Wine helper returned an unexpected error: \(error)")

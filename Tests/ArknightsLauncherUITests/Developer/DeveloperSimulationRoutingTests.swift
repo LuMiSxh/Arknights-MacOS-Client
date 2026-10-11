@@ -78,7 +78,7 @@ import Testing
 			let failureID = model.lifecycle.state.presentation.failure!.id
 
 			#expect(model.performRecoveryAction(.retry, failureID: failureID) == .completed)
-			#expect(model.developerSimulation?.failure == DeveloperPreviewFailure.none)
+			#expect(model.developerSimulation?.failure == DeveloperSimulationState.Failure.none)
 			#expect(model.developerSimulation?.lifecycle == .ready)
 			#expect(!model.lifecycle.activity.isGameActive)
 		}
@@ -91,7 +91,7 @@ import Testing
 			await api.waitForBrandingRequest()
 			await api.resolveBranding()
 
-			for kind in [DeveloperPreviewFailure.runtime, .configuration] {
+			for kind in [DeveloperSimulationState.Failure.runtime, .configuration] {
 				model.updateDeveloperSimulation {
 					$0.failure = kind
 					$0.isInstalled = true
@@ -102,7 +102,7 @@ import Testing
 				#expect(!failure.message.contains("status 1"))
 				#expect(await model.actions.launchFromDock(region: .global))
 				#expect(model.lifecycle.state.presentation.failure == nil)
-				#expect(model.developerSimulation?.failure == DeveloperPreviewFailure.none)
+				#expect(model.developerSimulation?.failure == DeveloperSimulationState.Failure.none)
 				model.actions.stopGame()
 			}
 

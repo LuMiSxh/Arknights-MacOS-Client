@@ -12,8 +12,7 @@ extension ContentView {
 
 	/// Window-level gate minus the covered state. Applies to the home layer only.
 	var homeLayerMotionEnabled: Bool {
-		DecorativeMotionVisibilityPolicy.homeLayerEnabled(
-			base: decorativeMotionVisibility.isEnabled, isCovered: isHomeCovered)
+		decorativeMotionVisibility.isEnabled && !isHomeCovered
 	}
 
 	func gameActivityDidChange(_ isActive: Bool) {

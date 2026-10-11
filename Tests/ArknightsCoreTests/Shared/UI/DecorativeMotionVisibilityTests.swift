@@ -7,84 +7,24 @@ import Testing
 @testable import ArknightsCore
 
 @Test
-func decorativeMotionRequiresAnActiveVisibleUnoccludedWindow() {
-	#expect(
-		DecorativeMotionVisibilityPolicy.isEnabled(
-			applicationIsActive: true,
-			applicationIsHidden: false,
-			windowIsVisible: true,
-			windowIsMiniaturized: false,
-			windowIsOccluded: false
-		)
-	)
-	#expect(
-		!DecorativeMotionVisibilityPolicy.isEnabled(
-			applicationIsActive: false,
-			applicationIsHidden: false,
-			windowIsVisible: true,
-			windowIsMiniaturized: false,
-			windowIsOccluded: false
-		)
-	)
-	#expect(
-		!DecorativeMotionVisibilityPolicy.isEnabled(
-			applicationIsActive: true,
-			applicationIsHidden: false,
-			windowIsVisible: true,
-			windowIsMiniaturized: true,
-			windowIsOccluded: false
-		)
-	)
-	#expect(
-		!DecorativeMotionVisibilityPolicy.isEnabled(
-			applicationIsActive: true,
-			applicationIsHidden: false,
-			windowIsVisible: true,
-			windowIsMiniaturized: false,
-			windowIsOccluded: true
-		)
-	)
-	#expect(
-		!DecorativeMotionVisibilityPolicy.isEnabled(
-			applicationIsActive: true,
-			applicationIsHidden: true,
-			windowIsVisible: true,
-			windowIsMiniaturized: false,
-			windowIsOccluded: false
-		)
-	)
-}
-
-@Test
 @MainActor
-func decorativeMotionVisibilityStopsAndResumesWithWindowState() {
-	let subject = DecorativeMotionVisibility(notificationCenter: NotificationCenter())
-
-	subject.update(
-		applicationIsActive: true,
-		applicationIsHidden: false,
-		windowIsVisible: true,
-		windowIsMiniaturized: false,
-		windowIsOccluded: false
+func decorativeMotionVisibilityStopsWhileAttachedToAnUnshownWindow() {
+	let subject = DecorativeMotionVisibility(
+		notificationCenter: NotificationCenter(),
+		lowPowerModeProvider: { false }
+	)
+	let window = NSWindow(
+		contentRect: .zero,
+		styleMask: .borderless,
+		backing: .buffered,
+		defer: true
 	)
 	#expect(subject.isEnabled)
 
-	subject.update(
-		applicationIsActive: true,
-		applicationIsHidden: false,
-		windowIsVisible: true,
-		windowIsMiniaturized: false,
-		windowIsOccluded: true
-	)
+	subject.attach(to: window)
 	#expect(!subject.isEnabled)
 
-	subject.update(
-		applicationIsActive: true,
-		applicationIsHidden: false,
-		windowIsVisible: true,
-		windowIsMiniaturized: false,
-		windowIsOccluded: false
-	)
+	subject.detach()
 	#expect(subject.isEnabled)
 }
 
@@ -104,32 +44,6 @@ func decorativeMotionVisibilityRemovesObserversWhenDetached() {
 
 	subject.detach()
 	#expect(!subject.isObserving)
-}
-
-@Test
-func decorativeMotionStopsWhileTheGameIsActiveOrLowPowerModeIsOn() {
-	func enabled(game: Bool, lowPower: Bool) -> Bool {
-		DecorativeMotionVisibilityPolicy.isEnabled(
-			applicationIsActive: true,
-			applicationIsHidden: false,
-			windowIsVisible: true,
-			windowIsMiniaturized: false,
-			windowIsOccluded: false,
-			isGameActive: game,
-			isLowPowerModeEnabled: lowPower
-		)
-	}
-	#expect(enabled(game: false, lowPower: false))
-	#expect(!enabled(game: true, lowPower: false))
-	#expect(!enabled(game: false, lowPower: true))
-	#expect(!enabled(game: true, lowPower: true))
-}
-
-@Test
-func decorativeMotionHomeLayerPausesOnlyWhenCovered() {
-	#expect(DecorativeMotionVisibilityPolicy.homeLayerEnabled(base: true, isCovered: false))
-	#expect(!DecorativeMotionVisibilityPolicy.homeLayerEnabled(base: true, isCovered: true))
-	#expect(!DecorativeMotionVisibilityPolicy.homeLayerEnabled(base: false, isCovered: false))
 }
 
 @Test

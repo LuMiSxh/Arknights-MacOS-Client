@@ -76,7 +76,7 @@ package struct PresetGalleryView: View {
 				) { selection in
 					searchText =
 						destination == .artwork
-						? WallpaperSearch.applyingSuggestion(selection, to: searchText)
+						? PresetSearch.applyingSuggestion(selection, to: searchText)
 						: selection
 				}
 				.padding(.horizontal, 24)
@@ -222,7 +222,7 @@ package struct PresetGalleryView: View {
 			let sourceAvatars = avatars
 			let sourceWallpapers = wallpapers
 			do {
-				let computed = try await PresetGallerySearch.results(
+				let computed = try await PresetSearch.results(
 					for: query.destination,
 					searchText: query.searchText,
 					committedTags: query.committedTags,
@@ -232,7 +232,7 @@ package struct PresetGalleryView: View {
 				)
 				try Task.checkCancellation()
 				guard
-					PresetGallerySearch.shouldPublishResults(
+					PresetSearch.shouldPublishResults(
 						request: query,
 						currentQuery: searchQuery,
 						isCancelled: Task.isCancelled
@@ -244,7 +244,7 @@ package struct PresetGalleryView: View {
 				return
 			} catch {
 				guard
-					PresetGallerySearch.shouldPublishResults(
+					PresetSearch.shouldPublishResults(
 						request: query,
 						currentQuery: searchQuery,
 						isCancelled: Task.isCancelled

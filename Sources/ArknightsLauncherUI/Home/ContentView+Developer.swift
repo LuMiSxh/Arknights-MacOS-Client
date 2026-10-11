@@ -17,16 +17,9 @@ extension ContentView {
 			guard model.isDeveloperMode else { return nil }
 			return model.developerAccessibilityMusicTitle
 		}
-		var developerPopup: ((String, String) -> Void)? {
-			guard model.isDeveloperMode else { return nil }
-			return { title, message in
-				model.applyDeveloperCustomPopup(title: title, markdown: message)
-			}
-		}
 	#else
 		var developerSimulationBinding: DeveloperSimulationBinding? { nil }
 		var developerExpandedPillID: String? { nil }
 		package var developerAccessibilityMusicTitle: String? { nil }
-		var developerPopup: ((String, String) -> Void)? { nil }
 	#endif
 }

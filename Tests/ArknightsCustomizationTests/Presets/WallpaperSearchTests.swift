@@ -74,13 +74,13 @@ struct WallpaperSearchTests {
 	) throws {
 		let category = try #require(WallpaperCategory(rawValue: categoryRawValue))
 		let selectedCategory = selectedCategoryRawValue.flatMap(WallpaperCategory.init(rawValue:))
-		let matches = WallpaperSearch.matches(
+		let matches = PresetSearch.matches(
 			title: title,
 			tags: tags,
 			category: category,
 			query: query,
 			selectedCategory: selectedCategory,
-			knownTags: Set(knownTags.map { WallpaperSearch.normalized($0) })
+			knownTags: Set(knownTags.map { PresetSearch.normalized($0) })
 		)
 		#expect(matches == expected, Comment(rawValue: caseLabel))
 	}
@@ -114,13 +114,13 @@ struct WallpaperSearchTests {
 		knownTags: [String],
 		expected: Bool
 	) {
-		let matches = WallpaperSearch.matches(
+		let matches = PresetSearch.matches(
 			title: "Untitled",
 			tags: tags,
 			category: .story,
 			query: query,
 			selectedCategory: nil,
-			knownTags: Set(knownTags.map { WallpaperSearch.normalized($0) })
+			knownTags: Set(knownTags.map { PresetSearch.normalized($0) })
 		)
 		#expect(matches == expected, Comment(rawValue: caseLabel))
 	}
@@ -170,13 +170,13 @@ struct WallpaperSearchTests {
 		knownTags: [String],
 		expected: Bool
 	) {
-		let matches = WallpaperSearch.matches(
+		let matches = PresetSearch.matches(
 			title: title,
 			tags: tags,
 			category: .story,
 			query: query,
 			selectedCategory: nil,
-			knownTags: Set(knownTags.map { WallpaperSearch.normalized($0) })
+			knownTags: Set(knownTags.map { PresetSearch.normalized($0) })
 		)
 		#expect(matches == expected, Comment(rawValue: caseLabel))
 	}
@@ -193,7 +193,7 @@ struct WallpaperSearchTests {
 		expected: Bool
 	) {
 		#expect(
-			WallpaperSearch.tagsContain(tags, exactly: query) == expected,
+			PresetSearch.tagsContain(tags, exactly: query) == expected,
 			Comment(rawValue: caseLabel))
 	}
 
@@ -202,7 +202,7 @@ struct WallpaperSearchTests {
 		let exact = wallpaper(id: "global-586")
 		let prefixOnly = wallpaper(id: "global-592")
 
-		let matches = try await PresetGallerySearch.wallpapers(
+		let matches = try await PresetSearch.wallpapers(
 			matching: "",
 			committedTags: ["w"],
 			category: nil,
@@ -217,7 +217,7 @@ struct WallpaperSearchTests {
 		let story = wallpaper(id: "story", title: "Story")
 		let holiday = wallpaper(id: "holiday", title: "Christmas")
 
-		let results = try await PresetGallerySearch.results(
+		let results = try await PresetSearch.results(
 			for: .artwork,
 			searchText: "",
 			committedTags: [],
@@ -264,22 +264,22 @@ struct WallpaperSearchTests {
 		)
 
 		#expect(
-			PresetGallerySearch.shouldPublishResults(
+			PresetSearch.shouldPublishResults(
 				request: current, currentQuery: current, isCancelled: false
 			)
 		)
 		#expect(
-			!PresetGallerySearch.shouldPublishResults(
+			!PresetSearch.shouldPublishResults(
 				request: stale, currentQuery: current, isCancelled: false
 			)
 		)
 		#expect(
-			!PresetGallerySearch.shouldPublishResults(
+			!PresetSearch.shouldPublishResults(
 				request: current, currentQuery: current, isCancelled: true
 			)
 		)
 		#expect(
-			!PresetGallerySearch.shouldPublishResults(
+			!PresetSearch.shouldPublishResults(
 				request: loading, currentQuery: loading, isCancelled: false
 			)
 		)

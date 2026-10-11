@@ -13,29 +13,19 @@ extension GameSessionController {
 		region: GameRegion,
 		blocksGameLaunch: Bool? = nil
 	) {
-		let code = Self.supportCode(for: error)
-		let actions = Self.recoveryActions(
-			for: code,
-			isInstalled: installation.isInstalled,
-			operation: operation
-		)
-		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: id,
-				message: message,
-				code: code,
-				context: SupportContext(
-					operation: operation,
-					region: region.supportRegion
-				),
-				actions: actions,
-				blocksGameLaunch: blocksGameLaunch
-					?? (operation == .launch || operation == .runtimeDiscovery)
-			),
-			diagnostic: launcherDiagnosticDescription(for: error)
+			error,
+			id: id,
+			code: Self.supportCode(for: error),
+			context: SupportContext(operation: operation, region: region.supportRegion),
+			repairableCodes: Self.repairableCodes,
+			canRepair: installation.isInstalled && operation != .runtimeStop,
+			blocksGameLaunch: blocksGameLaunch
+				?? (operation == .launch || operation == .runtimeDiscovery)
 		)
 	}
+
+	package static let repairableCodes: Set<SupportCode> = [.pebble, .anemone, .narwhal, .crux]
 
 	@discardableResult
 	package func retryRuntimeFailure(id: UUID) -> Bool {
@@ -111,19 +101,4 @@ extension GameSessionController {
 		}
 	}
 
-	package static func recoveryActions(
-		for code: SupportCode?,
-		isInstalled: Bool,
-		operation: SupportOperation
-	) -> [RecoveryAction] {
-		var actions: [RecoveryAction] = [.retry]
-		if code != nil { actions.append(.openTroubleshooting) }
-		if code == .pebble || code == .anemone || code == .narwhal || code == .crux,
-			isInstalled, operation != .runtimeStop
-		{
-			actions.append(.repair)
-		}
-		actions.append(.reportProblem)
-		return actions
-	}
 }

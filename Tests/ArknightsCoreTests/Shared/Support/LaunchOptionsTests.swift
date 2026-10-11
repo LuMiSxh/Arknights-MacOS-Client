@@ -8,7 +8,7 @@ import Testing
 @Test
 func gameResolutionsMatchOfficialClientOptions() {
 	#expect(
-		GameResolution.allCases.map(\.rawValue)
+		GameDisplaySize.officialResolutions.map(\.storageValue)
 			== [
 				"3840x2160", "2560x1440", "2048x1080", "1920x1200", "1920x1080",
 				"1680x1050", "1600x1200", "1600x1024", "1600x900", "1440x1080",
@@ -16,9 +16,6 @@ func gameResolutionsMatchOfficialClientOptions() {
 				"1152x864", "1024x768", "800x600", "720x480", "640x480",
 			]
 	)
-	for resolution in GameResolution.allCases {
-		#expect(resolution.rawValue == "\(resolution.width)x\(resolution.height)")
-	}
 }
 
 @Test
@@ -136,7 +133,7 @@ func nativeFullscreenRendersTheDisplaySizeOnThePrimaryDisplay() throws {
 	let older = try JSONDecoder().decode(
 		GameLaunchOptions.self, from: Data(#"{"displayMode":"fullscreen"}"#.utf8))
 	#expect(
-		older.fullscreenResolution == .fixed(GameDisplaySize(GameLaunchOptions.default.resolution)))
+		older.fullscreenResolution == .fixed(GameLaunchOptions.default.resolution))
 	let official = try JSONDecoder().decode(
 		GameLaunchOptions.self, from: Data(#"{"resolution":"2560x1440"}"#.utf8))
 	#expect(official.fullscreenResolution == .fixed(GameDisplaySize(width: 2560, height: 1440)))

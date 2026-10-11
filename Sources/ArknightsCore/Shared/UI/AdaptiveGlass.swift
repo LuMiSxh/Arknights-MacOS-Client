@@ -90,19 +90,6 @@ enum AdaptiveGlassSurfaceTreatment: Equatable {
 		) == .external
 	}
 
-	static func ownsExternalBorder(
-		isMacOS27Available: Bool,
-		reduceTransparency: Bool,
-		showBorders: Bool
-	) -> Bool {
-		borderOwner(
-			isMacOS27Available: isMacOS27Available,
-			isMacOS26Available: false,
-			reduceTransparency: reduceTransparency,
-			showBorders: showBorders
-		) == .external
-	}
-
 	static func borderOwner(
 		isMacOS27Available: Bool,
 		isMacOS26Available: Bool,
@@ -138,12 +125,12 @@ enum AdaptiveGlassSurfaceTreatment: Equatable {
 		}
 	}
 
-	private static var isMacOS27Available: Bool {
+	fileprivate static var isMacOS27Available: Bool {
 		if #available(macOS 27, *) { return true }
 		return false
 	}
 
-	private static var isMacOS26Available: Bool {
+	fileprivate static var isMacOS26Available: Bool {
 		if #available(macOS 26, *) { return true }
 		return false
 	}
@@ -167,8 +154,8 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@ViewBuilder
 	func body(content: Content) -> some View {
 		switch AdaptiveGlassSurfaceTreatment.resolve(
-			isMacOS27Available: isMacOS27Available,
-			isMacOS26Available: isMacOS26Available,
+			isMacOS27Available: AdaptiveGlassSurfaceTreatment.isMacOS27Available,
+			isMacOS26Available: AdaptiveGlassSurfaceTreatment.isMacOS26Available,
 			reduceTransparency: reduceTransparency,
 			showBorders: showBorders || showsBorder,
 			hasTint: tint != nil
@@ -199,20 +186,10 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		}
 	}
 
-	private var isMacOS27Available: Bool {
-		if #available(macOS 27, *) {
-			true
-		} else {
-			false
-		}
-	}
-
-	private var isMacOS26Available: Bool {
-		if #available(macOS 26, *) {
-			true
-		} else {
-			false
-		}
+	@available(macOS 26, *)
+	private var glass: Glass {
+		(tint.map { Glass.regular.tint($0) } ?? .regular)
+			.interactive(isInteractive && isEnabled)
 	}
 
 	@available(macOS 26, *)
@@ -240,23 +217,13 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@available(macOS 26, *)
 	@ViewBuilder
 	private func macOS27GlassContent(_ content: Content, hasTint: Bool) -> some View {
-		if hasTint, let tint = macOS27ColorTint {
-			if isInteractive {
-				macOS27Backplate(content, tint: tint)
-					.glassEffect(.regular.tint(tint).interactive(isEnabled), in: shape)
-			} else {
-				macOS27Backplate(content, tint: tint)
-					.glassEffect(.regular.tint(tint), in: shape)
-			}
-		} else {
-			if isInteractive {
-				macOS27Backplate(content, tint: nil)
-					.glassEffect(.regular.interactive(isEnabled), in: shape)
-			} else {
-				macOS27Backplate(content, tint: nil)
-					.glassEffect(.regular, in: shape)
-			}
-		}
+		let backplateTint = hasTint ? macOS27ColorTint : nil
+		macOS27Backplate(content, tint: backplateTint)
+			.glassEffect(
+				(backplateTint.map { Glass.regular.tint($0) } ?? .regular)
+					.interactive(isInteractive && isEnabled),
+				in: shape
+			)
 	}
 
 	@ViewBuilder
@@ -326,19 +293,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@available(macOS 26, *)
 	@ViewBuilder
 	private func macOS26Glass(_ content: Content) -> some View {
-		if let tint {
-			if isInteractive {
-				content.glassEffect(.regular.tint(tint).interactive(isEnabled), in: shape)
-			} else {
-				content.glassEffect(.regular.tint(tint), in: shape)
-			}
-		} else {
-			if isInteractive {
-				content.glassEffect(.regular.interactive(isEnabled), in: shape)
-			} else {
-				content.glassEffect(.regular, in: shape)
-			}
-		}
+		content.glassEffect(glass, in: shape)
 	}
 
 	@ViewBuilder

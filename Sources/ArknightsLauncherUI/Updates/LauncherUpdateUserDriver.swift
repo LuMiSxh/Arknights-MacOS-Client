@@ -22,8 +22,8 @@ enum LauncherUpdatePhase: Equatable {
 @MainActor
 @Observable
 final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
-	private(set) var phase: LauncherUpdatePhase = .hidden
-	private(set) var version: String?
+	var phase: LauncherUpdatePhase = .hidden
+	var version: String?
 	private(set) var releaseNotes: String?
 	private(set) var releaseNotesFormat: String?
 	private(set) var updateStage: SPUUserUpdateStage?
@@ -36,13 +36,15 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	private(set) var gameIsRunning = false
 	private(set) var terminationBlocked = false
 	private(set) var relaunched = false
-	private(set) var message: String?
+	var message: String?
 
-	@ObservationIgnored private var updateReply: ((SPUUserUpdateChoice) -> Void)?
-	@ObservationIgnored private var readyReply: ((SPUUserUpdateChoice) -> Void)?
-	@ObservationIgnored private var noUpdateAcknowledgement: (() -> Void)?
-	@ObservationIgnored private var errorAcknowledgement: (() -> Void)?
-	@ObservationIgnored private var installedAcknowledgement: (() -> Void)?
+	/// The one Sparkle reply the user can currently answer.
+	enum PendingReply {
+		case choice((SPUUserUpdateChoice) -> Void)
+		case acknowledgement(() -> Void)
+	}
+
+	@ObservationIgnored var pendingReply: PendingReply?
 	@ObservationIgnored private var checkCancellation: (() -> Void)?
 	@ObservationIgnored private var downloadCancellation: (() -> Void)?
 	@ObservationIgnored private var retryTermination: (() -> Void)?
@@ -106,38 +108,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		checkCancellation = cancellation
 	}
 
-	#if DEBUG
-		func showDeveloperPreview(version: String?, failed: Bool) {
-			resetCallbacks()
-			self.version = version
-			releaseNotes = nil
-			releaseNotesFormat = nil
-			updateStage = nil
-			informationOnly = false
-			informationURL = nil
-			expectedBytes = 0
-			receivedBytes = 0
-			extractionProgress = 0
-			message = failed ? LauncherStrings.updateErrorDetail : nil
-
-			if failed {
-				phase = .failed
-				errorAcknowledgement = { [weak self] in self?.dismissUpdateInstallation() }
-			} else if version != nil {
-				phase = .available
-				updateReply = { [weak self] choice in
-					guard choice == .install else { return }
-					self?.phase = .readyToInstall
-					self?.readyReply = { [weak self] _ in
-						self?.dismissUpdateInstallation()
-					}
-				}
-			} else {
-				phase = .noUpdate
-				noUpdateAcknowledgement = { [weak self] in self?.dismissUpdateInstallation() }
-			}
-		}
-	#endif
 	func showUpdateFound(
 		with appcastItem: SUAppcastItem,
 		state: SPUUserUpdateState,
@@ -150,7 +120,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		receivedBytes = 0
 		extractionProgress = 0
 		phase = .available
-		updateReply = reply
+		pendingReply = .choice(reply)
 	}
 	func showUpdateReleaseNotes(with downloadData: SPUDownloadData) {
 		releaseNotes = String(data: downloadData.data, encoding: .utf8)
@@ -163,12 +133,12 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		resetCallbacks()
 		phase = .noUpdate
 		message = LauncherStrings.updateErrorDetail
-		noUpdateAcknowledgement = acknowledgement
+		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
 		showError(error)
-		errorAcknowledgement = acknowledgement
+		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func showDownloadInitiated(cancellation: @escaping () -> Void) {
 		cancelAutomaticTerminationRetry()
@@ -197,7 +167,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showReady(toInstallAndRelaunch reply: @escaping (SPUUserUpdateChoice) -> Void) {
 		cancelAutomaticTerminationRetry()
 		phase = .readyToInstall
-		readyReply = reply
+		pendingReply = .choice(reply)
 	}
 	func showInstallingUpdate(
 		withApplicationTerminated applicationTerminated: Bool,
@@ -224,7 +194,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		}
 		phase = .installed
 		self.relaunched = relaunched
-		installedAcknowledgement = acknowledgement
+		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func dismissUpdateInstallation() {
 		resetCallbacks()
@@ -236,15 +206,11 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		activateApplication()
 	}
 	func choose(_ choice: SPUUserUpdateChoice) {
-		guard choice != .skip else { return }
+		guard choice != .skip, case .choice(let reply)? = pendingReply else { return }
+		pendingReply = nil
 		let actualChoice = informationOnly && choice == .install ? .dismiss : choice
-		if let reply = takeReply(&updateReply) {
-			if actualChoice != .install { hide() }
-			reply(actualChoice)
-		} else if let reply = takeReply(&readyReply) {
-			if actualChoice != .install { hide() }
-			reply(actualChoice)
-		}
+		if actualChoice != .install { hide() }
+		reply(actualChoice)
 	}
 	func cancelCheck() {
 		guard let cancellation = takeAction(&checkCancellation) else { return }
@@ -257,16 +223,9 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		cancellation()
 	}
 	func acknowledge() {
-		if let acknowledgement = takeAction(&noUpdateAcknowledgement) {
-			hide()
-			acknowledgement()
-		} else if let acknowledgement = takeAction(&errorAcknowledgement) {
-			hide()
-			acknowledgement()
-		} else if let acknowledgement = takeAction(&installedAcknowledgement) {
-			hide()
-			acknowledgement()
-		}
+		guard case .acknowledgement(let acknowledgement)? = pendingReply else { return }
+		hide()
+		acknowledgement()
 	}
 	func retryTerminationRequest() {
 		guard phase == .installing, let retryTermination else { return }
@@ -289,10 +248,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 			isPresentationHidden = true
 			return
 		}
-		if let reply = takeReply(&updateReply) {
-			hide()
-			reply(.dismiss)
-		} else if let reply = takeReply(&readyReply) {
+		if case .choice(let reply)? = pendingReply {
 			hide()
 			reply(.dismiss)
 		} else if let cancellation = takeAction(&checkCancellation) {
@@ -309,8 +265,8 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		cancelAutomaticTerminationRetry()
 		phase = .failed
 		message = LauncherStrings.updateErrorDetail
-		if errorAcknowledgement == nil {
-			errorAcknowledgement = {}
+		if pendingReply == nil {
+			pendingReply = .acknowledgement {}
 		}
 	}
 	private func setUpdateDetails(_ item: SUAppcastItem) {
@@ -342,11 +298,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	}
 	private func resetCallbacks() {
 		cancelAutomaticTerminationRetry()
-		updateReply = nil
-		readyReply = nil
-		noUpdateAcknowledgement = nil
-		errorAcknowledgement = nil
-		installedAcknowledgement = nil
+		pendingReply = nil
 		checkCancellation = nil
 		downloadCancellation = nil
 		retryTermination = nil
@@ -370,12 +322,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		automaticRetryAttempted = false
 	}
 	private func takeAction(_ callback: inout (() -> Void)?) -> (() -> Void)? {
-		defer { callback = nil }
-		return callback
-	}
-	private func takeReply(
-		_ callback: inout ((SPUUserUpdateChoice) -> Void)?
-	) -> ((SPUUserUpdateChoice) -> Void)? {
 		defer { callback = nil }
 		return callback
 	}

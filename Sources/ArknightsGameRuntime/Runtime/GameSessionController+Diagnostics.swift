@@ -16,7 +16,7 @@ extension GameSessionController {
 			"region=\(region.displayName)",
 			"usesGameSettings=\(options.usesGameSettings)",
 			"displayMode=\(options.displayMode.displayName)",
-			"resolution=\(options.resolution.rawValue)",
+			"resolution=\(options.resolution.storageValue)",
 			"fullscreenResolution=\(options.fullscreenResolution.storageValue)",
 			"windowSize=\(options.windowSize.width)x\(options.windowSize.height)",
 			"rendering=\(options.renderingMode.rawValue)",

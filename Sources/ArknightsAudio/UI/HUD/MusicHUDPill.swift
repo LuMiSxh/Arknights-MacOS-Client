@@ -12,7 +12,6 @@ package struct MusicHUDPill: View {
 	let openCurrentMusicURL: () -> Void
 	let controller: BackgroundMusicController
 	@Binding var isExpanded: Bool
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@ScaledMetric(relativeTo: .caption) private var titleLineHeight =
 		AppConstants.Music.titleLineHeight
 	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
@@ -38,138 +37,94 @@ package struct MusicHUDPill: View {
 
 	package var body: some View {
 		if let musicTitle {
-			VStack(alignment: .leading, spacing: isExpanded ? 9 : 0) {
-				Button(action: toggleExpansion) {
-					HStack(spacing: 5) {
-						Image(systemName: "music.note")
-							.font(.caption2.weight(.semibold))
+			ExpandableHUDPill(
+				systemImage: "music.note",
+				iconFont: .caption2.weight(.semibold),
+				toggleNoun: "music controls",
+				accessibilityValue: musicTitle,
+				accentColor: accentColor,
+				hudTintColor: hudTintColor,
+				expandedSpacing: 9,
+				sizing: HUDPillSizing(
+					collapsedHeight: collapsedPlayerHeight,
+					collapsedMaxWidth: AppConstants.Music.expandedPlayerWidth,
+					expandedWidth: AppConstants.Music.expandedPlayerWidth,
+					expandedMaxWidth: AppConstants.Music.expandedPlayerWidth,
+					expandedMinHeight: AppConstants.Music.expandedPlayerHeight
+				),
+				isExpanded: $isExpanded
+			) {
+				VStack(alignment: .leading, spacing: 1) {
+					OverflowingMusicTitle(title: musicTitle)
+						.font(.caption.monospaced().weight(.medium))
+						.foregroundStyle(.secondary)
+						.frame(height: titleLineHeight, alignment: .leading)
+						.frame(
+							maxWidth: isExpanded
+								? .infinity
+								: AppConstants.Music.collapsedTitleMaxWidth,
+							alignment: .leading
+						)
+					if isExpanded {
+						Text(playbackStatus)
+							.font(.caption)
 							.adaptiveControlForeground(accentColor)
-							.accessibilityHidden(true)
-						VStack(alignment: .leading, spacing: 1) {
-							OverflowingMusicTitle(title: musicTitle)
-								.font(.caption.monospaced().weight(.medium))
-								.foregroundStyle(.secondary)
-								.frame(
-									height: titleLineHeight,
-									alignment: .leading
-								)
-								.frame(
-									maxWidth: isExpanded
-										? .infinity
-										: AppConstants.Music.collapsedTitleMaxWidth,
-									alignment: .leading
-								)
-							if isExpanded {
-								Text(playbackStatus)
-									.font(.caption)
-									.adaptiveControlForeground(accentColor)
-									.transition(.opacity)
-							}
-						}
-						Spacer(minLength: 6)
-						Image(systemName: disclosureImage)
-							.font(.caption.bold())
-							.adaptiveControlForeground(accentColor)
-							.contentTransition(
-								HUDPillMotion.chevronTransition(reduceMotion: reduceMotion)
-							)
-							.accessibilityHidden(true)
+							.transition(.opacity)
 					}
-					.padding(.horizontal, isExpanded ? 14 : 12)
-					.frame(minHeight: isExpanded ? nil : collapsedPlayerHeight)
-					.contentShape(Rectangle())
 				}
-				.buttonStyle(ActionPressStyle())
-				.keyboardFocusIndicator(in: Capsule())
-				.accessibilityLabel(
-					isExpanded ? "Hide music controls" : "Show music controls"
-				)
-				.accessibilityValue(Text(musicTitle))
-				.help(
-
-					isExpanded ? "Hide music controls" : "Show music controls"
-
-				)
-
-				if isExpanded {
-					HStack(spacing: 6) {
-						if controller.canNavigatePlaylist {
-							MusicPlayerControlButton(
-								title: "Previous Track",
-								systemImage: "backward.end.fill",
-								accentColor: accentColor,
-								isDisabled: controller.controlsAreDisabled,
-								action: controller.playPreviousTrack
-							)
-						}
-
+			} detail: {
+				HStack(spacing: 6) {
+					if controller.canNavigatePlaylist {
 						MusicPlayerControlButton(
-							title:
-								controller.isPlaying ? "Pause" : "Play",
-							systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
-							accentColor: accentColor,
-							isProminent: true,
-							isDisabled: controller.controlsAreDisabled,
-							action: controller.togglePlayback
-						)
-
-						if controller.canNavigatePlaylist {
-							MusicPlayerControlButton(
-								title: "Next Track",
-								systemImage: "forward.end.fill",
-								accentColor: accentColor,
-								isDisabled: controller.controlsAreDisabled,
-								action: controller.playNextTrack
-							)
-						}
-
-						MusicVolumeControl(
-							volume: $settings.launcherMusicVolume,
-							accentColor: accentColor,
-							isMuted: controller.isMuted,
-							isDisabled: controller.controlsAreDisabled,
-							toggleMute: controller.toggleMute
-						)
-
-						Spacer(minLength: 0)
-
-						MusicPlayerControlButton(
-							title: "Open on YouTube",
-							systemImage: "arrow.up.right.square",
+							title: "Previous Track",
+							systemImage: "backward.end.fill",
 							accentColor: accentColor,
 							isDisabled: controller.controlsAreDisabled,
-							action: openCurrentMusicURL
+							action: controller.playPreviousTrack
 						)
 					}
-					.padding(.horizontal, 14)
-					.frame(maxWidth: .infinity, alignment: .leading)
-					.transition(expandedContentTransition)
+
+					MusicPlayerControlButton(
+						title:
+							controller.isPlaying ? "Pause" : "Play",
+						systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
+						accentColor: accentColor,
+						isProminent: true,
+						isDisabled: controller.controlsAreDisabled,
+						action: controller.togglePlayback
+					)
+
+					if controller.canNavigatePlaylist {
+						MusicPlayerControlButton(
+							title: "Next Track",
+							systemImage: "forward.end.fill",
+							accentColor: accentColor,
+							isDisabled: controller.controlsAreDisabled,
+							action: controller.playNextTrack
+						)
+					}
+
+					MusicVolumeControl(
+						volume: $settings.launcherMusicVolume,
+						accentColor: accentColor,
+						isMuted: controller.isMuted,
+						isDisabled: controller.controlsAreDisabled,
+						toggleMute: controller.toggleMute
+					)
+
+					Spacer(minLength: 0)
+
+					MusicPlayerControlButton(
+						title: "Open on YouTube",
+						systemImage: "arrow.up.right.square",
+						accentColor: accentColor,
+						isDisabled: controller.controlsAreDisabled,
+						action: openCurrentMusicURL
+					)
 				}
+				.padding(.horizontal, 14)
+				.frame(maxWidth: .infinity, alignment: .leading)
 			}
-			.padding(.vertical, isExpanded ? 11 : 0)
-			.frame(width: isExpanded ? AppConstants.Music.expandedPlayerWidth : nil)
-			.frame(
-				minHeight: isExpanded
-					? AppConstants.Music.expandedPlayerHeight
-					: collapsedPlayerHeight,
-				alignment: isExpanded ? .topLeading : .center
-			)
-			.frame(
-				maxWidth: AppConstants.Music.expandedPlayerWidth
-			)
-			.fixedSize(horizontal: !isExpanded, vertical: false)
-			.hudPillSurface(
-				isExpanded: isExpanded,
-				tint: hudTintColor,
-				progressTint: accentColor
-			)
-			.shadow(
-				color: Color.black.opacity(isExpanded ? 0.35 : 0),
-				radius: isExpanded ? 12 : 0,
-				y: isExpanded ? 5 : 0
-			)
-			.accessibilityElement(children: .contain)
-			.onExitCommand(perform: collapseExpansion)
 		}
 	}
 
@@ -177,26 +132,5 @@ package struct MusicHUDPill: View {
 		if controller.isGameProcessRunning { return "Paused while the game is running" }
 		if controller.isChangingTrack { return "Changing track…" }
 		return controller.isPlaying ? "Playing" : "Paused"
-	}
-
-	private var disclosureImage: String {
-		isExpanded ? "chevron.up" : "chevron.down"
-	}
-
-	private var expandedContentTransition: AnyTransition {
-		HUDPillMotion.expandedContentTransition(reduceMotion: reduceMotion)
-	}
-
-	private func toggleExpansion() {
-		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
-			isExpanded.toggle()
-		}
-	}
-
-	private func collapseExpansion() {
-		guard isExpanded else { return }
-		withAnimation(HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion)) {
-			isExpanded = false
-		}
 	}
 }

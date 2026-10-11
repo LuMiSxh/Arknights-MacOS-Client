@@ -267,8 +267,7 @@ package struct ContentView: View {
 				uninstallGame: { model.actions.uninstallGame() },
 				restartOnboarding: restartOnboarding,
 				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
-				developerSimulation: developerSimulationBinding,
-				applyCustomPopup: developerPopup, windowSize: windowSize)
+				developerSimulation: developerSimulationBinding, windowSize: windowSize)
 		case .failure(let failure):
 			LauncherFailureDetailView(
 				failure: failure, accentColor: model.customization.accentColor,

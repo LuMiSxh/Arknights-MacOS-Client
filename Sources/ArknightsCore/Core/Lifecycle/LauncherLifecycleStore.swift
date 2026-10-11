@@ -137,6 +137,50 @@ package final class LauncherLifecycleStore {
 		}
 	}
 
+	/// Builds the recovery actions and presents `error`. `repairableCodes` is the owning
+	/// feature's set of codes that a full repair can fix; `canRepair` adds the caller's state.
+	package func presentFailure(
+		_ error: any Error,
+		id: UUID,
+		code: SupportCode?,
+		context: SupportContext,
+		repairableCodes: Set<SupportCode>,
+		canRepair: Bool,
+		allowsRetry: Bool = true,
+		blocksGameLaunch: Bool
+	) {
+		presentFailure(
+			LauncherFailurePresentation(
+				id: id,
+				message: launcherUserMessage(for: error),
+				code: code,
+				context: context,
+				actions: Self.recoveryActions(
+					for: code,
+					repairableCodes: repairableCodes,
+					canRepair: canRepair,
+					allowsRetry: allowsRetry
+				),
+				blocksGameLaunch: blocksGameLaunch
+			),
+			diagnostic: launcherDiagnosticDescription(for: error)
+		)
+	}
+
+	package static func recoveryActions(
+		for code: SupportCode?,
+		repairableCodes: Set<SupportCode>,
+		canRepair: Bool,
+		allowsRetry: Bool = true
+	) -> [RecoveryAction] {
+		var actions: [RecoveryAction] = []
+		if allowsRetry { actions.append(.retry) }
+		if code != nil { actions.append(.openTroubleshooting) }
+		if canRepair, let code, repairableCodes.contains(code) { actions.append(.repair) }
+		actions.append(.reportProblem)
+		return actions
+	}
+
 	@discardableResult
 	package func presentFailure(
 		_ failure: LauncherFailurePresentation,

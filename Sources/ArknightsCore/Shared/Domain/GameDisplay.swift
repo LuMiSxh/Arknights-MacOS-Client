@@ -32,8 +32,33 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 		self.height = height
 	}
 
-	package init(_ resolution: GameResolution) {
-		self.init(width: resolution.width, height: resolution.height)
+	/// Resolutions of the official client, largest first. `GameLaunchOptions.resolution` is one of these.
+	static let officialResolutions: [GameDisplaySize] = [
+		(3840, 2160), (2560, 1440), (2048, 1080), (1920, 1200), (1920, 1080), (1680, 1050),
+		(1600, 1200), (1600, 1024), (1600, 900), (1440, 1080), (1360, 768), (1280, 960),
+		(1280, 800), (1280, 768), (1280, 720), (1176, 664), (1152, 864), (1024, 768), (800, 600),
+		(720, 480), (640, 480),
+	].map { GameDisplaySize(width: $0.0, height: $0.1) }
+	package static let ultraHD = GameDisplaySize(width: 3840, height: 2160)
+	package static let quadHD = GameDisplaySize(width: 2560, height: 1440)
+	package static let fullHD = GameDisplaySize(width: 1920, height: 1080)
+	package static let hd = GameDisplaySize(width: 1280, height: 720)
+
+	/// The official resolution with the most pixels that fits within `size`.
+	static func largestOfficial(fitting size: GameDisplaySize) -> GameDisplaySize? {
+		officialResolutions.filter { $0.fits(in: size) }.max { $0.pixelCount < $1.pixelCount }
+	}
+
+	/// Stored as "WIDTHxHEIGHT".
+	package var storageValue: String { "\(width)x\(height)" }
+
+	init?(storageValue: String) {
+		let components = storageValue.split(separator: "x")
+		guard components.count == 2, let width = Int(components[0]),
+			let height = Int(components[1]),
+			Self.validDimensions.contains(width), Self.validDimensions.contains(height)
+		else { return nil }
+		self.init(width: width, height: height)
 	}
 
 	package init(from decoder: any Decoder) throws {

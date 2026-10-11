@@ -21,14 +21,12 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	private var hasStarted = false
 	private var postponedActivityObserverID: UUID?
 	private var cancelActivityObservation: (@Sendable () -> Void)?
-	private enum CheckKind {
-		case none
-		case probe
+	private enum Check {
 		case userInitiated
+		/// A silent availability check; Sparkle reports its outcome across several callbacks.
+		case probe(LauncherUpdateCheckOutcome, completion: (LauncherUpdateCheckOutcome) -> Void)
 	}
-	private var checkKind = CheckKind.none
-	private var probeOutcome: LauncherUpdateCheckOutcome = .current
-	private var probeCompletion: ((LauncherUpdateCheckOutcome) -> Void)?
+	private var check: Check?
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -82,23 +80,21 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 			updater.checkForUpdates()
 			return
 		}
-		guard checkKind == .none, updater.canCheckForUpdates, !updater.sessionInProgress else {
+		guard check == nil, updater.canCheckForUpdates, !updater.sessionInProgress else {
 			return
 		}
-		checkKind = .userInitiated
+		check = .userInitiated
 		updater.checkForUpdates()
 	}
 
 	func checkForUpdateInformation(
 		completion: @escaping (LauncherUpdateCheckOutcome) -> Void
 	) {
-		guard lifecycle.canBeginExclusiveActivity, checkKind == .none else {
+		guard lifecycle.canBeginExclusiveActivity, check == nil else {
 			completion(.failed)
 			return
 		}
-		checkKind = .probe
-		probeOutcome = .current
-		probeCompletion = completion
+		check = .probe(.current, completion: completion)
 		guard startIfNeeded(showError: false), updater.canCheckForUpdates,
 			!updater.sessionInProgress
 		else {
@@ -112,9 +108,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		func beginProbeForTesting(
 			completion: @escaping (LauncherUpdateCheckOutcome) -> Void
 		) {
-			checkKind = .probe
-			probeOutcome = .current
-			probeCompletion = completion
+			check = .probe(.current, completion: completion)
 		}
 	#endif
 
@@ -151,17 +145,12 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 
 	func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
 		userDriver.recordAvailableUpdate(item)
-		if checkKind == .probe {
-			probeOutcome = .found(
-				version: item.displayVersionString, running: Bundle.main.shortVersionString)
-		}
+		recordProbeOutcome(
+			.found(version: item.displayVersionString, running: Bundle.main.shortVersionString))
 	}
 
 	func updaterDidNotFindUpdate(_ updater: SPUUpdater, error: Error) {
-		if checkKind == .probe {
-			probeOutcome = .current
-			return
-		}
+		if recordProbeOutcome(.current) { return }
 		userDriver.recordNoUpdate(error)
 	}
 
@@ -174,14 +163,8 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 			finishLauncherUpdate()
 			return
 		}
-		if checkKind == .probe {
-			let outcome: LauncherUpdateCheckOutcome
-			if let error {
-				outcome = Self.isNoUpdateError(error) ? .current : .failed
-			} else {
-				outcome = probeOutcome
-			}
-			completeProbe(outcome)
+		if case .probe(let recorded, _) = check {
+			completeProbe(error.map { Self.probeOutcome(for: $0) } ?? recorded)
 			return
 		}
 		if let error {
@@ -258,12 +241,9 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	}
 
 	func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
-		if checkKind == .probe {
-			// Sparkle calls didAbort before didFinish for a probe that ends in an
-			// error. Keep the completion pending until the update cycle finishes.
-			probeOutcome = Self.isNoUpdateError(error) ? .current : .failed
-			return
-		}
+		// Sparkle calls didAbort before didFinish for a probe that ends in an
+		// error. Keep the completion pending until the update cycle finishes.
+		if recordProbeOutcome(Self.probeOutcome(for: error)) { return }
 		finishLauncherUpdate()
 	}
 
@@ -273,16 +253,25 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 			lifecycle.removeActivityObserver(postponedActivityObserverID)
 			self.postponedActivityObserverID = nil
 		}
-		checkKind = .none
+		check = nil
 		lifecycle.finishLauncherUpdate()
 	}
 
+	@discardableResult
+	private func recordProbeOutcome(_ outcome: LauncherUpdateCheckOutcome) -> Bool {
+		guard case .probe(_, let completion) = check else { return false }
+		check = .probe(outcome, completion: completion)
+		return true
+	}
+
 	private func completeProbe(_ outcome: LauncherUpdateCheckOutcome) {
-		guard checkKind == .probe else { return }
-		checkKind = .none
-		let completion = probeCompletion
-		probeCompletion = nil
-		completion?(outcome)
+		guard case .probe(_, let completion) = check else { return }
+		check = nil
+		completion(outcome)
+	}
+
+	private static func probeOutcome(for error: Error) -> LauncherUpdateCheckOutcome {
+		isNoUpdateError(error) ? .current : .failed
 	}
 
 	static func isNoUpdateError(_ error: Error) -> Bool {

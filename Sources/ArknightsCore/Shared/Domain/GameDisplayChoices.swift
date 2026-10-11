@@ -35,8 +35,8 @@ package struct GameScreenMetrics: Equatable, Sendable {
 	}
 
 	/// The official game resolution with the most pixels that the panel can show unscaled.
-	package var fullscreenResolution: GameResolution {
-		GameResolution.largest(
+	package var fullscreenResolution: GameDisplaySize {
+		GameDisplaySize.largestOfficial(
 			fitting: GameDisplaySize(width: Int(pixelSize.width), height: Int(pixelSize.height)))
 			?? .fullHD
 	}
@@ -98,7 +98,7 @@ package enum GameFullscreenDetail: CaseIterable, Sendable {
 				.max { $0.pixelCount < $1.pixelCount }
 				.map(GameFullscreenResolution.fixed) ?? .native
 		case .lighter:
-			.fixed(GameDisplaySize(.fullHD))
+			.fixed(.fullHD)
 		}
 	}
 
@@ -115,7 +115,7 @@ package enum GameFullscreenDetail: CaseIterable, Sendable {
 	/// `lighter` draws, and `lighter` when it equals `full` or is larger than the display.
 	package static func available(native: GameDisplaySize?) -> [Self] {
 		let full = GameFullscreenResolution.native.drawnSize(native: native)
-		let lighter = GameDisplaySize(.fullHD)
+		let lighter = GameDisplaySize.fullHD
 		let balanced = Self.balanced.resolution(native: native).drawnSize(native: native)
 		var levels = [Self.full]
 		if balanced != full && balanced != lighter { levels.append(.balanced) }

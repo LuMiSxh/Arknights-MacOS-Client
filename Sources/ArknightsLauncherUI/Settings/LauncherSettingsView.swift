@@ -37,7 +37,6 @@ struct LauncherSettingsView: View {
 	let restartOnboarding: () -> Void
 	let requestLauncherUpdateCheck: () -> Void
 	let developerSimulation: DeveloperSimulationBinding?
-	let applyCustomPopup: ((String, String) -> Void)?
 	let windowSize: CGSize
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -148,11 +147,10 @@ struct LauncherSettingsView: View {
 						)
 					#if DEBUG
 						case .developer:
-							if let developerSimulation, let applyCustomPopup {
+							if let developerSimulation {
 								DeveloperSettingsPage(
 									simulation: developerSimulation,
-									accentColor: customization.accentColor,
-									applyCustomPopup: applyCustomPopup
+									accentColor: customization.accentColor
 								)
 							}
 					#endif

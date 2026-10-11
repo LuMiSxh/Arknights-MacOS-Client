@@ -13,29 +13,16 @@ extension InstallationController {
 		region: GameRegion
 	) {
 		let presentedError = Self.mapTransportError(error)
-		let code: SupportCode? =
-			operation == .uninstall ? .basalt : Self.supportCode(for: presentedError)
-		let actions = Self.recoveryActions(
-			for: code,
-			isInstalled: isInstalled,
-			operation: operation,
-			allowsRetry: !Self.isMissingConfiguration(error)
-		)
-		let message = launcherUserMessage(for: presentedError)
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: id,
-				message: message,
-				code: code,
-				context: SupportContext(
-					operation: operation,
-					region: region.supportRegion
-				),
-				actions: actions,
-				blocksGameLaunch: operation == .install || operation == .update
-					|| operation == .repair
-			),
-			diagnostic: launcherDiagnosticDescription(for: presentedError)
+			presentedError,
+			id: id,
+			code: operation == .uninstall ? .basalt : Self.supportCode(for: presentedError),
+			context: SupportContext(operation: operation, region: region.supportRegion),
+			repairableCodes: [.pebble, .anemone],
+			canRepair: isInstalled && operation != .repair,
+			allowsRetry: !Self.isMissingConfiguration(error),
+			blocksGameLaunch: operation == .install || operation == .update
+				|| operation == .repair
 		)
 	}
 
@@ -79,22 +66,6 @@ extension InstallationController {
 		default:
 			nil
 		}
-	}
-
-	static func recoveryActions(
-		for code: SupportCode?,
-		isInstalled: Bool,
-		operation: SupportOperation,
-		allowsRetry: Bool = true
-	) -> [RecoveryAction] {
-		var actions: [RecoveryAction] = []
-		if allowsRetry { actions.append(.retry) }
-		if code != nil { actions.append(.openTroubleshooting) }
-		if code == .pebble || code == .anemone, isInstalled, operation != .repair {
-			actions.append(.repair)
-		}
-		actions.append(.reportProblem)
-		return actions
 	}
 
 	private static func isMissingConfiguration(_ error: any Error) -> Bool {

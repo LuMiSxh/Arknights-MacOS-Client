@@ -25,9 +25,9 @@ private func makePreferences() -> (
 	)
 }
 
-@Test(arguments: [(laptop, GameResolution.quadHD), (scaled4K, .ultraHD)])
+@Test(arguments: [(laptop, GameDisplaySize.quadHD), (scaled4K, .ultraHD)])
 func screenMetricsPickTheLargestFittingResolution(
-	screen: GameScreenMetrics, resolution: GameResolution
+	screen: GameScreenMetrics, resolution: GameDisplaySize
 ) {
 	#expect(screen.fullscreenResolution == resolution)
 }

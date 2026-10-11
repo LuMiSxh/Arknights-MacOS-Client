@@ -10,30 +10,46 @@ import ArknightsGameRuntime
 
 	extension LauncherViewModel {
 		func applyDeveloperSimulation(_ simulation: DeveloperSimulationState) {
-			var simulation = simulation.normalized()
-			applyDeveloperRegionState(&simulation)
+			let simulation = simulation.normalized()
 			developerSimulation = simulation
 
+			settings.canaryFeaturesEnabled = simulation.canaryFeaturesEnabled
+			settings.taiwanClientEnabled = simulation.taiwanClientEnabled
+			if installation.region != simulation.selectedRegion {
+				lifecycle.simulateActivity(.idle)
+				_ = installation.selectRegion(simulation.selectedRegion)
+			}
+			for region in GameRegion.allCases {
+				installation.setRegionInstalled(
+					region, simulation.installedRegions.contains(region))
+			}
+
 			communication.resetPopupQueueForDeveloper()
-			let projection = simulation.projection()
 			installation.cancelInstalledStateRefresh()
 			installation.configuration = Self.developerConfiguration
-			installation.progress = projection.progress
-			installation.isInstalled = projection.isInstalled
-			installation.hasPartialDownload = projection.hasPartialDownload
-			installation.installedVersion = projection.installedVersion
-			installation.isGameUpdateAvailable = projection.isGameUpdateAvailable
+			installation.progress = simulation.downloadProgress
+			installation.isInstalled = simulation.isInstalled
+			installation.hasPartialDownload = simulation.hasPartialDownload
+			installation.installedVersion = simulation.installedVersion
+			installation.isGameUpdateAvailable = simulation.updateAvailable
 			gameSession.runtimeName = "Wine 11.16 + DXMT 0.80-199"
-			communication.launcherUpdateVersion = projection.launcherUpdateVersion
-			communication.launcherUpdateStatus = projection.launcherUpdateStatus
+			communication.launcherUpdateVersion = simulation.launcherUpdateVersion
+			communication.launcherUpdateStatus = simulation.launcherUpdateStatus
 			communication.isCheckingLauncherUpdates = false
 			lifecycle.state.refresh = .idle
 			lifecycle.simulateActivity(simulatedActivity(for: simulation))
-			lifecycle.setStatus(projection.status, clearsFailure: projection.failureCode == nil)
-			applyDeveloperPreferences(simulation)
-			applyDeveloperFailure(projection, region: simulation.selectedRegion)
+			lifecycle.setStatus(simulation.status, clearsFailure: simulation.failure == .none)
+			settings.showsServerResetCountdown = simulation.showStatusPill
+			settings.showsGameVersion = simulation.showVersionPill
+			settings.showsPlayingMusic = simulation.showMusicPill
+			settings.usesDynamicTheme = simulation.usesDynamicTheme
+			developerAccessibilityMusicTitle =
+				simulation.longAccessibilityText
+				? "A very long Arknights soundtrack title for keyboard and layout checks"
+				: "Developer preview soundtrack"
+			applyDeveloperFailure(simulation)
 			applyDeveloperTranslationCheck(simulation)
-			applyDeveloperPopup(simulation)
+			if simulation.announcement { enqueueDeveloperAnnouncement() }
 		}
 
 		func applyDeveloperTranslationCheck(_ simulation: DeveloperSimulationState) {
@@ -49,19 +65,6 @@ import ArknightsGameRuntime
 			guard var simulation = developerSimulation else { return }
 			update(&simulation)
 			applyDeveloperSimulation(simulation)
-		}
-
-		func applyDeveloperCustomPopup(title: String, markdown: String) {
-			communication.enqueuePopup(
-				LauncherPopup(
-					id: "developer-custom-popup",
-					title: title,
-					content: .markdown(markdown),
-					dismissTitle: "Done",
-					actionTitle: nil,
-					actionURL: nil
-				)
-			)
 		}
 
 		func loadDeveloperArtwork() async {
@@ -110,41 +113,9 @@ import ArknightsGameRuntime
 			}
 		}
 
-		private func applyDeveloperRegionState(_ simulation: inout DeveloperSimulationState) {
-			settings.canaryFeaturesEnabled = simulation.canaryFeaturesEnabled
-			settings.taiwanClientEnabled = simulation.taiwanClientEnabled
-			if !simulation.selectableRegions.contains(simulation.selectedRegion) {
-				simulation.selectedRegion = .global
-			}
-			if installation.region != simulation.selectedRegion {
-				lifecycle.simulateActivity(.idle)
-				_ = installation.selectRegion(simulation.selectedRegion)
-			}
-			for region in GameRegion.allCases {
-				installation.setRegionInstalled(
-					region,
-					simulation.installedRegions.contains(region)
-				)
-			}
-		}
-
-		private func applyDeveloperPreferences(_ simulation: DeveloperSimulationState) {
-			settings.showsServerResetCountdown = simulation.showStatusPill
-			settings.showsGameVersion = simulation.showVersionPill
-			settings.showsPlayingMusic = simulation.showMusicPill
-			settings.usesDynamicTheme = simulation.usesDynamicTheme
-			developerAccessibilityMusicTitle =
-				simulation.longAccessibilityText
-				? "A very long Arknights soundtrack title for keyboard and layout checks"
-				: "Developer preview soundtrack"
-		}
-
-		private func applyDeveloperFailure(
-			_ projection: DeveloperSimulationProjection,
-			region: GameRegion
-		) {
-			guard let code = projection.failureCode, let operation = projection.failureOperation
-			else {
+		private func applyDeveloperFailure(_ simulation: DeveloperSimulationState) {
+			let region = simulation.selectedRegion
+			guard let operation = simulation.failure.operation else {
 				if lifecycle.state.presentation.failure?.context.operation
 					!= .intelTranslationPreflight
 					|| !installation.isInstalled
@@ -153,58 +124,46 @@ import ArknightsGameRuntime
 				}
 				return
 			}
+			let code = simulation.failureCode
 			let isConfiguration = operation == .configurationRefresh
 			let existingFailure = lifecycle.state.presentation.failure
-			let failureID: UUID
-			if let existingFailure,
-				existingFailure.code == code,
-				existingFailure.context.operation == operation,
-				existingFailure.context.region == region.supportRegion
-			{
-				failureID = existingFailure.id
-			} else {
-				failureID = UUID()
-			}
+			let isSameFailure =
+				existingFailure?.code == code && existingFailure?.context.operation == operation
+				&& existingFailure?.context.region == region.supportRegion
 			let error: any LauncherDiagnosticError =
 				isConfiguration
 				? LauncherError.invalidResponse
 				: GameRuntimeError.runtimeExited(
 					status: 1, log: gameSession.paths.runtimeLogFile(for: region))
 			lifecycle.state.presentation.failure = LauncherFailurePresentation(
-				id: failureID,
+				id: isSameFailure ? existingFailure?.id ?? UUID() : UUID(),
 				message: launcherUserMessage(for: error),
 				code: code,
 				context: SupportContext(operation: operation, region: region.supportRegion),
 				actions: isConfiguration
 					? [.retry, .openTroubleshooting, .reportProblem]
-					: GameSessionController.recoveryActions(
-						for: code, isInstalled: projection.isInstalled, operation: operation),
-				blocksGameLaunch: isConfiguration && !projection.isInstalled
+					: LauncherLifecycleStore.recoveryActions(
+						for: code,
+						repairableCodes: GameSessionController.repairableCodes,
+						canRepair: simulation.isInstalled && operation != .runtimeStop),
+				blocksGameLaunch: isConfiguration && !simulation.isInstalled
 			)
 		}
 
-		private func applyDeveloperPopup(_ simulation: DeveloperSimulationState) {
-			switch simulation.popup {
-			case .none:
-				return
-			case .announcement:
-				communication.enqueuePopup(
-					LauncherPopup(
-						id: "developer-announcement",
-						title: "Help improve Arknights Client",
-						content: .markdown(
-							"Found a bug or have an idea? Share it on GitHub so it can be tracked."
-						),
-						dismissTitle: "Done",
-						actionTitle: "Open GitHub Issues",
-						actionURL: URL(
-							string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues"
-						)
-					)
+		private func enqueueDeveloperAnnouncement() {
+			communication.enqueuePopup(
+				LauncherPopup(
+					id: "developer-announcement",
+					title: "Help improve Arknights Client",
+					content: .markdown(
+						"Found a bug or have an idea? Share it on GitHub so it can be tracked."
+					),
+					dismissTitle: "Done",
+					actionTitle: "Open GitHub Issues",
+					actionURL: URL(
+						string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues")
 				)
-			case .custom:
-				break
-			}
+			)
 		}
 
 		private func simulatedActivity(for simulation: DeveloperSimulationState) -> LauncherActivity
@@ -212,7 +171,7 @@ import ArknightsGameRuntime
 			switch simulation.lifecycle {
 			case .ready, .paused: .idle
 			case .installing:
-				.installing(id: UUID(), stage: simulation.installationPhase.state)
+				.installing(id: UUID(), stage: simulation.installationStage)
 			case .launching:
 				.launchingGame(sessionID: UUID(), processIdentifier: nil)
 			case .running:

@@ -59,34 +59,22 @@ func adaptiveGlassKeepsMacOS27ContrastCorrectionSeparateFromOtherSurfaces() {
 
 @Test
 func adaptiveGlassKeepsExactlyOneExternalBorderOwner() {
-	#expect(
-		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
-			isMacOS27Available: true,
-			reduceTransparency: false,
-			showBorders: true
-		) == false
-	)
-	#expect(
-		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
-			isMacOS27Available: false,
-			reduceTransparency: false,
-			showBorders: true
+	let cases: [(Bool, Bool, Bool, AdaptiveGlassBorderOwner)] = [
+		(true, false, true, .adaptiveSurface),
+		(false, false, true, .external),
+		(true, true, true, .adaptiveSurface),
+		(true, false, false, .external),
+	]
+	for (isMacOS27, reduceTransparency, showBorders, owner) in cases {
+		#expect(
+			AdaptiveGlassSurfaceTreatment.borderOwner(
+				isMacOS27Available: isMacOS27,
+				isMacOS26Available: isMacOS27,
+				reduceTransparency: reduceTransparency,
+				showBorders: showBorders
+			) == owner
 		)
-	)
-	#expect(
-		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
-			isMacOS27Available: true,
-			reduceTransparency: true,
-			showBorders: true
-		) == false
-	)
-	#expect(
-		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
-			isMacOS27Available: true,
-			reduceTransparency: false,
-			showBorders: false
-		)
-	)
+	}
 }
 
 @Test

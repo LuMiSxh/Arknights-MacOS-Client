@@ -8,6 +8,8 @@ import Testing
 
 @Suite(.serialized)
 struct GryphlineLauncherAPITests {
+	private static let profile = GameRegion.taiwan.hypergryphProfile!
+
 	@Test
 	func gameConfigurationUsesTaiwanMetadataAndRequestContract() async throws {
 		let session = makeSession()
@@ -26,9 +28,9 @@ struct GryphlineLauncherAPITests {
 		}
 		defer { GryphlineURLProtocol.handler = nil }
 
-		let api = GryphlineLauncherAPI(session: session)
-		let configuration = try await api.gameConfiguration()
-		let cdn = try await api.cdnConfiguration()
+		let api = HypergryphLauncherAPI(session: session)
+		let configuration = try await api.gameConfiguration(for: Self.profile)
+		let cdn = try await api.cdnConfiguration(for: Self.profile)
 
 		#expect(configuration.gameLowestVersion == "72.0.0")
 		#expect(configuration.gameLatestVersion == "72.0.0")
@@ -74,7 +76,7 @@ struct GryphlineLauncherAPITests {
 		}
 		defer { GryphlineURLProtocol.handler = nil }
 
-		let branding = try await GryphlineLauncherAPI(session: session).branding()
+		let branding = try await HypergryphLauncherAPI(session: session).branding(for: Self.profile)
 
 		#expect(
 			branding.launcherBackgroundImage?.absoluteString
@@ -126,8 +128,9 @@ struct GryphlineLauncherAPITests {
 			decompressionSize: "41163MB"
 		)
 
-		let manifest = try await GryphlineLauncherAPI(session: session).manifest(
-			for: configuration
+		let manifest = try await HypergryphLauncherAPI(session: session).manifest(
+			for: configuration,
+			profile: Self.profile
 		)
 
 		#expect(
@@ -160,7 +163,7 @@ struct GryphlineLauncherAPITests {
 		defer { GryphlineURLProtocol.handler = nil }
 
 		await #expect(throws: LauncherError.self) {
-			try await GryphlineLauncherAPI(session: session).gameConfiguration()
+			try await HypergryphLauncherAPI(session: session).gameConfiguration(for: Self.profile)
 		}
 	}
 

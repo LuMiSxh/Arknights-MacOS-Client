@@ -20,7 +20,6 @@ package actor LauncherAPI {
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
 	private let hypergryph: HypergryphLauncherAPI
-	private let gryphline: GryphlineLauncherAPI
 
 	package init(
 		session: URLSession = .shared,
@@ -38,21 +37,13 @@ package actor LauncherAPI {
 			maximumAPIResponseBytes: maximumAPIResponseBytes,
 			maximumManifestResponseBytes: maximumManifestResponseBytes
 		)
-		gryphline = GryphlineLauncherAPI(
-			session: session,
-			maximumAPIResponseBytes: maximumAPIResponseBytes,
-			maximumManifestResponseBytes: maximumManifestResponseBytes
-		)
 		decoder = JSONDecoder()
 		decoder.keyDecodingStrategy = .convertFromSnakeCase
 	}
 
 	package func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		if region == .taiwan {
-			return try await gryphline.gameConfiguration()
-		}
-		if let channel = region.hypergryphChannel {
-			return try await hypergryph.gameConfiguration(channel: channel)
+		if let profile = region.hypergryphProfile {
+			return try await hypergryph.gameConfiguration(for: profile)
 		}
 		return try await request(
 			region: region,
@@ -62,11 +53,8 @@ package actor LauncherAPI {
 	}
 
 	package func branding(region: GameRegion) async throws -> LauncherBranding {
-		if region == .taiwan {
-			return try await gryphline.branding()
-		}
-		if let channel = region.hypergryphChannel {
-			return try await hypergryph.branding(channel: channel)
+		if let profile = region.hypergryphProfile {
+			return try await hypergryph.branding(for: profile)
 		}
 		return try await request(
 			region: region,
@@ -76,11 +64,8 @@ package actor LauncherAPI {
 	}
 
 	package func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		if region == .taiwan {
-			return try await gryphline.cdnConfiguration()
-		}
-		if let channel = region.hypergryphChannel {
-			return try await hypergryph.cdnConfiguration(channel: channel)
+		if let profile = region.hypergryphProfile {
+			return try await hypergryph.cdnConfiguration(for: profile)
 		}
 		return try await request(
 			region: region,
@@ -93,11 +78,8 @@ package actor LauncherAPI {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> GameManifest {
-		if region == .taiwan {
-			return try await gryphline.manifest(for: configuration)
-		}
-		if region.hypergryphChannel != nil {
-			return try await hypergryph.manifest(for: configuration)
+		if let profile = region.hypergryphProfile {
+			return try await hypergryph.manifest(for: configuration, profile: profile)
 		}
 		let location = try await manifestLocation(for: configuration, region: region)
 		return try await manifestPayload(at: location.url, region: region).manifest
