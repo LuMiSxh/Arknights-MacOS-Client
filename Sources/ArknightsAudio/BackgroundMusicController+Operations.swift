@@ -1,36 +1,29 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 import YouTubePlayerKit
 
 extension BackgroundMusicController {
 	func invalidatePlayerTasks() {
-		playerGeneration = UUID()
-		loadingTask?.cancel()
-		controlTask?.cancel()
-		shuffleTask?.cancel()
-		fadeTask?.cancel()
-		volumeTask?.cancel()
-		loadingTask = nil
-		controlTask = nil
-		shuffleTask = nil
-		fadeTask = nil
-		volumeTask = nil
+		playerGeneration = playerSlot.begin()
+		loadingSlot.invalidate()
+		operationTask?.cancel()
+		operationTask = nil
+		operationSlot.invalidate()
+		cancelFade()
+		volumeSlot.invalidate()
 		operation = .idle
-		playbackExpectation = nil
-		fadeOperation = nil
+		discardPlaybackExpectation()
 	}
 
-	func beginOperation(
-		_ kind: BackgroundMusicOperationKind,
-		on targetPlayer: YouTubePlayer
-	) -> BackgroundMusicOperationToken {
-		controlTask?.cancel()
-		playbackExpectation = nil
-		let token = BackgroundMusicOperationToken(
-			generation: playerGeneration,
-			player: targetPlayer
-		)
+	/// Starts a track or playback change. The caller stores its task in `operationTask` so the
+	/// next operation can cancel it.
+	func beginOperation(_ kind: BackgroundMusicOperationKind) -> TaskSlot.Token {
+		operationTask?.cancel()
+		operationTask = nil
+		discardPlaybackExpectation()
+		let token = operationSlot.begin()
 		switch kind {
 		case .trackChange:
 			operation = .trackChange(token)
@@ -40,19 +33,16 @@ extension BackgroundMusicController {
 		return token
 	}
 
-	func finishOperation(_ token: BackgroundMusicOperationToken) {
+	func finishOperation(_ token: TaskSlot.Token) {
 		guard isCurrent(token) else { return }
+		operationSlot.invalidate()
 		operation = .idle
 	}
 
 	@discardableResult
-	func expectPlayback(
-		_ intent: PlaybackIntent,
-		on targetPlayer: YouTubePlayer
-	) -> BackgroundMusicPlaybackExpectation {
+	func expectPlayback(_ intent: PlaybackIntent) -> BackgroundMusicPlaybackExpectation {
 		let expectation = BackgroundMusicPlaybackExpectation(
-			generation: playerGeneration,
-			player: targetPlayer,
+			token: expectationSlot.begin(),
 			intent: intent
 		)
 		playbackExpectation = expectation
@@ -61,57 +51,42 @@ extension BackgroundMusicController {
 	}
 
 	func clearPlaybackExpectation(_ expectation: BackgroundMusicPlaybackExpectation) {
-		guard playbackExpectation?.id == expectation.id else { return }
-		playbackExpectation = nil
+		guard isCurrent(expectation) else { return }
+		discardPlaybackExpectation()
 		nowPlaying.updatePlayback(isPlaying: isPlaying)
 	}
 
-	func beginFade(on targetPlayer: YouTubePlayer) -> BackgroundMusicFadeOperation {
-		fadeTask?.cancel()
-		let operation = BackgroundMusicFadeOperation(
-			generation: playerGeneration,
-			player: targetPlayer
-		)
-		fadeOperation = operation
-		return operation
+	func discardPlaybackExpectation() {
+		expectationSlot.invalidate()
+		playbackExpectation = nil
 	}
 
 	func cancelFade() {
-		fadeTask?.cancel()
+		fadeSlot.invalidate()
 		fadeTask = nil
-		fadeOperation = nil
 	}
 
-	func isCurrent(_ token: BackgroundMusicOperationToken) -> Bool {
-		guard playerGeneration == token.generation, player === token.player else { return false }
-		return operation.token?.id == token.id
+	func isCurrent(_ token: TaskSlot.Token) -> Bool {
+		operationSlot.owns(token)
 	}
 
 	func isCurrent(_ expectation: BackgroundMusicPlaybackExpectation) -> Bool {
-		guard playbackExpectation?.id == expectation.id else { return false }
-		return playerGeneration == expectation.generation
-			&& player === expectation.player
+		expectationSlot.owns(expectation.token)
 	}
 
-	func isCurrent(_ operation: BackgroundMusicFadeOperation) -> Bool {
-		playerGeneration == operation.generation
-			&& player === operation.player
-			&& fadeOperation?.id == operation.id
-	}
-
-	func isCurrent(_ targetPlayer: YouTubePlayer, generation: UUID) -> Bool {
-		playerGeneration == generation && player === targetPlayer
+	func isCurrent(_ targetPlayer: YouTubePlayer, generation: TaskSlot.Token) -> Bool {
+		playerSlot.owns(generation) && player === targetPlayer
 	}
 
 	func scheduleVolumeUpdate(to volume: Double) {
-		volumeTask?.cancel()
+		volumeSlot.invalidate()
 		guard let player else { return }
 		let generation = playerGeneration
-		volumeTask = Task { [weak self] in
+		volumeSlot.replace { [weak self] token in
 			guard let self else { return }
 			await applyVolume(volume, on: player, generation: generation)
-			guard !Task.isCancelled, isCurrent(player, generation: generation) else { return }
-			volumeTask = nil
+			guard volumeSlot.owns(token) else { return }
+			volumeSlot.invalidate()
 		}
 	}
 }

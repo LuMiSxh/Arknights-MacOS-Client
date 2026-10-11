@@ -12,10 +12,9 @@ extension BackgroundMusicController {
 	}
 
 	func shuffleInitialPlaylist(on targetPlayer: YouTubePlayer) {
-		shuffleTask?.cancel()
-		let operation = beginOperation(.trackChange, on: targetPlayer)
-		expectPlayback(.playing, on: targetPlayer)
-		shuffleTask = Task { [weak self] in
+		let operation = beginOperation(.trackChange)
+		expectPlayback(.playing)
+		operationTask = Task { [weak self] in
 			guard let self else { return }
 			do {
 				guard isCurrent(operation) else { return }
@@ -50,17 +49,17 @@ extension BackgroundMusicController {
 			}
 			guard isCurrent(operation) else { return }
 			finishOperation(operation)
-			shuffleTask = nil
+			operationTask = nil
 		}
 	}
 
 	func pauseFromUserAction() {
 		guard let player else { return }
 		isManuallyPaused = true
-		let operation = beginOperation(.playbackChange(.paused), on: player)
-		let expectation = expectPlayback(.paused, on: player)
+		let operation = beginOperation(.playbackChange(.paused))
+		let expectation = expectPlayback(.paused)
 		cancelFade()
-		controlTask = Task { [weak self] in
+		operationTask = Task { [weak self] in
 			guard let self else { return }
 			do {
 				guard isCurrent(operation) else { return }
@@ -76,7 +75,7 @@ extension BackgroundMusicController {
 			}
 			guard isCurrent(operation) else { return }
 			finishOperation(operation)
-			controlTask = nil
+			operationTask = nil
 		}
 	}
 
@@ -84,8 +83,8 @@ extension BackgroundMusicController {
 		guard canNavigatePlaylist, !controlsAreDisabled, let player else { return }
 		let previousVideoID = currentMusicVideoID
 		let expectsPlayback = !isManuallyPaused
-		let operation = beginOperation(.trackChange, on: player)
-		controlTask = Task { [weak self] in
+		let operation = beginOperation(.trackChange)
+		operationTask = Task { [weak self] in
 			guard let self else { return }
 			do {
 				let changed = try await selectTrack(
@@ -112,13 +111,13 @@ extension BackgroundMusicController {
 			}
 			guard isCurrent(operation) else { return }
 			finishOperation(operation)
-			controlTask = nil
+			operationTask = nil
 		}
 	}
 
 	private func selectTrack(
 		on targetPlayer: YouTubePlayer,
-		operation: BackgroundMusicOperationToken,
+		operation: TaskSlot.Token,
 		direction: TrackDirection,
 		previousVideoID: String? = nil,
 		expectsPlayback: Bool
@@ -148,7 +147,7 @@ extension BackgroundMusicController {
 			?? (playlist.indices.contains(currentIndex) ? playlist[currentIndex] : nil)
 		let targetVideoID = playlist[targetIndex]
 		playbackState = nil
-		expectPlayback(expectsPlayback ? .playing : .paused, on: targetPlayer)
+		expectPlayback(expectsPlayback ? .playing : .paused)
 		try await targetPlayer.playVideoInPlaylist(at: targetIndex)
 		guard isCurrent(operation) else { return false }
 		return await waitForTrackStart(
@@ -163,7 +162,7 @@ extension BackgroundMusicController {
 
 	private func waitForTrackStart(
 		on targetPlayer: YouTubePlayer,
-		operation: BackgroundMusicOperationToken,
+		operation: TaskSlot.Token,
 		targetIndex: Int,
 		targetVideoID: String,
 		previousVideoID: String?,

@@ -29,14 +29,18 @@ package final class BackgroundMusicController {
 	var isManuallyPaused = false
 	@ObservationIgnored var cancellables: Set<AnyCancellable> = []
 	@ObservationIgnored var didShuffleCurrentPlaylist = false
-	@ObservationIgnored var fadeTask: Task<Void, Never>?
-	@ObservationIgnored var loadingTask: Task<Void, Never>?
-	@ObservationIgnored var controlTask: Task<Void, Never>?
-	@ObservationIgnored var shuffleTask: Task<Void, Never>?
 	@ObservationIgnored var sourceChangeTask: Task<Void, Never>?
-	@ObservationIgnored var volumeTask: Task<Void, Never>?
-	@ObservationIgnored var playerGeneration = UUID()
-	@ObservationIgnored var fadeOperation: BackgroundMusicFadeOperation?
+	@ObservationIgnored let playerSlot = TaskSlot()
+	@ObservationIgnored let loadingSlot = TaskSlot()
+	@ObservationIgnored let operationSlot = TaskSlot()
+	@ObservationIgnored let expectationSlot = TaskSlot()
+	@ObservationIgnored let fadeSlot = TaskSlot()
+	@ObservationIgnored let volumeSlot = TaskSlot()
+	/// The running fade; `fadeSlot` owns it. Non-nil only while a fade runs.
+	@ObservationIgnored var fadeTask: Task<Void, Never>?
+	/// The running track or playback change; `operationSlot` decides whether its result is current.
+	@ObservationIgnored var operationTask: Task<Void, Never>?
+	@ObservationIgnored var playerGeneration: TaskSlot.Token
 	@ObservationIgnored var lastObservedTitle: String?
 	@ObservationIgnored var lastObservedVideoID: String?
 
@@ -73,6 +77,7 @@ package final class BackgroundMusicController {
 		self.settings = settings
 		self.playerCommands = playerCommands
 		self.openURL = openURL
+		playerGeneration = playerSlot.begin()
 		currentMusicTitle = initialMusicTitle
 		nowPlaying = NowPlayingCoordinator(icon: launcherIconManager.currentIcon)
 		launcherIconManager.iconDidChange = { [weak self] icon in
@@ -181,7 +186,7 @@ package final class BackgroundMusicController {
 		} else {
 			isManuallyPaused = false
 			guard let player else { return }
-			let operation = beginOperation(.playbackChange(.playing), on: player)
+			let operation = beginOperation(.playbackChange(.playing))
 			performFadeIn(on: player, userPlaybackOperation: operation)
 		}
 	}
@@ -214,28 +219,23 @@ package final class BackgroundMusicController {
 
 		if let player {
 			setupObservation(for: player, source: source)
-			let generation = playerGeneration
-			loadingTask = Task { [weak self] in
+			loadingSlot.replace { [weak self] token in
 				guard let self else { return }
 				do {
 					if player.source == nil || player.source != source {
 						try await player.load(source: source)
 					}
-					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
-						return
-					}
+					guard loadingSlot.owns(token) else { return }
 					lifecycle.log.info("Background music loaded source type: \(sourceType)")
 					performFadeIn(on: player)
 				} catch {
-					guard !Task.isCancelled, isCurrent(player, generation: generation) else {
-						return
-					}
+					guard loadingSlot.owns(token) else { return }
 					lifecycle.log.error(
 						"Background music failed to load source: \(error.localizedDescription)"
 					)
 				}
-				guard isCurrent(player, generation: generation) else { return }
-				loadingTask = nil
+				guard loadingSlot.owns(token) else { return }
+				loadingSlot.invalidate()
 			}
 			return
 		}

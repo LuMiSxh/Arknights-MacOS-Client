@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 import YouTubePlayerKit
 
@@ -39,44 +40,15 @@ enum BackgroundMusicOperationKind {
 	case playbackChange(PlaybackIntent)
 }
 
-/// Identifies one in-flight track or playback change, so a result arriving after the player
-/// was replaced can be recognized as stale and discarded.
-package struct BackgroundMusicOperationToken {
-	let id = UUID()
-	let generation: UUID
-	let player: YouTubePlayer
-}
-
-/// The fade path's own token; separate from `BackgroundMusicOperationToken` because a fade
-/// and the operation that triggered it are cancelled independently.
-struct BackgroundMusicFadeOperation {
-	let id = UUID()
-	let generation: UUID
-	let player: YouTubePlayer
-}
-
 struct BackgroundMusicPlaybackExpectation {
-	let id: UUID
-	let generation: UUID
-	let player: YouTubePlayer
+	let token: TaskSlot.Token
 	let intent: PlaybackIntent
-
-	init(
-		generation: UUID,
-		player: YouTubePlayer,
-		intent: PlaybackIntent
-	) {
-		id = UUID()
-		self.generation = generation
-		self.player = player
-		self.intent = intent
-	}
 }
 
 package enum BackgroundMusicOperation {
 	case idle
-	case trackChange(BackgroundMusicOperationToken)
-	case playbackChange(BackgroundMusicOperationToken, PlaybackIntent)
+	case trackChange(TaskSlot.Token)
+	case playbackChange(TaskSlot.Token, PlaybackIntent)
 
 	var isChangingTrack: Bool {
 		if case .trackChange = self { return true }
@@ -88,7 +60,7 @@ package enum BackgroundMusicOperation {
 		return false
 	}
 
-	var token: BackgroundMusicOperationToken? {
+	package var token: TaskSlot.Token? {
 		switch self {
 		case .idle:
 			nil

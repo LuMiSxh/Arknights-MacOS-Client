@@ -31,8 +31,8 @@ struct BackgroundMusicControllerTests {
 		controller.playbackState = .playing
 		let player = YouTubePlayer(source: .video(id: "test"))
 		controller.player = player
-		_ = controller.beginOperation(.playbackChange(.paused), on: player)
-		controller.expectPlayback(.paused, on: player)
+		_ = controller.beginOperation(.playbackChange(.paused))
+		controller.expectPlayback(.paused)
 		#expect(!controller.isPlaying)
 		#expect(controller.controlsAreDisabled)
 
@@ -50,12 +50,12 @@ struct BackgroundMusicControllerTests {
 
 		let player = YouTubePlayer(source: .video(id: "test"))
 		controller.player = player
-		let pauseOperation = controller.beginOperation(.playbackChange(.paused), on: player)
-		controller.expectPlayback(.paused, on: player)
+		let pauseOperation = controller.beginOperation(.playbackChange(.paused))
+		controller.expectPlayback(.paused)
 		controller.finishOperation(pauseOperation)
 
-		let playOperation = controller.beginOperation(.playbackChange(.playing), on: player)
-		controller.expectPlayback(.playing, on: player)
+		let playOperation = controller.beginOperation(.playbackChange(.playing))
+		controller.expectPlayback(.playing)
 		controller.finishOperation(playOperation)
 		controller.playbackState = .paused
 		controller.reconcilePlaybackIntent(with: .paused)
