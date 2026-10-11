@@ -119,7 +119,7 @@ package struct GameDisplayPlan: Equatable, Sendable {
 	/// Game pixels per macOS point; the in-game resolution is a window size times this value.
 	package let gamePixelsPerPoint: Int
 	/// Pixels of the display's backing store per macOS point.
-	package let backingScale: Int
+	let backingScale: Int
 	package let scaling: Scaling
 
 	package init(

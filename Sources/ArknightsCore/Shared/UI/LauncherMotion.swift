@@ -63,23 +63,23 @@ package enum LauncherMotion {
 
 	/// Looping and one-shot durations shared by decorative motion.
 	package enum Cycle {
-		package static let breathing: TimeInterval = 3.2
+		static let breathing: TimeInterval = 3.2
 		package static let completionFeedback: Duration = .milliseconds(400)
-		package static let progressSweepFadeIn = 0.12
-		package static let progressSweepTravel = 1.40
-		package static let progressSweepFadeOut = 0.25
-		package static let progressSweepPause = 0.55
-		package static let indeterminateOrbitLaps = 2.0
-		package static let indeterminateGlintLength = 0.14
+		static let progressSweepFadeIn = 0.12
+		static let progressSweepTravel = 1.40
+		static let progressSweepFadeOut = 0.25
+		static let progressSweepPause = 0.55
+		static let indeterminateOrbitLaps = 2.0
+		static let indeterminateGlintLength = 0.14
 	}
 
 	/// Delay between siblings that enter together, such as HUD pills.
-	package static let staggerStep = 0.045
+	static let staggerStep = 0.045
 	package static let pressedScale: CGFloat = 0.95
 	package static let hoverScale: CGFloat = 1.025
 	/// Gentler press feedback for large tiles, rows, and dense pills.
-	package static let subtlePressedScale: CGFloat = 0.97
-	package static let subtleHoverScale: CGFloat = 1.01
+	static let subtlePressedScale: CGFloat = 0.97
+	static let subtleHoverScale: CGFloat = 1.01
 	package static func animation(_ curve: Curve, reduceMotion: Bool) -> Animation? {
 		reduceMotion ? nil : curve.animation
 	}

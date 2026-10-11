@@ -15,19 +15,19 @@ package enum AppConstants {
 		package static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
 		package static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
 		/// Title bar height assumed when the real one cannot be measured.
-		package static let standardWindowTitleBarHeight: CGFloat = 28
+		static let standardWindowTitleBarHeight: CGFloat = 28
 		/// Share of the usable screen the "leave room" game window may cover.
-		package static let compactWindowScreenShare = 0.65
+		static let compactWindowScreenShare = 0.65
 		/// Tallest fullscreen resolution the "balanced" detail level draws.
-		package static let balancedFullscreenHeight = 1440
+		static let balancedFullscreenHeight = 1440
 		/// Height step between fullscreen sizes generated above 4K for larger displays.
-		package static let generatedResolutionHeightStep = 360
+		static let generatedResolutionHeightStep = 360
 	}
 
 	package enum Runtime {
-		package static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
-		package static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
-		package static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
+		static let aceCompactEnvironmentKey = "ARKNIGHTS_RUNTIME_ACE_COMPACT"
+		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
+		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
 		package static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
@@ -50,7 +50,7 @@ package enum AppConstants {
 	}
 
 	package enum Music {
-		package static let defaultLauncherMusicURL =
+		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"
 		package static let backgroundMusicViewFrame: Double = 300
 		package static let backgroundMusicOpacity: Double = 0.01
@@ -165,19 +165,17 @@ package enum AppConstants {
 	}
 
 	package enum Logging {
-		/// Matches `AppPaths.bundleIdentifier`; keep both in sync.
-		package static let bundleIdentifier = "com.lumisxh.arknights-client"
 		package static let installerSignpostCategory = "Installer"
-		package static let maximumFileSize = 4 * 1_024 * 1_024
-		package static let maximumMessageBytes = 16 * 1_024
-		package static let truncationMarker = " [trunc]"
+		static let maximumFileSize = 4 * 1_024 * 1_024
+		static let maximumMessageBytes = 16 * 1_024
+		static let truncationMarker = " [trunc]"
 		package static let wineLogTailBytes = 2_000
 		package static let crashReportSearchWindow: TimeInterval = 120
 	}
 
 	package enum Playtime {
 		package static let schemaVersion = 1
-		package static let statisticsFilename = "playtime-v1.json"
+		static let statisticsFilename = "playtime-v1.json"
 		package static let statisticsMaximumBytes = 64 * 1_024
 		package static let dailyHistoryLimit = 31
 	}

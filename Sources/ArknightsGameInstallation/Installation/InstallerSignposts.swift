@@ -6,7 +6,7 @@ import OSLog
 /// Signposts for installer phases. Intervals appear in Instruments' Points of Interest lane.
 enum InstallerSignposts {
 	static let signposter = OSSignposter(
-		subsystem: AppConstants.Logging.bundleIdentifier,
+		subsystem: AppPaths.bundleIdentifier,
 		category: AppConstants.Logging.installerSignpostCategory
 	)
 
