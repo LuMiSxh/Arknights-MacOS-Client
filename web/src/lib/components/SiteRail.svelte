@@ -114,6 +114,7 @@
 		top: 0;
 		display: flex;
 		height: 100vh;
+		height: 100dvh;
 		flex-direction: column;
 		gap: var(--site-space-5);
 		border-right: 1px solid var(--site-border);

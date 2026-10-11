@@ -264,7 +264,7 @@
 
 		<main class="site-main" id="main-content">
 			<div class="site-main-inner">
-				{@render children()}
+				<div class="site-content">{@render children()}</div>
 				{@render footer()}
 			</div>
 		</main>
