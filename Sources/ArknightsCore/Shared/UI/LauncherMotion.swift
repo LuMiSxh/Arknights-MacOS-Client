@@ -63,13 +63,18 @@ package enum LauncherMotion {
 
 	/// Looping and one-shot durations shared by decorative motion.
 	package enum Cycle {
+		/// Period in seconds of the halo pulse and the indeterminate pulse.
 		static let breathing: TimeInterval = 3.2
+		/// Duration of the completion feedback.
 		package static let completionFeedback: Duration = .milliseconds(400)
+		/// Progress sweep phase durations in seconds: fade in, travel, fade out, then pause.
 		static let progressSweepFadeIn = 0.12
 		static let progressSweepTravel = 1.40
 		static let progressSweepFadeOut = 0.25
 		static let progressSweepPause = 0.55
+		/// Laps of the indeterminate glint around the outline.
 		static let indeterminateOrbitLaps = 2.0
+		/// Length of the indeterminate glint.
 		static let indeterminateGlintLength = 0.14
 	}
 

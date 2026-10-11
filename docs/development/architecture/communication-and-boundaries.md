@@ -24,58 +24,29 @@ status state and the themed Sparkle UI.
 | Sparkle appcast                                                         | `LauncherUpdaterController`   | Signed launcher update metadata and archive               | Update status, then Sparkle's themed update UI on request          |
 | Repository wallpaper tags                                               | `PresetCatalogService`        | Bounded `WallpaperTags.json` from `main`                  | Gallery search tags layered over the bundled manifest              |
 
-- **Sparkle appcast** (`SUFeedURL`): Checked silently when automatic launcher-update checks are on, and
-  before onboarding. A newer version becomes launcher status state and enables the update action. An
-  automatic startup discovery or manual action opens the themed Sparkle UI.
-- **GitHub Contents API**
-  (`https://api.github.com/repos/LuMiSxh/Arknights-MacOS-Client/contents/announcements.json?ref=main`):
-  `checkAnnouncements()` checks it when announcements are on.
-  - The request sends `Accept: application/vnd.github.raw+json`, so GitHub returns the raw file, not a
-    base64-wrapped JSON blob.
-  - The feed has at most 20 entries and 128 KB, and must declare schema version 1.
-  - The first entry that is enabled, unseen, inside its optional date window and version bounds, under
-    the field-length limits, and HTTPS-only in its action becomes the shown announcement.
-- **Third-party preset sources**: `PresetRemoteSources` names every community mirror and the Fankit
-  gallery API that the preset gallery reads. Size limits are in `AppConstants.Presets`.
-  - The operator catalog and avatar images use community mirrors that track `main`. A failed fetch keeps
-    the cached catalog or the curated avatars. A failed gallery fetch keeps the cached wallpapers.
-  - The wallpaper tags file below is app-owned and follows `main` on purpose. It is not pinned.
-  - The China and Taiwan launcher logos have no remote source. The launcher shows its text logo.
-- **Wallpaper tags** (`AppConstants.Presets.wallpaperTagsURL`, the raw
-  `Sources/ArknightsCore/Resources/WallpaperTags.json` on `main`): Fetched once per launch, when the
-  Artwork gallery first loads.
-  - The manifest has at most 1 MB and must declare schema version 1. Its entries replace bundled
-    entries with the same ID.
-  - The file is cached as `wallpaper_tags_v1.json` in the gallery cache. The next launch applies it
-    before the network answers.
-  - A failed or 404 response keeps the bundled and cached tags. Clearing the gallery cache returns to
-    the bundled manifest.
-- **Yostar branding response** (not a dedicated notice endpoint): It rides on the `api.branding(region:)`
-  call that `refresh()` already makes for hero artwork.
-  - If `noticePopOpen` is true and `noticeContent` differs from the last notice shown, the launcher
-    converts the HTML to native attributed text and queues it.
-  - There is no persistent "seen" state. The in-memory guard resets on every region switch and fresh
-    launch, so an active notice reappears each session. Announcements persist seen IDs.
-
-`LauncherUpdaterController` owns launcher release discovery and installation. It wraps Sparkle 2.9.6's
-`SPUUpdater` and the launcher's `LauncherUpdateUserDriver`.
-
-- Sparkle validates the signed feed, compares its update item with the running version, and handles
-  release notes data, download, signature verification, replacement, and relaunch.
-- The feature-local SwiftUI driver supplies the accessible, themed presentation.
-- The wrapper rejects checks while the lifecycle is installing, migrating, launching, or running the
-  game. It postpones a pending relaunch until idle.
-- Lifecycle activity gates these checks. A stale activity lease cannot change that gate. See
+- **Sparkle appcast** (`SUFeedURL`): The launcher checks it silently when automatic launcher-update
+  checks are on, and before onboarding. A newer version becomes launcher status state and enables the
+  update action. `LauncherUpdaterController` wraps `SPUUpdater` and `LauncherUpdateUserDriver`. Sparkle
+  validates the feed and handles download, signature verification, replacement, and relaunch. The
+  driver supplies the themed UI.
+- **Update gate**: `LauncherUpdaterController` rejects checks while the lifecycle is installing,
+  migrating, launching, or running the game. It postpones a pending relaunch until idle. A stale
+  activity lease cannot change this gate. See
   [Activity leases](launch-and-process-lifecycle.md#activity-leases).
+- **Announcements**: `checkAnnouncements()` reads the GitHub Contents API in raw form when
+  announcements are on. [Announcements](../announcements.md) owns the feed schema, limits, and
+  eligibility rules.
+- **Wallpaper tags**: The Artwork gallery fetches the manifest once per launch. Cached tags apply
+  before the network answers. [Wallpaper tagging](../wallpaper-tagging.md) owns the manifest rules.
+- **Preset sources**: `PresetRemoteSources` names every community mirror and the Fankit gallery API.
+  A failed fetch keeps the cached data.
+- **Yostar branding response**: It rides on the `api.branding(region:)` call that `refresh()` already
+  makes for hero artwork. If `noticePopOpen` is true and `noticeContent` differs from the last notice
+  shown, the launcher converts the HTML to native attributed text and queues it. The guard is in
+  memory only. It resets on every region switch and launch, so an active notice reappears each
+  session.
 
-Announcements and Yostar notices share one queue (`enqueuePopup`):
-
-- If nothing shows, the popup shows now and is recorded as seen. Otherwise it joins `pendingPopups` and
-  is recorded as seen only when `dismissPopup` promotes it.
-- The queue silently drops a duplicate ID of the shown or a queued popup.
-- Announcements keep a set of seen IDs. Yostar notices keep nothing beyond the session. Their ID embeds
-  a fresh UUID, so only the upstream content comparison catches a repeat.
-- Dismissing a popup with its action button removes it from the queue before the URL opens.
+The three launch checks run in parallel. They meet in one popup queue:
 
 ```mermaid
 sequenceDiagram
@@ -108,13 +79,13 @@ sequenceDiagram
 Queue->>Queue: Show now, or append to pendingPopups and dedup by id
 ```
 
-## Launcher actions
+Announcements and Yostar notices share one queue (`enqueuePopup`):
 
-Views call `LauncherActions`, a protocol. Views reach it through `model.actions`.
-
-- `LiveLauncherActions` runs the production behavior.
-- `SimulatedLauncherActions` runs the developer simulation. It exists only in DEBUG builds. It never reaches live controllers.
-- Release builds contain no simulation code.
+- If nothing shows, the popup shows now and is recorded as seen. Otherwise it joins `pendingPopups` and
+  is recorded as seen only when `dismissPopup` promotes it.
+- The queue silently drops a duplicate ID of the shown or a queued popup.
+- Announcements persist a set of seen IDs. Yostar notices keep nothing beyond the session. Their ID
+  embeds a fresh UUID, so only the upstream content comparison catches a repeat.
 
 ## Refresh concurrency
 
@@ -122,8 +93,12 @@ Views call `LauncherActions`, a protocol. Views reach it through `model.actions`
 independently. Each refresh receives a UUID generation.
 
 - Cancelling a refresh invalidates its generation before a later task can publish.
-- The controller accepts branding assets only when the refresh ID and active region both still match, so
-  a slow response from a previous region cannot replace current artwork, notices, or readiness.
+- The controller accepts branding assets only when the refresh ID and active region both still match.
+  A slow response from a previous region cannot replace current artwork, notices, or readiness.
+- A late official image never replaces user-selected artwork. The controller captures a
+  custom-artwork generation at refresh start and checks it again before it applies the asset.
+
+This diagram shows the generation check:
 
 ```mermaid
 flowchart LR
@@ -139,9 +114,6 @@ flowchart LR
 	Cancel --> Drop
 ```
 
-A late official image never replaces user-selected artwork. The controller captures a custom-artwork
-generation at refresh start and checks it again before it applies the downloaded asset.
-
 > [!IMPORTANT]
 > Every asynchronous remote result needs an ownership check before it mutates observable state.
 > Cancellation alone is not enough: a request can complete between cancellation and its callback.
@@ -149,13 +121,9 @@ generation at refresh start and checks it again before it applies the downloaded
 ## Boundaries
 
 - Game files come from first-party HTTPS endpoints. No release includes them.
-- Manifest paths cannot escape the selected game directory. See [Installation architecture](installation.md#manifest-and-path-safety).
-- Wine sees only its private prefix, `G:` for the selected game directory, and `L:` for logs. The
-  prefix is not a macOS security sandbox. See [Wine prefix architecture](wine-prefix.md).
-- The launcher never handles credentials or intercepts Vuplex pages. It renders Yostar notices as native
-  text and announcements through its bounded Markdown renderer.
-- Remote action links must use HTTPS. The launcher validates announcement body size, item count, field
-  lengths, and version/date windows before it queues an announcement.
+- Manifest paths cannot escape the selected game directory. See
+  [Installation architecture](installation.md#manifest-and-path-safety).
+- The launcher never handles credentials or intercepts Vuplex pages. Remote action links must use HTTPS.
 - [`runtime.json`](../../../runtime.json) pins runtime versions and source revisions.
 
 > [!WARNING]
@@ -176,20 +144,15 @@ Remote requests fail closed for the feature they serve:
   The onboarding preflight has its own update gate.
 
 Never make an optional message or metadata source a lifecycle dependency without updating the state
-model and recovery contract. See [Announcements](../announcements.md) for request limits and feed
-fields, and [Releases and updates](../releases-and-updates.md) for release order.
+model and recovery contract.
 
 ## Privacy and support boundary
 
-The launcher sends the region and the signed request metadata that the publisher API needs. It fetches
-announcements when enabled and checks Sparkle updates per Settings. It collects no project telemetry.
+The launcher collects no project telemetry. The website privacy page lists the hosts it contacts.
 The embedded browser stays an official game helper. The compatibility components never inspect login,
 payment, or page contents.
 
-Logs are local app-owned files. Diagnostics can include endpoint hosts, versions, process IDs,
-termination status, and bounded runtime output. Before you share a log, remove account identifiers,
-local paths, and unneeded content.
-
-Route account, payment, and service issues to the selected publisher's official support. Use the
+Route account, payment, and service issues to the publisher's official support. See the
 [publisher support routing table](../../help/README.md#publisher-support-routing). Route launcher,
-runtime, and packaging issues to the repository issue form.
+runtime, and packaging issues to the repository issue form. Before you share a log, remove account
+identifiers and local paths.

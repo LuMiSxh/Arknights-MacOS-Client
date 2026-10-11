@@ -7,7 +7,7 @@ audience: developers
 
 # License automation
 
-`scripts/licenses.py` keeps the third-party notices complete. It replaces hand-maintained lists. The logic is in `scripts/lib/licenses.py`. The website publishes the full documents. The app bundles one compact file with the same content.
+`scripts/licenses.py` keeps the third-party notices complete. It replaces hand-maintained lists. The logic is in `scripts/lib/licenses.py`. The website publishes the full documents.
 
 ## Sources of truth
 
@@ -74,15 +74,18 @@ Without a prepared runtime, the page lists the `runtime-fallback` entries. To me
 
 ## Build the app
 
-`scripts/build_app.py` calls the same code with `--bundle`. It writes one file, `Contents/Resources/ThirdPartyNotices.deflate`. The file replaces the loose notice and license files of earlier builds.
+`scripts/build_app.py` calls the same code with `--bundle`. It writes `Contents/Resources/ThirdPartyNotices.deflate`, a raw-deflate file of one Markdown document. The document has a table of the app components and the merged runtime components. Each distinct license text appears once. The website components are not in the file. The app decodes the file with the Compression framework when the user opens **Third-Party Notices** in **Settings → About**.
 
-The file is raw-deflate data of one Markdown document. The document has a table of the app components and the merged runtime components. Each distinct license text appears once. A table row names the text by its id. The website components are not in the file. The app decodes the file with the Compression framework when the user opens **Third-Party Notices** in **Settings → About**.
+The repository keeps a copy at `docs/legal/ThirdPartyNotices.deflate` for `--check`. That copy has no runtime components unless you generate it with `--runtime`. A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-fallback` entries. [Bundled resources](architecture/README.md#bundled-resources) states which other files the bundle keeps.
 
-Compression saves about 80 KB of the 115 KB document. The runtime texts increase the saving. The repository keeps a copy of the file at `docs/legal/ThirdPartyNotices.deflate` for the `--check` mode. That copy has no runtime components unless you generate it with `--runtime`.
+## Generated blocks
 
-The app bundle also keeps `LICENSE`, `CHANGELOG.md`, and `RUNTIME.json` as plain copies. The build generates only the notices, so only the notices use deflate. [Bundled resources](architecture/README.md#bundled-resources) states the rule. The bundle does not contain `Licenses/` or `NOTICE.md` of the runtime. `scripts/download_runtime.py` keeps them in `.build/runtime` for the checks and the merge.
+Two scripts write generated blocks in `docs/legal/`. Each block sits between a marker pair on its own lines.
 
-A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-fallback` entries.
+- `scripts/licenses.py` owns `<!-- licenses:begin NAME -->` and `<!-- licenses:end NAME -->`.
+- `scripts/update_runtime.py` owns `<!-- runtime:begin NAME -->` and `<!-- runtime:end NAME -->`. See [Runtime updates](runtime-updates.md).
+
+Each script ignores the markers of the other script. Do not edit the lines between markers by hand. Do not put a marker inside a table.
 
 ## Strict mode
 
@@ -91,4 +94,4 @@ Pass `--strict-licenses` to `scripts/build_app.py` or `scripts/build_dmg.py`. Ru
 - the runtime archive has no `Licenses/index.json` or no `NOTICE.md`, or
 - any component in the app or the runtime has the status `unverified`.
 
-The default build only warns. The release workflow creates a draft, and the project rule is to keep a draft until the review is complete. Enable `--strict-licenses` in the release workflow when the pinned runtime ships its license files and every component is verified.
+The default build only warns. The [release review](releases-and-updates.md#release-review) runs strict mode before a draft becomes public.
