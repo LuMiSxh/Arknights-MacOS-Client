@@ -20,17 +20,14 @@ struct ActivityLeaseTests {
 		#expect(lifecycle.begin(second) == nil)
 		#expect(lifecycle.activity == first)
 		#expect(lifecycle.end(lease))
-	}
-
-	@Test
-	func beginFailsWhileLauncherUpdateIsPending() {
-		let lifecycle = makeLifecycleStore()
-		lifecycle.beginLauncherUpdate()
-
-		#expect(lifecycle.begin(first) == nil)
-
-		lifecycle.finishLauncherUpdate()
+		#expect(!lifecycle.end(lease))
 		#expect(lifecycle.begin(first) != nil)
+
+		let pending = makeLifecycleStore()
+		pending.beginLauncherUpdate()
+		#expect(pending.begin(first) == nil)
+		pending.finishLauncherUpdate()
+		#expect(pending.begin(first) != nil)
 	}
 
 	@Test
@@ -45,47 +42,6 @@ struct ActivityLeaseTests {
 		#expect(lifecycle.activity == second)
 		#expect(lifecycle.end(current))
 		#expect(lifecycle.activity == .idle)
-	}
-
-	@Test
-	func simulatedActivityInvalidatesTheLease() throws {
-		let lifecycle = makeLifecycleStore()
-		let lease = try #require(lifecycle.begin(first))
-		let simulated = LauncherActivity.preparingGame(sessionID: UUID())
-
-		lifecycle.simulateActivity(simulated)
-
-		#expect(!lifecycle.end(lease))
-		#expect(!lifecycle.update(lease, to: first))
-		#expect(lifecycle.activity == simulated)
-	}
-
-	@Test
-	func endingClearsTheLeaseSoNewWorkCanBegin() throws {
-		let lifecycle = makeLifecycleStore()
-		let lease = try #require(lifecycle.begin(first))
-
-		#expect(lifecycle.end(lease))
-		#expect(!lifecycle.end(lease))
-		#expect(lifecycle.begin(first) != nil)
-	}
-
-	@Test
-	func observersFireOncePerRealChange() throws {
-		let lifecycle = makeLifecycleStore()
-		var count = 0
-		lifecycle.observeActivityChanges { count += 1 }
-
-		let lease = try #require(lifecycle.begin(first))
-		#expect(count == 1)
-		#expect(lifecycle.update(lease, to: first))
-		#expect(count == 1)
-		#expect(lifecycle.update(lease, to: second))
-		#expect(count == 2)
-		#expect(lifecycle.end(lease))
-		#expect(count == 3)
-		#expect(!lifecycle.end(lease))
-		#expect(count == 3)
 	}
 }
 

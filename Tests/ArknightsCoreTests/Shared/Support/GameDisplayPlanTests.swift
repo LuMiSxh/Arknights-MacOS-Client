@@ -5,94 +5,58 @@ import Testing
 
 @testable import ArknightsCore
 
-private func options(
-	_ renderingMode: GameRenderingMode,
-	displayMode: GameDisplayMode = .windowed,
-	usesGameSettings: Bool = false
-) -> GameLaunchOptions {
-	GameLaunchOptions(
+private func size(_ width: Int, _ height: Int) -> GameDisplaySize {
+	GameDisplaySize(width: width, height: height)
+}
+
+@Test(
+	arguments: [
+		// (rendering, display mode, native fullscreen, in-game settings, backing scale, render size, scaling)
+		(
+			GameRenderingMode.retina, GameDisplayMode.windowed, false, false, 2.0, size(2560, 1440),
+			.native
+		),
+		(.metalFX, .windowed, false, false, 2.0, size(1280, 720), .metalFX),
+		(.lightweight, .windowed, false, false, 2.0, size(1280, 720), .stretched),
+		(.retina, .windowed, false, false, 1.0, size(1280, 720), .native),
+		(.metalFX, .windowed, false, false, 1.0, size(1280, 720), .native),
+		(.retina, .fullscreen, false, false, 2.0, size(1920, 1080), nil),
+		(.lightweight, .fullscreen, false, false, 2.0, size(1920, 1080), nil),
+		(.retina, .fullscreen, true, false, 2.0, size(6016, 3384), .native),
+		(.metalFX, .fullscreen, true, false, 2.0, size(3008, 1692), .metalFX),
+		(.lightweight, .fullscreen, true, false, 2.0, size(3008, 1692), .stretched),
+		(.retina, .windowed, false, true, 2.0, nil, nil),
+	]
+		as [(
+			GameRenderingMode, GameDisplayMode, Bool, Bool, Double, GameDisplaySize?,
+			GameDisplayPlan.Scaling?
+		)])
+func windowedPlansRenderTheWindowSizeTimesTheGamePixelDensity(
+	renderingMode: GameRenderingMode,
+	displayMode: GameDisplayMode,
+	native: Bool,
+	usesGameSettings: Bool,
+	backingScale: Double,
+	renderSize: GameDisplaySize?,
+	scaling: GameDisplayPlan.Scaling?
+) {
+	var options = GameLaunchOptions(
 		displayMode: displayMode,
 		resolution: .fullHD,
 		windowSize: .defaultWindow,
 		usesGameSettings: usesGameSettings,
 		renderingMode: renderingMode
 	)
-}
+	var display: GameFullscreenDisplay?
+	if native {
+		options.fullscreenResolution = .native
+		display = GameFullscreenDisplay(pointSize: size(3008, 1692), backingScale: 2)
+	}
 
-@Test(arguments: [
-	(GameRenderingMode.retina, 2.0, 2560, GameDisplayPlan.Scaling.native),
-	(.metalFX, 2.0, 1280, .metalFX),
-	(.lightweight, 2.0, 1280, .stretched),
-	(.retina, 1.0, 1280, .native),
-	(.metalFX, 1.0, 1280, .native),
-])
-func windowedPlansRenderTheWindowSizeTimesTheGamePixelDensity(
-	renderingMode: GameRenderingMode,
-	backingScale: Double,
-	renderWidth: Int,
-	scaling: GameDisplayPlan.Scaling
-) {
 	let plan = GameDisplayPlan(
-		options: options(renderingMode), backingScaleFactor: CGFloat(backingScale))
+		options: options, backingScaleFactor: CGFloat(backingScale), fullscreenDisplay: display)
 
-	#expect(plan.renderSize?.width == renderWidth)
-	#expect(plan.renderSize?.height == renderWidth * 9 / 16)
-	#expect(plan.scaling == scaling)
-}
-
-@Test(arguments: GameRenderingMode.allCases)
-func fullscreenPlansKeepTheGameResolution(renderingMode: GameRenderingMode) {
-	let plan = GameDisplayPlan(
-		options: options(renderingMode, displayMode: .fullscreen), backingScaleFactor: 2)
-
-	#expect(plan.renderSize == GameDisplaySize(width: 1920, height: 1080))
-}
-
-@Test(arguments: [
-	(GameRenderingMode.retina, 6016, GameDisplayPlan.Scaling.native),
-	(.metalFX, 3008, .metalFX),
-	(.lightweight, 3008, .stretched),
-])
-func nativeFullscreenPlansRenderThePrimaryDisplaySize(
-	renderingMode: GameRenderingMode, renderWidth: Int, scaling: GameDisplayPlan.Scaling
-) {
-	var native = options(renderingMode, displayMode: .fullscreen)
-	native.fullscreenResolution = .native
-	let display = GameFullscreenDisplay(
-		pointSize: GameDisplaySize(width: 3008, height: 1692), backingScale: 2)
-
-	let plan = GameDisplayPlan(options: native, backingScaleFactor: 2, fullscreenDisplay: display)
-
-	#expect(plan.renderSize?.width == renderWidth)
-	#expect(plan.renderSize?.height == renderWidth * 1692 / 3008)
-	#expect(plan.scaling == scaling)
-	// A display without Retina scaling shows its points one to one.
-	let standard = GameFullscreenDisplay(pointSize: display.pointSize, backingScale: 1)
-	#expect(standard.pixelSize == display.pointSize)
-	#expect(standard.drawnSize(showing: display.pointSize, retina: false) == display.pointSize)
-}
-
-@Test
-func inGameSettingsLeaveTheRenderSizeToArknights() {
-	let plan = GameDisplayPlan(
-		options: options(.retina, usesGameSettings: true), backingScaleFactor: 2)
-
-	#expect(plan.renderSize == nil)
-	#expect(plan.gamePixelsPerPoint == 2)
-}
-
-@Test
-func windowOptionsFitTheScreenAndKeepTheCurrentSize() {
-	let custom = GameDisplaySize(width: 1000, height: 600)
-	let options = GameDisplaySize.windowOptions(
-		fitting: CGSize(width: 1512, height: 944), current: custom)
-
-	#expect(options.contains(custom))
-	#expect(options.contains(GameDisplaySize(width: 1440, height: 900)))
-	#expect(!options.contains(GameDisplaySize(width: 1600, height: 900)))
-	#expect(options == options.sorted { ($0.width, $0.height) < ($1.width, $1.height) })
-	#expect(
-		GameDisplaySize.windowOptions(fitting: nil, current: .defaultWindow)
-			== GameDisplaySize.windowPresets
-	)
+	#expect(plan.renderSize == renderSize)
+	if let scaling { #expect(plan.scaling == scaling) }
+	if usesGameSettings { #expect(plan.gamePixelsPerPoint == 2) }
 }

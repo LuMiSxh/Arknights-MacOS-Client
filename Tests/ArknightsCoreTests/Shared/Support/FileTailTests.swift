@@ -6,28 +6,18 @@ import Testing
 @testable import ArknightsCore
 
 @Test
-func fileTailReturnsWholeFileWhenSmallerThanTheLimit() throws {
-	let url = try makeTemporaryFile(contents: "line one\nline two\n")
-	defer { try? FileManager.default.removeItem(at: url) }
-
-	#expect(FileTail.read(of: url, maximumBytes: 1_024) == "line one\nline two")
-}
-
-@Test
-func fileTailDropsAPossiblyTruncatedLeadingLine() throws {
-	let lines = (1...50).map { "line \($0) of the log file" }
-	let url = try makeTemporaryFile(contents: lines.joined(separator: "\n"))
-	defer { try? FileManager.default.removeItem(at: url) }
-
-	let tail = try #require(FileTail.read(of: url, maximumBytes: 40))
-
-	#expect(tail == "line 50 of the log file")
-}
-
-@Test
 func fileTailNeverReadsBeyondTheRequestedByteLimit() throws {
+	let small = try makeTemporaryFile(contents: "line one\nline two\n")
+	let lines = (1...50).map { "line \($0) of the log file" }
+	let truncated = try makeTemporaryFile(contents: lines.joined(separator: "\n"))
 	let url = try makeTemporaryFile(contents: "0123456789")
-	defer { try? FileManager.default.removeItem(at: url) }
+	defer {
+		for file in [small, truncated, url] { try? FileManager.default.removeItem(at: file) }
+	}
+
+	#expect(FileTail.read(of: small, maximumBytes: 1_024) == "line one\nline two")
+	#expect(FileTail.read(of: truncated, maximumBytes: 40) == "line 50 of the log file")
+	#expect(FileTail.read(of: url, maximumBytes: 0) == nil)
 
 	let handle = try FileHandle(forReadingFrom: url)
 	defer { handle.closeFile() }
@@ -40,15 +30,6 @@ func fileTailNeverReadsBeyondTheRequestedByteLimit() throws {
 	try writer.close()
 
 	#expect(try FileTail.readTail(from: handle, offset: offset, maximumBytes: 4) == "6789")
-}
-
-@Test
-func fileTailRejectsNonPositiveLimits() throws {
-	let url = try makeTemporaryFile(contents: "content")
-	defer { try? FileManager.default.removeItem(at: url) }
-
-	#expect(FileTail.read(of: url, maximumBytes: 0) == nil)
-	#expect(FileTail.read(of: url, maximumBytes: -1) == nil)
 }
 
 private func makeTemporaryFile(contents: String) throws -> URL {

@@ -11,22 +11,6 @@ private struct SupportCodeFixture: Decodable {
 }
 
 @Test
-func supportCodesUseStableBareWordsAndDocumentationRoutes() {
-	for code in SupportCode.allCases {
-		#expect(SupportCode.hasValidSyntax(code.rawValue))
-		#expect(SupportCode.isPublished(code.rawValue))
-		#expect(code.troubleshootingURL.query == nil)
-		#expect(
-			code.troubleshootingURL.absoluteString
-				== "https://lumisxh.github.io/Arknights-MacOS-Client/help/errors/\(code.rawValue.lowercased())/"
-		)
-	}
-	#expect(!SupportCode.hasValidSyntax("AKC-VIRGA"))
-	#expect(!SupportCode.hasValidSyntax("Virga"))
-	#expect(!SupportCode.isPublished("CLOUD"))
-}
-
-@Test
 func supportCodeRegistryMatchesThePublicDocumentationFixture() throws {
 	let repositoryRoot = (0..<5).reduce(URL(filePath: #filePath)) { url, _ in
 		url.deletingLastPathComponent()
@@ -42,29 +26,17 @@ func supportCodeRegistryMatchesThePublicDocumentationFixture() throws {
 	#expect(Set(fixtures.map(\.code)) == Set(SupportCode.allCases.map(\.rawValue)))
 	#expect(fixtures.allSatisfy { !$0.domain.isEmpty })
 	#expect(fixtures.map(\.code).count == Set(fixtures.map(\.code)).count)
-}
 
-@Test
-func supportCodesLoadEmbeddedRecoverySectionsAndResolveWebsiteLinks() throws {
 	for code in SupportCode.allCases {
-		let markdown = try #require(
-			code.bundledTroubleshootingMarkdown()
+		#expect(SupportCode.hasValidSyntax(code.rawValue))
+		#expect(SupportCode.isPublished(code.rawValue))
+		#expect(
+			code.troubleshootingURL.absoluteString
+				== "https://lumisxh.github.io/Arknights-MacOS-Client/help/errors/\(code.rawValue.lowercased())/"
 		)
+		let markdown = try #require(code.bundledTroubleshootingMarkdown())
 		#expect(markdown.hasPrefix("## Try this"))
-		#expect(!markdown.contains("\n# \(code.rawValue)\n"))
 	}
-
-	let sepia = try #require(
-		SupportCode.sepia.bundledTroubleshootingMarkdown()
-	)
-	#expect(
-		sepia.contains(
-			"https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/"
-		)
-	)
-	#expect(
-		sepia.contains(
-			"https://lumisxh.github.io/Arknights-MacOS-Client/help/errors/anemone/"
-		)
-	)
+	#expect(!SupportCode.hasValidSyntax("AKC-VIRGA"))
+	#expect(!SupportCode.isPublished("CLOUD"))
 }

@@ -53,7 +53,11 @@ func appStorageMigratorMovesLegacyDirectoriesAndUpdatesExactInstallPreferences()
 
 	let result = AppStorageMigrator.migrate(
 		paths: paths,
-		persistedInstallDirectories: [.global: legacyGame],
+		persistedInstallDirectories: [
+			.global: legacyGame,
+			.korea: paths.applicationSupportRoot.appending(path: "Games/Arknights-Korea"),
+			.japan: root.appending(path: "Custom-Game"),
+		],
 		fileManager: fileManager
 	)
 
@@ -64,55 +68,25 @@ func appStorageMigratorMovesLegacyDirectoriesAndUpdatesExactInstallPreferences()
 	#expect(!fileManager.fileExists(atPath: legacyPrefix.path))
 	#expect(fileManager.fileExists(atPath: paths.winePrefix.appending(path: "marker").path))
 	#expect(result.installDirectoriesToUpdate[.global] == paths.gameInstall(for: .global))
-}
-
-@Test
-func appStorageMigratorUpdatesAbsentExactDefaultsButPreservesCustomPaths() throws {
-	let root = FileManager.default.temporaryDirectory
-		.appending(
-			path: "AppStorageMigratorAbsentTests.\(UUID().uuidString)", directoryHint: .isDirectory)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let paths = AppPaths(
-		applicationSupportDirectory: root.appending(path: "Support"),
-		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library")
-	)
-	let legacy = paths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
-	let custom = root.appending(path: "Custom-Game")
-	let result = AppStorageMigrator.migrate(
-		paths: paths,
-		persistedInstallDirectories: [
-			.global: URL(filePath: legacy.path, directoryHint: .isDirectory),
-			.japan: custom,
-		]
-	)
-
-	#expect(result.installDirectoriesToUpdate[.global] == paths.gameInstall(for: .global))
+	#expect(result.installDirectoriesToUpdate[.korea] == paths.gameInstall(for: .korea))
 	#expect(result.installDirectoriesToUpdate[.japan] == nil)
-}
 
-@Test
-func appStorageMigratorRejectsSymbolicLinkSources() throws {
-	let root = FileManager.default.temporaryDirectory
-		.appending(
-			path: "AppStorageMigratorSymlinkTests.\(UUID().uuidString)", directoryHint: .isDirectory
-		)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let paths = AppPaths(
-		applicationSupportDirectory: root.appending(path: "Support"),
-		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library")
+	let raceRoot = root.appending(path: "Race", directoryHint: .isDirectory)
+	let racePaths = AppPaths(
+		applicationSupportDirectory: raceRoot.appending(path: "Support"),
+		cachesDirectory: raceRoot.appending(path: "Caches"),
+		libraryDirectory: raceRoot.appending(path: "Library")
 	)
-	let fileManager = FileManager.default
-	let legacy = paths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
-	try fileManager.createDirectory(
-		at: legacy.deletingLastPathComponent(), withIntermediateDirectories: true)
-	try fileManager.createSymbolicLink(at: legacy, withDestinationURL: root)
-
-	let result = AppStorageMigrator.migrate(
-		paths: paths, persistedInstallDirectories: [:], fileManager: fileManager)
-	#expect(result.failure is AppStorageMigrationError)
-	#expect(!fileManager.fileExists(atPath: paths.gameInstall(for: .global).path))
+	let raceLegacy = racePaths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
+	try fileManager.createDirectory(at: raceLegacy, withIntermediateDirectories: true)
+	let raced = AppStorageMigrator.migrate(
+		paths: racePaths,
+		persistedInstallDirectories: [:],
+		fileManager: ConcurrentMoveFileManager()
+	)
+	#expect(raced.failure == nil)
+	#expect(!fileManager.fileExists(atPath: raceLegacy.path))
+	#expect(fileManager.fileExists(atPath: racePaths.gameInstall(for: .global).path))
 }
 
 @Test
@@ -142,30 +116,21 @@ func appStorageMigratorRejectsConflictsWithoutChangingEitherDirectory() throws {
 	#expect(result.installDirectoriesToUpdate.isEmpty)
 	#expect(fileManager.fileExists(atPath: legacy.path))
 	#expect(fileManager.fileExists(atPath: paths.gameInstall(for: .global).path))
-}
 
-@Test
-func appStorageMigratorAcceptsAMoveCompletedByAnotherProcess() throws {
-	let root = FileManager.default.temporaryDirectory
-		.appending(path: "AppStorageMigratorRaceTests.\(UUID().uuidString)")
-	defer { try? FileManager.default.removeItem(at: root) }
-	let paths = AppPaths(
-		applicationSupportDirectory: root.appending(path: "Support"),
-		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library")
+	let linkRoot = root.appending(path: "Link", directoryHint: .isDirectory)
+	let linkPaths = AppPaths(
+		applicationSupportDirectory: linkRoot.appending(path: "Support"),
+		cachesDirectory: linkRoot.appending(path: "Caches"),
+		libraryDirectory: linkRoot.appending(path: "Library")
 	)
-	let legacy = paths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
-	try FileManager.default.createDirectory(at: legacy, withIntermediateDirectories: true)
-
-	let result = AppStorageMigrator.migrate(
-		paths: paths,
-		persistedInstallDirectories: [:],
-		fileManager: ConcurrentMoveFileManager()
-	)
-
-	#expect(result.failure == nil)
-	#expect(!FileManager.default.fileExists(atPath: legacy.path))
-	#expect(FileManager.default.fileExists(atPath: paths.gameInstall(for: .global).path))
+	let link = linkPaths.applicationSupportRoot.appending(path: "Games/Arknights-Global")
+	try fileManager.createDirectory(
+		at: link.deletingLastPathComponent(), withIntermediateDirectories: true)
+	try fileManager.createSymbolicLink(at: link, withDestinationURL: root)
+	let linked = AppStorageMigrator.migrate(
+		paths: linkPaths, persistedInstallDirectories: [:], fileManager: fileManager)
+	#expect(linked.failure is AppStorageMigrationError)
+	#expect(!fileManager.fileExists(atPath: linkPaths.gameInstall(for: .global).path))
 }
 
 @Test

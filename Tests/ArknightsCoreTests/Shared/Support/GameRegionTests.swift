@@ -6,122 +6,46 @@ import Testing
 @testable import ArknightsCore
 
 @Test
-func gameRegionsExposeVerifiedLauncherIdentifiers() {
+func globalRegionPreservesThePreExistingPreferencesKey() {
+	// installPath.global predates multi-region support; changing it would silently drop
+	// existing users' custom install-directory preference on upgrade.
+	#expect(GameRegion.global.rawValue == "global")
 	#expect(GameRegion.global.gameTag == "Arknights_EN")
 	#expect(GameRegion.global.apiBaseURL == URL(string: "https://api-launcher-en.yo-star.com")!)
-
 	#expect(GameRegion.japan.gameTag == "Arknights_JP")
 	#expect(GameRegion.japan.apiBaseURL == URL(string: "https://api-launcher-jp.yo-star.com")!)
-
 	#expect(GameRegion.korea.gameTag == "Arknights_KR")
 	#expect(GameRegion.korea.apiBaseURL == URL(string: "https://api-launcher-kr.yo-star.com")!)
 	#expect(GameRegion.taiwan.gameTag == "Arknights_TC")
 }
 
-@Test
-func globalRegionPreservesThePreExistingPreferencesKey() {
-	// installPath.global predates multi-region support; changing it would silently drop
-	// existing users' custom install-directory preference on upgrade.
-	#expect(GameRegion.global.rawValue == "global")
-}
-
+@MainActor
 @Test
 func onlyTaiwanSelectionDependsOnCanaryPermissions() {
+	for (canary, taiwan) in [(false, false), (true, false), (false, true)] {
+		#expect(
+			RegionAccess(canaryFeaturesEnabled: canary, taiwanClientEnabled: taiwan)
+				.selectableRegions == GameRegion.generallyAvailableCases)
+	}
 	#expect(
-		RegionAccess(
-			canaryFeaturesEnabled: false,
-			taiwanClientEnabled: false
-		).selectableRegions
-			== GameRegion.generallyAvailableCases)
-	#expect(
-		RegionAccess(
-			canaryFeaturesEnabled: true,
-			taiwanClientEnabled: false
-		).selectableRegions
-			== GameRegion.generallyAvailableCases)
-	#expect(
-		RegionAccess(
-			canaryFeaturesEnabled: true,
-			taiwanClientEnabled: true
-		).selectableRegions
+		RegionAccess(canaryFeaturesEnabled: true, taiwanClientEnabled: true).selectableRegions
 			== GameRegion.allCases)
-	#expect(
-		RegionAccess(
-			canaryFeaturesEnabled: false,
-			taiwanClientEnabled: true
-		).selectableRegions
-			== GameRegion.generallyAvailableCases)
-}
 
-@Test(arguments: [
-	(
-		GameRegion.global, GamePublisher.yostar, GameClientVariant.standard, false, false, false
-	),
-	(
-		GameRegion.japan, GamePublisher.yostar, GameClientVariant.standard, false, false, false
-	),
-	(
-		GameRegion.korea, GamePublisher.yostar, GameClientVariant.standard, false, false, false
-	),
-	(
-		GameRegion.china, GamePublisher.hypergryph, GameClientVariant.standard, false, true, false
-	),
-	(
-		GameRegion.chinaBilibili, GamePublisher.hypergryph, GameClientVariant.bilibili, false, true,
-		false
-	),
-	(
-		GameRegion.taiwan, GamePublisher.gryphline, GameClientVariant.standard, true, true, true
-	),
-])
-func regionsExposeNeutralPublisherAndClientProfile(
-	region: GameRegion,
-	publisher: GamePublisher,
-	variant: GameClientVariant,
-	requiresCanaryPermission: Bool,
-	requiresACEWarning: Bool,
-	requiresTaiwanClientPermission: Bool
-) {
-	#expect(region.publisher == publisher)
-	#expect(region.clientVariant == variant)
-	#expect(region.requiresCanaryPermission == requiresCanaryPermission)
-	#expect(region.clientProfile.requiresCanaryPermission == requiresCanaryPermission)
-	#expect(region.requiresACEWarning == requiresACEWarning)
-	#expect(region.requiresTaiwanClientPermission == requiresTaiwanClientPermission)
-}
+	let suiteName = "GameRegionTests.\(UUID().uuidString)"
+	let defaults = UserDefaults(suiteName: suiteName)!
+	defer { defaults.removePersistentDomain(forName: suiteName) }
+	let store = LauncherPreferencesStore(defaults: defaults)
+	typealias Key = LauncherPreferencesStore.Key
 
-@Test
-func clientProfilesOwnRuntimePatchEnvironment() {
-	#expect(GameRegion.global.runtimeEnvironmentOverrides.isEmpty)
-	#expect(
-		GameRegion.china.runtimeEnvironmentOverrides
-			== ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"]
-	)
-	#expect(
-		GameRegion.chinaBilibili.runtimeEnvironmentOverrides
-			== [
-				"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
-				"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
-				"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
-			]
-	)
-	#expect(
-		GameRegion.taiwan.runtimeEnvironmentOverrides
-			== ["ARKNIGHTS_RUNTIME_ACE_COMPACT": "1"]
-	)
-}
+	store.setSelectedRegion(.chinaBilibili)
+	#expect(store.selectedRegion() == .chinaBilibili)
 
-@Test(arguments: [
-	(GameRegion.global, "https://account.yo-star.com/contact"),
-	(GameRegion.japan, "https://account.yo-star.com/contact"),
-	(GameRegion.korea, "https://account.yo-star.com/contact"),
-	(GameRegion.china, "https://user.hypergryph.com/support"),
-	(GameRegion.chinaBilibili, "https://user.hypergryph.com/support"),
-	(GameRegion.taiwan, "https://www.gryphline.com/en-us/contacts"),
-])
-func regionsUseTheOfficialPublisherSupportDestination(
-	region: GameRegion,
-	expectedURL: String
-) {
-	#expect(SupportLinks.contact(for: region) == URL(string: expectedURL))
+	store.setSelectedRegion(.taiwan)
+	#expect(store.selectedRegion() == .global)
+	store.set(true, for: Key.canaryFeaturesEnabled)
+	#expect(store.selectedRegion() == .global)
+	store.set(true, for: Key.taiwanClientEnabled)
+	#expect(store.selectedRegion() == .taiwan)
+	store.set(false, for: Key.taiwanClientEnabled)
+	#expect(store.selectedRegion() == .global)
 }

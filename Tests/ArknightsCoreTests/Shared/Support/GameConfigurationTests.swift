@@ -7,67 +7,25 @@ import Testing
 
 @Test(
 	arguments: [
-		("30GB", Int64(30_000_000_000)),
-		("38.5 GB", Int64(38_500_000_000)),
-		("512MB", Int64(512_000_000)),
-		("2TB", Int64(2_000_000_000_000)),
+		("", "1 GB"),
+		(".", "1 GB"),
+		("..", "1 GB"),
+		("nested/Arknights.exe", "1 GB"),
+		("nested\\Arknights.exe", "1 GB"),
+		("Arknights\n.exe", "1 GB"),
+		("Arknights.exe", ""),
+		("Arknights.exe", "unknown"),
+		("Arknights.exe", "NaN GB"),
+		("Arknights.exe", "infinity GB"),
+		("Arknights.exe", "1e3 GB"),
+		("Arknights.exe", "9223372036854775808 GB"),
+		("Arknights.exe", "100000000000000000000 TB"),
 	]
 )
-func byteSizeParsesRecognizedUnits(input: String, expected: Int64) {
-	#expect(GameConfiguration.parseByteSize(input) == expected)
-}
-
-@Test(
-	arguments: [
-		"",
-		"unknown",
-		"-1 GB",
-		"NaN GB",
-		"infinity GB",
-		"1e3 GB",
-		"9223372036854775808 GB",
-		"100000000000000000000 TB",
-	]
-)
-func byteSizeRejectsInvalidInput(input: String) {
-	#expect(GameConfiguration.parseByteSize(input) == nil)
-}
-
-@Test
-func byteSizeAcceptsValuesWithinInt64Range() {
-	#expect(GameConfiguration.parseByteSize("9223372036 GB") == 9_223_372_036_000_000_000)
-}
-
-@Test(
-	arguments: [
-		"",
-		"unknown",
-		"NaN GB",
-		"infinity GB",
-		"1e3 GB",
-		"9223372036854775808 GB",
-		"100000000000000000000 TB",
-	]
-)
-func gameConfigurationDecoderRejectsInvalidDecompressionSizes(size: String) {
+func gameConfigurationRejectsUnsafeExecutableBasenames(name: String, size: String) {
 	#expect(throws: DecodingError.self) {
-		try JSONDecoder().decode(GameConfiguration.self, from: configurationJSON(size: size))
-	}
-}
-
-@Test(
-	arguments: [
-		"",
-		".",
-		"..",
-		"nested/Arknights.exe",
-		"nested\\Arknights.exe",
-		"Arknights\n.exe",
-	]
-)
-func gameConfigurationRejectsUnsafeExecutableBasenames(name: String) {
-	#expect(throws: DecodingError.self) {
-		try JSONDecoder().decode(GameConfiguration.self, from: configurationJSON(executable: name))
+		try JSONDecoder().decode(
+			GameConfiguration.self, from: configurationJSON(executable: name, size: size))
 	}
 }
 

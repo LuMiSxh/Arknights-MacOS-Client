@@ -16,7 +16,7 @@ private final class FailingCacheEnumerationFileManager: FileManager {
 }
 
 @Test
-func appPathsUseStandardInjectedDirectories() {
+func appPathsUseStandardInjectedDirectories() throws {
 	let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
 	let support = root.appending(path: "Application Support")
 	let caches = root.appending(path: "Caches")
@@ -26,185 +26,60 @@ func appPathsUseStandardInjectedDirectories() {
 		cachesDirectory: caches,
 		libraryDirectory: library
 	)
+	let id = AppPaths.bundleIdentifier
+	let logs = "Logs/\(id)"
 
-	#expect(
-		paths.applicationSupportRoot
-			== support.appending(path: AppPaths.bundleIdentifier, directoryHint: .isDirectory)
-	)
-	#expect(
-		paths.cacheRoot
-			== caches.appending(path: AppPaths.bundleIdentifier, directoryHint: .isDirectory)
-	)
-	#expect(
-		paths.logRoot
-			== library.appending(
-				path: "Logs/\(AppPaths.bundleIdentifier)",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.gameInstall(for: .global)
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Yostar/Global",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.gameInstall(for: .japan)
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Yostar/Japan",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.gameInstall(for: .korea)
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Yostar/Korea",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.gameInstall(for: .china)
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Hypergryph/China",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.gameInstall(for: .chinaBilibili)
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Hypergryph/China-Bilibili",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.gameInstall(for: .taiwan)
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Gryphline/Taiwan",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.winePrefix
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Yostar/Prefix",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.chinaWinePrefix
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Hypergryph/Prefix",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.gryphlineWinePrefix
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Gryphline/Prefix",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.yostarLogFile
-			== library.appending(
-				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-yostar.log"
-			)
-	)
-	#expect(
-		paths.publisherLogFile(for: .hypergryph)
-			== library.appending(
-				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-hypergryph.log"
-			)
-	)
-	#expect(
-		paths.publisherLogFile(for: .gryphline)
-			== library.appending(
-				path: "Logs/\(AppPaths.bundleIdentifier)/arknights-gryphline.log"
-			)
-	)
-	#expect(
-		paths.launcherLogFile
-			== library.appending(path: "Logs/\(AppPaths.bundleIdentifier)/launcher.log")
-	)
-	#expect(
-		paths.artworkCache
-			== caches.appending(
-				path: "\(AppPaths.bundleIdentifier)/Artwork/Downloaded",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.presetGalleryCache
-			== caches.appending(
-				path: "\(AppPaths.bundleIdentifier)/PresetGallery",
-				directoryHint: .isDirectory
-			)
-	)
-	#expect(
-		paths.customArtwork
-			== support.appending(path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/artwork")
-	)
-	#expect(
-		paths.customAppIcon
-			== support.appending(path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/app-icon")
-	)
-	#expect(
-		paths.customGameIcon
-			== support.appending(path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/game-icon")
-	)
-	#expect(
-		paths.operatorPresetAvatar
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/Artwork/Custom/operator-avatar-source")
-	)
-	#expect(
-		paths.playtimeStatistics
-			== support.appending(
-				path: "\(AppPaths.bundleIdentifier)/\(AppConstants.Playtime.statisticsFilename)"
-			)
-	)
-}
-
-@Test
-func bilibiliKeepsItsGameFilesSeparateInsideTheSharedHypergryphPrefix() throws {
-	let region = try JSONDecoder().decode(
-		GameRegion.self,
-		from: Data(#""chinaBilibili""#.utf8)
-	)
-	let paths = AppPaths(
-		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
-		cachesDirectory: URL(filePath: "/tmp/Caches"),
-		libraryDirectory: URL(filePath: "/tmp/Library")
-	)
-
-	#expect(paths.gameInstall(for: region).lastPathComponent == "China-Bilibili")
-	#expect(paths.winePrefix(for: region) == paths.winePrefix(for: .china))
-}
-
-@Test
-func taiwanUsesItsOwnGryphlinePrefix() {
-	let paths = AppPaths(
-		applicationSupportDirectory: URL(filePath: "/tmp/Application Support"),
-		cachesDirectory: URL(filePath: "/tmp/Caches"),
-		libraryDirectory: URL(filePath: "/tmp/Library")
-	)
-
+	let rows: [(URL, URL)] = [
+		(paths.applicationSupportRoot, support.appending(path: id)),
+		(paths.cacheRoot, caches.appending(path: id)),
+		(paths.logRoot, library.appending(path: logs)),
+		(paths.gameInstall(for: .global), support.appending(path: "\(id)/Yostar/Global")),
+		(paths.gameInstall(for: .japan), support.appending(path: "\(id)/Yostar/Japan")),
+		(paths.gameInstall(for: .korea), support.appending(path: "\(id)/Yostar/Korea")),
+		(paths.gameInstall(for: .china), support.appending(path: "\(id)/Hypergryph/China")),
+		(
+			paths.gameInstall(for: .chinaBilibili),
+			support.appending(path: "\(id)/Hypergryph/China-Bilibili")
+		),
+		(paths.gameInstall(for: .taiwan), support.appending(path: "\(id)/Gryphline/Taiwan")),
+		(paths.winePrefix, support.appending(path: "\(id)/Yostar/Prefix")),
+		(paths.chinaWinePrefix, support.appending(path: "\(id)/Hypergryph/Prefix")),
+		(paths.gryphlineWinePrefix, support.appending(path: "\(id)/Gryphline/Prefix")),
+		(paths.yostarLogFile, library.appending(path: "\(logs)/arknights-yostar.log")),
+		(
+			paths.publisherLogFile(for: .hypergryph),
+			library.appending(path: "\(logs)/arknights-hypergryph.log")
+		),
+		(
+			paths.publisherLogFile(for: .gryphline),
+			library.appending(path: "\(logs)/arknights-gryphline.log")
+		),
+		(paths.launcherLogFile, library.appending(path: "\(logs)/launcher.log")),
+		(paths.artworkCache, caches.appending(path: "\(id)/Artwork/Downloaded")),
+		(paths.presetGalleryCache, caches.appending(path: "\(id)/PresetGallery")),
+		(paths.customArtwork, support.appending(path: "\(id)/Artwork/Custom/artwork")),
+		(paths.customAppIcon, support.appending(path: "\(id)/Artwork/Custom/app-icon")),
+		(paths.customGameIcon, support.appending(path: "\(id)/Artwork/Custom/game-icon")),
+		(
+			paths.operatorPresetAvatar,
+			support.appending(path: "\(id)/Artwork/Custom/operator-avatar-source")
+		),
+		(
+			paths.playtimeStatistics,
+			support.appending(path: "\(id)/\(AppConstants.Playtime.statisticsFilename)")
+		),
+	]
+	for (actual, expected) in rows {
+		#expect(actual.standardizedFileURL.path == expected.standardizedFileURL.path)
+	}
+	#expect(paths.winePrefix(for: .chinaBilibili) == paths.winePrefix(for: .china))
 	#expect(paths.winePrefix(for: .taiwan) == paths.gryphlineWinePrefix)
-	#expect(paths.gameInstall(for: .taiwan).lastPathComponent == "Taiwan")
-}
 
-@Test
-func gameCacheEnumerationTreatsMissingUsersAsEmptyAndSurfacesFailures() throws {
-	let missingPrefix = FileManager.default.temporaryDirectory.appending(
-		path: "AppPathsMissingCacheUsers.\(UUID().uuidString)", directoryHint: .isDirectory)
+	let missingPrefix = root.appending(path: "MissingCacheUsers", directoryHint: .isDirectory)
 	#expect(try AppPaths.gameCacheDirectories(winePrefix: missingPrefix).isEmpty)
-
-	let unreadablePrefix = FileManager.default.temporaryDirectory.appending(
-		path: "AppPathsCacheEnumerationFailure.\(UUID().uuidString)", directoryHint: .isDirectory)
 	#expect(throws: AppPathsError.self) {
 		try AppPaths.gameCacheDirectories(
-			winePrefix: unreadablePrefix,
+			winePrefix: root.appending(path: "Unreadable", directoryHint: .isDirectory),
 			fileManager: FailingCacheEnumerationFileManager()
 		)
 	}
