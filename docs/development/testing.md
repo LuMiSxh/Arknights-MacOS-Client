@@ -67,6 +67,8 @@ HTTP tests use an ephemeral `URLSession` whose `URLProtocol` accepts only record
 
 Helpers that more than one test target uses live in the `ArknightsTestSupport` library target. Do not copy a helper into another test target.
 
+Use `StubURLProtocol` for network stubs. Each `Route` has its own handler and request count. Use `makeIsolatedDefaults()`, `makeLifecycleStore()`, and `TemporaryDirectory` instead of a private copy.
+
 Timed code takes an injected `Clock` (`any Clock<Duration>`). Tests pass a manual clock and advance it explicitly. A test never sleeps for real time.
 
 Each test owns its state:
