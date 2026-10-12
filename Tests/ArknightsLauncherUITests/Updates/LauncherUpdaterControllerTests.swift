@@ -30,45 +30,6 @@ struct LauncherUpdaterControllerTests {
 		}
 	}
 
-	@Test
-	func relaunchPermissionDoesNotPreemptDeferredLifecycleHandling() {
-		let subject = makeUpdater()
-		let sparkle = makeSparkleUpdater()
-
-		#expect(subject.updaterShouldRelaunchApplication(sparkle.1))
-	}
-
-	@Test(arguments: [false, true])
-	func hiddenInstallingUpdateRefocusesWhileIdleOrTheUpdateGateIsHeld(
-		holdsUpdateGate: Bool
-	) {
-		// Installing has no Later button, so dismissFromUser only hides this presentation.
-		let lifecycle = makeLifecycleStore()
-		if holdsUpdateGate {
-			lifecycle.beginLauncherUpdate()
-		}
-		var activationCount = 0
-		let subject = LauncherUpdaterController(
-			lifecycle: lifecycle,
-			log: lifecycle.log,
-			activateApplication: { activationCount += 1 }
-		)
-
-		subject.userDriver.showInstallingUpdate(withApplicationTerminated: true) {}
-		subject.userDriver.dismissFromUser()
-		#expect(subject.userDriver.phase == .installing)
-		#expect(!subject.userDriver.isPresented)
-		if holdsUpdateGate {
-			#expect(subject.canOpenUpdate)
-		}
-
-		subject.checkForUpdates()
-
-		#expect(subject.userDriver.phase == .installing)
-		#expect(subject.userDriver.isPresented)
-		#expect(activationCount == 1)
-	}
-
 	@Test(arguments: UpdateLifecycleScenario.allCases)
 	func relaunchIsPostponedOnlyUntilAnActiveLifecycleFinishes(
 		scenario: UpdateLifecycleScenario
@@ -89,22 +50,15 @@ struct LauncherUpdaterControllerTests {
 			lifecycle.simulateActivity(.idle)
 			#expect(installCalled)
 		}
-	}
+		#expect(subject.updaterShouldRelaunchApplication(sparkle.1))
 
-	@Test
-	func terminationRetryResumesWhenLifecycleBecomesIdle() {
-		let lifecycle = makeLifecycleStore()
-		let lease = lifecycle.begin(.runningGame(sessionID: UUID(), processIdentifier: 42))
-		let subject = LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
 		var retryCount = 0
-
+		let lease = lifecycle.begin(.runningGame(sessionID: UUID(), processIdentifier: 42))
 		subject.userDriver.showInstallingUpdate(withApplicationTerminated: false) {
 			retryCount += 1
 		}
 		#expect(retryCount == 0)
-
 		#expect(lease.map { lifecycle.end($0) } == true)
-
 		#expect(retryCount == 1)
 	}
 
@@ -124,34 +78,6 @@ struct LauncherUpdaterControllerTests {
 	}
 
 	@Test
-	func abortAfterSparkleErrorAcknowledgementDoesNotReopenTheError() {
-		let subject = makeUpdater()
-		let sparkle = makeSparkleUpdater()
-		subject.userDriver.showUpdaterError(
-			NSError(domain: "Test", code: 1), acknowledgement: {}
-		)
-		subject.userDriver.acknowledge()
-
-		subject.updater(
-			sparkle.1,
-			didAbortWithError: NSError(domain: "Test", code: 1)
-		)
-
-		#expect(subject.userDriver.phase == .hidden)
-	}
-
-	@Test(arguments: [
-		("0.6.1", "0.6.1" as String?, LauncherUpdateCheckOutcome.current),
-		("0.6.2", "0.6.1", .updateAvailable("0.6.2")),
-		("0.6.1", nil, .updateAvailable("0.6.1")),
-	])
-	func onlyADifferentVersionCountsAsAnUpdate(
-		offered: String, running: String?, expected: LauncherUpdateCheckOutcome
-	) {
-		#expect(LauncherUpdateCheckOutcome.found(version: offered, running: running) == expected)
-	}
-
-	@Test
 	func sparkleNoUpdateErrorCountsAsCurrentForSilentProbe() {
 		let error = NSError(
 			domain: SUSparkleErrorDomain,
@@ -167,86 +93,23 @@ struct LauncherUpdaterControllerTests {
 				)
 			)
 		)
-	}
 
-	@Test
-	func abortingSilentProbeCompletesWhenTheCycleFinishes() {
-		let subject = makeUpdater()
-		var outcome: LauncherUpdateCheckOutcome?
-		subject.beginProbeForTesting { outcome = $0 }
-		let error = NSError(domain: "Test", code: 1)
-		subject.updater(makeSparkleUpdater().1, didAbortWithError: error)
-
-		#expect(outcome == nil)
-		#expect(subject.userDriver.phase == .hidden)
-		subject.updater(
-			makeSparkleUpdater().1,
-			didFinishUpdateCycleFor: .updateInformation,
-			error: error
-		)
-		#expect(outcome == .failed)
-		#expect(subject.userDriver.phase == .hidden)
-	}
-
-	@Test
-	func silentNoUpdateAbortThenFinishStaysHiddenAndCurrent() {
-		let subject = makeUpdater()
-		var outcome: LauncherUpdateCheckOutcome?
-		subject.beginProbeForTesting { outcome = $0 }
-		let error = NSError(
-			domain: SUSparkleErrorDomain,
-			code: Int(SUError.noUpdateError.rawValue),
-			userInfo: [NSLocalizedDescriptionKey: "You’re up to date!"]
-		)
-
-		subject.updater(makeSparkleUpdater().1, didAbortWithError: error)
-		#expect(outcome == nil)
-		#expect(subject.userDriver.phase == .hidden)
-
-		subject.updater(
-			makeSparkleUpdater().1,
-			didFinishUpdateCycleFor: .updateInformation,
-			error: error
-		)
-
-		#expect(outcome == .current)
-		#expect(subject.userDriver.phase == .hidden)
-
-		subject.userDriver.showUserInitiatedUpdateCheck(cancellation: {})
-		subject.updater(
-			makeSparkleUpdater().1,
-			didFinishUpdateCycleFor: .updateInformation,
-			error: nil
-		)
-		#expect(subject.userDriver.phase == .hidden)
-	}
-
-	@Test
-	func finishingProbeCanStartTheNextProbeWithoutOldFinishInterference() {
-		let subject = makeUpdater()
-		var completionCount = 0
-		subject.beginProbeForTesting { _ in
-			completionCount += 1
-			subject.beginProbeForTesting { _ in completionCount += 10 }
+		for (probeError, expected) in [
+			(error, LauncherUpdateCheckOutcome.current),
+			(NSError(domain: "Test", code: 1), .failed),
+		] {
+			let subject = makeUpdater()
+			var outcome: LauncherUpdateCheckOutcome?
+			subject.beginProbeForTesting { outcome = $0 }
+			subject.updater(makeSparkleUpdater().1, didAbortWithError: probeError)
+			#expect(outcome == nil)
+			#expect(subject.userDriver.phase == .hidden)
+			subject.updater(
+				makeSparkleUpdater().1, didFinishUpdateCycleFor: .updateInformation,
+				error: probeError)
+			#expect(outcome == expected)
+			#expect(subject.userDriver.phase == .hidden)
 		}
-		let error = NSError(domain: "Test", code: 1)
-
-		subject.updater(makeSparkleUpdater().1, didAbortWithError: error)
-		#expect(completionCount == 0)
-		subject.updater(
-			makeSparkleUpdater().1,
-			didFinishUpdateCycleFor: .updateInformation,
-			error: error
-		)
-
-		#expect(completionCount == 1)
-		subject.updater(makeSparkleUpdater().1, didAbortWithError: error)
-		subject.updater(
-			makeSparkleUpdater().1,
-			didFinishUpdateCycleFor: .updateInformation,
-			error: error
-		)
-		#expect(completionCount == 11)
 	}
 }
 

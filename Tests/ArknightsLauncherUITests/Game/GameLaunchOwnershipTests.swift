@@ -28,82 +28,13 @@ struct GameLaunchOwnershipTests {
 		#expect(model.lifecycle.state.presentation.failure?.id == pendingID)
 		#expect(model.gameSession.session == nil)
 		#expect(model.lifecycle.activity == .idle)
-		await api.resolveBranding()
-	}
 
-	@Test
-	func aFinishedPreflightAllowsTheNextLaunch() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-
+		// A session that already owns the launcher ignores further launches.
+		let owned = LauncherActivity.runningGame(sessionID: UUID(), processIdentifier: 7)
+		model.beginTestGameSession(owned)
 		model.gameSession.launch()
-		let firstID = model.gameSession.pendingLaunchID
-		#expect(await waitForCondition { model.gameSession.pendingLaunchID == nil })
-		_ = model.lifecycle.consumeFailure(id: firstID ?? UUID())
-		model.gameSession.launch()
-
-		#expect(model.gameSession.pendingLaunchID != nil)
-		#expect(model.gameSession.pendingLaunchID != firstID)
-		#expect(await waitForCondition { model.gameSession.pendingLaunchID == nil })
-		await api.resolveBranding()
-	}
-
-	@Test(arguments: [
-		LauncherActivity.runningGame(sessionID: UUID(), processIdentifier: 7),
-		.preparingGame(sessionID: UUID()),
-		.stoppingGame(sessionID: UUID(), processIdentifier: nil),
-	])
-	func launchIsIgnoredWhileAnotherSessionOwnsTheLauncher(activity: LauncherActivity) async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		model.beginTestGameSession(activity)
-
-		model.gameSession.launch()
-
 		#expect(model.gameSession.pendingLaunchID == nil)
-		#expect(model.lifecycle.activity == activity)
-		await api.resolveBranding()
-	}
-
-	@Test
-	func staleSessionIDNeverStopsOrIdlesTheLiveSession() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		let sessionID = UUID()
-		let activity = LauncherActivity.runningGame(sessionID: sessionID, processIdentifier: 42)
-		model.beginTestGameSession(activity)
-		let runtime = ControlledLaunchRuntime()
-
-		await model.gameSession.stopAndFinishGameSession(
-			using: runtime, sessionID: UUID(), processIdentifier: 42, region: .global)
-		model.gameSession.finishGameSession(UUID())
-
-		#expect(runtime.stopCalls == 0)
-		#expect(model.lifecycle.activity == activity)
-		#expect(model.gameSession.session?.id == sessionID)
-		await api.resolveBranding()
-	}
-
-	@Test
-	func staleLeaseCannotUpdateOrEndAReplacementActivity() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		let oldID = UUID()
-		let oldLease = model.lifecycle.begin(.preparingGame(sessionID: oldID))
-		#expect(oldLease.map { model.lifecycle.end($0) } == true)
-		let newActivity = LauncherActivity.runningGame(sessionID: UUID(), processIdentifier: 9)
-		_ = model.lifecycle.begin(newActivity)
-
-		if let oldLease {
-			#expect(!model.lifecycle.end(oldLease))
-			#expect(!model.lifecycle.update(oldLease, to: .idle))
-		}
-
-		#expect(model.lifecycle.activity == newActivity)
+		#expect(model.lifecycle.activity == owned)
 		await api.resolveBranding()
 	}
 

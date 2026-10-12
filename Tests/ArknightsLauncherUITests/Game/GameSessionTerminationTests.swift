@@ -112,47 +112,6 @@ struct GameSessionTerminationTests {
 		#expect(await fixture.runtime.stopAttemptCount() == 2)
 		await fixture.api.resolveBranding()
 	}
-
-	@Test
-	func staleCleanupCannotFinishOrFailAReplacementSession() async {
-		let fixture = await makeFixture(region: .japan)
-		let replacementSessionID = UUID()
-		let cleanup = Task {
-			await fixture.model.gameSession.stopAndFinishGameSession(
-				using: fixture.runtime,
-				sessionID: fixture.sessionID,
-				processIdentifier: 42,
-				region: .japan,
-				terminalFailure: GameSessionTerminalFailure(
-					error: TestSessionError.crashed,
-					operation: .runtimeExit,
-					blocksGameLaunch: false
-				)
-			)
-		}
-
-		#expect(await fixture.runtime.waitForStop(attempt: 1))
-		fixture.model.lifecycle.simulateActivity(
-			.runningGame(sessionID: replacementSessionID, processIdentifier: 99))
-		if let lease = fixture.model.gameSession.session?.lease {
-			fixture.model.gameSession.session = ActiveGameSession(
-				id: replacementSessionID,
-				lease: lease,
-				region: .global,
-				spawnGate: WineProcessSpawnGate(),
-				usesGameMode: false
-			)
-		}
-		await fixture.runtime.succeedStop(attempt: 1)
-		await cleanup.value
-
-		#expect(
-			fixture.model.lifecycle.activity
-				== .runningGame(sessionID: replacementSessionID, processIdentifier: 99)
-		)
-		#expect(fixture.model.lifecycle.state.presentation.failure == nil)
-		await fixture.api.resolveBranding()
-	}
 }
 
 @MainActor

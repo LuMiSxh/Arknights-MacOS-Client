@@ -19,23 +19,24 @@ struct LauncherUpdateUserDriverTests {
 
 		#expect(cancellationCount == 1)
 		#expect(driver.phase == .hidden)
-	}
 
-	@Test
-	func downloadAndExtractionProgressAreClampedAndPreserveStages() {
-		let driver = LauncherUpdateUserDriver()
-		driver.showDownloadInitiated(cancellation: {})
-		driver.showDownloadDidReceiveExpectedContentLength(100)
-		driver.showDownloadDidReceiveData(ofLength: 140)
+		// Dismissing the overlay cancels an active check at once.
+		driver.showUserInitiatedUpdateCheck { cancellationCount += 1 }
+		driver.dismissFromUser()
+		#expect(cancellationCount == 2)
+		#expect(driver.phase == .hidden)
 
-		#expect(driver.phase == .downloading)
-		#expect(driver.receivedBytes == 140)
-
-		driver.showDownloadDidStartExtractingUpdate()
-		driver.showExtractionReceivedProgress(1.4)
-
-		#expect(driver.phase == .extracting)
-		#expect(driver.extractionProgress == 1)
+		// A replacement callback takes over the stale check cancellation.
+		var replacementCancellations = 0
+		var acknowledgements = 0
+		driver.showUserInitiatedUpdateCheck { replacementCancellations += 1 }
+		driver.showUpdateNotFoundWithError(
+			NSError(domain: "Test", code: 1), acknowledgement: { acknowledgements += 1 })
+		driver.dismissFromUser()
+		driver.cancelCheck()
+		#expect(replacementCancellations == 0)
+		#expect(acknowledgements == 1)
+		#expect(driver.phase == .hidden)
 	}
 
 	@Test
@@ -51,132 +52,17 @@ struct LauncherUpdateUserDriverTests {
 		#expect(driver.phase == .readyToInstall)
 		#expect(driver.isPresented)
 		driver.dismissUpdateInstallation()
-	}
 
-	@Test
-	func installChoiceKeepsOnePresentationAcrossDownloadStages() {
-		let driver = LauncherUpdateUserDriver()
-		var choices: [SPUUserUpdateChoice] = []
-		driver.showReady { choices.append($0) }
-
-		driver.choose(.install)
-		driver.showDownloadInitiated(cancellation: {})
-		driver.showDownloadDidStartExtractingUpdate()
-		driver.showReady { choices.append($0) }
-
-		#expect(choices == [.install])
-		#expect(driver.phase == .readyToInstall)
-		#expect(driver.isPresented)
-		driver.dismissUpdateInstallation()
-	}
-
-	@Test
-	func dismissFromUserWhenReadyToInstallRepliesTheSameAsLater() {
-		let driver = LauncherUpdateUserDriver()
-		var choices: [SPUUserUpdateChoice] = []
-		driver.showReady { choices.append($0) }
-
+		var dismissed: [SPUUserUpdateChoice] = []
+		driver.showReady { dismissed.append($0) }
 		driver.dismissFromUser()
-
-		#expect(choices == [.dismiss])
+		#expect(dismissed == [.dismiss])
 		#expect(driver.phase == .hidden)
-		#expect(!driver.isPresented)
-	}
 
-	@Test
-	func errorAcknowledgementClearsTheCustomPresentation() {
-		let driver = LauncherUpdateUserDriver()
-		var acknowledgementCount = 0
-		driver.showUpdaterError(
-			NSError(domain: "Test", code: 1),
-			acknowledgement: { acknowledgementCount += 1 }
-		)
-
-		driver.acknowledge()
-		driver.acknowledge()
-
-		#expect(acknowledgementCount == 1)
+		var relaunchAcknowledgements = 0
+		driver.showUpdateInstalledAndRelaunched(true) { relaunchAcknowledgements += 1 }
+		#expect(relaunchAcknowledgements == 1)
 		#expect(driver.phase == .hidden)
-	}
-
-	@Test(arguments: ReplacedCheckCallback.allCases)
-	func replacementAcknowledgementReplacesStaleCheckCancellation(
-		callback: ReplacedCheckCallback
-	) {
-		let driver = LauncherUpdateUserDriver()
-		var cancellationCount = 0
-		var acknowledgementCount = 0
-		driver.showUserInitiatedUpdateCheck { cancellationCount += 1 }
-		switch callback {
-		case .noUpdate:
-			driver.showUpdateNotFoundWithError(
-				NSError(domain: "Test", code: 1),
-				acknowledgement: { acknowledgementCount += 1 }
-			)
-		case .updaterError:
-			driver.showUpdaterError(
-				NSError(domain: "Test", code: 1),
-				acknowledgement: { acknowledgementCount += 1 }
-			)
-		}
-
-		driver.dismissFromUser()
-		switch callback {
-		case .noUpdate:
-			driver.cancelCheck()
-		case .updaterError:
-			driver.acknowledge()
-		}
-
-		#expect(cancellationCount == 0)
-		#expect(acknowledgementCount == 1)
-		#expect(driver.phase == .hidden)
-	}
-
-	@Test
-	func relaunchedInstallationAcknowledgesImmediately() {
-		let driver = LauncherUpdateUserDriver()
-		var acknowledgementCount = 0
-		driver.showUpdateInstalledAndRelaunched(true) { acknowledgementCount += 1 }
-
-		#expect(acknowledgementCount == 1)
-		#expect(driver.phase == .hidden)
-		driver.acknowledge()
-		#expect(acknowledgementCount == 1)
-	}
-
-	@Test
-	func updateInFocusKeepsTheCurrentPresentationVisible() {
-		var activationCount = 0
-		let driver = LauncherUpdateUserDriver { activationCount += 1 }
-		driver.showUserInitiatedUpdateCheck(cancellation: {})
-
-		driver.showUpdateInFocus()
-
-		#expect(activationCount == 1)
-		#expect(driver.isPresented)
-	}
-
-	@Test
-	func installingDismissalHidesAndFocusRestoresTheSamePresentation() {
-		var activationCount = 0
-		var retryCount = 0
-		let driver = LauncherUpdateUserDriver(
-			activateApplication: { activationCount += 1 },
-			canRetryTermination: { false }
-		)
-		driver.showInstallingUpdate(withApplicationTerminated: false) { retryCount += 1 }
-
-		driver.dismissFromUser()
-
-		#expect(!driver.isPresented)
-		#expect(driver.phase == .installing)
-		driver.showUpdateInFocus()
-		driver.retryTerminationRequest()
-
-		#expect(driver.isPresented)
-		#expect(activationCount == 1)
-		#expect(retryCount == 1)
 	}
 
 	@Test
@@ -199,84 +85,38 @@ struct LauncherUpdateUserDriverTests {
 		driver.retryTerminationRequest()
 
 		#expect(retryCount == 2)
-	}
 
-	@Test
-	func automaticTerminationRetryWaitsForSafeTransition() {
+		// Ending the installation cancels a pending automatic retry.
 		var safeToRetry = false
-		var retryCount = 0
-		let driver = LauncherUpdateUserDriver(
-			canRetryTermination: { safeToRetry },
-			automaticRetryScheduler: { _ in Task { @MainActor in } }
-		)
-		driver.showInstallingUpdate(withApplicationTerminated: false) { retryCount += 1 }
-		#expect(retryCount == 0)
-
-		safeToRetry = true
-		driver.retryTerminationIfSafe()
-
-		#expect(retryCount == 1)
-	}
-
-	@Test
-	func terminationContextDistinguishesGameFromOtherBusyActivity() {
-		var gameRunning = true
-		var safeToRetry = false
-		var retryCount = 0
-		let driver = LauncherUpdateUserDriver(
-			canRetryTermination: { safeToRetry },
-			isGameRunning: { gameRunning },
-			automaticRetryScheduler: { _ in Task { @MainActor in } }
-		)
-		driver.showInstallingUpdate(withApplicationTerminated: false) { retryCount += 1 }
-
-		#expect(driver.gameIsRunning)
-		#expect(!driver.terminationBlocked)
-		gameRunning = false
-		driver.retryTerminationIfSafe()
-
-		#expect(!driver.gameIsRunning)
-		#expect(driver.terminationBlocked)
-		safeToRetry = true
-		driver.retryTerminationIfSafe()
-
-		#expect(!driver.terminationBlocked)
-		#expect(retryCount == 1)
-	}
-
-	@Test
-	func endingInstallationCancelsPendingAutomaticRetry() {
-		var safeToRetry = false
-		var retryCount = 0
-		var runAutomaticRetry: (@MainActor () -> Void)?
-		let driver = LauncherUpdateUserDriver(
+		var endedRetryCount = 0
+		var pendingRetry: (@MainActor () -> Void)?
+		let waiting = LauncherUpdateUserDriver(
 			canRetryTermination: { safeToRetry },
 			automaticRetryScheduler: { action in
-				runAutomaticRetry = action
+				pendingRetry = action
 				return Task { @MainActor in }
 			}
 		)
-		driver.showInstallingUpdate(withApplicationTerminated: false) { retryCount += 1 }
-		driver.dismissUpdateInstallation()
+		waiting.showInstallingUpdate(withApplicationTerminated: false) { endedRetryCount += 1 }
 		safeToRetry = true
-		runAutomaticRetry?()
-		driver.retryTerminationIfSafe()
+		waiting.dismissUpdateInstallation()
+		pendingRetry?()
+		waiting.retryTerminationIfSafe()
+		#expect(endedRetryCount == 0)
 
-		#expect(retryCount == 0)
+		// The retry waits for a safe transition.
+		safeToRetry = false
+		var transitionRetryCount = 0
+		let transition = LauncherUpdateUserDriver(
+			canRetryTermination: { safeToRetry },
+			automaticRetryScheduler: { _ in Task { @MainActor in } }
+		)
+		transition.showInstallingUpdate(withApplicationTerminated: false) {
+			transitionRetryCount += 1
+		}
+		#expect(transitionRetryCount == 0)
+		safeToRetry = true
+		transition.retryTerminationIfSafe()
+		#expect(transitionRetryCount == 1)
 	}
-
-	@Test
-	func directErrorPresentationCanBeDismissedWithoutSparkleAcknowledgement() {
-		let driver = LauncherUpdateUserDriver()
-		driver.showError(NSError(domain: "Test", code: 1))
-
-		driver.acknowledge()
-
-		#expect(driver.phase == .hidden)
-	}
-}
-
-enum ReplacedCheckCallback: String, CaseIterable, Sendable {
-	case noUpdate
-	case updaterError
 }

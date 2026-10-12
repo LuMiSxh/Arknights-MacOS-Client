@@ -8,29 +8,20 @@ import Testing
 
 @MainActor
 struct LauncherACEWarningTests {
-	@Test(arguments: [
-		(GameRegion.china, false, true),
-		(GameRegion.chinaBilibili, false, true),
-		(GameRegion.taiwan, false, true),
-		(GameRegion.china, true, false),
-		(GameRegion.global, false, false),
-		(GameRegion.japan, false, false),
-	])
-	func launchWarningPolicyIsLimitedToUnacknowledgedACEClients(
-		region: GameRegion,
-		acknowledged: Bool,
-		expected: Bool
-	) {
-		#expect(
-			LauncherViewModel.shouldPresentACEWarning(
-				for: region,
-				acknowledged: acknowledged
-			) == expected
-		)
-	}
-
 	@Test
 	func firstACEClientLaunchRequiresConfirmationAndRecordsAcknowledgement() async {
+		for (region, acknowledged, expected) in [
+			(GameRegion.china, false, true),
+			(.chinaBilibili, false, true),
+			(.taiwan, false, true),
+			(.china, true, false),
+			(.global, false, false),
+			(.japan, false, false),
+		] {
+			#expect(
+				LauncherViewModel.shouldPresentACEWarning(for: region, acknowledged: acknowledged)
+					== expected)
+		}
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
 		await api.waitForBrandingRequest()

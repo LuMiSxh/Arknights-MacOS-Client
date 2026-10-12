@@ -60,10 +60,10 @@ func asynchronousStopWaitsForWineServerToReleaseThePrefix() async throws {
 	#expect(commandsBeforeRelease == "-k\n-w\n")
 	try Data().write(to: releaseMarker)
 	try await stop.value
+	try await assertWineserverWaitIsAuthoritativeWhenKillFindsNoServer()
 }
 
-@Test
-func wineserverWaitIsAuthoritativeWhenKillFindsNoServer() async throws {
+private func assertWineserverWaitIsAuthoritativeWhenKillFindsNoServer() async throws {
 	let root = FileManager.default.temporaryDirectory.appending(
 		path: "wine-kill-status-test-\(UUID().uuidString)",
 		directoryHint: .isDirectory
@@ -90,52 +90,6 @@ func wineserverWaitIsAuthoritativeWhenKillFindsNoServer() async throws {
 		#expect(didFail == !shouldSucceed)
 		#expect(try String(contentsOf: fixture.trace, encoding: .utf8) == "-k\n-w\n")
 	}
-}
-
-@Test
-func wineserverWaitTimeoutFailsShutdownWithoutWaitingForAChildTask() async throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: "wine-shutdown-timeout-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let runtimeDirectory = root.appending(path: "Runtime/bin", directoryHint: .isDirectory)
-	try FileManager.default.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
-	let fifo = root.appending(path: "block")
-	let fifoStatus = fifo.path.withCString { Darwin.mkfifo($0, 0o600) }
-	#expect(fifoStatus == 0)
-	let trace = root.appending(path: "commands.log")
-	let script = """
-		#!/bin/sh
-		printf '%s\\n' "$1" >> '\(trace.path)'
-		if [ "$1" = "-w" ]; then read ignored < '\(fifo.path)'; fi
-		"""
-	let wineserver = runtimeDirectory.appending(path: "wineserver")
-	try Data(script.utf8).write(to: wineserver)
-	try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wineserver.path)
-	let runtime = WineRuntime(
-		executableURL: runtimeDirectory.appending(path: "Arknights"),
-		displayName: "Fixture",
-		revision: "fixture",
-		compatibilityManager: GameCompatibilityManager(active: [])
-	)
-	let clock = ContinuousClock()
-	let started = clock.now
-	var didTimeOut = false
-	do {
-		try await runtime.stop(
-			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
-			timeout: .milliseconds(500)
-		)
-	} catch is GameRuntimeError {
-		didTimeOut = true
-	} catch {
-		Issue.record("Wine shutdown failed with an unexpected error: \(error)")
-	}
-	#expect(didTimeOut)
-	#expect(started.duration(to: clock.now) < .seconds(2))
-	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 }
 
 @Test

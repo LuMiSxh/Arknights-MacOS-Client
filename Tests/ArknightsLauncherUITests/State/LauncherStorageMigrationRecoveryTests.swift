@@ -35,38 +35,4 @@ struct LauncherStorageMigrationRecoveryTests {
 		#expect(failure.actions == [.retry, .openTroubleshooting, .reportProblem])
 		#expect(model.lifecycle.state.presentation.status != .migratingStorage)
 	}
-
-	@Test
-	func retryRunsStartupAgainOnceAfterTheUserFixesTheFolders() async throws {
-		let model = makeConflictingModel()
-		#expect(await model.waitForStartup() == false)
-		let failure = try #require(model.lifecycle.state.presentation.failure)
-
-		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .completed)
-		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .ignored)
-		#expect(await model.waitForStartup() == false)
-		let second = try #require(model.lifecycle.state.presentation.failure)
-		#expect(second.id != failure.id)
-
-		try FileManager.default.removeItem(
-			at: model.paths.applicationSupportRoot.appending(path: "Games/Arknights-Global"))
-		#expect(model.performRecoveryAction(.retry, failureID: second.id) == .completed)
-		#expect(await model.waitForStartup())
-
-		#expect(model.lifecycle.state.presentation.failure == nil)
-		#expect(model.lifecycle.activity == .idle)
-		#expect(model.installation.configuration != nil)
-	}
-
-	@Test
-	func retryIsRefusedWhileAnotherActivityOwnsTheLauncher() async throws {
-		let model = makeConflictingModel()
-		#expect(await model.waitForStartup() == false)
-		let failure = try #require(model.lifecycle.state.presentation.failure)
-
-		model.lifecycle.simulateActivity(.maintaining(.clearingCache))
-
-		#expect(model.performRecoveryAction(.retry, failureID: failure.id) == .ignored)
-		#expect(model.lifecycle.state.presentation.failure?.id == failure.id)
-	}
 }

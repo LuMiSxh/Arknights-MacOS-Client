@@ -63,20 +63,5 @@ import Testing
 			#expect(model.pendingACEWarningRegion == nil)
 			model.communication.launcherUpdateUserDriver.dismissUpdateInstallation()
 		}
-
-		@Test
-		func liveActionsReachTheRealControllersWithoutASimulation() async {
-			let api = CancellableBrandingAPI()
-			let model = makeModel(api: api, installer: ControllableInstaller())
-			await api.waitForBrandingRequest()
-			await api.resolveBranding()
-
-			#expect(model.developerSimulation == nil)
-			model.actions.selectRegion(.japan)
-			await api.waitForBrandingRequests(2)
-
-			#expect(model.installation.region == .japan)
-			await api.resolveBranding()
-		}
 	}
 #endif

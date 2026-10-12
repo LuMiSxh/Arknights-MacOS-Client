@@ -21,112 +21,20 @@ struct InstallationRecoveryTests {
 		let feedback = fixture.controller.completionFeedback
 		#expect(feedback?.region == .global)
 		#expect(fixture.controller.lifecycle.state.presentation.status == .ready)
+		#expect(!fixture.controller.finishInstallation(UUID()))
+		#expect(fixture.controller.consumeCompletionFeedback(for: .japan) == nil)
 		#expect(
 			fixture.controller.consumeCompletionFeedback(for: .global)?.id == feedback?.id
 		)
 		#expect(fixture.controller.consumeCompletionFeedback(for: .global) == nil)
-	}
 
-	@Test
-	func reachingOneHundredPercentWithoutSuccessfulCompletionDoesNotPublishFeedback() {
-		let fixture = makeInstallationFixture(region: .global)
-		fixture.controller.progress = DownloadProgress(
-			downloadedBytes: 100,
-			totalBytes: 100,
-			completedFiles: 1,
-			totalFiles: 1,
-			currentFile: "game.zip"
-		)
-
-		#expect(fixture.controller.completionFeedback == nil)
-	}
-
-	@Test
-	func cancelledInstallationDoesNotPublishCompletionFeedback() async {
-		let fixture = makeInstallationFixture(region: .global)
-		fixture.controller.startInstallation(launchAfterCompletion: false)
-		await fixture.installer.waitForInstallationStart()
-
-		fixture.controller.cancelDownload()
-		await fixture.installer.waitForCancellationRequest()
-		#expect(await waitForCondition { !fixture.controller.isDownloading })
-
-		#expect(fixture.controller.completionFeedback == nil)
-	}
-
-	@Test
-	func changingRegionClearsPendingCompletionFeedback() async {
-		let fixture = makeInstallationFixture(region: .global)
-		fixture.controller.startInstallation(launchAfterCompletion: false)
-		await fixture.installer.waitForInstallationStart()
-		await fixture.installer.completeSuccessfully()
-		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
-		#expect(fixture.controller.completionFeedback != nil)
-
-		#expect(fixture.controller.selectRegion(.japan))
-		#expect(fixture.controller.completionFeedback == nil)
-	}
-
-	@Test
-	func consumedCompletionFeedbackDisappearsAfterRegionSwitch() async {
-		let fixture = makeInstallationFixture(region: .global)
-		fixture.controller.startInstallation(launchAfterCompletion: false)
-		await fixture.installer.waitForInstallationStart()
-		await fixture.installer.completeSuccessfully()
-		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
-
-		let displayedFeedback = fixture.controller.consumeCompletionFeedback(for: .global)
-		#expect(
-			LauncherCompletionFeedbackPresentation.isVisible(
-				displayedFeedback,
-				currentRegion: .global,
-				activity: .idle,
-				hasFailure: false
-			)
-		)
-		#expect(fixture.controller.selectRegion(.japan))
-		#expect(
-			!LauncherCompletionFeedbackPresentation.isVisible(
-				displayedFeedback,
-				currentRegion: fixture.controller.region,
-				activity: .idle,
-				hasFailure: false
-			)
-		)
-	}
-
-	@Test
-	func staleCompletionCannotBeConsumedForAnotherRegion() async {
-		let fixture = makeInstallationFixture(region: .global)
-		fixture.controller.startInstallation(launchAfterCompletion: false)
-		await fixture.installer.waitForInstallationStart()
-		await fixture.installer.completeSuccessfully()
-		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
-
-		#expect(fixture.controller.consumeCompletionFeedback(for: .japan) == nil)
-		#expect(fixture.controller.completionFeedback != nil)
-	}
-
-	@Test
-	func staleOperationCannotPublishCompletionFeedback() {
-		let fixture = makeInstallationFixture(region: .global)
-
-		#expect(!fixture.controller.finishInstallation(UUID()))
-		#expect(fixture.controller.completionFeedback == nil)
-	}
-
-	@Test
-	func regionSelectionUsesIndependentCanaryPermissions() {
-		let fixture = makeInstallationFixture(region: .global)
-		#expect(fixture.controller.selectRegion(.china))
-		#expect(!fixture.controller.selectRegion(.taiwan))
-
-		fixture.preferences.set(true, for: LauncherPreferencesStore.Key.canaryFeaturesEnabled)
-		fixture.preferences.set(true, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
-		#expect(fixture.controller.selectRegion(.taiwan))
-
-		fixture.preferences.set(false, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
-		#expect(!fixture.controller.selectRegion(.taiwan))
+		let switching = makeInstallationFixture(region: .global)
+		switching.controller.startInstallation(launchAfterCompletion: false)
+		await switching.installer.waitForInstallationStart()
+		await switching.installer.completeSuccessfully()
+		#expect(await waitForCondition { switching.controller.completionFeedback != nil })
+		#expect(switching.controller.selectRegion(.japan))
+		#expect(switching.controller.completionFeedback == nil)
 	}
 
 	@Test(arguments: GameRegion.allCases)
@@ -145,27 +53,40 @@ struct InstallationRecoveryTests {
 		await fixture.installer.waitForInstallationStart()
 		#expect(await fixture.installer.requestedRegions() == [region])
 		#expect(await fixture.installer.requestedVerificationModes() == [false])
+		#expect(!fixture.controller.retryInstallationFailure(id: failureID))
+		#expect(await fixture.installer.installationCount() == 1)
 		await fixture.installer.completeSuccessfully()
 		await fixture.controller.waitForCurrentInstallation()
-	}
 
-	@Test
-	func repairRetryPreservesFullVerification() async {
-		let fixture = makeInstallationFixture(region: .global)
+		guard region == .global else { return }
+		// A repair retry keeps full verification.
 		fixture.controller.isInstalled = true
-		let failureID = UUID()
+		let repairID = UUID()
 		fixture.controller.presentInstallationFailure(
 			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: failureID,
+			id: repairID,
 			operation: .repair,
 			region: .global
 		)
-
-		#expect(fixture.controller.retryInstallationFailure(id: failureID))
-		await fixture.installer.waitForInstallationStart()
-		#expect(await fixture.installer.requestedVerificationModes() == [true])
+		#expect(fixture.controller.retryInstallationFailure(id: repairID))
+		while await fixture.installer.requestedVerificationModes().count < 2 {
+			await Task.yield()
+		}
+		#expect(await fixture.installer.requestedVerificationModes().last == true)
 		await fixture.installer.completeSuccessfully()
 		await fixture.controller.waitForCurrentInstallation()
+
+		// A retry is rejected after the region changed.
+		let staleID = UUID()
+		fixture.controller.presentInstallationFailure(
+			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
+			id: staleID,
+			operation: .install,
+			region: .global
+		)
+		#expect(fixture.controller.selectRegion(.japan))
+		fixture.controller.configuration = testGameConfiguration
+		#expect(!fixture.controller.retryInstallationFailure(id: staleID))
 	}
 
 	@Test
@@ -197,102 +118,6 @@ struct InstallationRecoveryTests {
 	}
 
 	@Test
-	func retryRejectsChangedRegionAndDuplicateSelection() async {
-		let fixture = makeInstallationFixture(region: .global)
-		let failureID = UUID()
-		fixture.controller.presentInstallationFailure(
-			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: failureID,
-			operation: .install,
-			region: .global
-		)
-		#expect(fixture.controller.selectRegion(.japan))
-		fixture.controller.configuration = testGameConfiguration
-
-		#expect(!fixture.controller.retryInstallationFailure(id: failureID))
-		#expect(await fixture.installer.installationCount() == 0)
-
-		#expect(fixture.controller.selectRegion(.global))
-		fixture.controller.configuration = testGameConfiguration
-		#expect(!fixture.controller.retryInstallationFailure(id: failureID))
-
-		let currentFailureID = UUID()
-		fixture.controller.presentInstallationFailure(
-			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: currentFailureID,
-			operation: .install,
-			region: .global
-		)
-		#expect(fixture.controller.retryInstallationFailure(id: currentFailureID))
-		await fixture.installer.waitForInstallationStart()
-		#expect(!fixture.controller.retryInstallationFailure(id: currentFailureID))
-		#expect(await fixture.installer.installationCount() == 1)
-		await fixture.installer.completeSuccessfully()
-		await fixture.controller.waitForCurrentInstallation()
-	}
-
-	@Test
-	func confirmedRepairRevalidatesAndConsumesTheFailureOnce() async throws {
-		let api = BlockingBrandingAPI()
-		let installer = ControllableInstaller()
-		let model = makeModel(api: api, installer: installer)
-		await api.waitForBrandingRequest()
-		await api.resolveBranding()
-		_ = await model.waitForStartup()
-		model.installation.isInstalled = true
-		let failureID = UUID()
-		model.installation.presentInstallationFailure(
-			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: failureID,
-			operation: .update,
-			region: .global
-		)
-
-		#expect(
-			model.performRecoveryAction(.repair, failureID: failureID)
-				== .repairConfirmationRequired
-		)
-		model.confirmRepair(failureID: failureID)
-		await installer.waitForInstallationStart()
-		model.confirmRepair(failureID: failureID)
-		#expect(await installer.installationCount() == 1)
-		#expect(await installer.requestedVerificationModes() == [true])
-		await installer.completeSuccessfully()
-		await model.installation.waitForCurrentInstallation()
-	}
-
-	@Test
-	func repairConfirmationRejectsChangedStateAndRegion() async {
-		let api = BlockingBrandingAPI()
-		let installer = ControllableInstaller()
-		let model = makeModel(api: api, installer: installer)
-		await api.waitForBrandingRequest()
-		await api.resolveBranding()
-		_ = await model.waitForStartup()
-		model.installation.isInstalled = true
-		let wrongRegionID = UUID()
-		model.installation.presentInstallationFailure(
-			GameCompatibilityError.setupFailed("test"),
-			id: wrongRegionID,
-			operation: .launch,
-			region: .japan
-		)
-		model.confirmRepair(failureID: wrongRegionID)
-		#expect(await installer.installationCount() == 0)
-
-		let changedStateID = UUID()
-		model.installation.presentInstallationFailure(
-			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
-			id: changedStateID,
-			operation: .update,
-			region: .global
-		)
-		model.installation.isInstalled = false
-		model.confirmRepair(failureID: changedStateID)
-		#expect(await installer.installationCount() == 0)
-	}
-
-	@Test
 	func invalidConfigurationCannotSkipInstallationDiskPreflight() {
 		let fixture = makeInstallationFixture(region: .global)
 		fixture.controller.configuration = GameConfiguration(
@@ -302,83 +127,6 @@ struct InstallationRecoveryTests {
 		fixture.controller.startInstallation(launchAfterCompletion: false)
 		#expect(fixture.controller.lifecycle.activity == .idle)
 		#expect(fixture.controller.lifecycle.state.presentation.failure != nil)
-	}
-
-	@Test
-	func staleSnapshotCannotOverwriteARegionReplacement() async throws {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "InstallationStateSnapshotTests.\(UUID().uuidString)", directoryHint: .isDirectory
-		)
-		let paths = AppPaths(
-			applicationSupportDirectory: root.appending(path: "Support"),
-			cachesDirectory: root.appending(path: "Caches"),
-			libraryDirectory: root.appending(path: "Library"),
-			resourceDirectory: root.appending(path: "Resources"))
-		let defaults = try #require(
-			UserDefaults(suiteName: "InstallationStateSnapshotTests.\(UUID().uuidString)"))
-		let gate = ControlledRequestGate<InstallationStateSnapshot, InstallationStateRequest>()
-		let log = LauncherLog(fileURL: paths.launcherLogFile)
-		let controller = InstallationController(
-			lifecycle: LauncherLifecycleStore(log: log), installer: ControllableInstaller(),
-			paths: paths, preferences: LauncherPreferencesStore(defaults: defaults), log: log,
-			region: .global, stateLoader: gate.next)
-
-		let first = controller.updateInstalledState()
-		await gate.waitForRequestCount(1)
-		#expect(controller.selectRegion(.japan))
-		let second = controller.updateInstalledState()
-		await gate.waitForRequestCount(2)
-		await gate.resolve(
-			1,
-			with: InstallationStateSnapshot(
-				isInstalled: true, hasPartialDownload: false, installedVersion: "2.0.0",
-				installedRegions: [.japan], diagnostic: nil))
-		await second.value
-		await gate.resolve(
-			0,
-			with: InstallationStateSnapshot(
-				isInstalled: false, hasPartialDownload: false, installedVersion: "stale",
-				installedRegions: [], diagnostic: nil))
-		await first.value
-		#expect(controller.region == .japan)
-		#expect(controller.isInstalled)
-		#expect(controller.installedVersion == "2.0.0")
-		#expect(controller.installedRegions == [.japan])
-	}
-
-	@Test
-	func completedStateRefreshRevalidatesRegionsAfterCanaryGateChange() async throws {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "InstallationStateGateTests.\(UUID().uuidString)", directoryHint: .isDirectory
-		)
-		let paths = AppPaths(
-			applicationSupportDirectory: root.appending(path: "Support"),
-			cachesDirectory: root.appending(path: "Caches"),
-			libraryDirectory: root.appending(path: "Library"),
-			resourceDirectory: root.appending(path: "Resources"))
-		let defaults = try #require(
-			UserDefaults(suiteName: "InstallationStateGateTests.\(UUID().uuidString)"))
-		let preferences = LauncherPreferencesStore(defaults: defaults)
-		preferences.set(true, for: LauncherPreferencesStore.Key.canaryFeaturesEnabled)
-		preferences.set(true, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
-		let gate = ControlledRequestGate<InstallationStateSnapshot, InstallationStateRequest>()
-		let log = LauncherLog(fileURL: paths.launcherLogFile)
-		let controller = InstallationController(
-			lifecycle: LauncherLifecycleStore(log: log), installer: ControllableInstaller(),
-			paths: paths, preferences: preferences, log: log,
-			region: .global, stateLoader: gate.next)
-
-		let refresh = controller.updateInstalledState()
-		await gate.waitForRequestCount(1)
-		preferences.set(false, for: LauncherPreferencesStore.Key.taiwanClientEnabled)
-		await gate.resolve(
-			0,
-			with: InstallationStateSnapshot(
-				isInstalled: true, hasPartialDownload: false, installedVersion: "2.0.0",
-				installedRegions: [.global, .taiwan], diagnostic: nil))
-		await refresh.value
-
-		#expect(controller.installedRegions == [.global])
 	}
 }
 

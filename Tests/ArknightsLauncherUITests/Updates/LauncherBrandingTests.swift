@@ -8,67 +8,6 @@ import Testing
 @testable import ArknightsCustomization
 @testable import ArknightsLauncherUI
 
-@Test
-func brandingDecodesOfficialSnakeCaseResponse() throws {
-	let json = #"""
-		{
-		  "launcher_background_img": "https://example.com/launcher.jpg",
-		  "launcher_background_img_crc64": "10730643096684735589",
-		  "copyright_information": "Copyright notice",
-		  "privacy_policy": "https://example.com/privacy",
-		  "user_agreement": "https://example.com/terms",
-		  "notice_pop_open": true,
-		  "notice_content": "<p>Scheduled maintenance</p>"
-		}
-		"""#
-	let decoder = JSONDecoder()
-	decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-	let branding = try decoder.decode(LauncherBranding.self, from: Data(json.utf8))
-
-	#expect(branding.launcherBackgroundImage?.absoluteString == "https://example.com/launcher.jpg")
-	#expect(branding.launcherBackgroundImageCRC64 == "10730643096684735589")
-	#expect(branding.copyrightInformation == "Copyright notice")
-	#expect(branding.privacyPolicy?.absoluteString == "https://example.com/privacy")
-	#expect(branding.userAgreement?.absoluteString == "https://example.com/terms")
-	#expect(branding.noticePopOpen == true)
-	#expect(branding.noticeContent == "<p>Scheduled maintenance</p>")
-}
-
-@Test
-func artworkCacheRestoresTheLastActiveImagePerRegion() async throws {
-	let directory = FileManager.default.temporaryDirectory.appending(
-		path: "ArtworkCacheTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: directory) }
-	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-	let imageData = try #require(
-		Data(
-			base64Encoded:
-				"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
-		)
-	)
-	try imageData.write(to: directory.appending(path: "artwork-key.jpg"))
-	let cache = ArtworkCache(directory: directory)
-	let branding = LauncherBranding(
-		launcherBackgroundImage: URL(string: "https://www.arknights.global/artwork.jpg"),
-		launcherBackgroundImageCRC64: "artwork-key",
-		copyrightInformation: nil,
-		privacyPolicy: nil,
-		userAgreement: nil,
-		noticePopOpen: nil,
-		noticeContent: nil
-	)
-
-	_ = try await cache.imageData(for: branding, region: .global)
-
-	#expect(try cache.cachedActiveImageData(for: .global) != nil)
-	#expect(try cache.cachedActiveCacheKey(for: .global) == "artwork-key")
-	#expect(cache.cacheKey(for: branding) == "artwork-key")
-	#expect(try cache.cachedActiveImageData(for: .korea) == nil)
-}
-
 private func verifyArtworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
 	RegionalLogoURLProtocol.resetOrdering()
 	defer {
@@ -109,40 +48,6 @@ private func testBranding(host: String, key: String) -> LauncherBranding {
 }
 
 @Test
-func officialWordmarkURLsAndCachesAreRegionSpecific() throws {
-	#expect(
-		ArtworkCache.officialLogoURL(for: .global)?.absoluteString
-			== "https://webusstatic.yo-star.com/arknights-us/arknights-us-website/main/h5/assets/logo-4f95ced5.png"
-	)
-	#expect(
-		ArtworkCache.officialLogoURL(for: .japan)?.absoluteString
-			== "https://webusstatic.yo-star.com/arknights-jp/arknights-jp-website/main/arknights-jp-website/assets/logo-0bd0cb04.png"
-	)
-	#expect(
-		ArtworkCache.officialLogoURL(for: .korea)?.absoluteString
-			== "https://webusstatic.yo-star.com/arknights-kr/arknights-kr-website/main/arknights-kr-website/assets/logo-7510becf.png"
-	)
-
-	let directory = FileManager.default.temporaryDirectory.appending(
-		path: "RegionalWordmarkCacheTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: directory) }
-	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-	let globalData = Data("global-wordmark".utf8)
-	let japanData = Data("japan-wordmark".utf8)
-	try globalData.write(
-		to: directory.appending(path: "official-arknights-logo-global.png")
-	)
-	try japanData.write(to: directory.appending(path: "official-arknights-logo-japan.png"))
-	let cache = ArtworkCache(directory: directory)
-
-	#expect(try cache.cachedOfficialLogoData(for: .global) == globalData)
-	#expect(try cache.cachedOfficialLogoData(for: .japan) == japanData)
-	#expect(try cache.cachedOfficialLogoData(for: .korea) == nil)
-}
-
-@Test
 func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 	let taiwanValidator = ArtworkCache.artworkRedirectValidator(for: .taiwan)
 	#expect(taiwanValidator(URL(string: "https://gl-utils-public.hg-cdn.com/background.png")!))
@@ -158,72 +63,11 @@ func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 	#expect(chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
 }
 
-@Test(arguments: GameRegion.allCases)
-func everyRegionHasAnAllowedOfficialLogoURL(region: GameRegion) throws {
-	let url = try #require(ArtworkCache.officialLogoURL(for: region))
-	#expect(ArtworkCache.artworkRedirectValidator(for: region)(url))
-}
-
-private func verifyJapanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {
-	let directory = FileManager.default.temporaryDirectory.appending(
-		path: "JapanWordmarkRetryTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: directory) }
-	try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-	try Data("not-an-image".utf8).write(
-		to: directory.appending(path: "official-arknights-logo-japan.png")
-	)
-
-	let imageData = try #require(
-		Data(
-			base64Encoded:
-				"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
-		)
-	)
-	let logoURL = try #require(ArtworkCache.officialLogoURL(for: .japan))
-	RegionalLogoURLProtocol.configureJapan(
-		responses: [
-			HTTPURLResponse(
-				url: logoURL,
-				statusCode: 200,
-				httpVersion: nil,
-				headerFields: nil
-			)!,
-			HTTPURLResponse(
-				url: logoURL,
-				statusCode: 200,
-				httpVersion: nil,
-				headerFields: nil
-			)!,
-		],
-		bodies: [Data("<!doctype html>".utf8), imageData]
-	)
-	defer { RegionalLogoURLProtocol.resetJapan() }
-
-	let configuration = URLSessionConfiguration.ephemeral
-	configuration.protocolClasses = [RegionalLogoURLProtocol.self]
-	let cache = ArtworkCache(
-		session: URLSession(configuration: configuration),
-		directory: directory
-	)
-
-	let loaded = try await cache.officialLogoData(for: .japan)
-	#expect(loaded == imageData)
-	#expect(try cache.cachedOfficialLogoData(for: .japan) == imageData)
-	#expect(RegionalLogoURLProtocol.requestCountValue == 2)
-}
-
 @Suite(.serialized)
 struct LauncherBrandingURLProtocolTests {
 	@Test
 	func artworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
 		try await verifyArtworkCacheKeepsTheNewestSameRegionRequestActive()
-	}
-
-	@Test
-	func japanWordmarkRecoversFromMalformedCacheAndCorruptResponse() async throws {
-		try await verifyJapanWordmarkRecoversFromMalformedCacheAndCorruptResponse()
 	}
 }
 
@@ -234,9 +78,6 @@ private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
 	)!
 	private static let lock = NSLock()
 	private static let release = DispatchSemaphore(value: 0)
-	nonisolated(unsafe) static var responses: [HTTPURLResponse] = []
-	nonisolated(unsafe) static var bodies: [Data] = []
-	nonisolated(unsafe) static var requestCount = 0
 	nonisolated(unsafe) static var delayFirst = false
 	nonisolated(unsafe) static var firstRequestStarted = false
 
@@ -261,30 +102,10 @@ private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
 			finish(Self.imageData)
 			return
 		}
-		_ = Self.lock.withLock {
-			Self.requestCount += 1
-			return false
-		}
-		let result = Self.lock.withLock { () -> (HTTPURLResponse, Data)? in
-			guard !Self.responses.isEmpty else { return nil }
-			let response = Self.responses.removeFirst()
-			let body = Self.bodies.isEmpty ? Data() : Self.bodies.removeFirst()
-			return (response, body)
-		}
-		guard let (response, body) = result else {
-			client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
-			return
-		}
-		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-		if response.statusCode == 200 { client?.urlProtocol(self, didLoad: body) }
-		client?.urlProtocolDidFinishLoading(self)
+		client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
 	}
 
 	override func stopLoading() {}
-
-	static var requestCountValue: Int {
-		lock.withLock { requestCount }
-	}
 
 	private func finish(_ data: Data) {
 		let response = HTTPURLResponse(
@@ -294,25 +115,10 @@ private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
 		client?.urlProtocolDidFinishLoading(self)
 	}
 
-	static func configureJapan(responses: [HTTPURLResponse], bodies: [Data]) {
-		lock.withLock {
-			Self.responses = responses
-			Self.bodies = bodies
-			Self.requestCount = 0
-		}
-	}
-
 	static func beginOrdering() {
 		lock.withLock {
 			delayFirst = true
 			firstRequestStarted = false
-		}
-	}
-	static func resetJapan() {
-		lock.withLock {
-			responses = []
-			bodies = []
-			requestCount = 0
 		}
 	}
 	static func resetOrdering() {

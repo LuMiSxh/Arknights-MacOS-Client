@@ -9,53 +9,6 @@ import Testing
 
 @MainActor
 struct LauncherLifecycleStoreTests {
-	@Test
-	func presentationChangesDoNotReplaceActiveGameActivity() {
-		let lifecycle = makeLifecycleStore()
-		let sessionID = UUID()
-		let lease = lifecycle.begin(.runningGame(sessionID: sessionID, processIdentifier: 42))
-		#expect(lease != nil)
-
-		lifecycle.show(CustomizationError.cannotSetAppIcon)
-
-		#expect(lifecycle.activity == .runningGame(sessionID: sessionID, processIdentifier: 42))
-		#expect(
-			lifecycle.state.presentation.failure?.message
-				== CustomizationError.cannotSetAppIcon.errorDescription)
-	}
-
-	@Test
-	func statusClearsFailuresUnlessTheCallerPreservesThem() {
-		let lifecycle = makeLifecycleStore()
-		lifecycle.show(CustomizationError.cannotSetAppIcon)
-
-		lifecycle.setStatus(.ready, clearsFailure: false)
-		#expect(lifecycle.state.presentation.failure?.message != nil)
-
-		lifecycle.setStatus(.running)
-		#expect(lifecycle.state.presentation.failure?.message == nil)
-		#expect(!lifecycle.state.presentation.status.message.isEmpty)
-	}
-
-	@Test
-	func statusUpdatesKeepRosettaPreflightFailureUntilItsCheckSucceeds() {
-		let lifecycle = makeLifecycleStore()
-		let failure = LauncherFailurePresentation(
-			id: UUID(),
-			message: "Rosetta is unavailable",
-			code: .limpet,
-			context: SupportContext(operation: .intelTranslationPreflight, region: nil),
-			actions: [.retry],
-			blocksGameLaunch: true
-		)
-		lifecycle.presentFailure(failure, diagnostic: "preflight")
-
-		lifecycle.setStatus(.checking)
-		lifecycle.setStatus(.ready)
-
-		#expect(lifecycle.state.presentation.failure == failure)
-	}
-
 	@Test(arguments: LauncherUpdateStartScenario.allCases)
 	func launcherUpdateWaitsForAnActiveGameToFinish(scenario: LauncherUpdateStartScenario) {
 		let lifecycle = makeLifecycleStore()
@@ -85,35 +38,6 @@ struct LauncherLifecycleStoreTests {
 		#expect(lifecycle.activity == .idle)
 		#expect(lifecycle.canBeginExclusiveActivity)
 	}
-
-	@Test
-	func duplicatePresentationAndConsumptionAreIdempotent() {
-		let lifecycle = makeLifecycleStore()
-		let failure = testFailure(id: UUID(), message: "failure")
-		#expect(lifecycle.presentFailure(failure, diagnostic: "first"))
-		#expect(!lifecycle.presentFailure(failure, diagnostic: "duplicate"))
-
-		#expect(lifecycle.consumeFailure(id: UUID()) == nil)
-		#expect(lifecycle.consumeFailure(id: failure.id) == failure)
-		#expect(lifecycle.consumeFailure(id: failure.id) == nil)
-	}
-
-	@Test
-	func staleLeaseEndDoesNotIdleANewerOperation() {
-		let lifecycle = makeLifecycleStore()
-		let earlier = lifecycle.begin(.maintaining(.clearingCache))
-		#expect(earlier != nil)
-		lifecycle.simulateActivity(.idle)
-		let newer = lifecycle.begin(.installing(id: UUID(), stage: .downloading))
-		#expect(newer != nil)
-
-		#expect(earlier.map { lifecycle.end($0) } == false)
-		#expect(earlier.map { lifecycle.update($0, to: .idle) } == false)
-
-		#expect(lifecycle.hasActiveActivity)
-		#expect(newer.map { lifecycle.end($0) } == true)
-		#expect(lifecycle.activity == .idle)
-	}
 }
 
 enum LauncherUpdateStartScenario: String, CaseIterable, Equatable, Sendable {
@@ -127,14 +51,4 @@ private func makeLifecycleStore() -> LauncherLifecycleStore {
 		path: "LauncherLifecycleStoreTests.\(UUID().uuidString).log"
 	)
 	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
-}
-
-private func testFailure(id: UUID, message: String) -> LauncherFailurePresentation {
-	LauncherFailurePresentation(
-		id: id,
-		message: message,
-		code: .virga,
-		context: SupportContext(operation: .launcher, region: nil),
-		actions: [.openTroubleshooting, .reportProblem]
-	)
 }

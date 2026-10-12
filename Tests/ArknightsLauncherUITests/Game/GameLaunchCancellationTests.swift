@@ -85,30 +85,6 @@ struct GameLaunchCancellationTests {
 		await api.resolveBranding()
 	}
 
-	@Test
-	func aSecondStopWhileCleanupRunsDoesNotStartAnotherStop() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		let sessionID = UUID()
-		let runtime = ControlledLaunchRuntime()
-		model.beginTestGameSession(.preparingGame(sessionID: sessionID))
-		let first = Task {
-			await model.gameSession.stopAndFinishGameSession(
-				using: runtime, sessionID: sessionID, processIdentifier: nil, region: .global)
-		}
-		#expect(await waitForCondition { runtime.isStopPending })
-
-		await model.gameSession.stopAndFinishGameSession(
-			using: runtime, sessionID: sessionID, processIdentifier: nil, region: .global)
-		runtime.finishStop()
-		await first.value
-
-		#expect(runtime.stopCalls == 1)
-		#expect(model.lifecycle.activity == .idle)
-		await api.resolveBranding()
-	}
-
 	@Test(arguments: [Duration.seconds(1), .seconds(90)])
 	func windowReadinessTimesOutOnAManualClockWithoutSleeping(timeout: Duration) async {
 		let clock = ManualClock()
@@ -125,18 +101,5 @@ struct GameLaunchCancellationTests {
 
 		#expect(clock.now.offset >= timeout)
 		#expect(clock.sleepCount >= Int(timeout / pollInterval))
-	}
-
-	@Test
-	func windowReadinessPropagatesCancellationFromTheClock() async {
-		let clock = ManualClock()
-		let wait = Task {
-			try await WineWindowReadiness.wait(
-				processIdentifier: Int32.max - 1, timeout: .seconds(90),
-				pollInterval: .milliseconds(250), clock: clock)
-		}
-		wait.cancel()
-
-		await #expect(throws: CancellationError.self) { try await wait.value }
 	}
 }

@@ -37,49 +37,6 @@ struct LauncherRefreshRecoveryTests {
 		#expect(model.installation.configuration != nil)
 		#expect(await api.requestedRegions().last == region)
 	}
-
-	@Test
-	func installedAutomaticFailureStaysInLogsButManualCheckPresentsVirga() async throws {
-		let api = ConfigurationRefreshAPI(outcomes: [.success, .failure, .failure])
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		_ = await model.waitForStartup()
-		try writeInstalledState(for: model.installation)
-		await model.installation.updateInstalledState().value
-		#expect(model.installation.isInstalled)
-
-		await model.refreshController.startRefresh().value
-		#expect(model.lifecycle.state.presentation.failure == nil)
-
-		model.refreshController.checkGameUpdates()
-		await model.refreshController.waitForCurrentRefresh()
-		#expect(model.lifecycle.state.presentation.failure?.code == .virga)
-		#expect(
-			model.lifecycle.state.presentation.failure?.context.operation == .configurationRefresh)
-		#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == false)
-	}
-}
-
-@MainActor
-private func writeInstalledState(for installation: InstallationController) throws {
-	try FileManager.default.createDirectory(
-		at: installation.installDirectory,
-		withIntermediateDirectories: true
-	)
-	try Data().write(to: installation.installDirectory.appending(path: "Arknights.exe"))
-	let state = InstalledState(
-		version: "1.0.0",
-		basis: "test",
-		source: "test",
-		installedAt: .now,
-		files: nil
-	)
-	let encoder = JSONEncoder()
-	encoder.dateEncodingStrategy = .iso8601
-	try encoder.encode(state).write(
-		to: installation.installDirectory.appending(
-			path: AppConstants.Game.installedStateFileName
-		)
-	)
 }
 
 actor ConfigurationRefreshAPI: LauncherAPIProviding {

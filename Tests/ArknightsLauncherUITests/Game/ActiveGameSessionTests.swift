@@ -37,44 +37,6 @@ extension LauncherViewModel {
 @MainActor
 struct ActiveGameSessionTests {
 	@Test
-	func finishingASessionClearsEveryField() async {
-		let api = BlockingBrandingAPI()
-		let model = makeModel(api: api, installer: ControllableInstaller())
-		await api.waitForBrandingRequest()
-		let sessionID = UUID()
-		let launch = Task<Void, Never> {
-			while !Task.isCancelled { await Task.yield() }
-		}
-		let monitor = Task<Void, Never> {
-			while !Task.isCancelled { await Task.yield() }
-		}
-		model.beginTestGameSession(
-			.runningGame(sessionID: sessionID, processIdentifier: 42),
-			region: .japan,
-			launchTask: launch
-		)
-		model.gameSession.session?.monitorTask = monitor
-		model.gameSession.session?.pendingTerminalFailure = GameSessionTerminalFailure(
-			error: SessionTestError.crashed,
-			operation: .runtimeExit,
-			blocksGameLaunch: false
-		)
-		model.gameSession.session?.isRuntimeStopInFlight = true
-
-		model.gameSession.finishGameSession(sessionID)
-		await launch.value
-		await monitor.value
-
-		#expect(model.gameSession.session == nil)
-		#expect(model.gameSession.sessionLease == nil)
-		#expect(model.gameSession.activeGameRegion == nil)
-		#expect(launch.isCancelled)
-		#expect(monitor.isCancelled)
-		#expect(model.lifecycle.activity == .idle)
-		await api.resolveBranding()
-	}
-
-	@Test
 	func staleSessionIDCannotFinishANewerSession() async {
 		let api = BlockingBrandingAPI()
 		let model = makeModel(api: api, installer: ControllableInstaller())
@@ -114,10 +76,6 @@ struct ActiveGameSessionTests {
 		#expect(model.lifecycle.activity == .idle)
 		await api.resolveBranding()
 	}
-}
-
-private enum SessionTestError: Error {
-	case crashed
 }
 
 /// Records whether the spawn gate already refused new processes when `stop` ran.

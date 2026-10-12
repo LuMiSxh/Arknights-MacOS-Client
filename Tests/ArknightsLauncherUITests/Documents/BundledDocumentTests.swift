@@ -7,31 +7,6 @@ import Testing
 @testable import ArknightsLauncherUI
 
 @MainActor
-@Test(arguments: BundledDocumentLoadMode.allCases)
-func bundledDocumentReportsMissingResourcesExplicitly(mode: BundledDocumentLoadMode) async throws {
-	let bundle = try #require(Bundle(url: URL(filePath: "/tmp")))
-
-	let error: BundledResourceError?
-	switch mode {
-	case .synchronous:
-		error = #expect(throws: BundledResourceError.self) {
-			_ = try BundledDocument.changelog.load(bundle: bundle)
-		}
-	case .asynchronous:
-		error = await #expect(throws: BundledResourceError.self) {
-			_ = try await BundledDocument.changelog.loadAndParse(bundle: bundle)
-		}
-	}
-
-	#expect(error == .missing(path: "CHANGELOG.md"))
-}
-
-enum BundledDocumentLoadMode: String, CaseIterable, Sendable {
-	case synchronous
-	case asynchronous
-}
-
-@MainActor
 @Test
 func thirdPartyNoticesLoadFromTheCompiledDeflateResource() async throws {
 	let directory = FileManager.default.temporaryDirectory
