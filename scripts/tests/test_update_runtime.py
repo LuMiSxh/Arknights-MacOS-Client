@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from collections.abc import Callable
 from pathlib import Path
@@ -13,7 +14,7 @@ from lib import licenses, runtime_update
 from lib.common import PROJECT_DIR, ScriptError
 from lib.generated_blocks import apply_blocks
 
-NEW_TAG = "v0.7.0-rc3"
+NEW_TAG = "v99.0.0"
 NEW_WINE_COMMIT = "1" * 40
 NEW_SOURCE_COMMIT = "2" * 40
 FIXTURE_FILES = (
@@ -25,6 +26,11 @@ FIXTURE_FILES = (
 
 def manifest_of(root: Path) -> dict[str, Any]:
     return json.loads((root / "runtime.json").read_text(encoding="utf-8"))
+
+
+def current_tag(root: Path) -> str:
+    url = manifest_of(root)["runtime"]["url"]
+    return re.search(r"/download/(v[^/]+)/", url).group(1)
 
 
 def release_provenance(tag: str, **overrides: str) -> dict[str, Any]:
@@ -142,6 +148,7 @@ def test_manifest_formatting_round_trips() -> None:
 
 
 def test_update_rewrites_manifest_and_blocks(project: Path) -> None:
+    previous_tag = current_tag(project)
     changed = runtime_update.update(project, NEW_TAG, release_fetch())
 
     manifest = manifest_of(project)
@@ -152,7 +159,7 @@ def test_update_rewrites_manifest_and_blocks(project: Path) -> None:
         runtime_update.NOTICES_DOCUMENT,
     ]
     assert manifest["runtime"] == {
-        "name": "Arknights macOS Runtime 0.7.0-rc3",
+        "name": "Arknights macOS Runtime 99.0.0",
         "url": base + archive,
         "sha256": "a" * 64,
     }
@@ -170,7 +177,7 @@ def test_update_rewrites_manifest_and_blocks(project: Path) -> None:
     assert manifest["provenance"]["baseArchiveSha256"] == "c" * 64
     notices = (project / runtime_update.NOTICES_DOCUMENT).read_text(encoding="utf-8")
     assert NEW_TAG in notices
-    assert "v0.7.0-rc2" not in notices
+    assert previous_tag not in notices
     assert f"Wine 11.18, `{NEW_WINE_COMMIT}`" in notices
     assert "Whisky base libraries | v4.7.0," in notices
     runtime_update.check(project)
@@ -198,7 +205,8 @@ def test_second_update_changes_nothing(project: Path) -> None:
 
 def test_repinning_the_current_release_is_a_no_op(project: Path) -> None:
     manifest = manifest_of(project)
-    provenance = release_provenance("v0.7.0-rc2")
+    tag = current_tag(project)
+    provenance = release_provenance(tag)
     lock = provenance["runtimeLock"]["contents"]
     provenance["runtimeArchive"]["sha256"] = manifest["runtime"]["sha256"]
     provenance["correspondingSourceArchive"]["sha256"] = manifest["buildRecipe"][
@@ -221,9 +229,7 @@ def test_repinning_the_current_release_is_a_no_op(project: Path) -> None:
         "url": manifest["provenance"]["baseArchiveUrl"],
     }
 
-    changed = runtime_update.update(
-        project, "v0.7.0-rc2", release_fetch("v0.7.0-rc2", provenance)
-    )
+    changed = runtime_update.update(project, tag, release_fetch(tag, provenance))
 
     assert changed == []
     assert manifest_of(project) == manifest
@@ -366,13 +372,16 @@ def test_license_blocks_ignore_runtime_markers_and_follow_the_pin(
 ) -> None:
     components = licenses.load_client_components(project, [])
     libraries = next(c for c in components if c.runtime_release)
-    assert libraries.name == "Libraries of runtime 0.7.0-rc2"
+    assert (
+        libraries.name
+        == f"Libraries of runtime {current_tag(project).removeprefix('v')}"
+    )
 
     runtime_update.update(project, NEW_TAG, release_fetch())
 
     components = licenses.load_client_components(project, [])
     libraries = next(c for c in components if c.runtime_release)
-    assert libraries.name == "Libraries of runtime 0.7.0-rc3"
+    assert libraries.name == "Libraries of runtime 99.0.0"
     assert libraries.source.endswith(f"/tree/{NEW_TAG}")
     text = "<!-- runtime:begin build -->\nold\n<!-- runtime:end build -->\n"
     assert apply_blocks(text, {}, "licenses") == text

@@ -21,7 +21,7 @@ The app bundles one compact file with these notices. This website publishes the 
 | WineCX / Wine | Wine 11.17, `e0aa380780b73e20fabcfe78fd42713b94929a53` | LGPL-2.1-or-later and bundled third-party terms | [dappermint/winecx commit](https://github.com/dappermint/winecx/tree/e0aa380780b73e20fabcfe78fd42713b94929a53) |
 | DXMT | 0.80-262-ge94c312, `e94c312f5c054263acf261cfa109edf13e757587` | LGPL-2.1-or-later and bundled third-party terms | [3Shain/dxmt commit](https://github.com/3Shain/dxmt/tree/e94c312f5c054263acf261cfa109edf13e757587) |
 | MoltenVK | 1.4.2, `db66022459ffb663aa2b50f6b018bc2e124f5edf` | Apache-2.0 and bundled third-party terms | [KhronosGroup/MoltenVK commit](https://github.com/KhronosGroup/MoltenVK/tree/db66022459ffb663aa2b50f6b018bc2e124f5edf) |
-| Nix libraries | libpng-apng 1.6.46, libunistring 1.3, libffi 39, GMP 6.3.0, Brotli 1.1.0, GnuTLS 3.8.9, zlib 1.3.1, Nettle 3.10.1, libiconv 1.17, bzip2 1.0.8, FreeType 2.13.3, p11-kit 0.25.5, libidn2 2.3.8, gettext 0.22.5, libtasn1 4.20.0 | LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6 | [Runtime v0.7.0-rc2](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc2), Nixpkgs `ac62194c3917d5f474c1a844b6fd6da2db95077d` |
+| Nix libraries | libpng-apng 1.6.46, libunistring 1.3, libffi 39, GMP 6.3.0, Brotli 1.1.0, GnuTLS 3.8.9, zlib 1.3.1, Nettle 3.10.1, libiconv 1.17, bzip2 1.0.8, FreeType 2.13.3, p11-kit 0.25.5, libidn2 2.3.8, gettext 0.22.5, libtasn1 4.20.0 | LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6 | [Runtime v0.7.0-rc3](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc3), Nixpkgs `ac62194c3917d5f474c1a844b6fd6da2db95077d` |
 <!-- runtime:end components -->
 
 The pinned runtime archive has no media stack. It has no Wine Gecko, GStreamer, FFmpeg, or media codec libraries. The `Licenses/` directory and `NOTICE.md` in the archive carry the license texts of every component.
@@ -29,11 +29,11 @@ The pinned runtime archive has no media stack. It has no Wine Gecko, GStreamer, 
 ## Runtime build provenance
 
 <!-- runtime:begin build -->
-The v0.7.0-rc2 runtime was built from the release tag and exact inputs below. The base archive and Nixpkgs revision are build inputs, not independently selected runtime components. They remain part of the release's corresponding-source record.
+The v0.7.0-rc3 runtime was built from the release tag and exact inputs below. The base archive and Nixpkgs revision are build inputs, not independently selected runtime components. They remain part of the release's corresponding-source record.
 
 | Build input | Version or revision | Exact provenance source |
 | --- | --- | --- |
-| Runtime build | Arknights macOS Runtime v0.7.0-rc2 | [Runtime v0.7.0-rc2 tag](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc2), [release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.7.0-rc2) |
+| Runtime build | Arknights macOS Runtime v0.7.0-rc3 | [Runtime v0.7.0-rc3 tag](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.7.0-rc3), [release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.7.0-rc3) |
 | Whisky base libraries | v4.7.3, `a4b5d63493f80698cce5cad8e7212d9a51c8292037b00c478f4652636fcfd331` archive SHA-256 | [Whisky v4.7.3 release](https://github.com/dappermint/Whisky/releases/tag/v4.7.3) |
 | winecx-gptk base recipe | `0bf3eabc2f0d95154282eb86b11205cbbaae6c65` | [winecx-gptk commit](https://github.com/dappermint/winecx-gptk/tree/0bf3eabc2f0d95154282eb86b11205cbbaae6c65) |
 | Nixpkgs | `ac62194c3917d5f474c1a844b6fd6da2db95077d` | [Nixpkgs commit](https://github.com/NixOS/nixpkgs/tree/ac62194c3917d5f474c1a844b6fd6da2db95077d) |
