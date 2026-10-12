@@ -23,7 +23,7 @@ struct GameInstallerReuseTests {
 			await recorder.record($0)
 		}
 
-		#expect(ReuseURLProtocol.requestCount == 0)
+		#expect(world.fixture.route.requestCount == 0)
 		#expect(result.downloadedFiles == 1)
 		#expect(try Data(contentsOf: world.destination) == Self.body)
 		#expect(try FileSnapshot(donor.file) == before)
@@ -91,7 +91,7 @@ struct GameInstallerReuseTests {
 
 			_ = try await world.install(donors: donors)
 
-			#expect(ReuseURLProtocol.requestCount == 1, "\(scenario)")
+			#expect(world.fixture.route.requestCount == 1, "\(scenario)")
 			#expect(try Data(contentsOf: world.destination) == Self.body, "\(scenario)")
 			#expect(try world.stagingEntries().isEmpty, "\(scenario)")
 			for file in files { _ = chmod(file.path, 0o644) }
@@ -106,7 +106,7 @@ struct GameInstallerReuseTests {
 			name: "wrong", body: Data(repeating: 1, count: Self.body.count))
 		let right = try world.makeDonor(name: "right", body: Self.body)
 		_ = try await world.install(donors: [wrong.directory, right.directory])
-		#expect(ReuseURLProtocol.requestCount == 0)
+		#expect(world.fixture.route.requestCount == 0)
 		#expect(try Data(contentsOf: world.destination) == Self.body)
 
 		// A region never reuses its own directory, even through an alias.
@@ -155,24 +155,6 @@ private struct FileSnapshot: Equatable {
 	}
 }
 
-final class ReuseURLProtocol: URLProtocol, @unchecked Sendable {
-	nonisolated(unsafe) static var requestCount = 0
-	nonisolated(unsafe) static var body = Data()
-
-	override class func canInit(with request: URLRequest) -> Bool { true }
-	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-	override func startLoading() {
-		Self.requestCount += 1
-		let response = GameInstallerStreamingTests.response(url: request.url!, status: 200)
-		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-		client?.urlProtocol(self, didLoad: Self.body)
-		client?.urlProtocolDidFinishLoading(self)
-	}
-
-	override func stopLoading() {}
-}
-
 private struct ReuseWorld {
 	let fixture: InstallerFixture
 	let root: URL
@@ -181,13 +163,13 @@ private struct ReuseWorld {
 
 	init() throws {
 		let body = Data((0..<4_096).map { UInt8($0 % 251) })
-		fixture = try GameInstallerStreamingTests.makeFixture(
-			body: body, protocolClass: ReuseURLProtocol.self)
+		fixture = try GameInstallerStreamingTests.makeFixture(body: body)
+		fixture.route.handler = { request in
+			(GameInstallerStreamingTests.response(url: request.url!, status: 200), body)
+		}
 		root = FileManager.default.temporaryDirectory.appending(
 			path: "GameInstallerReuseTests-\(UUID().uuidString)", directoryHint: .isDirectory)
 		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-		ReuseURLProtocol.requestCount = 0
-		ReuseURLProtocol.body = body
 	}
 
 	func remove() {
@@ -196,14 +178,12 @@ private struct ReuseWorld {
 	}
 
 	func installer(donors: [URL]) -> GameInstaller {
-		let configuration = URLSessionConfiguration.ephemeral
-		configuration.protocolClasses = [ReuseURLProtocol.self]
-		return GameInstaller(
+		GameInstaller(
 			api: InstallerAPI(
 				manifest: GameManifest(source: fixture.source, file: [fixture.item]),
 				cdn: CDNConfiguration(primaryCdn: fixture.baseURL, backUpCdn: fixture.baseURL)
 			),
-			session: URLSession(configuration: configuration),
+			session: fixture.route.session,
 			compatibilityManager: GameCompatibilityManager(),
 			reuseSourceDirectories: { _ in donors }
 		)

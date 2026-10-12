@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -11,7 +12,7 @@ private typealias Key = LauncherPreferencesStore.Key
 struct LauncherPreferencesStoreTests {
 	@Test
 	func launchOptionsPreserveValidStoredFieldsAndRoundTrip() {
-		let (defaults, suiteName) = makeDefaults()
+		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 		defaults.set(
@@ -40,7 +41,7 @@ struct LauncherPreferencesStoreTests {
 
 	@Test
 	func installDirectoryMigrationPreservesSeparateRegionalUserChoices() {
-		let (defaults, suiteName) = makeDefaults()
+		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
 		let legacyGlobal = URL(filePath: "/tmp/Legacy-Global", directoryHint: .isDirectory)
@@ -66,8 +67,4 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.installDirectory(for: .japan, default: legacyJapan) == customJapan)
 	}
 
-	private func makeDefaults() -> (UserDefaults, String) {
-		let suiteName = "LauncherPreferencesStoreTests.\(UUID().uuidString)"
-		return (UserDefaults(suiteName: suiteName)!, suiteName)
-	}
 }

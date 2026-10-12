@@ -2,7 +2,7 @@
 
 import Foundation
 
-public actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
+package actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 	private struct Request {
 		let id: Int
 		let payload: Payload
@@ -13,9 +13,9 @@ public actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 	private var nextID = 0
 	private var cancelledIDs: Set<Int> = []
 
-	public init() {}
+	package init() {}
 
-	public func next(_ payload: Payload) async throws -> Value {
+	package func next(_ payload: Payload) async throws -> Value {
 		let id = nextID
 		nextID += 1
 		return try await withTaskCancellationHandler {
@@ -32,20 +32,16 @@ public actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 		}
 	}
 
-	public func waitForRequestCount(_ count: Int) async {
+	package func waitForRequestCount(_ count: Int) async {
 		while requests.count < count { await Task.yield() }
 	}
 
-	public func payload(at index: Int) -> Payload? {
+	package func payload(at index: Int) -> Payload? {
 		guard requests.indices.contains(index) else { return nil }
 		return requests[index]?.payload
 	}
 
-	public func requestCount() -> Int {
-		requests.compactMap(\.self).count
-	}
-
-	public func resolve(_ index: Int, with value: Value) {
+	package func resolve(_ index: Int, with value: Value) {
 		guard requests.indices.contains(index), let request = requests[index] else { return }
 		requests[index] = nil
 		request.continuation.resume(returning: value)
@@ -64,7 +60,7 @@ public actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 }
 
 extension ControlledRequestGate where Value == Void, Payload == (Data, URL) {
-	public func resolveStaged(_ index: Int) async throws {
+	package func resolveStaged(_ index: Int) async throws {
 		guard let (data, url) = payload(at: index) else { return }
 		try FileManager.default.createDirectory(
 			at: url.deletingLastPathComponent(), withIntermediateDirectories: true)

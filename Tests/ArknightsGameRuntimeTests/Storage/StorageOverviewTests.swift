@@ -19,8 +19,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 		libraryDirectory: root.appending(path: "Library"),
 		resourceDirectory: root.appending(path: "Resources")
 	)
-	let suiteName = "StorageOverviewTests.\(UUID().uuidString)"
-	let defaults = UserDefaults(suiteName: suiteName)!
+	let (defaults, suiteName) = makeIsolatedDefaults("StorageOverviewTests")
 	defer { defaults.removePersistentDomain(forName: suiteName) }
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	let customJapan = root.appending(path: "External/Arknights-Japan")

@@ -47,7 +47,6 @@ actor ConfigurationRefreshAPI: LauncherAPIProviding {
 
 	private var outcomes: [Outcome]
 	private var regions: [GameRegion] = []
-	private var waiters: [(Int, CheckedContinuation<Void, Never>)] = []
 
 	init(outcomes: [Outcome]) {
 		self.outcomes = outcomes
@@ -55,9 +54,6 @@ actor ConfigurationRefreshAPI: LauncherAPIProviding {
 
 	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
 		regions.append(region)
-		let ready = waiters.filter { $0.0 <= regions.count }
-		waiters.removeAll { $0.0 <= regions.count }
-		for waiter in ready { waiter.1.resume() }
 		let outcome = outcomes.isEmpty ? .success : outcomes.removeFirst()
 		guard outcome == .success else {
 			throw ContextualLauncherError(
@@ -89,11 +85,6 @@ actor ConfigurationRefreshAPI: LauncherAPIProviding {
 		region: GameRegion
 	) async throws -> GameManifest {
 		throw CancellationError()
-	}
-
-	func waitForRequests(_ count: Int) async {
-		guard regions.count < count else { return }
-		await withCheckedContinuation { waiters.append((count, $0)) }
 	}
 
 	func requestedRegions() -> [GameRegion] { regions }

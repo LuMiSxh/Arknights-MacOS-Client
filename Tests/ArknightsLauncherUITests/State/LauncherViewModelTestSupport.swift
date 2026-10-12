@@ -63,33 +63,19 @@ func makeModel(
 }
 
 private func testArtworkSession() -> URLSession {
-	let configuration = URLSessionConfiguration.ephemeral
-	configuration.protocolClasses = [TestArtworkURLProtocol.self]
-	return URLSession(configuration: configuration)
-}
-
-private final class TestArtworkURLProtocol: URLProtocol, @unchecked Sendable {
-	static let imageData = Data(
+	let imageData = Data(
 		base64Encoded:
 			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zf9sAAAAASUVORK5CYII="
 	)!
-
-	override class func canInit(with request: URLRequest) -> Bool { true }
-	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-	override func startLoading() {
-		let response = HTTPURLResponse(
-			url: request.url!,
-			statusCode: 200,
-			httpVersion: nil,
-			headerFields: nil
-		)!
-		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-		client?.urlProtocol(self, didLoad: Self.imageData)
-		client?.urlProtocolDidFinishLoading(self)
+	let route = StubURLProtocol.Route()
+	route.handler = { request in
+		(
+			HTTPURLResponse(
+				url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+			imageData
+		)
 	}
-
-	override func stopLoading() {}
+	return route.session
 }
 
 typealias BlockingBrandingAPI = CancellableBrandingAPI
@@ -181,9 +167,7 @@ actor ControllableInstaller: GameInstalling {
 
 actor CancellableBrandingAPI: LauncherAPIProviding {
 	private var brandingRequests = 0
-	private var cancellations = 0
 	private var requestWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
-	private var cancellationWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
 	private var brandingContinuations:
 		[(id: Int, continuation: CheckedContinuation<LauncherBranding, Error>)] = []
 	private var cancelledBrandingRequestIDs: Set<Int> = []
@@ -207,8 +191,6 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 		return try await withTaskCancellationHandler {
 			try await withCheckedThrowingContinuation { continuation in
 				if cancelledBrandingRequestIDs.remove(requestID) != nil {
-					cancellations += 1
-					resumeReadyWaiters()
 					continuation.resume(throwing: CancellationError())
 				} else {
 					brandingContinuations.append((id: requestID, continuation: continuation))
@@ -247,10 +229,6 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 		brandingContinuations.removeAll()
 		for (_, continuation) in pending { continuation.resume(returning: value) }
 	}
-	func waitForCancellations(_ count: Int) async {
-		guard cancellations < count else { return }
-		await withCheckedContinuation { cancellationWaiters.append((count, $0)) }
-	}
 
 	private func cancelBrandingRequest(id: Int) {
 		guard let index = brandingContinuations.firstIndex(where: { $0.id == id }) else {
@@ -258,8 +236,6 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 			return
 		}
 		let continuation = brandingContinuations.remove(at: index).continuation
-		cancellations += 1
-		resumeReadyWaiters()
 		continuation.resume(throwing: CancellationError())
 	}
 
@@ -267,9 +243,5 @@ actor CancellableBrandingAPI: LauncherAPIProviding {
 		let readyRequests = requestWaiters.filter { $0.0 <= brandingRequests }
 		requestWaiters.removeAll { $0.0 <= brandingRequests }
 		for (_, continuation) in readyRequests { continuation.resume() }
-
-		let readyCancellations = cancellationWaiters.filter { $0.0 <= cancellations }
-		cancellationWaiters.removeAll { $0.0 <= cancellations }
-		for (_, continuation) in readyCancellations { continuation.resume() }
 	}
 }

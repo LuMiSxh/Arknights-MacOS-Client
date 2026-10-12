@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -38,12 +39,18 @@ struct PresetCatalogServiceTests {
 			),
 		]
 		for row in rows {
-			let configuration = URLSessionConfiguration.ephemeral
-			configuration.protocolClasses = [BoundedDataURLProtocol.self]
-			BoundedDataURLProtocol.configure(body: row.body, redirectURL: row.redirectURL)
-			defer { BoundedDataURLProtocol.reset() }
+			let route = StubURLProtocol.Route(chunkSize: 1)
+			route.redirectURL = row.redirectURL
+			route.handler = { request in
+				(
+					HTTPURLResponse(
+						url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1",
+						headerFields: nil)!,
+					row.body
+				)
+			}
 			let loader = BoundedHTTPDataLoader(
-				session: URLSession(configuration: configuration),
+				session: route.session,
 				maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes,
 				redirectValidator: PresetCatalogService.isAllowedRemoteAssetURL
 			)
@@ -111,52 +118,6 @@ struct PresetCatalogServiceTests {
 
 		let cacheURL = await service.cacheFileURL(for: "epoch")
 		#expect(!FileManager.default.fileExists(atPath: cacheURL.path))
-	}
-}
-
-private final class BoundedDataURLProtocol: URLProtocol, @unchecked Sendable {
-	private static let lock = NSLock()
-	nonisolated(unsafe) static var body = Data()
-	nonisolated(unsafe) static var redirectURL: URL?
-
-	override class func canInit(with request: URLRequest) -> Bool { true }
-	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-	override func startLoading() {
-		let (body, redirectURL) = Self.lock.withLock { (Self.body, Self.redirectURL) }
-		let statusCode = redirectURL == nil ? 200 : 302
-		guard let url = request.url,
-			let response = HTTPURLResponse(
-				url: url,
-				statusCode: statusCode,
-				httpVersion: "HTTP/1.1",
-				headerFields: nil
-			)
-		else { return }
-		if let redirectURL {
-			var redirectRequest = URLRequest(url: redirectURL)
-			redirectRequest.httpMethod = request.httpMethod
-			client?.urlProtocol(self, wasRedirectedTo: redirectRequest, redirectResponse: response)
-			return
-		}
-		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-		for byte in body {
-			client?.urlProtocol(self, didLoad: Data([byte]))
-		}
-		client?.urlProtocolDidFinishLoading(self)
-	}
-
-	override func stopLoading() {}
-
-	static func configure(body: Data = Data(), redirectURL: URL? = nil) {
-		lock.withLock {
-			Self.body = body
-			Self.redirectURL = redirectURL
-		}
-	}
-
-	static func reset() {
-		configure()
 	}
 }
 

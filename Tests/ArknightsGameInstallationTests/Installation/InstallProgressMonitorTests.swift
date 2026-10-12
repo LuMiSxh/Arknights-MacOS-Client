@@ -23,14 +23,10 @@ private final class ManualTickClock: Clock, @unchecked Sendable {
 	private let lock = NSLock()
 	private var sleepers: [Sleeper] = []
 	private var nextID: UInt64 = 0
-	private var totalSleeps = 0
-	private var maxConcurrentSleepers = 0
 
 	var now: Instant { Instant() }
 	var minimumResolution: Duration { .zero }
 
-	var sleepCount: Int { lock.withLock { totalSleeps } }
-	var peakConcurrentSleepers: Int { lock.withLock { maxConcurrentSleepers } }
 	private var waiting: Int { lock.withLock { sleepers.count } }
 
 	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
@@ -43,10 +39,8 @@ private final class ManualTickClock: Clock, @unchecked Sendable {
 				// Registering and checking cancellation under one lock closes the window where
 				// `onCancel` runs before the sleeper exists and the sleep would never end.
 				let wasCancelled = lock.withLock { () -> Bool in
-					totalSleeps += 1
 					if Task.isCancelled { return true }
 					sleepers.append(Sleeper(id: id, continuation: continuation))
-					maxConcurrentSleepers = max(maxConcurrentSleepers, sleepers.count)
 					return false
 				}
 				if wasCancelled { continuation.resume(throwing: CancellationError()) }

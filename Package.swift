@@ -163,7 +163,7 @@ let package = Package(
 		),
 		.testTarget(
 			name: "ArknightsCoreTests",
-			dependencies: ["ArknightsCore"],
+			dependencies: ["ArknightsCore", "ArknightsTestSupport"],
 			path: "Tests/ArknightsCoreTests"
 		),
 		.testTarget(
@@ -183,6 +183,7 @@ let package = Package(
 				"ArknightsCustomization",
 				"ArknightsCore",
 				"ArknightsInfrastructure",
+				"ArknightsTestSupport",
 			],
 			path: "Tests/ArknightsGameInstallationTests"
 		),
@@ -207,6 +208,7 @@ let package = Package(
 				"ArknightsCustomization",
 				"ArknightsCore",
 				"ArknightsInfrastructure",
+				"ArknightsTestSupport",
 			],
 			path: "Tests/ArknightsOnboardingTests"
 		),
@@ -224,6 +226,7 @@ let package = Package(
 				"ArknightsGameInstallation",
 				"ArknightsCore",
 				"ArknightsInfrastructure",
+				"ArknightsTestSupport",
 			],
 			path: "Tests/ArknightsClientIntegrationTests",
 			resources: [.copy("Fixtures")]

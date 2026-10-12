@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -9,7 +10,7 @@ import Testing
 struct OnboardingProgressStoreTests {
 	@Test
 	func stepsSavedByEarlierLaunchersResumeAtTheSystemCheck() {
-		let (defaults, suiteName) = makeDefaults()
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingProgressStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		for savedRawValue in 0...6 {
 			defaults.set(savedRawValue, forKey: "onboarding.currentStep")
@@ -41,8 +42,4 @@ struct OnboardingProgressStoreTests {
 		}
 	}
 
-	private func makeDefaults() -> (UserDefaults, String) {
-		let suiteName = "OnboardingProgressStoreTests.\(UUID().uuidString)"
-		return (UserDefaults(suiteName: suiteName)!, suiteName)
-	}
 }

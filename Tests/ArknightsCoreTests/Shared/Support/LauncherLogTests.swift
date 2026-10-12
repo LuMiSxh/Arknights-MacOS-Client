@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -7,10 +8,9 @@ import Testing
 
 @Test
 func launcherLogWritesSanitizedAndBoundedDiagnosticLines() async throws {
-	let directory = FileManager.default.temporaryDirectory.appending(
-		path: "LauncherLogTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
+	let temporary = try TemporaryDirectory("LauncherLogTests")
+	defer { temporary.remove() }
+	let directory = temporary.url
 	let fileURL = directory.appending(path: "launcher.log")
 	let log = LauncherLog(fileURL: fileURL)
 	let omittedSuffix = "END-OF-OVERSIZED-MESSAGE"
@@ -34,11 +34,9 @@ func launcherLogWritesSanitizedAndBoundedDiagnosticLines() async throws {
 @Test
 func launcherLogAttemptLogsFailuresWithContextAndRunsSuccessfulWorkSilently() async throws {
 	struct Failure: Error {}
-	let directory = FileManager.default.temporaryDirectory.appending(
-		path: "LauncherLogTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: directory) }
+	let temporary = try TemporaryDirectory("LauncherLogTests")
+	defer { temporary.remove() }
+	let directory = temporary.url
 	let fileURL = directory.appending(path: "launcher.log")
 	let log = LauncherLog(fileURL: fileURL)
 	var ran = false
@@ -55,10 +53,9 @@ func launcherLogAttemptLogsFailuresWithContextAndRunsSuccessfulWorkSilently() as
 
 @Test
 func launcherLogRotatesBeforeAnAppendingEntryExceedsItsLimit() async throws {
-	let directory = FileManager.default.temporaryDirectory.appending(
-		path: "LauncherLogTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
+	let temporary = try TemporaryDirectory("LauncherLogTests")
+	defer { temporary.remove() }
+	let directory = temporary.url
 	let fileURL = directory.appending(path: "launcher.log")
 	let log = LauncherLog(
 		fileURL: fileURL,

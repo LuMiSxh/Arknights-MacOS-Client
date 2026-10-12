@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsTestSupport
 import Darwin
 import Foundation
 import Testing
@@ -14,8 +15,6 @@ struct GameInstallerStreamingTests {
 	/// a rejected answer must leave the resumable partial and the previous destination intact.
 	@Test
 	func installerResumesAPartialFileWithBufferedChunks() async throws {
-		defer { StreamingURLProtocol.handler = nil }
-
 		// The server honors the range: only the missing tail is transferred.
 		do {
 			let body = Data(repeating: 0xA5, count: 512 * 1_024)
@@ -23,7 +22,7 @@ struct GameInstallerStreamingTests {
 			let fixture = try Self.makeFixture(body: body)
 			defer { fixture.remove() }
 			try body.prefix(partialSize).write(to: fixture.partial)
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				#expect(request.value(forHTTPHeaderField: "Range") == "bytes=98304-")
 				return (
 					Self.response(
@@ -58,7 +57,7 @@ struct GameInstallerStreamingTests {
 			let fixture = try Self.makeFixture(body: body)
 			defer { fixture.remove() }
 			try Data(repeating: 0xFF, count: 64 * 1_024).write(to: fixture.partial)
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				#expect(request.value(forHTTPHeaderField: "Range") == "bytes=65536-")
 				return (Self.response(url: request.url!, status: 200), body)
 			}
@@ -84,7 +83,7 @@ struct GameInstallerStreamingTests {
 			let fixture = try Self.makeFixture(body: body)
 			defer { fixture.remove() }
 			var requestCount = 0
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				requestCount += 1
 				switch requestCount {
 				case 1:
@@ -131,7 +130,7 @@ struct GameInstallerStreamingTests {
 			let previous = Data("old!".utf8)
 			try previous.write(to: fixture.destination)
 			try Data("ga".utf8).write(to: fixture.partial)
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				#expect(request.value(forHTTPHeaderField: "Range") == "bytes=2-")
 				return (
 					Self.response(
@@ -153,7 +152,7 @@ struct GameInstallerStreamingTests {
 			let fixture = try Self.makeFixture(body: Data("game".utf8))
 			defer { fixture.remove() }
 			try Data("g".utf8).write(to: fixture.partial)
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				#expect(request.value(forHTTPHeaderField: "Range") == "bytes=1-")
 				return (
 					Self.response(
@@ -180,7 +179,7 @@ struct GameInstallerStreamingTests {
 			defer { fixture.remove() }
 			try Data("ga".utf8).write(to: fixture.partial)
 			try await Self.writeMetadata(manifestHash: "0", for: fixture)
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				#expect(request.value(forHTTPHeaderField: "Range") == nil)
 				return (Self.response(url: request.url!, status: 200), body)
 			}
@@ -200,7 +199,7 @@ struct GameInstallerStreamingTests {
 			defer { fixture.remove() }
 			try body.write(to: fixture.partial)
 			var requestCount = 0
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				requestCount += 1
 				return (Self.response(url: request.url!, status: 200), body)
 			}
@@ -221,7 +220,7 @@ struct GameInstallerStreamingTests {
 			)
 			defer { fixture.remove() }
 			try FileManager.default.removeItem(at: fixture.destination.deletingLastPathComponent())
-			StreamingURLProtocol.handler = { request in
+			fixture.route.handler = { request in
 				#expect(
 					request.url?.absoluteString
 						== "https://download.yo-star.com/Arknights_JP-36.7.23-game/bin/Arknights.exe"
@@ -245,14 +244,12 @@ struct GameInstallerStreamingTests {
 		let body = Data("game".utf8)
 		let fixture = try Self.makeFixture(body: body)
 		defer { fixture.remove() }
-		StreamingURLProtocol.handler = { request in
+		fixture.route.handler = { request in
 			return (
 				Self.response(url: request.url!, status: 200),
 				body + Data(repeating: 0xFF, count: 64 * 1_024)
 			)
 		}
-		defer { StreamingURLProtocol.handler = nil }
-
 		do {
 			_ = try await withTestInstallDirectory(at: fixture.directory) { installDirectory in
 				try await fixture.installer.download(
@@ -323,7 +320,7 @@ struct GameInstallerStreamingTests {
 		body: Data,
 		source: String = "payload",
 		relativePath: String = "bin/game.dat",
-		protocolClass: URLProtocol.Type = StreamingURLProtocol.self
+		protocolClass: URLProtocol.Type? = nil
 	) throws -> InstallerFixture {
 		let baseURL = URL(string: "https://download.yo-star.com")!
 		let directory = FileManager.default.temporaryDirectory.appending(
@@ -360,8 +357,13 @@ struct GameInstallerStreamingTests {
 			),
 			cdn: CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
 		)
+		let route = StubURLProtocol.Route(chunkSize: 32 * 1_024)
 		let sessionConfiguration = URLSessionConfiguration.ephemeral
-		sessionConfiguration.protocolClasses = [protocolClass]
+		if let protocolClass {
+			sessionConfiguration.protocolClasses = [protocolClass]
+		} else {
+			route.configure(sessionConfiguration)
+		}
 		return InstallerFixture(
 			directory: directory,
 			destination: destination,
@@ -373,7 +375,8 @@ struct GameInstallerStreamingTests {
 				api: api,
 				session: URLSession(configuration: sessionConfiguration),
 				compatibilityManager: GameCompatibilityManager()
-			)
+			),
+			route: route
 		)
 	}
 

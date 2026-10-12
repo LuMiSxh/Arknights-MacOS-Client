@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -13,6 +14,7 @@ struct IntegrationTestEnvironment {
 	let defaults: UserDefaults
 	let preferences: LauncherPreferencesStore
 	let session: URLSession
+	let route = StubURLProtocol.Route()
 
 	private let defaultsSuiteName: String
 
@@ -43,9 +45,7 @@ struct IntegrationTestEnvironment {
 		self.defaults = defaults
 		preferences = LauncherPreferencesStore(defaults: defaults)
 
-		let configuration = URLSessionConfiguration.ephemeral
-		configuration.protocolClasses = [LocalFixtureURLProtocol.self]
-		session = URLSession(configuration: configuration)
+		session = route.session
 	}
 
 	func cleanUp() {

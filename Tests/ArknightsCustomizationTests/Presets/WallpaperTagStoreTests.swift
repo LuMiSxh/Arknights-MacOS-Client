@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -40,34 +41,19 @@ private func tagService(
 )
 	-> PresetCatalogService
 {
-	let configuration = URLSessionConfiguration.ephemeral
-	configuration.protocolClasses = [TagManifestURLProtocol.self]
+	let route = StubURLProtocol.Route()
+	route.handler = { request in
+		let url = request.url!
+		let found = url.path == "/tags.json"
+		let response = HTTPURLResponse(
+			url: url, statusCode: found ? 200 : 404, httpVersion: "HTTP/1.1", headerFields: nil)!
+		return (response, found ? remoteManifest : Data())
+	}
 	return PresetCatalogService(
 		cacheDirectory: root,
-		session: URLSession(configuration: configuration),
+		session: route.session,
 		wallpaperTagsURL: URL(string: "https://raw.githubusercontent.com\(path)")!,
 		tagStore: store,
 		log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
 	)
-}
-
-/// Serves the manifest for `/tags.json` and 404 for anything else, without shared state.
-private final class TagManifestURLProtocol: URLProtocol, @unchecked Sendable {
-	override class func canInit(with request: URLRequest) -> Bool { true }
-	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-	override func startLoading() {
-		guard let url = request.url else { return }
-		let found = url.path == "/tags.json"
-		guard
-			let response = HTTPURLResponse(
-				url: url, statusCode: found ? 200 : 404, httpVersion: "HTTP/1.1",
-				headerFields: nil)
-		else { return }
-		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-		if found { client?.urlProtocol(self, didLoad: remoteManifest) }
-		client?.urlProtocolDidFinishLoading(self)
-	}
-
-	override func stopLoading() {}
 }

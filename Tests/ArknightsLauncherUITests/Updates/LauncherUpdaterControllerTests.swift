@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Sparkle
 import Testing
@@ -125,14 +126,6 @@ private func makeSparkleUpdater() -> (SPUStandardUpdaterController, SPUUpdater) 
 private func makeUpdater() -> LauncherUpdaterController {
 	let lifecycle = makeLifecycleStore()
 	return LauncherUpdaterController(lifecycle: lifecycle, log: lifecycle.log)
-}
-
-@MainActor
-private func makeLifecycleStore() -> LauncherLifecycleStore {
-	let fileURL = FileManager.default.temporaryDirectory.appending(
-		path: "LauncherUpdaterControllerTests.\(UUID().uuidString).log"
-	)
-	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
 }
 
 enum UpdateLifecycleScenario: String, CaseIterable, Equatable, Sendable {

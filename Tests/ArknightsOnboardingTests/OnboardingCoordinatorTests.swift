@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -9,7 +10,7 @@ import Testing
 struct OnboardingCoordinatorTests {
 	@Test
 	func currentLauncherCanAdvanceAndResume() async {
-		let (defaults, suiteName) = makeDefaults()
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = OnboardingProgressStore(defaults: defaults)
 		let coordinator = OnboardingCoordinator(store: store)
@@ -75,7 +76,7 @@ struct OnboardingCoordinatorTests {
 		caseLabel: String,
 		updateIsAvailable: Bool
 	) async {
-		let (defaults, suiteName) = makeDefaults()
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = OnboardingProgressStore(defaults: defaults)
 		let coordinator = OnboardingCoordinator(store: store)
@@ -116,7 +117,7 @@ struct OnboardingCoordinatorTests {
 
 	@Test
 	func requiredSetupCannotBeSkippedUntilFinished() async {
-		let (defaults, suiteName) = makeDefaults()
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		defaults.set(1, forKey: "onboarding.completedSchemaVersion")
 		let store = OnboardingProgressStore(defaults: defaults)
@@ -140,8 +141,4 @@ struct OnboardingCoordinatorTests {
 		#expect(store.pendingRequiredSchema == nil)
 	}
 
-	private func makeDefaults() -> (UserDefaults, String) {
-		let suiteName = "OnboardingCoordinatorTests.\(UUID().uuidString)"
-		return (UserDefaults(suiteName: suiteName)!, suiteName)
-	}
 }

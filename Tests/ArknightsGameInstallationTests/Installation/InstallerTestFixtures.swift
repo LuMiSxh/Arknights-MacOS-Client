@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsTestSupport
 import Foundation
 
 @testable import ArknightsGameInstallation
@@ -26,6 +27,7 @@ struct InstallerFixture {
 	let source: String
 	let baseURL: URL
 	let installer: GameInstaller
+	let route: StubURLProtocol.Route
 
 	var partial: URL { destination.appendingPathExtension("part") }
 
@@ -47,33 +49,4 @@ struct InstallerAPI: LauncherAPIProviding {
 		for configuration: GameConfiguration,
 		region: GameRegion
 	) async throws -> GameManifest { manifest }
-}
-
-final class StreamingURLProtocol: URLProtocol, @unchecked Sendable {
-	nonisolated(unsafe) static var handler: ((URLRequest) -> (HTTPURLResponse, Data))?
-
-	override class func canInit(with request: URLRequest) -> Bool { true }
-	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-	override func startLoading() {
-		guard let result = Self.handler?(request) else {
-			client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
-			return
-		}
-		client?.urlProtocol(self, didReceive: result.0, cacheStoragePolicy: .notAllowed)
-		for range in result.1.chunkRanges(size: 32 * 1_024) {
-			client?.urlProtocol(self, didLoad: result.1.subdata(in: range))
-		}
-		client?.urlProtocolDidFinishLoading(self)
-	}
-
-	override func stopLoading() {}
-}
-
-extension Data {
-	func chunkRanges(size: Int) -> [Range<Int>] {
-		stride(from: 0, to: count, by: size).map { start in
-			start..<Swift.min(start + size, count)
-		}
-	}
 }

@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -43,12 +44,4 @@ struct LauncherLifecycleStoreTests {
 enum LauncherUpdateStartScenario: String, CaseIterable, Equatable, Sendable {
 	case idle
 	case gameRunning
-}
-
-@MainActor
-private func makeLifecycleStore() -> LauncherLifecycleStore {
-	let fileURL = FileManager.default.temporaryDirectory.appending(
-		path: "LauncherLifecycleStoreTests.\(UUID().uuidString).log"
-	)
-	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
 }

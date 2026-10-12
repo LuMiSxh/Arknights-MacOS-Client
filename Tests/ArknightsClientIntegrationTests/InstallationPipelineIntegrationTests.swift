@@ -27,8 +27,7 @@ struct InstallationPipelineIntegrationTests {
 		let environment = try IntegrationTestEnvironment()
 		defer { environment.cleanUp() }
 		let network = try LocalFixtureNetwork()
-		LocalFixtureURLProtocol.handler = network.response(for:)
-		defer { LocalFixtureURLProtocol.handler = nil }
+		environment.route.handler = network.response(for:)
 
 		#expect(environment.preferences.selectedRegion() == .global)
 		let installDirectory = environment.paths.gameInstall(for: .global)

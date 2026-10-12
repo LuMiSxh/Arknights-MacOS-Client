@@ -13,10 +13,10 @@ struct GameInstallerRollbackTests {
 	@Test
 	func checksumMismatchEmptiesThePartialAndRemovesItsCountedBytes() async throws {
 		let fixture = try GameInstallerStreamingTests.makeFixture(
-			body: Data("game".utf8), protocolClass: RollbackURLProtocol.self)
+			body: Data("game".utf8))
 		defer { fixture.remove() }
 		try Data("ga".utf8).write(to: fixture.partial)
-		RollbackURLProtocol.handler = { request in
+		fixture.route.handler = { request in
 			(
 				GameInstallerStreamingTests.response(
 					url: request.url!,
@@ -26,7 +26,6 @@ struct GameInstallerRollbackTests {
 				Data("xx".utf8)
 			)
 		}
-		defer { RollbackURLProtocol.handler = nil }
 		let recorder = ProgressRecorder()
 
 		do {
@@ -49,15 +48,14 @@ struct GameInstallerRollbackTests {
 	@Test
 	func cancelledDownloadLeavesTheResumablePartialUntouched() async throws {
 		let fixture = try GameInstallerStreamingTests.makeFixture(
-			body: Data("game".utf8), protocolClass: RollbackURLProtocol.self)
+			body: Data("game".utf8))
 		defer { fixture.remove() }
 		try Data("ga".utf8).write(to: fixture.partial)
 		var requestCount = 0
-		RollbackURLProtocol.handler = { request in
+		fixture.route.handler = { request in
 			requestCount += 1
 			return (GameInstallerStreamingTests.response(url: request.url!, status: 200), Data())
 		}
-		defer { RollbackURLProtocol.handler = nil }
 
 		let task = Task {
 			withUnsafeCurrentTask { $0?.cancel() }
@@ -69,7 +67,7 @@ struct GameInstallerRollbackTests {
 		#expect(try Data(contentsOf: fixture.partial) == Data("ga".utf8))
 
 		// An unsuccessful status keeps the resumable partial too.
-		RollbackURLProtocol.handler = { request in
+		fixture.route.handler = { request in
 			(GameInstallerStreamingTests.response(url: request.url!, status: 404), Data())
 		}
 		do {
@@ -93,24 +91,4 @@ struct GameInstallerRollbackTests {
 		try await GameInstallerStreamingTests.download(
 			fixture, baseline: baseline, recorder: recorder)
 	}
-}
-
-/// Private to this suite so its handler cannot race the other suites' shared protocol.
-private final class RollbackURLProtocol: URLProtocol, @unchecked Sendable {
-	nonisolated(unsafe) static var handler: ((URLRequest) -> (HTTPURLResponse, Data))?
-
-	override class func canInit(with request: URLRequest) -> Bool { true }
-	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-	override func startLoading() {
-		guard let result = Self.handler?(request) else {
-			client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
-			return
-		}
-		client?.urlProtocol(self, didReceive: result.0, cacheStoragePolicy: .notAllowed)
-		client?.urlProtocol(self, didLoad: result.1)
-		client?.urlProtocolDidFinishLoading(self)
-	}
-
-	override func stopLoading() {}
 }

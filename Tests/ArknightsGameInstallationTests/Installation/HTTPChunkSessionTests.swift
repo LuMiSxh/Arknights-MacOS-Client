@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -12,21 +13,23 @@ struct HTTPChunkSessionTests {
 	/// Reaching the ceiling must delay bytes, never drop them.
 	@Test
 	func chunkSessionDeliversEveryByteWhenTheBufferCeilingIsReached() async throws {
+		let route = StubURLProtocol.Route(chunkSize: 4_096)
 		let configuration = URLSessionConfiguration.ephemeral
-		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		route.configure(configuration)
 		let session = HTTPChunkSession(configuration: configuration, maximumBufferedBytes: 4_096)
 		let url = URL(string: "https://download.test/game.bin")!
 		let expected = Data(repeating: 0x33, count: 64 * 1_024)
-		ChunkedURLProtocol.response = HTTPURLResponse(
-			url: url,
-			statusCode: 206,
-			httpVersion: "HTTP/1.1",
-			headerFields: ["Content-Length": String(expected.count)]
-		)!
-		ChunkedURLProtocol.chunks = stride(from: 0, to: expected.count, by: 4_096).map {
-			expected.subdata(in: $0..<min($0 + 4_096, expected.count))
+		route.handler = { _ in
+			(
+				HTTPURLResponse(
+					url: url,
+					statusCode: 206,
+					httpVersion: "HTTP/1.1",
+					headerFields: ["Content-Length": String(expected.count)]
+				)!,
+				expected
+			)
 		}
-		defer { ChunkedURLProtocol.reset() }
 
 		let stream = session.stream(for: URLRequest(url: url))
 		var received = Data()
@@ -41,15 +44,15 @@ struct HTTPChunkSessionTests {
 
 	@Test
 	func chunkSessionRejectsAStreamRedirectOutsideItsPolicy() async throws {
+		let route = StubURLProtocol.Route()
 		let configuration = URLSessionConfiguration.ephemeral
-		configuration.protocolClasses = [ChunkedURLProtocol.self]
+		route.configure(configuration)
 		let session = HTTPChunkSession(
 			configuration: configuration,
 			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
 		)
 		let sourceURL = URL(string: "https://download.test/game.bin")!
-		ChunkedURLProtocol.configureRedirect(to: URL(string: "https://evil.test/game.bin")!)
-		defer { ChunkedURLProtocol.reset() }
+		route.redirectURL = URL(string: "https://evil.test/game.bin")!
 
 		let stream = session.stream(
 			for: URLRequest(url: sourceURL),
@@ -63,56 +66,5 @@ struct HTTPChunkSessionTests {
 		}
 
 		#expect(rejected)
-	}
-}
-
-private final class ChunkedURLProtocol: URLProtocol, @unchecked Sendable {
-	nonisolated(unsafe) static var response: HTTPURLResponse?
-	nonisolated(unsafe) static var chunks: [Data] = []
-	nonisolated(unsafe) static var redirectURL: URL?
-	nonisolated(unsafe) static var didRedirect = false
-
-	override class func canInit(with request: URLRequest) -> Bool { true }
-	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-	override func startLoading() {
-		if let redirectURL = Self.redirectURL, !Self.didRedirect {
-			Self.didRedirect = true
-			let redirectResponse = HTTPURLResponse(
-				url: request.url!,
-				statusCode: 302,
-				httpVersion: "HTTP/1.1",
-				headerFields: ["Location": redirectURL.absoluteString]
-			)!
-			client?.urlProtocol(
-				self,
-				wasRedirectedTo: URLRequest(url: redirectURL),
-				redirectResponse: redirectResponse
-			)
-			return
-		}
-		guard let response = Self.response else {
-			client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
-			return
-		}
-		client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-		for chunk in Self.chunks {
-			client?.urlProtocol(self, didLoad: chunk)
-		}
-		client?.urlProtocolDidFinishLoading(self)
-	}
-
-	override func stopLoading() {}
-
-	static func reset() {
-		response = nil
-		chunks = []
-		redirectURL = nil
-		didRedirect = false
-	}
-
-	static func configureRedirect(to url: URL) {
-		redirectURL = url
-		didRedirect = false
 	}
 }

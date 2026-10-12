@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -33,10 +34,9 @@ private final class ConcurrentMoveFileManager: FileManager {
 
 @Test
 func appStorageMigratorMovesLegacyDirectoriesAndUpdatesExactInstallPreferences() throws {
-	let root = FileManager.default.temporaryDirectory
-		.appending(
-			path: "AppStorageMigratorTests.\(UUID().uuidString)", directoryHint: .isDirectory)
-	defer { try? FileManager.default.removeItem(at: root) }
+	let temporary = try TemporaryDirectory("AppStorageMigratorTests")
+	defer { temporary.remove() }
+	let root = temporary.url
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
@@ -91,11 +91,9 @@ func appStorageMigratorMovesLegacyDirectoriesAndUpdatesExactInstallPreferences()
 
 @Test
 func appStorageMigratorRejectsConflictsWithoutChangingEitherDirectory() throws {
-	let root = FileManager.default.temporaryDirectory
-		.appending(
-			path: "AppStorageMigratorConflictTests.\(UUID().uuidString)",
-			directoryHint: .isDirectory)
-	defer { try? FileManager.default.removeItem(at: root) }
+	let temporary = try TemporaryDirectory("AppStorageMigratorConflictTests")
+	defer { temporary.remove() }
+	let root = temporary.url
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
@@ -135,9 +133,9 @@ func appStorageMigratorRejectsConflictsWithoutChangingEitherDirectory() throws {
 
 @Test
 func appStorageMigratorReportsCompletedMovesWhenALaterMoveFailsAndResumesOnRetry() throws {
-	let root = FileManager.default.temporaryDirectory
-		.appending(path: "AppStorageMigratorPartialTests.\(UUID().uuidString)")
-	defer { try? FileManager.default.removeItem(at: root) }
+	let temporary = try TemporaryDirectory("AppStorageMigratorPartialTests")
+	defer { temporary.remove() }
+	let root = temporary.url
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),

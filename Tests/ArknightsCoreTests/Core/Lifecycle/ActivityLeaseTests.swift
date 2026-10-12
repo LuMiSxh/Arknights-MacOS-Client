@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -43,12 +44,4 @@ struct ActivityLeaseTests {
 		#expect(lifecycle.end(current))
 		#expect(lifecycle.activity == .idle)
 	}
-}
-
-@MainActor
-private func makeLifecycleStore() -> LauncherLifecycleStore {
-	let fileURL = FileManager.default.temporaryDirectory.appending(
-		path: "ActivityLeaseTests.\(UUID().uuidString).log"
-	)
-	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
 }

@@ -83,11 +83,3 @@ struct IntelTranslationControllerTests {
 		#expect(errno == ESRCH)
 	}
 }
-
-@MainActor
-private func makeLifecycleStore() -> LauncherLifecycleStore {
-	let fileURL = FileManager.default.temporaryDirectory.appending(
-		path: "IntelTranslationControllerTests.\(UUID().uuidString).log"
-	)
-	return LauncherLifecycleStore(log: LauncherLog(fileURL: fileURL))
-}

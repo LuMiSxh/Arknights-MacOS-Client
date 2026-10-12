@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -31,8 +32,7 @@ func onlyTaiwanSelectionDependsOnCanaryPermissions() {
 		RegionAccess(canaryFeaturesEnabled: true, taiwanClientEnabled: true).selectableRegions
 			== GameRegion.allCases)
 
-	let suiteName = "GameRegionTests.\(UUID().uuidString)"
-	let defaults = UserDefaults(suiteName: suiteName)!
+	let (defaults, suiteName) = makeIsolatedDefaults("GameRegionTests")
 	defer { defaults.removePersistentDomain(forName: suiteName) }
 	let store = LauncherPreferencesStore(defaults: defaults)
 	typealias Key = LauncherPreferencesStore.Key
