@@ -1,10 +1,14 @@
 <script lang="ts">
-	import { asset, resolve } from '$app/paths';
+	import { asset, base, resolve } from '$app/paths';
 	import ArtworkStage from '$lib/components/ArtworkStage.svelte';
 	import PageMetadata from '$lib/components/PageMetadata.svelte';
 	import RegionManifest from '$lib/components/RegionManifest.svelte';
 	import { reveal } from '$lib/motion.svelte.js';
-	import { releaseUrl } from '$lib/site.js';
+	import {
+		absoluteSiteUrl,
+		normalizeBasePath,
+		releaseUrl
+	} from '$lib/site.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -31,6 +35,38 @@
 	const guides = $derived(
 		data.navigation.filter((entry) => entry.audience !== 'developers')
 	);
+
+	const description =
+		'Play Arknights PC on an Apple Silicon Mac with this free, unofficial launcher. Supports macOS 15–27.';
+	const basePath = normalizeBasePath(
+		typeof process !== 'undefined' && process.env.BASE_PATH
+			? process.env.BASE_PATH
+			: base
+	);
+	const homeUrl = absoluteSiteUrl('/', basePath);
+	const structuredData = JSON.stringify({
+		'@context': 'https://schema.org',
+		'@graph': [
+			{
+				'@type': 'WebSite',
+				'@id': `${homeUrl}#website`,
+				name: 'Arknights macOS Client',
+				alternateName: ['Arknights Client', 'Arknights-MacOS-Client'],
+				url: homeUrl
+			},
+			{
+				'@type': 'SoftwareApplication',
+				'@id': `${homeUrl}#app`,
+				name: 'Arknights macOS Client',
+				applicationCategory: 'GameApplication',
+				operatingSystem: 'macOS 15 or later',
+				description,
+				url: homeUrl,
+				downloadUrl: releaseUrl,
+				offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }
+			}
+		]
+	}).replace(/</g, '\\u003c');
 </script>
 
 <svelte:head>
@@ -38,11 +74,12 @@
 		name="google-site-verification"
 		content="rKSkIR3sV4QdLRzh6LfguydNElkuRCFjlw7EIqDHnyI"
 	/>
+	{@html `<script type="application/ld+json">${structuredData}</script>`}
 </svelte:head>
 
 <PageMetadata
 	title="Play Arknights PC on Mac · Arknights Client"
-	description="Play Arknights PC on an Apple Silicon Mac with this free, unofficial launcher. Supports macOS 15–27."
+	{description}
 	path="/"
 />
 
