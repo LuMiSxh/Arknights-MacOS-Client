@@ -6,6 +6,8 @@ import ArknightsGameInstallation
 import SwiftUI
 
 struct LauncherUpdateView: View {
+	private static let installingTitle = "Finishing update…"
+
 	let driver: LauncherUpdateUserDriver
 	package let accentColor: Color
 	let hudTintColor: Color
@@ -89,7 +91,7 @@ struct LauncherUpdateView: View {
 			Text("No newer version was found.")
 				.foregroundStyle(.secondary)
 		case .failed:
-			Text(driver.message ?? LauncherStrings.updateErrorDetail)
+			Text(driver.message ?? LauncherUpdateUserDriver.errorDetail)
 				.foregroundStyle(.secondary)
 				.textSelection(.enabled)
 		}
@@ -142,7 +144,7 @@ struct LauncherUpdateView: View {
 	private var installingContent: some View {
 		VStack(alignment: .leading, spacing: 10) {
 			ProgressView()
-				.accessibilityLabel(Text(LauncherStrings.updateInstalling))
+				.accessibilityLabel(Text(Self.installingTitle))
 			Text(
 				driver.message
 					?? (driver.gameIsRunning
@@ -219,7 +221,7 @@ struct LauncherUpdateView: View {
 			}
 		case .installed:
 			CapsuleActionButton(
-				title: LauncherStrings.updateDone,
+				title: "Done",
 				tone: .neutral,
 				action: driver.acknowledge
 			)
@@ -231,7 +233,7 @@ struct LauncherUpdateView: View {
 				action: retryUpdate
 			)
 			CapsuleActionButton(
-				title: LauncherStrings.updateDone,
+				title: "Done",
 				tone: .neutral,
 				action: driver.acknowledge
 			)
@@ -244,7 +246,7 @@ struct LauncherUpdateView: View {
 			)
 			.keyboardShortcut(.defaultAction)
 			CapsuleActionButton(
-				title: LauncherStrings.updateDone,
+				title: "Done",
 				tone: .neutral,
 				action: driver.acknowledge
 			)
@@ -261,7 +263,7 @@ struct LauncherUpdateView: View {
 		case .downloading: "Downloading update…"
 		case .extracting: "Preparing update…"
 		case .readyToInstall: "Update is ready."
-		case .installing: LauncherStrings.updateInstalling
+		case .installing: Self.installingTitle
 		case .installed: "Update installed"
 		case .noUpdate: "The launcher is up to date."
 		case .failed: "Couldn’t check for updates"
@@ -271,7 +273,7 @@ struct LauncherUpdateView: View {
 	private var availableStatusText: String {
 		switch driver.updateStage {
 		case .downloaded: "Update is ready."
-		case .installing: LauncherStrings.updateInstalling
+		case .installing: Self.installingTitle
 		default: "An update is available."
 		}
 	}

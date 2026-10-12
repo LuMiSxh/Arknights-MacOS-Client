@@ -32,6 +32,18 @@ struct OnboardingExtrasView: View {
 		)
 	}
 
+	private static func musicAnswer(_ plays: Bool) -> OnboardingAnswer<Bool> {
+		plays
+			? OnboardingAnswer(
+				value: true, title: "Yes, play music",
+				detail: "Plays the launcher's YouTube music and pauses while the game runs.",
+				systemImage: "music.note")
+			: OnboardingAnswer(
+				value: false, title: "No, keep it quiet",
+				detail: "You can turn music on later in Settings.",
+				systemImage: "speaker.slash")
+	}
+
 	var body: some View {
 		OnboardingPage(
 			title: "A few last questions",
@@ -42,7 +54,7 @@ struct OnboardingExtrasView: View {
 			OnboardingQuestion(
 				question: "How should the launcher stay up to date?",
 				systemImage: "arrow.trianglehead.2.clockwise",
-				answers: UpdateCheckAnswer.allCases.map(OnboardingStrings.updateAnswer),
+				answers: UpdateCheckAnswer.allCases.map(\.answer),
 				selection: updateBinding,
 				accentColor: accentColor
 			)
@@ -50,7 +62,7 @@ struct OnboardingExtrasView: View {
 			OnboardingQuestion(
 				question: "Play music while the launcher is open?",
 				systemImage: "music.note",
-				answers: [true, false].map(OnboardingStrings.musicAnswer),
+				answers: [true, false].map(Self.musicAnswer),
 				selection: musicBinding,
 				accentColor: accentColor
 			)

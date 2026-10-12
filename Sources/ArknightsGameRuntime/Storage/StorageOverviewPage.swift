@@ -19,6 +19,47 @@ package struct StorageOverviewCopy {
 	let showLogs: String
 	let categoryTitle: (StorageCategory) -> String
 	let categoryDetail: (StorageCategory) -> String
+
+	package static var english: StorageOverviewCopy {
+		StorageOverviewCopy(
+			title: "Storage",
+			subtitle: "Disk usage and targeted cleanup",
+			installationsTitle: "Game Installations",
+			sharedTitle: "Shared Runtime Data",
+			cachesTitle: "Recreatable Caches",
+			logsTitle: "Logs",
+			calculating: "Calculating…",
+			unavailable: "Not present",
+			clearCaches: "Clear Caches",
+			clearGalleryCache: "Clear Gallery Cache",
+			showLogs: "Show Logs",
+			categoryTitle: { category in
+				switch category {
+				case .game(let region): region.displayName
+				case .winePrefix: "Game Environment"
+				case .compatibilityRuntime: "Compatibility Runtime"
+				case .dxmtCache: "DXMT Shader Cache"
+				case .browserCache: "Embedded Browser Data"
+				case .galleryCache: "Preset Gallery Caches"
+				case .logs: "Logs"
+				}
+			},
+			categoryDetail: { category in
+				switch category {
+				case .game: "Game files that may require repair or reinstall."
+				case .winePrefix:
+					"Shared by the selected client family; contains runtime data and logins."
+				case .compatibilityRuntime: "Bundled Wine and DXMT components; read-only."
+				case .dxmtCache: "Recreated automatically and removed by the cache cleanup action."
+				case .browserCache:
+					"Recreated automatically and removed by the cache cleanup action."
+				case .galleryCache:
+					"Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers)."
+				case .logs: "Launcher and game diagnostics; reveal them in Finder."
+				}
+			}
+		)
+	}
 }
 
 /// Targeted actions for the storage buckets. No generic path deletion is exposed.

@@ -118,7 +118,7 @@ package final class LauncherCommunicationController {
 						id: "announcement-\(announcement.id)",
 						title: announcement.title,
 						content: .markdown(announcement.body),
-						dismissTitle: LauncherStrings.popupDone,
+						dismissTitle: "Done",
 						actionTitle: announcement.actionTitle,
 						actionURL: announcement.actionURL
 					)
@@ -145,7 +145,7 @@ package final class LauncherCommunicationController {
 				id: "yostar-notice-\(formattedNotice.id.uuidString)",
 				title: "Notice",
 				content: .attributed(formattedNotice.content),
-				dismissTitle: LauncherStrings.popupDone,
+				dismissTitle: "Done",
 				actionTitle: nil,
 				actionURL: nil
 			)

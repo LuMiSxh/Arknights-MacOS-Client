@@ -28,7 +28,7 @@ struct OnboardingWelcomeView: View {
 					systemImage: "exclamationmark.triangle",
 					tone: .warning
 				) {
-					Text(OnboardingStrings.requiredSetupReason(schema: requiredSchema))
+					Text(Self.requiredSetupReason(schema: requiredSchema))
 						.fixedSize(horizontal: false, vertical: true)
 				}
 			}
@@ -38,7 +38,7 @@ struct OnboardingWelcomeView: View {
 				case .checking:
 					HStack(spacing: 12) {
 						ProgressView()
-						Text(OnboardingStrings.checking)
+						Text(OnboardingUpdateState.checkingTitle)
 							.foregroundStyle(.secondary)
 					}
 				case .current:
@@ -112,7 +112,7 @@ struct OnboardingWelcomeView: View {
 								.font(.callout.monospaced())
 								.textSelection(.enabled)
 							CapsuleActionButton(
-								title: OnboardingStrings.checkAgain,
+								title: OnboardingRosettaRecoveryView.checkAgainTitle,
 								systemImage: "arrow.clockwise",
 								tone: .accent(accentColor),
 								action: retryIntelTranslation
@@ -126,7 +126,7 @@ struct OnboardingWelcomeView: View {
 							.foregroundStyle(.secondary)
 							.fixedSize(horizontal: false, vertical: true)
 							CapsuleActionButton(
-								title: OnboardingStrings.checkAgain,
+								title: OnboardingRosettaRecoveryView.checkAgainTitle,
 								systemImage: "arrow.clockwise",
 								tone: .accent(accentColor),
 								action: retryIntelTranslation
@@ -143,7 +143,21 @@ struct OnboardingWelcomeView: View {
 	}
 
 	private var statusTitle: String {
-		OnboardingStrings.statusTitle(updateState)
+		switch updateState {
+		case .checking: "Checking for launcher updates"
+		case .current: "Ready for setup"
+		case .updateRequired: "Update before setup"
+		case .checkFailed: "Update check unavailable"
+		}
+	}
+
+	static func requiredSetupReason(schema: Int) -> String {
+		switch schema {
+		case 2:
+			"Setup now asks a few simple questions about your screen, pointer, and look. Answer them once so the game fits your Mac."
+		default:
+			"The launcher changed how an important setting works. Go through each step once so everything keeps working."
+		}
 	}
 
 	private var updatePanelTone: SettingsPanelTone {

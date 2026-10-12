@@ -26,14 +26,7 @@ struct LauncherSettingsView: View {
 	let presetCatalog: PresetCatalogService
 	package let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
-	package let resetArtwork: () -> Void
-	package let checkGameUpdates: () -> Void
-	package let selectRegion: (GameRegion) -> Void
-	package let chooseInstallDirectory: () -> Void
-	package let locateExistingInstallation: () -> Void
-	package let repairGame: () -> Void
-	package let resetAllLauncherSettings: () -> Void
-	package let uninstallGame: () -> Void
+	let actions: any LauncherActions
 	let restartOnboarding: () -> Void
 	let requestLauncherUpdateCheck: () -> Void
 	let developerSimulation: DeveloperSimulationBinding?
@@ -83,7 +76,7 @@ struct LauncherSettingsView: View {
 							lifecycle: lifecycle,
 							presetCatalog: presetCatalog,
 							accentColor: customization.accentColor,
-							resetArtwork: resetArtwork
+							actions: actions
 						)
 					case .audio:
 						AudioSettingsPage(
@@ -98,8 +91,8 @@ struct LauncherSettingsView: View {
 							lifecycle: lifecycle,
 							accentColor: customization.accentColor,
 							appVersion: IssueReportURL.appVersion,
-							checkLauncherUpdates: requestLauncherUpdateCheck,
-							checkGameUpdates: checkGameUpdates
+							actions: actions,
+							checkLauncherUpdates: requestLauncherUpdateCheck
 						)
 					case .installation:
 						InstallationSettingsPage(
@@ -108,18 +101,13 @@ struct LauncherSettingsView: View {
 							gameSession: gameSession,
 							lifecycle: lifecycle,
 							accentColor: customization.accentColor,
-							selectRegion: selectRegion,
-							chooseInstallDirectory: chooseInstallDirectory,
-							locateExistingInstallation: locateExistingInstallation,
-							repairGame: repairGame,
-							resetAllLauncherSettings: resetAllLauncherSettings,
-							uninstallGame: uninstallGame,
+							actions: actions,
 							restartOnboarding: restartOnboarding
 						)
 					case .storage:
 						StorageOverviewPage(
 							controller: storageOverview,
-							copy: StorageStrings.copy(),
+							copy: .english,
 							actions: StorageOverviewActions(
 								clearGameCaches: storage.clearGameCache,
 								clearGalleryCache: storage.clearPresetGalleryCache,
@@ -167,7 +155,7 @@ struct LauncherSettingsView: View {
 					FloatingActionBar(tint: customization.hudTintColor) {
 						if selectedSection == .storage {
 							CapsuleActionButton(
-								title: StorageStrings.refresh,
+								title: "Refresh",
 								systemImage: "arrow.clockwise",
 								tone: .neutral,
 								action: storageOverview.refreshNow

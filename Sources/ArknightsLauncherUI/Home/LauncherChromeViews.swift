@@ -32,7 +32,7 @@ struct ArknightsWordmark: View {
 						.transition(wordmarkTransition)
 				}
 			} else {
-				Text(HomeStrings.wordmarkFallback(region: region))
+				Text(wordmarkFallback)
 					.font(.system(.title, design: .serif))
 					.minimumScaleFactor(0.7)
 					.lineLimit(1)
@@ -48,6 +48,17 @@ struct ArknightsWordmark: View {
 		.accessibilityLabel(
 			"Arknights \(region.displayName) macOS client"
 		)
+	}
+
+	private var wordmarkFallback: String {
+		switch region {
+		case .global: "ARKNIGHTS · GLOBAL"
+		case .japan: "ARKNIGHTS · JAPAN"
+		case .korea: "ARKNIGHTS · KOREA"
+		case .taiwan: "ARKNIGHTS · TAIWAN"
+		case .china: "ARKNIGHTS · CHINA"
+		case .chinaBilibili: "ARKNIGHTS · CHINA · BILIBILI"
+		}
 	}
 
 	private var wordmarkIdentity: String {

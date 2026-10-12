@@ -11,12 +11,14 @@ private func isImageURL(_ url: URL) -> Bool {
 }
 
 struct AppearanceSettingsPage: View {
+	private static let useDefaultTitle = "Use Default"
+
 	@Bindable var settings: LauncherPreferencesController
 	let customization: CustomizationController
 	package let lifecycle: LauncherLifecycleStore
 	let presetCatalog: PresetCatalogService
 	package let accentColor: Color
-	package let resetArtwork: () -> Void
+	let actions: any LauncherActions
 	@State private var presentedGallery: PresetGalleryDestination?
 
 	var body: some View {
@@ -111,11 +113,11 @@ struct AppearanceSettingsPage: View {
 				action: customization.chooseCustomArtwork
 			)
 			CapsuleActionButton(
-				title: SettingsStrings.useDefault,
+				title: Self.useDefaultTitle,
 				systemImage: "arrow.counterclockwise",
 				tone: .neutral,
 				presentation: .compact,
-				action: resetArtwork
+				action: actions.resetArtwork
 			)
 		}
 		.dropDestination(for: URL.self) { urls, _ in
@@ -162,7 +164,7 @@ struct AppearanceSettingsPage: View {
 					"Choose Image…", systemImage: "folder",
 					action: customization.chooseCustomAppIcon)
 				Button(
-					SettingsStrings.useDefault,
+					Self.useDefaultTitle,
 					systemImage: "arrow.counterclockwise",
 					action: customization.resetAppIcon)
 			}
@@ -180,7 +182,7 @@ struct AppearanceSettingsPage: View {
 					"Choose Image…", systemImage: "folder",
 					action: customization.chooseCustomGameIcon)
 				Button(
-					SettingsStrings.useDefault,
+					Self.useDefaultTitle,
 					systemImage: "arrow.counterclockwise",
 					action: customization.resetGameIcon)
 			}

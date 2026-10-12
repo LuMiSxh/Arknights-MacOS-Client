@@ -207,10 +207,10 @@ package struct OnboardingView: View {
 	private var primaryTitle: String {
 		if coordinator.step == .welcome {
 			return switch coordinator.updateState {
-			case .checking: OnboardingStrings.checking
+			case .checking: OnboardingUpdateState.checkingTitle
 			case .current, .checkFailed:
 				coordinator.intelTranslationState == .checking
-					? OnboardingStrings.checking : OnboardingStrings.continue
+					? OnboardingUpdateState.checkingTitle : "Continue"
 			case .updateRequired(let version): "Install Update \(version)"
 			}
 		}
@@ -222,7 +222,7 @@ package struct OnboardingView: View {
 				? "Resume & Continue" : "Install & Continue"
 		}
 		if coordinator.step == .finish { return "Finish Setup" }
-		return OnboardingStrings.continue
+		return "Continue"
 	}
 
 	private var canPerformPrimaryAction: Bool {

@@ -11,6 +11,14 @@ struct OnboardingFinishView: View {
 	let accentColor: Color
 	let install: () -> Void
 
+	private var publisherName: String {
+		switch installation.region.publisher {
+		case .gryphline: "Gryphline"
+		case .hypergryph: "Hypergryph"
+		default: "Yostar"
+		}
+	}
+
 	var body: some View {
 		OnboardingPage(
 			title: "Ready for deployment",
@@ -59,13 +67,14 @@ struct OnboardingFinishView: View {
 
 				SettingsHairline()
 
-				Text(OnboardingStrings.communitySupport(region: installation.region))
-					.font(.callout)
-					.foregroundStyle(.secondary)
-					.fixedSize(horizontal: false, vertical: true)
+				Text(
+					"For account, payment, or game-service issues, contact \(publisherName) support instead."
+				)
+				.font(.callout)
+				.foregroundStyle(.secondary)
+				.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					title:
-						OnboardingStrings.contactSupport(region: installation.region),
+					title: "Contact \(publisherName) Support…",
 					systemImage: "arrow.up.right.square",
 					tone: .accent(accentColor),
 					action: contactPublisher

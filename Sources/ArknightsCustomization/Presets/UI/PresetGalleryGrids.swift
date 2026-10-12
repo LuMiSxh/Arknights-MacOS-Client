@@ -3,6 +3,8 @@
 import ArknightsCore
 import SwiftUI
 
+private let applyingLabel = "Applying…"
+
 /// The operator icon grid shown in the Operator gallery.
 struct PresetAvatarGrid: View {
 	let catalog: PresetCatalogService
@@ -88,7 +90,7 @@ struct PresetAvatarGrid: View {
 					applyHint(for: avatar)
 				)
 				.accessibilityValue(
-					isApplying ? Text(CustomizationStrings.applying) : Text("")
+					isApplying ? Text(applyingLabel) : Text("")
 				)
 			}
 		}
@@ -141,7 +143,7 @@ struct PresetWallpaperGrid: View {
 										ProgressView()
 											.controlSize(.regular)
 											.tint(accentColor)
-										Text(CustomizationStrings.applying)
+										Text(applyingLabel)
 											.font(.caption2.bold())
 											.foregroundStyle(.white)
 									}
@@ -186,7 +188,7 @@ struct PresetWallpaperGrid: View {
 					applyHint(for: wp)
 				)
 				.accessibilityValue(
-					isApplying ? Text(CustomizationStrings.applying) : Text("")
+					isApplying ? Text(applyingLabel) : Text("")
 				)
 				.help(hoverText(for: wp))
 			}

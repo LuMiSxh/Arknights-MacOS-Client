@@ -22,6 +22,8 @@ enum LauncherUpdatePhase: Equatable {
 @MainActor
 @Observable
 final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
+	static let errorDetail = "The update could not be completed."
+
 	var phase: LauncherUpdatePhase = .hidden
 	var version: String?
 	private(set) var releaseNotes: String?
@@ -132,7 +134,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
 		phase = .noUpdate
-		message = LauncherStrings.updateErrorDetail
+		message = LauncherUpdateUserDriver.errorDetail
 		pendingReply = .acknowledgement(acknowledgement)
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
@@ -264,7 +266,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	func showError(_ error: Error) {
 		cancelAutomaticTerminationRetry()
 		phase = .failed
-		message = LauncherStrings.updateErrorDetail
+		message = LauncherUpdateUserDriver.errorDetail
 		if pendingReply == nil {
 			pendingReply = .acknowledgement {}
 		}
@@ -291,7 +293,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	}
 	func recordNoUpdate(_ error: Error) {
 		if phase == .hidden || phase == .checking { phase = .noUpdate }
-		message = LauncherStrings.updateErrorDetail
+		message = LauncherUpdateUserDriver.errorDetail
 	}
 	func recordAvailabilityError(_ error: Error) {
 		if phase == .hidden || phase == .checking { showError(error) }

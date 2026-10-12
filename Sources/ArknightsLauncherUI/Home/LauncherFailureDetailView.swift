@@ -135,7 +135,7 @@ struct LauncherFailureDetailView: View {
 
 	private var dismissButton: some View {
 		CapsuleActionButton(
-			title: LauncherStrings.popupDone,
+			title: "Done",
 			tone: .neutral,
 			action: { dismiss() }
 		)

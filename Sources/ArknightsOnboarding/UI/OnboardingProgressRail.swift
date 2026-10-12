@@ -29,7 +29,7 @@ struct OnboardingProgressRail: View {
 							.frame(width: 17)
 							.symbolRenderingMode(.monochrome)
 							.accessibilityHidden(true)
-						Text(OnboardingStrings.stepTitle(step))
+						Text(step.title)
 							.fontWeight(currentStep == step ? .semibold : .regular)
 						Spacer(minLength: 0)
 					}
@@ -42,7 +42,7 @@ struct OnboardingProgressRail: View {
 					)
 					.frame(minHeight: 38)
 					.accessibilityElement(children: .combine)
-					.accessibilityLabel(OnboardingStrings.stepTitle(step))
+					.accessibilityLabel(step.title)
 					.accessibilityAddTraits(currentStep == step ? .isSelected : [])
 				}
 			}

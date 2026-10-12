@@ -6,17 +6,15 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct InstallationSettingsPage: View {
+	private static let canaryFeaturesTitle = "Canary Features"
+	private static let cancelTitle = "Cancel"
+
 	@Bindable var settings: LauncherPreferencesController
 	package let installation: InstallationController
 	let gameSession: GameSessionController
 	package let lifecycle: LauncherLifecycleStore
 	package let accentColor: Color
-	package let selectRegion: (GameRegion) -> Void
-	package let chooseInstallDirectory: () -> Void
-	package let locateExistingInstallation: () -> Void
-	package let repairGame: () -> Void
-	package let resetAllLauncherSettings: () -> Void
-	package let uninstallGame: () -> Void
+	let actions: any LauncherActions
 	let restartOnboarding: () -> Void
 	@State private var confirmsGameUninstall = false
 	@State private var confirmsForceMigration = false
@@ -85,10 +83,10 @@ struct InstallationSettingsPage: View {
 					) {
 						Button(
 							"Choose New Location…",
-							action: chooseInstallDirectory)
+							action: actions.chooseInstallDirectory)
 						Button(
 							"Locate Existing Installation…",
-							action: locateExistingInstallation
+							action: actions.locateExistingInstallation
 						)
 					}
 				}
@@ -106,7 +104,7 @@ struct InstallationSettingsPage: View {
 						title: "Repair…",
 						systemImage: "wrench.and.screwdriver",
 						tone: .accent(accentColor), presentation: .compact,
-						action: repairGame
+						action: actions.repairGame
 					)
 					.disabled(!installation.isInstalled || !installation.canInstall)
 				}
@@ -125,17 +123,17 @@ struct InstallationSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: SettingsStrings.canaryFeatures,
+				title: Self.canaryFeaturesTitle,
 				systemImage: "exclamationmark.triangle.fill",
 				tone: .warning
 			) {
 				SettingsActionRow(
-					title: SettingsStrings.canaryFeatures,
+					title: Self.canaryFeaturesTitle,
 					detail:
 						"Try experimental features. Turning this off switches a Canary region back to Global."
 				) {
 					SettingsToggle(
-						SettingsStrings.canaryFeatures,
+						Self.canaryFeaturesTitle,
 						isOn: $settings.canaryFeaturesEnabled,
 						accentColor: LauncherVisuals.warning
 					)
@@ -174,7 +172,7 @@ struct InstallationSettingsPage: View {
 							"Rebuild Environment", role: .destructive,
 							action: gameSession.forcePrefixMigration
 						)
-						Button(SettingsStrings.cancel, role: .cancel) {}
+						Button(Self.cancelTitle, role: .cancel) {}
 					} message: {
 						Text(
 							"Sets up the game's Windows environment again the next time you start the game. Game files and saves are untouched; that start just takes longer."
@@ -204,9 +202,9 @@ struct InstallationSettingsPage: View {
 					) {
 						Button(
 							"Reset Settings", role: .destructive,
-							action: resetAllLauncherSettings
+							action: actions.resetAllLauncherSettings
 						)
-						Button(SettingsStrings.cancel, role: .cancel) {}
+						Button(Self.cancelTitle, role: .cancel) {}
 					} message: {
 						Text(
 							"Puts every launcher setting back to its default. Game files, the install location, and the region are untouched."
@@ -239,7 +237,7 @@ struct InstallationSettingsPage: View {
 							"Delete Environment", role: .destructive,
 							action: gameSession.deleteWinePrefix
 						)
-						Button(SettingsStrings.cancel, role: .cancel) {}
+						Button(Self.cancelTitle, role: .cancel) {}
 					} message: {
 						Text(
 							"This signs you out of every login saved in the sign-in window. Game files are untouched."
@@ -268,8 +266,8 @@ struct InstallationSettingsPage: View {
 					) {
 						Button(
 							"Move Game to Trash", role: .destructive,
-							action: uninstallGame)
-						Button(SettingsStrings.cancel, role: .cancel) {}
+							action: actions.uninstallGame)
+						Button(Self.cancelTitle, role: .cancel) {}
 					} message: {
 						Text("The launcher stays installed.")
 					}
@@ -293,7 +291,7 @@ struct InstallationSettingsPage: View {
 	private var regionBinding: Binding<GameRegion> {
 		Binding(
 			get: { installation.region },
-			set: { region in selectRegion(region) }
+			set: { region in actions.selectRegion(region) }
 		)
 	}
 }

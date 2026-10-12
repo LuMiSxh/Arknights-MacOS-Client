@@ -47,7 +47,7 @@ struct OnboardingLookView: View {
 			OnboardingQuestion(
 				question: "Which colors should the launcher use?",
 				systemImage: "paintpalette",
-				answers: [true, false].map(OnboardingStrings.colorsAnswer),
+				answers: [true, false].map(Self.colorsAnswer),
 				selection: colorsBinding,
 				accentColor: customization.accentColor
 			)
@@ -64,11 +64,23 @@ struct OnboardingLookView: View {
 			OnboardingQuestion(
 				question: "What should the launcher show?",
 				systemImage: "rectangle.bottomthird.inset.filled",
-				answers: LauncherInfoAnswer.allCases.map(OnboardingStrings.infoAnswer),
+				answers: LauncherInfoAnswer.allCases.map(\.answer),
 				selections: $preferences.shownLauncherInfo,
 				accentColor: customization.accentColor
 			)
 		}
+	}
+
+	private static func colorsAnswer(_ matchesArtwork: Bool) -> OnboardingAnswer<Bool> {
+		matchesArtwork
+			? OnboardingAnswer(
+				value: true, title: "Match the artwork",
+				detail: "Buttons and glass pick up the colors of your artwork.",
+				systemImage: "paintpalette", isRecommended: true)
+			: OnboardingAnswer(
+				value: false, title: "Keep it neutral",
+				detail: "Uses the standard launcher colors whatever the artwork.",
+				systemImage: "circle.lefthalf.filled")
 	}
 
 	private var dockActions: [OnboardingAnswer<Action>] {

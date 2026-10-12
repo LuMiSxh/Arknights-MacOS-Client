@@ -14,6 +14,17 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Senda
 
 	var id: Int { rawValue }
 
+	var title: String {
+		switch self {
+		case .welcome: "System Check"
+		case .region: "Region"
+		case .display: "Display"
+		case .look: "Look"
+		case .extras: "Updates & Audio"
+		case .finish: "Ready"
+		}
+	}
+
 	var systemImage: String {
 		switch self {
 		case .welcome: "checkmark.shield"

@@ -48,7 +48,12 @@ struct WallpaperCategoryFilter: View {
 	}
 
 	private func title(for category: WallpaperCategory?) -> String {
-		category.map { CustomizationStrings.wallpaperCategory($0) }
-			?? "All Types"
+		switch category {
+		case nil: "All Types"
+		case .story: "Story"
+		case .commemorative: "Commemorative"
+		case .celebration: "Celebration"
+		case .holiday: "Holiday"
+		}
 	}
 }

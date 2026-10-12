@@ -31,9 +31,8 @@ enum ServerReset {
 		now: Date = Date()
 	) -> String {
 		let remaining = max(0, Int(nextReset(for: region, after: now).timeIntervalSince(now)))
-		return LauncherStrings.serverReset(
-			hours: remaining / 3600,
-			minutes: (remaining % 3600) / 60
-		)
+		let minutes = (remaining % 3600) / 60
+		let minuteText = minutes < 10 ? "0\(minutes)" : "\(minutes)"
+		return "Reset in \(remaining / 3600)h \(minuteText)m"
 	}
 }

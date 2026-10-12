@@ -104,10 +104,11 @@ struct AboutSettingsPage: View {
 
 				SettingsActionRow(
 					title: "Game & Account Issues",
-					detail: SettingsStrings.gameAccountIssuesDetail(region: region)
+					detail:
+						"Contact \(publisherName) for account, payment, or game-service problems."
 				) {
 					CapsuleActionButton(
-						title: SettingsStrings.contactPublisherTitle(region: region),
+						title: "Contact \(publisherName)…",
 						systemImage: "arrow.up.right.square",
 						tone: .neutral, presentation: .compact,
 						action: contactPublisher
@@ -217,6 +218,14 @@ struct AboutSettingsPage: View {
 			accentColor: accentColor
 		) {
 			presentedDocument = document
+		}
+	}
+
+	private var publisherName: String {
+		switch region.publisher {
+		case .gryphline: "Gryphline"
+		case .hypergryph: "Hypergryph"
+		default: "Yostar"
 		}
 	}
 

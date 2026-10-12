@@ -6,6 +6,8 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct OnboardingRosettaRecoveryView: View {
+	static let checkAgainTitle = "Check Again"
+
 	let installationState: RosettaInstallationState
 	let accentColor: Color
 	let install: () -> Void
@@ -55,7 +57,7 @@ struct OnboardingRosettaRecoveryView: View {
 						confirmsInstallation = true
 					}
 					CapsuleActionButton(
-						title: OnboardingStrings.checkAgain,
+						title: Self.checkAgainTitle,
 						systemImage: "checkmark.arrow.trianglehead.counterclockwise",
 						tone: .accent(accentColor)
 					) {

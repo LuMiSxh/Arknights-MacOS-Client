@@ -3,6 +3,8 @@
 import Foundation
 
 nonisolated enum OnboardingUpdateState: Equatable, Sendable {
+	static let checkingTitle = "Checking…"
+
 	case checking
 	case current
 	case updateRequired(String)

@@ -54,7 +54,7 @@ struct GameAdvancedSettingsPanel: View {
 				SettingsHairline()
 				SettingsActionRow(
 					title: "Game draws \(renderSize.displayName)",
-					detail: SettingsStrings.scalingDetail(plan.scaling)
+					detail: scalingDetail
 				) {}
 			}
 			SettingsHairline()
@@ -115,14 +115,23 @@ struct GameAdvancedSettingsPanel: View {
 		)
 	}
 
+	private var scalingDetail: String {
+		switch plan.scaling {
+		case .native: "Shown without scaling."
+		case .metalFX: "MetalFX upscales it to fit your screen."
+		case .stretched: "macOS stretches it to fit your screen, which looks softer."
+		}
+	}
+
 	private var inGameResolutionNote: some View {
 		HStack(alignment: .firstTextBaseline, spacing: LauncherVisuals.Spacing.control) {
 			Image(systemName: "info.circle")
 				.foregroundStyle(.secondary)
 				.accessibilityHidden(true)
 			Text(
-				SettingsStrings.inGameResolutionNote(
-					window: options.windowSize, pixelsPerPoint: plan.gamePixelsPerPoint)
+				"Resolutions inside Arknights count the pixels the game draws. With the sharpest picture, "
+					+ "choose \(options.windowSize.scaled(by: plan.gamePixelsPerPoint).displayName) in the game for a "
+					+ "\(options.windowSize.displayName) window."
 			)
 			.font(.caption)
 			.foregroundStyle(.secondary)

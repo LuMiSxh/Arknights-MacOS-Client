@@ -71,6 +71,23 @@ nonisolated enum PointerAnswer: CaseIterable, Sendable {
 	}
 }
 
+extension PointerAnswer {
+	var answer: OnboardingAnswer<PointerAnswer> {
+		switch self {
+		case .macPointer:
+			OnboardingAnswer(
+				value: self, title: "Your Mac's pointer",
+				detail: "Follows your mouse without delay. Applies the next time the game starts.",
+				systemImage: "cursorarrow", isRecommended: true, technicalName: "Hardware cursor")
+		case .gameCursor:
+			OnboardingAnswer(
+				value: self, title: "Arknights' own cursor",
+				detail: "The game's themed cursor, which can trail your mouse slightly.",
+				systemImage: "scope", technicalName: "Software cursor")
+		}
+	}
+}
+
 extension LauncherPreferencesController {
 	var pointerAnswer: PointerAnswer {
 		get { PointerAnswer(usesHardwareCursor: usesHardwareCursor) }
@@ -83,6 +100,28 @@ nonisolated enum LauncherInfoAnswer: CaseIterable, Hashable, Sendable {
 	case gameVersion
 	case serverTime
 	case branding
+}
+
+extension LauncherInfoAnswer {
+	var answer: OnboardingAnswer<LauncherInfoAnswer> {
+		switch self {
+		case .gameVersion:
+			OnboardingAnswer(
+				value: self, title: "Game version",
+				detail: "Shows the installed version above Play, with a quick update check.",
+				systemImage: "number.square")
+		case .serverTime:
+			OnboardingAnswer(
+				value: self, title: "Server time & reset countdown",
+				detail: "Shows how long until your server's next daily reset.",
+				systemImage: "clock")
+		case .branding:
+			OnboardingAnswer(
+				value: self, title: "Branding",
+				detail: "Shows the server logo in the top left corner.",
+				systemImage: "textformat")
+		}
+	}
 }
 
 extension LauncherPreferencesController {
@@ -122,5 +161,86 @@ nonisolated enum UpdateCheckAnswer: CaseIterable, Sendable {
 			})
 		else { return nil }
 		self = answer
+	}
+}
+
+extension UpdateCheckAnswer {
+	var answer: OnboardingAnswer<UpdateCheckAnswer> {
+		switch self {
+		case .automatic:
+			OnboardingAnswer(
+				value: self, title: "Check automatically",
+				detail:
+					"Looks for new versions and project notices when the app opens. You choose when to download.",
+				systemImage: "checkmark.arrow.trianglehead.counterclockwise", isRecommended: true)
+		case .noticesOnly:
+			OnboardingAnswer(
+				value: self, title: "Only show important notices",
+				detail:
+					"Skips version checks but still tells you when a game update needs a newer launcher.",
+				systemImage: "megaphone")
+		case .manual:
+			OnboardingAnswer(
+				value: self, title: "I'll check myself",
+				detail: "Never looks on its own. You can turn checks on later in Settings.",
+				systemImage: "hand.raised")
+		}
+	}
+}
+
+extension GamePlacementAnswer {
+	var answer: OnboardingAnswer<GamePlacementAnswer> {
+		switch self {
+		case .window:
+			OnboardingAnswer(
+				value: self, title: "In a window",
+				detail: "Fits on your screen, so other apps stay within reach.",
+				systemImage: "macwindow", isRecommended: true)
+		case .fullscreen:
+			OnboardingAnswer(
+				value: self, title: "Fullscreen",
+				detail: "Fills the whole screen. Other apps stay hidden while you play.",
+				systemImage: "arrow.up.left.and.arrow.down.right")
+		}
+	}
+}
+
+extension GameWindowSizeChoice {
+	var answer: OnboardingAnswer<GameWindowSizeChoice> {
+		switch self {
+		case .fillScreen:
+			OnboardingAnswer(
+				value: self, title: "Fill my screen",
+				detail: "Uses all the room your screen has, like a maximized window.",
+				systemImage: "rectangle.inset.filled", isRecommended: true)
+		case .leaveRoom:
+			OnboardingAnswer(
+				value: self, title: "Leave room for other apps",
+				detail: "Smaller, so chat or a browser fits beside the game.",
+				systemImage: "rectangle.split.2x1")
+		}
+	}
+}
+
+extension GameRenderingMode {
+	var answer: OnboardingAnswer<GameRenderingMode> {
+		switch self {
+		case .retina:
+			OnboardingAnswer(
+				value: self, title: "The sharpest picture",
+				detail:
+					"Uses every detail your screen has. Most Macs keep battles smooth this way.",
+				systemImage: "sparkles", isRecommended: true, technicalName: "Retina")
+		case .metalFX:
+			OnboardingAnswer(
+				value: self, title: "Smooth play on big screens",
+				detail: "Draws a lighter picture and sharpens it. Pick this if battles stutter.",
+				systemImage: "gauge.with.dots.needle.67percent", technicalName: "MetalFX")
+		case .lightweight:
+			OnboardingAnswer(
+				value: self, title: "Longer battery life",
+				detail: "Draws the lightest picture, so text looks a little softer.",
+				systemImage: "leaf", technicalName: "Lightweight")
+		}
 	}
 }

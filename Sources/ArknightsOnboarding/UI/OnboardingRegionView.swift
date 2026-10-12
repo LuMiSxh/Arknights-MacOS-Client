@@ -12,6 +12,20 @@ struct OnboardingRegionView: View {
 	let canSwitchRegion: Bool
 	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
+	private static func regionAnswer(_ region: GameRegion) -> OnboardingAnswer<GameRegion> {
+		let detail =
+			switch region {
+			case .global: "The English game, for Global accounts."
+			case .japan: "The Japanese game, for Japan accounts."
+			case .korea: "The Korean game, for Korea accounts."
+			case .taiwan: "The Taiwan game, for Taiwan accounts."
+			case .china: "The China game, for China accounts."
+			case .chinaBilibili: "The China game, for Bilibili accounts."
+			}
+		return OnboardingAnswer(
+			value: region, title: region.displayName, detail: detail, systemImage: "globe")
+	}
+
 	var body: some View {
 		OnboardingPage(
 			title: "Your server",
@@ -23,7 +37,7 @@ struct OnboardingRegionView: View {
 				question: "Which server do you play on?",
 				systemImage: "globe.asia.australia",
 				answers: preferences.regionAccess.selectableRegions.map(
-					OnboardingStrings.regionAnswer),
+					Self.regionAnswer),
 				selection: regionBinding,
 				accentColor: accentColor,
 				isDisabled: !canSwitchRegion

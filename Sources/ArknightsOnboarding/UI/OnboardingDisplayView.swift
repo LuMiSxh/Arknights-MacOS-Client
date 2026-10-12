@@ -18,7 +18,7 @@ struct OnboardingDisplayView: View {
 			OnboardingQuestion(
 				question: "Where should the game appear?",
 				systemImage: "macwindow",
-				answers: GamePlacementAnswer.allCases.map(OnboardingStrings.placementAnswer),
+				answers: GamePlacementAnswer.allCases.map(\.answer),
 				selection: answerBinding(\.placement),
 				accentColor: accentColor,
 				isDisabled: isLocked
@@ -27,7 +27,7 @@ struct OnboardingDisplayView: View {
 				OnboardingQuestion(
 					question: "How big should the window be?",
 					systemImage: "rectangle.expand.diagonal",
-					answers: GameWindowSizeChoice.allCases.map(OnboardingStrings.windowSizeAnswer),
+					answers: GameWindowSizeChoice.allCases.map(\.answer),
 					selection: answerBinding(\.windowSize),
 					accentColor: accentColor,
 					isDisabled: isLocked,
@@ -37,7 +37,7 @@ struct OnboardingDisplayView: View {
 			OnboardingQuestion(
 				question: "What matters most to you?",
 				systemImage: "sparkles",
-				answers: GameRenderingMode.allCases.map(OnboardingStrings.renderingAnswer),
+				answers: GameRenderingMode.allCases.map(\.answer),
 				selection: answerBinding(\.rendering),
 				accentColor: accentColor,
 				isDisabled: isLocked
@@ -47,12 +47,12 @@ struct OnboardingDisplayView: View {
 			OnboardingQuestion(
 				question: "Which pointer should the game use?",
 				systemImage: "cursorarrow.motionlines",
-				answers: PointerAnswer.allCases.map(OnboardingStrings.pointerAnswer),
+				answers: PointerAnswer.allCases.map(\.answer),
 				selection: pointerBinding,
 				accentColor: accentColor,
 				isDisabled: isLocked
 			)
-			Text(OnboardingStrings.displaySummary(answers))
+			Text(displaySummary)
 				.font(.callout)
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: true)
@@ -62,6 +62,22 @@ struct OnboardingDisplayView: View {
 	}
 
 	private var isLocked: Bool { lifecycle.activity.isGameActive }
+
+	private var displaySummary: String {
+		let placement =
+			switch (answers.placement, answers.windowSize) {
+			case (.window, .fillScreen): "The game opens in a window that fills your screen"
+			case (.window, .leaveRoom): "The game opens in a window with room left for other apps"
+			case (.fullscreen, _): "The game opens fullscreen"
+			}
+		let picture =
+			switch answers.rendering {
+			case .retina: "and looks as sharp as your screen allows."
+			case .metalFX: "and favors smooth play on big screens."
+			case .lightweight: "and goes easy on your battery."
+			}
+		return "\(placement) \(picture) You can change all of this in Settings → Game."
+	}
 
 	private var answers: GameDisplayAnswers {
 		GameDisplayAnswers(preferences.launchOptions, screen: GameScreenMetrics.main)

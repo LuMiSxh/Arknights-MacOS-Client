@@ -11,8 +11,9 @@ struct UpdatesSettingsPage: View {
 	package let lifecycle: LauncherLifecycleStore
 	package let accentColor: Color
 	let appVersion: String
-	package let checkLauncherUpdates: () -> Void
-	package let checkGameUpdates: () -> Void
+	private static let announcementsTitle = "Announcements"
+	let actions: any LauncherActions
+	let checkLauncherUpdates: () -> Void
 
 	var body: some View {
 		SettingsPage(
@@ -42,19 +43,19 @@ struct UpdatesSettingsPage: View {
 					isDisabled: lifecycle.state.refresh.isChecking
 						|| !lifecycle.canBeginExclusiveActivity,
 					accentColor: accentColor,
-					check: checkGameUpdates
+					check: actions.checkGameUpdates
 				)
 			}
 
 			SettingsPanel(
-				title: SettingsStrings.announcements, systemImage: "megaphone"
+				title: Self.announcementsTitle, systemImage: "megaphone"
 			) {
 				SettingsActionRow(
-					title: SettingsStrings.announcements,
+					title: Self.announcementsTitle,
 					detail: "Show an occasional message from the project, once each."
 				) {
 					SettingsToggle(
-						SettingsStrings.announcements,
+						Self.announcementsTitle,
 						isOn: $settings.announcementsEnabled,
 						accentColor: accentColor
 					)
