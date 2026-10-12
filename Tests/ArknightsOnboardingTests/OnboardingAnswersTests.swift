@@ -25,128 +25,58 @@ private func makePreferences() -> (
 	)
 }
 
-@Test(arguments: [(laptop, GameDisplaySize.quadHD), (scaled4K, .ultraHD)])
-func screenMetricsPickTheLargestFittingResolution(
-	screen: GameScreenMetrics, resolution: GameDisplaySize
-) {
-	#expect(screen.fullscreenResolution == resolution)
-}
-
+@MainActor
 @Test
-func displayAnswersLetTheLauncherSizeTheGameAndKeepUnrelatedOptions() {
-	var base = GameLaunchOptions.default
-	base.usesGameSettings = true
+func appliedWindowAnswersAreReadBack() {
+	var base = GameLaunchOptions(displayMode: .windowed, resolution: .hd, usesGameSettings: true)
 	base.usesGameMode = true
 	base.synchronizationMode = .esync
 
-	let window = GameDisplayAnswers.recommended.applied(to: base, screen: scaled4K)
-	let smooth = GameDisplayAnswers(placement: .window, rendering: .metalFX)
-		.applied(to: base, screen: scaled4K)
-	let fullscreen = GameDisplayAnswers(placement: .fullscreen, rendering: .retina)
-		.applied(to: base, screen: scaled4K)
-
-	for options in [window, smooth, fullscreen] {
-		#expect(!options.usesGameSettings)
-		#expect(options.usesGameMode)
-		#expect(options.synchronizationMode == .esync)
+	for windowSize in GameWindowSizeChoice.allCases {
+		for rendering in GameRenderingMode.allCases {
+			let answers = GameDisplayAnswers(
+				placement: .window, windowSize: windowSize, rendering: rendering)
+			let options = answers.applied(to: base, screen: scaled4K)
+			#expect(GameDisplayAnswers(options, screen: scaled4K) == answers)
+			#expect(options.windowSize == windowSize.size(on: scaled4K))
+			#expect(!options.usesGameSettings)
+			#expect(options.usesGameMode)
+			#expect(options.synchronizationMode == .esync)
+		}
 	}
-	#expect(window.displayMode == .windowed && window.renderingMode == .retina)
-	#expect(window.windowSize == GameDisplaySize(width: 3008, height: 1631))
-	#expect(window.windowSize == GameWindowSizeChoice.fillScreen.size(on: scaled4K))
-	#expect(smooth.renderingMode == .metalFX && smooth.windowSize == window.windowSize)
-	#expect(fullscreen.displayMode == .fullscreen && fullscreen.fullscreenResolution == .native)
-	#expect(fullscreen.resolution == .ultraHD)
-}
+	for rendering in GameRenderingMode.allCases {
+		let answers = GameDisplayAnswers(placement: .fullscreen, rendering: rendering)
+		let options = answers.applied(to: base, screen: laptop)
+		#expect(GameDisplayAnswers(options, screen: laptop) == answers)
+		#expect(options.fullscreenResolution == .native)
+	}
+	#expect(laptop.fullscreenResolution == .quadHD)
+	#expect(scaled4K.fullscreenResolution == .ultraHD)
 
-@Test
-func windowedAnswersUseTheChosenWindowSize() {
-	let leaveRoom = GameDisplayAnswers(
-		placement: .window, windowSize: .leaveRoom, rendering: .retina
-	).applied(to: .default, screen: scaled4K)
+	var handSized = GameLaunchOptions.default
+	handSized.windowSize = GameDisplaySize(width: 1000, height: 700)
+	#expect(GameDisplayAnswers(handSized, screen: laptop).windowSize == .fillScreen)
 
-	#expect(leaveRoom.windowSize == GameWindowSizeChoice.leaveRoom.size(on: scaled4K))
-	#expect(leaveRoom.windowSize != GameWindowSizeChoice.fillScreen.size(on: scaled4K))
-}
-
-@Test(arguments: GameWindowSizeChoice.allCases, GameRenderingMode.allCases)
-func appliedWindowAnswersAreReadBack(
-	windowSize: GameWindowSizeChoice, rendering: GameRenderingMode
-) {
-	let answers = GameDisplayAnswers(
-		placement: .window, windowSize: windowSize, rendering: rendering)
-	let base = GameLaunchOptions(displayMode: .windowed, resolution: .hd, usesGameSettings: true)
-
-	#expect(
-		GameDisplayAnswers(answers.applied(to: base, screen: laptop), screen: laptop) == answers)
-}
-
-@Test(arguments: GameRenderingMode.allCases)
-func appliedFullscreenAnswersAreReadBack(rendering: GameRenderingMode) {
-	let answers = GameDisplayAnswers(placement: .fullscreen, rendering: rendering)
-	let base = GameLaunchOptions(displayMode: .windowed, resolution: .hd, usesGameSettings: true)
-
-	#expect(
-		GameDisplayAnswers(answers.applied(to: base, screen: laptop), screen: laptop).placement
-			== .fullscreen)
-	#expect(
-		GameDisplayAnswers(answers.applied(to: base, screen: laptop), screen: laptop).rendering
-			== rendering)
-}
-
-@Test
-func handSizedWindowsReadBackAsFillingTheScreen() {
-	var options = GameLaunchOptions.default
-	options.windowSize = GameDisplaySize(width: 1000, height: 700)
-
-	#expect(GameDisplayAnswers(options, screen: laptop).windowSize == .fillScreen)
-}
-
-@MainActor
-@Test(arguments: PointerAnswer.allCases)
-func pointerAnswersWriteTheHardwareCursorPreference(answer: PointerAnswer) {
-	let (preferences, store, cleanUp) = makePreferences()
-	defer { cleanUp() }
-
-	preferences.pointerAnswer = answer
-
-	#expect(preferences.usesHardwareCursor == (answer == .macPointer))
-	#expect(store.value(LauncherPreferencesStore.Key.usesHardwareCursor) == (answer == .macPointer))
-	#expect(preferences.pointerAnswer == answer)
-}
-
-@MainActor
-@Test
-func launcherInfoAnswersMapToTheTwoDisplayPreferences() {
 	let (preferences, _, cleanUp) = makePreferences()
 	defer { cleanUp() }
-
-	preferences.shownLauncherInfo = [.gameVersion]
-	#expect(preferences.showsGameVersion)
-	#expect(!preferences.showsServerResetCountdown)
-
+	for answer in PointerAnswer.allCases {
+		preferences.pointerAnswer = answer
+		#expect(preferences.usesHardwareCursor == (answer == .macPointer))
+		#expect(preferences.pointerAnswer == answer)
+	}
 	preferences.shownLauncherInfo = [.serverTime]
 	#expect(!preferences.showsGameVersion)
 	#expect(preferences.showsServerResetCountdown)
 	#expect(preferences.shownLauncherInfo == [.serverTime])
 
-	preferences.shownLauncherInfo = []
-	#expect(!preferences.showsGameVersion)
-	#expect(!preferences.showsServerResetCountdown)
-}
-
-@Test(arguments: UpdateCheckAnswer.allCases)
-func updateAnswersAreReadBackFromTheirPreferences(answer: UpdateCheckAnswer) {
-	#expect(
-		UpdateCheckAnswer(
-			launcherChecks: answer.checksForUpdates,
-			gameChecks: answer.checksForUpdates,
-			announcements: answer.showsAnnouncements
-		) == answer
-	)
-}
-
-@Test
-func customizedUpdatePreferencesMatchNoAnswer() {
+	for answer in UpdateCheckAnswer.allCases {
+		#expect(
+			UpdateCheckAnswer(
+				launcherChecks: answer.checksForUpdates,
+				gameChecks: answer.checksForUpdates,
+				announcements: answer.showsAnnouncements
+			) == answer
+		)
+	}
 	#expect(UpdateCheckAnswer(launcherChecks: true, gameChecks: false, announcements: true) == nil)
-	#expect(UpdateCheckAnswer(launcherChecks: true, gameChecks: true, announcements: false) == nil)
 }

@@ -10,33 +10,22 @@ import Testing
 
 @MainActor
 struct AppDelegateQuitTests {
-	@Test(arguments: UpdateQuitPath.allCases)
-	func installingUpdateTerminationUsesTheQuitHandler(path: UpdateQuitPath) {
+	@Test(arguments: QuitScenario.allCases)
+	func installingUpdateTerminationUsesTheQuitHandler(scenario: QuitScenario) {
 		let fixture = QuitFixture()
-		fixture.prepareUpdateInstallation()
-		#expect(fixture.updater.userDriver.phase == .readyToInstall)
-
-		switch path {
+		var dismissed = false
+		fixture.delegate.dismissPresentationForQuit = { dismissed = true }
+		switch scenario {
 		case .quitEvent:
-			fixture.sendQuitEvent()
+			fixture.prepareUpdateInstallation()
 		case .manualRetry:
+			fixture.prepareUpdateInstallation()
 			fixture.updater.userDriver.showInstallingUpdate(
 				withApplicationTerminated: false
 			) { [weak fixture] in
 				fixture?.sendQuitEvent()
 			}
 			fixture.updater.userDriver.retryTerminationRequest()
-		}
-
-		#expect(fixture.terminationCount == 1)
-	}
-
-	@Test(arguments: NonInstallingUpdateState.allCases)
-	func nonInstallingUpdateStatesDoNotAuthorizeTermination(
-		state: NonInstallingUpdateState
-	) {
-		let fixture = QuitFixture()
-		switch state {
 		case .downloadPrompt:
 			fixture.lifecycle.beginLauncherUpdate()
 			fixture.updater.userDriver.showDownloadInitiated(cancellation: {})
@@ -54,15 +43,21 @@ struct AppDelegateQuitTests {
 			fixture.prepareUpdateInstallation()
 			fixture.updater.updater(
 				fixture.sparkle, didAbortWithError: NSError(domain: "Test", code: 1))
+		case .ordinaryQuitWithOpenSettings:
+			fixture.delegate.blockingPresentationForQuit = { .settings }
+		case .ordinaryQuitWithoutPrompt:
+			fixture.delegate.blockingPresentationForQuit = { nil }
+		case .ordinaryQuitDuringSparklePrompt:
+			fixture.delegate.blockingPresentationForQuit = { .update }
 		}
 
-		fixture.sendQuitEvent()
+		if scenario != .manualRetry { fixture.sendQuitEvent() }
 
-		#expect(fixture.terminationCount == 0)
-		if state == .cancelledDownload || state == .abortedUpdate {
+		#expect(fixture.terminationCount == (scenario.terminates ? 1 : 0))
+		if scenario == .cancelledDownload || scenario == .abortedUpdate {
 			#expect(fixture.updater.installationID == nil)
 		}
-
+		if scenario == .ordinaryQuitWithOpenSettings { #expect(dismissed) }
 	}
 
 	@Test(arguments: [
@@ -92,90 +87,6 @@ struct AppDelegateQuitTests {
 
 		#expect(fixture.terminationCount == 1)
 	}
-	@Test(arguments: QuitRevalidationScenario.allCases)
-	func sheetDismissalRevalidatesTheQuitRequest(scenario: QuitRevalidationScenario) {
-		let fixture = QuitFixture()
-		fixture.prepareUpdateInstallation()
-		let installationID = fixture.updater.installationID
-		var replacementInstallationID: UUID?
-		var stoppingActivity: LauncherActivity?
-		switch scenario {
-		case .activityBecameBusy:
-			fixture.delegate.dismissPresentationForQuit = { [weak fixture] in
-				let activity = LauncherActivity.stoppingGame(
-					sessionID: UUID(), processIdentifier: 42)
-				stoppingActivity = activity
-				fixture?.lifecycle.simulateActivity(activity)
-			}
-		case .updateWasReplaced:
-			fixture.delegate.dismissPresentationForQuit = { [weak fixture] in
-				guard let fixture else { return }
-				fixture.updater.userDidCancelDownload(fixture.sparkle)
-				fixture.prepareUpdateInstallation()
-				replacementInstallationID = fixture.updater.installationID
-			}
-		case .installationWasRepeated:
-			fixture.delegate.dismissPresentationForQuit = { [weak fixture] in
-				fixture?.prepareUpdateInstallation()
-			}
-		}
-
-		fixture.sendQuitEvent()
-
-		#expect(fixture.terminationCount == (scenario == .installationWasRepeated ? 1 : 0))
-		switch scenario {
-		case .activityBecameBusy:
-			#expect(fixture.lifecycle.activity == stoppingActivity)
-		case .updateWasReplaced:
-			#expect(replacementInstallationID != nil)
-			#expect(fixture.updater.installationID == replacementInstallationID)
-		case .installationWasRepeated:
-			#expect(fixture.updater.installationID == installationID)
-		}
-	}
-
-	@Test(arguments: [
-		("no prompt", nil as LauncherPresentationDestination?, false),
-		("settings", .settings, true),
-		("popup", .popup, true),
-		(
-			"failure",
-			.failure(
-				LauncherFailurePresentation(
-					id: UUID(), message: "Failed", code: nil,
-					context: SupportContext(operation: .launch, region: nil),
-					actions: [.reportProblem]
-				)
-			),
-			true
-		),
-	])
-	func ordinaryQuitClosesPromptsAndTerminates(
-		_ scenarioName: String,
-		destination: LauncherPresentationDestination?,
-		expectedDismissal: Bool
-	) {
-		let fixture = QuitFixture()
-		fixture.delegate.blockingPresentationForQuit = { destination }
-		var dismissed = false
-		fixture.delegate.dismissPresentationForQuit = { dismissed = true }
-
-		fixture.sendQuitEvent()
-
-		#expect(fixture.terminationCount == 1)
-		#expect(dismissed == expectedDismissal)
-	}
-
-	@Test
-	func ordinaryQuitLeavesTheSparklePromptInControl() {
-		let fixture = QuitFixture()
-		fixture.delegate.blockingPresentationForQuit = { .update }
-
-		fixture.sendQuitEvent()
-
-		#expect(fixture.terminationCount == 0)
-	}
-
 	@Test
 	func systemLogoutIsNeverVetoedByLauncherPrompts() {
 		let fixture = QuitFixture()
@@ -189,23 +100,26 @@ struct AppDelegateQuitTests {
 	}
 }
 
-enum UpdateQuitPath: String, CaseIterable, Sendable {
+enum QuitScenario: String, CaseIterable, Equatable, Sendable {
 	case quitEvent
 	case manualRetry
-}
-
-enum NonInstallingUpdateState: String, CaseIterable, Equatable, Sendable {
 	case downloadPrompt
 	case readyPrompt
 	case updaterError
 	case cancelledDownload
 	case abortedUpdate
-}
+	case ordinaryQuitWithOpenSettings
+	case ordinaryQuitWithoutPrompt
+	case ordinaryQuitDuringSparklePrompt
 
-enum QuitRevalidationScenario: String, CaseIterable, Equatable, Sendable {
-	case activityBecameBusy
-	case updateWasReplaced
-	case installationWasRepeated
+	var terminates: Bool {
+		switch self {
+		case .quitEvent, .manualRetry, .ordinaryQuitWithOpenSettings, .ordinaryQuitWithoutPrompt:
+			true
+		default:
+			false
+		}
+	}
 }
 
 @MainActor

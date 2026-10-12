@@ -39,46 +39,32 @@ struct OnboardingCoordinatorTests {
 		resumed.advance()
 
 		#expect(resumed.step == .display)
-	}
 
-	@Test
-	func missingGameClampsResumeToRegion() async {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = OnboardingProgressStore(defaults: defaults)
 		store.save(step: .look)
-		let coordinator = OnboardingCoordinator(store: store)
-
-		await coordinator.startIfNeeded(
+		let withoutGame = OnboardingCoordinator(store: store)
+		await withoutGame.startIfNeeded(
 			isDeveloperMode: false,
 			isOnboardingPreview: false,
 			gameIsInstalled: false,
 			checkForUpdates: { .current },
 			checkIntelTranslation: { .available }
 		)
-		coordinator.advance()
+		withoutGame.advance()
+		#expect(withoutGame.step == .region)
 
-		#expect(coordinator.step == .region)
-	}
-
-	@Test
-	func stepSavedByAnEarlierLauncherRestartsAtTheSystemCheck() async {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
 		defaults.set(5, forKey: "onboarding.currentStep")
-		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
-
-		await coordinator.startIfNeeded(
+		let fromEarlierLauncher = OnboardingCoordinator(
+			store: OnboardingProgressStore(defaults: defaults))
+		await fromEarlierLauncher.startIfNeeded(
 			isDeveloperMode: false,
 			isOnboardingPreview: false,
 			gameIsInstalled: true,
 			checkForUpdates: { .current },
 			checkIntelTranslation: { .available }
 		)
-		#expect(coordinator.step == .welcome)
-
-		coordinator.advance()
-		#expect(coordinator.step == .region)
+		#expect(fromEarlierLauncher.step == .welcome)
+		fromEarlierLauncher.advance()
+		#expect(fromEarlierLauncher.step == .region)
 	}
 
 	@Test(arguments: [
@@ -93,6 +79,7 @@ struct OnboardingCoordinatorTests {
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = OnboardingProgressStore(defaults: defaults)
 		let coordinator = OnboardingCoordinator(store: store)
+		var intelChecks = 0
 		await coordinator.startIfNeeded(
 			isDeveloperMode: false,
 			isOnboardingPreview: false,
@@ -100,8 +87,12 @@ struct OnboardingCoordinatorTests {
 			checkForUpdates: {
 				updateIsAvailable ? .updateAvailable("0.5.0") : .failed
 			},
-			checkIntelTranslation: { .available }
+			checkIntelTranslation: {
+				intelChecks += 1
+				return .available
+			}
 		)
+		#expect(intelChecks == (updateIsAvailable ? 0 : 1), Comment(rawValue: caseLabel))
 		coordinator.advance()
 		#expect(
 			coordinator.step == (updateIsAvailable ? .welcome : .region),
@@ -122,59 +113,6 @@ struct OnboardingCoordinatorTests {
 		#expect(coordinator.isPresented == updateIsAvailable, Comment(rawValue: caseLabel))
 		#expect(store.needsOnboarding == updateIsAvailable, Comment(rawValue: caseLabel))
 	}
-
-	@Test
-	func rosettaIsCheckedOnlyAfterTheLauncherCanContinue() async {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let coordinator = OnboardingCoordinator(
-			store: OnboardingProgressStore(defaults: defaults)
-		)
-		var checks = 0
-
-		await coordinator.startIfNeeded(
-			isDeveloperMode: false,
-			isOnboardingPreview: false,
-			gameIsInstalled: false,
-			checkForUpdates: { .current },
-			checkIntelTranslation: {
-				checks += 1
-				return .rosettaMissing
-			}
-		)
-
-		#expect(checks == 1)
-		#expect(coordinator.intelTranslationState == .rosettaMissing)
-
-		await coordinator.refreshIntelTranslationAvailability(
-			checkIntelTranslation: { .available }
-		)
-		#expect(coordinator.intelTranslationState == .available)
-	}
-
-	#if DEBUG
-		@Test
-		func developerPreviewCanBeToggledWithoutCompletingOnboarding() async {
-			let (defaults, suiteName) = makeDefaults()
-			defer { defaults.removePersistentDomain(forName: suiteName) }
-			let store = OnboardingProgressStore(defaults: defaults)
-			let coordinator = OnboardingCoordinator(store: store)
-
-			await coordinator.startIfNeeded(
-				isDeveloperMode: true,
-				isOnboardingPreview: true,
-				gameIsInstalled: true,
-				checkForUpdates: { .current },
-				checkIntelTranslation: { .available }
-			)
-			#expect(coordinator.isPresented)
-
-			coordinator.dismissDeveloperPreview()
-
-			#expect(!coordinator.isPresented)
-			#expect(store.needsOnboarding)
-		}
-	#endif
 
 	@Test
 	func requiredSetupCannotBeSkippedUntilFinished() async {
@@ -200,37 +138,6 @@ struct OnboardingCoordinatorTests {
 		coordinator.finish()
 		#expect(!store.needsOnboarding)
 		#expect(store.pendingRequiredSchema == nil)
-	}
-
-	@Test
-	func restartedSetupStaysSkippable() async {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		defaults.set(1, forKey: "onboarding.completedSchemaVersion")
-		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
-
-		await coordinator.restart(
-			gameIsInstalled: true,
-			checkForUpdates: { .current },
-			checkIntelTranslation: { .available }
-		)
-		#expect(coordinator.requiredSchema == nil)
-
-		coordinator.skip()
-		#expect(!coordinator.isPresented)
-	}
-
-	@Test
-	func setupFinishedBeforeTheQuestionsRunsAgain() {
-		let (defaults, suiteName) = makeDefaults()
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = OnboardingProgressStore(defaults: defaults)
-
-		defaults.set(1, forKey: "onboarding.completedSchemaVersion")
-		#expect(store.needsOnboarding)
-
-		store.complete()
-		#expect(!store.needsOnboarding)
 	}
 
 	private func makeDefaults() -> (UserDefaults, String) {

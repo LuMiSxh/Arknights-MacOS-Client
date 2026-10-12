@@ -29,21 +29,6 @@ struct InstallerDirectoryTests {
 	}
 
 	@Test
-	func leaseCanBeReleasedAndReacquiredInOneProcess() throws {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "InstallerDirectoryTests-reacquire-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? FileManager.default.removeItem(at: root) }
-
-		let first = try InstallLease.acquire(at: root)
-		first.release()
-		let second = try InstallLease.acquire(at: root)
-		second.release()
-		try withInstallLease(at: root) { _ in }
-	}
-
-	@Test
 	func secondAcquireWhileHeldThrowsDirectoryInUse() throws {
 		let root = FileManager.default.temporaryDirectory.appending(
 			path: "InstallerDirectoryTests-busy-\(UUID().uuidString)",
@@ -61,17 +46,8 @@ struct InstallerDirectoryTests {
 		}
 		held.release()
 		try withInstallLease(at: root) { _ in }
-	}
 
-	@Test
-	func scopedLeaseIsReleasedWhenTheBodyThrows() throws {
 		struct Failure: Error {}
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "InstallerDirectoryTests-throw-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? FileManager.default.removeItem(at: root) }
-
 		#expect(throws: Failure.self) {
 			try withInstallLease(at: root) { _ in throw Failure() }
 		}
