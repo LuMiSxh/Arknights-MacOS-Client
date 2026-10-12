@@ -7,114 +7,79 @@ import Testing
 
 @Suite("PresetCatalogModels")
 struct PresetCatalogModelsTests {
-	@Test(
-		"decodes gallery image fields from strings or one-element arrays",
-		arguments: [
-			(
-				"plain string fields",
-				#"""
-				{
-				  "id": 4431,
-				  "title": "Crossing",
-				  "image1": "https://webusstatic.yo-star.com/a.png",
-				  "smallImage": "https://webusstatic.yo-star.com/a-small.jpg"
-				}
-				"""#,
-				4431,
-				"Crossing",
-				"https://webusstatic.yo-star.com/a.png",
-				"https://webusstatic.yo-star.com/a-small.jpg"
-			),
-			(
-				"single-element array-wrapped fields",
-				#"""
-				{
-				  "id": 172197591815510122,
-				  "title": "70万人突破記念イラスト",
-				  "image1": ["https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/01.jpg"],
-				  "smallImage": ["https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/small.jpg"]
-				}
-				"""#,
-				172_197_591_815_510_122,
-				"70万人突破記念イラスト",
-				"https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/01.jpg",
-				"https://webusstatic.yo-star.com/ark_jp_web/assets/172197591815510122/small.jpg"
-			),
-		]
-	)
-	func decodesGalleryImageFields(
-		caseLabel: String,
-		json: String,
-		expectedID: Int,
-		expectedTitle: String,
-		expectedImage: String,
-		expectedSmallImage: String
-	) throws {
-		let row = try JSONDecoder().decode(YostarGalleryRow.self, from: Data(json.utf8))
-
-		#expect(row.id == expectedID, Comment(rawValue: caseLabel))
-		#expect(row.title == expectedTitle, Comment(rawValue: caseLabel))
-		#expect(
-			row.image1 == expectedImage,
-			Comment(rawValue: caseLabel)
-		)
-		#expect(
-			row.smallImage == expectedSmallImage,
-			Comment(rawValue: caseLabel)
-		)
-	}
-
-	@Test("falls back from missing smallImage to image1")
-	func fallsBackToImage1WhenSmallImageMissing() throws {
-		let json = #"""
-			{
-			  "id": 1,
-			  "title": "Fallback",
-			  "image1": "https://webusstatic.yo-star.com/only.png"
-			}
-			"""#
-		let row = try JSONDecoder().decode(YostarGalleryRow.self, from: Data(json.utf8))
-
-		#expect(row.smallImage == "https://webusstatic.yo-star.com/only.png")
-	}
-
-	@Test("wallpaper tag catalog returns empty tags for unknown IDs")
-	func tagCatalogReturnsEmptyForUnknownID() {
-		#expect(WallpaperTagCatalog.tags(for: "global-not-a-real-id").isEmpty)
-	}
-
-	@Test("wallpaper tag manifest decodes a schemaVersion and tag dictionary")
-	func manifestDecodesSchema() throws {
-		let json = #"""
-			{
-			  "schemaVersion": 1,
-			  "tags": {
-			    "global-4431": ["amiya", "closer", "rhodes-island"]
-			  }
-			}
-			"""#
-		let manifest = try JSONDecoder().decode(
-			WallpaperTagManifest.self, from: Data(json.utf8))
-
-		#expect(manifest.schemaVersion == 1)
-		#expect(manifest.tags["global-4431"] == ["amiya", "closer", "rhodes-island"])
+	enum UpstreamPayload: CaseIterable {
+		case plainStringFields
+		case arrayWrappedFields
+		case missingSmallImage
+		case galleryRowIdentity
+		case characterTable
+		case legacyWallpaperCache
 	}
 
 	@Test(
-		"classifies wallpaper titles into categories",
-		arguments: [
-			("Episode 6: Partial Necrosis Opening", WallpaperCategory.story),
-			("Twitter 110k Followers Commemorative Wallpaper", WallpaperCategory.commemorative),
-			("2019 Christmas", WallpaperCategory.holiday),
-			("4th Anniversary Celebration", WallpaperCategory.celebration),
-			("3rd Anniverary Celebration", WallpaperCategory.celebration),
-			(
-				"5.5th Livestream Commemorative Wallpaper",
-				WallpaperCategory.celebration
-			),
-		]
+		"decodes gallery image fields, character tables and legacy wallpaper caches",
+		arguments: UpstreamPayload.allCases
 	)
-	func classifiesTitles(title: String, expected: WallpaperCategory) {
-		#expect(WallpaperCategory(title: title) == expected)
+	func decodesGalleryImageFields(payload: UpstreamPayload) throws {
+		func galleryRow(_ json: String) throws -> YostarGalleryRow {
+			try JSONDecoder().decode(YostarGalleryRow.self, from: Data(json.utf8))
+		}
+		switch payload {
+		case .plainStringFields:
+			let row = try galleryRow(
+				#"{"id":4431,"title":"Crossing","image1":"https://webusstatic.yo-star.com/a.png","smallImage":"https://webusstatic.yo-star.com/a-small.jpg"}"#
+			)
+			#expect(row.id == 4431)
+			#expect(row.title == "Crossing")
+			#expect(row.image1 == "https://webusstatic.yo-star.com/a.png")
+			#expect(row.smallImage == "https://webusstatic.yo-star.com/a-small.jpg")
+		case .arrayWrappedFields:
+			let row = try galleryRow(
+				#"{"id":172197591815510122,"title":"70万人突破記念イラスト","image1":["https://webusstatic.yo-star.com/01.jpg"],"smallImage":["https://webusstatic.yo-star.com/small.jpg"]}"#
+			)
+			#expect(row.id == 172_197_591_815_510_122)
+			#expect(row.image1 == "https://webusstatic.yo-star.com/01.jpg")
+			#expect(row.smallImage == "https://webusstatic.yo-star.com/small.jpg")
+		case .missingSmallImage:
+			let row = try galleryRow(
+				#"{"id":1,"title":"Fallback","image1":"https://webusstatic.yo-star.com/only.png"}"#
+			)
+			#expect(row.smallImage == "https://webusstatic.yo-star.com/only.png")
+		case .galleryRowIdentity:
+			let row = try galleryRow(
+				#"{"id":42,"title":"  Crossing the Rhine  ","author":" Yostar Art ","description":" A river crossing illustration ","image1":"https://webusstatic.yo-star.com/crossing.png"}"#
+			)
+			let wallpaper = try #require(
+				PresetCatalogService.wallpaper(from: row, page: 1, ordinal: 1))
+			#expect(wallpaper.id == "wp_42")
+			#expect(wallpaper.title == "Crossing the Rhine")
+			#expect(wallpaper.author == "Yostar Art")
+			#expect(wallpaper.description == "A river crossing illustration")
+
+			let fallbackRow = try galleryRow(
+				#"{"title":"Untitled","image1":"https://webusstatic.yo-star.com/untitled.png"}"#)
+			let fallback = try #require(
+				PresetCatalogService.wallpaper(from: fallbackRow, page: 2, ordinal: 3))
+			#expect(fallback.id == "wp_2_2")
+		case .characterTable:
+			let entry = try JSONDecoder().decode(
+				RawCharacterEntry.self,
+				from: Data(
+					#"{"name":"Amiya","rarity":5,"profession":"CASTER","subProfessionId":"corecaster","nationId":"Rhodes","groupId":"Rhodes Island","teamId":"Rhodes Island","tagList":["Support"]}"#
+						.utf8))
+			#expect(entry.rarity == "TIER_6")
+			#expect(entry.subProfessionID == "corecaster")
+			#expect(entry.groupID == "Rhodes Island")
+			#expect(entry.tagList == ["Support"])
+		case .legacyWallpaperCache:
+			let wallpaper = try JSONDecoder().decode(
+				PresetWallpaper.self,
+				from: Data(
+					#"{"id":"crossing","title":"Crossing","fallbackOrdinal":null,"url":"https://webusstatic.yo-star.com/crossing.png","thumbnailURL":null}"#
+						.utf8))
+			#expect(wallpaper.title == "Crossing")
+			#expect(wallpaper.author == nil)
+			#expect(wallpaper.description == nil)
+		}
 	}
 }

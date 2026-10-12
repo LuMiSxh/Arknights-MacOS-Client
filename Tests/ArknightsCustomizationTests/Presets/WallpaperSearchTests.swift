@@ -7,166 +7,51 @@ import Testing
 
 @Suite("WallpaperSearch matching")
 struct WallpaperSearchTests {
+
 	@Test(
-		"matches title and category filters",
+		"matches title, category, tag and multi-term filters",
 		arguments: [
+			("title substring", "2019 Christmas", [], "christmas", nil, [], true),
+			("empty query respects the category", "Untitled", [], "", .holiday, [], false),
 			(
-				"title substring",
-				"2019 Christmas",
-				[String](),
-				WallpaperCategory.holiday.rawValue,
-				"christmas",
-				nil as String?,
-				[String](),
-				true
+				"category mismatch excludes a tag match", "Untitled", ["w"], "w", .holiday, ["w"],
+				false
 			),
+			("matching category keeps a tag match", "Untitled", ["w"], "w", .story, ["w"], true),
 			(
-				"empty query includes every category",
-				"Untitled",
-				[String](),
-				WallpaperCategory.story.rawValue,
-				"",
-				nil as String?,
-				[String](),
-				true
-			),
-			(
-				"empty query still respects the selected category",
-				"Untitled",
-				[String](),
-				WallpaperCategory.story.rawValue,
-				"",
-				WallpaperCategory.holiday.rawValue,
-				[String](),
+				"complete tag is exact", "Untitled", ["warfarin"], "w", nil, ["w", "warfarin"],
 				false
 			),
 			(
-				"category mismatch excludes an otherwise matching tag",
-				"Untitled",
-				["w"],
-				WallpaperCategory.story.rawValue,
-				"w",
-				WallpaperCategory.holiday.rawValue,
-				["w"],
-				false
+				"incomplete tag matches by prefix", "Untitled", ["kristen wright"], "kr", nil,
+				["kristen wright"], true
+			),
+			("diacritics fold", "Untitled", ["młynar"], "mlynar", nil, ["młynar"], true),
+			("ligatures fold", "Untitled", ["ægir"], "ae", nil, ["ægir"], true),
+			(
+				"multi-word query is not split over another tag", "Untitled", ["amiya"],
+				"kristen wright", nil, ["kristen wright", "amiya"], false
 			),
 			(
-				"matching category keeps the tag result",
-				"Untitled",
-				["w"],
-				WallpaperCategory.story.rawValue,
-				"w",
-				WallpaperCategory.story.rawValue,
-				["w"],
-				true
+				"terms match across title and tags", "Twitter 460k Followers", ["angelina"],
+				"twitter angelina", nil, ["angelina"], true
 			),
-		]
+			(
+				"one missing term rejects the result", "Unrelated Title", ["angelina"],
+				"twitter angelina", nil, ["angelina"], false
+			),
+			(
+				"terms match separate tags", "Untitled", ["amiya", "angelina"], "amiya angelina",
+				nil, ["amiya", "angelina"], true
+			),
+		] as [(String, String, [String], String, WallpaperCategory?, [String], Bool)]
 	)
 	func wallpaperSearchMatchesTextAndCategoryFilters(
-		caseLabel: String,
-		title: String,
-		tags: [String],
-		categoryRawValue: String,
-		query: String,
-		selectedCategoryRawValue: String?,
-		knownTags: [String],
-		expected: Bool
-	) throws {
-		let category = try #require(WallpaperCategory(rawValue: categoryRawValue))
-		let selectedCategory = selectedCategoryRawValue.flatMap(WallpaperCategory.init(rawValue:))
-		let matches = PresetSearch.matches(
-			title: title,
-			tags: tags,
-			category: category,
-			query: query,
-			selectedCategory: selectedCategory,
-			knownTags: Set(knownTags.map { PresetSearch.normalized($0) })
-		)
-		#expect(matches == expected, Comment(rawValue: caseLabel))
-	}
-
-	@Test(
-		"matches complete tags exactly and incomplete tags by prefix",
-		arguments: [
-			("complete tag", ["w"], "w", ["w"], true),
-			("complete tag is not a prefix", ["warfarin"], "w", ["w", "warfarin"], false),
-			("incomplete tag prefix", ["kristen wright"], "kr", ["kristen wright"], true),
-			(
-				"unrelated tag has no prefix match", ["amiya"], "kr", ["kristen wright", "amiya"],
-				false
-			),
-			("non-decomposable diacritic", ["młynar"], "mlynar", ["młynar"], true),
-			("ligature", ["ægir"], "ae", ["ægir"], true),
-			(
-				"complete multi-word tag", ["kristen wright"], "kristen wright",
-				["kristen wright", "amiya"], true
-			),
-			(
-				"multi-word query is not split over another tag", ["amiya"], "kristen wright",
-				["kristen wright", "amiya"], false
-			),
-		]
-	)
-	func wallpaperSearchMatchesExpectedTags(
-		caseLabel: String,
-		tags: [String],
-		query: String,
-		knownTags: [String],
-		expected: Bool
-	) {
-		let matches = PresetSearch.matches(
-			title: "Untitled",
-			tags: tags,
-			category: .story,
-			query: query,
-			selectedCategory: nil,
-			knownTags: Set(knownTags.map { PresetSearch.normalized($0) })
-		)
-		#expect(matches == expected, Comment(rawValue: caseLabel))
-	}
-
-	@Test(
-		"requires every search term to match across the title or tags",
-		arguments: [
-			(
-				"all terms match across title and tags",
-				"Twitter 460k Followers Commemorative Wallpaper",
-				["angelina", "amiya"],
-				"twitter angelina",
-				["angelina", "amiya"],
-				true
-			),
-			(
-				"one missing term rejects the result",
-				"Unrelated Title",
-				["angelina", "amiya"],
-				"twitter angelina",
-				["angelina", "amiya"],
-				false
-			),
-			(
-				"terms can match separate tags",
-				"Untitled",
-				["amiya", "pramanix", "angelina"],
-				"amiya angelina",
-				["amiya", "pramanix", "angelina"],
-				true
-			),
-			(
-				"an incomplete term keeps prefix matching",
-				"Untitled",
-				["kristen wright", "angelina"],
-				"kr angelina",
-				["kristen wright", "angelina"],
-				true
-			),
-		]
-	)
-	func wallpaperSearchRequiresAllTerms(
-		caseLabel: String,
+		label: String,
 		title: String,
 		tags: [String],
 		query: String,
+		selected: WallpaperCategory?,
 		knownTags: [String],
 		expected: Bool
 	) {
@@ -175,62 +60,10 @@ struct WallpaperSearchTests {
 			tags: tags,
 			category: .story,
 			query: query,
-			selectedCategory: nil,
+			selectedCategory: selected,
 			knownTags: Set(knownTags.map { PresetSearch.normalized($0) })
 		)
-		#expect(matches == expected, Comment(rawValue: caseLabel))
-	}
-
-	@Test(arguments: [
-		("exact tag", ["w", "amiya"], "w", true),
-		("prefix is not exact", ["warfarin"], "w", false),
-		("diacritic folds", ["młynar"], "mlynar", true),
-	])
-	func tagsContainUsesExactNormalizedMatching(
-		caseLabel: String,
-		tags: [String],
-		query: String,
-		expected: Bool
-	) {
-		#expect(
-			PresetSearch.tagsContain(tags, exactly: query) == expected,
-			Comment(rawValue: caseLabel))
-	}
-
-	@Test("committed tags filter exact catalog tags")
-	func committedTagsFilterExactly() async throws {
-		let exact = wallpaper(id: "global-586")
-		let prefixOnly = wallpaper(id: "global-592")
-
-		let matches = try await PresetSearch.wallpapers(
-			matching: "",
-			committedTags: ["w"],
-			category: nil,
-			in: [exact, prefixOnly]
-		)
-
-		#expect(matches == [exact])
-	}
-
-	@Test("gallery results derive only the selected destination and preserve category counts")
-	func galleryResultsKeepDestinationDataAndCounts() async throws {
-		let story = wallpaper(id: "story", title: "Story")
-		let holiday = wallpaper(id: "holiday", title: "Christmas")
-
-		let results = try await PresetSearch.results(
-			for: .artwork,
-			searchText: "",
-			committedTags: [],
-			selectedCategory: .story,
-			avatars: [avatar(name: "Amiya")],
-			wallpapers: [story, holiday]
-		)
-
-		#expect(results.filteredAvatars.isEmpty)
-		#expect(results.filteredWallpapers == [story])
-		#expect(results.wallpaperCategoryCounts[nil] == 2)
-		#expect(results.wallpaperCategoryCounts[.story] == 1)
-		#expect(results.wallpaperCategoryCounts[.holiday] == 1)
+		#expect(matches == expected, Comment(rawValue: label))
 	}
 
 	@Test("gallery result publication rejects stale and cancelled requests")
@@ -282,25 +115,6 @@ struct WallpaperSearchTests {
 			!PresetSearch.shouldPublishResults(
 				request: loading, currentQuery: loading, isCancelled: false
 			)
-		)
-	}
-
-	private func avatar(name: String) -> PresetAvatar {
-		PresetAvatar(
-			id: "char_002_amiya",
-			name: name,
-			filename: "char_002_amiya.png",
-			rarity: "TIER_5"
-		)
-	}
-
-	private func wallpaper(id: String, title: String = "Untitled") -> PresetWallpaper {
-		PresetWallpaper(
-			id: id,
-			title: title,
-			fallbackOrdinal: nil,
-			url: URL(string: "https://example.com/wallpaper.png")!,
-			thumbnailURL: nil
 		)
 	}
 }

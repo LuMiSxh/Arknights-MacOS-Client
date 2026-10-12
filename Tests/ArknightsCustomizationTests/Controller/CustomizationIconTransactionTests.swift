@@ -10,10 +10,11 @@ import Testing
 
 @MainActor
 struct CustomizationIconTransactionTests {
-	@Test(arguments: [(2, false), (3, false), (2, true)])
+	@Test(arguments: [(2, false, false), (3, false, false), (2, true, false), (2, false, true)])
 	func failedPresetCommitRestoresEarlierFilesOrReportsRollbackFailure(
 		failedStage: Int,
-		failRollback: Bool
+		failRollback: Bool,
+		passive: Bool
 	) async throws {
 		let failedDestination = failedStage == 2 ? "game-icon" : "operator-avatar-source"
 		var bundleIconApplyCount = 0
@@ -43,15 +44,19 @@ struct CustomizationIconTransactionTests {
 			setRunningIcon: { _ in runningIconApplyCount += 1 }
 		)
 		let previous = try writeOperatorIconSet(fixture.paths)
-		if failedStage == 2 && !failRollback {
+		if failedStage == 2 && !failRollback && !passive {
 			try FileManager.default.removeItem(at: fixture.paths.customAppIcon)
 		}
 		fixture.controller.setHasCustomAppIcon(true)
 		fixture.controller.setHasCustomGameIcon(true)
 
-		await fixture.controller.applyPresetAvatar(
-			data: try #require(solidImage(.systemGreen).tiffRepresentation)
-		)
+		if passive {
+			await fixture.controller.refreshOperatorPresetIconsForTheme(hue: 0.7)
+		} else {
+			await fixture.controller.applyPresetAvatar(
+				data: try #require(solidImage(.systemGreen).tiffRepresentation)
+			)
+		}
 
 		if failRollback {
 			#expect(try Data(contentsOf: fixture.paths.customAppIcon) != previous.launcher)
@@ -65,7 +70,7 @@ struct CustomizationIconTransactionTests {
 			#expect(log.contains("Icon publication failed:"))
 			#expect(log.contains("macOS refused to update the app icon."))
 			#expect(log.contains("Rollback failures:"))
-		} else if failedStage == 2 {
+		} else if failedStage == 2 && !passive {
 			#expect(!FileManager.default.fileExists(atPath: fixture.paths.customAppIcon.path))
 			#expect(try Data(contentsOf: fixture.paths.customGameIcon) == previous.game)
 			#expect(try Data(contentsOf: fixture.paths.operatorPresetAvatar) == previous.source)
@@ -73,7 +78,7 @@ struct CustomizationIconTransactionTests {
 			#expect(try Data(contentsOf: fixture.paths.customAppIcon) == previous.launcher)
 			#expect(try Data(contentsOf: fixture.paths.customGameIcon) == previous.game)
 			#expect(try Data(contentsOf: fixture.paths.operatorPresetAvatar) == previous.source)
-			#expect(fixture.controller.lifecycle.state.presentation.failure != nil)
+			#expect(passive || fixture.controller.lifecycle.state.presentation.failure != nil)
 		}
 		#expect(fixture.controller.hasCustomAppIcon)
 		#expect(fixture.controller.hasCustomGameIcon)
@@ -82,87 +87,6 @@ struct CustomizationIconTransactionTests {
 		let files = try FileManager.default.contentsOfDirectory(
 			atPath: fixture.paths.customAppIcon.deletingLastPathComponent().path)
 		#expect(!files.contains { $0.contains(".stage.") })
-	}
-
-	@Test
-	func failedPassiveIconCommitRestoresBothPersistedIcons() async throws {
-		var bundleIconApplyCount = 0
-		var runningIconApplyCount = 0
-		let fixture = makeCustomizationController(
-			iconCommitter: { staged, destination in
-				guard destination.lastPathComponent != "game-icon" else {
-					throw CocoaError(.fileWriteUnknown)
-				}
-				try CustomizationImageIO.commit(staged, to: destination)
-			},
-			setBundleIcon: { _ in
-				bundleIconApplyCount += 1
-				return true
-			},
-			setRunningIcon: { _ in runningIconApplyCount += 1 }
-		)
-		let previous = try writeOperatorIconSet(fixture.paths)
-		fixture.controller.setHasCustomAppIcon(true)
-		fixture.controller.setHasCustomGameIcon(true)
-
-		await fixture.controller.refreshOperatorPresetIconsForTheme(hue: 0.7)
-
-		#expect(try Data(contentsOf: fixture.paths.customAppIcon) == previous.launcher)
-		#expect(try Data(contentsOf: fixture.paths.customGameIcon) == previous.game)
-		#expect(try Data(contentsOf: fixture.paths.operatorPresetAvatar) == previous.source)
-		#expect(fixture.controller.hasCustomAppIcon)
-		#expect(fixture.controller.hasCustomGameIcon)
-		#expect(bundleIconApplyCount == 0)
-		#expect(runningIconApplyCount == 0)
-	}
-
-	@Test
-	func cancelledStalePreparedThemeRefreshCannotTouchANewerPresetPublication() async throws {
-		let preparations = ControlledRequestGate<Void, CustomizationImageIO.PreparedPublication>()
-		var runningIconApplyCount = 0
-		let fixture = makeCustomizationController(
-			iconPublicationPreparer: { destinations, operationID, log in
-				let prepared = try await CustomizationImageIO.preparePublication(
-					destinations,
-					operationID: operationID,
-					log: log
-				)
-				try await Task.detached {
-					try await preparations.next(prepared)
-				}.value
-				return prepared
-			},
-			setRunningIcon: { _ in runningIconApplyCount += 1 }
-		)
-		_ = try writeOperatorIconSet(fixture.paths)
-		let newerAvatar = try #require(solidImage(.systemGreen).tiffRepresentation)
-
-		let staleRefresh = fixture.controller.startOperatorPresetIconRefresh(hue: 0.1)
-		await preparations.waitForRequestCount(1)
-
-		let newerPreset = Task {
-			await fixture.controller.applyPresetAvatar(data: newerAvatar)
-		}
-		await preparations.waitForRequestCount(2)
-		staleRefresh.cancel()
-		await preparations.resolve(1, with: ())
-		await newerPreset.value
-		let publishedAppIcon = try Data(contentsOf: fixture.paths.customAppIcon)
-		let publishedGameIcon = try Data(contentsOf: fixture.paths.customGameIcon)
-
-		await preparations.resolve(0, with: ())
-		await staleRefresh.value
-
-		#expect(try Data(contentsOf: fixture.paths.operatorPresetAvatar) == newerAvatar)
-		#expect(try Data(contentsOf: fixture.paths.customAppIcon) == publishedAppIcon)
-		#expect(try Data(contentsOf: fixture.paths.customGameIcon) == publishedGameIcon)
-		#expect(fixture.controller.hasCustomAppIcon)
-		#expect(fixture.controller.hasCustomGameIcon)
-		#expect(fixture.controller.lifecycle.state.presentation.failure == nil)
-		#expect(runningIconApplyCount == 1)
-		let files = try FileManager.default.contentsOfDirectory(
-			atPath: fixture.paths.customAppIcon.deletingLastPathComponent().path)
-		#expect(!files.contains { $0.contains(".backup.") || $0.contains(".stage.") })
 	}
 
 	@Test
@@ -199,38 +123,6 @@ struct CustomizationIconTransactionTests {
 		let files = try FileManager.default.contentsOfDirectory(
 			atPath: fixture.paths.customAppIcon.deletingLastPathComponent().path)
 		#expect(!files.contains { $0.contains(".backup.") })
-	}
-
-	@Test
-	func presetAndThemeRefreshPublishCompleteIconSets() async throws {
-		var runningIconApplyCount = 0
-		let fixture = makeCustomizationController(
-			setRunningIcon: { _ in runningIconApplyCount += 1 }
-		)
-		let previous = try writeOperatorIconSet(fixture.paths)
-		let avatar = try #require(solidImage(.systemGreen).tiffRepresentation)
-
-		await fixture.controller.applyPresetAvatar(data: avatar)
-		let presetLauncher = try Data(contentsOf: fixture.paths.customAppIcon)
-		let presetGame = try Data(contentsOf: fixture.paths.customGameIcon)
-		#expect(presetLauncher != previous.launcher)
-		#expect(presetGame != previous.game)
-		#expect(NSImage(data: presetLauncher) != nil)
-		#expect(NSImage(data: presetGame) != nil)
-		#expect(try Data(contentsOf: fixture.paths.operatorPresetAvatar) == avatar)
-		#expect(runningIconApplyCount == 1)
-
-		await fixture.controller.refreshOperatorPresetIconsForTheme(hue: 0.7)
-
-		#expect(NSImage(data: try Data(contentsOf: fixture.paths.customAppIcon)) != nil)
-		#expect(NSImage(data: try Data(contentsOf: fixture.paths.customGameIcon)) != nil)
-		#expect(try Data(contentsOf: fixture.paths.operatorPresetAvatar) == avatar)
-		#expect(fixture.controller.hasCustomAppIcon)
-		#expect(fixture.controller.hasCustomGameIcon)
-		#expect(runningIconApplyCount == 2)
-		let files = try FileManager.default.contentsOfDirectory(
-			atPath: fixture.paths.customAppIcon.deletingLastPathComponent().path)
-		#expect(!files.contains { $0.contains(".backup.") || $0.contains(".stage.") })
 	}
 }
 

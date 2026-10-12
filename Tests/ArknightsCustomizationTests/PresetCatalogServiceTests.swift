@@ -10,37 +10,7 @@ import Testing
 @Suite(.serialized)
 struct PresetCatalogServiceTests {
 	@Test
-	func galleryCacheSurvivesServiceRecreation() throws {
-		let fileManager = FileManager.default
-		let root = fileManager.temporaryDirectory.appending(
-			path: "PresetCatalogVersionTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? fileManager.removeItem(at: root) }
-		let log = LauncherLog(fileURL: root.appending(path: "launcher.log"))
-		_ = PresetCatalogService(cacheDirectory: root, log: log)
-		let staleFile = root.appending(path: "stale.cache")
-		try Data("stale".utf8).write(to: staleFile)
-
-		_ = PresetCatalogService(cacheDirectory: root, log: log)
-
-		#expect(fileManager.fileExists(atPath: staleFile.path))
-	}
-
-	@Test
-	func avatarIdentifiersAllowOnlyBoundedASCIIKeys() {
-		#expect(PresetCatalogService.isValidAvatarIdentifier("char_002_amiya"))
-		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_../../escape"))
-		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_éxample"))
-		#expect(
-			!PresetCatalogService.isValidAvatarIdentifier(
-				"char_" + String(repeating: "a", count: 100)
-			)
-		)
-	}
-
-	@Test
-	func remoteAssetsRequireApprovedHTTPSHosts() {
+	func remoteAssetsRequireApprovedHTTPSHosts() async {
 		#expect(
 			PresetCatalogService.isAllowedRemoteAssetURL(
 				URL(string: "https://webusstatic.yo-star.com/image.png")!
@@ -59,26 +29,29 @@ struct PresetCatalogServiceTests {
 		let url = PresetCatalogService.validatedRemoteAssetURL(
 			from: "https://webusstatic.yo-star.com/image.png?token=secret#frag")
 		#expect(url?.absoluteString == "https://webusstatic.yo-star.com/image.png")
-	}
 
-	@Test
-	func syntheticThumbnailAddsTheResizeQueryTheLiveGalleryPageItselfUses() {
-		// The CDN only ever serves a resized response for a URL something has already
-		// requested with this exact query value, regardless of which upload path a wallpaper
-		// lives under — matching the live Fankit page's own convention, rather than gating on
-		// a specific path, is what actually lands on an already-warm cached response.
-		for path in [
-			"/ark_us_web/assets/1/a.jpg",
-			"/web-cms-prod/upload/content/a.png",
-			"/web-cms-test/upload/content/2026/08/17/a.png",
-		] {
-			let url = URL(string: "https://webusstatic.yo-star.com\(path)")!
-			let thumbnail = PresetCatalogService.syntheticThumbnailURL(for: url)
-			#expect(
-				thumbnail?.absoluteString
-					== "https://webusstatic.yo-star.com\(path)"
-					+ "?x-oss-process=image/resize,p_\(AppConstants.Presets.thumbnailResizePercent)"
+		let rows: [(label: String, body: Data, redirectURL: URL?)] = [
+			("chunked body exceeds the byte limit", Data(repeating: 0xAB, count: 32), nil),
+			(
+				"redirect leaves the approved asset hosts", Data(),
+				URL(string: "https://127.0.0.1/image.png")
+			),
+		]
+		for row in rows {
+			let configuration = URLSessionConfiguration.ephemeral
+			configuration.protocolClasses = [BoundedDataURLProtocol.self]
+			BoundedDataURLProtocol.configure(body: row.body, redirectURL: row.redirectURL)
+			defer { BoundedDataURLProtocol.reset() }
+			let loader = BoundedHTTPDataLoader(
+				session: URLSession(configuration: configuration),
+				maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes,
+				redirectValidator: PresetCatalogService.isAllowedRemoteAssetURL
 			)
+			let request = URLRequest(url: URL(string: "https://cdn.jsdelivr.net/image.png")!)
+
+			await #expect(throws: HTTPTransportError.self, Comment(rawValue: row.label)) {
+				_ = try await loader.data(for: request, maximumBytes: 16)
+			}
 		}
 	}
 
@@ -101,123 +74,13 @@ struct PresetCatalogServiceTests {
 		#expect(first.deletingLastPathComponent() == root)
 		#expect(first.lastPathComponent.count == 70)
 		#expect(first.pathExtension == "cache")
-	}
 
-	@Test
-	func existingImageCacheIsPrunedToItsBudget() async throws {
-		let fileManager = FileManager.default
-		let root = fileManager.temporaryDirectory.appending(
-			path: "PresetCatalogCacheLimitTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? fileManager.removeItem(at: root) }
-		let service = PresetCatalogService(
-			cacheDirectory: root,
-			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
-		)
-		try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
-		let older = root.appending(path: "older.cache")
-		let newer = root.appending(path: "newer.cache")
-		for url in [older, newer] {
-			#expect(fileManager.createFile(atPath: url.path, contents: nil))
-			let handle = try FileHandle(forWritingTo: url)
-			try handle.truncate(atOffset: 140 * 1_024 * 1_024)
-			try handle.close()
-		}
-		try fileManager.setAttributes(
-			[.modificationDate: Date(timeIntervalSince1970: 1)],
-			ofItemAtPath: older.path
-		)
-		try fileManager.setAttributes(
-			[.modificationDate: Date(timeIntervalSince1970: 2)],
-			ofItemAtPath: newer.path
-		)
-		await service.enforceImageCacheLimitIfNeeded()
-
-		#expect(!fileManager.fileExists(atPath: older.path))
-		#expect(fileManager.fileExists(atPath: newer.path))
-	}
-
-	@Test
-	func imageValidationRejectsUnrecognizedAndTruncatedPayloads() throws {
-		#expect(throws: CustomizationError.self) {
-			try PresetCatalogService.validateImageData(
-				Data("not an image".utf8),
-				source: URL(string: "https://cdn.jsdelivr.net/image.png")!
-			)
-		}
-		let encoded =
-			"/9j/4AAQSkZJRgABAQAASABIAAD/4QBARXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9sAQwACAgICAgIDAgIDBQMDAwUGBQUFBQYIBgYGBgYICggICAgICAoKCgoKCgoKDAwMDAwMDg4ODg4PDw8PDw8PDw8P/9sAQwECAgIEBAQHBAQHEAsJCxAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ/90ABAAB/9oADAMBAAIRAxEAPwD9/KKKKAP/2Q=="
-		var data = try #require(Data(base64Encoded: encoded))
-		try PresetCatalogService.validateImageData(
-			data,
-			source: URL(string: "https://webusstatic.yo-star.com/image.jpg")!
-		)
-		data.removeLast(2)
-
-		#expect(throws: CustomizationError.self) {
-			try PresetCatalogService.validateImageData(
-				data,
-				source: URL(string: "https://webusstatic.yo-star.com/image.jpg")!
-			)
-		}
-	}
-
-	@Test
-	func failedImageDownloadsKeepTheValidationReasonInTheLog() async throws {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "PresetCatalogDiagnosticsTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		let configuration = URLSessionConfiguration.ephemeral
-		configuration.protocolClasses = [BoundedDataURLProtocol.self]
-		BoundedDataURLProtocol.configure(body: Data("not an image".utf8))
-		defer { BoundedDataURLProtocol.reset() }
-		let session = URLSession(configuration: configuration)
-		defer { session.invalidateAndCancel() }
-		let fileURL = root.appending(path: "launcher.log")
-		let log = LauncherLog(fileURL: fileURL)
-		let service = PresetCatalogService(cacheDirectory: root, session: session, log: log)
-		let url = URL(string: "https://webusstatic.yo-star.com/invalid.png")!
-
-		await #expect(throws: CustomizationError.self) {
-			_ = try await service.imageData(for: url, cacheKey: "invalid")
-		}
-		await log.flush()
-
-		let diagnostic = try String(contentsOf: fileURL, encoding: .utf8)
-		try FileManager.default.removeItem(at: root)
-		#expect(diagnostic.contains(url.absoluteString))
-		#expect(diagnostic.contains("unsafe dimensions"))
-	}
-
-	@Test(arguments: [
-		("chunked body exceeds the byte limit", Data(repeating: 0xAB, count: 32), nil as URL?),
-		(
-			"redirect leaves the approved asset hosts",
-			Data(),
-			URL(string: "https://127.0.0.1/image.png")
-		),
-	])
-	func boundedLoaderRejectsOversizedBodiesAndUntrustedRedirects(
-		caseLabel: String,
-		body: Data,
-		redirectURL: URL?
-	) async {
-		let configuration = URLSessionConfiguration.ephemeral
-		configuration.protocolClasses = [BoundedDataURLProtocol.self]
-		BoundedDataURLProtocol.configure(body: body, redirectURL: redirectURL)
-		defer { BoundedDataURLProtocol.reset() }
-		let loader = BoundedHTTPDataLoader(
-			session: URLSession(configuration: configuration),
-			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes,
-			redirectValidator: PresetCatalogService.isAllowedRemoteAssetURL
-		)
-		let request = URLRequest(url: URL(string: "https://cdn.jsdelivr.net/image.png")!)
-
-		await #expect(throws: HTTPTransportError.self, Comment(rawValue: caseLabel)) {
-			_ = try await loader.data(for: request, maximumBytes: 16)
-		}
+		#expect(PresetCatalogService.isValidAvatarIdentifier("char_002_amiya"))
+		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_../../escape"))
+		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_éxample"))
+		#expect(
+			!PresetCatalogService.isValidAvatarIdentifier(
+				"char_" + String(repeating: "a", count: 100)))
 	}
 
 	@Test

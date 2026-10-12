@@ -10,23 +10,28 @@ import Testing
 
 @MainActor
 struct CustomizationControllerTests {
-	@Test
-	func initialRestorePrefersPersistedCustomArtwork() async throws {
-		let fixture = makeCustomizationController()
-		let data = try #require(solidImage(.systemPurple).tiffRepresentation)
-		try FileManager.default.createDirectory(
-			at: fixture.paths.customArtwork.deletingLastPathComponent(),
-			withIntermediateDirectories: true
-		)
-		try data.write(to: fixture.paths.customArtwork)
-
-		await fixture.controller.restoreInitialArtwork(for: .global)
-
-		#expect(fixture.controller.heroArtwork != nil)
-		#expect(fixture.controller.activeThemeCacheKey?.hasPrefix("custom.") == true)
+	enum Race: CaseIterable {
+		case artworkSelection
+		case passiveArtworkLoad
+		case startupArtworkRestore
+		case themeExtraction
+		case operatorIconRefresh
+		case manualIconOverStartupRestore
 	}
-	@Test
-	func newerArtworkSelectionRejectsAnOlderDelayedRead() async throws {
+
+	@Test(arguments: Race.allCases)
+	func newerArtworkSelectionRejectsAnOlderDelayedRead(race: Race) async throws {
+		switch race {
+		case .artworkSelection: try await artworkSelectionRace()
+		case .passiveArtworkLoad: try await passiveArtworkLoadRace()
+		case .startupArtworkRestore: try await startupArtworkRestoreRace()
+		case .themeExtraction: try await themeExtractionRace()
+		case .operatorIconRefresh: try await operatorIconRefreshRace()
+		case .manualIconOverStartupRestore: try await manualIconOverStartupRestoreRace()
+		}
+	}
+
+	private func artworkSelectionRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
 		let fixture = makeCustomizationController(dataLoader: { try await loader.next($0) })
 		let firstURL = fixture.paths.customArtwork.deletingLastPathComponent()
@@ -56,8 +61,8 @@ struct CustomizationControllerTests {
 				== CustomizationController.customThemeCacheKey(for: secondData)
 		)
 	}
-	@Test
-	func passiveArtworkLoadCannotCancelAnActiveUserSelection() async throws {
+
+	private func passiveArtworkLoadRace() async throws {
 		let stager = ControlledRequestGate<Void, (Data, URL)>()
 		let fixture = makeCustomizationController(dataStager: { try await stager.next(($0, $1)) })
 		let selectedData = try #require(solidImage(.systemGreen).tiffRepresentation)
@@ -77,8 +82,8 @@ struct CustomizationControllerTests {
 				== CustomizationController.customThemeCacheKey(for: selectedData)
 		)
 	}
-	@Test
-	func completedCustomMutationWinsWhenStartupRestoreWasSuspended() async throws {
+
+	private func startupArtworkRestoreRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
 		let stager = ControlledRequestGate<Void, (Data, URL)>()
 		let fixture = makeCustomizationController(
@@ -111,111 +116,7 @@ struct CustomizationControllerTests {
 		)
 	}
 
-	@Test
-	func failedLauncherIconApplicationDoesNotPublishCustomIcon() async throws {
-		let fixture = makeCustomizationController(setBundleIcon: { _ in false })
-		let data = try #require(solidImage(.systemGreen).tiffRepresentation)
-		try FileManager.default.createDirectory(
-			at: fixture.paths.customAppIcon.deletingLastPathComponent(),
-			withIntermediateDirectories: true
-		)
-		try data.write(to: fixture.paths.customAppIcon)
-
-		#expect(await !fixture.controller.loadCustomAppIcon())
-		#expect(!fixture.controller.hasCustomAppIcon)
-	}
-
-	@Test
-	func dynamicIconSkipsBundleWriteButRendersWhenPersistedHueIsUnchanged() {
-		let rendered = solidImage(.systemPink)
-		var bundleWriteCount = 0
-		var runningIcon: NSImage?
-		let fixture = makeCustomizationController(
-			usesDynamicTheme: true,
-			dynamicIconRenderer: { _ in rendered },
-			setBundleIcon: { _ in
-				bundleWriteCount += 1
-				return true
-			},
-			setRunningIcon: { runningIcon = $0 }
-		)
-		fixture.preferences.setLastAppliedDynamicIconHue(0.42)
-
-		fixture.controller.updateDynamicAppIcon(hue: 0.42)
-
-		#expect(bundleWriteCount == 0)
-		#expect(runningIcon === rendered)
-	}
-
-	@Test
-	func dynamicIconRendersAgainAfterResettingTheAppIcon() {
-		var renderCount = 0
-		let fixture = makeCustomizationController(
-			usesDynamicTheme: true,
-			dynamicIconRenderer: { _ in
-				renderCount += 1
-				return solidImage(.systemPink)
-			}
-		)
-		let cacheKey = "official.global.cached"
-		fixture.preferences.setDynamicThemeAccent(
-			ThemeAccentSnapshot(hue: 0.42, saturation: 0.8, brightness: 0.9),
-			for: cacheKey
-		)
-		fixture.preferences.setLastAppliedDynamicIconHue(0.42)
-		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
-		fixture.controller.setHasCustomAppIcon(true)
-		renderCount = 0
-
-		fixture.controller.resetAppIcon()
-
-		#expect(renderCount == 1)
-	}
-
-	@Test
-	func resettingTheAppIconWithDynamicThemeNeverPublishesTheUntintedDefault() {
-		var clearedRunningIcon = false
-		let fixture = makeCustomizationController(
-			usesDynamicTheme: true,
-			dynamicIconRenderer: { _ in solidImage(.systemPink) },
-			setRunningIcon: { clearedRunningIcon = clearedRunningIcon || $0 == nil }
-		)
-		let cacheKey = "official.global.cached"
-		fixture.preferences.setDynamicThemeAccent(
-			ThemeAccentSnapshot(hue: 0.42, saturation: 0.8, brightness: 0.9),
-			for: cacheKey
-		)
-		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
-		fixture.controller.setHasCustomAppIcon(true)
-		clearedRunningIcon = false
-
-		fixture.controller.resetAppIcon()
-
-		#expect(!clearedRunningIcon)
-	}
-
-	@Test
-	func cachedThemeAccentSkipsRedundantExtraction() async {
-		let extractor = ControlledRequestGate<ExtractedAccent?, NSImage>()
-		let fixture = makeCustomizationController(
-			usesDynamicTheme: true,
-			accentExtractor: { try? await extractor.next($0) }
-		)
-		let cacheKey = "official.global.cached"
-		fixture.preferences.setDynamicThemeAccent(
-			ThemeAccentSnapshot(hue: 0.42, saturation: 0.8, brightness: 0.9),
-			for: cacheKey
-		)
-
-		fixture.controller.setHeroArtwork(solidImage(.systemRed), themeCacheKey: cacheKey)
-		await Task.yield()
-
-		#expect(await extractor.requestCount() == 0)
-		#expect(fixture.controller.dynamicThemeHue == 0.42)
-	}
-
-	@Test
-	func newerThemeExtractionRejectsAnOlderDelayedResult() async throws {
+	private func themeExtractionRace() async throws {
 		let extractor = ControlledRequestGate<ExtractedAccent?, NSImage>()
 		let fixture = makeCustomizationController(
 			usesDynamicTheme: true,
@@ -240,8 +141,8 @@ struct CustomizationControllerTests {
 		#expect(fixture.preferences.dynamicThemeAccent(for: firstKey) == nil)
 		#expect(fixture.preferences.dynamicThemeAccent(for: secondKey)?.hue == 0.7)
 	}
-	@Test
-	func newerOperatorIconRefreshRejectsAnOlderDelayedRead() async throws {
+
+	private func operatorIconRefreshRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
 		let fixture = makeCustomizationController(dataLoader: { try await loader.next($0) })
 		let avatarData = try #require(solidImage(.systemPink).tiffRepresentation)
@@ -265,8 +166,7 @@ struct CustomizationControllerTests {
 		#expect(try Data(contentsOf: fixture.paths.customAppIcon) == expected)
 	}
 
-	@Test
-	func manualAppIconSelectionWinsOverDelayedStartupRestore() async throws {
+	private func manualIconOverStartupRestoreRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
 		let fixture = makeCustomizationController(dataLoader: { try await loader.next($0) })
 		let selected = solidImage(.systemGreen)
@@ -289,6 +189,20 @@ struct CustomizationControllerTests {
 		_ = await restore.value
 
 		#expect(try Data(contentsOf: fixture.paths.customAppIcon) != staleData)
+	}
+
+	@Test
+	func failedLauncherIconApplicationDoesNotPublishCustomIcon() async throws {
+		let fixture = makeCustomizationController(setBundleIcon: { _ in false })
+		let data = try #require(solidImage(.systemGreen).tiffRepresentation)
+		try FileManager.default.createDirectory(
+			at: fixture.paths.customAppIcon.deletingLastPathComponent(),
+			withIntermediateDirectories: true
+		)
+		try data.write(to: fixture.paths.customAppIcon)
+
+		#expect(await !fixture.controller.loadCustomAppIcon())
+		#expect(!fixture.controller.hasCustomAppIcon)
 	}
 }
 

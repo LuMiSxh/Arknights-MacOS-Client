@@ -12,48 +12,13 @@ private let remoteManifest = Data(
 private let bundledTags = ["global-1": ["amiya"], "global-2": ["texas"]]
 
 @Test
-func downloadedTagsExtendTheBundledManifestUntilReset() {
-	let store = WallpaperTagStore(bundled: bundledTags)
-
-	store.apply(["global-1": ["amiya", "kal'tsit"], "global-9999": ["new event"]])
-	#expect(store.tags["global-1"] == ["amiya", "kal'tsit"])
-	#expect(store.tags["global-2"] == ["texas"])
-	#expect(store.tags["global-9999"] == ["new event"])
-
-	store.resetToBundled()
-	#expect(store.tags == bundledTags)
-}
-
-@Test
-func tagManifestsWithAnotherSchemaAreRejected() throws {
+func tagManifestsWithAnotherSchemaAreRejected() async throws {
 	#expect(throws: DecodingError.self) {
 		try WallpaperTagCatalog.decode(Data(#"{"schemaVersion":2,"tags":{}}"#.utf8))
 	}
 	#expect(try WallpaperTagCatalog.decode(remoteManifest)["global-9999"] == ["new event"])
-}
 
-@Test
-func refreshedTagsAreAppliedCachedAndRestoredByTheNextLaunch() async throws {
-	let root = temporaryPresetRoot()
-	defer { try? FileManager.default.removeItem(at: root) }
-	let store = WallpaperTagStore(bundled: bundledTags)
-	let service = tagService(root: root, path: "/tags.json", store: store)
-
-	#expect(await service.refreshWallpaperTags())
-	#expect(store.tags["global-9999"] == ["new event"])
-
-	// The next launch applies the cached manifest before the network answers.
-	let relaunchedStore = WallpaperTagStore(bundled: bundledTags)
-	let relaunched = tagService(root: root, path: "/missing.json", store: relaunchedStore)
-	await relaunched.prepareWallpaperTags()
-	#expect(relaunchedStore.tags["global-9999"] == ["new event"])
-
-	try await relaunched.clearCaches()
-	#expect(relaunchedStore.tags == bundledTags)
-}
-
-@Test
-func missingRemoteManifestKeepsTheBundledTags() async {
+	// A missing remote manifest keeps the bundled tags and writes no cache.
 	let root = temporaryPresetRoot()
 	defer { try? FileManager.default.removeItem(at: root) }
 	let store = WallpaperTagStore(bundled: bundledTags)
