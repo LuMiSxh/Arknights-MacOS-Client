@@ -90,49 +90,18 @@ func cleanerSkipsWhenTheRuntimeStillShipsI386() throws {
 	#expect(report.skipped)
 	#expect(fixture.exists("kernel32.dll"))
 	#expect(fixture.exists("d3d11.dll"))
-}
 
-@Test
-func cleanerSkipsWhenTheRuntimeRootIsNotARuntime() throws {
-	let fixture = try CleanerFixture(runtimeShipsI386: false)
-	defer { fixture.remove() }
-	try fixture.write(CleanerFixture.peData(marker: "Wine builtin DLL"), "kernel32.dll")
+	let notARuntime = try CleanerFixture(runtimeShipsI386: false)
+	defer { notARuntime.remove() }
+	try notARuntime.write(CleanerFixture.peData(marker: "Wine builtin DLL"), "kernel32.dll")
+	let missingRoot = notARuntime.root.appending(path: "Missing", directoryHint: .isDirectory)
+	#expect(cleaner.clean(prefixDirectory: notARuntime.prefix, runtimeRoot: missingRoot).skipped)
+	#expect(notARuntime.exists("kernel32.dll"))
 
-	let report = cleaner.clean(
-		prefixDirectory: fixture.prefix,
-		runtimeRoot: fixture.root.appending(path: "Missing", directoryHint: .isDirectory))
-
-	#expect(report.skipped)
-	#expect(fixture.exists("kernel32.dll"))
-}
-
-@Test
-func cleanerToleratesAPrefixWithoutSyswow64() throws {
-	let fixture = try CleanerFixture(runtimeShipsI386: false)
-	defer { fixture.remove() }
-	try FileManager.default.removeItem(at: fixture.syswow64)
-
-	let report = cleaner.clean(prefixDirectory: fixture.prefix, runtimeRoot: fixture.runtimeRoot)
-
-	#expect(report == WinePrefixLegacyLibraryCleaner.Report())
-}
-
-@Test
-func deduplicatorIsHarmlessWhenTheRuntimeHasNoI386Libraries() throws {
-	let fixture = try CleanerFixture(runtimeShipsI386: false)
-	defer { fixture.remove() }
-	try fixture.write(Data("same".utf8), "kernel32.dll")
-	let system32 = fixture.prefix.appending(path: "drive_c/windows/system32")
-	try FileManager.default.createDirectory(at: system32, withIntermediateDirectories: true)
-	try Data("same".utf8).write(to: system32.appending(path: "kernel32.dll"))
-	try Data("same".utf8).write(
-		to: fixture.runtimeRoot.appending(path: "lib/wine/x86_64-windows/kernel32.dll"))
-
-	let report = WinePrefixLibraryDeduplicator()
-		.deduplicate(prefixDirectory: fixture.prefix, runtimeRoot: fixture.runtimeRoot)
-
-	#expect(report.failures.isEmpty)
-	#expect(report.clonedCount == 1)
-	#expect(
-		try Data(contentsOf: fixture.syswow64.appending(path: "kernel32.dll")) == Data("same".utf8))
+	let withoutSyswow64 = try CleanerFixture(runtimeShipsI386: false)
+	defer { withoutSyswow64.remove() }
+	try FileManager.default.removeItem(at: withoutSyswow64.syswow64)
+	let empty = cleaner.clean(
+		prefixDirectory: withoutSyswow64.prefix, runtimeRoot: withoutSyswow64.runtimeRoot)
+	#expect(empty == WinePrefixLegacyLibraryCleaner.Report())
 }

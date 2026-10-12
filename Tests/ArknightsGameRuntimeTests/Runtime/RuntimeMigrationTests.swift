@@ -100,8 +100,34 @@ func migrationPlanSelectsThePendingSteps(
 	#expect(plan.pending == expectedPending, Comment(rawValue: caseName))
 }
 
+@Test(
+	arguments: [
+		(
+			#"{"schemaVersion":1,"runtimeRevision":"runtime-prefix-2","completed":["initialize-wine-prefix","install-dxmt","configure-registry"]}"#,
+			[RuntimeMigration.shareRuntimeLibraries, .removeLegacy32BitLibraries]
+		),
+		(
+			#"{"schemaVersion":1,"runtimeRevision":"runtime-prefix-2","completed":["initialize-wine-prefix","install-dxmt","configure-registry","share-runtime-libraries"]}"#,
+			[.removeLegacy32BitLibraries]
+		),
+	]
+)
+func migrationStateWrittenBeforeLibrarySharingDecodesAndRunsOnlyThatStep(
+	json: String,
+	expectedPending: [RuntimeMigration]
+) throws {
+	let state = try JSONDecoder().decode(RuntimeMigrationState.self, from: Data(json.utf8))
+	let plan = RuntimeMigrationPlan(
+		expectedRevision: "runtime-prefix-2",
+		installedState: state,
+		hasSystemRegistry: true
+	)
+
+	#expect(plan.pending == expectedPending)
+}
+
 @Test
-func migrationStoreRoundTripsState() throws {
+func migrationStoreRoundTripsImportsLegacyMarkersAndSurfacesCorruptPersistedState() throws {
 	let fileManager = FileManager.default
 	let prefix = fileManager.temporaryDirectory.appending(
 		path: "runtime-migration-store-\(UUID().uuidString)",
@@ -116,127 +142,22 @@ func migrationStoreRoundTripsState() throws {
 	)
 
 	try store.save(state, to: prefix)
-
 	#expect(try store.load(from: prefix) == state)
-}
-
-@Test
-func migrationStoreSurfacesCorruptPersistedState() throws {
-	let fileManager = FileManager.default
-	let prefix = fileManager.temporaryDirectory.appending(
-		path: "runtime-migration-corrupt-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: prefix) }
-	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
-	try Data("not-json".utf8).write(
-		to: prefix.appending(path: RuntimeMigrationStore.stateFileName)
-	)
-
-	#expect(throws: Error.self) {
-		_ = try RuntimeMigrationStore(fileManager: fileManager).load(from: prefix)
-	}
-}
-
-@Test
-func migrationStoreResetDiscardsStateSoEverythingReplays() throws {
-	let fileManager = FileManager.default
-	let prefix = fileManager.temporaryDirectory.appending(
-		path: "runtime-migration-reset-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: prefix) }
-	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
-	let store = RuntimeMigrationStore(fileManager: fileManager)
-	try store.save(
-		RuntimeMigrationState(
-			runtimeRevision: "runtime-prefix-2",
-			completed: RuntimeMigration.allCases
-		),
-		to: prefix
-	)
-
 	try store.reset(prefixDirectory: prefix)
-
 	#expect(try store.load(from: prefix) == nil)
-}
 
-@Test
-func migrationStoreImportsAndRemovesVersionZeroOneMarkers() throws {
-	let fileManager = FileManager.default
-	let prefix = fileManager.temporaryDirectory.appending(
-		path: "runtime-migration-legacy-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: prefix) }
-	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
 	let revision = "runtime-prefix-1"
-	for name in [
+	let markers = [
 		RuntimeMigrationStore.legacyRevisionFileName,
 		RuntimeMigrationStore.legacyConfigurationFileName,
-	] {
-		try revision.write(
-			to: prefix.appending(path: name),
-			atomically: true,
-			encoding: .utf8
-		)
-	}
-	let store = RuntimeMigrationStore(fileManager: fileManager)
-
+	].map { prefix.appending(path: $0) }
+	for marker in markers { try revision.write(to: marker, atomically: true, encoding: .utf8) }
 	let imported = try store.loadLegacy(
-		from: prefix,
-		expectedRevision: revision,
-		hasSystemRegistry: true
-	)
+		from: prefix, expectedRevision: revision, hasSystemRegistry: true)
 	try store.removeLegacyMarkers(from: prefix)
+	#expect(imported?.completed == [.initializeWinePrefix, .installDXMT, .configureRegistry])
+	#expect(markers.allSatisfy { !fileManager.fileExists(atPath: $0.path) })
 
-	#expect(
-		imported?.completed == [.initializeWinePrefix, .installDXMT, .configureRegistry]
-	)
-	#expect(
-		!fileManager.fileExists(
-			atPath: prefix.appending(path: RuntimeMigrationStore.legacyRevisionFileName).path
-		)
-	)
-	#expect(
-		!fileManager.fileExists(
-			atPath: prefix.appending(
-				path: RuntimeMigrationStore.legacyConfigurationFileName
-			).path
-		)
-	)
-}
-
-@Test
-func migrationStateWrittenBeforeLibrarySharingDecodesAndRunsOnlyThatStep() throws {
-	let json = """
-		{"schemaVersion":1,"runtimeRevision":"runtime-prefix-2",
-		"completed":["initialize-wine-prefix","install-dxmt","configure-registry"]}
-		"""
-
-	let state = try JSONDecoder().decode(RuntimeMigrationState.self, from: Data(json.utf8))
-	let plan = RuntimeMigrationPlan(
-		expectedRevision: "runtime-prefix-2",
-		installedState: state,
-		hasSystemRegistry: true
-	)
-
-	#expect(plan.pending == [.shareRuntimeLibraries, .removeLegacy32BitLibraries])
-}
-
-@Test
-func migrationStateWrittenBeforeLegacyCleanupDecodesAndRunsOnlyThatStep() throws {
-	let json = """
-		{"schemaVersion":1,"runtimeRevision":"runtime-prefix-2",
-		"completed":["initialize-wine-prefix","install-dxmt","configure-registry","share-runtime-libraries"]}
-		"""
-
-	let state = try JSONDecoder().decode(RuntimeMigrationState.self, from: Data(json.utf8))
-	let plan = RuntimeMigrationPlan(
-		expectedRevision: "runtime-prefix-2",
-		installedState: state,
-		hasSystemRegistry: true
-	)
-
-	#expect(plan.pending == [.removeLegacy32BitLibraries])
+	try Data("not-json".utf8).write(to: prefix.appending(path: RuntimeMigrationStore.stateFileName))
+	#expect(throws: Error.self) { _ = try store.load(from: prefix) }
 }

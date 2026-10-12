@@ -25,24 +25,16 @@ private func makePrefix(fileManager: FileManager = .default) -> URL {
 }
 
 @Test
-func cacheDirectoriesFindsDXMTAndEveryWindowsUserBrowserCache() throws {
-	let fileManager = FileManager.default
-	let prefix = makePrefix(fileManager: fileManager)
-	defer { try? fileManager.removeItem(at: prefix) }
-
-	let directories = try GameCacheCleaner.cacheDirectories(
-		winePrefix: prefix, fileManager: fileManager)
-
-	#expect(directories.count == 2)
-	#expect(directories.contains { $0.path.hasSuffix("home/.cache/dxmt") })
-	#expect(directories.contains { $0.path.hasSuffix("users/crossover/AppData/Local/cache") })
-}
-
-@Test
 func clearRemovesEveryCacheDirectoryButLeavesTheRestOfThePrefix() throws {
 	let fileManager = FileManager.default
 	let prefix = makePrefix(fileManager: fileManager)
 	defer { try? fileManager.removeItem(at: prefix) }
+	let caches = try GameCacheCleaner.cacheDirectories(winePrefix: prefix, fileManager: fileManager)
+	#expect(caches.count == 2)
+	#expect(throws: CocoaError.self) {
+		try GameCacheCleaner.clear(
+			winePrefix: prefix, fileManager: FailingCacheRemovalFileManager())
+	}
 	let untouched = prefix.appending(path: "drive_c/windows", directoryHint: .isDirectory)
 	try fileManager.createDirectory(at: untouched, withIntermediateDirectories: true)
 	let externalUser = prefix.deletingLastPathComponent().appending(
@@ -57,19 +49,7 @@ func clearRemovesEveryCacheDirectoryButLeavesTheRestOfThePrefix() throws {
 
 	try GameCacheCleaner.clear(winePrefix: prefix, fileManager: fileManager)
 
+	#expect(caches.allSatisfy { !fileManager.fileExists(atPath: $0.path) })
 	#expect(fileManager.fileExists(atPath: untouched.path))
 	#expect(fileManager.fileExists(atPath: externalFile.path))
-}
-
-@Test
-func cacheRemovalFailuresAreSurfaced() throws {
-	let prefix = makePrefix()
-	defer { try? FileManager.default.removeItem(at: prefix) }
-
-	#expect(throws: CocoaError.self) {
-		try GameCacheCleaner.clear(
-			winePrefix: prefix,
-			fileManager: FailingCacheRemovalFileManager()
-		)
-	}
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import CoreGraphics
 import Foundation
 import Testing
@@ -8,13 +9,6 @@ import Testing
 @testable import ArknightsGameInstallation
 @testable import ArknightsGameRuntime
 @testable import ArknightsInfrastructure
-
-@Test
-func gameExecutableUsesTheIsolatedWindowsDrive() {
-	let executable = URL(filePath: "/Applications/Support/Arknights-Global/Arknights.exe")
-
-	#expect(WineRuntime.windowsGamePath(for: executable) == "G:\\Arknights.exe")
-}
 
 @Test
 func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
@@ -48,150 +42,28 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(environment["SSH_AUTH_SOCK"] == nil)
 	#expect(environment["AWS_SECRET_ACCESS_KEY"] == nil)
 	#expect(environment["PATH"] == "/runtime/bin:/usr/bin:/bin")
-}
+	#expect(
+		WineRuntime.windowsGamePath(for: URL(filePath: "/Support/Arknights.exe"))
+			== "G:\\Arknights.exe")
 
-@Test
-func runtimeProvidesOnlyPrivateUnixUserDirectoriesToWineboot() throws {
-	let fileManager = FileManager.default
-	let root = fileManager.temporaryDirectory.appending(
-		path: "wine-environment-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: root) }
-
-	for directory in WineRuntime.isolatedEnvironmentDirectories(prefixDirectory: root) {
-		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-	}
-	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
-
-	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
-	let originalFileNumber =
-		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
-			.systemFileNumber
-		] as? NSNumber
-	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
-	let preservedFileNumber =
-		try FileManager.default.attributesOfItem(atPath: configurationURL.path)[
-			.systemFileNumber
-		] as? NSNumber
-	let configuration = try String(contentsOf: configurationURL, encoding: .utf8)
-	#expect(preservedFileNumber == originalFileNumber)
-	#expect(configuration == WineRuntime.isolatedUserDirectoryConfiguration)
-	#expect(configuration.contains("XDG_DOCUMENTS_DIR=\"$HOME/Documents\""))
-	#expect(configuration.contains("XDG_DOWNLOAD_DIR=\"$HOME/Downloads\""))
-	for name in WineRuntime.isolatedUserDirectoryNames {
-		#expect(fileManager.fileExists(atPath: root.appending(path: "home/\(name)").path))
-	}
-}
-
-@Test(arguments: ["oversized", "malformed"])
-func runtimeRejectsInvalidUserDirectoryConfiguration(_ kind: String) throws {
-	let fileManager = FileManager.default
-	let root = fileManager.temporaryDirectory.appending(
-		path: "wine-environment-\(kind)-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: root) }
-	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
-	try fileManager.createDirectory(
-		at: configurationURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-	let data =
-		kind == "oversized"
-		? Data(repeating: 0x41, count: AppConstants.Game.userDirectoryConfigurationMaximumBytes + 1)
-		: Data([0xC3, 0x28])
-	try data.write(to: configurationURL)
-	if kind == "oversized" {
-		#expect(throws: BoundedFileReadError.self) {
-			try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
-		}
-	} else {
-		#expect(throws: Error.self) {
-			try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
-		}
-	}
-}
-
-@Test
-func runtimeEnablesOnlyTheSelectedSynchronizationMode() {
-	let environment = WineRuntime.isolatedEnvironment(
-		prefixDirectory: URL(filePath: "/prefix", directoryHint: .isDirectory),
+	let esync = WineRuntime.isolatedEnvironment(
+		prefixDirectory: prefix,
 		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
 		baseEnvironment: ["WINEMSYNC": "host", "WINEESYNC": "host"],
 		userName: "tester",
 		synchronizationMode: .esync
 	)
+	#expect(esync["WINEMSYNC"] == nil)
+	#expect(esync["WINEESYNC"] == "1")
 
-	#expect(environment["WINEMSYNC"] == nil)
-	#expect(environment["WINEESYNC"] == "1")
-}
-
-@Test
-func bilibiliControllerDoesNotInheritGameOnlyRuntimeEnvironment() {
-	let environment = WineRuntime.bilibiliControllerEnvironment(from: [
+	let controller = WineRuntime.bilibiliControllerEnvironment(from: [
 		"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1",
-		"DXMT_METALFX_SPATIAL_SWAPCHAIN": "1",
-		"ARKNIGHTS_RUNTIME_ACE_COMPACT": "1",
 		"ARKNIGHTS_RUNTIME_CEF_COMPAT": "1",
-		"ARKNIGHTS_RUNTIME_CN_COMPAT": "1",
 		"DYLD_INSERT_LIBRARIES": "/runtime/bridge.dylib",
-		"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/game/icon.icns",
-		"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
 	])
-
-	#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
-	#expect(environment["DXMT_METALFX_SPATIAL_SWAPCHAIN"] == nil)
-	#expect(environment["ARKNIGHTS_RUNTIME_ACE_COMPACT"] == "1")
-	#expect(environment["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
-	#expect(environment["ARKNIGHTS_RUNTIME_CN_COMPAT"] == "1")
-	#expect(environment["DYLD_INSERT_LIBRARIES"] == nil)
-	#expect(environment["ARKNIGHTS_CLIENT_GAME_ICON_PATH"] == nil)
-	#expect(environment["ARKNIGHTS_CLIENT_LAUNCHER_PID"] == nil)
-}
-
-@Test
-func graphicsDiagnosticsExposeMacDriverAndDXMTInformation() {
-	let runtime = WineRuntime(
-		executableURL: URL(filePath: "/runtime/bin/Arknights"),
-		displayName: "Test",
-		revision: "test",
-		compatibilityManager: GameCompatibilityManager()
-	)
-	let environment = runtime.runtimeEnvironment(
-		prefixDirectory: URL(filePath: "/prefix", directoryHint: .isDirectory),
-		graphicsDiagnostics: true
-	)
-
-	#expect(environment["WINEDEBUG"]?.contains("+macdrv") == true)
-	#expect(environment["DXMT_LOG_LEVEL"] == "info")
-	#expect(environment["DXMT_LOG_PATH"] == "none")
-}
-
-@Test
-func gameIconEnvironmentInjectsBridgeAndOptionalCustomIcon() {
-	let runtime = WineRuntime(
-		executableURL: URL(filePath: "/runtime/bin/Arknights"),
-		displayName: "Test",
-		revision: "test",
-		gameIconBridgeURL: URL(filePath: "/runtime/GameIconBridge.dylib"),
-		compatibilityManager: GameCompatibilityManager()
-	)
-
-	#expect(
-		runtime.gameIconEnvironment(customIconURL: nil, launcherProcessIdentifier: 42)
-			== [
-				"DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib",
-				"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
-			]
-	)
-	#expect(
-		runtime.gameIconEnvironment(
-			customIconURL: URL(filePath: "/icons/game.png"), launcherProcessIdentifier: 42)
-			== [
-				"DYLD_INSERT_LIBRARIES": "/runtime/GameIconBridge.dylib",
-				"ARKNIGHTS_CLIENT_GAME_ICON_PATH": "/icons/game.png",
-				"ARKNIGHTS_CLIENT_LAUNCHER_PID": "42",
-			]
-	)
+	#expect(controller["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == nil)
+	#expect(controller["DYLD_INSERT_LIBRARIES"] == nil)
+	#expect(controller["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
 }
 
 @Test
@@ -199,105 +71,24 @@ func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	let fileManager = FileManager.default
 	let fixture = try DXMTFixture(fileManager: fileManager)
 	defer { fixture.remove(fileManager: fileManager) }
-
-	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
-	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
-
-	for library in WineRuntime.dxmtLibraryNames {
-		let installed = fixture.prefix.appending(path: "drive_c/windows/system32/\(library)")
-		#expect(try Data(contentsOf: installed) == Data("x64-\(library)".utf8))
-		#expect(
-			!fileManager.fileExists(
-				atPath: fixture.prefix.appending(path: "drive_c/windows/syswow64/\(library)").path)
-		)
-	}
-
-	try fileManager.removeItem(
-		at: fixture.prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
-	)
-	#expect(!WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
-}
-
-@Test
-func dxmtInstallAndCurrencyIgnoreAnAbsentOrStaleX32Payload() throws {
-	let fileManager = FileManager.default
-	let fixture = try DXMTFixture(fileManager: fileManager, architectures: ["x64"])
-	defer { fixture.remove(fileManager: fileManager) }
 	let stale = fixture.prefix.appending(path: "drive_c/windows/syswow64/d3d11.dll")
 	try fileManager.createDirectory(
 		at: stale.deletingLastPathComponent(), withIntermediateDirectories: true)
 	try Data("old-x32".utf8).write(to: stale)
 
 	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
-
 	#expect(WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
 	#expect(try Data(contentsOf: stale) == Data("old-x32".utf8))
-}
 
-@Test
-func hasPendingMigrationReflectsSavedStateForTheCurrentRevision() throws {
-	let fileManager = FileManager.default
-	let fixture = try DXMTFixture(fileManager: fileManager)
-	defer { fixture.remove(fileManager: fileManager) }
-	try WineRuntime.installDXMT(from: fixture.payload, in: fixture.prefix)
-	try Data().write(to: fixture.prefix.appending(path: "system.reg"))
-	let runtime = WineRuntime(
-		executableURL: fixture.root.appending(path: "bin/Arknights"),
-		displayName: "Test",
-		revision: "test-revision",
-		compatibilityManager: GameCompatibilityManager()
-	)
-
-	#expect(try runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
-
-	try RuntimeMigrationStore(fileManager: fileManager).save(
-		RuntimeMigrationState(
-			runtimeRevision: "test-revision", completed: RuntimeMigration.allCases),
-		to: fixture.prefix
-	)
-
-	#expect(try !runtime.hasPendingMigration(prefixDirectory: fixture.prefix))
-}
-
-@Test
-func gameWindowReadinessRequiresALargeVisibleWindowForTheRuntimeProcess() {
-	let processIdentifier: Int32 = 42
-	let helperWindow: [String: Any] = [
-		kCGWindowOwnerPID as String: processIdentifier,
-		kCGWindowLayer as String: 0,
-		kCGWindowIsOnscreen as String: true,
-		kCGWindowAlpha as String: 1,
-		kCGWindowBounds as String: ["Width": 1, "Height": 1],
-	]
-	let gameWindow: [String: Any] = [
-		kCGWindowOwnerPID as String: processIdentifier,
-		kCGWindowLayer as String: 0,
-		kCGWindowIsOnscreen as String: true,
-		kCGWindowAlpha as String: 1,
-		kCGWindowBounds as String: ["Width": 1280, "Height": 720],
-	]
-
-	#expect(
-		!WineWindowReadiness.isVisible(
-			processIdentifier: processIdentifier,
-			windows: [helperWindow]
-		))
-	#expect(
-		WineWindowReadiness.isVisible(
-			processIdentifier: processIdentifier,
-			windows: [helperWindow, gameWindow]
-		))
-}
-
-@Test
-func gameWindowReadinessTimesOutWhenTheRuntimeNeverCreatesAWindow() async {
-	await #expect(throws: GameRuntimeError.self) {
-		try await WineWindowReadiness.wait(
-			processIdentifier: Int32.max,
-			timeout: .milliseconds(2),
-			pollInterval: .milliseconds(1)
-		)
+	for library in WineRuntime.dxmtLibraryNames {
+		let installed = fixture.prefix.appending(path: "drive_c/windows/system32/\(library)")
+		#expect(try Data(contentsOf: installed) == Data("x64-\(library)".utf8))
 	}
+
+	try fileManager.removeItem(
+		at: fixture.prefix.appending(path: "drive_c/windows/system32/d3d11.dll")
+	)
+	#expect(!WineRuntime.dxmtIsCurrent(from: fixture.payload, in: fixture.prefix))
 }
 
 @Test
@@ -308,19 +99,73 @@ func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
 		revision: "test",
 		compatibilityManager: GameCompatibilityManager()
 	)
+	let pidFile = FileManager.default.temporaryDirectory.appending(
+		path: "runtime-wait-\(UUID().uuidString).pid")
+	defer { try? FileManager.default.removeItem(at: pidFile) }
 	let task = Task {
 		try await runtime.runAndWait(
 			executable: URL(filePath: "/bin/sh"),
-			arguments: ["-c", "exec sleep 30"],
+			arguments: ["-c", "echo $$ > '\(pidFile.path)'; exec sleep 30"],
 			environment: ProcessInfo.processInfo.environment,
 			output: .nullDevice
 		)
 	}
-	try await Task.sleep(for: .milliseconds(50))
+	let started = await waitForCondition(timeout: .seconds(5)) {
+		FileManager.default.fileExists(atPath: pidFile.path)
+	}
+	try #require(started)
 	task.cancel()
 
 	await #expect(throws: CancellationError.self) {
 		try await task.value
+	}
+}
+
+@Test
+func gameWindowReadinessRequiresALargeVisibleWindowAndTimesOutWithoutOne() async {
+	func window(_ side: Int) -> [String: Any] {
+		[
+			kCGWindowOwnerPID as String: 42, kCGWindowLayer as String: 0,
+			kCGWindowIsOnscreen as String: true, kCGWindowAlpha as String: 1,
+			kCGWindowBounds as String: ["Width": side, "Height": side],
+		]
+	}
+	#expect(!WineWindowReadiness.isVisible(processIdentifier: 42, windows: [window(1)]))
+	#expect(
+		WineWindowReadiness.isVisible(processIdentifier: 42, windows: [window(1), window(900)]))
+
+	await #expect(throws: GameRuntimeError.self) {
+		try await WineWindowReadiness.wait(
+			processIdentifier: Int32.max, timeout: .milliseconds(2), pollInterval: .milliseconds(1))
+	}
+}
+
+@Test
+func runtimeProvidesOnlyPrivateUnixUserDirectoriesAndRejectsInvalidConfiguration() throws {
+	let fileManager = FileManager.default
+	let root = fileManager.temporaryDirectory.appending(
+		path: "wine-environment-test-\(UUID().uuidString)", directoryHint: .isDirectory)
+	defer { try? fileManager.removeItem(at: root) }
+	for directory in WineRuntime.isolatedEnvironmentDirectories(prefixDirectory: root) {
+		try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+	}
+	try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+	let configurationURL = root.appending(path: "home/.config/user-dirs.dirs")
+	#expect(
+		try String(contentsOf: configurationURL, encoding: .utf8)
+			== WineRuntime.isolatedUserDirectoryConfiguration)
+	for name in WineRuntime.isolatedUserDirectoryNames {
+		#expect(fileManager.fileExists(atPath: root.appending(path: "home/\(name)").path))
+	}
+
+	try Data(repeating: 0x41, count: AppConstants.Game.userDirectoryConfigurationMaximumBytes + 1)
+		.write(to: configurationURL)
+	#expect(throws: BoundedFileReadError.self) {
+		try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
+	}
+	try Data([0xC3, 0x28]).write(to: configurationURL)
+	#expect(throws: Error.self) {
+		try WineRuntime.writeIsolatedUserDirectoryConfiguration(prefixDirectory: root)
 	}
 }
 

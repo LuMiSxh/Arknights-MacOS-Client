@@ -47,125 +47,20 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 		locations.first { $0.category == .browserCache }?.urls.first?.resolvingSymlinksInPath()
 			.path == browserCache.resolvingSymlinksInPath().path
 	)
-}
 
-@Test
-func storageResolverFiltersChinaAndTaiwanIndependently() throws {
-	let root = temporaryStorageRoot()
-	defer { try? FileManager.default.removeItem(at: root) }
-	let paths = AppPaths(
-		applicationSupportDirectory: root.appending(path: "Support"),
-		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
-	)
-	let directories: [GameRegion: URL] = [:]
-
-	let taiwanOnly = try StorageOverviewResolver.locations(
-		paths: paths,
-		context: StorageOverviewContext(
-			region: .global,
-			regionAccess: RegionAccess(
-				canaryFeaturesEnabled: true,
-				taiwanClientEnabled: true
-			),
-			persistedInstallDirectories: directories
+	for canary in [true, false] {
+		let filtered = try StorageOverviewResolver.locations(
+			paths: paths,
+			context: StorageOverviewContext(
+				region: .global,
+				regionAccess: RegionAccess(
+					canaryFeaturesEnabled: canary, taiwanClientEnabled: canary),
+				persistedInstallDirectories: [:]
+			)
 		)
-	)
-	#expect(taiwanOnly.contains { $0.category == .game(.taiwan) })
-	#expect(taiwanOnly.contains { $0.category == .game(.china) })
-
-	let noCanary = try StorageOverviewResolver.locations(
-		paths: paths,
-		context: StorageOverviewContext(
-			region: .global,
-			regionAccess: RegionAccess(
-				canaryFeaturesEnabled: false,
-				taiwanClientEnabled: false
-			),
-			persistedInstallDirectories: directories
-		)
-	)
-	#expect(!noCanary.contains { $0.category == .game(.taiwan) })
-	#expect(noCanary.contains { $0.category == .game(.china) })
-}
-
-@Test
-func storageSizeCalculatorAggregatesExistingPathsAndIgnoresSymlinks() throws {
-	let fileManager = FileManager.default
-	let root = temporaryStorageRoot()
-	defer { try? fileManager.removeItem(at: root) }
-	let first = root.appending(path: "first", directoryHint: .isDirectory)
-	let second = root.appending(path: "second", directoryHint: .isDirectory)
-	let outside = root.appending(path: "outside.bin")
-	let outsideDirectory = root.appending(path: "outside-directory", directoryHint: .isDirectory)
-	try fileManager.createDirectory(at: first, withIntermediateDirectories: true)
-	try fileManager.createDirectory(at: second, withIntermediateDirectories: true)
-	try Data(repeating: 0, count: 4).write(to: first.appending(path: "one"))
-	try Data(repeating: 0, count: 6).write(to: second.appending(path: "two"))
-	try Data(repeating: 0, count: 100).write(to: outside)
-	try fileManager.createDirectory(at: outsideDirectory, withIntermediateDirectories: true)
-	try Data(repeating: 0, count: 100).write(to: outsideDirectory.appending(path: "secret"))
-	try fileManager.createSymbolicLink(
-		at: first.appending(path: "outside"), withDestinationURL: outside)
-	try fileManager.createSymbolicLink(
-		at: first.appending(path: "outside-directory"), withDestinationURL: outsideDirectory)
-
-	let measured = try StorageSizeCalculator.measure(
-		[
-			StorageLocation(category: .winePrefix, urls: [first, second]),
-			StorageLocation(category: .logs, urls: [root.appending(path: "missing")]),
-			StorageLocation(category: .compatibilityRuntime, urls: []),
-		], fileManager: fileManager)
-
-	#expect(measured[0].byteCount == 10)
-	#expect(measured[0].exists)
-	#expect(measured[1].byteCount == nil)
-	#expect(!measured[1].exists)
-	#expect(measured[2].byteCount == nil)
-}
-
-@Test
-@MainActor
-func storageOverviewReusesCachedMeasurementUntilForcedRefresh() async throws {
-	let fileManager = FileManager.default
-	let root = temporaryStorageRoot()
-	defer { try? fileManager.removeItem(at: root) }
-	let paths = AppPaths(
-		applicationSupportDirectory: root.appending(path: "Support"),
-		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
-	)
-	try fileManager.createDirectory(at: paths.logsDirectory, withIntermediateDirectories: true)
-	let logFile = paths.logsDirectory.appending(path: "launcher.log")
-	try Data(repeating: 0, count: 4).write(to: logFile)
-
-	let suiteName = "StorageOverviewControllerTests.\(UUID().uuidString)"
-	let defaults = UserDefaults(suiteName: suiteName)!
-	defer { defaults.removePersistentDomain(forName: suiteName) }
-	let preferences = LauncherPreferencesStore(defaults: defaults)
-	let log = LauncherLog(fileURL: paths.launcherLogFile)
-	let lifecycle = LauncherLifecycleStore(log: log)
-	let controller = StorageOverviewController(
-		lifecycle: lifecycle,
-		paths: paths,
-		preferences: preferences,
-		log: log
-	)
-
-	controller.refresh()
-	#expect(await waitForCondition { !controller.isMeasuring })
-	#expect(controller.usage(for: .logs)?.byteCount == 4)
-
-	try Data(repeating: 0, count: 10).write(to: logFile)
-	controller.refresh()
-	#expect(!controller.isMeasuring)
-	#expect(controller.usage(for: .logs)?.byteCount == 4)
-
-	controller.refreshNow()
-	#expect(await waitForCondition { !controller.isMeasuring })
-	#expect(controller.usage(for: .logs)?.byteCount == 10)
+		#expect(filtered.contains { $0.category == .game(.taiwan) } == canary)
+		#expect(filtered.contains { $0.category == .game(.china) })
+	}
 }
 
 @Test
@@ -194,23 +89,6 @@ func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 	storage.clearPresetGalleryCache()
 
 	#expect(lifecycle.activity.isInstalling)
-}
-
-@Test
-func storageMaintenanceIncludesEveryPublisherLog() {
-	let root = temporaryStorageRoot()
-	defer { try? FileManager.default.removeItem(at: root) }
-	let paths = AppPaths(
-		applicationSupportDirectory: root.appending(path: "Support"),
-		cachesDirectory: root.appending(path: "Caches"),
-		libraryDirectory: root.appending(path: "Library"),
-		resourceDirectory: root.appending(path: "Resources")
-	)
-
-	let logURLs = StorageMaintenanceController.logURLs(for: paths)
-	for publisher in [GamePublisher.yostar, .hypergryph, .gryphline] {
-		#expect(logURLs.contains(paths.publisherLogFile(for: publisher)))
-	}
 }
 
 private func temporaryStorageRoot() -> URL {

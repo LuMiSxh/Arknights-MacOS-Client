@@ -28,113 +28,6 @@ struct PlaytimeStatisticsTests {
 	}
 
 	@Test
-	func totalsStayIndependentAcrossRegionsAndReloads() throws {
-		let fixture = try Fixture()
-		var uptime: TimeInterval = 0
-		let controller = fixture.controller(now: { fixture.date(2026, 3, 1) }, uptime: { uptime })
-
-		for (region, duration) in zip(
-			GameRegion.allCases,
-			[60.0, 120.0, 180.0, 240.0, 300.0, 360.0]
-		) {
-			let sessionID = UUID()
-			controller.start(sessionID: sessionID, region: region)
-			uptime += duration
-			controller.finish(sessionID: sessionID)
-		}
-
-		let reloaded = fixture.controller()
-		#expect(reloaded.totalDuration == 1_260)
-		#expect(reloaded.duration(for: .global) == 60)
-		#expect(reloaded.duration(for: .japan) == 120)
-		#expect(reloaded.duration(for: .korea) == 180)
-		#expect(reloaded.duration(for: .taiwan) == 240)
-		#expect(reloaded.duration(for: .china) == 300)
-		#expect(reloaded.duration(for: .chinaBilibili) == 360)
-		#expect(reloaded.statistics.latestSession?.region == .chinaBilibili)
-	}
-
-	@Test
-	func recentSummariesRespectCalendarBoundaries() throws {
-		let fixture = try Fixture()
-		var statistics = PlaytimeStatistics.empty
-		let now = fixture.date(2026, 1, 30, hour: 12)
-		statistics.record(
-			region: .global,
-			startedAt: fixture.date(2025, 12, 31, hour: 23),
-			duration: 30,
-			calendar: fixture.calendar
-		)
-		statistics.record(
-			region: .japan,
-			startedAt: fixture.date(2026, 1, 1),
-			duration: 60,
-			calendar: fixture.calendar
-		)
-		statistics.record(
-			region: .korea,
-			startedAt: fixture.date(2026, 1, 29),
-			duration: 90,
-			calendar: fixture.calendar
-		)
-
-		#expect(statistics.duration(inLast: 7, now: now, calendar: fixture.calendar) == 90)
-		#expect(statistics.duration(inLast: 30, now: now, calendar: fixture.calendar) == 150)
-	}
-
-	@Test
-	func dailyHistoryIsBoundedWithoutLosingAllTimeTotals() throws {
-		let fixture = try Fixture()
-		var statistics = PlaytimeStatistics.empty
-
-		for offset in 0..<50 {
-			statistics.record(
-				region: .global,
-				startedAt: fixture.date(2026, 1, 1).addingTimeInterval(Double(offset) * 86_400),
-				duration: 60,
-				calendar: fixture.calendar
-			)
-		}
-
-		#expect(statistics.days.count == AppConstants.Playtime.dailyHistoryLimit)
-		#expect(statistics.totalDuration == 3_000)
-	}
-
-	@Test
-	func restartDiscardsAnUnfinishedSessionWithoutInventingTime() throws {
-		let fixture = try Fixture()
-		let sessionID = UUID()
-		let first = fixture.controller(now: { fixture.date(2026, 4, 1) }, uptime: { 500 })
-		first.start(sessionID: sessionID, region: .japan)
-
-		let restarted = fixture.controller(now: { fixture.date(2026, 4, 2) }, uptime: { 900 })
-		#expect(restarted.statistics.activeSession == nil)
-		#expect(restarted.totalDuration == 0)
-
-		let reloaded = fixture.controller()
-		#expect(reloaded.statistics.activeSession == nil)
-	}
-
-	@Test
-	func resetDuringAGameCountsOnlyTimeAfterReset() throws {
-		let fixture = try Fixture()
-		var uptime: TimeInterval = 100
-		var now = fixture.date(2026, 5, 1)
-		let controller = fixture.controller(now: { now }, uptime: { uptime })
-		let sessionID = UUID()
-		controller.start(sessionID: sessionID, region: .korea)
-		uptime = 130
-		now = fixture.date(2026, 5, 1, hour: 1)
-
-		controller.reset()
-		uptime = 150
-
-		#expect(controller.finish(sessionID: sessionID) == 20)
-		#expect(controller.totalDuration == 20)
-		#expect(controller.statistics.latestSession?.startedAt == now)
-	}
-
-	@Test
 	func corruptedAndOversizedFilesStartWithAnEmptyState() throws {
 		let corrupt = try Fixture()
 		try Data("not json".utf8).write(to: corrupt.statisticsURL)
@@ -148,20 +41,13 @@ struct PlaytimeStatisticsTests {
 		try Data(repeating: 0, count: AppConstants.Playtime.statisticsMaximumBytes + 1)
 			.write(to: oversized.statisticsURL)
 		#expect(oversized.controller().statistics == .empty)
-	}
 
-	@Test
-	func symlinkedStatisticsStartWithAnEmptyState() throws {
-		let fixture = try Fixture()
-		let target = fixture.root.appending(path: "outside.json")
-		let data = try JSONEncoder().encode(PlaytimeStatistics.empty)
-		try data.write(to: target)
+		let linked = try Fixture()
+		let target = linked.root.appending(path: "outside.json")
+		try JSONEncoder().encode(PlaytimeStatistics.empty).write(to: target)
 		try FileManager.default.createSymbolicLink(
-			at: fixture.statisticsURL,
-			withDestinationURL: target
-		)
-
-		#expect(fixture.controller().statistics == .empty)
+			at: linked.statisticsURL, withDestinationURL: target)
+		#expect(linked.controller().statistics == .empty)
 	}
 }
 

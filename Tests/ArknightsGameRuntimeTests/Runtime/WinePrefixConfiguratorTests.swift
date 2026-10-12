@@ -43,6 +43,10 @@ func winePrefixUsesOnlyIsolatedFoldersAndGameDrive() throws {
 		withDestinationURL: URL(filePath: "/")
 	)
 	try Data("host mapping".utf8).write(to: dosDevices.appending(path: "h:"))
+	let music = userDirectory.appending(path: "Music", directoryHint: .isDirectory)
+	try fileManager.createDirectory(at: music, withIntermediateDirectories: true)
+	let savedFile = music.appending(path: "saved.txt")
+	try Data("saved".utf8).write(to: savedFile)
 	try fileManager.createSymbolicLink(
 		at: userDirectory.appending(path: "Documents"),
 		withDestinationURL: hostDocuments
@@ -75,6 +79,7 @@ func winePrefixUsesOnlyIsolatedFoldersAndGameDrive() throws {
 		] as? NSNumber
 
 	#expect(fileManager.fileExists(atPath: dosDevices.appending(path: "c:").path))
+	#expect(fileManager.fileExists(atPath: savedFile.path))
 	#expect(preservedFileNumber == originalFileNumber)
 	#expect(!fileManager.fileExists(atPath: dosDevices.appending(path: "z:").path))
 	#expect(!fileManager.fileExists(atPath: dosDevices.appending(path: "h:").path))
@@ -93,38 +98,4 @@ func winePrefixUsesOnlyIsolatedFoldersAndGameDrive() throws {
 			#expect((try? fileManager.destinationOfSymbolicLink(atPath: folder.path)) == nil)
 		}
 	}
-}
-
-@Test
-func winePrefixPreservesFilesInsideItsIsolatedFolders() throws {
-	let fileManager = FileManager.default
-	let root = fileManager.temporaryDirectory.appending(
-		path: "arknights-prefix-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: root) }
-
-	let prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
-	let documents = prefix.appending(
-		path: "drive_c/users/tester/Documents",
-		directoryHint: .isDirectory
-	)
-	let gameDirectory = root.appending(path: "Game", directoryHint: .isDirectory)
-	try fileManager.createDirectory(
-		at: prefix.appending(path: "dosdevices", directoryHint: .isDirectory),
-		withIntermediateDirectories: true
-	)
-	try fileManager.createDirectory(at: documents, withIntermediateDirectories: true)
-	try fileManager.createDirectory(at: gameDirectory, withIntermediateDirectories: true)
-	let savedFile = documents.appending(path: "saved.txt")
-	try Data("saved".utf8).write(to: savedFile)
-
-	try WinePrefixConfigurator().configure(
-		prefixDirectory: prefix,
-		gameDirectory: gameDirectory,
-		logsDirectory: root.appending(path: "Logs", directoryHint: .isDirectory),
-		userName: "tester"
-	)
-
-	#expect(fileManager.fileExists(atPath: savedFile.path))
 }

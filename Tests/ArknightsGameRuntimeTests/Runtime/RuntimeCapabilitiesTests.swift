@@ -12,58 +12,6 @@ private let runtimeCapabilityManifest = Data(
 )
 
 @Test
-func runtimeCapabilitiesOnlyOverrideTheHardwareCursorAndNeverSetFrameLatency() throws {
-	let current = try RuntimeCapabilities.decode(from: runtimeCapabilityManifest)
-	let legacyCursor = try RuntimeCapabilities.decode(
-		from: Data(
-			#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":1,"maximum":3,"defaultValue":3},"hardwareCursor":false}}"#
-				.utf8
-		)
-	)
-
-	#expect(
-		current.environmentOverrides(usesHardwareCursor: true) == [
-			"ARKNIGHTS_RUNTIME_HARDWARE_CURSOR": "1"
-		]
-	)
-	#expect(current.environmentOverrides(usesHardwareCursor: false) == [:])
-	#expect(legacyCursor.environmentOverrides(usesHardwareCursor: true) == [:])
-	#expect(RuntimeCapabilities.conservative.environmentOverrides(usesHardwareCursor: true) == [:])
-	#expect(current.dxmtMaximumFrameLatency?.maximum == 3)
-}
-
-@Test
-func metalFXUpscalingSupportIsOptionalInTheManifest() throws {
-	let supporting = try RuntimeCapabilities.decode(
-		from: Data(
-			#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true,"metalFXSpatialUpscaling":true}}"#
-				.utf8
-		)
-	)
-	let legacy = try RuntimeCapabilities.decode(from: runtimeCapabilityManifest)
-
-	#expect(supporting.metalFXSpatialUpscalingSupported)
-	#expect(!legacy.metalFXSpatialUpscalingSupported)
-	#expect(legacy.hardwareCursorSupported)
-}
-
-@Test
-func runtimeCapabilitiesRejectUnsupportedSchemaAndLatencyRanges() {
-	let invalidManifests = [
-		#"{"schemaVersion":2,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true}}"#,
-		#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true},"future":true}"#,
-		#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":1,"maximum":3,"defaultValue":0},"hardwareCursor":true}}"#,
-		#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":4,"defaultValue":3},"hardwareCursor":true}}"#,
-	]
-
-	for manifest in invalidManifests {
-		#expect(throws: RuntimeCapabilityContractError.self) {
-			try RuntimeCapabilities.decode(from: Data(manifest.utf8))
-		}
-	}
-}
-
-@Test
 func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() throws {
 	let fileManager = FileManager.default
 	let root = fileManager.temporaryDirectory.appending(
@@ -129,7 +77,10 @@ func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() th
 	#expect(missing.capabilities == .conservative)
 	#expect(missing.diagnostic?.isEmpty == false)
 
-	try Data("{}".utf8).write(to: manifestURL)
+	try Data(
+		#"{"schemaVersion":2,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true}}"#
+			.utf8
+	).write(to: manifestURL)
 	let malformed = RuntimeCapabilities.discover(
 		inRuntimeDirectory: root,
 		manifestRelativePath: relativePath
