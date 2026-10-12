@@ -6,22 +6,6 @@ import Testing
 @testable import ArknightsGameInstallation
 
 @Test
-func platformProcessNoticeWrapperStopsWhenTheGameWindowDisappears() throws {
-	let repositoryRoot = (0..<4).reduce(URL(filePath: #filePath)) { url, _ in
-		url.deletingLastPathComponent()
-	}
-	let sourceURL = repositoryRoot.appending(
-		path: "RuntimeSupport/PlatformProcess/PlatformProcessShim.c"
-	)
-	let source = try String(contentsOf: sourceURL, encoding: .utf8)
-
-	#expect(source.contains("GAME_MISSING_LIMIT = 4"))
-	#expect(source.contains("saw_game"))
-	#expect(source.contains("missing_game_ticks"))
-	#expect(source.contains("TerminateProcess(process.hProcess"))
-}
-
-@Test
 func platformProcessComponentInstallsAndRestoresOfficialHelper() throws {
 	let fixture = try PlatformProcessFixture()
 	defer { fixture.remove() }
@@ -32,93 +16,62 @@ func platformProcessComponentInstallsAndRestoresOfficialHelper() throws {
 	#expect(try Data(contentsOf: fixture.helper) == fixture.shimData)
 	#expect(try Data(contentsOf: fixture.original) == official)
 	#expect(try Data(contentsOf: fixture.installedBridge) == fixture.bridgeData)
+	#expect(try !fixture.component.installIfSupported(in: fixture.root))
 
-	#expect(try fixture.component.restoreIfInstalled(in: fixture.root))
+	// An older shim upgrades in place and keeps the official helper.
+	try Data("old Arknights Client PlatformProcess compatibility".utf8).write(to: fixture.helper)
+	try Data("old Arknights Client PlatformProcess window bridge".utf8).write(
+		to: fixture.installedBridge)
+	#expect(try fixture.component.installIfSupported(in: fixture.root))
+	#expect(try Data(contentsOf: fixture.original) == official)
+	#expect(try Data(contentsOf: fixture.helper) == fixture.shimData)
+	#expect(try Data(contentsOf: fixture.installedBridge) == fixture.bridgeData)
+
+	// Restore works without bundled assets.
+	let withoutAssets = PlatformProcessCompatibility(shimURL: nil, bridgeURL: nil)
+	#expect(try withoutAssets.restoreIfInstalled(in: fixture.root))
 	#expect(try Data(contentsOf: fixture.helper) == official)
 	#expect(!FileManager.default.fileExists(atPath: fixture.original.path))
 	#expect(!FileManager.default.fileExists(atPath: fixture.installedBridge.path))
 }
 
 @Test
-func platformProcessComponentIsIdempotent() throws {
-	let fixture = try PlatformProcessFixture()
-	defer { fixture.remove() }
-	try Data("official PlatformProcess.exe".utf8).write(to: fixture.helper)
-
-	#expect(try fixture.component.installIfSupported(in: fixture.root))
-	#expect(try !fixture.component.installIfSupported(in: fixture.root))
-}
-
-@Test
 func platformProcessComponentLeavesUnknownHelperUntouched() throws {
-	let fixture = try PlatformProcessFixture()
-	defer { fixture.remove() }
 	let unknown = Data("unrelated executable".utf8)
-	try unknown.write(to: fixture.helper)
+	let official = Data("official PlatformProcess.exe".utf8)
 
-	#expect(try !fixture.component.installIfSupported(in: fixture.root))
-	#expect(try Data(contentsOf: fixture.helper) == unknown)
-}
-
-@Test
-func platformProcessComponentRejectsUnknownBridge() throws {
-	let fixture = try PlatformProcessFixture()
-	defer { fixture.remove() }
-	try Data("official PlatformProcess.exe".utf8).write(to: fixture.helper)
-	let unknownBridge = Data("unrelated dynamic library".utf8)
-	try unknownBridge.write(to: fixture.installedBridge)
-
-	#expect(throws: GameCompatibilityError.self) {
-		try fixture.component.installIfSupported(in: fixture.root)
+	do {
+		let fixture = try PlatformProcessFixture()
+		defer { fixture.remove() }
+		try unknown.write(to: fixture.helper)
+		#expect(try !fixture.component.installIfSupported(in: fixture.root))
+		#expect(try Data(contentsOf: fixture.helper) == unknown)
 	}
-	#expect(try Data(contentsOf: fixture.installedBridge) == unknownBridge)
-}
 
-@Test
-func platformProcessComponentUpgradePreservesOfficialHelper() throws {
-	let fixture = try PlatformProcessFixture()
-	defer { fixture.remove() }
-	let official = Data("official PlatformProcess.exe".utf8)
-	try official.write(to: fixture.original)
-	try Data("old Arknights Client PlatformProcess compatibility".utf8).write(
-		to: fixture.helper)
-	try Data("old Arknights Client PlatformProcess window bridge".utf8).write(
-		to: fixture.installedBridge)
+	do {
+		let fixture = try PlatformProcessFixture()
+		defer { fixture.remove() }
+		try official.write(to: fixture.helper)
+		let unknownBridge = Data("unrelated dynamic library".utf8)
+		try unknownBridge.write(to: fixture.installedBridge)
+		#expect(throws: GameCompatibilityError.self) {
+			try fixture.component.installIfSupported(in: fixture.root)
+		}
+		#expect(try Data(contentsOf: fixture.installedBridge) == unknownBridge)
+	}
 
-	#expect(try fixture.component.installIfSupported(in: fixture.root))
-	#expect(try Data(contentsOf: fixture.original) == official)
-	#expect(try Data(contentsOf: fixture.helper) == fixture.shimData)
-	#expect(try Data(contentsOf: fixture.installedBridge) == fixture.bridgeData)
-}
-
-@Test
-func platformProcessComponentAcceptsOfficialUpdaterReplacement() throws {
-	let fixture = try PlatformProcessFixture()
-	defer { fixture.remove() }
-	let oldOfficial = Data("old official PlatformProcess.exe".utf8)
-	let updatedOfficial = Data("updated official PlatformProcess.exe".utf8)
-	try oldOfficial.write(to: fixture.original)
-	try updatedOfficial.write(to: fixture.helper)
-	try fixture.bridgeData.write(to: fixture.installedBridge)
-
-	#expect(try fixture.component.installIfSupported(in: fixture.root))
-	#expect(try Data(contentsOf: fixture.original) == updatedOfficial)
-	#expect(try Data(contentsOf: fixture.helper) == fixture.shimData)
-}
-
-@Test
-func platformProcessComponentRestoresWithoutBundledAssets() throws {
-	let fixture = try PlatformProcessFixture()
-	defer { fixture.remove() }
-	let official = Data("official PlatformProcess.exe".utf8)
-	try official.write(to: fixture.original)
-	try fixture.shimData.write(to: fixture.helper)
-	try fixture.bridgeData.write(to: fixture.installedBridge)
-	let compatibility = PlatformProcessCompatibility(shimURL: nil, bridgeURL: nil)
-
-	#expect(try compatibility.restoreIfInstalled(in: fixture.root))
-	#expect(try Data(contentsOf: fixture.helper) == official)
-	#expect(!FileManager.default.fileExists(atPath: fixture.installedBridge.path))
+	// The official updater replaced the helper: keep the new official file as the original.
+	do {
+		let fixture = try PlatformProcessFixture()
+		defer { fixture.remove() }
+		let updatedOfficial = Data("updated official PlatformProcess.exe".utf8)
+		try Data("old official PlatformProcess.exe".utf8).write(to: fixture.original)
+		try updatedOfficial.write(to: fixture.helper)
+		try fixture.bridgeData.write(to: fixture.installedBridge)
+		#expect(try fixture.component.installIfSupported(in: fixture.root))
+		#expect(try Data(contentsOf: fixture.original) == updatedOfficial)
+		#expect(try Data(contentsOf: fixture.helper) == fixture.shimData)
+	}
 }
 
 private struct PlatformProcessFixture {

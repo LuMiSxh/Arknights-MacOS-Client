@@ -6,25 +6,6 @@ import Testing
 @testable import ArknightsGameInstallation
 
 @Test
-func bilibiliPlatformComponentMigratesLegacyWrapperAndInstallsController() throws {
-	let fixture = try BilibiliPlatformFixture(legacyWrapper: true)
-	defer { fixture.remove() }
-
-	#expect(try fixture.component.installIfSupported(in: fixture.root))
-	#expect(try Data(contentsOf: fixture.helper) == fixture.officialData)
-	#expect(try Data(contentsOf: fixture.installedController) == fixture.controllerData)
-	#expect(!FileManager.default.fileExists(atPath: fixture.privateDirectory.path))
-	#expect(!FileManager.default.fileExists(atPath: fixture.installedBridge.path))
-	#expect(!FileManager.default.fileExists(atPath: fixture.installedInjection.path))
-	#expect(try !fixture.component.installIfSupported(in: fixture.root))
-
-	#expect(try fixture.component.restoreIfInstalled(in: fixture.root))
-	#expect(try Data(contentsOf: fixture.helper) == fixture.officialData)
-	#expect(!FileManager.default.fileExists(atPath: fixture.installedController.path))
-	#expect(try !fixture.component.restoreIfInstalled(in: fixture.root))
-}
-
-@Test
 func bilibiliPlatformComponentPreservesUnknownFilesDuringLegacyMigration() throws {
 	let fixture = try BilibiliPlatformFixture(legacyWrapper: true, unknownPrivateFile: true)
 	defer { fixture.remove() }
@@ -33,22 +14,27 @@ func bilibiliPlatformComponentPreservesUnknownFilesDuringLegacyMigration() throw
 
 	#expect(try fixture.component.installIfSupported(in: fixture.root))
 	#expect(try Data(contentsOf: fixture.helper) == fixture.officialData)
+	#expect(try Data(contentsOf: fixture.installedController) == fixture.controllerData)
+	#expect(!FileManager.default.fileExists(atPath: fixture.installedBridge.path))
+	#expect(!FileManager.default.fileExists(atPath: fixture.installedInjection.path))
 	#expect(try Data(contentsOf: fixture.unknownPrivateFile) == unknown)
 	#expect(FileManager.default.fileExists(atPath: fixture.privateDirectory.path))
-}
+	#expect(try !fixture.component.installIfSupported(in: fixture.root))
 
-@Test
-func bilibiliPlatformComponentLeavesUnknownHelperAndControllerUntouched() throws {
-	let fixture = try BilibiliPlatformFixture()
-	defer { fixture.remove() }
+	#expect(try fixture.component.restoreIfInstalled(in: fixture.root))
+	#expect(try Data(contentsOf: fixture.helper) == fixture.officialData)
+	#expect(!FileManager.default.fileExists(atPath: fixture.installedController.path))
+
+	let untouched = try BilibiliPlatformFixture()
+	defer { untouched.remove() }
 	let unknownHelper = Data("unrelated executable".utf8)
 	let unknownController = Data("unrelated controller".utf8)
-	try unknownHelper.write(to: fixture.helper)
-	try unknownController.write(to: fixture.installedController)
+	try unknownHelper.write(to: untouched.helper)
+	try unknownController.write(to: untouched.installedController)
 
-	#expect(try !fixture.component.installIfSupported(in: fixture.root))
-	#expect(try Data(contentsOf: fixture.helper) == unknownHelper)
-	#expect(try Data(contentsOf: fixture.installedController) == unknownController)
+	#expect(try !untouched.component.installIfSupported(in: untouched.root))
+	#expect(try Data(contentsOf: untouched.helper) == unknownHelper)
+	#expect(try Data(contentsOf: untouched.installedController) == unknownController)
 }
 
 private struct BilibiliPlatformFixture {

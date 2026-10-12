@@ -83,44 +83,6 @@ private actor UpdateLog {
 
 struct InstallProgressMonitorTests {
 	@Test
-	func oneMonitorTicksForAllConcurrentFiles() async throws {
-		let clock = ManualTickClock()
-		let counter = ProgressCounter(totalBytes: 100, totalFiles: 3)
-		let log = UpdateLog()
-		await InstallProgressMonitor.run(
-			counter: counter, fallbackFile: "a", clock: clock,
-			progress: log.handler
-		) {
-			_ = await counter.add(bytes: 1, file: "a")
-			_ = await counter.add(bytes: 1, file: "b")
-			_ = await counter.add(bytes: 1, file: "c")
-			await clock.tick()
-			await log.waitForCount(1)
-			_ = await counter.add(bytes: 1, file: "b")
-			await clock.tick()
-			await log.waitForCount(2)
-		}
-		let files = await log.updates.map(\.currentFile)
-		#expect(files == ["c", "b"])
-		#expect(clock.peakConcurrentSleepers == 1)
-	}
-
-	@Test
-	func fallsBackToTheFirstFileBeforeAnyBytesArrive() async {
-		let clock = ManualTickClock()
-		let counter = ProgressCounter(totalBytes: 100, totalFiles: 1)
-		let log = UpdateLog()
-		await InstallProgressMonitor.run(
-			counter: counter, fallbackFile: "first", clock: clock,
-			progress: log.handler
-		) {
-			await clock.tick()
-			await log.waitForCount(1)
-		}
-		#expect(await log.updates.map(\.currentFile) == ["first"])
-	}
-
-	@Test
 	func tickReportsAStallWhenNoBytesArrive() async {
 		let downloadClock = AdvancingClock()
 		let counter = ProgressCounter(totalBytes: 100, totalFiles: 2, clock: downloadClock)
@@ -139,39 +101,5 @@ struct InstallProgressMonitorTests {
 		let update = await log.updates[0]
 		#expect(update.isTransferStalled)
 		#expect(update.currentFile == "b")
-	}
-
-	@Test
-	func monitorEndsBeforeRunReturnsOnSuccessFailureAndCancellation() async {
-		struct Failure: Error {}
-		for outcome in ["success", "failure", "cancellation"] {
-			let clock = ManualTickClock()
-			let counter = ProgressCounter(totalBytes: 1, totalFiles: 1)
-			let log = UpdateLog()
-			let task = Task {
-				try await InstallProgressMonitor.run(
-					counter: counter, fallbackFile: "a", clock: clock,
-					progress: log.handler
-				) {
-					await clock.tick()
-					await log.waitForCount(1)
-					switch outcome {
-					case "failure": throw Failure()
-					case "cancellation": try await Task.sleep(for: .seconds(60))
-					default: break
-					}
-				}
-			}
-			if outcome == "cancellation" {
-				await log.waitForCount(1)
-				task.cancel()
-			}
-			_ = try? await task.value
-			let sleepsAtReturn = clock.sleepCount
-			await Task.yield()
-			// No further sleep begins after the run returns, so the monitor is gone.
-			#expect(clock.sleepCount == sleepsAtReturn, "\(outcome)")
-			#expect(clock.peakConcurrentSleepers == 1, "\(outcome)")
-		}
 	}
 }

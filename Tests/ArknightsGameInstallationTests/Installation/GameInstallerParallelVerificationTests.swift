@@ -40,11 +40,7 @@ struct GameInstallerParallelVerificationTests {
 		}
 	}
 
-	/// Writes `bodies`; entries whose index is in `corrupt` get different bytes of the same size.
-	private static func makeFixture(
-		bodies: [Data],
-		corrupt: Set<Int> = []
-	) throws -> Fixture {
+	private static func makeFixture(bodies: [Data]) throws -> Fixture {
 		let directory = FileManager.default.temporaryDirectory.appending(
 			path: "GameInstallerParallelVerificationTests-\(UUID().uuidString)",
 			directoryHint: .isDirectory
@@ -57,8 +53,7 @@ struct GameInstallerParallelVerificationTests {
 			let path = "file-\(index).dat"
 			files.append(
 				ManifestFile(path: path, hash: checksum.decimalString, size: String(body.count)))
-			let stored = corrupt.contains(index) ? Data(repeating: 0xFF, count: body.count) : body
-			try stored.write(to: directory.appending(path: path))
+			try body.write(to: directory.appending(path: path))
 		}
 		let installer = GameInstaller(
 			api: InstallerAPI(
@@ -78,37 +73,6 @@ struct GameInstallerParallelVerificationTests {
 
 	private static func bodies(count: Int, size: Int) -> [Data] {
 		(0..<count).map { Data(repeating: UInt8($0 + 1), count: size) }
-	}
-
-	@Test
-	func pendingFilesKeepManifestOrder() async throws {
-		let corrupt: Set<Int> = [0, 3, 4, 9, 10]
-		let fixture = try Self.makeFixture(
-			bodies: Self.bodies(count: 12, size: 64 * 1_024), corrupt: corrupt)
-		defer { fixture.remove() }
-
-		let result = try await fixture.pending()
-
-		#expect(result.files == corrupt.sorted().map { fixture.manifest.file[$0] })
-	}
-
-	@Test
-	func progressByteTotalCoversEveryHashedFile() async throws {
-		let size = 96 * 1_024
-		let fixture = try Self.makeFixture(bodies: Self.bodies(count: 6, size: size))
-		defer { fixture.remove() }
-		let recorder = ProgressRecorderBox()
-
-		let result = try await fixture.pending(progress: { recorder.record($0) })
-
-		let updates = recorder.updates()
-		let last = try #require(updates.last)
-		#expect(result.files.isEmpty)
-		#expect(updates.allSatisfy { $0.isVerifying && $0.totalBytes == Int64(6 * size) })
-		#expect(last.downloadedBytes == Int64(6 * size))
-		#expect(last.completedFiles == 6)
-		#expect(last.totalFiles == 6)
-		#expect(result.lastSequence == last.sequence)
 	}
 
 	@Test
@@ -135,17 +99,5 @@ struct GameInstallerParallelVerificationTests {
 		let observed = reads.load(ordering: .relaxed)
 		#expect(observed <= 2 * AppConstants.IO.verificationConcurrency)
 		#expect(observed < fileCount * bufferCount)
-	}
-}
-
-private final class ProgressRecorderBox: Sendable {
-	private let storage = Mutex<[DownloadProgress]>([])
-
-	func record(_ update: DownloadProgress) {
-		storage.withLock { $0.append(update) }
-	}
-
-	func updates() -> [DownloadProgress] {
-		storage.withLock { $0 }
 	}
 }

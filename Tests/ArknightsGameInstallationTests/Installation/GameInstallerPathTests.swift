@@ -10,8 +10,136 @@ import Testing
 @testable import ArknightsInfrastructure
 
 struct GameInstallerPathTests {
+	private let installer = GameInstaller(
+		api: PathTestAPI(),
+		compatibilityManager: GameCompatibilityManager()
+	)
+
 	@Test
-	func boundedReaderRejectsOversizedAndSymbolicLinkInputs() throws {
+	func manifestRejectsUnsafePathComponents() throws {
+		for path in [
+			"", "/", "//bin/game.dat", "bin//game.dat", "bin/game.dat/", ".",
+			"../game.dat", "bin/../game.dat", "bin\\game.dat", "bin/game\n.dat",
+		] {
+			#expect(throws: InstallerError.self) {
+				_ = try GameInstaller.safeRelativePath(path)
+			}
+		}
+
+		// The official manifest prefixes paths with a single slash.
+		#expect(try GameInstaller.safeRelativePath("/bin/game.dat") == "bin/game.dat")
+		try validateManifest(
+			GameManifest(
+				source: "/Arknights_JP-36.7.23-game",
+				file: [ManifestFile(path: "/Arknights.exe", hash: "0", size: "0")]
+			))
+
+		let invalidFileSets: [[String]] = [
+			["bin/Game.dat", "BIN/game.dat"],
+			["assets", "assets/image.png"],
+			["assets", "assets-foo", "assets/image.png"],
+			["foo", "foo.part"],
+			["foo", "foo.part/content"],
+			[AppConstants.Game.installedStateFileName],
+			[AppConstants.Game.installedStateFileName + "/content"],
+			["bin/\(AppConstants.Game.installerStagingDirectoryName)/content"],
+		]
+		for paths in invalidFileSets {
+			#expect(throws: InstallerError.self) {
+				try validateManifest(makeManifest(paths: paths))
+			}
+		}
+	}
+
+	enum UnsafeLink: CaseIterable {
+		case symlinkedSourceDirectory
+		case symlinkedPartialFile
+		case symlinkedDestinationFile
+		case hardLinkedPartialFile
+		case boundedReader
+	}
+
+	@Test(arguments: UnsafeLink.allCases)
+	func installerRejectsSymbolicPartialFileWithoutTouchingItsTarget(link: UnsafeLink) async throws
+	{
+		if link == .boundedReader {
+			try assertBoundedReaderRejectsUnsafeInputs()
+			return
+		}
+		let fileManager = FileManager.default
+		let root = temporaryInstallDirectory()
+		let outside = root.deletingLastPathComponent().appending(
+			path: "GameInstallerPathTests-outside-\(UUID().uuidString)"
+		)
+		defer {
+			try? fileManager.removeItem(at: root)
+			try? fileManager.removeItem(at: outside)
+		}
+		let binDirectory = root.appending(path: "bin", directoryHint: .isDirectory)
+		let sentinel = Data("outside".utf8)
+		var manifest = GameManifest(
+			source: "payload",
+			file: [ManifestFile(path: "bin/game.dat", hash: "0", size: "0")]
+		)
+		var rejectedName = "game.dat"
+		var untouched = outside
+		switch link {
+		case .symlinkedSourceDirectory:
+			try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+			try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
+			try fileManager.createSymbolicLink(at: binDirectory, withDestinationURL: outside)
+			rejectedName = "bin"
+			untouched = outside.appending(path: "game.dat")
+		case .symlinkedPartialFile:
+			try fileManager.createDirectory(at: binDirectory, withIntermediateDirectories: true)
+			try sentinel.write(to: outside)
+			try fileManager.createSymbolicLink(
+				at: binDirectory.appending(path: "game.dat.part"), withDestinationURL: outside)
+			rejectedName = "game.dat.part"
+		case .symlinkedDestinationFile:
+			try fileManager.createDirectory(at: binDirectory, withIntermediateDirectories: true)
+			try sentinel.write(to: outside)
+			try fileManager.createSymbolicLink(
+				at: binDirectory.appending(path: "game.dat"), withDestinationURL: outside)
+		case .hardLinkedPartialFile:
+			try fileManager.createDirectory(at: binDirectory, withIntermediateDirectories: true)
+			try sentinel.write(to: outside)
+			try fileManager.linkItem(at: outside, to: binDirectory.appending(path: "game.dat.part"))
+			manifest = GameManifest(
+				source: "payload",
+				file: [ManifestFile(path: "bin/game.dat", hash: "0", size: "16")]
+			)
+			rejectedName = "game.dat.part"
+		case .boundedReader:
+			return
+		}
+		let installer = GameInstaller(
+			api: PathTestAPI(manifest: manifest),
+			compatibilityManager: GameCompatibilityManager()
+		)
+
+		do {
+			_ = try await installer.install(
+				configuration: PathTestAPI.configuration, region: .global, into: root,
+				progress: { _ in })
+			Issue.record("Expected \(link) to be rejected")
+		} catch InstallerError.symbolicLinkInInstallPath(let url) {
+			#expect(link != .hardLinkedPartialFile)
+			#expect(url.lastPathComponent == rejectedName)
+		} catch InstallerError.unsafeInstallerTemporaryFile(let url) {
+			#expect(link == .hardLinkedPartialFile)
+			#expect(url.lastPathComponent == rejectedName)
+		} catch {
+			Issue.record("Unexpected installer error: \(error)")
+		}
+		if link == .symlinkedSourceDirectory {
+			#expect(!fileManager.fileExists(atPath: untouched.path))
+		} else {
+			#expect(try Data(contentsOf: untouched) == sentinel)
+		}
+	}
+
+	private func assertBoundedReaderRejectsUnsafeInputs() throws {
 		let root = FileManager.default.temporaryDirectory.appending(
 			path: "bounded-reader-\(UUID().uuidString)", directoryHint: .isDirectory)
 		let target = root.appending(path: "target")
@@ -62,209 +190,6 @@ struct GameInstallerPathTests {
 			}
 			#expect(returnedBeforeWriter)
 		}
-	}
-	private let installer = GameInstaller(
-		api: PathTestAPI(),
-		compatibilityManager: GameCompatibilityManager()
-	)
-
-	@Test
-	func manifestAcceptsOfficialLeadingSlashPaths() throws {
-		let source = try GameInstaller.safeRelativePath("/Arknights_JP-36.7.23-game")
-		#expect(source == "Arknights_JP-36.7.23-game")
-		#expect(try GameInstaller.safeRelativePath("/bin/game.dat") == "bin/game.dat")
-
-		let manifest = GameManifest(
-			source: "/Arknights_JP-36.7.23-game",
-			file: [ManifestFile(path: "/Arknights.exe", hash: "0", size: "0")]
-		)
-		try validateManifest(manifest)
-	}
-
-	@Test
-	func manifestRejectsUnsafePathComponents() {
-		for path in [
-			"", "/", "//bin/game.dat", "bin//game.dat", "bin/game.dat/", ".",
-			"../game.dat", "bin/../game.dat", "bin\\game.dat", "bin/game\n.dat",
-		] {
-			#expect(throws: InstallerError.self) {
-				_ = try GameInstaller.safeRelativePath(path)
-			}
-		}
-	}
-
-	@Test(arguments: [
-		("case-insensitive duplicate paths", ["bin/Game.dat", "BIN/game.dat"]),
-		("file and directory conflict", ["assets", "assets/image.png"]),
-		("non-adjacent file and directory conflict", ["assets", "assets-foo", "assets/image.png"]),
-		("partial file suffix", ["foo", "foo.part"]),
-		("nested partial file suffix", ["foo", "foo.part/content"]),
-		("installed state filename", [AppConstants.Game.installedStateFileName]),
-		(
-			"nested installed state filename",
-			[AppConstants.Game.installedStateFileName + "/content"]
-		),
-		(
-			"installer staging directory",
-			["bin/\(AppConstants.Game.installerStagingDirectoryName)/content"]
-		),
-	])
-	func manifestRejectsInvalidFileSets(scenario: String, paths: [String]) {
-		#expect(throws: InstallerError.self) {
-			try validateManifest(makeManifest(paths: paths))
-		}
-	}
-
-	@Test
-	func installerRejectsSymbolicLinkBeforeDownloading() async throws {
-		let fileManager = FileManager.default
-		let root = temporaryInstallDirectory()
-		let outside = root.deletingLastPathComponent().appending(
-			path: "GameInstallerPathTests-outside-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer {
-			try? fileManager.removeItem(at: root)
-			try? fileManager.removeItem(at: outside)
-		}
-		try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
-		try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
-		try fileManager.createSymbolicLink(
-			at: root.appending(path: "bin"),
-			withDestinationURL: outside
-		)
-		let manifest = makeManifest(paths: ["bin/game.dat"])
-		let installer = GameInstaller(
-			api: PathTestAPI(manifest: manifest),
-			compatibilityManager: GameCompatibilityManager()
-		)
-
-		do {
-			_ = try await installer.install(
-				configuration: PathTestAPI.configuration, region: .global, into: root,
-				progress: { _ in })
-			Issue.record("Expected the symbolic destination to be rejected")
-		} catch InstallerError.symbolicLinkInInstallPath(let url) {
-			#expect(url.lastPathComponent == "bin")
-		} catch {
-			Issue.record("Unexpected installer error: \(error)")
-		}
-		#expect(!fileManager.fileExists(atPath: outside.appending(path: "game.dat").path))
-	}
-
-	@Test
-	func installerRejectsSymbolicPartialFileWithoutTouchingItsTarget() async throws {
-		let fileManager = FileManager.default
-		let root = temporaryInstallDirectory()
-		let outside = root.deletingLastPathComponent().appending(
-			path: "GameInstallerPathTests-partial-\(UUID().uuidString)"
-		)
-		defer {
-			try? fileManager.removeItem(at: root)
-			try? fileManager.removeItem(at: outside)
-		}
-		let binDirectory = root.appending(path: "bin", directoryHint: .isDirectory)
-		try fileManager.createDirectory(at: binDirectory, withIntermediateDirectories: true)
-		let sentinel = Data("outside".utf8)
-		try sentinel.write(to: outside)
-		try fileManager.createSymbolicLink(
-			at: binDirectory.appending(path: "game.dat.part"),
-			withDestinationURL: outside
-		)
-		let installer = GameInstaller(
-			api: PathTestAPI(),
-			compatibilityManager: GameCompatibilityManager()
-		)
-
-		do {
-			_ = try await installer.install(
-				configuration: PathTestAPI.configuration, region: .global, into: root,
-				progress: { _ in })
-			Issue.record("Expected the symbolic partial file to be rejected")
-		} catch InstallerError.symbolicLinkInInstallPath(let url) {
-			#expect(url.lastPathComponent == "game.dat.part")
-		} catch {
-			Issue.record("Unexpected installer error: \(error)")
-		}
-		#expect(try Data(contentsOf: outside) == sentinel)
-	}
-
-	@Test
-	func installerRejectsSymbolicDestinationWithoutTouchingItsTarget() async throws {
-		let fileManager = FileManager.default
-		let root = temporaryInstallDirectory()
-		let outside = root.deletingLastPathComponent().appending(
-			path: "GameInstallerPathTests-destination-\(UUID().uuidString)"
-		)
-		defer {
-			try? fileManager.removeItem(at: root)
-			try? fileManager.removeItem(at: outside)
-		}
-		let binDirectory = root.appending(path: "bin", directoryHint: .isDirectory)
-		try fileManager.createDirectory(at: binDirectory, withIntermediateDirectories: true)
-		let sentinel = Data("outside".utf8)
-		try sentinel.write(to: outside)
-		try fileManager.createSymbolicLink(
-			at: binDirectory.appending(path: "game.dat"),
-			withDestinationURL: outside
-		)
-		let installer = GameInstaller(
-			api: PathTestAPI(),
-			compatibilityManager: GameCompatibilityManager()
-		)
-
-		do {
-			_ = try await installer.install(
-				configuration: PathTestAPI.configuration, region: .global, into: root,
-				progress: { _ in })
-			Issue.record("Expected the symbolic destination file to be rejected")
-		} catch InstallerError.symbolicLinkInInstallPath(let url) {
-			#expect(url.lastPathComponent == "game.dat")
-		} catch {
-			Issue.record("Unexpected installer error: \(error)")
-		}
-		#expect(try Data(contentsOf: outside) == sentinel)
-	}
-
-	@Test
-	func installerRejectsMultiplyLinkedPartialFileWithoutWritingToItsPeer() async throws {
-		let fileManager = FileManager.default
-		let root = temporaryInstallDirectory()
-		let outside = root.deletingLastPathComponent().appending(
-			path: "GameInstallerPathTests-hardlink-\(UUID().uuidString)"
-		)
-		defer {
-			try? fileManager.removeItem(at: root)
-			try? fileManager.removeItem(at: outside)
-		}
-		let binDirectory = root.appending(path: "bin", directoryHint: .isDirectory)
-		try fileManager.createDirectory(at: binDirectory, withIntermediateDirectories: true)
-		let sentinel = Data("outside".utf8)
-		try sentinel.write(to: outside)
-		try fileManager.linkItem(
-			at: outside,
-			to: binDirectory.appending(path: "game.dat.part")
-		)
-		let manifest = GameManifest(
-			source: "payload",
-			file: [ManifestFile(path: "bin/game.dat", hash: "0", size: "16")]
-		)
-		let installer = GameInstaller(
-			api: PathTestAPI(manifest: manifest),
-			compatibilityManager: GameCompatibilityManager()
-		)
-
-		do {
-			_ = try await installer.install(
-				configuration: PathTestAPI.configuration, region: .global, into: root,
-				progress: { _ in })
-			Issue.record("Expected the multiply linked partial file to be rejected")
-		} catch InstallerError.unsafeInstallerTemporaryFile(let url) {
-			#expect(url.lastPathComponent == "game.dat.part")
-		} catch {
-			Issue.record("Unexpected installer error: \(error)")
-		}
-		#expect(try Data(contentsOf: outside) == sentinel)
 	}
 
 	private func validateManifest(_ manifest: GameManifest) throws {

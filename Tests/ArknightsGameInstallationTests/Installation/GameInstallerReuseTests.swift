@@ -38,108 +38,91 @@ struct GameInstallerReuseTests {
 
 	@Test
 	func donorWithSameSizeButDifferentContentFallsBackToDownload() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		let wrong = Data(repeating: 0x7F, count: Self.body.count)
-		let donor = try world.makeDonor(body: wrong)
-		let before = try FileSnapshot(donor.file)
+		// Each row builds its own world and lists the donors that must not be reused.
+		let rows: [(String, @Sendable (ReuseWorld) throws -> [URL])] = [
+			(
+				"same size, different content",
+				{ world in
+					let donor = try world.makeDonor(
+						body: Data(repeating: 0x7F, count: Self.body.count))
+					return [donor.directory]
+				}
+			),
+			(
+				"different size",
+				{ world in [try world.makeDonor(body: Self.body.prefix(100)).directory] }
+			),
+			(
+				"unreadable file",
+				{ world in
+					let donor = try world.makeDonor(body: Self.body)
+					#expect(chmod(donor.file.path, 0) == 0)
+					return [donor.directory]
+				}
+			),
+			(
+				"incomplete regions",
+				{ world in
+					let noState = try world.makeDonor(name: "no-state", body: Self.body)
+					try FileManager.default.removeItem(
+						at: noState.directory.appending(path: Self.stateName))
+					let noExecutable = try world.makeDonor(name: "no-exe", body: Self.body)
+					try FileManager.default.removeItem(
+						at: noExecutable.directory.appending(path: "Arknights.exe"))
+					let corrupt = try world.makeDonor(name: "corrupt", body: Self.body)
+					try Data("{".utf8).write(to: corrupt.directory.appending(path: Self.stateName))
+					let missing = world.root.appending(path: "missing", directoryHint: .isDirectory)
+					return [noState.directory, noExecutable.directory, corrupt.directory, missing]
+				}
+			),
+			(
+				"path not listed",
+				{ world in
+					[try world.makeDonor(body: Self.body, listedPath: "other/file.dat").directory]
+				}
+			),
+		]
+		for (scenario, makeDonors) in rows {
+			let world = try ReuseWorld()
+			defer { world.remove() }
+			let donors = try makeDonors(world)
+			let files = donors.map { $0.appending(path: world.fixture.item.path) }
+			let snapshots = files.map { FileSnapshot.ifReadable($0) }
 
-		_ = try await world.install(donors: [donor.directory])
+			_ = try await world.install(donors: donors)
 
-		#expect(ReuseURLProtocol.requestCount == 1)
-		#expect(try Data(contentsOf: world.destination) == Self.body)
-		#expect(try FileSnapshot(donor.file) == before)
-		#expect(try world.stagingEntries().isEmpty)
-	}
+			#expect(ReuseURLProtocol.requestCount == 1, "\(scenario)")
+			#expect(try Data(contentsOf: world.destination) == Self.body, "\(scenario)")
+			#expect(try world.stagingEntries().isEmpty, "\(scenario)")
+			for file in files { _ = chmod(file.path, 0o644) }
+			let after = zip(files, snapshots).map { $1 == nil ? nil : FileSnapshot.ifReadable($0) }
+			#expect(snapshots == after, "\(scenario)")
+		}
 
-	@Test
-	func donorWithDifferentSizeFallsBackToDownload() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		let donor = try world.makeDonor(body: Self.body.prefix(100))
-
-		_ = try await world.install(donors: [donor.directory])
-
-		#expect(ReuseURLProtocol.requestCount == 1)
-		#expect(try Data(contentsOf: world.destination) == Self.body)
-	}
-
-	@Test
-	func unreadableDonorFileFallsBackToDownload() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		let donor = try world.makeDonor(body: Self.body)
-		#expect(chmod(donor.file.path, 0) == 0)
-
-		_ = try await world.install(donors: [donor.directory])
-
-		#expect(ReuseURLProtocol.requestCount == 1)
-		#expect(try Data(contentsOf: world.destination) == Self.body)
-		#expect(chmod(donor.file.path, 0o644) == 0)
-	}
-
-	@Test
-	func laterDonorIsUsedWhenAnEarlierOneDoesNotMatch() async throws {
+		// A later matching donor is used when an earlier one does not match.
 		let world = try ReuseWorld()
 		defer { world.remove() }
 		let wrong = try world.makeDonor(
 			name: "wrong", body: Data(repeating: 1, count: Self.body.count))
 		let right = try world.makeDonor(name: "right", body: Self.body)
-
 		_ = try await world.install(donors: [wrong.directory, right.directory])
-
 		#expect(ReuseURLProtocol.requestCount == 0)
 		#expect(try Data(contentsOf: world.destination) == Self.body)
-	}
 
-	@Test
-	func regionNeverReusesItsOwnDirectory() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		_ = try world.writeInstalledRegion(at: world.target, body: Self.body)
-		let alias = world.root.appending(path: "alias", directoryHint: .isDirectory)
-		try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: world.target)
-		try await withTestInstallDirectory(at: world.target) { root in
-			let session = await world.installer(donors: [world.target, alias])
+		// A region never reuses its own directory, even through an alias.
+		let own = try ReuseWorld()
+		defer { own.remove() }
+		_ = try own.writeInstalledRegion(at: own.target, body: Self.body)
+		let alias = own.root.appending(path: "alias", directoryHint: .isDirectory)
+		try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: own.target)
+		try await withTestInstallDirectory(at: own.target) { root in
+			let session = await own.installer(donors: [own.target, alias])
 				.reuseSession(for: .global, target: root)
-
 			#expect(session.sources.isEmpty)
 		}
 	}
 
-	@Test
-	func incompleteRegionsAreNotSources() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		let noState = try world.makeDonor(name: "no-state", body: Self.body)
-		try FileManager.default.removeItem(at: noState.directory.appending(path: stateName))
-		let noExecutable = try world.makeDonor(name: "no-exe", body: Self.body)
-		try FileManager.default.removeItem(
-			at: noExecutable.directory.appending(path: "Arknights.exe"))
-		let corruptState = try world.makeDonor(name: "corrupt", body: Self.body)
-		try Data("{".utf8).write(to: corruptState.directory.appending(path: stateName))
-		let missing = world.root.appending(path: "missing", directoryHint: .isDirectory)
-
-		_ = try await world.install(
-			donors: [noState.directory, noExecutable.directory, corruptState.directory, missing]
-		)
-
-		#expect(ReuseURLProtocol.requestCount == 1)
-		#expect(try Data(contentsOf: world.destination) == Self.body)
-	}
-
-	@Test
-	func donorThatDoesNotListThePathIsSkipped() async throws {
-		let world = try ReuseWorld()
-		defer { world.remove() }
-		let donor = try world.makeDonor(body: Self.body, listedPath: "other/file.dat")
-
-		_ = try await world.install(donors: [donor.directory])
-
-		#expect(ReuseURLProtocol.requestCount == 1)
-	}
-
-	private var stateName: String { AppConstants.Game.installedStateFileName }
+	private static var stateName: String { AppConstants.Game.installedStateFileName }
 }
 
 private struct FileSnapshot: Equatable {
@@ -147,6 +130,14 @@ private struct FileSnapshot: Equatable {
 	let size: off_t
 	let modified: timespec
 	let contents: Data
+
+	static func ifReadable(_ url: URL) -> FileSnapshot? {
+		do {
+			return try FileSnapshot(url)
+		} catch {
+			return nil
+		}
+	}
 
 	init(_ url: URL) throws {
 		var status = stat()

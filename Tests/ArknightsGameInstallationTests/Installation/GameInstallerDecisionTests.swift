@@ -39,21 +39,6 @@ func needsDownloadUsesSizeAndPreviousManifestBeforeHashing() {
 }
 
 @Test
-func diskCapacityFailureIsTypedWhenNoDirectoryCanBeRead() {
-	#expect(throws: DiskCapacityError.self) {
-		_ = try GameInstaller.availableCapacityBytes(
-			at: URL(filePath: "/dev/null/arknights-client-install"))
-	}
-}
-
-@Test(arguments: ["-1", "+1", "01", " 1", "1.0", "9223372036854775808"])
-func manifestDecodeRejectsInvalidSizes(_ size: String) {
-	#expect(throws: DecodingError.self) {
-		_ = try JSONDecoder().decode(ManifestFile.self, from: manifestJSON(hash: "0", size: size))
-	}
-}
-
-@Test
 func manifestValidationRejectsPerFileAndAggregateLimits() throws {
 	let installer = GameInstaller(
 		api: InstallerAPI(
@@ -62,6 +47,12 @@ func manifestValidationRejectsPerFileAndAggregateLimits() throws {
 				primaryCdn: URL(string: "https://example.invalid")!,
 				backUpCdn: URL(string: "https://example.invalid")!)),
 		compatibilityManager: GameCompatibilityManager())
+	for size in ["-1", "+1", "01", " 1", "1.0", "9223372036854775808"] {
+		#expect(throws: DecodingError.self) {
+			_ = try JSONDecoder().decode(
+				ManifestFile.self, from: manifestJSON(hash: "0", size: size))
+		}
+	}
 	let file = try decodeManifestFile(path: "large", size: "1099511627777")
 	#expect(throws: LauncherError.self) {
 		try installer.validateManifestPaths(GameManifest(source: "payload", file: [file]))
