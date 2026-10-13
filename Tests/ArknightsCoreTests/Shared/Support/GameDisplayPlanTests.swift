@@ -17,14 +17,14 @@ private func size(_ width: Int, _ height: Int) -> GameDisplaySize {
 			.native
 		),
 		(.metalFX, .windowed, false, false, 2.0, size(1280, 720), .metalFX),
-		(.lightweight, .windowed, false, false, 2.0, size(1280, 720), .stretched),
+		(.standard, .windowed, false, false, 2.0, size(1280, 720), .stretched),
 		(.retina, .windowed, false, false, 1.0, size(1280, 720), .native),
 		(.metalFX, .windowed, false, false, 1.0, size(1280, 720), .native),
 		(.retina, .fullscreen, false, false, 2.0, size(1920, 1080), nil),
-		(.lightweight, .fullscreen, false, false, 2.0, size(1920, 1080), nil),
+		(.standard, .fullscreen, false, false, 2.0, size(1920, 1080), nil),
 		(.retina, .fullscreen, true, false, 2.0, size(6016, 3384), .native),
 		(.metalFX, .fullscreen, true, false, 2.0, size(3008, 1692), .metalFX),
-		(.lightweight, .fullscreen, true, false, 2.0, size(3008, 1692), .stretched),
+		(.standard, .fullscreen, true, false, 2.0, size(3008, 1692), .stretched),
 		(.retina, .windowed, false, true, 2.0, nil, nil),
 	]
 		as [(

@@ -22,9 +22,9 @@
 1. Use an Apple silicon Mac with macOS 15–27, Rosetta 2 (the setup assistant can install it), and free space for the game. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements) and [runtime compatibility](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/).
 2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest). Drag the app to **Applications**.
 3. Open the app. Releases are not notarized, so macOS can block it. The [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) shows how to allow it.
-4. Choose your region. The setup assistant downloads the official game files.
+4. Choose your server. The setup assistant downloads the official game files.
 
-Global, Japan, Korea, China, and China (Bilibili) are supported by default. Taiwan is an experimental Canary region.
+Global, Japan, Korea, China, and China (Bilibili) are supported by default. Taiwan is an experimental Canary server.
 
 > [!NOTE]
 > Arknights Client is an unofficial community project. It is not affiliated with Gryphline, Hypergryph, Yostar, or Bilibili. Release builds do not include game files or downloaded artwork.
@@ -33,9 +33,9 @@ Global, Japan, Korea, China, and China (Bilibili) are supported by default. Taiw
 
 ## Features
 
-- Install, resume, update, repair, and remove regional PC clients, each in its own game directory.
-- Windowed, borderless, or fullscreen play, including native fullscreen beyond 4K, with Retina, MetalFX, or Lightweight rendering.
-- Official sign-in for each client.
+- Install, resume, update, repair, and remove the PC game for each server. Each server uses its own game directory.
+- Windowed, borderless, or fullscreen play, including native fullscreen beyond 4K, with Retina, MetalFX, or Standard rendering.
+- Official sign-in for each server.
 - Resumable setup assistant. The game downloads in the background.
 - Custom artwork, preset gallery, dynamic theme colors, and custom launcher and game icons.
 - Dock menu, optional game-version, server-time, and daily-reset indicators, and optional YouTube background music.
@@ -45,7 +45,7 @@ Global, Japan, Korea, China, and China (Bilibili) are supported by default. Taiw
 
 ## Support
 
-The publisher of your region handles account, payment, and in-game problems. See the [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) and [publisher support routing](https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing).
+The publisher of your server handles account, payment, and in-game problems. See the [Help section](https://lumisxh.github.io/Arknights-MacOS-Client/help/) and [publisher support routing](https://lumisxh.github.io/Arknights-MacOS-Client/help/#publisher-support-routing).
 
 ## Development
 

@@ -9,7 +9,7 @@ package enum GameRenderingMode: String, CaseIterable, Codable, Sendable {
 	/// Wine renders in points and DXMT upscales each frame with MetalFX spatial scaling.
 	case metalFX
 	/// Wine renders in points and macOS stretches the window to the backing store.
-	case lightweight
+	case standard
 }
 
 /// A width and height, either in macOS points (window size) or in game pixels.
@@ -156,7 +156,7 @@ package struct GameDisplayPlan: Equatable, Sendable {
 		switch (backingScale, options.renderingMode) {
 		case (1, _), (_, .retina): scaling = .native
 		case (_, .metalFX): scaling = .metalFX
-		case (_, .lightweight): scaling = .stretched
+		case (_, .standard): scaling = .stretched
 		}
 		gamePixelsPerPoint = options.renderingMode == .retina ? backingScale : 1
 		renderSize =

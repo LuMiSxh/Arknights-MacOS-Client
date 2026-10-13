@@ -25,52 +25,29 @@ struct OnboardingExtrasView: View {
 		)
 	}
 
-	private var musicBinding: Binding<Bool?> {
-		Binding(
-			get: { preferences.playsLauncherMusic },
-			set: { if let plays = $0 { preferences.playsLauncherMusic = plays } }
-		)
-	}
-
-	private static func musicAnswer(_ plays: Bool) -> OnboardingAnswer<Bool> {
-		plays
-			? OnboardingAnswer(
-				value: true, title: "Yes, play music",
-				detail: "Plays the launcher's YouTube music and pauses while the game runs.",
-				systemImage: "music.note")
-			: OnboardingAnswer(
-				value: false, title: "No, keep it quiet",
-				detail: "You can turn music on later in Settings.",
-				systemImage: "speaker.slash")
-	}
-
 	var body: some View {
 		OnboardingPage(
-			title: "A few last questions",
-			subtitle:
-				"Looking for updates never downloads anything by itself, apart from the game files you chose to install.",
+			title: "Updates & Audio",
+			subtitle: "Update checks only notify you. Nothing downloads until you choose.",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
-				question: "How should the launcher stay up to date?",
+				question: "Update checks",
 				systemImage: "arrow.trianglehead.2.clockwise",
 				answers: UpdateCheckAnswer.allCases.map(\.answer),
 				selection: updateBinding,
 				accentColor: accentColor
 			)
 
-			OnboardingQuestion(
-				question: "Play music while the launcher is open?",
-				systemImage: "music.note",
-				answers: [true, false].map(Self.musicAnswer),
-				selection: musicBinding,
-				accentColor: accentColor
-			)
-
-			if preferences.playsLauncherMusic {
-				SettingsPanel(
-					title: "Music", systemImage: "speaker.wave.2"
-				) {
+			SettingsPanel(title: "Music", systemImage: "speaker.wave.2") {
+				OnboardingToggleRow(
+					title: "Launcher music",
+					detail: "YouTube playlist. Pauses while the game runs.",
+					isOn: $preferences.playsLauncherMusic,
+					accentColor: accentColor
+				)
+				if preferences.playsLauncherMusic {
+					SettingsHairline()
 					LabeledContent("Volume") {
 						HStack(spacing: 10) {
 							Image(systemName: "speaker.fill")

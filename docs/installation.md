@@ -30,38 +30,38 @@ The launcher downloads the official PC game from its publisher. It contains no g
 The setup assistant opens on the first start. Change any choice later in **Settings**.
 
 1. **Rosetta 2** — If missing (the assistant installs it), choose **Install Rosetta 2…**, then **Check Again**.
-2. **Region** — Choose the service of your account:
+2. **Server** — Choose the server of your account:
 
-   | Region               | Publisher  | Availability                       |
+   | Server               | Publisher  | Availability                       |
    | -------------------- | ---------- | ---------------------------------- |
    | **Global**           | Yostar     | Always                             |
    | **Japan**            | Yostar     | Always                             |
    | **Korea**            | Yostar     | Always                             |
-   | **Taiwan**           | Gryphline  | [Canary Features](#canary-regions) |
+   | **Taiwan**           | Gryphline  | [Canary Features](#canary-servers) |
    | **China**            | Hypergryph | Always                             |
    | **China (Bilibili)** | Hypergryph | Always                             |
 
 3. **Download** — Choose **Install & Continue**. The download continues in the background. Closing the launcher pauses it.
-4. **Display** — Choose window or fullscreen, window size, picture priority, and pointer. Pick an exact size later in **Settings → Game**.
+4. **Display** — Choose display mode, window size, rendering, and cursor. Pick an exact size later in **Settings → Game**.
 5. **Look** — Choose artwork, colors, the Dock operator, and launcher display options.
 6. **Updates & Audio** — Choose update behavior and music.
 
 After the launcher verifies the download, **Play** becomes available.
 
-### Canary regions
+### Canary servers
 
-To show experimental Taiwan, turn on **Settings → Installation → Canary Features**, then **Allow Taiwan region**. Taiwan uses ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running it through Wine is unofficial and at your own risk.
+To show experimental Taiwan, turn on **Settings → Installation → Canary Features**, then **Allow Taiwan server**. Taiwan uses ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running it through Wine is unofficial and at your own risk.
 
 ## First launch
 
-Choose **Play** and sign in through the official game. The first start is slower. Taiwan signs in through your default browser. Other regions sign in inside the game. The window can stay blank for up to one minute the first time.
+Choose **Play** and sign in through the official game. The first start is slower. Taiwan signs in through your default browser. Other servers sign in inside the game. The window can stay blank for up to one minute the first time.
 
 > [!TIP]
 > Quitting Arknights Client also quits the game. Closing the launcher window does not.
 
-## More regions and existing installations
+## More servers and existing installations
 
-- **Add a region:** Select it in **Settings → Installation** and start its download.
+- **Add a server:** Select it in **Settings → Installation** and start its download.
 - **Use existing files:** Choose **Settings → Installation → Installation Location → Locate Existing Installation…** and select the game folder. If it shows **Not installed**, run **Repair…**.
 - **Use another location:** Choose **Choose New Location…** before the download. Use a folder that contains only the game. The game can see its contents.
 

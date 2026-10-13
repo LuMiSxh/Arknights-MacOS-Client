@@ -3,7 +3,7 @@
 import ArknightsCore
 import SwiftUI
 
-/// Where the game appears, how big it is, and how its picture and pointer behave, in plain terms.
+/// Where the game appears, how big it is, and how its rendering and cursor behave.
 /// Windowed sizes are macOS points; the launcher converts them into the game's pixel resolution.
 struct GameDisplaySettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
@@ -18,7 +18,7 @@ struct GameDisplaySettingsPanel: View {
 	var body: some View {
 		SettingsPanel(title: "Display", systemImage: "display") {
 			SettingsActionRow(
-				title: "Show the game",
+				title: "Display mode",
 				detail: displayModeDetail,
 				help: "Applies the next time the game starts."
 			) {
@@ -31,32 +31,28 @@ struct GameDisplaySettingsPanel: View {
 			}
 			SettingsHairline()
 			if options.displayMode == .fullscreen {
-				fullscreenDetailRow
+				fullscreenResolutionRow
 			} else {
 				windowSizeRow
 			}
 			SettingsHairline()
 			SettingsActionRow(
-				title: "Picture",
-				detail: pictureDetail,
+				title: "Rendering",
 				help:
-					"Retina: Wine renders at the display's full backing-store resolution.\nMetalFX: Wine renders in macOS points and DXMT upscales every frame 2× with MetalFX spatial scaling. Runtimes without MetalFX support use Lightweight instead.\nLightweight: Wine renders in macOS points and macOS scales the window up.\nApplies on the next game launch."
+					"Retina: the game renders every pixel of the display.\nMetalFX: the game renders one pixel per point and MetalFX upscales each frame. Falls back to Standard if the runtime lacks support.\nStandard: the game renders one pixel per point and macOS scales the window. Softer image, lowest GPU load.\nApplies on next launch."
 			) {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.renderingMode,
-					options: GameRenderingMode.allCases.map {
-						($0, pictureTitle($0))
-					},
+					options: GameRenderingMode.allCases.map { ($0, renderingTitle($0)) },
 					accentColor: accentColor,
 					isDisabled: isLocked
 				)
 			}
 			SettingsHairline()
 			SettingsActionRow(
-				title: "Pointer",
-				detail: pointerDetail,
+				title: "Cursor",
 				help:
-					"Asks the runtime to hide the game's software-drawn cursor so the macOS hardware cursor shows instead. Runtimes without this capability keep the game cursor. Applies on the next game launch."
+					"macOS cursor = hardware cursor. Older runtimes keep the game cursor. Applies on next launch."
 			) {
 				AdaptiveSegmentedControl(
 					selection: $settings.usesHardwareCursor,
@@ -64,16 +60,16 @@ struct GameDisplaySettingsPanel: View {
 					accentColor: accentColor,
 					isDisabled: isLocked
 				) { usesMacPointer in
-					Text(usesMacPointer ? "Your Mac's pointer" : "Arknights' cursor")
+					Text(usesMacPointer ? "macOS" : "Game")
 				}
 			}
-			SettingsHairline()
-			Text(
-				GameDisplaySummary.text(for: options, screen: screen, native: nativeFullscreenSize)
-			)
-			.font(.callout)
-			.foregroundStyle(.secondary)
-			.fixedSize(horizontal: false, vertical: true)
+			if options.usesGameSettings {
+				SettingsHairline()
+				Text("The game uses the display settings chosen inside Arknights.")
+					.font(.callout)
+					.foregroundStyle(.secondary)
+					.fixedSize(horizontal: false, vertical: true)
+			}
 		}
 	}
 
@@ -85,7 +81,6 @@ struct GameDisplaySettingsPanel: View {
 	}
 
 	private var windowSizeRow: some View {
-		let choice = screen.flatMap { GameWindowSizeChoice.matching(options.windowSize, on: $0) }
 		let exact = GameDisplaySize.windowOptions(
 			fitting: screen?.visibleSize, current: options.windowSize
 		).map(WindowSizeSelection.exact)
@@ -93,9 +88,8 @@ struct GameDisplaySettingsPanel: View {
 			screen == nil ? [] : GameWindowSizeChoice.allCases.map(WindowSizeSelection.choice)
 		return SettingsActionRow(
 			title: "Window size",
-			detail: windowSizeDetail(choice),
 			help:
-				"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Picture setting."
+				"Measured like the resolutions in System Settings › Displays. The launcher works out the resolution the game draws from this size and the Rendering setting."
 		) {
 			GlassMenuPicker(
 				selection: windowSizeSelection,
@@ -127,64 +121,36 @@ struct GameDisplaySettingsPanel: View {
 
 	private func windowSizeTitle(_ selection: WindowSizeSelection) -> String {
 		switch selection {
-		case .choice(.fillScreen): "Fill my screen"
-		case .choice(.leaveRoom): "Leave room for other apps"
+		case .choice(.fillScreen): "Fill screen"
+		case .choice(.leaveRoom): "Compact"
 		case .exact(let size): size.displayName
 		}
 	}
 
-	// MARK: Fullscreen detail
+	// MARK: Fullscreen resolution
 
-	private var fullscreenDetailRow: some View {
-		let native = nativeFullscreenSize
-		let detail = GameFullscreenDetail.matching(options.fullscreenResolution, native: native)
-		var choices = GameFullscreenDetail.available(native: native).map {
-			let resolution = $0.resolution(native: native)
-			return (resolution, fullscreenDetailTitle($0, resolution: resolution))
+	private var fullscreenResolutionRow: some View {
+		var resolutions = GameFullscreenResolution.choices(native: nativeFullscreenSize)
+		// Keeps a resolution saved for another display selectable.
+		if !resolutions.contains(options.fullscreenResolution) {
+			resolutions.append(options.fullscreenResolution)
 		}
-		// Keeps an exact resolution picked in the submenu, or on another display, selectable.
-		if detail == nil {
-			choices.append(
-				(
-					options.fullscreenResolution,
-					fullscreenResolutionTitle(options.fullscreenResolution)
-				))
-		}
+		let choices = resolutions.map { ($0, resolutionChoiceTitle($0)) }
 		return SettingsActionRow(
-			title: "Detail",
-			detail: fullscreenDetailDetail(detail),
+			title: "Resolution",
 			help:
-				"Fullscreen fills the display with the menu bar. Full detail matches that display exactly, the sharpest choice; lower resolutions are scaled up to fill it. With the Smooth and Battery picture settings, the game draws half the width and height and scales the picture up, so every resolution needs less graphics power."
+				"Fullscreen fills the display with the menu bar. Native matches that display exactly; lower resolutions are scaled up to fill it. With MetalFX or Standard rendering, the game draws one pixel per point, fewer pixels than the resolution on a Retina display, so every resolution needs less graphics power."
 		) {
 			GlassMenuPicker(
 				selection: fullscreenResolution,
 				options: choices,
 				accentColor: accentColor,
-				isDisabled: isSizeLocked,
-				trailingMenuItems: { AnyView(exactResolutionMenu) }
+				isDisabled: isSizeLocked
 			)
 		}
 	}
 
-	private var exactResolutionMenu: some View {
-		Menu("Exact resolution") {
-			ForEach(GameFullscreenResolution.choices(native: nativeFullscreenSize), id: \.self) {
-				choice in
-				Button {
-					fullscreenResolution.wrappedValue = choice
-				} label: {
-					let title = exactResolutionTitle(choice)
-					if choice == options.fullscreenResolution {
-						Label(title, systemImage: "checkmark")
-					} else {
-						Text(title)
-					}
-				}
-			}
-		}
-	}
-
-	private func exactResolutionTitle(_ choice: GameFullscreenResolution) -> String {
+	private func resolutionChoiceTitle(_ choice: GameFullscreenResolution) -> String {
 		switch choice {
 		case .native:
 			// For example "Native (6016 × 3384)", like games label the display's own resolution.
@@ -205,83 +171,23 @@ struct GameDisplaySettingsPanel: View {
 
 	private static let nativeResolution = "Native"
 
-	private var displayModeDetail: String {
-		switch options.displayMode {
-		case .fullscreen: "Arknights fills your whole screen."
-		case .windowed: "Arknights opens in a window you can move around."
-		case .borderlessWindow: "Arknights opens in a window without a title bar."
-		}
+	private var displayModeDetail: String? {
+		options.displayMode == .borderlessWindow ? "Window without a title bar." : nil
 	}
 
 	private func displayModeTitle(_ mode: GameDisplayMode) -> String {
 		switch mode {
 		case .fullscreen: "Fullscreen"
-		case .windowed: "In a window"
+		case .windowed: "Windowed"
 		case .borderlessWindow: "Borderless window"
 		}
 	}
 
-	private var pictureDetail: String {
-		switch options.renderingMode {
-		case .retina: "Looks sharpest, but asks the most of your Mac."
-		case .metalFX: "Stays smooth on large screens; text looks slightly softer."
-		case .lightweight: "Easiest on your battery, but the picture looks softer."
-		}
-	}
-
-	private func pictureTitle(_ mode: GameRenderingMode) -> String {
+	private func renderingTitle(_ mode: GameRenderingMode) -> String {
 		switch mode {
-		case .retina: "The sharpest picture · Retina"
-		case .metalFX: "Smooth play on big screens · MetalFX"
-		case .lightweight: "Longer battery life · Lightweight"
-		}
-	}
-
-	private var pointerDetail: String {
-		settings.usesHardwareCursor
-			? "The macOS hardware cursor follows your mouse without delay."
-			: "The game draws its own software cursor, which can lag slightly."
-	}
-
-	/// `choice` is nil for an exact size picked from the list.
-	private func windowSizeDetail(_ choice: GameWindowSizeChoice?) -> String {
-		switch choice {
-		case .fillScreen?: "Fills your screen, title bar included."
-		case .leaveRoom?: "Leaves space for other apps on your screen."
-		case nil: "A window of the exact size you picked."
-		}
-	}
-
-	/// For example "Balanced · 2560 × 1440 (WQHD)".
-	private func fullscreenDetailTitle(
-		_ detail: GameFullscreenDetail, resolution: GameFullscreenResolution
-	) -> String {
-		let size =
-			switch resolution {
-			case .native: Self.nativeResolution
-			case .fixed(let size): resolutionTitle(size)
-			}
-		return switch detail {
-		case .full: "Full detail · \(size) (recommended)"
-		case .balanced: "Balanced · \(size)"
-		case .lighter: "Lighter · \(size)"
-		}
-	}
-
-	/// `detail` is nil for an exact resolution picked from the submenu.
-	private func fullscreenDetailDetail(_ detail: GameFullscreenDetail?) -> String {
-		switch detail {
-		case .full?: "Uses every pixel of your screen. Best on most Macs."
-		case .balanced?: "A little easier on your Mac, still crisp."
-		case .lighter?: "Easiest on your Mac, but the picture looks softer."
-		case nil: "A resolution you picked yourself."
-		}
-	}
-
-	private func fullscreenResolutionTitle(_ choice: GameFullscreenResolution) -> String {
-		switch choice {
-		case .native: Self.nativeResolution
-		case .fixed(let size): size.displayName
+		case .retina: "Retina"
+		case .metalFX: "MetalFX"
+		case .standard: "Standard"
 		}
 	}
 

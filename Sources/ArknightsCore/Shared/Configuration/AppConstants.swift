@@ -18,8 +18,6 @@ package enum AppConstants {
 		static let standardWindowTitleBarHeight: CGFloat = 28
 		/// Share of the usable screen the "leave room" game window may cover.
 		static let compactWindowScreenShare = 0.65
-		/// Tallest fullscreen resolution the "balanced" detail level draws.
-		static let balancedFullscreenHeight = 1440
 		/// Height step between fullscreen sizes generated above 4K for larger displays.
 		static let generatedResolutionHeightStep = 360
 	}

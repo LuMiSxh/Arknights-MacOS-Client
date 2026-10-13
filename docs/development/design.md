@@ -57,15 +57,15 @@ The home screen exposes one primary operation at a time. The current state selec
 
 | State                               | Action                    |
 | ----------------------------------- | ------------------------- |
-| Selected region absent or partial   | **Install** or **Resume** |
+| Selected server absent or partial   | **Install** or **Resume** |
 | Cancellable download                | **Pause**                 |
 | Newer game manifest available       | **Update**                |
-| Region ready                        | **Play**                  |
-| The region's game session is active | **Stop**                  |
+| Server ready                        | **Play**                  |
+| The server's game session is active | **Stop**                  |
 
 These actions reuse one control, never compete as buttons, and secondary controls stay neutral. Update checks never download game data until the user selects the update action.
 
-Each region owns its game directory and installed manifest. The home action and status capsule show only the active region. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md).
+Each server owns its game directory and installed manifest. The home action and status capsule show only the active server. See [Installation architecture](architecture/installation.md) and [Launch and process lifecycle](architecture/launch-and-process-lifecycle.md).
 
 Show a failure in the shared failure dialog. Give actionable guidance and matching recovery actions. For a blocking failure, the status capsule shows **Needs attention** and a **Show Details** action. The capsule does not repeat the error text, the support code, or the Rosetta recovery controls. During onboarding, keep the Rosetta prerequisites and the installation recovery in the setup step. Do not turn a transient check failure into an install or play action.
 
@@ -107,7 +107,7 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 - Present setup as an operation briefing in the launcher window: a persistent route on the left, one task on the right, and installation status inside the relevant step.
 - Check for a newer launcher first. If one exists, stop setup at the update action until the user installs and reopens it.
 - Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 beta-only Legacy Game Test Mode recovery without presenting it as a stable-OS step.
-- Walk through System Check, Region, Display, Look, Updates & Audio, and Ready. Ask each question as answer cards (`OnboardingQuestion`): one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
+- Walk through System Check, Server, Display, Look, Updates & Audio, and Ready. Ask each question as answer cards (`OnboardingQuestion`): one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
 - Apply choices immediately through the same actions as Settings. Users can reopen the assistant from Settings → Installation.
 - When a release requires returning players to rerun setup, open with a "Something important changed" briefing that explains why, and hide Skip Setup until they finish. First runs stay skippable.
 - End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form. Route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).

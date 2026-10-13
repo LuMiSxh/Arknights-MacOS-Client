@@ -5,7 +5,7 @@ import ArknightsGameInstallation
 import ArknightsGameRuntime
 import SwiftUI
 
-/// Collapsed by default: who sizes the game, the exact size it draws, and the performance and
+/// Collapsed by default: who sets the display, the size the game renders, and the performance and
 /// diagnostics launch options.
 struct GameAdvancedSettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
@@ -34,14 +34,14 @@ struct GameAdvancedSettingsPanel: View {
 			isExpanded: $isExpanded
 		) {
 			SettingsActionRow(
-				title: "Let the launcher size the game",
+				title: "Override in-game display settings",
 				detail:
-					"Recommended. The launcher starts the game with the display choices above. When off, Arknights uses the settings chosen inside the game.",
+					"On: the launcher sets mode and resolution at each start. Off: the game uses its own settings.",
 				help:
 					"Arknights' own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
 			) {
 				SettingsToggle(
-					"Let the launcher size the game",
+					"Override in-game display settings",
 					isOn: launcherDisplayControl,
 					accentColor: accentColor
 				)
@@ -53,9 +53,13 @@ struct GameAdvancedSettingsPanel: View {
 			if let renderSize = plan.renderSize {
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Game draws \(renderSize.displayName)",
+					title: "Render resolution",
 					detail: scalingDetail
-				) {}
+				) {
+					Text(renderSize.displayName)
+						.monospacedDigit()
+						.foregroundStyle(.secondary)
+				}
 			}
 			SettingsHairline()
 			SettingsActionRow(
@@ -77,9 +81,8 @@ struct GameAdvancedSettingsPanel: View {
 			.onAppear { isXcodeInstalled = GamePolicyControl.isAvailable() }
 			SettingsHairline()
 			SettingsActionRow(
-				title: "Wine synchronization",
-				detail:
-					"How the game's background tasks wait for each other. MSYNC suits most Macs; try ESYNC if the game misbehaves. Applies on the next start.",
+				title: "Wine sync (MSYNC / ESYNC)",
+				detail: "MSYNC is faster on most Macs. Try ESYNC if the game freezes or crashes.",
 				help:
 					"Controls how Wine translates Windows thread waits. MSYNC uses macOS Mach synchronization and gave steadier frame pacing in our tests. ESYNC uses Wine's older event-based path and remains the compatibility fallback."
 			) {
@@ -94,12 +97,11 @@ struct GameAdvancedSettingsPanel: View {
 			}
 			SettingsHairline()
 			SettingsActionRow(
-				title: "Metal performance HUD",
-				detail:
-					"Shows the frame rate and graphics load over the game the next time it starts."
+				title: "Metal Performance HUD",
+				detail: "Shows frame rate and GPU load in game."
 			) {
 				SettingsToggle(
-					"Metal performance HUD",
+					"Metal Performance HUD",
 					isOn: $settings.launchOptions.usesMetalPerformanceHUD,
 					accentColor: accentColor
 				)
@@ -119,7 +121,7 @@ struct GameAdvancedSettingsPanel: View {
 		switch plan.scaling {
 		case .native: "Shown without scaling."
 		case .metalFX: "MetalFX upscales it to fit your screen."
-		case .stretched: "macOS stretches it to fit your screen, which looks softer."
+		case .stretched: "macOS stretches it to fit your screen."
 		}
 	}
 
@@ -129,7 +131,7 @@ struct GameAdvancedSettingsPanel: View {
 				.foregroundStyle(.secondary)
 				.accessibilityHidden(true)
 			Text(
-				"Resolutions inside Arknights count the pixels the game draws. With the sharpest picture, "
+				"Resolutions inside Arknights count the pixels the game draws. With Retina rendering, "
 					+ "choose \(options.windowSize.scaled(by: plan.gamePixelsPerPoint).displayName) in the game for a "
 					+ "\(options.windowSize.displayName) window."
 			)

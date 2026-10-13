@@ -78,10 +78,10 @@ Allow **Arknights Client** in **System Settings → Privacy & Security → Local
 
 ## Graphics, window, or performance problems
 
-1. If **Let the launcher size the game** (**Settings → Game → Advanced**) is off, turn it on or change the display settings in the game.
-2. Set **Picture** to **Smooth play on big screens** in **Settings → Game**. See [Display](runtime-compatibility.md#display).
-3. Pick **Leave room for other apps**, a smaller **Window size**, a lower fullscreen **Detail**, or **Fullscreen** (it can skip a macOS compositing pass).
-4. If fullscreen looks grainy, set **Detail** to **Full detail**.
+1. If **Override in-game display settings** (**Settings → Game → Advanced**) is off, turn it on or change the display settings in the game.
+2. Set **Rendering** to **MetalFX** in **Settings → Game**. See [Display](runtime-compatibility.md#display).
+3. Pick **Compact**, a smaller **Window size**, a lower fullscreen **Resolution**, or **Fullscreen** (it can skip a macOS compositing pass).
+4. If fullscreen looks grainy, set **Resolution** to **Native**.
 
 If the cursor lags, turn off VSync in the game. Tearing can occur.
 

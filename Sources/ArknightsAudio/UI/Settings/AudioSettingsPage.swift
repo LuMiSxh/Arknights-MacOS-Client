@@ -20,11 +20,11 @@ package struct AudioSettingsPage: View {
 		) {
 			SettingsPanel(title: "Music", systemImage: "music.note") {
 				SettingsActionRow(
-					title: "Play background music",
-					detail: "Plays music while the launcher is open and the game is closed."
+					title: "Launcher music",
+					detail: "YouTube playlist. Pauses while the game runs."
 				) {
 					SettingsToggle(
-						"Play background music",
+						"Launcher music",
 						isOn: $settings.playsLauncherMusic,
 						accentColor: accentColor
 					)
@@ -47,8 +47,7 @@ package struct AudioSettingsPage: View {
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Volume",
-						detail: "How loud the launcher music plays."
+						title: "Volume"
 					) {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")

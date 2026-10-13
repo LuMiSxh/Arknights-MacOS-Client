@@ -13,28 +13,20 @@ struct OnboardingRegionView: View {
 	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
 	private static func regionAnswer(_ region: GameRegion) -> OnboardingAnswer<GameRegion> {
-		let detail =
-			switch region {
-			case .global: "The English game, for Global accounts."
-			case .japan: "The Japanese game, for Japan accounts."
-			case .korea: "The Korean game, for Korea accounts."
-			case .taiwan: "The Taiwan game, for Taiwan accounts."
-			case .china: "The China game, for China accounts."
-			case .chinaBilibili: "The China game, for Bilibili accounts."
-			}
-		return OnboardingAnswer(
-			value: region, title: region.displayName, detail: detail, systemImage: "globe")
+		OnboardingAnswer(
+			value: region, title: region.displayName,
+			detail: region == .chinaBilibili ? "For Bilibili accounts." : "", systemImage: "globe")
 	}
 
 	var body: some View {
 		OnboardingPage(
-			title: "Your server",
+			title: "Server",
 			subtitle:
-				"Each server has its own game files and accounts. Pick the one you already play on; you can add another later in Settings.",
+				"Each server has its own game files and accounts. You can add another server later in Settings.",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
-				question: "Which server do you play on?",
+				question: "Server",
 				systemImage: "globe.asia.australia",
 				answers: preferences.regionAccess.selectableRegions.map(
 					Self.regionAnswer),
@@ -54,7 +46,7 @@ struct OnboardingRegionView: View {
 				.disabled(lifecycle.activity != .idle)
 				if preferences.canaryFeaturesEnabled {
 					OnboardingToggleRow(
-						title: "Allow Taiwan client",
+						title: "Allow Taiwan server",
 						detail: "Lets you pick the Taiwan server.",
 						isOn: $preferences.taiwanClientEnabled,
 						accentColor: LauncherVisuals.warning

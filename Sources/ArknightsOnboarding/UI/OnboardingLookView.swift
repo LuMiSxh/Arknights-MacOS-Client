@@ -19,7 +19,7 @@ struct OnboardingLookView: View {
 	var body: some View {
 		OnboardingPage(
 			title: "How should the launcher look?",
-			subtitle: "Pick the artwork, colors, and Dock icon. Every change shows up right away.",
+			subtitle: "Artwork, colors and Dock icon.",
 			accentColor: customization.accentColor
 		) {
 			OnboardingQuestion(
@@ -28,15 +28,14 @@ struct OnboardingLookView: View {
 				actions: [
 					OnboardingAnswer(
 						value: Action.defaultArtwork, title: "Default artwork",
-						detail: "The official artwork for your server.",
+						detail: "Official artwork for your server.",
 						systemImage: "arrow.counterclockwise", action: resetArtwork),
 					OnboardingAnswer(
 						value: .preset, title: "Pick a preset…",
 						detail: "Browse ready-made artwork.",
 						systemImage: "square.grid.2x2", action: browseArtwork),
 					OnboardingAnswer(
-						value: .ownImage, title: "Choose my own image…",
-						detail: "Use any picture from your Mac.",
+						value: .ownImage, title: "Choose Image…",
 						systemImage: "photo.badge.plus", action: customization.chooseCustomArtwork),
 				],
 				accentColor: customization.accentColor
@@ -93,8 +92,8 @@ struct OnboardingLookView: View {
 		if customization.hasCustomAppIcon || customization.hasCustomGameIcon {
 			actions.append(
 				OnboardingAnswer(
-					value: .standardIcons, title: "Use the standard icons",
-					detail: "Go back to the icons the launcher and the game came with.",
+					value: .standardIcons, title: "Use Default",
+					detail: "Launcher and game Dock icons.",
 					systemImage: "arrow.counterclockwise",
 					action: customization.resetOperatorIcons))
 		}

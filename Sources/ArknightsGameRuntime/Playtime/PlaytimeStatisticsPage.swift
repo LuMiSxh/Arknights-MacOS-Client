@@ -50,7 +50,7 @@ package struct PlaytimeStatisticsPage: View {
 
 			if !regions.isEmpty {
 				SettingsPanel(
-					title: "Regions",
+					title: "Servers",
 					systemImage: "globe"
 				) {
 					ForEach(Array(regions.enumerated()), id: \.element.id) {

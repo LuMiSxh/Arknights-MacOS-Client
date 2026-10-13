@@ -6,11 +6,11 @@ import SwiftUI
 extension InstallationSettingsPage {
 	@ViewBuilder var canaryRuntimeSettings: some View {
 		SettingsActionRow(
-			title: "Allow Taiwan region",
-			detail: "Adds the Taiwan region to the region list."
+			title: "Allow Taiwan server",
+			detail: "Adds the Taiwan server to the server list."
 		) {
 			SettingsToggle(
-				"Allow Taiwan region",
+				"Allow Taiwan server",
 				isOn: $settings.taiwanClientEnabled,
 				accentColor: LauncherVisuals.warning
 			)

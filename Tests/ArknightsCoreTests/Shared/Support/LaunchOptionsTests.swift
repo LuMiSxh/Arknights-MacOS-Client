@@ -95,7 +95,7 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 		(#"{"resolution":"2560x1440","usesGameSettings":false}"#, 1280, 720, .retina),
 		(
 			#"{"resolution":"1920x1080","usesGameSettings":false,"usesHighResolutionMode":false}"#,
-			1920, 1080, .lightweight
+			1920, 1080, .standard
 		),
 		// In-game settings never used the stored resolution, so the window starts at the default.
 		(#"{"resolution":"2560x1440","usesGameSettings":true}"#, 1280, 720, .retina),

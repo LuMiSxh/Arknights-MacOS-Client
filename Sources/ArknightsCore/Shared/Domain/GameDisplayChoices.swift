@@ -42,7 +42,7 @@ package struct GameScreenMetrics: Equatable, Sendable {
 	}
 }
 
-/// How big a windowed game should be, in plain terms.
+/// How big a windowed game should be.
 package enum GameWindowSizeChoice: CaseIterable, Sendable {
 	/// The screen's usable area minus the window title bar, like a zoomed window.
 	case fillScreen
@@ -71,66 +71,6 @@ package enum GameWindowSizeChoice: CaseIterable, Sendable {
 	/// The choice whose size equals `size` on this screen, or nil for a custom size.
 	package static func matching(_ size: GameDisplaySize, on screen: GameScreenMetrics) -> Self? {
 		allCases.first { $0.size(on: screen) == size }
-	}
-}
-
-/// How much detail fullscreen draws, in plain terms.
-package enum GameFullscreenDetail: CaseIterable, Sendable {
-	/// The display's own size.
-	case full
-	/// The largest choice no taller than `AppConstants.Game.balancedFullscreenHeight`.
-	case balanced
-	/// Full HD.
-	case lighter
-
-	package func resolution(native: GameDisplaySize?) -> GameFullscreenResolution {
-		switch self {
-		case .full:
-			.native
-		case .balanced:
-			GameFullscreenResolution.choices(native: native)
-				.compactMap { choice -> GameDisplaySize? in
-					guard case .fixed(let size) = choice,
-						size.height <= AppConstants.Game.balancedFullscreenHeight
-					else { return nil }
-					return size
-				}
-				.max { $0.pixelCount < $1.pixelCount }
-				.map(GameFullscreenResolution.fixed) ?? .native
-		case .lighter:
-			.fixed(.fullHD)
-		}
-	}
-
-	/// The detail level that draws `resolution` on this display, or nil for a custom size.
-	package static func matching(
-		_ resolution: GameFullscreenResolution, native: GameDisplaySize?
-	)
-		-> Self?
-	{
-		available(native: native).first { $0.resolution(native: native) == resolution }
-	}
-
-	/// Levels that differ on this display. `balanced` is dropped when it draws what `full` or
-	/// `lighter` draws, and `lighter` when it equals `full` or is larger than the display.
-	package static func available(native: GameDisplaySize?) -> [Self] {
-		let full = GameFullscreenResolution.native.drawnSize(native: native)
-		let lighter = GameDisplaySize.fullHD
-		let balanced = Self.balanced.resolution(native: native).drawnSize(native: native)
-		var levels = [Self.full]
-		if balanced != full && balanced != lighter { levels.append(.balanced) }
-		if lighter != full, native.map(lighter.fits(in:)) ?? true { levels.append(.lighter) }
-		return levels
-	}
-}
-
-extension GameFullscreenResolution {
-	/// The size the game draws, with `.native` standing for the display's own size.
-	fileprivate func drawnSize(native: GameDisplaySize?) -> GameDisplaySize? {
-		switch self {
-		case .native: native
-		case .fixed(let size): size
-		}
 	}
 }
 

@@ -141,7 +141,7 @@ struct AppearanceSettingsPage: View {
 				presentedGallery = .operatorIcons
 			}
 			CapsuleActionButton(
-				title: "Use Defaults",
+				title: Self.useDefaultTitle,
 				systemImage: "arrow.counterclockwise",
 				tone: .neutral,
 				presentation: .compact,
@@ -152,8 +152,8 @@ struct AppearanceSettingsPage: View {
 
 	private var customIconRow: some View {
 		SettingsActionRow(
-			title: "Your own images",
-			detail: "Use pictures from your Mac instead of the operator icons."
+			title: "Custom icons",
+			detail: "Launcher and game Dock icons."
 		) {
 			GlassActionMenu(
 				title: "Launcher",

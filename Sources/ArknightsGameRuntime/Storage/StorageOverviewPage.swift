@@ -48,13 +48,13 @@ package struct StorageOverviewCopy {
 				switch category {
 				case .game: "Game files that may require repair or reinstall."
 				case .winePrefix:
-					"Shared by the selected client family; contains runtime data and logins."
+					"Shared by the selected publisher's servers; contains runtime data and logins."
 				case .compatibilityRuntime: "Bundled Wine and DXMT components; read-only."
 				case .dxmtCache: "Recreated automatically and removed by the cache cleanup action."
 				case .browserCache:
 					"Recreated automatically and removed by the cache cleanup action."
 				case .galleryCache:
-					"Clear cached preset metadata and all downloaded gallery assets (avatars + wallpapers)."
+					"Clear cached preset metadata and all downloaded avatars and wallpapers."
 				case .logs: "Launcher and game diagnostics; reveal them in Finder."
 				}
 			}

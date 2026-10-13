@@ -14,8 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added a **Branding** option in Settings and in setup. Turn it off to hide the server logo and its backdrop.
-- Added a **Picture** setting: Retina (default), MetalFX for large displays, or Lightweight for battery life.
-- Added plain window sizes (**Fill my screen**, **Leave room for other apps**) and fullscreen **Detail** levels; exact sizes stay available.
+- Added a **Rendering** setting: Retina (default), MetalFX, or Standard.
+- Added window sizes (**Fill screen**, **Compact**) and a fullscreen **Resolution** list; exact sizes stay available.
 - Added an AI assistance note to the About page and the documentation.
 - Added the missing third-party licenses and a script that generates the notices, checks them, and merges the runtime's license index.
 
@@ -25,22 +25,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Updates from the three previous releases download only what changed.
 - Repair and first-time file checks verify several files at once and finish faster.
 - Downloads resume partial files first and start large files early, so the end of a download no longer waits on one large file.
-- Installing a second region reuses identical files from an installed one instead of downloading them again.
+- Installing a second server reuses identical files from an installed one instead of downloading them again.
 - Wine environments share Wine's libraries with the launcher instead of copying them, saving about 560 MB per publisher on APFS drives.
 - The bundled runtime is 64-bit only and no longer includes GStreamer or FFmpeg, roughly halving the app's size. Existing Wine environments drop their unused 32-bit libraries.
 - Updated the pinned Wine and DXMT runtime to Arknights macOS Runtime 0.7.0-rc2, which carries its own license texts and notices.
 - Settings adapts to small windows and shows the running operation, such as a download, at the bottom of the sidebar.
 - **Game Mode** is greyed out with an explanation when Xcode is not installed.
-- China and China (Bilibili) no longer need Canary Features; Taiwan remains a Canary region.
+- China and China (Bilibili) no longer need Canary Features; Taiwan remains a Canary server.
 - Renamed **China — Bilibili** to **China (Bilibili)**.
-- Windowed games use a **Window size** measured like macOS display resolutions; fullscreen uses a separate **Detail** level.
+- Windowed games use a **Window size** measured like macOS display resolutions; fullscreen uses a separate **Resolution**.
 - The launcher now sizes the game by default.
 - Everyone updating to 0.7.0 runs setup once more; returning players keep their window mode and rendering.
-- **Windowed** is now the recommended window mode.
+- **Fullscreen** is now the recommended window mode in setup.
 - Rebuilt setup around six plain steps whose answers apply right away.
-- The Mac pointer (formerly Canary Hardware Cursor) is now a regular **Pointer** setting.
+- The macOS cursor (formerly Canary Hardware Cursor) is now a regular **Cursor** setting.
 - Regrouped Settings into **Game** and **Appearance**, with Game Mode, Wine synchronization, and the Metal HUD under **Game → Advanced**.
-- Rewrote Settings in plain language with technical details in tooltips.
+- Rewrote Settings and setup wording around the real option names: **Server**, **Display mode**, **Rendering**, **Cursor**, and **Resolution**. Technical details moved to tooltips.
 - The app bundles one compact, compressed license file instead of many loose files, and the website publishes the full texts.
 - Gallery tiles, search pills, sidebar items, and document links now animate when pressed.
 - New wallpapers become searchable by operator or event without a launcher update.

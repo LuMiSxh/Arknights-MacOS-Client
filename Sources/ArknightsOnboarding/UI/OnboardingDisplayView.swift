@@ -10,13 +10,12 @@ struct OnboardingDisplayView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "How do you like to play?",
-			subtitle:
-				"Your answers set the game up for this screen, so there is nothing to calculate.",
+			title: "Display",
+			subtitle: "The launcher sets the resolution for this screen.",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
-				question: "Where should the game appear?",
+				question: "Display mode",
 				systemImage: "macwindow",
 				answers: GamePlacementAnswer.allCases.map(\.answer),
 				selection: answerBinding(\.placement),
@@ -25,17 +24,18 @@ struct OnboardingDisplayView: View {
 			)
 			if answers.placement == .window {
 				OnboardingQuestion(
-					question: "How big should the window be?",
+					question: "Window size",
 					systemImage: "rectangle.expand.diagonal",
-					answers: GameWindowSizeChoice.allCases.map(\.answer),
+					answers: GameWindowSizeChoice.allCases.map {
+						$0.answer(on: GameScreenMetrics.main)
+					},
 					selection: answerBinding(\.windowSize),
 					accentColor: accentColor,
-					isDisabled: isLocked,
-					footnote: "You can pick an exact size in Settings any time."
+					isDisabled: isLocked
 				)
 			}
 			OnboardingQuestion(
-				question: "What matters most to you?",
+				question: "Rendering",
 				systemImage: "sparkles",
 				answers: GameRenderingMode.allCases.map(\.answer),
 				selection: answerBinding(\.rendering),
@@ -45,7 +45,7 @@ struct OnboardingDisplayView: View {
 			// The runtime reports pointer support only while launching, so the question is always
 			// shown; a runtime without it falls back to the game's own cursor at launch.
 			OnboardingQuestion(
-				question: "Which pointer should the game use?",
+				question: "Cursor",
 				systemImage: "cursorarrow.motionlines",
 				answers: PointerAnswer.allCases.map(\.answer),
 				selection: pointerBinding,
@@ -66,17 +66,17 @@ struct OnboardingDisplayView: View {
 	private var displaySummary: String {
 		let placement =
 			switch (answers.placement, answers.windowSize) {
-			case (.window, .fillScreen): "The game opens in a window that fills your screen"
-			case (.window, .leaveRoom): "The game opens in a window with room left for other apps"
-			case (.fullscreen, _): "The game opens fullscreen"
+			case (.window, .fillScreen): "Windowed, fill screen"
+			case (.window, .leaveRoom): "Windowed, compact"
+			case (.fullscreen, _): "Fullscreen"
 			}
-		let picture =
+		let rendering =
 			switch answers.rendering {
-			case .retina: "and looks as sharp as your screen allows."
-			case .metalFX: "and favors smooth play on big screens."
-			case .lightweight: "and goes easy on your battery."
+			case .retina: "Retina"
+			case .metalFX: "MetalFX"
+			case .standard: "Standard"
 			}
-		return "\(placement) \(picture) You can change all of this in Settings → Game."
+		return "\(placement), \(rendering). Change this in Settings → Game."
 	}
 
 	private var answers: GameDisplayAnswers {

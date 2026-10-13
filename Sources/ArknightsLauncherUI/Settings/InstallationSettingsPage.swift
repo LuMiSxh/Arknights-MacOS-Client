@@ -24,13 +24,13 @@ struct InstallationSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "Installation",
-			subtitle: "Region, game files, and repairs",
+			subtitle: "Server, game files, and repairs",
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: "Region", systemImage: "globe") {
+			SettingsPanel(title: "Server", systemImage: "globe") {
 				SettingsActionRow(
-					title: "Region",
-					detail: "Each region keeps its own game files and updates."
+					title: "Server",
+					detail: "Each server keeps its own game files and updates."
 				) {
 					GlassMenuPicker(
 						selection: regionBinding,
@@ -47,8 +47,7 @@ struct InstallationSettingsPage: View {
 				title: "Location", systemImage: "externaldrive"
 			) {
 				SettingsActionRow(
-					title: "Status",
-					detail: "Whether the game is installed for this region."
+					title: "Status"
 				) {
 					VStack(alignment: .trailing, spacing: 2) {
 						Text(gameStatus)
@@ -130,7 +129,7 @@ struct InstallationSettingsPage: View {
 				SettingsActionRow(
 					title: Self.canaryFeaturesTitle,
 					detail:
-						"Try experimental features. Turning this off switches a Canary region back to Global."
+						"Try experimental features. Turning this off switches a Canary server back to Global."
 				) {
 					SettingsToggle(
 						Self.canaryFeaturesTitle,
@@ -147,11 +146,10 @@ struct InstallationSettingsPage: View {
 
 			DangerZonePanel {
 				SettingsActionRow(
-					title: "Environment setup",
-					detail:
-						"Sets up the game's Windows environment again the next time you start the game. Game files and saves are untouched; that start just takes longer.",
+					title: "Rebuild game environment",
+					detail: "Next launch takes longer. Game files and logins stay.",
 					help:
-						"Reruns Wine prefix initialization, DXMT installation, and registry overrides."
+						"Recreates the Wine prefix with its graphics layer and registry overrides."
 				) {
 					CapsuleActionButton(
 						title: "Rebuild…",
@@ -175,15 +173,15 @@ struct InstallationSettingsPage: View {
 						Button(Self.cancelTitle, role: .cancel) {}
 					} message: {
 						Text(
-							"Sets up the game's Windows environment again the next time you start the game. Game files and saves are untouched; that start just takes longer."
+							"Next launch takes longer. Game files and logins stay."
 						)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Launcher settings",
+					title: "Reset launcher settings",
 					detail:
-						"Puts every launcher setting back to its default. Game files, the install location, and the region are untouched."
+						"Puts every launcher setting back to its default. Game files, the install location, and the server stay."
 				) {
 					CapsuleActionButton(
 						title: "Reset All Settings…",
@@ -207,16 +205,15 @@ struct InstallationSettingsPage: View {
 						Button(Self.cancelTitle, role: .cancel) {}
 					} message: {
 						Text(
-							"Puts every launcher setting back to its default. Game files, the install location, and the region are untouched."
+							"Puts every launcher setting back to its default. Game files, the install location, and the server stay."
 						)
 					}
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Logins & environment",
-					detail:
-						"Deletes the game's Windows environment, including saved Yostar, Google, Apple, and Facebook logins. Game files are untouched; everything else is rebuilt on the next start.",
-					help: "Deletes the Wine prefix folder shared by this publisher's regions."
+					title: "Delete game environment",
+					detail: "Signs you out of Yostar, Google, Apple and Facebook. Game files stay.",
+					help: "Deletes the Wine prefix folder shared by this publisher's servers."
 				) {
 					CapsuleActionButton(
 						title: "Delete Environment…",
@@ -246,8 +243,8 @@ struct InstallationSettingsPage: View {
 				}
 				SettingsHairline()
 				SettingsActionRow(
-					title: "Game files",
-					detail: "Move the game for this region to the Trash."
+					title: "Uninstall game",
+					detail: "Move the game for this server to the Trash."
 				) {
 					CapsuleActionButton(
 						title: "Uninstall Game…",

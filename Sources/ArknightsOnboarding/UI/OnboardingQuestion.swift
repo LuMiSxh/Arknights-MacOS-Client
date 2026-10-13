@@ -8,11 +8,11 @@ import SwiftUI
 struct OnboardingAnswer<Value: Hashable>: Identifiable {
 	let value: Value
 	let title: String
-	let detail: String
+	var detail = ""
 	let systemImage: String
 	var isRecommended = false
-	/// The technical name, for example "Retina", shown as a quiet label after the title.
-	var technicalName: String?
+	/// Mechanism or alternate name, shown as a tooltip.
+	var help: String?
 	/// Runs when an action card is tapped. Selection questions ignore it.
 	var action: (@MainActor () -> Void)?
 
@@ -136,11 +136,6 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 						Text(answer.title)
 							.font(.body.weight(.semibold))
 							.foregroundStyle(.primary)
-						if let technicalName = answer.technicalName {
-							Text(technicalName)
-								.font(.caption.weight(.medium))
-								.foregroundStyle(.tertiary)
-						}
 						if answer.isRecommended {
 							Text("Recommended")
 								.font(.caption2.weight(.semibold))
@@ -150,11 +145,13 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 								.overlay(Capsule().stroke(LauncherVisuals.hairline))
 						}
 					}
-					Text(answer.detail)
-						.font(.callout)
-						.foregroundStyle(.secondary)
-						.multilineTextAlignment(.leading)
-						.fixedSize(horizontal: false, vertical: true)
+					if !answer.detail.isEmpty {
+						Text(answer.detail)
+							.font(.callout)
+							.foregroundStyle(.secondary)
+							.multilineTextAlignment(.leading)
+							.fixedSize(horizontal: false, vertical: true)
+					}
 				}
 				Spacer(minLength: LauncherVisuals.Spacing.content)
 				Image(systemName: trailingGlyph(isSelected: isSelected))
@@ -170,6 +167,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 			OnboardingAnswerStyle(isSelected: isSelected, accentColor: accentColor, shape: shape)
 		)
 		.disabled(isDisabled)
+		.help(answer.help ?? "")
 		.accessibilityElement(children: .combine)
 		.accessibilityAddTraits(isSelected ? .isSelected : [])
 	}

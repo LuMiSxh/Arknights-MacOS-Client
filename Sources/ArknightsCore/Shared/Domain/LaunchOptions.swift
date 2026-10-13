@@ -10,7 +10,7 @@ package enum GameDisplayMode: String, CaseIterable, Codable, Sendable {
 	package var displayName: String {
 		switch self {
 		case .fullscreen: "Fullscreen"
-		case .windowed: "Windowed (Recommended)"
+		case .windowed: "Windowed"
 		case .borderlessWindow: "Borderless Window"
 		}
 	}
@@ -102,7 +102,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 
 		// Before 0.7.0 one resolution served both modes, in pixels while Retina was on.
 		let legacyRetina = value(.usesHighResolutionMode, true)
-		renderingMode = value(.renderingMode, legacyRetina ? .retina : .lightweight)
+		renderingMode = value(.renderingMode, legacyRetina ? .retina : .standard)
 		let legacyWindow =
 			!usesGameSettings && container.contains(.resolution)
 			? Self.legacyWindowSize(for: resolution, retina: legacyRetina)
@@ -145,7 +145,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 	}
 
-	/// The pixels the game draws in fullscreen. MetalFX and Lightweight draw one pixel per point
+	/// The pixels the game draws in fullscreen. MetalFX and Standard draw one pixel per point
 	/// and scale up; without a known display the shown size is drawn as is.
 	func fullscreenDrawnSize(on display: GameFullscreenDisplay?, retina: Bool) -> GameDisplaySize {
 		let shown = fullscreenSize(native: display?.pixelSize)

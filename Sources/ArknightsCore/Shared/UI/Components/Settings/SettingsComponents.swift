@@ -307,14 +307,14 @@ package struct UpdateSettingsRow: View {
 
 package struct SettingsActionRow<Actions: View>: View {
 	let title: String
-	let detail: String
+	let detail: String?
 	/// Technical background shown as a tooltip over the title and detail.
 	var help: String?
 	@ViewBuilder package let actions: Actions
 
 	package init(
 		title: String,
-		detail: String,
+		detail: String? = nil,
 		help: String? = nil,
 		@ViewBuilder actions: () -> Actions
 	) {
@@ -353,10 +353,12 @@ package struct SettingsActionRow<Actions: View>: View {
 	private var label: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 			Text(title)
-			Text(detail)
-				.font(.caption)
-				.foregroundStyle(.secondary)
-				.fixedSize(horizontal: false, vertical: true)
+			if let detail {
+				Text(detail)
+					.font(.caption)
+					.foregroundStyle(.secondary)
+					.fixedSize(horizontal: false, vertical: true)
+			}
 		}
 		.help(help.map { Text($0) } ?? Text(verbatim: ""))
 	}

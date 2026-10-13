@@ -17,7 +17,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Senda
 	var title: String {
 		switch self {
 		case .welcome: "System Check"
-		case .region: "Region"
+		case .region: "Server"
 		case .display: "Display"
 		case .look: "Look"
 		case .extras: "Updates & Audio"

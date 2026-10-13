@@ -52,7 +52,7 @@ struct UpdatesSettingsPage: View {
 			) {
 				SettingsActionRow(
 					title: Self.announcementsTitle,
-					detail: "Show an occasional message from the project, once each."
+					detail: "Project news. Each message shows once."
 				) {
 					SettingsToggle(
 						Self.announcementsTitle,

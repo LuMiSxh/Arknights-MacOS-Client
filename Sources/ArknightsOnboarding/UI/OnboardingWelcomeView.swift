@@ -18,7 +18,7 @@ struct OnboardingWelcomeView: View {
 			title: requiredSchema == nil
 				? "Welcome to Arknights Client" : "Something important changed",
 			subtitle: requiredSchema == nil
-				? "First we'll check that everything is ready, then ask a few quick questions. Your answers apply right away."
+				? "Setup checks your Mac, then sets your server, display and launcher options. Changes apply immediately."
 				: "This version of the launcher needs you to go through setup once more. Your current settings are kept as the starting point.",
 			accentColor: accentColor
 		) {
@@ -154,7 +154,7 @@ struct OnboardingWelcomeView: View {
 	static func requiredSetupReason(schema: Int) -> String {
 		switch schema {
 		case 2:
-			"Setup now asks a few simple questions about your screen, pointer, and look. Answer them once so the game fits your Mac."
+			"Display settings work differently in this version. Confirm display mode, rendering and cursor once."
 		default:
 			"The launcher changed how an important setting works. Go through each step once so everything keeps working."
 		}

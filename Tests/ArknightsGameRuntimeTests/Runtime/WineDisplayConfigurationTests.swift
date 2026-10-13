@@ -52,7 +52,7 @@ func displayConfigurationReadsTheExpectedRegistryState() throws {
 	}
 
 	// Retina needs a scaled display; MetalFX also needs runtime support and falls back to
-	// Lightweight rendering, never Retina.
+	// Raw rendering, never Retina.
 	let retina = WineDisplayConfiguration(backingScaleFactor: 2)
 	#expect(retina.retinaEnabled)
 	#expect(retina.gamePixelsPerPoint == 2)
@@ -63,7 +63,7 @@ func displayConfigurationReadsTheExpectedRegistryState() throws {
 	#expect(upscaled.registryValue == "n")
 	for configuration in [
 		WineDisplayConfiguration(backingScaleFactor: 1),
-		WineDisplayConfiguration(backingScaleFactor: 2, renderingMode: .lightweight),
+		WineDisplayConfiguration(backingScaleFactor: 2, renderingMode: .standard),
 		WineDisplayConfiguration(backingScaleFactor: 2, forceDisabled: true),
 		WineDisplayConfiguration(
 			backingScaleFactor: 1, renderingMode: .metalFX, metalFXSupported: true),

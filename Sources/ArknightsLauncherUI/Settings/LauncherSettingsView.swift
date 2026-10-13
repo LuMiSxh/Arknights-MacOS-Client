@@ -251,16 +251,7 @@ private struct SettingsNavigationRail: View {
 
 			SettingsOperationStrip(lifecycle: lifecycle, installation: installation)
 				.padding(.horizontal, 18)
-
-			HStack(spacing: LauncherVisuals.Spacing.control) {
-				Rectangle()
-					.fill(LauncherVisuals.selectedNavigationMarker(for: accentColor))
-					.frame(width: 28, height: 2)
-				Rectangle()
-					.fill(LauncherVisuals.hairline)
-					.frame(height: 1)
-			}
-			.padding(18)
+				.padding(.bottom, 18)
 		}
 		.frame(width: 164)
 		.background(LauncherVisuals.navigationRailBackground)

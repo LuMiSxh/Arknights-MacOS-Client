@@ -5,8 +5,8 @@ import ArknightsCore
 
 /// Where the game appears, answered during setup.
 nonisolated enum GamePlacementAnswer: CaseIterable, Sendable {
-	case window
 	case fullscreen
+	case window
 }
 
 /// The setup assistant's display questions. Every answer lets the launcher size the game for
@@ -16,7 +16,7 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	var windowSize: GameWindowSizeChoice
 	var rendering: GameRenderingMode
 
-	static let recommended = GameDisplayAnswers(placement: .window, rendering: .retina)
+	static let recommended = GameDisplayAnswers(placement: .fullscreen, rendering: .retina)
 
 	init(
 		placement: GamePlacementAnswer, windowSize: GameWindowSizeChoice = .fillScreen,
@@ -59,10 +59,10 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 
 /// Which pointer the game shows, answered during setup.
 nonisolated enum PointerAnswer: CaseIterable, Sendable {
-	case macPointer
 	case gameCursor
+	case macPointer
 
-	static let recommended = PointerAnswer.macPointer
+	static let recommended = PointerAnswer.gameCursor
 
 	var usesHardwareCursor: Bool { self == .macPointer }
 
@@ -74,16 +74,14 @@ nonisolated enum PointerAnswer: CaseIterable, Sendable {
 extension PointerAnswer {
 	var answer: OnboardingAnswer<PointerAnswer> {
 		switch self {
-		case .macPointer:
-			OnboardingAnswer(
-				value: self, title: "Your Mac's pointer",
-				detail: "Follows your mouse without delay. Applies the next time the game starts.",
-				systemImage: "cursorarrow", isRecommended: true, technicalName: "Hardware cursor")
 		case .gameCursor:
 			OnboardingAnswer(
-				value: self, title: "Arknights' own cursor",
-				detail: "The game's themed cursor, which can trail your mouse slightly.",
-				systemImage: "scope", technicalName: "Software cursor")
+				value: self, title: "Game cursor", detail: "Themed. May lag slightly.",
+				systemImage: "scope", isRecommended: true, help: "Software cursor")
+		case .macPointer:
+			OnboardingAnswer(
+				value: self, title: "macOS cursor", detail: "No input lag. Applies on next launch.",
+				systemImage: "cursorarrow", help: "Hardware cursor")
 		}
 	}
 }
@@ -169,20 +167,15 @@ extension UpdateCheckAnswer {
 		switch self {
 		case .automatic:
 			OnboardingAnswer(
-				value: self, title: "Check automatically",
-				detail:
-					"Looks for new versions and project notices when the app opens. You choose when to download.",
+				value: self, title: "Automatic",
 				systemImage: "checkmark.arrow.trianglehead.counterclockwise", isRecommended: true)
 		case .noticesOnly:
 			OnboardingAnswer(
-				value: self, title: "Only show important notices",
-				detail:
-					"Skips version checks but still tells you when a game update needs a newer launcher.",
+				value: self, title: "Notices only", detail: "Project news. No version checks.",
 				systemImage: "megaphone")
 		case .manual:
 			OnboardingAnswer(
-				value: self, title: "I'll check myself",
-				detail: "Never looks on its own. You can turn checks on later in Settings.",
+				value: self, title: "Manual", detail: "No automatic checks.",
 				systemImage: "hand.raised")
 		}
 	}
@@ -191,32 +184,30 @@ extension UpdateCheckAnswer {
 extension GamePlacementAnswer {
 	var answer: OnboardingAnswer<GamePlacementAnswer> {
 		switch self {
-		case .window:
-			OnboardingAnswer(
-				value: self, title: "In a window",
-				detail: "Fits on your screen, so other apps stay within reach.",
-				systemImage: "macwindow", isRecommended: true)
 		case .fullscreen:
 			OnboardingAnswer(
-				value: self, title: "Fullscreen",
-				detail: "Fills the whole screen. Other apps stay hidden while you play.",
-				systemImage: "arrow.up.left.and.arrow.down.right")
+				value: self, title: "Fullscreen", detail: "Uses the whole display.",
+				systemImage: "arrow.up.left.and.arrow.down.right", isRecommended: true)
+		case .window:
+			OnboardingAnswer(
+				value: self, title: "Windowed", detail: "Resizable window beside other apps.",
+				systemImage: "macwindow")
 		}
 	}
 }
 
 extension GameWindowSizeChoice {
-	var answer: OnboardingAnswer<GameWindowSizeChoice> {
-		switch self {
+	/// The title shows the window size on `screen`, for example "Compact · 1600 × 900".
+	func answer(on screen: GameScreenMetrics?) -> OnboardingAnswer<GameWindowSizeChoice> {
+		return switch self {
 		case .fillScreen:
 			OnboardingAnswer(
-				value: self, title: "Fill my screen",
-				detail: "Uses all the room your screen has, like a maximized window.",
+				value: self, title: "Fill screen",
 				systemImage: "rectangle.inset.filled", isRecommended: true)
 		case .leaveRoom:
 			OnboardingAnswer(
-				value: self, title: "Leave room for other apps",
-				detail: "Smaller, so chat or a browser fits beside the game.",
+				value: self,
+				title: "Compact" + (screen.map { " · \(size(on: $0).displayName)" } ?? ""),
 				systemImage: "rectangle.split.2x1")
 		}
 	}
@@ -227,20 +218,18 @@ extension GameRenderingMode {
 		switch self {
 		case .retina:
 			OnboardingAnswer(
-				value: self, title: "The sharpest picture",
-				detail:
-					"Uses every detail your screen has. Most Macs keep battles smooth this way.",
-				systemImage: "sparkles", isRecommended: true, technicalName: "Retina")
+				value: self, title: "Retina", detail: "Full display resolution. Sharpest.",
+				systemImage: "sparkles", isRecommended: true)
 		case .metalFX:
 			OnboardingAnswer(
-				value: self, title: "Smooth play on big screens",
-				detail: "Draws a lighter picture and sharpens it. Pick this if battles stutter.",
-				systemImage: "gauge.with.dots.needle.67percent", technicalName: "MetalFX")
-		case .lightweight:
+				value: self, title: "MetalFX",
+				detail: "Renders at 1× and upscales with MetalFX. Use it if the frame rate drops.",
+				systemImage: "gauge.with.dots.needle.67percent")
+		case .standard:
 			OnboardingAnswer(
-				value: self, title: "Longer battery life",
-				detail: "Draws the lightest picture, so text looks a little softer.",
-				systemImage: "leaf", technicalName: "Lightweight")
+				value: self, title: "Standard",
+				detail: "Renders at 1× and macOS scales the window. Softer image, lowest GPU load.",
+				systemImage: "rectangle.dashed")
 		}
 	}
 }
