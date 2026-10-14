@@ -46,6 +46,31 @@ struct PresetCatalogSearchTests {
 	}
 
 	@Test
+	func supplementalCharacterTableAddsOperatorsMissingFromGlobal() throws {
+		let global = Data(
+			"""
+			{"char_003_kalts":{"name":"Kal'tsit","rarity":"TIER_6"},
+			"char_999_hidden":{"name":"Hidden","rarity":"TIER_1","isNotObtainable":true}}
+			""".utf8
+		)
+		let supplemental = Data(
+			"""
+			{"char_003_kalts":{"name":"凯尔希","appellation":"Kal'tsit","rarity":"TIER_6"},
+			"char_1052_kalts2":{"name":"凯尔希·思衡托","appellation":"Kal'tsit·Esperanta","rarity":"TIER_6"}}
+			""".utf8
+		)
+
+		let avatars = try PresetCatalogService.avatars(
+			fromCharacterTable: global,
+			supplementalTable: supplemental
+		)
+
+		#expect(avatars.map(\.id).sorted() == ["char_003_kalts", "char_1052_kalts2"])
+		#expect(avatars.first { $0.id == "char_003_kalts" }?.name == "Kal'tsit")
+		#expect(avatars.first { $0.id == "char_1052_kalts2" }?.name == "Kal'tsit·Esperanta")
+	}
+
+	@Test
 	func oneCharacterTypoRanksTheClosestPresetAcrossCatalogs() async throws {
 		let closestAvatar = PresetAvatar(
 			id: "char_002_amiya",

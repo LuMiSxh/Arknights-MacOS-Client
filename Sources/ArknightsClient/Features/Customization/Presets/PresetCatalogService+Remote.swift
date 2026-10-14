@@ -8,40 +8,22 @@ extension PresetCatalogService {
 		let epoch = cacheEpoch
 		do {
 			log.info("Fetching remote character table from GameData…")
-			let request = URLRequest(url: Self.characterTableURL)
-			let (data, response) = try await loader.data(
-				for: request,
-				maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
-			)
+			let data = try await characterTableData(from: Self.characterTableURL)
 			guard cacheEpoch == epoch else { return [] }
-			guard response.statusCode == 200 else { throw URLError(.badServerResponse) }
-
-			let parsed = try await Task.detached(priority: .utility) { () -> [PresetAvatar] in
-				let rawEntries = try JSONDecoder().decode(
-					[String: RawCharacterEntry].self,
-					from: data
+			var supplementalData: Data?
+			do {
+				supplementalData = try await characterTableData(
+					from: Self.supplementalCharacterTableURL
 				)
-				return rawEntries.compactMap { characterID, entry in
-					guard Self.isValidAvatarIdentifier(characterID),
-						entry.isNotObtainable != true,
-						let rarity = entry.rarity, !rarity.isEmpty
-					else { return nil }
-					let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
-					guard !name.isEmpty else { return nil }
-					return PresetAvatar(
-						id: characterID,
-						name: name,
-						filename: "\(characterID).png",
-						rarity: rarity,
-						appellation: entry.appellation,
-						profession: entry.profession,
-						subProfessionID: entry.subProfessionID,
-						nationID: entry.nationID,
-						groupID: entry.groupID,
-						teamID: entry.teamID,
-						tagList: entry.tagList
-					)
-				}.sorted(by: Self.avatarSortOrder)
+			} catch {
+				log.error(
+					"Failed to fetch supplemental character table: \(error.localizedDescription)"
+				)
+			}
+			guard cacheEpoch == epoch else { return [] }
+
+			let parsed = try await Task.detached(priority: .utility) { [supplementalData] in
+				try Self.avatars(fromCharacterTable: data, supplementalTable: supplementalData)
 			}.value
 
 			guard cacheEpoch == epoch else { return [] }
@@ -61,6 +43,64 @@ extension PresetCatalogService {
 			log.error("Failed to fetch remote character table: \(error.localizedDescription)")
 			return []
 		}
+	}
+
+	private func characterTableData(from url: URL) async throws -> Data {
+		let (data, response) = try await loader.data(
+			for: URLRequest(url: url),
+			maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
+		)
+		guard response.statusCode == 200 else { throw URLError(.badServerResponse) }
+		return data
+	}
+
+	/// Builds the avatar catalog from the Global table, appending operators that only the
+	/// supplemental table lists yet. Their names fall back to the romanized appellation.
+	static func avatars(
+		fromCharacterTable data: Data,
+		supplementalTable supplementalData: Data? = nil
+	) throws -> [PresetAvatar] {
+		let primary = try JSONDecoder().decode([String: RawCharacterEntry].self, from: data)
+		var avatars = primary.compactMap { characterID, entry in
+			avatar(id: characterID, entry: entry, name: entry.name)
+		}
+		if let supplementalData {
+			let supplemental = try JSONDecoder().decode(
+				[String: RawCharacterEntry].self,
+				from: supplementalData
+			)
+			avatars += supplemental.compactMap { characterID, entry in
+				guard primary[characterID] == nil else { return nil }
+				return avatar(id: characterID, entry: entry, name: entry.appellation ?? entry.name)
+			}
+		}
+		return avatars.sorted(by: avatarSortOrder)
+	}
+
+	private static func avatar(
+		id characterID: String,
+		entry: RawCharacterEntry,
+		name: String
+	) -> PresetAvatar? {
+		guard isValidAvatarIdentifier(characterID),
+			entry.isNotObtainable != true,
+			let rarity = entry.rarity, !rarity.isEmpty
+		else { return nil }
+		let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !name.isEmpty else { return nil }
+		return PresetAvatar(
+			id: characterID,
+			name: name,
+			filename: "\(characterID).png",
+			rarity: rarity,
+			appellation: entry.appellation,
+			profession: entry.profession,
+			subProfessionID: entry.subProfessionID,
+			nationID: entry.nationID,
+			groupID: entry.groupID,
+			teamID: entry.teamID,
+			tagList: entry.tagList
+		)
 	}
 
 	@discardableResult

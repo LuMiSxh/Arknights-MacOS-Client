@@ -3,9 +3,14 @@
 import Foundation
 
 actor PresetCatalogService {
+	// The CN table supplements operators whose avatars exist before they reach Global.
 	static let characterTableURL = URL(
 		string:
-			"https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData_YoStar@main/en_US/gamedata/excel/character_table.json"
+			"https://raw.githubusercontent.com/ArknightsAssets/ArknightsGameData/master/en/gamedata/excel/character_table.json"
+	)!
+	static let supplementalCharacterTableURL = URL(
+		string:
+			"https://raw.githubusercontent.com/ArknightsAssets/ArknightsGameData/master/cn/gamedata/excel/character_table.json"
 	)!
 
 	let cacheDirectory: URL
