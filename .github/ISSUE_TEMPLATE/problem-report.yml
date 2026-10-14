@@ -16,7 +16,7 @@ body:
     attributes:
       label: Runtime version
       description: Use the version shown by the launcher. Include the commit when you test a development build.
-      placeholder: v0.7.0-rc2
+      placeholder: v0.7.0
     validations:
       required: true
 

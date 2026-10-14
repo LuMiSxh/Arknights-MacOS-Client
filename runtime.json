@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.7.0-rc3",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc3/Arknights-MacOS-Runtime-v0.7.0-rc3.tar.gz",
-    "sha256": "fdec6afbe8ce9688a9b9884a104b1f1746aa0fdf5ebfefb98edcf728ebfb99b9"
+    "name": "Arknights macOS Runtime 0.7.0",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0/Arknights-MacOS-Runtime-v0.7.0.tar.gz",
+    "sha256": "11cf370772c008421c9305d8d95fc3349e305d35b695a390aba37256acaf0baf"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0-rc3/Arknights-MacOS-Runtime-v0.7.0-rc3-source.tar.gz",
-    "sha256": "bc25a02700675677682660024297b73649e1ae9d62f7f46c551a746dc6c58d8d"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0/Arknights-MacOS-Runtime-v0.7.0-source.tar.gz",
+    "sha256": "2f9251e3745bebaef411408e029895eea3dd27a81d0bc47894bd61def0a39557"
   },
   "interface": {
     "archive": {
