@@ -43,17 +43,16 @@ static const wchar_t original_name[] = L"Vuplex WebView.original.helper.vuplex";
 static const wchar_t userenv_override[] = L"userenv=n,b";
 
 static const wchar_t *compatibility_arguments[] = {
-	L"--vx-accelerated-paint-disabled",
-	L"--disable-webgl",
-	L"--disable-gpu-rasterization",
-	L"--disable-accelerated-2d-canvas",
-	L"--disable-features=AsyncDns,ClipboardMaximumAge",
-	L"--log-file=L:\\chromium.log"
-};
+    L"--vx-accelerated-paint-disabled",
+    L"--disable-webgl",
+    L"--disable-gpu-rasterization",
+    L"--disable-accelerated-2d-canvas",
+    L"--disable-features=AsyncDns,ClipboardMaximumAge",
+    L"--log-file=L:\\chromium.log"};
 
 static const wchar_t *high_resolution_arguments[] = {
-	L"--high-dpi-support=1",
-	L"--force-device-scale-factor=2",
+    L"--high-dpi-support=1",
+    L"--force-device-scale-factor=2",
 };
 
 /* Win32 gives no fixed upper bound for a module's own path, so this grows the buffer and
@@ -65,13 +64,15 @@ static wchar_t *module_path(void) {
 		wchar_t *path = GlobalAlloc(GMEM_FIXED, (SIZE_T)capacity * sizeof(*path));
 		DWORD length;
 
-		if (path == NULL) return NULL;
+		if (path == NULL)
+			return NULL;
 		length = GetModuleFileNameW(NULL, path, capacity);
 		if (length == 0) {
 			GlobalFree(path);
 			return NULL;
 		}
-		if (length < capacity - 1) return path;
+		if (length < capacity - 1)
+			return path;
 		GlobalFree(path);
 		if (capacity > (MAXDWORD / 2)) {
 			SetLastError(ERROR_FILENAME_EXCED_RANGE);
@@ -87,7 +88,8 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
 	int index;
 
 	for (index = 1; index < count; index++) {
-		if (wcscmp(arguments[index], expected) == 0) return TRUE;
+		if (wcscmp(arguments[index], expected) == 0)
+			return TRUE;
 	}
 	return FALSE;
 }
@@ -98,7 +100,7 @@ static BOOL has_argument(int count, wchar_t **arguments, const wchar_t *expected
 static BOOL high_resolution_enabled(void) {
 	wchar_t value[8];
 	DWORD length =
-		GetEnvironmentVariableW(L"ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR", value, ARRAYSIZE(value));
+	    GetEnvironmentVariableW(L"ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR", value, ARRAYSIZE(value));
 
 	return length == 1 && value[0] == L'2';
 }
@@ -163,7 +165,8 @@ static BOOL enable_userenv_override(void) {
 	}
 	value_length = (SIZE_T)existing_length + wcslen(userenv_override) + 1;
 	value = GlobalAlloc(GMEM_FIXED, value_length * sizeof(*value));
-	if (value == NULL) return FALSE;
+	if (value == NULL)
+		return FALSE;
 	if (GetEnvironmentVariableW(variable_name, value, existing_length) == 0) {
 		GlobalFree(value);
 		return FALSE;
@@ -201,10 +204,9 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 	int high_resolution_index;
 	BOOL use_high_resolution;
 	SIZE_T command_length = 1;
-	STARTUPINFOW startup_info = { .cb = sizeof(startup_info),
-								  .dwFlags = STARTF_USESHOWWINDOW,
-								  .wShowWindow = SW_HIDE };
-	PROCESS_INFORMATION process_info = { 0 };
+	STARTUPINFOW startup_info = {
+	    .cb = sizeof(startup_info), .dwFlags = STARTF_USESHOWWINDOW, .wShowWindow = SW_HIDE};
+	PROCESS_INFORMATION process_info = {0};
 	DWORD creation_flags = CREATE_NO_WINDOW | DETACHED_PROCESS;
 	DWORD exit_code;
 	DWORD error;
@@ -215,11 +217,14 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 	(void)previous_instance;
 	(void)command_line;
 	(void)show_command;
-	if (launcher_marker[0] == '\0') return ERROR_INVALID_DATA;
+	if (launcher_marker[0] == '\0')
+		return ERROR_INVALID_DATA;
 	shim_path = module_path();
-	if (shim_path == NULL) return (int)GetLastError();
+	if (shim_path == NULL)
+		return (int)GetLastError();
 	separator = wcsrchr(shim_path, L'\\');
-	if (separator == NULL) separator = wcsrchr(shim_path, L'/');
+	if (separator == NULL)
+		separator = wcsrchr(shim_path, L'/');
 	if (separator == NULL) {
 		GlobalFree(shim_path);
 		return ERROR_PATH_NOT_FOUND;
@@ -251,18 +256,18 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 	for (index = 1; index < argument_count; index++)
 		command_length += 2 * wcslen(arguments[index]) + 3;
 	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments);
-		 compatibility_index++) {
+	     compatibility_index++) {
 		if (!has_argument(
-				argument_count, arguments, compatibility_arguments[compatibility_index])) {
+		        argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			command_length += 2 * wcslen(compatibility_arguments[compatibility_index]) + 3;
 		}
 	}
 	if (use_high_resolution) {
 		for (high_resolution_index = 0;
-			 high_resolution_index < ARRAYSIZE(high_resolution_arguments);
-			 high_resolution_index++) {
+		     high_resolution_index < ARRAYSIZE(high_resolution_arguments);
+		     high_resolution_index++) {
 			if (!has_argument(
-					argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+			        argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
 				command_length += 2 * wcslen(high_resolution_arguments[high_resolution_index]) + 3;
 			}
 		}
@@ -279,19 +284,19 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 		cursor = append_quoted(cursor, arguments[index]);
 	}
 	for (compatibility_index = 0; compatibility_index < ARRAYSIZE(compatibility_arguments);
-		 compatibility_index++) {
+	     compatibility_index++) {
 		if (!has_argument(
-				argument_count, arguments, compatibility_arguments[compatibility_index])) {
+		        argument_count, arguments, compatibility_arguments[compatibility_index])) {
 			*cursor++ = L' ';
 			cursor = append_quoted(cursor, compatibility_arguments[compatibility_index]);
 		}
 	}
 	if (use_high_resolution) {
 		for (high_resolution_index = 0;
-			 high_resolution_index < ARRAYSIZE(high_resolution_arguments);
-			 high_resolution_index++) {
+		     high_resolution_index < ARRAYSIZE(high_resolution_arguments);
+		     high_resolution_index++) {
 			if (!has_argument(
-					argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
+			        argument_count, arguments, high_resolution_arguments[high_resolution_index])) {
 				*cursor++ = L' ';
 				cursor = append_quoted(cursor, high_resolution_arguments[high_resolution_index]);
 			}
@@ -306,23 +311,24 @@ WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int
 		return (int)error;
 	}
 	if (!CreateProcessW(
-			original_path,
-			child_command_line,
-			NULL,
-			NULL,
-			FALSE,
-			creation_flags,
-			NULL,
-			NULL,
-			&startup_info,
-			&process_info)) {
+	        original_path,
+	        child_command_line,
+	        NULL,
+	        NULL,
+	        FALSE,
+	        creation_flags,
+	        NULL,
+	        NULL,
+	        &startup_info,
+	        &process_info)) {
 		error = GetLastError();
 		GlobalFree(child_command_line);
 		GlobalFree(original_path);
 		return (int)error;
 	}
 	WaitForSingleObject(process_info.hProcess, INFINITE);
-	if (!GetExitCodeProcess(process_info.hProcess, &exit_code)) exit_code = GetLastError();
+	if (!GetExitCodeProcess(process_info.hProcess, &exit_code))
+		exit_code = GetLastError();
 	CloseHandle(process_info.hThread);
 	CloseHandle(process_info.hProcess);
 	GlobalFree(child_command_line);

@@ -1,6 +1,6 @@
 ---
 title: WHELK
-description: The bundled Wine and DXMT runtime could not be found
+description: The bundled Wine and DXMT runtime is missing
 order: 70
 audience: users
 code: WHELK
@@ -9,20 +9,20 @@ domain: runtime
 
 # WHELK
 
-The launcher could not find a complete compatible Wine and DXMT runtime in the app bundle.
+The launcher could not find a complete, compatible Wine and DXMT runtime in the app bundle.
 
 ## Try this
 
 1. Quit Arknights Client.
-2. Download the latest complete DMG from the project's release page.
-3. Replace the launcher in Applications with that copy and open it again.
+2. Download the latest complete DMG from the project release page.
+3. Replace the launcher in Applications with that copy and open it.
 4. Choose **Retry**.
 
 > [!WARNING]
-> A source build without an embedded runtime can manage documentation and settings but cannot launch the game. Do not download Wine or DXMT from an unverified third-party package to fill the bundle manually.
+> A source build without an embedded runtime cannot launch the game. Do not fill the bundle by hand with Wine or DXMT from an unverified package.
 
-Repair checks official game files, not the launcher bundle, so it does not resolve this code.
+Repair cannot fix this code.
 
 ## Report this problem
 
-Report the code, launcher version, and whether the app came from a release DMG or a local build. Do not attach the runtime binaries.
+Report the code, launcher version, and whether the app came from a release DMG or a local build. Do not attach runtime binaries.

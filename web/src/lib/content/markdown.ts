@@ -19,6 +19,7 @@ export interface RenderedMarkdown {
 
 const SAFE_EXTERNAL_LINK = /^(?:https:|mailto:)/i;
 const SAFE_EXTERNAL_IMAGE = /^https:/i;
+const HTML_COMMENT = /^\s*<!--[\s\S]*?-->\s*$/;
 const ALERT_MARKER = /^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\r?\n)?/;
 const ALERT_LABELS = {
 	NOTE: 'Note',
@@ -128,7 +129,7 @@ export function renderMarkdown(
 	context: MarkdownLinkContext
 ): RenderedMarkdown {
 	const renderer: RendererObject = {
-		html: ({ text }) => escapeHtml(text),
+		html: ({ text }) => (HTML_COMMENT.test(text) ? '' : escapeHtml(text)),
 		table: renderTable,
 		blockquote(token) {
 			const rendered = this.parser.parse(token.tokens);

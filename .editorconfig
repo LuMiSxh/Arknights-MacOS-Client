@@ -1,16 +1,21 @@
 root = true
 
-[*.swift]
+[*]
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{swift,c,h,cpp,hpp,m,mm}]
 indent_style = tab
 indent_size = 4
 tab_width = 4
 
-[*.{md,yml,yaml,json,plist}]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
+[*.{yml,yaml,json,plist}]
 indent_style = space
 indent_size = 2
+
+[*.md]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = false

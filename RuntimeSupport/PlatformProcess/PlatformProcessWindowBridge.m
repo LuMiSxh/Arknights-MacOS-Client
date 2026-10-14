@@ -47,11 +47,12 @@ struct game_window {
  * launcher (which is also named "Arknights Client" and would otherwise self-match). */
 static struct game_window game_window_info(void) {
 	CFArrayRef windows = CGWindowListCopyWindowInfo(
-		kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
-	struct game_window result = { kCGNullWindowID, 0 };
+	    kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+	struct game_window result = {kCGNullWindowID, 0};
 	CGFloat largest_area = 0.0;
 
-	if (windows == NULL) return result;
+	if (windows == NULL)
+		return result;
 	for (NSDictionary *description in (__bridge NSArray *)windows) {
 		NSNumber *owner_pid = description[(id)kCGWindowOwnerPID];
 		NSNumber *layer = description[(id)kCGWindowLayer];
@@ -61,22 +62,25 @@ static struct game_window game_window_info(void) {
 		CGRect bounds;
 		CGFloat area;
 
-		if (owner_pid.intValue == getpid()) continue;
-		if (layer.integerValue < 0) continue;
+		if (owner_pid.intValue == getpid())
+			continue;
+		if (layer.integerValue < 0)
+			continue;
 
 		// SwiftUI Launcher ("Arknights Client")
 		if ([owner_name isEqualToString:@"Arknights Client"] ||
-			[name isEqualToString:@"Arknights Client"]) {
+		    [name isEqualToString:@"Arknights Client"]) {
 			continue;
 		}
 		if (![owner_name hasPrefix:@"Arknights"] && ![name hasPrefix:@"Arknights"]) {
 			continue;
 		}
 		if (!CGRectMakeWithDictionaryRepresentation(
-				(__bridge CFDictionaryRef)bounds_description, &bounds))
+		        (__bridge CFDictionaryRef)bounds_description, &bounds))
 			continue;
 		area = bounds.size.width * bounds.size.height;
-		if (area <= largest_area) continue;
+		if (area <= largest_area)
+			continue;
 		largest_area = area;
 		result.number = [description[(id)kCGWindowNumber] unsignedIntValue];
 		result.process_id = owner_pid.intValue;
@@ -95,11 +99,13 @@ static void apply_notice_mask(NSView *view) {
 	CGRect visible_bounds;
 	CGPathRef path;
 
-	if (view == nil) return;
+	if (view == nil)
+		return;
 	view.wantsLayer = YES;
 	bounds = view.bounds;
 	mask = objc_getAssociatedObject(view, &notice_mask_key);
-	if (mask != nil && CGRectEqualToRect(mask.frame, bounds)) return;
+	if (mask != nil && CGRectEqualToRect(mask.frame, bounds))
+		return;
 	if (mask == nil) {
 		mask = [CAShapeLayer layer];
 		objc_setAssociatedObject(view, &notice_mask_key, mask, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -107,7 +113,8 @@ static void apply_notice_mask(NSView *view) {
 	visible_bounds = bounds;
 	visible_bounds.size.width = MAX(0.0, visible_bounds.size.width - 1.0);
 	visible_bounds.size.height = MAX(0.0, visible_bounds.size.height - 1.0);
-	if (!view.layer.geometryFlipped) visible_bounds.origin.y += 1.0;
+	if (!view.layer.geometryFlipped)
+		visible_bounds.origin.y += 1.0;
 	mask.frame = bounds;
 	path = CGPathCreateWithRoundedRect(visible_bounds, 9.0, 9.0, NULL);
 	mask.path = path;
@@ -133,9 +140,10 @@ static void configure_window(NSWindow *window) {
 
 	behavior &= ~NSWindowCollectionBehaviorFullScreenPrimary;
 	behavior |= NSWindowCollectionBehaviorCanJoinAllSpaces |
-				NSWindowCollectionBehaviorFullScreenAuxiliary |
-				NSWindowCollectionBehaviorStationary | NSWindowCollectionBehaviorIgnoresCycle;
-	if (window.collectionBehavior != behavior) window.collectionBehavior = behavior;
+	            NSWindowCollectionBehaviorFullScreenAuxiliary |
+	            NSWindowCollectionBehaviorStationary | NSWindowCollectionBehaviorIgnoresCycle;
+	if (window.collectionBehavior != behavior)
+		window.collectionBehavior = behavior;
 
 	window.hidesOnDeactivate = NO;
 
@@ -162,12 +170,15 @@ static void configure_window(NSWindow *window) {
 	if (restored_nonactivating_style && content.acceptsFirstResponder) {
 		[window makeFirstResponder:content];
 	}
-	if (window.ignoresMouseEvents) window.ignoresMouseEvents = NO;
-	if (window.hasShadow) window.hasShadow = NO;
+	if (window.ignoresMouseEvents)
+		window.ignoresMouseEvents = NO;
+	if (window.hasShadow)
+		window.hasShadow = NO;
 	if (![window.backgroundColor isEqual:NSColor.clearColor]) {
 		window.backgroundColor = NSColor.clearColor;
 	}
-	if (window.opaque) window.opaque = NO;
+	if (window.opaque)
+		window.opaque = NO;
 	if (content != nil) {
 		content.wantsLayer = YES;
 		content.layer.opaque = NO;
@@ -182,15 +193,15 @@ static void configure_window(NSWindow *window) {
 
 	if (logged_notice_window != window.windowNumber) {
 		fprintf(
-			stderr,
-			"platform-window-bridge: configured notice=%ld class=%s nonactivating=%d "
-			"firstMouse=%d canKey=%d active=%d\n",
-			(long)window.windowNumber,
-			class_getName(window.class),
-			(window.styleMask & NSWindowStyleMaskNonactivatingPanel) != 0,
-			[content acceptsFirstMouse:nil],
-			window.canBecomeKeyWindow,
-			NSApp.active);
+		    stderr,
+		    "platform-window-bridge: configured notice=%ld class=%s nonactivating=%d "
+		    "firstMouse=%d canKey=%d active=%d\n",
+		    (long)window.windowNumber,
+		    class_getName(window.class),
+		    (window.styleMask & NSWindowStyleMaskNonactivatingPanel) != 0,
+		    [content acceptsFirstMouse:nil],
+		    window.canBecomeKeyWindow,
+		    NSApp.active);
 		logged_notice_window = window.windowNumber;
 	}
 }
@@ -206,7 +217,7 @@ static NSWindow *notice_window(void) {
 			continue;
 		}
 		if (candidate == nil || window.frame.size.width * window.frame.size.height >
-									candidate.frame.size.width * candidate.frame.size.height) {
+		                            candidate.frame.size.width * candidate.frame.size.height) {
 			candidate = window;
 		}
 	}
@@ -220,7 +231,8 @@ static NSWindow *notice_window(void) {
 static void maintain_presentation(void) {
 	NSWindow *window = notice_window();
 
-	if (window == nil) return;
+	if (window == nil)
+		return;
 	configure_window(window);
 
 	NSWindowLevel target_level = (NSWindowLevel)(CGShieldingWindowLevel() + 1);
@@ -237,11 +249,11 @@ static void maintain_presentation(void) {
 
 		if (game.number != kCGNullWindowID) {
 			fprintf(
-				stderr,
-				"platform-window-bridge: found notice=%ld game=%u pid=%d\n",
-				(long)window.windowNumber,
-				game.number,
-				game.process_id);
+			    stderr,
+			    "platform-window-bridge: found notice=%ld game=%u pid=%d\n",
+			    (long)window.windowNumber,
+			    game.number,
+			    game.process_id);
 			logged_game_window = game.number;
 		}
 	}
@@ -252,23 +264,24 @@ static void maintain_presentation(void) {
  * main queue; the short 2ms leeway keeps notice tracking smooth during game-window
  * dragging instead of visibly lagging behind it. */
 __attribute__((constructor)) static void install_platform_process_bridge(void) {
-	if (launcher_marker[0] == '\0') return;
+	if (launcher_marker[0] == '\0')
+		return;
 	/* AppKit is a dependency of this dylib. Install synchronously without creating
 	 * NSApplication or waiting for the main queue, before Wine starts presenting UI. */
 	Method method =
-		class_getInstanceMethod(objc_getClass("NSApplication"), @selector(setActivationPolicy:));
+	    class_getInstanceMethod(objc_getClass("NSApplication"), @selector(setActivationPolicy:));
 	if (method == NULL) {
 		fprintf(stderr, "platform-window-bridge: activation policy method unavailable\n");
 		return;
 	}
 	original_set_activation_policy =
-		(BOOL (*)(id, SEL, NSApplicationActivationPolicy))method_getImplementation(method);
+	    (BOOL (*)(id, SEL, NSApplicationActivationPolicy))method_getImplementation(method);
 	method_setImplementation(method, (IMP)set_activation_policy);
 	fprintf(
-		stderr,
-		"platform-window-bridge: loaded pid=%d process=%s\n",
-		getpid(),
-		NSProcessInfo.processInfo.processName.UTF8String);
+	    stderr,
+	    "platform-window-bridge: loaded pid=%d process=%s\n",
+	    getpid(),
+	    NSProcessInfo.processInfo.processName.UTF8String);
 
 	dispatch_async(dispatch_get_main_queue(), ^{
 	  presentation_timer =

@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import ArknightsCore
+import Foundation
+
+/// Arknights servers reset daily at 04:00 server time. Server time is a fixed UTC offset,
+/// not a named timezone, so the reset hour never shifts with daylight saving.
+enum ServerReset {
+	static func offsetSeconds(for region: GameRegion) -> Int {
+		switch region {
+		case .global: -7 * 3600
+		case .japan, .korea: 9 * 3600
+		case .taiwan, .china, .chinaBilibili: 8 * 3600
+		}
+	}
+
+	static func nextReset(for region: GameRegion, after date: Date = Date()) -> Date {
+		var calendar = Calendar(identifier: .gregorian)
+		calendar.timeZone = TimeZone(secondsFromGMT: offsetSeconds(for: region))!
+		var components = calendar.dateComponents([.year, .month, .day], from: date)
+		components.hour = 4
+		components.minute = 0
+		components.second = 0
+		let todayReset = calendar.date(from: components)!
+		return todayReset > date
+			? todayReset : calendar.date(byAdding: .day, value: 1, to: todayReset)!
+	}
+
+	static func countdownText(
+		for region: GameRegion,
+		now: Date = Date()
+	) -> String {
+		let remaining = max(0, Int(nextReset(for: region, after: now).timeIntervalSince(now)))
+		let minutes = (remaining % 3600) / 60
+		let minuteText = minutes < 10 ? "0\(minutes)" : "\(minutes)"
+		return "Reset in \(remaining / 3600)h \(minuteText)m"
+	}
+}

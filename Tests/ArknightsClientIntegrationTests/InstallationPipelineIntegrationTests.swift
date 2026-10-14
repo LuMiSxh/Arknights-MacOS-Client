@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
+import ArknightsGameRuntime
 import Foundation
 import Testing
 
-@testable import ArknightsClient
+@testable import ArknightsGameInstallation
+@testable import ArknightsInfrastructure
+@testable import ArknightsLauncherUI
+@testable import ArknightsOnboarding
+
+private typealias Key = LauncherPreferencesStore.Key
 
 @Suite(
 	"Fresh onboarding and installation",
@@ -20,17 +27,16 @@ struct InstallationPipelineIntegrationTests {
 		let environment = try IntegrationTestEnvironment()
 		defer { environment.cleanUp() }
 		let network = try LocalFixtureNetwork()
-		LocalFixtureURLProtocol.handler = network.response(for:)
-		defer { LocalFixtureURLProtocol.handler = nil }
+		environment.route.handler = network.response(for:)
 
 		#expect(environment.preferences.selectedRegion() == .global)
 		let installDirectory = environment.paths.gameInstall(for: .global)
 		environment.preferences.setSelectedRegion(.global)
 		environment.preferences.setInstallDirectory(installDirectory, for: .global)
-		environment.preferences.setAutomaticGameUpdates(false)
-		environment.preferences.setAutomaticLauncherUpdates(false)
-		environment.preferences.setAnnouncementsEnabled(false)
-		environment.preferences.setPlaysLauncherMusic(false)
+		environment.preferences.set(false, for: Key.automaticGameUpdates)
+		environment.preferences.set(false, for: Key.automaticLauncherUpdates)
+		environment.preferences.set(false, for: Key.announcementsEnabled)
+		environment.preferences.set(false, for: Key.playsLauncherMusic)
 
 		let api = LauncherAPI(session: environment.session)
 		let installer = GameInstaller(
@@ -64,7 +70,7 @@ struct InstallationPipelineIntegrationTests {
 		#expect(onboarding.isPresented)
 		#expect(onboarding.step == .welcome)
 		onboarding.advance()
-		#expect(onboarding.step == .installation)
+		#expect(onboarding.step == .region)
 
 		let progress = IntegrationProgressRecorder()
 		model.installation.startInstallation(launchAfterCompletion: false)
@@ -84,12 +90,13 @@ struct InstallationPipelineIntegrationTests {
 			!FileManager.default.fileExists(atPath: payloadURL.appendingPathExtension("part").path))
 
 		do {
-			let installationRoot = try InstallerInstallDirectory(at: installDirectory)
-			let state = try #require(try installer.loadState(from: installationRoot))
-			#expect(state.version == "1.2.3")
-			#expect(state.basis == "fixture-manifest.json")
-			#expect(state.source == "fixture-source")
-			#expect(state.files?.map(\.path) == ["Arknights.exe"])
+			try withInstallLease(at: installDirectory) { lease in
+				let state = try #require(try installer.loadState(from: lease.directory))
+				#expect(state.version == "1.2.3")
+				#expect(state.basis == "fixture-manifest.json")
+				#expect(state.source == "fixture-source")
+				#expect(state.files?.map(\.path) == ["Arknights.exe"])
+			}
 		}
 		let finalProgress = try #require(await progress.updates().last)
 		#expect(finalProgress.fraction == 1)

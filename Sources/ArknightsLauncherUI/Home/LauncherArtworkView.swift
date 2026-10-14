@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import ArknightsCore
+import ArknightsGameInstallation
+import SwiftUI
+
+struct LauncherArtworkView: View {
+	let image: NSImage?
+	let themeCacheKey: String?
+	package let accentColor: Color
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	// The very first artwork this view ever shows is revealed instantly (it was loaded while
+	// the window was still covered) — only later live updates get the crossfade.
+	@State private var hasShownArtworkBefore = false
+
+	var body: some View {
+		GeometryReader { proxy in
+			ZStack {
+				if let image {
+					Image(nsImage: image)
+						.resizable()
+						.scaledToFill()
+						.id(artworkIdentity)
+						.transition(artworkTransition)
+						.accessibilityLabel("Arknights artwork")
+				} else {
+					fallbackArtwork
+						.id(artworkIdentity)
+						.transition(artworkTransition)
+						.accessibilityHidden(true)
+				}
+			}
+			.frame(width: proxy.size.width, height: proxy.size.height)
+			.clipped()
+			.animation(
+				hasShownArtworkBefore
+					? LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion) : nil,
+				value: artworkIdentity
+			)
+			.onChange(of: artworkIdentity, initial: true) { _, _ in
+				if image != nil { hasShownArtworkBefore = true }
+			}
+		}
+	}
+
+	private var artworkIdentity: String {
+		themeCacheKey ?? (image == nil ? "fallback" : "artwork")
+	}
+
+	private var artworkTransition: AnyTransition {
+		.materialize(reduceMotion: reduceMotion, scale: 1.03, blur: 12)
+	}
+
+	private var fallbackArtwork: some View {
+		ZStack {
+			LauncherVisuals.artworkFallback
+			Text("A")
+				.font(LauncherVisuals.Typography.fallbackWordmark)
+				.foregroundStyle(.white.opacity(0.07))
+			Rectangle()
+				.fill(accentColor.opacity(0.4))
+				.frame(width: 620, height: 10)
+				.rotationEffect(.degrees(-42))
+		}
+	}
+}

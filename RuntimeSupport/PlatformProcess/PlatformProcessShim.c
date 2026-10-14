@@ -55,15 +55,18 @@ static wchar_t *module_path(void) {
 		wchar_t *path = HeapAlloc(GetProcessHeap(), 0, (SIZE_T)capacity * sizeof(*path));
 		DWORD length;
 
-		if (path == NULL) return NULL;
+		if (path == NULL)
+			return NULL;
 		length = GetModuleFileNameW(NULL, path, capacity);
 		if (length == 0) {
 			HeapFree(GetProcessHeap(), 0, path);
 			return NULL;
 		}
-		if (length < capacity - 1) return path;
+		if (length < capacity - 1)
+			return path;
 		HeapFree(GetProcessHeap(), 0, path);
-		if (capacity > MAXDWORD / 2) return NULL;
+		if (capacity > MAXDWORD / 2)
+			return NULL;
 		capacity *= 2;
 	}
 }
@@ -77,12 +80,15 @@ static wchar_t *sibling_path(const wchar_t *module, const wchar_t *name) {
 	SIZE_T bytes;
 	wchar_t *result;
 
-	if (separator == NULL) separator = wcsrchr(module, L'/');
-	if (separator == NULL) return NULL;
+	if (separator == NULL)
+		separator = wcsrchr(module, L'/');
+	if (separator == NULL)
+		return NULL;
 	directory_length = (SIZE_T)(separator - module + 1);
 	bytes = (directory_length + wcslen(name) + 1) * sizeof(*result);
 	result = HeapAlloc(GetProcessHeap(), 0, bytes);
-	if (result == NULL) return NULL;
+	if (result == NULL)
+		return NULL;
 	memcpy(result, module, directory_length * sizeof(*result));
 	wcscpy(result + directory_length, name);
 	return result;
@@ -141,11 +147,14 @@ static BOOL CALLBACK find_process_window(HWND window, LPARAM context_value) {
 	LONGLONG height;
 
 	GetWindowThreadProcessId(window, &process_id);
-	if (process_id != search->process_id || !IsWindowVisible(window)) return TRUE;
-	if (!GetWindowRect(window, &rectangle)) return TRUE;
+	if (process_id != search->process_id || !IsWindowVisible(window))
+		return TRUE;
+	if (!GetWindowRect(window, &rectangle))
+		return TRUE;
 	width = (LONGLONG)rectangle.right - (LONGLONG)rectangle.left;
 	height = (LONGLONG)rectangle.bottom - (LONGLONG)rectangle.top;
-	if (width < 400 || height < 300) return TRUE;
+	if (width < 400 || height < 300)
+		return TRUE;
 	search->result = window;
 	return FALSE;
 }
@@ -163,15 +172,21 @@ static BOOL CALLBACK find_game_window(HWND window, LPARAM context_value) {
 	ULONGLONG area;
 
 	GetWindowThreadProcessId(window, &process_id);
-	if (process_id == search->excluded_process_id || !IsWindowVisible(window)) return TRUE;
-	if (GetWindowTextW(window, title, ARRAYSIZE(title)) == 0) return TRUE;
-	if (wcsncmp(title, L"Arknights", 9) != 0) return TRUE;
-	if (!GetWindowRect(window, &rectangle)) return TRUE;
+	if (process_id == search->excluded_process_id || !IsWindowVisible(window))
+		return TRUE;
+	if (GetWindowTextW(window, title, ARRAYSIZE(title)) == 0)
+		return TRUE;
+	if (wcsncmp(title, L"Arknights", 9) != 0)
+		return TRUE;
+	if (!GetWindowRect(window, &rectangle))
+		return TRUE;
 	width = (LONGLONG)rectangle.right - (LONGLONG)rectangle.left;
 	height = (LONGLONG)rectangle.bottom - (LONGLONG)rectangle.top;
-	if (width <= 0 || height <= 0) return TRUE;
+	if (width <= 0 || height <= 0)
+		return TRUE;
 	area = (ULONGLONG)width * (ULONGLONG)height;
-	if (area <= search->largest_area) return TRUE;
+	if (area <= search->largest_area)
+		return TRUE;
 	search->largest_area = area;
 	search->result = window;
 	return TRUE;
@@ -180,7 +195,7 @@ static BOOL CALLBACK find_game_window(HWND window, LPARAM context_value) {
 /* Wraps find_game_window's EnumWindows scan; `excluded_process_id` is this wrapper's own
  * child (the notice helper), never the game itself. */
 static HWND locate_game_window(DWORD excluded_process_id) {
-	struct game_window_search search = { excluded_process_id, NULL, 0 };
+	struct game_window_search search = {excluded_process_id, NULL, 0};
 
 	EnumWindows(find_game_window, (LPARAM)&search);
 	return search.result;
@@ -191,13 +206,14 @@ static HWND locate_game_window(DWORD excluded_process_id) {
  * interactive treatment the macOS-side bridge applies, then forces a frame-changed repaint
  * only if a style bit actually changed (SetWindowPos is otherwise a visible no-op flicker). */
 static HWND repair_notice_window(DWORD process_id) {
-	struct window_search search = { process_id, NULL };
+	struct window_search search = {process_id, NULL};
 	LONG_PTR style;
 	LONG_PTR extended_style;
 	BOOL style_changed = FALSE;
 
 	EnumWindows(find_process_window, (LPARAM)&search);
-	if (search.result == NULL) return NULL;
+	if (search.result == NULL)
+		return NULL;
 	style = GetWindowLongPtrW(search.result, GWL_STYLE);
 	if ((style & (WS_BORDER | WS_DLGFRAME | WS_THICKFRAME)) != 0) {
 		style &= ~(WS_BORDER | WS_DLGFRAME | WS_THICKFRAME);
@@ -212,13 +228,13 @@ static HWND repair_notice_window(DWORD process_id) {
 	}
 	if (style_changed) {
 		SetWindowPos(
-			search.result,
-			NULL,
-			0,
-			0,
-			0,
-			0,
-			SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED);
+		    search.result,
+		    NULL,
+		    0,
+		    0,
+		    0,
+		    0,
+		    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_FRAMECHANGED);
 	}
 	return search.result;
 }
@@ -229,7 +245,7 @@ static HWND repair_notice_window(DWORD process_id) {
 static BOOL center_notice_window(HWND notice, HWND game) {
 	RECT game_client;
 	RECT notice_rectangle;
-	POINT game_origin = { 0, 0 };
+	POINT game_origin = {0, 0};
 	POINT game_bottom_right;
 	LONGLONG game_width;
 	LONGLONG game_height;
@@ -262,13 +278,13 @@ static BOOL center_notice_window(HWND notice, HWND game) {
 		return TRUE;
 	}
 	return SetWindowPos(
-		notice,
-		NULL,
-		(int)target_x,
-		(int)target_y,
-		0,
-		0,
-		SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+	    notice,
+	    NULL,
+	    (int)target_x,
+	    (int)target_y,
+	    0,
+	    0,
+	    SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 /* Captures the game window identity before disabling it. A game window that was already
@@ -278,14 +294,16 @@ static BOOL disable_game_window(HWND game, BOOL *was_enabled, DWORD *process_id,
 	DWORD observed_thread_id;
 
 	if (game == NULL || was_enabled == NULL || process_id == NULL || thread_id == NULL ||
-		!IsWindow(game))
+	    !IsWindow(game))
 		return FALSE;
 	observed_thread_id = GetWindowThreadProcessId(game, &observed_process_id);
-	if (observed_thread_id == 0) return FALSE;
+	if (observed_thread_id == 0)
+		return FALSE;
 	*process_id = observed_process_id;
 	*thread_id = observed_thread_id;
 	*was_enabled = IsWindowEnabled(game);
-	if (!*was_enabled) return TRUE;
+	if (!*was_enabled)
+		return TRUE;
 	EnableWindow(game, FALSE);
 	return !IsWindowEnabled(game);
 }
@@ -296,7 +314,8 @@ static BOOL game_identity_matches(HWND game, DWORD process_id, DWORD thread_id) 
 	DWORD observed_process_id = 0;
 	DWORD observed_thread_id;
 
-	if (game == NULL || !IsWindow(game)) return FALSE;
+	if (game == NULL || !IsWindow(game))
+		return FALSE;
 	observed_thread_id = GetWindowThreadProcessId(game, &observed_process_id);
 	return observed_thread_id == thread_id && observed_process_id == process_id;
 }
@@ -304,8 +323,10 @@ static BOOL game_identity_matches(HWND game, DWORD process_id, DWORD thread_id) 
 /* Reasserts the modal lock only for a game the wrapper originally disabled. The captured
  * enabled state is never overwritten by a transient external re-enable. */
 static BOOL reassert_game_window(HWND game, BOOL was_enabled, DWORD process_id, DWORD thread_id) {
-	if (!game_identity_matches(game, process_id, thread_id)) return FALSE;
-	if (!was_enabled || !IsWindowEnabled(game)) return TRUE;
+	if (!game_identity_matches(game, process_id, thread_id))
+		return FALSE;
+	if (!was_enabled || !IsWindowEnabled(game))
+		return TRUE;
 	EnableWindow(game, FALSE);
 	return game_identity_matches(game, process_id, thread_id) && !IsWindowEnabled(game);
 }
@@ -313,7 +334,8 @@ static BOOL reassert_game_window(HWND game, BOOL was_enabled, DWORD process_id, 
 /* Restores the state captured by disable_game_window after revalidating identity. Only a
  * game that was enabled before the lock is ever enabled here. */
 static void restore_game_window(HWND game, BOOL was_enabled, DWORD process_id, DWORD thread_id) {
-	if (!was_enabled || !game_identity_matches(game, process_id, thread_id)) return;
+	if (!was_enabled || !game_identity_matches(game, process_id, thread_id))
+		return;
 	EnableWindow(game, TRUE);
 }
 
@@ -330,9 +352,11 @@ static BOOL install_bridge_environment(const wchar_t *bridge_path) {
 		return FALSE;
 	}
 	convert = (wine_get_unix_file_name_fn)GetProcAddress(kernel32, "wine_get_unix_file_name");
-	if (convert == NULL) return FALSE;
+	if (convert == NULL)
+		return FALSE;
 	unix_path = convert(bridge_path);
-	if (unix_path == NULL) return FALSE;
+	if (unix_path == NULL)
+		return FALSE;
 	/* WineCX promotes __CX_UNIX_* values into the Unix child environment. */
 	result = SetEnvironmentVariableA("__CX_UNIX_DYLD_INSERT_LIBRARIES", unix_path);
 	HeapFree(GetProcessHeap(), 0, unix_path);
@@ -356,8 +380,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 	int argument_count = 0;
 	int index;
 	SIZE_T command_length;
-	STARTUPINFOW startup = { .cb = sizeof(startup) };
-	PROCESS_INFORMATION process = { 0 };
+	STARTUPINFOW startup = {.cb = sizeof(startup)};
+	PROCESS_INFORMATION process = {0};
 	DWORD exit_code = ERROR_GEN_FAILURE;
 	DWORD wait_timeout = NOTICE_DISCOVERY_INTERVAL_MS;
 	HWND notice = NULL;
@@ -375,23 +399,29 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 	(void)previous;
 	(void)command_line;
 	(void)show;
-	if (launcher_marker[0] == '\0') return ERROR_INVALID_DATA;
+	if (launcher_marker[0] == '\0')
+		return ERROR_INVALID_DATA;
 
 	module = module_path();
-	if (module == NULL) goto cleanup;
+	if (module == NULL)
+		goto cleanup;
 	original = sibling_path(module, original_name);
 	bridge = sibling_path(module, bridge_name);
-	if (original == NULL || bridge == NULL) goto cleanup;
-	if (!install_bridge_environment(bridge)) goto cleanup;
+	if (original == NULL || bridge == NULL)
+		goto cleanup;
+	if (!install_bridge_environment(bridge))
+		goto cleanup;
 
 	arguments = CommandLineToArgvW(GetCommandLineW(), &argument_count);
-	if (arguments == NULL) goto cleanup;
+	if (arguments == NULL)
+		goto cleanup;
 	command_length = 2 * wcslen(original) + 3;
 	for (index = 1; index < argument_count; index++) {
 		command_length += 2 * wcslen(arguments[index]) + 3;
 	}
 	child_command = HeapAlloc(GetProcessHeap(), 0, command_length * sizeof(*child_command));
-	if (child_command == NULL) goto cleanup;
+	if (child_command == NULL)
+		goto cleanup;
 	cursor = append_quoted(child_command, original);
 	for (index = 1; index < argument_count; index++) {
 		*cursor++ = L' ';
@@ -400,7 +430,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 	*cursor = L'\0';
 
 	if (!CreateProcessW(
-			original, child_command, NULL, NULL, FALSE, 0, NULL, NULL, &startup, &process)) {
+	        original, child_command, NULL, NULL, FALSE, 0, NULL, NULL, &startup, &process)) {
 		exit_code = GetLastError();
 		goto cleanup;
 	}
@@ -409,7 +439,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 		HWND discovered_notice;
 		HWND discovered_game;
 
-		if (wait == WAIT_OBJECT_0) break;
+		if (wait == WAIT_OBJECT_0)
+			break;
 		if (wait == WAIT_FAILED) {
 			exit_code = GetLastError();
 			goto cleanup;
@@ -422,8 +453,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 			missing_game_ticks = 0;
 		} else if (saw_game && ++missing_game_ticks >= GAME_MISSING_LIMIT) {
 			fprintf(
-				stderr,
-				"platform-window-wrapper: game window disappeared; terminating notice helper\n");
+			    stderr,
+			    "platform-window-wrapper: game window disappeared; terminating notice helper\n");
 			if (!TerminateProcess(process.hProcess, 0)) {
 				exit_code = GetLastError();
 				goto cleanup;
@@ -452,7 +483,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 		}
 		if (notice == NULL || game == NULL) {
 			wait_timeout = saw_game && game == NULL ? NOTICE_LIFECYCLE_INTERVAL_MS
-													: NOTICE_DISCOVERY_INTERVAL_MS;
+			                                        : NOTICE_DISCOVERY_INTERVAL_MS;
 			continue;
 		}
 		if (!has_locked_game) {
@@ -473,12 +504,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 		}
 		if (!reported_windows) {
 			fprintf(
-				stderr,
-				"platform-window-wrapper: notice=%p style=%08lx exstyle=%08lx game=%p\n",
-				notice,
-				(unsigned long)GetWindowLongPtrW(notice, GWL_STYLE),
-				(unsigned long)GetWindowLongPtrW(notice, GWL_EXSTYLE),
-				game);
+			    stderr,
+			    "platform-window-wrapper: notice=%p style=%08lx exstyle=%08lx game=%p\n",
+			    notice,
+			    (unsigned long)GetWindowLongPtrW(notice, GWL_STYLE),
+			    (unsigned long)GetWindowLongPtrW(notice, GWL_EXSTYLE),
+			    game);
 			reported_windows = TRUE;
 		}
 		if (!has_centered_notice) {
@@ -486,17 +517,25 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 		}
 		wait_timeout = NOTICE_LIFECYCLE_INTERVAL_MS;
 	}
-	if (!GetExitCodeProcess(process.hProcess, &exit_code)) exit_code = GetLastError();
+	if (!GetExitCodeProcess(process.hProcess, &exit_code))
+		exit_code = GetLastError();
 
 cleanup:
 	if (has_locked_game)
 		restore_game_window(game, game_was_enabled, game_process_id, game_thread_id);
-	if (process.hThread != NULL) CloseHandle(process.hThread);
-	if (process.hProcess != NULL) CloseHandle(process.hProcess);
-	if (arguments != NULL) LocalFree(arguments);
-	if (child_command != NULL) HeapFree(GetProcessHeap(), 0, child_command);
-	if (bridge != NULL) HeapFree(GetProcessHeap(), 0, bridge);
-	if (original != NULL) HeapFree(GetProcessHeap(), 0, original);
-	if (module != NULL) HeapFree(GetProcessHeap(), 0, module);
+	if (process.hThread != NULL)
+		CloseHandle(process.hThread);
+	if (process.hProcess != NULL)
+		CloseHandle(process.hProcess);
+	if (arguments != NULL)
+		LocalFree(arguments);
+	if (child_command != NULL)
+		HeapFree(GetProcessHeap(), 0, child_command);
+	if (bridge != NULL)
+		HeapFree(GetProcessHeap(), 0, bridge);
+	if (original != NULL)
+		HeapFree(GetProcessHeap(), 0, original);
+	if (module != NULL)
+		HeapFree(GetProcessHeap(), 0, module);
 	return (int)exit_code;
 }

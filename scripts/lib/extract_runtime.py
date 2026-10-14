@@ -6,41 +6,28 @@
 from __future__ import annotations
 
 import argparse
+import posixpath
 import tarfile
 from pathlib import Path, PurePosixPath
 
 from lib.common import fail, remove_path, run_main
 
-
-def stays_within_root(path: PurePosixPath) -> bool:
-    depth = 0
-    for part in path.parts:
-        if part in ("", "."):
-            continue
-        if part == "..":
-            depth -= 1
-            if depth < 0:
-                return False
-        else:
-            depth += 1
-    return True
+# Runtime 0.7.0 ships its license texts beside the runtime directory.
+RUNTIME_COMPANIONS = frozenset({"Licenses", "NOTICE.md"})
 
 
 def validate_member(member: tarfile.TarInfo) -> PurePosixPath:
+    """Reject absolute paths, `..` components and links that leave the archive."""
     path = PurePosixPath(member.name)
     if path.is_absolute() or ".." in path.parts:
         fail(f"unsafe archive path: {member.name}")
-    if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
-        fail(f"unsupported archive entry: {member.name}")
-
-    if member.issym():
+    if member.issym() or member.islnk():
         target = PurePosixPath(member.linkname)
-        if target.is_absolute() or not stays_within_root(path.parent / target):
-            fail(f"unsafe symbolic link: {member.name} -> {member.linkname}")
-    elif member.islnk():
-        target = PurePosixPath(member.linkname)
-        if target.is_absolute() or not stays_within_root(target):
-            fail(f"unsafe hard link: {member.name} -> {member.linkname}")
+        # Symbolic links resolve against their own directory; hard links against the root.
+        base = path.parent if member.issym() else PurePosixPath()
+        resolved = posixpath.normpath(base / target)
+        if target.is_absolute() or resolved == ".." or resolved.startswith("../"):
+            fail(f"unsafe link: {member.name} -> {member.linkname}")
     return path
 
 
@@ -59,12 +46,15 @@ def extract(archive: Path, destination: Path) -> Path:
         validated = [
             (member, validate_member(member)) for member in contents.getmembers()
         ]
-        members = [
-            member for member, path in validated if not is_platform_metadata(path)
-        ]
-        paths = [path for _, path in validated if not is_platform_metadata(path)]
+        kept = [(m, p) for m, p in validated if not is_platform_metadata(p)]
+        members = [member for member, _ in kept]
+        paths = [path for _, path in kept]
         top_levels = {
-            path.parts[0] for path in paths if path.parts and path.parts[0] != "."
+            path.parts[0]
+            for path in paths
+            if path.parts
+            and path.parts[0] != "."
+            and path.parts[0] not in RUNTIME_COMPANIONS
         }
         if len(top_levels) != 1:
             fail("runtime archive must contain exactly one top-level directory")

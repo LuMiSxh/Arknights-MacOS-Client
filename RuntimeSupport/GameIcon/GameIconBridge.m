@@ -8,15 +8,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 /*
- * Process-local Dock icon policy for the main Arknights Wine process.
+ * Process-local Dock policy for the Arknights Wine process tree.
  *
  * The launcher injects this x86-64 dylib with DYLD_INSERT_LIBRARIES. Wine later asks
  * NSApplication to publish the icon it extracted from Arknights.exe. Intercepting that
  * single public AppKit setter lets the launcher either normalize the extracted icon to
  * the macOS icon grid or replace it with a launcher-owned PNG, without modifying Wine,
  * its prefix, or the game executable.
+ *
+ * Wine passes the injection on to every process the game starts, such as the Bilibili
+ * sign-in helper or a console host. Each of those would otherwise get its own "wine"
+ * Dock tile with a generic executable icon, which macOS can keep among recent apps after
+ * the game exits. Only the launcher's direct child, the game, keeps its Dock tile.
  *
  * This file deliberately does not import or link AppKit/Foundation. Loading an AppKit-
  * linked injected dylib initializes AppKit before Wine has assigned
@@ -47,23 +53,29 @@ typedef struct {
 } AKRect;
 
 typedef void (*SetApplicationIconImageIMP)(id, SEL, id);
+typedef signed char (*SetActivationPolicyIMP)(id, SEL, long);
 
 /* A 412-point content square inside a 512-point canvas is the 80.5% macOS icon grid.
- * The integer enum values mirror NSCompositingOperationCopy and NSImageInterpolationHigh;
- * naming them here avoids loading AppKit merely to obtain those declarations. */
+ * The integer enum values mirror NSCompositingOperationCopy, NSImageInterpolationHigh,
+ * and NSApplicationActivationPolicyRegular/Accessory; naming them here avoids loading
+ * AppKit merely to obtain those declarations. */
 static const double icon_canvas_dimension = 512.0;
 static const double icon_content_dimension = 412.0;
 static const long compositing_operation_copy = 1;
 static const long image_interpolation_high = 3;
+static const long activation_policy_regular = 0;
+static const long activation_policy_accessory = 1;
 
 /* AppKit normally appears very early in Wine startup. Polling every 50ms for at most ten
  * seconds avoids blocking dyld's constructor thread while still installing the hook before
  * Wine publishes its executable icon, without keeping the CPU out of its idle states.
  * objc_getClass only observes runtime state; it does not cause AppKit to load. */
-static const struct timespec appkit_poll_interval = { .tv_sec = 0, .tv_nsec = 50000000 };
+static const struct timespec appkit_poll_interval = {.tv_sec = 0, .tv_nsec = 50000000};
 static const int appkit_poll_limit = 200;
 
 static SetApplicationIconImageIMP original_set_application_icon_image;
+static SetActivationPolicyIMP original_set_activation_policy;
+static bool is_helper_process;
 static pthread_mutex_t icon_setter_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *custom_game_icon_path;
 static id custom_game_icon;
@@ -96,9 +108,9 @@ static AKSize send_size(id receiver, SEL selector) {
 }
 
 static void send_draw_message(
-	id receiver, SEL selector, AKRect destination, AKRect source, long operation, double fraction) {
+    id receiver, SEL selector, AKRect destination, AKRect source, long operation, double fraction) {
 	((void (*)(id, SEL, AKRect, AKRect, long, double))objc_msgSend)(
-		receiver, selector, destination, source, operation, fraction);
+	    receiver, selector, destination, source, operation, fraction);
 }
 
 /* Resolves the optional launcher-owned PNG only after Wine has initialized AppKit.
@@ -106,21 +118,23 @@ static void send_draw_message(
  * lifetime: Wine sets its application icon once, and retaining these objects prevents
  * an autorelease-pool boundary from invalidating the replacement before AppKit consumes it. */
 static id load_custom_game_icon(void) {
-	if (custom_game_icon != nil || custom_game_icon_path == NULL) return custom_game_icon;
+	if (custom_game_icon != nil || custom_game_icon_path == NULL)
+		return custom_game_icon;
 
 	Class string_class = objc_getClass("NSString");
 	Class image_class = objc_getClass("NSImage");
-	if (string_class == Nil || image_class == Nil) return nil;
+	if (string_class == Nil || image_class == Nil)
+		return nil;
 
 	id path = ((id (*)(id, SEL, const char *))objc_msgSend)(
-		(id)string_class, sel_registerName("stringWithUTF8String:"), custom_game_icon_path);
+	    (id)string_class, sel_registerName("stringWithUTF8String:"), custom_game_icon_path);
 	id image = send_id((id)image_class, sel_registerName("alloc"));
 	custom_game_icon = send_id_with_id(image, sel_registerName("initWithContentsOfFile:"), path);
 	if (custom_game_icon == nil) {
 		fprintf(
-			stderr,
-			"Arknights Client: failed to load custom game icon: %s\n",
-			custom_game_icon_path);
+		    stderr,
+		    "Arknights Client: failed to load custom game icon: %s\n",
+		    custom_game_icon_path);
 	}
 	return custom_game_icon;
 }
@@ -130,32 +144,35 @@ static id load_custom_game_icon(void) {
  * handling can never prevent the game from presenting its Dock tile. Drawing uses the
  * current AppKit graphics context on Wine's setter-calling thread, not the polling thread. */
 static id normalized_game_icon(id source) {
-	if (source == nil) return nil;
+	if (source == nil)
+		return nil;
 
 	Class image_class = objc_getClass("NSImage");
 	Class graphics_context_class = objc_getClass("NSGraphicsContext");
-	if (image_class == Nil || graphics_context_class == Nil) return source;
+	if (image_class == Nil || graphics_context_class == Nil)
+		return source;
 
-	AKSize canvas_size = { icon_canvas_dimension, icon_canvas_dimension };
+	AKSize canvas_size = {icon_canvas_dimension, icon_canvas_dimension};
 	id result = send_id((id)image_class, sel_registerName("alloc"));
 	result = send_id_with_size(result, sel_registerName("initWithSize:"), canvas_size);
-	if (result == nil) return source;
+	if (result == nil)
+		return source;
 
 	send_void(result, sel_registerName("lockFocus"));
 	id context = send_id((id)graphics_context_class, sel_registerName("currentContext"));
 	send_void_with_integer(
-		context, sel_registerName("setImageInterpolation:"), image_interpolation_high);
+	    context, sel_registerName("setImageInterpolation:"), image_interpolation_high);
 
 	double inset = (icon_canvas_dimension - icon_content_dimension) / 2.0;
-	AKRect destination = { { inset, inset }, { icon_content_dimension, icon_content_dimension } };
-	AKRect source_rect = { { 0.0, 0.0 }, send_size(source, sel_registerName("size")) };
+	AKRect destination = {{inset, inset}, {icon_content_dimension, icon_content_dimension}};
+	AKRect source_rect = {{0.0, 0.0}, send_size(source, sel_registerName("size"))};
 	send_draw_message(
-		source,
-		sel_registerName("drawInRect:fromRect:operation:fraction:"),
-		destination,
-		source_rect,
-		compositing_operation_copy,
-		1.0);
+	    source,
+	    sel_registerName("drawInRect:fromRect:operation:fraction:"),
+	    destination,
+	    source_rect,
+	    compositing_operation_copy,
+	    1.0);
 	send_void(result, sel_registerName("unlockFocus"));
 	return result;
 }
@@ -169,11 +186,13 @@ static void set_application_icon_image(id application, SEL selector, id image) {
 	@autoreleasepool {
 		SetApplicationIconImageIMP original;
 		id resolved = load_custom_game_icon();
-		if (resolved == nil) resolved = normalized_game_icon(image);
+		if (resolved == nil)
+			resolved = normalized_game_icon(image);
 		pthread_mutex_lock(&icon_setter_lock);
 		original = original_set_application_icon_image;
 		pthread_mutex_unlock(&icon_setter_lock);
-		if (original != NULL) original(application, selector, resolved);
+		if (original != NULL)
+			original(application, selector, resolved);
 	}
 }
 
@@ -183,28 +202,65 @@ static void set_application_icon_image(id application, SEL selector, id image) {
 static bool install_icon_setter(void) {
 	Class application_class = objc_getClass("NSApplication");
 	SetApplicationIconImageIMP original;
-	if (application_class == Nil) return false;
+	if (application_class == Nil)
+		return false;
 
 	SEL selector = sel_registerName("setApplicationIconImage:");
 	Method method = class_getInstanceMethod(application_class, selector);
-	if (method == NULL) return false;
+	if (method == NULL)
+		return false;
 
 	pthread_mutex_lock(&icon_setter_lock);
 	original = (SetApplicationIconImageIMP)method_setImplementation(
-		method, (IMP)set_application_icon_image);
+	    method, (IMP)set_application_icon_image);
 	original_set_application_icon_image = original;
 	pthread_mutex_unlock(&icon_setter_lock);
 	return original != NULL;
 }
 
-/* Background entry point used solely to observe AppKit availability and install the hook.
+/* Replacement IMP for NSApplication.setActivationPolicy: in helper processes. Wine starts
+ * each process as a UI element and requests Regular when it shows its first window; keeping
+ * that request accessory-only leaves the window usable but never publishes a Dock tile. */
+static signed char set_activation_policy(id application, SEL selector, long policy) {
+	SetActivationPolicyIMP original;
+	if (policy == activation_policy_regular)
+		policy = activation_policy_accessory;
+	pthread_mutex_lock(&icon_setter_lock);
+	original = original_set_activation_policy;
+	pthread_mutex_unlock(&icon_setter_lock);
+	return original != NULL ? original(application, selector, policy) : 0;
+}
+
+static bool install_activation_policy_hook(void) {
+	Class application_class = objc_getClass("NSApplication");
+	if (application_class == Nil)
+		return false;
+
+	Method method =
+	    class_getInstanceMethod(application_class, sel_registerName("setActivationPolicy:"));
+	if (method == NULL)
+		return false;
+
+	pthread_mutex_lock(&icon_setter_lock);
+	original_set_activation_policy =
+	    (SetActivationPolicyIMP)method_setImplementation(method, (IMP)set_activation_policy);
+	pthread_mutex_unlock(&icon_setter_lock);
+	return original_set_activation_policy != NULL;
+}
+
+/* Background entry point used solely to observe AppKit availability and install the hooks.
  * A timeout is non-fatal—the game keeps Wine's unmodified icon—but is written to stderr,
  * which the launcher already captures in wine.log for diagnosis. */
 static void *wait_for_appkit(void *context) {
 	(void)context;
 	for (int attempt = 0; attempt < appkit_poll_limit; attempt++) {
 		@autoreleasepool {
-			if (install_icon_setter()) return NULL;
+			if (install_icon_setter()) {
+				if (is_helper_process && !install_activation_policy_hook()) {
+					fprintf(stderr, "Arknights Client: failed to keep a helper out of the Dock\n");
+				}
+				return NULL;
+			}
 		}
 		nanosleep(&appkit_poll_interval, NULL);
 	}
@@ -212,8 +268,10 @@ static void *wait_for_appkit(void *context) {
 	return NULL;
 }
 
-/* Dylib entry point. It snapshots the optional custom-icon path before returning from the
- * loader callback, then detaches the observer so dyld can continue Wine startup immediately.
+/* Dylib entry point. It snapshots the optional custom-icon path and whether this process is a
+ * helper before returning from the loader callback, then detaches the observer so dyld can
+ * continue Wine startup immediately. The parent check runs here because the game is still the
+ * launcher's child; a missing or malformed launcher PID keeps the original Dock behavior.
  * Constructor failures are deliberately non-fatal and logged to Wine's captured stderr. */
 __attribute__((constructor)) static void install_game_icon_bridge(void) {
 	const char *custom_path = getenv("ARKNIGHTS_CLIENT_GAME_ICON_PATH");
@@ -222,6 +280,12 @@ __attribute__((constructor)) static void install_game_icon_bridge(void) {
 		if (custom_game_icon_path == NULL) {
 			fprintf(stderr, "Arknights Client: failed to copy custom game icon path\n");
 		}
+	}
+	const char *launcher_pid = getenv("ARKNIGHTS_CLIENT_LAUNCHER_PID");
+	if (launcher_pid != NULL && launcher_pid[0] != '\0') {
+		char *end = NULL;
+		long parent = strtol(launcher_pid, &end, 10);
+		is_helper_process = *end == '\0' && parent > 0 && parent != (long)getppid();
 	}
 
 	pthread_t thread;

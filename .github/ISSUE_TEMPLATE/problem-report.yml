@@ -1,0 +1,106 @@
+name: Problem report
+description: Report a launcher, runtime, or game compatibility problem.
+labels:
+  - bug
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Launcher version
+      placeholder: 0.7.0
+    validations:
+      required: true
+
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime version
+      description: Use the version shown by the launcher. Include the commit when you test a development build.
+      placeholder: v0.7.0-rc2
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Mac and macOS
+      description: Include the macOS version, Mac model or chip, and memory.
+      placeholder: macOS 26.0; MacBook Air (M2, 2022); 16 GB
+    validations:
+      required: true
+
+  - type: input
+    id: code
+    attributes:
+      label: Error code
+      description: Keep the code shown by the launcher, if one was provided.
+      placeholder: PEBBLE
+
+  - type: input
+    id: operation
+    attributes:
+      label: Failed operation
+      description: The launcher fills this when the report starts from a recovery action.
+
+  - type: input
+    id: region
+    attributes:
+      label: Selected region
+      description: Global, Japan, Korea, China, China (Bilibili), or Taiwan (Canary), when the problem belongs to one region.
+
+  - type: dropdown
+    id: prefix-history
+    attributes:
+      label: Wine prefix
+      description: Select the state that best describes the prefix used for this run.
+      options:
+        - Existing prefix
+        - Fresh prefix
+        - Existing prefix after migration
+        - Unknown
+
+  - type: textarea
+    id: runtime-settings
+    attributes:
+      label: Runtime settings
+      description: List non-default audio, cursor, frame-latency, synchronization, graphics, or Canary settings.
+      placeholder: Defaults
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the launcher
+        2. Select Play
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: comparison
+    attributes:
+      label: Comparison
+      description: If known, state whether another runtime version, a fresh prefix, or default settings change the result.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log files (only when requested)
+      description: Leave this empty for the first report. If a maintainer asks for a file, choose Show Logs in Settings → Storage and attach only that file. Logs can contain private paths, URLs, or account data.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked that an existing issue does not already describe this problem.
+          required: true

@@ -1,0 +1,344 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import AppKit
+import ArknightsCore
+import ArknightsCustomization
+import Combine
+import Foundation
+import Observation
+import YouTubePlayerKit
+
+/// Owns the hidden YouTube player and coordinates launcher, game, and user playback actions.
+@MainActor
+@Observable
+package final class BackgroundMusicController {
+	var player: YouTubePlayer?
+	var playbackState: YouTubePlayer.PlaybackState?
+	var isMuted = false
+	package var operation: BackgroundMusicOperation = .idle
+	var playbackExpectation: BackgroundMusicPlaybackExpectation?
+
+	let lifecycle: LauncherLifecycleStore
+	let settings: LauncherPreferencesController
+	let nowPlaying: NowPlayingCoordinator
+	let playerCommands: BackgroundMusicPlayerCommands
+	let openURL: (URL) -> Void
+	package var currentMusicTitle: String?
+	var currentMusicVideoID: String?
+	var currentSource: YouTubePlayer.Source?
+	var isManuallyPaused = false
+	@ObservationIgnored var cancellables: Set<AnyCancellable> = []
+	@ObservationIgnored var didShuffleCurrentPlaylist = false
+	@ObservationIgnored var sourceChangeTask: Task<Void, Never>?
+	@ObservationIgnored let playerSlot = TaskSlot()
+	@ObservationIgnored let loadingSlot = TaskSlot()
+	@ObservationIgnored let operationSlot = TaskSlot()
+	@ObservationIgnored let expectationSlot = TaskSlot()
+	@ObservationIgnored let fadeSlot = TaskSlot()
+	@ObservationIgnored let volumeSlot = TaskSlot()
+	/// The running fade; `fadeSlot` owns it. Non-nil only while a fade runs.
+	@ObservationIgnored var fadeTask: Task<Void, Never>?
+	/// The running track or playback change; `operationSlot` decides whether its result is current.
+	@ObservationIgnored var operationTask: Task<Void, Never>?
+	@ObservationIgnored var playerGeneration: TaskSlot.Token
+	@ObservationIgnored var lastObservedTitle: String?
+	@ObservationIgnored var lastObservedVideoID: String?
+
+	deinit {
+		sourceChangeTask?.cancel()
+	}
+
+	package convenience init(
+		lifecycle: LauncherLifecycleStore,
+		settings: LauncherPreferencesController,
+		launcherIconManager: LauncherIconManager,
+		initialMusicTitle: String? = nil,
+		openURL: @escaping (URL) -> Void
+	) {
+		self.init(
+			lifecycle: lifecycle,
+			settings: settings,
+			launcherIconManager: launcherIconManager,
+			initialMusicTitle: initialMusicTitle,
+			playerCommands: .live,
+			openURL: openURL
+		)
+	}
+
+	init(
+		lifecycle: LauncherLifecycleStore,
+		settings: LauncherPreferencesController,
+		launcherIconManager: LauncherIconManager,
+		initialMusicTitle: String? = nil,
+		playerCommands: BackgroundMusicPlayerCommands = .live,
+		openURL: @escaping (URL) -> Void
+	) {
+		self.lifecycle = lifecycle
+		self.settings = settings
+		self.playerCommands = playerCommands
+		self.openURL = openURL
+		playerGeneration = playerSlot.begin()
+		currentMusicTitle = initialMusicTitle
+		nowPlaying = NowPlayingCoordinator(icon: launcherIconManager.currentIcon)
+		launcherIconManager.iconDidChange = { [weak self] icon in
+			self?.nowPlaying.updateArtwork(icon)
+		}
+	}
+
+	var isPlaying: Bool {
+		if let playbackIntent { return playbackIntent == .playing }
+		return playbackState == .playing || playbackState == .buffering
+	}
+
+	var isGameProcessRunning: Bool { lifecycle.activity.hasGameProcess }
+
+	var isChangingTrack: Bool { operation.isChangingTrack }
+
+	var isChangingPlayback: Bool { operation.isChangingPlayback }
+
+	var playbackIntent: PlaybackIntent? {
+		guard let playbackExpectation, isCurrent(playbackExpectation) else { return nil }
+		return playbackExpectation.intent
+	}
+
+	var canNavigatePlaylist: Bool {
+		guard case .playlist = currentSource else { return false }
+		return true
+	}
+
+	var controlsAreDisabled: Bool {
+		return player == nil || lifecycle.activity.hasGameProcess || isChangingTrack
+			|| isChangingPlayback
+	}
+
+	var effectiveVolume: Double {
+		isMuted ? 0 : settings.launcherMusicVolume
+	}
+
+	func startIfNeeded() {
+		guard !lifecycle.state.refresh.isChecking,
+			settings.playsLauncherMusic,
+			!lifecycle.activity.hasGameProcess
+		else { return }
+		setupPlayer()
+	}
+
+	func refreshDidChange(isChecking: Bool) {
+		guard !isChecking, player == nil else { return }
+		startIfNeeded()
+	}
+
+	func sourceDidChange() {
+		guard settings.playsLauncherMusic, !lifecycle.activity.hasGameProcess else { return }
+		sourceChangeTask?.cancel()
+		sourceChangeTask = Task { [weak self] in
+			do {
+				try await Task.sleep(for: AppConstants.Music.sourceChangeDebounce)
+			} catch {
+				return
+			}
+			guard let self, !Task.isCancelled else { return }
+			sourceChangeTask = nil
+			guard settings.playsLauncherMusic, !lifecycle.activity.hasGameProcess else {
+				return
+			}
+			if let source = parsedYouTubeSource, player != nil, currentSource == source { return }
+			setupPlayer()
+		}
+	}
+
+	func enabledDidChange(to isEnabled: Bool) {
+		if isEnabled {
+			isManuallyPaused = false
+			setupPlayer()
+		} else {
+			stopAndClearPlayer()
+		}
+	}
+
+	func volumeDidChange(to volume: Double) {
+		guard fadeTask == nil else { return }
+		scheduleVolumeUpdate(to: isMuted ? 0 : volume)
+	}
+
+	func toggleMute() {
+		isMuted.toggle()
+		cancelFade()
+		scheduleVolumeUpdate(to: effectiveVolume)
+	}
+
+	func gameRunningDidChange(to isRunning: Bool) {
+		if isRunning {
+			performFadeOut()
+		} else if settings.playsLauncherMusic, !isManuallyPaused {
+			if player == nil {
+				setupPlayer()
+			} else {
+				performFadeIn()
+			}
+		}
+	}
+
+	func togglePlayback() {
+		guard !controlsAreDisabled else { return }
+		if isPlaying {
+			pauseFromUserAction()
+		} else {
+			isManuallyPaused = false
+			guard let player else { return }
+			let operation = beginOperation(.playbackChange(.playing))
+			performFadeIn(on: player, userPlaybackOperation: operation)
+		}
+	}
+
+	func playNextTrack() {
+		changeTrack(direction: .next)
+	}
+
+	func playPreviousTrack() {
+		changeTrack(direction: .previous)
+	}
+
+	func stop() {
+		stopAndClearPlayer()
+	}
+
+	private func setupPlayer() {
+		guard let source = parsedYouTubeSource else {
+			stopAndClearPlayer()
+			lifecycle.log.error("Background music failed: invalid YouTube URL")
+			return
+		}
+		let sourceType = sourceTypeName(source)
+
+		invalidatePlayerTasks()
+		didShuffleCurrentPlaylist = false
+		cancellables.removeAll()
+		currentSource = source
+		isManuallyPaused = false
+
+		if let player {
+			setupObservation(for: player, source: source)
+			loadingSlot.replace { [weak self] token in
+				guard let self else { return }
+				do {
+					if player.source == nil || player.source != source {
+						try await player.load(source: source)
+					}
+					guard loadingSlot.owns(token) else { return }
+					lifecycle.log.info("Background music loaded source type: \(sourceType)")
+					performFadeIn(on: player)
+				} catch {
+					guard loadingSlot.owns(token) else { return }
+					lifecycle.log.error(
+						"Background music failed to load source: \(error.localizedDescription)"
+					)
+				}
+				guard loadingSlot.owns(token) else { return }
+				loadingSlot.invalidate()
+			}
+			return
+		}
+
+		let newPlayer = YouTubePlayer(
+			source: source,
+			parameters: .init(
+				autoPlay: true,
+				showControls: false,
+				restrictRelatedVideosToSameChannel: false
+			)
+		)
+		lifecycle.log.info("Background music initializing player with source type: \(sourceType)")
+		player = newPlayer
+		setupObservation(for: newPlayer, source: source)
+	}
+
+	var parsedYouTubeSource: YouTubePlayer.Source? {
+		let trimmedURL = settings.launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard
+			let url = URL(string: trimmedURL),
+			let host = url.host?.lowercased()
+		else { return nil }
+
+		if host.contains("youtube.com") || host.contains("youtu.be") {
+			if let listID = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+				.queryItems?.first(where: { $0.name == "list" })?.value
+			{
+				return .playlist(id: listID)
+			}
+			if host.contains("youtu.be") {
+				return .video(id: url.lastPathComponent)
+			}
+			if let videoID = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+				.queryItems?.first(where: { $0.name == "v" })?.value
+			{
+				return .video(id: videoID)
+			}
+		}
+		return .init(url: url)
+	}
+
+	private func sourceTypeName(_ source: YouTubePlayer.Source) -> String {
+		if case .playlist = source { return "playlist" }
+		if case .video = source { return "video" }
+		return "custom URL"
+	}
+
+	package func openCurrentMusicURL() {
+		if let currentMusicVideoID,
+			let url = URL(string: "https://www.youtube.com/watch?v=\(currentMusicVideoID)")
+		{
+			openURL(url)
+			return
+		}
+		let trimmed = settings.launcherMusicURL.trimmingCharacters(in: .whitespacesAndNewlines)
+		if let url = URL(string: trimmed) { openURL(url) }
+	}
+
+	private func setupObservation(for targetPlayer: YouTubePlayer, source: YouTubePlayer.Source) {
+		let generation = playerGeneration
+		lastObservedTitle = nil
+		lastObservedVideoID = nil
+		playbackState = nil
+
+		targetPlayer.playbackStatePublisher
+			.receive(on: DispatchQueue.main)
+			.removeDuplicates()
+			.sink { [weak self, weak targetPlayer] state in
+				guard let self, let targetPlayer, isCurrent(targetPlayer, generation: generation)
+				else {
+					return
+				}
+				playbackState = state
+				reconcilePlaybackIntent(with: state)
+				nowPlaying.updatePlayback(isPlaying: isPlaying)
+				lifecycle.log.debug("Background music state: \(state)")
+
+				if state == .cued || state == .unstarted {
+					if settings.playsLauncherMusic
+						&& !lifecycle.activity.hasGameProcess
+						&& !isManuallyPaused
+					{
+						performFadeIn(on: targetPlayer)
+					}
+				}
+
+				if state == .playing, case .playlist = source {
+					shuffleInitialPlaylistIfNeeded(on: targetPlayer)
+				}
+			}
+			.store(in: &cancellables)
+
+		targetPlayer.playbackMetadataPublisher
+			.receive(on: DispatchQueue.main)
+			.sink { [weak self, weak targetPlayer] metadata in
+				guard let self, let targetPlayer, isCurrent(targetPlayer, generation: generation)
+				else {
+					return
+				}
+				applyTrackTitle(from: metadata)
+			}
+			.store(in: &cancellables)
+	}
+
+}

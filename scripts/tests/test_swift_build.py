@@ -111,7 +111,7 @@ esac
     builds = [command for command in commands if "scripts/swift_build.py" in command]
     assert len(builds) == 2
     assert "--show-bin-path" not in builds[0]
-    assert "--sdk macosx27.0" in builds[0]
+    assert "--sdk" not in builds[0]
     assert "--show-bin-path" in builds[1]
     assert commands[-1] == "launch --developer-preview"
 

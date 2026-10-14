@@ -27,7 +27,8 @@ static BOOL process_has_name(DWORD process_id, const wchar_t *expected) {
 	HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, process_id);
 	BOOL matches = FALSE;
 
-	if (process == NULL) return FALSE;
+	if (process == NULL)
+		return FALSE;
 	if (QueryFullProcessImageNameW(process, 0, path, &length)) {
 		const wchar_t *name = wcsrchr(path, L'\\');
 		name = name == NULL ? path : name + 1;
@@ -40,7 +41,8 @@ static BOOL process_has_name(DWORD process_id, const wchar_t *expected) {
 static BOOL is_login_window(HWND window) {
 	wchar_t class_name[64];
 
-	if (GetClassNameW(window, class_name, ARRAYSIZE(class_name)) == 0) return FALSE;
+	if (GetClassNameW(window, class_name, ARRAYSIZE(class_name)) == 0)
+		return FALSE;
 	return wcsncmp(class_name, login_class_prefix, ARRAYSIZE(login_class_prefix) - 1) == 0;
 }
 
@@ -57,10 +59,12 @@ static BOOL CALLBACK find_windows(HWND window, LPARAM context_value) {
 	ULONGLONG area;
 
 	GetWindowThreadProcessId(window, &process_id);
-	if (!IsWindowVisible(window) || !GetWindowRect(window, &rectangle)) return TRUE;
+	if (!IsWindowVisible(window) || !GetWindowRect(window, &rectangle))
+		return TRUE;
 	width = (LONGLONG)rectangle.right - rectangle.left;
 	height = (LONGLONG)rectangle.bottom - rectangle.top;
-	if (width <= 0 || height <= 0) return TRUE;
+	if (width <= 0 || height <= 0)
+		return TRUE;
 	area = (ULONGLONG)width * (ULONGLONG)height;
 	if (process_has_name(process_id, L"Arknights.exe")) {
 		if (area > targets->game_area) {
@@ -70,7 +74,7 @@ static BOOL CALLBACK find_windows(HWND window, LPARAM context_value) {
 		return TRUE;
 	}
 	if (targets->login == NULL && process_has_name(process_id, L"PCGamePlatform.exe") &&
-		is_login_window(window)) {
+	    is_login_window(window)) {
 		targets->login = window;
 	}
 	return TRUE;
@@ -83,7 +87,7 @@ static BOOL CALLBACK find_windows(HWND window, LPARAM context_value) {
 static BOOL center_login(HWND login, HWND game, BOOL raise) {
 	RECT login_rectangle;
 	RECT game_client;
-	POINT client_origin = { 0 };
+	POINT client_origin = {0};
 	LONGLONG login_width;
 	LONGLONG login_height;
 	LONGLONG client_width;
@@ -92,7 +96,7 @@ static BOOL center_login(HWND login, HWND game, BOOL raise) {
 	LONGLONG y;
 
 	if (!GetWindowRect(login, &login_rectangle) || !GetClientRect(game, &game_client) ||
-		!ClientToScreen(game, &client_origin)) {
+	    !ClientToScreen(game, &client_origin)) {
 		return FALSE;
 	}
 	login_width = (LONGLONG)login_rectangle.right - login_rectangle.left;
@@ -102,23 +106,24 @@ static BOOL center_login(HWND login, HWND game, BOOL raise) {
 	x = (client_width - login_width) / 2;
 	y = (client_height - login_height) / 2;
 	if (login_width <= 0 || login_height <= 0 || login_width > INT_MAX || login_height > INT_MAX ||
-		x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX) {
+	    x < INT_MIN || x > INT_MAX || y < INT_MIN || y > INT_MAX) {
 		return FALSE;
 	}
 	if (login_rectangle.left != client_origin.x + (int)x ||
-		login_rectangle.top != client_origin.y + (int)y) {
+	    login_rectangle.top != client_origin.y + (int)y) {
 		return SetWindowPos(
-			login,
-			HWND_TOP,
-			client_origin.x + (int)x,
-			client_origin.y + (int)y,
-			(int)login_width,
-			(int)login_height,
-			SWP_NOACTIVATE | SWP_SHOWWINDOW);
+		    login,
+		    HWND_TOP,
+		    client_origin.x + (int)x,
+		    client_origin.y + (int)y,
+		    (int)login_width,
+		    (int)login_height,
+		    SWP_NOACTIVATE | SWP_SHOWWINDOW);
 	}
-	if (!raise) return TRUE;
+	if (!raise)
+		return TRUE;
 	return SetWindowPos(
-		login, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+	    login, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
 }
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_line, int show) {
@@ -130,13 +135,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 	(void)previous;
 	(void)command_line;
 	(void)show;
-	if (launcher_marker[0] == '\0') return 1;
+	if (launcher_marker[0] == '\0')
+		return 1;
 	/* Polling avoids code inside the official helper and reacts quickly to game moves or
 	 * replacement dialogs. Fifty milliseconds is responsive without continuous repositioning; after
 	 * the game has appeared, twenty missing polls allow transient window changes but end this
 	 * detached controller after one second, so it can never keep a Wine session alive by itself. */
 	for (;;) {
-		struct window_targets targets = { 0 };
+		struct window_targets targets = {0};
 
 		EnumWindows(find_windows, (LPARAM)&targets);
 		if (targets.game != NULL) {

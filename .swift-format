@@ -6,5 +6,6 @@
 	"tabWidth": 4,
 	"lineLength": 100,
 	"multiElementCollectionTrailingCommas": true,
-	"respectsExistingLineBreaks": true
+	"respectsExistingLineBreaks": true,
+	"prioritizeKeepingFunctionOutputTogether": true
 }

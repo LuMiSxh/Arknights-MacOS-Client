@@ -3,8 +3,9 @@
 ## Scope
 
 - Target Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs through `AdaptiveGlass.swift` fallbacks.
-- Treat Yostar's Global, Japan, and Korea PC clients as stable; keep China-specific behavior behind Canary Features.
+- Treat Yostar's Global, Japan, and Korea PC clients and Hypergryph's China and China (Bilibili) clients as stable; keep Gryphline Taiwan behind Canary Features.
 - Keep source, docs, tests, UI copy, and commits in English. The app ships English-only.
+- Write docs in ASD-STE100 Simplified Technical English: short sentences, active voice, one instruction per step, one term per concept, no filler.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
 - Keep the static SvelteKit site in `web/`; follow `docs/development/README.md#documentation-website` and do not add Vitest.
 - Never commit game/runtime binaries, downloaded artwork, or `dist/`; regenerate tracked shipping icons only with `just icon`. The only artwork exception is the website hero wallpaper in `web/static/artwork/`.
@@ -14,43 +15,84 @@
 | Task                  | Command                                                  |
 | --------------------- | -------------------------------------------------------- |
 | Focused native checks | `just check`                                             |
+| Focused unit tests    | `just test FILTER`                                       |
 | Native CI             | `just ci`                                                |
 | Integration tests     | `just integration`                                       |
 | Website checks        | `just check web`                                         |
 | Production website    | `cd web && BASE_PATH=/Arknights-MacOS-Client pnpm build` |
 | Other tasks           | `just --list`                                            |
 
-## Architecture and Swift
+## Architecture
 
-- Use Swift 6.2. Keep composition in `Application`, feature work in `Features/*`, cross-feature primitives/configuration in `Shared`, and feature-independent I/O in `Infrastructure`.
-- Never import feature-owned types from `Shared` or `Infrastructure`; map infrastructure errors at the owning feature boundary.
-- Keep components feature-local unless multiple features share the same presentation contract.
-- Declare reusable identical controls, surfaces, and design tokens centrally in `Shared/UI`; keep feature-specific semantics and state local. Do not duplicate local button or panel styles.
-- Dynamic artwork or theme accents are intentionally allowed for the current primary operation, progress, selection, and interaction highlights. Preserve those highlights instead of replacing them with hardcoded neutrals.
-- Secondary controls use quiet filled neutral surfaces with restrained borders. Collapsed HUD surfaces stay compact capsules; expanded HUD surfaces use a fixed-radius rounded rectangle.
-- Never use a fixed cyan value in UI styling. `LauncherVisuals.cyan` is reserved for the fallback when no dynamic theme or artwork tint is available.
-- Keep handwritten production Swift and Swift tests below 450 lines. Native C/Objective-C shims and scripts are exempt.
-- Use tabs with width four and follow `.swift-format`.
-- Keep observable/UI/AppKit state on `@MainActor`; move synchronous network, hashing, extraction, and file work off it.
+- Use Swift 6.4. Follow the target table in `docs/development/architecture/README.md#targets`.
+- Keep app composition in `Sources/ArknightsClient/Application` (the only code in the executable), feature work in its feature target, cross-feature primitives and configuration in `ArknightsCore`, and feature-independent I/O in `ArknightsInfrastructure`.
+- Give a symbol `package` access only when another production target uses it (with an explicit `package init` when that target constructs the type); keep the rest `internal`. Tests use `@testable import`: do not widen access or add a `package init` for tests. Do not add `public`.
+- Write UI copy as literals at the view. Do not add `*Strings` files. Extract a constant only when two or more sites share it.
+- Map infrastructure errors at the owning feature boundary. Each feature owns its error type; support codes and messages are a stable contract pinned by `SupportCodeStabilityTests`.
+- Only `ArknightsLauncherUI` links Sparkle. Only `ArknightsAudio` links YouTubePlayerKit.
+- `Core` holds cross-feature lifecycle state and names no feature type.
 - Use `@Observable`; keep `LauncherViewModel` at composition and inject narrow dependencies into features and views.
-- After suspension, revalidate request/session/generation ownership before publishing UI state or committing identity-sensitive file/process state.
-- Increment a cache/request epoch before clearing or replacing state so suspended work cannot republish stale results.
-- Keep the shared Wine prefix owned until prefix-wide shutdown completes; direct game-process exit alone never means Idle.
-- Treat installation as exclusive, preserve resumable `.part` files, and validate every manifest path before writing.
+- Add a presentation or policy type only when it holds real branching. Do not extract a one-expression policy.
 - Define persisted locations through `AppPaths`; preserve paths, keys, and serialized formats unless a migration is explicit.
 - Centralize application-owned fixed keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.
+- Keep handwritten production Swift below 800 lines and Swift tests below 450 lines. Do not split a type into `+Aspect` files only to meet the limit. Native C/Objective-C shims and scripts are exempt.
+- Use tabs with width four and follow `.swift-format`.
+- Avoid silent `try?` for filesystem, process, and network work. For best-effort cleanup, use `log.attempt("context") { try … }`, which logs the failure. Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
+- Write expressive code. Comment only non-obvious WHYs, workarounds, and security/concurrency invariants; add DocC only to `package` APIs whose behavior the name does not state.
+- Keep developer simulation in `SimulatedLauncherActions` (`#if DEBUG`); production action bodies never branch on developer mode. Drive it from `CaseIterable` state with generic pickers, not per-knob controls.
+- Treat installation as exclusive, preserve resumable `.part` files, and validate every manifest path before writing. Path-based I/O is enough: check each manifest path lexically, reject symlinks per component, write `.part`, hash, then rename atomically. Do not add inode-identity rechecks.
+
+## Concurrency
+
+- Set default isolation per target: `.defaultIsolation(MainActor.self)` only for UI and composition targets; Infrastructure, installation, hashing, and runtime stay nonisolated. Keep observable/UI/AppKit state on `@MainActor`.
+- Mark offloads `@concurrent`; do not add `Task.detached`. Enable `NonisolatedNonsendingByDefault` per target only after every function that must leave the caller's actor is `@concurrent`.
+- Use `Mutex` for small synchronous leaf state; use an actor for multi-step state machines. Never `await` while holding a lock.
+- Capture an identity (session ID, lease, token) before `await` and compare it after. Cancellation alone is not ownership.
+- Guard stale async results with `TaskSlot` (cancel on replace, `owns(token)`, `invalidate()`), not hand-written epoch counters. Hand-write identities only for leases and game sessions.
+- Call `invalidate()` or end the lease before clearing or replacing state, so suspended work cannot republish stale results.
+- Change launcher activity only through `LauncherLifecycleStore` lease `begin`, `update`, and `end`; a stale lease must not set idle. Launch work rechecks the session ID and lease after every suspension.
+- Keep the shared Wine prefix owned until prefix-wide shutdown completes; direct game-process exit alone never means Idle.
+- Bound parallel work with a windowed task group (seed N, add one per completion) and an `AppConstants` limit. Never call `addTask` in an unbounded loop.
+- Give every `AsyncStream` an explicit buffering policy: `.bufferingNewest(1)` for progress and state, a stated bound for lossless streams. Set `onTermination` and call `finish()` once.
+- Prefer event sources (`terminationHandler`, `DispatchSource`, notifications) to polling. A timer that remains uses `Task.sleep(for:tolerance:)` with at least 10% leeway.
+- Release locks deterministically: use a `~Copyable` install lease with `consuming func release()` or the scoped `withInstallLease(at:)`. Never rely on `deinit` order. Acquire and release leases explicitly in tests.
+- Swift 6.4: cleanup that must outlive cancellation (rollback, prefix shutdown, wineserver wait) runs in `withTaskCancellationShield` once the deployment target allows it, or in an `await` inside `defer`. Never skip prefix shutdown on cancel. Do not use detached cleanup tasks.
+
+## Performance and Energy
+
+- Keep hot loops (MD5, CRC64, extraction) inside one target; do not cross a module boundary per chunk. Hash from the read buffer with raw buffer pointers; no per-block `Data` copies.
+- Only a small leaf view reads per-tick progress. Throttle high-frequency values to about 10 Hz.
+- Run continuous animation through `ContinuousMotion` only. It pauses when hidden or covered, under sheets and overlays, while the game runs, and in Low Power Mode. Use one shared clock per loop type.
+
+## UI
+
 - Follow `docs/development/design.md`; reuse controls only when semantics, spacing, accessibility, and state match.
-- Avoid silent `try?` for filesystem, process, and network work. Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
-- Test behavior by regression impact; share fixtures and parameterize equivalent cases without deleting path, persistence, migration, isolation, cancellation, or concurrency contracts.
+- Keep components feature-local unless multiple features share the same presentation contract. Declare reusable identical controls, surfaces, and design tokens centrally in `Shared/UI`; do not duplicate local button or panel styles.
+- Dynamic artwork or theme accents are allowed for the current primary operation, progress, selection, and interaction highlights. Preserve them instead of replacing them with hardcoded neutrals.
+- Secondary controls use quiet filled neutral surfaces with restrained borders. Collapsed HUD surfaces stay compact capsules; expanded HUD surfaces use a fixed-radius rounded rectangle.
+- Never use a fixed cyan value in UI styling. `LauncherVisuals.cyan` is reserved for the fallback when no dynamic theme or artwork tint is available.
+- `LauncherMotion` (curves and `Cycle`) is the only motion source; no raw `.easeInOut`, `.spring`, or durations in views.
+- The primary action shows at most one ambient effect: a static halo with one arrival pulse.
+
+## Testing
+
+- Keep unit and integration tests offline and fixture-backed; live contracts run only through `just live-contracts`.
+- Put shared test helpers in `Tests/ArknightsTestSupport`; do not copy them between test targets.
+- Timed code takes an injected `Clock`; tests use a manual clock and never sleep for real.
+- Give each test its own UUID temp directory, cleaned in `defer`. Use `.serialized` only as a last resort.
+- Write one test per contract, not one per edge case. Parameterize equivalent cases. Test a contract at the cheapest layer that fails; do not repeat it in view-model or composition tests.
+- Add a regression test only when users would notice the bug and no type, compiler check, or existing test catches it. Prefer a type change (enum, value type, exhaustive `switch`) to a new test.
+- Do not test constants, strings, mappings, getters, log text, presentation, or framework behavior.
+- Keep at least one test for each critical contract: install exclusivity, activity lease, prefix ownership, launch cancellation, `.part` resume, manifest paths, download hosts, migrations, support codes, privacy, stale-result checks, and update safety.
 
 ## Verification and Safety
 
 - Run focused checks while iterating, `just check web` plus the production build for website changes, and `just ci` before completion.
-- Keep unit/integration tests offline and fixture-backed; live contracts run only through `just live-contracts`.
 - Do not launch previews or the app for UI work unless the user authorizes it.
 - Do not install, launch, download, uninstall, or alter the user's game/runtime unless explicitly requested.
 - Run Python through the root `pyproject.toml`/`uv.lock` with `uv run --locked`; reuse `scripts/lib` and test changed behavior.
-- Derive product/package metadata through `scripts/lib/project_config.py` and runtime layout through `runtime.json`.
+- Derive product/package metadata and per-target resources (icons, bundles, and other multi-target assets) through `scripts/lib/project_config.py`, and runtime layout through `runtime.json`.
+- Scripts never hard-code source paths; read them from `project_config`.
 - Record user-visible changes in `CHANGELOG.md`; follow `docs/development/releases-and-updates.md` for releases.
 - Follow existing commit style, never mention agent/model vendors, and push only with explicit consent.
 
@@ -59,6 +101,7 @@
 | Need              | File                                                                             |
 | ----------------- | -------------------------------------------------------------------------------- |
 | Architecture      | `docs/development/architecture/README.md`                                        |
+| Design            | `docs/development/design.md`                                                     |
 | Testing           | `docs/development/testing.md`                                                    |
 | Storage/runtime   | `docs/help/storage.md`, `docs/help/runtime-compatibility.md`                     |
 | Recovery/releases | `docs/development/error-recovery.md`, `docs/development/releases-and-updates.md` |

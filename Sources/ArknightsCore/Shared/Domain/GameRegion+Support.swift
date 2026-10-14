@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: MPL-2.0
+
+extension GameRegion {
+	package var supportRegion: SupportRegion {
+		switch self {
+		case .global: .global
+		case .japan: .japan
+		case .korea: .korea
+		case .taiwan: .taiwan
+		case .china: .china
+		case .chinaBilibili: .chinaBilibili
+		}
+	}
+}

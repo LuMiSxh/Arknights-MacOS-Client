@@ -40,10 +40,15 @@ def dmgbuild_arguments(
 def build_dmg(
     runtime: Path,
     configuration: ProjectConfiguration | None = None,
+    strict_licenses: bool = False,
 ) -> Path:
     configuration = configuration or load_project_configuration()
     project = configuration.project_directory
-    app = build(runtime, project_configuration=configuration)
+    app = build(
+        runtime,
+        project_configuration=configuration,
+        strict_licenses=strict_licenses,
+    )
     dist = project / "dist"
     destination = dist / configuration.dmg_name
     with tempfile.TemporaryDirectory(prefix=".dmg-build.", dir=dist) as name:
@@ -60,8 +65,13 @@ def build_dmg(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", required=True, type=Path)
+    parser.add_argument(
+        "--strict-licenses",
+        action="store_true",
+        help="fail on unverified licenses or a runtime without license files",
+    )
     arguments = parser.parse_args()
-    build_dmg(arguments.runtime.resolve())
+    build_dmg(arguments.runtime.resolve(), strict_licenses=arguments.strict_licenses)
 
 
 if __name__ == "__main__":

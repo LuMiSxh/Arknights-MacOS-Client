@@ -14,17 +14,13 @@ import json
 import re
 from pathlib import Path
 
-from lib.common import PROJECT_DIR, fail, output, require_command, run, run_main
+from lib.common import fail, output, require_command, run, run_main
 from lib.console import info, success
-from lib.github_monitor import (
-    AUTOMATED_LABEL,
-    AUTOMATED_LABEL_COLOR,
-    AUTOMATED_LABEL_DESCRIPTION,
-)
+from lib.project_config import load_project_configuration
 from lib.wallpapers import GalleryWallpaper, fetch_gallery_wallpapers, parse_image_field
 
 # GalleryWallpaper and parse_image_field are re-exported for
-# scripts/tests/test_scan_untagged_wallpapers.py, which predates lib.wallpapers.
+# scripts/tests/test_scan_untagged_wallpapers.py.
 __all__ = [
     "GalleryWallpaper",
     "fetch_gallery_wallpapers",
@@ -32,9 +28,10 @@ __all__ = [
     "parse_image_field",
 ]
 
-TAGS_MANIFEST_PATH = (
-    PROJECT_DIR / "Sources/ArknightsClient/Resources/WallpaperTags.json"
-)
+RESOURCE_SUBDIRECTORY = Path("Resources")
+AUTOMATED_LABEL = "automated"
+AUTOMATED_LABEL_COLOR = "B60205"
+AUTOMATED_LABEL_DESCRIPTION = "Created by repository automation"
 TAGGING_LABEL = "wallpaper-tagging"
 TAGGING_LABEL_COLOR = "d4c5f9"
 TAGGING_LABEL_DESCRIPTION = (
@@ -151,7 +148,12 @@ def main() -> None:
 
     info("Fetching the official Fankit gallery…")
     wallpapers = fetch_gallery_wallpapers()
-    tagged_ids = load_tagged_ids(TAGS_MANIFEST_PATH)
+    manifest = (
+        load_project_configuration().resource_target_directory
+        / RESOURCE_SUBDIRECTORY
+        / "WallpaperTags.json"
+    )
+    tagged_ids = load_tagged_ids(manifest)
     filed_ids = set() if arguments.dry_run else already_filed_ids()
     untagged = find_untagged(wallpapers, tagged_ids, filed_ids)
 
