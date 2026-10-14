@@ -28,6 +28,9 @@ extension PresetCatalogService {
 
 			guard cacheEpoch == epoch else { return [] }
 			guard !parsed.isEmpty else { return [] }
+			for change in Self.avatarChanges(from: memoryCachedAvatars ?? [], to: parsed) {
+				log.info("Operator catalog update: \(change)")
+			}
 			memoryCachedAvatars = parsed
 			await writeJSONCache(
 				parsed,
@@ -71,10 +74,47 @@ extension PresetCatalogService {
 			)
 			avatars += supplemental.compactMap { characterID, entry in
 				guard primary[characterID] == nil else { return nil }
-				return avatar(id: characterID, entry: entry, name: entry.appellation ?? entry.name)
+				return avatar(
+					id: characterID,
+					entry: entry,
+					name: englishFallbackName(appellation: entry.appellation, name: entry.name)
+				)
 			}
 		}
 		return avatars.sorted(by: avatarSortOrder)
+	}
+
+	/// Operators that have not reached Global only carry a CN name and an appellation, which is
+	/// usually romanized but can be Cyrillic or missing. Non-Latin text is transliterated.
+	static func englishFallbackName(appellation: String?, name: String) -> String {
+		let trimmedAppellation = appellation?.trimmingCharacters(in: .whitespacesAndNewlines)
+		let source = trimmedAppellation.flatMap { $0.isEmpty ? nil : $0 } ?? name
+		guard
+			let latin = source.applyingTransform(.toLatin, reverse: false),
+			latin != source
+		else { return source }
+		return (latin.applyingTransform(.stripDiacritics, reverse: false) ?? latin).capitalized
+	}
+
+	/// Describes operators added, removed, or renamed between two catalog snapshots.
+	static func avatarChanges(from old: [PresetAvatar], to new: [PresetAvatar]) -> [String] {
+		guard !old.isEmpty else { return [] }
+		let previous = Dictionary(old.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+		let current = Set(new.map(\.id))
+		var changes: [String] = []
+		for avatar in new {
+			if let before = previous[avatar.id] {
+				if before.name != avatar.name {
+					changes.append("renamed \(avatar.id) from \(before.name) to \(avatar.name)")
+				}
+			} else {
+				changes.append("added \(avatar.id) as \(avatar.name)")
+			}
+		}
+		for avatar in old where !current.contains(avatar.id) {
+			changes.append("removed \(avatar.id) (\(avatar.name))")
+		}
+		return changes
 	}
 
 	private static func avatar(

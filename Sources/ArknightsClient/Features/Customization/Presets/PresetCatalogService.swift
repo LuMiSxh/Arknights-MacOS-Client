@@ -20,6 +20,7 @@ actor PresetCatalogService {
 	let log: LauncherLog
 	var memoryCachedAvatars: [PresetAvatar]?
 	var memoryCachedWallpapers: [PresetWallpaper]?
+	var avatarRefresh: Task<[PresetAvatar], Never>?
 	var hasEnforcedImageCacheLimit = false
 	var cacheEpoch: UInt64 = 0
 
@@ -64,7 +65,7 @@ actor PresetCatalogService {
 			let validated = cached.filter(Self.isValidAvatar)
 			if !validated.isEmpty {
 				memoryCachedAvatars = validated
-				Task { [weak self] in await self?.refreshAvatarsFromRemote() }
+				avatarRefresh = Task { [weak self] in await self?.refreshAvatarsFromRemote() ?? [] }
 				return validated
 			}
 		}
@@ -72,6 +73,16 @@ actor PresetCatalogService {
 		let remote = await refreshAvatarsFromRemote()
 		guard cacheEpoch == epoch else { return fallbackCuratedAvatars }
 		return !remote.isEmpty ? remote : fallbackCuratedAvatars
+	}
+
+	/// Waits for the refresh `fetchAvatars` started from the disk cache and returns its catalog
+	/// only when it differs from the one already shown, such as a renamed or newly added operator.
+	func refreshedAvatars(replacing current: [PresetAvatar]) async -> [PresetAvatar]? {
+		guard let avatarRefresh else { return nil }
+		let epoch = cacheEpoch
+		let refreshed = await avatarRefresh.value
+		guard cacheEpoch == epoch, !refreshed.isEmpty, refreshed != current else { return nil }
+		return refreshed
 	}
 
 	func fetchWallpapers() async -> [PresetWallpaper] {
@@ -102,6 +113,7 @@ actor PresetCatalogService {
 	func clearCaches() async throws {
 		cacheEpoch &+= 1
 		memoryCachedAvatars = nil
+		avatarRefresh = nil
 		memoryCachedWallpapers = nil
 		hasEnforcedImageCacheLimit = true
 		do {

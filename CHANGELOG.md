@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- The operator icon gallery now lists newly released operators again, including ones that have not reached Global yet, by reading a maintained character table.
+- The operator icon gallery now lists newly released operators again, including ones that have not reached Global yet, by reading a maintained character table. CN-only operators show their romanized name, transliterated when it is not in Latin script.
+- Operator renames and newly added operators from the character table now replace the cached gallery list as soon as the background refresh finishes, and each change is logged.
 
 ## [0.6.1] - 2026-10-02
 
