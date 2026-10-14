@@ -13,7 +13,7 @@ Wine and DXMT are one tested unit. Do not combine arbitrary latest versions. A r
 
 ## Update the pin
 
-1. Run `just runtime update TAG`. For example, `just runtime update v0.7.0-rc2`.
+1. Run `just runtime update TAG`. For example, `just runtime update v0.7.0`.
 2. Read the changed files with `git diff`.
 3. Run `just check scripts`.
 4. Run `just runtime` to download, hash, extract, and validate the archive.
