@@ -5,57 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import subprocess
 import tarfile
-import urllib.error
-import urllib.request
 from pathlib import Path, PurePosixPath
-from typing import Self
 
 import download_runtime
 import pytest
 from lib.common import PROJECT_DIR
 from runtime_config import RuntimeLayout, load_runtime_config
-
-
-class Response:
-    def __init__(
-        self,
-        chunks: list[bytes | Exception],
-        *,
-        headers: dict[str, str] | None = None,
-        status: int = 200,
-        url: str = "https://example.invalid/runtime.tar.gz",
-    ) -> None:
-        self.chunks, self.headers, self.status, self.url = (
-            iter(chunks),
-            headers or {},
-            status,
-            url,
-        )
-
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(self, *args: object) -> None:
-        pass
-
-    def geturl(self) -> str:
-        return self.url
-
-    def read(self, size: int) -> bytes:
-        value = next(self.chunks, b"")
-        if isinstance(value, Exception):
-            raise value
-        return value
-
-
-def download_paths(output: Path) -> tuple[Path, Path]:
-    partial = output.with_suffix(output.suffix + ".part")
-    return partial, Path(f"{partial}.json")
-
-
-def metadata(path: Path, url: str, etag: str) -> None:
-    path.write_text(json.dumps({"url": url, "etag": etag}), encoding="utf-8")
 
 
 def digest(value: bytes) -> str:
@@ -117,94 +74,100 @@ def write_runtime_archive(
         contents.add(libraries, arcname="Libraries")
 
 
-@pytest.mark.parametrize("content_length", ["unknown", "9" * 5_000])
-def test_download_rejects_malformed_content_length(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, content_length: str
-) -> None:
-    output = tmp_path / "runtime.tar.gz"
-    response = Response([b"runtime"], headers={"Content-Length": content_length})
-    monkeypatch.setattr(urllib.request, "urlopen", lambda request, timeout: response)
-
-    with pytest.raises(RuntimeError, match="Content-Length"):
-        download_runtime.download(
-            response.url, output, digest(b"runtime"), "fixture-agent"
-        )
+URL = "https://example.invalid/runtime.tar.gz"
 
 
-def test_download_enforces_archive_ceiling_while_streaming(
+class FakeCurl:
+    """Stand-in for the curl subprocess that appends `body` to the `.part` file."""
+
+    def __init__(self, body: bytes, returncode: int = 0) -> None:
+        self.body, self.returncode = body, returncode
+        self.commands: list[list[str]] = []
+
+    def __call__(self, command: list[str], **_: object) -> subprocess.CompletedProcess:
+        self.commands.append(command)
+        partial = Path(command[command.index("--output") + 1])
+        with partial.open("ab") as file:
+            file.write(self.body)
+        return subprocess.CompletedProcess(command, self.returncode)
+
+
+def test_download_runs_hardened_resumable_curl_and_renames(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     output = tmp_path / "runtime.tar.gz"
-    partial, _ = download_paths(output)
-    response = Response([b"12345678", b"overflow"])
-    monkeypatch.setattr(
-        download_runtime, "MAXIMUM_RUNTIME_ARCHIVE_BYTES", 10, raising=False
-    )
-    monkeypatch.setattr(urllib.request, "urlopen", lambda request, timeout: response)
+    partial = tmp_path / "runtime.tar.gz.part"
+    partial.write_bytes(b"prefix")
+    curl = FakeCurl(b"suffix")
+    monkeypatch.setattr(subprocess, "run", curl)
+
+    download_runtime.download(URL, output, digest(b"prefixsuffix"), "fixture-agent")
+
+    command = curl.commands[0]
+    assert command[0] == "curl"
+    assert command[-1] == URL
+    for flag in ("--fail", "--location"):
+        assert flag in command
+    assert command[command.index("--proto") + 1] == "=https"
+    assert command[command.index("--proto-redir") + 1] == "=https"
+    assert command[command.index("--continue-at") + 1] == "-"
+    assert command[command.index("--user-agent") + 1] == "fixture-agent"
+    assert output.read_bytes() == b"prefixsuffix"
+    assert not partial.exists()
+
+
+def test_download_skips_curl_for_verified_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "runtime.tar.gz"
+    output.write_bytes(b"runtime")
+    curl = FakeCurl(b"")
+    monkeypatch.setattr(subprocess, "run", curl)
+
+    download_runtime.download(URL, output, digest(b"runtime"), "fixture-agent")
+
+    assert curl.commands == []
+
+
+def test_download_rejects_checksum_mismatch_and_removes_partial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "runtime.tar.gz"
+    monkeypatch.setattr(subprocess, "run", FakeCurl(b"tampered"))
+
+    with pytest.raises(RuntimeError, match="SHA-256"):
+        download_runtime.download(URL, output, digest(b"runtime"), "fixture-agent")
+
+    assert not output.exists()
+    assert not (tmp_path / "runtime.tar.gz.part").exists()
+
+
+def test_download_enforces_archive_ceiling(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "runtime.tar.gz"
+    monkeypatch.setattr(download_runtime, "MAXIMUM_RUNTIME_ARCHIVE_BYTES", 10)
+    monkeypatch.setattr(subprocess, "run", FakeCurl(b"x" * 11))
 
     with pytest.raises(RuntimeError, match="size limit"):
-        download_runtime.download(response.url, output, digest(b""), "fixture-agent")
+        download_runtime.download(URL, output, digest(b"x" * 11), "fixture-agent")
 
-    assert partial.read_bytes() == b"12345678"
+    assert not output.exists()
+    assert not (tmp_path / "runtime.tar.gz.part").exists()
 
 
-def test_download_resumes_matching_partial_with_range_and_etag(
+def test_download_preserves_partial_after_curl_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     output = tmp_path / "runtime.tar.gz"
-    partial, metadata_path = download_paths(output)
-    complete = b"prefixsuffix"
-    partial.write_bytes(b"prefix")
-    metadata(metadata_path, "https://example.invalid/runtime.tar.gz", '"v1"')
-    response = Response(
-        [b"suffix"],
-        status=206,
-        headers={
-            "Content-Length": "6",
-            "Content-Range": "bytes 6-11/12",
-            "ETag": '"v1"',
-        },
-    )
-    requests: list[urllib.request.Request] = []
-
-    def open_response(request: urllib.request.Request, timeout: int) -> Response:
-        requests.append(request)
-        return response
-
-    monkeypatch.setattr(urllib.request, "urlopen", open_response)
-
-    download_runtime.download(response.url, output, digest(complete), "fixture-agent")
-
-    assert output.read_bytes() == complete
-    assert requests[0].get_header("Range") == "bytes=6-"
-    assert requests[0].get_header("If-range") == '"v1"'
-    assert not partial.exists()
-    assert not metadata_path.exists()
-
-
-def test_download_preserves_partial_after_transient_failure(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    output = tmp_path / "runtime.tar.gz"
-    partial, metadata_path = download_paths(output)
-    partial.write_bytes(b"prefix")
-    metadata(metadata_path, "https://example.invalid/runtime.tar.gz", '"v1"')
-    response = Response(
-        [b"suffix", urllib.error.URLError("connection reset")],
-        status=206,
-        headers={
-            "Content-Length": "12",
-            "Content-Range": "bytes 6-17/18",
-            "ETag": '"v1"',
-        },
-    )
-    monkeypatch.setattr(urllib.request, "urlopen", lambda request, timeout: response)
+    partial = tmp_path / "runtime.tar.gz.part"
+    monkeypatch.setattr(subprocess, "run", FakeCurl(b"prefix", returncode=18))
 
     with pytest.raises(RuntimeError, match="unable to download"):
-        download_runtime.download(response.url, output, digest(b""), "fixture-agent")
+        download_runtime.download(URL, output, digest(b""), "fixture-agent")
 
-    assert partial.read_bytes() == b"prefixsuffix"
-    assert metadata_path.is_file()
+    assert partial.read_bytes() == b"prefix"
+    assert not output.exists()
 
 
 @pytest.mark.parametrize("sidecar", ["present", "missing", "symlink"])

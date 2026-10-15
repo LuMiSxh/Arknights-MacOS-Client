@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.6.1",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1.tar.gz",
-    "sha256": "56e5d3448ad18446b824ec1f7eda266f836bdd3d05b99dcadc0c69a9c0a1dc6d"
+    "name": "Arknights macOS Runtime 0.7.0",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0/Arknights-MacOS-Runtime-v0.7.0.tar.gz",
+    "sha256": "11cf370772c008421c9305d8d95fc3349e305d35b695a390aba37256acaf0baf"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.6.1/Arknights-MacOS-Runtime-v0.6.1-source.tar.gz",
-    "sha256": "55889cdbda123751ab5b7e9ea0dc34c8afd8ee95e548f84d6a390fdc5c5e70d2"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.0/Arknights-MacOS-Runtime-v0.7.0-source.tar.gz",
+    "sha256": "2f9251e3745bebaef411408e029895eea3dd27a81d0bc47894bd61def0a39557"
   },
   "interface": {
     "archive": {
@@ -29,36 +29,30 @@
     "dxmt": {
       "payloadDirectory": "DXMT",
       "destinations": {
-        "x64": "system32",
-        "x32": "syswow64"
+        "x64": "system32"
       },
       "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
     }
   },
   "components": {
     "wine": "11.17",
-    "dxmt": "0.80-244-g7c8dee1",
-    "gstreamer": "1.26.3",
-    "ffmpeg": "7.1.1",
-    "moltenvk": "1.4.2",
-    "wineGecko": "2.47.4"
+    "dxmt": "0.80-262-ge94c312",
+    "moltenvk": "1.4.2"
   },
   "provenance": {
     "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "e53f807f6567209482fa0be134b8fee85d01e60c",
+    "buildCommit": "7bd7759a060924421bbb4198e5810fe960f85faa",
     "wineRepository": "https://github.com/dappermint/winecx",
     "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
-    "dxmtCommit": "7c8dee1c2d73415301ceb7d1fa810861cef4cd67",
+    "dxmtCommit": "e94c312f5c054263acf261cfa109edf13e757587",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
-    "gstreamerRepository": "https://github.com/GStreamer/gstreamer",
-    "gstreamerCommit": "87bc0c6e949e3dcc440658f78ef52aa8088cb62f",
-    "ffmpegRepository": "https://github.com/FFmpeg/FFmpeg",
-    "ffmpegCommit": "db69d06eeeab4f46da15030a80d539efb4503ca8",
-    "wineGeckoRepository": "https://gitlab.winehq.org/wine/wine-gecko",
-    "wineGeckoCommit": "557ea0c2e9f9ebd621323b3dbfbdd18c2528759c",
     "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",
-    "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d"
+    "nixpkgsCommit": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
+    "baseRecipeRepository": "https://github.com/dappermint/winecx-gptk",
+    "baseRecipeCommit": "0bf3eabc2f0d95154282eb86b11205cbbaae6c65",
+    "baseArchiveUrl": "https://github.com/dappermint/Whisky/releases/download/v4.7.3/Libraries.tar.gz",
+    "baseArchiveSha256": "a4b5d63493f80698cce5cad8e7212d9a51c8292037b00c478f4652636fcfd331"
   }
 }

@@ -6,36 +6,27 @@ order: 50
 
 # Releases and updates
 
-## User experience
-
-Each release contains a complete Apple Silicon DMG with the launcher, Wine, DXMT, licenses, and an Applications shortcut. Arknights game files are never part of the DMG.
-
-> [!IMPORTANT]
-> Wine and DXMT are released as one tested runtime unit. Do not combine arbitrary latest versions: the browser and graphics fixes must match the Wine build. The current unit is published by [Arknights macOS Runtime](https://github.com/LuMiSxh/Arknights-MacOS-Runtime) and pinned with its exact components, source revisions, and checksums in [`runtime.json`](../../runtime.json). A runtime change requires a fresh-prefix and existing-prefix game launch, each supported client's login path where provided, and a clean exit test before release.
-
-The launcher performs a silent Sparkle feed check when it opens. If a newer launcher version exists, the launcher invokes its themed Sparkle update UI for the signed update archive. The app remains ad-hoc signed and is not notarized; first-launch approval follows the [installation guide](../installation.md). The check can be disabled in Settings.
-
-The first check that discovers a new version records it in the launcher's status capsule and Settings. Selecting the update action opens the launcher's accessible Sparkle UI, which presents embedded release notes while Sparkle owns the download, verification, and installation flow; release pages remain available through GitHub.
-
-Game updates are checked separately against the selected publisher. The check can also be disabled. A check never downloads game data by itself; the user starts the update.
+Each release is a complete Apple Silicon DMG with the launcher, Wine, DXMT, licenses, and an Applications shortcut. It never contains Arknights game files. [`runtime.json`](../../runtime.json) pins the tested runtime. [Runtime updates](runtime-updates.md) describes how to change the pin.
 
 ## Creating a release
 
 > [!IMPORTANT]
-> Merge the release branch first, update the local `main` branch, and run `just release X.Y.Z` from clean, pushed `main`. Alternatively, start **Draft release** from the GitHub Actions page on `main` and enter the version there. Both paths require the same non-empty version section in `CHANGELOG.md` and an exact `CFBundleShortVersionString` match in `Resources/Info.plist`. The workflow also rejects other branches, malformed versions, and versions whose tag or release already exists.
+> Merge the release branch, update local `main`, and run `just release X.Y.Z` from clean, pushed `main`. Or start **Draft release** from GitHub Actions on `main` and enter the version. The workflow rejects other branches, malformed versions, and existing tags or releases.
 
-Before triggering the workflow, check the inputs that affect the published files:
+Check these inputs first:
 
-| Input                   | Required state                                                                                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CHANGELOG.md`          | Contains a non-empty `## [X.Y.Z]` section; that section becomes the GitHub release notes and Sparkle embedded notes                                      |
-| `Resources/Info.plist`  | `CFBundleShortVersionString` exactly matches `X.Y.Z`; `SUPublicEDKey` remains the tracked release public key                                             |
-| `runtime.json`          | Valid schema, HTTPS downloads, lowercase SHA-256 values, safe interface paths, paired provenance repositories/commits, and the intended `prefixRevision` |
-| Working tree and `main` | Clean, on `main`, with the local branch equal to its upstream; `just release` checks all three conditions before dispatching                             |
+| Input                   | Required state                                                                                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CHANGELOG.md`          | Non-empty `## [X.Y.Z]` section; it becomes the GitHub and Sparkle release notes                                                                      |
+| `Resources/Info.plist`  | `CFBundleShortVersionString` exactly matches `X.Y.Z`; `SUPublicEDKey` stays the tracked release public key                                           |
+| `runtime.json`          | Valid schema, HTTPS downloads, lowercase SHA-256 values, safe interface paths, paired provenance repositories and commits, intended `prefixRevision` |
+| Working tree and `main` | Clean, on `main`, equal to upstream. `just release` checks all three                                                                                 |
 
-The `pages` and `package` jobs run independently from the same release commit. Pages checks out that commit, requires `main`, installs the website lockfile, runs `pnpm check`, and builds with `BASE_PATH=/Arknights-MacOS-Client`. A Pages failure does not stop the package job from creating its draft, but it keeps the workflow red until the website is repaired. Documentation changes alone never dispatch Pages.
+The `pages` and `package` jobs run independently from the same commit. Pages requires `main`, runs `pnpm check`, and builds with `BASE_PATH=/Arknights-MacOS-Client`. A Pages failure does not stop the draft but keeps the workflow red.
 
-Repository owners can inspect published DMG and Sparkle update-archive download counts with `just stats`. The command separates manual packages from in-app updates and reports their combined release totals and rates. GitHub reports asset downloads rather than unique users or installations, so every derived total and latest-version share remains a directional metric only.
+The `package` job works in this order. It validates the branch, version, `CHANGELOG.md`, and `Info.plist`. It runs `just ci`. It extracts the changelog section as release notes. It downloads and verifies the pinned runtime and build recipe. It builds the arm64 app and DMG. It creates the signed update archive and appcast, writes `SHA256SUMS`, and creates the draft `vX.Y.Z` release.
+
+This diagram shows the same order:
 
 ```mermaid
 flowchart LR
@@ -49,87 +40,97 @@ flowchart LR
 	Sums --> Draft["Create a draft<br/>vX.Y.Z release"]
 ```
 
-> [!IMPORTANT]
-> [`runtime.json`](../../runtime.json) is the single source of truth for the tested runtime, its prefix revision, build recipe, component versions, source revisions, URLs, and checksums. The workflow reads it with `scripts/runtime_config.py`. Increase `prefixRevision` whenever a runtime or prefix configuration change must be applied to existing installations.
-
-The bundled runtime's `RUNTIME.json` may include `interface.runtimeCapabilities`, an optional
-single filename for a capability manifest at the runtime root. Package that sidecar when the runtime
-supports the optional controls; it declares the Frame Latency range and Hardware Cursor support.
-If the entry or manifest is missing, malformed, unreadable, or unsupported, the client uses
-conservative defaults and keeps saved Canary preferences without sending unsupported overrides. Do
-not infer runtime support from the launcher controls alone.
-
-The archive checksum is also part of the effective runtime revision. Changing the pinned archive automatically replays the runtime migrations for an existing prefix, so a binary-only refresh does not require a `prefixRevision` increase or ask users to delete their prefix.
-
-Release automation does not use repository variables for these values. A runtime update is a reviewed `runtime.json` change, so local and GitHub builds cannot silently select different binaries.
-
-The [Arknights macOS Runtime](https://github.com/LuMiSxh/Arknights-MacOS-Runtime) repository owns
-upstream source monitoring, reproducible runtime builds, and runtime releases. This repository owns
-the one runtime selected for the client: `runtime.json` pins the reviewed release archive and its
-consumer-facing layout.
-
-### Updating the pinned runtime
-
-Treat a runtime refresh as a compatibility change, not as a dependency bump. Start from a published,
-checksum-verified Arknights macOS Runtime release, update the reviewed metadata and checksums in
-[`runtime.json`](../../runtime.json), and run
-`uv run --locked --no-dev scripts/runtime_config.py --validate runtime.json`. Then run `just runtime`
-to download, hash, extract, and validate the exact pinned archive. Test a fresh prefix and an existing
-prefix through install/update, each supported client's web-login path where provided, game start, and clean exit. Add or update prefix migrations
-when the runtime state contract requires them.
-
-Do not approve a runtime only because its version is higher. A runtime release never changes the
-client pin automatically; promotion remains a reviewed `runtime.json` change.
+`just stats` shows DMG and Sparkle archive download counts, separated into manual packages and in-app updates. GitHub counts downloads, not unique users. Treat the totals as directional.
 
 ## Local packaging
 
-The root [`runtime.json`](../../runtime.json) file pins the prebuilt, tested runtime archive and its checksum. To download it and build the app, run:
+Run `just dev` to download the pinned runtime and build the app. Run `just dev dmg` to continue to the installable DMG. `just runtime` only downloads the runtime. It verifies the SHA-256, extracts the archive safely, validates Wine and both DXMT architectures, and replaces `.build/runtime`.
 
-```sh
-just dev
-```
+Packaging compiles only the Swift launcher and the x86-64 components in `RuntimeSupport`, and changes Wine's staged menu shortcut from Option-Command-Q to Command-Q. It writes one compact `ThirdPartyNotices.deflate` file into the app. See [License automation](license-automation.md).
 
-`just runtime` only downloads and verifies that pinned runtime into `.build/runtime`. `just dev` uses the same downloader and then builds a complete local app bundle; `just dev dmg` continues through the installable DMG.
-
-> [!IMPORTANT]
-> `just runtime` downloads over HTTPS, verifies the SHA-256, safely extracts the archive, validates Wine and both DXMT architectures, and replaces `.build/runtime`. Repeated runs reuse the verified archive cache.
-
-The Wine and DXMT binaries are prebuilt. Packaging compiles only the native Swift launcher and the small x86-64 compatibility components in `RuntimeSupport`, then changes Wine's staged menu shortcut from Option-Command-Q to the standard Command-Q. `just dev` produces the complete app and `just dev dmg` produces the installable disk image. Release users receive those finished artifacts and need no compiler or development tools.
-
-Release automation always uses `runtime.json`. The attached `Runtime-Build-Recipe.tar.gz` records the runtime build process; it is not a complete corresponding-source bundle for every bundled runtime component.
-
-The draft contains these generated assets:
+The draft contains:
 
 | Asset                         | Purpose                                             |
 | ----------------------------- | --------------------------------------------------- |
 | DMG                           | Installable arm64 application and pinned runtime    |
-| Versioned `.app.zip`          | Complete Sparkle update archive                     |
+| `.tar.xz` update archive      | Complete Sparkle update archive (0.6.x: `.zip`)     |
+| `*.delta`                     | Sparkle binary deltas from recent releases          |
 | `appcast.xml`                 | Signed Sparkle feed with embedded release notes     |
 | `Runtime-Build-Recipe.tar.gz` | Pinned runtime build recipe and provenance metadata |
 | `SHA256SUMS`                  | SHA-256 checksums for the published artifacts       |
 
-The workflow also attaches GitHub build-provenance attestations. Do not copy generated assets from `dist/` into the repository; inspect them locally or in the draft release.
+The workflow attaches GitHub build-provenance attestations for the DMG, runtime recipe, and checksum file. Do not copy assets from `dist/` into the repository.
+
+To test the release path without publishing, start **Draft release** from any branch with **dry_run** enabled. The run builds, signs, and verifies everything, including the Sparkle deltas. It skips the website deploy, the attestation, and the draft release. It uploads the files as the `dry-run-vX.Y.Z` workflow artifact, which expires after three days. Inspect that artifact before a real release.
+
+GitHub Actions dependencies use immutable commit pins with version comments. Every workflow declares bounded job runtimes and job-specific token permissions. Write access is limited to release publication, Pages deployment, live-contract failure issues, and wallpaper-tag issue filing.
+
+## Release review
 
 > [!WARNING]
-> Keep the release as a draft until the runtime notice and corresponding-source work described in [`legal/third-party-notices.md`](../legal/third-party-notices.md) is complete. Then install its DMG on a clean Mac and test Install, Update, Repair, and Play before publishing. Published assets and version tags are never replaced. A broken release is fixed with a higher version.
+> Keep the release as a draft until every item below passes. Published assets and version tags are never replaced. Fix a broken release with a higher version.
 
-The release workflow creates GitHub build-provenance attestations for the DMG, runtime recipe, and checksum file before opening the draft release. GitHub Actions dependencies use immutable commit pins with version comments. Every workflow declares bounded job runtimes and job-specific token permissions; write access is limited to release publication, scheduled contract-alert reconciliation, and wallpaper-tag issue filing.
+1. The source tag matches `CFBundleShortVersionString` and the release notes.
+2. `Contents/Resources/RUNTIME.json` in the app matches the `runtime.json` that the build used. The runtime archive and build-recipe SHA-256 values match.
+3. The runtime archive and build recipe are available at the pinned HTTPS URLs, and the recorded SHA-256 values verify them.
+4. The runtime files match the declared interface: `bin/wine64`, `bin/wineserver`, `winemetal.dll`, the macOS driver, and the DXMT x64 library set. Runtimes before 0.7.0 also ship x32.
+5. The component commits in `runtime.json` match the source links in [Third-party notices](../legal/third-party-notices.md).
+6. The app bundle contains `LICENSE`, `RUNTIME.json`, and `ThirdPartyNotices.deflate`. The website publishes current [Third-party notices](../legal/third-party-notices.md) and [License texts](../legal/license-texts.md). **Settings → About → Third-Party Notices** shows the same list.
+7. `scripts/licenses.py --check --strict --runtime .build/runtime` passes, and every shipped component has a verified license.
+8. The release has a reviewed source and notice package for every bundled runtime component. For each library, a component-level record maps the exact version or revision, notices, preferred-form source, build scripts, and any relinkable material or offer that its terms require. Publish this material at a stable release-linked location. The packaging checks cannot decide this step. `Runtime-Build-Recipe.tar.gz` is a provenance record, not a corresponding-source archive. See [Source code](../legal/source-code.md).
+9. Install, Update, Repair, and Play work from the DMG on a clean Mac.
+
+If an artifact lacks a notice, has another runtime checksum, or points to the wrong tag, keep the release as a draft and open a repository issue with the version and asset.
 
 ## Versioning and changelog
 
-Versions follow Semantic Versioning. Before 1.0, minor versions may contain deliberate compatibility changes; patch versions contain compatible fixes. User-visible work starts in `Unreleased` and moves into an `X.Y.Z` section before release. Keep entries under the existing `Added`, `Changed`, `Fixed`, and `Removed` headings so the website changelog can group them and the release-note extractor can preserve the section.
+Versions follow Semantic Versioning. Before 1.0, minor versions can contain deliberate compatibility changes and patch versions contain compatible fixes. User-visible work starts in `Unreleased` and moves to an `X.Y.Z` section before release. Use the `Added`, `Changed`, `Fixed`, and `Removed` headings.
 
-The release extractor accepts a heading in the form `## [X.Y.Z]` with an optional ` - description` suffix. It takes the content up to the next `## [` heading and fails when that section is missing or empty. Avoid placing unrelated headings or unfinished notes inside the release section.
+The extractor accepts a `## [X.Y.Z]` heading with an optional ` - description` suffix. It takes content up to the next `## [` heading. It fails when the section is missing or empty.
 
-## Signing limitation
+## Signing and Sparkle updates
 
-The 0.6.1 release remains ad-hoc signed and non-notarized. Users should obtain the official release and follow the [installation guide](../installation.md) for Apple's app-specific **Open Anyway** flow. Sparkle signs updates separately with Ed25519 and replaces the complete app bundle through its helper; this does not remove the first-launch Gatekeeper confirmation.
+Releases are ad-hoc signed and not notarized. Users must follow the [installation guide](../installation.md) for Apple's **Open Anyway** flow. Sparkle signs updates separately with Ed25519 and replaces the complete app bundle through its helper. This does not remove the first-launch Gatekeeper confirmation.
 
-The appcast is published as the `appcast.xml` asset of the latest GitHub release and is read through the stable `releases/latest/download/appcast.xml` URL. Each release also contains a complete `.app.zip` update archive. The release workflow creates both from the fully packaged app, preserving bundle symlinks and executable modes, then generates and signs the appcast with Sparkle's `generate_appcast` tool. Before it creates a draft, the workflow validates the public/private key pair and cryptographically verifies the signed appcast bytes and every enclosure against the generated update archive. It checks the expected ZIP basename and byte length; the workflow constructs the release URL prefix. This rejects a bad signature, a tampered archive, an incorrect asset filename, or a length mismatch before publication.
+The launcher checks for updates silently when it opens (the user can disable this in Settings). Sparkle owns download, verification, and installation. Game updates are checked separately and never download without a user action.
+
+Clients read the appcast through the stable `releases/latest/download/appcast.xml` URL. Each release has a complete `.tar.xz` update archive (up to 0.6.x: `.zip`). Sparkle 2.9.6, the oldest shipped updater, extracts both.
+
+The workflow creates the archives from the fully packaged app, preserving bundle symlinks and executable modes. It generates and signs the appcast with Sparkle's `generate_appcast`. Before it creates the draft, it validates the key pair and runs Sparkle's `sign_update --verify` on the appcast, the archive, and every delta. This rejects a bad signature or a tampered file before publication.
+
+The workflow also checks that the bundle contains Sparkle.framework with symlinks and nested XPC and helper code intact, an `@executable_path/../Frameworks` rpath, inside-out ad-hoc signatures, and a final outer-bundle verification. For a release candidate, install the DMG, start a newer signed update from the launcher, and confirm the themed update UI and the download and restart flow. Repeat during an active game or installation to verify that replacement is deferred.
 
 > [!CAUTION]
-> The current Sparkle public key, K0, is tracked in `Resources/Info.plist` as `SUPublicEDKey` and is validated as exactly 32 decoded bytes during every package build. The private key is supplied to GitHub Actions only through the protected `release` environment as `SPARKLE_ED25519_PRIVATE_KEY`; it is passed to `generate_appcast` through standard input and never appears in command arguments. Export a current Sparkle `generate_keys -x` seed and ensure it decodes to exactly 32 bytes; legacy 96-byte key-pair exports are rejected. Release validation derives the public key from that seed and compares it with K0 before upload. Keep the private key in the macOS login Keychain and one separate encrypted offline recovery copy; never commit it. Local `just ci` and release signature verification require OpenSSL 3 or newer with Ed25519 support. Homebrew's OpenSSL 3 is installed in CI because macOS system LibreSSL does not provide the required command behavior; install `openssl@3` locally and put its `bin` directory before the system tools in `PATH`.
+>
+> - The current Sparkle public key, K0, is tracked in `Resources/Info.plist` as `SUPublicEDKey`. Every package build validates that it decodes to exactly 32 bytes.
+> - The private key reaches GitHub Actions only through the protected `release` environment as `SPARKLE_ED25519_PRIVATE_KEY`. The workflow passes it to `generate_appcast` through standard input, never in arguments.
+> - Export a current Sparkle `generate_keys -x` seed of exactly 32 decoded bytes. The workflow rejects legacy 96-byte key-pair exports.
+> - Release validation derives the public key from the seed and compares it with K0 before upload.
+> - Keep the private key in the macOS login Keychain and one separate encrypted offline recovery copy. Never commit it.
+> - The release workflow needs OpenSSL 3 or newer with Ed25519 support to derive the public key. macOS system LibreSSL lacks it. The workflow installs `openssl@3`. Unit tests do not need it.
 
-Key rotation is deferred. Sparkle 2.9.6's `generate_appcast` does not add an enclosure signature when the signing seed does not match the public key embedded in the app, and each installed client authenticates the signed feed using its own key ([Sparkle's signing and rotation guide](https://sparkle-project.org/documentation/#rotating-signing-keys)). A single replacement `appcast.xml` therefore cannot serve both K0 and a new K1. Keep K0 until a bridge release can be signed explicitly with `sign_update`, the K0 and K1 generations have separate authenticated feed routes, and packaged A→B and B→C paths pass tests, including a lagging A client still receiving B after C is published. Since current clients are ad-hoc signed, losing K0 requires an independently authenticated recovery path; it cannot be repaired by assigning a new Apple signing identity after the fact.
+Key rotation is deferred. Sparkle 2.9.6's `generate_appcast` adds no enclosure signature when the signing seed does not match the embedded public key. Each installed client authenticates the signed feed with its own key ([Sparkle's guide](https://sparkle-project.org/documentation/#rotating-signing-keys)). One replacement `appcast.xml` cannot serve both K0 and a new K1. Keep K0 until all of these are true:
 
-The setup assistant always performs one silent Sparkle feed check before version-specific onboarding, independent of the automatic-check preference. If a newer release exists, setup remains pending and opens Sparkle's updater; it resumes only after the newer launcher is installed and reopened. A failed network check is recoverable and does not permanently block first-run setup.
+- A bridge release can be signed explicitly with `sign_update`.
+- The K0 and K1 generations have separate authenticated feed routes.
+- Packaged A→B and B→C paths pass tests, including a lagging A client that still receives B after C is published.
+
+Current clients are ad-hoc signed, so losing K0 requires an independently authenticated recovery path. A new Apple signing identity cannot repair it afterward.
+
+### Delta updates
+
+The Wine runtime is most of the bundle and rarely changes, so the workflow also publishes Sparkle binary deltas. Before `generate_appcast`, `scripts/sparkle_deltas.py fetch` downloads the full update archives of the newest published releases (`SPARKLE_DELTA_SOURCE_COUNT` in `scripts/lib/project_config.py`). `generate_appcast --maximum-versions 1 --maximum-deltas N` then builds one delta per source and keeps only the new version in the feed. Clients older than the oldest source, or that reject a delta, use the full archive.
+
+Delta generation is best effort. A missing release, failed listing, or failed download logs a warning and skips that source. The complete archive still ships.
+
+`generate_appcast` names deltas after the app bundle, but GitHub stores the asset with dots, which breaks the URL. `scripts/sparkle_deltas.py finalize` copies the referenced deltas into `dist/` under GitHub-safe names, rewrites their URLs, and signs the feed again with the K0 seed, because the signature covers those URLs. `validate_sparkle_keys.py --delta-directory dist` then verifies every delta with `sign_update --verify`. Deltas are in `SHA256SUMS` and the attestation.
+
+Sparkle ignores the custom `Icon\r` file that `NSWorkspace.setIcon` writes into the bundle, so icon customization does not invalidate deltas. Any other bundle change makes Sparkle use the full archive.
+
+## Onboarding after a release
+
+The setup assistant always does one silent Sparkle check before version-specific onboarding, regardless of the automatic-check preference. If a newer release exists, setup stays pending and opens Sparkle's updater. It resumes after the newer launcher is installed and reopened. A failed network check does not block first-run setup.
+
+To make every existing user rerun setup after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0. Preferences stay unchanged. Only setup progress resets.
+
+To make the rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingStrings.requiredSetupReason(schema:)`. Returning players then see why, and Skip Setup stays hidden until they finish. First-time users can still skip. Schema 2 is required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.

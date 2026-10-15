@@ -1,0 +1,234 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import AppKit
+import ArknightsCore
+import ArknightsCustomization
+import Foundation
+import Observation
+
+/// Owns launcher updates, announcements, Yostar notices, and their shared popup queue.
+@MainActor
+@Observable
+package final class LauncherCommunicationController {
+	var launcherUpdateVersion: String?
+	var launcherUpdateStatus: String?
+	var isCheckingLauncherUpdates = false
+	var popup: LauncherPopup?
+	var canOpenLauncherUpdate: Bool { launcherUpdater.canOpenUpdate }
+	var shouldShowLauncherUpdateButton: Bool {
+		launcherUpdateVersion != nil || launcherUpdater.hasActiveUpdate
+	}
+
+	private let announcementService: LauncherAnnouncementService
+	private let preferences: LauncherPreferencesStore
+	private let log: LauncherLog
+	package let launcherUpdater: LauncherUpdaterController
+	private var pendingPopups: [LauncherPopup] = []
+	private var presentedNoticeContent: String?
+	@ObservationIgnored private var launcherUpdateTask: Task<LauncherUpdateCheckOutcome, Never>?
+	@ObservationIgnored private var announcementTask: Task<Void, Never>?
+	private var startupProbeOutcome: LauncherUpdateCheckOutcome?
+
+	init(
+		lifecycle: LauncherLifecycleStore,
+		announcementService: LauncherAnnouncementService,
+		preferences: LauncherPreferencesStore,
+		log: LauncherLog
+	) {
+		self.announcementService = announcementService
+		self.preferences = preferences
+		self.log = log
+		let updater = LauncherUpdaterController(lifecycle: lifecycle, log: log)
+		self.launcherUpdater = updater
+	}
+
+	deinit {
+		launcherUpdateTask?.cancel()
+		announcementTask?.cancel()
+	}
+
+	@discardableResult
+	package func checkLauncherUpdates(
+		presentUpdate: Bool = false
+	)
+		-> Task<LauncherUpdateCheckOutcome, Never>
+	{
+		let task = startLauncherUpdateCheck()
+		guard presentUpdate else { return task }
+		return Task { [weak self] in
+			let outcome = await task.value
+			guard let self else { return outcome }
+			startupProbeOutcome = outcome
+			if case .updateAvailable = outcome {
+				launcherUpdater.checkForUpdates()
+			}
+			return outcome
+		}
+	}
+
+	/// Reuses an active request so onboarding and the automatic check cannot race.
+	package func launcherUpdateCheckForOnboarding() async -> LauncherUpdateCheckOutcome {
+		if let startupProbeOutcome {
+			self.startupProbeOutcome = nil
+			return startupProbeOutcome
+		}
+		return await startLauncherUpdateCheck().value
+	}
+
+	package func openLauncherUpdate() {
+		launcherUpdater.checkForUpdates()
+	}
+
+	var launcherUpdateUserDriver: LauncherUpdateUserDriver {
+		launcherUpdater.userDriver
+	}
+
+	package func checkAnnouncements(isEnabled: Bool) {
+		guard isEnabled else {
+			announcementTask?.cancel()
+			announcementTask = nil
+			return
+		}
+		guard
+			let endpointString = Bundle.main.object(
+				forInfoDictionaryKey: "LauncherAnnouncementsURL"
+			) as? String,
+			let endpoint = URL(string: endpointString)
+		else { return }
+
+		announcementTask?.cancel()
+		announcementTask = Task { [weak self] in
+			guard let self else { return }
+			do {
+				let announcements = try await announcementService.announcements(from: endpoint)
+				try Task.checkCancellation()
+				let currentVersion = Bundle.main.shortVersionString ?? "0"
+				let seenIDs = preferences.seenAnnouncementIDs()
+				guard
+					let announcement = announcements.first(where: {
+						$0.isEligible(
+							currentVersion: currentVersion,
+							now: .now,
+							seenIDs: seenIDs
+						)
+					})
+				else { return }
+				enqueuePopup(
+					LauncherPopup(
+						id: "announcement-\(announcement.id)",
+						title: announcement.title,
+						content: .markdown(announcement.body),
+						dismissTitle: "Done",
+						actionTitle: announcement.actionTitle,
+						actionURL: announcement.actionURL
+					)
+				)
+				log.info("Announcement presented; id=\(announcement.id)")
+			} catch is CancellationError {
+				return
+			} catch {
+				log.error("Announcement check failed: \(launcherDiagnosticDescription(for: error))")
+			}
+		}
+	}
+
+	func presentNoticeIfNeeded(_ branding: LauncherBranding) {
+		guard
+			branding.noticePopOpen == true,
+			let content = branding.noticeContent,
+			content != presentedNoticeContent,
+			let formattedNotice = LauncherNoticeFormatter.notice(fromHTML: content)
+		else { return }
+		presentedNoticeContent = content
+		enqueuePopup(
+			LauncherPopup(
+				id: "yostar-notice-\(formattedNotice.id.uuidString)",
+				title: "Notice",
+				content: .attributed(formattedNotice.content),
+				dismissTitle: "Done",
+				actionTitle: nil,
+				actionURL: nil
+			)
+		)
+	}
+
+	func resetPresentedNotice() {
+		presentedNoticeContent = nil
+	}
+
+	func enqueuePopup(_ newPopup: LauncherPopup) {
+		guard popup?.id != newPopup.id,
+			!pendingPopups.contains(where: { $0.id == newPopup.id })
+		else { return }
+		if popup == nil {
+			popup = newPopup
+		} else {
+			pendingPopups.append(newPopup)
+		}
+	}
+
+	func dismissPopup() {
+		// Announcements count as seen once dismissed, so one hidden behind another modal is not lost.
+		if let dismissed = popup { recordPopupSeen(dismissed) }
+		popup = pendingPopups.isEmpty ? nil : pendingPopups.removeFirst()
+	}
+
+	func openPopupAction() {
+		let url = popup?.actionURL
+		dismissPopup()
+		if let url { NSWorkspace.shared.open(url) }
+	}
+
+	#if DEBUG
+		func resetPopupQueueForDeveloper() {
+			pendingPopups.removeAll()
+			popup = nil
+		}
+	#endif
+
+	private func startLauncherUpdateCheck() -> Task<LauncherUpdateCheckOutcome, Never> {
+		if isCheckingLauncherUpdates, let launcherUpdateTask {
+			return launcherUpdateTask
+		}
+
+		isCheckingLauncherUpdates = true
+		launcherUpdateStatus = "Checking…"
+		let task = Task<LauncherUpdateCheckOutcome, Never> { [weak self] in
+			guard let self else { return .failed }
+			let outcome = await withCheckedContinuation {
+				(continuation: CheckedContinuation<LauncherUpdateCheckOutcome, Never>) in
+				self.launcherUpdater.checkForUpdateInformation {
+					continuation.resume(returning: $0)
+				}
+			}
+			recordLauncherUpdateAvailability(outcome)
+			isCheckingLauncherUpdates = false
+			return outcome
+		}
+		launcherUpdateTask = task
+		return task
+	}
+
+	func recordLauncherUpdateAvailability(_ outcome: LauncherUpdateCheckOutcome) {
+		switch outcome {
+		case .current:
+			launcherUpdateVersion = nil
+			launcherUpdateStatus = "Up to date"
+		case .updateAvailable(let version):
+			launcherUpdateVersion = version
+			launcherUpdateStatus =
+				"Version \(version) available"
+
+		case .failed:
+			launcherUpdateVersion = nil
+			launcherUpdateStatus = "Couldn’t check for updates"
+		}
+	}
+
+	private func recordPopupSeen(_ popup: LauncherPopup) {
+		let announcementPrefix = "announcement-"
+		if popup.id.hasPrefix(announcementPrefix) {
+			preferences.markAnnouncementSeen(String(popup.id.dropFirst(announcementPrefix.count)))
+		}
+	}
+}

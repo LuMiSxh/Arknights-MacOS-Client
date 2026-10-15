@@ -5,7 +5,8 @@
 app_bundle = globals()["defines"]["app_bundle"]
 app_name = globals()["defines"]["app_name"]
 
-format = "UDZO"
+# LZMA (macOS 10.15+) is far smaller than zlib; the app already requires macOS 15.
+format = "ULMO"
 files = [app_bundle]
 symlinks = {"Applications": "/Applications"}
 

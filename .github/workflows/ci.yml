@@ -33,11 +33,5 @@ jobs:
       - name: Set up just
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
 
-      - name: Set up OpenSSL 3 for Sparkle Ed25519 tests
-        run: |
-          brew install openssl@3
-          echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
-          "$(brew --prefix openssl@3)/bin/openssl" version
-
       - name: Check source
         run: just ci

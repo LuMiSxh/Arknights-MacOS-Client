@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import SwiftUI
+
+extension ContentView {
+	#if DEBUG
+		var developerSimulationBinding: DeveloperSimulationBinding? {
+			guard model.isDeveloperMode else { return nil }
+			return Binding(
+				get: { model.developerSimulation ?? DeveloperSimulationState() },
+				set: { model.applyDeveloperSimulation($0) })
+		}
+		var developerExpandedPillID: String? {
+			model.developerSimulation?.expandedPill.rawValue
+		}
+		package var developerAccessibilityMusicTitle: String? {
+			guard model.isDeveloperMode else { return nil }
+			return model.developerAccessibilityMusicTitle
+		}
+	#else
+		var developerSimulationBinding: DeveloperSimulationBinding? { nil }
+		var developerExpandedPillID: String? { nil }
+		package var developerAccessibilityMusicTitle: String? { nil }
+	#endif
+}

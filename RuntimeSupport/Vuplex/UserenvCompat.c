@@ -14,7 +14,7 @@
  * Chromium from throwing FATAL CHECK assertions.
  */
 __declspec(dllexport) const char arknights_client_userenv_marker[] =
-	"Arknights Client AppContainer compatibility";
+    "Arknights Client AppContainer compatibility";
 
 /* HRESULT_FROM_WIN32(ERROR_SUCCESS) does not produce S_OK, so a failure path that never set
  * a real Win32 error would misreport success; this substitutes a generic failure code in
@@ -22,7 +22,8 @@ __declspec(dllexport) const char arknights_client_userenv_marker[] =
 static HRESULT result_from_last_error(void) {
 	DWORD error = GetLastError();
 
-	if (error == ERROR_SUCCESS) error = ERROR_GEN_FAILURE;
+	if (error == ERROR_SUCCESS)
+		error = ERROR_GEN_FAILURE;
 	return HRESULT_FROM_WIN32(error);
 }
 
@@ -44,7 +45,8 @@ DeriveAppContainerSidFromAppContainerName(PCWSTR app_container_name, PSID *app_c
 	size_t index;
 	HRESULT result = E_FAIL;
 
-	if (app_container_sid == NULL) return E_POINTER;
+	if (app_container_sid == NULL)
+		return E_POINTER;
 	*app_container_sid = NULL;
 	if (app_container_name == NULL || app_container_name[0] == L'\0') {
 		return E_INVALIDARG;
@@ -55,20 +57,21 @@ DeriveAppContainerSidFromAppContainerName(PCWSTR app_container_name, PSID *app_c
 		return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
 	}
 	normalized_name = HeapAlloc(GetProcessHeap(), 0, (name_length + 1) * sizeof(*normalized_name));
-	if (normalized_name == NULL) return E_OUTOFMEMORY;
+	if (normalized_name == NULL)
+		return E_OUTOFMEMORY;
 	for (index = 0; index < name_length; index++) {
 		normalized_name[index] = towlower(app_container_name[index]);
 	}
 	normalized_name[name_length] = L'\0';
 
 	if (!CryptAcquireContextW(&provider, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) ||
-		!CryptCreateHash(provider, CALG_SHA_256, 0, 0, &hash) ||
-		!CryptHashData(
-			hash,
-			(const BYTE *)normalized_name,
-			(DWORD)(name_length * sizeof(*normalized_name)),
-			0) ||
-		!CryptGetHashParam(hash, HP_HASHVAL, (BYTE *)digest, &digest_size, 0)) {
+	    !CryptCreateHash(provider, CALG_SHA_256, 0, 0, &hash) ||
+	    !CryptHashData(
+	        hash,
+	        (const BYTE *)normalized_name,
+	        (DWORD)(name_length * sizeof(*normalized_name)),
+	        0) ||
+	    !CryptGetHashParam(hash, HP_HASHVAL, (BYTE *)digest, &digest_size, 0)) {
 		result = result_from_last_error();
 		goto cleanup;
 	}
@@ -77,25 +80,27 @@ DeriveAppContainerSidFromAppContainerName(PCWSTR app_container_name, PSID *app_c
 		goto cleanup;
 	}
 	if (!AllocateAndInitializeSid(
-			&authority,
-			SECURITY_APP_PACKAGE_RID_COUNT,
-			SECURITY_APP_PACKAGE_BASE_RID,
-			digest[0],
-			digest[1],
-			digest[2],
-			digest[3],
-			digest[4],
-			digest[5],
-			digest[6],
-			app_container_sid)) {
+	        &authority,
+	        SECURITY_APP_PACKAGE_RID_COUNT,
+	        SECURITY_APP_PACKAGE_BASE_RID,
+	        digest[0],
+	        digest[1],
+	        digest[2],
+	        digest[3],
+	        digest[4],
+	        digest[5],
+	        digest[6],
+	        app_container_sid)) {
 		result = result_from_last_error();
 		goto cleanup;
 	}
 	result = S_OK;
 
 cleanup:
-	if (hash != 0) CryptDestroyHash(hash);
-	if (provider != 0) CryptReleaseContext(provider, 0);
+	if (hash != 0)
+		CryptDestroyHash(hash);
+	if (provider != 0)
+		CryptReleaseContext(provider, 0);
 	HeapFree(GetProcessHeap(), 0, normalized_name);
 	return result;
 }
@@ -105,12 +110,12 @@ __declspec(dllexport)
  * persists a profile, so only the SID derivation Chromium actually checks matters. */
 HRESULT WINAPI
 CreateAppContainerProfile(
-	PCWSTR app_container_name,
-	PCWSTR display_name,
-	PCWSTR description,
-	PSID_AND_ATTRIBUTES capabilities,
-	DWORD capability_count,
-	PSID *app_container_sid) {
+    PCWSTR app_container_name,
+    PCWSTR display_name,
+    PCWSTR description,
+    PSID_AND_ATTRIBUTES capabilities,
+    DWORD capability_count,
+    PSID *app_container_sid) {
 	(void)display_name;
 	(void)description;
 	(void)capabilities;
@@ -132,7 +137,8 @@ __declspec(dllexport)
 HRESULT WINAPI
 GetAppContainerRegistryLocation(REGSAM desired_access, PHKEY app_container_key) {
 	(void)desired_access;
-	if (app_container_key == NULL) return E_POINTER;
+	if (app_container_key == NULL)
+		return E_POINTER;
 	*app_container_key = NULL;
 	return E_NOTIMPL;
 }
@@ -143,7 +149,8 @@ __declspec(dllexport)
 HRESULT WINAPI
 GetAppContainerFolderPath(PCWSTR app_container_sid, PWSTR *folder_path) {
 	(void)app_container_sid;
-	if (folder_path == NULL) return E_POINTER;
+	if (folder_path == NULL)
+		return E_POINTER;
 	*folder_path = NULL;
 	return E_NOTIMPL;
 }

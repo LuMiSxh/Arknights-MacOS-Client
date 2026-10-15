@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
-@testable import ArknightsClient
+@testable import ArknightsGameInstallation
 
 struct YostarContractProbe {
 	private static let attempts = 3
@@ -199,7 +200,9 @@ struct YostarContractProbe {
 		)
 	}
 
-	private func blocked(_ region: GameRegion, _ contract: String, by dependency: String)
+	private func blocked(
+		_ region: GameRegion, _ contract: String, by dependency: String
+	)
 		-> LiveContractCheck
 	{
 		LiveContractCheck(

@@ -1,11 +1,9 @@
-#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
-"""Read and validate the pinned runtime configuration."""
+"""Load and validate the pinned runtime configuration."""
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import re
@@ -13,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from lib.common import fail, run_main
+from lib.common import fail
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
@@ -118,13 +116,6 @@ def nested_value(config: dict[str, Any], key: str) -> Any:
             fail(f"runtime configuration has no value for {key}")
         value = value[component]
     return value
-
-
-def read_value(config: Path, key: str) -> str:
-    value = nested_value(read_config(config), key)
-    if not isinstance(value, (str, int, float, bool)):
-        fail(f"runtime configuration value is not scalar: {key}")
-    return str(value).lower() if isinstance(value, bool) else str(value)
 
 
 def _mapping(config: dict[str, Any], key: str) -> dict[str, Any]:
@@ -292,27 +283,3 @@ def load_runtime_config(config_path: Path) -> RuntimeConfiguration:
     _string(config, "runtime.name")
     _validate_components(config)
     return RuntimeConfiguration(raw=config, layout=_read_layout(config))
-
-
-def validate_config(config_path: Path) -> None:
-    load_runtime_config(config_path)
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--validate", action="store_true")
-    parser.add_argument("config", type=Path)
-    parser.add_argument("key", nargs="?")
-    arguments = parser.parse_args()
-    if arguments.validate:
-        if arguments.key is not None:
-            parser.error("a key cannot be used with --validate")
-        validate_config(arguments.config)
-        return
-    if arguments.key is None:
-        parser.error("a key is required unless --validate is used")
-    print(read_value(arguments.config, arguments.key))
-
-
-if __name__ == "__main__":
-    run_main(main)

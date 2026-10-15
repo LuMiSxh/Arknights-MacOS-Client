@@ -20,22 +20,12 @@ def write_config(path: Path, value: dict[str, object]) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def test_reads_nested_scalar(tmp_path: Path) -> None:
-    config = tmp_path / "runtime.json"
-    write_config(config, {"runtime": {"url": "https://example.com/runtime.tar.gz"}})
-
-    assert (
-        runtime_config.read_value(config, "runtime.url")
-        == "https://example.com/runtime.tar.gz"
-    )
-
-
 def test_rejects_missing_value(tmp_path: Path) -> None:
     config = tmp_path / "runtime.json"
     write_config(config, {})
 
     with pytest.raises(RuntimeError):
-        runtime_config.read_value(config, "runtime.url")
+        runtime_config.load_runtime_config(config)
 
 
 def test_validates_complete_configuration(tmp_path: Path) -> None:
@@ -60,7 +50,7 @@ def test_rejects_invalid_checksum(tmp_path: Path) -> None:
     write_config(config, value)
 
     with pytest.raises(RuntimeError):
-        runtime_config.validate_config(config)
+        runtime_config.load_runtime_config(config)
 
 
 def test_rejects_previous_schema(tmp_path: Path) -> None:
@@ -70,7 +60,7 @@ def test_rejects_previous_schema(tmp_path: Path) -> None:
     write_config(config, value)
 
     with pytest.raises(RuntimeError, match="schemaVersion must be 2"):
-        runtime_config.validate_config(config)
+        runtime_config.load_runtime_config(config)
 
 
 def test_new_component_requires_and_accepts_matching_provenance(
@@ -84,12 +74,12 @@ def test_new_component_requires_and_accepts_matching_provenance(
     write_config(config, value)
 
     with pytest.raises(RuntimeError, match="missing component sources"):
-        runtime_config.validate_config(config)
+        runtime_config.load_runtime_config(config)
 
     value["provenance"]["newMediaRepository"] = "https://example.com/media"
     value["provenance"]["newMediaCommit"] = "1" * 40
     write_config(config, value)
-    runtime_config.validate_config(config)
+    runtime_config.load_runtime_config(config)
 
 
 def test_reads_safe_runtime_capability_manifest_path(tmp_path: Path) -> None:

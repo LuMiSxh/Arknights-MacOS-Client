@@ -8,31 +8,15 @@ order: 10
 
 Arknights Client is a native SwiftUI launcher around a bundled Windows compatibility runtime. The
 launcher owns downloads, updates, settings, diagnostics, and process state. It does not ship game
-files and it does not run Wine until **Play** is selected.
+files. It does not run Wine until the user selects **Play**.
 
-This section describes the boundaries that make those responsibilities safe to change. Start with
-the map below, then follow the flow that matches the change you are making:
-
-- [Installation architecture](installation.md) covers API responses, manifest validation,
-  resumable downloads, and per-region state.
-- [Launch and process lifecycle](launch-and-process-lifecycle.md) covers Rosetta, Wine prefixes,
-  compatibility components, process monitoring, and shutdown.
-- [Wine prefix architecture](wine-prefix.md) covers prefix topology, environment isolation, drive
-  mappings, migrations, persistent state, and maintenance boundaries.
-- [Communication and boundaries](communication-and-boundaries.md) covers publisher requests,
-  announcements, notices, update checks, and stale-result handling.
-- [Data and persistence](data-and-persistence.md) maps `AppPaths`, `UserDefaults`, caches, logs,
-  and files that can be removed.
-
-The primary composition and ownership sources are [`LauncherViewModel`](../../../Sources/ArknightsClient/Features/Launcher/State/LauncherViewModel.swift),
-[`LauncherState`](../../../Sources/ArknightsClient/Features/Launcher/State/LauncherState.swift),
-and [`AppPaths`](../../../Sources/ArknightsClient/Shared/Persistence/AppPaths.swift).
+[`LauncherViewModel`](../../../Sources/ArknightsLauncherUI/State/LauncherViewModel.swift) is the
+composition root. Read the system map first. Then read the page that matches your change.
 
 ## System map
 
-The launcher is the composition root for feature controllers. Data and side effects flow through
-those controllers; views receive the narrow controller or values they need. The root does not
-become a shared service locator.
+Data and side effects flow through the feature controllers. Each view receives only the controller or
+values it needs. The root is not a service locator.
 
 ```mermaid
 flowchart TB
@@ -55,85 +39,34 @@ flowchart TB
 	Game --> Prefix[Publisher-family Wine prefix]
 ```
 
-The arrows represent ownership or an explicit callback, not arbitrary bidirectional access. For
-example, `InstallationController` can update lifecycle state, but a view should not reach into
-`LauncherViewModel` to start a download.
+An arrow means ownership or an explicit callback, not free two-way access. For example,
+`InstallationController` can update lifecycle state. A view must not use `LauncherViewModel` to start a
+download.
 
-## Source layout
+`LauncherViewModel` constructs the feature controllers and wires the few transitions that cross feature
+boundaries. It does no network, filesystem, installation, Wine, audio, customization, or update work.
+Put new policy in the owning feature.
 
-| Folder           | Responsibility                                                                                 |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| `Application`    | App entry point, dependency composition, and macOS lifecycle                                   |
-| `Features`       | Feature-owned UI, state, domain models, services, and external work                            |
-| `Infrastructure` | Feature-independent network and system I/O primitives                                          |
-| `Shared`         | Cross-feature domain/configuration, persistence, diagnostics, support, and shared UI contracts |
-| `Resources`      | SwiftPM resources copied into the application bundle                                           |
+Controllers never depend on `LauncherViewModel` or on singleton state. Feature views receive their
+owning controller, or explicit values and actions.
 
-`Features` is organized around behavior rather than technical layers:
+Each long-lived state and each asynchronous task has one feature owner:
 
-- `Launcher` owns application composition, shared lifecycle presentation, home, Settings, documents,
-  popups, and launcher updates.
-- `Game` owns installation, Wine runtime behavior, Intel translation, and game-file compatibility components.
-- `Customization` owns artwork, icons, and the preset gallery.
-- `Audio` owns background playback, Now Playing integration, settings, and HUD controls.
-- `Onboarding` owns its resumable flow, progress persistence, and step views.
+| Owner                             | Responsibility                                                                                       |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `LauncherLifecycleStore`          | Exclusive activity, refresh state, launch readiness, status, failure UI                              |
+| `InstallationController`          | Region, install directory, installed state, resumable install/update/repair tasks, progress, removal |
+| `GameSessionController`           | Runtime discovery, prefix maintenance, launch options, Wine processes, Game Mode, diagnostics        |
+| `IntelTranslationController`      | Rosetta preflight, installation, recovery state, launch eligibility                                  |
+| `LauncherRefreshController`       | Concurrent configuration and branding refreshes, stale-result rejection, region transitions          |
+| `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, presets                                             |
+| `BackgroundMusicController`       | Playlist parsing, playback, Now Playing metadata, fades, music-link presentation                     |
+| `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, popup order                                        |
+| `LauncherPreferencesController`   | Persisted settings and the region-aware server-reset timer                                           |
+| `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                    |
+| `StorageOverviewController`       | Async usage measurement for installations, runtime data, caches, logs                                |
 
-Feature-specific components remain with their feature. `Shared/UI/Components` contains only presentation contracts used by multiple features, such as action buttons, modal chrome, and Settings panels.
-
-`Infrastructure` contains feature-independent I/O such as bounded HTTP loading and chunked
-transfer support. It does not decide whether a response is a valid game manifest or how a
-controller presents an error. That policy remains in the owning feature. Neither `Infrastructure`
-nor `Shared` imports feature-owned types; features map transport and storage errors at their
-boundary.
-
-User-facing launcher copy is kept as English literals in small feature-local `…Strings` namespaces, so ownership stays with the UI that uses the copy and there is no runtime language-selection layer.
-
-Repository scripts derive shipping product metadata from `Resources/Info.plist`, target and resource layout from SwiftPM's evaluated `Package.swift`, and runtime layout from `runtime.json`. `scripts/lib/project_config.py` cross-validates the first two before builds and checks. Scripts must not maintain separate app-name, executable, platform, architecture, or package-resource lists.
-
-Tests follow separate unit, deterministic integration, and live-contract boundaries. Their target ownership, network and filesystem isolation, fixtures, CI cadence, and manual Wine/game matrix are documented in [Testing architecture](../testing.md).
-
-`LauncherViewModel` is the application composition root. It constructs feature controllers, wires the
-few transitions that cross feature boundaries, and provides the application shell used by the debug
-simulator. It does not implement network, filesystem, installation, Wine, audio,
-customization, or update work itself. Feature-local views receive their owning controller or explicit
-values and actions instead of the complete root model. New work should follow the same direction:
-put policy beside the feature that owns it and add only the smallest callback needed at composition
-time.
-
-Long-lived state and asynchronous work have one feature owner:
-
-| Owner                             | Responsibility                                                                                            |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `LauncherLifecycleStore`          | Mutually exclusive launcher activity, metadata-refresh state, launch readiness, status, and failure UI    |
-| `InstallationController`          | Region, install directory, installed state, resumable install/update/repair tasks, progress, and removal  |
-| `GameSessionController`           | Runtime discovery, prefix maintenance, launch options capture, Wine processes, Game Mode, and diagnostics |
-| `IntelTranslationController`      | Rosetta preflight, installation, recovery state, and launch eligibility                                   |
-| `LauncherRefreshController`       | Concurrent publisher configuration and branding refreshes, stale-result rejection, and region transitions |
-| `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, and preset application                                   |
-| `BackgroundMusicController`       | Playlist parsing, playback, Now Playing metadata, fades, and music-link presentation                      |
-| `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, and popup ordering                                      |
-| `LauncherPreferencesController`   | Persisted user-facing settings and the region-aware server-reset timer                                    |
-| `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                         |
-| `StorageOverviewController`       | Asynchronous usage measurement for installations, shared runtime data, caches, and logs                   |
-
-Installation, maintenance, and the Wine-backed game lifecycle share the exclusive
-`LauncherActivity` state machine because they may touch the same game files or runtime. Refresh and
-presentation remain orthogonal so safe metadata checks and actionable errors can coexist with a
-running game. Controllers use explicit narrow feature dependencies and callbacks configured by the
-composition root; they never depend on `LauncherViewModel` or implicit singleton state.
-
-The state tree has three deliberately separate concerns:
-
-| State branch              | Answers                                              | Examples                                                         |
-| ------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
-| `activity`                | What exclusive work owns the game/runtime right now? | install, migrate, launch, run, stop                              |
-| `refresh` and `readiness` | What metadata and prerequisites are currently known? | Publisher configuration, installed version, Rosetta availability |
-| `presentation`            | What should the user see or act on?                  | status text, failure message, update prompt                      |
-
-Do not use a presentation message as a lifecycle lock, and do not clear an active lifecycle state
-just because a refresh failed. `LauncherLifecycleStore` is the single gate for mutually exclusive
-work. The `installing(id:)` activity carries its operation ID, so a stale cancelled installation task
-cannot finish a newer operation.
+The composition root owns these controllers:
 
 ```mermaid
 flowchart TD
@@ -153,37 +86,113 @@ flowchart TD
 	Customization --> Artwork[Artwork and icons]
 ```
 
-First-run setup is a separate `Onboarding` feature with its own `@Observable` coordinator and `UserDefaults` progress store. It never downloads files or persists launcher settings itself: each step calls the same region, installer, display, artwork, icon, update, and audio actions used by the main interface. A mandatory launcher-update preflight runs before setup; an available launcher release blocks the remaining steps until the newer app is installed and reopened. Interrupted setup resumes at its saved step, but an absent game always routes back through Region & Install before later steps.
+The state tree has three separate concerns:
 
-Detailed flows are documented in [Installation architecture](installation.md), [Launch and process lifecycle](launch-and-process-lifecycle.md), and [Communication and boundaries](communication-and-boundaries.md).
+| State branch              | Answers                                     | Examples                                               |
+| ------------------------- | ------------------------------------------- | ------------------------------------------------------ |
+| `activity`                | Which exclusive work owns the game/runtime? | install, migrate, launch, run, stop                    |
+| `refresh` and `readiness` | Which metadata and prerequisites are known? | configuration, installed version, Rosetta availability |
+| `presentation`            | What does the user see or act on?           | status text, failure message, update prompt            |
+
+- `LauncherLifecycleStore` is the single gate for mutually exclusive work. Installation, maintenance,
+  and the Wine-backed game lifecycle can touch the same files, so they share it. See
+  [Activity leases](launch-and-process-lifecycle.md#activity-leases).
+- Refresh and presentation stay separate from activity. Metadata checks and error messages can exist
+  while a game runs.
+- Do not use a presentation message as a lifecycle lock.
+- Do not clear an active lifecycle state because a refresh failed.
+
+First-run setup is the separate `ArknightsOnboarding` feature. It has its own `@Observable` coordinator
+and `UserDefaults` progress store. It never downloads files or persists launcher settings. Each step
+calls the same region, installer, display, artwork, icon, update, and audio actions as the main
+interface.
+
+A mandatory launcher-update preflight runs before setup. Interrupted setup resumes at its saved step.
+If the game is absent, setup returns to Region & Install.
+
+## Targets
+
+Each folder under `Sources` is one SwiftPM target. `Package.swift` is the source of truth for target
+dependencies, linked products, and isolation settings. A target depends only on targets with a lower
+number. The compiler rejects a cycle.
+
+| No. | Target                      | Contains                                                                                                                                       | Depends on          | Linked products    |
+| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------ |
+| 1   | `ArknightsInfrastructure`   | Feature-independent network and file I/O primitives (`FileSystem`, `Network`)                                                                  | none                | none               |
+| 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                   | none               |
+| 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                | none               |
+| 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2, 3             | `CCommonCrypto`    |
+| 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 3, 4          | none               |
+| 6   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                | `YouTubePlayerKit` |
+| 7   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5          | none               |
+| 8   | `ArknightsLauncherUI`       | Composition (`LauncherViewModel`), home, Settings, documents, popups, launcher updates                                                         | 1, 2, 3, 4, 5, 6, 7 | `Sparkle`          |
+| 9   | `ArknightsClient`           | The executable. It holds only `Application`: the app entry point and the macOS lifecycle                                                       | 2, 6, 7, 8          | none               |
+
+Each library target has an `Arknights<Name>Tests` target. `ArknightsClientTests` holds only
+`Application` tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the
+other levels. `ArknightsTestSupport` is a library target for shared test helpers. See
+[Testing architecture](../testing.md).
+
+Direction rules:
+
+- `ArknightsInfrastructure` imports no other target. It receives limits and policy as init arguments.
+  It does not decide if a response is a valid game manifest or how a controller shows an error.
+- `ArknightsCore` names no feature type. `Core` names only `Shared` types. `Shared` names no `Core` type.
+- A feature target never imports `ArknightsLauncherUI`. Composition code passes values and closures
+  down.
+- A symbol that another production target uses gets `package` access. Other symbols stay `internal`.
+  Tests use `@testable import` and need no `package` access.
+- Feature-specific components stay in their feature target. `Shared/UI/Components` holds only
+  presentation contracts that multiple features use.
+- A feature maps transport and storage errors at its own boundary.
+
+`Package.swift` sets default actor isolation per target. `ArknightsAudio`, `ArknightsOnboarding`,
+`ArknightsLauncherUI`, and `ArknightsClient` default to `MainActor`. The other targets are
+`nonisolated` and mark controller types `@MainActor`.
+
+Scripts derive configuration from `Resources/Info.plist` (product metadata), `Package.swift` (target
+and resource layout), and `runtime.json` (runtime layout) through `scripts/lib/project_config.py`.
+`ArknightsCore` owns the SwiftPM resources.
+
+## Bundled resources
+
+`Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app
+bundle. Each entry states its path, kind, origin, and encoding.
+
+| Origin    | Staged by                       | Read from                                                    |
+| --------- | ------------------------------- | ------------------------------------------------------------ |
+| `app`     | `scripts/build_app.py`          | `Bundle.main`                                                |
+| `package` | `resources:` in `Package.swift` | `AppResourceBundle.bundle` (`Bundle.module` in SwiftPM runs) |
+
+- Load a file with `BundledResource.data(in:)`, `text(in:)`, or `decode(_:in:)`. Do not call
+  `Bundle.url(forResource:)` for a bundled resource.
+- The loader throws `BundledResourceError`: `missing` (no such resource), `unreadable` (file system
+  failure), or `corrupt` (invalid deflate data, UTF-8, or JSON). The owning feature maps the error.
+- A file that the build copies from the repository stays `identity`: the bundle holds the same bytes as
+  the source. A document that the build generates uses `deflate`. Today only `ThirdPartyNotices.deflate`
+  does.
+- `scripts/lib/bundled_resources.py` lists the same resources. `just check scripts` fails when the two
+  lists differ. A new `package` resource also needs an entry in `Package.swift`.
 
 ## Platform boundary
 
-The native side runs on Apple Silicon and macOS 15 or newer. The packaged Wine runtime is x86-64,
-so the launcher verifies that macOS can execute an Intel process through Rosetta 2 before launch.
-Wine receives a private prefix, private Unix home, private temporary directories, and only the
-selected game directory as `G:`. The prefix reduces accidental access to host files, but it is not
-a macOS security sandbox. See [Runtime compatibility](../../help/runtime-compatibility.md) and
-[Storage](../../help/storage.md) for the user-facing contract.
+The native side runs on Apple Silicon and macOS 15 or newer. The packaged Wine runtime is x86-64.
+Before launch, the launcher verifies that macOS can run an Intel process through Rosetta 2.
 
-> [!WARNING]
-> Do not describe the Wine prefix as a security boundary equivalent to App Sandbox. A custom game
-> directory is intentionally exposed to the Windows client, and the runtime still executes native
-> macOS binaries under the launcher's user account.
+The Wine prefix is not a macOS security sandbox. See
+[Directory and drive contract](wine-prefix.md#directory-and-drive-contract) and
+[Runtime compatibility](../../help/runtime-compatibility.md).
 
 ## Change guide
 
-Before changing a behavior, identify its owner and its external contract:
+Before you change behavior, find its owner and external contract:
 
-| Change                                            | Start here                                         | Also update or verify                                                                                                         |
-| ------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Game files, manifests, install paths              | `Features/Game/Installation`                       | [Installation architecture](installation.md), installer tests                                                                 |
-| Wine startup, prefix, process or display behavior | `Features/Game/Runtime`                            | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Runtime compatibility](../../help/runtime-compatibility.md) |
-| Compatibility wrapper or bridge                   | `Features/Game/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
-| Publisher endpoint or refresh behavior            | `LauncherAPI` and `LauncherRefreshController`      | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
-| Persisted setting or app-owned path               | `LauncherPreferencesStore` or `AppPaths`           | [Data and persistence](data-and-persistence.md), storage tests                                                                |
-| User-facing copy                                  | owning feature's `…Strings` namespace              | English literals and accessibility review                                                                                     |
-
-Run the focused checks while iterating and [Testing architecture](../testing.md) before a full
-release validation. A runtime layout, prefix migration, or installer safety change is not complete
-until the relevant fixture-backed tests and a manual compatibility check have been reviewed.
+| Change                                   | Start here                                                     | Also update or verify                                                                                                         |
+| ---------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Game files, manifests, paths             | `ArknightsGameInstallation/Installation`                       | [Installation architecture](installation.md), installer tests                                                                 |
+| Wine startup, prefix, process, display   | `ArknightsGameRuntime/Runtime`                                 | [Launch and process lifecycle](launch-and-process-lifecycle.md), [Runtime compatibility](../../help/runtime-compatibility.md) |
+| Compatibility component or native bridge | `ArknightsGameInstallation/Compatibility` and `RuntimeSupport` | restore/update behavior, runtime notices, release validation                                                                  |
+| Publisher endpoint, refresh              | `LauncherAPI` and `LauncherRefreshController`                  | [Communication and boundaries](communication-and-boundaries.md), live contracts                                               |
+| Persisted setting, app-owned path        | `LauncherPreferencesStore` or `AppPaths`                       | [Data and persistence](data-and-persistence.md), storage tests                                                                |
+| Launcher activity or lifecycle state     | `ArknightsCore/Core/Lifecycle`                                 | [Launch and process lifecycle](launch-and-process-lifecycle.md), lease tests                                                  |
+| User-facing copy                         | the view that shows it (literals)                              | English literals and accessibility review                                                                                     |

@@ -1,0 +1,295 @@
+// SPDX-License-Identifier: MPL-2.0
+
+import AppKit
+import ArknightsAudio
+import ArknightsCore
+import ArknightsLauncherUI
+import ArknightsOnboarding
+import SwiftUI
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+	weak var model: LauncherViewModel?
+	weak var launcherUpdater: LauncherUpdaterController?
+	var terminateApplication: () -> Void = { NSApp.terminate(nil) }
+	var stopGame: (() -> Void)?
+	var openSettings: (() -> Void)?
+	var blockingPresentationForQuit: (() -> LauncherPresentationDestination?)?
+	var dismissPresentationForQuit: (() -> Void)?
+	private var quitKeyMonitor: Any?
+
+	// `swift run` (used by `just preview`) launches the executable directly rather than
+	// through LaunchServices: without a bundle, the process's activation policy isn't
+	// guaranteed to be `.regular`, so it can render a frontmost window while keyboard
+	// focus stays with whatever app was active before (the terminal, an IDE). Mouse
+	// clicks still reach controls since those don't require being the active app.
+	func applicationDidFinishLaunching(_ notification: Notification) {
+		NSApp.setActivationPolicy(.regular)
+		NSApp.activate(ignoringOtherApps: true)
+		fixQuitMenuItemTarget()
+		installQuitKeyMonitor()
+		installQuitEventHandler()
+	}
+
+	// A key SwiftUI sheet can prevent the default nil target from reaching NSApp.
+	private func fixQuitMenuItemTarget() {
+		guard
+			let item = NSApp.mainMenu?.items.lazy.compactMap({ $0.submenu }).flatMap(\.items)
+				.first(where: { $0.action == #selector(NSApplication.terminate(_:)) })
+		else { return }
+		item.target = self
+		item.action = #selector(requestQuitFromMenu)
+	}
+
+	// A key sheet can also bypass the menu item's Command-Q dispatch.
+	private func installQuitKeyMonitor() {
+		quitKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+			guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+				event.charactersIgnoringModifiers?.lowercased() == "q"
+			else { return event }
+			self?.requestQuitFromMenu()
+			return nil
+		}
+	}
+
+	func applicationWillTerminate(_ notification: Notification) {
+		stopGame?()
+	}
+
+	// AppKit rejects quit Apple Events with an attached sheet before delegate policy runs.
+	private func installQuitEventHandler() {
+		NSAppleEventManager.shared().setEventHandler(
+			self,
+			andSelector: #selector(handleQuitEvent(_:withReplyEvent:)),
+			forEventClass: AEEventClass(kCoreEventClass),
+			andEventID: AEEventID(kAEQuitApplication)
+		)
+	}
+
+	@objc private func handleQuitEvent(
+		_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor
+	) {
+		// Logout, restart, and shutdown attach a quit reason; the launcher never vetoes them.
+		let isSystemInitiated =
+			event.attributeDescriptor(forKeyword: AEKeyword(kAEQuitReason)) != nil
+		requestQuit(isSystemInitiated: isSystemInitiated)
+	}
+
+	@objc private func requestQuitFromMenu() {
+		requestQuit(isSystemInitiated: false)
+	}
+
+	private func requestQuit(isSystemInitiated: Bool) {
+		if !isSystemInitiated, let installationID = launcherUpdater?.installationID {
+			guard launcherUpdater?.canTerminateForUpdate == true else { return }
+			dismissPresentationForQuit?()
+			terminateOnceSheetDetaches(installationID: installationID)
+			return
+		}
+		switch blockingPresentationForQuit?() {
+		case .none:
+			terminateApplication()
+		case .update where !isSystemInitiated:
+			// Sparkle owns this prompt and may send its own quit requests while it is visible.
+			break
+		case .settings, .failure, .popup, .update:
+			dismissPresentationForQuit?()
+			terminateOnceSheetDetaches()
+		}
+	}
+
+	private func terminateOnceSheetDetaches(attempt: Int = 0, installationID: UUID? = nil) {
+		if let installationID {
+			guard launcherUpdater?.installationID == installationID,
+				launcherUpdater?.canTerminateForUpdate == true
+			else { return }
+		}
+		guard NSApp.windows.contains(where: { $0.attachedSheet != nil }),
+			attempt < AppConstants.Timeouts.quitSheetDetachPollLimit
+		else {
+			terminateApplication()
+			return
+		}
+		// SwiftUI clears presentation state before AppKit detaches the sheet.
+		let timer = Timer(
+			timeInterval: AppConstants.Timeouts.quitSheetDetachPollInterval,
+			repeats: false
+		) { [weak self] _ in
+			MainActor.assumeIsolated {
+				self?.terminateOnceSheetDetaches(
+					attempt: attempt + 1, installationID: installationID)
+			}
+		}
+		RunLoop.main.add(timer, forMode: .common)
+	}
+
+	// requestQuit(isSystemInitiated:) applies presentation policy before asking AppKit to terminate.
+	func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+		.terminateNow
+	}
+
+	func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+		true
+	}
+
+	func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+		let menu = NSMenu()
+		menu.autoenablesItems = false
+		if let model {
+			let installedRegions = model.installation.installedRegions
+			for region in installedRegions {
+				let item = NSMenuItem(
+					title: "Play \(region.displayName)",
+					action: #selector(playRegion(_:)),
+					keyEquivalent: ""
+				)
+				item.target = self
+				item.representedObject = region.rawValue
+				item.isEnabled = model.actions.canRequestDockLaunch
+				menu.addItem(item)
+			}
+			if !installedRegions.isEmpty {
+				menu.addItem(.separator())
+			}
+		}
+
+		let settingsItem = NSMenuItem(
+			title: "Settings…",
+			action: #selector(showSettings),
+			keyEquivalent: ","
+		)
+		settingsItem.keyEquivalentModifierMask = [.command]
+		settingsItem.target = self
+		settingsItem.isEnabled = openSettings != nil
+		menu.addItem(settingsItem)
+		return menu
+	}
+
+	@objc private func playRegion(_ sender: NSMenuItem) {
+		guard
+			let rawValue = sender.representedObject as? String,
+			let region = GameRegion(rawValue: rawValue),
+			let model
+		else {
+			showMainWindow()
+			return
+		}
+		Task {
+			if !(await model.actions.launchFromDock(region: region)) {
+				showMainWindow()
+			}
+		}
+	}
+
+	@objc private func showSettings() {
+		showMainWindow()
+		openSettings?()
+	}
+
+	private func showMainWindow() {
+		NSApp.activate(ignoringOtherApps: true)
+		let window =
+			NSApp.mainWindow ?? NSApp.keyWindow
+			?? NSApp.windows.first(where: \.canBecomeMain)
+		window?.deminiaturize(nil)
+		window?.makeKeyAndOrderFront(nil)
+	}
+}
+
+@main
+struct ArknightsClientApp: App {
+	@NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+	@State private var model: LauncherViewModel
+	@State private var musicController: BackgroundMusicController
+	@State private var onboarding: OnboardingCoordinator
+
+	init() {
+		let model = Self.makeModel()
+		_model = State(wrappedValue: model)
+		#if DEBUG
+			let initialMusicTitle = model.developerAccessibilityMusicTitle
+		#else
+			let initialMusicTitle: String? = nil
+		#endif
+		_musicController = State(
+			wrappedValue: BackgroundMusicController(
+				lifecycle: model.lifecycle,
+				settings: model.settings,
+				launcherIconManager: model.launcherIconManager,
+				initialMusicTitle: initialMusicTitle,
+				openURL: { _ = NSWorkspace.shared.open($0) }
+			)
+		)
+		_onboarding = State(
+			wrappedValue: OnboardingCoordinator(
+				store: OnboardingProgressStore(defaults: model.preferences.defaults)
+			)
+		)
+	}
+
+	private static func makeModel() -> LauncherViewModel {
+		let arguments = ProcessInfo.processInfo.arguments
+		#if DEBUG
+			if DeveloperSimulationState.isPreviewArgument(arguments) {
+				// One fixed preview store, cleared on every start, so previews never accumulate
+				// preference domains or temporary folders.
+				let suiteName = "com.lumisxh.arknights-client.preview"
+				let root = FileManager.default.temporaryDirectory.appending(
+					path: "ArknightsClientPreview",
+					directoryHint: .isDirectory
+				)
+				do {
+					if FileManager.default.fileExists(atPath: root.path) {
+						try FileManager.default.removeItem(at: root)
+					}
+				} catch {
+					NSLog("ArknightsClient could not clear the previous preview data: \(error)")
+				}
+				let paths = AppPaths(
+					applicationSupportDirectory: root.appending(path: "Support"),
+					cachesDirectory: root.appending(path: "Caches"),
+					libraryDirectory: root.appending(path: "Library")
+				)
+				let defaults = UserDefaults(suiteName: suiteName)!
+				defaults.removePersistentDomain(forName: suiteName)
+				return LauncherViewModel(
+					paths: paths,
+					preferences: LauncherPreferencesStore(defaults: defaults),
+					arguments: arguments
+				)
+			}
+		#endif
+		return LauncherViewModel(
+			paths: AppPaths(),
+			preferences: LauncherPreferencesStore(),
+			arguments: arguments
+		)
+	}
+
+	var body: some Scene {
+		WindowGroup("Arknights Client") {
+			GeometryReader { geometry in
+				ContentView(
+					model: model,
+					musicController: musicController,
+					onboarding: onboarding,
+					registerOpenSettings: { appDelegate.openSettings = $0 },
+					registerQuitPresentationQuery: {
+						appDelegate.blockingPresentationForQuit = $0
+					},
+					registerQuitDismissal: { appDelegate.dismissPresentationForQuit = $0 }
+				)
+				.environment(\.launcherWindowSize, geometry.size)
+			}
+			.frame(minWidth: 880, minHeight: 560)
+			.onAppear {
+				appDelegate.model = model
+				appDelegate.launcherUpdater = model.communication.launcherUpdater
+				appDelegate.stopGame = { model.actions.stopGameForApplicationTermination() }
+				NSApp.activate(ignoringOtherApps: true)
+			}
+		}
+		.windowStyle(.hiddenTitleBar)
+		.defaultSize(width: 1040, height: 680)
+	}
+}
