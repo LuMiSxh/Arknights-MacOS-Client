@@ -11,12 +11,20 @@ import Foundation
 /// TODO(pin): The community mirrors below track `main` because the repository cannot determine a
 /// trusted commit offline. Replace `main` with a reviewed commit SHA, then bump it on purpose.
 enum PresetRemoteSources {
-	/// Operator catalog (`character_table.json`) from the community GameData mirror.
+	/// Operator catalog (`character_table.json`) hosts in preference order, from the maintained
+	/// community GameData mirror. jsDelivr refuses files over 20 MB and the table is close to
+	/// that, so raw GitHub serves it when the CDN fails.
 	/// Bound: `AppConstants.Presets.characterCatalogMaximumBytes`. Fallback: curated avatars.
-	static let characterTable = URL(
-		string:
-			"https://cdn.jsdelivr.net/gh/Kengxxiao/ArknightsGameData_YoStar@main/en_US/gamedata/excel/character_table.json"
-	)!
+	static let characterTables = [
+		URL(
+			string:
+				"https://cdn.jsdelivr.net/gh/ArknightsAssets/ArknightsGameData@master/en/gamedata/excel/character_table.json"
+		)!,
+		URL(
+			string:
+				"https://raw.githubusercontent.com/ArknightsAssets/ArknightsGameData/master/en/gamedata/excel/character_table.json"
+		)!,
+	]
 
 	/// Avatar image hosts in preference order. The first entry is a CDN. The others are raw
 	/// GitHub mirrors that `PresetCatalogService.imageData` tries when the CDN fails.

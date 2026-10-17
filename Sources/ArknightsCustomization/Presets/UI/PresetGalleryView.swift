@@ -173,6 +173,8 @@ package struct PresetGalleryView: View {
 				}
 				catalogRevision &+= 1
 				catalogReady = true
+				guard destination == .operatorIcons else { return }
+				await applyRefreshedAvatars(replacing: fetchedAvatars)
 			} catch is CancellationError {
 				return
 			} catch {
@@ -210,6 +212,7 @@ package struct PresetGalleryView: View {
 				else { return }
 				avatars = fetchedAvatars
 				avatarRevision &+= 1
+				await applyRefreshedAvatars(replacing: fetchedAvatars)
 			} catch is CancellationError {
 				return
 			} catch {
@@ -268,6 +271,21 @@ package struct PresetGalleryView: View {
 			catalogReady: catalogReady
 		)
 	}
+	/// Swaps in the refreshed operator catalog once its background update finishes, so renamed
+	/// or newly added operators appear without reopening the gallery.
+	private func applyRefreshedAvatars(replacing shown: [PresetAvatar]) async {
+		let expected = destination
+		guard let refreshed = await catalog.refreshedAvatars(replacing: shown),
+			!Task.isCancelled, destination == expected, avatars == shown
+		else { return }
+		avatars = refreshed
+		if expected == .artwork {
+			avatarRevision &+= 1
+		} else {
+			catalogRevision &+= 1
+		}
+	}
+
 	private func applyAvatar(_ avatar: PresetAvatar) {
 		applyPreset(id: avatar.id, url: avatar.url) { data in
 			await customization.applyPresetAvatar(data: data)
