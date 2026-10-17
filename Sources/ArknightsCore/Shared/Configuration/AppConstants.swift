@@ -202,7 +202,8 @@ package enum AppConstants {
 		package static let accentHueBuckets = 24
 		// Hero artwork can be anything from near-monochrome to neon: these only exclude
 		// true noise (near-gray, near-black, blown-out highlights) when picking a hue.
-		package static let minimumPixelSaturation = 0.15
+		// Muted pixels are excluded here and weighted down further in the accent score.
+		package static let minimumPixelSaturation = 0.25
 		package static let minimumPixelBrightness = 0.08
 		package static let maximumPixelBrightness = 0.97
 		// The winning hue's own saturation/brightness are clamped into this range so the

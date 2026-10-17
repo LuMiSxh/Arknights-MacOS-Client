@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- **Dynamic Theme** picks the accent color from vivid details of the artwork more reliably. The launcher calculates existing theme colors again once.
+
 ### Fixed
 
 - The game no longer leaves a generic "exec" icon in the Dock's recent apps after it closes.

@@ -31,6 +31,7 @@ extension LauncherViewModel {
 
 	/// Migrates storage, then runs the normal startup work. Only a storage failure stops the sequence.
 	func beginStartup() {
+		preferences.removeLegacyDynamicThemeAccents()
 		let persistedInstallDirectories = preferences.persistedInstallDirectories()
 		storageMigrationFailureID = nil
 		// Startup runs from idle. Without a lease the migration still runs, as before.

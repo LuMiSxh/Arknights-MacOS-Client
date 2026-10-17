@@ -41,9 +41,7 @@ enum WallpaperColorExtractor {
 	/// readable accent.
 	static func extractAccent(from image: NSImage) async -> ExtractedAccent? {
 		guard let pixels = samplePixels(from: image) else { return nil }
-		return await Task.detached(priority: .utility) {
-			bestAccentColor(in: pixels)
-		}.value
+		return await bestAccentColor(in: pixels)
 	}
 
 	private static func samplePixels(from image: NSImage) -> [UInt8]? {
@@ -79,16 +77,12 @@ enum WallpaperColorExtractor {
 	}
 }
 
-/// Pure pixel math with no AppKit dependency, so it can run on `Task.detached`'s background
-/// executor without hopping back to the main actor.
-private func bestAccentColor(in pixels: [UInt8]) -> ExtractedAccent? {
+/// Pure pixel math with no AppKit dependency. `@concurrent` keeps the scan off the main actor.
+@concurrent
+private func bestAccentColor(in pixels: [UInt8]) async -> ExtractedAccent? {
 	let side = AppConstants.Theme.wallpaperSampleSide
 	let bucketCount = AppConstants.Theme.accentHueBuckets
-	var bucketScore = [Double](repeating: 0, count: bucketCount)
-	var bucketHueSum = [Double](repeating: 0, count: bucketCount)
-	var bucketSaturationSum = [Double](repeating: 0, count: bucketCount)
-	var bucketBrightnessSum = [Double](repeating: 0, count: bucketCount)
-	var bucketCounts = [Int](repeating: 0, count: bucketCount)
+	var buckets = [HueBucket](repeating: HueBucket(), count: bucketCount)
 
 	for pixel in 0..<(side * side) {
 		let offset = pixel * 4
@@ -108,33 +102,72 @@ private func bestAccentColor(in pixels: [UInt8]) -> ExtractedAccent? {
 		else { continue }
 
 		let bucket = min(bucketCount - 1, Int(hue * Double(bucketCount)))
-		bucketScore[bucket] += saturation * brightness
-		bucketHueSum[bucket] += hue
-		bucketSaturationSum[bucket] += saturation
-		bucketBrightnessSum[bucket] += brightness
-		bucketCounts[bucket] += 1
+		buckets[bucket].add(.sample(hue: hue, saturation: saturation, brightness: brightness))
 	}
 
+	// A hue cluster that straddles a bucket edge (red at 0°/360°) would split its score across
+	// two buckets. Scoring each bucket with its circular neighbors keeps the cluster whole.
+	let windows = buckets.indices.map { center in
+		var window = HueBucket()
+		for neighbor in [center - 1, center, center + 1] {
+			window.add(buckets[(neighbor + bucketCount) % bucketCount])
+		}
+		return window
+	}
 	guard
-		let winner = bucketScore.indices.max(by: { bucketScore[$0] < bucketScore[$1] }),
-		bucketCounts[winner] > 0
+		let winner = windows.indices.max(by: { windows[$0].weight < windows[$1].weight }),
+		windows[winner].weight > 0
 	else { return nil }
 
-	let count = Double(bucketCounts[winner])
+	let window = windows[winner]
 	let renderSaturation = min(
-		max(bucketSaturationSum[winner] / count, AppConstants.Theme.minimumRenderSaturation),
+		max(window.saturation / window.weight, AppConstants.Theme.minimumRenderSaturation),
 		AppConstants.Theme.maximumRenderSaturation
 	)
 	let renderBrightness = min(
-		max(bucketBrightnessSum[winner] / count, AppConstants.Theme.minimumRenderBrightness),
+		max(window.brightness / window.weight, AppConstants.Theme.minimumRenderBrightness),
 		AppConstants.Theme.maximumRenderBrightness
 	)
-	let hue = bucketHueSum[winner] / count
+	// The circular mean is the angle of the summed unit vectors. Shifting by one turn before
+	// wrapping keeps the result in [0, 1) when the angle is negative.
+	let turns = atan2(window.sine, window.cosine) / (2 * .pi)
+	let hue = (turns + 1).truncatingRemainder(dividingBy: 1)
 	return ExtractedAccent(
 		hue: hue,
 		saturation: renderSaturation,
 		brightness: renderBrightness
 	)
+}
+
+/// Score-weighted sums for one hue bucket. Hue is stored as a unit vector (weight times cosine
+/// and sine) so that a window crossing 0°/360° averages correctly.
+private struct HueBucket {
+	var weight = 0.0
+	var cosine = 0.0
+	var sine = 0.0
+	var saturation = 0.0
+	var brightness = 0.0
+
+	/// Pixels weighted by saturation² × brightness, so a small vivid accent beats a large muted area.
+	static func sample(hue: Double, saturation: Double, brightness: Double) -> HueBucket {
+		let weight = saturation * saturation * brightness
+		let angle = 2 * Double.pi * hue
+		return HueBucket(
+			weight: weight,
+			cosine: weight * cos(angle),
+			sine: weight * sin(angle),
+			saturation: weight * saturation,
+			brightness: weight * brightness
+		)
+	}
+
+	mutating func add(_ other: HueBucket) {
+		weight += other.weight
+		cosine += other.cosine
+		sine += other.sine
+		saturation += other.saturation
+		brightness += other.brightness
+	}
 }
 
 private func hsb(

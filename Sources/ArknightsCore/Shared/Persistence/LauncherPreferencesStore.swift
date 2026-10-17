@@ -52,7 +52,9 @@ package struct LauncherPreferencesStore {
 		static let installPath = "installPath"
 		package static let selectedRegion = "selectedRegion"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
-		package static let dynamicThemeAccent = "dynamicThemeAccent"
+		package static let dynamicThemeAccent = "dynamicThemeAccent.v2"
+		/// The pre-v2 prefix. It exists only so launch cleanup can remove entries computed by the old algorithm.
+		static let legacyDynamicThemeAccent = "dynamicThemeAccent"
 		package static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
 		static let forceDisableRetina = "forceDisableRetina"
 	}
@@ -210,6 +212,16 @@ package struct LauncherPreferencesStore {
 			],
 			forKey: key
 		)
+	}
+
+	/// Removes accents cached under earlier prefixes. Entries under the current version stay.
+	package func removeLegacyDynamicThemeAccents() {
+		let legacyPrefix = "\(Key.legacyDynamicThemeAccent)."
+		let currentPrefix = "\(Key.dynamicThemeAccent)."
+		for key in defaults.dictionaryRepresentation().keys
+		where key.hasPrefix(legacyPrefix) && !key.hasPrefix(currentPrefix) {
+			defaults.removeObject(forKey: key)
+		}
 	}
 
 	/// The hue last persisted to the app bundle's icon via `NSWorkspace.setIcon`.
