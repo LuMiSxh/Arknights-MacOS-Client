@@ -5,8 +5,7 @@ import ArknightsInfrastructure
 import Foundation
 
 package actor PresetCatalogService {
-	static let characterTableURL = PresetRemoteSources.characterTable
-	static let supplementalCharacterTableURL = PresetRemoteSources.supplementalCharacterTable
+	static let characterTableURLs = PresetRemoteSources.characterTables
 
 	let cacheDirectory: URL
 	let cachedAvatarsFile: URL
