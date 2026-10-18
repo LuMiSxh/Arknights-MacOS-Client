@@ -9,6 +9,12 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The game no longer uses more memory the longer it runs. Two leaks in the bundled DXMT grew the game by up to 20 GB per hour until macOS ran out of memory.
+
 ## [0.7.0] - 2026-10-14
 
 ### Added

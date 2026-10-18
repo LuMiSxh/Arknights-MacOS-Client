@@ -48,6 +48,7 @@ struct WineRuntime: Sendable {
 	let displayName: String
 	let revision: String
 	let gameIconBridgeURL: URL?
+	let dxmtLeakFixURL: URL?
 	let capabilityManifestFileName: String?
 	private let compatibilityManager: GameCompatibilityManager
 
@@ -56,6 +57,7 @@ struct WineRuntime: Sendable {
 		displayName: String,
 		revision: String,
 		gameIconBridgeURL: URL? = nil,
+		dxmtLeakFixURL: URL? = nil,
 		capabilityManifestFileName: String? = nil,
 		compatibilityManager: GameCompatibilityManager
 	) {
@@ -63,6 +65,7 @@ struct WineRuntime: Sendable {
 		self.displayName = displayName
 		self.revision = revision
 		self.gameIconBridgeURL = gameIconBridgeURL
+		self.dxmtLeakFixURL = dxmtLeakFixURL
 		self.capabilityManifestFileName = capabilityManifestFileName
 		self.compatibilityManager = compatibilityManager
 	}
@@ -159,6 +162,7 @@ struct WineRuntime: Sendable {
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
+			dxmtLeakFixURL: resources.appending(path: "Compatibility/DXMT/DXMTLeakFix.dylib"),
 			capabilityManifestFileName: configuration.interface?.runtimeCapabilities,
 			compatibilityManager: compatibilityManager
 		)
@@ -304,7 +308,7 @@ struct WineRuntime: Sendable {
 		if metalPerformanceHUDEnabled {
 			environment["MTL_HUD_ENABLED"] = "1"
 		}
-		for (key, value) in gameIconEnvironment(customIconURL: gameIconURL) {
+		for (key, value) in injectedLibraryEnvironment(customIconURL: gameIconURL) {
 			environment[key] = value
 		}
 		let process = Process()
