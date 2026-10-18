@@ -6,13 +6,18 @@ import Testing
 
 @testable import ArknightsGameRuntime
 
-private let runtimeCapabilityManifest = Data(
-	#"{"schemaVersion":1,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true}}"#
-		.utf8
-)
+private func runtimeCapabilityManifest(schemaVersion: Int) -> Data {
+	let capabilities =
+		schemaVersion == 1
+		? #"{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true}"#
+		: #"{"hardwareCursor":true}"#
+	return Data(#"{"schemaVersion":\#(schemaVersion),"capabilities":\#(capabilities)}"#.utf8)
+}
 
-@Test
-func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() throws {
+@Test(arguments: [1, 2])
+func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles(
+	schemaVersion: Int
+) throws {
 	let fileManager = FileManager.default
 	let root = fileManager.temporaryDirectory.appending(
 		path: "runtime-capabilities-test-\(UUID().uuidString)",
@@ -20,6 +25,8 @@ func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() th
 	)
 	try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
 	defer { try? fileManager.removeItem(at: root) }
+
+	let manifest = runtimeCapabilityManifest(schemaVersion: schemaVersion)
 
 	let unconfigured = RuntimeCapabilities.discover(
 		inRuntimeDirectory: root,
@@ -46,7 +53,7 @@ func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() th
 	)
 	try fileManager.createDirectory(at: outside, withIntermediateDirectories: true)
 	defer { try? fileManager.removeItem(at: outside) }
-	try runtimeCapabilityManifest.write(to: outside.appending(path: "manifest.json"))
+	try manifest.write(to: outside.appending(path: "manifest.json"))
 	try fileManager.createSymbolicLink(
 		at: root.appending(path: "linked"),
 		withDestinationURL: outside
@@ -60,13 +67,13 @@ func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() th
 
 	let relativePath = "runtime-capabilities.json"
 	let manifestURL = root.appending(path: relativePath)
-	try runtimeCapabilityManifest.write(to: manifestURL)
+	try manifest.write(to: manifestURL)
 	let supported = RuntimeCapabilities.discover(
 		inRuntimeDirectory: root,
 		manifestRelativePath: relativePath
 	)
 	#expect(
-		supported.capabilities == (try RuntimeCapabilities.decode(from: runtimeCapabilityManifest)))
+		supported.capabilities == (try RuntimeCapabilities.decode(from: manifest)))
 	#expect(supported.diagnostic == nil)
 
 	try fileManager.removeItem(at: manifestURL)
@@ -78,15 +85,15 @@ func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles() th
 	#expect(missing.diagnostic?.isEmpty == false)
 
 	try Data(
-		#"{"schemaVersion":2,"capabilities":{"dxmtMaximumFrameLatency":{"minimum":0,"maximum":3,"defaultValue":3},"hardwareCursor":true}}"#
+		#"{"schemaVersion":3,"capabilities":{"hardwareCursor":true}}"#
 			.utf8
 	).write(to: manifestURL)
-	let malformed = RuntimeCapabilities.discover(
+	let unsupportedVersion = RuntimeCapabilities.discover(
 		inRuntimeDirectory: root,
 		manifestRelativePath: relativePath
 	)
-	#expect(malformed.capabilities == .conservative)
-	#expect(malformed.diagnostic?.isEmpty == false)
+	#expect(unsupportedVersion.capabilities == .conservative)
+	#expect(unsupportedVersion.diagnostic?.isEmpty == false)
 
 	try fileManager.removeItem(at: manifestURL)
 	try fileManager.createSymbolicLink(

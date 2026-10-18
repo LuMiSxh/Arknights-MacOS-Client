@@ -180,13 +180,8 @@ def test_prepare_runtime_preserves_only_regular_capability_sidecar(
     archive = tmp_path / "fixture.tar.gz"
     manifest = json.dumps(
         {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "capabilities": {
-                "dxmtMaximumFrameLatency": {
-                    "minimum": 0,
-                    "maximum": 3,
-                    "defaultValue": 3,
-                },
                 "hardwareCursor": True,
             },
         }

@@ -8,12 +8,10 @@ import Testing
 @testable import ArknightsGameRuntime
 
 private let currentRuntimeCapabilities = RuntimeCapabilities(
-	dxmtMaximumFrameLatency: .init(minimum: 0, maximum: 3, defaultValue: 3),
 	hardwareCursorSupported: true,
 	metalFXSpatialUpscalingSupported: true
 )
 private let legacyRuntimeCapabilities = RuntimeCapabilities(
-	dxmtMaximumFrameLatency: .init(minimum: 1, maximum: 3, defaultValue: 3),
 	hardwareCursorSupported: false,
 	metalFXSpatialUpscalingSupported: false
 )
@@ -45,7 +43,6 @@ func runtimeEnvironmentAppliesAdvertisedCapabilities(
 			#expect(environment[key] == region.runtimeEnvironmentOverrides[key])
 		}
 		#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == nil)
-		#expect(environment["ARKNIGHTS_RUNTIME_DXMT_MAX_FRAME_LATENCY"] == nil)
 		#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == expectedHardwareCursor)
 	}
 }
