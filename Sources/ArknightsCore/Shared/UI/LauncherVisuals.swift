@@ -2,18 +2,15 @@
 
 import SwiftUI
 
-/// Shared semantic colors for launcher chrome and controls, independent of any one screen.
 package enum LauncherVisuals {
 	/// Fallback accent used only when artwork cannot provide a dynamic theme color.
 	package static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
 	package static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
-	/// A quieter neutral for secondary controls and macOS 27's high-contrast borders.
 	static let quietControlTint = Color(red: 0.58, green: 0.61, blue: 0.65)
 	package static let hairline = Color.white.opacity(0.12)
 	package static let danger = Color(red: 0.69, green: 0.141, blue: 0.231)
 	/// Bright semantic foreground for destructive actions; `danger` remains a dark surface tint.
 	package static let dangerForeground = Color(red: 0.98, green: 0.42, blue: 0.48)
-	/// Brighter destructive foreground used when the system requests increased contrast.
 	static let dangerForegroundHighContrast = Color(red: 1, green: 0.55, blue: 0.60)
 	package static let warning = Color(red: 0.91, green: 0.61, blue: 0.21)
 	package static let success = Color(red: 0.28, green: 0.78, blue: 0.55)
@@ -23,11 +20,8 @@ package enum LauncherVisuals {
 	package static let navigationRailBackground = Color.black.opacity(0.28)
 	static let panelBorder = Color.white.opacity(0.08)
 	package static let navigationHoverFill = Color.white.opacity(0.06)
-	/// Black scrim opacity behind modal overlays such as the update sheet.
 	package static let overlayDim = 0.55
-	/// Near-black backdrop shown when artwork is unavailable.
 	package static let artworkFallback = Color(red: 0.035, green: 0.04, blue: 0.045)
-	/// Top and bottom stops of the plate behind preset gallery thumbnails.
 	package static let galleryPlateTop = Color(red: 0.16, green: 0.17, blue: 0.19)
 	package static let galleryPlateBottom = Color(red: 0.06, green: 0.06, blue: 0.07)
 
@@ -120,10 +114,10 @@ package enum LauncherVisuals {
 		}
 	}
 
-	/// Raises the contrast of a chromatic foreground while retaining its hue. macOS 27's
-	/// Liquid Glass can blend a tint into the surface until the original accent is too close
-	/// to the fill, so controls use this only for their foreground and keep the raw tint on
-	/// their surface and border.
+	// Raises the contrast of a chromatic foreground while retaining its hue. macOS 27's
+	// Liquid Glass can blend a tint into the surface until the original accent is too close
+	// to the fill, so controls use this only for their foreground and keep the raw tint on
+	// their surface and border.
 	static func contrastTint(_ color: Color) -> Color {
 		let resolved = color.resolve(in: EnvironmentValues())
 		let red = Double(resolved.red)

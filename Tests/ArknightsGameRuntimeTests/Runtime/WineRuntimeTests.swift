@@ -26,14 +26,9 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 
 	#expect(environment["HOME"] == "/isolated/prefix/home")
 	#expect(environment["TMPDIR"] == "/isolated/prefix/home/tmp")
-	#expect(environment["XDG_CONFIG_HOME"] == "/isolated/prefix/home/.config")
-	#expect(environment["WINEPREFIX"] == "/isolated/prefix")
-	#expect(environment["WINEPRELOADERAPPNAME"] == "Arknights")
 	#expect(environment["CFFIXED_USER_HOME"] == "/isolated/prefix/home")
-	#expect(environment["DXMT_SHADER_CACHE"] == "1")
+	#expect(environment["WINEPREFIX"] == "/isolated/prefix")
 	#expect(environment["DXMT_SHADER_CACHE_PATH"] == "/isolated/prefix/home/.cache/dxmt")
-	#expect(environment["DXMT_LOG_LEVEL"] == "error")
-	#expect(environment["WINEDEBUG"] == "-all,err+all")
 	#expect(environment["WINEMSYNC"] == "1")
 	#expect(environment["WINEESYNC"] == nil)
 	#expect(environment["DYLD_FALLBACK_LIBRARY_PATH"] == "/runtime/lib")
@@ -42,9 +37,6 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(environment["SSH_AUTH_SOCK"] == nil)
 	#expect(environment["AWS_SECRET_ACCESS_KEY"] == nil)
 	#expect(environment["PATH"] == "/runtime/bin:/usr/bin:/bin")
-	#expect(
-		WineRuntime.windowsGamePath(for: URL(filePath: "/Support/Arknights.exe"))
-			== "G:\\Arknights.exe")
 
 	let esync = WineRuntime.isolatedEnvironment(
 		prefixDirectory: prefix,

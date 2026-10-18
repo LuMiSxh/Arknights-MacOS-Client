@@ -2,12 +2,9 @@
 
 import AppKit
 
-/// The screen the display choices are sized for: usable area in points and the panel's full
-/// pixel size.
 package struct GameScreenMetrics: Equatable, Sendable {
 	package let visibleSize: CGSize
 	package let pixelSize: CGSize
-	/// Height of a standard window title bar, which a windowed game's content area gives up.
 	package var titleBarHeight = AppConstants.Game.standardWindowTitleBarHeight
 
 	init(
@@ -42,9 +39,7 @@ package struct GameScreenMetrics: Equatable, Sendable {
 	}
 }
 
-/// How big a windowed game should be.
 package enum GameWindowSizeChoice: CaseIterable, Sendable {
-	/// The screen's usable area minus the window title bar, like a zoomed window.
 	case fillScreen
 	/// The largest 16:9 preset within `AppConstants.Game.compactWindowScreenShare` of the screen.
 	case leaveRoom
@@ -68,7 +63,6 @@ package enum GameWindowSizeChoice: CaseIterable, Sendable {
 		}
 	}
 
-	/// The choice whose size equals `size` on this screen, or nil for a custom size.
 	package static func matching(_ size: GameDisplaySize, on screen: GameScreenMetrics) -> Self? {
 		allCases.first { $0.size(on: screen) == size }
 	}

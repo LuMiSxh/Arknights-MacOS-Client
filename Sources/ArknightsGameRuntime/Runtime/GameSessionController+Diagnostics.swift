@@ -34,7 +34,7 @@ extension GameSessionController {
 		) + "s"
 	}
 
-	/// Reads the crash report and log tail off the caller's actor.
+	// Reads the crash report and log tail off the caller's actor.
 	@concurrent
 	static func collectExitDiagnostics(
 		_ exit: WineProcessExit,

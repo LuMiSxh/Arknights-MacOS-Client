@@ -20,40 +20,13 @@ private struct TestCompatibilityComponent: GameCompatibilityComponent {
 }
 
 @Test
-func compatibilityManagerInstallsActiveAndRemovesRetiredComponents() throws {
-	let active = TestCompatibilityComponent(
-		identifier: "active",
-		installs: true,
-		restores: false
-	)
-	let retired = TestCompatibilityComponent(
-		identifier: "retired",
-		installs: false,
-		restores: true
-	)
+func compatibilityManagerInstallsActiveRemovesRetiredAndRestoresBeforeUpdates() throws {
+	let active = TestCompatibilityComponent(identifier: "active", installs: true, restores: true)
+	let retired = TestCompatibilityComponent(identifier: "retired", installs: false, restores: true)
 	let manager = GameCompatibilityManager(active: [active], retired: [retired])
 
 	let changes = try manager.prepareForLaunch(in: URL(filePath: "/game"))
 
 	#expect(changes == GameCompatibilityChanges(installed: ["active"], removed: ["retired"]))
-}
-
-@Test
-func compatibilityManagerRestoresActiveAndRetiredComponentsBeforeUpdates() throws {
-	let active = TestCompatibilityComponent(
-		identifier: "active",
-		installs: true,
-		restores: true
-	)
-	let retired = TestCompatibilityComponent(
-		identifier: "retired",
-		installs: false,
-		restores: true
-	)
-	let manager = GameCompatibilityManager(active: [active], retired: [retired])
-
-	#expect(
-		try manager.restoreForUpdate(in: URL(filePath: "/game"))
-			== ["active", "retired"]
-	)
+	#expect(try manager.restoreForUpdate(in: URL(filePath: "/game")) == ["active", "retired"])
 }

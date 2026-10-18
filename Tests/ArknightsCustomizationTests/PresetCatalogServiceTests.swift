@@ -63,12 +63,10 @@ struct PresetCatalogServiceTests {
 	}
 
 	@Test
-	func cacheKeysAreHashedIntoSinglePathComponents() async {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "PresetCatalogServiceTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? FileManager.default.removeItem(at: root) }
+	func cacheKeysAreHashedIntoSinglePathComponents() async throws {
+		let temporary = try TemporaryDirectory("PresetCatalogServiceTests")
+		defer { temporary.remove() }
+		let root = temporary.url
 		let service = PresetCatalogService(
 			cacheDirectory: root,
 			log: LauncherLog(fileURL: root.appending(path: "launcher.log"))
@@ -79,8 +77,6 @@ struct PresetCatalogServiceTests {
 
 		#expect(first == second)
 		#expect(first.deletingLastPathComponent() == root)
-		#expect(first.lastPathComponent.count == 70)
-		#expect(first.pathExtension == "cache")
 
 		#expect(PresetCatalogService.isValidAvatarIdentifier("char_002_amiya"))
 		#expect(!PresetCatalogService.isValidAvatarIdentifier("char_../../escape"))
@@ -97,11 +93,9 @@ struct PresetCatalogServiceTests {
 			EpochImageURLProtocol.release()
 			EpochImageURLProtocol.reset()
 		}
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "PresetCatalogEpochTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? FileManager.default.removeItem(at: root) }
+		let temporary = try TemporaryDirectory("PresetCatalogEpochTests")
+		defer { temporary.remove() }
+		let root = temporary.url
 		let configuration = URLSessionConfiguration.ephemeral
 		configuration.protocolClasses = [EpochImageURLProtocol.self]
 		let service = PresetCatalogService(

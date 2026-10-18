@@ -4,7 +4,6 @@ import ArknightsCore
 import ArknightsGameInstallation
 import SwiftUI
 
-/// Briefly draws the verified-installation checkmark without delaying the next action.
 struct LauncherCompletionFeedbackView: View {
 	let feedbackID: UUID
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion

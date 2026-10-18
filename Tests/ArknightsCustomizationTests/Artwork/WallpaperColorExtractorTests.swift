@@ -9,28 +9,25 @@ import Testing
 
 @MainActor
 struct WallpaperColorExtractorTests {
-	@Test
-	func clusterStraddlingTheRedSeamOutweighsASingleBucketHue() async throws {
-		// Two red halves (about 355° and 5°) sit in different buckets; each alone scores below
-		// the green bucket, but together they outweigh it.
-		let image = try makeImage(runs: [
-			(red: 230, green: 0, blue: 19, count: 20),
-			(red: 230, green: 19, blue: 0, count: 20),
-			(red: 0, green: 230, blue: 27, count: 30),
-		])
+	typealias Run = (red: UInt8, green: UInt8, blue: UInt8, count: Int)
 
-		let accent = try #require(await WallpaperColorExtractor.extractAccent(from: image))
-		let circularDistanceToRed = min(accent.hue, 1 - accent.hue)
-		#expect(circularDistanceToRed < 0.03)
-	}
-
-	@Test
-	func smallVividAccentBeatsLargerMutedRegion() async throws {
-		// The muted blue has more pixels, but its saturation squared weight is far lower.
-		let image = try makeImage(runs: [
-			(red: 230, green: 0, blue: 19, count: 10),
-			(red: 107, green: 117, blue: 153, count: 60),
-		])
+	@Test(
+		arguments: [
+			// Two red halves (about 355° and 5°) sit in different buckets; each alone scores below
+			// the green bucket, but together they outweigh it.
+			[
+				(red: 230, green: 0, blue: 19, count: 20),
+				(red: 230, green: 19, blue: 0, count: 20),
+				(red: 0, green: 230, blue: 27, count: 30),
+			],
+			// The muted blue has more pixels, but its saturation squared weight is far lower.
+			[
+				(red: 230, green: 0, blue: 19, count: 10),
+				(red: 107, green: 117, blue: 153, count: 60),
+			],
+		] as [[Run]])
+	func vividRedAccentWinsOverBucketSplitOrLargerMutedRuns(runs: [Run]) async throws {
+		let image = try makeImage(runs: runs)
 
 		let accent = try #require(await WallpaperColorExtractor.extractAccent(from: image))
 		let circularDistanceToRed = min(accent.hue, 1 - accent.hue)
@@ -38,7 +35,7 @@ struct WallpaperColorExtractorTests {
 	}
 
 	private func makeImage(
-		runs: [(red: UInt8, green: UInt8, blue: UInt8, count: Int)]
+		runs: [Run]
 	) throws -> NSImage {
 		let side = AppConstants.Theme.wallpaperSampleSide
 		// Pixels after the last run keep alpha 0, so the extractor skips them.

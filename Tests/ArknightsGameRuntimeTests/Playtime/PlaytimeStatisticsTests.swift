@@ -28,10 +28,12 @@ struct PlaytimeStatisticsTests {
 	}
 
 	@Test
-	func corruptedAndOversizedFilesStartWithAnEmptyState() throws {
+	func corruptedAndOversizedFilesStartWithAnEmptyState() async throws {
 		let corrupt = try Fixture()
 		try Data("not json".utf8).write(to: corrupt.statisticsURL)
-		#expect(corrupt.controller().statistics == .empty)
+		let corruptController = corrupt.controller()
+		await corruptController.loaded()
+		#expect(corruptController.statistics == .empty)
 		#expect(!FileManager.default.fileExists(atPath: corrupt.statisticsURL.path))
 		#expect(
 			try Data(contentsOf: corrupt.statisticsURL.appendingPathExtension("unreadable"))
@@ -40,14 +42,18 @@ struct PlaytimeStatisticsTests {
 		let oversized = try Fixture()
 		try Data(repeating: 0, count: AppConstants.Playtime.statisticsMaximumBytes + 1)
 			.write(to: oversized.statisticsURL)
-		#expect(oversized.controller().statistics == .empty)
+		let oversizedController = oversized.controller()
+		await oversizedController.loaded()
+		#expect(oversizedController.statistics == .empty)
 
 		let linked = try Fixture()
 		let target = linked.root.appending(path: "outside.json")
 		try JSONEncoder().encode(PlaytimeStatistics.empty).write(to: target)
 		try FileManager.default.createSymbolicLink(
 			at: linked.statisticsURL, withDestinationURL: target)
-		#expect(linked.controller().statistics == .empty)
+		let linkedController = linked.controller()
+		await linkedController.loaded()
+		#expect(linkedController.statistics == .empty)
 	}
 }
 

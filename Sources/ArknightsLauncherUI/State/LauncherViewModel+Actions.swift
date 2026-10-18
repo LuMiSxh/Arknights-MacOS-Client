@@ -5,8 +5,8 @@ import ArknightsGameInstallation
 import ArknightsGameRuntime
 import Foundation
 
-/// Developer-mode flags and the action seam. Production action bodies live here
-/// and never branch on developer mode; debug builds substitute `SimulatedLauncherActions`.
+// Production action bodies live here and never branch on developer mode; debug builds
+// substitute `SimulatedLauncherActions`.
 extension LauncherViewModel: LauncherActions {
 	var isDeveloperMode: Bool {
 		#if DEBUG

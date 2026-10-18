@@ -3,10 +3,9 @@
 import ArknightsCore
 import Foundation
 
-/// Drives macOS Game Mode around a Wine-run session. Game Mode can't see the actual
-/// Windows game process through Wine (it only sees the wrapper), so the only way to
-/// activate it is Apple's own `gamepolicyctl`, which ships solely inside the full
-/// Xcode.app (not the standalone Command Line Tools) — most players won't have it.
+// Game Mode can't see the actual Windows game process through Wine (it only sees the
+// wrapper), so the only way to activate it is Apple's own `gamepolicyctl`, which ships solely
+// inside the full Xcode.app (not the standalone Command Line Tools) — most players won't have it.
 package enum GamePolicyControl {
 	static let executablePath = "/Applications/Xcode.app/Contents/Developer/usr/bin/gamepolicyctl"
 
@@ -14,7 +13,7 @@ package enum GamePolicyControl {
 		fileManager.isExecutableFile(atPath: executablePath)
 	}
 
-	/// Requests the policy change without blocking launch and records start or exit failures.
+	// Requests the policy change without blocking launch and records start or exit failures.
 	static func setGameMode(on: Bool, log: LauncherLog) {
 		guard isAvailable() else {
 			log.debug("Game Mode request skipped because gamepolicyctl is unavailable")

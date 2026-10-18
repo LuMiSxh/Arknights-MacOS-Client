@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -129,12 +130,9 @@ func migrationStateWrittenBeforeLibrarySharingDecodesAndRunsOnlyThatStep(
 @Test
 func migrationStoreRoundTripsImportsLegacyMarkersAndSurfacesCorruptPersistedState() throws {
 	let fileManager = FileManager.default
-	let prefix = fileManager.temporaryDirectory.appending(
-		path: "runtime-migration-store-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: prefix) }
-	try fileManager.createDirectory(at: prefix, withIntermediateDirectories: true)
+	let temporary = try TemporaryDirectory("RuntimeMigrationTests")
+	defer { temporary.remove() }
+	let prefix = temporary.url
 	let store = RuntimeMigrationStore(fileManager: fileManager)
 	let state = RuntimeMigrationState(
 		runtimeRevision: "runtime-prefix-2",

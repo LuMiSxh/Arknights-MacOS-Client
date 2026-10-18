@@ -6,15 +6,12 @@ import Synchronization
 
 struct ChildProcessTimeout: Error, Sendable {}
 
-/// Owns one short-lived child process and resumes its awaiting task exactly once.
-///
-/// Without captured output, cancellation and timeout resume the caller at once. With captured
-/// output, they only terminate the child; the caller resumes after the child exits and its output
-/// ends, so the child is reaped before the error is reported.
+// Without captured output, cancellation and timeout resume the caller at once. With captured
+// output, they only terminate the child; the caller resumes after the child exits and its output
+// ends, so the child is reaped before the error is reported.
 final class ChildProcess: @unchecked Sendable {
 	enum Output {
 		case file(FileHandle)
-		/// Drains output while the child runs and keeps the last `maximumBytes`.
 		case captured(maximumBytes: Int)
 	}
 
@@ -165,7 +162,7 @@ final class ChildProcess: @unchecked Sendable {
 		}
 	}
 
-	/// Resumes the awaiting task once, with the first outcome `decide` accepts.
+	// Resumes the awaiting task once, with the first outcome `decide` accepts.
 	private func settle(_ decide: (State) -> Swift.Result<Result, any Error>?) {
 		let settled = state.withLock {
 			state -> (Continuation, Swift.Result<Result, any Error>, DispatchSourceTimer?)? in

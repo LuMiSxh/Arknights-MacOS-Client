@@ -18,6 +18,15 @@ package struct TemporaryDirectory: Sendable {
 	}
 }
 
+/// An HTTP/1.1 response for a stub route.
+package func makeHTTPResponse(
+	url: URL,
+	status: Int,
+	headers: [String: String] = [:]
+) -> HTTPURLResponse {
+	HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!
+}
+
 /// A defaults suite that no other test shares. Remove it with `removePersistentDomain(forName:)`.
 package func makeIsolatedDefaults(
 	_ label: String = "Tests"

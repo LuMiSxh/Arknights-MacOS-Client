@@ -2,7 +2,6 @@
 
 import SwiftUI
 
-/// Draws transfer progress around a capsule without changing the capsule's layout.
 struct CapsuleProgressOutline: View {
 	let progress: Double
 	let tint: Color
@@ -15,7 +14,6 @@ struct CapsuleProgressOutline: View {
 		min(max(progress, 0), 1)
 	}
 
-	/// A full, active outline marks work without measurable progress.
 	private var showsIndeterminatePulse: Bool {
 		isGlintActive && clampedProgress >= 1 && !reduceMotion
 	}
@@ -50,7 +48,6 @@ struct CapsuleProgressOutline: View {
 			.accessibilityHidden(true)
 	}
 
-	/// A soft glow at the leading edge of the transferred fraction.
 	private var progressHead: some View {
 		let tail = max(0, clampedProgress - min(0.035, clampedProgress))
 		return Capsule()
@@ -126,9 +123,9 @@ private struct CapsuleProgressSweep: View {
 	}
 }
 
-/// Indeterminate work: an accent glint circles the outline while the ring breathes on the
-/// same cycle as the primary action halo. The orbit eases without ever stopping, so it
-/// reads as ongoing work rather than a looping progress fill.
+// Indeterminate work: an accent glint circles the outline while the ring breathes on the
+// same cycle as the primary action halo. The orbit eases without ever stopping, so it
+// reads as ongoing work rather than a looping progress fill.
 private struct CapsuleIndeterminatePulse: View {
 	let tint: Color
 	let lineWidth: CGFloat
@@ -165,7 +162,6 @@ private struct CapsuleIndeterminatePulse: View {
 		Capsule().inset(by: lineWidth / 2)
 	}
 
-	/// Draws a segment ending at `head`, split in two where it wraps past the path start.
 	private func glint(head: Double, length: Double, width: CGFloat) -> some View {
 		let start = head - length
 		let style = StrokeStyle(lineWidth: width, lineCap: .round)

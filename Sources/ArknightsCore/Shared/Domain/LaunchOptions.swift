@@ -24,7 +24,6 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	/// The resolution fullscreen shows, like a game's output resolution. Native follows the
 	/// fullscreen display, so displays beyond 4K or with uncommon sizes are not scaled unevenly.
 	package var fullscreenResolution: GameFullscreenResolution
-	/// Windowed and borderless window size in macOS points.
 	package var windowSize: GameDisplaySize = .defaultWindow
 	package var usesGameSettings: Bool = false
 	package var renderingMode: GameRenderingMode = .retina
@@ -93,21 +92,14 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 				GameDisplaySize.officialResolutions.contains($0) ? $0 : nil
 			} ?? defaults.resolution
 		fullscreenResolution = value(.fullscreenResolution, .fixed(resolution))
-		// Stored options without this key predate it, when Arknights kept its own settings.
-		usesGameSettings = value(.usesGameSettings, true)
+		usesGameSettings = value(.usesGameSettings, defaults.usesGameSettings)
 		usesMetalPerformanceHUD = value(
 			.usesMetalPerformanceHUD, defaults.usesMetalPerformanceHUD)
 		usesGameMode = value(.usesGameMode, defaults.usesGameMode)
 		synchronizationMode = value(.synchronizationMode, defaults.synchronizationMode)
 
-		// Before 0.7.0 one resolution served both modes, in pixels while Retina was on.
-		let legacyRetina = value(.usesHighResolutionMode, true)
-		renderingMode = value(.renderingMode, legacyRetina ? .retina : .standard)
-		let legacyWindow =
-			!usesGameSettings && container.contains(.resolution)
-			? Self.legacyWindowSize(for: resolution, retina: legacyRetina)
-			: defaults.windowSize
-		windowSize = value(.windowSize, legacyWindow)
+		renderingMode = value(.renderingMode, defaults.renderingMode)
+		windowSize = value(.windowSize, defaults.windowSize)
 	}
 
 	package func encode(to encoder: any Encoder) throws {
@@ -124,20 +116,6 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		try container.encode(synchronizationMode, forKey: .synchronizationMode)
 	}
 
-	/// Keeps the window a legacy pixel resolution produced, assuming a 2x Retina display.
-	private static func legacyWindowSize(
-		for size: GameDisplaySize, retina: Bool
-	) -> GameDisplaySize {
-		guard retina else { return size }
-		let halved = GameDisplaySize(width: size.width / 2, height: size.height / 2)
-		guard GameDisplaySize.validDimensions.contains(halved.width),
-			GameDisplaySize.validDimensions.contains(halved.height)
-		else { return .defaultWindow }
-		return halved
-	}
-
-	/// The resolution fullscreen shows: the display's own when Native is chosen and known,
-	/// otherwise the chosen size.
 	func fullscreenSize(native: GameDisplaySize?) -> GameDisplaySize {
 		switch fullscreenResolution {
 		case .native: native ?? resolution
@@ -145,8 +123,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 	}
 
-	/// The pixels the game draws in fullscreen. MetalFX and Standard draw one pixel per point
-	/// and scale up; without a known display the shown size is drawn as is.
+	// The pixels the game draws in fullscreen. MetalFX and Standard draw one pixel per point
+	// and scale up; without a known display the shown size is drawn as is.
 	func fullscreenDrawnSize(on display: GameFullscreenDisplay?, retina: Bool) -> GameDisplaySize {
 		let shown = fullscreenSize(native: display?.pixelSize)
 		return display?.drawnSize(showing: shown, retina: retina) ?? shown

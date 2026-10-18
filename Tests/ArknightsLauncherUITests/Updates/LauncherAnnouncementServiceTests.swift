@@ -6,8 +6,6 @@ import Testing
 
 @testable import ArknightsLauncherUI
 
-@Suite(.serialized)
-
 struct LauncherAnnouncementServiceTests {
 	@Test
 	func eligibilityHonorsVersionWindowDatesAndSeenIDs() throws {

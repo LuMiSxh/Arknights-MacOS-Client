@@ -2,43 +2,12 @@
 
 import AppKit
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
 @testable import ArknightsCustomization
 @testable import ArknightsLauncherUI
-
-private func verifyArtworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
-	RegionalLogoURLProtocol.resetOrdering()
-	defer {
-		RegionalLogoURLProtocol.releaseFirst()
-		RegionalLogoURLProtocol.resetOrdering()
-	}
-	let directory = FileManager.default.temporaryDirectory.appending(
-		path: "ArtworkCacheOrderingTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? FileManager.default.removeItem(at: directory) }
-	let configuration = URLSessionConfiguration.ephemeral
-	configuration.protocolClasses = [RegionalLogoURLProtocol.self]
-	let cache = ArtworkCache(
-		session: URLSession(configuration: configuration),
-		directory: directory
-	)
-	let first = testBranding(host: "first", key: "first")
-	let second = testBranding(host: "second", key: "second")
-
-	RegionalLogoURLProtocol.beginOrdering()
-	let firstTask = Task { try await cache.imageData(for: first, region: .global) }
-	while !RegionalLogoURLProtocol.isFirstRequestStarted() { await Task.yield() }
-	let secondTask = Task { try await cache.imageData(for: second, region: .global) }
-	_ = try await secondTask.value
-	RegionalLogoURLProtocol.releaseFirst()
-	_ = try await firstTask.value
-
-	let activeKey = try cache.cachedActiveCacheKey(for: .global)
-	#expect(activeKey == "second")
-}
 
 private func testBranding(host: String, key: String) -> LauncherBranding {
 	LauncherBranding(
@@ -63,11 +32,37 @@ func artworkRedirectsUseTheSelectedPublisherHostModel() throws {
 	#expect(chinaValidator(URL(string: "https://zh.wikifur.com/w/images/logo.png")!))
 }
 
+/// Serialized because `RegionalLogoURLProtocol` keeps its ordering state in static variables.
 @Suite(.serialized)
 struct LauncherBrandingURLProtocolTests {
 	@Test
 	func artworkCacheKeepsTheNewestSameRegionRequestActive() async throws {
-		try await verifyArtworkCacheKeepsTheNewestSameRegionRequestActive()
+		RegionalLogoURLProtocol.resetOrdering()
+		defer {
+			RegionalLogoURLProtocol.releaseFirst()
+			RegionalLogoURLProtocol.resetOrdering()
+		}
+		let storage = try TemporaryDirectory("ArtworkCacheOrderingTests")
+		defer { storage.remove() }
+		let configuration = URLSessionConfiguration.ephemeral
+		configuration.protocolClasses = [RegionalLogoURLProtocol.self]
+		let cache = ArtworkCache(
+			session: URLSession(configuration: configuration),
+			directory: storage.url
+		)
+		let first = testBranding(host: "first", key: "first")
+		let second = testBranding(host: "second", key: "second")
+
+		RegionalLogoURLProtocol.beginOrdering()
+		let firstTask = Task { try await cache.imageData(for: first, region: .global) }
+		while !RegionalLogoURLProtocol.isFirstRequestStarted() { await Task.yield() }
+		let secondTask = Task { try await cache.imageData(for: second, region: .global) }
+		_ = try await secondTask.value
+		RegionalLogoURLProtocol.releaseFirst()
+		_ = try await firstTask.value
+
+		let activeKey = try cache.cachedActiveCacheKey(for: .global)
+		#expect(activeKey == "second")
 	}
 }
 

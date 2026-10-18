@@ -4,7 +4,6 @@ import ArknightsCore
 import ArknightsGameInstallation
 import SwiftUI
 
-/// English copy and descriptions supplied by the Settings feature.
 package struct StorageOverviewCopy {
 	let title: String
 	let subtitle: String

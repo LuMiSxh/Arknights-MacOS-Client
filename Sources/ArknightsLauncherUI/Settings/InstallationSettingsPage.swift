@@ -8,6 +8,10 @@ import SwiftUI
 struct InstallationSettingsPage: View {
 	private static let canaryFeaturesTitle = "Canary Features"
 	private static let cancelTitle = "Cancel"
+	private static let rebuildDetail =
+		"Next launch takes longer. Game files and logins stay."
+	private static let settingsResetDetail =
+		"Puts every launcher setting back to its default. Game files, the install location, and the server stay."
 
 	@Bindable var settings: LauncherPreferencesController
 	package let installation: InstallationController
@@ -16,10 +20,7 @@ struct InstallationSettingsPage: View {
 	package let accentColor: Color
 	let actions: any LauncherActions
 	let restartOnboarding: () -> Void
-	@State private var confirmsGameUninstall = false
-	@State private var confirmsForceMigration = false
-	@State private var confirmsWinePrefixDeletion = false
-	@State private var confirmsSettingsReset = false
+	@State private var confirmation: InstallationConfirmation?
 
 	var body: some View {
 		SettingsPage(
@@ -49,12 +50,10 @@ struct InstallationSettingsPage: View {
 				SettingsActionRow(
 					title: "Status"
 				) {
-					VStack(alignment: .trailing, spacing: 2) {
-						Text(gameStatus)
-							.foregroundStyle(installation.isDownloading ? accentColor : .secondary)
-						transferDetails
-					}
-					.accessibilityElement(children: .combine)
+					InstallationDownloadStatus(
+						installation: installation,
+						accentColor: accentColor
+					)
 				}
 				SettingsHairline()
 				SettingsActionRow(
@@ -145,144 +144,131 @@ struct InstallationSettingsPage: View {
 			}
 
 			DangerZonePanel {
-				SettingsActionRow(
+				destructiveRow(
 					title: "Rebuild game environment",
-					detail: "Next launch takes longer. Game files and logins stay.",
+					detail: Self.rebuildDetail,
 					help:
-						"Recreates the Wine prefix with its graphics layer and registry overrides."
-				) {
-					CapsuleActionButton(
-						title: "Rebuild…",
-						systemImage: "arrow.triangle.2.circlepath",
-						tone: .danger,
-						presentation: .compact,
-						role: .destructive
-					) {
-						confirmsForceMigration = true
-					}
-					.disabled(!installation.canModifyGameFiles)
-					.confirmationDialog(
-						"Rebuild the Game Environment?",
-						isPresented: $confirmsForceMigration,
-						titleVisibility: .visible
-					) {
-						Button(
-							"Rebuild Environment", role: .destructive,
-							action: gameSession.forcePrefixMigration
-						)
-						Button(Self.cancelTitle, role: .cancel) {}
-					} message: {
-						Text(
-							"Next launch takes longer. Game files and logins stay."
-						)
-					}
-				}
+						"Recreates the Wine prefix with its graphics layer and registry overrides.",
+					buttonTitle: "Rebuild…",
+					systemImage: "arrow.triangle.2.circlepath",
+					isDisabled: !installation.canModifyGameFiles,
+					confirming: .rebuildEnvironment
+				)
 				SettingsHairline()
-				SettingsActionRow(
+				destructiveRow(
 					title: "Reset launcher settings",
-					detail:
-						"Puts every launcher setting back to its default. Game files, the install location, and the server stay."
-				) {
-					CapsuleActionButton(
-						title: "Reset All Settings…",
-						systemImage: "arrow.counterclockwise",
-						tone: .danger,
-						presentation: .compact,
-						role: .destructive
-					) {
-						confirmsSettingsReset = true
-					}
-					.disabled(gameSession.isGameActive || lifecycle.activity != .idle)
-					.confirmationDialog(
-						"Reset All Launcher Settings?",
-						isPresented: $confirmsSettingsReset,
-						titleVisibility: .visible
-					) {
-						Button(
-							"Reset Settings", role: .destructive,
-							action: actions.resetAllLauncherSettings
-						)
-						Button(Self.cancelTitle, role: .cancel) {}
-					} message: {
-						Text(
-							"Puts every launcher setting back to its default. Game files, the install location, and the server stay."
-						)
-					}
-				}
+					detail: Self.settingsResetDetail,
+					buttonTitle: "Reset All Settings…",
+					systemImage: "arrow.counterclockwise",
+					isDisabled: gameSession.isGameActive || lifecycle.activity != .idle,
+					confirming: .resetSettings
+				)
 				SettingsHairline()
-				SettingsActionRow(
+				destructiveRow(
 					title: "Delete game environment",
 					detail: "Signs you out of Yostar, Google, Apple and Facebook. Game files stay.",
-					help: "Deletes the Wine prefix folder shared by this publisher's servers."
-				) {
-					CapsuleActionButton(
-						title: "Delete Environment…",
-						systemImage: "trash",
-						tone: .danger,
-						presentation: .compact,
-						role: .destructive
-					) {
-						confirmsWinePrefixDeletion = true
-					}
-					.disabled(!installation.canModifyGameFiles)
-					.confirmationDialog(
-						"Delete the Game Environment?",
-						isPresented: $confirmsWinePrefixDeletion,
-						titleVisibility: .visible
-					) {
-						Button(
-							"Delete Environment", role: .destructive,
-							action: gameSession.deleteWinePrefix
-						)
-						Button(Self.cancelTitle, role: .cancel) {}
-					} message: {
-						Text(
-							"This signs you out of every login saved in the sign-in window. Game files are untouched."
-						)
-					}
-				}
+					help: "Deletes the Wine prefix folder shared by this publisher's servers.",
+					buttonTitle: "Delete Environment…",
+					systemImage: "trash",
+					isDisabled: !installation.canModifyGameFiles,
+					confirming: .deleteEnvironment
+				)
 				SettingsHairline()
-				SettingsActionRow(
+				destructiveRow(
 					title: "Uninstall game",
-					detail: "Move the game for this server to the Trash."
-				) {
-					CapsuleActionButton(
-						title: "Uninstall Game…",
-						systemImage: "trash",
-						tone: .danger,
-						presentation: .compact,
-						role: .destructive
-					) {
-						confirmsGameUninstall = true
-					}
-					.disabled(!installation.canUninstallGame)
-					.confirmationDialog(
-						"Uninstall Arknights?",
-						isPresented: $confirmsGameUninstall,
-						titleVisibility: .visible
-					) {
-						Button(
-							"Move Game to Trash", role: .destructive,
-							action: actions.uninstallGame)
-						Button(Self.cancelTitle, role: .cancel) {}
-					} message: {
-						Text("The launcher stays installed.")
-					}
+					detail: "Move the game for this server to the Trash.",
+					buttonTitle: "Uninstall Game…",
+					systemImage: "trash",
+					isDisabled: !installation.canUninstallGame,
+					confirming: .uninstallGame
+				)
+			}
+			.confirmationDialog(
+				confirmation?.title ?? "",
+				isPresented: isConfirmingBinding,
+				titleVisibility: .visible
+			) {
+				Button(confirmation?.confirmTitle ?? "", role: .destructive) {
+					if let confirmation { perform(confirmation) }
 				}
+				Button(Self.cancelTitle, role: .cancel) {}
+			} message: {
+				Text(confirmation?.message ?? "")
 			}
 		}
 	}
 
-	private var gameStatus: String {
-		if installation.isDownloading, let progress = installation.progress {
-			let percentage = Int(progress.fraction * 100)
-			return progress.isVerifying
-				? "Verifying \(percentage)%" : "Downloading \(percentage)%"
+	private func destructiveRow(
+		title: String,
+		detail: String,
+		help: String? = nil,
+		buttonTitle: String,
+		systemImage: String,
+		isDisabled: Bool,
+		confirming request: InstallationConfirmation
+	) -> some View {
+		SettingsActionRow(title: title, detail: detail, help: help) {
+			CapsuleActionButton(
+				title: buttonTitle,
+				systemImage: systemImage,
+				tone: .danger,
+				presentation: .compact,
+				role: .destructive
+			) {
+				confirmation = request
+			}
+			.disabled(isDisabled)
 		}
-		if installation.isDownloading { return "Preparing download" }
-		if installation.isInstalled { return "Installed" }
-		return
-			installation.hasPartialDownload ? "Paused" : "Not installed"
+	}
+
+	private var isConfirmingBinding: Binding<Bool> {
+		Binding(
+			get: { confirmation != nil },
+			set: { isPresented in
+				if !isPresented { confirmation = nil }
+			}
+		)
+	}
+
+	private func perform(_ confirmation: InstallationConfirmation) {
+		switch confirmation {
+		case .rebuildEnvironment: gameSession.forcePrefixMigration()
+		case .resetSettings: actions.resetAllLauncherSettings()
+		case .deleteEnvironment: gameSession.deleteWinePrefix()
+		case .uninstallGame: actions.uninstallGame()
+		}
+	}
+
+	private enum InstallationConfirmation {
+		case rebuildEnvironment, resetSettings, deleteEnvironment, uninstallGame
+
+		var title: String {
+			switch self {
+			case .rebuildEnvironment: "Rebuild the Game Environment?"
+			case .resetSettings: "Reset All Launcher Settings?"
+			case .deleteEnvironment: "Delete the Game Environment?"
+			case .uninstallGame: "Uninstall Arknights?"
+			}
+		}
+
+		var confirmTitle: String {
+			switch self {
+			case .rebuildEnvironment: "Rebuild Environment"
+			case .resetSettings: "Reset Settings"
+			case .deleteEnvironment: "Delete Environment"
+			case .uninstallGame: "Move Game to Trash"
+			}
+		}
+
+		var message: String {
+			switch self {
+			case .rebuildEnvironment: InstallationSettingsPage.rebuildDetail
+			case .resetSettings: InstallationSettingsPage.settingsResetDetail
+			case .deleteEnvironment:
+				"This signs you out of every login saved in the sign-in window. Game files are untouched."
+			case .uninstallGame: "The launcher stays installed."
+			}
+		}
 	}
 
 	private var regionBinding: Binding<GameRegion> {

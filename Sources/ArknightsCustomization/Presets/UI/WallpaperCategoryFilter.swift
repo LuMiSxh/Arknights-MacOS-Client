@@ -6,12 +6,12 @@ import SwiftUI
 struct WallpaperCategoryFilter: View {
 	@Binding var selection: WallpaperCategory?
 	package let accentColor: Color
-	/// Wallpaper counts for each category (and, under the `nil` key, the total across every
-	/// category) among whatever's currently in play — the active search text and tag pills —
-	/// so a count reflects what picking that option would actually show, not the whole catalog.
+	// Wallpaper counts for each category (and, under the `nil` key, the total across every
+	// category) among whatever's currently in play — the active search text and tag pills —
+	// so a count reflects what picking that option would actually show, not the whole catalog.
 	let counts: [WallpaperCategory?: Int]
-	/// Every operator identified among the currently shown wallpapers, most-featured first —
-	/// picking one commits it as an exact-tag search pill, the same as typing its name would.
+	// Every operator identified among the currently shown wallpapers, most-featured first —
+	// picking one commits it as an exact-tag search pill, the same as typing its name would.
 	let operatorCounts: [OperatorArtCount]
 	let onSelectOperator: (String) -> Void
 

@@ -14,12 +14,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - **Dynamic Theme** picks the accent color from vivid details of the artwork more reliably. The launcher calculates existing theme colors again once.
+- The control bar, the status line, and the **Installation** settings page no longer redraw completely on each download progress update. Only the progress indicators update.
+- The preset gallery scrolls more smoothly. The launcher keeps decoded thumbnails and operator icons in memory and renders icons in the background.
+- Settings shows one consistent download status, for example "Downloading · 42%" or "Verifying · 42%". Before the download size is known, it shows "Preparing download" instead of "Downloading 0%".
 
 ### Fixed
 
 - The game no longer leaves a generic "exec" icon in the Dock's recent apps after it closes.
 - The operator icon gallery lists newly released operators again. It reads the maintained ArknightsAssets character table instead of the archived one.
 - Renamed and new operators replace the cached gallery list when the background refresh finishes. You do not have to reopen the gallery.
+- If the Bilibili compatibility setup fails and cannot restore the original files, the launcher now reports the restore failure.
 
 ## [0.7.0] - 2026-10-14
 

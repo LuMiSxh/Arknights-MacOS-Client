@@ -4,9 +4,7 @@ import Foundation
 
 /// The reason a bundled resource could not be loaded. Callers map it at their feature boundary.
 package enum BundledResourceError: Error, Equatable, LocalizedError, Sendable {
-	/// The bundle does not contain the resource.
 	case missing(path: String)
-	/// The resource exists but the file system could not read it.
 	case unreadable(path: String, reason: String)
 	/// The resource was read but its content is not valid: bad deflate data, bad UTF-8, or bad JSON.
 	case corrupt(path: String, reason: String)
@@ -97,7 +95,6 @@ extension BundledResource {
 		return text
 	}
 
-	/// The file content decoded from JSON.
 	package func decode<Value: Decodable>(
 		_ type: Value.Type = Value.self,
 		using decoder: JSONDecoder = JSONDecoder(),

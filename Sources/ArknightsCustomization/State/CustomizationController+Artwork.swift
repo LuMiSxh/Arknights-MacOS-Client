@@ -40,8 +40,8 @@ extension CustomizationController {
 		}
 	}
 
-	/// Removes the saved artwork and delegates the replacement refresh to the caller that owns
-	/// the active region's metadata request.
+	// Removes the saved artwork and delegates the replacement refresh to the caller that owns
+	// the active region's metadata request.
 	package func resetArtwork(
 		isDeveloperMode: Bool = false,
 		isDownloading: Bool,
@@ -80,10 +80,12 @@ extension CustomizationController {
 				data,
 				source: destination
 			)
+			let decoded = await CustomizationImageIO.decodeImage(data)
 			guard artworkOperationID == operationID else { return }
-			guard let image = NSImage(data: data) else {
+			guard let decoded else {
 				throw CustomizationError.invalidCustomImage(destination)
 			}
+			let image = NSImage(cgImage: decoded, size: .zero)
 			try await dataStager(data, stagedURL)
 			guard artworkOperationID == operationID else {
 				discardStagedArtwork(at: stagedURL)
@@ -108,10 +110,13 @@ extension CustomizationController {
 			guard ownsPassiveArtworkLoad(token) else { return false }
 			let cacheKey = try await CustomizationImageIO.prepareArtwork(data, source: artworkURL)
 			guard ownsPassiveArtworkLoad(token) else { return false }
-			guard let image = NSImage(data: data) else {
+			let decoded = await CustomizationImageIO.decodeImage(data)
+			guard ownsPassiveArtworkLoad(token) else { return false }
+			guard let decoded else {
 				log.error("Custom launcher artwork is not a valid image")
 				return false
 			}
+			let image = NSImage(cgImage: decoded, size: .zero)
 			setHasPersistedCustomArtwork(true)
 			setHeroArtwork(image, themeCacheKey: cacheKey)
 			return true
@@ -126,8 +131,8 @@ extension CustomizationController {
 		}
 	}
 
-	/// Restores local artwork before the first SwiftUI frame, keeping cached Dynamic Theme colors
-	/// available while the active region refreshes in the background.
+	// Restores local artwork before the first SwiftUI frame, keeping cached Dynamic Theme colors
+	// available while the active region refreshes in the background.
 	package func restoreInitialArtwork(for region: GameRegion) async {
 		let hasCustomArtwork = await loadCustomArtwork()
 		if !hasCustomArtwork, !hasPersistedCustomArtwork, !artworkMutationInFlight,
@@ -138,7 +143,7 @@ extension CustomizationController {
 		await restoreOfficialLogo(for: region).value
 	}
 
-	/// Clears any previous region's wordmark before a refresh can load the selected region's asset.
+	// Clears any previous region's wordmark before a refresh can load the selected region's asset.
 	@discardableResult
 	package func restoreOfficialLogo(for region: GameRegion) -> Task<Void, Never> {
 		officialLogoLoad.invalidate()
@@ -146,15 +151,13 @@ extension CustomizationController {
 		let artworkCache = self.artworkCache
 		return officialLogoLoad.replace { [weak self, log] token in
 			do {
-				let data = try await Task.detached(priority: .utility) {
-					try artworkCache.cachedOfficialLogoData(for: region)
-				}.value
+				let logo = try await Self.cachedOfficialLogo(in: artworkCache, for: region)
 				guard
 					let self,
 					self.officialLogoLoad.owns(token),
 					self.region() == region
 				else { return }
-				self.officialLogo = data.flatMap { NSImage(data: $0) }
+				self.officialLogo = logo.map { NSImage(cgImage: $0, size: .zero) }
 			} catch {
 				guard self?.officialLogoLoad.owns(token) == true else { return }
 				log.error(
@@ -169,24 +172,42 @@ extension CustomizationController {
 		token: TaskSlot.Token
 	) async {
 		do {
-			let cached = try await Task.detached(priority: .utility) { [artworkCache] in
-				try artworkCache.cachedActiveImageData(for: region)
-			}.value
+			let cached = try await Self.cachedActiveArtwork(in: artworkCache, for: region)
 			guard ownsPassiveArtworkLoad(token),
 				self.region() == region,
 				!hasPersistedCustomArtwork,
-				let (cacheKey, data) = cached,
-				let image = NSImage(data: data)
+				let cached
 			else { return }
 			setHeroArtwork(
-				image,
-				themeCacheKey: Self.officialThemeCacheKey(for: region, artworkCacheKey: cacheKey)
+				NSImage(cgImage: cached.image, size: .zero),
+				themeCacheKey: Self.officialThemeCacheKey(
+					for: region, artworkCacheKey: cached.cacheKey)
 			)
 		} catch {
 			log.error(
 				"Failed to load cached artwork for \(region.displayName): \(error.localizedDescription)"
 			)
 		}
+	}
+
+	@concurrent
+	private static func cachedOfficialLogo(
+		in artworkCache: ArtworkCache,
+		for region: GameRegion
+	) async throws -> CGImage? {
+		guard let data = try artworkCache.cachedOfficialLogoData(for: region) else { return nil }
+		return await CustomizationImageIO.decodeImage(data)
+	}
+
+	@concurrent
+	private static func cachedActiveArtwork(
+		in artworkCache: ArtworkCache,
+		for region: GameRegion
+	) async throws -> (cacheKey: String, image: CGImage)? {
+		guard let (cacheKey, data) = try artworkCache.cachedActiveImageData(for: region),
+			let image = await CustomizationImageIO.decodeImage(data)
+		else { return nil }
+		return (cacheKey, image)
 	}
 
 	nonisolated static func customThemeCacheKey(for data: Data) -> String {

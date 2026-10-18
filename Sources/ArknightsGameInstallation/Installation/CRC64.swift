@@ -3,12 +3,12 @@
 import ArknightsCore
 import Foundation
 
-/// CRC-64/XZ, the checksum Yostar's manifest uses to verify each downloaded file.
+// CRC-64/XZ, the checksum Yostar's manifest uses to verify each downloaded file.
 struct CRC64: Sendable {
 	private static let polynomial: UInt64 = 0xC96C_5795_D787_0F42
 
-	/// Slicing-by-8 tables. Table 0 is the bytewise table the tail loop uses; table `slice`
-	/// carries that remainder `slice` bytes further along, so one pass folds eight input bytes.
+	// Slicing-by-8 tables. Table 0 is the bytewise table the tail loop uses; table `slice`
+	// carries that remainder `slice` bytes further along, so one pass folds eight input bytes.
 	private static let tables: [[UInt64]] = {
 		var tables = [[UInt64]](repeating: [UInt64](repeating: 0, count: 256), count: 8)
 		for index in 0..<256 {
@@ -33,7 +33,7 @@ struct CRC64: Sendable {
 		data.withUnsafeBytes { update($0) }
 	}
 
-	/// Folds `bytes` into the running checksum. Callers may split the stream at any boundary.
+	// Folds `bytes` into the running checksum. Callers may split the stream at any boundary.
 	mutating func update(_ bytes: UnsafeRawBufferPointer) {
 		guard let base = bytes.baseAddress else { return }
 		var cursor = base.assumingMemoryBound(to: UInt8.self)
@@ -68,30 +68,9 @@ struct CRC64: Sendable {
 	var decimalString: String {
 		String(~value)
 	}
-
-	static func checksum(of url: URL, onRead: ((Int) -> Void)? = nil) throws -> String {
-		let handle = try FileHandle(forReadingFrom: url)
-		defer {
-			do {
-				try handle.close()
-			} catch {
-				// The read result is already complete; close errors are not actionable here.
-			}
-		}
-
-		var checksum = CRC64()
-		while true {
-			try Task.checkCancellation()
-			let data = try handle.read(upToCount: AppConstants.IO.checksumBufferSize)
-			guard let data, !data.isEmpty else { break }
-			checksum.update(data)
-			onRead?(data.count)
-		}
-		return checksum.decimalString
-	}
 }
 
-/// `Data`'s bytes are not guaranteed to be aligned for a `UInt64` load.
+// `Data`'s bytes are not guaranteed to be aligned for a `UInt64` load.
 private func loadUnalignedUInt64(from pointer: UnsafePointer<UInt8>) -> UInt64 {
 	var block: UInt64 = 0
 	withUnsafeMutableBytes(of: &block) { destination in

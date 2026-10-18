@@ -5,7 +5,6 @@ import ArknightsGameInstallation
 import ArknightsGameRuntime
 import SwiftUI
 
-/// Expands the installed game version into an independent manual update check.
 struct VersionHUDPill: View {
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController

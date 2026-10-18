@@ -5,8 +5,8 @@ import ArknightsCore
 #if DEBUG
 	import Foundation
 
-	/// Developer-preview actions. They change only `DeveloperSimulationState`, so a preview
-	/// never starts a download, refresh, game process, or system change.
+	// Developer-preview actions. They change only `DeveloperSimulationState`, so a preview
+	// never starts a download, refresh, game process, or system change.
 	@MainActor
 	struct SimulatedLauncherActions: LauncherActions {
 		unowned let model: LauncherViewModel
@@ -78,7 +78,7 @@ import ArknightsCore
 			}
 		}
 
-		/// Shows the real update dialog with a fixture instead of starting Sparkle.
+		// Shows the real update dialog with a fixture instead of starting Sparkle.
 		func openLauncherUpdate() {
 			let driver = model.communication.launcherUpdateUserDriver
 			let dismiss: () -> Void = { [weak driver] in driver?.dismissUpdateInstallation() }
@@ -118,7 +118,7 @@ import ArknightsCore
 			}
 		}
 
-		/// A simulation never presents the ACE warning, so there is nothing to confirm.
+		// A simulation never presents the ACE warning, so there is nothing to confirm.
 		func confirmACEWarningAndLaunch() {}
 
 		func cancelACEWarning() {}

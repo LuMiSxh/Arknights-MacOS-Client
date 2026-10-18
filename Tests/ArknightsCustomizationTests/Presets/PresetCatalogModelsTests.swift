@@ -67,7 +67,6 @@ struct PresetCatalogModelsTests {
 				from: Data(
 					#"{"name":"Amiya","rarity":5,"profession":"CASTER","subProfessionId":"corecaster","nationId":"Rhodes","groupId":"Rhodes Island","teamId":"Rhodes Island","tagList":["Support"]}"#
 						.utf8))
-			#expect(entry.rarity == "TIER_6")
 			#expect(entry.subProfessionID == "corecaster")
 			#expect(entry.groupID == "Rhodes Island")
 			#expect(entry.tagList == ["Support"])

@@ -33,7 +33,8 @@ struct CustomizationControllerTests {
 
 	private func artworkSelectionRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
-		let fixture = makeCustomizationController(dataLoader: { try await loader.next($0) })
+		let fixture = try makeCustomizationController(dataLoader: { try await loader.next($0) })
+		defer { fixture.temporary.remove() }
 		let firstURL = fixture.paths.customArtwork.deletingLastPathComponent()
 			.appending(path: "first.tiff")
 		let secondURL = fixture.paths.customArtwork.deletingLastPathComponent()
@@ -64,7 +65,10 @@ struct CustomizationControllerTests {
 
 	private func passiveArtworkLoadRace() async throws {
 		let stager = ControlledRequestGate<Void, (Data, URL)>()
-		let fixture = makeCustomizationController(dataStager: { try await stager.next(($0, $1)) })
+		let fixture = try makeCustomizationController(dataStager: {
+			try await stager.next(($0, $1))
+		})
+		defer { fixture.temporary.remove() }
 		let selectedData = try #require(solidImage(.systemGreen).tiffRepresentation)
 
 		let selection = Task {
@@ -86,10 +90,11 @@ struct CustomizationControllerTests {
 	private func startupArtworkRestoreRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
 		let stager = ControlledRequestGate<Void, (Data, URL)>()
-		let fixture = makeCustomizationController(
+		let fixture = try makeCustomizationController(
 			dataLoader: { try await loader.next($0) },
 			dataStager: { try await stager.next(($0, $1)) }
 		)
+		defer { fixture.temporary.remove() }
 		let customData = try #require(solidImage(.systemGreen).tiffRepresentation)
 		let officialData = try #require(solidImage(.systemRed).tiffRepresentation)
 		try FileManager.default.createDirectory(
@@ -118,10 +123,11 @@ struct CustomizationControllerTests {
 
 	private func themeExtractionRace() async throws {
 		let extractor = ControlledRequestGate<ExtractedAccent?, NSImage>()
-		let fixture = makeCustomizationController(
+		let fixture = try makeCustomizationController(
 			usesDynamicTheme: true,
 			accentExtractor: { try? await extractor.next($0) }
 		)
+		defer { fixture.temporary.remove() }
 		let firstKey = "custom.first"
 		let secondKey = "custom.second"
 
@@ -144,7 +150,8 @@ struct CustomizationControllerTests {
 
 	private func operatorIconRefreshRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
-		let fixture = makeCustomizationController(dataLoader: { try await loader.next($0) })
+		let fixture = try makeCustomizationController(dataLoader: { try await loader.next($0) })
+		defer { fixture.temporary.remove() }
 		let avatarData = try #require(solidImage(.systemPink).tiffRepresentation)
 		await fixture.controller.applyPresetAvatar(data: avatarData)
 
@@ -168,7 +175,8 @@ struct CustomizationControllerTests {
 
 	private func manualIconOverStartupRestoreRace() async throws {
 		let loader = ControlledRequestGate<Data, URL>()
-		let fixture = makeCustomizationController(dataLoader: { try await loader.next($0) })
+		let fixture = try makeCustomizationController(dataLoader: { try await loader.next($0) })
+		defer { fixture.temporary.remove() }
 		let selected = solidImage(.systemGreen)
 		let staleData = try #require(solidImage(.systemRed).tiffRepresentation)
 		let selectedURL = fixture.paths.customArtwork.deletingLastPathComponent()
@@ -193,7 +201,8 @@ struct CustomizationControllerTests {
 
 	@Test
 	func failedLauncherIconApplicationDoesNotPublishCustomIcon() async throws {
-		let fixture = makeCustomizationController(setBundleIcon: { _ in false })
+		let fixture = try makeCustomizationController(setBundleIcon: { _ in false })
+		defer { fixture.temporary.remove() }
 		let data = try #require(solidImage(.systemGreen).tiffRepresentation)
 		try FileManager.default.createDirectory(
 			at: fixture.paths.customAppIcon.deletingLastPathComponent(),
@@ -217,21 +226,20 @@ func makeCustomizationController(
 	dynamicIconRenderer: CustomizationController.DynamicIconRenderer? = nil,
 	setBundleIcon: @escaping (NSImage?) -> Bool = { _ in true },
 	setRunningIcon: @escaping (NSImage?) -> Void = { _ in }
-) -> (
+) throws -> (
 	controller: CustomizationController,
 	paths: AppPaths,
-	preferences: LauncherPreferencesStore
+	preferences: LauncherPreferencesStore,
+	temporary: TemporaryDirectory
 ) {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: "CustomizationControllerTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
+	let temporary = try TemporaryDirectory("CustomizationControllerTests")
+	let root = temporary.url
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
 		libraryDirectory: root.appending(path: "Library")
 	)
-	let defaults = UserDefaults(suiteName: "CustomizationControllerTests.\(UUID().uuidString)")!
+	let defaults = makeIsolatedDefaults("CustomizationControllerTests").defaults
 	let lifecycle = LauncherLifecycleStore(log: LauncherLog(fileURL: paths.launcherLogFile))
 	let preferences = LauncherPreferencesStore(defaults: defaults)
 	let iconManager = LauncherIconManager(
@@ -253,7 +261,7 @@ func makeCustomizationController(
 		accentExtractor: accentExtractor,
 		dynamicIconRenderer: dynamicIconRenderer
 	)
-	return (controller, paths, preferences)
+	return (controller, paths, preferences, temporary)
 }
 
 @MainActor

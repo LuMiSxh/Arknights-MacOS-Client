@@ -2,7 +2,6 @@
 
 import SwiftUI
 
-/// A branded single-line input with a visible keyboard-focus state and a Material fallback.
 package struct ThemedTextField: View {
 	let title: String
 	let prompt: String

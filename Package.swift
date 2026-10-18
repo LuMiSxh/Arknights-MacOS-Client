@@ -153,6 +153,7 @@ let package = Package(
 		.testTarget(
 			name: "ArknightsAudioTests",
 			dependencies: [
+				"ArknightsTestSupport",
 				"ArknightsAudio",
 				"ArknightsCustomization",
 				"ArknightsCore",
@@ -214,7 +215,7 @@ let package = Package(
 		),
 		.testTarget(
 			name: "ArknightsInfrastructureTests",
-			dependencies: ["ArknightsInfrastructure"],
+			dependencies: ["ArknightsInfrastructure", "ArknightsTestSupport"],
 			path: "Tests/ArknightsInfrastructureTests"
 		),
 		.testTarget(

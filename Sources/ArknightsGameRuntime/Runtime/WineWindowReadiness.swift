@@ -5,9 +5,8 @@ import ArknightsCore
 import CoreGraphics
 import Foundation
 
-/// Polls `CGWindowListCopyWindowInfo` for the game's onscreen window instead of trusting
-/// process launch alone, since Wine's own startup can succeed well before Arknights actually
-/// has a visible, appropriately sized window.
+// Polls `CGWindowListCopyWindowInfo` for the game's onscreen window. Process launch alone is
+// not enough: Wine's startup can succeed well before Arknights has a visible, sized window.
 struct WineWindowReadiness {
 	static func wait(
 		processIdentifier: Int32,
@@ -32,7 +31,7 @@ struct WineWindowReadiness {
 				!= .regular
 		{
 			guard clock.now < deadline else { throw GameRuntimeError.runtimeWindowTimeout }
-			try await clock.sleep(for: pollInterval)
+			try await clock.sleep(for: pollInterval, tolerance: pollInterval / 10)
 		}
 	}
 
@@ -45,8 +44,10 @@ struct WineWindowReadiness {
 				(window[kCGWindowIsOnscreen as String] as? NSNumber)?.boolValue == true,
 				(window[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 0 > 0,
 				let bounds = window[kCGWindowBounds as String] as? [String: Any],
-				(bounds["Width"] as? NSNumber)?.doubleValue ?? 0 >= 320,
-				(bounds["Height"] as? NSNumber)?.doubleValue ?? 0 >= 200
+				(bounds["Width"] as? NSNumber)?.doubleValue ?? 0
+					>= AppConstants.Game.minimumGameWindowWidth,
+				(bounds["Height"] as? NSNumber)?.doubleValue ?? 0
+					>= AppConstants.Game.minimumGameWindowHeight
 			else {
 				return false
 			}

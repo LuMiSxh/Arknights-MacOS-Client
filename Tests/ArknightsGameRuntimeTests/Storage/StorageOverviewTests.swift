@@ -11,8 +11,9 @@ import Testing
 @Test
 @MainActor
 func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
-	let root = temporaryStorageRoot()
-	defer { try? FileManager.default.removeItem(at: root) }
+	let temporary = try TemporaryDirectory("StorageOverviewTests")
+	defer { temporary.remove() }
+	let root = temporary.url
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support"),
 		cachesDirectory: root.appending(path: "Caches"),
@@ -65,8 +66,9 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 @Test
 @MainActor
 func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
-	let root = temporaryStorageRoot()
-	defer { try? FileManager.default.removeItem(at: root) }
+	let temporary = try TemporaryDirectory("StorageOverviewTests")
+	defer { temporary.remove() }
+	let root = temporary.url
 	let log = LauncherLog(fileURL: root.appending(path: "launcher.log"))
 	let lifecycle = LauncherLifecycleStore(log: log)
 	let paths = AppPaths(
@@ -88,11 +90,4 @@ func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 	storage.clearPresetGalleryCache()
 
 	#expect(lifecycle.activity.isInstalling)
-}
-
-private func temporaryStorageRoot() -> URL {
-	FileManager.default.temporaryDirectory.appending(
-		path: "StorageOverviewTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
 }

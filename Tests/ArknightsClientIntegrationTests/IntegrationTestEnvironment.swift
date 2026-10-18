@@ -16,51 +16,34 @@ struct IntegrationTestEnvironment {
 	let session: URLSession
 	let route = StubURLProtocol.Route()
 
+	private let storage: TemporaryDirectory
 	private let defaultsSuiteName: String
 
 	init() throws {
-		let identifier = UUID().uuidString
-		root = FileManager.default.temporaryDirectory.appending(
-			path: "ArknightsClientIntegrationTests-\(identifier)",
-			directoryHint: .isDirectory
-		)
+		storage = try TemporaryDirectory("ArknightsClientIntegrationTests")
+		root = storage.url
 		let applicationSupport = root.appending(
 			path: "Application Support",
 			directoryHint: .isDirectory
 		)
 		let caches = root.appending(path: "Caches", directoryHint: .isDirectory)
 		let library = root.appending(path: "Library", directoryHint: .isDirectory)
-		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 		paths = AppPaths(
 			applicationSupportDirectory: applicationSupport,
 			cachesDirectory: caches,
 			libraryDirectory: library
 		)
 
-		defaultsSuiteName = "ArknightsClientIntegrationTests.\(identifier)"
-		guard let defaults = UserDefaults(suiteName: defaultsSuiteName) else {
-			throw IntegrationTestEnvironmentError.cannotCreatePreferences(defaultsSuiteName)
-		}
-		defaults.removePersistentDomain(forName: defaultsSuiteName)
-		self.defaults = defaults
+		let isolated = makeIsolatedDefaults("ArknightsClientIntegrationTests")
+		defaults = isolated.defaults
+		defaultsSuiteName = isolated.suiteName
 		preferences = LauncherPreferencesStore(defaults: defaults)
-
 		session = route.session
 	}
 
 	func cleanUp() {
 		session.invalidateAndCancel()
 		defaults.removePersistentDomain(forName: defaultsSuiteName)
-		do {
-			try FileManager.default.removeItem(at: root)
-		} catch CocoaError.fileNoSuchFile {
-			return
-		} catch {
-			Issue.record("Could not remove integration test directory: \(error)")
-		}
+		storage.remove()
 	}
-}
-
-private enum IntegrationTestEnvironmentError: Error {
-	case cannotCreatePreferences(String)
 }

@@ -7,8 +7,7 @@ import Darwin
 import Foundation
 
 enum ManifestChecksum {
-	/// Hashes `url` with the algorithm implied by `expected`, honoring task cancellation between
-	/// buffers and reporting each buffer's size through `onRead`.
+	// Honors task cancellation between buffers and reports each buffer's size through `onRead`.
 	static func checksum(
 		of url: URL,
 		expected: String,
@@ -33,7 +32,7 @@ enum ManifestChecksum {
 			: actual == expected
 	}
 
-	/// Hashes an already-open regular file with one hard link.
+	// Hashes an already-open regular file with one hard link.
 	static func checksum(
 		ofFileDescriptor descriptor: Int32,
 		expected: String,
@@ -72,11 +71,11 @@ enum ManifestChecksum {
 			onRead?(count)
 		}
 		return isMD5(expected)
-			? md5.finalize().map { String(format: "%02x", $0) }.joined()
+			? md5.finalize().hexString
 			: crc64.decimalString
 	}
 
-	private static func isMD5(_ value: String) -> Bool {
+	static func isMD5(_ value: String) -> Bool {
 		value.count == 32 && value.allSatisfy(\.isHexDigit)
 	}
 

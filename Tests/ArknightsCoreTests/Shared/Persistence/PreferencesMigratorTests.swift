@@ -43,4 +43,80 @@ struct PreferencesMigratorTests {
 		#expect(defaults.object(forKey: "dynamicThemeAccent.legacy-cache") == nil)
 		#expect(store.dynamicThemeAccent(for: "current-cache")?.hue == 0.6)
 	}
+
+	@Test(arguments: [
+		// Retina on: the stored resolution was in pixels, so the window is half its size.
+		(
+			#"{"resolution":"2560x1440","usesGameSettings":false}"#,
+			GameLaunchOptions(
+				displayMode: .windowed,
+				resolution: .quadHD,
+				windowSize: GameDisplaySize(width: 1280, height: 720),
+				usesGameSettings: false,
+				renderingMode: .retina
+			)
+		),
+		// Retina off: the stored pixels were the window.
+		(
+			#"{"resolution":"1920x1080","usesGameSettings":false,"usesHighResolutionMode":false}"#,
+			GameLaunchOptions(
+				displayMode: .windowed,
+				resolution: .fullHD,
+				windowSize: GameDisplaySize(width: 1920, height: 1080),
+				usesGameSettings: false,
+				renderingMode: .standard
+			)
+		),
+		// In-game settings never used the stored resolution, so the window starts at the default.
+		(
+			#"{"resolution":"2560x1440","usesGameSettings":true}"#,
+			GameLaunchOptions(
+				displayMode: .windowed,
+				resolution: .quadHD,
+				usesGameSettings: true,
+				renderingMode: .retina
+			)
+		),
+		// Halving below the smallest supported window falls back to the default size.
+		(
+			#"{"resolution":"640x480","usesGameSettings":false}"#,
+			GameLaunchOptions(
+				displayMode: .windowed,
+				resolution: GameDisplaySize(width: 640, height: 480),
+				usesGameSettings: false,
+				renderingMode: .retina
+			)
+		),
+		// An unreadable window size falls back to the default size.
+		(
+			#"{"windowSize":{"width":10,"height":10},"usesGameSettings":false}"#,
+			GameLaunchOptions(
+				displayMode: .windowed,
+				resolution: GameLaunchOptions.default.resolution,
+				usesGameSettings: false,
+				renderingMode: .retina
+			)
+		),
+		// Stored options without usesGameSettings predate it, when Arknights kept its own settings.
+		(
+			#"{"displayMode":"fullscreen","resolution":"1280x720"}"#,
+			GameLaunchOptions(
+				displayMode: .fullscreen,
+				resolution: .hd,
+				usesGameSettings: true,
+				renderingMode: .retina
+			)
+		),
+	])
+	func legacyLaunchOptionsKeepTheirEffectiveSettingsAfterMigration(
+		json: String, expected: GameLaunchOptions
+	) {
+		let (defaults, suiteName) = makeIsolatedDefaults("PreferencesMigratorTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		defaults.set(Data(json.utf8), forKey: LauncherPreferencesStore.Key.gameLaunchOptions)
+
+		PreferencesMigrator().migrate(defaults)
+
+		#expect(LauncherPreferencesStore(defaults: defaults).launchOptions() == expected)
+	}
 }

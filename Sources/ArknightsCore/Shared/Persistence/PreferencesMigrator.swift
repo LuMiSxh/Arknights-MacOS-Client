@@ -2,8 +2,7 @@
 
 import Foundation
 
-/// The narrow `UserDefaults` operations a preferences migration may use.
-/// Key names live in `LauncherPreferencesStore.Key`; a step names a retired key as a literal.
+// Key names live in `LauncherPreferencesStore.Key`; a step names a retired key as a literal.
 struct PreferencesMigrationStore {
 	let defaults: UserDefaults
 
@@ -11,7 +10,6 @@ struct PreferencesMigrationStore {
 		defaults.removeObject(forKey: key)
 	}
 
-	/// Removes every key that starts with `prefix`, except keys that start with `keeping`.
 	func removeKeys(withPrefix prefix: String, keeping: String? = nil) {
 		for key in defaults.dictionaryRepresentation().keys
 		where key.hasPrefix(prefix) && !(keeping.map(key.hasPrefix) ?? false) {
@@ -19,11 +17,79 @@ struct PreferencesMigrationStore {
 		}
 	}
 
-	/// Moves a value to a new key. An existing value under the new key wins.
+	// Moves a value to a new key. An existing value under the new key wins.
 	func rename(_ key: String, to newKey: String) {
 		guard let value = defaults.object(forKey: key) else { return }
 		if defaults.object(forKey: newKey) == nil { defaults.set(value, forKey: newKey) }
 		defaults.removeObject(forKey: key)
+	}
+}
+
+// Converts a launch-options blob stored before 0.7.0 into the current format. Before 0.7.0 one
+// resolution set both the Retina pixel density and the window size, and a missing
+// `usesGameSettings` meant the in-game settings were on. Each field falls back on its own.
+private enum PreRetinaLaunchOptions {
+	private struct Fields: Decodable {
+		let usesGameSettings: Bool?
+		let usesHighResolutionMode: Bool?
+		let renderingMode: GameRenderingMode?
+		let windowSize: GameDisplaySize?
+		let hasResolution: Bool
+
+		private enum CodingKeys: String, CodingKey {
+			case usesGameSettings, usesHighResolutionMode, renderingMode, windowSize, resolution
+		}
+
+		init(from decoder: any Decoder) throws {
+			let container = try decoder.container(keyedBy: CodingKeys.self)
+			usesGameSettings = try? container.decodeIfPresent(Bool.self, forKey: .usesGameSettings)
+			usesHighResolutionMode = try? container.decodeIfPresent(
+				Bool.self, forKey: .usesHighResolutionMode)
+			renderingMode = try? container.decodeIfPresent(
+				GameRenderingMode.self, forKey: .renderingMode)
+			windowSize = try? container.decodeIfPresent(GameDisplaySize.self, forKey: .windowSize)
+			hasResolution = container.contains(.resolution)
+		}
+	}
+
+	// Rewrites the stored blob with explicit values. A blob that is not a JSON object stays as
+	// it is; the store reports it when it is read.
+	static func convert(_ defaults: UserDefaults) {
+		let key = LauncherPreferencesStore.Key.gameLaunchOptions
+		guard let data = defaults.data(forKey: key),
+			let fields = try? JSONDecoder().decode(Fields.self, from: data),
+			let stored = try? JSONDecoder().decode(GameLaunchOptions.self, from: data),
+			let encoded = try? JSONEncoder().encode(converted(stored, fields))
+		else { return }
+		defaults.set(encoded, forKey: key)
+	}
+
+	private static func converted(
+		_ stored: GameLaunchOptions, _ fields: Fields
+	) -> GameLaunchOptions {
+		var options = stored
+		let retina = fields.usesHighResolutionMode ?? true
+		let usesGameSettings = fields.usesGameSettings ?? true
+		options.usesGameSettings = usesGameSettings
+		options.renderingMode = fields.renderingMode ?? (retina ? .retina : .standard)
+		// In-game settings never used the stored resolution, so the window starts at the default.
+		let legacyWindow =
+			!usesGameSettings && fields.hasResolution
+			? legacyWindowSize(for: stored.resolution, retina: retina) : .defaultWindow
+		options.windowSize = fields.windowSize ?? legacyWindow
+		return options
+	}
+
+	// Keeps the window a legacy pixel resolution produced, assuming a 2x Retina display.
+	private static func legacyWindowSize(
+		for size: GameDisplaySize, retina: Bool
+	) -> GameDisplaySize {
+		guard retina else { return size }
+		let halved = GameDisplaySize(width: size.width / 2, height: size.height / 2)
+		guard GameDisplaySize.validDimensions.contains(halved.width),
+			GameDisplaySize.validDimensions.contains(halved.height)
+		else { return .defaultWindow }
+		return halved
 	}
 }
 
@@ -36,12 +102,14 @@ package struct PreferencesMigrator {
 		let run: @Sendable (PreferencesMigrationStore) -> Void
 	}
 
-	/// Append a step with the next version. Never edit or reorder a released step.
+	// Append a step with the next version. Never edit or reorder a released step.
 	static let steps: [Step] = [
 		// Accents cached by the pre-v2 algorithm.
 		Step(version: 1) {
 			$0.removeKeys(withPrefix: "dynamicThemeAccent.", keeping: "dynamicThemeAccent.v2.")
-		}
+		},
+		// Launch options stored before 0.7.0 kept Retina and the window size in one resolution.
+		Step(version: 2) { PreRetinaLaunchOptions.convert($0.defaults) },
 	]
 
 	private static let versionKey = LauncherPreferencesStore.Key.preferencesMigrationVersion

@@ -22,7 +22,7 @@ extension GameInstaller {
 		)
 	}
 
-	/// `monitorClock` paces the install-wide progress monitor; tests inject a manual clock.
+	// `monitorClock` paces the install-wide progress monitor; tests inject a manual clock.
 	package func install(
 		configuration: GameConfiguration,
 		region: GameRegion,
@@ -51,7 +51,6 @@ extension GameInstaller {
 		}
 	}
 
-	/// Runs the install while the caller holds the install lease on `installationRoot`.
 	private func installHoldingLease(
 		configuration: GameConfiguration,
 		region: GameRegion,
@@ -136,13 +135,11 @@ extension GameInstaller {
 			clock: monitorClock,
 			progress: progress
 		) {
-			try await withThrowingTaskGroup(of: Int64.self) { group in
-				var nextIndex = 0
-				let initialCount = min(concurrentDownloads, pendingFiles.count)
-				for _ in 0..<initialCount {
-					let item = pendingFiles[nextIndex]
-					nextIndex += 1
-					addDownload(
+			try await withWindowedTaskGroup(
+				pendingFiles,
+				limit: concurrentDownloads,
+				operation: { item in
+					try await self.downloadOrReuse(
 						item,
 						manifest: manifest,
 						cdn: cdn,
@@ -150,34 +147,10 @@ extension GameInstaller {
 						counter: counter,
 						progress: progress,
 						region: region,
-						reuse: reuse,
-						to: &group
+						reuse: reuse
 					)
 				}
-
-				do {
-					while try await group.next() != nil {
-						if nextIndex < pendingFiles.count {
-							let item = pendingFiles[nextIndex]
-							nextIndex += 1
-							addDownload(
-								item,
-								manifest: manifest,
-								cdn: cdn,
-								installDirectory: installationRoot,
-								counter: counter,
-								progress: progress,
-								region: region,
-								reuse: reuse,
-								to: &group
-							)
-						}
-					}
-				} catch {
-					group.cancelAll()
-					throw error
-				}
-			}
+			)
 		}
 
 		try Task.checkCancellation()

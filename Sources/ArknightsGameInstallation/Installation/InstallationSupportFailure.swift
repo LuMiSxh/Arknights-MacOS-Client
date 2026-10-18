@@ -33,6 +33,8 @@ extension InstallationController {
 
 	static func supportCode(for error: any Error) -> SupportCode? {
 		switch error {
+		case let diagnosed as DiagnosedLauncherError:
+			supportCode(for: diagnosed.underlying)
 		case InstallerError.invalidManifestPath,
 			InstallerError.duplicateManifestPath,
 			InstallerError.conflictingManifestPaths:

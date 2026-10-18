@@ -21,7 +21,6 @@ extension EnvironmentValues {
 }
 
 extension View {
-	/// Applies the shared accent action treatment independently of control geometry.
 	func adaptiveActionSurface<ControlShape: Shape>(
 		tint: Color,
 		foreground: Color? = nil,
@@ -69,7 +68,6 @@ extension View {
 		)
 	}
 
-	/// Shared compact chrome for Settings actions and menu pickers.
 	func settingsControlCapsule(tint: Color, isDisabled: Bool = false) -> some View {
 		modifier(SettingsControlCapsuleModifier(tint: tint, isDisabled: isDisabled))
 	}

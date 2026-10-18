@@ -4,13 +4,11 @@ import ArknightsCore
 import ArknightsGameInstallation
 import SwiftUI
 
-/// Maps the launcher status and installation progress to the Settings operation strip text.
 enum SettingsOperationStripPresentation {
-	/// The strip text, or `nil` when no work is active and the strip stays hidden.
+	// The strip text, or `nil` when no work is active and the strip stays hidden.
 	static func text(status: LauncherStatus, progress: DownloadProgress?) -> String? {
-		guard let label = label(for: status) else { return nil }
-		guard let percentage = percentage(status: status, progress: progress) else { return label }
-		return "\(label) · \(percentage)%"
+		if let title = downloadTitle(status: status, progress: progress) { return title }
+		return label(for: status)
 	}
 
 	static func accessibilityLabel(for status: LauncherStatus) -> String? {
@@ -34,6 +32,24 @@ enum SettingsOperationStripPresentation {
 		}
 	}
 
+	// Download wording comes from the shared presentation so both surfaces show the same title.
+	private static func downloadTitle(
+		status: LauncherStatus,
+		progress: DownloadProgress?
+	) -> String? {
+		switch status {
+		case .downloading:
+			LauncherDownloadProgressPresentation.labeledTitle(for: progress, isPaused: false)
+		case .paused:
+			LauncherDownloadProgressPresentation.title(for: progress, isPaused: true)
+		case .verifyingInstallation:
+			progress?.isVerifying == true
+				? LauncherDownloadProgressPresentation.title(for: progress, isPaused: false) : nil
+		default:
+			nil
+		}
+	}
+
 	private static func percentage(status: LauncherStatus, progress: DownloadProgress?) -> Int? {
 		switch status {
 		case .downloading, .pausing, .paused:
@@ -47,8 +63,7 @@ enum SettingsOperationStripPresentation {
 	}
 }
 
-/// One-line operation summary for the Settings sidebar. Only this leaf reads the per-tick
-/// installation progress, so the rest of the sheet does not re-render on every update.
+// Only this leaf reads the per-tick installation progress, so the rest of the sheet does not re-render on every update.
 struct SettingsOperationStrip: View {
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController

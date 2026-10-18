@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Darwin
 import Foundation
 
-/// Replaces the builtin PE libraries `wineboot` copies into a prefix with APFS clones of the
-/// runtime's identical files, so every prefix stops duplicating hundreds of megabytes.
-///
-/// Only byte-identical regular files are touched, so DXMT libraries (which intentionally
-/// differ) and anything Wine or the game modified are left alone. Each swap clones into a
-/// temporary sibling and renames over the destination, so the destination never goes missing.
+// Replaces the builtin PE libraries `wineboot` copies into a prefix with APFS clones of the
+// runtime's identical files, so every prefix stops duplicating hundreds of megabytes.
+//
+// Only byte-identical regular files are touched. DXMT libraries are skipped by name, and
+// anything Wine or the game modified is left alone. Each swap clones into a temporary sibling
+// and renames over the destination, so the destination never goes missing.
 struct WinePrefixLibraryDeduplicator: Sendable {
 	/// Runtime library directory paired with the prefix directory Wine fills from it.
 	static let directoryPairs = [
@@ -16,7 +17,6 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 		(runtime: "lib/wine/i386-windows", prefix: "drive_c/windows/syswow64"),
 	]
 
-	private static let comparisonChunkBytes = 1 << 20
 	private static let cloneUnsupportedCodes: Set<Int32> = [EXDEV, ENOTSUP, EOPNOTSUPP, ENOSYS]
 
 	struct Report: Equatable, Sendable {
@@ -95,7 +95,6 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 		}
 	}
 
-	/// Returns the file size when `destination` is a regular file byte-identical to `source`.
 	private func replaceableSize(destination: URL, source: URL) throws -> Int64? {
 		guard
 			let destinationSize = try regularFileSize(destination),
@@ -114,19 +113,47 @@ struct WinePrefixLibraryDeduplicator: Sendable {
 		return (info.st_mode & S_IFMT) == S_IFREG ? Int64(info.st_size) : nil
 	}
 
+	// Reads never follow symlinks; a symlink must not redirect the comparison.
 	private func contentsMatch(_ lhs: URL, _ rhs: URL) throws -> Bool {
-		let lhsHandle = try FileHandle(forReadingFrom: lhs)
-		let rhsHandle = try FileHandle(forReadingFrom: rhs)
-		defer {
-			try? lhsHandle.close()
-			try? rhsHandle.close()
-		}
+		let lhsFD = open(lhs.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+		guard lhsFD >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+		defer { _ = close(lhsFD) }
+		let rhsFD = open(rhs.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+		guard rhsFD >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+		defer { _ = close(rhsFD) }
+
+		let chunkSize = AppConstants.IO.fileComparisonBufferSize
+		var lhsBuffer = [UInt8](repeating: 0, count: chunkSize)
+		var rhsBuffer = [UInt8](repeating: 0, count: chunkSize)
 		while true {
-			let lhsChunk = try lhsHandle.read(upToCount: Self.comparisonChunkBytes) ?? Data()
-			let rhsChunk = try rhsHandle.read(upToCount: Self.comparisonChunkBytes) ?? Data()
-			if lhsChunk != rhsChunk { return false }
-			if lhsChunk.isEmpty { return true }
+			let lhsCount = try Self.fill(lhsFD, &lhsBuffer)
+			let rhsCount = try Self.fill(rhsFD, &rhsBuffer)
+			guard lhsCount == rhsCount else { return false }
+			let equal = lhsBuffer.withUnsafeBufferPointer { lhsPointer in
+				rhsBuffer.withUnsafeBufferPointer { rhsPointer in
+					memcmp(lhsPointer.baseAddress!, rhsPointer.baseAddress!, lhsCount) == 0
+				}
+			}
+			if !equal { return false }
+			// A short fill means both files reached end of file at the same offset.
+			if lhsCount < chunkSize { return true }
 		}
+	}
+
+	private static func fill(_ fd: Int32, _ buffer: inout [UInt8]) throws -> Int {
+		var filled = 0
+		while filled < buffer.count {
+			let count = buffer.withUnsafeMutableBytes { raw in
+				read(fd, raw.baseAddress!.advanced(by: filled), raw.count - filled)
+			}
+			if count < 0 {
+				if errno == EINTR { continue }
+				throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+			}
+			if count == 0 { break }
+			filled += count
+		}
+		return filled
 	}
 
 	private func replaceWithClone(of source: URL, at destination: URL) throws {

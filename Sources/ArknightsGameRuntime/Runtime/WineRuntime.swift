@@ -88,8 +88,8 @@ struct WineRuntime: Sendable {
 		"mshtml": "",
 	]
 	static let inheritedEnvironmentKeys = ["LANG", "LC_ALL", "LC_CTYPE", "__CF_USER_TEXT_ENCODING"]
-	/// Only the 64-bit payload is installed; 32-bit DXMT left by earlier builds is inert and cleaned up
-	/// by `removeLegacy32BitLibraries` once the runtime stops shipping `i386-windows`.
+	// Earlier builds shipped 32-bit DXMT files. `removeLegacy32BitLibraries` cleans them up
+	// once the runtime stops shipping `i386-windows`.
 	static let dxmtDestinations = [("x64", "system32")]
 	static let dxmtLibraryNames = ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
 	static let crashDialogRegistryKey = "HKCU\\Software\\Wine\\WineDbg"
@@ -232,7 +232,7 @@ struct WineRuntime: Sendable {
 		defer { logHandle.closeFile() }
 		try logHandle.seekToEnd()
 		RuntimePerformanceLog.write(
-			stage: "filesystem", since: launchStarted, to: logHandle)
+			stage: "filesystem", since: launchStarted, to: logHandle, log: log)
 		let compatibilityChanges: GameCompatibilityChanges
 		do {
 			compatibilityChanges = try compatibilityManager.prepareForLaunch(
@@ -242,18 +242,16 @@ struct WineRuntime: Sendable {
 			throw GameRuntimeError.mappingCompatibilityFailure(error)
 		}
 		for identifier in compatibilityChanges.installed {
-			try? logHandle.write(
-				contentsOf: Data(
-					"Arknights Client: enabled compatibility component \(identifier).\n".utf8))
+			logHandle.appendLaunchLogLine(
+				"Arknights Client: enabled compatibility component \(identifier).\n", log: log)
 		}
 		for identifier in compatibilityChanges.removed {
-			try? logHandle.write(
-				contentsOf: Data(
-					"Arknights Client: removed retired compatibility component \(identifier).\n"
-						.utf8))
+			logHandle.appendLaunchLogLine(
+				"Arknights Client: removed retired compatibility component \(identifier).\n",
+				log: log)
 		}
 		RuntimePerformanceLog.write(
-			stage: "compatibility", since: launchStarted, to: logHandle)
+			stage: "compatibility", since: launchStarted, to: logHandle, log: log)
 
 		var environment = runtimeEnvironment(
 			prefixDirectory: prefixDirectory,
@@ -276,7 +274,7 @@ struct WineRuntime: Sendable {
 			spawnGate: spawnGate
 		)
 		RuntimePerformanceLog.write(
-			stage: "prefix", since: launchStarted, to: logHandle)
+			stage: "prefix", since: launchStarted, to: logHandle, log: log)
 		if clientVariant == .bilibili {
 			try await applyBilibiliFontConfiguration(
 				prefixDirectory: prefixDirectory,
@@ -291,10 +289,11 @@ struct WineRuntime: Sendable {
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle,
+			log: log,
 			spawnGate: spawnGate
 		)
 		RuntimePerformanceLog.write(
-			stage: "display", since: launchStarted, to: logHandle)
+			stage: "display", since: launchStarted, to: logHandle, log: log)
 		environment["ARKNIGHTS_CLIENT_BROWSER_SCALE_FACTOR"] = String(
 			displayConfiguration.browserScaleFactor
 		)
@@ -339,15 +338,12 @@ struct WineRuntime: Sendable {
 			do {
 				try spawnGate.runIfAllowed(process: controller) { try controller.run() }
 			} catch {
-				try? logHandle.write(
-					contentsOf: Data(
-						"Arknights Client: Bilibili window controller failed: \(error)\n".utf8
-					)
-				)
+				logHandle.appendLaunchLogLine(
+					"Arknights Client: Bilibili window controller failed: \(error)\n", log: log)
 			}
 		}
 		RuntimePerformanceLog.write(
-			stage: "process", since: launchStarted, to: logHandle)
+			stage: "process", since: launchStarted, to: logHandle, log: log)
 
 		let terminationTask = Task {
 			for await exit in terminationStatuses { return exit }
@@ -380,11 +376,23 @@ struct WineRuntime: Sendable {
 
 }
 
+extension FileHandle {
+	/// Appends one launch-log line. Logging is best effort: a failed write is recorded, never thrown.
+	func appendLaunchLogLine(_ line: String, log: LauncherLog?) {
+		do {
+			try write(contentsOf: Data(line.utf8))
+		} catch {
+			log?.error("Launch log write failed: \(error)")
+		}
+	}
+}
+
 enum RuntimePerformanceLog {
 	static func write(
 		stage: String,
 		since start: ContinuousClock.Instant,
 		to handle: FileHandle,
+		log: LauncherLog?,
 		now: ContinuousClock.Instant = .now
 	) {
 		let components = start.duration(to: now).components
@@ -394,6 +402,6 @@ enum RuntimePerformanceLog {
 			stage,
 			max(0, seconds)
 		)
-		try? handle.write(contentsOf: Data(line.utf8))
+		handle.appendLaunchLogLine(line, log: log)
 	}
 }

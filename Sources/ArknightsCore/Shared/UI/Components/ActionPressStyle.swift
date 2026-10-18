@@ -6,7 +6,6 @@ import SwiftUI
 /// press, a springy release, and a small hover lift. Reduce Motion keeps only the opacity dip.
 package struct ActionPressStyle: ButtonStyle {
 	package enum Intensity {
-		/// Compact buttons and pills.
 		case standard
 		/// Large tiles and cards, where full scaling reads as a jump.
 		case subtle

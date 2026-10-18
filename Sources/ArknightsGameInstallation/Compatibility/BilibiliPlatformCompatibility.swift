@@ -75,11 +75,21 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 			try fileManager.moveItem(at: stagedController, to: paths.controller)
 			try? fileManager.removeItem(at: previousController)
 		} catch {
-			try? fileManager.removeItem(at: paths.controller)
-			if fileManager.fileExists(atPath: previousController.path) {
-				try? fileManager.moveItem(at: previousController, to: paths.controller)
-			}
-			throw error
+			try GameShimIO.rethrowAfterRollback(
+				error,
+				steps: [
+					{
+						if fileManager.fileExists(atPath: paths.controller.path) {
+							try fileManager.removeItem(at: paths.controller)
+						}
+					},
+					{
+						if fileManager.fileExists(atPath: previousController.path) {
+							try fileManager.moveItem(at: previousController, to: paths.controller)
+						}
+					},
+				]
+			)
 		}
 		return true
 	}

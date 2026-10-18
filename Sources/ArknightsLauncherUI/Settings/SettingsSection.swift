@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-/// Pages of the settings sheet in navigation order. Selection is view state only, never persisted.
+// Selection is view state only and is never persisted.
 enum SettingsSection: String, CaseIterable, Identifiable {
 	case game
 	case appearance
@@ -14,7 +14,6 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case developer
 	#endif
 
-	/// What the sheet shows when it opens.
 	static let initial = SettingsSection.game
 
 	var id: String { rawValue }

@@ -189,8 +189,8 @@ extension InstallationController {
 		installationTask?.cancel()
 	}
 
-	/// The installing activity carries its operation ID, so a stale task that lost a race to a
-	/// newer operation can never finish or update it.
+	// The installing activity carries its operation ID, so a stale task that lost a race to a
+	// newer operation can never finish or update it.
 	func ownsInstallation(_ installationID: UUID) -> Bool {
 		guard case .installing(let activeID, _) = lifecycle.activity else { return false }
 		return activeID == installationID

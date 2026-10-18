@@ -3,10 +3,8 @@
 import Darwin
 import Foundation
 
-/// Shared low-level file operations behind `GameCompatibilityComponent` implementations.
-/// Each component keeps its own install/restore orchestration, error messages, and recovery
-/// rules; only the mechanical parts that are byte-for-byte identical across components live
-/// here, so the two never drift out of sync on the same primitive.
+// Shared file primitives for `GameCompatibilityComponent`s. Components keep their own
+// orchestration and error messages.
 enum GameShimIO {
 	static func containsMarker(at url: URL, marker: Data, maximumSize: Int) throws -> Bool {
 		guard maximumSize >= 0, maximumSize < Int.max else { return false }
@@ -42,10 +40,9 @@ enum GameShimIO {
 		}
 	}
 
-	/// Swaps `helperURL` for `shimURL`, first backing up whatever is currently
-	/// there (the official helper on a first install, or a previous shim on upgrade) to
-	/// `backupURL`. `installCompanions` runs only once the helper is in place; if it or the
-	/// helper move itself fails, the helper is restored from its backup before rethrowing.
+	// The current helper moves aside first: the official helper on a first install goes to
+	// `backupURL`; a previous shim moves to a unique sibling. `installCompanions` runs only
+	// after the shim is in place, and any later failure restores the helper before rethrowing.
 	static func swapHelper(
 		at helperURL: URL,
 		with shimURL: URL,
@@ -76,32 +73,49 @@ enum GameShimIO {
 			try fileManager.moveItem(at: temporaryURL, to: helperURL)
 			try installCompanions()
 		} catch {
-			let operationError = error
-			var rollbackErrors: [String] = []
-			if fileManager.fileExists(atPath: helperURL.path) {
-				do { try fileManager.removeItem(at: helperURL) } catch {
-					rollbackErrors.append(error.localizedDescription)
-				}
-			}
-			let restoreURL =
-				fileManager.fileExists(atPath: previousURL.path) ? previousURL : backupURL
-			do {
-				try fileManager.moveItem(at: restoreURL, to: helperURL)
-			} catch {
-				rollbackErrors.append(error.localizedDescription)
-			}
-			if !rollbackErrors.isEmpty {
-				throw GameShimRollbackError(
-					operationDescription: operationError.localizedDescription,
-					rollbackDescriptions: rollbackErrors
-				)
-			}
-			throw operationError
+			try rethrowAfterRollback(
+				error,
+				steps: [
+					{
+						if fileManager.fileExists(atPath: helperURL.path) {
+							try fileManager.removeItem(at: helperURL)
+						}
+					},
+					{
+						let restoreURL =
+							fileManager.fileExists(atPath: previousURL.path)
+							? previousURL : backupURL
+						try fileManager.moveItem(at: restoreURL, to: helperURL)
+					},
+				]
+			)
 		}
 	}
 
-	/// Replaces `destinationURL` with `sourceURL`; the caller-provided backup restores the
-	/// destination if copying or moving the replacement fails.
+	// Every step runs even when an earlier one fails. Rollback failures are aggregated into
+	// `GameShimRollbackError`; otherwise the operation error is rethrown unchanged.
+	static func rethrowAfterRollback(
+		_ operationError: Error,
+		steps: [() throws -> Void]
+	) throws -> Never {
+		var rollbackErrors: [String] = []
+		for step in steps {
+			do {
+				try step()
+			} catch {
+				rollbackErrors.append(error.localizedDescription)
+			}
+		}
+		if !rollbackErrors.isEmpty {
+			throw GameShimRollbackError(
+				operationDescription: operationError.localizedDescription,
+				rollbackDescriptions: rollbackErrors
+			)
+		}
+		throw operationError
+	}
+
+	// `backupURL` restores `destinationURL` if copying or moving the replacement fails.
 	static func replaceWithBackup(
 		destinationURL: URL,
 		sourceURL: URL,
@@ -116,27 +130,21 @@ enum GameShimIO {
 			try fileManager.moveItem(at: temporaryURL, to: destinationURL)
 			try? fileManager.removeItem(at: backupURL)
 		} catch {
-			let operationError = error
-			var rollbackErrors: [String] = []
-			if fileManager.fileExists(atPath: destinationURL.path) {
-				do { try fileManager.removeItem(at: destinationURL) } catch {
-					rollbackErrors.append(error.localizedDescription)
-				}
-			}
-			if fileManager.fileExists(atPath: backupURL.path) {
-				do {
-					try fileManager.moveItem(at: backupURL, to: destinationURL)
-				} catch {
-					rollbackErrors.append(error.localizedDescription)
-				}
-			}
-			if !rollbackErrors.isEmpty {
-				throw GameShimRollbackError(
-					operationDescription: operationError.localizedDescription,
-					rollbackDescriptions: rollbackErrors
-				)
-			}
-			throw operationError
+			try rethrowAfterRollback(
+				error,
+				steps: [
+					{
+						if fileManager.fileExists(atPath: destinationURL.path) {
+							try fileManager.removeItem(at: destinationURL)
+						}
+					},
+					{
+						if fileManager.fileExists(atPath: backupURL.path) {
+							try fileManager.moveItem(at: backupURL, to: destinationURL)
+						}
+					},
+				]
+			)
 		}
 	}
 }

@@ -5,9 +5,9 @@ import ArknightsGameRuntime
 import Foundation
 import Observation
 
-/// Owns first-run presentation, resumable navigation, and the mandatory launcher-update
-/// preflight checks. Individual steps apply settings through their feature controllers; the
-/// coordinator never duplicates installation, networking, or asset persistence.
+// Owns first-run presentation, resumable navigation, and the mandatory launcher-update
+// preflight checks. Individual steps apply settings through their feature controllers; the
+// coordinator never duplicates installation, networking, or asset persistence.
 @MainActor
 @Observable
 package final class OnboardingCoordinator {
@@ -19,7 +19,7 @@ package final class OnboardingCoordinator {
 	private(set) var step: OnboardingStep = .welcome
 	private(set) var updateState: OnboardingUpdateState = .checking
 	private(set) var intelTranslationState: IntelTranslationState = .waitingForLauncherCheck
-	/// Set while a returning player reruns a required setup schema; Skip Setup stays unavailable.
+	// Set while a returning player reruns a required setup schema; Skip Setup stays unavailable.
 	private(set) var requiredSchema: Int?
 
 	package init(store: OnboardingProgressStore) {

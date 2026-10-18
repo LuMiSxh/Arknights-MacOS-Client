@@ -3,14 +3,13 @@
 import AppKit
 import ArknightsCore
 
-/// Where the game appears, answered during setup.
 nonisolated enum GamePlacementAnswer: CaseIterable, Sendable {
 	case fullscreen
 	case window
 }
 
-/// The setup assistant's display questions. Every answer lets the launcher size the game for
-/// the current screen, so players never have to calculate resolutions.
+// The setup assistant's display questions. Every answer lets the launcher size the game for
+// the current screen, so players never have to calculate resolutions.
 nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	var placement: GamePlacementAnswer
 	var windowSize: GameWindowSizeChoice
@@ -27,8 +26,8 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 		self.rendering = rendering
 	}
 
-	/// Reads the answers back from saved options, so returning to setup shows earlier choices.
-	/// A window size set by hand in Settings reads back as filling the screen.
+	// Reads the answers back from saved options, so returning to setup shows earlier choices.
+	// A window size set by hand in Settings reads back as filling the screen.
 	init(_ options: GameLaunchOptions, screen: GameScreenMetrics?) {
 		placement = options.displayMode == .fullscreen ? .fullscreen : .window
 		windowSize =
@@ -37,7 +36,7 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 		rendering = options.renderingMode
 	}
 
-	/// Applies the answers and keeps every unrelated launch option.
+	// Applies the answers and keeps every unrelated launch option.
 	func applied(to base: GameLaunchOptions, screen: GameScreenMetrics) -> GameLaunchOptions {
 		var options = base
 		options.usesGameSettings = false
@@ -57,7 +56,6 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	}
 }
 
-/// Which pointer the game shows, answered during setup.
 nonisolated enum PointerAnswer: CaseIterable, Sendable {
 	case gameCursor
 	case macPointer
@@ -93,7 +91,6 @@ extension LauncherPreferencesController {
 	}
 }
 
-/// What the launcher shows around the Play button, answered during setup.
 nonisolated enum LauncherInfoAnswer: CaseIterable, Hashable, Sendable {
 	case gameVersion
 	case serverTime
@@ -139,7 +136,6 @@ extension LauncherPreferencesController {
 	}
 }
 
-/// How the launcher keeps up with new versions and project notices, answered during setup.
 nonisolated enum UpdateCheckAnswer: CaseIterable, Sendable {
 	case automatic
 	case noticesOnly
@@ -150,7 +146,7 @@ nonisolated enum UpdateCheckAnswer: CaseIterable, Sendable {
 	var checksForUpdates: Bool { self == .automatic }
 	var showsAnnouncements: Bool { self != .manual }
 
-	/// The answer the saved preferences match, or nil when they were customized in Settings.
+	// The answer the saved preferences match, or nil when they were customized in Settings.
 	init?(launcherChecks: Bool, gameChecks: Bool, announcements: Bool) {
 		guard
 			let answer = Self.allCases.first(where: {
@@ -197,7 +193,7 @@ extension GamePlacementAnswer {
 }
 
 extension GameWindowSizeChoice {
-	/// The title shows the window size on `screen`, for example "Compact · 1600 × 900".
+	// The title shows the window size on `screen`, for example "Compact · 1600 × 900".
 	func answer(on screen: GameScreenMetrics?) -> OnboardingAnswer<GameWindowSizeChoice> {
 		return switch self {
 		case .fillScreen:

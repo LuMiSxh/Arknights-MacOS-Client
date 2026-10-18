@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
 @testable import ArknightsGameRuntime
 
 private struct CleanerFixture {
-	let root = FileManager.default.temporaryDirectory
-		.appending(path: "legacy-clean-\(UUID().uuidString)", directoryHint: .isDirectory)
+	let temporary: TemporaryDirectory
+	var root: URL { temporary.url }
 	var runtimeRoot: URL { root.appending(path: "Runtime", directoryHint: .isDirectory) }
 	var prefix: URL { root.appending(path: "Prefix", directoryHint: .isDirectory) }
 	var syswow64: URL {
@@ -15,6 +16,7 @@ private struct CleanerFixture {
 	}
 
 	init(runtimeShipsI386: Bool) throws {
+		temporary = try TemporaryDirectory("WinePrefixLegacyLibraryCleanerTests")
 		let fileManager = FileManager.default
 		try fileManager.createDirectory(at: syswow64, withIntermediateDirectories: true)
 		try fileManager.createDirectory(
@@ -41,7 +43,7 @@ private struct CleanerFixture {
 		FileManager.default.fileExists(atPath: syswow64.appending(path: name).path)
 	}
 
-	func remove() { try? FileManager.default.removeItem(at: root) }
+	func remove() { temporary.remove() }
 }
 
 private let cleaner = WinePrefixLegacyLibraryCleaner(

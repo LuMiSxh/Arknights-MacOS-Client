@@ -3,7 +3,6 @@
 import ArknightsCore
 import Foundation
 
-/// Validates publisher artifact sources and their redirects before any bytes are accepted.
 enum DownloadHTTPPolicy {
 	private static let hostCharacters: CharacterSet = {
 		var characters = CharacterSet.urlHostAllowed
@@ -18,7 +17,7 @@ enum DownloadHTTPPolicy {
 		"gl-utils-public.hg-cdn.com",
 	]
 
-	/// Yostar serves launcher packages from subdomains such as `launcher-pkg-ark-en.yo-star.com`.
+	// Yostar serves launcher packages from subdomains such as `launcher-pkg-ark-en.yo-star.com`.
 	private static let yostarDomain = "yo-star.com"
 
 	static func isAllowedSource(_ url: URL, for region: GameRegion) -> Bool {

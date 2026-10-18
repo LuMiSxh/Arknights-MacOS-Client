@@ -3,8 +3,7 @@
 import ArknightsCore
 import SwiftUI
 
-/// Where the game appears, how big it is, and how its rendering and cursor behave.
-/// Windowed sizes are macOS points; the launcher converts them into the game's pixel resolution.
+// Windowed sizes are macOS points; the launcher converts them into the game's pixel resolution.
 struct GameDisplaySettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool

@@ -3,8 +3,8 @@
 import ArknightsCore
 import Foundation
 
-/// Reads elapsed time from any `Clock<Duration>`. The clock's instant type is erased, so the
-/// reader keeps its start instant inside the closure and reports offsets from it.
+// Reads elapsed time from any `Clock<Duration>`. The clock's instant type is erased, so the
+// reader keeps its start instant inside the closure and reports offsets from it.
 struct ElapsedTime {
 	private let read: () -> Duration
 
@@ -25,12 +25,10 @@ struct TransferRateSnapshot: Sendable, Equatable {
 	let isStalled: Bool
 }
 
-/// Smooths byte samples from the network and derives a stable display rate.
-///
-/// The estimator intentionally knows nothing about manifest bytes, resumed files, checksums,
-/// or file moves. Its caller supplies only bytes received from the current network stream;
-/// resetting it at a retry or failed validation prevents invalid samples from contaminating
-/// the next display rate.
+// The estimator intentionally knows nothing about manifest bytes, resumed files, checksums,
+// or file moves. Its caller supplies only bytes received from the current network stream;
+// resetting it at a retry or failed validation prevents invalid samples from contaminating
+// the next display rate.
 struct TransferRateEstimator {
 	private let clock: ElapsedTime
 	private let sampleInterval: Duration

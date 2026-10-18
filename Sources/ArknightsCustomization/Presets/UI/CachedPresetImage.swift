@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ImageIO
 import SwiftUI
 
-/// Loads a validated preset image through the bounded on-disk gallery cache.
 struct CachedPresetImage: View {
 	let catalog: PresetCatalogService
 	let url: URL
@@ -43,6 +41,14 @@ struct CachedPresetImage: View {
 		.task(id: cacheIdentity) {
 			let taskIdentity = cacheIdentity
 			guard !Task.isCancelled else { return }
+			if let cached = PresetThumbnailCache.shared.thumbnail(
+				cacheKey: cacheKey,
+				maxPixelSize: Self.maxDecodedPixelSize
+			) {
+				image = NSImage(cgImage: cached, size: .zero)
+				hasFailed = false
+				return
+			}
 			image = nil
 			hasFailed = false
 			do {
@@ -51,7 +57,13 @@ struct CachedPresetImage: View {
 					cacheKey: cacheKey
 				)
 				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
-				guard let thumbnail = await Self.decodedThumbnail(from: data) else {
+				guard
+					let thumbnail = await PresetThumbnailCache.shared.decodeThumbnail(
+						from: data,
+						cacheKey: cacheKey,
+						maxPixelSize: Self.maxDecodedPixelSize
+					)
+				else {
 					throw CustomizationError.invalidPresetImage(url)
 				}
 				guard !Task.isCancelled, cacheIdentity == taskIdentity else { return }
@@ -68,40 +80,5 @@ struct CachedPresetImage: View {
 
 	private var cacheIdentity: String {
 		"\(url.absoluteString)|\(cacheKey)"
-	}
-
-	// Decodes straight to a bounded-size bitmap via ImageIO's own thumbnail generator instead
-	// of NSImage(data:), which would decode the source at its full native resolution before
-	// anything gets a chance to scale it down.
-	@MainActor
-	private static func decodedThumbnail(from data: Data) async -> CGImage? {
-		guard !Task.isCancelled else { return nil }
-		let maximumPixelSize = maxDecodedPixelSize
-		let decodingTask = Task.detached(priority: .utility) { () -> CGImage? in
-			guard !Task.isCancelled else { return nil }
-			return Self.createThumbnail(from: data, maxPixelSize: maximumPixelSize)
-		}
-		return await withTaskCancellationHandler {
-			await decodingTask.value
-		} onCancel: {
-			decodingTask.cancel()
-		}
-	}
-
-	private nonisolated static func createThumbnail(
-		from data: Data,
-		maxPixelSize: CGFloat
-	) -> CGImage? {
-		guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-		let options: [CFString: Any] = [
-			kCGImageSourceCreateThumbnailFromImageAlways: true,
-			kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
-			kCGImageSourceCreateThumbnailWithTransform: true,
-		]
-		guard
-			let thumbnail = CGImageSourceCreateThumbnailAtIndex(
-				source, 0, options as CFDictionary)
-		else { return nil }
-		return thumbnail
 	}
 }

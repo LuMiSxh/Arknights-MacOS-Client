@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -7,13 +8,15 @@ import Testing
 
 @Test
 func fileTailNeverReadsBeyondTheRequestedByteLimit() throws {
-	let small = try makeTemporaryFile(contents: "line one\nline two\n")
-	let lines = (1...50).map { "line \($0) of the log file" }
-	let truncated = try makeTemporaryFile(contents: lines.joined(separator: "\n"))
-	let url = try makeTemporaryFile(contents: "0123456789")
-	defer {
-		for file in [small, truncated, url] { try? FileManager.default.removeItem(at: file) }
-	}
+	let temporary = try TemporaryDirectory("FileTailTests")
+	defer { temporary.remove() }
+	let small = temporary.url.appending(path: "small.log")
+	try "line one\nline two\n".write(to: small, atomically: true, encoding: .utf8)
+	let truncated = temporary.url.appending(path: "truncated.log")
+	try (1...50).map { "line \($0) of the log file" }.joined(separator: "\n")
+		.write(to: truncated, atomically: true, encoding: .utf8)
+	let url = temporary.url.appending(path: "bytes.log")
+	try "0123456789".write(to: url, atomically: true, encoding: .utf8)
 
 	#expect(FileTail.read(of: small, maximumBytes: 1_024) == "line one\nline two")
 	#expect(FileTail.read(of: truncated, maximumBytes: 40) == "line 50 of the log file")
@@ -30,11 +33,4 @@ func fileTailNeverReadsBeyondTheRequestedByteLimit() throws {
 	try writer.close()
 
 	#expect(try FileTail.readTail(from: handle, offset: offset, maximumBytes: 4) == "6789")
-}
-
-private func makeTemporaryFile(contents: String) throws -> URL {
-	let url = FileManager.default.temporaryDirectory
-		.appendingPathComponent(UUID().uuidString)
-	try contents.write(to: url, atomically: true, encoding: .utf8)
-	return url
 }

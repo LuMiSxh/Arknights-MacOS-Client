@@ -18,8 +18,10 @@ package enum AppConstants {
 		static let standardWindowTitleBarHeight: CGFloat = 28
 		/// Share of the usable screen the "leave room" game window may cover.
 		static let compactWindowScreenShare = 0.65
-		/// Height step between fullscreen sizes generated above 4K for larger displays.
 		static let generatedResolutionHeightStep = 360
+		/// Smallest on-screen window treated as the game window; smaller helper windows are ignored.
+		package static let minimumGameWindowWidth: Double = 320
+		package static let minimumGameWindowHeight: Double = 200
 	}
 
 	package enum Runtime {
@@ -40,9 +42,22 @@ package enum AppConstants {
 		package static let squircleCornerRadius: CGFloat = 92.3
 		package static let baseCyanHue: Double = 0.533
 		package static let operatorFrameInset: CGFloat = 36
-		/// Opacity of the dynamically tinted frame drawn over generated Game icons.
 		package static let operatorFrameOpacity: CGFloat = 1.0
 		package static let operatorFrameOutlineWidth: CGFloat = 1.5
+		package static let launcherAccentSaturation: CGFloat = 0.9
+		package static let launcherBackgroundStart: (red: CGFloat, green: CGFloat, blue: CGFloat) =
+			(0.035, 0.055, 0.065)
+		package static let launcherBackgroundEnd: (red: CGFloat, green: CGFloat, blue: CGFloat) =
+			(0.07, 0.075, 0.085)
+		package static let launcherAvatarInsetX: CGFloat = 18
+		package static let launcherAvatarInsetY: CGFloat = 12
+		package static let launcherBevelOpacity: CGFloat = 0.42
+		package static let gameBevelOpacity: CGFloat = 0.16
+		package static let shadowOpacity: CGFloat = 0.35
+		package static let shadowOffset: CGFloat = 6
+		package static let shadowBlurRadius: CGFloat = 12
+		package static let specularOpacity: CGFloat = 0.2
+		package static let specularHeightFraction: CGFloat = 0.55
 		/// Below this, a newly resolved hue is treated as unchanged from the persisted icon's.
 		package static let dynamicIconHueChangeTolerance: Double = 0.02
 	}
@@ -118,9 +133,7 @@ package enum AppConstants {
 		package static let transferRateStallTimeout: Duration = .seconds(5)
 		/// Refresh stalled-download state even when the HTTP stream has no new chunks.
 		package static let transferRateMonitorInterval: Duration = .seconds(1)
-		/// Weight of the newest sample in the smoothed transfer rate.
 		package static let transferRateSmoothingFactor = 0.35
-		/// Unconsumed bytes one HTTP stream may hold before its transfer is suspended.
 		package static let maximumBufferedStreamBytes = 8 * 1_024 * 1_024
 		package static let announcementFeedMaximumBytes = 128 * 1_024
 		package static let yostarAPIResponseMaximumBytes = 4 * 1_024 * 1_024
@@ -140,6 +153,10 @@ package enum AppConstants {
 		)!
 		package static let imageMaximumBytes = 24 * 1_024 * 1_024
 		package static let imageCacheMaximumBytes: Int64 = 256 * 1_024 * 1_024
+		/// In-memory decoded gallery thumbnails; `NSCache` cost is bytes.
+		package static let thumbnailCacheMaximumBytes = 32 * 1_024 * 1_024
+		/// In-memory rendered Launcher and Game icon pairs (about 8 MiB each).
+		package static let iconPairCacheMaximumBytes = 48 * 1_024 * 1_024
 		package static let imageDownloadAttempts = 2
 		package static let imageMaximumDimension = 16_384
 		package static let imageMaximumPixels = 120_000_000
@@ -156,6 +173,7 @@ package enum AppConstants {
 
 	package enum IO {
 		package static let checksumBufferSize = 4 * 1024 * 1024
+		package static let fileComparisonBufferSize = 1 * 1_024 * 1_024
 		/// Files hashed at once during the check pass; bounds open descriptors and read buffers.
 		package static let verificationConcurrency = 4
 		package static let processDiagnosticMaximumBytes = 16 * 1_024

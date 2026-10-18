@@ -27,8 +27,8 @@ struct LauncherPrimaryActionView: View {
 		.controlSize(.large)
 		.accentHalo(
 			tint: accentColor,
-			isActive: LauncherPrimaryActionPresentation.showsHalo(
-				kind: actionKind, isDisabled: actionIsDisabled),
+			// The halo is the only ambient effect and shows only for an enabled Play.
+			isActive: actionKind == .play && !actionIsDisabled,
 			in: Capsule()
 		)
 		.disabled(actionIsDisabled)
@@ -124,10 +124,5 @@ nonisolated enum LauncherPrimaryActionPresentation {
 		case install
 		case update
 		case play
-	}
-
-	/// The halo is the only ambient effect and shows only for an enabled Play.
-	static func showsHalo(kind: Kind, isDisabled: Bool) -> Bool {
-		kind == .play && !isDisabled
 	}
 }

@@ -94,6 +94,8 @@ extension GameSessionController {
 	}
 
 	package func stopGameForApplicationTermination() {
+		// Quit does not wait for the asynchronous save, so write the final playtime on every exit.
+		defer { playtimeStatistics.persistForTermination() }
 		guard isGameActive, !applicationTerminationRequested else { return }
 		prepareForApplicationTermination()
 		if let activeGameSessionID {
@@ -312,7 +314,6 @@ extension GameSessionController {
 		lifecycle.setStatus(.stoppingGame)
 	}
 
-	/// Changes the session activity through the session lease. Without a lease it changes nothing.
 	func updateSessionActivity(_ activity: LauncherActivity, lease: ActivityLease? = nil) {
 		guard let lease = lease ?? session?.lease else { return }
 		lifecycle.update(lease, to: activity)

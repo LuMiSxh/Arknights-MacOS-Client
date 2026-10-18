@@ -58,8 +58,7 @@ struct LocalFixtureNetwork: Sendable {
 		return (response, data)
 	}
 
-	private static func fixture(named name: String, extension fileExtension: String) throws -> Data
-	{
+	static func fixture(named name: String, extension fileExtension: String) throws -> Data {
 		guard
 			let url = Bundle.module.url(
 				forResource: name,

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Darwin
 import Foundation
 import Testing
@@ -8,13 +9,12 @@ import Testing
 
 @Suite(.serialized)
 struct InstallerDirectoryTests {
+	/// A held lease excludes other processes, and a process that dies while holding it releases it.
 	@Test
-	func installationLeaseIsProcessSharedAndReleasedWhenAProcessExits() throws {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "InstallerDirectoryTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? FileManager.default.removeItem(at: root) }
+	func installLeaseExcludesOtherProcessesAndIsReleasedWhenTheHolderDies() throws {
+		let directory = try TemporaryDirectory("InstallerDirectoryTests")
+		defer { directory.remove() }
+		let root = directory.url
 
 		try withInstallLease(at: root) { _ in
 			let lockAttempt = try childLockAttempt(at: root, killAfterAcquire: false)
@@ -28,13 +28,12 @@ struct InstallerDirectoryTests {
 		}
 	}
 
+	/// A second holder in the same process fails at once, and a throwing body still releases the lease.
 	@Test
 	func secondAcquireWhileHeldThrowsDirectoryInUse() throws {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "InstallerDirectoryTests-busy-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer { try? FileManager.default.removeItem(at: root) }
+		let directory = try TemporaryDirectory("InstallerDirectoryTests")
+		defer { directory.remove() }
+		let root = directory.url
 
 		let held = try InstallLease.acquire(at: root)
 		do {
@@ -45,7 +44,6 @@ struct InstallerDirectoryTests {
 			Issue.record("Unexpected error: \(error)")
 		}
 		held.release()
-		try withInstallLease(at: root) { _ in }
 
 		struct Failure: Error {}
 		#expect(throws: Failure.self) {

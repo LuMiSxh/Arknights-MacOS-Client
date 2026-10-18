@@ -3,9 +3,9 @@
 import ArknightsCore
 import Foundation
 
-/// Swaps the Notices helper (`PlatformProcess.exe`) for a shim that loads
-/// `PlatformProcessWindowBridge.dylib`, which gives that window macOS-native transparency
-/// and layering instead of the opaque black surface Wine renders by default.
+// Swaps the Notices helper (`PlatformProcess.exe`) for a shim that loads
+// `PlatformProcessWindowBridge.dylib`, which gives that window macOS-native transparency
+// and layering instead of the opaque black surface Wine renders by default.
 struct PlatformProcessCompatibility: GameCompatibilityComponent {
 	let identifier = "platform-process-window"
 	static let helperRelativePath = "PlatformProcess.exe"

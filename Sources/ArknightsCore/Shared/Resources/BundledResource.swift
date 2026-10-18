@@ -24,9 +24,7 @@ package struct BundledResource: Hashable, Sendable {
 		case directory
 	}
 
-	/// How the staged bytes relate to the content that the app reads.
 	package enum Encoding: String, Sendable {
-		/// The file holds the content as is.
 		case identity
 		/// The file holds raw deflate data, which Apple's Compression framework reads as zlib.
 		case deflate
@@ -77,7 +75,6 @@ extension BundledResource {
 	package static let operatorIconFrame = BundledResource(
 		file: "OperatorIconFrame.svg", origin: .package)
 
-	/// Every resource that the app reads by name.
 	static let all: [BundledResource] = [
 		.projectLicense, .changelog, .thirdPartyNotices, .runtimeConfiguration,
 		.supportArticles, .compatibility, .runtime,

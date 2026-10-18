@@ -5,7 +5,7 @@ import ArknightsCustomization
 import SwiftUI
 
 struct OnboardingLookView: View {
-	/// Names the action cards of the artwork and Dock questions so each card has a stable identity.
+	// Names the action cards of the artwork and Dock questions so each card has a stable identity.
 	private enum Action: Hashable {
 		case defaultArtwork, preset, ownImage, operatorIcons, standardIcons
 	}

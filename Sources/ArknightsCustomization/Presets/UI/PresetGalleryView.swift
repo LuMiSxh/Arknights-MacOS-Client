@@ -271,8 +271,8 @@ package struct PresetGalleryView: View {
 			catalogReady: catalogReady
 		)
 	}
-	/// Swaps in the refreshed operator catalog once its background update finishes, so renamed
-	/// or newly added operators appear without reopening the gallery.
+	// Swaps in the refreshed operator catalog once its background update finishes, so renamed
+	// or newly added operators appear without reopening the gallery.
 	private func applyRefreshedAvatars(replacing shown: [PresetAvatar]) async {
 		let expected = destination
 		guard let refreshed = await catalog.refreshedAvatars(replacing: shown),

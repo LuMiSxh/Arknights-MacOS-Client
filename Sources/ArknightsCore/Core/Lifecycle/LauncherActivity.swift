@@ -10,7 +10,7 @@ package enum LauncherActivity: Equatable, Sendable {
 	case preparingGame(sessionID: UUID)
 	case launchingGame(sessionID: UUID, processIdentifier: Int32?)
 	case runningGame(sessionID: UUID, processIdentifier: Int32)
-	/// The process identifier is nil when Stop interrupts Wine preparation before the game spawns.
+	// The process identifier is nil when Stop interrupts Wine preparation before the game spawns.
 	case stoppingGame(sessionID: UUID, processIdentifier: Int32?)
 
 	package var activeGameSessionID: UUID? {

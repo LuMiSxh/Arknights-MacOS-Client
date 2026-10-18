@@ -4,9 +4,8 @@ import ArknightsCore
 import Foundation
 import Observation
 
-/// Coordinates the Rosetta preflight and installation flow for the bundled x86-64 Wine runtime.
-/// Lifecycle state lives in `LauncherLifecycleStore` so launch and setup share one readiness
-/// source without this feature depending on the root launcher model.
+// Lifecycle state lives in `LauncherLifecycleStore` so launch and setup share one readiness
+// source without this feature depending on the root launcher model.
 @MainActor
 @Observable
 package final class IntelTranslationController {

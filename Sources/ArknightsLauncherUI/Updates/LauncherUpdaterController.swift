@@ -23,7 +23,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	private var cancelActivityObservation: (@Sendable () -> Void)?
 	private enum Check {
 		case userInitiated
-		/// A silent availability check; Sparkle reports its outcome across several callbacks.
+		// A silent availability check; Sparkle reports its outcome across several callbacks.
 		case probe(LauncherUpdateCheckOutcome, completion: (LauncherUpdateCheckOutcome) -> Void)
 	}
 	private var check: Check?

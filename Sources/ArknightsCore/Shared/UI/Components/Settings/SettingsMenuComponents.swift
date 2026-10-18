@@ -14,7 +14,6 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 	/// collapsed button's label — lets a caller show detail (e.g. a result count) that's only
 	/// worth the width once the list is actually open.
 	var listTitle: (Value) -> String? = { _ in nil }
-	/// Draws a divider above these options, to set a group of exact choices apart.
 	var dividerBefore: (Value) -> Bool = { _ in false }
 	/// Additional menu content appended after the plain option list — e.g. a submenu that
 	/// doesn't itself change `selection`.
@@ -68,7 +67,6 @@ package struct GlassMenuPicker<Value: Hashable>: View {
 	}
 }
 
-/// A settings action menu using the same compact capsule treatment as `GlassMenuPicker`.
 package struct GlassActionMenu<Content: View>: View {
 	let title: String
 	let systemImage: String
@@ -101,7 +99,6 @@ package struct GlassActionMenu<Content: View>: View {
 	}
 }
 
-/// The capsule menu chrome shared by `GlassMenuPicker` and `GlassActionMenu`.
 private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 	let accentColor: Color
 	let isDisabled: Bool
@@ -127,7 +124,6 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 	}
 }
 
-/// A `Link` that underlines on hover instead of sitting there looking unresponsive.
 package struct AccentLink: View {
 	let title: String
 	let destination: URL

@@ -3,9 +3,6 @@
 import Foundation
 
 @MainActor
-/// The single owner of every `UserDefaults`-backed launcher preference. Feature controllers read
-/// and write through here rather than touching `UserDefaults` directly, so reset behavior and
-/// tests have one place to reason about persisted state.
 package struct LauncherPreferencesStore {
 	/// A scalar `UserDefaults` preference with its single default; `sanitize` runs on every read and write.
 	package struct ScalarKey<Value: Sendable>: Sendable {
@@ -49,7 +46,9 @@ package struct LauncherPreferencesStore {
 		package static let usesDynamicTheme = ScalarKey("usesDynamicTheme", default: true)
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
 		static let gameLaunchOptions = "gameLaunchOptions"
-		static let installPath = "installPath"
+		static func installPath(for region: GameRegion) -> String {
+			"installPath.\(region.rawValue)"
+		}
 		package static let selectedRegion = "selectedRegion"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
 		package static let dynamicThemeAccent = "dynamicThemeAccent.v2"
@@ -100,7 +99,7 @@ package struct LauncherPreferencesStore {
 	}
 
 	package func installDirectory(for region: GameRegion, default defaultURL: URL) -> URL {
-		guard let path = defaults.string(forKey: "\(Key.installPath).\(region.rawValue)") else {
+		guard let path = defaults.string(forKey: Key.installPath(for: region)) else {
 			return defaultURL
 		}
 		return URL(filePath: path, directoryHint: .isDirectory)
@@ -109,7 +108,7 @@ package struct LauncherPreferencesStore {
 	package func persistedInstallDirectories() -> [GameRegion: URL] {
 		Dictionary(
 			uniqueKeysWithValues: GameRegion.allCases.compactMap { region in
-				guard let path = defaults.string(forKey: "\(Key.installPath).\(region.rawValue)")
+				guard let path = defaults.string(forKey: Key.installPath(for: region))
 				else {
 					return nil
 				}
@@ -134,7 +133,7 @@ package struct LauncherPreferencesStore {
 	}
 
 	package func setInstallDirectory(_ url: URL, for region: GameRegion) {
-		defaults.set(url.path, forKey: "\(Key.installPath).\(region.rawValue)")
+		defaults.set(url.path, forKey: Key.installPath(for: region))
 	}
 
 	package func selectedRegion() -> GameRegion {
@@ -164,8 +163,7 @@ package struct LauncherPreferencesStore {
 		defaults.set(Array(regions).sorted(), forKey: Key.acknowledgedACEWarningRegions)
 	}
 
-	/// Removes every user-facing setting so each getter falls back to its single default.
-	/// Region, install locations, announcement history, and theme caches are kept.
+	// Region, install locations, announcement history, and theme caches are kept.
 	func removeResettablePreferences() {
 		for key in [
 			Key.automaticLauncherUpdates.name, Key.automaticGameUpdates.name,

@@ -105,10 +105,10 @@ struct OnboardingDisplayView: View {
 		)
 	}
 
-	/// Untouched defaults start from the recommended answers. Players returning with in-game
-	/// display settings keep their window mode and rendering, but the launcher takes over sizing,
-	/// so the answers shown are the answers in effect. The pointer has no untouched marker, so it
-	/// is only recommended alongside untouched display defaults.
+	// Untouched defaults start from the recommended answers. Players returning with in-game
+	// display settings keep their window mode and rendering, but the launcher takes over sizing,
+	// so the answers shown are the answers in effect. The pointer has no untouched marker, so it
+	// is only recommended alongside untouched display defaults.
 	private func applyRecommendedAnswers() {
 		guard let screen = GameScreenMetrics.main else { return }
 		let options = preferences.launchOptions

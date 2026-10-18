@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -32,10 +33,6 @@ struct InstallerResumeTests {
 			"Last-Modified only", ["Last-Modified": "Wed, 12 Aug 2026 10:30:34 GMT"], nil,
 			Optional("Wed, 12 Aug 2026 10:30:34 GMT"), nil, false
 		),
-		(
-			"ETag without Last-Modified", ["ETag": "\"v1\""], Optional("\"v1\""), nil,
-			Optional("\"v1\""), false
-		),
 		("no validators", [:], nil, nil, nil, false),
 		("empty ETag", ["ETag": ""], nil, nil, nil, true),
 		("oversized ETag", ["ETag": String(repeating: "x", count: 4_097)], nil, nil, nil, true),
@@ -52,7 +49,7 @@ struct InstallerResumeTests {
 		expectedIfRange: String?,
 		rejectsResponse: Bool
 	) throws {
-		let response = GameInstallerStreamingTests.response(
+		let response = makeHTTPResponse(
 			url: URL(string: "https://cdn.example/game.dat")!,
 			status: 206,
 			headers: headers

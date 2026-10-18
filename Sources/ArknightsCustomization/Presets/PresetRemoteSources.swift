@@ -2,19 +2,19 @@
 
 import Foundation
 
-/// Third-party content the preset gallery loads at runtime.
-///
-/// This file is the only place that names these upstream locations. Size limits live in
-/// `AppConstants.Presets`. Every source degrades gracefully: a failed fetch keeps the cached
-/// catalog, or the curated list for avatars, and never blocks the launcher.
-///
-/// TODO(pin): The community mirrors below track `main` because the repository cannot determine a
-/// trusted commit offline. Replace `main` with a reviewed commit SHA, then bump it on purpose.
+// Third-party content the preset gallery loads at runtime.
+//
+// This file is the only place that names these upstream locations. Size limits live in
+// `AppConstants.Presets`. Every source degrades gracefully: a failed fetch keeps the cached
+// catalog, or the curated list for avatars, and never blocks the launcher.
+//
+// The community mirrors below track `main` because the launcher cannot resolve a trusted
+// commit offline.
 enum PresetRemoteSources {
-	/// Operator catalog (`character_table.json`) hosts in preference order, from the maintained
-	/// community GameData mirror. jsDelivr refuses files over 20 MB and the table is close to
-	/// that, so raw GitHub serves it when the CDN fails.
-	/// Bound: `AppConstants.Presets.characterCatalogMaximumBytes`. Fallback: curated avatars.
+	// Operator catalog (`character_table.json`) hosts in preference order, from the maintained
+	// community GameData mirror. jsDelivr refuses files over 20 MB and the table is close to
+	// that, so raw GitHub serves it when the CDN fails.
+	// Bound: `AppConstants.Presets.characterCatalogMaximumBytes`. Fallback: curated avatars.
 	static let characterTables = [
 		URL(
 			string:
@@ -26,8 +26,8 @@ enum PresetRemoteSources {
 		)!,
 	]
 
-	/// Avatar image hosts in preference order. The first entry is a CDN. The others are raw
-	/// GitHub mirrors that `PresetCatalogService.imageData` tries when the CDN fails.
+	// Avatar image hosts in preference order. The first entry is a CDN. The others are raw
+	// GitHub mirrors that `PresetCatalogService.imageData` tries when the CDN fails.
 	static let primaryAvatarDirectory = URL(
 		string: "https://cdn.jsdelivr.net/gh/PuppiizSunniiz/Arknight-Images@main/avatars/"
 	)!
@@ -41,8 +41,8 @@ enum PresetRemoteSources {
 	]
 	static let primaryAvatarHost = "cdn.jsdelivr.net"
 
-	/// Yostar Fankit gallery list. Bound: `AppConstants.Presets.wallpaperCatalogMaximumBytes`.
-	/// Fallback: the cached catalog, otherwise an empty gallery.
+	// Yostar Fankit gallery list. Bound: `AppConstants.Presets.wallpaperCatalogMaximumBytes`.
+	// Fallback: the cached catalog, otherwise an empty gallery.
 	static func wallpaperGalleryPage(index: Int, size: Int) -> URL? {
 		URL(
 			string:

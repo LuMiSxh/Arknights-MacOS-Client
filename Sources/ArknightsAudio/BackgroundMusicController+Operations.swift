@@ -17,8 +17,7 @@ extension BackgroundMusicController {
 		discardPlaybackExpectation()
 	}
 
-	/// Starts a track or playback change. The caller stores its task in `operationTask` so the
-	/// next operation can cancel it.
+	// The caller stores its task in `operationTask` so the next operation can cancel it.
 	func beginOperation(_ kind: BackgroundMusicOperationKind) -> TaskSlot.Token {
 		operationTask?.cancel()
 		operationTask = nil

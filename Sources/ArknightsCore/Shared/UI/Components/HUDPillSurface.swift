@@ -4,29 +4,24 @@ import SwiftUI
 
 /// A shared surface for compact HUD pills and their expanded detail panels. Callers own the
 /// interactive content insets so Button hit targets stay aligned with the visible surface.
-/// Progress is drawn as an outer contour and never supplies a second full track.
+/// A caller that overlays its own border, such as `HUDPillProgressOutline`, passes
+/// `showsBorder: false`.
 struct HUDPillSurface<Content: View>: View {
-	let progress: Double?
-	let isProgressActive: Bool
 	let isExpanded: Bool
+	let showsBorder: Bool
 	let tint: Color
-	let progressTint: Color
 	@ViewBuilder package let content: Content
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	package init(
-		progress: Double? = nil,
-		isProgressActive: Bool = false,
 		isExpanded: Bool = false,
+		showsBorder: Bool = true,
 		tint: Color = LauncherVisuals.hudGlassTint,
-		progressTint: Color = LauncherVisuals.controlTint,
 		@ViewBuilder content: () -> Content
 	) {
-		self.progress = progress
-		self.isProgressActive = isProgressActive
 		self.isExpanded = isExpanded
+		self.showsBorder = showsBorder
 		self.tint = tint
-		self.progressTint = progressTint
 		self.content = content()
 	}
 
@@ -37,25 +32,9 @@ struct HUDPillSurface<Content: View>: View {
 				tint: tint,
 				presentation: .hud,
 				isInteractive: false,
-				borderOpacity: progress == nil ? LauncherVisuals.Control.hudBorderOpacity : 0.5,
+				borderOpacity: showsBorder ? LauncherVisuals.Control.hudBorderOpacity : 0,
 				in: surfaceShape
 			)
-			.overlay {
-				ZStack {
-					CapsuleProgressOutline(
-						progress: progress ?? 0,
-						tint: progressTint,
-						isGlintActive: isProgressActive,
-						track: .clear
-					)
-					.animation(
-						HUDPillMotion.progressAnimation(reduceMotion: reduceMotion),
-						value: progress
-					)
-				}
-				.opacity(progress == nil || isExpanded ? 0 : 1)
-				.allowsHitTesting(false)
-			}
 			.animation(
 				HUDPillMotion.expansionAnimation(reduceMotion: reduceMotion),
 				value: isExpanded
@@ -111,7 +90,9 @@ package enum HUDPillMotion {
 				offsetY: 6,
 				anchor: .topTrailing
 			)
-			.animation(LauncherMotion.Curve.state.animation.delay(0.06)),
+			.animation(
+				LauncherMotion.Curve.state.animation.delay(LauncherMotion.expandedContentDelay)
+			),
 			removal: .materialize(reduceMotion: false, scale: 0.96, blur: 4, anchor: .topTrailing)
 				.animation(LauncherMotion.Curve.dismiss.animation)
 		)
@@ -122,43 +103,53 @@ package enum HUDPillMotion {
 	}
 }
 
-private struct HUDPillSurfaceModifier: ViewModifier {
+/// The border and download outline of a progress-bearing HUD surface. Overlay it on a
+/// `HUDPillSurface` with `showsBorder: false`. The outline dims the border to 0.5 while it is drawn.
+package struct HUDPillProgressOutline: View {
 	let progress: Double?
-	let isProgressActive: Bool
-	let isExpanded: Bool
+	let isActive: Bool
 	let tint: Color
-	let progressTint: Color
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-	func body(content: Content) -> some View {
-		HUDPillSurface(
-			progress: progress,
-			isProgressActive: isProgressActive,
-			isExpanded: isExpanded,
-			tint: tint,
-			progressTint: progressTint
-		) {
-			content
-		}
+	package init(progress: Double?, isActive: Bool, tint: Color) {
+		self.progress = progress
+		self.isActive = isActive
+		self.tint = tint
+	}
+
+	package var body: some View {
+		Capsule()
+			.stroke(
+				LauncherVisuals.hairline.opacity(
+					progress == nil ? LauncherVisuals.Control.hudBorderOpacity : 0.5
+				),
+				lineWidth: LauncherVisuals.Control.borderWidth
+			)
+			.overlay {
+				CapsuleProgressOutline(
+					progress: progress ?? 0,
+					tint: tint,
+					isGlintActive: isActive,
+					track: .clear
+				)
+				.animation(
+					HUDPillMotion.progressAnimation(reduceMotion: reduceMotion),
+					value: progress
+				)
+				.opacity(progress == nil ? 0 : 1)
+			}
+			.allowsHitTesting(false)
 	}
 }
 
 extension View {
-	/// Applies the shared HUD pill geometry to an existing view.
 	package func hudPillSurface(
-		progress: Double? = nil,
-		isProgressActive: Bool = false,
 		isExpanded: Bool = false,
-		tint: Color = LauncherVisuals.hudGlassTint,
-		progressTint: Color = LauncherVisuals.controlTint
+		showsBorder: Bool = true,
+		tint: Color = LauncherVisuals.hudGlassTint
 	) -> some View {
-		modifier(
-			HUDPillSurfaceModifier(
-				progress: progress,
-				isProgressActive: isProgressActive,
-				isExpanded: isExpanded,
-				tint: tint,
-				progressTint: progressTint
-			)
-		)
+		HUDPillSurface(isExpanded: isExpanded, showsBorder: showsBorder, tint: tint) {
+			self
+		}
 	}
 }

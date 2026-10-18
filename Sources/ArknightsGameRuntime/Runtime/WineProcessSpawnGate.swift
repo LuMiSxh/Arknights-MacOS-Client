@@ -5,7 +5,7 @@ import Foundation
 
 struct WineProcessRetirementTimeout: Error, Sendable {}
 
-/// Serializes Wine process creation with shutdown and retains children until they exit.
+// Serializes Wine process creation with shutdown and retains children until they exit.
 final class WineProcessSpawnGate: @unchecked Sendable {
 	private let lock = NSLock()
 	private let beforeSpawnAttempt: @Sendable () -> Void

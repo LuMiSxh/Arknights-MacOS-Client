@@ -5,20 +5,18 @@ import ArknightsInfrastructure
 import Foundation
 import OSLog
 
-/// What one response stream has delivered so far.
 struct ReceivedTransfer {
 	var newlyDownloaded: Int64 = 0
 	var receivedResponse = false
 	var responseBodyBytes: Int64 = 0
-	/// Partial length a failed range response rolls back to.
+
 	var rangeBaseBytes: Int64
 	var expectedRangeBytes: Int64?
 }
 
-/// Streams a file response into its partial, keeping the partial and the progress counter
-/// consistent on every failure.
+// Streams a file response into its partial, keeping the partial and the progress counter
+// consistent on every failure.
 extension GameInstaller {
-	/// Writes the response body to the partial and returns the bytes received from the network.
 	func receive(
 		_ request: URLRequest,
 		redirectValidator: @escaping @Sendable (URL) -> Bool,
@@ -61,11 +59,11 @@ extension GameInstaller {
 					stream.cancel()
 				})
 		} catch {
-			if Task.isCancelled { throw CancellationError() }
-			if let transportError = error as? HTTPTransportError {
+			let resolved = HTTPCancellation.resolve(error)
+			if let transportError = resolved as? HTTPTransportError {
 				throw Self.launcherError(for: transportError)
 			}
-			throw error
+			throw resolved
 		}
 		try await validateCompletedTransfer(transfer, for: download)
 		return transfer.newlyDownloaded
@@ -196,7 +194,7 @@ extension GameInstaller {
 		}
 	}
 
-	/// Keeps the bytes that existed before the range response and discards what it added.
+	// Keeps the bytes that existed before the range response and discards what it added.
 	private func discardRange(
 		of download: PartialDownload,
 		transfer: ReceivedTransfer,

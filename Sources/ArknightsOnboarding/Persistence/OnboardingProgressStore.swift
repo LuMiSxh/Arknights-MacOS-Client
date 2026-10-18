@@ -3,15 +3,15 @@
 import ArknightsCore
 import Foundation
 
-/// Persists only setup-assistant progress. Launcher preferences and game files remain owned
-/// by their existing stores, so bumping the schema can rerun onboarding without migrating or
-/// rewriting any user choice.
+// Persists only setup-assistant progress. Launcher preferences and game files remain owned
+// by their existing stores, so bumping the schema can rerun onboarding without migrating or
+// rewriting any user choice.
 @MainActor
 package struct OnboardingProgressStore {
-	/// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
+	// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
 	static let currentSchemaVersion = 2
-	/// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
-	/// `OnboardingWelcomeView.requiredSetupReason(schema:)`.
+	// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
+	// `OnboardingWelcomeView.requiredSetupReason(schema:)`.
 	static let requiredSchemaVersions: Set<Int> = [2]
 
 	private typealias Key = LauncherPreferencesStore.Key
@@ -26,8 +26,8 @@ package struct OnboardingProgressStore {
 		defaults.integer(forKey: Key.onboardingCompletedSchemaVersion) < Self.currentSchemaVersion
 	}
 
-	/// The newest required schema a returning player has not finished. First runs, which have
-	/// no completed schema, can still skip setup.
+	// The newest required schema a returning player has not finished. First runs, which have
+	// no completed schema, can still skip setup.
 	var pendingRequiredSchema: Int? {
 		let completed = defaults.integer(forKey: Key.onboardingCompletedSchemaVersion)
 		guard completed > 0 else { return nil }

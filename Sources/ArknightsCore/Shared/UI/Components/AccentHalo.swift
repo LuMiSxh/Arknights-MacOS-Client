@@ -60,7 +60,6 @@ private struct AccentHalo<S: Shape>: View {
 }
 
 extension View {
-	/// Adds the shared accent halo behind `shape` while `isActive` is true.
 	package func accentHalo<S: Shape>(tint: Color, isActive: Bool, in shape: S) -> some View {
 		modifier(AccentHaloModifier(tint: tint, isActive: isActive, shape: shape))
 	}

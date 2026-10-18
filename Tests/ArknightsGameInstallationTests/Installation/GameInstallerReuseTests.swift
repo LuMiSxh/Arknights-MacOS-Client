@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Darwin
 import Foundation
 import Testing
@@ -155,26 +156,23 @@ private struct FileSnapshot: Equatable {
 	}
 }
 
+/// A game install target plus donor regions, all under one temporary root.
 private struct ReuseWorld {
 	let fixture: InstallerFixture
-	let root: URL
+	var root: URL { fixture.temporary.url }
 	var target: URL { fixture.directory }
 	var destination: URL { fixture.destination }
 
 	init() throws {
 		let body = Data((0..<4_096).map { UInt8($0 % 251) })
-		fixture = try GameInstallerStreamingTests.makeFixture(body: body)
+		fixture = try InstallerFixture.make(body: body)
 		fixture.route.handler = { request in
-			(GameInstallerStreamingTests.response(url: request.url!, status: 200), body)
+			(makeHTTPResponse(url: request.url!, status: 200), body)
 		}
-		root = FileManager.default.temporaryDirectory.appending(
-			path: "GameInstallerReuseTests-\(UUID().uuidString)", directoryHint: .isDirectory)
-		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 	}
 
 	func remove() {
 		fixture.remove()
-		try? FileManager.default.removeItem(at: root)
 	}
 
 	func installer(donors: [URL]) -> GameInstaller {
@@ -194,7 +192,7 @@ private struct ReuseWorld {
 		progress: @escaping @Sendable (DownloadProgress) async -> Void = { _ in }
 	) async throws -> InstallResult {
 		try await installer(donors: donors).install(
-			configuration: fixture.configuration,
+			configuration: installerTestConfiguration,
 			region: .global,
 			into: target,
 			progress: progress

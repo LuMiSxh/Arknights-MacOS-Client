@@ -4,7 +4,7 @@ import ArknightsCore
 import ArknightsInfrastructure
 import Foundation
 
-/// One-time Wine prefix setup step, recorded so it isn't replayed on every launch.
+// One-time Wine prefix setup step, recorded so it isn't replayed on every launch.
 enum RuntimeMigration: String, CaseIterable, Codable, Sendable {
 	case initializeWinePrefix = "initialize-wine-prefix"
 	case installDXMT = "install-dxmt"
@@ -41,9 +41,9 @@ package struct RuntimeMigrationState: Codable, Equatable, Sendable {
 	}
 }
 
-/// Decides which migrations still need to run: a schema or runtime-revision mismatch, a
-/// missing system registry, or an explicitly invalidated step all restart from that point
-/// forward, rather than replaying every step unconditionally.
+// Decides which migrations still need to run: a schema or runtime-revision mismatch, a
+// missing system registry, or an explicitly invalidated step all restart from that point
+// forward, rather than replaying every step unconditionally.
 struct RuntimeMigrationPlan: Sendable {
 	package private(set) var state: RuntimeMigrationState
 	let pending: [RuntimeMigration]
@@ -77,12 +77,16 @@ struct RuntimeMigrationPlan: Sendable {
 	}
 }
 
-/// Reads and writes `RuntimeMigrationState` inside the Wine prefix, importing the legacy
-/// single-file revision/configuration markers older builds used before this schema existed.
+// Reads and writes `RuntimeMigrationState` inside the Wine prefix, importing the legacy
+// single-file revision/configuration markers older builds used before this schema existed.
 struct RuntimeMigrationStore {
 	static let stateFileName = ".arknights-runtime-migrations.json"
 	static let legacyRevisionFileName = ".arknights-runtime-revision"
 	static let legacyConfigurationFileName = ".arknights-runtime-configuration"
+
+	private static let stateStore = JSONFileStore(
+		maximumBytes: AppConstants.Game.runtimeMigrationStateMaximumBytes
+	)
 
 	private let fileManager: FileManager
 
@@ -91,17 +95,10 @@ struct RuntimeMigrationStore {
 	}
 
 	func load(from prefixDirectory: URL) throws -> RuntimeMigrationState? {
-		let stateURL = prefixDirectory.appending(path: Self.stateFileName)
-		let data: Data
-		do {
-			data = try BoundedFileReader.readRegularFile(
-				at: stateURL,
-				maximumBytes: AppConstants.Game.runtimeMigrationStateMaximumBytes
-			)
-		} catch let error as POSIXError where error.code == .ENOENT {
-			return nil
-		}
-		return try JSONDecoder().decode(RuntimeMigrationState.self, from: data)
+		try Self.stateStore.read(
+			RuntimeMigrationState.self,
+			at: prefixDirectory.appending(path: Self.stateFileName)
+		)
 	}
 
 	func loadLegacy(
@@ -136,20 +133,11 @@ struct RuntimeMigrationStore {
 	}
 
 	func save(_ state: RuntimeMigrationState, to prefixDirectory: URL) throws {
-		let encoder = JSONEncoder()
-		encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-		var data = try encoder.encode(state)
-		data.append(0x0A)
-		try data.write(
-			to: prefixDirectory.appending(path: Self.stateFileName),
-			options: .atomic
-		)
+		try Self.stateStore.write(state, to: prefixDirectory.appending(path: Self.stateFileName))
 	}
 
-	/// Discards the recorded migration state so the next launch replays Wine
-	/// initialization, DXMT installation, and every registry override from
-	/// scratch. Touches only setup bookkeeping, never game files or Wine's own
-	/// user directories (saves, cookies, Documents).
+	// Touches only setup bookkeeping, never game files or Wine's own
+	// user directories (saves, cookies, Documents).
 	func reset(prefixDirectory: URL) throws {
 		let stateURL = prefixDirectory.appending(path: Self.stateFileName)
 		try removeIfPresent(at: stateURL)

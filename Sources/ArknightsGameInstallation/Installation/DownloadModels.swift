@@ -8,16 +8,16 @@ package struct DownloadProgress: Equatable, Sendable {
 	let completedFiles: Int
 	let totalFiles: Int
 	let currentFile: String
-	/// Bytes received from the network during this installation operation. Resumed and
-	/// already-present bytes are deliberately excluded.
+	// Bytes received from the network during this installation operation. Resumed and
+	// already-present bytes are deliberately excluded.
 	let networkDownloadedBytes: Int64
 	package let transferRateBytesPerSecond: Double?
 	package let isTransferStalled: Bool
 	/// True while existing files are hashed before any download starts. Byte and file counts
 	/// then describe the verification pass instead of the transfer.
 	package let isVerifying: Bool
-	/// Monotonic within one installer operation, so concurrent stream callbacks cannot move
-	/// the controller back to an older snapshot.
+	// Monotonic within one installer operation, so concurrent stream callbacks cannot move
+	// the controller back to an older snapshot.
 	let sequence: UInt64
 
 	package init(

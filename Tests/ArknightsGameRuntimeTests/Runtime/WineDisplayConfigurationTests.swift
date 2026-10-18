@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -42,9 +43,10 @@ func displayConfigurationReadsTheExpectedRegistryState() throws {
 			WineDisplayRegistryState(retinaMode: nil, logPixels: nil, usePreciseScrolling: "n")
 		),
 	]
+	let temporary = try TemporaryDirectory("WineDisplayConfigurationTests")
+	defer { temporary.remove() }
 	for (scenario, registry, expected) in scenarios {
-		let prefix = try makeRegistryPrefix(registry)
-		defer { try? FileManager.default.removeItem(at: prefix) }
+		let prefix = try makeRegistryPrefix(registry, in: temporary.url)
 		let configuration = WineDisplayConfiguration(backingScaleFactor: 2)
 		#expect(configuration.registryState(in: prefix) == expected, Comment(rawValue: scenario))
 		#expect(configuration.logPixels == 96)
@@ -74,11 +76,7 @@ func displayConfigurationReadsTheExpectedRegistryState() throws {
 	}
 }
 
-private func makeRegistryPrefix(_ registry: String) throws -> URL {
-	let prefix = FileManager.default.temporaryDirectory.appending(
-		path: "wine-registry-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
+private func makeRegistryPrefix(_ registry: String, in prefix: URL) throws -> URL {
 	try FileManager.default.createDirectory(at: prefix, withIntermediateDirectories: true)
 	try registry.write(
 		to: prefix.appending(path: "user.reg"),

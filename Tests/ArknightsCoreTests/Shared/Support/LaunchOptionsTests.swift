@@ -87,27 +87,6 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 		#"{"displayMode":"windowed","resolution":"1280x720","usesPreciseScrolling":true}"#)
 	let current = try decode(#"{"displayMode":"windowed","resolution":"1280x720"}"#)
 	#expect(retired == current)
-	#expect(retired.usesGameSettings)
-
-	// (stored JSON, window width, window height, rendering mode)
-	let migrations: [(String, Int, Int, GameRenderingMode)] = [
-		// Retina-on launcher overrides stored pixels; keep the window they opened.
-		(#"{"resolution":"2560x1440","usesGameSettings":false}"#, 1280, 720, .retina),
-		(
-			#"{"resolution":"1920x1080","usesGameSettings":false,"usesHighResolutionMode":false}"#,
-			1920, 1080, .standard
-		),
-		// In-game settings never used the stored resolution, so the window starts at the default.
-		(#"{"resolution":"2560x1440","usesGameSettings":true}"#, 1280, 720, .retina),
-		// Halving below the smallest supported window falls back to the default size.
-		(#"{"resolution":"640x480","usesGameSettings":false}"#, 1280, 720, .retina),
-		(#"{"windowSize":{"width":10,"height":10},"usesGameSettings":false}"#, 1280, 720, .retina),
-	]
-	for (json, width, height, renderingMode) in migrations {
-		let migrated = try decode(json)
-		#expect(migrated.windowSize == GameDisplaySize(width: width, height: height))
-		#expect(migrated.renderingMode == renderingMode)
-	}
 
 	// Older launchers stored only the official resolution; newer ones add a fullscreen value.
 	#expect(

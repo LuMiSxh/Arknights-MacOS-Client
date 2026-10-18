@@ -12,7 +12,6 @@ actor ProgressCounter {
 	private var completedFiles = 0
 	private var sequence: UInt64 = 0
 	private var estimator: TransferRateEstimator
-	/// The file that most recently received network bytes; the install-wide monitor reports it.
 	private(set) var lastActiveFile: String?
 	// Chunk callbacks can fire far faster than SwiftUI needs to redraw a progress bar;
 	// throttling emissions to 10/s keeps updates smooth without flooding the UI.
@@ -53,9 +52,8 @@ actor ProgressCounter {
 		return progress(file: file)
 	}
 
-	/// Counts a file satisfied without the network. The bytes advance progress and the
-	/// completed-file count but not the transfer rate or network total, so the rate and ETA
-	/// keep describing real downloads.
+	// The bytes advance progress and the completed-file count, not the rate or network total,
+	// so the rate and ETA keep describing real downloads.
 	func addReused(bytes: Int64, file: String) -> DownloadProgress {
 		downloadedBytes += bytes
 		completedFiles += 1
@@ -85,8 +83,7 @@ actor ProgressCounter {
 		return progress(file: file)
 	}
 
-	/// Clears rate state while preserving accurate byte progress, for example when
-	/// a CDN retry or a stalled stream starts a new network attempt.
+	// Byte progress stays accurate. Only the rate restarts, on a CDN retry or a stalled stream.
 	func resetRate(file: String) -> DownloadProgress {
 		estimator.reset()
 		lastEmission = clock.now
@@ -114,14 +111,12 @@ actor ProgressCounter {
 	}
 }
 
-/// One install-wide ticker that keeps stall detection and the displayed rate fresh while
-/// bytes are not arriving.
-///
-/// Every in-flight file shares the counter's estimator, so a single tick reporting the most
-/// recently active file covers 1 to N concurrent downloads.
+// One install-wide ticker keeps stall detection and the displayed rate fresh while bytes are
+// not arriving. Every in-flight file shares the counter's estimator, so one tick reporting the
+// most recently active file covers 1 to N concurrent downloads.
 enum InstallProgressMonitor {
-	/// Runs `operation` with the monitor ticking beside it. The monitor is cancelled and awaited
-	/// on every exit path, so no progress callback outlives the call.
+	// The monitor is cancelled and awaited on every exit path, so no progress callback outlives
+	// the call.
 	static func run<Result>(
 		counter: ProgressCounter,
 		fallbackFile: String,
@@ -130,10 +125,22 @@ enum InstallProgressMonitor {
 		progress: @escaping GameInstaller.ProgressHandler,
 		operation: () async throws -> Result
 	) async rethrows -> Result {
+		try await run(interval: interval, clock: clock) {
+			let file = await counter.lastActiveFile ?? fallbackFile
+			await progress(await counter.refresh(file: file))
+		} operation: {
+			try await operation()
+		}
+	}
+
+	static func run<Result>(
+		interval: Duration,
+		clock: any Clock<Duration> = ContinuousClock(),
+		emit: @escaping @Sendable () async -> Void,
+		operation: () async throws -> Result
+	) async rethrows -> Result {
 		let monitor = Task {
-			await tick(
-				counter: counter, fallbackFile: fallbackFile, interval: interval, clock: clock,
-				progress: progress)
+			await tick(interval: interval, clock: clock, emit: emit)
 		}
 		let result: Result
 		do {
@@ -149,18 +156,15 @@ enum InstallProgressMonitor {
 	}
 
 	private static func tick(
-		counter: ProgressCounter,
-		fallbackFile: String,
 		interval: Duration,
 		clock: any Clock<Duration>,
-		progress: GameInstaller.ProgressHandler
+		emit: @Sendable () async -> Void
 	) async {
 		do {
 			while !Task.isCancelled {
 				try await clock.sleep(for: interval, tolerance: interval / 10)
 				guard !Task.isCancelled else { return }
-				let file = await counter.lastActiveFile ?? fallbackFile
-				await progress(await counter.refresh(file: file))
+				await emit()
 			}
 		} catch {
 			// Only cancellation ends the sleep: the install finished, failed, or paused.

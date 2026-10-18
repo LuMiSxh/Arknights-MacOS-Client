@@ -2,7 +2,6 @@
 
 import Foundation
 
-/// A lightweight operator avatar representation for the gallery.
 struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 	let id: String
 	package let name: String
@@ -42,7 +41,7 @@ struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 		self.tagList = tagList
 	}
 
-	/// Search input includes stable upstream metadata, while the identifier stays presentation-free.
+	// Search input includes stable upstream metadata, while the identifier stays presentation-free.
 	var searchableValues: [String] {
 		[
 			id, name, appellation, profession, subProfessionID, nationID, groupID, teamID, rarity,
@@ -55,7 +54,6 @@ struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 	}
 }
 
-/// Official high-resolution wallpaper entry.
 struct PresetWallpaper: Identifiable, Codable, Sendable, Hashable {
 	let id: String
 	let title: String
@@ -118,7 +116,6 @@ enum WallpaperCategory: String, CaseIterable, Identifiable, Sendable {
 	]
 }
 
-/// An operator identified among a set of wallpapers, with how many of them feature them.
 struct OperatorArtCount: Identifiable, Hashable, Sendable {
 	var id: String { tag }
 	let tag: String
@@ -126,7 +123,6 @@ struct OperatorArtCount: Identifiable, Hashable, Sendable {
 	let count: Int
 }
 
-/// Decodes identity fields from `character_table.json`.
 struct RawCharacterEntry: Decodable {
 	package let name: String
 	let isNotObtainable: Bool?
@@ -166,7 +162,7 @@ struct RawCharacterEntry: Decodable {
 	}
 }
 
-/// Tolerant decoders for Yostar's Fan Kit gallery API (handles mixed String/Int types and key variants).
+// Tolerant decoders for Yostar's Fan Kit gallery API (handles mixed String/Int types and key variants).
 struct YostarGalleryResponse: Decodable {
 	let data: YostarGalleryData?
 }

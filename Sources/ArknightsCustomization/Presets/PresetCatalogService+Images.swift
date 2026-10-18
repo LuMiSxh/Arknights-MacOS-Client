@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import CryptoKit
 import Foundation
 import ImageIO
@@ -40,18 +41,16 @@ extension PresetCatalogService {
 
 		var lastError: (any Error)?
 		for candidate in candidates {
-			for _ in 0..<AppConstants.Presets.imageDownloadAttempts {
-				do {
-					let data = try await fetchImageData(from: candidate)
-					guard cacheEpoch == epoch else { throw CancellationError() }
-					await cacheImageData(data, at: cachedFile, epoch: epoch)
-					guard cacheEpoch == epoch else { throw CancellationError() }
-					return data
-				} catch {
-					guard cacheEpoch == epoch else { throw CancellationError() }
-					if Task.isCancelled { throw CancellationError() }
-					lastError = error
-				}
+			do {
+				let data = try await fetchImageData(from: candidate)
+				guard cacheEpoch == epoch else { throw CancellationError() }
+				await cacheImageData(data, at: cachedFile, epoch: epoch)
+				guard cacheEpoch == epoch else { throw CancellationError() }
+				return data
+			} catch {
+				guard cacheEpoch == epoch else { throw CancellationError() }
+				if Task.isCancelled { throw CancellationError() }
+				lastError = error
 			}
 		}
 		let finalError = lastError ?? CustomizationError.invalidPresetImage(url)
@@ -86,15 +85,23 @@ extension PresetCatalogService {
 			timeoutInterval: AppConstants.Presets.requestTimeout
 		)
 		request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
-		let (data, response) = try await loader.data(
-			for: request,
-			maximumBytes: AppConstants.Presets.imageMaximumBytes
-		)
-		guard response.statusCode == 200, !data.isEmpty else {
+		let result: HTTPFetchResult
+		do {
+			result = try await fetcher.fetch(
+				[request],
+				policy: HTTPFetchPolicy(
+					maximumBytes: AppConstants.Presets.imageMaximumBytes,
+					attemptsPerCandidate: AppConstants.Presets.imageDownloadAttempts
+				)
+			)
+		} catch HTTPFetchError.unexpectedStatus {
 			throw URLError(.badServerResponse)
 		}
-		try Self.validateImageData(data, source: url)
-		return data
+		guard !result.data.isEmpty else {
+			throw URLError(.badServerResponse)
+		}
+		try Self.validateImageData(result.data, source: url)
+		return result.data
 	}
 
 	private func cachedImageData(from url: URL, epoch: UInt64) async -> Data? {
@@ -114,11 +121,11 @@ extension PresetCatalogService {
 				guard cacheEpoch == epoch else { return nil }
 				return nil
 			}
-			let data = try Self.readBoundedFile(
+			// Only bytes that `fetchImageData` validated reach the cache, so a hit skips decoding.
+			let data = try BoundedFileReader.readRegularFile(
 				at: url,
 				maximumBytes: AppConstants.Presets.imageMaximumBytes
 			)
-			try Self.validateImageData(data, source: url)
 			try FileManager.default.setAttributes(
 				[.modificationDate: Date.now],
 				ofItemAtPath: url.path

@@ -5,10 +5,9 @@ import ArknightsCore
 import CoreImage
 import SwiftUI
 
-/// Unified engine for generating, dynamically tinting, and grid-normalizing macOS application icons.
 enum AppIconRenderer {
-	/// Aspect-fits and centers full-bleed icon artwork onto the standard 80.5% Apple Icon Grid
-	/// with transparent margins, matching macOS system apps (Safari, Music, Settings).
+	// The transparent margin matches the 80.5% Apple icon grid used by macOS system apps
+	// (Safari, Music, Settings).
 	static func padToAppleGrid(image: NSImage) -> NSImage {
 		let canvasSize = NSSize(
 			width: AppConstants.Icon.canvasDimension,
@@ -23,30 +22,12 @@ enum AppIconRenderer {
 		)
 		let drawRect = NSRect(origin: origin, size: contentSize)
 
-		// `lockFocus` renders at the scale of whichever screen AppKit picks, which differs on
-		// mixed-scale multi-display setups; draw into a fixed-density bitmap instead.
-		let pixels = Int(AppConstants.Icon.canvasDimension * AppConstants.Icon.renderScale)
-		guard
-			let bitmap = NSBitmapImageRep(
-				bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
-				bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-				colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
-			)
-		else { return image }
-		// The context derives its point-to-pixel transform from the size set beforehand.
-		bitmap.size = canvasSize
-		guard let context = NSGraphicsContext(bitmapImageRep: bitmap) else { return image }
-		NSGraphicsContext.saveGraphicsState()
-		NSGraphicsContext.current = context
-		context.imageInterpolation = .high
-		image.draw(in: drawRect, from: .zero, operation: .copy, fraction: 1.0)
-		NSGraphicsContext.restoreGraphicsState()
-		let padded = NSImage(size: canvasSize)
-		padded.addRepresentation(bitmap)
-		return padded
+		return RGBABitmap.image(size: canvasSize, scale: AppConstants.Icon.renderScale) { context in
+			context.imageInterpolation = .high
+			image.draw(in: drawRect, from: .zero, operation: .copy, fraction: 1.0)
+		} ?? image
 	}
 
-	/// Generates a dynamically tinted version of the bundled app icon for the given hue.
 	static func tintedDefaultIcon(for targetHue: Double) -> NSImage? {
 		guard let baseIcon = bundledImage(.appIconTintSource),
 			let tiffData = baseIcon.tiffRepresentation,
@@ -70,7 +51,7 @@ enum AppIconRenderer {
 		return padToAppleGrid(image: rawTintedImage)
 	}
 
-	/// The 1024-pixel render produced by `just icon`; the compiled ICNS tops out at 256 pixels.
+	// The 1024-pixel render produced by `just icon`; the compiled ICNS tops out at 256 pixels.
 	static func bundledImage(_ resource: BundledResource) -> NSImage? {
 		do {
 			return NSImage(contentsOf: try resource.url())
@@ -80,7 +61,7 @@ enum AppIconRenderer {
 		}
 	}
 
-	/// `CIHueAdjust` rotates hue in `NSColor`'s HSB circle, not YIQ chroma-angle space.
+	// `CIHueAdjust` rotates hue in `NSColor`'s HSB circle, not YIQ chroma-angle space.
 	static func hueRotationAngle(to targetHue: Double) -> Double {
 		var deltaAngle = (targetHue - AppConstants.Icon.baseCyanHue) * 2 * Double.pi
 		while deltaAngle > Double.pi { deltaAngle -= 2 * Double.pi }
