@@ -9,13 +9,8 @@ extension PresetCatalogService {
 		let epoch = cacheEpoch
 		do {
 			log.info("Fetching remote character table from GameData…")
-			let request = URLRequest(url: Self.characterTableURL)
-			let (data, response) = try await loader.data(
-				for: request,
-				maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
-			)
+			let data = try await characterTableData()
 			guard cacheEpoch == epoch else { return [] }
-			guard response.statusCode == 200 else { throw URLError(.badServerResponse) }
 
 			let parsed = try await Task.detached(priority: .utility) { () -> [PresetAvatar] in
 				let rawEntries = try JSONDecoder().decode(
@@ -62,6 +57,27 @@ extension PresetCatalogService {
 			log.error("Failed to fetch remote character table: \(error.localizedDescription)")
 			return []
 		}
+	}
+
+	private func characterTableData() async throws -> Data {
+		var lastError: any Error = URLError(.badServerResponse)
+		for url in Self.characterTableURLs {
+			do {
+				let (data, response) = try await loader.data(
+					for: URLRequest(url: url),
+					maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
+				)
+				guard response.statusCode == 200 else { throw URLError(.badServerResponse) }
+				return data
+			} catch {
+				if Task.isCancelled { throw CancellationError() }
+				log.error(
+					"Failed to fetch character table from \(url.absoluteString): \(error.localizedDescription)"
+				)
+				lastError = error
+			}
+		}
+		throw lastError
 	}
 
 	@discardableResult

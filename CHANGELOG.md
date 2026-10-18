@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - The game no longer leaves a generic "exec" icon in the Dock's recent apps after it closes.
+- The operator icon gallery lists newly released operators again. It reads the maintained ArknightsAssets character table instead of the archived one.
+- Renamed and new operators replace the cached gallery list when the background refresh finishes. You do not have to reopen the gallery.
 
 ## [0.7.0] - 2026-10-14
 
