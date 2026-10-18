@@ -46,7 +46,7 @@ flowchart LR
 
 Run `just dev` to download the pinned runtime and build the app. Run `just dev dmg` to continue to the installable DMG. `just runtime` only downloads the runtime. It verifies the SHA-256, extracts the archive safely, validates Wine and both DXMT architectures, and replaces `.build/runtime`.
 
-Packaging compiles only the Swift launcher and the x86-64 components in `RuntimeSupport`, and changes Wine's staged menu shortcut from Option-Command-Q to Command-Q. It writes one compact `ThirdPartyNotices.deflate` file into the app. See [License automation](license-automation.md).
+Packaging compiles only the Swift launcher and the x86-64 components in `RuntimeSupport`. It writes one compact `ThirdPartyNotices.deflate` file into the app. See [License automation](license-automation.md).
 
 The draft contains:
 
