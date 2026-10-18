@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// Persists only setup-assistant progress. Launcher preferences and game files remain owned
@@ -13,10 +14,7 @@ package struct OnboardingProgressStore {
 	/// `OnboardingWelcomeView.requiredSetupReason(schema:)`.
 	static let requiredSchemaVersions: Set<Int> = [2]
 
-	private enum Key {
-		static let completedSchemaVersion = "onboarding.completedSchemaVersion"
-		static let currentStep = "onboarding.currentStep"
-	}
+	private typealias Key = LauncherPreferencesStore.Key
 
 	private let defaults: UserDefaults
 
@@ -25,13 +23,13 @@ package struct OnboardingProgressStore {
 	}
 
 	var needsOnboarding: Bool {
-		defaults.integer(forKey: Key.completedSchemaVersion) < Self.currentSchemaVersion
+		defaults.integer(forKey: Key.onboardingCompletedSchemaVersion) < Self.currentSchemaVersion
 	}
 
 	/// The newest required schema a returning player has not finished. First runs, which have
 	/// no completed schema, can still skip setup.
 	var pendingRequiredSchema: Int? {
-		let completed = defaults.integer(forKey: Key.completedSchemaVersion)
+		let completed = defaults.integer(forKey: Key.onboardingCompletedSchemaVersion)
 		guard completed > 0 else { return nil }
 		return Self.requiredSchemaVersions.filter {
 			$0 > completed && $0 <= Self.currentSchemaVersion
@@ -39,21 +37,21 @@ package struct OnboardingProgressStore {
 	}
 
 	var savedStep: OnboardingStep? {
-		guard defaults.object(forKey: Key.currentStep) != nil else { return nil }
-		return OnboardingStep(rawValue: defaults.integer(forKey: Key.currentStep))
+		guard defaults.object(forKey: Key.onboardingCurrentStep) != nil else { return nil }
+		return OnboardingStep(rawValue: defaults.integer(forKey: Key.onboardingCurrentStep))
 	}
 
 	func save(step: OnboardingStep) {
-		defaults.set(step.rawValue, forKey: Key.currentStep)
+		defaults.set(step.rawValue, forKey: Key.onboardingCurrentStep)
 	}
 
 	func complete() {
-		defaults.set(Self.currentSchemaVersion, forKey: Key.completedSchemaVersion)
-		defaults.removeObject(forKey: Key.currentStep)
+		defaults.set(Self.currentSchemaVersion, forKey: Key.onboardingCompletedSchemaVersion)
+		defaults.removeObject(forKey: Key.onboardingCurrentStep)
 	}
 
 	func reset() {
-		defaults.removeObject(forKey: Key.completedSchemaVersion)
-		defaults.removeObject(forKey: Key.currentStep)
+		defaults.removeObject(forKey: Key.onboardingCompletedSchemaVersion)
+		defaults.removeObject(forKey: Key.onboardingCurrentStep)
 	}
 }

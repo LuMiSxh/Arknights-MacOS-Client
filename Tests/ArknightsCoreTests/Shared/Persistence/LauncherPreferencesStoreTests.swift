@@ -67,24 +67,4 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.installDirectory(for: .japan, default: legacyJapan) == customJapan)
 	}
 
-	@Test
-	func removeLegacyDynamicThemeAccentsKeepsOnlyCurrentVersionEntries() {
-		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let store = LauncherPreferencesStore(defaults: defaults)
-		defaults.set(
-			["hue": 0.1, "saturation": 0.8, "brightness": 0.9],
-			forKey: "dynamicThemeAccent.legacy-cache"
-		)
-		store.setDynamicThemeAccent(
-			ThemeAccentSnapshot(hue: 0.6, saturation: 0.8, brightness: 0.9),
-			for: "current-cache"
-		)
-
-		store.removeLegacyDynamicThemeAccents()
-
-		#expect(defaults.object(forKey: "dynamicThemeAccent.legacy-cache") == nil)
-		#expect(store.dynamicThemeAccent(for: "current-cache")?.hue == 0.6)
-	}
-
 }

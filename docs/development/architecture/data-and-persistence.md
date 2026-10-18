@@ -74,7 +74,25 @@ display settings, and personalization values. A region switch moves no files. Up
 download game data. A chosen image is copied into `Artwork/Custom`.
 
 To add a preference, add it to the store, test it in its owning feature, and reset it in
-`resetToDefaults` when appropriate. Never use a preference as a file marker or migration state.
+`resetToDefaults` when appropriate. Never use a preference as a file marker or as filesystem migration state.
+
+### Add a preferences migration
+
+`PreferencesMigrator` runs once at launch, before the launcher reads any preference. It stores the last
+applied version in one `UserDefaults` key and runs each newer step in order. Use it for a cache wipe, a
+key rename, or a key removal. Filesystem moves stay in `AppStorageMigrator`. Wine prefix changes stay
+in `RuntimeMigration`.
+
+1. Open `PreferencesMigrator.swift`.
+2. Append a `Step` with the next version to `steps`. Never edit a released step.
+3. Call `removeKeys(withPrefix:keeping:)`, `remove(_:)`, or `rename(_:to:)` in the step body.
+
+```swift
+Step(version: 2) { $0.remove("lastAppliedDynamicIconHue") },
+```
+
+Keep the step idempotent. A fresh install runs every step on empty defaults. Every key name stays in
+`LauncherPreferencesStore.Key`. Name a retired key as a literal in its step.
 
 ## Runtime state and atomicity
 

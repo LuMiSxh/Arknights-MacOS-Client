@@ -259,6 +259,7 @@ struct ArknightsClientApp: App {
 				)
 			}
 		#endif
+		PreferencesMigrator().migrate(.standard)
 		return LauncherViewModel(
 			paths: AppPaths(),
 			preferences: LauncherPreferencesStore(),
