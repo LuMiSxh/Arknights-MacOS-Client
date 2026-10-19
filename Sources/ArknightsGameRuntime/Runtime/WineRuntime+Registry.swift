@@ -6,7 +6,7 @@ import Foundation
 struct WineRegistryEntry {
 	enum Kind {
 		case string(String)
-		/// Written as `dword:`-prefixed hex, the only numeric form `.reg` files accept.
+		// Written as `dword:`-prefixed hex, the only numeric form `.reg` files accept.
 		case dword(UInt32)
 	}
 
@@ -16,9 +16,9 @@ struct WineRegistryEntry {
 }
 
 extension WineRuntime {
-	/// Applies every entry with one `regedit.exe`, instead of a Windows process per `reg.exe add`.
-	/// The script lives inside the prefix because `regedit.exe` takes only Windows paths,
-	/// and is removed afterwards.
+	// One `regedit.exe` run replaces a Windows process per `reg.exe add`.
+	// The script lives inside the prefix because `regedit.exe` takes only Windows paths,
+	// and is removed afterwards.
 	func applyRegistryEntries(
 		_ entries: [WineRegistryEntry],
 		description: String,
@@ -83,7 +83,7 @@ extension WineRuntime {
 		return lines.joined(separator: "\r\n") + "\r\n"
 	}
 
-	/// `.reg` sections need the long root-key names; only `reg.exe` accepts the short aliases.
+	// `.reg` sections need the long root-key names; only `reg.exe` accepts the short aliases.
 	private static func expandedRootKey(in key: String) -> String {
 		for (alias, expanded) in [
 			("HKCU\\", "HKEY_CURRENT_USER\\"),

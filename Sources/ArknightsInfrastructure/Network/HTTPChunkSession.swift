@@ -88,7 +88,11 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 		for request: URLRequest,
 		redirectValidator: (@Sendable (URL) -> Bool)? = nil
 	) -> HTTPChunkStream {
-		let (events, continuation) = AsyncThrowingStream<HTTPChunkEvent, any Error>.makeStream()
+		// Lossless, so the buffer is unbounded by policy. The bound is `maximumBufferedBytes`:
+		// `didReceive` suspends the task once that many bytes await `acknowledge`.
+		let (events, continuation) = AsyncThrowingStream<HTTPChunkEvent, any Error>.makeStream(
+			bufferingPolicy: .unbounded
+		)
 		let task = session.dataTask(with: request)
 		let identifier = task.taskIdentifier
 		lock.withLock {
@@ -171,7 +175,7 @@ package final class HTTPChunkSession: NSObject, URLSessionDataDelegate, @uncheck
 		continuation?.yield(.data(data))
 	}
 
-	/// Resumes at half the ceiling, so a steady download does not suspend once per chunk.
+	// Resume at half the ceiling so a steady download does not suspend once per chunk.
 	private func acknowledge(_ byteCount: Int, taskIdentifier: Int) {
 		lock.withLock {
 			guard var subscriber = subscribers[taskIdentifier] else { return }

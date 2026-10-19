@@ -2,8 +2,6 @@
 
 import Foundation
 
-/// The fullscreen resolution a player picked: the display's own size, read at every launch, or a
-/// fixed size in game pixels.
 package enum GameFullscreenResolution: Hashable, Sendable {
 	case native
 	case fixed(GameDisplaySize)
@@ -36,8 +34,6 @@ package enum GameFullscreenResolution: Hashable, Sendable {
 		return [.native] + (generated + official).map(Self.fixed)
 	}
 
-	/// Fills the gap between the largest official resolution and a larger display with sizes in
-	/// the display's shape, stepping by `generatedResolutionHeightStep` like 1440p, 2160p, 2880p.
 	static func generatedSizes(native: GameDisplaySize) -> [GameDisplaySize] {
 		let largest = GameDisplaySize.ultraHD
 		guard native.pixelCount > largest.pixelCount else { return [] }

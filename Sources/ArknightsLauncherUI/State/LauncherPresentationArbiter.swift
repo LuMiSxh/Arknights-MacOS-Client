@@ -41,7 +41,7 @@ enum LauncherConfirmation: Equatable, Identifiable {
 	}
 }
 
-package struct LauncherPresentationArbiter {
+struct LauncherPresentationArbiter {
 	private(set) var current: LauncherPresentationDestination?
 	private(set) var queued: LauncherPresentationDestination?
 
@@ -101,7 +101,7 @@ package struct LauncherPresentationArbiter {
 		isOnboardingPresented && current == nil
 	}
 
-	/// Pending popups wait until setup ends; letting either side hide the other left neither visible.
+	// Pending popups wait until setup ends; letting either side hide the other left neither visible.
 	func sheetDestination(
 		isOnboardingPresented: Bool, isUpdatePresented: Bool, hasPendingPopup: Bool
 	) -> LauncherPresentationDestination? {

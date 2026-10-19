@@ -3,7 +3,7 @@
 import ArknightsCore
 import SwiftUI
 
-/// Gives every setup step the same title rule and content rhythm as a launcher Settings page.
+// Gives every setup step the same title rule and content rhythm as a launcher Settings page.
 struct OnboardingPage<Content: View>: View {
 	let title: String
 	let subtitle: String

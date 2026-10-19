@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -75,6 +76,7 @@ func platformProcessComponentLeavesUnknownHelperUntouched() throws {
 }
 
 private struct PlatformProcessFixture {
+	let temporary: TemporaryDirectory
 	let root: URL
 	let helper: URL
 	let original: URL
@@ -84,11 +86,8 @@ private struct PlatformProcessFixture {
 	let component: PlatformProcessCompatibility
 
 	init() throws {
-		root = FileManager.default.temporaryDirectory.appending(
-			path: UUID().uuidString,
-			directoryHint: .isDirectory
-		)
-		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+		temporary = try TemporaryDirectory("PlatformProcessCompatibilityTests")
+		root = temporary.url
 		helper = root.appending(path: PlatformProcessCompatibility.helperRelativePath)
 		original = root.appending(path: PlatformProcessCompatibility.originalHelperName)
 		installedBridge = root.appending(path: PlatformProcessCompatibility.bridgeName)
@@ -100,6 +99,6 @@ private struct PlatformProcessFixture {
 	}
 
 	func remove() {
-		try? FileManager.default.removeItem(at: root)
+		temporary.remove()
 	}
 }

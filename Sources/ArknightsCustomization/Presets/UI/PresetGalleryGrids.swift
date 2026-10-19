@@ -5,7 +5,6 @@ import SwiftUI
 
 private let applyingLabel = "Applying…"
 
-/// The operator icon grid shown in the Operator gallery.
 struct PresetAvatarGrid: View {
 	let catalog: PresetCatalogService
 	let accentColor: Color
@@ -101,7 +100,6 @@ struct PresetAvatarGrid: View {
 	}
 }
 
-/// The official wallpaper grid shown in the Artwork gallery.
 struct PresetWallpaperGrid: View {
 	let catalog: PresetCatalogService
 	let accentColor: Color

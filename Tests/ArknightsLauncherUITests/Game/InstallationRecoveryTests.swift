@@ -11,8 +11,9 @@ import Testing
 @MainActor
 struct InstallationRecoveryTests {
 	@Test
-	func successfulInstallationPublishesOneCompletionFeedback() async {
-		let fixture = makeInstallationFixture(region: .global)
+	func successfulInstallationPublishesOneCompletionFeedback() async throws {
+		let fixture = try makeInstallationFixture(region: .global)
+		defer { fixture.storage.remove() }
 		fixture.controller.startInstallation(launchAfterCompletion: false)
 		await fixture.installer.waitForInstallationStart()
 		await fixture.installer.completeSuccessfully()
@@ -28,7 +29,8 @@ struct InstallationRecoveryTests {
 		)
 		#expect(fixture.controller.consumeCompletionFeedback(for: .global) == nil)
 
-		let switching = makeInstallationFixture(region: .global)
+		let switching = try makeInstallationFixture(region: .global)
+		defer { switching.storage.remove() }
 		switching.controller.startInstallation(launchAfterCompletion: false)
 		await switching.installer.waitForInstallationStart()
 		await switching.installer.completeSuccessfully()
@@ -38,8 +40,9 @@ struct InstallationRecoveryTests {
 	}
 
 	@Test(arguments: GameRegion.allCases)
-	func retryUsesTheOriginalRegion(region: GameRegion) async {
-		let fixture = makeInstallationFixture(region: region)
+	func retryUsesTheOriginalRegion(region: GameRegion) async throws {
+		let fixture = try makeInstallationFixture(region: region)
+		defer { fixture.storage.remove() }
 		let failureID = UUID()
 		fixture.controller.presentInstallationFailure(
 			InstallerError.checksumMismatch(path: "test", expected: "a", actual: "b"),
@@ -90,8 +93,9 @@ struct InstallationRecoveryTests {
 	}
 
 	@Test
-	func partialInstallCanBeUninstalledOnlyWhileIdle() {
-		let fixture = makeInstallationFixture(region: .global)
+	func partialInstallCanBeUninstalledOnlyWhileIdle() throws {
+		let fixture = try makeInstallationFixture(region: .global)
+		defer { fixture.storage.remove() }
 		#expect(!fixture.controller.canUninstallGame)
 
 		fixture.controller.isInstalled = true
@@ -118,8 +122,9 @@ struct InstallationRecoveryTests {
 	}
 
 	@Test
-	func invalidConfigurationCannotSkipInstallationDiskPreflight() {
-		let fixture = makeInstallationFixture(region: .global)
+	func invalidConfigurationCannotSkipInstallationDiskPreflight() throws {
+		let fixture = try makeInstallationFixture(region: .global)
+		defer { fixture.storage.remove() }
 		fixture.controller.configuration = GameConfiguration(
 			gameLowestVersion: "1", gameLatestVersion: "1", gameLatestFilePath: "manifest",
 			gameStartExeName: "Arknights.exe", gameStartParams: [], gameUninstallScript: "",
@@ -131,24 +136,24 @@ struct InstallationRecoveryTests {
 }
 
 @MainActor
-private func makeInstallationFixture(
-	region: GameRegion
-) -> (
-	controller: InstallationController,
-	installer: ControllableInstaller,
-	preferences: LauncherPreferencesStore
-) {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: "InstallationRecoveryTests.\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
+private struct InstallationFixture {
+	let controller: InstallationController
+	let installer: ControllableInstaller
+	let preferences: LauncherPreferencesStore
+	/// The test removes this in a `defer`.
+	let storage: TemporaryDirectory
+}
+
+@MainActor
+private func makeInstallationFixture(region: GameRegion) throws -> InstallationFixture {
+	let storage = try TemporaryDirectory("InstallationRecoveryTests")
+	let root = storage.url
 	let paths = AppPaths(
 		applicationSupportDirectory: root.appending(path: "Support", directoryHint: .isDirectory),
 		cachesDirectory: root.appending(path: "Caches", directoryHint: .isDirectory),
 		libraryDirectory: root.appending(path: "Library", directoryHint: .isDirectory)
 	)
-	let defaults = UserDefaults(suiteName: "InstallationRecoveryTests.\(UUID().uuidString)")!
-	let preferences = LauncherPreferencesStore(defaults: defaults)
+	let preferences = LauncherPreferencesStore(defaults: makeIsolatedDefaults().defaults)
 	let log = LauncherLog(fileURL: paths.launcherLogFile)
 	let lifecycle = LauncherLifecycleStore(log: log)
 	let installer = ControllableInstaller()
@@ -161,7 +166,8 @@ private func makeInstallationFixture(
 		region: region
 	)
 	controller.configuration = testGameConfiguration
-	return (controller, installer, preferences)
+	return InstallationFixture(
+		controller: controller, installer: installer, preferences: preferences, storage: storage)
 }
 
 private let testGameConfiguration = GameConfiguration(

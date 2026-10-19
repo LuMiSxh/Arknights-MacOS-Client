@@ -46,15 +46,33 @@ package enum BoundedFileReader {
 			throw BoundedFileReadError.tooLarge(url, maximumBytes: maximumBytes)
 		}
 
-		var data = Data(count: maximumBytes + 1)
-		let count = data.withUnsafeMutableBytes {
-			pread(descriptor, $0.baseAddress, $0.count, 0)
+		// One byte beyond the stated size detects a file that grew after `fstat`.
+		var data = Data(count: Int(status.st_size) + 1)
+		var offset = 0
+		while true {
+			if offset == data.count {
+				guard data.count <= maximumBytes else {
+					throw BoundedFileReadError.tooLarge(url, maximumBytes: maximumBytes)
+				}
+				data.count = min(data.count * 2, maximumBytes + 1)
+			}
+			let (count, failure) = data.withUnsafeMutableBytes { buffer in
+				let count = pread(
+					descriptor,
+					buffer.baseAddress?.advanced(by: offset),
+					buffer.count - offset,
+					off_t(offset)
+				)
+				return (count, errno)
+			}
+			if count < 0 {
+				if failure == EINTR { continue }
+				throw POSIXError(.init(rawValue: failure) ?? .EIO)
+			}
+			if count == 0 { break }
+			offset += count
 		}
-		guard count >= 0 else { throw POSIXError(.init(rawValue: errno) ?? .EIO) }
-		data.count = count
-		guard data.count <= maximumBytes else {
-			throw BoundedFileReadError.tooLarge(url, maximumBytes: maximumBytes)
-		}
+		data.count = offset
 		return data
 	}
 }

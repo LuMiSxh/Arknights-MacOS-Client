@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -93,9 +94,9 @@ struct LauncherErrorPresentationTests {
 	func failureDialogsKeepTechnicalDetailsInTheLog(
 		fixture: (any LauncherDiagnosticError & Sendable, [String])
 	) async throws {
-		let fileURL = FileManager.default.temporaryDirectory.appending(
-			path: "LauncherErrorPresentationTests.\(UUID().uuidString).log"
-		)
+		let storage = try TemporaryDirectory("LauncherErrorPresentationTests")
+		defer { storage.remove() }
+		let fileURL = storage.url.appending(path: "launcher.log")
 		let log = LauncherLog(fileURL: fileURL)
 		let lifecycle = LauncherLifecycleStore(log: log)
 
@@ -104,7 +105,7 @@ struct LauncherErrorPresentationTests {
 
 		let message = try #require(lifecycle.state.presentation.failure?.message)
 		let diagnostic = try String(contentsOf: fileURL, encoding: .utf8)
-		try FileManager.default.removeItem(at: fileURL)
+
 		#expect(!message.isEmpty)
 		for detail in fixture.1 {
 			#expect(!message.contains(detail))

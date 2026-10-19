@@ -48,6 +48,7 @@ extension WineRuntime {
 		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
+		log: LauncherLog? = nil,
 		spawnGate: WineProcessSpawnGate? = nil
 	) async throws {
 		let current = configuration.registryState(in: prefixDirectory)
@@ -89,16 +90,14 @@ extension WineRuntime {
 			logHandle: logHandle,
 			spawnGate: spawnGate
 		)
-		try? logHandle.write(
-			contentsOf: Data(
-				"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels); UsePreciseScrolling=\(preciseScrollingValue).\n"
-					.utf8
-			)
+		logHandle.appendLaunchLogLine(
+			"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels); UsePreciseScrolling=\(preciseScrollingValue).\n",
+			log: log
 		)
 	}
 
-	/// Whether the next launch would replay any prefix migration, so callers can
-	/// show a "Migrating" state instead of the generic launch status.
+	// Whether the next launch would replay any prefix migration, so callers can
+	// show a "Migrating" state instead of the generic launch status.
 	func hasPendingMigration(prefixDirectory: URL) throws -> Bool {
 		try !migrationPlanContext(prefixDirectory: prefixDirectory).plan.pending.isEmpty
 	}
@@ -222,13 +221,31 @@ extension WineRuntime {
 		)
 	}
 
-	/// Clones are APFS-only and best effort: any failure keeps Wine's copies and never blocks launch.
+	@concurrent
+	private static func deduplicateRuntimeLibraries(
+		prefixDirectory: URL,
+		runtimeRoot: URL
+	) async -> WinePrefixLibraryDeduplicator.Report {
+		WinePrefixLibraryDeduplicator(excludingNames: Set(Self.dxmtLibraryNames))
+			.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+	}
+
+	@concurrent
+	private static func cleanLegacyLibraries(
+		prefixDirectory: URL,
+		runtimeRoot: URL
+	) async -> WinePrefixLegacyLibraryCleaner.Report {
+		WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(Self.dxmtLibraryNames))
+			.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
+	}
+
+	// Clones are APFS-only and best effort: any failure keeps Wine's copies and never blocks launch.
 	private func shareRuntimeLibraries(prefixDirectory: URL, log: LauncherLog?) async throws {
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		let report = await Task.detached(priority: .utility) {
-			WinePrefixLibraryDeduplicator(excludingNames: Set(Self.dxmtLibraryNames))
-				.deduplicate(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
-		}.value
+		let report = await Self.deduplicateRuntimeLibraries(
+			prefixDirectory: prefixDirectory,
+			runtimeRoot: runtimeRoot
+		)
 		try Task.checkCancellation()
 		if let code = report.cloneUnsupportedCode {
 			log?.info(
@@ -243,13 +260,13 @@ extension WineRuntime {
 		)
 	}
 
-	/// Best effort: failures are logged and never block launch, but cancellation leaves the step pending.
+	// Best effort: failures are logged and never block launch, but cancellation leaves the step pending.
 	private func removeLegacy32BitLibraries(prefixDirectory: URL, log: LauncherLog?) async throws {
 		let runtimeRoot = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-		let report = await Task.detached(priority: .utility) {
-			WinePrefixLegacyLibraryCleaner(launcherInstalledNames: Set(Self.dxmtLibraryNames))
-				.clean(prefixDirectory: prefixDirectory, runtimeRoot: runtimeRoot)
-		}.value
+		let report = await Self.cleanLegacyLibraries(
+			prefixDirectory: prefixDirectory,
+			runtimeRoot: runtimeRoot
+		)
 		try Task.checkCancellation()
 		if report.skipped {
 			log?.info("Legacy 32-bit library cleanup skipped: runtime still ships i386-windows")

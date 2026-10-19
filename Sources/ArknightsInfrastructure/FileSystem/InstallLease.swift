@@ -12,7 +12,6 @@ package struct InstallLease: ~Copyable, Sendable {
 	package let directory: InstallerDirectory
 	private let lockDescriptor: Int32
 
-	/// Creates the install root and takes its lock, or throws `directoryInUse` while another holder has it.
 	static func acquire(at url: URL) throws -> InstallLease {
 		try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
 		let directory = InstallerDirectory(at: url)
@@ -32,7 +31,7 @@ package struct InstallLease: ~Copyable, Sendable {
 		return InstallLease(directory: directory, lockDescriptor: descriptor)
 	}
 
-	/// Ends the lease now; consuming `self` runs `deinit`, the single unlock path.
+	// Consuming `self` runs `deinit`, the single unlock path.
 	consuming func release() {}
 
 	deinit {

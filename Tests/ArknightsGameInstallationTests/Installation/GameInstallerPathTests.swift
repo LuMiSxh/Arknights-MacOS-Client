@@ -2,6 +2,7 @@
 
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsTestSupport
 import Darwin
 import Foundation
 import Testing
@@ -10,10 +11,7 @@ import Testing
 @testable import ArknightsInfrastructure
 
 struct GameInstallerPathTests {
-	private let installer = GameInstaller(
-		api: PathTestAPI(),
-		compatibilityManager: GameCompatibilityManager()
-	)
+	private let installer = makeInstaller(GameManifest(source: "payload", file: []))
 
 	@Test
 	func manifestRejectsUnsafePathComponents() throws {
@@ -56,25 +54,17 @@ struct GameInstallerPathTests {
 		case symlinkedPartialFile
 		case symlinkedDestinationFile
 		case hardLinkedPartialFile
-		case boundedReader
 	}
 
 	@Test(arguments: UnsafeLink.allCases)
-	func installerRejectsSymbolicPartialFileWithoutTouchingItsTarget(link: UnsafeLink) async throws
-	{
-		if link == .boundedReader {
-			try assertBoundedReaderRejectsUnsafeInputs()
-			return
-		}
+	func installerRejectsSymbolicPartialFileWithoutTouchingItsTarget(
+		link: UnsafeLink
+	) async throws {
 		let fileManager = FileManager.default
-		let root = temporaryInstallDirectory()
-		let outside = root.deletingLastPathComponent().appending(
-			path: "GameInstallerPathTests-outside-\(UUID().uuidString)"
-		)
-		defer {
-			try? fileManager.removeItem(at: root)
-			try? fileManager.removeItem(at: outside)
-		}
+		let temporary = try TemporaryDirectory("GameInstallerPathTests")
+		defer { temporary.remove() }
+		let root = temporary.url.appending(path: "install", directoryHint: .isDirectory)
+		let outside = temporary.url.appending(path: "outside")
 		let binDirectory = root.appending(path: "bin", directoryHint: .isDirectory)
 		let sentinel = Data("outside".utf8)
 		var manifest = GameManifest(
@@ -110,17 +100,12 @@ struct GameInstallerPathTests {
 				file: [ManifestFile(path: "bin/game.dat", hash: "0", size: "16")]
 			)
 			rejectedName = "game.dat.part"
-		case .boundedReader:
-			return
 		}
-		let installer = GameInstaller(
-			api: PathTestAPI(manifest: manifest),
-			compatibilityManager: GameCompatibilityManager()
-		)
+		let installer = makeInstaller(manifest)
 
 		do {
 			_ = try await installer.install(
-				configuration: PathTestAPI.configuration, region: .global, into: root,
+				configuration: installerTestConfiguration, region: .global, into: root,
 				progress: { _ in })
 			Issue.record("Expected \(link) to be rejected")
 		} catch InstallerError.symbolicLinkInInstallPath(let url) {
@@ -139,13 +124,14 @@ struct GameInstallerPathTests {
 		}
 	}
 
-	private func assertBoundedReaderRejectsUnsafeInputs() throws {
-		let root = FileManager.default.temporaryDirectory.appending(
-			path: "bounded-reader-\(UUID().uuidString)", directoryHint: .isDirectory)
-		let target = root.appending(path: "target")
-		let link = root.appending(path: "link")
-		try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-		defer { try? FileManager.default.removeItem(at: root) }
+	/// BoundedFileReader refuses symbolic links and oversized files, and does not block on a FIFO
+	/// without a writer.
+	@Test
+	func boundedReaderRejectsUnsafeFilesWithoutBlocking() throws {
+		let temporary = try TemporaryDirectory("GameInstallerPathTests")
+		defer { temporary.remove() }
+		let target = temporary.url.appending(path: "target")
+		let link = temporary.url.appending(path: "link")
 		try Data(repeating: 0, count: 16).write(to: target)
 		try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
 		#expect(throws: Error.self) {
@@ -155,13 +141,14 @@ struct GameInstallerPathTests {
 			_ = try BoundedFileReader.readRegularFile(at: link, maximumBytes: 32)
 		}
 
-		let fifo = root.appending(path: "fifo")
+		// A FIFO without a writer is rejected without blocking the reader.
+		let fifo = temporary.url.appending(path: "fifo")
 		guard mkfifo(fifo.path, 0o600) == 0 else {
 			throw POSIXError(.init(rawValue: errno) ?? .EIO)
 		}
 		let started = DispatchSemaphore(value: 0)
 		let finished = DispatchSemaphore(value: 0)
-		try withInstallLease(at: root) { lease in
+		try withInstallLease(at: temporary.url) { lease in
 			let install = lease.directory
 			DispatchQueue.global().async {
 				started.signal()
@@ -193,9 +180,9 @@ struct GameInstallerPathTests {
 	}
 
 	private func validateManifest(_ manifest: GameManifest) throws {
-		let root = temporaryInstallDirectory()
-		defer { try? FileManager.default.removeItem(at: root) }
-		try withInstallLease(at: root) { lease in
+		let temporary = try TemporaryDirectory("GameInstallerPathTests")
+		defer { temporary.remove() }
+		try withInstallLease(at: temporary.url) { lease in
 			try installer.validateManifest(manifest, in: lease.directory)
 		}
 	}
@@ -206,54 +193,15 @@ struct GameInstallerPathTests {
 			file: paths.map { ManifestFile(path: $0, hash: "0", size: "0") }
 		)
 	}
-
-	private func temporaryInstallDirectory() -> URL {
-		FileManager.default.temporaryDirectory.appending(
-			path: "GameInstallerPathTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-	}
 }
 
-private struct PathTestAPI: LauncherAPIProviding {
-	static let configuration = GameConfiguration(
-		gameLowestVersion: "1.0.0",
-		gameLatestVersion: "1.0.0",
-		gameLatestFilePath: "manifest.json",
-		gameStartExeName: "Arknights",
-		gameStartParams: [],
-		gameUninstallScript: "uninstall.exe",
-		decompressionSize: "1 MB"
+private func makeInstaller(_ manifest: GameManifest) -> GameInstaller {
+	let baseURL = URL(string: "https://download.yo-star.com")!
+	return GameInstaller(
+		api: InstallerAPI(
+			manifest: manifest,
+			cdn: CDNConfiguration(primaryCdn: baseURL, backUpCdn: baseURL)
+		),
+		compatibilityManager: GameCompatibilityManager()
 	)
-
-	let manifest: GameManifest
-
-	init(
-		manifest: GameManifest = GameManifest(
-			source: "payload",
-			file: [ManifestFile(path: "bin/game.dat", hash: "0", size: "0")]
-		)
-	) {
-		self.manifest = manifest
-	}
-
-	func gameConfiguration(region: GameRegion) async throws -> GameConfiguration {
-		Self.configuration
-	}
-
-	func branding(region: GameRegion) async throws -> LauncherBranding {
-		throw CancellationError()
-	}
-
-	func cdnConfiguration(region: GameRegion) async throws -> CDNConfiguration {
-		let url = URL(string: "https://download.yo-star.com/")!
-		return CDNConfiguration(primaryCdn: url, backUpCdn: url)
-	}
-
-	func manifest(
-		for configuration: GameConfiguration,
-		region: GameRegion
-	) async throws -> GameManifest {
-		manifest
-	}
 }

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -38,6 +39,7 @@ func bilibiliPlatformComponentPreservesUnknownFilesDuringLegacyMigration() throw
 }
 
 private struct BilibiliPlatformFixture {
+	let temporary: TemporaryDirectory
 	let root: URL
 	let helper: URL
 	let privateDirectory: URL
@@ -51,8 +53,8 @@ private struct BilibiliPlatformFixture {
 	let component: BilibiliPlatformCompatibility
 
 	init(legacyWrapper: Bool = false, unknownPrivateFile: Bool = false) throws {
-		root = FileManager.default.temporaryDirectory.appending(
-			path: UUID().uuidString, directoryHint: .isDirectory)
+		temporary = try TemporaryDirectory("BilibiliPlatformCompatibilityTests")
+		root = temporary.url
 		let directory = root.appending(path: "BLPlatform64", directoryHint: .isDirectory)
 		privateDirectory = directory.appending(
 			path: BilibiliPlatformCompatibility.originalDirectoryName,
@@ -101,6 +103,6 @@ private struct BilibiliPlatformFixture {
 	}
 
 	func remove() {
-		try? FileManager.default.removeItem(at: root)
+		temporary.remove()
 	}
 }

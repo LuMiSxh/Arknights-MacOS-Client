@@ -4,8 +4,6 @@ import ArknightsCore
 import ArknightsGameInstallation
 import SwiftUI
 
-/// Floating pill above the main control bar showing the active client's server reset countdown.
-/// Expands to show reset information for every installed client when region switching is useful.
 struct StatusHUDPill: View {
 	package let settings: LauncherPreferencesController
 	package let installation: InstallationController

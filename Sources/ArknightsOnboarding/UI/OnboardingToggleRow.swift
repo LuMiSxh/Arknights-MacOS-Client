@@ -3,7 +3,7 @@
 import ArknightsCore
 import SwiftUI
 
-/// Adds the plain-language consequence that Settings tooltips cannot teach during setup.
+// Adds the plain-language consequence that Settings tooltips cannot teach during setup.
 struct OnboardingToggleRow: View {
 	let title: String
 	let detail: String

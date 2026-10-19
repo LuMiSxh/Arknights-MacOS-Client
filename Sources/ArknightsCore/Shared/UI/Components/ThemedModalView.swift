@@ -2,7 +2,6 @@
 
 import SwiftUI
 
-/// Shared launcher modal composition with a branded header and floating action bar.
 package struct ThemedModalView<Content: View, Actions: View>: View {
 	let title: String
 	let hudTintColor: Color
@@ -104,7 +103,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		.preferredColorScheme(.dark)
 		.onAppear {
 			let entrance = LauncherMotion.animation(.present, reduceMotion: reduceMotion)
-			withAnimation(entrance?.delay(0.08)) {
+			withAnimation(entrance?.delay(LauncherMotion.modalEntranceDelay)) {
 				hasEntered = true
 			}
 		}
@@ -138,7 +137,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 	}
 }
 
-/// Lets modal content settle in after the native sheet lifecycle has placed the window.
+// Lets modal content settle in after the native sheet lifecycle has placed the window.
 private struct ModalEntrance: ViewModifier {
 	let hasEntered: Bool
 	let reduceMotion: Bool

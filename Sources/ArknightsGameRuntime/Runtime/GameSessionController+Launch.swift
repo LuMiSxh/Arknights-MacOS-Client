@@ -46,8 +46,8 @@ extension GameSessionController {
 		}
 	}
 
-	/// Cleans up from a cancelled launch task without inheriting its cancellation, which would
-	/// otherwise abort the `wineserver -k` call itself.
+	// Cleans up from a cancelled launch task without inheriting its cancellation, which would
+	// otherwise abort the `wineserver -k` call itself.
 	func stopAfterCancelledLaunch(
 		runtime: WineRuntime,
 		sessionID: UUID,

@@ -3,8 +3,8 @@
 import ArknightsCore
 import Foundation
 
-/// Arknights servers reset daily at 04:00 server time. Server time is a fixed UTC offset,
-/// not a named timezone, so the reset hour never shifts with daylight saving.
+// Arknights servers reset daily at 04:00 server time. Server time is a fixed UTC offset,
+// not a named timezone, so the reset hour never shifts with daylight saving.
 enum ServerReset {
 	static func offsetSeconds(for region: GameRegion) -> Int {
 		switch region {

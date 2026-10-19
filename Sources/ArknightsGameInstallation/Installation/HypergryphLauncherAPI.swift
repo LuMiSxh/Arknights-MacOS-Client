@@ -5,13 +5,13 @@ import ArknightsCustomization
 import ArknightsInfrastructure
 import Foundation
 
-/// Adapts the Hypergryph-family launcher metadata (China, China Bilibili, Taiwan) and per-file
-/// manifest to the launcher's normal installation pipeline. The client selects the region; no
-/// vendor launcher is run.
+// Adapts the Hypergryph and Gryphline launcher metadata (China, China Bilibili, Taiwan) and per-file
+// manifest to the launcher's normal installation pipeline. The client selects the region; no
+// vendor launcher is run.
 actor HypergryphLauncherAPI {
 	private static let sequence = "5"
 
-	private let loader: BoundedHTTPDataLoader
+	private let client: LauncherHTTPClient
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
 	private var latestPackages: [String: HypergryphPackage] = [:]
@@ -21,9 +21,15 @@ actor HypergryphLauncherAPI {
 		maximumAPIResponseBytes: Int = AppConstants.Network.yostarAPIResponseMaximumBytes,
 		maximumManifestResponseBytes: Int = AppConstants.Network.yostarManifestMaximumBytes
 	) {
-		loader = BoundedHTTPDataLoader(
-			session: session,
-			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		client = LauncherHTTPClient(
+			apiName: "Hypergryph",
+			style: .diagnosed,
+			fetcher: CheckedHTTPFetcher(
+				loader: BoundedHTTPDataLoader(
+					session: session,
+					maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+				)
+			)
 		)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
@@ -74,7 +80,7 @@ actor HypergryphLauncherAPI {
 				.mainBackground?.image,
 			DownloadHTTPPolicy.isAllowedSource(image.url, for: profile.region),
 			image.md5.isEmpty
-				|| (image.md5.count == 32 && image.md5.allSatisfy(\.isHexDigit))
+				|| ManifestChecksum.isMD5(image.md5)
 		else { throw LauncherError.invalidResponse }
 		return LauncherBranding(
 			launcherBackgroundImage: image.url,
@@ -108,12 +114,13 @@ actor HypergryphLauncherAPI {
 		let source = try GameInstaller.safeRelativePath(fileBaseURL.path)
 		var request = URLRequest(url: fileBaseURL.appending(path: "game_files"))
 		request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-		let (encrypted, response) = try await loader.data(
+		let (encrypted, _) = try await client.data(
 			for: request,
 			maximumBytes: maximumManifestResponseBytes,
+			operation: "manifest download",
+			region: profile.region,
 			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: profile.region)
 		)
-		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		let decrypted = try HypergryphManifestCipher.decrypt(encrypted)
 		guard let text = String(data: decrypted, encoding: .utf8) else {
 			throw LauncherError.invalidResponse
@@ -123,8 +130,7 @@ actor HypergryphLauncherAPI {
 			let entry = try decoder.decode(HypergryphManifestEntry.self, from: Data(line.utf8))
 			guard
 				entry.size >= 0,
-				entry.md5.count == 32,
-				entry.md5.allSatisfy(\.isHexDigit)
+				ManifestChecksum.isMD5(entry.md5)
 			else { throw LauncherError.invalidResponse }
 			return ManifestFile(path: entry.path, hash: entry.md5, size: String(entry.size))
 		}
@@ -175,12 +181,13 @@ actor HypergryphLauncherAPI {
 		request.httpMethod = "POST"
 		request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 		request.httpBody = try JSONEncoder().encode(payload)
-		let (data, response) = try await loader.data(
+		let (data, _) = try await client.data(
 			for: request,
 			maximumBytes: maximumAPIResponseBytes,
+			operation: "metadata request",
+			region: profile.region,
 			redirectValidator: profile.isAllowedMetadataURL
 		)
-		guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
 		return try JSONDecoder().decode(HypergryphBatchResponse.self, from: data)
 	}
 
@@ -199,7 +206,6 @@ actor HypergryphLauncherAPI {
 	}
 }
 
-/// Per-region constants for the shared Hypergryph launcher protocol.
 struct HypergryphProfile: Sendable {
 	let region: GameRegion
 	let launcherHost: String

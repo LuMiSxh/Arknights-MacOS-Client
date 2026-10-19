@@ -6,10 +6,8 @@ import Darwin
 import Foundation
 import OSLog
 
-/// One manifest file from request to installed byte: retrying across CDNs, then hashing the
-/// completed partial before an atomic rename promotes it.
 extension GameInstaller {
-	func addDownload(
+	func downloadOrReuse(
 		_ item: ManifestFile,
 		manifest: GameManifest,
 		cdn: CDNConfiguration,
@@ -17,29 +15,26 @@ extension GameInstaller {
 		counter: ProgressCounter,
 		progress: @escaping ProgressHandler,
 		region: GameRegion,
-		reuse: ReuseSession,
-		to group: inout ThrowingTaskGroup<Int64, any Error>
-	) {
-		group.addTask {
-			if try await reuseFromOtherRegions(
-				item,
-				installDirectory: installDirectory,
-				session: reuse,
-				counter: counter,
-				progress: progress
-			) {
-				return 0
-			}
-			return try await downloadWithRetry(
-				item,
-				source: manifest.source,
-				cdn: cdn,
-				installDirectory: installDirectory,
-				counter: counter,
-				progress: progress,
-				region: region
-			)
+		reuse: ReuseSession
+	) async throws -> Int64 {
+		if try await reuseFromOtherRegions(
+			item,
+			installDirectory: installDirectory,
+			session: reuse,
+			counter: counter,
+			progress: progress
+		) {
+			return 0
 		}
+		return try await downloadWithRetry(
+			item,
+			source: manifest.source,
+			cdn: cdn,
+			installDirectory: installDirectory,
+			counter: counter,
+			progress: progress,
+			region: region
+		)
 	}
 
 	private func downloadWithRetry(
@@ -72,7 +67,8 @@ extension GameInstaller {
 					"Retrying \(item.path) (attempt \(attempt + 1)/\(maxAttempts)) after: "
 						+ launcherDiagnosticDescription(for: error)
 				)
-				try await Task.sleep(for: AppConstants.Network.retryBackoffStep * attempt)
+				let delay = AppConstants.Network.retryBackoffStep * attempt
+				try await Task.sleep(for: delay, tolerance: delay / 10)
 			}
 		}
 		throw LauncherError.invalidResponse

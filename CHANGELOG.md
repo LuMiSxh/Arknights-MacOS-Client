@@ -9,6 +9,26 @@ All notable changes to this project are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.7.1] - 2026-10-19
+
+### Changed
+
+- **Dynamic Theme** picks the accent color from vivid details of the artwork more reliably. The launcher calculates existing theme colors again once.
+- The control bar, the status line, and the **Installation** settings page no longer redraw completely on each download progress update. Only the progress indicators update.
+- The preset gallery scrolls more smoothly. The launcher keeps decoded thumbnails and operator icons in memory and renders icons in the background.
+- Settings shows one consistent download status, for example "Downloading · 42%" or "Verifying · 42%". Before the download size is known, it shows "Preparing download" instead of "Downloading 0%".
+- Runtime 0.7.1 updates DXMT to 0.80-267 and removes the DXMT frame latency patch. Wine stays on 11.17.
+
+### Fixed
+
+- The game no longer leaks memory in the DXMT display queries. Runtime 0.7.1 releases the display color profiles and the AppKit objects of each query.
+- The game no longer leaves a generic "exec" icon in the Dock's recent apps after it closes.
+- The operator icon gallery lists newly released operators again. It reads the maintained ArknightsAssets character table instead of the archived one.
+- Renamed and new operators replace the cached gallery list when the background refresh finishes. You do not have to reopen the gallery.
+- If the Bilibili compatibility setup fails and cannot restore the original files, the launcher now reports the restore failure.
+
 ## [0.7.0] - 2026-10-14
 
 ### Added
@@ -404,6 +424,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
 [unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.7.0...HEAD
+[0.7.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.1
 [0.7.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.0
 [0.6.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.1
 [0.6.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.0

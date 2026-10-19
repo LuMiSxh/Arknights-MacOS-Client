@@ -57,7 +57,6 @@ private struct PointerSheenModifier<S: Shape>: ViewModifier {
 }
 
 extension View {
-	/// Adds the shared pointer-following highlight inside `shape`.
 	func pointerSheen<S: Shape>(tint: Color, in shape: S) -> some View {
 		modifier(PointerSheenModifier(shape: shape, tint: tint))
 	}

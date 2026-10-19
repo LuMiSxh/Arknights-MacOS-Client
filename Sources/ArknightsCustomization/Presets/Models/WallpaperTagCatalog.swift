@@ -9,9 +9,9 @@ struct WallpaperTagManifest: Decodable, Sendable {
 	let tags: [String: [String]]
 }
 
-/// Holds the current wallpaper tags: the bundled manifest as the offline baseline, plus the
-/// repository's current manifest once the gallery downloads it, so tags for new wallpapers reach
-/// players without a launcher release.
+// Holds the current wallpaper tags: the bundled manifest as the offline baseline, plus the
+// repository's current manifest once the gallery downloads it, so tags for new wallpapers reach
+// players without a launcher release.
 package final class WallpaperTagStore: Sendable {
 	static let shared = WallpaperTagStore(bundled: WallpaperTagCatalog.loadBundled())
 
@@ -25,13 +25,13 @@ package final class WallpaperTagStore: Sendable {
 
 	var tags: [String: [String]] { storage.withLock { $0 } }
 
-	/// Adds a downloaded manifest's tags; its entries replace bundled entries with the same ID.
+	// Adds a downloaded manifest's tags; its entries replace bundled entries with the same ID.
 	func apply(_ downloaded: [String: [String]]) {
 		let merged = bundled.merging(downloaded) { _, new in new }
 		storage.withLock { $0 = merged }
 	}
 
-	/// Drops downloaded tags, for example after the gallery cache was cleared.
+	// Drops downloaded tags, for example after the gallery cache was cleared.
 	func resetToBundled() {
 		storage.withLock { $0 = bundled }
 	}

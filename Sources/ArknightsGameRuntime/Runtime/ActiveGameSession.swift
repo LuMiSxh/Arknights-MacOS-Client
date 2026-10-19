@@ -3,15 +3,15 @@
 import ArknightsCore
 import Foundation
 
-/// Everything the controller owns for one game session. Finishing a session cancels its tasks
-/// and replaces this value with `nil`, so no field can outlive its session.
+// Finishing a session cancels its tasks and replaces this value with `nil`, so no field can
+// outlive its session.
 struct ActiveGameSession {
 	let id: UUID
-	/// Lease for this session. It ends only after prefix-wide shutdown completes.
+	// Ends only after prefix-wide shutdown completes.
 	let lease: ActivityLease
 	package let region: GameRegion
 	let spawnGate: WineProcessSpawnGate
-	/// Whether the launcher still has to switch Game Mode off for this session.
+
 	var usesGameMode: Bool
 	var isRuntimeStopInFlight = false
 	var pendingTerminalFailure: GameSessionTerminalFailure?

@@ -59,7 +59,6 @@ package enum CapsuleActionLabelMotion: Equatable {
 	case primary
 }
 
-/// A text action whose visible capsule and interactive label always share the same bounds.
 package struct CapsuleActionButton: View {
 	let title: String
 	var systemImage: String?

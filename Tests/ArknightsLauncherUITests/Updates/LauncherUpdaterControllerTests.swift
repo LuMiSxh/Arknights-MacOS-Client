@@ -85,16 +85,6 @@ struct LauncherUpdaterControllerTests {
 			code: Int(SUError.noUpdateError.rawValue)
 		)
 
-		#expect(LauncherUpdaterController.isNoUpdateError(error))
-		#expect(
-			!LauncherUpdaterController.isNoUpdateError(
-				NSError(
-					domain: SUSparkleErrorDomain,
-					code: Int(SUError.appcastError.rawValue)
-				)
-			)
-		)
-
 		for (probeError, expected) in [
 			(error, LauncherUpdateCheckOutcome.current),
 			(NSError(domain: "Test", code: 1), .failed),

@@ -3,8 +3,8 @@
 import ArknightsCore
 import Foundation
 
-/// DXMT's shader cache and the embedded browser's cache both rebuild automatically, so
-/// clearing them only costs a slower next launch, not lost state.
+// DXMT's shader cache and the embedded browser's cache both rebuild automatically, so
+// clearing them only costs a slower next launch, not lost state.
 enum GameCacheCleaner {
 	static func cacheDirectories(
 		winePrefix: URL,

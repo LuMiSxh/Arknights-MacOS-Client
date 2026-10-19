@@ -18,20 +18,17 @@ extension BackgroundMusicController {
 			let startVolume = effectiveVolume
 			let steps = AppConstants.Music.fadeSteps
 			let stepInterval = AppConstants.Music.fadeOutDuration / Double(steps)
-
-			for step in stride(from: steps, through: 0, by: -1) {
-				guard fadeSlot.owns(token) else { return }
-				await applyVolume(
-					startVolume * Double(step) / Double(steps),
-					on: player,
-					generation: generation
-				)
-				do {
-					try await Task.sleep(for: .seconds(stepInterval))
-				} catch {
-					return
-				}
+			let volumes = stride(from: steps, through: 0, by: -1).map {
+				startVolume * Double($0) / Double(steps)
 			}
+			let completed = await ramp(
+				through: volumes,
+				on: player,
+				generation: generation,
+				stepInterval: stepInterval,
+				token: token
+			)
+			guard completed else { return }
 
 			do {
 				guard fadeSlot.owns(token) else { return }
@@ -88,19 +85,15 @@ extension BackgroundMusicController {
 				return
 			}
 
-			for step in 1...steps {
-				guard fadeSlot.owns(token) else { return }
-				await applyVolume(
-					targetVolume * Double(step) / Double(steps),
-					on: target,
-					generation: generation
-				)
-				do {
-					try await Task.sleep(for: .seconds(stepInterval))
-				} catch {
-					return
-				}
-			}
+			let volumes = (1...steps).map { targetVolume * Double($0) / Double(steps) }
+			let completed = await ramp(
+				through: volumes,
+				on: target,
+				generation: generation,
+				stepInterval: stepInterval,
+				token: token
+			)
+			guard completed else { return }
 
 			guard fadeSlot.owns(token) else { return }
 			await applyVolume(targetVolume, on: target, generation: generation)
@@ -150,6 +143,29 @@ extension BackgroundMusicController {
 				"Background music volume update was not applied: \(error.localizedDescription)"
 			)
 		}
+	}
+
+	// Returns `false` when the fade is superseded or cancelled.
+	private func ramp(
+		through volumes: [Double],
+		on player: YouTubePlayer,
+		generation: TaskSlot.Token,
+		stepInterval: Double,
+		token: TaskSlot.Token
+	) async -> Bool {
+		for volume in volumes {
+			guard fadeSlot.owns(token) else { return false }
+			await applyVolume(volume, on: player, generation: generation)
+			do {
+				try await Task.sleep(
+					for: .seconds(stepInterval),
+					tolerance: .seconds(stepInterval / 10)
+				)
+			} catch {
+				return false
+			}
+		}
+		return true
 	}
 
 	func finishFade(_ token: TaskSlot.Token) {

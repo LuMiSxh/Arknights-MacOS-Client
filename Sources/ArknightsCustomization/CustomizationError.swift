@@ -3,7 +3,6 @@
 import ArknightsCore
 import Foundation
 
-/// Failures raised while loading remote artwork and applying custom images or app icons.
 package enum CustomizationError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case invalidRemoteAsset(URL)
 	case invalidPresetImage(URL)

@@ -3,7 +3,6 @@
 import Foundation
 import Observation
 
-/// Owns persisted launcher preferences that are shared across feature controllers.
 @MainActor
 @Observable
 package final class LauncherPreferencesController {
@@ -70,7 +69,6 @@ package final class LauncherPreferencesController {
 	package var usesHardwareCursor: Bool {
 		didSet { store.set(usesHardwareCursor, for: Key.usesHardwareCursor) }
 	}
-	/// Hides the one-time explanation of in-game resolutions on Retina displays.
 	package var dismissedInGameResolutionNote: Bool {
 		didSet { store.set(dismissedInGameResolutionNote, for: Key.dismissedInGameResolutionNote) }
 	}

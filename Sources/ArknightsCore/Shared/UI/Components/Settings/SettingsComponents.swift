@@ -120,7 +120,6 @@ package struct SettingsPanel<Content: View>: View {
 	let title: String
 	let systemImage: String
 	var tone: SettingsPanelTone = .neutral
-	/// Makes the header a disclosure button that shows or hides the content.
 	var isExpanded: Binding<Bool>?
 	@ViewBuilder package let content: Content
 
@@ -244,7 +243,6 @@ package enum SettingsPanelTone {
 	}
 }
 
-/// Same quiet panel geometry as `SettingsPanel`, reserved for destructive actions.
 package struct DangerZonePanel<Content: View>: View {
 	let title: String
 	@ViewBuilder package let content: Content
@@ -308,7 +306,6 @@ package struct UpdateSettingsRow: View {
 package struct SettingsActionRow<Actions: View>: View {
 	let title: String
 	let detail: String?
-	/// Technical background shown as a tooltip over the title and detail.
 	var help: String?
 	@ViewBuilder package let actions: Actions
 

@@ -19,8 +19,8 @@ package struct InstallationStateSnapshot: Sendable {
 }
 
 enum InstallationStateReader {
-	/// Runs the blocking file reads off the caller's actor; the reader observes the caller's
-	/// cancellation through `Task.checkCancellation()`.
+	// Runs the blocking file reads off the caller's actor; the reader observes the caller's
+	// cancellation through `Task.checkCancellation()`.
 	@concurrent
 	static func loadOffCaller(
 		_ request: InstallationStateRequest
@@ -41,12 +41,9 @@ enum InstallationStateReader {
 		var diagnostic: String?
 
 		do {
-			let data = try BoundedFileReader.readRegularFile(
-				at: stateURL, maximumBytes: AppConstants.Game.installedStateMaximumBytes)
+			installedState = try JSONFileStore.installedState.read(
+				InstalledState.self, at: stateURL)
 			try Task.checkCancellation()
-			let decoder = JSONDecoder()
-			decoder.dateDecodingStrategy = .iso8601
-			installedState = try decoder.decode(InstalledState.self, from: data)
 		} catch is CancellationError {
 			throw CancellationError()
 		} catch let error as POSIXError where error.code == .ENOENT {

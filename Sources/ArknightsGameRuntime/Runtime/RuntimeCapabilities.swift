@@ -7,7 +7,6 @@ import Foundation
 enum RuntimeCapabilityContractError: LocalizedError, Sendable {
 	case malformedManifest(String)
 	case unsupportedSchema(Int)
-	case invalidFrameLatencyRange
 	case invalidManifestPath
 
 	var errorDescription: String? {
@@ -16,8 +15,6 @@ enum RuntimeCapabilityContractError: LocalizedError, Sendable {
 			"Capability manifest is malformed: \(reason)"
 		case .unsupportedSchema(let version):
 			"Capability manifest schema version \(version) is unsupported."
-		case .invalidFrameLatencyRange:
-			"Capability manifest frame latency range is invalid."
 		case .invalidManifestPath:
 			"Capability manifest path must be a safe single filename."
 		}
@@ -30,25 +27,16 @@ struct RuntimeCapabilityDiscovery: Equatable, Sendable {
 }
 
 struct RuntimeCapabilities: Equatable, Sendable {
-	struct FrameLatency: Decodable, Equatable, Sendable {
-		let minimum: Int
-		let maximum: Int
-		let defaultValue: Int
-	}
-
 	static let conservative = RuntimeCapabilities(
-		dxmtMaximumFrameLatency: nil,
 		hardwareCursorSupported: false,
 		metalFXSpatialUpscalingSupported: false
 	)
 
-	let dxmtMaximumFrameLatency: FrameLatency?
 	let hardwareCursorSupported: Bool
 	let metalFXSpatialUpscalingSupported: Bool
 
 	private struct Manifest: Decodable {
 		struct Capabilities: Decodable {
-			let dxmtMaximumFrameLatency: FrameLatency
 			let hardwareCursor: Bool
 			/// Optional so runtimes published before 0.7.0 keep their other capabilities.
 			let metalFXSpatialUpscaling: Bool?
@@ -68,20 +56,10 @@ struct RuntimeCapabilities: Equatable, Sendable {
 				error.localizedDescription
 			)
 		}
-		guard manifest.schemaVersion == 1 else {
+		guard [1, 2].contains(manifest.schemaVersion) else {
 			throw RuntimeCapabilityContractError.unsupportedSchema(manifest.schemaVersion)
 		}
-		let latency = manifest.capabilities.dxmtMaximumFrameLatency
-		guard (0...3).contains(latency.minimum),
-			(1...3).contains(latency.maximum),
-			latency.minimum <= latency.maximum,
-			latency.defaultValue == 3,
-			(latency.minimum...latency.maximum).contains(latency.defaultValue)
-		else {
-			throw RuntimeCapabilityContractError.invalidFrameLatencyRange
-		}
 		return RuntimeCapabilities(
-			dxmtMaximumFrameLatency: latency,
 			hardwareCursorSupported: manifest.capabilities.hardwareCursor,
 			metalFXSpatialUpscalingSupported: manifest.capabilities.metalFXSpatialUpscaling ?? false
 		)
@@ -153,12 +131,29 @@ struct RuntimeCapabilities: Equatable, Sendable {
 		guard
 			let manifest = object as? [String: Any],
 			Set(manifest.keys) == ["schemaVersion", "capabilities"],
-			let capabilities = manifest["capabilities"] as? [String: Any],
-			Set(capabilities.keys).subtracting(["metalFXSpatialUpscaling"])
-				== ["dxmtMaximumFrameLatency", "hardwareCursor"],
-			let frameLatency = capabilities["dxmtMaximumFrameLatency"] as? [String: Any],
-			Set(frameLatency.keys) == ["minimum", "maximum", "defaultValue"]
+			let capabilities = manifest["capabilities"] as? [String: Any]
 		else {
+			throw RuntimeCapabilityContractError.malformedManifest(
+				"the manifest contains missing or unknown fields"
+			)
+		}
+		let capabilityKeys = Set(capabilities.keys).subtracting(["metalFXSpatialUpscaling"])
+		let hasExpectedShape: Bool
+		switch manifest["schemaVersion"] as? Int {
+		case 1?:
+			// Schema 1 runtimes advertise a frame-latency range that the client ignores.
+			let frameLatency = capabilities["dxmtMaximumFrameLatency"] as? [String: Any]
+			let frameLatencyKeys = frameLatency.map { Set($0.keys) }
+			hasExpectedShape =
+				capabilityKeys == ["dxmtMaximumFrameLatency", "hardwareCursor"]
+				&& frameLatencyKeys == Set(["minimum", "maximum", "defaultValue"])
+		case 2?:
+			hasExpectedShape = capabilityKeys == ["hardwareCursor"]
+		default:
+			// decode(from:) rejects unsupported schema versions.
+			hasExpectedShape = true
+		}
+		guard hasExpectedShape else {
 			throw RuntimeCapabilityContractError.malformedManifest(
 				"the manifest contains missing or unknown fields"
 			)

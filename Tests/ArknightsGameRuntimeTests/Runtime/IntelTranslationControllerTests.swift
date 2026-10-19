@@ -55,9 +55,9 @@ struct IntelTranslationControllerTests {
 	@Test
 	func translationProcessCancellationWaitsForChildExit() async throws {
 		let clock = ContinuousClock()
-		let pidFile = FileManager.default.temporaryDirectory.appending(
-			path: "intel-process-\(UUID().uuidString).pid")
-		defer { try? FileManager.default.removeItem(at: pidFile) }
+		let temporary = try TemporaryDirectory("IntelTranslationControllerTests")
+		defer { temporary.remove() }
+		let pidFile = temporary.url.appending(path: "intel.pid")
 		let task = Task {
 			try await IntelTranslationProcess.run(
 				executable: URL(filePath: "/bin/sh"),

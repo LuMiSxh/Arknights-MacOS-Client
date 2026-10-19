@@ -14,7 +14,7 @@ enum ProgressMonitorOutcome: String, CaseIterable, Sendable {
 struct GameInstallerDownloadLifecycleTests {
 	@Test(arguments: ProgressMonitorOutcome.allCases)
 	func waitsForTheProgressMonitorBeforeReturning(outcome: ProgressMonitorOutcome) async throws {
-		let fixture = try GameInstallerStreamingTests.makeFixture(
+		let fixture = try InstallerFixture.make(
 			body: Data("game".utf8),
 			protocolClass: LifecycleURLProtocol.self
 		)

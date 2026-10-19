@@ -2,7 +2,6 @@
 
 import SwiftUI
 
-/// A shared icon-only action with the same semantic tone and focus treatment as text actions.
 package struct IconActionButton: View {
 	let title: String
 	let systemImage: String

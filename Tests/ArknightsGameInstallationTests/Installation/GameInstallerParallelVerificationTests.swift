@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Darwin
 import Foundation
 import Synchronization
@@ -11,16 +12,14 @@ import Testing
 
 struct GameInstallerParallelVerificationTests {
 	private struct Fixture {
-		let directory: URL
+		let temporary: TemporaryDirectory
 		let manifest: GameManifest
 		let installer: GameInstaller
 
+		var directory: URL { temporary.url }
+
 		func remove() {
-			do {
-				try FileManager.default.removeItem(at: directory)
-			} catch {
-				Issue.record("Could not remove \(directory.path): \(error)")
-			}
+			temporary.remove()
 		}
 
 		func pending(
@@ -41,11 +40,7 @@ struct GameInstallerParallelVerificationTests {
 	}
 
 	private static func makeFixture(bodies: [Data]) throws -> Fixture {
-		let directory = FileManager.default.temporaryDirectory.appending(
-			path: "GameInstallerParallelVerificationTests-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		let temporary = try TemporaryDirectory("GameInstallerParallelVerificationTests")
 		var files: [ManifestFile] = []
 		for (index, body) in bodies.enumerated() {
 			var checksum = CRC64()
@@ -53,7 +48,7 @@ struct GameInstallerParallelVerificationTests {
 			let path = "file-\(index).dat"
 			files.append(
 				ManifestFile(path: path, hash: checksum.decimalString, size: String(body.count)))
-			try body.write(to: directory.appending(path: path))
+			try body.write(to: temporary.url.appending(path: path))
 		}
 		let installer = GameInstaller(
 			api: InstallerAPI(
@@ -65,7 +60,7 @@ struct GameInstallerParallelVerificationTests {
 			compatibilityManager: GameCompatibilityManager()
 		)
 		return Fixture(
-			directory: directory,
+			temporary: temporary,
 			manifest: GameManifest(source: "payload", file: files),
 			installer: installer
 		)

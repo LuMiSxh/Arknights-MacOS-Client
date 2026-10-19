@@ -33,7 +33,6 @@ from lib.common import (
 )
 from lib.console import info, spinner, success, warning
 from lib.licenses import stage_bundle
-from lib.patch_wine_runtime import patch_file
 from lib.project_config import ProjectConfiguration, load_project_configuration
 from lib.swift_build import run_swift_build
 from runtime_config import (
@@ -273,14 +272,6 @@ def embed_runtime(
     if count:
         info(f"Thinned {count} universal runtime files")
 
-    driver = destination / layout.mac_driver
-    require_file(driver)
-    info("Applying the native Command-Q integration patch")
-    patch_file(driver)
-    run(
-        ["codesign", "--force", "--sign", "-", "--timestamp=none", driver],
-        capture=True,
-    )
     launcher = destination / layout.launcher.path
     remove_path(launcher)
     launcher.symlink_to(layout.launcher.target)

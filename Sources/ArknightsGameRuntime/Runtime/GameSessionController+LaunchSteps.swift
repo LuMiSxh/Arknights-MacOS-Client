@@ -4,7 +4,7 @@ import ArknightsCore
 import ArknightsGameInstallation
 import Foundation
 
-/// Everything captured when the user asks to play, before the first suspension.
+// Everything captured when the user asks to play, before the first suspension.
 struct LaunchRequest {
 	let id: UUID
 	package let region: GameRegion
@@ -16,23 +16,21 @@ struct LaunchRequest {
 	let requestedAt: Date
 }
 
-/// Result of the file-system and runtime checks that run off the main actor.
 struct LaunchPreflight: Sendable {
 	let executableExists: Bool
-	/// Nil when the executable is missing, so the runtime was never discovered.
+	// Nil when the executable is missing, so the runtime was never discovered.
 	let runtime: Result<WineRuntime, any Error>?
-	/// Nil when no runtime was available to ask.
+	// Nil when no runtime was available to ask.
 	let pendingMigration: Result<Bool, any Error>?
 }
 
-/// A launch that owns its lease and session. Every later step revalidates `request.id`.
+// A launch that owns its lease and session. Every later step revalidates `request.id`.
 struct LaunchContext {
 	let request: LaunchRequest
 	let lease: ActivityLease
 	let runtime: WineRuntime
 }
 
-/// Environment and arguments for the runtime, resolved once capabilities are known.
 struct PreparedLaunch {
 	let displayConfiguration: WineDisplayConfiguration
 	let environment: [String: String]
@@ -61,12 +59,11 @@ extension GameSessionController {
 			executableExists: true, runtime: runtime, pendingMigration: migration)
 	}
 
-	/// Whether `id` still owns the not-yet-leased part of a launch.
 	private func ownsPendingLaunch(_ id: UUID) -> Bool {
 		pendingLaunchID == id && lifecycle.activity == .idle && !applicationTerminationRequested
 	}
 
-	/// Runs the preflight, then claims the lease. Only one launch may be pending at a time.
+	// Runs the preflight, then claims the lease. Only one launch may be pending at a time.
 	func startLaunch(_ request: LaunchRequest) async {
 		defer { if pendingLaunchID == request.id { pendingLaunchID = nil } }
 		let preflight = await Self.preflight(
@@ -81,8 +78,7 @@ extension GameSessionController {
 		}
 	}
 
-	/// Maps the preflight outcome to a failure or to a lease and session. No suspension happens
-	/// here, so the idle check and the lease claim are atomic.
+	// No suspension happens here, so the idle check and the lease claim are atomic.
 	private func beginLease(_ request: LaunchRequest, preflight: LaunchPreflight) -> LaunchContext?
 	{
 		guard preflight.executableExists else {
@@ -154,7 +150,6 @@ extension GameSessionController {
 		)
 	}
 
-	/// Runs the owned launch steps and maps their failure to the matching session cleanup.
 	private func runLaunch(_ context: LaunchContext) async {
 		let id = context.request.id
 		do {
@@ -203,7 +198,7 @@ extension GameSessionController {
 		}
 	}
 
-	/// Returns nil when the session no longer owns the launch.
+	// Returns nil when the session no longer owns the launch.
 	private func prepareRuntime(_ context: LaunchContext) async throws -> PreparedLaunch? {
 		let request = context.request
 		let discovery = await context.runtime.discoverCapabilities()
@@ -225,7 +220,7 @@ extension GameSessionController {
 		return PreparedLaunch(displayConfiguration: displayConfiguration, environment: environment)
 	}
 
-	/// Starts the game process. Returns nil when the session no longer owns the launch.
+	// Returns nil when the session no longer owns the launch.
 	private func spawn(
 		_ context: LaunchContext, prepared: PreparedLaunch
 	) async throws
@@ -274,7 +269,6 @@ extension GameSessionController {
 		return launch
 	}
 
-	/// Publishes the launching and running states once the process and its window are up.
 	private func monitor(_ context: LaunchContext, launch: WineLaunch) async throws {
 		let request = context.request
 		if request.options.usesGameMode {

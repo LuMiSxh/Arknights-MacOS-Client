@@ -87,7 +87,10 @@ package actor ArtworkCache {
 	package nonisolated func cachedActiveImageData(for region: GameRegion) throws -> (String, Data)?
 	{
 		guard let cacheKey = try cachedActiveCacheKey(for: region) else { return nil }
-		let data = try Data(contentsOf: cachedImageURL(for: cacheKey), options: .mappedIfSafe)
+		let data = try BoundedFileReader.readRegularFile(
+			at: cachedImageURL(for: cacheKey),
+			maximumBytes: AppConstants.Artwork.launcherMaximumBytes
+		)
 		return data.isEmpty ? nil : (cacheKey, data)
 	}
 
@@ -109,7 +112,10 @@ package actor ArtworkCache {
 	package nonisolated func cachedOfficialLogoData(for region: GameRegion) throws -> Data? {
 		let cacheURL = officialLogoCacheURL(for: region)
 		guard FileManager.default.fileExists(atPath: cacheURL.path) else { return nil }
-		let data = try Data(contentsOf: cacheURL, options: .mappedIfSafe)
+		let data = try BoundedFileReader.readRegularFile(
+			at: cacheURL,
+			maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes
+		)
 		return data.isEmpty ? nil : data
 	}
 
@@ -126,7 +132,10 @@ package actor ArtworkCache {
 		let fileManager = FileManager.default
 		let cachedURL = cachedImageURL(for: safeKey)
 		do {
-			let data = try Data(contentsOf: cachedURL, options: .mappedIfSafe)
+			let data = try BoundedFileReader.readRegularFile(
+				at: cachedURL,
+				maximumBytes: AppConstants.Artwork.launcherMaximumBytes
+			)
 			if !data.isEmpty, NSImage(data: data) != nil {
 				guard isCurrentImageRequest(requestID, region: region) else { return nil }
 				try persistActiveCacheKey(safeKey, for: region)
@@ -157,7 +166,10 @@ package actor ArtworkCache {
 	package func officialLogoData(for region: GameRegion) async throws -> Data? {
 		let cachedURL = officialLogoCacheURL(for: region)
 		do {
-			let data = try Data(contentsOf: cachedURL, options: .mappedIfSafe)
+			let data = try BoundedFileReader.readRegularFile(
+				at: cachedURL,
+				maximumBytes: AppConstants.Artwork.officialLogoMaximumBytes
+			)
 			if !data.isEmpty, NSImage(data: data) != nil {
 				return data
 			}
@@ -179,32 +191,32 @@ package actor ArtworkCache {
 		return data
 	}
 
+	private var fetcher: CheckedHTTPFetcher { CheckedHTTPFetcher(loader: loader) }
+
 	private func downloadData(
 		from url: URL,
 		maximumBytes: Int,
 		region: GameRegion
 	) async throws -> Data {
-		for attempt in 1...AppConstants.Network.maxDownloadAttempts {
-			do {
-				var request = URLRequest(url: url)
-				request.cachePolicy = .reloadRevalidatingCacheData
-				let (data, response) = try await loader.data(
-					for: request,
+		var request = URLRequest(url: url)
+		request.cachePolicy = .reloadRevalidatingCacheData
+		let result: HTTPFetchResult
+		do {
+			result = try await fetcher.fetch(
+				[request],
+				policy: HTTPFetchPolicy(
 					maximumBytes: maximumBytes,
-					redirectValidator: Self.artworkRedirectValidator(for: region)
-				)
-				guard response.statusCode == 200 else { throw LauncherError.invalidResponse }
-				guard !data.isEmpty else { throw LauncherError.invalidResponse }
-				guard NSImage(data: data) != nil else { throw LauncherError.invalidResponse }
-				return data
-			} catch is CancellationError {
-				throw CancellationError()
-			} catch {
-				if attempt == AppConstants.Network.maxDownloadAttempts { throw error }
-				try await Task.sleep(for: AppConstants.Network.retryBackoffStep * attempt)
-			}
+					attemptsPerCandidate: AppConstants.Network.maxDownloadAttempts,
+					backoffStep: AppConstants.Network.retryBackoffStep
+				),
+				redirectValidator: Self.artworkRedirectValidator(for: region)
+			)
+		} catch HTTPFetchError.unexpectedStatus {
+			throw LauncherError.invalidResponse
 		}
-		throw LauncherError.invalidResponse
+		guard !result.data.isEmpty else { throw LauncherError.invalidResponse }
+		guard NSImage(data: result.data) != nil else { throw LauncherError.invalidResponse }
+		return result.data
 	}
 
 	private nonisolated func officialLogoCacheURL(for region: GameRegion) -> URL {

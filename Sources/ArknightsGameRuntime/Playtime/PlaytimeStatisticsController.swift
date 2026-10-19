@@ -10,12 +10,19 @@ import Observation
 package final class PlaytimeStatisticsController {
 	private(set) var statistics: PlaytimeStatistics
 
-	@ObservationIgnored private let fileURL: URL
 	@ObservationIgnored private let log: LauncherLog
 	@ObservationIgnored private let now: () -> Date
 	@ObservationIgnored private let uptime: () -> TimeInterval
 	@ObservationIgnored private let calendar: Calendar
 	@ObservationIgnored private var monotonicStart: TimeInterval?
+	@ObservationIgnored private let snapshotContinuation:
+		AsyncStream<PlaytimeStatistics>.Continuation
+	@ObservationIgnored private let store: PlaytimeStatisticsStore
+	@ObservationIgnored private var loadTask: Task<Void, Never>?
+	@ObservationIgnored private var isLoaded = false
+	// Changes made before the load finishes; `applyLoaded` replays them over the persisted data.
+	@ObservationIgnored private var discardsLoaded = false
+	@ObservationIgnored private var unloadedRecords: [(GameRegion, Date, TimeInterval)] = []
 
 	package init(
 		fileURL: URL,
@@ -24,25 +31,47 @@ package final class PlaytimeStatisticsController {
 		uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
 		calendar: Calendar = .autoupdatingCurrent
 	) {
-		self.fileURL = fileURL
 		self.log = log
 		self.now = now
 		self.uptime = uptime
 		self.calendar = calendar
 
-		do {
-			statistics = try Self.load(from: fileURL)
-		} catch {
-			statistics = .empty
-			Self.logPersistenceError(error, operation: "load", log: log)
-			Self.moveUnreadableFileAside(fileURL, log: log)
+		statistics = .empty
+		let store = PlaytimeStatisticsStore(fileURL: fileURL, log: log)
+		self.store = store
+		// Only the latest snapshot matters, so a slow disk coalesces writes. One consumer writes
+		// them in order, after the initial load, so an older snapshot never overwrites a newer one.
+		let (snapshots, continuation) = AsyncStream<PlaytimeStatistics>.makeStream(
+			bufferingPolicy: .bufferingNewest(1)
+		)
+		snapshotContinuation = continuation
+		let loading = Task { [weak self] in
+			let loaded = await store.load()
+			self?.applyLoaded(loaded)
 		}
+		loadTask = loading
+		Task {
+			await loading.value
+			for await snapshot in snapshots {
+				await store.save(snapshot)
+			}
+		}
+	}
 
-		if statistics.activeSession != nil {
-			statistics.activeSession = nil
-			save()
-			log.info("Discarded an unfinished playtime session after launcher restart")
-		}
+	deinit {
+		snapshotContinuation.finish()
+	}
+
+	/// Returns once the persisted statistics are merged into memory.
+	func loaded() async {
+		await loadTask?.value
+	}
+
+	/// Writes the final state before the process exits, which cannot wait for the asynchronous
+	/// consumer. Loads first if the initial load is unfinished. Later asynchronous saves are dropped.
+	func persistForTermination() {
+		if !isLoaded { applyLoaded(store.loadSynchronously()) }
+		store.saveSynchronously(statistics)
 	}
 
 	var totalDuration: TimeInterval { statistics.totalDuration }
@@ -79,6 +108,7 @@ package final class PlaytimeStatisticsController {
 			duration: duration,
 			calendar: calendar
 		)
+		if !isLoaded { unloadedRecords.append((active.region, active.startedAt, duration)) }
 		save()
 		return duration
 	}
@@ -86,6 +116,10 @@ package final class PlaytimeStatisticsController {
 	func reset() {
 		let active = statistics.activeSession
 		statistics = .empty
+		if !isLoaded {
+			discardsLoaded = true
+			unloadedRecords = []
+		}
 		if let active {
 			statistics.activeSession = .init(
 				id: active.id,
@@ -97,62 +131,32 @@ package final class PlaytimeStatisticsController {
 		save()
 	}
 
-	/// Keeps unreadable statistics (for example after a downgrade) from being overwritten by the next save.
-	private static func moveUnreadableFileAside(_ fileURL: URL, log: LauncherLog) {
-		let fileManager = FileManager.default
-		guard fileManager.fileExists(atPath: fileURL.path) else { return }
-		let asideURL = fileURL.appendingPathExtension("unreadable")
-		do {
-			if fileManager.fileExists(atPath: asideURL.path) {
-				try fileManager.removeItem(at: asideURL)
+	private func applyLoaded(_ loaded: PlaytimeStatistics) {
+		guard !isLoaded else { return }
+		isLoaded = true
+		var changedLocally = discardsLoaded || !unloadedRecords.isEmpty
+		if !discardsLoaded {
+			var merged = loaded
+			merged.activeSession = nil
+			for (region, startedAt, duration) in unloadedRecords {
+				merged.record(
+					region: region, startedAt: startedAt, duration: duration, calendar: calendar)
 			}
-			try fileManager.moveItem(at: fileURL, to: asideURL)
-		} catch {
-			logPersistenceError(error, operation: "preserve unreadable", log: log)
+			merged.activeSession = statistics.activeSession
+			statistics = merged
 		}
+		unloadedRecords = []
+		if statistics.activeSession != nil { changedLocally = true }
+		if loaded.activeSession != nil {
+			changedLocally = true
+			log.info("Discarded an unfinished playtime session after launcher restart")
+		}
+		if changedLocally { save() }
 	}
 
+	/// Snapshots wait for the load, which saves the merged result itself.
 	private func save() {
-		do {
-			try FileManager.default.createDirectory(
-				at: fileURL.deletingLastPathComponent(),
-				withIntermediateDirectories: true
-			)
-			let encoder = JSONEncoder()
-			encoder.dateEncodingStrategy = .iso8601
-			encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-			var data = try encoder.encode(statistics)
-			data.append(0x0A)
-			try data.write(to: fileURL, options: .atomic)
-		} catch {
-			Self.logPersistenceError(error, operation: "save", log: log)
-		}
-	}
-
-	private static func load(from fileURL: URL) throws -> PlaytimeStatistics {
-		guard FileManager.default.fileExists(atPath: fileURL.path) else { return .empty }
-		let data: Data
-		do {
-			data = try BoundedFileReader.readRegularFile(
-				at: fileURL,
-				maximumBytes: AppConstants.Playtime.statisticsMaximumBytes
-			)
-		} catch BoundedFileReadError.tooLarge {
-			throw PlaytimeStatisticsError.fileTooLarge
-		}
-		let decoder = JSONDecoder()
-		decoder.dateDecodingStrategy = .iso8601
-		return try decoder.decode(PlaytimeStatistics.self, from: data)
-			.validated()
-	}
-
-	private static func logPersistenceError(
-		_ error: Error,
-		operation: String,
-		log: LauncherLog
-	) {
-		log.error(
-			"Could not \(operation) local playtime statistics: \(error.localizedDescription)"
-		)
+		guard isLoaded else { return }
+		snapshotContinuation.yield(statistics)
 	}
 }

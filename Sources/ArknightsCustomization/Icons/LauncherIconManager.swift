@@ -46,10 +46,10 @@ package final class LauncherIconManager {
 		currentIcon = defaultIcon()
 	}
 
-	/// Applies `image` everywhere macOS presents the launcher identity. `persistToBundle` guards
-	/// `NSWorkspace.setIcon`, which costs hundreds of ms — skip it when the caller already knows
-	/// the bundle icon is unchanged from a previous launch.
-	/// Returns `false` when Finder rejected the persistent app-bundle icon.
+	// `persistToBundle` guards
+	// `NSWorkspace.setIcon`, which costs hundreds of ms — skip it when the caller already knows
+	// the bundle icon is unchanged from a previous launch.
+	// Returns `false` when Finder rejected the persistent app-bundle icon.
 	@discardableResult
 	func apply(_ image: NSImage, persistToBundle: Bool = true) -> Bool {
 		let persisted = persistToBundle ? setBundleIcon(image) : true
@@ -59,8 +59,7 @@ package final class LauncherIconManager {
 		return persisted
 	}
 
-	/// Clears every custom icon surface and publishes the app's bundled default icon.
-	/// Returns `false` when Finder rejected removal of the persistent custom icon.
+	// Returns `false` when Finder rejected removal of the persistent custom icon.
 	@discardableResult
 	func reset() -> Bool {
 		let persisted = setBundleIcon(nil)

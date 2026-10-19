@@ -2,8 +2,8 @@
 
 import Foundation
 
-/// Raw values start at 10 so a step saved by 0.6.1, which used 0 through 6, never decodes and
-/// setup resumes at the system check instead of landing on an unrelated question.
+// Raw values start at 10 so a step saved by 0.6.1, which used 0 through 6, never decodes and
+// setup resumes at the system check instead of landing on an unrelated question.
 nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Sendable {
 	case welcome = 10
 	case region = 11

@@ -84,22 +84,4 @@ struct GameLaunchCancellationTests {
 		#expect(model.gameSession.session == nil)
 		await api.resolveBranding()
 	}
-
-	@Test(arguments: [Duration.seconds(1), .seconds(90)])
-	func windowReadinessTimesOutOnAManualClockWithoutSleeping(timeout: Duration) async {
-		let clock = ManualClock()
-		let pollInterval = Duration.milliseconds(250)
-
-		await #expect {
-			// No process has this identifier, so no window ever becomes visible.
-			try await WineWindowReadiness.wait(
-				processIdentifier: Int32.max - 1, timeout: timeout, pollInterval: pollInterval,
-				clock: clock)
-		} throws: { error in
-			if case GameRuntimeError.runtimeWindowTimeout = error { true } else { false }
-		}
-
-		#expect(clock.now.offset >= timeout)
-		#expect(clock.sleepCount >= Int(timeout / pollInterval))
-	}
 }

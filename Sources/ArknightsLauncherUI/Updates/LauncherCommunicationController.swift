@@ -6,7 +6,6 @@ import ArknightsCustomization
 import Foundation
 import Observation
 
-/// Owns launcher updates, announcements, Yostar notices, and their shared popup queue.
 @MainActor
 @Observable
 package final class LauncherCommunicationController {

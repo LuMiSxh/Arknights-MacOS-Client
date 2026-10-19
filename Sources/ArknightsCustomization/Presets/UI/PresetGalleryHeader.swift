@@ -3,7 +3,6 @@
 import ArknightsCore
 import SwiftUI
 
-/// Owns the gallery title and the optional operator-style preview action.
 struct PresetGalleryHeader: View {
 	let destination: PresetGalleryDestination
 	let catalog: PresetCatalogService

@@ -5,8 +5,6 @@ import ArknightsGameInstallation
 import ArknightsGameRuntime
 import SwiftUI
 
-/// Collapsed by default: who sets the display, the size the game renders, and the performance and
-/// diagnostics launch options.
 struct GameAdvancedSettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool

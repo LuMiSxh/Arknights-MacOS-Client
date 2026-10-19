@@ -2,7 +2,6 @@
 
 import SwiftUI
 
-/// Loads one bounded avatar asset and renders its coordinated Launcher and Game previews.
 struct CachedPresetOperatorPair: View {
 	let catalog: PresetCatalogService
 	let url: URL
@@ -41,6 +40,14 @@ struct CachedPresetOperatorPair: View {
 		.task(id: renderIdentifier) {
 			let taskIdentifier = renderIdentifier
 			guard !Task.isCancelled else { return }
+			if let cached = PresetThumbnailCache.shared.iconPair(
+				cacheKey: cacheKey,
+				accentHue: accentHue
+			) {
+				icons = (cached.launcher, cached.game)
+				hasFailed = false
+				return
+			}
 			icons = nil
 			hasFailed = false
 			do {
@@ -48,13 +55,18 @@ struct CachedPresetOperatorPair: View {
 					for: url,
 					cacheKey: cacheKey
 				)
-				guard !Task.isCancelled, renderIdentifier == taskIdentifier,
-					let rendered = AppIconRenderer.createPresetIconPair(
-						from: data,
-						accentHue: accentHue
-					)
-				else { return }
-				icons = rendered
+				guard !Task.isCancelled, renderIdentifier == taskIdentifier else { return }
+				let rendered = await PresetThumbnailCache.shared.renderIconPair(
+					from: data,
+					cacheKey: cacheKey,
+					accentHue: accentHue
+				)
+				guard !Task.isCancelled, renderIdentifier == taskIdentifier else { return }
+				guard let rendered else {
+					hasFailed = true
+					return
+				}
+				icons = (rendered.launcher, rendered.game)
 			} catch is CancellationError {
 				return
 			} catch {

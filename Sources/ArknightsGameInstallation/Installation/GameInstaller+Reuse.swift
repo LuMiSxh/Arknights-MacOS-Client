@@ -5,14 +5,10 @@ import ArknightsInfrastructure
 import Darwin
 import Foundation
 
-/// A complete installation of another region whose files may be cloned instead of downloaded.
-///
-/// Sources are only read: the installer never opens them through `InstallerDirectory`,
-/// so it takes no lock and no file in them is modified, moved, or held open beyond one copy.
+// Sources are only read: the installer never opens them through `InstallerDirectory`,
+// so it takes no lock and no file in them is modified, moved, or held open beyond one copy.
 struct ReuseSource: Sendable {
 	let directory: URL
-	/// Paths the source's own installed state lists, or `nil` for a state recorded before
-	/// file metadata existed.
 	let knownPaths: Set<String>?
 
 	func mayContain(_ relativePath: String) -> Bool {
@@ -20,7 +16,6 @@ struct ReuseSource: Sendable {
 	}
 }
 
-/// What one operation took from other regions, summarized once the operation finishes.
 actor ReuseTally {
 	private(set) var files = 0
 	private(set) var bytes: Int64 = 0
@@ -39,9 +34,9 @@ struct ReuseSession: Sendable {
 }
 
 extension GameInstaller {
-	/// Resolves the other regions that can donate files to `target`. A candidate must be a
-	/// different directory from the target and have both `Arknights.exe` and a readable
-	/// installed-state file, the same definition of an installed region the launcher uses.
+	// A candidate must be a different directory from the target and have both
+	// `Arknights.exe` and a readable installed-state file, the same definition of an
+	// installed region the launcher uses.
 	func reuseSession(
 		for region: GameRegion, target: InstallerDirectory
 	) async
@@ -73,22 +68,19 @@ extension GameInstaller {
 		guard stat(directory.appending(path: "Arknights.exe").path, &executable) == 0,
 			executable.st_mode & S_IFMT == S_IFREG
 		else { throw POSIXError(.ENOENT) }
-		let data = try BoundedFileReader.readRegularFile(
-			at: directory.appending(path: AppConstants.Game.installedStateFileName),
-			maximumBytes: AppConstants.Game.installedStateMaximumBytes
-		)
-		let decoder = JSONDecoder()
-		decoder.dateDecodingStrategy = .iso8601
-		let state = try decoder.decode(InstalledState.self, from: data)
+		guard
+			let state = try JSONFileStore.installedState.read(
+				InstalledState.self,
+				at: directory.appending(path: AppConstants.Game.installedStateFileName)
+			)
+		else { throw POSIXError(.ENOENT) }
 		return ReuseSource(
 			directory: directory,
 			knownPaths: state.files.map { Set($0.map(\.path)) }
 		)
 	}
 
-	/// Tries to satisfy `item` from a donor region. Returns `true` once a donor's clone has
-	/// passed the manifest checksum and been promoted exactly like a downloaded file; `false`
-	/// means the caller must download. A failing donor never fails the installation.
+	// A failing donor never fails the installation; the caller falls back to downloading.
 	func reuseFromOtherRegions(
 		_ item: ManifestFile,
 		installDirectory: InstallerDirectory,

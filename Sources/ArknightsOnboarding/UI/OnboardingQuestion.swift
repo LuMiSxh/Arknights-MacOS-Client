@@ -4,24 +4,23 @@ import ArknightsCore
 import ArknightsGameInstallation
 import SwiftUI
 
-/// One answer the player can pick in a setup question.
 struct OnboardingAnswer<Value: Hashable>: Identifiable {
 	let value: Value
 	let title: String
 	var detail = ""
 	let systemImage: String
 	var isRecommended = false
-	/// Mechanism or alternate name, shown as a tooltip.
+	// Mechanism or alternate name, shown as a tooltip.
 	var help: String?
-	/// Runs when an action card is tapped. Selection questions ignore it.
+	// Runs when an action card is tapped. Selection questions ignore it.
 	var action: (@MainActor () -> Void)?
 
 	var id: Value { value }
 }
 
-/// Asks one setup question and applies the picked answer immediately, so players configure the
-/// launcher by answering instead of reading individual settings. A question picks one answer,
-/// several answers, or offers action cards that open a chooser.
+// Asks one setup question and applies the picked answer immediately, so players configure the
+// launcher by answering instead of reading individual settings. A question picks one answer,
+// several answers, or offers action cards that open a chooser.
 struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	private enum Interaction {
 		case single(Binding<Value?>)
@@ -54,8 +53,8 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 		self.accessory = accessory
 	}
 
-	/// Action cards, each with a chevron, that run their own closure. The accessory shows a
-	/// preview of the current choice above the cards.
+	// Action cards, each with a chevron, that run their own closure. The accessory shows a
+	// preview of the current choice above the cards.
 	init(
 		question: String, systemImage: String, actions: [OnboardingAnswer<Value>],
 		accentColor: Color, @ViewBuilder accessory: () -> Accessory
@@ -174,7 +173,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 }
 
 extension OnboardingQuestion where Accessory == EmptyView {
-	/// One answer, applied the moment it is picked. The footnote adds a hint under the cards.
+	// One answer, applied the moment it is picked. The footnote adds a hint under the cards.
 	init(
 		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
 		selection: Binding<Value?>, accentColor: Color, isDisabled: Bool = false,
@@ -186,7 +185,6 @@ extension OnboardingQuestion where Accessory == EmptyView {
 			footnote: footnote, accessory: EmptyView())
 	}
 
-	/// Any number of answers, each shown with a checkbox.
 	init(
 		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
 		selections: Binding<Set<Value>>, accentColor: Color
@@ -198,8 +196,8 @@ extension OnboardingQuestion where Accessory == EmptyView {
 	}
 }
 
-/// Answer cards use the shared press and hover motion on a plain surface. A Glass surface is
-/// rebuilt when the selection tint changes, which made the release spring snap to full size.
+// Answer cards use the shared press and hover motion on a plain surface. A Glass surface is
+// rebuilt when the selection tint changes, which made the release spring snap to full size.
 private struct OnboardingAnswerStyle<S: InsettableShape>: ButtonStyle {
 	let isSelected: Bool
 	let accentColor: Color

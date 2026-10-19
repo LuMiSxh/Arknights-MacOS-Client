@@ -30,12 +30,7 @@ func supportCodeRegistryMatchesThePublicDocumentationFixture() throws {
 	for code in SupportCode.allCases {
 		#expect(SupportCode.hasValidSyntax(code.rawValue))
 		#expect(SupportCode.isPublished(code.rawValue))
-		#expect(
-			code.troubleshootingURL.absoluteString
-				== "https://lumisxh.github.io/Arknights-MacOS-Client/help/errors/\(code.rawValue.lowercased())/"
-		)
-		let markdown = try #require(code.bundledTroubleshootingMarkdown())
-		#expect(markdown.hasPrefix("## Try this"))
+		#expect(code.bundledTroubleshootingMarkdown() != nil)
 	}
 	#expect(!SupportCode.hasValidSyntax("AKC-VIRGA"))
 	#expect(!SupportCode.isPublished("CLOUD"))

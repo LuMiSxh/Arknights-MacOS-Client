@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import Foundation
 
 extension PresetCatalogService {
-	/// Applies the last downloaded tag manifest, then fetches the repository's current one once
-	/// per launch without delaying the gallery.
+	// Applies the last downloaded tag manifest, then fetches the repository's current one once
+	// per launch without delaying the gallery.
 	func prepareWallpaperTags() async {
 		if !hasLoadedWallpaperTagCache {
 			hasLoadedWallpaperTagCache = true
@@ -55,7 +56,7 @@ extension PresetCatalogService {
 	private func readBoundedCache(at url: URL) async -> Data? {
 		guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 		do {
-			return try Self.readBoundedFile(
+			return try BoundedFileReader.readRegularFile(
 				at: url, maximumBytes: AppConstants.Presets.wallpaperTagsMaximumBytes)
 		} catch {
 			log.error(

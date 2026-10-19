@@ -5,10 +5,8 @@ import ArknightsInfrastructure
 import Darwin
 import Foundation
 
-/// The validated `.part` file and resume bookkeeping of one download attempt.
-///
-/// Owns the partial file descriptor until `close()` or `closeAfterFailure(log:)`, so no path
-/// out of `GameInstaller.download` leaks it. Not `Sendable`: one attempt uses it serially.
+// Owns the partial file descriptor until `close()` or `closeAfterFailure(log:)`, so no path
+// out of `GameInstaller.download` leaks it. Not `Sendable`: one attempt uses it serially.
 final class PartialDownload {
 	let item: ManifestFile
 	let partial: InstallerFile
@@ -18,7 +16,7 @@ final class PartialDownload {
 	let handle: FileHandle
 	let counter: ProgressCounter
 	let progress: GameInstaller.ProgressHandler
-	/// Bytes already in the `.part` file and counted in `counter` for this attempt.
+	// Bytes already in the `.part` file and counted in `counter` for this attempt.
 	var existingBytes: Int64
 	var resumeMetadata: InstallerResumeMetadata?
 	private var isClosed = false
@@ -60,16 +58,8 @@ final class PartialDownload {
 		}
 	}
 
-	/// The single rollback path: truncates the partial to `offset` and takes the discarded
-	/// bytes back out of the shared progress counter.
-	///
-	/// - Parameters:
-	///   - offset: Length the partial keeps. Resume rollbacks keep the resume offset.
-	///   - counted: Bytes to remove from the counter's downloaded total.
-	///   - network: Bytes to remove from the counter's network total.
-	///   - reportsProgress: `false` when the counter never included the discarded bytes.
-	///   - rewinds: Moves the write position to `offset` so the stream can keep writing.
-	///   - synchronizes: Flushes the truncation before progress is reported.
+	// The single rollback path. It takes the discarded bytes out of the shared counter.
+	// `reportsProgress` is `false` when the counter never included those bytes.
 	func discardBytes(
 		truncatingTo offset: UInt64 = 0,
 		counted: Int64 = 0,
@@ -94,8 +84,7 @@ final class PartialDownload {
 }
 
 extension GameInstaller {
-	/// Truncates a partial and removes the discarded bytes from the progress counter. Every
-	/// download rollback goes through here, including the checksum-mismatch rollback.
+	// Every download rollback goes through here, including the checksum-mismatch rollback.
 	static func rollBack(
 		_ handle: FileHandle,
 		of item: ManifestFile,
@@ -117,8 +106,8 @@ extension GameInstaller {
 }
 
 extension GameInstaller {
-	/// Validates the manifest path and destination, then opens the regular `.part` file without
-	/// following links.
+	// Validates the manifest path and destination, then opens the regular `.part` file without
+	// following links.
 	func openPartialDownload(
 		_ item: ManifestFile,
 		installDirectory: InstallerDirectory,
@@ -168,8 +157,8 @@ extension GameInstaller {
 		)
 	}
 
-	/// Drops resume state that no longer matches the manifest, so only trustworthy bytes
-	/// count as already downloaded.
+	// Drops resume state that no longer matches the manifest, so only trustworthy bytes
+	// count as already downloaded.
 	func reconcileResumeState(of download: PartialDownload) async throws {
 		let item = download.item
 		download.resumeMetadata = try readResumeMetadata(at: download.metadataFile)
@@ -191,7 +180,7 @@ extension GameInstaller {
 		}
 	}
 
-	/// Builds the ranged request, checking the source against the region's download policy.
+	// Builds the ranged request, checking the source against the region's download policy.
 	func resumeRequest(
 		for download: PartialDownload,
 		source: String,

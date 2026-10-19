@@ -7,12 +7,9 @@ import Foundation
 import OSLog
 import Synchronization
 
-/// Selects the manifest files that must be downloaded. Existing files the previous manifest
-/// cannot vouch for are hashed first; that pass is cancellable and reported as progress.
 extension GameInstaller {
 	struct PendingDownloads: Sendable {
 		let files: [ManifestFile]
-		/// The last progress sequence emitted, so download progress continues after it.
 		let lastSequence: UInt64
 	}
 
@@ -58,60 +55,49 @@ extension GameInstaller {
 			totalBytes: try Self.totalByteCount(of: hashedFiles.map(\.item)),
 			totalFiles: hashedFiles.count
 		)
-		let monitor = hashedFiles.isEmpty ? nil : Self.monitorVerification(tally, progress)
-
-		var pending: [ManifestFile] = []
-		do {
-			let decisions = try await withThrowingTaskGroup(of: (Int, Bool).self) { group in
-				var decisions = [Bool](repeating: false, count: candidates.count)
-				var nextIndex = 0
-				func addNext() {
-					guard nextIndex < candidates.count else { return }
-					let index = nextIndex
-					nextIndex += 1
-					let candidate = candidates[index]
-					let previousFile = previousFiles?[candidate.item.path]
-					group.addTask {
-						let needsDownload = try await self.needsDownload(
-							candidate,
-							previousFile: previousFile,
-							verifyAllExistingFiles: verifyAllExistingFiles,
-							installDirectory: installDirectory,
-							tally: tally,
-							willHash: willHash,
-							didRead: didRead
-						)
-						return (index, needsDownload)
-					}
-				}
-				for _ in 0..<AppConstants.IO.verificationConcurrency { addNext() }
-				do {
-					while let (index, needsDownload) = try await group.next() {
-						decisions[index] = needsDownload
-						addNext()
-					}
-				} catch {
-					group.cancelAll()
-					throw error
-				}
-				return decisions
-			}
-			pending = zip(candidates, decisions).filter(\.1).map(\.0.item)
-		} catch {
-			monitor?.cancel()
-			_ = await monitor?.value
-			throw error
+		let candidateList = candidates
+		func decideDownloads() async throws -> [Bool] {
+			var decisions = [Bool](repeating: false, count: candidateList.count)
+			try await withWindowedTaskGroup(
+				Array(candidateList.indices),
+				limit: AppConstants.IO.verificationConcurrency,
+				operation: { index in
+					let candidate = candidateList[index]
+					let needsDownload = try await self.needsDownload(
+						candidate,
+						previousFile: previousFiles?[candidate.item.path],
+						verifyAllExistingFiles: verifyAllExistingFiles,
+						installDirectory: installDirectory,
+						tally: tally,
+						willHash: willHash,
+						didRead: didRead
+					)
+					return (index, needsDownload)
+				},
+				consume: { decisions[$0.0] = $0.1 }
+			)
+			return decisions
 		}
-
-		guard let monitor else { return PendingDownloads(files: pending, lastSequence: 0) }
-		monitor.cancel()
-		let sequence = await monitor.value + 1
+		let monitored = !hashedFiles.isEmpty
+		let decisions: [Bool]
+		if monitored {
+			decisions = try await InstallProgressMonitor.run(
+				interval: AppConstants.Network.progressEmissionInterval,
+				emit: { await progress(tally.snapshot(sequence: tally.nextSequence())) },
+				operation: decideDownloads
+			)
+		} else {
+			decisions = try await decideDownloads()
+		}
+		let pending = zip(candidates, decisions).filter(\.1).map(\.0.item)
+		guard monitored else { return PendingDownloads(files: pending, lastSequence: 0) }
+		let sequence = tally.nextSequence()
 		await progress(tally.snapshot(sequence: sequence))
 		return PendingDownloads(files: pending, lastSequence: sequence)
 	}
 
-	/// Hashes on the concurrent pool so synchronous file reads never occupy the caller's
-	/// executor.
+	// Hashes on the concurrent pool so synchronous file reads never occupy the caller's
+	// executor.
 	@concurrent
 	private func needsDownload(
 		_ candidate: VerificationCandidate,
@@ -151,43 +137,22 @@ extension GameInstaller {
 			}
 		)
 	}
-
-	/// Emits verification snapshots on the progress cadence until cancelled; returns the last
-	/// sequence it used.
-	private static func monitorVerification(
-		_ tally: VerificationTally,
-		_ progress: @escaping ProgressHandler
-	) -> Task<UInt64, Never> {
-		Task {
-			var sequence: UInt64 = 0
-			while !Task.isCancelled {
-				sequence += 1
-				await progress(tally.snapshot(sequence: sequence))
-				do {
-					try await Task.sleep(for: AppConstants.Network.progressEmissionInterval)
-				} catch {
-					break
-				}
-			}
-			return sequence
-		}
-	}
 }
 
-/// A manifest file with the destination state observed before hashing.
 struct VerificationCandidate: Sendable {
 	let item: ManifestFile
 	let relativePath: String
 	var size: Int64?
 }
 
-/// Thread-safe verification counters written by the concurrent hashing tasks and read by the
-/// progress monitor.
+// Thread-safe verification counters written by the concurrent hashing tasks and read by the
+// progress monitor.
 final class VerificationTally: Sendable {
 	private struct State {
 		var verifiedBytes: Int64 = 0
 		var verifiedFiles = 0
 		var currentFile = ""
+		var sequence: UInt64 = 0
 	}
 
 	private let totalBytes: Int64
@@ -222,5 +187,12 @@ final class VerificationTally: Sendable {
 			isVerifying: true,
 			sequence: sequence
 		)
+	}
+
+	func nextSequence() -> UInt64 {
+		state.withLock { state in
+			state.sequence += 1
+			return state.sequence
+		}
 	}
 }

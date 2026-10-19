@@ -2,7 +2,7 @@
 
 import SwiftUI
 
-/// Explains the two generated treatments without adding a second interaction to the gallery.
+// Explains the two generated treatments without adding a second interaction to the gallery.
 struct OperatorIconStylePreview: View {
 	let catalog: PresetCatalogService
 	let avatar: PresetAvatar?

@@ -20,8 +20,9 @@ func tagManifestsWithAnotherSchemaAreRejected() async throws {
 	#expect(try WallpaperTagCatalog.decode(remoteManifest)["global-9999"] == ["new event"])
 
 	// A missing remote manifest keeps the bundled tags and writes no cache.
-	let root = temporaryPresetRoot()
-	defer { try? FileManager.default.removeItem(at: root) }
+	let temporary = try TemporaryDirectory("WallpaperTagStoreTests")
+	defer { temporary.remove() }
+	let root = temporary.url
 	let store = WallpaperTagStore(bundled: bundledTags)
 	let service = tagService(root: root, path: "/missing.json", store: store)
 
@@ -29,11 +30,6 @@ func tagManifestsWithAnotherSchemaAreRejected() async throws {
 	#expect(store.tags == bundledTags)
 	let cacheFile = await service.cachedWallpaperTagsFile
 	#expect(!FileManager.default.fileExists(atPath: cacheFile.path))
-}
-
-private func temporaryPresetRoot() -> URL {
-	FileManager.default.temporaryDirectory.appending(
-		path: "WallpaperTagStoreTests-\(UUID().uuidString)", directoryHint: .isDirectory)
 }
 
 private func tagService(

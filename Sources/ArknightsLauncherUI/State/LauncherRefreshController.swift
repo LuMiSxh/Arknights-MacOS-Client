@@ -7,7 +7,6 @@ import ArknightsGameInstallation
 import Foundation
 import Observation
 
-/// Coordinates region selection and concurrent Yostar configuration and branding refreshes.
 @MainActor
 @Observable
 final class LauncherRefreshController {
@@ -22,9 +21,9 @@ final class LauncherRefreshController {
 	private let api: any LauncherAPIProviding
 	private let log: LauncherLog
 	@ObservationIgnored private var refreshTask: Task<Void, Never>?
-	/// Metadata results are accepted only while this slot owns the observable refresh state.
+	// Metadata results are accepted only while this slot owns the observable refresh state.
 	@ObservationIgnored private let metadataSlot = TaskSlot()
-	/// Starting or cancelling a refresh invalidates the slot before any older asset task can finish.
+	// Starting or cancelling a refresh invalidates the slot before any older asset task can finish.
 	@ObservationIgnored private let brandingSlot = TaskSlot()
 
 	init(
@@ -74,9 +73,9 @@ final class LauncherRefreshController {
 		await refreshTask?.value
 	}
 
-	/// Stops metadata work because installation has exclusive ownership of the network and
-	/// lifecycle state. The current region's already-started branding task remains valid and
-	/// may finish applying its assets before the next normal refresh replaces it.
+	// Stops metadata work because installation has exclusive ownership of the network and
+	// lifecycle state. The current region's already-started branding task remains valid and
+	// may finish applying its assets before the next normal refresh replaces it.
 	func cancelForInstallationStart() {
 		metadataSlot.invalidate()
 		refreshTask = nil

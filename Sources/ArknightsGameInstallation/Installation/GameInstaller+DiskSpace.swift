@@ -25,8 +25,8 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 }
 
 extension GameInstaller {
-	/// Walks up to the nearest existing ancestor since `url` (e.g. a not-yet-created
-	/// install directory) may not exist yet.
+	// Walks up to the nearest existing ancestor because `url` (e.g. a not-yet-created install
+	// directory) may not exist yet.
 	static func availableCapacityBytes(
 		at url: URL, fileManager: FileManager = .default
 	) throws

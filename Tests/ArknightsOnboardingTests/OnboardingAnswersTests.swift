@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import CoreGraphics
 import Foundation
 import Testing
@@ -16,8 +17,7 @@ private let scaled4K = GameScreenMetrics(
 private func makePreferences() -> (
 	LauncherPreferencesController, LauncherPreferencesStore, () -> Void
 ) {
-	let suiteName = "OnboardingAnswersTests.\(UUID().uuidString)"
-	let defaults = UserDefaults(suiteName: suiteName)!
+	let (defaults, suiteName) = makeIsolatedDefaults("OnboardingAnswersTests")
 	let store = LauncherPreferencesStore(defaults: defaults)
 	return (
 		LauncherPreferencesController(store: store), store,

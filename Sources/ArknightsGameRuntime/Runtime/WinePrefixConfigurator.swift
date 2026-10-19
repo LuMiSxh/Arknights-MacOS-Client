@@ -3,8 +3,8 @@
 import Darwin
 import Foundation
 
-/// Points the prefix's `G:` drive at the active region's game directory and isolates
-/// Wine's shell folders, so this Windows environment never touches the user's real files.
+// Points the prefix's `G:` drive at the active region's game directory and isolates
+// Wine's shell folders, so this Windows environment never touches the user's real files.
 struct WinePrefixConfigurator {
 	// Wine defaults these to symlinks into the real macOS home folder. Replacing them with
 	// plain empty directories keeps the game and its Windows apps from ever seeing (or

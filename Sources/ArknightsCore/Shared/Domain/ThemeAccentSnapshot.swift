@@ -2,7 +2,6 @@
 
 import Foundation
 
-/// Persistable color components used to restore Dynamic Theme before artwork extraction runs.
 package struct ThemeAccentSnapshot: Equatable, Sendable {
 	package let hue: Double
 	package let saturation: Double

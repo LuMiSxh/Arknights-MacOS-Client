@@ -2,7 +2,6 @@
 
 import SwiftUI
 
-/// Adds the small top-leading contrast field behind launcher branding and status text.
 struct LauncherReadabilityField: View {
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 

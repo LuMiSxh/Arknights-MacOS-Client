@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -127,14 +128,13 @@ private func installedShimData() -> Data {
 }
 
 private struct VuplexFixture {
+	let temporary: TemporaryDirectory
 	let root: URL
 	let helper: URL
 
 	init() throws {
-		root = FileManager.default.temporaryDirectory.appending(
-			path: UUID().uuidString,
-			directoryHint: .isDirectory
-		)
+		temporary = try TemporaryDirectory("VuplexCompatibilityTests")
+		root = temporary.url
 		helper = root.appending(path: VuplexCompatibility.helperRelativePath)
 		try FileManager.default.createDirectory(
 			at: helper.deletingLastPathComponent(),
@@ -151,7 +151,7 @@ private struct VuplexFixture {
 	}
 
 	func remove() {
-		try? FileManager.default.removeItem(at: root)
+		temporary.remove()
 	}
 }
 

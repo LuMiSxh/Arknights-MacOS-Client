@@ -68,7 +68,6 @@ package final class DecorativeMotionVisibility {
 		refreshWindowState()
 	}
 
-	/// Applies to every decorative loop, including those inside sheets.
 	package func setGameActive(_ isActive: Bool) {
 		isGameActive = isActive
 		refreshWindowState()

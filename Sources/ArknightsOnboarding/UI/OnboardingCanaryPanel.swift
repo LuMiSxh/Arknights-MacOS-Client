@@ -3,7 +3,7 @@
 import ArknightsCore
 import SwiftUI
 
-/// Highlights Canary settings while keeping the controls inside the panel neutral.
+// Highlights Canary settings while keeping the controls inside the panel neutral.
 struct OnboardingCanaryPanel<Content: View>: View {
 	let title: String
 	@ViewBuilder let content: Content

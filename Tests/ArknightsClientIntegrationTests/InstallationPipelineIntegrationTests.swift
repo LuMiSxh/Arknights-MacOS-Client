@@ -80,7 +80,8 @@ struct InstallationPipelineIntegrationTests {
 		}
 
 		let payloadURL = installDirectory.appending(path: "Arknights.exe")
-		let expectedPayload = try fixturePayload()
+		let expectedPayload = try LocalFixtureNetwork.fixture(
+			named: "fixture-payload", extension: "bin")
 		#expect(configuration.gameLatestVersion == "1.2.3")
 		#expect(configuration.executableName == "Arknights.exe")
 		#expect(model.installation.isInstalled)
@@ -158,17 +159,6 @@ struct InstallationPipelineIntegrationTests {
 			}
 		)
 	}
-
-	private func fixturePayload() throws -> Data {
-		guard
-			let url = Bundle.module.url(
-				forResource: "fixture-payload",
-				withExtension: "bin",
-				subdirectory: "Fixtures"
-			)
-		else { throw IntegrationFixtureError.missingPayload }
-		return try Data(contentsOf: url)
-	}
 }
 
 private actor IntegrationProgressRecorder {
@@ -181,10 +171,6 @@ private actor IntegrationProgressRecorder {
 	func updates() -> [DownloadProgress] {
 		recordedUpdates
 	}
-}
-
-private enum IntegrationFixtureError: Error {
-	case missingPayload
 }
 
 extension FixtureRequestRecorder {

@@ -15,8 +15,8 @@ package struct GameInstaller: Sendable {
 	let compatibilityManager: GameCompatibilityManager
 	let concurrentDownloads = AppConstants.Network.concurrentDownloads
 	let log: LauncherLog?
-	/// Directories of other regions' installations, resolved per operation so custom
-	/// install locations are honored. `nil` disables cross-region reuse.
+	// Directories of other regions' installations, resolved per operation so custom
+	// install locations are honored. `nil` disables cross-region reuse.
 	let reuseSourceDirectories: (@Sendable (GameRegion) async -> [URL])?
 
 	var fileManager: FileManager { .default }
@@ -38,9 +38,8 @@ package struct GameInstaller: Sendable {
 		self.reuseSourceDirectories = reuseSourceDirectories
 	}
 
-	/// Downloads one manifest file and promotes it, returning the bytes fetched from the
-	/// network. Every failure leaves the `.part` file either resumable or truncated to
-	/// match the progress that was rolled back.
+	// Every failure leaves the `.part` file either resumable or truncated to
+	// match the progress that was rolled back.
 	func download(
 		_ item: ManifestFile,
 		source: String,
@@ -84,7 +83,6 @@ package struct GameInstaller: Sendable {
 		return networkBytes
 	}
 
-	/// Verifies and publishes the completed partial, then closes it and counts the file.
 	private func promote(_ download: PartialDownload, networkBytes: Int64) async throws {
 		try await finishDownload(
 			download.item,

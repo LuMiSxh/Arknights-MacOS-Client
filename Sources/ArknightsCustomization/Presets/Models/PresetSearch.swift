@@ -3,23 +3,18 @@
 import ArknightsCore
 import Foundation
 
-/// Search and ranking for the preset gallery: wallpaper term matching, autocomplete, fuzzy
-/// catalog ranking, and the gallery result pipeline.
 enum PresetSearch {
-	/// Whether `wallpaper` should be shown for the given search text and type filter.
-	///
-	/// `query` is treated as one or more space-separated terms that must ALL be found
-	/// somewhere in the title or tags — so "twitter angelina" finds wallpapers that mention
-	/// both, rather than requiring that exact combined phrase to appear as one substring
-	/// (which essentially never happens once a query has more than one meaningful word).
-	///
-	/// The one exception is when the *entire* query is already the complete text of a known
-	/// tag — e.g. "w" (a complete operator codename) or "kristen wright" typed or selected in
-	/// full — in which case it matches only that exact tag, not every tag that merely starts
-	/// with it (wang, warfarin, weedy, …) or splitting a legitimate multi-word tag into terms
-	/// that individually fail to prefix-match past the first word.
-	///
-	/// - Parameter knownTags: every curated tag value, already passed through `normalized(_:)`.
+	// `query` is treated as one or more space-separated terms that must ALL be found
+	// somewhere in the title or tags — so "twitter angelina" finds wallpapers that mention
+	// both, rather than requiring that exact combined phrase to appear as one substring
+	// (which essentially never happens once a query has more than one meaningful word).
+	//
+	// The one exception is when the *entire* query is already the complete text of a known
+	// tag — e.g. "w" (a complete operator codename) or "kristen wright" typed or selected in
+	// full — in which case it matches only that exact tag, not every tag that merely starts
+	// with it (wang, warfarin, weedy, …) or splitting a legitimate multi-word tag into terms
+	// that individually fail to prefix-match past the first word.
+	// `knownTags` holds every curated tag value, already passed through `normalized(_:)`.
 	static func matches(
 		title: String,
 		tags: [String],
@@ -58,27 +53,27 @@ enum PresetSearch {
 		}
 	}
 
-	/// Autocomplete chips for the search box: matching tags first, then individual words from
-	/// titles (not whole titles), deduplicated and capped at `limit`. Within each group, an
-	/// exact match ranks first — otherwise a short tag can get crowded out of the capped list
-	/// by longer candidates that merely contain it.
-	///
-	/// Candidates are matched by prefix, not substring — typing "w" suggests words that
-	/// *start* with "w" (w, warfarin, Windflit, …), not any word with a "w" anywhere in it
-	/// (Twitter, answer, …), which is how autocomplete conventionally behaves.
-	///
-	/// Only the last space-separated word of `query` drives matching, since earlier words are
-	/// already-completed terms (per `matches(...)`) rather than something still being typed —
-	/// e.g. for "twitter ang", candidates are matched against "ang", not the combined phrase.
-	/// Candidates are additionally scoped to wallpapers that already satisfy every earlier
-	/// term: otherwise a suggestion can look valid on its own (some tag/word starting with
-	/// "ex" genuinely exists) while combining with what's already typed to match nothing,
-	/// because that particular candidate never co-occurs with "twitter" on any wallpaper.
-	/// Use `applyingSuggestion(_:to:)` to splice a chosen suggestion back in, preserving those
-	/// earlier terms.
+	// Autocomplete chips for the search box: matching tags first, then individual words from
+	// titles (not whole titles), deduplicated and capped at `limit`. Within each group, an
+	// exact match ranks first — otherwise a short tag can get crowded out of the capped list
+	// by longer candidates that merely contain it.
+	//
+	// Candidates are matched by prefix, not substring — typing "w" suggests words that
+	// *start* with "w" (w, warfarin, Windflit, …), not any word with a "w" anywhere in it
+	// (Twitter, answer, …), which is how autocomplete conventionally behaves.
+	//
+	// Only the last space-separated word of `query` drives matching, since earlier words are
+	// already-completed terms (per `matches(...)`) rather than something still being typed —
+	// e.g. for "twitter ang", candidates are matched against "ang", not the combined phrase.
+	// Candidates are additionally scoped to wallpapers that already satisfy every earlier
+	// term: otherwise a suggestion can look valid on its own (some tag/word starting with
+	// "ex" genuinely exists) while combining with what's already typed to match nothing,
+	// because that particular candidate never co-occurs with "twitter" on any wallpaper.
+	// Use `applyingSuggestion(_:to:)` to splice a chosen suggestion back in, preserving those
+	// earlier terms.
 	static func suggestions(
 		for query: String,
-		wallpapers: [(title: String, tags: [String])],
+		wallpapers: [PresetSearchIndex.Entry],
 		knownTags: Set<String>,
 		limit: Int = 8
 	) throws -> [String] {
@@ -88,11 +83,11 @@ enum PresetSearch {
 		guard let lastTerm = terms.last, !lastTerm.isEmpty else { return [] }
 		let earlierTerms = terms.dropLast()
 
-		let candidates: [(title: String, tags: [String])]
+		let candidates: [PresetSearchIndex.Entry]
 		if earlierTerms.isEmpty {
 			candidates = wallpapers
 		} else {
-			var scoped: [(title: String, tags: [String])] = []
+			var scoped: [PresetSearchIndex.Entry] = []
 			for wallpaper in wallpapers {
 				try Task.checkCancellation()
 				if earlierTerms.allSatisfy({
@@ -137,10 +132,10 @@ enum PresetSearch {
 		return Array((tagSuggestions + titleWordSuggestions).prefix(limit))
 	}
 
-	/// Replaces the last space-separated term of `query` with `suggestion`, preserving any
-	/// earlier already-typed terms — so picking a suggestion for "ang" while the box reads
-	/// "twitter ang" produces "twitter angelina ", not just "angelina". A trailing space is
-	/// always appended so the next term can be typed immediately, without an extra keystroke.
+	// Replaces the last space-separated term of `query` with `suggestion`, preserving any
+	// earlier already-typed terms — so picking a suggestion for "ang" while the box reads
+	// "twitter ang" produces "twitter angelina ", not just "angelina". A trailing space is
+	// always appended so the next term can be typed immediately, without an extra keystroke.
 	static func applyingSuggestion(_ suggestion: String, to query: String) -> String {
 		var terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
 		guard !terms.isEmpty else { return suggestion + " " }
@@ -148,7 +143,7 @@ enum PresetSearch {
 		return terms.joined(separator: " ") + " "
 	}
 
-	/// Prefers the longest match so multi-word tags become one filter.
+	// Prefers the longest match so multi-word tags become one filter.
 	static func trailingKnownTag(
 		in query: String, canonicalTagsByNormalizedForm: [String: String]
 	) -> (tag: String, remainingQuery: String)? {
@@ -172,12 +167,12 @@ enum PresetSearch {
 		return tags.contains { normalized($0) == normalizedTag }
 	}
 
-	/// Case- and diacritic-folded form of `value`, used for every comparison in this type.
-	///
-	/// Foundation's `.diacriticInsensitive` string options don't fold every accented letter —
-	/// notably Polish "ł" and the ligature "æ" aren't decomposable combining-mark sequences, so
-	/// they pass through unchanged (verified directly; see the operator tags "młynar", "væla",
-	/// and "ægir"). Those are folded explicitly before handing off to Foundation for the rest.
+	// Case- and diacritic-folded form of `value`, used for every comparison in this type.
+	//
+	// Foundation's `.diacriticInsensitive` string options don't fold every accented letter —
+	// notably Polish "ł" and the ligature "æ" aren't decomposable combining-mark sequences, so
+	// they pass through unchanged (verified directly; see the operator tags "młynar", "væla",
+	// and "ægir"). Those are folded explicitly before handing off to Foundation for the rest.
 	static func normalized(_ value: String) -> String {
 		value
 			.replacingOccurrences(of: "ł", with: "l")
@@ -189,10 +184,6 @@ enum PresetSearch {
 
 	private static let titleWordSeparators = CharacterSet.whitespaces.union(
 		.punctuationCharacters)
-
-	private static var knownWallpaperTags: Set<String> {
-		Set(WallpaperTagCatalog.shared.values.flatMap { $0 }.map(PresetSearch.normalized))
-	}
 
 	static func avatars(
 		matching query: String, in avatars: [PresetAvatar]
@@ -207,70 +198,41 @@ enum PresetSearch {
 	static func wallpapers(
 		matching query: String,
 		category: WallpaperCategory? = nil,
-		in wallpapers: [PresetWallpaper]
-	)
-		async throws -> [PresetWallpaper]
-	{
+		in entries: [PresetSearchIndex.Entry],
+		knownTags: Set<String>
+	) async throws -> [PresetSearchIndex.Entry] {
 		await Task.yield()
 		try Task.checkCancellation()
-		var directMatches: [PresetWallpaper] = []
-		for wallpaper in wallpapers {
+		let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+		var directMatches: [PresetSearchIndex.Entry] = []
+		for entry in entries {
 			try Task.checkCancellation()
-			let prose = [wallpaper.displayTitle, wallpaper.author, wallpaper.description]
-				.compactMap { $0 }
-				.joined(separator: " ")
 			if PresetSearch.matches(
-				title: prose,
-				tags: WallpaperTagCatalog.tags(for: wallpaper.id),
-				category: wallpaper.category,
-				query: query.trimmingCharacters(in: .whitespacesAndNewlines),
+				title: entry.prose,
+				tags: entry.tags,
+				category: entry.wallpaper.category,
+				query: trimmedQuery,
 				selectedCategory: category,
-				knownTags: knownWallpaperTags
+				knownTags: knownTags
 			) {
-				directMatches.append(wallpaper)
+				directMatches.append(entry)
 			}
 		}
-		let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard trimmedQuery.count >= 3, !trimmedQuery.contains(where: \.isWhitespace) else {
 			return directMatches
 		}
-		let directIDs = Set(directMatches.map(\.id))
-		var candidates: [PresetWallpaper] = []
-		for wallpaper in wallpapers {
+		let directIDs = Set(directMatches.map(\.wallpaper.id))
+		var candidates: [PresetSearchIndex.Entry] = []
+		for entry in entries {
 			try Task.checkCancellation()
-			if category == nil || wallpaper.category == category {
-				candidates.append(wallpaper)
+			if category == nil || entry.wallpaper.category == category {
+				candidates.append(entry)
 			}
 		}
-		let fuzzyMatches = try await ranked(
-			candidates,
-			matching: trimmedQuery
-		) {
-			[$0.displayTitle, $0.author, $0.description].compactMap { $0 }
-				+ WallpaperTagCatalog.tags(for: $0.id)
-		}.filter { !directIDs.contains($0.id) }
+		let fuzzyMatches = try await ranked(candidates, matching: trimmedQuery) {
+			$0.fuzzyValues
+		}.filter { !directIDs.contains($0.wallpaper.id) }
 		return directMatches + fuzzyMatches
-	}
-
-	static func wallpaperSuggestions(
-		matching query: String, in wallpapers: [PresetWallpaper]
-	) async throws -> [String] {
-		await Task.yield()
-		try Task.checkCancellation()
-		var searchableWallpapers: [(title: String, tags: [String])] = []
-		searchableWallpapers.reserveCapacity(wallpapers.count)
-		for wallpaper in wallpapers {
-			try Task.checkCancellation()
-			searchableWallpapers.append(
-				(title: wallpaper.displayTitle, tags: WallpaperTagCatalog.tags(for: wallpaper.id))
-			)
-		}
-		return try PresetSearch.suggestions(
-			for: query,
-			wallpapers: searchableWallpapers,
-			knownTags: knownWallpaperTags,
-			limit: AppConstants.Presets.gallerySuggestionLimit
-		)
 	}
 
 	private static func ranked<Item>(
@@ -317,7 +279,7 @@ enum PresetSearch {
 		value.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
 	}
 
-	/// Allows one insertion, deletion, or substitution against a field or one of its windows.
+	// Allows one insertion, deletion, or substitution against a field or one of its windows.
 	private static func boundedDistance(_ query: String, to value: String) throws -> Int? {
 		let queryCharacters = Array(query)
 		let valueCharacters = Array(value)
@@ -431,11 +393,14 @@ enum PresetSearch {
 		category: WallpaperCategory?,
 		in wallpaperCatalog: [PresetWallpaper]
 	) async throws -> [PresetWallpaper] {
-		try await PresetSearch.wallpapers(
+		let index = PresetSearchIndex.current(for: wallpaperCatalog)
+		let tagged = try taggedEntries(committedTags, in: index)
+		return try await PresetSearch.wallpapers(
 			matching: searchText,
 			category: category,
-			in: try matchingTags(committedTags, in: wallpaperCatalog)
-		)
+			in: tagged,
+			knownTags: index.knownTags
+		).map(\.wallpaper)
 	}
 
 	static func suggestions(
@@ -444,33 +409,35 @@ enum PresetSearch {
 		category: WallpaperCategory?,
 		in wallpaperCatalog: [PresetWallpaper]
 	) async throws -> [String] {
-		let tagged = try matchingTags(committedTags, in: wallpaperCatalog)
-		var candidates: [PresetWallpaper] = []
-		for wallpaper in tagged {
+		await Task.yield()
+		try Task.checkCancellation()
+		let index = PresetSearchIndex.current(for: wallpaperCatalog)
+		let tagged = try taggedEntries(committedTags, in: index)
+		var candidates: [PresetSearchIndex.Entry] = []
+		for entry in tagged {
 			try Task.checkCancellation()
-			if category == nil || wallpaper.category == category {
-				candidates.append(wallpaper)
+			if category == nil || entry.wallpaper.category == category {
+				candidates.append(entry)
 			}
 		}
 		let committed = Set(committedTags.map(PresetSearch.normalized))
-		let suggestions = try await PresetSearch.wallpaperSuggestions(
-			matching: searchText,
-			in: candidates
+		let suggestions = try PresetSearch.suggestions(
+			for: searchText,
+			wallpapers: candidates,
+			knownTags: index.knownTags,
+			limit: AppConstants.Presets.gallerySuggestionLimit
 		)
 		return suggestions.filter { !committed.contains(PresetSearch.normalized($0)) }
 	}
 
-	private static func matchingTags(
-		_ committedTags: [String], in wallpapers: [PresetWallpaper]
-	) throws -> [PresetWallpaper] {
-		var matches: [PresetWallpaper] = []
-		for wallpaper in wallpapers {
+	private static func taggedEntries(
+		_ committedTags: [String], in index: PresetSearchIndex
+	) throws -> [PresetSearchIndex.Entry] {
+		var matches: [PresetSearchIndex.Entry] = []
+		for entry in index.entries {
 			try Task.checkCancellation()
-			if committedTags.allSatisfy({
-				PresetSearch.tagsContain(
-					WallpaperTagCatalog.tags(for: wallpaper.id), exactly: $0)
-			}) {
-				matches.append(wallpaper)
+			if committedTags.allSatisfy({ PresetSearch.tagsContain(entry.tags, exactly: $0) }) {
+				matches.append(entry)
 			}
 		}
 		return matches

@@ -236,8 +236,7 @@ sets it to `nil` when the session finishes. A stale session ID cannot finish a n
 
 ### Prefix migrations and playtime
 
-The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` name the main macOS process. Packaging applies
-one reviewed patch to the staged Wine macOS driver to enable `Command-Q`.
+The `Arknights` runtime alias and `WINEPRELOADERAPPNAME` name the main macOS process. The runtime's Wine macOS driver maps `Command-Q` to Quit.
 
 Prefix changes run through an ordered migration plan. See
 [Wine prefix architecture](wine-prefix.md#preparation-and-migrations). Registry overrides are

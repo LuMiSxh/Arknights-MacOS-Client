@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Darwin
 import Foundation
 import Testing
@@ -12,6 +13,7 @@ struct GameInstallerResourceTests {
 	private static let resultPathEnvironmentKey = "ARKNIGHTS_RESOURCE_TEST_RESULT"
 	private static let testFilter = "pendingDownloadsCompletesUnderLowDescriptorLimit"
 	private static let fileCount = 180
+	private static let expectedResult = "fresh=180\nrepair=0\n"
 	private static let descriptorLimit: rlim_t = 128
 
 	@Test
@@ -39,22 +41,14 @@ struct GameInstallerResourceTests {
 			throw POSIXError(.EMFILE)
 		}
 
-		let cases: [(name: String, filesExist: Bool, verifyAll: Bool, pendingCount: Int)] = [
-			("fresh", false, false, Self.fileCount),
-			("repair", true, true, 0),
-		]
-		for testCase in cases {
-			try await assertPendingDownloads(
-				name: testCase.name,
-				filesExist: testCase.filesExist,
-				verifyAll: testCase.verifyAll,
-				pendingCount: testCase.pendingCount
-			)
-		}
+		try await assertPendingDownloads(
+			name: "fresh", filesExist: false, verifyAll: false, pendingCount: Self.fileCount)
+		try await assertPendingDownloads(
+			name: "repair", filesExist: true, verifyAll: true, pendingCount: 0)
 
 		guard let resultPath = ProcessInfo.processInfo.environment[Self.resultPathEnvironmentKey]
 		else { throw ResourceTestError.missingResultPath }
-		try Data("fresh=180\nrepair=0\n".utf8).write(
+		try Data(Self.expectedResult.utf8).write(
 			to: URL(filePath: resultPath),
 			options: .atomic
 		)
@@ -66,18 +60,10 @@ struct GameInstallerResourceTests {
 		verifyAll: Bool,
 		pendingCount: Int
 	) async throws {
+		let temporary = try TemporaryDirectory("GameInstallerResourceTests-\(name)")
+		defer { temporary.remove() }
 		let manager = FileManager.default
-		let root = manager.temporaryDirectory.appending(
-			path: "GameInstallerResourceTests-\(name)-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		defer {
-			do {
-				try manager.removeItem(at: root)
-			} catch {
-				Issue.record("Could not remove fixture at \(root.path): \(error)")
-			}
-		}
+		let root = temporary.url
 		let resourceDirectory = root.appending(path: "resources", directoryHint: .isDirectory)
 		try manager.createDirectory(at: resourceDirectory, withIntermediateDirectories: true)
 
@@ -126,19 +112,10 @@ struct GameInstallerResourceTests {
 	}
 
 	private func runDescriptorLimitedChild() async throws {
+		let temporary = try TemporaryDirectory("GameInstallerResourceTests-child")
+		defer { temporary.remove() }
 		let manager = FileManager.default
-		let resultDirectory = manager.temporaryDirectory.appending(
-			path: "GameInstallerResourceTests-child-\(UUID().uuidString)",
-			directoryHint: .isDirectory
-		)
-		try manager.createDirectory(at: resultDirectory, withIntermediateDirectories: true)
-		defer {
-			do {
-				try manager.removeItem(at: resultDirectory)
-			} catch {
-				Issue.record("Could not remove child files at \(resultDirectory.path): \(error)")
-			}
-		}
+		let resultDirectory = temporary.url
 		let resultFile = resultDirectory.appending(path: "result.txt")
 		let stdoutFile = resultDirectory.appending(path: "stdout.log")
 		let stderrFile = resultDirectory.appending(path: "stderr.log")
@@ -182,40 +159,25 @@ struct GameInstallerResourceTests {
 				output: stdout + stderr
 			)
 		}
-		guard try String(contentsOf: resultFile, encoding: .utf8) == "fresh=180\nrepair=0\n" else {
+		guard try String(contentsOf: resultFile, encoding: .utf8) == Self.expectedResult else {
 			throw ResourceTestError.childDidNotComplete(output: stdout + stderr)
 		}
 	}
 
 	private func waitForChild(_ process: Process) async throws {
-		let clock = ContinuousClock()
-		let deadline = clock.now.advanced(by: .seconds(60))
-		do {
-			while process.isRunning, clock.now < deadline {
-				try await Task.sleep(for: .milliseconds(50))
-			}
-		} catch {
-			if process.isRunning {
-				_ = kill(process.processIdentifier, SIGKILL)
-				process.waitUntilExit()
-			}
-			throw error
-		}
-		guard !process.isRunning else {
-			process.terminate()
-			let terminationDeadline = clock.now.advanced(by: .seconds(2))
-			while process.isRunning, clock.now < terminationDeadline {
-				try await Task.sleep(for: .milliseconds(50))
-			}
+		let deadline = ContinuousClock.now.advanced(by: .seconds(60))
+		defer {
 			if process.isRunning { _ = kill(process.processIdentifier, SIGKILL) }
 			process.waitUntilExit()
-			throw ResourceTestError.childTimedOut
 		}
-		process.waitUntilExit()
+		while process.isRunning {
+			guard ContinuousClock.now < deadline else { throw ResourceTestError.childTimedOut }
+			try await Task.sleep(for: .milliseconds(50), tolerance: .milliseconds(5))
+		}
 	}
 }
 
-private enum ResourceTestError: Error, CustomStringConvertible {
+private enum ResourceTestError: Error {
 	case missingResultPath
 	case missingTestBundlePath
 	case cannotCreateChildLogs
@@ -223,23 +185,4 @@ private enum ResourceTestError: Error, CustomStringConvertible {
 	case childFailed(status: Int32, output: String)
 	case childDidNotComplete(output: String)
 	case childTimedOut
-
-	var description: String {
-		switch self {
-		case .missingResultPath:
-			"Missing child result path"
-		case .missingTestBundlePath:
-			"Missing SwiftPM test bundle path"
-		case .cannotCreateChildLogs:
-			"Could not create child test logs"
-		case .unexpectedPendingCount(let name, let expected, let actual):
-			"\(name) returned \(actual) pending files; expected \(expected)"
-		case .childFailed(let status, let output):
-			"Low-descriptor child exited with status \(status): \(output)"
-		case .childDidNotComplete(let output):
-			"Low-descriptor child did not run both fixture cases: \(output)"
-		case .childTimedOut:
-			"Low-descriptor child test timed out after 60 seconds"
-		}
-	}
 }

@@ -67,7 +67,7 @@ static struct game_window game_window_info(void) {
 		if (layer.integerValue < 0)
 			continue;
 
-		// SwiftUI Launcher ("Arknights Client")
+		// Skip this launcher's own window, titled "Arknights Client".
 		if ([owner_name isEqualToString:@"Arknights Client"] ||
 		    [name isEqualToString:@"Arknights Client"]) {
 			continue;

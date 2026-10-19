@@ -3,6 +3,7 @@
 import AppKit
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsTestSupport
 import Foundation
 import Testing
 import YouTubePlayerKit
@@ -12,9 +13,12 @@ import YouTubePlayerKit
 @MainActor
 struct BackgroundMusicControllerTests {
 	@Test
-	func newerPlayIntentIgnoresALatePausedStateFromThePreviousRequest() {
-		let (controller, defaults, suiteName) = makeController()
+	func newerPlayIntentIgnoresALatePausedStateFromThePreviousRequest() throws {
+		let temporary = try TemporaryDirectory("BackgroundMusicControllerTests")
+		defer { temporary.remove() }
+		let (defaults, suiteName) = makeIsolatedDefaults("BackgroundMusicControllerTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let controller = makeController(root: temporary.url, defaults: defaults)
 
 		let player = YouTubePlayer(source: .video(id: "test"))
 		controller.player = player
@@ -37,13 +41,7 @@ struct BackgroundMusicControllerTests {
 		#expect(controller.isPlaying)
 	}
 
-	private func makeController() -> (BackgroundMusicController, UserDefaults, String) {
-		let identifier = "BackgroundMusicControllerTests.\(UUID().uuidString)"
-		let root = URL(filePath: NSTemporaryDirectory()).appending(
-			path: identifier,
-			directoryHint: .isDirectory
-		)
-		let defaults = UserDefaults(suiteName: identifier)!
+	private func makeController(root: URL, defaults: UserDefaults) -> BackgroundMusicController {
 		let preferences = LauncherPreferencesStore(defaults: defaults)
 		let paths = AppPaths(
 			applicationSupportDirectory: root.appending(path: "Support"),
@@ -58,15 +56,11 @@ struct BackgroundMusicControllerTests {
 			setRunningIcon: { _ in },
 			defaultIcon: { NSImage(size: NSSize(width: 64, height: 64)) }
 		)
-		return (
-			BackgroundMusicController(
-				lifecycle: lifecycle,
-				settings: LauncherPreferencesController(store: preferences),
-				launcherIconManager: iconManager,
-				openURL: { _ in }
-			),
-			defaults,
-			identifier
+		return BackgroundMusicController(
+			lifecycle: lifecycle,
+			settings: LauncherPreferencesController(store: preferences),
+			launcherIconManager: iconManager,
+			openURL: { _ in }
 		)
 	}
 }

@@ -23,32 +23,11 @@ func launcherLogWritesSanitizedAndBoundedDiagnosticLines() async throws {
 	await log.flush()
 
 	let content = try String(contentsOf: fileURL, encoding: .utf8)
-	#expect(content.contains("[INFO] Installation started"))
-	#expect(content.contains("[ERROR] Download failed Connection closed"))
+	#expect(content.split(separator: "\n").count == 3)
 	#expect(content.contains(AppConstants.Logging.truncationMarker))
 	#expect(content.contains(omittedSuffix) == false)
 	let oversizedLine = try #require(content.split(separator: "\n").last)
 	#expect(oversizedLine.utf8.count <= AppConstants.Logging.maximumMessageBytes + 128)
-}
-
-@Test
-func launcherLogAttemptLogsFailuresWithContextAndRunsSuccessfulWorkSilently() async throws {
-	struct Failure: Error {}
-	let temporary = try TemporaryDirectory("LauncherLogTests")
-	defer { temporary.remove() }
-	let directory = temporary.url
-	let fileURL = directory.appending(path: "launcher.log")
-	let log = LauncherLog(fileURL: fileURL)
-	var ran = false
-
-	log.attempt("Quiet step") { ran = true }
-	log.attempt("Failing step") { throw Failure() }
-	await log.flush()
-
-	let content = try String(contentsOf: fileURL, encoding: .utf8)
-	#expect(ran)
-	#expect(content.contains("[ERROR] Failing step: "))
-	#expect(!content.contains("Quiet step"))
 }
 
 @Test

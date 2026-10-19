@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsInfrastructure
 import Foundation
 
 extension PresetCatalogService {
@@ -9,41 +10,10 @@ extension PresetCatalogService {
 		let epoch = cacheEpoch
 		do {
 			log.info("Fetching remote character table from GameData…")
-			let request = URLRequest(url: Self.characterTableURL)
-			let (data, response) = try await loader.data(
-				for: request,
-				maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
-			)
+			let data = try await characterTableData()
 			guard cacheEpoch == epoch else { return [] }
-			guard response.statusCode == 200 else { throw URLError(.badServerResponse) }
 
-			let parsed = try await Task.detached(priority: .utility) { () -> [PresetAvatar] in
-				let rawEntries = try JSONDecoder().decode(
-					[String: RawCharacterEntry].self,
-					from: data
-				)
-				return rawEntries.compactMap { characterID, entry in
-					guard Self.isValidAvatarIdentifier(characterID),
-						entry.isNotObtainable != true,
-						let rarity = entry.rarity, !rarity.isEmpty
-					else { return nil }
-					let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
-					guard !name.isEmpty else { return nil }
-					return PresetAvatar(
-						id: characterID,
-						name: name,
-						filename: "\(characterID).png",
-						rarity: rarity,
-						appellation: entry.appellation,
-						profession: entry.profession,
-						subProfessionID: entry.subProfessionID,
-						nationID: entry.nationID,
-						groupID: entry.groupID,
-						teamID: entry.teamID,
-						tagList: entry.tagList
-					)
-				}.sorted(by: Self.avatarSortOrder)
-			}.value
+			let parsed = try await Self.parseCharacterTable(data)
 
 			guard cacheEpoch == epoch else { return [] }
 			guard !parsed.isEmpty else { return [] }
@@ -61,6 +31,48 @@ extension PresetCatalogService {
 			guard cacheEpoch == epoch else { return [] }
 			log.error("Failed to fetch remote character table: \(error.localizedDescription)")
 			return []
+		}
+	}
+
+	// Decodes and filters the character table off the actor, so a large catalog never blocks it.
+	@concurrent
+	private static func parseCharacterTable(_ data: Data) async throws -> [PresetAvatar] {
+		let rawEntries = try JSONDecoder().decode([String: RawCharacterEntry].self, from: data)
+		return rawEntries.compactMap { characterID, entry in
+			guard Self.isValidAvatarIdentifier(characterID),
+				entry.isNotObtainable != true,
+				let rarity = entry.rarity, !rarity.isEmpty
+			else { return nil }
+			let name = entry.name.trimmingCharacters(in: .whitespacesAndNewlines)
+			guard !name.isEmpty else { return nil }
+			return PresetAvatar(
+				id: characterID,
+				name: name,
+				filename: "\(characterID).png",
+				rarity: rarity,
+				appellation: entry.appellation,
+				profession: entry.profession,
+				subProfessionID: entry.subProfessionID,
+				nationID: entry.nationID,
+				groupID: entry.groupID,
+				teamID: entry.teamID,
+				tagList: entry.tagList
+			)
+		}.sorted(by: Self.avatarSortOrder)
+	}
+
+	// Returns the first character table that answers; each candidate gets one attempt.
+	private func characterTableData() async throws -> Data {
+		do {
+			let result = try await fetcher.fetch(
+				Self.characterTableURLs.map { URLRequest(url: $0) },
+				policy: HTTPFetchPolicy(
+					maximumBytes: AppConstants.Presets.characterCatalogMaximumBytes
+				)
+			)
+			return result.data
+		} catch HTTPFetchError.unexpectedStatus {
+			throw URLError(.badServerResponse)
 		}
 	}
 

@@ -12,7 +12,6 @@ nonisolated enum MarkdownBlock: Equatable, Sendable {
 	case divider
 }
 
-/// A small hand-rolled block parser for the Markdown constructs used by bundled documents.
 nonisolated struct MarkdownParser: Sendable {
 	let source: String
 

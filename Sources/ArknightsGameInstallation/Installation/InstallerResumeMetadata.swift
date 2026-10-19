@@ -91,13 +91,18 @@ extension GameInstaller {
 		)
 	}
 
+	private static var resumeMetadataStore: JSONFileStore {
+		JSONFileStore(
+			maximumBytes: AppConstants.Game.installerResumeMetadataMaximumBytes,
+			prettyPrinted: false
+		)
+	}
+
 	func resumeMetadataFile(
 		for relativePath: String,
 		in stagingDirectory: InstallerDirectory
 	) -> InstallerFile {
-		let digest = SHA256.hash(data: Data(relativePath.utf8))
-			.map { String(format: "%02x", $0) }
-			.joined()
+		let digest = SHA256.hash(data: Data(relativePath.utf8)).hexString
 		return stagingDirectory.file(named: "resume-\(digest).json")
 	}
 
@@ -110,14 +115,13 @@ extension GameInstaller {
 		}
 		let descriptor = try file.open(flags: O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
 		defer { _ = close(descriptor) }
-		let data = try BoundedFileReader.readRegularFile(
-			fileDescriptor: descriptor,
-			at: file.url,
-			maximumBytes: AppConstants.Game.installerResumeMetadataMaximumBytes
-		)
 		do {
-			return try JSONDecoder().decode(InstallerResumeMetadata.self, from: data)
-		} catch {
+			return try Self.resumeMetadataStore.read(
+				InstallerResumeMetadata.self,
+				fileDescriptor: descriptor,
+				at: file.url
+			)
+		} catch is DecodingError {
 			log?.debug("Ignoring invalid installer resume metadata at \(file.url.path)")
 			try file.unlink()
 			return nil
@@ -128,13 +132,10 @@ extension GameInstaller {
 		_ metadata: InstallerResumeMetadata,
 		to file: InstallerFile
 	) throws {
-		let encoder = JSONEncoder()
-		encoder.outputFormatting = [.sortedKeys]
-		var data = try encoder.encode(metadata)
-		data.append(0x0A)
-		guard data.count <= AppConstants.Game.installerResumeMetadataMaximumBytes else {
+		do {
+			try Self.resumeMetadataStore.write(metadata, to: file.url)
+		} catch JSONFileStoreError.tooLarge {
 			throw LauncherError.invalidResponse
 		}
-		try data.write(to: file.url, options: .atomic)
 	}
 }

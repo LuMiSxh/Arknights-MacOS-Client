@@ -4,8 +4,8 @@ import AppKit
 import ArknightsCore
 import SwiftUI
 
-/// The dominant hue extracted from hero artwork, rendered two ways: a legible signal color
-/// for controls/text, and the same hue desaturated and darkened for tinting neutral chrome.
+// One hue, rendered twice: a legible signal color for controls and text,
+// and a muted tint for neutral chrome.
 struct ExtractedAccent: Sendable {
 	let hue: Double
 	let saturation: Double
@@ -29,66 +29,41 @@ struct ExtractedAccent: Sendable {
 	}
 }
 
-/// Derives a vibrant accent color from the launcher's hero artwork for dynamic theming.
-/// Drawing the thumbnail must stay on the main actor (AppKit drawing isn't thread-safe), but
-/// the pixel scan itself runs on a background executor to keep synchronous image work off UI.
+// The thumbnail is drawn on the main actor because AppKit drawing is not thread-safe.
+// The pixel scan runs off the main actor so synchronous image work stays off the UI.
 @MainActor
 enum WallpaperColorExtractor {
-	/// Returns `nil` when the sampled thumbnail has no pixel with any real hue (e.g.
-	/// grayscale or near-black artwork) — callers fall back to the fixed Arknights cyan and
-	/// the static HUD tint in that case. Otherwise the winning hue's saturation/brightness
-	/// are clamped into a legible range, so any artwork — dark, pale, or neon — yields a
-	/// readable accent.
+	// Returns nil when no sampled pixel has a real hue (grayscale or near-black artwork).
+	// Callers then use the fixed cyan. Otherwise saturation and brightness are clamped into a
+	// legible range, so dark, pale, and neon artwork all yield a readable accent.
 	static func extractAccent(from image: NSImage) async -> ExtractedAccent? {
 		guard let pixels = samplePixels(from: image) else { return nil }
-		return await Task.detached(priority: .utility) {
-			bestAccentColor(in: pixels)
-		}.value
+		return await bestAccentColor(in: pixels)
 	}
 
 	private static func samplePixels(from image: NSImage) -> [UInt8]? {
 		let side = AppConstants.Theme.wallpaperSampleSide
+		let bounds = NSRect(x: 0, y: 0, width: side, height: side)
 		guard
-			let bitmap = NSBitmapImageRep(
-				bitmapDataPlanes: nil,
+			let bitmap = RGBABitmap.render(
 				pixelsWide: side,
 				pixelsHigh: side,
-				bitsPerSample: 8,
-				samplesPerPixel: 4,
-				hasAlpha: true,
-				isPlanar: false,
-				colorSpaceName: .deviceRGB,
-				bytesPerRow: 0,
-				bitsPerPixel: 0
-			),
-			let context = NSGraphicsContext(bitmapImageRep: bitmap)
+				size: bounds.size,
+				draw: { _ in image.draw(in: bounds, from: .zero, operation: .copy, fraction: 1) }
+			)
 		else { return nil }
-
-		NSGraphicsContext.saveGraphicsState()
-		NSGraphicsContext.current = context
-		image.draw(
-			in: NSRect(x: 0, y: 0, width: side, height: side),
-			from: .zero,
-			operation: .copy,
-			fraction: 1
-		)
-		NSGraphicsContext.restoreGraphicsState()
 
 		guard let data = bitmap.bitmapData else { return nil }
 		return Array(UnsafeBufferPointer(start: data, count: side * side * 4))
 	}
 }
 
-/// Pure pixel math with no AppKit dependency, so it can run on `Task.detached`'s background
-/// executor without hopping back to the main actor.
-private func bestAccentColor(in pixels: [UInt8]) -> ExtractedAccent? {
+// Pure pixel math with no AppKit dependency; `@concurrent` keeps the scan off the main actor.
+@concurrent
+private func bestAccentColor(in pixels: [UInt8]) async -> ExtractedAccent? {
 	let side = AppConstants.Theme.wallpaperSampleSide
 	let bucketCount = AppConstants.Theme.accentHueBuckets
-	var bucketScore = [Double](repeating: 0, count: bucketCount)
-	var bucketHueSum = [Double](repeating: 0, count: bucketCount)
-	var bucketSaturationSum = [Double](repeating: 0, count: bucketCount)
-	var bucketBrightnessSum = [Double](repeating: 0, count: bucketCount)
-	var bucketCounts = [Int](repeating: 0, count: bucketCount)
+	var buckets = [HueBucket](repeating: HueBucket(), count: bucketCount)
 
 	for pixel in 0..<(side * side) {
 		let offset = pixel * 4
@@ -108,33 +83,72 @@ private func bestAccentColor(in pixels: [UInt8]) -> ExtractedAccent? {
 		else { continue }
 
 		let bucket = min(bucketCount - 1, Int(hue * Double(bucketCount)))
-		bucketScore[bucket] += saturation * brightness
-		bucketHueSum[bucket] += hue
-		bucketSaturationSum[bucket] += saturation
-		bucketBrightnessSum[bucket] += brightness
-		bucketCounts[bucket] += 1
+		buckets[bucket].add(.sample(hue: hue, saturation: saturation, brightness: brightness))
 	}
 
+	// A hue cluster that straddles a bucket edge (red at 0°/360°) would split its score across
+	// two buckets. Scoring each bucket with its circular neighbors keeps the cluster whole.
+	let windows = buckets.indices.map { center in
+		var window = HueBucket()
+		for neighbor in [center - 1, center, center + 1] {
+			window.add(buckets[(neighbor + bucketCount) % bucketCount])
+		}
+		return window
+	}
 	guard
-		let winner = bucketScore.indices.max(by: { bucketScore[$0] < bucketScore[$1] }),
-		bucketCounts[winner] > 0
+		let winner = windows.indices.max(by: { windows[$0].weight < windows[$1].weight }),
+		windows[winner].weight > 0
 	else { return nil }
 
-	let count = Double(bucketCounts[winner])
+	let window = windows[winner]
 	let renderSaturation = min(
-		max(bucketSaturationSum[winner] / count, AppConstants.Theme.minimumRenderSaturation),
+		max(window.saturation / window.weight, AppConstants.Theme.minimumRenderSaturation),
 		AppConstants.Theme.maximumRenderSaturation
 	)
 	let renderBrightness = min(
-		max(bucketBrightnessSum[winner] / count, AppConstants.Theme.minimumRenderBrightness),
+		max(window.brightness / window.weight, AppConstants.Theme.minimumRenderBrightness),
 		AppConstants.Theme.maximumRenderBrightness
 	)
-	let hue = bucketHueSum[winner] / count
+	// The circular mean is the angle of the summed unit vectors. Shifting by one turn before
+	// wrapping keeps the result in [0, 1) when the angle is negative.
+	let turns = atan2(window.sine, window.cosine) / (2 * .pi)
+	let hue = (turns + 1).truncatingRemainder(dividingBy: 1)
 	return ExtractedAccent(
 		hue: hue,
 		saturation: renderSaturation,
 		brightness: renderBrightness
 	)
+}
+
+// Hue is stored as a weighted unit vector (cosine and sine), so a hue window that crosses
+// 0°/360° still averages correctly.
+private struct HueBucket {
+	var weight = 0.0
+	var cosine = 0.0
+	var sine = 0.0
+	var saturation = 0.0
+	var brightness = 0.0
+
+	// Weighting by saturation² × brightness lets a small vivid accent beat a large muted area.
+	static func sample(hue: Double, saturation: Double, brightness: Double) -> HueBucket {
+		let weight = saturation * saturation * brightness
+		let angle = 2 * Double.pi * hue
+		return HueBucket(
+			weight: weight,
+			cosine: weight * cos(angle),
+			sine: weight * sin(angle),
+			saturation: weight * saturation,
+			brightness: weight * brightness
+		)
+	}
+
+	mutating func add(_ other: HueBucket) {
+		weight += other.weight
+		cosine += other.cosine
+		sine += other.sine
+		saturation += other.saturation
+		brightness += other.brightness
+	}
 }
 
 private func hsb(

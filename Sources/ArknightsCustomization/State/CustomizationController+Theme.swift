@@ -5,8 +5,8 @@ import ArknightsCore
 import SwiftUI
 
 extension CustomizationController {
-	/// Keeps Dynamic Theme state aligned with the current artwork and the region supplied by the
-	/// caller, while rejecting a delayed extraction for artwork that is no longer visible.
+	// Keeps Dynamic Theme state aligned with the current artwork and the region supplied by the
+	// caller, while rejecting a delayed extraction for artwork that is no longer visible.
 	package func updateThemeColor() {
 		let themeOperationID = UUID()
 		self.themeOperationID = themeOperationID

@@ -6,7 +6,6 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// Owns launcher artwork, Dynamic Theme, and launcher/game icon customizations.
 @MainActor
 @Observable
 package final class CustomizationController {
@@ -35,15 +34,15 @@ package final class CustomizationController {
 	package private(set) var hasCustomAppIcon = false
 	package private(set) var hasCompletedInitialArtworkLoad = false
 	package private(set) var hasCustomGameIcon = false
-	/// Flips once `restoreInitialArtwork(for:)` finishes, so the launcher window can stay
-	/// hidden until it has real wallpaper/logo to show instead of a placeholder.
+	// Flips once `restoreInitialArtwork(for:)` finishes, so the launcher window can stay
+	// hidden until it has real wallpaper/logo to show instead of a placeholder.
 	package var dynamicThemeHue: Double?
 	package var accentColor: Color = LauncherVisuals.cyan
 	package var hudTintColor: Color = LauncherVisuals.hudGlassTint
 	package private(set) var activeThemeCacheKey: String?
-	/// Increments only when the persisted custom artwork changes. Branding refreshes use this
-	/// generation to reject an official image that was already in flight when the user chose a
-	/// custom image.
+	// Increments only when the persisted custom artwork changes. Branding refreshes use this
+	// generation to reject an official image that was already in flight when the user chose a
+	// custom image.
 	package private(set) var customArtworkGeneration: UInt64 = 0
 	package private(set) var hasPersistedCustomArtwork = false
 	let dataLoader: DataLoader
@@ -106,7 +105,7 @@ package final class CustomizationController {
 		)
 	}
 
-	/// Designated initializer. Tests inject the I/O and rendering seams through it.
+	// Designated initializer. Tests inject the I/O and rendering seams through it.
 	init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,

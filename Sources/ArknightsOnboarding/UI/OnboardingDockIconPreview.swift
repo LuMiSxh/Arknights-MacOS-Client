@@ -6,8 +6,8 @@ import ArknightsCustomization
 import ArknightsGameInstallation
 import SwiftUI
 
-/// Shows the launcher and game Dock icons as they are right now, so choosing an operator has a
-/// visible result inside setup.
+// Shows the launcher and game Dock icons as they are right now, so choosing an operator has a
+// visible result inside setup.
 struct OnboardingDockIconPreview: View {
 	let customization: CustomizationController
 	@State private var gameIcon: NSImage?

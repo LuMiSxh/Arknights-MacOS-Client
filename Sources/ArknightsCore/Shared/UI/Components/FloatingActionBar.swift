@@ -84,7 +84,6 @@ private struct FloatingActionBarHeightPreferenceKey: PreferenceKey {
 	}
 }
 
-/// Standard confirmation action used by floating modal footers.
 package struct FloatingDoneButton: View {
 	var title = "Done"
 	package let accentColor: Color

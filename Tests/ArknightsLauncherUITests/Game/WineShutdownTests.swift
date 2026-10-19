@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Darwin
 import Dispatch
 import Foundation
@@ -10,37 +11,23 @@ import Testing
 @testable import ArknightsLauncherUI
 
 @Test
-func asynchronousStopWaitsForWineServerToReleaseThePrefix() async throws {
-	let fileManager = FileManager.default
-	let root = fileManager.temporaryDirectory.appending(
-		path: "wine-shutdown-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: root) }
-	let runtimeDirectory = root.appending(path: "Runtime/bin", directoryHint: .isDirectory)
-	try fileManager.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
-	let executable = runtimeDirectory.appending(path: "Arknights")
+func stopReturnsOnlyAfterWineserverWaitReleasesThePrefix() async throws {
+	let storage = try TemporaryDirectory("wine-shutdown")
+	defer { storage.remove() }
+	let root = storage.url
 	let trace = root.appending(path: "commands.log")
 	let waitingMarker = root.appending(path: "wait-started")
 	let releaseMarker = root.appending(path: "release-wait")
-	let script = """
-		#!/bin/sh
-		printf '%s\\n' "$1" >> '\(trace.path)'
-		if [ "$1" = "-w" ]; then
-		  : > '\(waitingMarker.path)'
-		  while [ ! -e '\(releaseMarker.path)' ]; do /bin/sleep 0.01; done
-		fi
-		"""
-	try Data(script.utf8).write(to: runtimeDirectory.appending(path: "wineserver"))
-	try fileManager.setAttributes(
-		[.posixPermissions: 0o755],
-		ofItemAtPath: runtimeDirectory.appending(path: "wineserver").path
-	)
-	let runtime = WineRuntime(
-		executableURL: executable,
-		displayName: "Fixture",
-		revision: "fixture",
-		compatibilityManager: GameCompatibilityManager(active: [])
+	let runtime = try makeWineRuntime(
+		root: root,
+		wineserverScript: """
+			#!/bin/sh
+			printf '%s\\n' "$1" >> '\(trace.path)'
+			if [ "$1" = "-w" ]; then
+			  : > '\(waitingMarker.path)'
+			  while [ ! -e '\(releaseMarker.path)' ]; do /bin/sleep 0.01; done
+			fi
+			"""
 	)
 	let stop = Task {
 		try await runtime.stop(
@@ -49,81 +36,65 @@ func asynchronousStopWaitsForWineServerToReleaseThePrefix() async throws {
 
 	let reachedWait = await waitForFixtureFile(waitingMarker, timeout: .seconds(1))
 	#expect(reachedWait)
-	if !reachedWait {
-		try? Data().write(to: releaseMarker)
-		try await stop.value
-		let commands = try String(contentsOf: trace, encoding: .utf8)
-		#expect(commands == "-k\n-w\n")
-		return
+	if reachedWait {
+		#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 	}
-	let commandsBeforeRelease = try String(contentsOf: trace, encoding: .utf8)
-	#expect(commandsBeforeRelease == "-k\n-w\n")
+	// Release the fake wineserver on every path so the stop task can finish.
 	try Data().write(to: releaseMarker)
 	try await stop.value
-	try await assertWineserverWaitIsAuthoritativeWhenKillFindsNoServer()
+	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 }
 
-private func assertWineserverWaitIsAuthoritativeWhenKillFindsNoServer() async throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: "wine-kill-status-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
+@Test(arguments: [(Int32(0), true), (Int32(1), false)])
+func stopIsAuthoritativeWhenKillFindsNoServer(waitStatus: Int32, succeeds: Bool) async throws {
+	let storage = try TemporaryDirectory("wine-kill-status")
+	defer { storage.remove() }
+	let root = storage.url
+	let trace = root.appending(path: "commands.log")
+	let runtime = try makeWineRuntime(
+		root: root,
+		wineserverScript: """
+			#!/bin/sh
+			printf '%s\\n' "$1" >> '\(trace.path)'
+			if [ "$1" = "-k" ]; then exit 1; fi
+			exit \(waitStatus)
+			"""
 	)
-	defer { try? FileManager.default.removeItem(at: root) }
-	for (name, waitStatus, shouldSucceed) in [
-		("already-stopped", 0, true),
-		("still-running", 1, false),
-	] {
-		let fixture = try makeWineserverStatusFixture(
-			at: root.appending(path: name, directoryHint: .isDirectory),
-			killStatus: 1,
-			waitStatus: Int32(waitStatus)
+
+	var didFail = false
+	do {
+		try await runtime.stop(
+			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
+			timeout: .seconds(1)
 		)
-		var didFail = false
-		do {
-			try await fixture.runtime.stop(
-				prefixDirectory: fixture.prefixDirectory,
-				timeout: .seconds(1)
-			)
-		} catch {
-			didFail = true
-		}
-		#expect(didFail == !shouldSucceed)
-		#expect(try String(contentsOf: fixture.trace, encoding: .utf8) == "-k\n-w\n")
+	} catch {
+		didFail = true
 	}
+	#expect(didFail == !succeeds)
+	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 }
 
 @Test
 func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
-	let root = FileManager.default.temporaryDirectory.appending(
-		path: "wine-helper-retirement-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-	defer { try? FileManager.default.removeItem(at: root) }
-	let runtimeDirectory = root.appending(path: "Runtime/bin", directoryHint: .isDirectory)
-	try FileManager.default.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
+	let storage = try TemporaryDirectory("wine-helper-retirement")
+	defer { storage.remove() }
+	let root = storage.url
 	let fifo = root.appending(path: "block")
 	let started = root.appending(path: "started")
 	let delayedConnection = root.appending(path: "late-server-connection")
 	let fifoStatus = fifo.path.withCString { Darwin.mkfifo($0, 0o600) }
 	#expect(fifoStatus == 0)
 	let trace = root.appending(path: "commands.log")
-	let wineserverScript = """
-		#!/bin/sh
-		printf '%s\\n' "$1" >> '\(trace.path)'
-		if [ "$1" = "-k" ]; then
-		  if [ -e '\(delayedConnection.path)' ]; then exit 0; else exit 1; fi
-		fi
-		exit 0
-		"""
-	let wineserver = runtimeDirectory.appending(path: "wineserver")
-	try Data(wineserverScript.utf8).write(to: wineserver)
-	try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wineserver.path)
-	let runtime = WineRuntime(
-		executableURL: runtimeDirectory.appending(path: "Arknights"),
-		displayName: "Fixture",
-		revision: "fixture",
-		compatibilityManager: GameCompatibilityManager(active: [])
+	let runtime = try makeWineRuntime(
+		root: root,
+		wineserverScript: """
+			#!/bin/sh
+			printf '%s\\n' "$1" >> '\(trace.path)'
+			if [ "$1" = "-k" ]; then
+			  if [ -e '\(delayedConnection.path)' ]; then exit 0; else exit 1; fi
+			fi
+			exit 0
+			"""
 	)
 	let prefixDirectory = root.appending(path: "prefix", directoryHint: .isDirectory)
 	let spawnGate = WineProcessSpawnGate()
@@ -195,7 +166,7 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 	pendingRegistryMigration: Bool
 ) async throws {
 	let fixture = try makeLaunchFixture(pendingRegistryMigration: pendingRegistryMigration)
-	defer { try? FileManager.default.removeItem(at: fixture.root) }
+	defer { fixture.storage.remove() }
 	let api = BlockingBrandingAPI()
 	let model = makeModel(api: api, installer: ControllableInstaller())
 	await api.waitForBrandingRequest()
@@ -273,45 +244,23 @@ private func waitForFixtureFile(_ url: URL, timeout: Duration) async -> Bool {
 	return FileManager.default.fileExists(atPath: url.path)
 }
 
-private struct WineserverStatusFixture {
-	let runtime: WineRuntime
-	let prefixDirectory: URL
-	let trace: URL
-}
-
-private func makeWineserverStatusFixture(
-	at root: URL,
-	killStatus: Int32,
-	waitStatus: Int32
-) throws -> WineserverStatusFixture {
-	let fileManager = FileManager.default
+/// Writes an executable fake `wineserver` into `root/Runtime/bin` and returns a runtime that uses it.
+private func makeWineRuntime(root: URL, wineserverScript: String) throws -> WineRuntime {
 	let runtimeDirectory = root.appending(path: "Runtime/bin", directoryHint: .isDirectory)
-	try fileManager.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
-	let trace = root.appending(path: "commands.log")
-	let script = """
-		#!/bin/sh
-		printf '%s\\n' "$1" >> '\(trace.path)'
-		if [ "$1" = "-k" ]; then exit \(killStatus); fi
-		exit \(waitStatus)
-		"""
+	try FileManager.default.createDirectory(at: runtimeDirectory, withIntermediateDirectories: true)
 	let wineserver = runtimeDirectory.appending(path: "wineserver")
-	try Data(script.utf8).write(to: wineserver)
-	try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wineserver.path)
-	let runtime = WineRuntime(
+	try Data(wineserverScript.utf8).write(to: wineserver)
+	try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: wineserver.path)
+	return WineRuntime(
 		executableURL: runtimeDirectory.appending(path: "Arknights"),
 		displayName: "Fixture",
 		revision: "fixture",
 		compatibilityManager: GameCompatibilityManager(active: [])
 	)
-	return WineserverStatusFixture(
-		runtime: runtime,
-		prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
-		trace: trace
-	)
 }
 
 private struct LaunchFixture {
-	let root: URL
+	let storage: TemporaryDirectory
 	let runtime: WineRuntime
 	let prefixDirectory: URL
 	let gameExecutable: URL
@@ -320,12 +269,10 @@ private struct LaunchFixture {
 	let helperSpawnMarker: URL
 }
 
-private func makeLaunchFixture(pendingRegistryMigration: Bool = false) throws -> LaunchFixture {
+private func makeLaunchFixture(pendingRegistryMigration: Bool) throws -> LaunchFixture {
 	let fileManager = FileManager.default
-	let root = fileManager.temporaryDirectory.appending(
-		path: "wine-launch-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
+	let storage = try TemporaryDirectory("wine-launch-test")
+	let root = storage.url
 	let runtimeRoot = root.appending(path: "Runtime", directoryHint: .isDirectory)
 	let runtimeDirectory = runtimeRoot.appending(path: "bin", directoryHint: .isDirectory)
 	let gameDirectory = root.appending(path: "Game", directoryHint: .isDirectory)
@@ -362,15 +309,10 @@ private func makeLaunchFixture(pendingRegistryMigration: Bool = false) throws ->
 		),
 		to: prefixDirectory
 	)
-	for architecture in ["x64"] {
-		let payloadDirectory = runtimeRoot.appending(
-			path: "DXMT/\(architecture)",
-			directoryHint: .isDirectory
-		)
-		try fileManager.createDirectory(at: payloadDirectory, withIntermediateDirectories: true)
-		for library in WineRuntime.dxmtLibraryNames {
-			try Data("fixture".utf8).write(to: payloadDirectory.appending(path: library))
-		}
+	let payloadDirectory = runtimeRoot.appending(path: "DXMT/x64", directoryHint: .isDirectory)
+	try fileManager.createDirectory(at: payloadDirectory, withIntermediateDirectories: true)
+	for library in WineRuntime.dxmtLibraryNames {
+		try Data("fixture".utf8).write(to: payloadDirectory.appending(path: library))
 	}
 	let runtime = WineRuntime(
 		executableURL: executable,
@@ -379,7 +321,7 @@ private func makeLaunchFixture(pendingRegistryMigration: Bool = false) throws ->
 		compatibilityManager: GameCompatibilityManager(active: [])
 	)
 	return LaunchFixture(
-		root: root,
+		storage: storage,
 		runtime: runtime,
 		prefixDirectory: prefixDirectory,
 		gameExecutable: gameExecutable,

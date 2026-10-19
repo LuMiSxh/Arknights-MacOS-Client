@@ -33,8 +33,8 @@ extension CustomizationController {
 		}
 	}
 
-	/// With Dynamic Theme active the themed icon replaces the custom one directly. Clearing the
-	/// bundle icon first lets the Dock re-read the untinted default over the themed result.
+	// With Dynamic Theme active the themed icon replaces the custom one directly. Clearing the
+	// bundle icon first lets the Dock re-read the untinted default over the themed result.
 	private func restoreLauncherIcon() -> Bool {
 		if usesDynamicTheme(), heroArtwork != nil { return true }
 		return launcherIconManager.reset()
@@ -119,17 +119,10 @@ extension CustomizationController {
 			do {
 				let data = try await dataLoader(sourceURL)
 				guard self.ownsPassiveIconRefresh(token) else { return }
-				guard
-					let icons = AppIconRenderer.createPresetIconPair(
-						from: data,
-						accentHue: hue
-					),
-					let launcherTIFF = icons.launcher.tiffRepresentation,
-					let gameTIFF = icons.game.tiffRepresentation
-				else { throw CustomizationError.cannotEncodeAppIcon }
-				async let launcherPNG = CustomizationImageIO.encodePNG(fromTIFF: launcherTIFF)
-				async let gamePNG = CustomizationImageIO.encodePNG(fromTIFF: gameTIFF)
-				let encodedIcons = try await (launcherPNG, gamePNG)
+				let rendered = await AppIconRenderer.renderPresetIcons(from: data, accentHue: hue)
+				guard self.ownsPassiveIconRefresh(token) else { return }
+				guard let icons = rendered else { throw CustomizationError.cannotEncodeAppIcon }
+				let encodedIcons = try await CustomizationImageIO.encodePNGs(of: icons)
 				guard self.ownsPassiveIconRefresh(token) else { return }
 				let launcherStage = CustomizationImageIO.stagedURL(
 					for: self.paths.customAppIcon,
@@ -143,9 +136,9 @@ extension CustomizationController {
 					CustomizationImageIO.discard(launcherStage, log: log)
 					CustomizationImageIO.discard(gameStage, log: log)
 				}
-				try await self.dataStager(encodedIcons.0, launcherStage)
+				try await self.dataStager(encodedIcons.launcher, launcherStage)
 				guard self.ownsPassiveIconRefresh(token) else { return }
-				try await self.dataStager(encodedIcons.1, gameStage)
+				try await self.dataStager(encodedIcons.game, gameStage)
 				guard self.ownsPassiveIconRefresh(token) else { return }
 				let replacements = [
 					(staged: launcherStage, destination: self.paths.customAppIcon),
@@ -231,18 +224,13 @@ extension CustomizationController {
 		defer { finishIconMutation(id) }
 		let source = paths.operatorPresetAvatar
 		do {
-			try await Task.detached(priority: .userInitiated) {
-				try CustomizationImageIO.validate(data, source: source)
-			}.value
-			guard operatorIconOperationID == id,
-				let icons = AppIconRenderer.createPresetIconPair(
-					from: data, accentHue: dynamicThemeHue),
-				let launcherTIFF = icons.launcher.tiffRepresentation,
-				let gameTIFF = icons.game.tiffRepresentation
-			else { throw CustomizationError.cannotEncodeAppIcon }
-			async let launcher = CustomizationImageIO.encodePNG(fromTIFF: launcherTIFF)
-			async let game = CustomizationImageIO.encodePNG(fromTIFF: gameTIFF)
-			let encoded = try await (launcher, game)
+			try await CustomizationImageIO.validateOffMainActor(data, source: source)
+			let hue = dynamicThemeHue
+			let rendered = await AppIconRenderer.renderPresetIcons(from: data, accentHue: hue)
+			guard operatorIconOperationID == id, let icons = rendered else {
+				throw CustomizationError.cannotEncodeAppIcon
+			}
+			let encoded = try await CustomizationImageIO.encodePNGs(of: icons)
 			guard operatorIconOperationID == id else { return }
 			let app = CustomizationImageIO.stagedURL(for: paths.customAppIcon, operationID: id)
 			let gameURL = CustomizationImageIO.stagedURL(for: paths.customGameIcon, operationID: id)
@@ -250,9 +238,9 @@ extension CustomizationController {
 			defer {
 				for url in [app, gameURL, sourceURL] { CustomizationImageIO.discard(url, log: log) }
 			}
-			try await dataStager(encoded.0, app)
+			try await dataStager(encoded.launcher, app)
 			guard operatorIconOperationID == id else { return }
-			try await dataStager(encoded.1, gameURL)
+			try await dataStager(encoded.game, gameURL)
 			guard operatorIconOperationID == id else { return }
 			try await dataStager(data, sourceURL)
 			guard operatorIconOperationID == id else { return }
@@ -299,14 +287,14 @@ extension CustomizationController {
 			do {
 				let data = try await load(url)
 				guard self.operatorIconOperationID == id else { return }
-				guard let raw = NSImage(data: data) else {
+				let padded = await AppIconRenderer.renderPaddedIcon(from: data)
+				guard self.operatorIconOperationID == id else { return }
+				guard let padded else {
 					self.lifecycle.show(CustomizationError.invalidCustomImage(url))
 					return
 				}
 				try CustomizationImageIO.removeIfPresent(self.paths.operatorPresetAvatar)
-				await self.persistCustomIcon(
-					AppIconRenderer.padToAppleGrid(image: raw), operationID: id,
-					isAppIcon: isAppIcon)
+				await self.persistCustomIcon(padded, operationID: id, isAppIcon: isAppIcon)
 			} catch {
 				guard self.operatorIconOperationID == id else { return }
 				self.lifecycle.show(error)
@@ -314,12 +302,12 @@ extension CustomizationController {
 		}
 	}
 
-	private func persistCustomIcon(_ image: NSImage, operationID id: UUID, isAppIcon: Bool) async {
+	private func persistCustomIcon(
+		_ icon: RenderedIcon, operationID id: UUID, isAppIcon: Bool
+	) async {
 		do {
-			guard let tiff = image.tiffRepresentation else {
-				throw CustomizationError.cannotEncodeAppIcon
-			}
-			let png = try await CustomizationImageIO.encodePNG(fromTIFF: tiff)
+			let image = icon.image
+			let png = try await CustomizationImageIO.encodePNG(of: icon)
 			guard operatorIconOperationID == id else { return }
 			let destination = isAppIcon ? paths.customAppIcon : paths.customGameIcon
 			let staged = CustomizationImageIO.stagedURL(for: destination, operationID: id)

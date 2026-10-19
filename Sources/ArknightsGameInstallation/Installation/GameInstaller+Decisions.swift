@@ -10,11 +10,12 @@ extension GameInstaller {
 	) async throws -> (GameManifest, CDNConfiguration) {
 		do {
 			return try await operation()
-		} catch is CancellationError {
-			throw CancellationError()
-		} catch let error as HTTPTransportError {
-			if Task.isCancelled { throw CancellationError() }
-			throw Self.launcherError(for: error)
+		} catch {
+			let resolved = HTTPCancellation.resolve(error)
+			if let transportError = resolved as? HTTPTransportError {
+				throw Self.launcherError(for: transportError)
+			}
+			throw resolved
 		}
 	}
 
@@ -30,11 +31,8 @@ extension GameInstaller {
 		}
 	}
 
-	/// Decides whether an existing destination can be reused for the supplied manifest entry.
-	///
-	/// Normal updates trust the checksum stored in the previous manifest after confirming the
-	/// file size. Repair mode, and installations created before file metadata was recorded,
-	/// verify the destination checksum instead.
+	// Normal updates trust the previous manifest's checksum after a size check. Repair, and
+	// installs created before file metadata was recorded, hash the destination instead.
 	static func needsDownload(
 		_ item: ManifestFile,
 		destinationSize: Int64?,

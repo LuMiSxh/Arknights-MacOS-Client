@@ -4,11 +4,11 @@ import AppKit
 import ArknightsCore
 import Foundation
 
-/// Whether to run the game and its login browser at full backing-store resolution, derived
-/// from the current screen's scale factor, the selected rendering mode, and a `--no-retina`
-/// override. MetalFX keeps Wine's point-sized surfaces and lets DXMT multiply the layer's
-/// content scale, so its default 2x factor reaches the backing store; a runtime without
-/// MetalFX support falls back to Standard rendering.
+// Whether to run the game and its login browser at full backing-store resolution, derived
+// from the current screen's scale factor, the selected rendering mode, and a `--no-retina`
+// override. MetalFX keeps Wine's point-sized surfaces and lets DXMT multiply the layer's
+// content scale, so its default 2x factor reaches the backing store; a runtime without
+// MetalFX support falls back to Standard rendering.
 struct WineDisplayConfiguration: Equatable, Sendable {
 	let retinaEnabled: Bool
 	let metalFXUpscalingEnabled: Bool

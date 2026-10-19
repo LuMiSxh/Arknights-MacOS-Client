@@ -8,36 +8,23 @@ import SwiftUI
 /// read as a change use `fade(reduceMotion:)`.
 package enum LauncherMotion {
 	package enum Curve {
-		/// Immediate, critically damped response while a control is held down.
 		case press
-		/// Springy settle after a press ends.
 		case release
-		/// Hover lift and pointer highlights.
 		case hover
 		/// Structural layout changes such as appearing controls, status swaps, and content
 		/// revealed inside an already visible surface.
 		case state
-		/// Primary action shape and label morphing between operations.
 		case morph
-		/// Popups, overlays, and HUD pill expansion entering the window.
 		case present
 		/// Popups and overlays leaving the window; faster than presentation.
 		case dismiss
-		/// Artwork, wordmark, and theme crossfades.
 		case crossfade
-		/// Selection state changes in lists and segmented controls.
 		case select
-		/// Page and step transitions.
 		case page
-		/// Determinate progress fill changes.
 		case progress
-		/// Dimming backdrop behind popups.
 		case backdrop
-		/// Expanding ripple on completion.
 		case ripple
-		/// Quick ease-in as an element settles out.
 		case settle
-		/// Disclosure of inline detail content.
 		case disclosure
 
 		package var animation: Animation {
@@ -61,47 +48,41 @@ package enum LauncherMotion {
 		}
 	}
 
-	/// Looping and one-shot durations shared by decorative motion.
 	package enum Cycle {
 		/// Period in seconds of the halo pulse and the indeterminate pulse.
 		static let breathing: TimeInterval = 3.2
-		/// Duration of the completion feedback.
 		package static let completionFeedback: Duration = .milliseconds(400)
 		/// Progress sweep phase durations in seconds: fade in, travel, fade out, then pause.
 		static let progressSweepFadeIn = 0.12
 		static let progressSweepTravel = 1.40
 		static let progressSweepFadeOut = 0.25
 		static let progressSweepPause = 0.55
-		/// Laps of the indeterminate glint around the outline.
 		static let indeterminateOrbitLaps = 2.0
-		/// Length of the indeterminate glint.
 		static let indeterminateGlintLength = 0.14
 	}
 
-	/// Delay between siblings that enter together, such as HUD pills.
 	static let staggerStep = 0.045
+	static let expandedContentDelay: TimeInterval = 0.06
+	static let modalEntranceDelay: TimeInterval = 0.08
+	package static let overlayEntranceScale: CGFloat = 0.90
 	package static let pressedScale: CGFloat = 0.95
 	package static let hoverScale: CGFloat = 1.025
-	/// Gentler press feedback for large tiles, rows, and dense pills.
 	static let subtlePressedScale: CGFloat = 0.97
 	static let subtleHoverScale: CGFloat = 1.01
 	package static func animation(_ curve: Curve, reduceMotion: Bool) -> Animation? {
 		reduceMotion ? nil : curve.animation
 	}
 
-	/// A quiet opacity-only fade that keeps state changes legible under Reduce Motion.
 	package static func fade(reduceMotion: Bool) -> Animation {
 		reduceMotion ? .easeInOut(duration: 0.15) : Curve.state.animation
 	}
 
-	/// Staggered entry for the sibling at `index`.
 	package static func staggered(_ curve: Curve, index: Int, reduceMotion: Bool) -> Animation? {
 		guard !reduceMotion else { return nil }
 		return curve.animation.delay(Double(max(index, 0)) * staggerStep)
 	}
 }
 
-/// Blur, scale, offset, and opacity combined so content materialises instead of popping in.
 private struct MaterializeModifier: ViewModifier {
 	let blur: CGFloat
 	let scale: CGFloat

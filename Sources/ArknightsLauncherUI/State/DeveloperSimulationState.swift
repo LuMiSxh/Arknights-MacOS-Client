@@ -33,7 +33,7 @@ import ArknightsGameInstallation
 				}
 			}
 		}
-		/// The raw value is the pill identifier `LauncherHUDView` expands.
+		// The raw value is the pill identifier `LauncherHUDView` expands.
 		enum Pill: String, CaseIterable { case none, music, version, status }
 
 		static let launcherUpdateVersion = "0.6.1"
@@ -67,7 +67,6 @@ import ArknightsGameInstallation
 			arguments.contains("--developer-preview")
 		}
 
-		/// Whether the selected region is installed.
 		var isInstalled: Bool {
 			get { installedRegions.contains(selectedRegion) }
 			set {

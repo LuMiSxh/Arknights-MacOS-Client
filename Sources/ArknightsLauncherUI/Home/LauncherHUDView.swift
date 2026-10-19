@@ -17,7 +17,7 @@ struct LauncherHUDView: View {
 	package let accentColor: Color
 	let hudTintColor: Color
 	let musicController: BackgroundMusicController
-	package let actions: LauncherHUDActions
+	let actions: LauncherHUDActions
 	let developerExpandedPill: String?
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var expandedPill: ExpandedPill?
@@ -106,8 +106,8 @@ struct LauncherHUDView: View {
 		.padding(16)
 	}
 
-	/// Only takes up the 10pt of VStack spacing above `controlBar` when at least one pill
-	/// has content — mirrors the visibility checks inside the pill views.
+	// Takes the 10pt VStack spacing above `controlBar` only when a pill has content, mirroring the
+	// pill visibility checks.
 	@ViewBuilder
 	private var hudPillRow: some View {
 		if hasMusicPill || hasVersionPill || hasStatusPill {
@@ -191,7 +191,7 @@ struct LauncherHUDView: View {
 		.materialize(reduceMotion: reduceMotion, scale: 0.88, blur: 6, anchor: .trailing)
 	}
 
-	/// Pills rise out of the control bar one after another instead of popping in together.
+	// Pills rise out of the control bar one after another instead of popping in together.
 	private func hudPillTransition(index: Int) -> AnyTransition {
 		let insertion = AnyTransition.materialize(
 			reduceMotion: reduceMotion,
@@ -212,7 +212,7 @@ struct LauncherHUDView: View {
 		return .asymmetric(insertion: insertion, removal: removal)
 	}
 
-	/// Recedes the pills that are not expanded so the open panel reads as the focus.
+	// Recedes the pills that are not expanded so the open panel reads as the focus.
 	private func siblingFocus(for pill: ExpandedPill) -> HUDSiblingFocus {
 		HUDSiblingFocus(
 			isReceded: expandedPill != nil && expandedPill != pill,

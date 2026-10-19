@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -8,11 +9,9 @@ import Testing
 @Test
 func winePrefixUsesOnlyIsolatedFoldersAndGameDrive() throws {
 	let fileManager = FileManager.default
-	let root = fileManager.temporaryDirectory.appending(
-		path: "arknights-prefix-test-\(UUID().uuidString)",
-		directoryHint: .isDirectory
-	)
-	defer { try? fileManager.removeItem(at: root) }
+	let temporary = try TemporaryDirectory("WinePrefixConfiguratorTests")
+	defer { temporary.remove() }
+	let root = temporary.url
 
 	let prefix = root.appending(path: "prefix", directoryHint: .isDirectory)
 	let dosDevices = prefix.appending(path: "dosdevices", directoryHint: .isDirectory)

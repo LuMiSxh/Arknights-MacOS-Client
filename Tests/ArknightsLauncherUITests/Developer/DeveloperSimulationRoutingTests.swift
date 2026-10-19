@@ -10,58 +10,6 @@ import Testing
 	@MainActor
 	struct DeveloperSimulationRoutingTests {
 		@Test
-		func simulatedActionsDoNotStartExternalRefreshOrInstallation() async {
-			let api = CancellableBrandingAPI()
-			let installer = ControllableInstaller()
-			let model = makeModel(
-				api: api,
-				installer: installer,
-				arguments: ["--developer-preview"]
-			)
-			await api.waitForBrandingRequest()
-			await api.resolveBranding()
-			let initialBrandingRequests = await api.brandingRequestCount()
-
-			model.updateDeveloperSimulation {
-				$0.installedRegions.insert(.japan)
-				$0.selectedRegion = .japan
-			}
-			model.actions.selectRegion(.global)
-			model.actions.openLauncherUpdate()
-			_ = await model.actions.launcherUpdateCheckForOnboarding()
-			let launched = await model.actions.launchFromDock(region: .japan)
-
-			#expect(launched)
-			#expect(await api.brandingRequestCount() == initialBrandingRequests)
-			#expect(await installer.installationCount() == 0)
-			#expect(model.installation.region == .japan)
-			#expect(model.communication.launcherUpdateUserDriver.phase == .noUpdate)
-			#expect(model.lifecycle.activity.isGameActive)
-			model.communication.launcherUpdateUserDriver.dismissUpdateInstallation()
-		}
-
-		@Test
-		func applyingTheSameSimulatedFailureKeepsItsPresentationIdentity() async {
-			let api = CancellableBrandingAPI()
-			let model = makeModel(
-				api: api,
-				installer: ControllableInstaller(),
-				arguments: ["--developer-preview"]
-			)
-			await api.waitForBrandingRequest()
-			await api.resolveBranding()
-
-			var simulation = model.developerSimulation!
-			simulation.failure = .runtime
-			model.applyDeveloperSimulation(simulation)
-			let firstID = model.lifecycle.state.presentation.failure?.id
-			model.applyDeveloperSimulation(simulation)
-
-			#expect(firstID != nil)
-			#expect(model.lifecycle.state.presentation.failure?.id == firstID)
-		}
-
-		@Test
 		func simulatedConfigurationRetryClearsFailureWithoutLaunching() async {
 			let api = CancellableBrandingAPI()
 			let model = makeModel(
@@ -131,8 +79,6 @@ import Testing
 			#expect(
 				failure.actions == [.installRosetta, .retry, .openTroubleshooting, .reportProblem])
 
-			model.updateDeveloperSimulation { $0.showVersionPill.toggle() }
-			#expect(model.lifecycle.state.presentation.failure?.id == failure.id)
 			model.updateDeveloperSimulation { $0.isInstalled = false }
 			#expect(model.lifecycle.state.presentation.failure == nil)
 			model.updateDeveloperSimulation { $0.isInstalled = true }

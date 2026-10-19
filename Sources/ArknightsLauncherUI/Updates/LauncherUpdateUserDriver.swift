@@ -18,7 +18,6 @@ enum LauncherUpdatePhase: Equatable {
 	case failed
 }
 
-/// Bridges Sparkle's callbacks to the launcher's one custom update presentation.
 @MainActor
 @Observable
 final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
@@ -40,7 +39,6 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	private(set) var relaunched = false
 	var message: String?
 
-	/// The one Sparkle reply the user can currently answer.
 	enum PendingReply {
 		case choice((SPUUserUpdateChoice) -> Void)
 		case acknowledgement(() -> Void)

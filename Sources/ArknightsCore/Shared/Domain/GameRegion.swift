@@ -139,15 +139,12 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 
 	package var clientVariant: GameClientVariant { clientProfile.variant }
 
-	/// Whether the region is hidden until the corresponding canary permission is enabled.
 	package var requiresCanaryPermission: Bool { clientProfile.requiresCanaryPermission }
 
-	/// Environment flags selected by this client profile when its game process launches.
 	package var runtimeEnvironmentOverrides: [String: String] {
 		clientProfile.runtimeEnvironmentOverrides
 	}
 
-	/// Whether Play must show the ACE compatibility warning before launching.
 	package var requiresACEWarning: Bool { clientProfile.requiresACEWarning }
 
 	/// Matches the publisher's client identifier where the launcher contract defines one.

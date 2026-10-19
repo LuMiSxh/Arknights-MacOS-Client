@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import ArknightsCore
 import CryptoKit
 import Foundation
@@ -47,21 +48,41 @@ enum CustomizationImageIO {
 		}
 	}
 
-	// Startup-critical: the launcher stays covered until the cached artwork and its Dynamic Theme
-	// accent are restored. `@concurrent` would run at the caller's priority, so these two keep an
-	// explicit `.userInitiated` task to avoid queueing behind other startup work.
+	@concurrent
 	static func load(_ url: URL) async throws -> Data {
-		try await Task.detached(priority: .userInitiated) {
-			try readValidatedArtwork(at: url)
-		}.value
+		try readValidatedArtwork(at: url)
 	}
 
+	@concurrent
 	static func prepareArtwork(_ data: Data, source: URL) async throws -> String {
-		try await Task.detached(priority: .userInitiated) {
-			try validate(data, source: source)
-			let digest = SHA256.hash(data: data)
-			return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
-		}.value
+		try validate(data, source: source)
+		let digest = SHA256.hash(data: data)
+		return "custom.\(digest.map { String(format: "%02x", $0) }.joined())"
+	}
+
+	@concurrent
+	static func validateOffMainActor(_ data: Data, source: URL) async throws {
+		try validate(data, source: source)
+	}
+
+	// Decodes full-size artwork off the main actor; `NSImage(data:)` would defer the decode to
+	// the first draw. The thumbnail API is used only to honor EXIF orientation.
+	@concurrent
+	static func decodeImage(_ data: Data) async -> CGImage? {
+		guard
+			let source = CGImageSourceCreateWithData(data as CFData, nil),
+			let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+				as? [CFString: Any],
+			let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
+			let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue
+		else { return nil }
+		let options: [CFString: Any] = [
+			kCGImageSourceCreateThumbnailFromImageAlways: true,
+			kCGImageSourceThumbnailMaxPixelSize: max(width, height),
+			kCGImageSourceCreateThumbnailWithTransform: true,
+			kCGImageSourceShouldCacheImmediately: true,
+		]
+		return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
 	}
 
 	private static func readValidatedArtwork(at url: URL) throws -> Data {
@@ -241,9 +262,19 @@ enum CustomizationImageIO {
 	}
 
 	@concurrent
-	static func encodePNG(fromTIFF data: Data) async throws -> Data {
+	static func encodePNGs(of pair: RenderedIconPair) async throws -> (launcher: Data, game: Data) {
+		(try pngData(of: pair.launcher), try pngData(of: pair.game))
+	}
+
+	@concurrent
+	static func encodePNG(of icon: RenderedIcon) async throws -> Data {
+		try pngData(of: icon.image)
+	}
+
+	private static func pngData(of image: NSImage) throws -> Data {
 		guard
-			let source = CGImageSourceCreateWithData(data as CFData, nil),
+			let tiff = image.tiffRepresentation,
+			let source = CGImageSourceCreateWithData(tiff as CFData, nil),
 			let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
 		else { throw CustomizationError.cannotEncodeAppIcon }
 		let output = NSMutableData()

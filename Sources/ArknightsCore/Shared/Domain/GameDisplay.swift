@@ -2,7 +2,6 @@
 
 import AppKit
 
-/// How the game's frames reach a scaled (Retina) display.
 package enum GameRenderingMode: String, CaseIterable, Codable, Sendable {
 	/// Wine RetinaMode: the game renders every backing-store pixel.
 	case retina
@@ -12,7 +11,6 @@ package enum GameRenderingMode: String, CaseIterable, Codable, Sendable {
 	case standard
 }
 
-/// A width and height, either in macOS points (window size) or in game pixels.
 package struct GameDisplaySize: Codable, Hashable, Sendable {
 	package let width: Int
 	package let height: Int
@@ -20,7 +18,6 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	package static let defaultWindow = GameDisplaySize(width: 1280, height: 720)
 	static let validDimensions = 320...16_384
 
-	/// Window sizes offered in the launcher, measured like macOS Display settings.
 	static let windowPresets: [GameDisplaySize] = [
 		(960, 540), (1024, 576), (1152, 648), (1280, 720), (1280, 800), (1440, 810),
 		(1440, 900), (1600, 900), (1680, 1050), (1920, 1080), (1920, 1200), (2048, 1152),
@@ -32,7 +29,7 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 		self.height = height
 	}
 
-	/// Resolutions of the official client, largest first. `GameLaunchOptions.resolution` is one of these.
+	// Resolutions of the official client, largest first. `GameLaunchOptions.resolution` is one of these.
 	static let officialResolutions: [GameDisplaySize] = [
 		(3840, 2160), (2560, 1440), (2048, 1080), (1920, 1200), (1920, 1080), (1680, 1050),
 		(1600, 1200), (1600, 1024), (1600, 900), (1440, 1080), (1360, 768), (1280, 960),
@@ -44,7 +41,6 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	package static let fullHD = GameDisplaySize(width: 1920, height: 1080)
 	package static let hd = GameDisplaySize(width: 1280, height: 720)
 
-	/// The official resolution with the most pixels that fits within `size`.
 	static func largestOfficial(fitting size: GameDisplaySize) -> GameDisplaySize? {
 		officialResolutions.filter { $0.fits(in: size) }.max { $0.pixelCount < $1.pixelCount }
 	}
@@ -103,9 +99,7 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 /// bar its primary display, and the game opens fullscreen on the primary display. It is read at
 /// every launch, so rearranging or swapping displays needs no setting change.
 package struct GameFullscreenDisplay: Equatable, Sendable {
-	/// The display's size in macOS points.
 	let pointSize: GameDisplaySize
-	/// Backing-store pixels per point.
 	let backingScale: Int
 
 	@MainActor package static var primary: GameFullscreenDisplay? {
@@ -119,11 +113,10 @@ package struct GameFullscreenDisplay: Equatable, Sendable {
 		)
 	}
 
-	/// The display's full resolution, which Native fullscreen shows.
 	package var pixelSize: GameDisplaySize { pointSize.scaled(by: backingScale) }
 
-	/// The pixels the game draws to show `shown`: all of them with Retina, otherwise one per
-	/// point, which MetalFX or macOS then scales up.
+	// The pixels the game draws to show `shown`: all of them with Retina, otherwise one per
+	// point, which MetalFX or macOS then scales up.
 	func drawnSize(showing shown: GameDisplaySize, retina: Bool) -> GameDisplaySize {
 		guard !retina, backingScale > 1 else { return shown }
 		return GameDisplaySize(
@@ -131,7 +124,6 @@ package struct GameFullscreenDisplay: Equatable, Sendable {
 	}
 }
 
-/// How a launch renders on a display, so the launcher can describe it before the game starts.
 package struct GameDisplayPlan: Equatable, Sendable {
 	package enum Scaling: Equatable, Sendable {
 		case native
@@ -143,7 +135,6 @@ package struct GameDisplayPlan: Equatable, Sendable {
 	package let renderSize: GameDisplaySize?
 	/// Game pixels per macOS point; the in-game resolution is a window size times this value.
 	package let gamePixelsPerPoint: Int
-	/// Pixels of the display's backing store per macOS point.
 	let backingScale: Int
 	package let scaling: Scaling
 

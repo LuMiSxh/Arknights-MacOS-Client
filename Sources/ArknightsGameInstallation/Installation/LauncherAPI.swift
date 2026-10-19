@@ -15,7 +15,7 @@ package actor LauncherAPI {
 	static let launcherVersion = "1.8.1"
 
 	private let salt = "DE7108E9B2842FD460F4777702727869"
-	private let loader: BoundedHTTPDataLoader
+	private let client: LauncherHTTPClient
 	private let decoder: JSONDecoder
 	private let maximumAPIResponseBytes: Int
 	private let maximumManifestResponseBytes: Int
@@ -26,9 +26,15 @@ package actor LauncherAPI {
 		maximumAPIResponseBytes: Int = AppConstants.Network.yostarAPIResponseMaximumBytes,
 		maximumManifestResponseBytes: Int = AppConstants.Network.yostarManifestMaximumBytes
 	) {
-		loader = BoundedHTTPDataLoader(
-			session: session,
-			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		client = LauncherHTTPClient(
+			apiName: "Yostar",
+			style: .contextual,
+			fetcher: CheckedHTTPFetcher(
+				loader: BoundedHTTPDataLoader(
+					session: session,
+					maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+				)
+			)
 		)
 		self.maximumAPIResponseBytes = maximumAPIResponseBytes
 		self.maximumManifestResponseBytes = maximumManifestResponseBytes
@@ -98,7 +104,7 @@ package actor LauncherAPI {
 			URLQueryItem(name: "file_path", value: configuration.gameLatestFilePath),
 		]
 		guard let locationURL = components?.url else {
-			throw requestError(
+			throw client.requestError(
 				operation: "manifest location",
 				region: region,
 				url: region.apiBaseURL,
@@ -119,26 +125,17 @@ package actor LauncherAPI {
 	) async throws -> (manifest: GameManifest, byteCount: Int) {
 		var manifestRequest = URLRequest(url: url)
 		manifestRequest.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-		let (data, response) = try await responseData(
+		let (data, response) = try await client.data(
 			for: manifestRequest,
 			maximumBytes: maximumManifestResponseBytes,
 			operation: "manifest download",
 			region: region,
-			url: url
+			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: region)
 		)
-		guard response.statusCode == 200 else {
-			throw requestError(
-				operation: "manifest download",
-				region: region,
-				url: url,
-				statusCode: response.statusCode,
-				reason: "unexpected HTTP status"
-			)
-		}
 		do {
 			return (try decoder.decode(GameManifest.self, from: data), data.count)
 		} catch {
-			throw requestError(
+			throw client.requestError(
 				operation: "manifest download",
 				region: region,
 				url: url,
@@ -155,7 +152,7 @@ package actor LauncherAPI {
 		let head =
 			"{\"game_tag\":\"\(region.gameTag)\",\"time\":\(timestamp),\"version\":\"\(Self.launcherVersion)\"}"
 		let digest = Insecure.MD5.hash(data: Data("\(head)\(salt)".utf8))
-		let signature = digest.map { String(format: "%02x", $0) }.joined()
+		let signature = digest.hexString
 		return "{\"head\":\(head),\"sign\":\"\(signature)\"}"
 	}
 
@@ -179,27 +176,18 @@ package actor LauncherAPI {
 		var request = URLRequest(url: url)
 		request.setValue(authorizationHeader(region: region), forHTTPHeaderField: "Authorization")
 		request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
-		let (data, response) = try await responseData(
+		let (data, response) = try await client.data(
 			for: request,
 			maximumBytes: maximumAPIResponseBytes,
 			operation: operation,
 			region: region,
-			url: url
+			redirectValidator: DownloadHTTPPolicy.redirectValidator(for: region)
 		)
-		guard response.statusCode == 200 else {
-			throw requestError(
-				operation: operation,
-				region: region,
-				url: url,
-				statusCode: response.statusCode,
-				reason: "unexpected HTTP status"
-			)
-		}
 		let envelope: APIEnvelope<Value>
 		do {
 			envelope = try decoder.decode(APIEnvelope<Value>.self, from: data)
 		} catch {
-			throw requestError(
+			throw client.requestError(
 				operation: operation,
 				region: region,
 				url: url,
@@ -212,96 +200,15 @@ package actor LauncherAPI {
 				code: envelope.code,
 				message: envelope.msg ?? "Unknown error"
 			)
-			throw requestError(
+			throw client.requestError(
 				operation: operation,
 				region: region,
 				url: url,
 				statusCode: response.statusCode,
 				reason: "API envelope code \(envelope.code): \(envelope.msg ?? "Unknown error")",
-				userMessage: serverError.localizedDescription
+				underlying: serverError
 			)
 		}
 		return envelope.data
-	}
-
-	private func responseData(
-		for request: URLRequest,
-		maximumBytes: Int,
-		operation: String,
-		region: GameRegion,
-		url: URL
-	) async throws -> (Data, HTTPURLResponse) {
-		do {
-			return try await loader.data(
-				for: request,
-				maximumBytes: maximumBytes,
-				redirectValidator: DownloadHTTPPolicy.redirectValidator(for: region)
-			)
-		} catch is CancellationError {
-			throw CancellationError()
-		} catch let error as HTTPTransportError {
-			if Task.isCancelled { throw CancellationError() }
-			switch error {
-			case .redirectRejected(let rejectedURL):
-				throw requestError(
-					operation: operation,
-					region: region,
-					url: url,
-					reason: "redirect refused unsupported origin "
-						+ (rejectedURL.host ?? "unknown"),
-					userMessage: LauncherError.invalidResponse.localizedDescription
-				)
-			case .responseTooLarge(let responseURL, let limit):
-				throw requestError(
-					operation: operation,
-					region: region,
-					url: url,
-					reason: "response exceeded \(limit) bytes",
-					userMessage: LauncherError.remoteContentTooLarge(
-						responseURL, maximumBytes: limit
-					).localizedDescription
-				)
-			case .responseSizeMismatch(_, let expected, let actual):
-				throw requestError(
-					operation: operation,
-					region: region,
-					url: url,
-					reason: "response size was \(actual) bytes; expected \(expected)"
-				)
-			case .invalidResponse:
-				throw requestError(
-					operation: operation,
-					region: region,
-					url: url,
-					reason: "response was not HTTP"
-				)
-			}
-		} catch {
-			throw requestError(
-				operation: operation,
-				region: region,
-				url: url,
-				reason: "transport error: \(error.localizedDescription)"
-			)
-		}
-	}
-
-	private func requestError(
-		operation: String,
-		region: GameRegion,
-		url: URL,
-		statusCode: Int? = nil,
-		reason: String,
-		userMessage: String = LauncherError.invalidResponse.localizedDescription
-	) -> ContextualLauncherError {
-		let endpoint = [url.host, url.path.isEmpty ? nil : url.path]
-			.compactMap { $0 }
-			.joined()
-		let status = statusCode.map { " status=\($0)" } ?? ""
-		return ContextualLauncherError(
-			userMessage: userMessage,
-			diagnosticDescription:
-				"Yostar API request failed; operation=\(operation); region=\(region.displayName); endpoint=\(endpoint);\(status) reason=\(reason)"
-		)
 	}
 }

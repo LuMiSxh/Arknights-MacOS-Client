@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Darwin
 import Foundation
 import Testing
@@ -7,6 +8,7 @@ import Testing
 @testable import ArknightsGameRuntime
 
 private struct DeduplicationFixture {
+	let temporary: TemporaryDirectory
 	let root: URL
 	let runtimeRoot: URL
 	let prefix: URL
@@ -14,8 +16,8 @@ private struct DeduplicationFixture {
 	let prefixLibraries: URL
 
 	init() throws {
-		root = FileManager.default.temporaryDirectory
-			.appending(path: "dedup-\(UUID().uuidString)", directoryHint: .isDirectory)
+		temporary = try TemporaryDirectory("WinePrefixLibraryDeduplicatorTests")
+		root = temporary.url
 		runtimeRoot = root.appending(path: "Runtime", directoryHint: .isDirectory)
 		prefix = root.appending(path: "Prefix", directoryHint: .isDirectory)
 		runtimeLibraries = runtimeRoot.appending(
@@ -44,7 +46,7 @@ private struct DeduplicationFixture {
 	}
 
 	func remove() {
-		try? FileManager.default.removeItem(at: root)
+		temporary.remove()
 	}
 }
 

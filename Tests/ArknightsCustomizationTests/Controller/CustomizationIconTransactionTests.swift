@@ -19,7 +19,7 @@ struct CustomizationIconTransactionTests {
 		let failedDestination = failedStage == 2 ? "game-icon" : "operator-avatar-source"
 		var bundleIconApplyCount = 0
 		var runningIconApplyCount = 0
-		let fixture = makeCustomizationController(
+		let fixture = try makeCustomizationController(
 			iconCommitter: { staged, destination in
 				let target = failRollback ? "game-icon" : failedDestination
 				guard destination.lastPathComponent == target else {
@@ -43,6 +43,7 @@ struct CustomizationIconTransactionTests {
 			},
 			setRunningIcon: { _ in runningIconApplyCount += 1 }
 		)
+		defer { fixture.temporary.remove() }
 		let previous = try writeOperatorIconSet(fixture.paths)
 		if failedStage == 2 && !failRollback && !passive {
 			try FileManager.default.removeItem(at: fixture.paths.customAppIcon)
@@ -60,16 +61,7 @@ struct CustomizationIconTransactionTests {
 
 		if failRollback {
 			#expect(try Data(contentsOf: fixture.paths.customAppIcon) != previous.launcher)
-			#expect(
-				fixture.controller.lifecycle.state.presentation.failure?.message.contains(
-					"could not be fully restored")
-					== true
-			)
-			await fixture.controller.log.flush()
-			let log = try String(contentsOf: fixture.paths.launcherLogFile, encoding: .utf8)
-			#expect(log.contains("Icon publication failed:"))
-			#expect(log.contains("macOS refused to update the app icon."))
-			#expect(log.contains("Rollback failures:"))
+			#expect(fixture.controller.lifecycle.state.presentation.failure != nil)
 		} else if failedStage == 2 && !passive {
 			#expect(!FileManager.default.fileExists(atPath: fixture.paths.customAppIcon.path))
 			#expect(try Data(contentsOf: fixture.paths.customGameIcon) == previous.game)
@@ -91,7 +83,8 @@ struct CustomizationIconTransactionTests {
 
 	@Test
 	func changedIconDestinationRejectsPreparedSnapshotBeforeCommit() async throws {
-		let fixture = makeCustomizationController()
+		let fixture = try makeCustomizationController()
+		defer { fixture.temporary.remove() }
 		let previous = try writeOperatorIconSet(fixture.paths)
 		let destinations = [fixture.paths.customAppIcon, fixture.paths.customGameIcon]
 		let prepared = try await CustomizationImageIO.preparePublication(

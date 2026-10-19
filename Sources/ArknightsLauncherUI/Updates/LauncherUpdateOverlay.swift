@@ -19,7 +19,7 @@ enum LauncherUpdateOverlayPresentation {
 
 	static func motion(reduceMotion: Bool) -> Motion {
 		guard !reduceMotion else { return .immediate }
-		return .animated(initialDialogScale: 0.90)
+		return .animated(initialDialogScale: LauncherMotion.overlayEntranceScale)
 	}
 }
 
@@ -77,7 +77,6 @@ struct LauncherUpdateOverlay: View {
 		return 1
 	}
 
-	/// The dialog starts soft and slightly low, then springs into focus.
 	private var initialDialogBlur: CGFloat {
 		if case .animated = motion { return 10 }
 		return 0

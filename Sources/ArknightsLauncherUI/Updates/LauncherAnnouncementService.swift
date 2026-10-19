@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsGameInstallation
 import ArknightsInfrastructure
 import Foundation
 internal import Sparkle
@@ -11,9 +10,8 @@ nonisolated struct LauncherAnnouncementFeed: Decodable, Sendable {
 	let announcements: [LauncherAnnouncement]
 }
 
-/// A repository-hosted, one-time message; `isEligible` is the single gate for whether it's
-/// shown, checking the seen-IDs set, an active date window, version bounds, and field limits
-/// together so a malformed or already-dismissed entry can't surface.
+// `isEligible` is the single gate: seen IDs, date window, version bounds, and field limits are
+// checked together so a malformed or already-dismissed entry cannot surface.
 nonisolated struct LauncherAnnouncement: Decodable, Sendable, Equatable, Identifiable {
 	let id: String
 	let enabled: Bool
@@ -48,9 +46,9 @@ nonisolated struct LauncherAnnouncement: Decodable, Sendable, Equatable, Identif
 		return true
 	}
 
-	/// Orders two release tags with Sparkle's comparator. Sparkle ignores a "-prerelease" suffix,
-	/// so the core versions compare first, then a prerelease sorts before its release. A leading
-	/// "v" and "+build" metadata are ignored. Returns nil for a non-version.
+	// Orders two release tags with Sparkle's comparator. Sparkle ignores a "-prerelease" suffix,
+	// so the core versions compare first, then a prerelease sorts before its release. A leading
+	// "v" and "+build" metadata are ignored. Returns nil for a non-version.
 	static func compare(_ lhs: String, _ rhs: String) -> ComparisonResult? {
 		guard let lhs = normalized(lhs), let rhs = normalized(rhs) else { return nil }
 		let comparator = SUStandardVersionComparator()
@@ -76,15 +74,16 @@ nonisolated struct LauncherAnnouncement: Decodable, Sendable, Equatable, Identif
 	}
 }
 
-/// Fetches this repository's `announcements.json` for one-time project messages, separate
-/// from Yostar's own in-game notices.
+// Yostar's in-game notices are a separate feed; this one is the project's own `announcements.json`.
 nonisolated struct LauncherAnnouncementService: Sendable {
-	private let loader: BoundedHTTPDataLoader
+	private let fetcher: CheckedHTTPFetcher
 
 	init(session: URLSession = .shared) {
-		loader = BoundedHTTPDataLoader(
-			session: session,
-			maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+		fetcher = CheckedHTTPFetcher(
+			loader: BoundedHTTPDataLoader(
+				session: session,
+				maximumBufferedBytes: AppConstants.Network.maximumBufferedStreamBytes
+			)
 		)
 	}
 
@@ -93,27 +92,25 @@ nonisolated struct LauncherAnnouncementService: Sendable {
 		request.cachePolicy = .reloadRevalidatingCacheData
 		request.setValue("application/vnd.github.raw+json", forHTTPHeaderField: "Accept")
 		request.setValue("ArknightsClient", forHTTPHeaderField: "User-Agent")
-		let data: Data
-		let response: HTTPURLResponse
+		let result: HTTPFetchResult
 		do {
-			(data, response) = try await loader.data(
-				for: request,
-				maximumBytes: AppConstants.Network.announcementFeedMaximumBytes
+			result = try await fetcher.fetch(
+				[request],
+				policy: HTTPFetchPolicy(
+					maximumBytes: AppConstants.Network.announcementFeedMaximumBytes,
+					acceptedStatusCodes: [200, 404]
+				)
 			)
-		} catch is CancellationError {
-			throw CancellationError()
 		} catch let error as HTTPTransportError {
-			if Task.isCancelled { throw CancellationError() }
 			throw Self.mapTransportError(error)
-		}
-		if response.statusCode == 404 { return [] }
-		guard response.statusCode == 200 else {
+		} catch is HTTPFetchError {
 			throw LauncherError.invalidResponse
 		}
+		if result.response.statusCode == 404 { return [] }
 
 		let decoder = JSONDecoder()
 		decoder.dateDecodingStrategy = .iso8601
-		let feed = try decoder.decode(LauncherAnnouncementFeed.self, from: data)
+		let feed = try decoder.decode(LauncherAnnouncementFeed.self, from: result.data)
 		guard feed.schemaVersion == 1, feed.announcements.count <= 20 else {
 			throw LauncherError.invalidResponse
 		}
@@ -121,6 +118,11 @@ nonisolated struct LauncherAnnouncementService: Sendable {
 	}
 
 	private static func mapTransportError(_ error: HTTPTransportError) -> any Error {
-		GameInstaller.launcherError(for: error)
+		switch error {
+		case .responseTooLarge(let url, let maximumBytes):
+			LauncherError.remoteContentTooLarge(url, maximumBytes: maximumBytes)
+		case .responseSizeMismatch, .invalidResponse, .redirectRejected:
+			LauncherError.invalidResponse
+		}
 	}
 }

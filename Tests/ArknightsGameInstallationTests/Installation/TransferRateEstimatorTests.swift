@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -48,28 +49,4 @@ func counterExcludesResumeBaselineAndRollsBackNetworkBytes() async throws {
 	#expect(rolledBack.downloadedBytes == 4_000)
 	#expect(rolledBack.networkDownloadedBytes == 0)
 	#expect(rolledBack.transferRateBytesPerSecond == nil)
-}
-
-/// A clock that moves only when a test advances it. Sleeping is unsupported.
-final class AdvancingClock: Clock, @unchecked Sendable {
-	struct Instant: InstantProtocol {
-		var offset: Duration
-		func advanced(by duration: Duration) -> Instant { Instant(offset: offset + duration) }
-		func duration(to other: Instant) -> Duration { other.offset - offset }
-		static func < (lhs: Instant, rhs: Instant) -> Bool { lhs.offset < rhs.offset }
-	}
-
-	private let lock = NSLock()
-	private var elapsed = Duration.zero
-
-	var now: Instant { lock.withLock { Instant(offset: elapsed) } }
-	var minimumResolution: Duration { .zero }
-
-	func advance(by duration: Duration) {
-		lock.withLock { elapsed += duration }
-	}
-
-	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
-		throw CancellationError()
-	}
 }

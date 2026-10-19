@@ -7,7 +7,6 @@ import ArknightsGameRuntime
 import Foundation
 import Observation
 
-/// Composes feature-owned launcher controllers and coordinates application startup.
 @MainActor
 @Observable
 package final class LauncherViewModel {

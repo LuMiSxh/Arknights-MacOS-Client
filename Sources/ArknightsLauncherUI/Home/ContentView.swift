@@ -15,7 +15,7 @@ package struct ContentView: View {
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-	@State package var presentation = LauncherPresentationArbiter()
+	@State var presentation = LauncherPresentationArbiter()
 	@State var confirmation: LauncherConfirmation?
 	@State var repairFailureID: UUID?
 	@State var decorativeMotionVisibility = DecorativeMotionVisibility()

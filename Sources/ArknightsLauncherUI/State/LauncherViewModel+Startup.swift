@@ -14,7 +14,7 @@ extension LauncherViewModel {
 		self.init(api: LauncherAPI(), paths: paths, preferences: preferences, arguments: arguments)
 	}
 
-	/// Launch arguments that shape the startup sequence. A retry after a storage failure reuses them.
+	// Launch arguments that shape the startup sequence. A retry after a storage failure reuses them.
 	struct StartupOptions: Sendable {
 		var installOnLaunch = false
 		var launchAfterInstall = false
@@ -29,11 +29,11 @@ extension LauncherViewModel {
 		}
 	}
 
-	/// Migrates storage, then runs the normal startup work. Only a storage failure stops the sequence.
+	// Only a storage failure stops the sequence; other startup work runs after migration.
 	func beginStartup() {
 		let persistedInstallDirectories = preferences.persistedInstallDirectories()
 		storageMigrationFailureID = nil
-		// Startup runs from idle. Without a lease the migration still runs, as before.
+		// Startup runs from idle. Without a lease the migration still runs.
 		let activityLease = lifecycle.begin(.maintaining(.migratingStorage))
 		lifecycle.setStatus(.migratingStorage)
 		startupTask = Task { [paths] in
@@ -60,8 +60,6 @@ extension LauncherViewModel {
 		}
 	}
 
-	/// Starts the startup sequence again for the recorded failure. The failure must be current and
-	/// the launcher must be idle.
 	@discardableResult
 	func retryStorageMigration(failureID: UUID) -> Bool {
 		guard storageMigrationFailureID == failureID,
