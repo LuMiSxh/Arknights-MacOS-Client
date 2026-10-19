@@ -65,8 +65,9 @@ struct IntelTranslationControllerTests {
 					"-c", "trap '' TERM; echo $$ > '\(pidFile.path)'; while :; do :; done",
 				])
 		}
+		// The shell creates the file before it writes the PID, so wait for the complete line.
 		let processStarted = await waitForCondition(timeout: .seconds(5)) {
-			FileManager.default.fileExists(atPath: pidFile.path)
+			(try? String(contentsOf: pidFile, encoding: .utf8))?.hasSuffix("\n") == true
 		}
 		try #require(processStarted)
 		let cancellationStarted = clock.now
