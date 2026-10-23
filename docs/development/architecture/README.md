@@ -52,19 +52,19 @@ owning controller, or explicit values and actions.
 
 Each long-lived state and each asynchronous task has one feature owner:
 
-| Owner                             | Responsibility                                                                                       |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `LauncherLifecycleStore`          | Exclusive activity, refresh state, launch readiness, status, failure UI                              |
-| `InstallationController`          | Region, install directory, installed state, resumable install/update/repair tasks, progress, removal |
-| `GameSessionController`           | Runtime discovery, prefix maintenance, launch options, Wine processes, Game Mode, diagnostics        |
-| `IntelTranslationController`      | Rosetta preflight, installation, recovery state, launch eligibility                                  |
-| `LauncherRefreshController`       | Concurrent configuration and branding refreshes, stale-result rejection, region transitions          |
-| `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, presets                                             |
-| `BackgroundMusicController`       | Playlist parsing, playback, Now Playing metadata, fades, music-link presentation                     |
-| `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, popup order                                        |
-| `LauncherPreferencesController`   | Persisted settings and the region-aware server-reset timer                                           |
-| `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                    |
-| `StorageOverviewController`       | Async usage measurement for installations, runtime data, caches, logs                                |
+| Owner                             | Responsibility                                                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LauncherLifecycleStore`          | Exclusive activity, refresh state, launch readiness, status, failure UI                                                                        |
+| `InstallationController`          | Region, install directory, installed state, resumable install/update/repair tasks, progress, removal                                           |
+| `GameSessionController`           | Runtime discovery, prefix maintenance, launch options, Wine processes, Game Mode, diagnostics                                                  |
+| `IntelTranslationController`      | Rosetta preflight, installation, recovery state, launch eligibility                                                                            |
+| `LauncherRefreshController`       | Concurrent configuration and branding refreshes, stale-result rejection, region transitions                                                    |
+| `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, presets                                                                                       |
+| `BackgroundMusicController`       | Playlist parsing, playback, Now Playing metadata, fades, music-link presentation. Created in `ArknightsClientApp`, not in `LauncherViewModel`. |
+| `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, popup order                                                                                  |
+| `LauncherPreferencesController`   | Persisted settings and the region-aware server-reset timer                                                                                     |
+| `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                                                              |
+| `StorageOverviewController`       | Async usage measurement for installations, runtime data, caches, logs                                                                          |
 
 The composition root owns these controllers:
 
@@ -156,7 +156,7 @@ and resource layout), and `runtime.json` (runtime layout) through `scripts/lib/p
 
 ## Bundled resources
 
-`Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app
+`Sources/ArknightsCore/Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app bundle.
 bundle. Each entry states its path, kind, origin, and encoding.
 
 | Origin    | Staged by                       | Read from                                                    |

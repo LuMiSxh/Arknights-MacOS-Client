@@ -108,7 +108,7 @@ download list does not depend on which check finishes first.
 3. Files with equal size sort by path.
 
 One install-wide monitor (`InstallProgressMonitor`) reports transfer rate and stalls. `install` cancels
-it and waits for it before it returns. Only the HUD progress leaf, `HUDProgressSurface`, reads
+it and waits for it before it returns. Only the HUD progress leaf, `LauncherHUDProgressSurface`, reads
 per-tick progress.
 
 ## Manifest and path safety

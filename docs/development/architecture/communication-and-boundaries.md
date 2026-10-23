@@ -124,7 +124,7 @@ flowchart LR
 - Manifest paths cannot escape the selected game directory. See
   [Installation architecture](installation.md#manifest-and-path-safety).
 - The launcher never handles credentials or intercepts Vuplex pages. Remote action links must use HTTPS.
-- [`runtime.json`](../../../runtime.json) pins runtime versions and source revisions.
+- [`RUNTIME.json`](../../../runtime.json) pins runtime versions and source revisions.
 
 > [!WARNING]
 > A popup or notice is not an authorization boundary. Keep remote content out of process execution,
