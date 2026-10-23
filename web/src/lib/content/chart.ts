@@ -14,12 +14,39 @@ export const CHART_METRICS = [
 
 export type ChartMetric = (typeof CHART_METRICS)[number];
 
-/** The subset the summary table shows. The rest is diagnostic detail for developers. */
+/** The subset the summary table and the stat cards show. The rest is developer detail. */
 export const SUMMARY_METRICS = [
 	'cpu_percent',
 	'gpu_device_percent',
 	'resident_mib'
 ] as const;
+
+export const SUMMARY_METRIC_LABELS: Record<
+	(typeof SUMMARY_METRICS)[number],
+	string
+> = {
+	cpu_percent: 'CPU',
+	gpu_device_percent: 'GPU',
+	resident_mib: 'Memory'
+};
+
+/** Memory reads better in GB; the rest are percentages. */
+export function formatMetricValue(
+	metric: (typeof SUMMARY_METRICS)[number],
+	value: number
+): string {
+	return metric === 'resident_mib'
+		? `${(value / 1024).toFixed(1)} GB`
+		: `${value.toFixed(1)} %`;
+}
+
+/** Percent change against the reference run, with a typographic minus. */
+export function formatMetricDelta(value: number, reference: number): string {
+	if (!reference) return '—';
+	const change = ((value - reference) / reference) * 100;
+	const sign = change < 0 ? '−' : '+';
+	return `${sign}${Math.abs(change).toFixed(0)} %`;
+}
 
 export const CHART_METRIC_LABELS: Record<ChartMetric, string> = {
 	cpu_percent: 'CPU (% of one core)',
@@ -52,9 +79,10 @@ export const CHART_METRIC_UNITS: Record<ChartMetric, string> = {
 export interface ChartSpec {
 	src: string;
 	metric?: ChartMetric;
-	mode?: 'timeseries' | 'summary';
+	mode?: 'timeseries' | 'summary' | 'stats';
 	title?: string;
 	unit?: string;
+	caption?: string;
 	height?: number;
 }
 

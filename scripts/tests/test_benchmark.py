@@ -282,6 +282,32 @@ def test_export_writes_a_web_dataset(tmp_path: Path) -> None:
     assert dataset["runs"][0]["samples"][0]["power_source"] == "AC Power"
 
 
+def test_export_adds_an_extra_run(tmp_path: Path) -> None:
+    baseline = tmp_path / "baseline"
+    candidate = tmp_path / "candidate"
+    extra = tmp_path / "extra"
+    write_run(baseline, "arknights-client", 12.0)
+    write_run(candidate, "playcover", 8.0)
+    write_run(extra, "arknights-client", 9.0)
+    output = tmp_path / "dataset.json"
+
+    benchmark.export(
+        baseline,
+        candidate,
+        output=output,
+        extra=extra,
+        extra_label="Arknights Client (MetalFX)",
+    )
+
+    dataset = json.loads(output.read_text())
+    assert [run["label"] for run in dataset["runs"]] == [
+        "Arknights Client",
+        "PlayCover",
+        "Arknights Client (MetalFX)",
+    ]
+    assert dataset["runs"][2]["samples"][0]["cpu_percent"] == 9.0
+
+
 def test_downsample_keeps_the_last_sample() -> None:
     samples = [{"elapsed_seconds": float(index)} for index in range(10)]
     selected = benchmark._downsample(samples, 3)

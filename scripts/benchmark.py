@@ -614,16 +614,22 @@ def export(
     title: str = "",
     baseline_label: str = "",
     candidate_label: str = "",
+    extra: Path | None = None,
+    extra_label: str = "",
     maximum_samples: int = 600,
 ) -> Path:
-    baseline_run = _read_run(baseline, baseline_label, maximum_samples)
-    candidate_run = _read_run(candidate, candidate_label, maximum_samples)
+    runs = [
+        _read_run(baseline, baseline_label, maximum_samples),
+        _read_run(candidate, candidate_label, maximum_samples),
+    ]
+    if extra is not None:
+        runs.append(_read_run(extra, extra_label, maximum_samples))
     dataset = {
         "schemaVersion": 1,
         "title": title or "Arknights Client vs PlayCover",
         "generatedAt": _utc_timestamp(datetime.now(UTC)),
-        "machine": baseline_run["machine"] or candidate_run["machine"],
-        "runs": [baseline_run, candidate_run],
+        "machine": runs[0]["machine"] or runs[1]["machine"],
+        "runs": runs,
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
@@ -691,6 +697,8 @@ def main(arguments: list[str] | None = None) -> int:
     export_parser.add_argument("--title", default="")
     export_parser.add_argument("--baseline-label", default="")
     export_parser.add_argument("--candidate-label", default="")
+    export_parser.add_argument("--extra", type=Path, default=None)
+    export_parser.add_argument("--extra-label", default="")
     export_parser.add_argument("--max-samples", type=int, default=600)
     parsed = parser.parse_args(arguments)
     if parsed.command == "sample":
@@ -714,6 +722,8 @@ def main(arguments: list[str] | None = None) -> int:
                 title=parsed.title,
                 baseline_label=parsed.baseline_label,
                 candidate_label=parsed.candidate_label,
+                extra=parsed.extra,
+                extra_label=parsed.extra_label,
                 maximum_samples=parsed.max_samples,
             )
         )

@@ -36,9 +36,18 @@ core, so a 10-core Mac can show up to 1000 %.
 ```chart
 {
   "src": "/benchmarks/comparison.json",
+  "mode": "stats",
+  "title": "At a glance"
+}
+```
+
+```chart
+{
+  "src": "/benchmarks/comparison.json",
   "metric": "cpu_percent",
   "title": "CPU use",
-  "unit": "% of one core"
+  "unit": "% of one core",
+  "caption": "Lower is better. 100 % is one CPU core."
 }
 ```
 
@@ -47,19 +56,15 @@ core, so a 10-core Mac can show up to 1000 %.
   "src": "/benchmarks/comparison.json",
   "metric": "gpu_device_percent",
   "title": "GPU use",
-  "unit": "%"
-}
-```
-
-```chart
-{
-  "src": "/benchmarks/comparison.json",
-  "mode": "summary",
-  "title": "Summary"
+  "unit": "%",
+  "caption": "Lower is better. MetalFX trades sharpness for GPU time."
 }
 ```
 
 In this run, Arknights Client used about three times the CPU and 2.6 times the GPU of PlayCover.
+**MetalFX** rendering cut the GPU load to 45 % by drawing a quarter of the pixels. The CPU cost
+stayed at about 2.7 times, because the translation happens on every frame.
+
 The two clients are different builds: PlayCover runs the mobile build natively, Arknights Client
 runs the PC build through Wine, Rosetta 2, and DXMT.
 

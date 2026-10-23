@@ -197,9 +197,22 @@ window bounds, foreground app, top background processes, and run count below the
 
 ## Charts
 
-`just benchmark export BASELINE CANDIDATE OUTPUT` writes a dataset for the website. Put the output
-under `web/static/benchmarks/`. Add a `chart` block to [Performance](../performance.md) with the
-dataset path. The chart plots the sample index, so both runs share one x axis.
+`just benchmark export BASELINE CANDIDATE OUTPUT [EXTRA [EXTRA_LABEL]]` writes a dataset for the
+website. The optional third run lands in the same chart. Call `scripts/benchmark.py export` directly
+when two runs share a target, because the labels must differ:
+
+```sh
+uv run --locked scripts/benchmark.py export BASE CAND --output web/static/benchmarks/comparison.json \
+  --baseline-label "Arknights Client (Retina)" --candidate-label "Arknights Client (MetalFX)" \
+  --extra PLAYCOVER --extra-label "PlayCover"
+```
+
+Put the output under `web/static/benchmarks/`. Add a `chart` block to [Performance](../performance.md)
+with the dataset path. The chart plots the sample index, so all runs share one x axis.
+
+A spec takes `mode` (`timeseries`, `summary`, or `stats`), an optional `metric`, `unit`, `title`, and
+`caption`. `stats` renders CPU, GPU, and memory as cards with the delta against the first run. The
+first run is the reference, so order the dataset with the baseline first.
 
 The runtime, Wine, and DXMT change often. Re-run the baseline after an update. Do not compare a new
 client build against an old dataset, because the runtime moves with it.
