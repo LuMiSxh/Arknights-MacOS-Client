@@ -153,6 +153,9 @@ export function renderMarkdown(
 			if (language === 'mermaid') {
 				return `<div class="mermaid-shell" data-mermaid><pre><code>${escapeHtml(text)}</code></pre></div>`;
 			}
+			if (language === 'chart') {
+				return `<div class="chart-shell" data-chart><pre><code>${escapeHtml(text)}</code></pre></div>`;
+			}
 			const className = language
 				? ` class="language-${escapeHtml(language)}"`
 				: '';

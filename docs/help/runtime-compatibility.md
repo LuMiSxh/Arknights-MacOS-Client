@@ -16,7 +16,7 @@ The launcher runs the Windows game through a bundled Wine. You need no Wine, vir
 | macOS 27    | Supported with Rosetta 2                                                                              |
 | macOS 28    | Blocked by current launcher policy; compatibility with Apple's limited Rosetta support is unconfirmed |
 
-Only Apple silicon Macs work. The launcher runs natively; the Windows part needs Rosetta 2.
+Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro). The launcher runs natively; the Windows part needs Rosetta 2.
 
 Apple says macOS 27 is the last release with general Rosetta support. From macOS 28, Rosetta stays only for some older games that use Intel frameworks. Apple has not said if this runtime qualifies. The launcher blocks macOS 28 by policy, not because of a verified failure. See Apple's [Rosetta details](https://support.apple.com/en-au/102527) and [developer notice](https://developer.apple.com/news/?id=w5ngl9k2).
 
@@ -40,15 +40,15 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 
 **Rendering** sets how the game reaches a Retina display. It has no effect on other displays.
 
-| Choice      | Behavior                                                                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Retina**  | Draws every display pixel. Sharpest. Needs the most GPU time.                                                                               |
-| **MetalFX** | Draws one pixel per macOS point. DXMT upscales each frame 2× with MetalFX spatial scaling. Softer text. A runtime without MetalFX uses Raw. |
-| **Raw**     | Draws one pixel per macOS point. macOS stretches the window. Blurry on Retina displays.                                                     |
+| Choice       | Behavior                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Retina**   | Draws every display pixel. Sharpest. Needs the most GPU time.                                                                                    |
+| **MetalFX**  | Draws one pixel per macOS point. DXMT upscales each frame 2× with MetalFX spatial scaling. Softer text. A runtime without MetalFX uses Standard. |
+| **Standard** | Draws one pixel per macOS point. macOS stretches the window. Blurry on Retina displays.                                                          |
 
 **Window size** uses the "Looks like" sizes of **System Settings → Displays**. **Fill screen** fills the usable screen area with the title bar visible. **Compact** picks a smaller 16:9 window. The menu also lists exact sizes.
 
-**Resolution** sets the fullscreen resolution. With MetalFX or Raw rendering, the game draws one pixel per macOS point, then scales up.
+**Resolution** sets the fullscreen resolution. With MetalFX or Standard rendering, the game draws one pixel per macOS point, then scales up.
 
 - **Native** matches the display pixel for pixel, with the menu bar. Setup picks it. It follows display changes.
 - The list also holds the sizes of the official client and sizes in the display shape between 4K and the native resolution.

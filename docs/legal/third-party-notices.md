@@ -76,6 +76,7 @@ The documentation website embeds these packages. They are not part of the app. T
 | [svelte](https://github.com/sveltejs/svelte/tree/svelte@5.57.0) | 5.57.0 | `MIT` | Verified | [`svelte.txt`](licenses/svelte.txt) |
 | [@sveltejs/kit](https://github.com/sveltejs/kit/tree/@sveltejs/kit@2.70.3) | 2.70.3 | `MIT` | Verified | [`sveltejs-kit.txt`](licenses/sveltejs-kit.txt) |
 | [anasthasia](https://github.com/LuMiSxh/Anasthasia/tree/v0.2.4) | 0.2.4 | `BSD-3-Clause` | Verified | [`anasthasia.txt`](licenses/anasthasia.txt) |
+| [uPlot](https://github.com/leeoniya/uPlot/tree/1.6.32) | 1.6.32 | `MIT` | Verified | [`uplot.txt`](licenses/uplot.txt) |
 <!-- licenses:end website -->
 
 <!-- licenses:begin runtime -->

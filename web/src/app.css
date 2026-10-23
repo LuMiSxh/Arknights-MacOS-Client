@@ -551,6 +551,29 @@ p {
 	height: auto;
 }
 
+.content-copy .chart-shell {
+	margin: var(--site-space-6) 0;
+	overflow: hidden;
+	border: 1px solid var(--site-line);
+	border-radius: var(--site-radius-control);
+	background: var(--site-panel);
+	padding: 0.75rem;
+}
+
+.content-copy .chart-shell .chart-status {
+	margin: 0;
+	color: var(--site-muted);
+	font-size: 0.85rem;
+}
+
+.content-copy .chart-shell .chart-error {
+	color: var(--site-danger);
+}
+
+.content-copy .chart-shell .benchmark-chart-mount {
+	min-width: 0;
+}
+
 .content-copy .diagram-rendered {
 	position: relative;
 	display: block;

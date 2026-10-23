@@ -105,6 +105,18 @@ test filter: (swift-tests 'unit' filter)
 [group('Checks')]
 live-contracts: (swift-tests 'live')
 
+# Sample, compare, or export benchmark runs; sample takes CASE SECONDS TARGET NOTE, compare takes BASELINE CANDIDATE, export takes BASELINE CANDIDATE OUTPUT.
+[group('Benchmarks')]
+benchmark action='sample' first='' second='' third='' fourth='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case {{ quote(action) }} in
+        sample) exec {{ uv }} scripts/benchmark.py sample {{ quote(first) }} --seconds {{ quote(second) }} --target {{ if third == '' { 'arknights-client' } else { quote(third) } }} --note {{ quote(fourth) }} ;;
+        compare) exec {{ uv }} scripts/benchmark.py compare {{ quote(first) }} {{ quote(second) }} ;;
+        export) [[ -n {{ quote(third) }} ]] || { echo "export needs an output path" >&2; exit 2; }; exec {{ uv }} scripts/benchmark.py export {{ quote(first) }} {{ quote(second) }} --output {{ quote(third) }} ;;
+        *) echo "unknown action: "{{ quote(action) }}"; use sample, compare, or export" >&2; exit 2 ;;
+    esac
+
 # Build, then run one Swift test level (unit, integration, live) with isolated HOME and TMPDIR; only live may use the network.
 [private]
 swift-tests level filter='':
