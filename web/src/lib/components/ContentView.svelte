@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount, tick } from 'svelte';
 	import { SlideIndicator } from '$lib/motion.svelte.js';
+	import ChartEnhancer from './ChartEnhancer.svelte';
 	import MermaidEnhancer from './MermaidEnhancer.svelte';
 	import PageMetadata from './PageMetadata.svelte';
 	import type {
@@ -44,6 +45,7 @@
 			: []
 	);
 	const hasMermaid = $derived(content.html.includes('data-mermaid'));
+	const hasCharts = $derived(content.html.includes('data-chart'));
 	const breadcrumbTrail = $derived.by(
 		(): Array<{ title: string; route: SiteRoute }> => {
 			if (breadcrumbs.length) return breadcrumbs;
@@ -229,6 +231,12 @@
 {#if hasMermaid}
 	{#key content.route}
 		<MermaidEnhancer route={content.route} />
+	{/key}
+{/if}
+
+{#if hasCharts}
+	{#key content.route}
+		<ChartEnhancer route={content.route} />
 	{/key}
 {/if}
 
