@@ -10,11 +10,15 @@ The launcher downloads the official PC game from its publisher. It contains no g
 
 ## Requirements
 
-- An Apple silicon Mac (M1 or newer)
+- An Apple silicon Mac: an M-series Mac, or the MacBook Neo (A18 Pro)
 - macOS 15 through macOS 27 (see [macOS compatibility](help/runtime-compatibility.md))
 - Rosetta 2
 - An account for your region
 - An internet connection and free space for the game and its updates
+
+> [!NOTE]
+> The MacBook Neo has 8 GB of memory and no fan. The game lists 8 GB of RAM, so macOS and the game
+> share the memory. Close other apps before you play.
 
 ## Install the launcher
 

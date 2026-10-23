@@ -30,6 +30,11 @@
 	--site-success: #6fd3a0;
 	--site-warning: #eab064;
 	--site-danger: #fa6b7a;
+	/* Chart series. Deliberately not the status colors: a comparison must not read as a verdict. */
+	--site-chart-1: var(--site-signal-text);
+	--site-chart-2: var(--site-warning);
+	--site-chart-3: #a88cdb;
+	--site-chart-4: var(--site-faint);
 	--site-font-ui:
 		-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
 	--site-font-display:

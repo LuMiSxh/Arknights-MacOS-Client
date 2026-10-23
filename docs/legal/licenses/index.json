@@ -6,6 +6,7 @@
     "marked.txt": "marked LICENSE file in node_modules (version in index)",
     "marked-gfm-heading-id.txt": "marked-gfm-heading-id LICENSE file in node_modules (version in index)",
     "mermaid.txt": "mermaid LICENSE file in node_modules (version in index)",
+    "uplot.txt": "uPlot LICENSE file in node_modules (version in index)",
     "yaml.txt": "yaml LICENSE file in node_modules (version in index)",
     "svelte.txt": "svelte LICENSE file in node_modules (version in index)",
     "sveltejs-kit.txt": "@sveltejs/kit LICENSE file in node_modules (version in index)",
@@ -212,6 +213,20 @@
       "ecosystem": "npm",
       "package": "anasthasia",
       "basis": "license-file-in-source"
+    },
+    {
+      "name": "uPlot",
+      "version": "1.6.32",
+      "spdx": "MIT",
+      "source": "https://github.com/leeoniya/uPlot/tree/1.6.32",
+      "files": [
+        "uplot.txt"
+      ],
+      "status": "verified",
+      "basis": "license-file-in-package",
+      "scope": "website",
+      "ecosystem": "npm",
+      "package": "uplot"
     },
     {
       "name": "Wine",

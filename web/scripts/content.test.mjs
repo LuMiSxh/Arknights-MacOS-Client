@@ -81,6 +81,18 @@ test('Markdown wraps tables for constrained-width scrolling', () => {
 	);
 });
 
+test('Markdown renders chart blocks as escaped data placeholders', () => {
+	const html = markdown(
+		'```chart\n{"src":"/benchmarks/example.json","metric":"cpu_percent"}\n```'
+	);
+	assert.match(html, /<div class="chart-shell" data-chart><pre><code>/);
+	assert.match(
+		html,
+		/&quot;src&quot;:&quot;\/benchmarks\/example\.json&quot;/
+	);
+	assert.doesNotMatch(html, /<script>/);
+});
+
 test('hidden sections hide descendants from the content index', () => {
 	const root = createDirectory('');
 	const hiddenSection = createDirectory('private');

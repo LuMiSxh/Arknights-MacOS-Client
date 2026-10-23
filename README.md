@@ -19,7 +19,7 @@
 
 ## Get started
 
-1. Use an Apple silicon Mac with macOS 15–27, Rosetta 2 (the setup assistant can install it), and free space for the game. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements) and [runtime compatibility](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/).
+1. Use an Apple silicon Mac (M-series, or the A18 Pro in MacBook Neo) with macOS 15–27, Rosetta 2 (the setup assistant can install it), and free space for the game. See the [requirements](https://lumisxh.github.io/Arknights-MacOS-Client/installation/#requirements) and [runtime compatibility](https://lumisxh.github.io/Arknights-MacOS-Client/help/runtime-compatibility/).
 2. Download **Arknights.Client.dmg** from the [latest release](https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/latest). Drag the app to **Applications**.
 3. Open the app. Releases are not notarized, so macOS can block it. The [installation guide](https://lumisxh.github.io/Arknights-MacOS-Client/installation/) shows how to allow it.
 4. Choose your server. The setup assistant downloads the official game files.
