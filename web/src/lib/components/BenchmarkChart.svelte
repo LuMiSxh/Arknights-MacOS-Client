@@ -40,6 +40,12 @@
 	const runs = $derived(
 		dataset.runs.filter((run) => (run.samples?.length ?? 0) > 0)
 	);
+	// uPlot draws a canvas, so the accessible name must describe the series in words.
+	const description = $derived(
+		`${title}. ${unit}. ${runs.length} series: ${runs
+			.map((run) => run.label)
+			.join(', ')}.`
+	);
 
 	// The harness samples once per second, so the sample index is the second. Using the index
 	// instead of elapsed_seconds keeps both runs on one shared x axis: their elapsed values
@@ -89,7 +95,7 @@
 				{ label: 'Seconds' },
 				...chartRuns.map((run, index) => ({
 					label: run.label,
-					stroke: colors[index % colors.length],
+					stroke: colors[(run.slot ?? index) % colors.length],
 					width: 2,
 					points: { show: false },
 					value: (_self: uPlot, value: number | null) =>
@@ -216,7 +222,12 @@
 			</table>
 		</div>
 	{:else}
-		<div class="benchmark-chart-host" bind:this={chartHost}></div>
+		<div
+			class="benchmark-chart-host"
+			bind:this={chartHost}
+			role="img"
+			aria-label={description}
+		></div>
 	{/if}
 
 	{#if spec.caption}
@@ -232,6 +243,7 @@
 
 	.benchmark-chart-header {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: var(--site-space-4);
@@ -371,5 +383,18 @@
 		font-size: 0.65rem;
 		font-weight: 500;
 		text-transform: uppercase;
+	}
+
+	/* Narrow screens: stack the header and let the legend wrap instead of clipping. */
+	@media (max-width: 640px) {
+		.benchmark-chart-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--site-space-2);
+		}
+
+		.benchmark-chart-host :global(.u-legend) {
+			white-space: normal;
+		}
 	}
 </style>

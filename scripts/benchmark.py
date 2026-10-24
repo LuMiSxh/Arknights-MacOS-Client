@@ -589,9 +589,11 @@ def _downsample(
     return selected
 
 
-def _read_run(path: Path, label: str, maximum_samples: int) -> dict[str, Any]:
+def _read_run(
+    path: Path, label: str, maximum_samples: int, slot: int | None = None
+) -> dict[str, Any]:
     manifest = _load_json(path / "manifest.json")
-    return {
+    run = {
         "label": label
         or {
             "arknights-client": "Arknights Client",
@@ -604,6 +606,32 @@ def _read_run(path: Path, label: str, maximum_samples: int) -> dict[str, Any]:
         "summary": _load_json(path / "summary.json"),
         "samples": _downsample(_read_samples(path / "samples.csv"), maximum_samples),
     }
+    if slot is not None:
+        run["slot"] = slot
+    return run
+
+
+def _read_slots(slots: Sequence[int] | None, count: int) -> list[int | None]:
+    """Return one palette slot per run. A run without a slot falls back to its position."""
+    if not slots:
+        return [None] * count
+    if len(slots) != count:
+        raise ScriptError(f"expected {count} color slots, got {len(slots)}")
+    if len(set(slots)) != len(slots) or any(slot < 0 for slot in slots):
+        raise ScriptError("color slots must be non-negative and unique")
+    return list(slots)
+
+
+def _parse_slots(value: str) -> list[int] | None:
+    """Parse the `--slots` argument. An empty value keeps the positional fallback."""
+    if not value.strip():
+        return None
+    try:
+        return [int(part) for part in value.split(",")]
+    except ValueError as error:
+        raise ScriptError(
+            f"--slots must be comma-separated integers: {value}"
+        ) from error
 
 
 def export(
@@ -616,14 +644,21 @@ def export(
     candidate_label: str = "",
     extra: Path | None = None,
     extra_label: str = "",
+    slots: Sequence[int] | None = None,
     maximum_samples: int = 600,
 ) -> Path:
-    runs = [
-        _read_run(baseline, baseline_label, maximum_samples),
-        _read_run(candidate, candidate_label, maximum_samples),
+    requested: list[tuple[Path, str]] = [
+        (baseline, baseline_label),
+        (candidate, candidate_label),
     ]
     if extra is not None:
-        runs.append(_read_run(extra, extra_label, maximum_samples))
+        requested.append((extra, extra_label))
+    runs = [
+        _read_run(path, label, maximum_samples, slot)
+        for (path, label), slot in zip(
+            requested, _read_slots(slots, len(requested)), strict=True
+        )
+    ]
     dataset = {
         "schemaVersion": 1,
         "title": title or "Arknights Client vs PlayCover",
@@ -699,6 +734,11 @@ def main(arguments: list[str] | None = None) -> int:
     export_parser.add_argument("--candidate-label", default="")
     export_parser.add_argument("--extra", type=Path, default=None)
     export_parser.add_argument("--extra-label", default="")
+    export_parser.add_argument(
+        "--slots",
+        default="",
+        help="comma-separated palette slots, one per run in argument order",
+    )
     export_parser.add_argument("--max-samples", type=int, default=600)
     parsed = parser.parse_args(arguments)
     if parsed.command == "sample":
@@ -724,6 +764,7 @@ def main(arguments: list[str] | None = None) -> int:
                 candidate_label=parsed.candidate_label,
                 extra=parsed.extra,
                 extra_label=parsed.extra_label,
+                slots=_parse_slots(parsed.slots),
                 maximum_samples=parsed.max_samples,
             )
         )

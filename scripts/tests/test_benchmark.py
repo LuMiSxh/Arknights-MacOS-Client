@@ -308,6 +308,31 @@ def test_export_adds_an_extra_run(tmp_path: Path) -> None:
     assert dataset["runs"][2]["samples"][0]["cpu_percent"] == 9.0
 
 
+def test_export_writes_the_requested_palette_slots(tmp_path: Path) -> None:
+    baseline = tmp_path / "baseline"
+    candidate = tmp_path / "candidate"
+    write_run(baseline, "arknights-client", 12.0)
+    write_run(candidate, "playcover", 8.0)
+    output = tmp_path / "dataset.json"
+
+    benchmark.export(baseline, candidate, output=output, slots=[0, 2])
+
+    dataset = json.loads(output.read_text())
+    assert [run["slot"] for run in dataset["runs"]] == [0, 2]
+
+
+def test_export_rejects_slot_count_and_duplicates(tmp_path: Path) -> None:
+    baseline = tmp_path / "baseline"
+    candidate = tmp_path / "candidate"
+    write_run(baseline, "arknights-client", 12.0)
+    write_run(candidate, "playcover", 8.0)
+    output = tmp_path / "dataset.json"
+
+    for slots in ([0], [1, 1], [-1, 0]):
+        with pytest.raises(benchmark.ScriptError):
+            benchmark.export(baseline, candidate, output=output, slots=slots)
+
+
 def test_downsample_keeps_the_last_sample() -> None:
     samples = [{"elapsed_seconds": float(index)} for index in range(10)]
     selected = benchmark._downsample(samples, 3)

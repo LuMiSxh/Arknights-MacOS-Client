@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-23T23:06:18Z",
+  "generatedAt": "2026-10-24T08:51:31Z",
   "machine": {
     "chip": "Apple M4",
     "logicalCores": 10,
@@ -1103,6 +1103,7 @@
           "wired_mib": 2389.421875
         }
       ],
+      "slot": 0,
       "summary": {
         "durationSeconds": 69.10134458300035,
         "metrics": {
@@ -2313,6 +2314,7 @@
           "wired_mib": 2568.109375
         }
       ],
+      "slot": 1,
       "summary": {
         "durationSeconds": 72.95758558299985,
         "metrics": {
@@ -3523,6 +3525,7 @@
           "wired_mib": 2249.96875
         }
       ],
+      "slot": 2,
       "summary": {
         "durationSeconds": 66.22745866700006,
         "metrics": {
