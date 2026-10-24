@@ -29,9 +29,9 @@ How the launcher runs the game is described in
 
 ## Comparison
 
-Measured on an Apple M4 with 16 GB of memory and macOS 27. Both clients played LS-5 with
-auto-deploy at 60 FPS in a 1280 × 800 window. Each line is one run of 60 seconds. 100 % is one CPU
-core, so a 10-core Mac can show up to 1000 %.
+Measured on 23 October 2026 on an Apple M4 with 16 GB of memory and macOS 27.0.1. Both clients
+played LS-5 with auto-deploy at 60 FPS in a 1280 × 800 window. Each line is one run of 60 seconds.
+100 % is one CPU core, so a 10-core Mac can show up to 1000 %.
 
 ```chart
 {
@@ -68,6 +68,29 @@ stayed at about 2.7 times, because the translation happens on every frame.
 The two clients are different builds: PlayCover runs the mobile build natively, Arknights Client
 runs the PC build through Wine, Rosetta 2, and DXMT.
 
+## Main menu
+
+A menu draws less than a stage. The gap stays, so most of it does not come from the scene.
+Measured on the same Mac, standing in the main menu for 30 seconds.
+
+```chart
+{
+  "src": "/benchmarks/main-menu.json",
+  "mode": "stats",
+  "title": "Main menu at a glance"
+}
+```
+
+```chart
+{
+  "src": "/benchmarks/main-menu.json",
+  "metric": "cpu_percent",
+  "title": "Main menu CPU use",
+  "unit": "% of one core",
+  "caption": "Lower is better. 100 % is one CPU core."
+}
+```
+
 > [!NOTE]
 > These numbers come from one controlled setup. The 1280 × 800 window is one fixed size, and most
 > players use fullscreen or a different size. The test Mac also drives a 6K display, and macOS
@@ -76,8 +99,8 @@ runs the PC build through Wine, Rosetta 2, and DXMT.
 
 ## Why the PC client needs more
 
-The PC client is a desktop build. It costs more CPU and GPU than the mobile build, and it gives more
-in return.
+The PC client is a desktop build. It costs more CPU, GPU, memory, and disk than the mobile build,
+and it gives more in return. Not all of the extra cost comes from translation.
 
 ### What you get
 
@@ -90,15 +113,18 @@ in return.
 
 ### What it costs
 
-- **Disk space.** The PC install is 30 GB. The iOS app is 3.3 GB.
-- **Memory.** The larger assets stay in memory. In the test, the PC client held about 1.9 GB against
-  1.5 GB for PlayCover.
-- **Translation.** The PC build is x86-64 and uses Direct3D 11. Rosetta 2 translates the
-  instructions to arm64, and DXMT translates the graphics calls to Metal. PlayCover runs the mobile
-  build natively and skips both steps.
+- **The build itself.** The PC install is 30 GB against 3.3 GB for the iOS app, and it keeps the
+  larger artwork in memory: about 1.9 GB against 1.5 GB in the test. This cost exists on Windows
+  too, without Rosetta, Wine, or DXMT.
+- **CPU.** Rosetta 2 translates every game instruction, and Wine handles every Windows call.
+  Neither step exists for the mobile build. That is why the CPU gap appears in the menu too, where
+  the scene draws almost nothing.
+- **GPU.** The game sends Direct3D 11 calls, and DXMT translates them to Metal. The larger PC
+  assets fill more pixels for the same scene. **MetalFX** reduces this part, because it draws fewer
+  pixels and upscales each frame.
 
 Both clients ran at 60 FPS and drew about the same number of pixels, so the measured difference
-comes from the assets and the translation, not from a higher frame rate or a larger render target.
+comes from the build and the translation, not from a higher frame rate or a larger render target.
 
 ## Ongoing work
 
