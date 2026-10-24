@@ -20,7 +20,8 @@ struct GameSettingsPage: View {
 				settings: settings,
 				isLocked: gameSession.isGameActive
 					|| lifecycle.activity == .maintaining(.migratingStorage),
-				accentColor: accentColor
+				accentColor: accentColor,
+				metalFXSpatialUpscalingSupported: gameSession.metalFXSpatialUpscalingSupported
 			)
 			GameAdvancedSettingsPanel(
 				settings: settings,

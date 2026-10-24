@@ -8,6 +8,8 @@ struct GameDisplaySettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool
 	package let accentColor: Color
+	/// nil while runtime discovery runs. False means the game falls back to Standard.
+	let metalFXSpatialUpscalingSupported: Bool?
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var isSizeLocked: Bool { options.usesGameSettings || isLocked }
@@ -37,6 +39,7 @@ struct GameDisplaySettingsPanel: View {
 			SettingsHairline()
 			SettingsActionRow(
 				title: "Rendering",
+				detail: renderingDetail,
 				help:
 					"Retina: the game renders every pixel of the display.\nMetalFX: the game renders one pixel per point and MetalFX upscales each frame. Falls back to Standard if the runtime lacks support.\nStandard: the game renders one pixel per point and macOS scales the window. Softer image, lowest GPU load.\nApplies on next launch."
 			) {
@@ -182,10 +185,18 @@ struct GameDisplaySettingsPanel: View {
 		}
 	}
 
+	private var renderingDetail: String? {
+		guard options.renderingMode == .metalFX, metalFXSpatialUpscalingSupported == false else {
+			return nil
+		}
+		return "This runtime has no MetalFX. The game uses Standard rendering."
+	}
+
 	private func renderingTitle(_ mode: GameRenderingMode) -> String {
 		switch mode {
 		case .retina: "Retina"
-		case .metalFX: "MetalFX"
+		case .metalFX:
+			metalFXSpatialUpscalingSupported == false ? "MetalFX (unavailable)" : "MetalFX"
 		case .standard: "Standard"
 		}
 	}

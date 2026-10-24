@@ -6,9 +6,21 @@ import Foundation
 extension GameSessionController {
 	package func refreshRuntime() {
 		do {
-			runtimeName = try discoverRuntime().displayName
+			let runtime = try discoverRuntime()
+			runtimeName = runtime.displayName
+			// Settings needs the capability before the first launch, so read it once at startup.
+			Task { [weak self] in
+				let discovery = await runtime.discoverCapabilities()
+				guard let self else { return }
+				self.metalFXSpatialUpscalingSupported =
+					discovery.capabilities.metalFXSpatialUpscalingSupported
+				if let diagnostic = discovery.diagnostic {
+					self.log.info("Runtime capability fallback: \(diagnostic)")
+				}
+			}
 		} catch {
 			runtimeName = nil
+			metalFXSpatialUpscalingSupported = false
 			log.error("Runtime discovery failed: \(error.localizedDescription)")
 		}
 	}
