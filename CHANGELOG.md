@@ -11,6 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added **Save diagnostics…** to **Settings → About**. It writes the launcher and game logs, your display settings, and the runtime details to one zip. Nothing is uploaded.
+
+### Changed
+
+- **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it, and names the fallback instead of leaving the choice unexplained.
+
 ## [0.7.1] - 2026-10-19
 
 ### Changed

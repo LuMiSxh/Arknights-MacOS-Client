@@ -10,6 +10,7 @@ struct AboutSettingsPage: View {
 	package let runtimeName: String?
 	package let accentColor: Color
 	package let launcherIconManager: LauncherIconManager
+	let actions: any LauncherActions
 	let branding: LauncherBranding?
 	let revealApplication: () -> Void
 	@Binding var presentedDocument: BundledDocument?
@@ -98,6 +99,21 @@ struct AboutSettingsPage: View {
 						tone: .neutral, presentation: .compact,
 						action: reportLauncherProblem
 					)
+				}
+
+				SettingsHairline()
+
+				SettingsActionRow(
+					title: "Diagnostics",
+					detail:
+						"Save the launcher and game logs with your display settings. Nothing is uploaded. Review the file before you attach it."
+				) {
+					CapsuleActionButton(
+						title: "Save…", systemImage: "square.and.arrow.down",
+						tone: .neutral, presentation: .compact
+					) {
+						Task { await actions.saveDiagnostics() }
+					}
 				}
 
 				SettingsHairline()

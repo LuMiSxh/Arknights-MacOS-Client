@@ -21,6 +21,9 @@ import ArknightsCore
 			model.lifecycle.activity == .idle && !model.lifecycle.state.refresh.isChecking
 		}
 
+		/// A preview never writes to disk.
+		func saveDiagnostics() async {}
+
 		func selectRegion(_ newRegion: GameRegion) {
 			model.updateDeveloperSimulation { simulation in
 				if simulation.selectableRegions.contains(newRegion) {

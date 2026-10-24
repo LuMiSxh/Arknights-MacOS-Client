@@ -129,6 +129,7 @@ struct LauncherSettingsView: View {
 							runtimeName: lifecycle.state.readiness.runtimeName,
 							accentColor: customization.accentColor,
 							launcherIconManager: launcherIconManager,
+							actions: actions,
 							branding: branding,
 							revealApplication: storage.revealApplication,
 							presentedDocument: $presentedDocument

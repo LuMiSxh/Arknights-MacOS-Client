@@ -264,7 +264,10 @@ package struct ContentView: View {
 		case .failure(let failure):
 			LauncherFailureDetailView(
 				failure: failure, accentColor: model.customization.accentColor,
-				hudTintColor: model.customization.hudTintColor, perform: performRecoveryAction
+				hudTintColor: model.customization.hudTintColor, perform: performRecoveryAction,
+				saveDiagnostics: {
+					Task { await model.actions.saveDiagnostics() }
+				}
 			)
 			.onDisappear(perform: failureDetailsDidDismiss)
 		case .popup:

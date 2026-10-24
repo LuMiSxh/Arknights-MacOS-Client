@@ -40,6 +40,9 @@ package protocol LauncherActions {
 
 	@discardableResult
 	func installRosetta() async -> IntelTranslationState
+
+	/// Writes logs and settings to a zip the user reviews and attaches to a report.
+	func saveDiagnostics() async
 }
 
 extension LauncherActions {

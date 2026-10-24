@@ -8,6 +8,7 @@ struct LauncherFailureDetailView: View {
 	package let accentColor: Color
 	let hudTintColor: Color
 	let perform: (RecoveryAction, UUID) -> Void
+	let saveDiagnostics: () -> Void
 	private let troubleshootingMarkdown: String?
 	@Environment(\.dismiss) private var dismiss
 
@@ -15,12 +16,14 @@ struct LauncherFailureDetailView: View {
 		failure: LauncherFailurePresentation,
 		accentColor: Color,
 		hudTintColor: Color,
-		perform: @escaping (RecoveryAction, UUID) -> Void
+		perform: @escaping (RecoveryAction, UUID) -> Void,
+		saveDiagnostics: @escaping () -> Void
 	) {
 		self.failure = failure
 		self.accentColor = accentColor
 		self.hudTintColor = hudTintColor
 		self.perform = perform
+		self.saveDiagnostics = saveDiagnostics
 		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
 	}
 
@@ -142,21 +145,34 @@ struct LauncherFailureDetailView: View {
 		.keyboardShortcut(.cancelAction)
 	}
 
+	// Three buttons do not fit the narrow modal on one line, so the footer stacks instead.
 	private var supportActions: some View {
-		HStack(spacing: 8) {
-			if failure.actions.contains(.openTroubleshooting) {
-				supportAction(
-					.openTroubleshooting,
-					title: "Open on Website",
-					systemImage: "arrow.up.right.square"
-				)
-			}
-			if failure.actions.contains(.reportProblem) {
-				supportAction(
-					.reportProblem,
-					title: "Report Problem",
-					systemImage: "ladybug"
-				)
+		ViewThatFits(in: .horizontal) {
+			HStack(spacing: 8) { supportButtons }
+			VStack(alignment: .trailing, spacing: 8) { supportButtons }
+		}
+	}
+
+	@ViewBuilder
+	private var supportButtons: some View {
+		if failure.actions.contains(.openTroubleshooting) {
+			supportAction(
+				.openTroubleshooting,
+				title: "Open on Website",
+				systemImage: "arrow.up.right.square"
+			)
+		}
+		if failure.actions.contains(.reportProblem) {
+			supportAction(
+				.reportProblem,
+				title: "Report Problem",
+				systemImage: "ladybug"
+			)
+			supportButton(
+				title: "Save Diagnostics",
+				systemImage: "square.and.arrow.down"
+			) {
+				saveDiagnostics()
 			}
 		}
 	}
@@ -166,13 +182,22 @@ struct LauncherFailureDetailView: View {
 		title: String,
 		systemImage: String
 	) -> some View {
+		supportButton(title: title, systemImage: systemImage) {
+			perform(action, failure.id)
+		}
+	}
+
+	private func supportButton(
+		title: String,
+		systemImage: String,
+		action: @escaping () -> Void
+	) -> some View {
 		CapsuleActionButton(
 			title: title,
 			systemImage: systemImage,
-			tone: .neutral
-		) {
-			perform(action, failure.id)
-		}
+			tone: .neutral,
+			action: action
+		)
 	}
 
 	private var hasSupportActions: Bool {
