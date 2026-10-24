@@ -137,7 +137,7 @@ def build_component(output_root: Path, component: dict[str, Any]) -> BuildResult
             temporary_output = temporary / output_path.name
             if not source.is_file():
                 fail(f"compatibility source not found: {source}")
-            with spinner(f"Compiling {artifact['output']}"):
+            with spinner(f"Compiling {artifact['output']}", child=True):
                 compile_artifact(source, temporary_output, artifact)
             staged.append((temporary_output, output_path))
             built.append(output_path)

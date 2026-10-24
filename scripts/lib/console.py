@@ -62,9 +62,16 @@ def error(message: str) -> None:
 
 
 @contextmanager
-def spinner(message: str) -> Iterator[None]:
-    """Print `message` once before the wrapped block runs."""
-    info(message)
+def spinner(message: str, *, child: bool = False) -> Iterator[None]:
+    """Print `message` once before the wrapped block runs.
+
+    `child` indents the line under the step that started it, so a sequence of
+    per-item steps reads as one group instead of a flat list.
+    """
+    if child:
+        child_output(message)
+    else:
+        info(message)
     yield
 
 
