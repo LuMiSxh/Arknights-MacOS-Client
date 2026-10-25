@@ -9,9 +9,9 @@ extension GameSessionController {
 			let runtime = try discoverRuntime()
 			runtimeName = runtime.displayName
 			// Settings needs the capability before the first launch, so read it once at startup.
-			Task { [weak self] in
+			capabilitySlot.replace { [weak self] token in
 				let discovery = await runtime.discoverCapabilities()
-				guard let self else { return }
+				guard let self, self.capabilitySlot.owns(token) else { return }
 				self.metalFXSpatialUpscalingSupported =
 					discovery.capabilities.metalFXSpatialUpscalingSupported
 				if let diagnostic = discovery.diagnostic {
@@ -20,6 +20,7 @@ extension GameSessionController {
 			}
 		} catch {
 			runtimeName = nil
+			capabilitySlot.invalidate()
 			metalFXSpatialUpscalingSupported = false
 			log.error("Runtime discovery failed: \(error.localizedDescription)")
 		}

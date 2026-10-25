@@ -27,6 +27,7 @@ package final class GameSessionController {
 	}
 	/// nil until discovery finishes. Settings reads it to explain a fallback before a launch.
 	package internal(set) var metalFXSpatialUpscalingSupported: Bool?
+	@ObservationIgnored let capabilitySlot = TaskSlot()
 	package var isGameActive: Bool { lifecycle.activity.isGameActive }
 	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }
 	var activeGameSessionID: UUID? { lifecycle.activity.activeGameSessionID }
