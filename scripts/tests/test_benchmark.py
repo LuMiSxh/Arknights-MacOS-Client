@@ -321,16 +321,23 @@ def test_export_writes_the_requested_palette_slots(tmp_path: Path) -> None:
     assert [run["slot"] for run in dataset["runs"]] == [0, 2]
 
 
-def test_export_rejects_slot_count_and_duplicates(tmp_path: Path) -> None:
+@pytest.mark.parametrize("slots", [[0], [1, 1], [-1, 0]])
+def test_export_rejects_slot_count_and_duplicates(
+    tmp_path: Path, slots: list[int]
+) -> None:
     baseline = tmp_path / "baseline"
     candidate = tmp_path / "candidate"
     write_run(baseline, "arknights-client", 12.0)
     write_run(candidate, "playcover", 8.0)
     output = tmp_path / "dataset.json"
 
-    for slots in ([0], [1, 1], [-1, 0]):
-        with pytest.raises(benchmark.ScriptError):
-            benchmark.export(baseline, candidate, output=output, slots=slots)
+    with pytest.raises(benchmark.ScriptError):
+        benchmark.export(baseline, candidate, output=output, slots=slots)
+
+
+def test_parse_slots_rejects_non_integer_slots() -> None:
+    with pytest.raises(benchmark.ScriptError, match="comma-separated integers"):
+        benchmark._parse_slots("0,x")
 
 
 def test_downsample_keeps_the_last_sample() -> None:
