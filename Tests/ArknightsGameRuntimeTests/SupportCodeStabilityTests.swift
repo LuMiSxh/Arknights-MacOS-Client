@@ -169,6 +169,11 @@ private let supportCodeStabilityCases:
 			"Launcher data could not be updated. Check the logs and try again.",
 			"Application storage migration failed: disk"
 		),
+		(
+			DiagnosticsError(detail: "ditto exited with status 1"), .basalt,
+			"The diagnostics archive could not be saved. Check free disk space and the Downloads folder permissions, then try again.",
+			"Diagnostics archive failed: ditto exited with status 1"
+		),
 	]
 
 @MainActor

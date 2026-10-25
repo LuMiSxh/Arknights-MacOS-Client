@@ -106,7 +106,7 @@ struct AboutSettingsPage: View {
 				SettingsActionRow(
 					title: "Diagnostics",
 					detail:
-						"Save the launcher and game logs with your display settings. Nothing is uploaded. Review the file before you attach it."
+						"Save the launcher and game logs with your display settings. Logs are redacted for your home folder and URL queries. Nothing is uploaded. Review the file before you share it."
 				) {
 					CapsuleActionButton(
 						title: "Save…", systemImage: "square.and.arrow.down",
@@ -114,6 +114,7 @@ struct AboutSettingsPage: View {
 					) {
 						Task { await actions.saveDiagnostics() }
 					}
+					.disabled(actions.isSavingDiagnostics)
 				}
 
 				SettingsHairline()

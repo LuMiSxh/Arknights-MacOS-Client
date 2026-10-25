@@ -22,6 +22,8 @@ import ArknightsCore
 		}
 
 		/// A preview never writes to disk.
+		var isSavingDiagnostics: Bool { false }
+
 		func saveDiagnostics() async {}
 
 		func selectRegion(_ newRegion: GameRegion) {

@@ -265,6 +265,7 @@ package struct ContentView: View {
 			LauncherFailureDetailView(
 				failure: failure, accentColor: model.customization.accentColor,
 				hudTintColor: model.customization.hudTintColor, perform: performRecoveryAction,
+				isSavingDiagnostics: model.actions.isSavingDiagnostics,
 				saveDiagnostics: {
 					Task { await model.actions.saveDiagnostics() }
 				}

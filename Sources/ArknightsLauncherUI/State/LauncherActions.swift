@@ -41,7 +41,10 @@ package protocol LauncherActions {
 	@discardableResult
 	func installRosetta() async -> IntelTranslationState
 
-	/// Writes logs and settings to a zip the user reviews and attaches to a report.
+	/// True while a diagnostics archive is being written; views disable their Save buttons.
+	var isSavingDiagnostics: Bool { get }
+
+	/// Writes redacted logs and settings to a zip the user reviews and attaches to a report.
 	func saveDiagnostics() async
 }
 

@@ -10,39 +10,45 @@ extension LauncherViewModel {
 	///
 	/// Nothing is uploaded. The user reviews the archive and decides whether to attach it.
 	package func saveDiagnostics() async {
+		guard !isSavingDiagnostics else { return }
+		isSavingDiagnostics = true
+		defer { isSavingDiagnostics = false }
 		do {
+			let log = log
 			let archive = try await DiagnosticsBundle.write(
 				diagnosticsItems(),
 				readme: diagnosticsReadme,
 				named: Self.diagnosticsBaseName(),
-				to: diagnosticsDirectory
+				to: paths.diagnosticsDirectory,
+				redaction: DiagnosticsRedaction(
+					homeDirectory: NSHomeDirectory(), userName: NSUserName()),
+				reportCleanupFailure: {
+					log.error(
+						"Diagnostics cleanup failed: \(launcherDiagnosticDescription(for: $0))")
+				}
 			)
 			log.info("Diagnostics archive written: \(archive.lastPathComponent)")
 			NSWorkspace.shared.activateFileViewerSelecting([archive])
+		} catch is CancellationError {
+			log.info("Diagnostics archive cancelled")
 		} catch {
-			log.error("Diagnostics archive failed: \(error.localizedDescription)")
-			lifecycle.show(error, context: "Diagnostics archive")
+			lifecycle.show(
+				DiagnosticsError(detail: launcherDiagnosticDescription(for: error)),
+				context: "Diagnostics archive")
 		}
-	}
-
-	private var diagnosticsDirectory: URL {
-		FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
-			?? paths.applicationSupportRoot
 	}
 
 	private func diagnosticsItems() -> [DiagnosticsBundle.Item] {
 		var items: [DiagnosticsBundle.Item] = []
-		let logs = paths.logsDirectory
-		let logNames = [
-			"launcher.log",
-			installation.region.publisher.runtimeLogFileName,
-			"unity.log",
-			"chromium.log",
+		let logs = [
+			paths.launcherLogFile,
+			paths.runtimeLogFile(for: installation.region),
+			paths.unityLogFile,
+			paths.chromiumLogFile,
 		]
-		for name in logNames {
-			let url = logs.appending(path: name)
-			guard FileManager.default.fileExists(atPath: url.path) else { continue }
-			items.append(.init(archivePath: "Logs/\(name)", content: .file(url)))
+		for url in logs where FileManager.default.fileExists(atPath: url.path) {
+			items.append(
+				.init(archivePath: "Logs/\(url.lastPathComponent)", content: .redactedLog(url)))
 		}
 		if let runtimeConfiguration = Bundle.main.url(
 			forResource: "RUNTIME", withExtension: "json")
@@ -89,8 +95,10 @@ extension LauncherViewModel {
 		  when each exists.
 		- `RUNTIME.json`: the runtime pin the app was built with.
 
-		The archive is not uploaded anywhere. Review it before you attach it to a report.
-		Logs can contain file paths and server URLs.
+		The archive is not uploaded anywhere.
+		The app redacts your home folder path, your user name, and URL query strings in the logs.
+		The logs can still contain other file paths, server names, and account details.
+		Review the archive before you share it.
 		"""
 	}
 

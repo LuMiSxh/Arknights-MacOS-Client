@@ -35,6 +35,7 @@ package final class LauncherViewModel {
 		var developerSimulation: DeveloperSimulationState?
 	#endif
 	var pendingACEWarningRegion: GameRegion?
+	package internal(set) var isSavingDiagnostics = false
 	let paths: AppPaths
 	@ObservationIgnored var startupTask: Task<Bool, Never>?
 	@ObservationIgnored var startupOptions = StartupOptions()

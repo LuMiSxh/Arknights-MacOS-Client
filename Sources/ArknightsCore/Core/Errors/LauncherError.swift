@@ -40,6 +40,22 @@ extension LauncherError: SupportCodeProviding {
 	}
 }
 
+/// The diagnostics archive could not be saved. The user text names no path; the detail goes to the log.
+package struct DiagnosticsError: LauncherDiagnosticError, SupportCodeProviding, Sendable {
+	let detail: String
+
+	package init(detail: String) {
+		self.detail = detail
+	}
+
+	package var errorDescription: String? {
+		"The diagnostics archive could not be saved. Check free disk space and the Downloads folder permissions, then try again."
+	}
+
+	package var diagnosticDescription: String { "Diagnostics archive failed: \(detail)" }
+	var supportCode: SupportCode? { .basalt }
+}
+
 /// Failures shared by every feature; feature-specific failures live in their own error types.
 package enum LauncherError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case invalidResponse

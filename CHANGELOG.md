@@ -13,11 +13,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added **Save diagnostics…** to **Settings → About**. It writes the launcher and game logs, your display settings, and the runtime details to one zip. Nothing is uploaded.
+- Added **Save diagnostics…** to **Settings → About**. It saves a zip file to your Downloads folder.
+- The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.
+- The logs redact your home folder, your user name, and URL queries. Nothing is uploaded.
 
 ### Changed
 
-- **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it, and names the fallback instead of leaving the choice unexplained.
+- **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
 
 ## [0.7.1] - 2026-10-19
 

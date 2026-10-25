@@ -8,6 +8,7 @@ struct LauncherFailureDetailView: View {
 	package let accentColor: Color
 	let hudTintColor: Color
 	let perform: (RecoveryAction, UUID) -> Void
+	let isSavingDiagnostics: Bool
 	let saveDiagnostics: () -> Void
 	private let troubleshootingMarkdown: String?
 	@Environment(\.dismiss) private var dismiss
@@ -17,12 +18,14 @@ struct LauncherFailureDetailView: View {
 		accentColor: Color,
 		hudTintColor: Color,
 		perform: @escaping (RecoveryAction, UUID) -> Void,
+		isSavingDiagnostics: Bool,
 		saveDiagnostics: @escaping () -> Void
 	) {
 		self.failure = failure
 		self.accentColor = accentColor
 		self.hudTintColor = hudTintColor
 		self.perform = perform
+		self.isSavingDiagnostics = isSavingDiagnostics
 		self.saveDiagnostics = saveDiagnostics
 		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
 	}
@@ -174,6 +177,7 @@ struct LauncherFailureDetailView: View {
 			) {
 				saveDiagnostics()
 			}
+			.disabled(isSavingDiagnostics)
 		}
 	}
 

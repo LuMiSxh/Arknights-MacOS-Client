@@ -24,6 +24,8 @@ package struct AppPaths: Sendable {
 	package let applicationSupportRoot: URL
 	let cacheRoot: URL
 	let logRoot: URL
+	/// Where saved diagnostics archives go: Downloads, or the support root when macOS has none.
+	package let diagnosticsDirectory: URL
 	package let winePrefix: URL
 	let chinaWinePrefix: URL
 	let gryphlineWinePrefix: URL
@@ -34,6 +36,7 @@ package struct AppPaths: Sendable {
 		applicationSupportDirectory: URL? = nil,
 		cachesDirectory: URL? = nil,
 		libraryDirectory: URL? = nil,
+		downloadsDirectory: URL? = nil,
 		resourceDirectory: URL? = Bundle.main.resourceURL
 	) {
 		let supportDirectory =
@@ -54,6 +57,10 @@ package struct AppPaths: Sendable {
 			path: Self.bundleIdentifier,
 			directoryHint: .isDirectory
 		)
+		diagnosticsDirectory =
+			downloadsDirectory
+			?? fileManager.urls(for: .downloadsDirectory, in: .userDomainMask).first
+			?? applicationSupportRoot
 		logRoot =
 			libraryDirectory
 			.appending(path: "Logs", directoryHint: .isDirectory)

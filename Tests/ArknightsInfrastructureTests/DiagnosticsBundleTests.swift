@@ -8,6 +8,7 @@ import Testing
 
 struct DiagnosticsBundleTests {
 	private let baseName = "DiagnosticsBundleTests"
+	private let redaction = DiagnosticsRedaction(homeDirectory: "/Users/tester", userName: "tester")
 
 	/// The archive carries every item plus the readme, and the staging folder stays out of it.
 	@Test
@@ -25,8 +26,15 @@ struct DiagnosticsBundleTests {
 			],
 			readme: "# Readme",
 			named: baseName,
-			to: output
+			to: output,
+			redaction: redaction,
+			reportCleanupFailure: { _ in }
 		)
+		let second = try await DiagnosticsBundle.write(
+			[], readme: "", named: baseName, to: output,
+			redaction: redaction, reportCleanupFailure: { _ in })
+		#expect(second.lastPathComponent == "\(baseName)-2.zip")
+		#expect(FileManager.default.fileExists(atPath: archive.path))
 
 		#expect(archive.lastPathComponent == "\(baseName).zip")
 		let extracted = directory.url.appending(path: "extracted")
@@ -43,28 +51,9 @@ struct DiagnosticsBundleTests {
 				== "# Readme")
 	}
 
-	/// A path that leaves the staging folder is rejected, and nothing is written.
-	@Test
-	func rejectsAnItemOutsideTheArchive() async throws {
-		let directory = try TemporaryDirectory("DiagnosticsBundleTests")
-		defer { directory.remove() }
-
-		await #expect(throws: DiagnosticsBundleError.self) {
-			try await DiagnosticsBundle.write(
-				[.init(archivePath: "../escape.txt", content: .text("x"))],
-				readme: "",
-				named: baseName,
-				to: directory.url
-			)
-		}
-		#expect(
-			!FileManager.default.fileExists(
-				atPath: directory.url.appending(path: "escape.txt").path))
-	}
-
-	/// A file item that does not exist fails the write instead of producing a partial archive.
-	@Test
-	func failsWhenAFileItemIsMissing() async throws {
+	/// An unsafe path or a missing source fails the write and leaves nothing behind.
+	@Test(arguments: ["../escape.txt", "/escape.txt", ".", "Logs/missing.log"])
+	func rejectsABadItemAndLeavesNothingBehind(archivePath: String) async throws {
 		let directory = try TemporaryDirectory("DiagnosticsBundleTests")
 		defer { directory.remove() }
 
@@ -72,17 +61,43 @@ struct DiagnosticsBundleTests {
 			try await DiagnosticsBundle.write(
 				[
 					.init(
-						archivePath: "Logs/missing.log",
+						archivePath: archivePath,
 						content: .file(directory.url.appending(path: "missing.log")))
 				],
 				readme: "",
 				named: baseName,
-				to: directory.url
+				to: directory.url,
+				redaction: redaction,
+				reportCleanupFailure: { _ in }
 			)
 		}
-		#expect(
-			!FileManager.default.fileExists(
-				atPath: directory.url.appending(path: "\(baseName).zip").path))
+		#expect(try FileManager.default.contentsOfDirectory(atPath: directory.url.path).isEmpty)
+	}
+
+	/// Home path, user name, and URL queries are removed from a log that spans several chunks.
+	@Test
+	func redactsALogWhileCopyingIt() async throws {
+		let directory = try TemporaryDirectory("DiagnosticsBundleTests")
+		defer { directory.remove() }
+		let source = directory.url.appending(path: "launcher.log")
+		let line = "open /Users/tester/Library/x https://h.example/p?token=abc#top by tester\n"
+		try Data(String(repeating: line, count: 5_000).utf8).write(to: source)
+
+		let archive = try await DiagnosticsBundle.write(
+			[.init(archivePath: "Logs/launcher.log", content: .redactedLog(source))],
+			readme: "",
+			named: baseName,
+			to: directory.url.appending(path: "out"),
+			redaction: redaction,
+			reportCleanupFailure: { _ in }
+		)
+
+		let extracted = directory.url.appending(path: "extracted")
+		try extract(archive, into: extracted)
+		let copy = try String(
+			contentsOf: extracted.appending(path: "Logs/launcher.log"), encoding: .utf8)
+		let expected = "open ~/Library/x https://h.example/p#top by <user>\n"
+		#expect(copy == String(repeating: expected, count: 5_000))
 	}
 
 	private func extract(_ archive: URL, into directory: URL) throws {
