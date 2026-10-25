@@ -68,12 +68,17 @@
 		return [x, ...series];
 	}
 
+	// Below this width the axis titles and the roomy tick spacing cost more plot area than they give.
+	const COMPACT_WIDTH = 520;
+
 	function chartOptions(
 		width: number,
 		height: number,
 		chartRuns: BenchmarkRun[],
 		chartUnit: string
 	): uPlot.Options {
+		const compact = width < COMPACT_WIDTH;
+		const font = `${compact ? 10 : 12}px system-ui, sans-serif`;
 		const styles = getComputedStyle(document.documentElement);
 		const palette = [1, 2, 3, 4]
 			.map((index) =>
@@ -86,7 +91,7 @@
 		return {
 			width,
 			height,
-			padding: [12, 12, 0, 0],
+			padding: [12, compact ? 8 : 12, 0, 0],
 			// One cursor across every chart on the page, so a hover reads all metrics at once.
 			cursor: { drag: { x: true, y: false }, sync: { key: 'benchmark' } },
 			legend: { show: true, live: true },
@@ -104,13 +109,19 @@
 			],
 			axes: [
 				{
-					label: 'Seconds',
+					label: compact ? undefined : 'Seconds',
+					font,
+					size: compact ? 28 : undefined,
+					space: compact ? 56 : 80,
 					stroke: '#7d838c',
 					grid: { stroke: 'rgba(255, 255, 255, 0.06)' },
 					ticks: { stroke: 'rgba(255, 255, 255, 0.12)' }
 				},
 				{
-					label: chartUnit,
+					// The unit is already in the chart header, so the compact axis drops its title.
+					label: compact ? undefined : chartUnit,
+					font,
+					size: compact ? 36 : undefined,
 					stroke: '#7d838c',
 					grid: { stroke: 'rgba(255, 255, 255, 0.06)' },
 					ticks: { stroke: 'rgba(255, 255, 255, 0.12)' }
@@ -141,14 +152,27 @@
 			typeof spec.height === 'number' && spec.height > 0
 				? spec.height
 				: 320;
-		chart = new uPlot(
-			chartOptions(chartHost.clientWidth || 640, height, runs, unit),
-			buildChartData(runs, metric),
-			chartHost
-		);
+		const data = buildChartData(runs, metric);
+		let compact = chartHost.clientWidth < COMPACT_WIDTH;
+		const create = (width: number) => {
+			chart?.destroy();
+			chart = new uPlot(
+				chartOptions(width, height, runs, unit),
+				data,
+				chartHost
+			);
+		};
+		create(chartHost.clientWidth || 640);
 		resizeObserver = new ResizeObserver((entries) => {
 			const width = entries[0]?.contentRect.width;
-			if (width && chart) chart.setSize({ width, height });
+			if (!width || !chart) return;
+			// Crossing the breakpoint changes axis options, which uPlot only reads at construction.
+			if (width < COMPACT_WIDTH !== compact) {
+				compact = width < COMPACT_WIDTH;
+				create(width);
+			} else {
+				chart.setSize({ width, height });
+			}
 		});
 		resizeObserver.observe(chartHost);
 		return () => {
@@ -236,9 +260,13 @@
 </section>
 
 <style>
+	/* minmax(0, 1fr) lets the track shrink below the canvas width; an auto track would
+	   pin the chart at its first measured width and the shell would clip the rest. */
 	.benchmark-chart {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: var(--site-space-3);
+		min-width: 0;
 	}
 
 	.benchmark-chart-header {
@@ -270,7 +298,12 @@
 	}
 
 	.benchmark-chart-host {
+		min-width: 0;
 		min-height: 12rem;
+	}
+
+	.benchmark-chart-host :global(.uplot) {
+		max-width: 100%;
 	}
 
 	.benchmark-chart-host :global(.u-legend) {
