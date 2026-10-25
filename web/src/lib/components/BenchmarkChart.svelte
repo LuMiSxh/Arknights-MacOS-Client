@@ -93,8 +93,13 @@
 			height,
 			padding: [12, compact ? 8 : 12, 0, 0],
 			// One cursor across every chart on the page, so a hover reads all metrics at once.
-			cursor: { drag: { x: true, y: false }, sync: { key: 'benchmark' } },
-			legend: { show: true, live: true },
+			// Drag-zoom and live values would capture touch gestures and reflow the legend while the
+			// page scrolls, so compact charts keep a static legend and leave vertical swipes to the page.
+			cursor: {
+				drag: { x: !compact, y: false },
+				sync: { key: 'benchmark' }
+			},
+			legend: { show: true, live: !compact },
 			scales: { x: { time: false } },
 			series: [
 				{ label: 'Seconds' },
@@ -302,14 +307,26 @@
 		min-height: 12rem;
 	}
 
+	/* uPlot sizes its root to min-content, which lets a long legend overflow the shell. */
 	.benchmark-chart-host :global(.uplot) {
+		width: 100%;
 		max-width: 100%;
+	}
+
+	.benchmark-chart-host :global(.u-over) {
+		touch-action: pan-y;
 	}
 
 	.benchmark-chart-host :global(.u-legend) {
 		color: var(--site-muted);
 		font-family: var(--site-font-ui);
 		font-size: 0.75rem;
+		text-align: left;
+	}
+
+	/* Each entry wraps as one unit, so a name never splits from its marker or value. */
+	.benchmark-chart-host :global(.u-legend .u-series) {
+		margin-right: var(--site-space-3);
 		white-space: nowrap;
 	}
 
@@ -424,10 +441,6 @@
 			flex-direction: column;
 			align-items: flex-start;
 			gap: var(--site-space-2);
-		}
-
-		.benchmark-chart-host :global(.u-legend) {
-			white-space: normal;
 		}
 	}
 </style>
