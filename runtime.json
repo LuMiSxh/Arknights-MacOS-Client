@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.7.1",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.1/Arknights-MacOS-Runtime-v0.7.1.tar.gz",
-    "sha256": "7bfd0f61e943d29ff15cb2f1262ab3edc41e3279004de9352d481290a37a06ba"
+    "name": "Arknights macOS Runtime 0.8.0",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0/Arknights-MacOS-Runtime-v0.8.0.tar.gz",
+    "sha256": "e5882c64b5abe7225149fde9b4bf94c6f403ff0def895e0eca69de94e588ebde"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.7.1/Arknights-MacOS-Runtime-v0.7.1-source.tar.gz",
-    "sha256": "a9e869617960f98c76f18479a119bf0c111518f2426747f8ab5bea0b033e4306"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0/Arknights-MacOS-Runtime-v0.8.0-source.tar.gz",
+    "sha256": "16b44f67d2ce16b6e64a8e1ecfb08b7ad4890363cdead50d02e15f0335dafbd2"
   },
   "interface": {
     "archive": {
@@ -36,16 +36,16 @@
   },
   "components": {
     "wine": "11.17",
-    "dxmt": "0.80-267-g50102f9",
+    "dxmt": "0.80-361-g9839e55",
     "moltenvk": "1.4.2"
   },
   "provenance": {
     "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "d9f41d20117cf53c97c7097ce33e0db156174d67",
+    "buildCommit": "4f2947ba8535817e113a984b0def43fb3ce9a28e",
     "wineRepository": "https://github.com/dappermint/winecx",
     "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
-    "dxmtCommit": "50102f994b406f58f56d5d09f2ad20f9b90390a2",
+    "dxmtCommit": "9839e55f98d4aca103957ee4132d6395a325a9ed",
     "moltenvkRepository": "https://github.com/KhronosGroup/MoltenVK",
     "moltenvkCommit": "db66022459ffb663aa2b50f6b018bc2e124f5edf",
     "nixpkgsRepository": "https://github.com/NixOS/nixpkgs",

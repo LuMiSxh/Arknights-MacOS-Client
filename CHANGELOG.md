@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
+- Runtime 0.8.0 updates DXMT to 0.80-361. It includes the upstream fixes for the display query leaks.
 
 ## [0.7.1] - 2026-10-19
 
