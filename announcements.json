@@ -1,4 +1,17 @@
 {
-  "schemaVersion": 1,
-  "announcements": []
+	"schemaVersion": 1,
+	"announcements": [
+		{
+			"id": "survey-2026-10",
+			"enabled": true,
+			"title": "Help shape the future of Arknights Client",
+			"body": "I want to know how Arknights Client works on your Mac. Your answers help me shape the future development of the app.\n\nThe survey asks about:\n\n- Your Mac, display setup, and macOS version\n- Performance and problems\n- Updates and features you want\n\nThe survey is anonymous and takes about 4 minutes. It does not ask for your name or email address. The launcher sends no data to the survey.\n\nPlease answer only once. This message appears only once.",
+			"actionTitle": "Open survey",
+			"actionURL": "https://tally.so/r/Vpp1rM",
+			"minimumVersion": "0.6.0",
+			"maximumVersion": null,
+			"startsAt": null,
+			"endsAt": "2026-11-10T15:20:00Z"
+		}
+	]
 }
