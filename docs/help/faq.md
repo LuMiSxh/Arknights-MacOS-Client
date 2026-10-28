@@ -50,7 +50,7 @@ The setting covers only project announcements. Publisher notices come from the g
 
 ## Does “Report a Problem…” upload my logs?
 
-No. It opens a public GitHub issue with basic error and Mac details. You can review them before sending. See [Report a problem](README.md#report-a-problem).
+No. It opens a public GitHub issue with basic error and Mac details. Logs are not included. You can review the details before sending. See [Report a problem](README.md#report-a-problem).
 
 ## Is Game Mode required?
 

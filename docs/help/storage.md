@@ -38,7 +38,7 @@ A custom installation location replaces only the game folder of that region. **S
 | `unity.log`                                                                   | Messages from the game itself          |
 | `chromium.log`                                                                | The sign-in window                     |
 
-Logs can contain private paths or URLs. Attach only the requested file.
+Logs can contain private paths or URLs. Do not attach them directly. If a maintainer asks for logs, choose **Help → Save Diagnostics…**. It saves redacted launcher and game logs to Downloads. Review the file before you attach it.
 
 ## What cleanup removes
 
