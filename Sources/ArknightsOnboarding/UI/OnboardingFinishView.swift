@@ -61,7 +61,7 @@ struct OnboardingFinishView: View {
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					title: "Report a Launcher Problem…", systemImage: "ladybug",
+					title: "Report a Problem…", systemImage: "ladybug",
 					tone: .accent(accentColor), action: reportProblem
 				)
 
@@ -113,7 +113,8 @@ struct OnboardingFinishView: View {
 
 	private func reportProblem() {
 		NSWorkspace.shared.open(
-			IssueReportURL.build(runtimeName: lifecycle.state.readiness.runtimeName))
+			IssueReportURL.build(
+				runtimeName: lifecycle.state.readiness.runtimeName, source: .onboarding))
 	}
 
 	private func contactPublisher() {

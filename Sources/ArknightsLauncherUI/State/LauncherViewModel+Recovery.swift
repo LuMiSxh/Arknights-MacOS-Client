@@ -5,6 +5,16 @@ import ArknightsCore
 import Foundation
 
 extension LauncherViewModel {
+	/// Opens the GitHub report with the presented failure's code and context, when one is shown.
+	package func openProblemReport(source: IssueReportSource) {
+		let failure = lifecycle.state.presentation.failure
+		NSWorkspace.shared.open(
+			IssueReportURL.build(
+				runtimeName: gameSession.runtimeName, code: failure?.code,
+				context: failure?.context, source: source)
+		)
+	}
+
 	func performRecoveryAction(
 		_ action: RecoveryAction,
 		failureID: UUID
@@ -81,11 +91,7 @@ extension LauncherViewModel {
 			logRecovery(action: action, result: "opened")
 			return .completed
 		case .reportProblem:
-			NSWorkspace.shared.open(
-				IssueReportURL.build(
-					runtimeName: gameSession.runtimeName, code: failure.code,
-					context: failure.context)
-			)
+			openProblemReport(source: .error)
 			logRecovery(action: action, result: "opened")
 			return .completed
 		case .repair:

@@ -162,6 +162,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		settingsItem.target = self
 		settingsItem.isEnabled = openSettings != nil
 		menu.addItem(settingsItem)
+		let reportItem = NSMenuItem(
+			title: "Report a Problem…",
+			action: #selector(reportProblem),
+			keyEquivalent: ""
+		)
+		reportItem.target = self
+		menu.addItem(reportItem)
 		return menu
 	}
 
@@ -179,6 +186,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				showMainWindow()
 			}
 		}
+	}
+
+	@objc private func reportProblem() {
+		NSWorkspace.shared.open(
+			IssueReportURL.build(
+				runtimeName: model?.lifecycle.state.readiness.runtimeName, source: .dock))
 	}
 
 	@objc private func showSettings() {
@@ -292,5 +305,24 @@ struct ArknightsClientApp: App {
 		}
 		.windowStyle(.hiddenTitleBar)
 		.defaultSize(width: 1040, height: 680)
+		.commands {
+			CommandGroup(replacing: .help) {
+				Button("Report a Problem…") {
+					model.openProblemReport(source: .helpMenu)
+				}
+				Button("Save Diagnostics…") {
+					Task { await model.actions.saveDiagnostics() }
+				}
+				.disabled(model.actions.isSavingDiagnostics)
+				Divider()
+				Button("Troubleshooting Guide") {
+					NSWorkspace.shared.open(SupportLinks.troubleshootingGuide)
+				}
+				Button("Contact Publisher Support…") {
+					NSWorkspace.shared.open(
+						SupportLinks.contact(for: model.installation.region))
+				}
+			}
+		}
 	}
 }

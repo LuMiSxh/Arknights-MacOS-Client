@@ -8,14 +8,18 @@ import Testing
 @Test
 func issueReportURLIncludesOnlyApprovedFailureContext() {
 	let emptyContext = URLComponents(
-		url: IssueReportURL.build(runtimeName: nil), resolvingAgainstBaseURL: false)!
+		url: IssueReportURL.build(runtimeName: nil, source: .settings),
+		resolvingAgainstBaseURL: false
+	)!
 	#expect(emptyContext.host == "github.com")
 	#expect(emptyContext.path == "/LuMiSxh/Arknights-MacOS-Client/issues/new")
 	#expect(
 		emptyContext.queryItems?.first { $0.name == "template" }?.value == "problem-report.yml")
 	#expect(emptyContext.queryItems?.contains { $0.name == "logs" } == false)
 	#expect(
-		Set(emptyContext.queryItems?.map(\.name) ?? []) == ["template", "version", "environment"],
+		Set(emptyContext.queryItems?.map(\.name) ?? []) == [
+			"template", "version", "environment", "source",
+		],
 		"empty context"
 	)
 
@@ -23,7 +27,8 @@ func issueReportURLIncludesOnlyApprovedFailureContext() {
 		url: IssueReportURL.build(
 			runtimeName: "Arknights macOS Runtime 0.7.0-rc2",
 			code: .pebble,
-			context: SupportContext(operation: .repair, region: .japan)
+			context: SupportContext(operation: .repair, region: .japan),
+			source: .error
 		), resolvingAgainstBaseURL: false)!
 
 	#expect(failureContext.queryItems?.first { $0.name == "code" }?.value == "PEBBLE")
@@ -35,7 +40,17 @@ func issueReportURLIncludesOnlyApprovedFailureContext() {
 	#expect(
 		Set(failureContext.queryItems?.map(\.name) ?? []) == [
 			"template", "version", "runtime", "environment", "code", "operation", "region",
+			"source",
 		],
 		"failure context"
 	)
+}
+
+@Test(arguments: IssueReportSource.allCases)
+func issueReportURLNamesTheSourceThatStartedTheReport(source: IssueReportSource) {
+	let components = URLComponents(
+		url: IssueReportURL.build(runtimeName: nil, source: source),
+		resolvingAgainstBaseURL: false
+	)!
+	#expect(components.queryItems?.first { $0.name == "source" }?.value == source.rawValue)
 }

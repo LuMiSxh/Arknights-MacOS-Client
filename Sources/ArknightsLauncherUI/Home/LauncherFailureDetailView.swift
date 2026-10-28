@@ -168,7 +168,7 @@ struct LauncherFailureDetailView: View {
 		if failure.actions.contains(.reportProblem) {
 			supportAction(
 				.reportProblem,
-				title: "Report Problem",
+				title: "Report a Problem",
 				systemImage: "ladybug"
 			)
 			supportButton(

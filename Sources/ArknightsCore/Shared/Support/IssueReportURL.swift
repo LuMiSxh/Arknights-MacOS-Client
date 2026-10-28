@@ -9,6 +9,15 @@ extension Bundle {
 	}
 }
 
+/// Where a report started. The raw value is the `source` answer the issue form receives.
+package enum IssueReportSource: String, CaseIterable, Sendable {
+	case error
+	case settings
+	case helpMenu = "help-menu"
+	case dock
+	case onboarding
+}
+
 /// Builds a pre-filled GitHub bug-report URL with safe diagnostic metadata.
 ///
 /// Log files are never included because they can contain private paths, URLs,
@@ -19,7 +28,8 @@ package enum IssueReportURL {
 	package static func build(
 		runtimeName: String?,
 		code: SupportCode? = nil,
-		context: SupportContext? = nil
+		context: SupportContext? = nil,
+		source: IssueReportSource
 	) -> URL {
 		var components = URLComponents(
 			string: "https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new")!
@@ -40,6 +50,7 @@ package enum IssueReportURL {
 				items.append(URLQueryItem(name: "region", value: region.rawValue))
 			}
 		}
+		items.append(URLQueryItem(name: "source", value: source.rawValue))
 		components.queryItems = items
 		return components.url!
 	}

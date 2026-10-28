@@ -90,12 +90,12 @@ struct AboutSettingsPage: View {
 				title: "Support", systemImage: "questionmark.circle"
 			) {
 				SettingsActionRow(
-					title: "Launcher Issues",
+					title: "Problems on This Mac",
 					detail:
-						"Report problems with the launcher, starting the game, or the sign-in window. The report includes diagnostic details automatically."
+						"Report problems with the launcher, the game start, graphics, sound, or the sign-in window. The report adds your launcher version, Mac chip, memory, and macOS version."
 				) {
 					CapsuleActionButton(
-						title: "Report…", systemImage: "ladybug",
+						title: "Report a Problem…", systemImage: "ladybug",
 						tone: .neutral, presentation: .compact,
 						action: reportLauncherProblem
 					)
@@ -120,9 +120,9 @@ struct AboutSettingsPage: View {
 				SettingsHairline()
 
 				SettingsActionRow(
-					title: "Game & Account Issues",
+					title: "Account and Payment",
 					detail:
-						"Contact \(publisherName) for account, payment, or game-service problems."
+						"Contact \(publisherName) for account, payment, or game-event problems."
 				) {
 					CapsuleActionButton(
 						title: "Contact \(publisherName)…",
@@ -216,7 +216,7 @@ struct AboutSettingsPage: View {
 	}
 
 	private func reportLauncherProblem() {
-		NSWorkspace.shared.open(IssueReportURL.build(runtimeName: runtimeName))
+		NSWorkspace.shared.open(IssueReportURL.build(runtimeName: runtimeName, source: .settings))
 	}
 
 	private func contactPublisher() {

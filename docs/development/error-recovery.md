@@ -31,7 +31,7 @@ Each feature owns one error type and maps it to a support code at its own bounda
 
 **Repair** is offered only for installed-file failures that a full manifest verification can help. The user must confirm it. The model then revalidates the failure ID, region, installation state, and exclusive-operation gate.
 
-The failure modal renders the matching English page from `docs/help/errors`, bundled during packaging. **Open on Website** opens the current, shareable GitHub Pages version. **Report Problem** sends only the code, operation, region, launcher version, and coarse environment, through fields declared in the GitHub issue form. Logs stay in **Settings → Storage** for maintainer-requested follow-up, not as an initial failure action.
+The failure modal renders the matching English page from `docs/help/errors`, bundled during packaging. **Open on Website** opens the current, shareable GitHub Pages version. **Report a Problem** sends only the code, operation, region, opening place, launcher version, and coarse environment, through fields declared in the GitHub issue form. Logs stay in **Settings → Storage** for maintainer-requested follow-up, not as an initial failure action.
 
 > [!CAUTION]
 > Never place user-facing error text, paths, URLs, response bodies, log excerpts, account data, or tokens in an automatically prepared public report.

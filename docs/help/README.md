@@ -26,9 +26,9 @@ For an unexpected charge, first contact the payment provider on the transaction.
 
 ## Report a problem
 
-Choose **Report Problem** next to the error, or **Settings → About → Report…**. The launcher opens a GitHub issue with the error code, region, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
+Choose **Help → Report a Problem…** in the menu bar. You can also choose **Report a Problem** next to an error, or **Settings → About → Report a Problem…**. The launcher opens a GitHub issue with the error code, region, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
 
-You do not need logs at first. If a maintainer asks, open **Settings → Storage → Show Logs** and attach only that file.
+You do not need logs at first. If a maintainer asks for logs, choose **Help → Save Diagnostics**. Review the file. Then attach it.
 
 > [!WARNING]
 > GitHub issues are public. Never post passwords, tokens, or payment details.

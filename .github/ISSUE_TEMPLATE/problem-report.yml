@@ -43,6 +43,12 @@ body:
       description: The launcher fills this when the report starts from a recovery action.
 
   - type: input
+    id: source
+    attributes:
+      label: Opened from
+      description: The launcher fills this with the place where the report started.
+
+  - type: input
     id: region
     attributes:
       label: Selected region
@@ -95,7 +101,7 @@ body:
     id: logs
     attributes:
       label: Log files (only when requested)
-      description: Leave this empty for the first report. If a maintainer asks for a file, choose Show Logs in Settings → Storage and attach only that file. Logs can contain private paths, URLs, or account data.
+      description: Leave this empty for the first report. If a maintainer asks for logs, choose Help → Save Diagnostics. Review the file. Then attach it.
 
   - type: checkboxes
     id: checks

@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The logs redact your home folder, your user name, and URL queries. Nothing is uploaded.
 - Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited. Lower limits save battery. The limit
 applies on the next launch.
+- Added a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support.
+- Added **Report a Problem…** to the Dock menu.
 
 ### Changed
 
@@ -25,6 +27,9 @@ applies on the next launch.
 - Runtime 0.8.0 updates DXMT to 0.80-361. It includes the upstream fixes for the display query leaks.
 - The launcher now remembers when you mute the music.
 - Playlists now start on a random track without playing the first track briefly.
+- Runtime 0.8.0-rc2 is built with the macOS 27 SDK. The game window uses the current macOS window style.
+- All report actions use the name **Report a Problem**. **Settings → About** separates problems on this Mac from account and payment problems.
+- The problem report form asks for logs only when a maintainer requests them.
 
 ### Fixed
 
@@ -36,6 +41,8 @@ applies on the next launch.
 - Music fades now follow a smoother volume curve.
 - The launcher now skips music tracks that YouTube cannot play. It shows when music is unavailable.
 - Muting the music during a fade-out no longer leaves the music playing. The fade-out now ends and pauses the music.
+- The music title now updates on every track change. **Next** and **Previous** no longer stay on "Changing track…".
+- The launcher no longer starts music while the game starts.
 
 ## [0.7.1] - 2026-10-19
 

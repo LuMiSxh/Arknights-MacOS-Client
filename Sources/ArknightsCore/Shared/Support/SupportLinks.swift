@@ -13,6 +13,7 @@ package enum SupportLinks {
 	package static let donate = URL(string: "https://ko-fi.com/lumisxh")!
 	package static let thirdPartyNotices = documentationPage("legal/third-party-notices")
 	package static let privacyNotice = documentationPage("privacy")
+	package static let troubleshootingGuide = documentationPage("help")
 
 	private static func documentationPage(_ path: String) -> URL {
 		documentationRoot.appending(path: path, directoryHint: .isDirectory)

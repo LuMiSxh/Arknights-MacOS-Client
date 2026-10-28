@@ -15,7 +15,7 @@ The manifest has a path that escapes the install directory, appears more than on
 
 1. Choose **Retry** once. The publisher can replace a temporary manifest.
 2. Check if the official client is updating or in maintenance.
-3. If the code returns, choose **Report Problem**.
+3. If the code returns, choose **Report a Problem**.
 
 > [!CAUTION]
 > Do not bypass this check or recreate the rejected path by hand. Repair uses the same manifest and cannot make an unsafe manifest valid.
