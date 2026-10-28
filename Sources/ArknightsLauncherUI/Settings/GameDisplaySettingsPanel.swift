@@ -52,6 +52,29 @@ struct GameDisplaySettingsPanel: View {
 			}
 			SettingsHairline()
 			SettingsActionRow(
+				title: "Frame rate limit",
+				help: "Lower limits save battery. Applies on next launch."
+			) {
+				HStack(spacing: 8) {
+					SettingsSlider(
+						value: frameRateStep,
+						range: 0...Double(GameFrameRateLimit.allCases.count - 1),
+						step: 1,
+						accentColor: accentColor,
+						width: 140
+					)
+					.disabled(isLocked)
+					.accessibilityLabel("Frame rate limit")
+					.accessibilityValue(options.frameRateLimit.displayName)
+					Text(options.frameRateLimit.displayName)
+						.font(.caption.monospacedDigit())
+						.foregroundStyle(.secondary)
+						.frame(width: 72, alignment: .trailing)
+						.accessibilityHidden(true)
+				}
+			}
+			SettingsHairline()
+			SettingsActionRow(
 				title: "Cursor",
 				help:
 					"macOS cursor = hardware cursor. Older runtimes keep the game cursor. Applies on next launch."
@@ -199,6 +222,15 @@ struct GameDisplaySettingsPanel: View {
 			metalFXSpatialUpscalingSupported == false ? "MetalFX (unavailable)" : "MetalFX"
 		case .standard: "Standard"
 		}
+	}
+
+	/// Maps the slider's stop index to a frame rate limit, in `allCases` order.
+	private var frameRateStep: Binding<Double> {
+		let limits = GameFrameRateLimit.allCases
+		return Binding(
+			get: { Double(limits.firstIndex(of: options.frameRateLimit) ?? 0) },
+			set: { settings.launchOptions.frameRateLimit = limits[Int($0.rounded())] }
+		)
 	}
 
 	/// For example "2560 × 1440 (WQHD)"; resolutions without a common name stay plain.

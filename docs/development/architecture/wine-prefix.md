@@ -79,11 +79,14 @@ launcher variable. It:
   `<prefix>/home/tmp`;
 - restricts `PATH` to the bundled runtime, `/usr/bin`, and `/bin`;
 - points the dynamic-library fallback path at the bundled runtime libraries;
-- adds only launcher-owned synchronization, diagnostics, icon, audio, and cursor overrides for the
-  current launch.
+- adds only launcher-owned synchronization, frame-rate, diagnostics, icon, audio, and cursor
+  overrides for the current launch.
 
-Launch-scoped options (MSYNC or ESYNC, Mac pointer) change only the next process environment, not
-migrations.
+Launch-scoped options (MSYNC or ESYNC, Mac pointer, frame rate limit) change only the next process
+environment, not migrations. A frame rate cap sets `DXMT_CONFIG=d3d11.preferredMaxFrameRate=N`,
+where N is 30, 60, or 120. DXMT
+reads it when it creates the swapchain. The launcher sets no `DXMT_CONFIG` value when the limit is
+unlimited.
 
 ## Preparation and migrations
 

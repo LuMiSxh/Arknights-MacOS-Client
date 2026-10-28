@@ -181,6 +181,7 @@ struct WineRuntime: Sendable {
 		graphicsDiagnostics: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
+		frameRateLimit: GameFrameRateLimit = .unlimited,
 		runtimeEnvironmentOverrides: [String: String] = [:],
 		clientVariant: GameClientVariant = .standard,
 		publisher: GamePublisher = .yostar,
@@ -256,6 +257,7 @@ struct WineRuntime: Sendable {
 		var environment = runtimeEnvironment(
 			prefixDirectory: prefixDirectory,
 			graphicsDiagnostics: graphicsDiagnostics,
+			frameRateLimit: frameRateLimit,
 			synchronizationMode: synchronizationMode
 		)
 		environment.merge(runtimeEnvironmentOverrides) { _, value in value }

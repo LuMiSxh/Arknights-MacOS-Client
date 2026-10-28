@@ -23,6 +23,7 @@ extension GameSessionController {
 			"metalHUD=\(options.usesMetalPerformanceHUD)",
 			"gameMode=\(options.usesGameMode)",
 			"synchronization=\(options.synchronizationMode.displayName)",
+			"frameRateLimit=\(options.frameRateLimit.rawValue)",
 			"graphicsDiagnostics=\(graphicsDiagnosticsEnabled)",
 		]
 		return "Game launch requested; " + fields.joined(separator: "; ")

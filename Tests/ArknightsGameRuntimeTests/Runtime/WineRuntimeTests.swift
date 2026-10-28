@@ -58,6 +58,18 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 	#expect(controller["ARKNIGHTS_RUNTIME_CEF_COMPAT"] == "1")
 }
 
+@Test(arguments: GameFrameRateLimit.allCases)
+func frameRateLimitWritesDXMTConfigOnlyWhenCapped(limit: GameFrameRateLimit) {
+	let environment = WineRuntime.isolatedEnvironment(
+		prefixDirectory: URL(filePath: "/isolated/prefix", directoryHint: .isDirectory),
+		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
+		baseEnvironment: [:],
+		userName: "tester",
+		frameRateLimit: limit
+	)
+	#expect((environment["DXMT_CONFIG"] != nil) == (limit != .unlimited))
+}
+
 @Test
 func runtimeInstallsOnlyTheX64DXMTPayloadIntoThePrefix() throws {
 	let fileManager = FileManager.default

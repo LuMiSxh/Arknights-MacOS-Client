@@ -30,6 +30,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	package var usesMetalPerformanceHUD: Bool = false
 	package var usesGameMode: Bool = false
 	package var synchronizationMode: WineSynchronizationMode = .msync
+	package var frameRateLimit: GameFrameRateLimit = .unlimited
 
 	package static let `default` = GameLaunchOptions(
 		displayMode: .windowed,
@@ -45,7 +46,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	private enum CodingKeys: String, CodingKey {
 		case displayMode, resolution, fullscreenResolution, windowSize, usesGameSettings
 		case renderingMode
-		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode
+		case usesMetalPerformanceHUD, usesGameMode, synchronizationMode, frameRateLimit
 		/// Pre-0.7.0 Retina toggle; still written so older launchers keep their pixel density.
 		case usesHighResolutionMode
 	}
@@ -97,6 +98,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 			.usesMetalPerformanceHUD, defaults.usesMetalPerformanceHUD)
 		usesGameMode = value(.usesGameMode, defaults.usesGameMode)
 		synchronizationMode = value(.synchronizationMode, defaults.synchronizationMode)
+		frameRateLimit = value(.frameRateLimit, defaults.frameRateLimit)
 
 		renderingMode = value(.renderingMode, defaults.renderingMode)
 		windowSize = value(.windowSize, defaults.windowSize)
@@ -114,6 +116,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		try container.encode(usesMetalPerformanceHUD, forKey: .usesMetalPerformanceHUD)
 		try container.encode(usesGameMode, forKey: .usesGameMode)
 		try container.encode(synchronizationMode, forKey: .synchronizationMode)
+		try container.encode(frameRateLimit, forKey: .frameRateLimit)
 	}
 
 	func fullscreenSize(native: GameDisplaySize?) -> GameDisplaySize {

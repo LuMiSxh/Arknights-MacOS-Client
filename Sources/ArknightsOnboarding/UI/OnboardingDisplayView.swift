@@ -42,6 +42,15 @@ struct OnboardingDisplayView: View {
 				accentColor: accentColor,
 				isDisabled: isLocked
 			)
+			OnboardingQuestion(
+				question: "Frame rate limit",
+				systemImage: "speedometer",
+				answers: GameFrameRateLimit.allCases.map(\.answer),
+				selection: answerBinding(\.frameRateLimit),
+				accentColor: accentColor,
+				isDisabled: isLocked,
+				footnote: "Lower limits save battery."
+			)
 			// The runtime reports pointer support only while launching, so the question is always
 			// shown; a runtime without it falls back to the game's own cursor at launch.
 			OnboardingQuestion(
@@ -76,7 +85,10 @@ struct OnboardingDisplayView: View {
 			case .metalFX: "MetalFX"
 			case .standard: "Standard"
 			}
-		return "\(placement), \(rendering). Change this in Settings → Game."
+		let frameRate =
+			answers.frameRateLimit == .unlimited
+			? "no frame rate limit" : "\(answers.frameRateLimit.displayName) limit"
+		return "\(placement), \(rendering), \(frameRate). Change this in Settings → Game."
 	}
 
 	private var answers: GameDisplayAnswers {

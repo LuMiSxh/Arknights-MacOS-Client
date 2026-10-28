@@ -75,6 +75,7 @@ extension WineRuntime {
 		executableDirectory: URL,
 		baseEnvironment: [String: String] = ProcessInfo.processInfo.environment,
 		userName: String = NSUserName(),
+		frameRateLimit: GameFrameRateLimit = .unlimited,
 		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		let home = prefixDirectory.appending(path: "home", directoryHint: .isDirectory)
@@ -104,6 +105,11 @@ extension WineRuntime {
 		environment["DXMT_SHADER_CACHE_PATH"] = home.appending(path: ".cache/dxmt").path
 		// Keep normal launches quiet; graphics diagnostics raises this to "info".
 		environment["DXMT_LOG_LEVEL"] = "error"
+		// DXMT reads "key=value" entries separated by ";". Without a cap, no entry is written and
+		// DXMT keeps its default pacing.
+		if let framesPerSecond = frameRateLimit.framesPerSecond {
+			environment["DXMT_CONFIG"] = "d3d11.preferredMaxFrameRate=\(framesPerSecond)"
+		}
 		for (name, value) in Self.synchronizationEnvironment(for: synchronizationMode) {
 			environment[name] = value
 		}
@@ -118,11 +124,13 @@ extension WineRuntime {
 	func runtimeEnvironment(
 		prefixDirectory: URL,
 		graphicsDiagnostics: Bool = false,
+		frameRateLimit: GameFrameRateLimit = .unlimited,
 		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		var environment = Self.isolatedEnvironment(
 			prefixDirectory: prefixDirectory,
 			executableDirectory: executableURL.deletingLastPathComponent(),
+			frameRateLimit: frameRateLimit,
 			synchronizationMode: synchronizationMode
 		)
 		if graphicsDiagnostics {

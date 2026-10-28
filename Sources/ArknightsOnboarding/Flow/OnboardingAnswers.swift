@@ -14,16 +14,19 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	var placement: GamePlacementAnswer
 	var windowSize: GameWindowSizeChoice
 	var rendering: GameRenderingMode
+	var frameRateLimit: GameFrameRateLimit
 
-	static let recommended = GameDisplayAnswers(placement: .fullscreen, rendering: .retina)
+	static let recommended = GameDisplayAnswers(
+		placement: .fullscreen, rendering: .retina, frameRateLimit: .unlimited)
 
 	init(
 		placement: GamePlacementAnswer, windowSize: GameWindowSizeChoice = .fillScreen,
-		rendering: GameRenderingMode
+		rendering: GameRenderingMode, frameRateLimit: GameFrameRateLimit = .unlimited
 	) {
 		self.placement = placement
 		self.windowSize = windowSize
 		self.rendering = rendering
+		self.frameRateLimit = frameRateLimit
 	}
 
 	// Reads the answers back from saved options, so returning to setup shows earlier choices.
@@ -34,6 +37,7 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 			screen.flatMap { GameWindowSizeChoice.matching(options.windowSize, on: $0) }
 			?? .fillScreen
 		rendering = options.renderingMode
+		frameRateLimit = options.frameRateLimit
 	}
 
 	// Applies the answers and keeps every unrelated launch option.
@@ -41,6 +45,7 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 		var options = base
 		options.usesGameSettings = false
 		options.renderingMode = rendering
+		options.frameRateLimit = frameRateLimit
 		switch placement {
 		case .window:
 			options.displayMode = .windowed
@@ -227,5 +232,13 @@ extension GameRenderingMode {
 				detail: "Renders at 1× and macOS scales the window. Softer image, lowest GPU load.",
 				systemImage: "rectangle.dashed")
 		}
+	}
+}
+
+extension GameFrameRateLimit {
+	var answer: OnboardingAnswer<GameFrameRateLimit> {
+		OnboardingAnswer(
+			value: self, title: displayName, systemImage: "speedometer",
+			isRecommended: self == .unlimited)
 	}
 }

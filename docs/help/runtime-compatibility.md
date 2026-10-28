@@ -46,6 +46,10 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 | **MetalFX**  | Draws one pixel per macOS point. DXMT upscales each frame 2× with MetalFX spatial scaling. Softer text. A runtime without MetalFX uses Standard. |
 | **Standard** | Draws one pixel per macOS point. macOS stretches the window. Blurry on Retina displays.                                                          |
 
+**Frame rate limit** caps the frames per second the game draws. Use the slider to choose **30 FPS**,
+**60 FPS**, or **120 FPS**. **Unlimited** removes the cap. Lower values save battery. The limit works
+best when it divides the display refresh rate evenly.
+
 **Window size** uses the "Looks like" sizes of **System Settings → Displays**. **Fill screen** fills the usable screen area with the title bar visible. **Compact** picks a smaller 16:9 window. The menu also lists exact sizes.
 
 **Resolution** sets the fullscreen resolution. With MetalFX or Standard rendering, the game draws one pixel per macOS point, then scales up.

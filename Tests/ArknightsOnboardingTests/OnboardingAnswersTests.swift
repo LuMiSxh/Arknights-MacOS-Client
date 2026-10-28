@@ -34,21 +34,27 @@ func appliedWindowAnswersAreReadBack() {
 
 	for windowSize in GameWindowSizeChoice.allCases {
 		for rendering in GameRenderingMode.allCases {
-			let answers = GameDisplayAnswers(
-				placement: .window, windowSize: windowSize, rendering: rendering)
-			let options = answers.applied(to: base, screen: scaled4K)
-			#expect(GameDisplayAnswers(options, screen: scaled4K) == answers)
-			#expect(options.windowSize == windowSize.size(on: scaled4K))
-			#expect(!options.usesGameSettings)
-			#expect(options.usesGameMode)
-			#expect(options.synchronizationMode == .esync)
+			for frameRateLimit in GameFrameRateLimit.allCases {
+				let answers = GameDisplayAnswers(
+					placement: .window, windowSize: windowSize, rendering: rendering,
+					frameRateLimit: frameRateLimit)
+				let options = answers.applied(to: base, screen: scaled4K)
+				#expect(GameDisplayAnswers(options, screen: scaled4K) == answers)
+				#expect(options.windowSize == windowSize.size(on: scaled4K))
+				#expect(!options.usesGameSettings)
+				#expect(options.usesGameMode)
+				#expect(options.synchronizationMode == .esync)
+			}
 		}
 	}
 	for rendering in GameRenderingMode.allCases {
-		let answers = GameDisplayAnswers(placement: .fullscreen, rendering: rendering)
-		let options = answers.applied(to: base, screen: laptop)
-		#expect(GameDisplayAnswers(options, screen: laptop) == answers)
-		#expect(options.fullscreenResolution == .native)
+		for frameRateLimit in GameFrameRateLimit.allCases {
+			let answers = GameDisplayAnswers(
+				placement: .fullscreen, rendering: rendering, frameRateLimit: frameRateLimit)
+			let options = answers.applied(to: base, screen: laptop)
+			#expect(GameDisplayAnswers(options, screen: laptop) == answers)
+			#expect(options.fullscreenResolution == .native)
+		}
 	}
 	#expect(laptop.fullscreenResolution == .quadHD)
 	#expect(scaled4K.fullscreenResolution == .ultraHD)
