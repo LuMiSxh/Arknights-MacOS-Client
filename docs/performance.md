@@ -137,5 +137,5 @@ The measurement method and the full metric list are in
 
 ## Report a performance problem
 
-If the game stutters, overheats, or uses too much memory, open **Settings → About → Report a Problem…**. Add
+If the game stutters, overheats, or uses too much memory, open **Settings → Help → Report a Problem…**. Add
 the scene, display settings, macOS version, chip, and memory size. See [Help](help/README.md).

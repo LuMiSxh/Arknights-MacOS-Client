@@ -92,7 +92,7 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 
 - The Settings sheet adapts to the window size. `AppConstants.Settings` defines its margin and size limits.
 - Group related controls in quiet Liquid Glass panels. Switch Settings pages at once, without page transitions. The selected rail section uses the dynamic accent.
-- Use a list rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, and About. Debug builds add Developer. Game opens first.
+- Use a list rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, Help, and About. Debug builds add Developer. Game opens first.
 - Explain destructive or expensive actions in user terms. Keep developer terminology out of the interface.
 - Warning and danger panels keep neutral backgrounds. Semantic color is limited to the header, icon, edge, and relevant actions: danger for destructive settings and failure codes, warning for cautionary state, success for completed state, and the dynamic accent for the primary operation and intentional selection.
 - Render bundled Markdown as native text, parsed once when the document opens. Tables adapt their column widths and can scroll horizontally. Missing or unreadable documents show an explicit error state.

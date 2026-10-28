@@ -13,11 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Added **Save diagnostics…** to **Settings → About**. It saves a zip file to your Downloads folder.
+- Added **Save diagnostics…** to **Settings → Help**. It saves a zip file to your Downloads folder.
 - The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.
 - The logs redact your home folder, your user name, and URL queries. Nothing is uploaded.
-- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited. Lower limits save battery. The limit
-applies on the next launch.
+- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited.
 - Added a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support.
 - Added **Report a Problem…** to the Dock menu.
 
@@ -28,8 +27,9 @@ applies on the next launch.
 - The launcher now remembers when you mute the music.
 - Playlists now start on a random track without playing the first track briefly.
 - Runtime 0.8.0-rc2 is built with the macOS 27 SDK. The game window uses the current macOS window style.
-- All report actions use the name **Report a Problem**. **Settings → About** separates problems on this Mac from account and payment problems.
+- All report actions use the name **Report a Problem**. **Settings → Help** separates problems on this Mac from account and payment problems.
 - The problem report form asks for logs only when a maintainer requests them.
+- **Settings** has a new **Help** section with problem reports, diagnostics, and the troubleshooting guide.
 
 ### Fixed
 
@@ -456,7 +456,7 @@ applies on the next launch.
 - Native Liquid Glass interface with official branding, notices, custom artwork, and settings.
 - Reproducible local packaging and manually triggered GitHub draft releases.
 
-[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.7.0...HEAD
+[unreleased]: https://github.com/LuMiSxh/Arknights-MacOS-Client/compare/v0.7.1...HEAD
 [0.7.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.1
 [0.7.0]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.7.0
 [0.6.1]: https://github.com/LuMiSxh/Arknights-MacOS-Client/releases/tag/v0.6.1

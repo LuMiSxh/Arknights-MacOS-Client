@@ -9,6 +9,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 	case installation
 	case storage
 	case statistics
+	case help
 	case about
 	#if DEBUG
 		case developer
@@ -27,6 +28,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case .installation: "Installation"
 		case .storage: "Storage"
 		case .statistics: "Playtime"
+		case .help: "Help"
 		case .about: "About"
 		#if DEBUG
 			case .developer: "Developer"
@@ -43,6 +45,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case .installation: "externaldrive"
 		case .storage: "internaldrive"
 		case .statistics: "chart.bar.xaxis"
+		case .help: "questionmark.circle"
 		case .about: "info.circle"
 		#if DEBUG
 			case .developer: "hammer"

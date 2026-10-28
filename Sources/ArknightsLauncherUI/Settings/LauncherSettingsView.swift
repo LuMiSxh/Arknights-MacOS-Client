@@ -123,13 +123,17 @@ struct LauncherSettingsView: View {
 							},
 							accentColor: customization.accentColor
 						)
-					case .about:
-						AboutSettingsPage(
+					case .help:
+						HelpSettingsPage(
 							region: installation.region,
 							runtimeName: lifecycle.state.readiness.runtimeName,
 							accentColor: customization.accentColor,
+							actions: actions
+						)
+					case .about:
+						AboutSettingsPage(
+							accentColor: customization.accentColor,
 							launcherIconManager: launcherIconManager,
-							actions: actions,
 							branding: branding,
 							revealApplication: storage.revealApplication,
 							presentedDocument: $presentedDocument
