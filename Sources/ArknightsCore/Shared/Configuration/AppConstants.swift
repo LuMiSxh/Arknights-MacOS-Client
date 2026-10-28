@@ -75,6 +75,8 @@ package enum AppConstants {
 		package static let fadeSteps: Int = 10
 		package static let sourceChangeDebounce: Duration = .milliseconds(300)
 		package static let trackStartTimeout: Duration = .seconds(20)
+		/// How often a track change reads the player when YouTube reports no usable event.
+		package static let trackStartRecheckInterval: Duration = .seconds(1)
 		package static let maxConsecutivePlayerFailures = 3
 		package static let playerEventBufferLimit = 32
 		package static let collapsedTitleMaxWidth: Double = 300

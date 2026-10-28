@@ -163,10 +163,38 @@ extension BackgroundMusicController {
 			return false
 		}
 		let changed = await videoDiffers(on: targetPlayer, from: previousVideoID)
-		guard !(changed && expectsPlayback) else { return true }
+		guard !(changed && expectsPlayback) else {
+			if let state = await readPlaybackState(of: targetPlayer), state == .playing {
+				adoptPlaybackState(state, on: targetPlayer)
+			}
+			return true
+		}
 		lifecycle.log.error(
 			"Background music timed out waiting for the next track; previous=\(previousVideoID ?? "unknown")"
 		)
+		return false
+	}
+
+	/// YouTube can start the new video without ever reporting `.playing`, so after a quiet interval
+	/// the player is read directly. No event source covers a lost event, hence the bounded recheck.
+	private func recheckTrackStart(
+		on targetPlayer: YouTubePlayer,
+		previousVideoID: String?
+	) async -> Bool {
+		// The timeout task ends the wait, so this loop needs no bound of its own.
+		while !Task.isCancelled {
+			do {
+				try await sleep(for: AppConstants.Music.trackStartRecheckInterval)
+			} catch {
+				return false
+			}
+			if await videoDiffers(on: targetPlayer, from: previousVideoID),
+				await readPlaybackState(of: targetPlayer) == .playing
+			{
+				adoptPlaybackState(.playing, on: targetPlayer)
+				return true
+			}
+		}
 		return false
 	}
 
@@ -190,13 +218,17 @@ extension BackgroundMusicController {
 				return false
 			}
 			if !videoChanged {
-				// `.metadata` events can be stale or missing, so a playing player is asked directly.
-				guard state == .playing,
-					await videoDiffers(on: targetPlayer, from: previousVideoID)
+				// `.metadata` events can be stale or missing, so the player is asked directly.
+				guard await videoDiffers(on: targetPlayer, from: previousVideoID)
 				else { continue }
 				videoChanged = true
 			}
 			if expectsPlayback {
+				// YouTube can skip `.playing` after `.buffering`, so the player's own state decides.
+				if state != .playing, let read = await readPlaybackState(of: targetPlayer) {
+					state = read
+					if read == .playing { adoptPlaybackState(.playing, on: targetPlayer) }
+				}
 				if state == .playing { return true }
 			} else if !didPause {
 				didPause = true
@@ -225,6 +257,19 @@ extension BackgroundMusicController {
 		guard let metadata = await readMetadata(of: targetPlayer) else { return false }
 		applyTrackTitle(from: metadata)
 		return metadata.videoId != nil && metadata.videoId != previousVideoID
+	}
+
+	private func readPlaybackState(
+		of targetPlayer: YouTubePlayer
+	) async -> YouTubePlayer.PlaybackState? {
+		do {
+			return try await playerCommands.getPlaybackState(targetPlayer)
+		} catch {
+			lifecycle.log.debug(
+				"Background music could not read the playback state: \(error.localizedDescription)"
+			)
+			return nil
+		}
 	}
 
 	func readMetadata(of targetPlayer: YouTubePlayer) async -> YouTubePlayer.PlaybackMetadata? {

@@ -20,6 +20,7 @@ struct BackgroundMusicPlayerCommands {
 	let getPlaylist: @MainActor (YouTubePlayer) async throws -> [String]?
 	let getPlaybackMetadata:
 		@MainActor (YouTubePlayer) async throws -> YouTubePlayer.PlaybackMetadata
+	let getPlaybackState: @MainActor (YouTubePlayer) async throws -> YouTubePlayer.PlaybackState
 	let playVideoInPlaylist: IndexCommand
 	let nextVideo: PlayerCommand
 	let previousVideo: PlayerCommand
@@ -41,6 +42,7 @@ struct BackgroundMusicPlayerCommands {
 		},
 		getPlaylist: { try await $0.getPlaylist() },
 		getPlaybackMetadata: { try await $0.getPlaybackMetadata() },
+		getPlaybackState: { try await $0.getPlaybackState() },
 		playVideoInPlaylist: { try await $0.playVideoInPlaylist(at: $1) },
 		nextVideo: { try await $0.nextVideoInPlaylist() },
 		previousVideo: { try await $0.previousVideoInPlaylist() },

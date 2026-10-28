@@ -25,6 +25,8 @@ final class FakeMusicPlayer {
 	private(set) var terminatedStreams = 0
 	/// What `getPlaybackMetadata` returns; it throws while nil.
 	var metadata: YouTubePlayer.PlaybackMetadata?
+	/// What `getPlaybackState` returns.
+	var state: YouTubePlayer.PlaybackState = .buffering
 	private var gate: CheckedContinuation<Void, Never>?
 	private var eventStreams: [AsyncStream<BackgroundMusicPlayerEvent>.Continuation] = []
 
@@ -92,6 +94,10 @@ final class FakeMusicPlayer {
 				}
 				guard let metadata else { throw Unsupported() }
 				return metadata
+			},
+			getPlaybackState: { [self] _ in
+				commands.append("getPlaybackState")
+				return state
 			},
 			playVideoInPlaylist: { [self] _, index in
 				commands.append("playVideoInPlaylist")

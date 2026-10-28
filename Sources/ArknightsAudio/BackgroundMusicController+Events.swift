@@ -24,15 +24,7 @@ extension BackgroundMusicController {
 	private func handle(_ event: BackgroundMusicPlayerEvent, from targetPlayer: YouTubePlayer) {
 		switch event {
 		case .playback(let state):
-			playbackState = state
-			reconcilePlaybackIntent(with: state)
-			nowPlaying.updatePlayback(isPlaying: isPlaying)
-			lifecycle.log.debug("Background music state: \(state)")
-			if state == .playing {
-				consecutiveFailures = 0
-				transition(.playerPlayed)
-				refreshTitle(of: targetPlayer)
-			}
+			adoptPlaybackState(state, on: targetPlayer)
 			// A playlist is cued, not autoplayed; a video autoplays and only needs a nudge when it stalls.
 			let isReadyToStart =
 				currentSource?.isPlaylist == true
@@ -47,6 +39,18 @@ extension BackgroundMusicController {
 		case .failure(let failure):
 			handle(failure, on: targetPlayer)
 		}
+	}
+
+	/// Applies a state the player reported or a direct read returned.
+	func adoptPlaybackState(_ state: YouTubePlayer.PlaybackState, on targetPlayer: YouTubePlayer) {
+		playbackState = state
+		reconcilePlaybackIntent(with: state)
+		nowPlaying.updatePlayback(isPlaying: isPlaying)
+		lifecycle.log.debug("Background music state: \(state)")
+		guard state == .playing else { return }
+		consecutiveFailures = 0
+		transition(.playerPlayed)
+		refreshTitle(of: targetPlayer)
 	}
 
 	/// A `videoDataChange` event can arrive before YouTube serves the new video's data, so the
