@@ -7,7 +7,7 @@ order: 20
 # Help
 
 - Something does not work → [Troubleshooting](troubleshooting.md)
-- The launcher shows a word such as `PEBBLE` → [Error codes](errors/README.md)
+- The launcher shows a code such as `IN-DLD` → [Error codes](errors/README.md)
 - File locations and cleanup → [Storage](storage.md)
 - Supported macOS versions → [macOS compatibility](runtime-compatibility.md)
 - General questions → [FAQ](faq.md)

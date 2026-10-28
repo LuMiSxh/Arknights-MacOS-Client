@@ -689,7 +689,7 @@ def check_all(
     problems = check_inventory(root, components)
     if not problems:
         problems.extend(
-            f"{path}: generated blocks are stale; run scripts/licenses.py"
+            f"{path}: generated blocks are stale; run just generate"
             for path in stale_documents(root, generate_documents(root, runtime))
         )
     warnings = _unverified_warnings([*components, *(legal.components if legal else ())])

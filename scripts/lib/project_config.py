@@ -19,6 +19,11 @@ SPARKLE_DELTA_SOURCE_COUNT = 3
 # Releases up to 0.6.x shipped `.zip` update archives; newer ones ship `.tar.xz`.
 # Sparkle 2.9.6, the oldest shipped updater, extracts both.
 SPARKLE_ARCHIVE_SUFFIXES = (".tar.xz", ".zip")
+# Support-code outputs, relative to the repository root. `support-codes.json` generates them.
+SUPPORT_CODE_CATALOG = Path("support-codes.json")
+SUPPORT_CODE_ARTICLES = Path("docs/help/errors")
+SUPPORT_CODE_SWIFT = Path("Sources/ArknightsCore/Shared/Support/SupportCode.swift")
+ISSUE_REPORT_TEMPLATE = Path(".github/ISSUE_TEMPLATE/problem-report.yml")
 
 
 def sparkle_archive_names(stem: str, version: str) -> set[str]:

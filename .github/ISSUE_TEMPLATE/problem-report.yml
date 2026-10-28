@@ -29,12 +29,36 @@ body:
     validations:
       required: true
 
-  - type: input
+  # support-codes:begin code
+  - type: dropdown
     id: code
     attributes:
       label: Error code
-      description: Keep the code shown by the launcher, if one was provided.
-      placeholder: PEBBLE
+      description: Select the code shown by the launcher. Choose None / not shown when the launcher showed no code.
+      options:
+        - None / not shown
+        - SV-CNT
+        - SV-ERR
+        - NW-OFF
+        - IN-BSY
+        - IN-DIR
+        - IN-DLD
+        - IN-DSK
+        - IN-MAN
+        - IN-MIS
+        - FS-MIG
+        - FS-WRT
+        - RT-BIL
+        - RT-BLK
+        - RT-BND
+        - RT-CMP
+        - RT-ROS
+        - RT-SET
+        - GM-CRS
+        - GM-WIN
+        - UP-ERR
+        - UI-ICN
+  # support-codes:end code
 
   - type: input
     id: operation

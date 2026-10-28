@@ -13,10 +13,10 @@ Every user-initiated failure opens the shared detail modal once. A launch-blocki
 
 ## Ownership
 
-- `Shared/Support` owns the closed code registry, safe report context, bundled troubleshooting lookup, and documentation URLs.
+- `Shared/Support` owns the generated `SupportCode` enum, safe report context, bundled troubleshooting lookup, and documentation URLs.
 - `LauncherLifecycleStore` owns the current presentation and rejects stale or duplicate updates.
 - `LauncherViewModel+Recovery` dispatches selected actions to the owning feature.
-- The website build checks the registry against one page per code.
+- The website build checks the generated registry against one page per code.
 
 > [!IMPORTANT]
 > User-facing messages explain the failure. They are never identifiers and never decide the code, recovery action, retry target, or report contents.
@@ -38,31 +38,47 @@ The failure modal renders the matching English page from `docs/help/errors`, bun
 
 ## Presentation policy
 
-A user-initiated operation can present its failure. The required initial game configuration and a manual update check can present `VIRGA`. Optional automatic refreshes for an installed game stay log-only. Features decide this before they call the shared presenter. Unpresented failures still go to the launcher log.
+A user-initiated operation can present its failure. The required initial game configuration and a manual update check can present `SV-ERR`. Optional automatic refreshes for an installed game stay log-only. Features decide this before they call the shared presenter. Unpresented failures still go to the launcher log.
 
 A newer visible status clears the previous failure unless a caller preserves it. Cancellation returns the feature to its paused or ready state and presents no support code.
 
-## Code taxonomy
+## Code catalog
 
-Each domain uses its own word family. A public code never encodes severity, implementation details, or a sequence number.
+`support-codes.json` at the repository root is the only hand-written source for public codes. `scripts/support_codes.py` generates these files from it:
 
-| Domain         | Word family           | Scope                                              | Current codes                                    |
-| -------------- | --------------------- | -------------------------------------------------- | ------------------------------------------------ |
-| `service`      | Atmospheric phenomena | Remote configuration and service responses         | `VIRGA`                                          |
-| `installation` | Geology               | Downloads, archives, game files, and local storage | `PEBBLE`, `GABBRO`, `BASALT`, `SCREE`            |
-| `runtime`      | Marine life           | Rosetta, Wine, DXMT, and compatibility setup       | `LIMPET`, `WHELK`, `SEPIA`, `ANEMONE`, `NARWHAL` |
-| `process`      | Constellations        | Started game and Wine process lifecycle            | `CRUX`                                           |
+- One help page for each active code in `docs/help/errors/`.
+- `docs/help/errors/registry.json`.
+- One hidden legacy page for each retired code, in `docs/help/errors/`. The page names the code or codes that replaced it.
+- The `code` dropdown in `.github/ISSUE_TEMPLATE/problem-report.yml`.
+- `Sources/ArknightsCore/Shared/Support/SupportCode.swift`.
+
+Do not edit the generated files. Run `uv run --locked scripts/support_codes.py` after you change the catalog. `just check scripts` runs the same check with `--check`.
+
+Each code has the form `XX-XXX`. The first two letters name the domain. The last three letters name the failure.
+
+| Domain          | Prefix | Scope                                              |
+| --------------- | ------ | -------------------------------------------------- |
+| `service`       | `SV`   | Remote configuration and service responses         |
+| `network`       | `NW`   | Network reachability and connection failures       |
+| `installation`  | `IN`   | Downloads, archives, game files, and local storage |
+| `files`         | `FS`   | Local file and data migration failures             |
+| `runtime`       | `RT`   | Rosetta, Wine, DXMT, and compatibility setup       |
+| `game`          | `GM`   | Started game and Wine process lifecycle            |
+| `update`        | `UP`   | Launcher updates                                   |
+| `customization` | `UI`   | Launcher appearance and app icon                   |
 
 The domain names the recovery owner, not the failing API. A filesystem failure while clearing game data stays in `installation`. A launcher-owned compatibility helper stays in `runtime`.
 
-## Publishing or changing a code
+## Adding or retiring a code
 
-1. Choose one uppercase English word from the domain's family that the project and well-known external error systems do not use. If no domain owns the recovery path, define a new domain and family first.
-2. Add it to `SupportCode` and `docs/help/errors/registry.json` with its domain.
-3. Add exactly one `docs/help/errors/<lowercase-code>.md` page with matching `code` and `domain` frontmatter.
-4. Map typed failures and ordered actions without inspecting message strings.
-5. Add fixtures for every mapped error family, route validation, report privacy, stale actions, duplicate selection, and each affected supported region.
+1. Choose a domain. If no domain owns the recovery path, add the domain to the generator first.
+2. Add an entry to `support-codes.json`. Fill every field.
+3. Run `uv run --locked scripts/support_codes.py`.
+4. Map typed failures and ordered actions to the code in the owning feature. Do not inspect message strings.
+5. Add fixtures for the mapped failures, report privacy, stale actions, duplicate selection, and each affected supported region.
 6. Update the changelog. Run the Swift, website, and production documentation checks.
 
+To retire a code, move it into the `legacy` list of its successor. Delete its entry. The generator then creates a hidden legacy page that names the successor.
+
 > [!NOTE]
-> Public words and routes are compatibility contracts. For a different recovery path, add a new code. Never change the meaning of a published one.
+> A published code is a compatibility contract. Never reuse a retired code. A different meaning needs a new code.

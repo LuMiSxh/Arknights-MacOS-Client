@@ -194,7 +194,7 @@
 			type="search"
 			bind:value={query}
 			label="Search documentation"
-			placeholder="Try “Wine prefix” or “VIRGA”"
+			placeholder="Try “Wine prefix” or “IN-DLD”"
 			autocomplete="off"
 			autofocus
 			oninput={() => (selectedIndex = 0)}

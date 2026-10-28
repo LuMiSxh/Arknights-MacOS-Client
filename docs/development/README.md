@@ -35,9 +35,9 @@ toc: true
 | `order`                  | Finite number for sorting.                                                                 |
 | `hidden`, `draft`, `toc` | Booleans. `hidden` removes the page from navigation. `toc` controls the table of contents. |
 | `audience`               | `all`, `developers`, or `users`.                                                           |
-| `code`                   | Optional. One uppercase English word. Requires a non-empty `domain`.                       |
+| `code`                   | Optional. A code in the form `XX-XXX`. Requires a non-empty `domain`.                      |
 
-- Error codes are unique across documentation files. Register public codes in `docs/help/errors/registry.json`. Each code needs exactly one page at `/help/errors/<lowercase-code>/`.
+- Public error codes come from `support-codes.json`. Do not edit the generated code pages, the generated tables in `docs/help/errors/README.md`, or `docs/help/errors/registry.json`. Each active code has one page at `/help/errors/<lowercase-code>/`.
 - A top-level section with `audience: developers` appears under **Contributors** in the sidebar.
 - A `draft: true` file fails the production build.
 - Use `README.md` for a directory landing page. It maps to the directory route. Do not add `index.md`. Without a README, the build lists the visible children.

@@ -17,7 +17,7 @@ export interface ParsedMarkdown {
 }
 
 const FRONTMATTER = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
-const ERROR_CODE = /^[A-Z]+$/;
+const ERROR_CODE = /^[A-Z]{2}-[A-Z]{3}$/;
 const AUDIENCES = new Set<DocumentMetadata['audience']>([
 	'all',
 	'developers',
@@ -139,7 +139,7 @@ export function parseFrontmatter(
 	if (code !== undefined && !ERROR_CODE.test(code)) {
 		throw new ContentError(
 			source,
-			'frontmatter.code must be one uppercase English word'
+			'frontmatter.code must match XX-XXX with uppercase English letters'
 		);
 	}
 	if (code !== undefined && domain === undefined) {

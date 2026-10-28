@@ -11,7 +11,7 @@ order: 20
 
 ## The launcher shows an error code
 
-See [Error codes](errors/README.md) for words such as `PEBBLE`.
+See [Error codes](errors/README.md) for codes such as `IN-DLD`.
 
 ## The launcher will not open
 

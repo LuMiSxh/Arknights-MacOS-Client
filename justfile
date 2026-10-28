@@ -88,6 +88,12 @@ format target='all':
     done
     echo "format complete ($target)"
 
+# Regenerate the files built from support-codes.json and the license inventory.
+[group('Checks')]
+generate:
+    {{ uv }} scripts/support_codes.py
+    {{ uv }} scripts/licenses.py
+
 # Build the Apple Silicon release binary.
 [group('Checks')]
 build:

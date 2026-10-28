@@ -60,7 +60,10 @@ function validateSupportCodeRegistry(
 ): void {
 	const registry = new Map<string, SupportCodeRegistryEntry>();
 	for (const entry of readSupportCodeRegistry()) {
-		if (!/^[A-Z]+$/.test(entry.code) || entry.domain.trim() === '') {
+		if (
+			!/^[A-Z]{2}-[A-Z]{3}$/.test(entry.code) ||
+			entry.domain.trim() === ''
+		) {
 			throw new ContentError(
 				registrySource,
 				`invalid support-code entry ${entry.code}`

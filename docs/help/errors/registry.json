@@ -1,13 +1,86 @@
 [
-  { "code": "VIRGA", "domain": "service" },
-  { "code": "PEBBLE", "domain": "installation" },
-  { "code": "GABBRO", "domain": "installation" },
-  { "code": "BASALT", "domain": "installation" },
-  { "code": "SCREE", "domain": "installation" },
-  { "code": "LIMPET", "domain": "runtime" },
-  { "code": "WHELK", "domain": "runtime" },
-  { "code": "SEPIA", "domain": "runtime" },
-  { "code": "ANEMONE", "domain": "runtime" },
-  { "code": "NARWHAL", "domain": "runtime" },
-  { "code": "CRUX", "domain": "process" }
+  {
+    "code": "SV-CNT",
+    "domain": "service"
+  },
+  {
+    "code": "SV-ERR",
+    "domain": "service"
+  },
+  {
+    "code": "NW-OFF",
+    "domain": "network"
+  },
+  {
+    "code": "IN-BSY",
+    "domain": "installation"
+  },
+  {
+    "code": "IN-DIR",
+    "domain": "installation"
+  },
+  {
+    "code": "IN-DLD",
+    "domain": "installation"
+  },
+  {
+    "code": "IN-DSK",
+    "domain": "installation"
+  },
+  {
+    "code": "IN-MAN",
+    "domain": "installation"
+  },
+  {
+    "code": "IN-MIS",
+    "domain": "installation"
+  },
+  {
+    "code": "FS-MIG",
+    "domain": "files"
+  },
+  {
+    "code": "FS-WRT",
+    "domain": "files"
+  },
+  {
+    "code": "RT-BIL",
+    "domain": "runtime"
+  },
+  {
+    "code": "RT-BLK",
+    "domain": "runtime"
+  },
+  {
+    "code": "RT-BND",
+    "domain": "runtime"
+  },
+  {
+    "code": "RT-CMP",
+    "domain": "runtime"
+  },
+  {
+    "code": "RT-ROS",
+    "domain": "runtime"
+  },
+  {
+    "code": "RT-SET",
+    "domain": "runtime"
+  },
+  {
+    "code": "GM-CRS",
+    "domain": "game"
+  },
+  {
+    "code": "GM-WIN",
+    "domain": "game"
+  },
+  {
+    "code": "UP-ERR",
+    "domain": "update"
+  },
+  {
+    "code": "UI-ICN",
+    "domain": "customization"
+  }
 ]
