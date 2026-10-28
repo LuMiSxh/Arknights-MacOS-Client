@@ -2,12 +2,12 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.8.0",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0/Arknights-MacOS-Runtime-v0.8.0.tar.gz",
+    "name": "Arknights macOS Runtime 0.8.0-rc1",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc1/Arknights-MacOS-Runtime-v0.8.0-rc1.tar.gz",
     "sha256": "e5882c64b5abe7225149fde9b4bf94c6f403ff0def895e0eca69de94e588ebde"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0/Arknights-MacOS-Runtime-v0.8.0-source.tar.gz",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc1/Arknights-MacOS-Runtime-v0.8.0-rc1-source.tar.gz",
     "sha256": "16b44f67d2ce16b6e64a8e1ecfb08b7ad4890363cdead50d02e15f0335dafbd2"
   },
   "interface": {

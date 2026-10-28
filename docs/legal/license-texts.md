@@ -430,7 +430,7 @@ THE SOFTWARE.
 ## Runtime components
 
 > [!WARNING]
-> This page does not list the runtime license index. The components below come from `runtime.json` and the project's own records. They are not a complete component list. The runtime archive carries its own license texts in `Licenses/`. See the [runtime release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0).
+> This page does not list the runtime license index. The components below come from `runtime.json` and the project's own records. They are not a complete component list. The runtime archive carries its own license texts in `Licenses/`. See the [runtime release](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc1).
 
 ### Wine
 
@@ -1159,9 +1159,9 @@ Text: `apache-2.0.txt`
    limitations under the License.
 ```
 
-### Libraries of runtime 0.8.0
+### Libraries of runtime 0.8.0-rc1
 
-Version 0.8.0. `LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6`. [Source](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.8.0).
+Version 0.8.0-rc1. `LGPL-2.1-or-later AND (GPL-2.0-or-later OR LGPL-3.0-or-later) AND (FTL OR GPL-2.0-only) AND BSD-3-Clause AND MIT AND Zlib AND libpng-2.0 AND bzip2-1.0.6`. [Source](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/tree/v0.8.0-rc1).
 
 The text of `lgpl-2.1.txt` is under [Wine](#wine).
 
