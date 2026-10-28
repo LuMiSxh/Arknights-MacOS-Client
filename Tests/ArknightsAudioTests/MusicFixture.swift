@@ -16,7 +16,13 @@ final class FakeMusicPlayer {
 	private(set) var playedIndices: [Int] = []
 	private(set) var isHoldingPlaylist = false
 	var holdsPlaylist = false
+	var holdsMetadata = false
+	private(set) var isHoldingMetadata = false
+	private var metadataGate: CheckedContinuation<Void, Never>?
 	var playlist = ["a", "b"]
+	/// Makes `nextVideo` and `previousVideo` throw.
+	var failsNavigation = false
+	private(set) var terminatedStreams = 0
 	/// What `getPlaybackMetadata` returns; it throws while nil.
 	var metadata: YouTubePlayer.PlaybackMetadata?
 	private var gate: CheckedContinuation<Void, Never>?
@@ -46,6 +52,12 @@ final class FakeMusicPlayer {
 		isHoldingPlaylist = false
 	}
 
+	func releaseMetadata() {
+		metadataGate?.resume()
+		metadataGate = nil
+		isHoldingMetadata = false
+	}
+
 	func count(_ command: String) -> Int {
 		commands.filter { $0 == command }.count
 	}
@@ -58,6 +70,9 @@ final class FakeMusicPlayer {
 					bufferingPolicy: .bufferingNewest(AppConstants.Music.playerEventBufferLimit)
 				)
 				eventStreams.append(continuation)
+				continuation.onTermination = { _ in
+					Task { @MainActor in self.terminatedStreams += 1 }
+				}
 				return stream
 			},
 			load: { [self] _, _ in commands.append("load") },
@@ -69,18 +84,26 @@ final class FakeMusicPlayer {
 				}
 				return playlist
 			},
-			getPlaylistIndex: { [self] _ in
-				commands.append("getPlaylistIndex")
-				return 0
-			},
 			getPlaybackMetadata: { [self] _ in
 				commands.append("getPlaybackMetadata")
+				if holdsMetadata {
+					isHoldingMetadata = true
+					await withCheckedContinuation { metadataGate = $0 }
+				}
 				guard let metadata else { throw Unsupported() }
 				return metadata
 			},
 			playVideoInPlaylist: { [self] _, index in
 				commands.append("playVideoInPlaylist")
 				playedIndices.append(index)
+			},
+			nextVideo: { [self] _ in
+				commands.append("nextVideo")
+				if failsNavigation { throw Unsupported() }
+			},
+			previousVideo: { [self] _ in
+				commands.append("previousVideo")
+				if failsNavigation { throw Unsupported() }
 			},
 			setLoop: { [self] _, _ in commands.append("setLoop") },
 			setShuffle: { [self] _, _ in commands.append("setShuffle") },

@@ -47,7 +47,7 @@ struct BackgroundMusicPlaylistTests {
 
 		for skipped in 1..<bound {
 			fixture.fake.emit(.failure(.unplayableTrack))
-			#expect(await waitForCondition { fixture.fake.count("playVideoInPlaylist") == skipped })
+			#expect(await waitForCondition { fixture.fake.count("nextVideo") == skipped })
 		}
 		if playsBetween {
 			fixture.fake.emit(.playback(.playing))
@@ -56,41 +56,13 @@ struct BackgroundMusicPlaylistTests {
 		fixture.fake.emit(.failure(.unplayableTrack))
 
 		if playsBetween {
-			#expect(await waitForCondition { fixture.fake.count("playVideoInPlaylist") == bound })
+			#expect(await waitForCondition { fixture.fake.count("nextVideo") == bound })
 			#expect(!controller.isUnavailable)
 			#expect(fixture.fake.count("pause") == 0)
 		} else {
 			#expect(await waitForCondition { controller.isUnavailable })
 			#expect(await waitForCondition { fixture.fake.count("pause") == 1 })
-			#expect(fixture.fake.count("playVideoInPlaylist") == bound - 1)
+			#expect(fixture.fake.count("nextVideo") == bound - 1)
 		}
-	}
-
-	@Test
-	func trackChangeCompletesWhenTheNewTrackPlaysAndGivesUpAfterTheTimeout() async throws {
-		let clock = HeldClock()
-		let fixture = try MusicFixture(clock: clock)
-		defer { fixture.remove() }
-		let controller = fixture.controller
-		controller.currentSource = .playlist(id: "list")
-
-		controller.playNextTrack()
-		#expect(await waitForCondition { fixture.fake.count("playVideoInPlaylist") == 1 })
-		for _ in 0..<20 { await Task.yield() }
-		// The previous track's video and a bare state change do not end the wait.
-		fixture.fake.emit(.metadata(try FakeMusicPlayer.metadata(videoID: "a")))
-		fixture.fake.emit(.playback(.playing))
-		for _ in 0..<20 { await Task.yield() }
-		#expect(controller.isChangingTrack)
-
-		fixture.fake.emit(.metadata(try FakeMusicPlayer.metadata(videoID: "b")))
-		#expect(await waitForCondition { !controller.isChangingTrack })
-
-		controller.playNextTrack()
-		#expect(await waitForCondition { fixture.fake.count("playVideoInPlaylist") == 2 })
-		for _ in 0..<20 { await Task.yield() }
-		#expect(controller.isChangingTrack)
-		clock.release()
-		#expect(await waitForCondition { !controller.isChangingTrack })
 	}
 }

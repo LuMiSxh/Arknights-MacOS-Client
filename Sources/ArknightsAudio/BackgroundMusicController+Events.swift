@@ -112,19 +112,20 @@ extension BackgroundMusicController {
 	}
 
 	/// Starts the first playlist track at random, or resumes the current track.
-	func startPlayback(on target: YouTubePlayer, token: TaskSlot.Token) async throws {
+	/// Returns `false` when nothing started: a game process exists, or the fade was superseded.
+	func startPlayback(on target: YouTubePlayer, token: TaskSlot.Token) async throws -> Bool {
+		guard !lifecycle.activity.hasGameProcess else { return false }
 		guard currentSource?.isPlaylist == true, !didStartCurrentPlaylist else {
 			try await playerCommands.play(target)
-			return
+			return true
 		}
-		guard !lifecycle.activity.hasGameProcess else { return }
 		// YouTube shuffles and loops the playlist from here on; the launcher only picks the start.
 		try await playerCommands.setLoop(target, true)
-		guard fadeSlot.owns(token) else { return }
+		guard fadeSlot.owns(token) else { return false }
 		try await playerCommands.setShuffle(target, true)
-		guard fadeSlot.owns(token) else { return }
+		guard fadeSlot.owns(token) else { return false }
 		let playlist = try await playerCommands.getPlaylist(target) ?? []
-		guard fadeSlot.owns(token) else { return }
+		guard fadeSlot.owns(token), !lifecycle.activity.hasGameProcess else { return false }
 		if playlist.isEmpty {
 			lifecycle.log.error(
 				"Background music playlist is empty or unavailable; playing it in order")
@@ -134,5 +135,6 @@ extension BackgroundMusicController {
 			lifecycle.log.info("Background music playlist started on a random track")
 		}
 		didStartCurrentPlaylist = true
+		return true
 	}
 }

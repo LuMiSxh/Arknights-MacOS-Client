@@ -238,7 +238,8 @@ package final class BackgroundMusicController {
 		let sourceType = sourceTypeName(source)
 
 		invalidatePlayerTasks()
-		didStartCurrentPlaylist = false
+		// Only a new player or source picks a random start; reusing the playlist resumes it.
+		if player == nil || currentSource != source { didStartCurrentPlaylist = false }
 		consecutiveFailures = 0
 		currentSource = source
 		transition(.sourceLoaded)

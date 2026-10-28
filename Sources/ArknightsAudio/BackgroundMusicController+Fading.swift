@@ -52,7 +52,9 @@ extension BackgroundMusicController {
 		userPlaybackOperation: TaskSlot.Token? = nil
 	) {
 		volumeSlot.invalidate()
-		guard !isSilencedForGame, let target = targetPlayer ?? player else { return }
+		guard !isSilencedForGame, !lifecycle.activity.hasGameProcess,
+			let target = targetPlayer ?? player
+		else { return }
 		let expectation = expectPlayback(.playing)
 		let generation = playerGeneration
 		fadeTask = fadeSlot.replace { [weak self] token in
@@ -65,8 +67,14 @@ extension BackgroundMusicController {
 			await applyVolume(0, on: target, generation: generation)
 			do {
 				guard fadeSlot.owns(token) else { return }
-				try await startPlayback(on: target, token: token)
+				let started = try await startPlayback(on: target, token: token)
 				guard fadeSlot.owns(token) else { return }
+				guard started else {
+					if let userPlaybackOperation { finishOperation(userPlaybackOperation) }
+					clearPlaybackExpectation(expectation)
+					finishFade(token)
+					return
+				}
 				if let userPlaybackOperation {
 					finishOperation(userPlaybackOperation)
 				}

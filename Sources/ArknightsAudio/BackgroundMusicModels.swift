@@ -18,10 +18,11 @@ struct BackgroundMusicPlayerCommands {
 	let events: @MainActor (YouTubePlayer) -> AsyncStream<BackgroundMusicPlayerEvent>
 	let load: SourceCommand
 	let getPlaylist: @MainActor (YouTubePlayer) async throws -> [String]?
-	let getPlaylistIndex: @MainActor (YouTubePlayer) async throws -> Int
 	let getPlaybackMetadata:
 		@MainActor (YouTubePlayer) async throws -> YouTubePlayer.PlaybackMetadata
 	let playVideoInPlaylist: IndexCommand
+	let nextVideo: PlayerCommand
+	let previousVideo: PlayerCommand
 	let setLoop: FlagCommand
 	let setShuffle: FlagCommand
 	let play: PlayerCommand
@@ -39,9 +40,10 @@ struct BackgroundMusicPlayerCommands {
 			}
 		},
 		getPlaylist: { try await $0.getPlaylist() },
-		getPlaylistIndex: { try await $0.getPlaylistIndex() },
 		getPlaybackMetadata: { try await $0.getPlaybackMetadata() },
 		playVideoInPlaylist: { try await $0.playVideoInPlaylist(at: $1) },
+		nextVideo: { try await $0.nextVideoInPlaylist() },
+		previousVideo: { try await $0.previousVideoInPlaylist() },
 		setLoop: { try await $0.setLoopPlaylist(enabled: $1) },
 		setShuffle: { try await $0.setShufflePlaylist(enabled: $1) },
 		play: { try await $0.play() },

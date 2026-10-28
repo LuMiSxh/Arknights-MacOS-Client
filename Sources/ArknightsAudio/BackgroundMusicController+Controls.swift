@@ -83,35 +83,28 @@ extension BackgroundMusicController {
 		expectsPlayback: Bool
 	) async throws -> Bool {
 		guard isCurrent(operation) else { return false }
-		guard let playlist = try await playerCommands.getPlaylist(targetPlayer), !playlist.isEmpty
-		else {
-			guard isCurrent(operation) else { return false }
-			lifecycle.log.error("Background music playlist is empty or unavailable")
-			return false
-		}
-		guard isCurrent(operation) else { return false }
-		let currentIndex = try await playerCommands.getPlaylistIndex(targetPlayer)
-		guard isCurrent(operation) else { return false }
-		guard
-			let targetIndex = direction.targetIndex(
-				in: playlist,
-				currentIndex: currentIndex
-			)
-		else {
-			lifecycle.log.error(
-				"Background music playlist has no different playable track; count=\(playlist.count) index=\(currentIndex)"
-			)
-			return false
-		}
+		// The player is the truth: the title state can lag behind the track that actually plays.
 		let resolvedPreviousVideoID =
-			previousVideoID
-			?? (playlist.indices.contains(currentIndex) ? playlist[currentIndex] : nil)
+			await readMetadata(of: targetPlayer)?.videoId ?? previousVideoID
+		guard isCurrent(operation) else { return false }
 		playbackState = nil
 		expectPlayback(expectsPlayback ? .playing : .paused)
 		// Subscribe before the command so the new track's events cannot be missed.
 		let events = playerCommands.events(targetPlayer)
-		try await playerCommands.playVideoInPlaylist(targetPlayer, targetIndex)
-		guard isCurrent(operation) else { return false }
+		do {
+			// YouTube owns the shuffled order, so it picks the neighbour.
+			switch direction {
+			case .next: try await playerCommands.nextVideo(targetPlayer)
+			case .previous: try await playerCommands.previousVideo(targetPlayer)
+			}
+		} catch {
+			await terminate(events)
+			throw error
+		}
+		guard isCurrent(operation) else {
+			await terminate(events)
+			return false
+		}
 		let started = await waitForTrackStart(
 			on: targetPlayer,
 			previousVideoID: resolvedPreviousVideoID,
@@ -119,6 +112,14 @@ extension BackgroundMusicController {
 			events: events
 		)
 		return started && isCurrent(operation)
+	}
+
+	/// An `AsyncStream` that nobody iterates never ends, and its subscription keeps running.
+	/// Iterating it in a cancelled task terminates it.
+	private func terminate(_ events: AsyncStream<BackgroundMusicPlayerEvent>) async {
+		let drain = Task { for await _ in events {} }
+		drain.cancel()
+		await drain.value
 	}
 
 	private func waitForTrackStart(
@@ -136,20 +137,33 @@ extension BackgroundMusicController {
 					events: events
 				)
 			}
-			group.addTask { await self.timeOutTrackStart(previousVideoID: previousVideoID) }
+			group.addTask {
+				await self.timeOutTrackStart(
+					on: targetPlayer,
+					previousVideoID: previousVideoID,
+					expectsPlayback: expectsPlayback
+				)
+			}
 			let started = await group.next() ?? false
 			group.cancelAll()
 			return started
 		}
 	}
 
-	/// Always returns `false`, after the timeout or at once when cancelled.
-	private func timeOutTrackStart(previousVideoID: String?) async -> Bool {
+	/// After the timeout, one last read of the player decides: the events can be lost, the track
+	/// can still have changed, and the title must show what plays.
+	private func timeOutTrackStart(
+		on targetPlayer: YouTubePlayer,
+		previousVideoID: String?,
+		expectsPlayback: Bool
+	) async -> Bool {
 		do {
 			try await sleep(for: AppConstants.Music.trackStartTimeout)
 		} catch {
 			return false
 		}
+		let changed = await videoDiffers(on: targetPlayer, from: previousVideoID)
+		guard !(changed && expectsPlayback) else { return true }
 		lifecycle.log.error(
 			"Background music timed out waiting for the next track; previous=\(previousVideoID ?? "unknown")"
 		)
@@ -170,14 +184,18 @@ extension BackgroundMusicController {
 			switch event {
 			case .playback(let newState):
 				state = newState
-			case .metadata(let metadata):
-				if let videoID = metadata.videoId, videoID != previousVideoID {
-					videoChanged = true
-				}
+			case .metadata:
+				break
 			case .failure:
 				return false
 			}
-			guard videoChanged else { continue }
+			if !videoChanged {
+				// `.metadata` events can be stale or missing, so a playing player is asked directly.
+				guard state == .playing,
+					await videoDiffers(on: targetPlayer, from: previousVideoID)
+				else { continue }
+				videoChanged = true
+			}
 			if expectsPlayback {
 				if state == .playing { return true }
 			} else if !didPause {
@@ -196,6 +214,28 @@ extension BackgroundMusicController {
 			}
 		}
 		return false
+	}
+
+	/// Reads the playing video from the player and applies its title.
+	private func videoDiffers(
+		on targetPlayer: YouTubePlayer, from previousVideoID: String?
+	) async
+		-> Bool
+	{
+		guard let metadata = await readMetadata(of: targetPlayer) else { return false }
+		applyTrackTitle(from: metadata)
+		return metadata.videoId != nil && metadata.videoId != previousVideoID
+	}
+
+	func readMetadata(of targetPlayer: YouTubePlayer) async -> YouTubePlayer.PlaybackMetadata? {
+		do {
+			return try await playerCommands.getPlaybackMetadata(targetPlayer)
+		} catch {
+			lifecycle.log.debug(
+				"Background music could not read the track title: \(error.localizedDescription)"
+			)
+			return nil
+		}
 	}
 
 	func reconcilePlaybackIntent(with state: YouTubePlayer.PlaybackState) {
@@ -243,21 +283,5 @@ enum TrackDirection {
 		case .previous: "previous"
 		case .next: "next"
 		}
-	}
-
-	func targetIndex(in playlist: [String], currentIndex: Int) -> Int? {
-		guard playlist.indices.contains(currentIndex), playlist.count > 1 else { return nil }
-		let currentVideoID = playlist[currentIndex]
-		for distance in 1..<playlist.count {
-			let candidate =
-				switch self {
-				case .previous:
-					(currentIndex - distance + playlist.count) % playlist.count
-				case .next:
-					(currentIndex + distance) % playlist.count
-				}
-			if playlist[candidate] != currentVideoID { return candidate }
-		}
-		return nil
 	}
 }
