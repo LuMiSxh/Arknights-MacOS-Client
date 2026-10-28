@@ -5,57 +5,9 @@ import Foundation
 import YouTubePlayerKit
 
 extension BackgroundMusicController {
-	func shuffleInitialPlaylistIfNeeded(on targetPlayer: YouTubePlayer) {
-		guard case .playlist = currentSource, !didShuffleCurrentPlaylist else { return }
-		didShuffleCurrentPlaylist = true
-		shuffleInitialPlaylist(on: targetPlayer)
-	}
-
-	func shuffleInitialPlaylist(on targetPlayer: YouTubePlayer) {
-		let operation = beginOperation(.trackChange)
-		expectPlayback(.playing)
-		operationTask = Task { [weak self] in
-			guard let self else { return }
-			do {
-				guard isCurrent(operation) else { return }
-				try await targetPlayer.setLoopPlaylist(enabled: true)
-				guard isCurrent(operation) else { return }
-				try await targetPlayer.setShufflePlaylist(enabled: true)
-				guard isCurrent(operation) else { return }
-				try await Task.sleep(for: AppConstants.Music.playlistShuffleDelay)
-				guard isCurrent(operation) else { return }
-				let changed = try await selectTrack(
-					on: targetPlayer,
-					operation: operation,
-					direction: .next,
-					expectsPlayback: true
-				)
-				if changed {
-					lifecycle.log.info(
-						"Background music playlist shuffled and started a random track"
-					)
-					guard isCurrent(operation) else { return }
-				} else {
-					lifecycle.log.error(
-						"Background music playlist shuffled, but the selected track did not start"
-					)
-					guard isCurrent(operation) else { return }
-				}
-			} catch {
-				guard !Task.isCancelled, isCurrent(operation) else { return }
-				lifecycle.log.error(
-					"Background music failed to shuffle the playlist: \(error.localizedDescription)"
-				)
-			}
-			guard isCurrent(operation) else { return }
-			finishOperation(operation)
-			operationTask = nil
-		}
-	}
-
 	func pauseFromUserAction() {
 		guard let player else { return }
-		isManuallyPaused = true
+		transition(.userPaused)
 		let operation = beginOperation(.playbackChange(.paused))
 		let expectation = expectPlayback(.paused)
 		cancelFade()
@@ -63,7 +15,7 @@ extension BackgroundMusicController {
 			guard let self else { return }
 			do {
 				guard isCurrent(operation) else { return }
-				try await player.pause()
+				try await playerCommands.pause(player)
 				guard isCurrent(operation) else { return }
 				lifecycle.log.info("Background music paused by user")
 			} catch {
@@ -80,9 +32,17 @@ extension BackgroundMusicController {
 	}
 
 	func changeTrack(direction: TrackDirection) {
-		guard canNavigatePlaylist, !controlsAreDisabled, let player else { return }
+		guard canNavigatePlaylist, !controlsAreUnavailable, !isChangingTrack,
+			!isChangingPlayback
+		else { return }
+		startTrackChange(direction: direction)
+	}
+
+	/// Replaces any running track or playback change, so a player failure can skip past its track.
+	func startTrackChange(direction: TrackDirection) {
+		guard let player else { return }
 		let previousVideoID = currentMusicVideoID
-		let expectsPlayback = !isManuallyPaused
+		let expectsPlayback = !phase.isUserPaused
 		let operation = beginOperation(.trackChange)
 		operationTask = Task { [weak self] in
 			guard let self else { return }
@@ -119,17 +79,18 @@ extension BackgroundMusicController {
 		on targetPlayer: YouTubePlayer,
 		operation: TaskSlot.Token,
 		direction: TrackDirection,
-		previousVideoID: String? = nil,
+		previousVideoID: String?,
 		expectsPlayback: Bool
 	) async throws -> Bool {
 		guard isCurrent(operation) else { return false }
-		guard let playlist = try await targetPlayer.getPlaylist(), !playlist.isEmpty else {
+		guard let playlist = try await playerCommands.getPlaylist(targetPlayer), !playlist.isEmpty
+		else {
 			guard isCurrent(operation) else { return false }
 			lifecycle.log.error("Background music playlist is empty or unavailable")
 			return false
 		}
 		guard isCurrent(operation) else { return false }
-		let currentIndex = try await targetPlayer.getPlaylistIndex()
+		let currentIndex = try await playerCommands.getPlaylistIndex(targetPlayer)
 		guard isCurrent(operation) else { return false }
 		guard
 			let targetIndex = direction.targetIndex(
@@ -145,110 +106,96 @@ extension BackgroundMusicController {
 		let resolvedPreviousVideoID =
 			previousVideoID
 			?? (playlist.indices.contains(currentIndex) ? playlist[currentIndex] : nil)
-		let targetVideoID = playlist[targetIndex]
 		playbackState = nil
 		expectPlayback(expectsPlayback ? .playing : .paused)
-		try await targetPlayer.playVideoInPlaylist(at: targetIndex)
+		// Subscribe before the command so the new track's events cannot be missed.
+		let events = playerCommands.events(targetPlayer)
+		try await playerCommands.playVideoInPlaylist(targetPlayer, targetIndex)
 		guard isCurrent(operation) else { return false }
-		return await waitForTrackStart(
+		let started = await waitForTrackStart(
 			on: targetPlayer,
-			operation: operation,
-			targetIndex: targetIndex,
-			targetVideoID: targetVideoID,
 			previousVideoID: resolvedPreviousVideoID,
-			expectsPlayback: expectsPlayback
+			expectsPlayback: expectsPlayback,
+			events: events
 		)
+		return started && isCurrent(operation)
 	}
 
 	private func waitForTrackStart(
 		on targetPlayer: YouTubePlayer,
-		operation: TaskSlot.Token,
-		targetIndex: Int,
-		targetVideoID: String,
 		previousVideoID: String?,
-		expectsPlayback: Bool
+		expectsPlayback: Bool,
+		events: AsyncStream<BackgroundMusicPlayerEvent>
 	) async -> Bool {
-		var pausedChangedTrack = false
-		var lastIndex: Int?
-		var lastVideoID: String?
-		var lastState: YouTubePlayer.PlaybackState?
-		var lastError: String?
-		for _ in 0..<AppConstants.Music.trackChangePollLimit {
-			guard !Task.isCancelled, isCurrent(operation) else { return false }
-			do {
-				let observedIndex = try await targetPlayer.getPlaylistIndex()
-				guard isCurrent(operation) else { return false }
-				lastIndex = observedIndex
-				guard observedIndex == targetIndex else {
-					try await Task.sleep(for: AppConstants.Music.trackChangePollInterval)
-					continue
-				}
-
-				let metadata = try await targetPlayer.getPlaybackMetadata()
-				guard isCurrent(operation) else { return false }
-				lastVideoID = metadata.videoId
-				lastState = playbackState
-				// YouTube applies `setShuffle` asynchronously. The selected index remains
-				// authoritative even if its video changed after our shuffled-list snapshot.
-				let reachedTarget = Self.hasReachedSelectedVideo(
+		await withTaskGroup(of: Bool.self) { group in
+			group.addTask {
+				await self.observeTrackStart(
+					on: targetPlayer,
 					previousVideoID: previousVideoID,
-					expectedVideoID: targetVideoID,
-					observedVideoID: metadata.videoId
+					expectsPlayback: expectsPlayback,
+					events: events
 				)
-				let hasValidTitle = reachedTarget && applyTrackTitle(from: metadata)
-				let reachedExpectedState =
-					expectsPlayback
-					? playbackState == .playing
-					: playbackState == .paused
-				if reachedTarget, !expectsPlayback, !pausedChangedTrack {
-					try await targetPlayer.pause()
-					guard isCurrent(operation) else { return false }
-					pausedChangedTrack = true
-					continue
-				}
-				if reachedTarget, hasValidTitle, reachedExpectedState { return true }
-			} catch {
-				lastError = error.localizedDescription
 			}
-			do {
-				try await Task.sleep(for: AppConstants.Music.trackChangePollInterval)
-			} catch {
-				return false
-			}
+			group.addTask { await self.timeOutTrackStart(previousVideoID: previousVideoID) }
+			let started = await group.next() ?? false
+			group.cancelAll()
+			return started
 		}
-		guard isCurrent(operation) else { return false }
-		if lastIndex == targetIndex {
-			let resolvedVideoID =
-				lastVideoID.map {
-					previousVideoID == nil || $0 != previousVideoID ? $0 : targetVideoID
-				}
-				?? targetVideoID
-			currentMusicVideoID = resolvedVideoID
-			if lastObservedVideoID != resolvedVideoID {
-				let fallbackTitle = "Playlist track \(targetIndex + 1)"
-				currentMusicTitle = fallbackTitle
-				nowPlaying.updateTrack(title: fallbackTitle, artist: nil)
-			}
+	}
+
+	/// Always returns `false`, after the timeout or at once when cancelled.
+	private func timeOutTrackStart(previousVideoID: String?) async -> Bool {
+		do {
+			try await sleep(for: AppConstants.Music.trackStartTimeout)
+		} catch {
+			return false
 		}
-		let previous = previousVideoID ?? "unknown"
-		let observedIndex = lastIndex.map(String.init) ?? "unknown"
-		let observedVideoID = lastVideoID ?? "unknown"
-		let observedState = lastState.map(String.init(describing:)) ?? "unknown"
-		let errorDetail = lastError.map { " error=\($0)" } ?? ""
 		lifecycle.log.error(
-			"Background music timed out waiting for target; previous=\(previous) targetIndex=\(targetIndex) targetVideo=\(targetVideoID) observedIndex=\(observedIndex) observedVideo=\(observedVideoID) state=\(observedState)\(errorDetail)"
+			"Background music timed out waiting for the next track; previous=\(previousVideoID ?? "unknown")"
 		)
 		return false
 	}
 
-	static func hasReachedSelectedVideo(
+	/// Returns once a different video plays (or pauses, when the user paused) or the player fails.
+	private func observeTrackStart(
+		on targetPlayer: YouTubePlayer,
 		previousVideoID: String?,
-		expectedVideoID: String,
-		observedVideoID: String?
-	) -> Bool {
-		guard let observedVideoID else { return false }
-		return observedVideoID == expectedVideoID
-			|| previousVideoID.map { observedVideoID != $0 } == true
+		expectsPlayback: Bool,
+		events: AsyncStream<BackgroundMusicPlayerEvent>
+	) async -> Bool {
+		var videoChanged = false
+		var didPause = false
+		var state: YouTubePlayer.PlaybackState?
+		for await event in events {
+			switch event {
+			case .playback(let newState):
+				state = newState
+			case .metadata(let metadata):
+				if let videoID = metadata.videoId, videoID != previousVideoID {
+					videoChanged = true
+				}
+			case .failure:
+				return false
+			}
+			guard videoChanged else { continue }
+			if expectsPlayback {
+				if state == .playing { return true }
+			} else if !didPause {
+				didPause = true
+				state = nil
+				do {
+					try await playerCommands.pause(targetPlayer)
+				} catch {
+					lifecycle.log.error(
+						"Background music failed to pause the changed track: \(error.localizedDescription)"
+					)
+					return false
+				}
+			} else if state == .paused {
+				return true
+			}
+		}
+		return false
 	}
 
 	func reconcilePlaybackIntent(with state: YouTubePlayer.PlaybackState) {

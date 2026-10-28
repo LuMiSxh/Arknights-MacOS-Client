@@ -182,7 +182,7 @@ The controller runs the launch in fixed steps. The source is in
 4. `runLaunch` runs in the session's `launchTask`:
    - `prepareRuntime` discovers runtime capabilities and builds the display settings and environment.
    - `spawn` starts `Arknights.exe` through `WineRuntime`.
-   - `monitor` waits for the visible game window and then publishes **Running**.
+   - `monitor` requests Game Mode when the launch enables it. It then waits for the visible game window and publishes **Running**.
 
 Each step checks the session ID and the lease after every `await`. A step stops when a newer session
 owns the launch. `WineWindowReadiness` takes an injected `Clock`.
@@ -309,9 +309,12 @@ Overlapping cleanup for one session is deduplicated.
 Application termination:
 
 1. The controller closes the process-spawn gate.
-2. It synchronously requests `wineserver -k` and waits up to three seconds.
-3. If the command still runs, it sends TERM and waits up to one more second.
-4. If needed, it sends SIGKILL.
+2. It waits up to three seconds for a running Game Mode request. If the request still runs, it
+   terminates that request. It then runs `gamepolicyctl` to turn Game Mode off. Later Game Mode
+   requests do not run.
+3. It synchronously requests `wineserver -k` and waits up to three seconds.
+4. If the command still runs, it sends TERM and waits up to one more second.
+5. If needed, it sends SIGKILL.
 
 This path does not wait for gated `Process` owners or run a final `wineserver -w`. It cannot confirm
 prefix-wide shutdown and never publishes **Idle**.
@@ -344,7 +347,7 @@ The launch directs Wine, Unity, and Chromium diagnostics to the central macOS lo
   adds `--log-file=L:\chromium.log`.
 - [Storage](../../help/storage.md#logs) lists the macOS paths.
 
-Launch diagnostics include the session ID, region, display and synchronization options, and whether
+Launch diagnostics include the session ID, region, display, frame rate limit, and synchronization options, and whether
 graphics diagnostics were enabled. An unexpected exit adds the process status, the termination reason,
 the latest `Arknights-*.ips` crash report when available, and a bounded tail of the publisher log.
 

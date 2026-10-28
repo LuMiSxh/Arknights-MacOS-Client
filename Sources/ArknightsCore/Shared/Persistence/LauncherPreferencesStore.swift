@@ -37,6 +37,7 @@ package struct LauncherPreferencesStore {
 		package static let launcherMusicVolume = ScalarKey("launcherMusicVolume", default: 0.5) {
 			$0.isFinite ? min(max($0, 0), 1) : 0.5
 		}
+		package static let launcherMusicMuted = ScalarKey("launcherMusicMuted", default: false)
 		package static let canaryFeaturesEnabled = ScalarKey(
 			"canaryFeaturesEnabled", default: false)
 		package static let taiwanClientEnabled = ScalarKey("taiwanClientEnabled", default: false)
@@ -170,7 +171,8 @@ package struct LauncherPreferencesStore {
 			Key.announcementsEnabled.name, Key.gameLaunchOptions,
 			Key.showsServerResetCountdown.name, Key.showsGameVersion.name, Key.showsBranding.name,
 			Key.playsLauncherMusic.name, Key.launcherMusicURL.name, Key.showsPlayingMusic.name,
-			Key.launcherMusicVolume.name, Key.usesDynamicTheme.name, Key.canaryFeaturesEnabled.name,
+			Key.launcherMusicVolume.name, Key.launcherMusicMuted.name,
+			Key.usesDynamicTheme.name, Key.canaryFeaturesEnabled.name,
 			Key.taiwanClientEnabled.name, Key.acknowledgedACEWarningRegions,
 			Key.usesHardwareCursor.name, Key.dismissedInGameResolutionNote.name,
 		] {

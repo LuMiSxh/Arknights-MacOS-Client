@@ -79,7 +79,7 @@ package struct MusicHUDPill: View {
 							title: "Previous Track",
 							systemImage: "backward.end.fill",
 							accentColor: accentColor,
-							isDisabled: controller.controlsAreDisabled,
+							isDisabled: controller.controlsAreUnavailable,
 							action: controller.playPreviousTrack
 						)
 					}
@@ -90,7 +90,7 @@ package struct MusicHUDPill: View {
 						systemImage: controller.isPlaying ? "pause.fill" : "play.fill",
 						accentColor: accentColor,
 						isProminent: true,
-						isDisabled: controller.controlsAreDisabled,
+						isDisabled: controller.controlsAreUnavailable,
 						action: controller.togglePlayback
 					)
 
@@ -99,7 +99,7 @@ package struct MusicHUDPill: View {
 							title: "Next Track",
 							systemImage: "forward.end.fill",
 							accentColor: accentColor,
-							isDisabled: controller.controlsAreDisabled,
+							isDisabled: controller.controlsAreUnavailable,
 							action: controller.playNextTrack
 						)
 					}
@@ -108,7 +108,7 @@ package struct MusicHUDPill: View {
 						volume: $settings.launcherMusicVolume,
 						accentColor: accentColor,
 						isMuted: controller.isMuted,
-						isDisabled: controller.controlsAreDisabled,
+						isDisabled: controller.controlsAreUnavailable,
 						toggleMute: controller.toggleMute
 					)
 
@@ -118,7 +118,7 @@ package struct MusicHUDPill: View {
 						title: "Open on YouTube",
 						systemImage: "arrow.up.right.square",
 						accentColor: accentColor,
-						isDisabled: controller.controlsAreDisabled,
+						isDisabled: controller.controlsAreUnavailable,
 						action: openCurrentMusicURL
 					)
 				}
@@ -129,7 +129,8 @@ package struct MusicHUDPill: View {
 	}
 
 	private var playbackStatus: String {
-		if controller.isGameProcessRunning { return "Paused while the game is running" }
+		if controller.isSilencedForGame { return "Paused while the game is running" }
+		if controller.isUnavailable { return "Music unavailable" }
 		if controller.isChangingTrack { return "Changing track…" }
 		return controller.isPlaying ? "Playing" : "Paused"
 	}

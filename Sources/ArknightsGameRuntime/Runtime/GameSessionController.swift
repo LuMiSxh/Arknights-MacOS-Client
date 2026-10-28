@@ -54,6 +54,8 @@ package final class GameSessionController {
 		@MainActor () throws -> any WineRuntimeSessionControlling
 	@ObservationIgnored var session: ActiveGameSession?
 	@ObservationIgnored var applicationTerminationRequested = false
+	/// Orders Game Mode requests: each one awaits the previous one, so `off` never overtakes `on`.
+	@ObservationIgnored var gameModeChain: Task<Void, Never>?
 	// Launch that passed the click guard but has no session yet. Blocks a second launch.
 	@ObservationIgnored var pendingLaunchID: UUID?
 	var gameRunningSince: Date?

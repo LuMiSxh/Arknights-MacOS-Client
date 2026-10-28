@@ -16,11 +16,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added **Save diagnostics…** to **Settings → About**. It saves a zip file to your Downloads folder.
 - The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.
 - The logs redact your home folder, your user name, and URL queries. Nothing is uploaded.
+- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited. Lower limits save battery. The limit
+applies on the next launch.
 
 ### Changed
 
 - **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
 - Runtime 0.8.0 updates DXMT to 0.80-361. It includes the upstream fixes for the display query leaks.
+- The launcher now remembers when you mute the music.
+- Playlists now start on a random track without playing the first track briefly.
+
+### Fixed
+
+- Launcher music now plays until the game window appears. It then fades out once, without stuttering.
+- The launcher no longer waits for the Game Mode helper on its main thread when the game starts.
+- The music controls no longer dim for a moment when you fade or change a track.
+- The launcher no longer changes the music track after the game window appears.
+- Changing the music volume during a fade-in now keeps the new volume.
+- Music fades now follow a smoother volume curve.
+- The launcher now skips music tracks that YouTube cannot play. It shows when music is unavailable.
+- Muting the music during a fade-out no longer leaves the music playing. The fade-out now ends and pauses the music.
 
 ## [0.7.1] - 2026-10-19
 

@@ -243,6 +243,7 @@ extension GameSessionController {
 			graphicsDiagnostics: graphicsDiagnosticsEnabled,
 			metalPerformanceHUDEnabled: request.options.usesMetalPerformanceHUD,
 			synchronizationMode: request.options.synchronizationMode,
+			frameRateLimit: request.options.frameRateLimit,
 			runtimeEnvironmentOverrides: prepared.environment,
 			clientVariant: request.region.clientVariant,
 			publisher: request.region.publisher,
@@ -271,15 +272,15 @@ extension GameSessionController {
 
 	private func monitor(_ context: LaunchContext, launch: WineLaunch) async throws {
 		let request = context.request
-		if request.options.usesGameMode {
-			GamePolicyControl.setGameMode(on: true, log: log)
-		}
 		updateSessionActivity(
 			.launchingGame(sessionID: request.id, processIdentifier: launch.processIdentifier),
 			lease: context.lease
 		)
 		lifecycle.setStatus(.startingGame)
 		monitorGame(launch: launch, runtime: context.runtime, sessionID: request.id)
+		if request.options.usesGameMode {
+			requestGameMode(on: true, sessionID: request.id)
+		}
 		try await WineWindowReadiness.wait(processIdentifier: launch.processIdentifier)
 		guard activeGameSessionID == request.id, isGameActive, !applicationTerminationRequested
 		else { return }

@@ -6,23 +6,25 @@ import YouTubePlayerKit
 
 extension BackgroundMusicController {
 	func performFadeOut() {
+		// A track change in flight must not select a track after the pause below.
+		cancelOperation()
+		loadingSlot.invalidate()
 		guard let player else { return }
-		if case .playbackChange(let playbackOperation, .playing) = operation {
-			finishOperation(playbackOperation)
-		}
 		expectPlayback(.paused)
 		volumeSlot.invalidate()
 		let generation = playerGeneration
 		fadeTask = fadeSlot.replace { [weak self] token in
 			guard let self else { return }
-			let startVolume = effectiveVolume
 			let steps = AppConstants.Music.fadeSteps
 			let stepInterval = AppConstants.Music.fadeOutDuration / Double(steps)
-			let volumes = stride(from: steps, through: 0, by: -1).map {
-				startVolume * Double($0) / Double(steps)
+			// Mirror of the fade-in curve: YouTube volume is linear, so squaring sounds even.
+			let levels = stride(from: steps, through: 0, by: -1).map {
+				let remaining = Double($0) / Double(steps)
+				return remaining * remaining
 			}
 			let completed = await ramp(
-				through: volumes,
+				levels: levels,
+				volume: { [self] in effectiveVolume },
 				on: player,
 				generation: generation,
 				stepInterval: stepInterval,
@@ -50,13 +52,12 @@ extension BackgroundMusicController {
 		userPlaybackOperation: TaskSlot.Token? = nil
 	) {
 		volumeSlot.invalidate()
-		guard let target = targetPlayer ?? player else { return }
+		guard !isSilencedForGame, let target = targetPlayer ?? player else { return }
 		let expectation = expectPlayback(.playing)
 		let generation = playerGeneration
 		fadeTask = fadeSlot.replace { [weak self] token in
 			guard let self else { return }
 
-			let targetVolume = effectiveVolume
 			let steps = AppConstants.Music.fadeSteps
 			let stepInterval = AppConstants.Music.fadeInDuration / Double(steps)
 
@@ -64,14 +65,12 @@ extension BackgroundMusicController {
 			await applyVolume(0, on: target, generation: generation)
 			do {
 				guard fadeSlot.owns(token) else { return }
-				try await playerCommands.play(target)
+				try await startPlayback(on: target, token: token)
 				guard fadeSlot.owns(token) else { return }
 				if let userPlaybackOperation {
 					finishOperation(userPlaybackOperation)
 				}
 				lifecycle.log.info("Background music resuming with fade-in")
-				guard fadeSlot.owns(token) else { return }
-				shuffleInitialPlaylistIfNeeded(on: target)
 			} catch {
 				guard fadeSlot.owns(token) else { return }
 				if let userPlaybackOperation {
@@ -85,9 +84,14 @@ extension BackgroundMusicController {
 				return
 			}
 
-			let volumes = (1...steps).map { targetVolume * Double($0) / Double(steps) }
+			// The target volume is read at every step so a volume change during the fade is kept.
+			let levels = (1...steps).map {
+				let progress = Double($0) / Double(steps)
+				return progress * progress
+			}
 			let completed = await ramp(
-				through: volumes,
+				levels: levels,
+				volume: { [self] in effectiveVolume },
 				on: target,
 				generation: generation,
 				stepInterval: stepInterval,
@@ -96,17 +100,16 @@ extension BackgroundMusicController {
 			guard completed else { return }
 
 			guard fadeSlot.owns(token) else { return }
-			await applyVolume(targetVolume, on: target, generation: generation)
+			await applyVolume(effectiveVolume, on: target, generation: generation)
 			finishFade(token)
 		}
 	}
 
 	func stopAndClearPlayer() {
 		let playerToStop = player
-		sourceChangeTask?.cancel()
-		sourceChangeTask = nil
+		sourceChangeSlot.invalidate()
 		invalidatePlayerTasks()
-		cancellables.removeAll()
+		transition(.stopped)
 		player = nil
 		playbackState = nil
 		currentSource = nil
@@ -116,9 +119,9 @@ extension BackgroundMusicController {
 		currentMusicVideoID = nil
 		nowPlaying.clear()
 
-		Task { [log = lifecycle.log] in
+		Task { [log = lifecycle.log, commands = playerCommands] in
 			do {
-				try await playerToStop?.pause()
+				if let playerToStop { try await commands.pause(playerToStop) }
 				log.info("Background music stopped")
 			} catch {
 				log.error(
@@ -147,20 +150,18 @@ extension BackgroundMusicController {
 
 	// Returns `false` when the fade is superseded or cancelled.
 	private func ramp(
-		through volumes: [Double],
+		levels: [Double],
+		volume: @MainActor () -> Double,
 		on player: YouTubePlayer,
 		generation: TaskSlot.Token,
 		stepInterval: Double,
 		token: TaskSlot.Token
 	) async -> Bool {
-		for volume in volumes {
+		for level in levels {
 			guard fadeSlot.owns(token) else { return false }
-			await applyVolume(volume, on: player, generation: generation)
+			await applyVolume(volume() * level, on: player, generation: generation)
 			do {
-				try await Task.sleep(
-					for: .seconds(stepInterval),
-					tolerance: .seconds(stepInterval / 10)
-				)
+				try await sleep(for: .seconds(stepInterval))
 			} catch {
 				return false
 			}

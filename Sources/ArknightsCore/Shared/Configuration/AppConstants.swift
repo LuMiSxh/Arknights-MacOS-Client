@@ -14,6 +14,7 @@ package enum AppConstants {
 		package static let vuplexShimMaximumBytes = 1 * 1_024 * 1_024
 		package static let platformProcessAssetMaximumBytes = 4 * 1_024 * 1_024
 		package static let bilibiliPlatformAssetMaximumBytes = 16 * 1_024 * 1_024
+		package static let gameModeQuitWaitSeconds: Double = 3
 		/// Title bar height assumed when the real one cannot be measured.
 		static let standardWindowTitleBarHeight: CGFloat = 28
 		/// Share of the usable screen the "leave room" game window may cover.
@@ -71,11 +72,11 @@ package enum AppConstants {
 		package static let skipMetadataPlaceholderTitle = "YouTube"
 		package static let fadeInDuration: Double = 1.5
 		package static let fadeOutDuration: Double = 1.0
-		package static let fadeSteps: Int = 15
-		package static let playlistShuffleDelay: Duration = .milliseconds(200)
+		package static let fadeSteps: Int = 10
 		package static let sourceChangeDebounce: Duration = .milliseconds(300)
-		package static let trackChangePollInterval: Duration = .milliseconds(250)
-		package static let trackChangePollLimit = 80
+		package static let trackStartTimeout: Duration = .seconds(20)
+		package static let maxConsecutivePlayerFailures = 3
+		package static let playerEventBufferLimit = 32
 		package static let collapsedTitleMaxWidth: Double = 300
 		package static let titleLineHeight: Double = 14
 		package static let titleScrollGap: Double = 24

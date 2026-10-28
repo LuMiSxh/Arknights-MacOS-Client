@@ -101,7 +101,7 @@ extension GameSessionController {
 		if let activeGameSessionID {
 			playtimeStatistics.finish(sessionID: activeGameSessionID)
 		}
-		disableActiveGameMode()
+		disableActiveGameMode(blocking: true)
 		let runtime: WineRuntime
 		do {
 			runtime = try discoverRuntime()
@@ -319,9 +319,27 @@ extension GameSessionController {
 		lifecycle.update(lease, to: activity)
 	}
 
-	func disableActiveGameMode() {
+	func disableActiveGameMode(blocking: Bool = false) {
 		guard session?.usesGameMode == true else { return }
 		session?.usesGameMode = false
-		GamePolicyControl.setGameMode(on: false, log: log)
+		if blocking {
+			GamePolicyControl.setGameModeBlocking(on: false, log: log)
+		} else {
+			requestGameMode(on: false, sessionID: nil)
+		}
+	}
+
+	/// Queues a Game Mode change behind the previous one. An `on` request is dropped when its
+	/// session ended or the app is quitting by the time it reaches the front.
+	func requestGameMode(on: Bool, sessionID: UUID?) {
+		let previous = gameModeChain
+		gameModeChain = Task { [weak self, log] in
+			await previous?.value
+			if on {
+				guard let self, activeGameSessionID == sessionID, !applicationTerminationRequested
+				else { return }
+			}
+			await GamePolicyControl.setGameMode(on: on, log: log)
+		}
 	}
 }

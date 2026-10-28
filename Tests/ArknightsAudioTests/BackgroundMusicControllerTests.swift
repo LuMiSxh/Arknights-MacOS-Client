@@ -14,11 +14,9 @@ import YouTubePlayerKit
 struct BackgroundMusicControllerTests {
 	@Test
 	func newerPlayIntentIgnoresALatePausedStateFromThePreviousRequest() throws {
-		let temporary = try TemporaryDirectory("BackgroundMusicControllerTests")
-		defer { temporary.remove() }
-		let (defaults, suiteName) = makeIsolatedDefaults("BackgroundMusicControllerTests")
-		defer { defaults.removePersistentDomain(forName: suiteName) }
-		let controller = makeController(root: temporary.url, defaults: defaults)
+		let fixture = try MusicFixture()
+		defer { fixture.remove() }
+		let controller = fixture.controller
 
 		let player = YouTubePlayer(source: .video(id: "test"))
 		controller.player = player
@@ -39,28 +37,5 @@ struct BackgroundMusicControllerTests {
 		controller.reconcilePlaybackIntent(with: .buffering)
 		#expect(controller.playbackIntent == nil)
 		#expect(controller.isPlaying)
-	}
-
-	private func makeController(root: URL, defaults: UserDefaults) -> BackgroundMusicController {
-		let preferences = LauncherPreferencesStore(defaults: defaults)
-		let paths = AppPaths(
-			applicationSupportDirectory: root.appending(path: "Support"),
-			cachesDirectory: root.appending(path: "Caches"),
-			libraryDirectory: root.appending(path: "Library")
-		)
-		let lifecycle = LauncherLifecycleStore(
-			log: LauncherLog(fileURL: paths.launcherLogFile)
-		)
-		let iconManager = LauncherIconManager(
-			setBundleIcon: { _ in true },
-			setRunningIcon: { _ in },
-			defaultIcon: { NSImage(size: NSSize(width: 64, height: 64)) }
-		)
-		return BackgroundMusicController(
-			lifecycle: lifecycle,
-			settings: LauncherPreferencesController(store: preferences),
-			launcherIconManager: iconManager,
-			openURL: { _ in }
-		)
 	}
 }

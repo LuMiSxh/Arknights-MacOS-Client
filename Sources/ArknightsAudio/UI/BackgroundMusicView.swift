@@ -55,8 +55,11 @@ package struct BackgroundMusicView: View {
 		.onChange(of: settings.launcherMusicVolume) { _, newVolume in
 			controller.volumeDidChange(to: newVolume)
 		}
+		.onChange(of: settings.launcherMusicMuted) { _, _ in
+			controller.volumeDidChange(to: settings.launcherMusicVolume)
+		}
 		.onChange(of: lifecycle.activity) { _, activity in
-			controller.gameRunningDidChange(to: activity.hasGameProcess)
+			controller.gameActivityDidChange(to: activity)
 		}
 		.onDisappear {
 			controller.stop()

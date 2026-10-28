@@ -48,6 +48,9 @@ package final class LauncherPreferencesController {
 	package var launcherMusicVolume: Double {
 		didSet { store.set(launcherMusicVolume, for: Key.launcherMusicVolume) }
 	}
+	package var launcherMusicMuted: Bool {
+		didSet { store.set(launcherMusicMuted, for: Key.launcherMusicMuted) }
+	}
 	package var usesDynamicTheme: Bool {
 		didSet {
 			store.set(usesDynamicTheme, for: Key.usesDynamicTheme)
@@ -101,6 +104,7 @@ package final class LauncherPreferencesController {
 		launcherMusicURL = store.value(Key.launcherMusicURL)
 		showsPlayingMusic = store.value(Key.showsPlayingMusic)
 		launcherMusicVolume = store.value(Key.launcherMusicVolume)
+		launcherMusicMuted = store.value(Key.launcherMusicMuted)
 		usesDynamicTheme = store.value(Key.usesDynamicTheme)
 		canaryFeaturesEnabled = store.value(Key.canaryFeaturesEnabled)
 		taiwanClientEnabled = store.value(Key.taiwanClientEnabled)
@@ -124,6 +128,7 @@ package final class LauncherPreferencesController {
 		launcherMusicURL = store.value(Key.launcherMusicURL)
 		showsPlayingMusic = store.value(Key.showsPlayingMusic)
 		launcherMusicVolume = store.value(Key.launcherMusicVolume)
+		launcherMusicMuted = store.value(Key.launcherMusicMuted)
 		usesDynamicTheme = store.value(Key.usesDynamicTheme)
 		canaryFeaturesEnabled = store.value(Key.canaryFeaturesEnabled)
 		taiwanClientEnabled = store.value(Key.taiwanClientEnabled)
