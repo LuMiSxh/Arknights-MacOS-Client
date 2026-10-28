@@ -3,12 +3,14 @@
 import AppKit
 import ArknightsCore
 import ArknightsCustomization
+import ArknightsGameRuntime
 import SwiftUI
 
 struct AboutSettingsPage: View {
 	package let accentColor: Color
 	package let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
+	let runtime: InstalledRuntimeDetails?
 	let revealApplication: () -> Void
 	@Binding var presentedDocument: BundledDocument?
 
@@ -83,6 +85,10 @@ struct AboutSettingsPage: View {
 				.font(.caption)
 			}
 
+			SettingsPanel(title: "Runtime", systemImage: "cpu") {
+				runtimeRows
+			}
+
 			SettingsPanel(title: "Arknights", systemImage: "link") {
 				VStack(alignment: .leading, spacing: 8) {
 					ViewThatFits(in: .horizontal) {
@@ -117,6 +123,50 @@ struct AboutSettingsPage: View {
 	}
 
 	private var appVersion: String { IssueReportURL.appVersion }
+
+	@ViewBuilder
+	private var runtimeRows: some View {
+		if let runtime {
+			SettingsActionRow(title: "Version") {
+				valueText(runtime.name)
+			}
+			SettingsHairline()
+			SettingsActionRow(
+				title: "Wine",
+				detail: runtime.wineCommit.map { "Commit \($0.prefix(12))" }
+			) {
+				valueText(runtime.wineVersion ?? "—")
+			}
+			SettingsHairline()
+			SettingsActionRow(
+				title: "DXMT",
+				detail: runtime.dxmtCommit.map { "Commit \($0.prefix(12))" }
+			) {
+				valueText(runtime.dxmtVersion ?? "—")
+			}
+			SettingsHairline()
+			capabilityRow("Hardware cursor", advertised: runtime.hardwareCursor)
+			SettingsHairline()
+			capabilityRow("MetalFX spatial upscaling", advertised: runtime.metalFXSpatialUpscaling)
+			SettingsHairline()
+			capabilityRow("Native fullscreen Space", advertised: runtime.nativeFullscreenSpace)
+		} else {
+			SettingsActionRow(title: "Version") {
+				valueText("Not installed")
+			}
+		}
+	}
+
+	private func capabilityRow(_ title: String, advertised: Bool) -> some View {
+		SettingsActionRow(title: title) {
+			valueText(advertised ? "Advertised" : "Not advertised")
+		}
+	}
+
+	private func valueText(_ text: String) -> some View {
+		Text(text)
+			.foregroundStyle(.secondary)
+	}
 
 	@ViewBuilder
 	private var identitySummary: some View {

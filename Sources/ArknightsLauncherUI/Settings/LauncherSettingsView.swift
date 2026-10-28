@@ -135,6 +135,7 @@ struct LauncherSettingsView: View {
 							accentColor: customization.accentColor,
 							launcherIconManager: launcherIconManager,
 							branding: branding,
+							runtime: gameSession.installedRuntime,
 							revealApplication: storage.revealApplication,
 							presentedDocument: $presentedDocument
 						)

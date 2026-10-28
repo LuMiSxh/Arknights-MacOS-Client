@@ -46,7 +46,7 @@ struct HelpSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: "Get Help", systemImage: "questionmark.circle") {
+			SettingsPanel(title: "Get Help", systemImage: "lifepreserver") {
 				SettingsActionRow(
 					title: "Troubleshooting Guide",
 					detail:

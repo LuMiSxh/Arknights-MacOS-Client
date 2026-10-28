@@ -14,6 +14,11 @@ extension GameSessionController {
 				guard let self, self.capabilitySlot.owns(token) else { return }
 				self.metalFXSpatialUpscalingSupported =
 					discovery.capabilities.metalFXSpatialUpscalingSupported
+				self.installedRuntime = InstalledRuntimeDetails(
+					name: runtime.displayName,
+					pins: runtime.pins,
+					capabilities: discovery.capabilities
+				)
 				if let diagnostic = discovery.diagnostic {
 					self.log.info("Runtime capability fallback: \(diagnostic)")
 				}
@@ -22,6 +27,7 @@ extension GameSessionController {
 			runtimeName = nil
 			capabilitySlot.invalidate()
 			metalFXSpatialUpscalingSupported = false
+			installedRuntime = nil
 			log.error("Runtime discovery failed: \(error.localizedDescription)")
 		}
 	}

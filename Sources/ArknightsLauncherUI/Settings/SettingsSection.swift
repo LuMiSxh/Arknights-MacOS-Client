@@ -45,7 +45,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case .installation: "externaldrive"
 		case .storage: "internaldrive"
 		case .statistics: "chart.bar.xaxis"
-		case .help: "questionmark.circle"
+		case .help: "lifepreserver"
 		case .about: "info.circle"
 		#if DEBUG
 			case .developer: "hammer"

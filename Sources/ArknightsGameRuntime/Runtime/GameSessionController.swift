@@ -27,6 +27,8 @@ package final class GameSessionController {
 	}
 	/// nil until discovery finishes. Settings reads it to explain a fallback before a launch.
 	package internal(set) var metalFXSpatialUpscalingSupported: Bool?
+	/// nil until discovery finishes or when no runtime is installed. Settings → About reads it.
+	package internal(set) var installedRuntime: InstalledRuntimeDetails?
 	@ObservationIgnored let capabilitySlot = TaskSlot()
 	package var isGameActive: Bool { lifecycle.activity.isGameActive }
 	var isGameProcessRunning: Bool { lifecycle.activity.isGameProcessRunning }

@@ -31,10 +31,21 @@ struct RuntimeConfiguration: Decodable, Sendable {
 	struct Interface: Decodable, Sendable {
 		let runtimeCapabilities: String?
 	}
+	struct Components: Decodable, Sendable {
+		let wine: String?
+		let dxmt: String?
+	}
+	struct Provenance: Decodable, Sendable {
+		let wineCommit: String?
+		let dxmtCommit: String?
+	}
 
 	let prefixRevision: Int
 	let runtime: Archive
 	let interface: Interface?
+	/// Optional so bundles that predate these fields still decode.
+	let components: Components?
+	let provenance: Provenance?
 
 	var revision: String {
 		"\(runtime.sha256)-prefix-\(prefixRevision)"
@@ -49,6 +60,7 @@ struct WineRuntime: Sendable {
 	let revision: String
 	let gameIconBridgeURL: URL?
 	let capabilityManifestFileName: String?
+	let pins: RuntimePins
 	private let compatibilityManager: GameCompatibilityManager
 
 	init(
@@ -57,6 +69,7 @@ struct WineRuntime: Sendable {
 		revision: String,
 		gameIconBridgeURL: URL? = nil,
 		capabilityManifestFileName: String? = nil,
+		pins: RuntimePins = RuntimePins(),
 		compatibilityManager: GameCompatibilityManager
 	) {
 		self.executableURL = executableURL
@@ -64,6 +77,7 @@ struct WineRuntime: Sendable {
 		self.revision = revision
 		self.gameIconBridgeURL = gameIconBridgeURL
 		self.capabilityManifestFileName = capabilityManifestFileName
+		self.pins = pins
 		self.compatibilityManager = compatibilityManager
 	}
 
@@ -160,6 +174,12 @@ struct WineRuntime: Sendable {
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
 			capabilityManifestFileName: configuration.interface?.runtimeCapabilities,
+			pins: RuntimePins(
+				wineVersion: configuration.components?.wine,
+				wineCommit: configuration.provenance?.wineCommit,
+				dxmtVersion: configuration.components?.dxmt,
+				dxmtCommit: configuration.provenance?.dxmtCommit
+			),
 			compatibilityManager: compatibilityManager
 		)
 	}
