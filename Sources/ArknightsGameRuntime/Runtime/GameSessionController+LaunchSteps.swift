@@ -34,6 +34,7 @@ struct LaunchContext {
 struct PreparedLaunch {
 	let displayConfiguration: WineDisplayConfiguration
 	let environment: [String: String]
+	let usesNativeFullscreenSpace: Bool
 }
 
 extension GameSessionController {
@@ -215,9 +216,15 @@ extension GameSessionController {
 		let environment = Self.runtimeEnvironmentOverrides(
 			for: request.region,
 			usesHardwareCursor: request.usesHardwareCursor,
+			displayMode: request.options.displayMode,
 			capabilities: discovery.capabilities
 		)
-		return PreparedLaunch(displayConfiguration: displayConfiguration, environment: environment)
+		return PreparedLaunch(
+			displayConfiguration: displayConfiguration,
+			environment: environment,
+			usesNativeFullscreenSpace: discovery.capabilities.usesNativeFullscreenSpace(
+				for: request.options.displayMode)
+		)
 	}
 
 	// Returns nil when the session no longer owns the launch.
@@ -230,6 +237,11 @@ extension GameSessionController {
 		guard let spawnGate = session?.spawnGate, activeGameSessionID == request.id else {
 			return nil
 		}
+		// The notch sits outside a native Space's content area, so Unity gets the shorter height.
+		let fullscreenDisplay =
+			prepared.usesNativeFullscreenSpace
+			? GameFullscreenDisplay.primary?.nativeSpaceContent
+			: GameFullscreenDisplay.primary
 		let launch = try await context.runtime.launch(
 			gameExecutable: request.executable,
 			prefixDirectory: request.prefixDirectory,
@@ -237,7 +249,7 @@ extension GameSessionController {
 				+ (installation.configuration?.gameStartParams ?? [])
 				+ request.options.playerArguments(
 					gamePixelsPerPoint: prepared.displayConfiguration.gamePixelsPerPoint,
-					fullscreenDisplay: GameFullscreenDisplay.primary
+					fullscreenDisplay: fullscreenDisplay
 				),
 			displayConfiguration: prepared.displayConfiguration,
 			graphicsDiagnostics: graphicsDiagnosticsEnabled,

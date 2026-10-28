@@ -29,17 +29,21 @@ struct RuntimeCapabilityDiscovery: Equatable, Sendable {
 struct RuntimeCapabilities: Equatable, Sendable {
 	static let conservative = RuntimeCapabilities(
 		hardwareCursorSupported: false,
-		metalFXSpatialUpscalingSupported: false
+		metalFXSpatialUpscalingSupported: false,
+		nativeFullscreenSpaceSupported: false
 	)
 
 	let hardwareCursorSupported: Bool
 	let metalFXSpatialUpscalingSupported: Bool
+	let nativeFullscreenSpaceSupported: Bool
 
 	private struct Manifest: Decodable {
 		struct Capabilities: Decodable {
 			let hardwareCursor: Bool
 			/// Optional so runtimes published before 0.7.0 keep their other capabilities.
 			let metalFXSpatialUpscaling: Bool?
+			/// Optional so runtimes published before 0.8.0-rc3 keep their other capabilities.
+			let nativeFullscreenSpace: Bool?
 		}
 
 		let schemaVersion: Int
@@ -61,7 +65,9 @@ struct RuntimeCapabilities: Equatable, Sendable {
 		}
 		return RuntimeCapabilities(
 			hardwareCursorSupported: manifest.capabilities.hardwareCursor,
-			metalFXSpatialUpscalingSupported: manifest.capabilities.metalFXSpatialUpscaling ?? false
+			metalFXSpatialUpscalingSupported: manifest.capabilities.metalFXSpatialUpscaling
+				?? false,
+			nativeFullscreenSpaceSupported: manifest.capabilities.nativeFullscreenSpace ?? false
 		)
 	}
 
@@ -109,12 +115,21 @@ struct RuntimeCapabilities: Equatable, Sendable {
 		RuntimeCapabilityDiscovery(capabilities: .conservative, diagnostic: diagnostic)
 	}
 
+	/// Only fullscreen windows move into a native Space; windowed modes keep the normal window.
+	func usesNativeFullscreenSpace(for displayMode: GameDisplayMode) -> Bool {
+		nativeFullscreenSpaceSupported && displayMode == .fullscreen
+	}
+
 	func environmentOverrides(
-		usesHardwareCursor: Bool
+		usesHardwareCursor: Bool,
+		displayMode: GameDisplayMode
 	) -> [String: String] {
 		var overrides: [String: String] = [:]
 		if hardwareCursorSupported && usesHardwareCursor {
 			overrides[AppConstants.Runtime.hardwareCursorEnvironmentKey] = "1"
+		}
+		if usesNativeFullscreenSpace(for: displayMode) {
+			overrides[AppConstants.Runtime.nativeFullscreenSpaceEnvironmentKey] = "1"
 		}
 		return overrides
 	}
@@ -137,7 +152,9 @@ struct RuntimeCapabilities: Equatable, Sendable {
 				"the manifest contains missing or unknown fields"
 			)
 		}
-		let capabilityKeys = Set(capabilities.keys).subtracting(["metalFXSpatialUpscaling"])
+		let capabilityKeys = Set(capabilities.keys).subtracting([
+			"metalFXSpatialUpscaling", "nativeFullscreenSpace",
+		])
 		let hasExpectedShape: Bool
 		switch manifest["schemaVersion"] as? Int {
 		case 1?:

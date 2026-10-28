@@ -101,6 +101,8 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 package struct GameFullscreenDisplay: Equatable, Sendable {
 	let pointSize: GameDisplaySize
 	let backingScale: Int
+	/// Points the notch covers at the top of the display; zero without a notch.
+	var notchHeight = 0
 
 	@MainActor package static var primary: GameFullscreenDisplay? {
 		// The first screen is always the one with the menu bar, even when it is not focused.
@@ -109,11 +111,22 @@ package struct GameFullscreenDisplay: Equatable, Sendable {
 			pointSize: GameDisplaySize(
 				width: Int(screen.frame.width.rounded()), height: Int(screen.frame.height.rounded())
 			),
-			backingScale: max(1, Int(screen.backingScaleFactor.rounded()))
+			backingScale: max(1, Int(screen.backingScaleFactor.rounded())),
+			notchHeight: Int(screen.safeAreaInsets.top.rounded())
 		)
 	}
 
 	package var pixelSize: GameDisplaySize { pointSize.scaled(by: backingScale) }
+
+	/// The content area of a native fullscreen Space, which leaves the notch area empty.
+	package var nativeSpaceContent: GameFullscreenDisplay {
+		GameFullscreenDisplay(
+			pointSize: GameDisplaySize(
+				width: pointSize.width, height: pointSize.height - notchHeight
+			),
+			backingScale: backingScale
+		)
+	}
 
 	// The pixels the game draws to show `shown`: all of them with Retina, otherwise one per
 	// point, which MetalFX or macOS then scales up.

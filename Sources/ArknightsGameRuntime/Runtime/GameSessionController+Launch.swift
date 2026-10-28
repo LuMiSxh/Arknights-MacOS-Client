@@ -7,6 +7,7 @@ extension GameSessionController {
 	static func runtimeEnvironmentOverrides(
 		for region: GameRegion,
 		usesHardwareCursor: Bool,
+		displayMode: GameDisplayMode,
 		capabilities: RuntimeCapabilities = .conservative
 	) -> [String: String] {
 		var environment = [
@@ -15,7 +16,8 @@ extension GameSessionController {
 		environment.merge(region.runtimeEnvironmentOverrides) { _, profileValue in profileValue }
 		environment.merge(
 			capabilities.environmentOverrides(
-				usesHardwareCursor: usesHardwareCursor
+				usesHardwareCursor: usesHardwareCursor,
+				displayMode: displayMode
 			)
 		) { _, value in value }
 		return environment

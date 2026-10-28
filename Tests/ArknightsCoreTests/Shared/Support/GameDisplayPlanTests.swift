@@ -60,3 +60,11 @@ func windowedPlansRenderTheWindowSizeTimesTheGamePixelDensity(
 	if let scaling { #expect(plan.scaling == scaling) }
 	if usesGameSettings { #expect(plan.gamePixelsPerPoint == 2) }
 }
+
+@Test
+func nativeSpaceContentExcludesTheNotchFromTheFullscreenHeight() {
+	let display = GameFullscreenDisplay(
+		pointSize: size(1512, 982), backingScale: 2, notchHeight: 32)
+
+	#expect(display.nativeSpaceContent.pixelSize == size(3024, 1900))
+}

@@ -30,6 +30,8 @@ package enum AppConstants {
 		static let cefCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CEF_COMPAT"
 		static let cnCompatEnvironmentKey = "ARKNIGHTS_RUNTIME_CN_COMPAT"
 		package static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
+		package static let nativeFullscreenSpaceEnvironmentKey =
+			"ARKNIGHTS_RUNTIME_NATIVE_FULLSCREEN_SPACE"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
 		package static let capabilityManifestMaximumBytes = 4 * 1_024

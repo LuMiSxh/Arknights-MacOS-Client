@@ -9,11 +9,13 @@ import Testing
 
 private let currentRuntimeCapabilities = RuntimeCapabilities(
 	hardwareCursorSupported: true,
-	metalFXSpatialUpscalingSupported: true
+	metalFXSpatialUpscalingSupported: true,
+	nativeFullscreenSpaceSupported: true
 )
 private let legacyRuntimeCapabilities = RuntimeCapabilities(
 	hardwareCursorSupported: false,
-	metalFXSpatialUpscalingSupported: false
+	metalFXSpatialUpscalingSupported: false,
+	nativeFullscreenSpaceSupported: false
 )
 
 @Test(arguments: [
@@ -32,6 +34,7 @@ func runtimeEnvironmentAppliesAdvertisedCapabilities(
 		let environment = GameSessionController.runtimeEnvironmentOverrides(
 			for: region,
 			usesHardwareCursor: usesHardwareCursor,
+			displayMode: .windowed,
 			capabilities: capabilities
 		)
 
@@ -45,4 +48,26 @@ func runtimeEnvironmentAppliesAdvertisedCapabilities(
 		#expect(environment["ARKNIGHTS_RUNTIME_PERFORMANCE"] == nil)
 		#expect(environment["ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"] == expectedHardwareCursor)
 	}
+}
+
+@Test(arguments: [
+	(GameDisplayMode.fullscreen, currentRuntimeCapabilities, "1" as String?),
+	(.windowed, currentRuntimeCapabilities, nil as String?),
+	(.borderlessWindow, currentRuntimeCapabilities, nil),
+	(.fullscreen, legacyRuntimeCapabilities, nil),
+])
+@MainActor
+func nativeFullscreenSpaceIsRequestedOnlyForFullscreenWithCapability(
+	displayMode: GameDisplayMode,
+	capabilities: RuntimeCapabilities,
+	expectedNativeSpace: String?
+) {
+	let environment = GameSessionController.runtimeEnvironmentOverrides(
+		for: .global,
+		usesHardwareCursor: false,
+		displayMode: displayMode,
+		capabilities: capabilities
+	)
+
+	#expect(environment["ARKNIGHTS_RUNTIME_NATIVE_FULLSCREEN_SPACE"] == expectedNativeSpace)
 }

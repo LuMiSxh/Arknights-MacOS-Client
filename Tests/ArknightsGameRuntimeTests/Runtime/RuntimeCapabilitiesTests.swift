@@ -119,3 +119,18 @@ func runtimeCapabilityDiscoveryFailsClosedForMissingMalformedAndUnsafeFiles(
 	#expect(oversized.capabilities == .conservative)
 	#expect(oversized.diagnostic?.contains("size limit") == true)
 }
+
+@Test(arguments: [
+	(#"{"hardwareCursor":true,"nativeFullscreenSpace":true}"#, true),
+	(#"{"hardwareCursor":true}"#, false),
+])
+func nativeFullscreenSpaceCapabilityIsOptionalInSchemaTwoManifests(
+	capabilities: String,
+	expected: Bool
+) throws {
+	let manifest = Data(#"{"schemaVersion":2,"capabilities":\#(capabilities)}"#.utf8)
+
+	let decoded = try RuntimeCapabilities.decode(from: manifest)
+
+	#expect(decoded.nativeFullscreenSpaceSupported == expected)
+}
