@@ -267,6 +267,46 @@ Playtime rules are in [Data and persistence](data-and-persistence.md). The contr
 monotonic measurement when the game window becomes visible. The first terminal path records the
 duration, and application termination flushes it before Wine shutdown.
 
+## Launcher music
+
+`BackgroundMusicView` sends each `LauncherActivity` change to `BackgroundMusicController.gameActivityDidChange(to:)`.
+The controller holds a `MusicPhase`. It changes the phase only through `transition(_:)`, which calls the
+pure `MusicPhase.applying(_:)`.
+
+| Phase                       | Entered by                                                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `off`                       | `stopped`                                                                                                         |
+| `playing`                   | `sourceLoaded`, `userResumed`, `playerPlayed` from `unavailable`, `gameProcessEnded` after a silence that resumes |
+| `userPaused`                | `userPaused` from `playing`, `gameProcessEnded` after a silence that does not resume                              |
+| `silencedForGame(resumes:)` | `gameWindowAppeared`. `resumes` is false when the user paused first.                                              |
+| `unavailable`               | `playerFailed` from `playing`                                                                                     |
+
+- The music keeps playing while the game loads (`.launchingGame`).
+- The music fades out once when the game window appears (`.runningGame`). The fade-out cancels a
+  running track change.
+- A launch that stops before the window appears changes nothing.
+- After the game process ends, the music fades in unless the user paused it.
+- No music starts while `LauncherActivity.hasGameProcess` is true. Async start steps check it again
+  after each suspension.
+
+- `performFadeOut()` and `performFadeIn(on:userPlaybackOperation:)` run in `fadeSlot`. Each fade uses
+  `AppConstants.Music.fadeSteps` steps over `fadeOutDuration` or `fadeInDuration`.
+- Each step follows a squared curve. YouTube volume is linear, so the squared curve sounds even.
+- Each step reads `effectiveVolume`. A volume or mute change during a fade is kept.
+- Mute persists through `LauncherPreferencesController.launcherMusicMuted`.
+
+- A new playlist starts on a random track. `startPlayback(on:token:)` turns on loop and shuffle first.
+  YouTube owns the order after that.
+- `startTrackChange(direction:)` calls `nextVideo` or `previousVideo`. The change finishes when
+  `observeTrackStart` reads the new video as playing after a player event. YouTube can skip these
+  events, so `recheckTrackStart` also reads the player every `trackStartRecheckInterval`. If no
+  read succeeds within `trackStartTimeout`, `timeOutTrackStart` reads the player once more and
+  decides.
+- `handle(_:on:)` skips an `unplayableTrack` failure to the next track while `canNavigatePlaylist` is
+  true and `consecutiveFailures` is below `maxConsecutivePlayerFailures`.
+- Any other failure, or the limit, calls `stopBecauseUnavailable`. That sets `unavailable` and pauses
+  the player. Playback that reaches `.playing` resets `consecutiveFailures`.
+
 ## Prefix boundary and process ownership
 
 | Process or helper                       | Started by                                                      | Responsibility                                   | Shutdown owner                           |
