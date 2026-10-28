@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import AppKit
 import ArknightsCore
 import SwiftUI
 
@@ -12,6 +13,8 @@ struct LauncherFailureDetailView: View {
 	let saveDiagnostics: () -> Void
 	private let troubleshootingMarkdown: String?
 	@Environment(\.dismiss) private var dismiss
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var didCopySupportCode = false
 
 	init(
 		failure: LauncherFailurePresentation,
@@ -30,6 +33,15 @@ struct LauncherFailureDetailView: View {
 		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
 	}
 
+	private func copySupportCode(_ code: SupportCode) {
+		let pasteboard = NSPasteboard.general
+		pasteboard.clearContents()
+		pasteboard.setString(code.rawValue, forType: .string)
+		withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
+			didCopySupportCode = true
+		}
+	}
+
 	var body: some View {
 		ThemedModalView(
 			title: "Needs attention",
@@ -40,7 +52,25 @@ struct LauncherFailureDetailView: View {
 		) {
 			VStack(alignment: .leading, spacing: 20) {
 				if let code = failure.code {
-					LauncherSupportCodeLabel(code: code)
+					HStack(alignment: .center, spacing: 12) {
+						LauncherSupportCodeLabel(code: code)
+						IconActionButton(
+							title: "Copy support code",
+							systemImage: didCopySupportCode ? "checkmark" : "doc.on.doc",
+							surface: .neutral
+						) {
+							copySupportCode(code)
+						}
+					}
+					.task(id: didCopySupportCode) {
+						guard didCopySupportCode else { return }
+						do {
+							try await Task.sleep(for: AppConstants.Support.copyConfirmationDuration)
+						} catch {
+							return
+						}
+						didCopySupportCode = false
+					}
 				}
 
 				Text(failure.message)

@@ -71,7 +71,10 @@ extension LauncherViewModel {
 			case .intelTranslationPreflight:
 				started = intelTranslation.retryAvailabilityFailure(id: failureID)
 			case .launcher:
-				guard retryStorageMigration(failureID: failureID) else {
+				guard
+					communication.launcherUpdater.retryFailure(id: failureID)
+						|| retryStorageMigration(failureID: failureID)
+				else {
 					logRecovery(action: action, result: "ignored-no-retry-route")
 					return .ignored
 				}

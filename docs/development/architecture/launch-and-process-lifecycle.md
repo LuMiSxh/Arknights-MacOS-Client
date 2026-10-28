@@ -328,10 +328,10 @@ state that a newer launch owns. See [Troubleshooting](../../help/troubleshooting
 - **Intel translation probe:** The launcher does not trust `/Library/Apple/usr/share/rosetta/rosetta`
   alone. It runs `/usr/bin/arch -x86_64 /usr/bin/true`. On macOS 27, when Apple's beta-only
   `game-test-tool` exists, it reads the tool status and reports Legacy Game Test Mode separately
-  (`LIMPET`). Launcher policy blocks macOS 28. Compatibility with Apple's limited Rosetta support for
+  (`RT-BLK`). Launcher policy blocks macOS 28. Compatibility with Apple's limited Rosetta support for
   legacy games is unconfirmed.
 - **Window wait:** After Wine starts the executable, the launcher waits up to 90 seconds for a visible
-  game window. Then it stops the timed-out runtime and reports `NARWHAL`.
+  game window. Then it stops the timed-out runtime and reports `GM-WIN`.
 - **Compatibility profiles:** `GameRegion.clientProfile` sets the runtime flags. Taiwan and both China
   clients set `ARKNIGHTS_RUNTIME_ACE_COMPACT=1`, which gates the ACE compatibility patches in the
   runtime. China (Bilibili) also sets the CEF and CN flags for its login window.

@@ -144,7 +144,6 @@ import ArknightsGameRuntime
 					? [.retry, .openTroubleshooting, .reportProblem]
 					: LauncherLifecycleStore.recoveryActions(
 						for: code,
-						repairableCodes: GameSessionController.repairableCodes,
 						canRepair: simulation.isInstalled && operation != .runtimeStop),
 				blocksGameLaunch: isConfiguration && !simulation.isInstalled
 			)

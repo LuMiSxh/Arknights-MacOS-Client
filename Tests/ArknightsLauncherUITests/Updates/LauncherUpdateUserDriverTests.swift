@@ -9,6 +9,24 @@ import Testing
 @MainActor
 struct LauncherUpdateUserDriverTests {
 	@Test
+	func userInitiatedFailureGoesToTheSheetAndLeavesTheOverlayIdle() {
+		let driver = LauncherUpdateUserDriver()
+		var reportedFailures = 0
+		driver.reportFailure = { _ in
+			reportedFailures += 1
+			return true
+		}
+		var acknowledgements = 0
+		driver.showUserInitiatedUpdateCheck {}
+		driver.showUpdaterError(
+			NSError(domain: "Test", code: 1), acknowledgement: { acknowledgements += 1 })
+
+		#expect(reportedFailures == 1)
+		#expect(acknowledgements == 1)
+		#expect(driver.phase == .hidden)
+	}
+
+	@Test
 	func checkCancellationIsDeliveredOnceAndDismissesThePresentation() {
 		let driver = LauncherUpdateUserDriver()
 		var cancellationCount = 0

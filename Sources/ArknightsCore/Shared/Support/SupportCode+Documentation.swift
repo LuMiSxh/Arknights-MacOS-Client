@@ -7,7 +7,7 @@ extension SupportCode {
 		let article = BundledResource.supportArticles.file("\(rawValue.lowercased()).md")
 		do {
 			let source = try loadArticle(article, bundle: bundle)
-			guard let contentStart = source.range(of: "## Try this") else {
+			guard let contentStart = source.range(of: "## What you can do") else {
 				assertionFailure("Troubleshooting page for \(rawValue) has no recovery section")
 				return nil
 			}

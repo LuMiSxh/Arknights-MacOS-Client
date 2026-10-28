@@ -75,6 +75,20 @@ extension PresetCatalogService {
 		return String(characters) + ".cache"
 	}
 
+	/// Maps preset download failures to typed errors so each resolves to a support code.
+	static func presetFetchError(_ error: any Error) -> any Error {
+		switch error {
+		case HTTPFetchError.unexpectedStatus(let status, _):
+			CustomizationError.presetServiceFailed(status: status)
+		case HTTPFetchError.noCandidates:
+			CustomizationError.presetNetworkFailed(detail: "No candidate address answered.")
+		case let urlError as URLError where urlError.code != .cancelled:
+			CustomizationError.presetNetworkFailed(detail: urlError.localizedDescription)
+		default:
+			error
+		}
+	}
+
 	private func fetchImageData(from url: URL) async throws -> Data {
 		guard Self.isAllowedRemoteAssetURL(url) else {
 			throw CustomizationError.invalidRemoteAsset(url)
@@ -94,8 +108,8 @@ extension PresetCatalogService {
 					attemptsPerCandidate: AppConstants.Presets.imageDownloadAttempts
 				)
 			)
-		} catch HTTPFetchError.unexpectedStatus {
-			throw URLError(.badServerResponse)
+		} catch {
+			throw Self.presetFetchError(error)
 		}
 		guard !result.data.isEmpty else {
 			throw URLError(.badServerResponse)

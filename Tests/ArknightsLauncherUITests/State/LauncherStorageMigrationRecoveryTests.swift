@@ -30,7 +30,7 @@ struct LauncherStorageMigrationRecoveryTests {
 
 		#expect(model.lifecycle.activity == .idle)
 		let failure = try #require(model.lifecycle.state.presentation.failure)
-		#expect(failure.code == .basalt)
+		#expect(failure.code == .dataMigrationFailed)
 		#expect(failure.blocksGameLaunch)
 		#expect(failure.actions == [.retry, .openTroubleshooting, .reportProblem])
 		#expect(model.lifecycle.state.presentation.status != .migratingStorage)

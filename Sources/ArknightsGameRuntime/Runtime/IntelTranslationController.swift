@@ -250,7 +250,7 @@ package final class IntelTranslationController {
 				id: existingID ?? UUID(),
 				message: error.errorDescription
 					?? "The operation could not be completed because of an unexpected error.",
-				code: .limpet,
+				code: check.state == .rosettaMissing ? .rosettaMissing : .intelTranslationBlocked,
 				context: SupportContext(operation: .intelTranslationPreflight, region: nil),
 				actions: actions,
 				blocksGameLaunch: true
@@ -264,7 +264,7 @@ package final class IntelTranslationController {
 			LauncherFailurePresentation(
 				id: id,
 				message: message,
-				code: .limpet,
+				code: .rosettaMissing,
 				context: SupportContext(operation: .rosettaInstallation, region: nil),
 				actions: [.retry, .openTroubleshooting, .reportProblem],
 				blocksGameLaunch: true

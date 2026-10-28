@@ -30,7 +30,7 @@ package struct BundledResource: Hashable, Sendable {
 		case deflate
 	}
 
-	/// The path below the resource root, for example `SupportArticles/sepia.md`.
+	/// The path below the resource root, for example `SupportArticles/rt-set.md`.
 	package let path: String
 	let kind: Kind
 	let origin: Origin

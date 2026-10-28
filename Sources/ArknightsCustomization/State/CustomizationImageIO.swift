@@ -22,13 +22,15 @@ struct IconPublicationSnapshotError: LauncherDiagnosticError {
 	}
 }
 
-struct IconRollbackFailure: LauncherDiagnosticError {
+struct IconRollbackFailure: LauncherDiagnosticError, SupportCodeProviding {
 	let original: any Error
 	let rollbackErrors: [any Error]
 
 	var errorDescription: String? {
-		"The icon update failed, and the previous icons could not be fully restored. Check the launcher log."
+		"The icon update failed, and the previous icons could not be fully restored."
 	}
+
+	package var supportCode: SupportCode? { .appIconFailed }
 
 	package var diagnosticDescription: String {
 		let details = rollbackErrors.map(\.localizedDescription).joined(separator: "; ")

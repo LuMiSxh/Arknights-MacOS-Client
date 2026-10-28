@@ -38,7 +38,7 @@ struct GameSessionRecoveryTests {
 		#expect(!model.gameSession.retryRuntimeFailure(id: failureID))
 		// The launch preflight is asynchronous, so the failure appears after the retry returns.
 		#expect(await waitForCondition { model.lifecycle.state.presentation.failure != nil })
-		#expect(model.lifecycle.state.presentation.failure?.code == .pebble)
+		#expect(model.lifecycle.state.presentation.failure?.code == .gameFilesMissing)
 		#expect(model.lifecycle.state.presentation.failure?.context.operation == .launch)
 		#expect(model.lifecycle.state.presentation.failure?.context.region == region.supportRegion)
 		#expect(model.lifecycle.state.presentation.failure?.blocksGameLaunch == true)

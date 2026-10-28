@@ -14,13 +14,14 @@ import Testing
 struct SupportFailureMappingTests {
 	@Test(
 		arguments: [
-			(URLError(.networkConnectionLost) as any Error, SupportCode.pebble),
-			(CocoaError(.fileWriteNoPermission) as any Error, .basalt),
+			(URLError(.networkConnectionLost) as any Error, SupportCode.networkUnavailable),
+			(CocoaError(.fileWriteNoPermission) as any Error, .localFileFailed),
 			(
-				HTTPTransportError.responseTooLarge(
-					URL(string: "https://cdn.example/game.bin")!, maximumBytes: 1
+				GameInstaller.launcherError(
+					for: .responseTooLarge(
+						URL(string: "https://cdn.example/game.bin")!, maximumBytes: 1)
 				) as any Error,
-				.pebble
+				.remoteContentInvalid
 			),
 		]
 	)
@@ -28,15 +29,16 @@ struct SupportFailureMappingTests {
 		#expect(InstallationController.supportCode(for: fixture.0) == fixture.1)
 	}
 
-	@Test func foreignRuntimeFailuresMapToTheRuntimeConfigurationCode() {
+	@Test func foreignRuntimeFailuresMapToPublishedCodes() {
 		let compatibility = GameRuntimeError.mappingCompatibilityFailure(
 			GameCompatibilityError.setupFailed("test"))
-		#expect(GameSessionController.supportCode(for: compatibility) == .anemone)
+		#expect(GameSessionController.supportCode(for: compatibility) == .compatibilitySetupFailed)
 		#expect(
-			GameSessionController.supportCode(for: CocoaError(.fileWriteNoPermission)) == .sepia)
+			GameSessionController.supportCode(for: CocoaError(.fileWriteNoPermission))
+				== .runtimeSetupFailed)
 		#expect(
 			GameSessionController.supportCode(
 				for: WineRuntimeDiscoveryError.missingResourceDirectory)
-				== .whelk)
+				== .bundledRuntimeDamaged)
 	}
 }

@@ -78,7 +78,7 @@ extension LauncherViewModel {
 		let failure = LauncherFailurePresentation(
 			id: UUID(),
 			message: launcherUserMessage(for: launcherError),
-			code: .basalt,
+			code: .dataMigrationFailed,
 			context: SupportContext(operation: .launcher, region: nil),
 			actions: [.retry, .openTroubleshooting, .reportProblem],
 			blocksGameLaunch: true

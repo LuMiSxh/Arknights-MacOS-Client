@@ -61,7 +61,7 @@ Rules:
 - A failed move does not undo earlier moves. The migrator returns `AppStorageMigrationResult` with the
   completed moves and the first failure. The model saves the preferences of the completed moves only
   and skips the moves that follow the failure.
-- A failure releases the startup activity. The launcher shows a `BASALT` failure with **Retry**,
+- A failure releases the startup activity. The launcher shows an `FS-MIG` failure with **Retry**,
   **Troubleshooting**, and **Report a problem**, and blocks game launch. **Retry** runs the migration
   again for the current failure ID only, then continues the normal startup work.
 

@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited.
 - Added a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support.
 - Added **Report a Problem…** to the Dock menu.
+- The failure sheet can copy the support code.
 
 ### Changed
 
@@ -28,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Playlists now start on a random track without playing the first track briefly.
 - Runtime 0.8.0-rc2 is built with the macOS 27 SDK. The game window uses the current macOS window style.
 - All report actions use the name **Report a Problem**. **Settings → Help** separates problems on this Mac from account and payment problems.
+- Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
 - The problem report form asks for logs only when a maintainer requests them.
 - **Settings** has a new **Help** section with problem reports, diagnostics, and the troubleshooting guide.
 
@@ -43,6 +45,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Muting the music during a fade-out no longer leaves the music playing. The fade-out now ends and pauses the music.
 - The music title now updates on every track change. **Next** and **Previous** no longer stay on "Changing track…".
 - The launcher no longer starts music while the game starts.
+- A failed launcher update now shows support code **UP-ERR**.
+- When the Bilibili sign-in helper cannot start, the launcher stops the launch and shows **RT-BIL** instead of waiting 90 seconds.
 
 ## [0.7.1] - 2026-10-19
 

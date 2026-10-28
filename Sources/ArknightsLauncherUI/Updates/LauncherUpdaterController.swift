@@ -27,6 +27,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		case probe(LauncherUpdateCheckOutcome, completion: (LauncherUpdateCheckOutcome) -> Void)
 	}
 	private var check: Check?
+	private var updateFailureID: UUID?
 
 	init(
 		lifecycle: LauncherLifecycleStore,
@@ -47,6 +48,7 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 		)
 		userDriver = driver
 		super.init()
+		driver.reportFailure = { [weak self] error in self?.reportUpdateFailure(error) ?? false }
 		let activityObserverID = lifecycle.observeActivityChanges { [weak driver] in
 			driver?.retryTerminationIfSafe()
 		}
@@ -243,8 +245,54 @@ package final class LauncherUpdaterController: NSObject, SPUUpdaterDelegate {
 	func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
 		// Sparkle calls didAbort before didFinish for a probe that ends in an
 		// error. Keep the completion pending until the update cycle finishes.
+		if !Self.isNoUpdateError(error) {
+			log.error("Launcher update aborted: \(error)")
+		}
 		if recordProbeOutcome(Self.probeOutcome(for: error)) { return }
 		finishLauncherUpdate()
+	}
+
+	/// Logs every update failure. A user-started check or install hands the failure to the
+	/// failure sheet and returns true, so the overlay stays idle. Background and probe failures
+	/// return false and keep their inline message.
+	private func reportUpdateFailure(_ error: any Error) -> Bool {
+		log.error("Launcher update failed: \(error)")
+		guard installationID != nil || isUserInitiatedCheck else { return false }
+		// Keep the failure the user already sees. A second one would replace it.
+		guard lifecycle.state.presentation.failure == nil else { return true }
+		let failureID = UUID()
+		updateFailureID = failureID
+		lifecycle.presentFailure(
+			ContextualLauncherError(
+				userMessage: LauncherUpdateUserDriver.errorDetail,
+				diagnosticDescription: String(describing: error),
+				supportCode: .updateFailed
+			),
+			id: failureID,
+			code: .updateFailed,
+			context: SupportContext(operation: .launcher, region: nil),
+			canRepair: false,
+			allowsRetry: true,
+			blocksGameLaunch: false
+		)
+		return true
+	}
+
+	/// Starts a new user-initiated check for the update failure `id`. Returns false when `id`
+	/// is not the failure the sheet shows.
+	package func retryFailure(id: UUID) -> Bool {
+		guard updateFailureID == id, lifecycle.canBeginExclusiveActivity,
+			lifecycle.consumeFailure(id: id) != nil
+		else { return false }
+		updateFailureID = nil
+		log.info("Recovery selected; action=retry operation=launcher-update")
+		checkForUpdates()
+		return true
+	}
+
+	private var isUserInitiatedCheck: Bool {
+		if case .userInitiated = check { return true }
+		return false
 	}
 
 	private func finishLauncherUpdate() {

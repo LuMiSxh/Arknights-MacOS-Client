@@ -63,6 +63,7 @@ struct LauncherHTTPClient: Sendable {
 					region: region,
 					url: url,
 					reason: "response exceeded \(limit) bytes",
+					supportCode: .remoteContentInvalid,
 					underlying: .remoteContentTooLarge(responseURL, maximumBytes: limit)
 				)
 			case .responseSizeMismatch(_, let expected, let actual):
@@ -89,7 +90,8 @@ struct LauncherHTTPClient: Sendable {
 				operation: operation,
 				region: region,
 				url: url,
-				reason: "transport error: \(error.localizedDescription)"
+				reason: "transport error: \(error.localizedDescription)",
+				supportCode: error is URLError ? .networkUnavailable : .serviceError
 			)
 		}
 	}
@@ -100,6 +102,7 @@ struct LauncherHTTPClient: Sendable {
 		url: URL,
 		statusCode: Int? = nil,
 		reason: String,
+		supportCode: SupportCode = .serviceError,
 		underlying: LauncherError = .invalidResponse
 	) -> any Error {
 		let endpoint = [url.host, url.path.isEmpty ? nil : url.path]
@@ -112,7 +115,8 @@ struct LauncherHTTPClient: Sendable {
 		case .contextual:
 			return ContextualLauncherError(
 				userMessage: underlying.localizedDescription,
-				diagnosticDescription: diagnostic
+				diagnosticDescription: diagnostic,
+				supportCode: supportCode
 			)
 		case .diagnosed:
 			return DiagnosedLauncherError(underlying: underlying, diagnosticDescription: diagnostic)

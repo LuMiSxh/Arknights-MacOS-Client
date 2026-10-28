@@ -71,8 +71,8 @@ extension PresetCatalogService {
 				)
 			)
 			return result.data
-		} catch HTTPFetchError.unexpectedStatus {
-			throw URLError(.badServerResponse)
+		} catch {
+			throw Self.presetFetchError(error)
 		}
 	}
 

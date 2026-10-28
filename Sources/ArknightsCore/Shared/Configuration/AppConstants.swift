@@ -240,4 +240,8 @@ package enum AppConstants {
 		package static let backgroundTintBrightness = 0.1
 		package static let backgroundTintOpacity = 0.52
 	}
+
+	package enum Support {
+		package static let copyConfirmationDuration: Duration = .seconds(2)
+	}
 }

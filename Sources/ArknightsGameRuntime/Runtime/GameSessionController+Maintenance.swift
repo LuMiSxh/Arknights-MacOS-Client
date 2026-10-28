@@ -88,7 +88,7 @@ extension GameSessionController {
 			LauncherFailurePresentation(
 				id: id,
 				message: message,
-				code: .sepia,
+				code: .runtimeSetupFailed,
 				context: SupportContext(
 					operation: operation,
 					region: region.supportRegion

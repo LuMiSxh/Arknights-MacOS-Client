@@ -120,7 +120,7 @@ package final class StorageMaintenanceController {
 			LauncherFailurePresentation(
 				id: id,
 				message: message,
-				code: .basalt,
+				code: .localFileFailed,
 				context: SupportContext(
 					operation: .cacheClearing,
 					region: region.supportRegion

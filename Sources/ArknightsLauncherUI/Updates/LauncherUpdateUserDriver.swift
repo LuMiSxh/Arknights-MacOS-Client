@@ -22,6 +22,9 @@ enum LauncherUpdatePhase: Equatable {
 @Observable
 final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	static let errorDetail = "The update could not be completed."
+	/// Receives each failure before the overlay shows it. Returns true when the failure sheet
+	/// presents it, so the overlay stays idle. The controller sets this after init.
+	var reportFailure: (any Error) -> Bool = { _ in false }
 
 	var phase: LauncherUpdatePhase = .hidden
 	var version: String?
@@ -137,8 +140,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 	}
 	func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
 		resetCallbacks()
-		showError(error)
-		pendingReply = .acknowledgement(acknowledgement)
+		showError(error, acknowledgement: acknowledgement)
 	}
 	func showDownloadInitiated(cancellation: @escaping () -> Void) {
 		cancelAutomaticTerminationRetry()
@@ -262,10 +264,22 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		}
 	}
 	func showError(_ error: Error) {
+		showError(error, acknowledgement: nil)
+	}
+
+	private func showError(_ error: Error, acknowledgement: (() -> Void)?) {
 		cancelAutomaticTerminationRetry()
+		if reportFailure(error) {
+			// The failure sheet owns this failure, so the overlay stays idle.
+			hide()
+			acknowledgement?()
+			return
+		}
 		phase = .failed
 		message = LauncherUpdateUserDriver.errorDetail
-		if pendingReply == nil {
+		if let acknowledgement {
+			pendingReply = .acknowledgement(acknowledgement)
+		} else if pendingReply == nil {
 			pendingReply = .acknowledgement {}
 		}
 	}

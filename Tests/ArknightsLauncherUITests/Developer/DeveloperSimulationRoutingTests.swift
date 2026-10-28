@@ -72,7 +72,7 @@ import Testing
 
 			model.updateDeveloperSimulation { $0.rosettaMissing = true }
 			let failure = try #require(model.lifecycle.state.presentation.failure)
-			#expect(failure.code == .limpet)
+			#expect(failure.code == .rosettaMissing)
 			#expect(failure.context.operation == .intelTranslationPreflight)
 			#expect(failure.context.region == nil)
 			#expect(failure.blocksGameLaunch)

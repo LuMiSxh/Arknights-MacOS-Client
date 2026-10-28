@@ -7,13 +7,19 @@ package protocol LauncherDiagnosticError: LocalizedError {
 }
 
 /// Keeps alerts concise while carrying operation details into `launcher.log`.
-package struct ContextualLauncherError: LocalizedError, LauncherDiagnosticError, Sendable {
+package struct ContextualLauncherError: LocalizedError, LauncherDiagnosticError,
+	SupportCodeProviding, Sendable
+{
 	let userMessage: String
 	package let diagnosticDescription: String
+	package let supportCode: SupportCode?
 
-	package init(userMessage: String, diagnosticDescription: String) {
+	package init(
+		userMessage: String, diagnosticDescription: String, supportCode: SupportCode? = nil
+	) {
 		self.userMessage = userMessage
 		self.diagnosticDescription = diagnosticDescription
+		self.supportCode = supportCode
 	}
 
 	package var errorDescription: String? { userMessage }
@@ -35,8 +41,8 @@ package func launcherUserMessage(for error: any Error) -> String {
 }
 
 extension LauncherError: SupportCodeProviding {
-	var supportCode: SupportCode? {
-		if case .storageMigrationFailed = self { .basalt } else { nil }
+	package var supportCode: SupportCode? {
+		if case .storageMigrationFailed = self { .dataMigrationFailed } else { nil }
 	}
 }
 
@@ -53,7 +59,7 @@ package struct DiagnosticsError: LauncherDiagnosticError, SupportCodeProviding, 
 	}
 
 	package var diagnosticDescription: String { "Diagnostics archive failed: \(detail)" }
-	var supportCode: SupportCode? { .basalt }
+	package var supportCode: SupportCode? { .localFileFailed }
 }
 
 /// Failures shared by every feature; feature-specific failures live in their own error types.

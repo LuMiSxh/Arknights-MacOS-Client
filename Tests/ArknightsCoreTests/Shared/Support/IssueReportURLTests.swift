@@ -26,12 +26,12 @@ func issueReportURLIncludesOnlyApprovedFailureContext() {
 	let failureContext = URLComponents(
 		url: IssueReportURL.build(
 			runtimeName: "Arknights macOS Runtime 0.7.0-rc2",
-			code: .pebble,
+			code: .remoteContentInvalid,
 			context: SupportContext(operation: .repair, region: .japan),
 			source: .error
 		), resolvingAgainstBaseURL: false)!
 
-	#expect(failureContext.queryItems?.first { $0.name == "code" }?.value == "PEBBLE")
+	#expect(failureContext.queryItems?.first { $0.name == "code" }?.value == "SV-CNT")
 	#expect(
 		failureContext.queryItems?.first { $0.name == "runtime" }?.value
 			== "Arknights macOS Runtime 0.7.0-rc2")

@@ -224,7 +224,8 @@ final class LauncherRefreshController {
 			LauncherFailurePresentation(
 				id: id,
 				message: message,
-				code: .virga,
+				code: (error as? any SupportCodeProviding)?.supportCode
+					?? (error is URLError ? .networkUnavailable : .serviceError),
 				context: SupportContext(
 					operation: .configurationRefresh,
 					region: region.supportRegion

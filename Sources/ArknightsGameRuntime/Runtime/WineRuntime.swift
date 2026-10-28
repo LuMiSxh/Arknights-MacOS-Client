@@ -339,9 +339,12 @@ struct WineRuntime: Sendable {
 			controller.standardError = logHandle
 			do {
 				try spawnGate.runIfAllowed(process: controller) { try controller.run() }
+			} catch is CancellationError {
+				throw CancellationError()
 			} catch {
 				logHandle.appendLaunchLogLine(
 					"Arknights Client: Bilibili window controller failed: \(error)\n", log: log)
+				throw GameRuntimeError.bilibiliControllerFailed(String(describing: error))
 			}
 		}
 		RuntimePerformanceLog.write(

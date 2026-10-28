@@ -46,7 +46,7 @@ import ArknightsGameInstallation
 		var updateAvailable = false
 		var launcherUpdate = LauncherUpdate.current
 		var failure = Failure.none
-		var failureCode = SupportCode.crux
+		var failureCode = SupportCode.gameClosedUnexpectedly
 		var selectedRegion = GameRegion.global
 		var installedRegions: Set<GameRegion> = [.global]
 		var canaryFeaturesEnabled = false

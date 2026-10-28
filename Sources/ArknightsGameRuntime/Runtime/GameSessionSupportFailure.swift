@@ -18,14 +18,11 @@ extension GameSessionController {
 			id: id,
 			code: Self.supportCode(for: error),
 			context: SupportContext(operation: operation, region: region.supportRegion),
-			repairableCodes: Self.repairableCodes,
 			canRepair: installation.isInstalled && operation != .runtimeStop,
 			blocksGameLaunch: blocksGameLaunch
 				?? (operation == .launch || operation == .runtimeDiscovery)
 		)
 	}
-
-	package static let repairableCodes: Set<SupportCode> = [.pebble, .anemone, .narwhal, .crux]
 
 	@discardableResult
 	package func retryRuntimeFailure(id: UUID) -> Bool {
@@ -70,32 +67,33 @@ extension GameSessionController {
 
 	static func supportCode(for error: any Error) -> SupportCode? {
 		if error is WineRuntimeDiscoveryError {
-			return .whelk
+			return .bundledRuntimeDamaged
 		}
 		return switch error {
 		case GameRuntimeError.wineRuntimeMissing:
-			.whelk
-		case GameRuntimeError.rosettaMissing,
-			GameRuntimeError.rosettaDisabledByGameTestMode,
+			.bundledRuntimeDamaged
+		case GameRuntimeError.rosettaMissing:
+			.rosettaMissing
+		case GameRuntimeError.rosettaDisabledByGameTestMode,
 			GameRuntimeError.intelTranslationUnavailable,
 			GameRuntimeError.intelTranslationUnsupported:
-			.limpet
+			.intelTranslationBlocked
 		case GameRuntimeError.runtimeConfiguration:
-			.sepia
+			.runtimeSetupFailed
 		case GameRuntimeError.gameCompatibility, is GameShimRollbackError:
-			.anemone
+			.compatibilitySetupFailed
 		case GameRuntimeError.runtimeWindowTimeout:
-			.narwhal
+			.gameWindowTimeout
 		case GameRuntimeError.runtimeExited:
-			.crux
+			.gameClosedUnexpectedly
+		case GameRuntimeError.bilibiliControllerFailed:
+			.bilibiliLoginUnavailable
 		case GameRuntimeError.gameNotInstalled:
-			.pebble
+			.gameFilesMissing
 		case InstallerError.cannotCreateFile:
-			.basalt
-		case is BoundedFileReadError:
-			.sepia
-		case is CocoaError, is POSIXError:
-			.sepia
+			.installFolderUnusable
+		case is BoundedFileReadError, is CocoaError, is POSIXError:
+			.runtimeSetupFailed
 		default:
 			nil
 		}

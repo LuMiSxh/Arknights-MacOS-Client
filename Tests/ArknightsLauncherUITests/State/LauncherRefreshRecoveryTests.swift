@@ -22,7 +22,7 @@ struct LauncherRefreshRecoveryTests {
 		}
 
 		await model.refreshController.waitForCurrentRefresh()
-		#expect(model.lifecycle.state.presentation.failure?.code == .virga)
+		#expect(model.lifecycle.state.presentation.failure?.code == .serviceError)
 		let failure = try #require(model.lifecycle.state.presentation.failure)
 		#expect(failure.context.operation == .configurationRefresh)
 		#expect(failure.context.region == region.supportRegion)
