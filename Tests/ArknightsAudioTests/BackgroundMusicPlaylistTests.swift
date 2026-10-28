@@ -34,6 +34,29 @@ struct BackgroundMusicPlaylistTests {
 		#expect(commands.last == "setVolume")
 	}
 
+	@Test
+	func setupForTheSameSourceKeepsTheStartedPlaylistButANewSourceRestartsIt() async throws {
+		let fixture = try MusicFixture(randomIndex: { $0 - 1 })
+		defer { fixture.remove() }
+		let controller = fixture.controller
+		controller.settings.playsLauncherMusic = true
+		controller.settings.launcherMusicURL = "https://www.youtube.com/playlist?list=one"
+		fixture.fake.playlist = ["a", "b", "c", "d"]
+		controller.enabledDidChange(to: true)
+		fixture.fake.emit(.playback(.cued))
+		#expect(await waitForCondition { fixture.fake.playedIndices == [3] })
+
+		controller.enabledDidChange(to: true)
+		fixture.fake.emit(.playback(.cued))
+		#expect(await waitForCondition { fixture.fake.count("play") == 1 })
+		#expect(fixture.fake.playedIndices == [3])
+
+		controller.settings.launcherMusicURL = "https://www.youtube.com/playlist?list=two"
+		controller.enabledDidChange(to: true)
+		fixture.fake.emit(.playback(.cued))
+		#expect(await waitForCondition { fixture.fake.playedIndices == [3, 3] })
+	}
+
 	@Test(arguments: [false, true])
 	func playerFailuresSkipTracksUntilTheBoundUnlessAPlayingTrackResetsIt(
 		playsBetween: Bool

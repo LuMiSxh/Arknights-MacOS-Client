@@ -91,20 +91,12 @@ extension BackgroundMusicController {
 		expectPlayback(expectsPlayback ? .playing : .paused)
 		// Subscribe before the command so the new track's events cannot be missed.
 		let events = playerCommands.events(targetPlayer)
-		do {
-			// YouTube owns the shuffled order, so it picks the neighbour.
-			switch direction {
-			case .next: try await playerCommands.nextVideo(targetPlayer)
-			case .previous: try await playerCommands.previousVideo(targetPlayer)
-			}
-		} catch {
-			await terminate(events)
-			throw error
+		// YouTube owns the shuffled order, so it picks the neighbour.
+		switch direction {
+		case .next: try await playerCommands.nextVideo(targetPlayer)
+		case .previous: try await playerCommands.previousVideo(targetPlayer)
 		}
-		guard isCurrent(operation) else {
-			await terminate(events)
-			return false
-		}
+		guard isCurrent(operation) else { return false }
 		let started = await waitForTrackStart(
 			on: targetPlayer,
 			previousVideoID: resolvedPreviousVideoID,
@@ -114,19 +106,11 @@ extension BackgroundMusicController {
 		return started && isCurrent(operation)
 	}
 
-	/// An `AsyncStream` that nobody iterates never ends, and its subscription keeps running.
-	/// Iterating it in a cancelled task terminates it.
-	private func terminate(_ events: AsyncStream<BackgroundMusicPlayerEvent>) async {
-		let drain = Task { for await _ in events {} }
-		drain.cancel()
-		await drain.value
-	}
-
 	private func waitForTrackStart(
 		on targetPlayer: YouTubePlayer,
 		previousVideoID: String?,
 		expectsPlayback: Bool,
-		events: AsyncStream<BackgroundMusicPlayerEvent>
+		events: BackgroundMusicPlayerEvents
 	) async -> Bool {
 		await withTaskGroup(of: Bool.self) { group in
 			group.addTask {
@@ -143,6 +127,14 @@ extension BackgroundMusicController {
 					previousVideoID: previousVideoID,
 					expectsPlayback: expectsPlayback
 				)
+			}
+			if expectsPlayback {
+				group.addTask {
+					await self.recheckTrackStart(
+						on: targetPlayer,
+						previousVideoID: previousVideoID
+					)
+				}
 			}
 			let started = await group.next() ?? false
 			group.cancelAll()
@@ -203,7 +195,7 @@ extension BackgroundMusicController {
 		on targetPlayer: YouTubePlayer,
 		previousVideoID: String?,
 		expectsPlayback: Bool,
-		events: AsyncStream<BackgroundMusicPlayerEvent>
+		events: BackgroundMusicPlayerEvents
 	) async -> Bool {
 		var videoChanged = false
 		var didPause = false

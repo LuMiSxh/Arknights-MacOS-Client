@@ -14,8 +14,8 @@ struct BackgroundMusicPlayerCommands {
 	typealias FlagCommand = @MainActor (YouTubePlayer, Bool) async throws -> Void
 
 	/// A subscription to one player's changes. Each call starts an independent stream that ends
-	/// when its consumer stops iterating.
-	let events: @MainActor (YouTubePlayer) -> AsyncStream<BackgroundMusicPlayerEvent>
+	/// when its consumer stops iterating or drops it.
+	let events: @MainActor (YouTubePlayer) -> BackgroundMusicPlayerEvents
 	let load: SourceCommand
 	let getPlaylist: @MainActor (YouTubePlayer) async throws -> [String]?
 	let getPlaybackMetadata:
@@ -62,45 +62,80 @@ struct BackgroundMusicPlayerCommands {
 
 	private static func liveEvents(
 		of player: YouTubePlayer
-	) -> AsyncStream<BackgroundMusicPlayerEvent> {
-		AsyncStream(bufferingPolicy: .bufferingNewest(AppConstants.Music.playerEventBufferLimit)) {
-			continuation in
-			// The player replays its current playback state to a new subscriber; only changes are events.
-			let replaysPlaybackState = player.playbackState != nil
-			let playback = player.playbackStatePublisher
-				.dropFirst(replaysPlaybackState ? 1 : 0)
-				.removeDuplicates()
-				.map(BackgroundMusicPlayerEvent.playback)
-				.eraseToAnyPublisher()
-			let metadata = player.playbackMetadataPublisher
-				.map(BackgroundMusicPlayerEvent.metadata)
-				.eraseToAnyPublisher()
-			// The iframe reports a video failure as an event; the state publisher drops repeats of it.
-			let playerEvents = player.eventPublisher
-				.compactMap { event -> BackgroundMusicPlayerEvent? in
-					switch event.name {
-					case .error: .failure(.unplayableTrack)
-					case .connectionIssue, .iFrameApiFailedToLoad: .failure(.unreachable)
-					default: nil
-					}
+	) -> BackgroundMusicPlayerEvents {
+		// The player replays its current playback state to a new subscriber; only changes are events.
+		let replaysPlaybackState = player.playbackState != nil
+		let playback = player.playbackStatePublisher
+			.dropFirst(replaysPlaybackState ? 1 : 0)
+			.removeDuplicates()
+			.map(BackgroundMusicPlayerEvent.playback)
+			.eraseToAnyPublisher()
+		let metadata = player.playbackMetadataPublisher
+			.map(BackgroundMusicPlayerEvent.metadata)
+			.eraseToAnyPublisher()
+		// The iframe reports a video failure as an event; the state publisher drops repeats of it.
+		let playerEvents = player.eventPublisher
+			.compactMap { event -> BackgroundMusicPlayerEvent? in
+				switch event.name {
+				case .error: .failure(.unplayableTrack)
+				case .connectionIssue, .iFrameApiFailedToLoad: .failure(.unreachable)
+				default: nil
 				}
-				.eraseToAnyPublisher()
-			let webViewFailures = player.statePublisher
-				.compactMap { state -> BackgroundMusicPlayerEvent? in
-					switch state.error {
-					case .setupFailed, .didFailProvisionalNavigation, .didFailNavigation,
-						.webContentProcessDidTerminate:
-						.failure(.unreachable)
-					default: nil
-					}
+			}
+			.eraseToAnyPublisher()
+		let webViewFailures = player.statePublisher
+			.compactMap { state -> BackgroundMusicPlayerEvent? in
+				switch state.error {
+				case .setupFailed, .didFailProvisionalNavigation, .didFailNavigation,
+					.webContentProcessDidTerminate:
+					.failure(.unreachable)
+				default: nil
 				}
+			}
+			.eraseToAnyPublisher()
+		return BackgroundMusicPlayerEvents(
+			Publishers.MergeMany([playback, metadata, playerEvents, webViewFailures])
 				.eraseToAnyPublisher()
-			let subscription = Publishers.MergeMany([
-				playback, metadata, playerEvents, webViewFailures,
-			])
-			.sink { continuation.yield($0) }
-			continuation.onTermination = { _ in subscription.cancel() }
-		}
+		)
+	}
+}
+
+/// The events of one subscription, as an `AsyncSequence`.
+///
+/// The Combine subscription is owned by this value and its iterators, never by the stream's
+/// continuation. The sink retains the continuation, so a continuation that owned the subscription
+/// would form a cycle. Dropping the sequence (or ending iteration) cancels the subscription.
+nonisolated struct BackgroundMusicPlayerEvents: AsyncSequence, Sendable {
+	typealias Element = BackgroundMusicPlayerEvent
+
+	private let stream: AsyncStream<Element>
+	// `AnyCancellable.cancel()` is thread-safe; it is only stored and cancelled.
+	nonisolated(unsafe) private let subscription: AnyCancellable
+
+	init(_ publisher: AnyPublisher<Element, Never>) {
+		let (stream, continuation) = AsyncStream.makeStream(
+			of: Element.self,
+			bufferingPolicy: .bufferingNewest(AppConstants.Music.playerEventBufferLimit)
+		)
+		let subscription = publisher.sink(
+			receiveCompletion: { _ in continuation.finish() },
+			receiveValue: { continuation.yield($0) }
+		)
+		continuation.onTermination = { [weak subscription] _ in subscription?.cancel() }
+		self.stream = stream
+		self.subscription = subscription
+	}
+
+	func makeAsyncIterator() -> Iterator {
+		Iterator(base: stream.makeAsyncIterator(), subscription: subscription)
+	}
+
+	struct Iterator: AsyncIteratorProtocol {
+		var base: AsyncStream<Element>.Iterator
+		// Keeps the subscription alive while this iterator exists.
+		nonisolated(unsafe) let subscription: AnyCancellable
+
+		mutating func next() async -> Element? { await base.next() }
 	}
 }
 

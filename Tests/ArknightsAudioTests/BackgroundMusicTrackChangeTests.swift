@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -77,7 +78,8 @@ struct BackgroundMusicTrackChangeTests {
 		// No further event arrives; only the recheck can notice the new track.
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "New")
 		fixture.fake.state = .playing
-		clock.release()
+		// One recheck interval is far short of the timeout, so only the recheck can finish this.
+		clock.advance(by: AppConstants.Music.trackStartRecheckInterval)
 
 		#expect(await waitForCondition { !controller.isChangingTrack })
 		#expect(controller.currentMusicTitle == "New")
@@ -117,5 +119,19 @@ struct BackgroundMusicTrackChangeTests {
 
 		#expect(await waitForCondition { fixture.fake.terminatedStreams == 1 })
 		#expect(await waitForCondition { !controller.isChangingTrack })
+	}
+
+	@Test
+	func anEventStreamThatIsNeverIteratedEndsItsSubscriptionWhenItIsDropped() throws {
+		let fixture = try MusicFixture()
+		defer { fixture.remove() }
+		let player = try #require(fixture.controller.player)
+
+		var events: BackgroundMusicPlayerEvents? = fixture.fake.playerCommands.events(player)
+		#expect(events != nil)
+		#expect(fixture.fake.activeSubscriptions == 1)
+		events = nil
+
+		#expect(fixture.fake.activeSubscriptions == 0)
 	}
 }

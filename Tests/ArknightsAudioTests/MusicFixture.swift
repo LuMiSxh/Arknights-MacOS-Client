@@ -4,7 +4,9 @@ import AppKit
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsTestSupport
+@preconcurrency import Combine
 import Foundation
+import Synchronization
 import YouTubePlayerKit
 
 @testable import ArknightsAudio
@@ -22,17 +24,22 @@ final class FakeMusicPlayer {
 	var playlist = ["a", "b"]
 	/// Makes `nextVideo` and `previousVideo` throw.
 	var failsNavigation = false
-	private(set) var terminatedStreams = 0
+	private let subscriptionCount = Mutex(0)
+	private let cancelledCount = Mutex(0)
+	/// Event subscriptions that are started and not yet cancelled.
+	var activeSubscriptions: Int { subscriptionCount.withLock { $0 } }
+	/// Event subscriptions that were cancelled.
+	var terminatedStreams: Int { cancelledCount.withLock { $0 } }
 	/// What `getPlaybackMetadata` returns; it throws while nil.
 	var metadata: YouTubePlayer.PlaybackMetadata?
 	/// What `getPlaybackState` returns.
 	var state: YouTubePlayer.PlaybackState = .buffering
 	private var gate: CheckedContinuation<Void, Never>?
-	private var eventStreams: [AsyncStream<BackgroundMusicPlayerEvent>.Continuation] = []
+	private let eventSubject = PassthroughSubject<BackgroundMusicPlayerEvent, Never>()
 
 	/// Delivers `event` to every subscription, as the player would.
 	func emit(_ event: BackgroundMusicPlayerEvent) {
-		for stream in eventStreams { stream.yield(event) }
+		eventSubject.send(event)
 	}
 
 	static func metadata(
@@ -67,15 +74,19 @@ final class FakeMusicPlayer {
 	var playerCommands: BackgroundMusicPlayerCommands {
 		BackgroundMusicPlayerCommands(
 			events: { [self] _ in
-				let (stream, continuation) = AsyncStream.makeStream(
-					of: BackgroundMusicPlayerEvent.self,
-					bufferingPolicy: .bufferingNewest(AppConstants.Music.playerEventBufferLimit)
+				BackgroundMusicPlayerEvents(
+					eventSubject
+						.handleEvents(
+							receiveSubscription: { _ in
+								self.subscriptionCount.withLock { $0 += 1 }
+							},
+							receiveCancel: {
+								self.subscriptionCount.withLock { $0 -= 1 }
+								self.cancelledCount.withLock { $0 += 1 }
+							}
+						)
+						.eraseToAnyPublisher()
 				)
-				eventStreams.append(continuation)
-				continuation.onTermination = { _ in
-					Task { @MainActor in self.terminatedStreams += 1 }
-				}
-				return stream
 			},
 			load: { [self] _, _ in commands.append("load") },
 			getPlaylist: { [self] _ in

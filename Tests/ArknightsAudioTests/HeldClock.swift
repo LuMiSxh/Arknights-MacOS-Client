@@ -2,7 +2,8 @@
 
 import Foundation
 
-/// A clock whose sleeps wait until a test calls `release()`, so a timeout fires only on demand.
+/// A clock whose sleeps wait until a test calls `release()` or advances past their deadline, so a
+/// timeout fires only on demand.
 final class HeldClock: Clock, @unchecked Sendable {
 	struct Instant: InstantProtocol {
 		var offset: Duration
@@ -13,9 +14,13 @@ final class HeldClock: Clock, @unchecked Sendable {
 	}
 
 	private let lock = NSLock()
-	private var waiters: [UUID: CheckedContinuation<Void, any Error>] = [:]
+	private typealias Waiter = (
+		deadline: Instant, continuation: CheckedContinuation<Void, any Error>
+	)
+	private var waiters: [UUID: Waiter] = [:]
+	private var elapsed = Duration.zero
 
-	var now: Instant { Instant(offset: .zero) }
+	var now: Instant { lock.withLock { Instant(offset: elapsed) } }
 	var minimumResolution: Duration { .nanoseconds(1) }
 
 	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
@@ -24,19 +29,23 @@ final class HeldClock: Clock, @unchecked Sendable {
 			operation: {
 				try await withCheckedThrowingContinuation {
 					(continuation: CheckedContinuation<Void, any Error>) in
-					register(continuation, id: id)
+					register(continuation, id: id, deadline: deadline)
 				}
 			},
 			onCancel: {
 				let waiter = lock.withLock { waiters.removeValue(forKey: id) }
-				waiter?.resume(throwing: CancellationError())
+				waiter?.continuation.resume(throwing: CancellationError())
 			}
 		)
 	}
 
-	private func register(_ continuation: CheckedContinuation<Void, any Error>, id: UUID) {
+	private func register(
+		_ continuation: CheckedContinuation<Void, any Error>,
+		id: UUID,
+		deadline: Instant
+	) {
 		let isCancelled = lock.withLock {
-			if !Task.isCancelled { waiters[id] = continuation }
+			if !Task.isCancelled { waiters[id] = (deadline, continuation) }
 			return Task.isCancelled
 		}
 		if isCancelled { continuation.resume(throwing: CancellationError()) }
@@ -48,6 +57,17 @@ final class HeldClock: Clock, @unchecked Sendable {
 			defer { waiters.removeAll() }
 			return Array(waiters.values)
 		}
-		for continuation in pending { continuation.resume() }
+		for waiter in pending { waiter.continuation.resume() }
+	}
+
+	/// Moves time forward and ends only the sleeps whose deadline has passed.
+	func advance(by duration: Duration) {
+		let due = lock.withLock {
+			elapsed += duration
+			let now = Instant(offset: elapsed)
+			let ids = waiters.filter { $0.value.deadline <= now }.map(\.key)
+			return ids.compactMap { waiters.removeValue(forKey: $0)?.continuation }
+		}
+		for continuation in due { continuation.resume() }
 	}
 }
