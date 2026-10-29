@@ -132,7 +132,7 @@
       "steps": [
         "Free the space that the launcher shows, plus extra space for updates.",
         "Empty the Trash if it holds a previous installation.",
-        "If needed, choose another local volume in **Settings → Installation**."
+        "If needed, choose another local volume with the **Change…** menu in **Settings → Servers → Location**."
       ],
       "report": "In the report, give the volume format and the free space that Finder and the launcher each show. Report only if Finder shows enough free space and the code remains.",
       "legacy": ["SCREE"]
@@ -155,7 +155,7 @@
       ],
       "steps": [
         "Quit Arknights and any app that uses the folder.",
-        "Choose a local folder that your account owns and that is not a symbolic link. Set it in **Settings → Installation**.",
+        "Choose a local folder that your account owns and that is not a symbolic link. Set it with the **Change…** menu in **Settings → Servers → Location**.",
         "Do not change ownership or permissions across your home folder."
       ],
       "report": "In the report, say whether a new local folder works. Give the volume type.",
@@ -322,7 +322,7 @@
       "title": "Runtime setup failed",
       "status": "active",
       "summary": "The launcher could not set up the game runtime.",
-      "action": "Choose Rebuild in Settings → Installation, then start the game.",
+      "action": "Choose Rebuild… in Settings → Help → Troubleshooting, then start the game.",
       "allowsRetry": true,
       "allowsRepair": false,
       "causes": [
@@ -332,7 +332,7 @@
       ],
       "steps": [
         "Quit other Wine apps.",
-        "Choose **Settings → Installation → Rebuild…**, then start the game. This sets up the game environment again and deletes no files.",
+        "Choose **Settings → Help → Troubleshooting → Rebuild…**, then start the game. This sets up the game environment again and deletes no files.",
         "As a last resort, choose **Delete Environment…**, which keeps your game files but signs you out. See [What cleanup removes](../storage.md#what-cleanup-removes)."
       ],
       "report": "In the report, say whether another Wine process was open and which recovery step failed.",
@@ -356,7 +356,7 @@
       "steps": [
         "Quit Arknights and any official updater.",
         "Do not delete or rename the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, userenv.dll, or the temporary files of the launcher.",
-        "If the code returns after Repair, restart the Mac. Then choose **Repair** in **Settings → Installation** again."
+        "If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Servers** again."
       ],
       "report": "In the report, say whether the second Repair failed. Attach no helper binaries.",
       "legacy": ["ANEMONE"]

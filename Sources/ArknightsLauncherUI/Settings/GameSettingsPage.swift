@@ -18,16 +18,26 @@ struct GameSettingsPage: View {
 		) {
 			GameDisplaySettingsPanel(
 				settings: settings,
-				isLocked: gameSession.isGameActive
-					|| lifecycle.activity == .maintaining(.migratingStorage),
+				isLocked: isDisplayLocked,
 				accentColor: accentColor,
 				metalFXSpatialUpscalingSupported: gameSession.metalFXSpatialUpscalingSupported
 			)
-			GameAdvancedSettingsPanel(
+			GamePerformanceSettingsPanel(
+				settings: settings,
+				isLocked: gameSession.isGameActive,
+				isFrameRateLocked: isDisplayLocked,
+				accentColor: accentColor
+			)
+			GameCompatibilitySettingsPanel(
 				settings: settings,
 				isLocked: gameSession.isGameActive,
 				accentColor: accentColor
 			)
 		}
+	}
+
+	/// Display settings and the frame rate also wait for storage migration.
+	private var isDisplayLocked: Bool {
+		gameSession.isGameActive || lifecycle.activity == .maintaining(.migratingStorage)
 	}
 }

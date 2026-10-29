@@ -23,7 +23,7 @@ Possible causes:
 ## What you can do
 
 1. Quit Arknights and any app that uses the folder.
-2. Choose a local folder that your account owns and that is not a symbolic link. Set it in **Settings → Installation**.
+2. Choose a local folder that your account owns and that is not a symbolic link. Set it with the **Change…** menu in **Settings → Servers → Location**.
 3. Do not change ownership or permissions across your home folder.
 
 Select **Retry** after you finish these steps. Retry repeats the failed operation. It keeps valid downloads and game files.

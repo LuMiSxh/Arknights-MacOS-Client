@@ -41,13 +41,13 @@ Do not move or rename `.part` files or change the installation location during a
 
 ## A region shows “Not installed”
 
-1. Select the region in **Settings → Installation**.
+1. Select the region in **Settings → Servers**.
 2. Choose **Installation Location → Locate Existing Installation…** and select the folder that directly contains `Arknights.exe`.
 3. If the region still shows **Not installed**, run **Repair…**.
 
 ## An update or repair does not finish
 
-When no other download runs, choose **Settings → Installation → Repair…**.
+When no other download runs, choose **Settings → Servers → Repair…**.
 
 ## The game will not start
 
@@ -78,8 +78,8 @@ Allow **Arknights Client** in **System Settings → Privacy & Security → Local
 
 ## Graphics, window, or performance problems
 
-1. If **Override in-game display settings** (**Settings → Game → Advanced**) is off, turn it on or change the display settings in the game.
-2. Set **Rendering** to **MetalFX** in **Settings → Game**. See [Display](runtime-compatibility.md#display).
+1. If **Override in-game display settings** (**Settings → Game → Display**) is off, turn it on or change the display settings in the game.
+2. Set **Rendering** to **MetalFX** in **Settings → Game → Display**. See [Display](runtime-compatibility.md#display).
 3. Pick **Compact**, a smaller **Window size**, a lower fullscreen **Resolution**, or **Fullscreen** (it can skip a macOS compositing pass).
 4. If fullscreen looks grainy, set **Resolution** to **Native**.
 

@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - Fullscreen mode now opens the game in its own macOS Space, so you can switch apps and Spaces normally (requires runtime 0.8.0-rc3 or newer).
 - **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
 - Runtime 0.8.0 updates DXMT to 0.80-361. It includes the upstream fixes for the display query leaks.

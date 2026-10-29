@@ -21,6 +21,7 @@ package struct ContentView: View {
 	@State var decorativeMotionVisibility = DecorativeMotionVisibility()
 	@State private var isTerminating = false
 	@State private var windowSize = CGSize.zero
+	@State private var settingsSection = SettingsSection.initial
 
 	package init(
 		model: LauncherViewModel,
@@ -260,7 +261,9 @@ package struct ContentView: View {
 				actions: model.actions,
 				restartOnboarding: restartOnboarding,
 				requestLauncherUpdateCheck: requestLauncherUpdateCheck,
-				developerSimulation: developerSimulationBinding, windowSize: windowSize)
+				developerSimulation: developerSimulationBinding, windowSize: windowSize,
+				selectedSection: $settingsSection
+			)
 		case .failure(let failure):
 			LauncherFailureDetailView(
 				failure: failure, accentColor: model.customization.accentColor,

@@ -148,7 +148,7 @@ package struct OnboardingView: View {
 							}
 						} message: {
 							Text(
-								"Setup picks your server, how the game looks on your screen, and how the launcher behaves. You can run it again from Settings → Installation."
+								"Setup picks your server, how the game looks on your screen, and how the launcher behaves. You can run it again from Settings → Help."
 							)
 						}
 					}

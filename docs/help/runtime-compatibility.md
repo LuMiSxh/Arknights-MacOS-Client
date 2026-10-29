@@ -61,11 +61,11 @@ Lower resolutions scale to fill the screen and look grainy on larger or differen
 
 **Cursor** set to **macOS** shows the macOS cursor instead of the PRTS cursor, so the cursor follows the mouse without delay. It needs runtime support.
 
-**Settings → Game → Advanced** shows the exact size the game draws. **Override in-game display settings** is on by default. Keep it on: the launcher converts the window size into the game resolution, so the picture stays sharp. When it is off, the display settings of Arknights decide and count drawn pixels. Example: with Retina rendering on a 2× display, 2560×1440 opens a 1280×720 window.
+**Settings → Game → Display** shows the exact size the game draws. **Override in-game display settings** is on by default. Keep it on: the launcher converts the window size into the game resolution, so the picture stays sharp. When it is off, the display settings of Arknights decide and count drawn pixels. Example: with Retina rendering on a 2× display, 2560×1440 opens a 1280×720 window.
 
 ## Canary Features
 
-**Settings → Installation → Canary Features** turns on experimental options. Turning it off restores normal behavior and deletes nothing.
+**Settings → Servers → Canary Features** turns on experimental options. Turning it off restores normal behavior and deletes nothing.
 
 - **Allow Taiwan region** shows the Taiwan region.
 

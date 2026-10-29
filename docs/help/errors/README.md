@@ -64,7 +64,7 @@ Each code has its own page. The page title starts with the code.
 | [RT-BND](rt-bnd.md) | Bundled runtime missing or damaged | Replace the launcher with a complete copy from the release DMG. |
 | [RT-CMP](rt-cmp.md) | Game compatibility setup failed | Quit the official updater. Then choose Repair. |
 | [RT-ROS](rt-ros.md) | Rosetta unavailable | Install Rosetta if the launcher offers it. |
-| [RT-SET](rt-set.md) | Runtime setup failed | Choose Rebuild in Settings → Installation, then start the game. |
+| [RT-SET](rt-set.md) | Runtime setup failed | Choose Rebuild… in Settings → Help → Troubleshooting, then start the game. |
 
 ### Game
 

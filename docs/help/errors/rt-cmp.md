@@ -23,7 +23,7 @@ Possible causes:
 
 1. Quit Arknights and any official updater.
 2. Do not delete or rename the .original.helper backups, the .arknights-client-bilibili folder, the bridge files, userenv.dll, or the temporary files of the launcher.
-3. If the code returns after Repair, restart the Mac. Then choose **Repair** in **Settings → Installation** again.
+3. If the code returns after Repair, restart the Mac. Then choose **Repair…** in **Settings → Servers** again.
 
 Select **Retry** after you finish these steps. Retry repeats the failed operation. It keeps valid downloads and game files.
 

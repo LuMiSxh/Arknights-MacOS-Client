@@ -33,7 +33,7 @@ struct LauncherSettingsView: View {
 	let windowSize: CGSize
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var selectedSection = SettingsSection.initial
+	@Binding var selectedSection: SettingsSection
 	@State private var presentedDocument: BundledDocument?
 
 	private var sheetSize: CGSize {
@@ -94,15 +94,14 @@ struct LauncherSettingsView: View {
 							actions: actions,
 							checkLauncherUpdates: requestLauncherUpdateCheck
 						)
-					case .installation:
+					case .servers:
 						InstallationSettingsPage(
 							settings: settings,
 							installation: installation,
 							gameSession: gameSession,
 							lifecycle: lifecycle,
 							accentColor: customization.accentColor,
-							actions: actions,
-							restartOnboarding: restartOnboarding
+							actions: actions
 						)
 					case .storage:
 						StorageOverviewPage(
@@ -128,7 +127,11 @@ struct LauncherSettingsView: View {
 							region: installation.region,
 							runtimeName: lifecycle.state.readiness.runtimeName,
 							accentColor: customization.accentColor,
-							actions: actions
+							actions: actions,
+							installation: installation,
+							gameSession: gameSession,
+							lifecycle: lifecycle,
+							restartOnboarding: restartOnboarding
 						)
 					case .about:
 						AboutSettingsPage(
@@ -223,6 +226,17 @@ struct LauncherSettingsView: View {
 	}
 }
 
+private struct SettingsRailCaption: View {
+	let text: String
+
+	var body: some View {
+		Text(text)
+			.font(.caption.monospaced().weight(.semibold))
+			.tracking(1.4)
+			.foregroundStyle(.tertiary)
+	}
+}
+
 private struct SettingsNavigationRail: View {
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
@@ -232,26 +246,31 @@ private struct SettingsNavigationRail: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETTINGS")
-				.font(.caption.monospaced().weight(.semibold))
-				.tracking(1.4)
-				.foregroundStyle(.tertiary)
-				.padding(.horizontal, 18)
-				.padding(.top, 22)
-				.padding(.bottom, 14)
-
-			VStack(spacing: LauncherVisuals.Spacing.compact) {
-				ForEach(visibleSections) { section in
-					SettingsNavigationButton(
-						section: section,
-						isSelected: selection == section,
-						accentColor: accentColor,
-					) {
-						selection = section
+			// Group captions title the rail, so it has no caption of its own.
+			VStack(spacing: 18) {
+				ForEach(SettingsGroup.allCases, id: \.self) { group in
+					let sections = visibleSections.filter { $0.group == group }
+					if !sections.isEmpty {
+						VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+							if let caption = group.caption {
+								SettingsRailCaption(text: caption)
+									.padding(.horizontal, 8)
+							}
+							ForEach(sections) { section in
+								SettingsNavigationButton(
+									section: section,
+									isSelected: selection == section,
+									accentColor: accentColor
+								) {
+									selection = section
+								}
+							}
+						}
 					}
 				}
 			}
 			.padding(.horizontal, 10)
+			.padding(.top, 22)
 
 			Spacer()
 

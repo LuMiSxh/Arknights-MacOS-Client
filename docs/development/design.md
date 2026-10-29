@@ -92,7 +92,7 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 
 - The Settings sheet adapts to the window size. `AppConstants.Settings` defines its margin and size limits.
 - Group related controls in quiet Liquid Glass panels. Switch Settings pages at once, without page transitions. The selected rail section uses the dynamic accent.
-- Use a list rail for Game, Appearance, Audio, Updates, Installation, Storage, Playtime, Help, and About. Debug builds add Developer. Game opens first.
+- Use a grouped list rail. The ARKNIGHTS group holds Game, Servers, Storage, and Playtime. The LAUNCHER group holds Appearance, Audio, and Updates. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
 - Explain destructive or expensive actions in user terms. Keep developer terminology out of the interface.
 - Warning and danger panels keep neutral backgrounds. Semantic color is limited to the header, icon, edge, and relevant actions: danger for destructive settings and failure codes, warning for cautionary state, success for completed state, and the dynamic accent for the primary operation and intentional selection.
 - Render bundled Markdown as native text, parsed once when the document opens. Tables adapt their column widths and can scroll horizontally. Missing or unreadable documents show an explicit error state.
@@ -108,7 +108,7 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 - Check for a newer launcher first. If one exists, stop setup at the update action until the user installs and reopens it.
 - Verify functional Intel execution through Rosetta 2 after the launcher preflight. Explain macOS 27 beta-only Legacy Game Test Mode recovery without presenting it as a stable-OS step.
 - Walk through System Check, Server, Display, Look, Updates & Audio, and Ready. Ask each question as answer cards (`OnboardingQuestion`): one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
-- Apply choices immediately through the same actions as Settings. Users can reopen the assistant from Settings → Installation.
+- Apply choices immediately through the same actions as Settings. Users can reopen the assistant from Settings → Help → Troubleshooting.
 - When a release requires returning players to rerun setup, open with a "Something important changed" briefing that explains why, and hide Skip Setup until they finish. First runs stay skippable.
 - End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form. Route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).
 

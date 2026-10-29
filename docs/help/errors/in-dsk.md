@@ -22,7 +22,7 @@ Possible causes:
 
 1. Free the space that the launcher shows, plus extra space for updates.
 2. Empty the Trash if it holds a previous installation.
-3. If needed, choose another local volume in **Settings → Installation**.
+3. If needed, choose another local volume with the **Change…** menu in **Settings → Servers → Location**.
 
 Select **Retry** after you finish these steps. Retry repeats the failed operation. It keeps valid downloads and game files.
 

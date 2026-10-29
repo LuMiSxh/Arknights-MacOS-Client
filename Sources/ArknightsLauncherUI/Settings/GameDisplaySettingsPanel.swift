@@ -10,14 +10,39 @@ struct GameDisplaySettingsPanel: View {
 	package let accentColor: Color
 	/// nil while runtime discovery runs. False means the game falls back to Standard.
 	let metalFXSpatialUpscalingSupported: Bool?
+	@Environment(\.displayScale) private var displayScale
 
 	private var options: GameLaunchOptions { settings.launchOptions }
 	private var isSizeLocked: Bool { options.usesGameSettings || isLocked }
 	private var screen: GameScreenMetrics? { GameScreenMetrics.main }
 	private var nativeFullscreenSize: GameDisplaySize? { GameFullscreenDisplay.primary?.pixelSize }
+	private var plan: GameDisplayPlan {
+		GameDisplayPlan(
+			options: options, backingScaleFactor: displayScale,
+			fullscreenDisplay: GameFullscreenDisplay.primary)
+	}
+	private var showsInGameResolutionNote: Bool {
+		options.usesGameSettings && plan.gamePixelsPerPoint > 1
+			&& !settings.dismissedInGameResolutionNote
+	}
 
 	var body: some View {
 		SettingsPanel(title: "Display", systemImage: "display") {
+			SettingsActionRow(
+				title: "Override in-game display settings",
+				detail:
+					"On: the launcher sets mode and resolution at each start. Off: the game uses its own settings.",
+				help:
+					"Arknights' own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
+			) {
+				SettingsToggle(
+					"Override in-game display settings",
+					isOn: launcherDisplayControl,
+					accentColor: accentColor
+				)
+				.disabled(isLocked)
+			}
+			SettingsHairline()
 			SettingsActionRow(
 				title: "Display mode",
 				detail: displayModeDetail,
@@ -51,29 +76,21 @@ struct GameDisplaySettingsPanel: View {
 				)
 			}
 			SettingsHairline()
-			SettingsActionRow(
-				title: "Frame rate limit",
-				help: "Lower limits save battery. Applies on next launch."
-			) {
-				HStack(spacing: 8) {
-					SettingsSlider(
-						value: frameRateStep,
-						range: 0...Double(GameFrameRateLimit.allCases.count - 1),
-						step: 1,
-						accentColor: accentColor,
-						width: 140
-					)
-					.disabled(isLocked)
-					.accessibilityLabel("Frame rate limit")
-					.accessibilityValue(options.frameRateLimit.displayName)
-					Text(options.frameRateLimit.displayName)
-						.font(.caption.monospacedDigit())
+			if let renderSize = plan.renderSize {
+				SettingsActionRow(
+					title: "Render resolution",
+					detail: scalingDetail
+				) {
+					Text(renderSize.displayName)
+						.monospacedDigit()
 						.foregroundStyle(.secondary)
-						.frame(width: 72, alignment: .trailing)
-						.accessibilityHidden(true)
 				}
+				SettingsHairline()
 			}
-			SettingsHairline()
+			if showsInGameResolutionNote {
+				inGameResolutionNote
+				SettingsHairline()
+			}
 			SettingsActionRow(
 				title: "Cursor",
 				help:
@@ -192,6 +209,46 @@ struct GameDisplaySettingsPanel: View {
 		)
 	}
 
+	// MARK: Override and render resolution
+
+	private var launcherDisplayControl: Binding<Bool> {
+		Binding(
+			get: { !settings.launchOptions.usesGameSettings },
+			set: { settings.launchOptions.usesGameSettings = !$0 }
+		)
+	}
+
+	private var scalingDetail: String {
+		switch plan.scaling {
+		case .native: "Shown without scaling."
+		case .metalFX: "MetalFX upscales it to fit your screen."
+		case .stretched: "macOS stretches it to fit your screen."
+		}
+	}
+
+	private var inGameResolutionNote: some View {
+		HStack(alignment: .firstTextBaseline, spacing: LauncherVisuals.Spacing.control) {
+			Image(systemName: "info.circle")
+				.foregroundStyle(.secondary)
+				.accessibilityHidden(true)
+			Text(
+				"Resolutions inside Arknights count the pixels the game draws. With Retina rendering, "
+					+ "choose \(options.windowSize.scaled(by: plan.gamePixelsPerPoint).displayName) in the game for a "
+					+ "\(options.windowSize.displayName) window."
+			)
+			.font(.caption)
+			.foregroundStyle(.secondary)
+			.fixedSize(horizontal: false, vertical: true)
+			.frame(maxWidth: .infinity, alignment: .leading)
+			CapsuleActionButton(
+				title: "Got It", systemImage: "checkmark",
+				tone: .neutral, presentation: .compact
+			) {
+				settings.dismissedInGameResolutionNote = true
+			}
+		}
+	}
+
 	// MARK: Text
 
 	private static let nativeResolution = "Native"
@@ -222,15 +279,6 @@ struct GameDisplaySettingsPanel: View {
 			metalFXSpatialUpscalingSupported == false ? "MetalFX (unavailable)" : "MetalFX"
 		case .standard: "Standard"
 		}
-	}
-
-	/// Maps the slider's stop index to a frame rate limit, in `allCases` order.
-	private var frameRateStep: Binding<Double> {
-		let limits = GameFrameRateLimit.allCases
-		return Binding(
-			get: { Double(limits.firstIndex(of: options.frameRateLimit) ?? 0) },
-			set: { settings.launchOptions.frameRateLimit = limits[Int($0.rounded())] }
-		)
 	}
 
 	/// For example "2560 × 1440 (WQHD)"; resolutions without a common name stay plain.

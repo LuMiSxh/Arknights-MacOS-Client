@@ -1,14 +1,29 @@
 // SPDX-License-Identifier: MPL-2.0
 
+/// Sidebar group. The caption labels the group in the settings rail.
+enum SettingsGroup: CaseIterable {
+	case arknights
+	case launcher
+	case general
+
+	var caption: String? {
+		switch self {
+		case .arknights: "ARKNIGHTS"
+		case .launcher: "LAUNCHER"
+		case .general: nil
+		}
+	}
+}
+
 // Selection is view state only and is never persisted.
 enum SettingsSection: String, CaseIterable, Identifiable {
 	case game
+	case servers
+	case storage
+	case statistics
 	case appearance
 	case audio
 	case updates
-	case installation
-	case storage
-	case statistics
 	case help
 	case about
 	#if DEBUG
@@ -19,13 +34,21 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
 	var id: String { rawValue }
 
+	var group: SettingsGroup {
+		switch self {
+		case .game, .servers, .storage, .statistics: .arknights
+		case .appearance, .audio, .updates: .launcher
+		default: .general
+		}
+	}
+
 	var title: String {
 		switch self {
 		case .game: "Game"
 		case .appearance: "Appearance"
 		case .audio: "Audio"
 		case .updates: "Updates"
-		case .installation: "Installation"
+		case .servers: "Servers"
 		case .storage: "Storage"
 		case .statistics: "Playtime"
 		case .help: "Help"
@@ -42,7 +65,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		case .appearance: "paintbrush"
 		case .audio: "music.note"
 		case .updates: "arrow.trianglehead.2.clockwise"
-		case .installation: "externaldrive"
+		case .servers: "globe"
 		case .storage: "internaldrive"
 		case .statistics: "chart.bar.xaxis"
 		case .help: "lifepreserver"

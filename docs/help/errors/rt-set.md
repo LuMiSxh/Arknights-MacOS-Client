@@ -22,7 +22,7 @@ Possible causes:
 ## What you can do
 
 1. Quit other Wine apps.
-2. Choose **Settings → Installation → Rebuild…**, then start the game. This sets up the game environment again and deletes no files.
+2. Choose **Settings → Help → Troubleshooting → Rebuild…**, then start the game. This sets up the game environment again and deletes no files.
 3. As a last resort, choose **Delete Environment…**, which keeps your game files but signs you out. See [What cleanup removes](../storage.md#what-cleanup-removes).
 
 Select **Retry** after you finish these steps. Retry repeats the failed operation. It keeps valid downloads and game files.

@@ -2,6 +2,8 @@
 
 import AppKit
 import ArknightsCore
+import ArknightsGameInstallation
+import ArknightsGameRuntime
 import SwiftUI
 
 struct HelpSettingsPage: View {
@@ -9,6 +11,11 @@ struct HelpSettingsPage: View {
 	package let runtimeName: String?
 	package let accentColor: Color
 	let actions: any LauncherActions
+	package let installation: InstallationController
+	let gameSession: GameSessionController
+	package let lifecycle: LauncherLifecycleStore
+	let restartOnboarding: () -> Void
+	@State private var confirmation: InstallationConfirmation?
 
 	var body: some View {
 		SettingsPage(
@@ -75,7 +82,54 @@ struct HelpSettingsPage: View {
 					)
 				}
 			}
+			SettingsPanel(title: "Troubleshooting", systemImage: "wrench.and.screwdriver") {
+				SettingsActionRow(
+					title: "Setup assistant",
+					detail: "Go through the first-run questions again."
+				) {
+					CapsuleActionButton(
+						title: "Run Setup Again…", systemImage: "wand.and.stars",
+						tone: .accent(accentColor), presentation: .compact,
+						action: restartOnboarding
+					)
+					.disabled(gameSession.isGameActive)
+				}
+				SettingsHairline()
+				InstallationDestructiveRow(
+					title: "Rebuild game environment",
+					detail: InstallationConfirmation.rebuildDetail,
+					help:
+						"Recreates the Wine prefix with its graphics layer and registry overrides.",
+					buttonTitle: "Rebuild…",
+					systemImage: "arrow.triangle.2.circlepath",
+					isDisabled: !installation.canModifyGameFiles,
+					confirming: .rebuildEnvironment,
+					confirmation: $confirmation
+				)
+				SettingsHairline()
+				InstallationDestructiveRow(
+					title: "Delete game environment",
+					detail: "Signs you out of Yostar, Google, Apple and Facebook. Game files stay.",
+					help: "Deletes the Wine prefix folder shared by this publisher's servers.",
+					buttonTitle: "Delete Environment…",
+					systemImage: "trash",
+					isDisabled: !installation.canModifyGameFiles,
+					confirming: .deleteEnvironment,
+					confirmation: $confirmation
+				)
+				SettingsHairline()
+				InstallationDestructiveRow(
+					title: "Reset launcher settings",
+					detail: InstallationConfirmation.settingsResetDetail,
+					buttonTitle: "Reset All Settings…",
+					systemImage: "arrow.counterclockwise",
+					isDisabled: gameSession.isGameActive || lifecycle.activity != .idle,
+					confirming: .resetSettings,
+					confirmation: $confirmation
+				)
+			}
 		}
+		.installationConfirmation($confirmation, gameSession: gameSession, actions: actions)
 	}
 
 	private func reportLauncherProblem() {

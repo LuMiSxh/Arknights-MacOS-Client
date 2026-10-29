@@ -54,7 +54,7 @@ After the launcher verifies the download, **Play** becomes available.
 
 ### Canary servers
 
-To show experimental Taiwan, turn on **Settings → Installation → Canary Features**, then **Allow Taiwan server**. Taiwan uses ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running it through Wine is unofficial and at your own risk.
+To show experimental Taiwan, turn on **Settings → Servers → Canary Features**, then **Allow Taiwan server**. Taiwan uses ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running it through Wine is unofficial and at your own risk.
 
 ## First launch
 
@@ -65,12 +65,12 @@ Choose **Play** and sign in through the official game. The first start is slower
 
 ## More servers and existing installations
 
-- **Add a server:** Select it in **Settings → Installation** and start its download.
-- **Use existing files:** Choose **Settings → Installation → Installation Location → Locate Existing Installation…** and select the game folder. If it shows **Not installed**, run **Repair…**.
+- **Add a server:** Select it in **Settings → Servers** and start its download.
+- **Use existing files:** Choose **Settings → Servers → Location → Change… → Locate Existing Installation…** and select the game folder. If it shows **Not installed**, run **Repair…**.
 - **Use another location:** Choose **Choose New Location…** before the download. Use a folder that contains only the game. The game can see its contents.
 
 ## Keep the game up to date
 
-The launcher never downloads updates without your choice. Choose **Update** in the main window. If the game is damaged, choose **Settings → Installation → Repair…**. Repair downloads only missing or broken files.
+The launcher never downloads updates without your choice. Choose **Update** in the main window. If the game is damaged, choose **Settings → Servers → Repair…**. Repair downloads only missing or broken files.
 
 If something fails, see [Troubleshooting](help/troubleshooting.md).
