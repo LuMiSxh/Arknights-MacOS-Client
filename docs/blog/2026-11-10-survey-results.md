@@ -147,4 +147,5 @@ The launcher is available only in English. Some players asked for Chinese. We wa
 ```contact
 title: Help translate the launcher into Chinese
 text: We look for native speakers of Simplified Chinese or Traditional Chinese. Tell us which variant you speak and how much time you can give.
+topic: translation
 ```
