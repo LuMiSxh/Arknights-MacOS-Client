@@ -111,7 +111,7 @@ topic: testing
 ````
 
 - `title` and `text` are required. Each must be a non-empty string.
-- `topic` is optional. Use only lowercase letters and hyphens. The button adds it to the form link as `?topic=<topic>`.
+- `topic` is optional. Use `testing` or `translation`. The button selects the matching answer for the first form question and adds `topic=<topic>`. To add a topic, add it with its exact form option text to `contactTopics` in `web/src/lib/site.ts`.
 - The button opens the contact form in a new tab. Other keys fail the build.
 - The form URL comes from `contactFormUrl` in `web/src/lib/site.ts`. Do not write the URL in the block.
 
