@@ -3,12 +3,14 @@ import { dirname } from 'node:path';
 
 import { ContentError, parseFrontmatter } from '../frontmatter.js';
 import type {
+	BlogPost,
 	ContentDirectory,
 	ContentIndex,
 	ContentNeighbors,
 	ContentNode,
 	SiteRoute
 } from '../types.js';
+import { readBlogSources } from './blog.js';
 import { renderSourceDocuments, validateLinks } from './links.js';
 import type { SourceDocument } from './model.js';
 import { changelogPath } from './paths.js';
@@ -20,6 +22,7 @@ let cached: ContentIndex | undefined;
 
 function loadIndex(): ContentIndex {
 	const documents = readSources();
+	const posts = readBlogSources();
 	const changelogParsed = parseFrontmatter(
 		'CHANGELOG.md',
 		readFileSync(changelogPath, 'utf8')
@@ -73,7 +76,8 @@ function loadIndex(): ContentIndex {
 
 	const byRoute = new Map<string, ContentNode>();
 	sourceRoutes.set('CHANGELOG.md', '/changelog/');
-	const allSources = [...documents, changelogSource];
+	for (const post of posts) sourceRoutes.set(post.relative, post.route);
+	const allSources = [...documents, ...posts, changelogSource];
 	const renderedBySource = renderSourceDocuments(allSources, sourceRoutes);
 	for (const document of documents) {
 		if (document.isReadme) continue;
@@ -91,6 +95,30 @@ function loadIndex(): ContentIndex {
 	if (!changelog)
 		throw new ContentError('CHANGELOG.md', 'failed to render changelog');
 	byRoute.set(changelog.route, changelog);
+	const blog = posts
+		.map((post): BlogPost => {
+			const page = renderedBySource.get(post.relative);
+			if (!page)
+				throw new ContentError(
+					post.source,
+					'failed to render blog post'
+				);
+			if (byRoute.has(post.route)) {
+				throw new ContentError(
+					post.relative,
+					`duplicate route ${post.route}`
+				);
+			}
+			return { ...page, date: post.date, draft: post.metadata.draft };
+		})
+		.sort(
+			(left, right) =>
+				right.date.localeCompare(left.date) ||
+				left.title.localeCompare(right.title, 'en', {
+					sensitivity: 'base'
+				})
+		);
+	for (const post of blog) byRoute.set(post.route, post);
 
 	for (const document of allSources)
 		validateLinks(document, sourceRoutes, renderedBySource);
@@ -103,7 +131,8 @@ function loadIndex(): ContentIndex {
 		root: rootDirectory,
 		directories,
 		byRoute,
-		changelog
+		changelog,
+		blog
 	};
 }
 

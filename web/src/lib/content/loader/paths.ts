@@ -7,6 +7,7 @@ export const repositoryRoot =
 		? resolve(process.cwd(), '..')
 		: process.cwd();
 export const docsRoot = resolve(repositoryRoot, 'docs');
+export const blogRoot = resolve(docsRoot, 'blog');
 export const changelogPath = resolve(repositoryRoot, 'CHANGELOG.md');
 export const supportCodeRegistryPath = resolve(
 	docsRoot,

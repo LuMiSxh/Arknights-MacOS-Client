@@ -6,6 +6,8 @@ import {
 } from 'marked-gfm-heading-id';
 import { normalizeBasePath } from '../site.js';
 import type { Heading } from './types.js';
+import { escapeHtml } from './html.js';
+import { parseShareChart, renderShareChart } from './share-chart.js';
 
 export interface MarkdownLinkContext {
 	source: string;
@@ -20,6 +22,9 @@ export interface RenderedMarkdown {
 const SAFE_EXTERNAL_LINK = /^(?:https:|mailto:)/i;
 const SAFE_EXTERNAL_IMAGE = /^https:/i;
 const HTML_COMMENT = /^\s*<!--[\s\S]*?-->\s*$/;
+// Raw HTML is escaped by default. Only these bare tags pass through so Markdown can
+// hold collapsible developer notes. Attributes stay escaped, so no markup injection.
+const DISCLOSURE_TAG = /&lt;(\/?)(details|summary)&gt;/g;
 const ALERT_MARKER = /^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\r?\n)?/;
 const ALERT_LABELS = {
 	NOTE: 'Note',
@@ -31,15 +36,6 @@ const ALERT_LABELS = {
 const buildBasePath = normalizeBasePath(
 	typeof process === 'undefined' ? '' : (process.env.BASE_PATH ?? '')
 );
-
-function escapeHtml(value: string): string {
-	return value
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#39;');
-}
 
 function safeExternalHref(href: string, pattern: RegExp): string | undefined {
 	if (pattern.test(href)) return href;
@@ -129,7 +125,10 @@ export function renderMarkdown(
 	context: MarkdownLinkContext
 ): RenderedMarkdown {
 	const renderer: RendererObject = {
-		html: ({ text }) => (HTML_COMMENT.test(text) ? '' : escapeHtml(text)),
+		html: ({ text }) =>
+			HTML_COMMENT.test(text)
+				? ''
+				: escapeHtml(text).replace(DISCLOSURE_TAG, '<$1$2>'),
 		table: renderTable,
 		blockquote(token) {
 			const rendered = this.parser.parse(token.tokens);
@@ -155,6 +154,9 @@ export function renderMarkdown(
 			}
 			if (language === 'chart') {
 				return `<div class="chart-shell" data-chart><pre><code>${escapeHtml(text)}</code></pre></div>`;
+			}
+			if (language === 'share-chart') {
+				return renderShareChart(parseShareChart(source, text));
 			}
 			const className = language
 				? ` class="language-${escapeHtml(language)}"`

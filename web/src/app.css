@@ -238,6 +238,29 @@ p {
 }
 
 /* Page heading: bold title, secondary subtitle, accent segment on a hairline. */
+.content-header {
+	margin-bottom: var(--site-space-8);
+}
+
+.breadcrumbs {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+	margin-bottom: var(--site-space-4);
+	color: var(--site-faint);
+	font-size: 0.8rem;
+}
+
+.breadcrumbs a {
+	color: var(--site-muted);
+	text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+	color: var(--site-text);
+}
+
 .page-heading {
 	background:
 		linear-gradient(var(--site-signal), var(--site-signal)) left bottom /
@@ -489,6 +512,91 @@ p {
 	background: color-mix(in srgb, var(--site-panel-raised) 65%, transparent);
 	padding: 0.1em 0.3em;
 	font-size: 0.86em;
+}
+
+/* Developer notes: a collapsible block on the same surface as the alerts. */
+.content-copy details {
+	margin: 1rem 0;
+	border: 1px solid var(--site-line);
+	border-radius: var(--site-radius-control);
+	background: var(--site-panel-raised);
+	padding: 0.7rem 0.9rem;
+}
+
+.content-copy summary {
+	color: var(--site-muted);
+	cursor: pointer;
+	font-family: var(--font-anasthasia-label);
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.content-copy details[open] > summary {
+	margin-bottom: 0.5rem;
+}
+
+/* Share charts show relative size only. The track is the whole; the fill is a neutral tint, not the signal. */
+.content-copy .share-chart {
+	margin: 1.25rem 0;
+	border: 1px solid var(--site-border);
+	border-radius: var(--site-radius-panel);
+	background: var(--site-panel);
+	padding: var(--site-space-5) var(--site-space-6);
+}
+
+.content-copy .share-chart figcaption {
+	margin-bottom: var(--site-space-3);
+	color: var(--site-text);
+	font-weight: 600;
+}
+
+.content-copy .share-chart ol {
+	display: grid;
+	gap: var(--site-space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.content-copy .share-chart li,
+.content-copy .share-chart li + li {
+	display: grid;
+	grid-template-columns: minmax(5rem, 9rem) minmax(0, 1fr);
+	align-items: center;
+	gap: var(--site-space-3);
+	margin-top: 0;
+}
+
+.content-copy .share-chart-label {
+	color: var(--site-body);
+	font-size: 0.9rem;
+}
+
+.content-copy .share-chart-track {
+	display: block;
+	height: 0.6rem;
+	border-radius: var(--site-radius-capsule);
+	background: var(--site-hover);
+	overflow: hidden;
+}
+
+.content-copy .share-chart-fill {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: color-mix(in srgb, var(--site-text) 45%, transparent);
+}
+
+/* The verbal share is for screen readers only, so the chart shows no visible numbers or words. */
+.content-copy .share-chart-verbal {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
 }
 
 .content-copy pre {

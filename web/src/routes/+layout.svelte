@@ -37,6 +37,11 @@
 					(entry) => entry.audience !== 'developers'
 				),
 				{
+					title: 'Blog',
+					route: '/blog/' as const,
+					children: []
+				},
+				{
 					title: 'Changelog',
 					route: '/changelog/' as const,
 					children: []

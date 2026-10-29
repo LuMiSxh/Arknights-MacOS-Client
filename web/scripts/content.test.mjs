@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
 	ContentError,
+	parseBlogFrontmatter,
 	parseFrontmatter
 } from '../.svelte-kit/content-tests/content/frontmatter.js';
 import {
@@ -48,6 +49,39 @@ test('Markdown escapes raw HTML and rejects insecure links and images', () => {
 	assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
 	assert.doesNotMatch(html, /href="http:/);
 	assert.doesNotMatch(html, /src="http:/);
+});
+
+test('share charts reject shares outside 0 to 1', () => {
+	assert.throws(
+		() =>
+			markdown(
+				'```share-chart\ntitle: Fixture\nitems:\n  - label: A\n    share: 1.5\n```'
+			),
+		(error) =>
+			error instanceof ContentError &&
+			error.message.includes('share must be a number from 0 to 1')
+	);
+});
+
+test('blog frontmatter requires an existing calendar date', () => {
+	assert.throws(
+		() =>
+			parseBlogFrontmatter(
+				'fixture.md',
+				'---\ntitle: Fixture\ndate: 2026-02-30\nsummary: Test fixture\n---\n'
+			),
+		(error) =>
+			error instanceof ContentError &&
+			error.message.includes('existing date')
+	);
+});
+
+test('disclosure tags pass through only without attributes', () => {
+	const html = markdown(
+		'<details open onclick="x()">\n<summary>Notes</summary>\n\nBody\n\n</details>'
+	);
+	assert.match(html, /&lt;details open onclick=&quot;x\(\)&quot;&gt;/);
+	assert.match(html, /<summary>Notes<\/summary>/);
 });
 
 test('Markdown rejects unsupported and protocol-relative schemes even when resolved', () => {
