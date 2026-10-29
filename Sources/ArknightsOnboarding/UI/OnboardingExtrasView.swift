@@ -25,9 +25,19 @@ struct OnboardingExtrasView: View {
 		)
 	}
 
+	private var presenceBinding: Binding<DiscordPresenceAnswer?> {
+		Binding(
+			get: { preferences.discordPresenceAnswer },
+			set: { answer in
+				guard let answer else { return }
+				preferences.discordPresenceAnswer = answer
+			}
+		)
+	}
+
 	var body: some View {
 		OnboardingPage(
-			title: "Updates & Audio",
+			title: "Updates & Integrations",
 			subtitle: "Update checks only notify you. Nothing downloads until you choose.",
 			accentColor: accentColor
 		) {
@@ -36,6 +46,14 @@ struct OnboardingExtrasView: View {
 				systemImage: "arrow.trianglehead.2.clockwise",
 				answers: UpdateCheckAnswer.allCases.map(\.answer),
 				selection: updateBinding,
+				accentColor: accentColor
+			)
+
+			OnboardingQuestion(
+				question: "Discord presence",
+				systemImage: "gamecontroller",
+				answers: DiscordPresenceAnswer.allCases.map(\.answer),
+				selection: presenceBinding,
 				accentColor: accentColor
 			)
 

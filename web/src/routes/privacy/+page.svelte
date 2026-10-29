@@ -46,6 +46,14 @@
 		that receives app data. Settings, logs, and game files stay on your Mac.
 	</p>
 	<p>
+		Discord presence is off by default. When you turn it on, the app sends
+		your Discord client the game name, your server, the session start time,
+		and the launcher process ID. This data goes to the local Discord app,
+		not to a server run by the author. The app does not read your Discord
+		account and sends no account, operator, or playtime data. Discord
+		controls what your profile shows.
+	</p>
+	<p>
 		The app connects to the hosts below when you use the matching feature.
 		Each host receives your IP address and request data under its own
 		privacy policy.

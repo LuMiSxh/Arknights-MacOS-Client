@@ -48,7 +48,7 @@ The setup assistant opens on the first start. Change any choice later in **Setti
 3. **Download** — Choose **Install & Continue**. The download continues in the background. Closing the launcher pauses it.
 4. **Display** — Choose display mode, window size, rendering, and cursor. Pick an exact size later in **Settings → Game**.
 5. **Look** — Choose artwork, colors, the Dock operator, and launcher display options.
-6. **Updates & Audio** — Choose update behavior and music.
+6. **Updates & Integrations** — Choose update behavior, Discord presence, and music.
 
 After the launcher verifies the download, **Play** becomes available.
 

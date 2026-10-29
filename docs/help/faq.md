@@ -62,4 +62,4 @@ Your publisher. See [Publisher support routing](README.md#publisher-support-rout
 
 ## How do I change the game volume in a per-app volume tool?
 
-Tools such as FineTune and SoundSource list the game under **Arknights Client**, not **Arknights**. The game runs through Wine and has no app bundle of its own, so these tools assign its audio to the launcher. Change the game volume in the **Arknights Client** entry. That entry also contains the launcher music. Use **Settings → Audio** for the launcher music settings.
+Tools such as FineTune and SoundSource list the game under **Arknights Client**, not **Arknights**. The game runs through Wine and has no app bundle of its own, so these tools assign its audio to the launcher. Change the game volume in the **Arknights Client** entry. That entry also contains the launcher music. Use **Settings → Integration** for the launcher music settings.

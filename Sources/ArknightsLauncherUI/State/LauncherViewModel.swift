@@ -4,6 +4,7 @@ import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
 import ArknightsGameRuntime
+import ArknightsPresence
 import Foundation
 import Observation
 
@@ -21,6 +22,7 @@ package final class LauncherViewModel {
 	let storage: StorageMaintenanceController
 	let storageOverview: StorageOverviewController
 	let playtimeStatistics: PlaytimeStatisticsController
+	let discordPresence: DiscordPresenceController
 
 	let presetCatalog: PresetCatalogService
 	package let preferences: LauncherPreferencesStore
@@ -178,6 +180,12 @@ package final class LauncherViewModel {
 			graphicsDiagnosticsEnabled: arguments.contains("--graphics-diagnostics")
 		)
 		self.gameSession = gameSession
+		discordPresence = DiscordPresenceController(
+			lifecycle: lifecycle,
+			preferences: settings,
+			log: launcherLog,
+			region: { [weak installation] in installation?.region ?? .global }
+		)
 
 		settings.onLauncherUpdateCheckRequested = { [weak self] in
 			self?.actions.checkLauncherUpdates()
@@ -197,8 +205,14 @@ package final class LauncherViewModel {
 		settings.onTaiwanClientChanged = { [weak self] _ in
 			self?.refreshInstalledRegionsAfterCanaryChange()
 		}
+		settings.onDiscordPresenceChanged = { [weak self] in
+			self?.discordPresence.activityDidChange()
+		}
 		_ = lifecycle.observeActivityChanges { [weak self] in
 			self?.scheduleCanaryRefreshIfIdle()
+		}
+		_ = lifecycle.observeActivityChanges { [weak self] in
+			self?.discordPresence.activityDidChange()
 		}
 		installation.onMetadataRefreshCancellationRequested = { [weak refreshController] in
 			refreshController?.cancelForInstallationStart()
@@ -207,6 +221,7 @@ package final class LauncherViewModel {
 		gameSession.customGameIconURL = { [weak customization, paths] in
 			customization?.hasCustomGameIcon == true ? paths.customGameIcon : nil
 		}
+		discordPresence.activityDidChange()
 
 		#if DEBUG
 			developerSimulation =

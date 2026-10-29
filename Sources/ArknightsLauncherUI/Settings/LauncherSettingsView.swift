@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import ArknightsAudio
 import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
@@ -78,8 +77,8 @@ struct LauncherSettingsView: View {
 							accentColor: customization.accentColor,
 							actions: actions
 						)
-					case .audio:
-						AudioSettingsPage(
+					case .integration:
+						IntegrationSettingsPage(
 							settings: settings,
 							accentColor: customization.accentColor
 						)

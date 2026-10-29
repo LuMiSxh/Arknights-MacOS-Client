@@ -22,7 +22,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 	case storage
 	case statistics
 	case appearance
-	case audio
+	case integration
 	case updates
 	case help
 	case about
@@ -37,7 +37,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 	var group: SettingsGroup {
 		switch self {
 		case .game, .servers, .storage, .statistics: .arknights
-		case .appearance, .audio, .updates: .launcher
+		case .appearance, .integration, .updates: .launcher
 		default: .general
 		}
 	}
@@ -46,7 +46,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		switch self {
 		case .game: "Game"
 		case .appearance: "Appearance"
-		case .audio: "Audio"
+		case .integration: "Integration"
 		case .updates: "Updates"
 		case .servers: "Servers"
 		case .storage: "Storage"
@@ -63,7 +63,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 		switch self {
 		case .game: "gamecontroller"
 		case .appearance: "paintbrush"
-		case .audio: "music.note"
+		case .integration: "puzzlepiece.extension"
 		case .updates: "arrow.trianglehead.2.clockwise"
 		case .servers: "globe"
 		case .storage: "internaldrive"

@@ -65,6 +65,17 @@ package enum AppConstants {
 		package static let dynamicIconHueChangeTolerance: Double = 0.02
 	}
 
+	package enum Presence {
+		/// Public Discord application ID from the Developer Portal. It is sent in the local
+		/// handshake and is not a secret.
+		package static let discordApplicationID = "1539589207381770261"
+		package static let messageMaximumBytes = 64 * 1_024
+		package static let connectionAttempts = 3
+		package static let initialRetryBackoff: Duration = .seconds(1)
+		package static let maximumRetryBackoff: Duration = .seconds(10)
+		package static let handshakeTimeout: Duration = .seconds(3)
+	}
+
 	package enum Music {
 		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"

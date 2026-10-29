@@ -182,6 +182,39 @@ extension UpdateCheckAnswer {
 	}
 }
 
+nonisolated enum DiscordPresenceAnswer: CaseIterable, Sendable {
+	case off
+	case on
+
+	static let recommended = DiscordPresenceAnswer.off
+
+	var showsDiscordPresence: Bool { self == .on }
+}
+
+extension DiscordPresenceAnswer {
+	var answer: OnboardingAnswer<DiscordPresenceAnswer> {
+		switch self {
+		case .off:
+			OnboardingAnswer(
+				value: self, title: "Off", detail: "Nothing is shared with Discord.",
+				systemImage: "xmark.circle", isRecommended: true)
+		case .on:
+			OnboardingAnswer(
+				value: self, title: "Show on Discord",
+				detail:
+					"Shares the game name, your server, and the session time.",
+				systemImage: "gamecontroller")
+		}
+	}
+}
+
+extension LauncherPreferencesController {
+	var discordPresenceAnswer: DiscordPresenceAnswer {
+		get { showsDiscordPresence ? .on : .off }
+		set { showsDiscordPresence = newValue.showsDiscordPresence }
+	}
+}
+
 extension GamePlacementAnswer {
 	var answer: OnboardingAnswer<GamePlacementAnswer> {
 		switch self {

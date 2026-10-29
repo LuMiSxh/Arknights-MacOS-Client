@@ -74,6 +74,12 @@ let package = Package(
 			swiftSettings: swiftSettings()
 		),
 		.target(
+			name: "ArknightsPresence",
+			dependencies: ["ArknightsInfrastructure", "ArknightsCore"],
+			path: "Sources/ArknightsPresence",
+			swiftSettings: swiftSettings()
+		),
+		.target(
 			name: "ArknightsAudio",
 			dependencies: [
 				"ArknightsCore",
@@ -102,6 +108,7 @@ let package = Package(
 				"ArknightsCustomization",
 				"ArknightsGameInstallation",
 				"ArknightsGameRuntime",
+				"ArknightsPresence",
 				"ArknightsAudio",
 				"ArknightsOnboarding",
 				.product(name: "Sparkle", package: "Sparkle"),
@@ -149,6 +156,16 @@ let package = Package(
 				.product(name: "Sparkle", package: "Sparkle"),
 			],
 			path: "Tests/ArknightsLauncherUITests"
+		),
+		.testTarget(
+			name: "ArknightsPresenceTests",
+			dependencies: [
+				"ArknightsPresence",
+				"ArknightsCore",
+				"ArknightsInfrastructure",
+				"ArknightsTestSupport",
+			],
+			path: "Tests/ArknightsPresenceTests"
 		),
 		.testTarget(
 			name: "ArknightsAudioTests",

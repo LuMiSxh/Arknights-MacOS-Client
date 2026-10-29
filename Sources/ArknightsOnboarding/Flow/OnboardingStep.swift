@@ -20,7 +20,7 @@ nonisolated enum OnboardingStep: Int, CaseIterable, Codable, Identifiable, Senda
 		case .region: "Server"
 		case .display: "Display"
 		case .look: "Look"
-		case .extras: "Updates & Audio"
+		case .extras: "Updates & Integrations"
 		case .finish: "Ready"
 		}
 	}

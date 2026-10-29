@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
 - Added **Save diagnostics…** to **Settings → Help**. It saves a zip file to your Downloads folder.
 - The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.
 - The logs redact your home folder, your user name, and URL queries. Nothing is uploaded.
@@ -25,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Renamed **Settings → Audio** to **Settings → Integration**. It holds launcher music and Discord presence.
+- Setup asks about Discord presence. The setup step is now **Updates & Integrations**.
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Onboarding answer cards use quieter hover and press effects.

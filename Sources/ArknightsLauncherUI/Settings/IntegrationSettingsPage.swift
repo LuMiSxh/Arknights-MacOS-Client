@@ -3,19 +3,14 @@
 import ArknightsCore
 import SwiftUI
 
-package struct AudioSettingsPage: View {
+struct IntegrationSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
-	package let accentColor: Color
+	let accentColor: Color
 
-	package init(settings: LauncherPreferencesController, accentColor: Color) {
-		self.settings = settings
-		self.accentColor = accentColor
-	}
-
-	package var body: some View {
+	var body: some View {
 		SettingsPage(
-			title: "Audio",
-			subtitle: "Music while the launcher is open",
+			title: "Integration",
+			subtitle: "Music and Discord while the launcher is open",
 			accentColor: accentColor
 		) {
 			SettingsPanel(title: "Music", systemImage: "music.note") {
@@ -92,6 +87,20 @@ package struct AudioSettingsPage: View {
 							accentColor: accentColor
 						)
 					}
+				}
+			}
+
+			SettingsPanel(title: "Discord", systemImage: "gamecontroller") {
+				SettingsActionRow(
+					title: "Discord presence",
+					detail:
+						"Shows the game name, your server, and the session time on your Discord profile while the game runs."
+				) {
+					SettingsToggle(
+						"Discord presence",
+						isOn: $settings.showsDiscordPresence,
+						accentColor: accentColor
+					)
 				}
 			}
 		}

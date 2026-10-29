@@ -45,6 +45,12 @@ package final class LauncherPreferencesController {
 	package var showsPlayingMusic: Bool {
 		didSet { store.set(showsPlayingMusic, for: Key.showsPlayingMusic) }
 	}
+	package var showsDiscordPresence: Bool {
+		didSet {
+			store.set(showsDiscordPresence, for: Key.showsDiscordPresence)
+			onDiscordPresenceChanged?()
+		}
+	}
 	package var launcherMusicVolume: Double {
 		didSet { store.set(launcherMusicVolume, for: Key.launcherMusicVolume) }
 	}
@@ -87,6 +93,7 @@ package final class LauncherPreferencesController {
 	@ObservationIgnored package var onDynamicThemeChanged: (() -> Void)?
 	@ObservationIgnored package var onCanaryFeaturesChanged: ((Bool) -> Void)?
 	@ObservationIgnored package var onTaiwanClientChanged: ((Bool) -> Void)?
+	@ObservationIgnored package var onDiscordPresenceChanged: (() -> Void)?
 
 	private typealias Key = LauncherPreferencesStore.Key
 	private let store: LauncherPreferencesStore
@@ -103,6 +110,7 @@ package final class LauncherPreferencesController {
 		playsLauncherMusic = store.value(Key.playsLauncherMusic)
 		launcherMusicURL = store.value(Key.launcherMusicURL)
 		showsPlayingMusic = store.value(Key.showsPlayingMusic)
+		showsDiscordPresence = store.value(Key.showsDiscordPresence)
 		launcherMusicVolume = store.value(Key.launcherMusicVolume)
 		launcherMusicMuted = store.value(Key.launcherMusicMuted)
 		usesDynamicTheme = store.value(Key.usesDynamicTheme)
@@ -127,6 +135,7 @@ package final class LauncherPreferencesController {
 		playsLauncherMusic = store.value(Key.playsLauncherMusic)
 		launcherMusicURL = store.value(Key.launcherMusicURL)
 		showsPlayingMusic = store.value(Key.showsPlayingMusic)
+		showsDiscordPresence = store.value(Key.showsDiscordPresence)
 		launcherMusicVolume = store.value(Key.launcherMusicVolume)
 		launcherMusicMuted = store.value(Key.launcherMusicMuted)
 		usesDynamicTheme = store.value(Key.usesDynamicTheme)

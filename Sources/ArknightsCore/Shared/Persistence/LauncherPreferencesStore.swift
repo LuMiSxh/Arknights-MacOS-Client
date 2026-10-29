@@ -34,6 +34,7 @@ package struct LauncherPreferencesStore {
 		package static let launcherMusicURL = ScalarKey(
 			"launcherMusicURL", default: AppConstants.Music.defaultLauncherMusicURL)
 		package static let showsPlayingMusic = ScalarKey("showsPlayingMusic", default: false)
+		package static let showsDiscordPresence = ScalarKey("showsDiscordPresence", default: false)
 		package static let launcherMusicVolume = ScalarKey("launcherMusicVolume", default: 0.5) {
 			$0.isFinite ? min(max($0, 0), 1) : 0.5
 		}
@@ -172,6 +173,7 @@ package struct LauncherPreferencesStore {
 			Key.showsServerResetCountdown.name, Key.showsGameVersion.name, Key.showsBranding.name,
 			Key.playsLauncherMusic.name, Key.launcherMusicURL.name, Key.showsPlayingMusic.name,
 			Key.launcherMusicVolume.name, Key.launcherMusicMuted.name,
+			Key.showsDiscordPresence.name,
 			Key.usesDynamicTheme.name, Key.canaryFeaturesEnabled.name,
 			Key.taiwanClientEnabled.name, Key.acknowledgedACEWarningRegions,
 			Key.usesHardwareCursor.name, Key.dismissedInGameResolutionNote.name,

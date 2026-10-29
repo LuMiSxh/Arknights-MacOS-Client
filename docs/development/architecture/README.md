@@ -62,6 +62,7 @@ Each long-lived state and each asynchronous task has one feature owner:
 | `CustomizationController`         | Artwork, Dynamic Theme, launcher and game icons, presets                                                                                       |
 | `BackgroundMusicController`       | Playlist parsing, playback, Now Playing metadata, fades, music-link presentation. Created in `ArknightsClientApp`, not in `LauncherViewModel`. |
 | `LauncherCommunicationController` | Launcher releases, announcements, Yostar notices, popup order                                                                                  |
+| `DiscordPresenceController`       | Discord Rich Presence intent, local IPC connection, bounded reconnects                                                                         |
 | `LauncherPreferencesController`   | Persisted settings and the region-aware server-reset timer                                                                                     |
 | `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                                                              |
 | `StorageOverviewController`       | Async usage measurement for installations, runtime data, caches, logs                                                                          |
@@ -75,6 +76,7 @@ flowchart TD
 	Root --> Session[GameSessionController]
 	Root --> Refresh[LauncherRefreshController]
 	Root --> Communication[LauncherCommunicationController]
+	Root --> Presence[DiscordPresenceController]
 	Root --> Customization[CustomizationController]
 	Root --> Preferences[LauncherPreferencesController]
 	Root --> Storage[StorageMaintenanceController]
@@ -116,17 +118,18 @@ Each folder under `Sources` is one SwiftPM target. `Package.swift` is the source
 dependencies, linked products, and isolation settings. A target depends only on targets with a lower
 number. The compiler rejects a cycle.
 
-| No. | Target                      | Contains                                                                                                                                       | Depends on          | Linked products    |
-| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------ |
-| 1   | `ArknightsInfrastructure`   | Feature-independent network and file I/O primitives (`FileSystem`, `Network`)                                                                  | none                | none               |
-| 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                   | none               |
-| 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                | none               |
-| 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2, 3             | `CCommonCrypto`    |
-| 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 3, 4          | none               |
-| 6   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                | `YouTubePlayerKit` |
-| 7   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5          | none               |
-| 8   | `ArknightsLauncherUI`       | Composition (`LauncherViewModel`), home, Settings, documents, popups, launcher updates                                                         | 1, 2, 3, 4, 5, 6, 7 | `Sparkle`          |
-| 9   | `ArknightsClient`           | The executable. It holds only `Application`: the app entry point and the macOS lifecycle                                                       | 2, 6, 7, 8          | none               |
+| No. | Target                      | Contains                                                                                                                                       | Depends on             | Linked products    |
+| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------ |
+| 1   | `ArknightsInfrastructure`   | Feature-independent network and file I/O primitives (`FileSystem`, `Network`)                                                                  | none                   | none               |
+| 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                      | none               |
+| 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                   | none               |
+| 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2, 3                | `CCommonCrypto`    |
+| 5   | `ArknightsGameRuntime`      | Wine runtime, Intel translation, playtime, storage                                                                                             | 1, 2, 3, 4             | none               |
+| 6   | `ArknightsPresence`         | Discord Rich Presence state, local IPC transport adapter                                                                                       | 1, 2                   | none               |
+| 7   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                   | `YouTubePlayerKit` |
+| 8   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5             | none               |
+| 9   | `ArknightsLauncherUI`       | Composition (`LauncherViewModel`), home, Settings, documents, popups, launcher updates                                                         | 1, 2, 3, 4, 5, 6, 7, 8 | `Sparkle`          |
+| 10  | `ArknightsClient`           | The executable. It holds only `Application`: the app entry point and the macOS lifecycle                                                       | 2, 7, 8, 9             | none               |
 
 Each library target has an `Arknights<Name>Tests` target. `ArknightsClientTests` holds only
 `Application` tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the
