@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support.
 - Added **Report a Problem…** to the Dock menu.
 - The failure sheet can copy the support code.
+- Added **Contact the Developer** to **Settings → Help** for private messages, feedback, and testing offers.
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
 
 ### Changed

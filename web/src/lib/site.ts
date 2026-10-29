@@ -1,6 +1,7 @@
 export const repositoryUrl =
 	'https://github.com/LuMiSxh/Arknights-MacOS-Client';
 export const releaseUrl = `${repositoryUrl}/releases/latest`;
+export const contactFormUrl = 'https://tally.so/r/gbbPYd';
 export const siteOrigin = 'https://lumisxh.github.io';
 
 export function normalizeBasePath(value: string): string {

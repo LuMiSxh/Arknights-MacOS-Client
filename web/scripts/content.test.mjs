@@ -63,6 +63,16 @@ test('share charts reject shares outside 0 to 1', () => {
 	);
 });
 
+// prettier-ignore
+test('contact callouts accept only simple topics and escape every field', () => {
+	assert.throws(() => markdown('```contact\ntitle: Fixture\ntext: Body\ntopic: Testing\n```'), (error) => error instanceof ContentError && error.message.includes('contact.topic must use only lowercase letters and hyphens'));
+	const html = markdown('```contact\ntitle: <b>Fixture</b>\ntext: A & B\ntopic: testing\n```');
+	assert.match(html, /href="https:\/\/tally\.so\/r\/gbbPYd\?topic=testing"/);
+	assert.match(html, /&lt;b&gt;Fixture&lt;\/b&gt;/);
+	assert.match(html, /A &amp; B/);
+	assert.doesNotMatch(html, /<b>/);
+});
+
 test('blog frontmatter requires an existing calendar date', () => {
 	assert.throws(
 		() =>

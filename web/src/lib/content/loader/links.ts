@@ -156,6 +156,7 @@ export function validateLinks(
 		if (target.route) {
 			if (
 				target.route !== '/changelog/' &&
+				target.route !== '/privacy/' &&
 				target.route !== '/' &&
 				![...sourceRoutes.values()].includes(target.route)
 			) {

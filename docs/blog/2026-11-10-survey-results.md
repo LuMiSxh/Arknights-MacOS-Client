@@ -133,3 +133,11 @@ items:
 ## What comes next
 
 TODO: Describe the next release goals. Keep one sentence per goal.
+
+We need a volunteer who plays on the Taiwan server. Help us test the Taiwan client, so that we can move it out of Canary Features.
+
+```contact
+title: Help test the Taiwan server
+text: We look for a volunteer who plays on the Taiwan server. Tell us about your Mac, and we will plan the tests with you.
+topic: testing
+```

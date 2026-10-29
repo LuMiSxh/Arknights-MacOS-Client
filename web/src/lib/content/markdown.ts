@@ -8,6 +8,10 @@ import { normalizeBasePath } from '../site.js';
 import type { Heading } from './types.js';
 import { escapeHtml } from './html.js';
 import { parseShareChart, renderShareChart } from './share-chart.js';
+import {
+	parseContactCallout,
+	renderContactCallout
+} from './contact-callout.js';
 
 export interface MarkdownLinkContext {
 	source: string;
@@ -157,6 +161,9 @@ export function renderMarkdown(
 			}
 			if (language === 'share-chart') {
 				return renderShareChart(parseShareChart(source, text));
+			}
+			if (language === 'contact') {
+				return renderContactCallout(parseContactCallout(source, text));
 			}
 			const className = language
 				? ` class="language-${escapeHtml(language)}"`

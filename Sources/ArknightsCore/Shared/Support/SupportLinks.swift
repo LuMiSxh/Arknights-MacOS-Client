@@ -11,6 +11,7 @@ package enum SupportLinks {
 	static let hypergryphContact = URL(string: "https://user.hypergryph.com/support")!
 	static let gryphlineContact = URL(string: "https://www.gryphline.com/en-us/contacts")!
 	package static let donate = URL(string: "https://ko-fi.com/lumisxh")!
+	package static let developerContact = URL(string: "https://tally.so/r/gbbPYd")!
 	package static let thirdPartyNotices = documentationPage("legal/third-party-notices")
 	package static let privacyNotice = documentationPage("privacy")
 	package static let troubleshootingGuide = documentationPage("help")

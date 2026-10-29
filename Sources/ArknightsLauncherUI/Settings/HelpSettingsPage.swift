@@ -81,6 +81,21 @@ struct HelpSettingsPage: View {
 						action: contactPublisher
 					)
 				}
+
+				SettingsHairline()
+
+				SettingsActionRow(
+					title: "Contact the Developer",
+					detail:
+						"Send a private message about testing, feedback, or a problem you do not want to report in public."
+				) {
+					CapsuleActionButton(
+						title: "Contact…", systemImage: "envelope",
+						tone: .neutral, presentation: .compact
+					) {
+						NSWorkspace.shared.open(SupportLinks.developerContact)
+					}
+				}
 			}
 			SettingsPanel(title: "Troubleshooting", systemImage: "wrench.and.screwdriver") {
 				SettingsActionRow(

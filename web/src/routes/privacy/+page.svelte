@@ -1,6 +1,6 @@
 <script lang="ts">
 	import PageMetadata from '$lib/components/PageMetadata.svelte';
-	import { repositoryUrl } from '$lib/site.js';
+	import { contactFormUrl, repositoryUrl } from '$lib/site.js';
 </script>
 
 <PageMetadata
@@ -10,7 +10,7 @@
 />
 
 <article class="privacy-page">
-	<p class="eyebrow">Last updated 2026-10-09</p>
+	<p class="eyebrow">Last updated 2026-10-29</p>
 	<h1>Privacy notice</h1>
 	<p>
 		This notice covers the Arknights Client website and the Arknights Client
@@ -21,6 +21,7 @@
 	<p>
 		LuMiSxh, a private individual, is responsible for this website and the
 		app. Contact the author through the
+		<a href={contactFormUrl}>contact form</a> or the
 		<a href={`${repositoryUrl}/issues`}>GitHub issue tracker</a>.
 	</p>
 
@@ -105,6 +106,32 @@
 		decide whether to submit the issue.
 	</p>
 
+	<h2>Contact form</h2>
+	<p>
+		The contact form runs on Tally Forms, which is based in Belgium in the
+		European Union. The website links to the form. The form does not load
+		when you visit a page. Tally processes the data that you submit.
+	</p>
+	<p>The form asks for:</p>
+	<ul>
+		<li>A topic and your message.</li>
+		<li>
+			Optional test device details: server, chip, Mac type, macOS version,
+			when you are available, and whether you used Canary before.
+		</li>
+		<li>A contact handle: your Discord name or your email address.</li>
+		<li>Your consent, as the form asks for it.</li>
+	</ul>
+	<p>
+		The author uses this data to reply to you and to coordinate testing.
+		Only the author reads it. The author deletes each submission and reply
+		when the conversation ends, and at the latest after 90 days.
+	</p>
+	<p>
+		To request deletion, send a message through the
+		<a href={contactFormUrl}>contact form</a>, or use the contact you gave.
+	</p>
+
 	<h2>Your rights</h2>
 	<ul>
 		<li>
@@ -113,8 +140,9 @@
 		</li>
 		<li>You can complain to a data protection supervisory authority.</li>
 		<li>
-			The author holds no personal data about app users. For data held by
-			GitHub, YouTube, or a publisher, contact that party.
+			Apart from contact form submissions, the author holds no personal
+			data about app users. For data held by GitHub, YouTube, or a
+			publisher, contact that party.
 		</li>
 	</ul>
 </article>
