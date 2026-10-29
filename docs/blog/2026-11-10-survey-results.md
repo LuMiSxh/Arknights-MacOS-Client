@@ -149,3 +149,23 @@ title: Help translate the launcher into Chinese
 text: We look for native speakers of Simplified Chinese or Traditional Chinese. Tell us which variant you speak and how much time you can give.
 topic: translation
 ```
+
+## Notes for when writing the blog post
+
+I am currently debating on wether adding multiple languages is feasible. I am a single developer working on it.
+I added translations modules in i think v0.5 but removed them again because thei were a LOT of work to maintain for 2 languages.
+Open sourcing the translations would help but require more people to help whioch is also not feasible on the current scale of the launcher and its publicity. <- Since I am still debating i would like to wait fopr feedback on persons wanting to help translate and test (see developer contact info) and incluide the framework for it in 0.8.0 and shipping first translation with 0.8.1
+
+The drag-to-resize feature is something i worked on already with a POC but it is not easy to get it to work reliably and without needing tons of RAM.
+I am therefore thinking of a way to set custom resolution via the launcher which shows a new client dummy window you can resize to the size you want and save.
+The game would then use that resolution. <- This will not ship with 0.8.0 i think but a later version?
+
+FPS limit is implemented. As for battery saver i'm still looking into what to do.
+Easiest would be for the user to change from "Retina" to "MetalFX" and capping FPS.
+I will need to take a look into wine for that. (TODO: Rework this pararagh once something is done)
+
+Discord rich presence is in the works!
+
+Screenshot shortcut is noted down.
+
+Menu bar/launch at login is noted down.
