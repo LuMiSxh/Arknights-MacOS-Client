@@ -29,8 +29,8 @@ The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is o
 
 ### What this offer covers today
 
-- The runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc3](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc3).
-- The pinned build recipe archive: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc3/Arknights-MacOS-Runtime-v0.8.0-rc3-source.tar.gz](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc3/Arknights-MacOS-Runtime-v0.8.0-rc3-source.tar.gz). Its SHA-256 is `d177c7bb7f6912a15cb883d730079c078f8c6453de9a47e0882ff961423e4e26`.
+- The runtime release page: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc4](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/tag/v0.8.0-rc4).
+- The pinned build recipe archive: [https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc4/Arknights-MacOS-Runtime-v0.8.0-rc4-source.tar.gz](https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc4/Arknights-MacOS-Runtime-v0.8.0-rc4-source.tar.gz). Its SHA-256 is `d9875652e721b7641cafa0bb199c24aaa851c5d9662dd5d62b4220ae05d06df5`.
 - The pinned source trees of the runtime components, as `runtime.json` records them. [Third-party notices](third-party-notices.md) links each tree.
 - The pinned [Nixpkgs revision](https://github.com/NixOS/nixpkgs/tree/ac62194c3917d5f474c1a844b6fd6da2db95077d). It names the exact source of each library that the runtime copies from Nixpkgs.
 
