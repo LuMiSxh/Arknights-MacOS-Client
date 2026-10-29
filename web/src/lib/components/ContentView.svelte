@@ -191,8 +191,9 @@
 		</aside>
 	{/if}
 
+	<p class="copy-status" aria-live="polite">{copyStatus}</p>
+
 	<article class="content-copy">
-		<p class="copy-status" aria-live="polite">{copyStatus}</p>
 		{#if content.html}
 			{@html content.html}
 		{:else}
@@ -253,29 +254,6 @@
 {/if}
 
 <style>
-	.content-header {
-		margin-bottom: var(--site-space-8);
-	}
-
-	.breadcrumbs {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.4rem;
-		margin-bottom: var(--site-space-4);
-		color: var(--site-faint);
-		font-size: 0.8rem;
-	}
-
-	.breadcrumbs a {
-		color: var(--site-muted);
-		text-decoration: none;
-	}
-
-	.breadcrumbs a:hover {
-		color: var(--site-text);
-	}
-
 	.content-layout {
 		position: relative;
 	}

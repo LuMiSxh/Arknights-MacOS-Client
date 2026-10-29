@@ -64,3 +64,40 @@ BASE_PATH=/Arknights-MacOS-Client pnpm build
 `just check web` runs Svelte, type, and Prettier checks. Run `just format web` to accept Prettier changes. The build fails unless frontmatter, routes, links, heading anchors, canonical and social URLs, accessibility metadata, and base-path URLs are valid. For a UI or Mermaid change, also check light, dark, desktop, and mobile pages with `just dev web`.
 
 `just ci` does not run these checks. A documentation-only edit does not trigger Pages. Run **Actions → Publish website → Run workflow** from `main`, or let the release workflow call it. Other branches fail before deployment.
+
+### Blog posts
+
+Write each post as one file in `docs/blog/`. Name the file `YYYY-MM-DD-slug.md`. The date in the file name must match `date`. The blog is not part of the documentation tree.
+
+Use this frontmatter:
+
+- `title`: required. The post title.
+- `date`: required. An existing date in `YYYY-MM-DD` form.
+- `summary`: required. One or two sentences. The listing and search show it.
+- `draft`: optional. Set `true` to hide the post from production.
+
+The post URL is `/blog/<slug>/`. The slug is the file name without the date. Keep the slug stable after you publish. The listing is at `/blog/`.
+
+Drafts appear under `pnpm dev`. The listing marks them as Draft. Drafts do not appear in production output.
+
+Use a fenced block with the info string `share-chart` to show relative sizes. Write the block as YAML or JSON:
+
+````markdown
+```share-chart
+title: Chip family
+items:
+  - label: M1
+    share: 0.31
+  - label: M2
+    share: 0.27
+```
+````
+
+- `title` is required. It names the chart.
+- `items` is a non-empty list. Each item needs a `label` and a `share`.
+- A `share` is a number from 0 to 1. The build fails for any other value.
+- The chart shows no numbers. Screen readers hear a coarse wording, such as "about a third".
+- The bars keep the order you write.
+- Quote a value that contains a colon, such as `"Chip family: TODO"`. Unquoted colons break the YAML.
+
+To add developer notes, use `<details>` and `<summary>`. Use no attributes. Leave a blank line before and after the Markdown inside. Other raw HTML is escaped.

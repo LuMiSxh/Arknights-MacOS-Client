@@ -6,14 +6,15 @@ import type { SourceDocument, SupportCodeRegistryEntry } from './model.js';
 import { docsRoot, supportCodeRegistryPath } from './paths.js';
 import { routeForRelative, sourceName } from './routes.js';
 
-const ignoredDirectory = 'superpowers';
+// Blog posts load through loader/blog.ts and are not documentation pages.
+const ignoredDirectories = new Set(['superpowers', 'blog']);
 const registrySource = 'docs/help/errors/registry.json';
 
 function walkMarkdown(directory: string, prefix = ''): string[] {
 	const files: string[] = [];
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		if (entry.name.startsWith('.') || entry.isSymbolicLink()) continue;
-		if (!prefix && entry.name === ignoredDirectory) continue;
+		if (!prefix && ignoredDirectories.has(entry.name)) continue;
 
 		const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
 		const absolute = resolve(directory, entry.name);

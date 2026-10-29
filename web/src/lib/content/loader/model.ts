@@ -15,6 +15,10 @@ export interface SourceDocument extends ParsedMarkdown {
 	rendered?: RenderedMarkdown;
 }
 
+export interface BlogSource extends SourceDocument {
+	date: string;
+}
+
 export interface DirectoryDraft {
 	path: string;
 	readme?: SourceDocument;

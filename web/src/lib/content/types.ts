@@ -37,6 +37,11 @@ export interface ContentDocument extends ContentSummary {
 	toc: boolean;
 }
 
+export interface BlogPost extends ContentDocument {
+	date: string;
+	draft: boolean;
+}
+
 export interface ContentDirectory extends ContentSummary {
 	kind: 'directory';
 	html: string;
@@ -57,4 +62,5 @@ export interface ContentIndex {
 	directories: ContentDirectory[];
 	byRoute: Map<string, ContentNode>;
 	changelog: ContentDocument;
+	blog: BlogPost[];
 }
