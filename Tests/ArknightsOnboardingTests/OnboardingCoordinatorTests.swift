@@ -130,7 +130,7 @@ struct OnboardingCoordinatorTests {
 			checkForUpdates: { .current },
 			checkIntelTranslation: { .available }
 		)
-		#expect(coordinator.requiredSchema == 2)
+		#expect(coordinator.requiredSchema == 3)
 
 		coordinator.skip()
 		#expect(coordinator.isPresented)

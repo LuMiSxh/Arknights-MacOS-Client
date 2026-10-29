@@ -29,16 +29,16 @@ struct OnboardingProgressStoreTests {
 		store.reset()
 		#expect(store.needsOnboarding)
 
-		for (completedSchema, expectedRequiredSchema) in [(0, nil), (1, 2), (2, nil)]
-			as [(Int, Int?)]
-		{
+		for (completedSchema, expectedRequiredSchema, needsOnboarding) in [
+			(0, nil, true), (1, 3, true), (2, 3, true), (3, nil, false),
+		] as [(Int, Int?, Bool)] {
 			defaults.removePersistentDomain(forName: suiteName)
 			if completedSchema > 0 {
 				defaults.set(completedSchema, forKey: "onboarding.completedSchemaVersion")
 			}
-			#expect(
-				OnboardingProgressStore(defaults: defaults).pendingRequiredSchema
-					== expectedRequiredSchema)
+			let store = OnboardingProgressStore(defaults: defaults)
+			#expect(store.pendingRequiredSchema == expectedRequiredSchema)
+			#expect(store.needsOnboarding == needsOnboarding)
 		}
 	}
 

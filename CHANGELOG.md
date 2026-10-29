@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
 - The problem report form asks for logs only when a maintainer requests them.
 - **Settings** has a new **Help** section with problem reports, diagnostics, and the troubleshooting guide.
+- Setup runs once more after this update so you can review the new options.
 
 ### Fixed
 
