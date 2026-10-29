@@ -1,5 +1,9 @@
 import { parse as parseYaml } from 'yaml';
-import { contactFormUrl } from '../site.js';
+import {
+	contactFormUrl,
+	contactTopicQuestionId,
+	contactTopics
+} from '../site.js';
 import { ContentError } from './frontmatter.js';
 import { escapeHtml } from './html.js';
 import { mapping, rejectUnknownKeys } from './fenced-yaml.js';
@@ -11,7 +15,6 @@ export interface ContactCallout {
 }
 
 const CALLOUT_KEYS = new Set(['title', 'text', 'topic']);
-const TOPIC = /^[a-z-]+$/;
 
 function requiredText(
 	values: Record<string, unknown>,
@@ -30,10 +33,10 @@ function requiredText(
 
 function optionalTopic(value: unknown, source: string): string | undefined {
 	if (value === undefined) return undefined;
-	if (typeof value !== 'string' || !TOPIC.test(value)) {
+	if (typeof value !== 'string' || !Object.hasOwn(contactTopics, value)) {
 		throw new ContentError(
 			source,
-			'contact.topic must use only lowercase letters and hyphens'
+			`contact.topic must be one of: ${Object.keys(contactTopics).join(', ')}`
 		);
 	}
 	return value;
@@ -62,7 +65,12 @@ export function parseContactCallout(
 
 export function contactHref(topic: string | undefined): string {
 	if (!topic) return contactFormUrl;
-	return `${contactFormUrl}?${new URLSearchParams({ topic }).toString()}`;
+	// The hidden topic field only records where a message came from.
+	const query = new URLSearchParams({
+		[contactTopicQuestionId]: contactTopics[topic],
+		topic
+	});
+	return `${contactFormUrl}?${query.toString()}`;
 }
 
 export function renderContactCallout(callout: ContactCallout): string {
