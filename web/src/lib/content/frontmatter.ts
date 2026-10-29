@@ -90,10 +90,12 @@ function optionalString(
 	return requiredString(value, key, source);
 }
 
-export function parseFrontmatter(
-	source: string,
-	input: string
-): ParsedMarkdown {
+interface RawFrontmatter {
+	values: Record<string, unknown>;
+	body: string;
+}
+
+function readFrontmatter(source: string, input: string): RawFrontmatter {
 	const match = FRONTMATTER.exec(input);
 	if (!match) {
 		throw new ContentError(
@@ -120,7 +122,15 @@ export function parseFrontmatter(
 		throw new ContentError(source, 'frontmatter must be a YAML mapping');
 	}
 
-	const values = parsed as Record<string, unknown>;
+	const body = input.slice(match[0].length);
+	return { values: parsed as Record<string, unknown>, body };
+}
+
+export function parseFrontmatter(
+	source: string,
+	input: string
+): ParsedMarkdown {
+	const { values, body } = readFrontmatter(source, input);
 	for (const key of Object.keys(values)) {
 		if (!FRONTMATTER_KEYS.has(key as keyof DocumentMetadata)) {
 			throw new ContentError(source, `unknown frontmatter key: ${key}`);
@@ -165,6 +175,60 @@ export function parseFrontmatter(
 			...(code === undefined ? {} : { code }),
 			...(domain === undefined ? {} : { domain })
 		},
-		body: input.slice(match[0].length)
+		body
+	};
+}
+
+export interface ParsedBlogMarkdown extends ParsedMarkdown {
+	date: string;
+}
+
+const BLOG_FRONTMATTER_KEYS = new Set(['title', 'date', 'summary', 'draft']);
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isCalendarDate(value: string): boolean {
+	if (!ISO_DATE.test(value)) return false;
+	const [year, month, day] = value.split('-').map(Number);
+	const date = new Date(Date.UTC(year, month - 1, day));
+	return (
+		date.getUTCFullYear() === year &&
+		date.getUTCMonth() === month - 1 &&
+		date.getUTCDate() === day
+	);
+}
+
+/** Blog posts carry their own frontmatter; `summary` becomes the page description. */
+export function parseBlogFrontmatter(
+	source: string,
+	input: string
+): ParsedBlogMarkdown {
+	const { values, body } = readFrontmatter(source, input);
+	for (const key of Object.keys(values)) {
+		if (!BLOG_FRONTMATTER_KEYS.has(key)) {
+			throw new ContentError(source, `unknown frontmatter key: ${key}`);
+		}
+	}
+	const date = requiredString(values.date, 'date', source);
+	if (!isCalendarDate(date)) {
+		throw new ContentError(
+			source,
+			'frontmatter.date must be an existing date in YYYY-MM-DD form'
+		);
+	}
+	const title = requiredString(values.title, 'title', source);
+	const summary = requiredString(values.summary, 'summary', source);
+	const draft = optionalBoolean(values.draft, 'draft', source, false);
+	return {
+		date,
+		body,
+		metadata: {
+			title,
+			description: summary,
+			order: 1000,
+			hidden: false,
+			draft,
+			audience: 'all',
+			toc: true
+		}
 	};
 }
