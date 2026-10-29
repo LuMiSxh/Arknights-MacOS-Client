@@ -85,9 +85,7 @@ struct OnboardingDisplayView: View {
 			case .metalFX: "MetalFX"
 			case .standard: "Standard"
 			}
-		let frameRate =
-			answers.frameRateLimit == .unlimited
-			? "no frame rate limit" : "\(answers.frameRateLimit.displayName) limit"
+		let frameRate = answers.frameRateLimit.displayName + " limit"
 		return "\(placement), \(rendering), \(frameRate). Change this in Settings → Game."
 	}
 

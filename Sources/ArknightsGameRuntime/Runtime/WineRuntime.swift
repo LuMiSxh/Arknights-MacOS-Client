@@ -201,7 +201,7 @@ struct WineRuntime: Sendable {
 		graphicsDiagnostics: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
-		frameRateLimit: GameFrameRateLimit = .unlimited,
+		frameRateLimit: GameFrameRateLimit = .fps120,
 		runtimeEnvironmentOverrides: [String: String] = [:],
 		clientVariant: GameClientVariant = .standard,
 		publisher: GamePublisher = .yostar,

@@ -30,7 +30,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	package var usesMetalPerformanceHUD: Bool = false
 	package var usesGameMode: Bool = false
 	package var synchronizationMode: WineSynchronizationMode = .msync
-	package var frameRateLimit: GameFrameRateLimit = .unlimited
+	package var frameRateLimit: GameFrameRateLimit = .fps120
 
 	package static let `default` = GameLaunchOptions(
 		displayMode: .windowed,

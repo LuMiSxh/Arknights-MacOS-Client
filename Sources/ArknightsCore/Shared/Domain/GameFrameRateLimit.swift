@@ -6,23 +6,20 @@ package enum GameFrameRateLimit: String, CaseIterable, Codable, Sendable {
 	case fps30
 	case fps60
 	case fps120
-	case unlimited
 
 	package var displayName: String {
 		switch self {
 		case .fps30: "30 FPS"
 		case .fps60: "60 FPS"
 		case .fps120: "120 FPS"
-		case .unlimited: "Unlimited"
 		}
 	}
 
-	package var framesPerSecond: Int? {
+	package var framesPerSecond: Int {
 		switch self {
 		case .fps30: 30
 		case .fps60: 60
 		case .fps120: 120
-		case .unlimited: nil
 		}
 	}
 }

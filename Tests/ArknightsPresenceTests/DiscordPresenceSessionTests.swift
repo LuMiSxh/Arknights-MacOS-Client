@@ -68,7 +68,7 @@ struct DiscordPresenceSessionTests {
 		#expect(secondActivities.last?.activity?.state == "Japan")
 		#expect(secondActivities.last?.activity?.timestamps?.start == 2_000_000)
 		#expect(
-			secondActivities.last?.activity?.assets?.largeImage
+			secondActivities.last?.activity?.assets?.smallImage
 				== SupportLinks.applicationIcon.absoluteString)
 		#expect(secondActivities.last?.activity?.buttons?.first?.label == "Website")
 		#expect(

@@ -17,11 +17,11 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	var frameRateLimit: GameFrameRateLimit
 
 	static let recommended = GameDisplayAnswers(
-		placement: .fullscreen, rendering: .retina, frameRateLimit: .unlimited)
+		placement: .fullscreen, rendering: .retina, frameRateLimit: .fps120)
 
 	init(
 		placement: GamePlacementAnswer, windowSize: GameWindowSizeChoice = .fillScreen,
-		rendering: GameRenderingMode, frameRateLimit: GameFrameRateLimit = .unlimited
+		rendering: GameRenderingMode, frameRateLimit: GameFrameRateLimit = .fps120
 	) {
 		self.placement = placement
 		self.windowSize = windowSize
@@ -272,6 +272,6 @@ extension GameFrameRateLimit {
 	var answer: OnboardingAnswer<GameFrameRateLimit> {
 		OnboardingAnswer(
 			value: self, title: displayName, systemImage: "speedometer",
-			isRecommended: self == .unlimited)
+			isRecommended: self == .fps120)
 	}
 }

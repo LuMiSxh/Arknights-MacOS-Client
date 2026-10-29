@@ -75,7 +75,7 @@ extension WineRuntime {
 		executableDirectory: URL,
 		baseEnvironment: [String: String] = ProcessInfo.processInfo.environment,
 		userName: String = NSUserName(),
-		frameRateLimit: GameFrameRateLimit = .unlimited,
+		frameRateLimit: GameFrameRateLimit = .fps120,
 		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		let home = prefixDirectory.appending(path: "home", directoryHint: .isDirectory)
@@ -107,9 +107,7 @@ extension WineRuntime {
 		environment["DXMT_LOG_LEVEL"] = "error"
 		// DXMT reads "key=value" entries separated by ";". Without a cap, no entry is written and
 		// DXMT keeps its default pacing.
-		if let framesPerSecond = frameRateLimit.framesPerSecond {
-			environment["DXMT_CONFIG"] = "d3d11.preferredMaxFrameRate=\(framesPerSecond)"
-		}
+		environment["DXMT_CONFIG"] = "d3d11.preferredMaxFrameRate=\(frameRateLimit.framesPerSecond)"
 		for (name, value) in Self.synchronizationEnvironment(for: synchronizationMode) {
 			environment[name] = value
 		}
@@ -124,7 +122,7 @@ extension WineRuntime {
 	func runtimeEnvironment(
 		prefixDirectory: URL,
 		graphicsDiagnostics: Bool = false,
-		frameRateLimit: GameFrameRateLimit = .unlimited,
+		frameRateLimit: GameFrameRateLimit = .fps120,
 		synchronizationMode: WineSynchronizationMode = .msync
 	) -> [String: String] {
 		var environment = Self.isolatedEnvironment(

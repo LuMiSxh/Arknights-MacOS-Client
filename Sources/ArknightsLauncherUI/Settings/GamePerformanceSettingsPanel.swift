@@ -15,6 +15,7 @@ struct GamePerformanceSettingsPanel: View {
 	@State private var isXcodeInstalled = GamePolicyControl.isAvailable()
 
 	private var options: GameLaunchOptions { settings.launchOptions }
+	private var launcherDisplayControl: Bool { !options.usesGameSettings }
 	private var isGameModeAvailable: Bool { isXcodeInstalled && !simulatesMissingXcode }
 
 	var body: some View {
@@ -31,7 +32,7 @@ struct GamePerformanceSettingsPanel: View {
 						accentColor: accentColor,
 						width: 140
 					)
-					.disabled(isFrameRateLocked)
+					.disabled(isFrameRateLocked || !launcherDisplayControl)
 					.accessibilityLabel("Frame rate limit")
 					.accessibilityValue(options.frameRateLimit.displayName)
 					Text(options.frameRateLimit.displayName)
@@ -56,7 +57,9 @@ struct GamePerformanceSettingsPanel: View {
 					accentColor: accentColor
 				)
 				// A saved choice stays switchable off after Xcode is removed.
-				.disabled(isLocked || (!isGameModeAvailable && !options.usesGameMode))
+				.disabled(
+					isLocked || !launcherDisplayControl
+						|| (!isGameModeAvailable && !options.usesGameMode))
 			}
 			.onAppear { isXcodeInstalled = GamePolicyControl.isAvailable() }
 			SettingsHairline()
@@ -69,7 +72,7 @@ struct GamePerformanceSettingsPanel: View {
 					isOn: $settings.launchOptions.usesMetalPerformanceHUD,
 					accentColor: accentColor
 				)
-				.disabled(isLocked)
+				.disabled(isLocked || !launcherDisplayControl)
 			}
 		}
 	}

@@ -67,7 +67,7 @@ func frameRateLimitWritesDXMTConfigOnlyWhenCapped(limit: GameFrameRateLimit) {
 		userName: "tester",
 		frameRateLimit: limit
 	)
-	#expect((environment["DXMT_CONFIG"] != nil) == (limit != .unlimited))
+	#expect(environment["DXMT_CONFIG"] != nil)
 }
 
 @Test

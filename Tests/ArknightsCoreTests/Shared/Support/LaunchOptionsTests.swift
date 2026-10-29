@@ -82,7 +82,7 @@ func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws 
 	#expect(!options.usesMetalPerformanceHUD)
 	#expect(!options.usesGameMode)
 	#expect(options.synchronizationMode == .msync)
-	#expect(options.frameRateLimit == .unlimited)
+	#expect(options.frameRateLimit == .fps120)
 
 	let retired = try decode(
 		#"{"displayMode":"windowed","resolution":"1280x720","usesPreciseScrolling":true}"#)

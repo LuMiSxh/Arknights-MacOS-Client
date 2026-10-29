@@ -32,6 +32,9 @@ package enum AppConstants {
 		package static let hardwareCursorEnvironmentKey = "ARKNIGHTS_RUNTIME_HARDWARE_CURSOR"
 		package static let nativeFullscreenSpaceEnvironmentKey =
 			"ARKNIGHTS_RUNTIME_NATIVE_FULLSCREEN_SPACE"
+		/// Only set when the launcher overrides in-game display settings; disables Unity FPS cap
+		/// and all performance options when off.
+		package static let overrideEnvironmentKey = "ARKNIGHTS_RUNTIME_OVERRIDE"
 		/// DXMT's upstream switch for its MetalFX spatial-upscaling swapchain.
 		package static let metalFXSpatialUpscalingEnvironmentKey = "DXMT_METALFX_SPATIAL_SWAPCHAIN"
 		package static let capabilityManifestMaximumBytes = 4 * 1_024
