@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "prefixRevision": 2,
   "runtime": {
-    "name": "Arknights macOS Runtime 0.8.0-rc2",
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc2/Arknights-MacOS-Runtime-v0.8.0-rc2.tar.gz",
-    "sha256": "0c24eefe892dd54236ff2900edd0599c7e13496897128d864f436b980c8b0e05"
+    "name": "Arknights macOS Runtime 0.8.0-rc3",
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc3/Arknights-MacOS-Runtime-v0.8.0-rc3.tar.gz",
+    "sha256": "dd62d817ff7ee86d0ef25db8445563ccf683df47af8351d4c151ade653115f9f"
   },
   "buildRecipe": {
-    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc2/Arknights-MacOS-Runtime-v0.8.0-rc2-source.tar.gz",
-    "sha256": "e46b45c89e835d7014e0cabd57b731135e457e9c4d132c3f196a4903e23ff214"
+    "url": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime/releases/download/v0.8.0-rc3/Arknights-MacOS-Runtime-v0.8.0-rc3-source.tar.gz",
+    "sha256": "d177c7bb7f6912a15cb883d730079c078f8c6453de9a47e0882ff961423e4e26"
   },
   "interface": {
     "archive": {
@@ -41,7 +41,7 @@
   },
   "provenance": {
     "buildRepository": "https://github.com/LuMiSxh/Arknights-MacOS-Runtime",
-    "buildCommit": "c891c98641babf11c06fe78ff38260cdbb7e6891",
+    "buildCommit": "41ab4643047e8732159a34450d475f76350c75e2",
     "wineRepository": "https://github.com/dappermint/winecx",
     "wineCommit": "e0aa380780b73e20fabcfe78fd42713b94929a53",
     "dxmtRepository": "https://github.com/3Shain/dxmt",
