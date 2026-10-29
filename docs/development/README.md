@@ -100,4 +100,19 @@ items:
 - The bars keep the order you write.
 - Quote a value that contains a colon, such as `"Chip family: TODO"`. Unquoted colons break the YAML.
 
+Use a fenced block with the info string `contact` to add a contact callout. Write the block as YAML:
+
+````markdown
+```contact
+title: Help test the Taiwan server
+text: We look for a volunteer who plays on the Taiwan server.
+topic: testing
+```
+````
+
+- `title` and `text` are required. Each must be a non-empty string.
+- `topic` is optional. Use only lowercase letters and hyphens. The button adds it to the form link as `?topic=<topic>`.
+- The button opens the contact form in a new tab. Other keys fail the build.
+- The form URL comes from `contactFormUrl` in `web/src/lib/site.ts`. Do not write the URL in the block.
+
 To add developer notes, use `<details>` and `<summary>`. Use no attributes. Leave a blank line before and after the Markdown inside. Other raw HTML is escaped.

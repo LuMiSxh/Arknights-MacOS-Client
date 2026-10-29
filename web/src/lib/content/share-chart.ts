@@ -1,6 +1,7 @@
 import { parse as parseYaml } from 'yaml';
 import { ContentError } from './frontmatter.js';
 import { escapeHtml } from './html.js';
+import { mapping, rejectUnknownKeys } from './fenced-yaml.js';
 
 export interface ShareChartItem {
 	label: string;
@@ -23,29 +24,6 @@ export function verbalShare(share: number): string {
 	if (share >= 0.25) return 'about a third';
 	if (share >= 0.15) return 'about a fifth';
 	return 'a few';
-}
-
-function mapping(
-	value: unknown,
-	source: string,
-	where: string
-): Record<string, unknown> {
-	if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-		throw new ContentError(source, `${where} must be a mapping`);
-	}
-	return value as Record<string, unknown>;
-}
-
-function rejectUnknownKeys(
-	values: Record<string, unknown>,
-	allowed: Set<string>,
-	source: string,
-	where: string
-): void {
-	for (const key of Object.keys(values)) {
-		if (!allowed.has(key))
-			throw new ContentError(source, `unknown ${where} key: ${key}`);
-	}
 }
 
 export function parseShareChart(source: string, text: string): ShareChartSpec {
