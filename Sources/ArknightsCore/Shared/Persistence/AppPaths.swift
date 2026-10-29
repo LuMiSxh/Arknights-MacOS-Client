@@ -270,6 +270,10 @@ package struct AppPaths: Sendable {
 		applicationSupportRoot.appending(path: "Artwork/Custom/operator-avatar-source")
 	}
 
+	package var storageOverviewCache: URL {
+		applicationSupportRoot.appending(path: AppConstants.Storage.overviewCacheFilename)
+	}
+
 	package var playtimeStatistics: URL {
 		applicationSupportRoot.appending(path: AppConstants.Playtime.statisticsFilename)
 	}

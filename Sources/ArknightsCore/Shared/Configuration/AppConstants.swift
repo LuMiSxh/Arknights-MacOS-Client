@@ -100,6 +100,12 @@ package enum AppConstants {
 		/// Reuse a completed directory measurement briefly while Settings is reopened, while
 		/// allowing later installs, repairs, and external cache changes to become visible.
 		package static let overviewCacheLifetime: TimeInterval = 30
+		/// Last measurements that seed Settings until the next measurement replaces them.
+		/// The format version lets a future layout be ignored instead of misread.
+		package static let overviewCacheFormatVersion = 1
+		static let overviewCacheFilename = "storage-overview-cache.json"
+		package static let overviewCacheMaximumBytes = 64 * 1_024
+		package static let overviewCacheEntryLimit = 8
 	}
 
 	package enum Settings {

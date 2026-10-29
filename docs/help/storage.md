@@ -19,6 +19,7 @@ Paths start with `~/Library/Application Support/com.lumisxh.arknights-client/` u
 | Hypergryph games and prefix | `Hypergryph/China`, `Hypergryph/China-Bilibili`, `Hypergryph/Prefix` |
 | Custom icons                | `Artwork/Custom`                                                     |
 | Playtime statistics         | `playtime-v1.json` (local only, never uploaded)                      |
+| Storage measurements        | `storage-overview-cache.json` (local only; safe to delete)           |
 | Caches                      | `~/Library/Caches/com.lumisxh.arknights-client/`                     |
 | Logs                        | `~/Library/Logs/com.lumisxh.arknights-client/`                       |
 
