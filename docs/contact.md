@@ -25,7 +25,7 @@ Use the form for:
 
 Report public bugs in GitHub issues. Everyone can read a public issue.
 
-- To report a problem from the app or the website, use **Report an issue**. It opens a prefilled GitHub issue.
+- To report a problem from the app, choose **Help → Report a Problem…**. On the website, use **Report an issue**. Both open a prefilled GitHub issue.
 - To report a problem in another way, open an [issue on GitHub](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues).
 
 Do not put personal data or contact details in a public issue.
