@@ -119,7 +119,19 @@ actor DiscordPresenceSession {
 			state: request.regionName,
 			timestamps: DiscordIPCTimestamps(
 				start: Int64((request.startedAt.timeIntervalSince1970 * 1_000).rounded())
-			)
+			),
+			assets: DiscordIPCAssets(
+				smallImage: SupportLinks.applicationIcon.absoluteString,
+				largeImage: nil,
+				smallText: "Arknights macOS Client",
+				largeText: "Arknights"
+			),
+			buttons: [
+				DiscordIPCButton(
+					label: "Website",
+					url: SupportLinks.documentationRoot.absoluteString
+				)
+			]
 		)
 		do {
 			try await connection.setActivity(activity, pid: processIdentifier)

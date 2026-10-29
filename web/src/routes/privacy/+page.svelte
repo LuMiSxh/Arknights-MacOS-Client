@@ -50,8 +50,9 @@
 		your Discord client the game name, your server, the session start time,
 		and the launcher process ID. This data goes to the local Discord app,
 		not to a server run by the author. The app does not read your Discord
-		account and sends no account, operator, or playtime data. Discord
-		controls what your profile shows.
+		account and sends no account, operator, or playtime data. The card uses
+		the project icon and links to the project website. Both are public
+		project addresses. Discord controls what your profile shows.
 	</p>
 	<p>
 		The app connects to the hosts below when you use the matching feature.

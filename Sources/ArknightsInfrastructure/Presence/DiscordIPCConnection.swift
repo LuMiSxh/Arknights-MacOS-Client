@@ -27,15 +27,57 @@ package struct DiscordIPCActivity: Encodable, Equatable, Sendable {
 	package var details: String
 	package var state: String?
 	package var timestamps: DiscordIPCTimestamps?
+	package var assets: DiscordIPCAssets?
+	package var buttons: [DiscordIPCButton]?
 
 	package init(
 		details: String,
 		state: String? = nil,
-		timestamps: DiscordIPCTimestamps? = nil
+		timestamps: DiscordIPCTimestamps? = nil,
+		assets: DiscordIPCAssets? = nil,
+		buttons: [DiscordIPCButton]? = nil
 	) {
 		self.details = details
 		self.state = state
 		self.timestamps = timestamps
+		self.assets = assets
+		self.buttons = buttons
+	}
+}
+
+package struct DiscordIPCAssets: Encodable, Equatable, Sendable {
+	package var smallImage: String?
+	package var largeImage: String?
+	package var smallText: String?
+	package var largeText: String?
+
+	package init(
+		smallImage: String? = nil,
+		largeImage: String? = nil,
+		smallText: String? = nil,
+		largeText: String? = nil
+	) {
+		self.smallImage = smallImage
+		self.largeImage = largeImage
+		self.smallText = smallText
+		self.largeText = largeText
+	}
+
+	private enum CodingKeys: String, CodingKey {
+		case smallImage = "small_image"
+		case largeImage = "large_image"
+		case smallText = "small_text"
+		case largeText = "large_text"
+	}
+}
+
+package struct DiscordIPCButton: Encodable, Equatable, Sendable {
+	package var label: String
+	package var url: String
+
+	package init(label: String, url: String) {
+		self.label = label
+		self.url = url
 	}
 }
 

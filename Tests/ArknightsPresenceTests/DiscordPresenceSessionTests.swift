@@ -67,6 +67,13 @@ struct DiscordPresenceSessionTests {
 		#expect(secondActivities.last?.activity?.details == "Playing Arknights")
 		#expect(secondActivities.last?.activity?.state == "Japan")
 		#expect(secondActivities.last?.activity?.timestamps?.start == 2_000_000)
+		#expect(
+			secondActivities.last?.activity?.assets?.largeImage
+				== SupportLinks.applicationIcon.absoluteString)
+		#expect(secondActivities.last?.activity?.buttons?.first?.label == "Website")
+		#expect(
+			secondActivities.last?.activity?.buttons?.first?.url
+				== SupportLinks.documentationRoot.absoluteString)
 		#expect(firstDisconnects == 1)
 		#expect(firstActivities.isEmpty)
 

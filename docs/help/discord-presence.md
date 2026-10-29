@@ -14,6 +14,8 @@ When the game runs, your Discord profile shows:
 - Your server, for example **Global**.
 - How long the current session has run.
 
+The card uses the project icon and has a **Website** button.
+
 The launcher sends this data to the Discord app on your Mac. Discord shows it to your friends. The launcher does not read your Discord account. It does not send operator names, account data, or playtime totals.
 
 Discord must be open before the game starts. If Discord starts later, start the game again to show presence.
