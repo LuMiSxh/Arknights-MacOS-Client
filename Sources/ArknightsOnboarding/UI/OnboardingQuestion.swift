@@ -196,8 +196,9 @@ extension OnboardingQuestion where Accessory == EmptyView {
 	}
 }
 
-// Answer cards use the shared press and hover motion on a plain surface. A Glass surface is
-// rebuilt when the selection tint changes, which made the release spring snap to full size.
+// Answer cards press like large shared tiles and hover by changing the surface, as settings
+// controls do. A Glass surface is rebuilt when the selection tint changes, which made the release
+// spring snap to full size.
 private struct OnboardingAnswerStyle<S: InsettableShape>: ButtonStyle {
 	let isSelected: Bool
 	let accentColor: Color
@@ -234,9 +235,8 @@ private struct OnboardingAnswerBody<S: InsettableShape>: View {
 	}
 
 	private var scale: CGFloat {
-		guard isEnabled, !reduceMotion else { return 1 }
-		if configuration.isPressed { return LauncherMotion.pressedScale }
-		return isHovered ? LauncherMotion.hoverScale : 1
+		guard isEnabled, !reduceMotion, configuration.isPressed else { return 1 }
+		return LauncherMotion.subtlePressedScale
 	}
 
 	private var fill: Color {
@@ -245,7 +245,6 @@ private struct OnboardingAnswerBody<S: InsettableShape>: View {
 			isSelected
 			? control.enabledChromaticSurfaceOpacity : control.enabledNeutralSurfaceOpacity
 		if isHovered { opacity += control.hudHoverSurfaceOpacity }
-		if configuration.isPressed { opacity += control.hudHoverSurfaceOpacity }
 		return (isSelected ? accentColor : Color.white).opacity(opacity)
 	}
 

@@ -10,7 +10,7 @@ enum SettingsGroup: CaseIterable {
 		switch self {
 		case .arknights: "ARKNIGHTS"
 		case .launcher: "LAUNCHER"
-		case .general: nil
+		case .general: "SUPPORT"
 		}
 	}
 }

@@ -67,7 +67,7 @@ package enum LauncherMotion {
 	package static let overlayEntranceScale: CGFloat = 0.90
 	package static let pressedScale: CGFloat = 0.95
 	package static let hoverScale: CGFloat = 1.025
-	static let subtlePressedScale: CGFloat = 0.97
+	package static let subtlePressedScale: CGFloat = 0.97
 	static let subtleHoverScale: CGFloat = 1.01
 	package static func animation(_ curve: Curve, reduceMotion: Bool) -> Animation? {
 		reduceMotion ? nil : curve.animation
