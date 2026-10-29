@@ -141,3 +141,10 @@ title: Help test the Taiwan server
 text: We look for a volunteer who plays on the Taiwan server. Tell us about your Mac, and we will plan the tests with you.
 topic: testing
 ```
+
+The launcher is available only in English. Some players asked for Chinese. We want to add Simplified Chinese and Traditional Chinese to the launcher in a later release. For this, we need native speakers who translate the launcher text and check the translations.
+
+```contact
+title: Help translate the launcher into Chinese
+text: We look for native speakers of Simplified Chinese or Traditional Chinese. Tell us which variant you speak and how much time you can give.
+```
