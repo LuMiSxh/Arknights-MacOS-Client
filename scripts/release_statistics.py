@@ -43,6 +43,27 @@ def release_downloads(
     return rows
 
 
+def traffic_referrers(repository: str) -> str:
+    try:
+        data = json.loads(
+            output(
+                [
+                    "gh",
+                    "api",
+                    f"repos/{repository}/traffic/popular/referrers",
+                ]
+            )
+        )
+        lines = ["Traffic referrers (last 14 days):"]
+        for item in data:
+            lines.append(
+                f"  {item.get('referrer', '?'):20}  {item.get('count', 0):4} views  {item.get('uniques', 0):4} uniques"
+            )
+        return "\n".join(lines)
+    except Exception:
+        return "Traffic data unavailable (requires repo owner access)."
+
+
 def render_statistics(rows: list[tuple[str, int, int, int]]) -> str:
     if not rows:
         return "No published releases found."
@@ -90,6 +111,8 @@ def main() -> None:
     )
     display_name = load_project_configuration().product.display_name
     print(render_statistics(release_downloads(pages, display_name=display_name)))
+    print()
+    print(traffic_referrers(repository))
 
 
 if __name__ == "__main__":
