@@ -5,9 +5,6 @@ import SwiftUI
 package enum LauncherVisuals {
 	/// Fallback accent used only when artwork cannot provide a dynamic theme color.
 	package static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
-	package static let controlTint = Color(red: 0.72, green: 0.74, blue: 0.77)
-	static let quietControlTint = Color(red: 0.58, green: 0.61, blue: 0.65)
-	package static let hairline = Color.white.opacity(0.12)
 	package static let danger = Color(red: 0.69, green: 0.141, blue: 0.231)
 	/// Bright semantic foreground for destructive actions; `danger` remains a dark surface tint.
 	package static let dangerForeground = Color(red: 0.98, green: 0.42, blue: 0.48)
@@ -15,51 +12,43 @@ package enum LauncherVisuals {
 	package static let warning = Color(red: 0.91, green: 0.61, blue: 0.21)
 	package static let success = Color(red: 0.28, green: 0.78, blue: 0.55)
 	package static let disabled = Color.white.opacity(0.42)
-	package static let hudGlassTint = Color.black.opacity(0.52)
-	package static let modalBackground = Color(red: 0.07, green: 0.07, blue: 0.08)
-	package static let navigationRailBackground = Color.black.opacity(0.28)
-	static let panelBorder = Color.white.opacity(0.08)
-	package static let navigationHoverFill = Color.white.opacity(0.06)
 	package static let overlayDim = 0.55
-	package static let artworkFallback = Color(red: 0.035, green: 0.04, blue: 0.045)
-	package static let galleryPlateTop = Color(red: 0.16, green: 0.17, blue: 0.19)
-	package static let galleryPlateBottom = Color(red: 0.06, green: 0.06, blue: 0.07)
 
 	package static func selectedNavigationFill(for accent: Color) -> Color {
 		accent.opacity(0.13)
 	}
 
-	package static func selectedNavigationMarker(for accent: Color) -> Color {
-		accent
-	}
-
 	static let modalCornerRadius = Radius.modal
 
 	package enum Typography {
-		package static let statusTitle = Font.system(size: 14, weight: .semibold)
-		package static let statusPercent = Font.system(size: 16, weight: .semibold)
-		package static let completionLabel = Font.system(size: 15, weight: .semibold)
-		package static let hudControlGlyph = Font.system(size: 13, weight: .semibold)
-		package static let hudProminentGlyph = Font.system(size: 16, weight: .semibold)
-		static let menuChevron = Font.system(size: 9, weight: .bold)
-		package static let tagGlyph = Font.system(size: 10, weight: .bold)
-		package static let fallbackWordmark = Font.system(size: 440, weight: .black)
+		package static let statusTitle = Font.system(size: 14, weight: .medium)
+		package static let statusPercent = Font.system(size: 16, weight: .medium)
+		package static let completionLabel = Font.system(size: 15, weight: .medium)
+		package static let hudControlGlyph = Font.system(size: 13, weight: .medium)
+		package static let hudProminentGlyph = Font.system(size: 16, weight: .medium)
+		static let menuChevron = Font.system(size: 9, weight: .medium)
+		package static let tagGlyph = Font.system(size: 10, weight: .medium)
+		package static let fallbackWordmark = Font.system(size: 440, weight: .regular)
+		package static let wordmark = Font.system(.title, design: .serif)
+	}
+
+	package enum Layout {
+		/// Shared by the Settings and Onboarding navigation rails.
+		package static let railWidth: CGFloat = 192
 	}
 
 	package enum Spacing {
 		package static let hairline: CGFloat = 1
 		package static let compact: CGFloat = 4
-		package static let tight: CGFloat = 6
 		package static let control: CGFloat = 8
 		package static let content: CGFloat = 12
 		package static let panel: CGFloat = 16
 		package static let section: CGFloat = 20
-		package static let page: CGFloat = 26
+		package static let page: CGFloat = 24
 	}
 
 	package enum Radius {
 		package static let control: CGFloat = 10
-		package static let row: CGFloat = 10
 		package static let panel: CGFloat = 16
 		static let hudPill: CGFloat = 22
 		package static let modal: CGFloat = 24
@@ -69,10 +58,10 @@ package enum LauncherVisuals {
 		package static let borderWidth: CGFloat = 1
 		static let focusWidth: CGFloat = 2
 		static let standardHorizontalPadding: CGFloat = 12
-		static let standardVerticalPadding: CGFloat = 6
-		static let compactHorizontalPadding: CGFloat = 10
-		static let compactVerticalPadding: CGFloat = 5
-		package static let hudHorizontalPadding: CGFloat = 11
+		static let standardVerticalPadding: CGFloat = 8
+		static let compactHorizontalPadding: CGFloat = 8
+		static let compactVerticalPadding: CGFloat = 4
+		package static let hudHorizontalPadding: CGFloat = 12
 		package static let hudVerticalPadding: CGFloat = 6
 		package static let enabledNeutralSurfaceOpacity = 0.07
 		static let disabledNeutralSurfaceOpacity = 0.025
@@ -88,8 +77,9 @@ package enum LauncherVisuals {
 		static let disabledForegroundHighContrastOpacity = 0.52
 		static let disabledNeutralForegroundOpacity = 0.36
 		static let disabledNeutralForegroundHighContrastOpacity = 0.52
-		static let hudBorderOpacity = 0.65
+		static let hudBorderOpacity = 0.16
 		package static let hudHoverSurfaceOpacity = 0.06
+		package static let controlHoverSurfaceOpacity = 0.06
 		static let hudDisabledSurfaceOpacity = 0.68
 		static let hudDisabledBorderOpacity = 0.20
 		static let opaqueNeutralSurface = Color(red: 0.13, green: 0.14, blue: 0.16)

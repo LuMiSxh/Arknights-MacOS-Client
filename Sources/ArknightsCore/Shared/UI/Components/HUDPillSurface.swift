@@ -16,7 +16,7 @@ struct HUDPillSurface<Content: View>: View {
 	package init(
 		isExpanded: Bool = false,
 		showsBorder: Bool = true,
-		tint: Color = LauncherVisuals.hudGlassTint,
+		tint: Color,
 		@ViewBuilder content: () -> Content
 	) {
 		self.isExpanded = isExpanded
@@ -110,6 +110,7 @@ package struct HUDPillProgressOutline: View {
 	let isActive: Bool
 	let tint: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherPalette) private var palette
 
 	package init(progress: Double?, isActive: Bool, tint: Color) {
 		self.progress = progress
@@ -120,7 +121,7 @@ package struct HUDPillProgressOutline: View {
 	package var body: some View {
 		Capsule()
 			.stroke(
-				LauncherVisuals.hairline.opacity(
+				palette.hairline.opacity(
 					progress == nil ? LauncherVisuals.Control.hudBorderOpacity : 0.5
 				),
 				lineWidth: LauncherVisuals.Control.borderWidth
@@ -146,7 +147,7 @@ extension View {
 	package func hudPillSurface(
 		isExpanded: Bool = false,
 		showsBorder: Bool = true,
-		tint: Color = LauncherVisuals.hudGlassTint
+		tint: Color
 	) -> some View {
 		HUDPillSurface(isExpanded: isExpanded, showsBorder: showsBorder, tint: tint) {
 			self

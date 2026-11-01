@@ -4,8 +4,9 @@ import ArknightsCore
 import SwiftUI
 
 struct PresetGallerySearchBar: View {
+	@Environment(\.launcherPalette) private var palette
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	let destination: PresetGalleryDestination
-	package let accentColor: Color
 	@Binding var searchText: String
 	@Binding var committedTags: [String]
 	@FocusState private var isFocused: Bool
@@ -18,14 +19,14 @@ struct PresetGallerySearchBar: View {
 			uniquingKeysWith: { first, _ in first }
 		)
 	}
-	private static let contentHeight: CGFloat = 18
+	private static let contentHeight: CGFloat = 20
 
 	var body: some View {
-		HStack(spacing: 6) {
+		HStack(spacing: 8) {
 			Image(systemName: "magnifyingglass")
 				.font(.caption)
 				.adaptiveControlForeground(
-					isFocused ? accentColor : .secondary,
+					isFocused ? palette.controlOn : .secondary,
 					disabledTint: .secondary
 				)
 				.accessibilityHidden(true)
@@ -64,14 +65,15 @@ struct PresetGallerySearchBar: View {
 			}
 		}
 		.font(.callout)
-		.padding(.horizontal, 10)
-		.padding(.vertical, 7)
+		.padding(.horizontal, 12)
+		.padding(.vertical, 8)
 		.adaptiveControlSurface(
-			tint: accentColor,
+			tint: isFocused ? palette.controlOn : palette.controlTint,
 			borderOpacity: isFocused ? 0.62 : nil,
 			in: Capsule()
 		)
 		.focusEffectDisabled(true)
+		.animation(LauncherMotion.animation(.state, reduceMotion: reduceMotion), value: isFocused)
 		.onChange(of: searchText) { _, _ in promoteTrailingTag() }
 	}
 
@@ -81,18 +83,21 @@ struct PresetGallerySearchBar: View {
 		} label: {
 			HStack(spacing: 4) {
 				Text(tag)
-					.font(.caption.weight(.semibold))
+					.font(.caption.weight(.medium))
 					.lineLimit(1)
 				Image(systemName: "xmark")
 					.font(LauncherVisuals.Typography.tagGlyph)
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
-			.adaptiveControlForeground(.secondary, disabledTint: .secondary.opacity(0.44))
+			.adaptiveControlForeground(
+				.secondary,
+				disabledTint: .secondary.opacity(LauncherVisuals.Control.disabledForegroundOpacity)
+			)
 			.padding(.leading, 8)
 			.padding(.trailing, 4)
-			.padding(.vertical, 3)
+			.padding(.vertical, 4)
 			.contentShape(Capsule())
-			.adaptiveControlSurface(tint: LauncherVisuals.controlTint, in: Capsule())
+			.adaptiveControlSurface(tint: palette.controlTint, in: Capsule())
 		}
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())

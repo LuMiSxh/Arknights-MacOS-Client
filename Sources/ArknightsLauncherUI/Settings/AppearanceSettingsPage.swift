@@ -34,14 +34,13 @@ struct AppearanceSettingsPage: View {
 				SettingsActionRow(
 					title: "Match colors to the artwork",
 					detail:
-						"The launcher and the generated Dock icons borrow the artwork's colors.",
+						"The launcher and the generated Dock icons borrow the artwork’s colors.",
 					help:
 						"Dynamic Theme: derives the launcher accent, HUD tint, and generated Dock icon pair from the selected artwork."
 				) {
 					SettingsToggle(
 						"Match colors to the artwork",
 						isOn: $settings.usesDynamicTheme,
-						accentColor: accentColor
 					)
 				}
 			}
@@ -58,7 +57,6 @@ struct AppearanceSettingsPage: View {
 					SettingsToggle(
 						"Branding",
 						isOn: $settings.showsBranding,
-						accentColor: accentColor
 					)
 				}
 				SettingsHairline()
@@ -69,7 +67,6 @@ struct AppearanceSettingsPage: View {
 					SettingsToggle(
 						"Game version",
 						isOn: $settings.showsGameVersion,
-						accentColor: accentColor
 					)
 				}
 				SettingsHairline()
@@ -80,7 +77,6 @@ struct AppearanceSettingsPage: View {
 					SettingsToggle(
 						"Server time & reset countdown",
 						isOn: $settings.showsServerResetCountdown,
-						accentColor: accentColor
 					)
 				}
 			}
@@ -103,7 +99,7 @@ struct AppearanceSettingsPage: View {
 			CapsuleActionButton(
 				title: "Presets…",
 				systemImage: "photo.on.rectangle",
-				tone: .accent(accentColor), presentation: .compact
+				tone: .neutral, presentation: .compact
 			) {
 				presentedGallery = .artwork
 			}
@@ -135,7 +131,7 @@ struct AppearanceSettingsPage: View {
 			CapsuleActionButton(
 				title: "Choose Operator…",
 				systemImage: "person.2.crop.square.stack",
-				tone: .accent(accentColor),
+				tone: .neutral,
 				presentation: .compact
 			) {
 				presentedGallery = .operatorIcons
@@ -158,7 +154,6 @@ struct AppearanceSettingsPage: View {
 			GlassActionMenu(
 				title: "Launcher",
 				systemImage: "macwindow",
-				accentColor: accentColor
 			) {
 				Button(
 					"Choose Image…", systemImage: "folder",
@@ -176,7 +171,6 @@ struct AppearanceSettingsPage: View {
 			GlassActionMenu(
 				title: "Game",
 				systemImage: "gamecontroller",
-				accentColor: accentColor
 			) {
 				Button(
 					"Choose Image…", systemImage: "folder",

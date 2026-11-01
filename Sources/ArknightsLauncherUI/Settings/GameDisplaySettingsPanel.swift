@@ -7,7 +7,6 @@ import SwiftUI
 struct GameDisplaySettingsPanel: View {
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool
-	package let accentColor: Color
 	/// nil while runtime discovery runs. False means the game falls back to Standard.
 	let metalFXSpatialUpscalingSupported: Bool?
 	@Environment(\.displayScale) private var displayScale
@@ -33,12 +32,11 @@ struct GameDisplaySettingsPanel: View {
 				detail:
 					"On: the launcher sets mode and resolution at each start. Off: the game uses its own settings.",
 				help:
-					"Arknights' own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
+					"Arknights’ own resolution setting counts the pixels the game draws. With the sharpest picture, every window point holds several pixels, so an in-game resolution opens a smaller window than its number suggests. The launcher passes the converted resolution to the game on every start."
 			) {
 				SettingsToggle(
 					"Override in-game display settings",
-					isOn: launcherDisplayControl,
-					accentColor: accentColor
+					isOn: launcherDisplayControl
 				)
 				.disabled(isLocked)
 			}
@@ -51,7 +49,6 @@ struct GameDisplaySettingsPanel: View {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.displayMode,
 					options: GameDisplayMode.allCases.map { ($0, displayModeTitle($0)) },
-					accentColor: accentColor,
 					isDisabled: isSizeLocked
 				)
 			}
@@ -71,7 +68,6 @@ struct GameDisplaySettingsPanel: View {
 				GlassMenuPicker(
 					selection: $settings.launchOptions.renderingMode,
 					options: GameRenderingMode.allCases.map { ($0, renderingTitle($0)) },
-					accentColor: accentColor,
 					isDisabled: isLocked
 				)
 			}
@@ -99,7 +95,6 @@ struct GameDisplaySettingsPanel: View {
 				AdaptiveSegmentedControl(
 					selection: $settings.usesHardwareCursor,
 					options: [true, false],
-					accentColor: accentColor,
 					isDisabled: isLocked
 				) { usesMacPointer in
 					Text(usesMacPointer ? "macOS" : "Game")
@@ -136,7 +131,6 @@ struct GameDisplaySettingsPanel: View {
 			GlassMenuPicker(
 				selection: windowSizeSelection,
 				options: (choices + exact).map { ($0, windowSizeTitle($0)) },
-				accentColor: accentColor,
 				isDisabled: isSizeLocked,
 				dividerBefore: { !choices.isEmpty && $0 == exact.first }
 			)
@@ -186,7 +180,6 @@ struct GameDisplaySettingsPanel: View {
 			GlassMenuPicker(
 				selection: fullscreenResolution,
 				options: choices,
-				accentColor: accentColor,
 				isDisabled: isSizeLocked
 			)
 		}

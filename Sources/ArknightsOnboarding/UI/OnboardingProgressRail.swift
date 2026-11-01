@@ -4,49 +4,30 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingProgressRail: View {
+	@Environment(\.launcherPalette) private var palette
 	let currentStep: OnboardingStep
 	let accentColor: Color
 	let appVersion: String
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
-			Text("SETUP ASSISTANT")
-				.font(.caption.monospaced().weight(.semibold))
-				.tracking(1.4)
-				.foregroundStyle(.tertiary)
-				.padding(.horizontal, 18)
-				.padding(.top, 22)
-				.padding(.bottom, 14)
+			NavigationRailCaption(text: "Setup assistant")
+				.padding(.horizontal, LauncherVisuals.Spacing.panel)
+				.padding(.top, LauncherVisuals.Spacing.page)
+				.padding(.bottom, LauncherVisuals.Spacing.content)
 
 			VStack(spacing: LauncherVisuals.Spacing.compact) {
 				ForEach(OnboardingStep.allCases) { step in
-					HStack(spacing: LauncherVisuals.Spacing.control) {
-						RoundedRectangle(cornerRadius: 1)
-							.fill(currentStep == step ? accentColor : .clear)
-							.frame(width: 2, height: 18)
-							.accessibilityHidden(true)
-						Image(systemName: markerImage(for: step))
-							.frame(width: 17)
-							.symbolRenderingMode(.monochrome)
-							.accessibilityHidden(true)
-						Text(step.title)
-							.fontWeight(currentStep == step ? .semibold : .regular)
-						Spacer(minLength: 0)
-					}
-					.foregroundStyle(foregroundStyle(for: step))
-					.padding(.vertical, 8)
-					.padding(.trailing, 12)
-					.background(
-						backgroundFill(for: step),
-						in: .rect(cornerRadius: LauncherVisuals.Radius.row)
+					NavigationRailRow(
+						title: step.title,
+						systemImage: markerImage(for: step),
+						isSelected: currentStep == step,
+						accentColor: accentColor,
+						isHighlighted: step.rawValue < currentStep.rawValue
 					)
-					.frame(minHeight: 38)
-					.accessibilityElement(children: .combine)
-					.accessibilityLabel(step.title)
-					.accessibilityAddTraits(currentStep == step ? .isSelected : [])
 				}
 			}
-			.padding(.horizontal, 10)
+			.padding(.horizontal, LauncherVisuals.Spacing.control)
 
 			Spacer()
 
@@ -54,24 +35,14 @@ struct OnboardingProgressRail: View {
 				Rectangle()
 					.fill(accentColor)
 					.frame(width: 28, height: 2)
-				Text("Launcher v\(appVersion)")
-					.font(.caption.monospaced())
+				Text("Version \(appVersion)")
+					.font(.caption)
 					.foregroundStyle(.tertiary)
 			}
-			.padding(18)
+			.padding(LauncherVisuals.Spacing.panel)
 		}
-		.frame(width: 205)
-		.background(LauncherVisuals.navigationRailBackground)
-	}
-
-	private func foregroundStyle(for step: OnboardingStep) -> Color {
-		if step == currentStep { return accentColor }
-		if step.rawValue < currentStep.rawValue { return .primary }
-		return .secondary
-	}
-
-	private func backgroundFill(for step: OnboardingStep) -> Color {
-		step == currentStep ? LauncherVisuals.selectedNavigationFill(for: accentColor) : .clear
+		.frame(width: LauncherVisuals.Layout.railWidth)
+		.background(palette.navigationRailBackground)
 	}
 
 	private func markerImage(for step: OnboardingStep) -> String {

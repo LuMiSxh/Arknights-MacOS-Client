@@ -41,7 +41,6 @@ struct OnboardingRegionView: View {
 					detail:
 						"Turns on experimental features and unlocks more servers. Turning it off switches a Canary server back to Global.",
 					isOn: $preferences.canaryFeaturesEnabled,
-					accentColor: LauncherVisuals.warning
 				)
 				.disabled(lifecycle.activity != .idle)
 				if preferences.canaryFeaturesEnabled {
@@ -49,7 +48,6 @@ struct OnboardingRegionView: View {
 						title: "Allow Taiwan server",
 						detail: "Lets you pick the Taiwan server.",
 						isOn: $preferences.taiwanClientEnabled,
-						accentColor: LauncherVisuals.warning
 					)
 					.disabled(lifecycle.activity != .idle)
 				}
@@ -59,11 +57,11 @@ struct OnboardingRegionView: View {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
 						if isLoadingInstallationMetadata {
-							SkeletonValue(width: 160, height: 17, pulses: true)
-							SkeletonValue(width: 216, height: 15, pulses: true)
+							SkeletonValue(width: 160, height: 16, pulses: true)
+							SkeletonValue(width: 216, height: 16, pulses: true)
 						} else {
 							Text(installationTitle)
-								.bold()
+								.fontWeight(.medium)
 							Text(installationDetail)
 								.font(.callout)
 								.foregroundStyle(.secondary)

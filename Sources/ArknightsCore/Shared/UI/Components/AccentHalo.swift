@@ -36,7 +36,7 @@ private struct AccentHalo<S: Shape>: View {
 	@Environment(\.decorativeMotionEnabled) private var decorativeMotionEnabled
 	@State private var pulseCount = 0
 
-	private var cycle: TimeInterval { LauncherMotion.Cycle.breathing }
+	private var cycle: TimeInterval { LauncherMotion.Cycle.pulse }
 
 	var body: some View {
 		shape
@@ -45,8 +45,8 @@ private struct AccentHalo<S: Shape>: View {
 				content, intensity in
 				content
 					.scaleEffect(0.94 + 0.08 * intensity)
-					.blur(radius: 12 + 8 * intensity)
-					.opacity(0.18 + 0.22 * intensity)
+					.blur(radius: 4.8 + 3.2 * intensity)
+					.opacity(0.1125 + 0.1375 * intensity)
 			} keyframes: { _ in
 				CubicKeyframe(1, duration: cycle / 2)
 				CubicKeyframe(Self.restingIntensity, duration: cycle / 2)

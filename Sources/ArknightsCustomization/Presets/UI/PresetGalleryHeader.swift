@@ -12,9 +12,9 @@ struct PresetGalleryHeader: View {
 
 	var body: some View {
 		HStack {
-			VStack(alignment: .leading, spacing: 3) {
+			VStack(alignment: .leading, spacing: 4) {
 				Text(destination.title)
-					.font(.title3.bold())
+					.font(.title3.weight(.medium))
 				Text(destination.subtitle)
 					.font(.caption)
 					.foregroundStyle(.secondary)
@@ -33,8 +33,7 @@ struct PresetGalleryHeader: View {
 					OperatorIconStylePreview(
 						catalog: catalog,
 						avatar: avatars.first,
-						accentHue: customization.dynamicThemeHue,
-						accentColor: customization.accentColor
+						accentHue: customization.dynamicThemeHue
 					)
 				}
 			}

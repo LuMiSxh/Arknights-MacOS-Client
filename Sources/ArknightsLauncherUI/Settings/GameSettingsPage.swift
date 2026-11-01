@@ -19,19 +19,16 @@ struct GameSettingsPage: View {
 			GameDisplaySettingsPanel(
 				settings: settings,
 				isLocked: isDisplayLocked,
-				accentColor: accentColor,
 				metalFXSpatialUpscalingSupported: gameSession.metalFXSpatialUpscalingSupported
 			)
 			GamePerformanceSettingsPanel(
 				settings: settings,
 				isLocked: gameSession.isGameActive,
 				isFrameRateLocked: isDisplayLocked,
-				accentColor: accentColor
 			)
 			GameCompatibilitySettingsPanel(
 				settings: settings,
 				isLocked: gameSession.isGameActive,
-				accentColor: accentColor
 			)
 		}
 	}

@@ -18,8 +18,8 @@ struct OnboardingWelcomeView: View {
 			title: requiredSchema == nil
 				? "Welcome to Arknights Client" : "Something important changed",
 			subtitle: requiredSchema == nil
-				? "Setup checks your Mac, then sets your server, display and launcher options. Changes apply immediately."
-				: "This version of the launcher needs you to go through setup once more. Your current settings are kept as the starting point.",
+				? "Setup checks your Mac, then sets your server, display and launcher options. Changes apply immediately"
+				: "This version of the launcher needs you to go through setup once more. Your current settings are kept as the starting point",
 			accentColor: accentColor
 		) {
 			if let requiredSchema {
@@ -46,11 +46,11 @@ struct OnboardingWelcomeView: View {
 						"This launcher is up to date. Setup can continue.",
 						systemImage: "checkmark.circle.fill"
 					)
-					.foregroundStyle(accentColor)
+					.foregroundStyle(LauncherVisuals.success)
 				case .updateRequired(let version):
 					VStack(alignment: .leading, spacing: 8) {
 						Text("Version \(version) is available.")
-							.bold()
+							.fontWeight(.medium)
 						Text(
 							"Install the newer launcher and open it again. Setup waits so its instructions match the version you use."
 						)
@@ -58,7 +58,7 @@ struct OnboardingWelcomeView: View {
 						.fixedSize(horizontal: false, vertical: true)
 					}
 				case .checkFailed:
-					VStack(alignment: .leading, spacing: 10) {
+					VStack(alignment: .leading, spacing: 8) {
 						Text(
 							"The launcher could not look for updates. You can continue now; it will try again later."
 						)
@@ -93,7 +93,7 @@ struct OnboardingWelcomeView: View {
 							"Your Mac can run the game.",
 							systemImage: "checkmark.circle.fill"
 						)
-						.foregroundStyle(accentColor)
+						.foregroundStyle(LauncherVisuals.success)
 					case .rosettaMissing:
 						OnboardingRosettaRecoveryView(
 							installationState: rosettaInstallationState,
@@ -102,7 +102,7 @@ struct OnboardingWelcomeView: View {
 							checkAgain: retryIntelTranslation
 						)
 					case .gameTestModeEnabled:
-						VStack(alignment: .leading, spacing: 10) {
+						VStack(alignment: .leading, spacing: 8) {
 							Text(
 								"On macOS 27 beta, Legacy Game Test Mode stops the game from running. Turn the test mode off, then restart your Mac:"
 							)
@@ -119,7 +119,7 @@ struct OnboardingWelcomeView: View {
 							)
 						}
 					case .unavailable:
-						VStack(alignment: .leading, spacing: 10) {
+						VStack(alignment: .leading, spacing: 8) {
 							Text(
 								"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
 							)

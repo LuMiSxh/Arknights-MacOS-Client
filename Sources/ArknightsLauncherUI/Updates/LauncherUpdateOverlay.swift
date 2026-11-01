@@ -59,8 +59,6 @@ struct LauncherUpdateOverlay: View {
 			hudTintColor: hudTintColor,
 			checkForUpdates: checkForUpdates
 		)
-		.blur(radius: isVisible ? 0 : initialDialogBlur)
-		.offset(y: isVisible ? 0 : initialDialogOffset)
 		.scaleEffect(isVisible ? 1 : initialDialogScale)
 		.opacity(isVisible ? 1 : 0)
 		.animation(dialogAnimation, value: isVisible)
@@ -75,16 +73,6 @@ struct LauncherUpdateOverlay: View {
 	private var initialDialogScale: CGFloat {
 		if case .animated(let scale) = motion { return scale }
 		return 1
-	}
-
-	private var initialDialogBlur: CGFloat {
-		if case .animated = motion { return 10 }
-		return 0
-	}
-
-	private var initialDialogOffset: CGFloat {
-		if case .animated = motion { return 18 }
-		return 0
 	}
 
 	private var backgroundAnimation: Animation? {

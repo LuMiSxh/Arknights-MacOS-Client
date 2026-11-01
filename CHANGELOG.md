@@ -27,7 +27,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Renamed **Settings → Audio** to **Settings → Integration**. It holds launcher music and Discord presence.
-- Setup asks about Discord presence. The setup step is now **Updates & Integrations**.
+- Setup asks about Discord presence. The setup step is now **Updates & integrations**.
+- Refined the launcher look. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
+- Secondary buttons and links in Settings, setup, and the update window now use quiet neutral colors. The theme color marks only the main action, progress, and selection.
+- **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
+- Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.
+- The theme color taken from the artwork is calmer and equally bright for every hue. Yellow no longer glares, and dark artwork no longer gives a muddy color.
+
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Onboarding answer cards use quieter hover and press effects.

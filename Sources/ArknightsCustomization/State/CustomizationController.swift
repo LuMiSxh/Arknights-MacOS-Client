@@ -38,7 +38,7 @@ package final class CustomizationController {
 	// hidden until it has real wallpaper/logo to show instead of a placeholder.
 	package var dynamicThemeHue: Double?
 	package var accentColor: Color = LauncherVisuals.cyan
-	package var hudTintColor: Color = LauncherVisuals.hudGlassTint
+	package let hudTintColor: Color = LauncherPalette.fallback.hudGlassTint
 	package private(set) var activeThemeCacheKey: String?
 	// Increments only when the persisted custom artwork changes. Branding refreshes use this
 	// generation to reject an official image that was already in flight when the user chose a

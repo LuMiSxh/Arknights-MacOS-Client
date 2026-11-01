@@ -8,11 +8,10 @@ struct OnboardingToggleRow: View {
 	let title: String
 	let detail: String
 	@Binding var isOn: Bool
-	let accentColor: Color
 
 	var body: some View {
 		SettingsActionRow(title: title, detail: detail) {
-			SettingsToggle(title, isOn: $isOn, accentColor: accentColor)
+			SettingsToggle(title, isOn: $isOn)
 		}
 	}
 }

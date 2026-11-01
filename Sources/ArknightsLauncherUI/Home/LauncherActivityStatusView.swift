@@ -14,7 +14,7 @@ struct LauncherActivityStatusView: View {
 	var body: some View {
 		Group {
 			if let completionFeedback, showsCompletionFeedback {
-				HStack(spacing: 6) {
+				HStack(spacing: 8) {
 					LauncherCompletionFeedbackView(feedbackID: completionFeedback.id)
 					Text("Installation complete")
 				}
@@ -107,7 +107,7 @@ private struct PlainStatusText: View {
 	let title: String
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 2) {
+		VStack(alignment: .leading, spacing: 4) {
 			Text(title)
 				.font(LauncherVisuals.Typography.statusTitle)
 				.contentTransition(.opacity)
@@ -126,12 +126,12 @@ private struct DownloadStatusLabel: View {
 		if showsDownloadSnapshot {
 			VStack(alignment: .leading, spacing: 4) {
 				ViewThatFits(in: .horizontal) {
-					HStack(alignment: .firstTextBaseline, spacing: 10) {
+					HStack(alignment: .firstTextBaseline, spacing: 12) {
 						percentageLabel
 						downloadProgressDetail
 						transferDetails
 					}
-					VStack(alignment: .leading, spacing: 3) {
+					VStack(alignment: .leading, spacing: 4) {
 						percentageLabel
 						HStack(alignment: .firstTextBaseline, spacing: 8) {
 							downloadProgressDetail

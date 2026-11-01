@@ -142,6 +142,7 @@ enum AdaptiveGlassBorderOwner: Equatable {
 }
 
 private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
+	@Environment(\.launcherPalette) private var palette
 	let tint: Color?
 	let borderTint: Color?
 	let shape: ShapeType
@@ -272,7 +273,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		let green = Double(resolved.green)
 		let blue = Double(resolved.blue)
 		let chroma = max(red, green, blue) - min(red, green, blue)
-		guard chroma > 0.08 else { return LauncherVisuals.quietControlTint }
+		guard chroma > 0.08 else { return palette.quietControlTint }
 		return Color(.sRGB, red: red, green: green, blue: blue)
 	}
 

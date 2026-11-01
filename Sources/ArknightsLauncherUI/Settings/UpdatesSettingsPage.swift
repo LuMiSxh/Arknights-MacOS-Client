@@ -22,7 +22,7 @@ struct UpdatesSettingsPage: View {
 			accentColor: accentColor
 		) {
 			SettingsPanel(
-				title: "Automatic Checks",
+				title: "Automatic checks",
 				systemImage: "arrow.trianglehead.2.clockwise"
 			) {
 				UpdateSettingsRow(
@@ -31,7 +31,6 @@ struct UpdatesSettingsPage: View {
 					isEnabled: $settings.automaticallyChecksLauncherUpdates,
 					isChecking: communication.isCheckingLauncherUpdates,
 					isDisabled: !communication.canOpenLauncherUpdate,
-					accentColor: accentColor,
 					check: checkLauncherUpdates
 				)
 				SettingsHairline()
@@ -42,7 +41,6 @@ struct UpdatesSettingsPage: View {
 					isChecking: lifecycle.state.refresh.isChecking,
 					isDisabled: lifecycle.state.refresh.isChecking
 						|| !lifecycle.canBeginExclusiveActivity,
-					accentColor: accentColor,
 					check: actions.checkGameUpdates
 				)
 			}
@@ -57,7 +55,6 @@ struct UpdatesSettingsPage: View {
 					SettingsToggle(
 						Self.announcementsTitle,
 						isOn: $settings.announcementsEnabled,
-						accentColor: accentColor
 					)
 					.disabled(lifecycle.activity == .maintaining(.migratingStorage))
 				}
@@ -72,11 +69,13 @@ struct UpdatesSettingsPage: View {
 		if communication.launcherUpdateVersion != nil {
 			return "Update available"
 		}
-		return "v\(appVersion)"
+		return "Version \(appVersion)"
 	}
 
 	private var versionText: String {
-		installation.installedVersion ?? installation.configuration?.gameLatestVersion ?? "—"
+		(installation.installedVersion ?? installation.configuration?.gameLatestVersion).map {
+			"Version \($0)"
+		} ?? "—"
 	}
 
 	private var gameStatusText: String {

@@ -5,7 +5,6 @@ import SwiftUI
 
 struct WallpaperCategoryFilter: View {
 	@Binding var selection: WallpaperCategory?
-	package let accentColor: Color
 	// Wallpaper counts for each category (and, under the `nil` key, the total across every
 	// category) among whatever's currently in play — the active search text and tag pills —
 	// so a count reflects what picking that option would actually show, not the whole catalog.
@@ -19,7 +18,6 @@ struct WallpaperCategoryFilter: View {
 		GlassMenuPicker(
 			selection: $selection,
 			options: options,
-			accentColor: accentColor,
 			listTitle: { category in
 
 				"\(title(for: category)) (\(counts[category] ?? 0))"

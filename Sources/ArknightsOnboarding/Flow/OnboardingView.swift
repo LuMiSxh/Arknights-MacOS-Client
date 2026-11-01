@@ -6,6 +6,7 @@ import ArknightsGameInstallation
 import SwiftUI
 
 package struct OnboardingView: View {
+	@Environment(\.launcherPalette) private var palette
 	let preferences: LauncherPreferencesController
 	let customization: CustomizationController
 	let installation: InstallationController
@@ -52,7 +53,7 @@ package struct OnboardingView: View {
 			)
 
 			Divider()
-				.overlay(LauncherVisuals.hairline)
+				.overlay(palette.hairline)
 
 			ZStack(alignment: .bottom) {
 				ScrollView {
@@ -111,12 +112,12 @@ package struct OnboardingView: View {
 					.transition(
 						reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity)
 					)
-					.padding(.horizontal, 26)
-					.padding(.top, 26)
+					.padding(.horizontal, LauncherVisuals.Spacing.page)
+					.padding(.top, LauncherVisuals.Spacing.page)
 					.padding(.bottom, 96)
 				}
-				.contentMargins(.top, 14, for: .scrollIndicators)
-				.contentMargins(.bottom, 22, for: .scrollIndicators)
+				.contentMargins(.top, LauncherVisuals.Spacing.page, for: .scrollIndicators)
+				.contentMargins(.bottom, LauncherVisuals.Spacing.page, for: .scrollIndicators)
 				.scrollIndicators(.automatic)
 				.scrollPosition($scrollPosition)
 				.onChange(of: coordinator.step) {
@@ -172,19 +173,19 @@ package struct OnboardingView: View {
 					.disabled(!canPerformPrimaryAction)
 					.keyboardShortcut(.defaultAction)
 				}
-				.padding(.horizontal, 24)
-				.padding(.bottom, 18)
+				.padding(.horizontal, LauncherVisuals.Spacing.page)
+				.padding(.bottom, LauncherVisuals.Spacing.panel)
 			}
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background {
 			ZStack {
-				LauncherVisuals.modalBackground
+				palette.modalBackground
 				customization.hudTintColor
 			}
 			.ignoresSafeArea(.container, edges: .top)
 		}
-		.tint(customization.accentColor)
+		.tint(palette.controlOn)
 		.preferredColorScheme(.dark)
 		.animation(
 			LauncherMotion.animation(.page, reduceMotion: reduceMotion),

@@ -22,6 +22,7 @@ struct OnboardingAnswer<Value: Hashable>: Identifiable {
 // launcher by answering instead of reading individual settings. A question picks one answer,
 // several answers, or offers action cards that open a chooser.
 struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
+	@Environment(\.launcherPalette) private var palette
 	private enum Interaction {
 		case single(Binding<Value?>)
 		case multiple(Binding<Set<Value>>)
@@ -116,7 +117,8 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 
 	private func answerButton(_ answer: OnboardingAnswer<Value>) -> some View {
 		let isSelected = isSelected(answer)
-		let shape = RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row, style: .continuous)
+		let shape = RoundedRectangle(
+			cornerRadius: LauncherVisuals.Radius.control, style: .continuous)
 		return Button {
 			// Answers can reveal follow-up panels or change the summary, so move those too.
 			withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
@@ -130,18 +132,18 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 					.foregroundStyle(isSelected ? accentColor : .secondary)
 					.frame(width: 28)
 					.accessibilityHidden(true)
-				VStack(alignment: .leading, spacing: 3) {
-					HStack(spacing: LauncherVisuals.Spacing.tight) {
+				VStack(alignment: .leading, spacing: 4) {
+					HStack(spacing: LauncherVisuals.Spacing.control) {
 						Text(answer.title)
-							.font(.body.weight(.semibold))
+							.font(.body.weight(.medium))
 							.foregroundStyle(.primary)
 						if answer.isRecommended {
 							Text("Recommended")
-								.font(.caption2.weight(.semibold))
+								.font(.caption2.weight(.medium))
 								.foregroundStyle(.secondary)
-								.padding(.horizontal, LauncherVisuals.Spacing.tight)
-								.padding(.vertical, 1)
-								.overlay(Capsule().stroke(LauncherVisuals.hairline))
+								.padding(.horizontal, LauncherVisuals.Spacing.control)
+								.padding(.vertical, 2)
+								.overlay(Capsule().stroke(palette.hairline))
 						}
 					}
 					if !answer.detail.isEmpty {
@@ -244,7 +246,7 @@ private struct OnboardingAnswerBody<S: InsettableShape>: View {
 		var opacity =
 			isSelected
 			? control.enabledChromaticSurfaceOpacity : control.enabledNeutralSurfaceOpacity
-		if isHovered { opacity += control.hudHoverSurfaceOpacity }
+		if isHovered { opacity += control.controlHoverSurfaceOpacity }
 		return (isSelected ? accentColor : Color.white).opacity(opacity)
 	}
 

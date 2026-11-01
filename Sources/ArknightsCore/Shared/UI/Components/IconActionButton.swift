@@ -16,6 +16,7 @@ package struct IconActionButton: View {
 	let hitTargetSize: CGFloat
 	let action: () -> Void
 	@Environment(\.colorSchemeContrast) private var contrast
+	@Environment(\.launcherPalette) private var palette
 
 	package init(
 		title: String,
@@ -54,20 +55,21 @@ package struct IconActionButton: View {
 							),
 							20
 						),
-						weight: .semibold
+						weight: .medium
 					)
 				)
 				.frame(width: size, height: size)
 				.contentShape(Circle())
 				.adaptiveControlSurface(
 					tint: surfaceTint
-						?? (surface == .hud ? LauncherVisuals.hudGlassTint : tone.surfaceColor),
+						?? (surface == .hud
+							? palette.hudGlassTint : tone.surfaceColor(in: palette)),
 					presentation: surface,
 					isInteractive: true,
 					in: Circle()
 				)
 				.adaptiveControlForeground(
-					foreground ?? tone.foregroundColor(for: contrast),
+					foreground ?? tone.foregroundColor(for: contrast, in: palette),
 					disabledTint: tone.disabledColor(for: contrast)
 				)
 				.accessibilityHidden(true)

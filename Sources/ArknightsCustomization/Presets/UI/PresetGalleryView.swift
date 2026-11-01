@@ -9,6 +9,7 @@ package struct PresetGalleryView: View {
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherPalette) private var palette
 	@State private var searchText = ""
 	@State private var committedTags: [String] = []
 	@State private var selectedCategory: WallpaperCategory?
@@ -45,11 +46,10 @@ package struct PresetGalleryView: View {
 					avatars: avatars,
 					showsIconStylePreview: $showsIconStylePreview
 				)
-				Divider().overlay(Color.white.opacity(0.08))
-				HStack(spacing: 10) {
+				Divider().overlay(palette.hairline)
+				HStack(spacing: 8) {
 					PresetGallerySearchBar(
 						destination: destination,
-						accentColor: customization.accentColor,
 						searchText: $searchText,
 						committedTags: $committedTags
 					)
@@ -57,7 +57,6 @@ package struct PresetGalleryView: View {
 					if destination == .artwork {
 						WallpaperCategoryFilter(
 							selection: $selectedCategory,
-							accentColor: customization.accentColor,
 							counts: searchResults.wallpaperCategoryCounts,
 							operatorCounts: searchResults.operatorCounts,
 							onSelectOperator: { tag in
@@ -67,7 +66,7 @@ package struct PresetGalleryView: View {
 					}
 				}
 				.padding(.horizontal, 24)
-				.padding(.vertical, 14)
+				.padding(.vertical, 16)
 				PresetGallerySuggestions(
 					destination: destination,
 					accentColor: customization.accentColor,
@@ -126,12 +125,12 @@ package struct PresetGalleryView: View {
 				}
 			}
 			.padding(.trailing, 24)
-			.padding(.bottom, 18)
+			.padding(.bottom, 16)
 		}
-		.frame(width: 760, height: 570)
+		.frame(width: 760, height: 572)
 		.background(
 			ZStack {
-				LauncherVisuals.modalBackground
+				palette.modalBackground
 				customization.hudTintColor
 			}
 		)

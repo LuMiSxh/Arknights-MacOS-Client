@@ -52,13 +52,13 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	/// - Parameter toggleNoun: Completes the "Show …" and "Hide …" accessibility label and help.
 	package init(
 		systemImage: String,
-		iconFont: Font = .caption.weight(.semibold),
+		iconFont: Font = .caption.weight(.medium),
 		toggleNoun: String,
 		accessibilityValue: String,
 		accentColor: Color,
 		hudTintColor: Color,
 		canExpand: Bool = true,
-		expandedSpacing: CGFloat = 10,
+		expandedSpacing: CGFloat = 8,
 		sizing: HUDPillSizing,
 		isExpanded: Binding<Bool>,
 		@ViewBuilder title: () -> Title,
@@ -88,7 +88,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 					HUDPillMotion.expandedContentTransition(reduceMotion: reduceMotion))
 			}
 		}
-		.padding(.vertical, expanded ? 11 : 0)
+		.padding(.vertical, expanded ? 12 : 0)
 		.frame(width: expanded ? sizing.expandedWidth : nil)
 		.frame(
 			minHeight: expanded ? sizing.expandedMinHeight : sizing.collapsedHeight,
@@ -125,7 +125,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	}
 
 	private var headerLabel: some View {
-		HStack(spacing: 5) {
+		HStack(spacing: 4) {
 			Image(systemName: systemImage)
 				.font(iconFont)
 				.adaptiveControlForeground(accentColor)
@@ -134,7 +134,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 			Spacer(minLength: canExpand ? 6 : 0)
 			if canExpand {
 				Image(systemName: expanded ? "chevron.up" : "chevron.down")
-					.font(.caption.bold())
+					.font(.caption.weight(.medium))
 					.adaptiveControlForeground(accentColor)
 					.contentTransition(HUDPillMotion.chevronTransition(reduceMotion: reduceMotion))
 					.accessibilityHidden(true)

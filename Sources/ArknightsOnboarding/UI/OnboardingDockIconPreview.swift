@@ -30,7 +30,7 @@ struct OnboardingDockIconPreview: View {
 	}
 
 	private func iconTile(_ image: Image, title: String) -> some View {
-		VStack(spacing: LauncherVisuals.Spacing.tight) {
+		VStack(spacing: LauncherVisuals.Spacing.control) {
 			image
 				.resizable()
 				.scaledToFit()

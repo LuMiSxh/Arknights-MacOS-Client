@@ -13,7 +13,6 @@ extension CustomizationController {
 		guard usesDynamicTheme(), let heroArtwork else {
 			dynamicThemeHue = nil
 			accentColor = LauncherVisuals.cyan
-			hudTintColor = LauncherVisuals.hudGlassTint
 			updateDynamicAppIcon(hue: nil)
 			_ = startOperatorPresetIconRefresh(hue: nil)
 			return
@@ -91,7 +90,6 @@ extension CustomizationController {
 	private func applyThemeAccent(_ extracted: ExtractedAccent?) {
 		dynamicThemeHue = extracted?.hue
 		accentColor = extracted?.accentColor ?? LauncherVisuals.cyan
-		hudTintColor = extracted?.backgroundTint ?? LauncherVisuals.hudGlassTint
 	}
 
 	private func applyDynamicLauncherIcon(_ image: NSImage, persistToBundle: Bool) {

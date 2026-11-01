@@ -30,11 +30,11 @@ package enum LauncherMotion {
 		package var animation: Animation {
 			switch self {
 			case .press: .spring(duration: 0.20, bounce: 0)
-			case .release: .spring(duration: 0.46, bounce: 0.42)
-			case .hover: .spring(duration: 0.32, bounce: 0.22)
-			case .state: .spring(duration: 0.38, bounce: 0.16)
-			case .morph: .spring(duration: 0.52, bounce: 0.30)
-			case .present: .spring(duration: 0.50, bounce: 0.24)
+			case .release: .spring(duration: 0.46, bounce: 0.12)
+			case .hover: .spring(duration: 0.24, bounce: 0)
+			case .state: .spring(duration: 0.38, bounce: 0.12)
+			case .morph: .spring(duration: 0.52, bounce: 0.12)
+			case .present: .spring(duration: 0.50, bounce: 0.10)
 			case .dismiss: .spring(duration: 0.24, bounce: 0)
 			case .crossfade: .easeInOut(duration: 0.48)
 			case .select: .easeInOut(duration: 0.16)
@@ -50,7 +50,7 @@ package enum LauncherMotion {
 
 	package enum Cycle {
 		/// Period in seconds of the halo pulse and the indeterminate pulse.
-		static let breathing: TimeInterval = 3.2
+		static let pulse: TimeInterval = 3.2
 		package static let completionFeedback: Duration = .milliseconds(400)
 		/// Progress sweep phase durations in seconds: fade in, travel, fade out, then pause.
 		static let progressSweepFadeIn = 0.12
@@ -64,11 +64,9 @@ package enum LauncherMotion {
 	static let staggerStep = 0.045
 	static let expandedContentDelay: TimeInterval = 0.06
 	static let modalEntranceDelay: TimeInterval = 0.08
-	package static let overlayEntranceScale: CGFloat = 0.90
+	package static let overlayEntranceScale: CGFloat = 0.96
 	package static let pressedScale: CGFloat = 0.95
-	package static let hoverScale: CGFloat = 1.025
 	package static let subtlePressedScale: CGFloat = 0.97
-	static let subtleHoverScale: CGFloat = 1.01
 	package static func animation(_ curve: Curve, reduceMotion: Bool) -> Animation? {
 		reduceMotion ? nil : curve.animation
 	}

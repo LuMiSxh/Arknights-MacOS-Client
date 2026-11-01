@@ -187,6 +187,10 @@ package struct ContentView: View {
 			.overlay { initialArtworkCover }
 			// Keep this last so every sheet and overlay inherits the visibility gate.
 			.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
+			.environment(
+				\.launcherPalette,
+				LauncherPalette(accent: model.customization.accentColor)
+			)
 	}
 
 	// Split out of `body`: the full modifier chain exceeds the type checker's budget.
@@ -293,7 +297,7 @@ package struct ContentView: View {
 			if model.settings.showsBranding {
 				ArknightsWordmark(
 					logo: model.customization.officialLogo, region: model.installation.region
-				).padding(.top, 34)
+				).padding(.top, 32)
 			}
 			Spacer()
 			IconActionButton(
@@ -312,7 +316,7 @@ package struct ContentView: View {
 			.accessibilityHint(Text("Open launcher settings"))
 			.help("Open launcher settings")
 		}
-		.padding(.top, 8).padding(.horizontal, 14).ignoresSafeArea(.container, edges: .top)
+		.padding(.top, 8).padding(.horizontal, 16).ignoresSafeArea(.container, edges: .top)
 	}
 
 	/// Closes every sheet and dialog so AppKit accepts the quit, without advancing popup queues.

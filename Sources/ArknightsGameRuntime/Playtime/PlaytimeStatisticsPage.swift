@@ -5,6 +5,7 @@ import ArknightsGameInstallation
 import SwiftUI
 
 package struct PlaytimeStatisticsPage: View {
+	@Environment(\.launcherPalette) private var palette
 	let controller: PlaytimeStatisticsController
 	let regions: [GameRegion]
 	package let accentColor: Color
@@ -123,7 +124,7 @@ package struct PlaytimeStatisticsPage: View {
 
 	private var metricDivider: some View {
 		Rectangle()
-			.fill(LauncherVisuals.hairline)
+			.fill(palette.hairline)
 			.frame(width: 1, height: 42)
 			.padding(.horizontal, 18)
 	}

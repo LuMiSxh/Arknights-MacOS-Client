@@ -8,30 +8,29 @@ package enum CapsuleActionTone {
 	case warning
 	case danger
 
-	var color: Color {
+	func color(in palette: LauncherPalette) -> Color {
 		switch self {
 		case .accent(let color): color
-		case .neutral: LauncherVisuals.controlTint
+		case .neutral: palette.controlTint
 		case .warning: LauncherVisuals.warning
 		case .danger: LauncherVisuals.dangerForeground
 		}
 	}
 
-	var surfaceColor: Color {
+	func surfaceColor(in palette: LauncherPalette) -> Color {
 		switch self {
 		case .accent(let color): color
-		case .neutral: LauncherVisuals.controlTint
+		case .neutral: palette.controlTint
 		case .warning: LauncherVisuals.warning
 		case .danger: LauncherVisuals.danger
 		}
 	}
 
-	func foregroundColor(for contrast: ColorSchemeContrast) -> Color {
-		let color = color
+	func foregroundColor(for contrast: ColorSchemeContrast, in palette: LauncherPalette) -> Color {
 		if case .danger = self, contrast == .increased {
 			return LauncherVisuals.dangerForegroundHighContrast
 		}
-		return color
+		return color(in: palette)
 	}
 
 	func disabledColor(for contrast: ColorSchemeContrast) -> Color {
@@ -96,7 +95,7 @@ package struct CapsuleActionButton: View {
 
 	package var body: some View {
 		Button(role: role, action: action) {
-			HStack(spacing: 6) {
+			HStack(spacing: 8) {
 				if let systemImage {
 					Image(systemName: systemImage)
 						.contentTransition(labelContentTransition)
@@ -110,7 +109,7 @@ package struct CapsuleActionButton: View {
 				}
 			}
 			.accessibilityLabel(title)
-			.fontWeight(.semibold)
+			.fontWeight(.medium)
 			.modifier(
 				CapsuleActionLabelModifier(
 					foreground: foregroundTint,
@@ -128,7 +127,7 @@ package struct CapsuleActionButton: View {
 	private var labelContentTransition: ContentTransition {
 		guard labelMotion == .primary else { return .identity }
 		guard !reduceMotion else { return .opacity }
-		return .symbolEffect(ReplaceSymbolEffect.replace.magic(fallback: .replace.downUp))
+		return .symbolEffect(ReplaceSymbolEffect.replace)
 	}
 
 	private var labelAnimation: Animation? {
@@ -136,16 +135,19 @@ package struct CapsuleActionButton: View {
 		return LauncherMotion.animation(.morph, reduceMotion: reduceMotion)
 	}
 
+	@Environment(\.launcherPalette) private var palette
+
 	private var titleContentTransition: ContentTransition {
 		labelMotion == .primary ? .opacity : .identity
 	}
 
 	private var foregroundTint: Color {
-		isEnabled ? tone.foregroundColor(for: contrast) : tone.disabledColor(for: contrast)
+		isEnabled
+			? tone.foregroundColor(for: contrast, in: palette) : tone.disabledColor(for: contrast)
 	}
 
 	private var surfaceTint: Color {
-		tone.surfaceColor
+		tone.surfaceColor(in: palette)
 	}
 }
 
@@ -165,7 +167,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 			compactSurface(content)
 		case .hud:
 			content
-				.font(.caption.weight(.semibold))
+				.font(.caption.weight(.medium))
 				.adaptiveControlForeground(foreground, disabledTint: disabledForeground)
 				.padding(.horizontal, LauncherVisuals.Control.hudHorizontalPadding)
 				.padding(.vertical, LauncherVisuals.Control.hudVerticalPadding)
@@ -184,12 +186,11 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 				foreground: foreground,
 				in: Capsule()
 			)
-			.pointerSheen(tint: foreground, in: Capsule())
 	}
 
 	private func compactSurface(_ content: Content) -> some View {
 		content
-			.font(.caption.weight(.semibold))
+			.font(.caption.weight(.medium))
 			.adaptiveControlForeground(foreground, disabledTint: disabledForeground)
 			.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
 			.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding)
@@ -199,8 +200,8 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 
 	private var standardHorizontalPadding: CGFloat {
 		switch controlSize {
-		case .mini: 7
-		case .small: 9
+		case .mini: 8
+		case .small: 8
 		case .large, .extraLarge: 16
 		default: LauncherVisuals.Control.standardHorizontalPadding
 		}
@@ -208,7 +209,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 
 	private var standardVerticalPadding: CGFloat {
 		switch controlSize {
-		case .mini: 3
+		case .mini: 4
 		case .small: 4
 		case .large, .extraLarge: 8
 		default: LauncherVisuals.Control.standardVerticalPadding

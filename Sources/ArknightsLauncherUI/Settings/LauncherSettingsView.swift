@@ -13,6 +13,7 @@ import SwiftUI
 #endif
 
 struct LauncherSettingsView: View {
+	@Environment(\.launcherPalette) private var palette
 	package let settings: LauncherPreferencesController
 	let customization: CustomizationController
 	package let communication: LauncherCommunicationController
@@ -56,7 +57,7 @@ struct LauncherSettingsView: View {
 				installation: installation
 			)
 			Divider()
-				.overlay(LauncherVisuals.hairline)
+				.overlay(palette.hairline)
 
 			ZStack(alignment: .bottomTrailing) {
 				Group {
@@ -176,18 +177,18 @@ struct LauncherSettingsView: View {
 						}
 					}
 				}
-				.padding(.trailing, 26)
+				.padding(.trailing, 24)
 				.padding(.top, LauncherVisuals.Spacing.control)
-				.padding(.bottom, 18)
+				.padding(.bottom, 16)
 				.background {
 					FloatingActionFooterFade(height: 94)
 				}
 			}
 		}
-		.tint(customization.accentColor)
+		.tint(palette.controlOn)
 		.background(
 			ZStack {
-				LauncherVisuals.modalBackground
+				palette.modalBackground
 				customization.hudTintColor
 			}
 		)
@@ -225,18 +226,8 @@ struct LauncherSettingsView: View {
 	}
 }
 
-private struct SettingsRailCaption: View {
-	let text: String
-
-	var body: some View {
-		Text(text)
-			.font(.caption.monospaced().weight(.semibold))
-			.tracking(1.4)
-			.foregroundStyle(.tertiary)
-	}
-}
-
 private struct SettingsNavigationRail: View {
+	@Environment(\.launcherPalette) private var palette
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
 	package let accentColor: Color
@@ -246,18 +237,19 @@ private struct SettingsNavigationRail: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			// Group captions title the rail, so it has no caption of its own.
-			VStack(spacing: 18) {
+			VStack(spacing: 16) {
 				ForEach(SettingsGroup.allCases, id: \.self) { group in
 					let sections = visibleSections.filter { $0.group == group }
 					if !sections.isEmpty {
 						VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 							if let caption = group.caption {
-								SettingsRailCaption(text: caption)
+								NavigationRailCaption(text: caption)
 									.padding(.horizontal, 8)
 							}
 							ForEach(sections) { section in
-								SettingsNavigationButton(
-									section: section,
+								NavigationRailRow(
+									title: section.title,
+									systemImage: section.systemImage,
 									isSelected: selection == section,
 									accentColor: accentColor
 								) {
@@ -268,17 +260,17 @@ private struct SettingsNavigationRail: View {
 					}
 				}
 			}
-			.padding(.horizontal, 10)
-			.padding(.top, 22)
+			.padding(.horizontal, 12)
+			.padding(.top, 24)
 
 			Spacer()
 
 			SettingsOperationStrip(lifecycle: lifecycle, installation: installation)
-				.padding(.horizontal, 18)
-				.padding(.bottom, 18)
+				.padding(.horizontal, 16)
+				.padding(.bottom, 16)
 		}
-		.frame(width: 164)
-		.background(LauncherVisuals.navigationRailBackground)
+		.frame(width: LauncherVisuals.Layout.railWidth)
+		.background(palette.navigationRailBackground)
 	}
 
 	private var visibleSections: [SettingsSection] {
@@ -287,53 +279,5 @@ private struct SettingsNavigationRail: View {
 		#else
 			SettingsSection.allCases
 		#endif
-	}
-}
-
-private struct SettingsNavigationButton: View {
-	let section: SettingsSection
-	let isSelected: Bool
-	package let accentColor: Color
-	let action: () -> Void
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@State private var isHovering = false
-
-	var body: some View {
-		Button(action: action) {
-			HStack(spacing: LauncherVisuals.Spacing.control) {
-				RoundedRectangle(cornerRadius: 1)
-					.fill(isSelected ? accentColor : .clear)
-					.frame(width: 2, height: 18)
-					.accessibilityHidden(true)
-				Image(systemName: section.systemImage)
-					.frame(width: 17)
-					.symbolRenderingMode(.monochrome)
-					.accessibilityHidden(true)
-				Text(section.title)
-					.fontWeight(isSelected ? .semibold : .regular)
-				Spacer(minLength: 0)
-			}
-			.foregroundStyle(isSelected ? accentColor : (isHovering ? .primary : .secondary))
-			.padding(.vertical, 8)
-			.padding(.trailing, 12)
-			.background(backgroundFill, in: .rect(cornerRadius: LauncherVisuals.Radius.row))
-			.contentShape(.rect)
-			.frame(minHeight: 38)
-			.animation(
-				LauncherMotion.animation(.hover, reduceMotion: reduceMotion), value: isHovering)
-		}
-		.buttonStyle(ActionPressStyle(intensity: .pressOnly))
-		.keyboardFocusIndicator(
-			in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
-		)
-		.onHover { isHovering = $0 }
-		.accessibilityLabel(section.title)
-		.accessibilityAddTraits(isSelected ? .isSelected : [])
-	}
-
-	private var backgroundFill: Color {
-		if isSelected { return LauncherVisuals.selectedNavigationFill(for: accentColor) }
-		if isHovering { return LauncherVisuals.navigationHoverFill }
-		return .clear
 	}
 }

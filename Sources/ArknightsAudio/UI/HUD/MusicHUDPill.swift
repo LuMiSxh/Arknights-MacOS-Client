@@ -39,7 +39,7 @@ package struct MusicHUDPill: View {
 		if let musicTitle {
 			ExpandableHUDPill(
 				systemImage: "music.note",
-				iconFont: .caption2.weight(.semibold),
+				iconFont: .caption2.weight(.medium),
 				toggleNoun: "music controls",
 				accessibilityValue: musicTitle,
 				accentColor: accentColor,
@@ -106,7 +106,6 @@ package struct MusicHUDPill: View {
 
 					MusicVolumeControl(
 						volume: $settings.launcherMusicVolume,
-						accentColor: accentColor,
 						isMuted: controller.isMuted,
 						isDisabled: controller.controlsAreUnavailable,
 						toggleMute: controller.toggleMute

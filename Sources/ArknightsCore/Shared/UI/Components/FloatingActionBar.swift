@@ -47,7 +47,7 @@ package struct FloatingActionBar<Content: View>: View {
 		HStack(spacing: spacing) {
 			content
 		}
-		.padding(10)
+		.padding(8)
 		.background {
 			GeometryReader { proxy in
 				Color.clear.preference(

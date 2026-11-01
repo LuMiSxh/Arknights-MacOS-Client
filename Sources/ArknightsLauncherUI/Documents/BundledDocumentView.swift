@@ -91,7 +91,7 @@ struct BundledDocumentView: View {
 			switch loadState {
 			case .loading:
 				ProgressView()
-					.controlSize(.large)
+					.controlSize(.regular)
 					.frame(maxWidth: .infinity, minHeight: 180)
 					.accessibilityLabel(Text("Loading document"))
 			case .loaded(let parsedDocument):
@@ -133,7 +133,7 @@ private struct DocumentLoadErrorView: View {
 	var body: some View {
 		ContentUnavailableView {
 			Label(
-				"This document is unavailable in the current build.",
+				"Document unavailable",
 				systemImage: "doc.badge.exclamationmark")
 		} description: {
 			Text("This document is unavailable in the current build.")
@@ -164,7 +164,7 @@ struct MarkdownDocument: View {
 	var body: some View {
 		Group {
 			if let document = initialDocument ?? loadedDocument {
-				LazyVStack(alignment: .leading, spacing: 10) {
+				LazyVStack(alignment: .leading, spacing: 12) {
 					ForEach(document.blocks.indices, id: \.self) { index in
 						MarkdownBlockView(
 							block: document.blocks[index],
@@ -175,7 +175,7 @@ struct MarkdownDocument: View {
 				}
 			} else {
 				ProgressView()
-					.controlSize(.small)
+					.controlSize(.regular)
 					.frame(maxWidth: .infinity, minHeight: 80)
 					.accessibilityLabel(Text("Loading document"))
 			}
@@ -205,28 +205,28 @@ private struct MarkdownBlockView: View {
 		case .heading(let level, let source):
 			Text(markdownInline(source))
 				.font(headingFont(level: level))
-				.padding(.top, level == 1 ? 0 : 10)
+				.padding(.top, level == 1 ? 0 : 12)
 				.accessibilityHeading(level == 1 ? .h1 : level == 2 ? .h2 : .h3)
 		case .paragraph(let source):
 			Text(markdownInline(source))
 				.font(.body)
-				.lineSpacing(3)
+				.lineSpacing(4)
 		case .bullet(let source):
-			HStack(alignment: .firstTextBaseline, spacing: 9) {
+			HStack(alignment: .firstTextBaseline, spacing: 8) {
 				Circle()
 					.fill(accentColor)
-					.frame(width: 5, height: 5)
+					.frame(width: 4, height: 4)
 				Text(markdownInline(source))
 			}
-			.padding(.leading, 6)
+			.padding(.leading, 8)
 		case .numbered(let number, let source):
-			HStack(alignment: .firstTextBaseline, spacing: 9) {
+			HStack(alignment: .firstTextBaseline, spacing: 8) {
 				Text("\(number).")
 					.foregroundStyle(accentColor)
 					.monospacedDigit()
 				Text(markdownInline(source))
 			}
-			.padding(.leading, 6)
+			.padding(.leading, 8)
 		case .table(let rows):
 			MarkdownTable(rows: rows, accentColor: accentColor, columnWidths: columnWidths)
 				.padding(.vertical, 4)
@@ -235,22 +235,24 @@ private struct MarkdownBlockView: View {
 				.font(.system(.callout, design: .monospaced))
 				.padding(12)
 				.frame(maxWidth: .infinity, alignment: .leading)
-				.background(.black.opacity(0.18), in: .rect(cornerRadius: 8))
+				.background(
+					.black.opacity(0.18), in: .rect(cornerRadius: LauncherVisuals.Radius.control))
 		case .divider:
-			Divider().padding(.vertical, 5)
+			Divider().padding(.vertical, 4)
 		}
 	}
 
 	private func headingFont(level: Int) -> Font {
 		switch level {
-		case 1: .title.bold()
-		case 2: .title2.bold()
+		case 1: .title.weight(.medium)
+		case 2: .title2.weight(.medium)
 		default: .headline
 		}
 	}
 }
 
 private struct MarkdownTable: View {
+	@Environment(\.launcherPalette) private var palette
 	let rows: [[String]]
 	package let accentColor: Color
 	let columnWidths: [CGFloat]
@@ -258,35 +260,52 @@ private struct MarkdownTable: View {
 	var body: some View {
 		ScrollView(.horizontal) {
 			VStack(alignment: .leading, spacing: 0) {
-				ForEach(rows.indices, id: \.self) { rowIndex in
-					let row = rows[rowIndex]
+				ForEach(Array(rows.enumerated()), id: \.offset) { entry in
 					HStack(alignment: .top, spacing: 0) {
-						ForEach(row.indices, id: \.self) { columnIndex in
-							Text(markdownInline(row[columnIndex]))
-								.font(rowIndex == 0 ? .callout.bold() : .callout)
-								.frame(
-									width: columnWidths[columnIndex],
-									alignment: .leading
-								)
-								.padding(10)
-								.background(
-									rowIndex == 0 ? accentColor.opacity(0.14) : .clear
-								)
-								.overlay(alignment: .trailing) { Divider() }
+						ForEach(entry.element.indices, id: \.self) { columnIndex in
+							MarkdownTableCell(
+								source: entry.element[columnIndex],
+								width: columnWidths[columnIndex],
+								isHeader: entry.offset == 0
+							)
 						}
 					}
-					.overlay(alignment: .bottom) { Divider() }
+					.overlay(alignment: .bottom) { SettingsHairline() }
 				}
 			}
 			.overlay {
-				RoundedRectangle(cornerRadius: 9)
-					.stroke(.secondary.opacity(0.28), lineWidth: 1)
+				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+					.stroke(palette.hairline, lineWidth: 1)
 			}
-			.clipShape(.rect(cornerRadius: 9))
+			.clipShape(.rect(cornerRadius: LauncherVisuals.Radius.control))
 		}
 		.scrollIndicators(.visible)
 	}
 
+}
+
+private struct MarkdownTableCell: View {
+	let source: String
+	let width: CGFloat
+	let isHeader: Bool
+
+	private var font: Font {
+		isHeader ? .callout.weight(.medium) : .callout
+	}
+
+	private var fill: Color {
+		guard isHeader else { return Color.clear }
+		return Color.white.opacity(LauncherVisuals.Control.enabledNeutralSurfaceOpacity)
+	}
+
+	var body: some View {
+		Text(markdownInline(source))
+			.font(font)
+			.frame(width: width, alignment: .leading)
+			.padding(8)
+			.background(fill)
+			.overlay(alignment: .trailing) { Divider() }
+	}
 }
 
 private func markdownInline(_ source: String) -> AttributedString {

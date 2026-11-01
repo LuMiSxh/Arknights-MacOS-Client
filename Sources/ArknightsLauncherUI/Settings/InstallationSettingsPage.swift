@@ -31,7 +31,6 @@ struct InstallationSettingsPage: View {
 						options: settings.regionAccess.selectableRegions.map {
 							($0, $0.displayName)
 						},
-						accentColor: accentColor,
 						isDisabled: lifecycle.activity != .idle
 					)
 				}
@@ -54,7 +53,7 @@ struct InstallationSettingsPage: View {
 					detail: installation.installDirectory.lastPathComponent
 				) {
 					CapsuleActionButton(
-						title: "Show", systemImage: "folder",
+						title: "Show in Finder", systemImage: "folder",
 						tone: .neutral, presentation: .compact,
 						action: installation.revealInstallDirectory
 					)
@@ -69,7 +68,6 @@ struct InstallationSettingsPage: View {
 					GlassActionMenu(
 						title: "Change…",
 						systemImage: "arrow.triangle.swap",
-						accentColor: accentColor,
 						isDisabled: !installation.canModifyGameFiles
 					) {
 						Button(
@@ -94,7 +92,7 @@ struct InstallationSettingsPage: View {
 					CapsuleActionButton(
 						title: "Repair…",
 						systemImage: "wrench.and.screwdriver",
-						tone: .accent(accentColor), presentation: .compact,
+						tone: .neutral, presentation: .compact,
 						action: actions.repairGame
 					)
 					.disabled(!installation.isInstalled || !installation.canInstall)
@@ -114,7 +112,7 @@ struct InstallationSettingsPage: View {
 					SettingsToggle(
 						Self.canaryFeaturesTitle,
 						isOn: $settings.canaryFeaturesEnabled,
-						accentColor: LauncherVisuals.warning
+						tint: LauncherVisuals.warning
 					)
 					.disabled(lifecycle.activity != .idle)
 				}

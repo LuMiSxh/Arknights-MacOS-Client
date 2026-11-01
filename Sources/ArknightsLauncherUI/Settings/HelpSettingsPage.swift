@@ -25,7 +25,7 @@ struct HelpSettingsPage: View {
 		) {
 			SettingsPanel(title: "Report", systemImage: "ladybug") {
 				SettingsActionRow(
-					title: "Problems on This Mac",
+					title: "Problems on this Mac",
 					detail:
 						"Report problems with the launcher, the game start, graphics, sound, or the sign-in window. The report adds your launcher version, Mac chip, memory, and macOS version."
 				) {
@@ -53,9 +53,9 @@ struct HelpSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: "Get Help", systemImage: "lifepreserver") {
+			SettingsPanel(title: "Get help", systemImage: "lifepreserver") {
 				SettingsActionRow(
-					title: "Troubleshooting Guide",
+					title: "Troubleshooting guide",
 					detail:
 						"Read solutions for common problems with installation, the game start, and display."
 				) {
@@ -70,12 +70,12 @@ struct HelpSettingsPage: View {
 				SettingsHairline()
 
 				SettingsActionRow(
-					title: "Account and Payment",
+					title: "Account and payment",
 					detail:
-						"Contact \(publisherName) for account, payment, or game-event problems."
+						"Contact \(region.publisherName) for account, payment, or game-event problems."
 				) {
 					CapsuleActionButton(
-						title: "Contact \(publisherName)…",
+						title: "Contact \(region.publisherName)…",
 						systemImage: "arrow.up.right.square",
 						tone: .neutral, presentation: .compact,
 						action: contactPublisher
@@ -85,7 +85,7 @@ struct HelpSettingsPage: View {
 				SettingsHairline()
 
 				SettingsActionRow(
-					title: "Contact the Developer",
+					title: "Contact the developer",
 					detail:
 						"Send a private message about testing, feedback, or a problem you do not want to report in public."
 				) {
@@ -104,7 +104,7 @@ struct HelpSettingsPage: View {
 				) {
 					CapsuleActionButton(
 						title: "Run Setup Again…", systemImage: "wand.and.stars",
-						tone: .accent(accentColor), presentation: .compact,
+						tone: .neutral, presentation: .compact,
 						action: restartOnboarding
 					)
 					.disabled(gameSession.isGameActive)
@@ -114,7 +114,7 @@ struct HelpSettingsPage: View {
 					title: "Rebuild game environment",
 					detail: InstallationConfirmation.rebuildDetail,
 					help:
-						"Recreates the Wine prefix with its graphics layer and registry overrides.",
+						"Recreates the Wine prefix with its graphics layer and registry overrides. Your game files stay installed.",
 					buttonTitle: "Rebuild…",
 					systemImage: "arrow.triangle.2.circlepath",
 					isDisabled: !installation.canModifyGameFiles,
@@ -125,7 +125,8 @@ struct HelpSettingsPage: View {
 				InstallationDestructiveRow(
 					title: "Delete game environment",
 					detail: "Signs you out of Yostar, Google, Apple and Facebook. Game files stay.",
-					help: "Deletes the Wine prefix folder shared by this publisher's servers.",
+					help:
+						"Deletes the Wine prefix folder shared by this publisher’s servers.",
 					buttonTitle: "Delete Environment…",
 					systemImage: "trash",
 					isDisabled: !installation.canModifyGameFiles,
@@ -153,13 +154,5 @@ struct HelpSettingsPage: View {
 
 	private func contactPublisher() {
 		NSWorkspace.shared.open(SupportLinks.contact(for: region))
-	}
-
-	private var publisherName: String {
-		switch region.publisher {
-		case .gryphline: "Gryphline"
-		case .hypergryph: "Hypergryph"
-		default: "Yostar"
-		}
 	}
 }

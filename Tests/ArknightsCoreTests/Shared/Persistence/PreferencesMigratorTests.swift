@@ -34,13 +34,15 @@ struct PreferencesMigratorTests {
 		let (defaults, suiteName) = makeIsolatedDefaults("PreferencesMigratorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
-		defaults.set(["hue": 0.1], forKey: "dynamicThemeAccent.legacy-cache")
+		// Installs that already ran the pre-v2 cleanup still hold HSB accents under v2.
+		defaults.set(2, forKey: LauncherPreferencesStore.Key.preferencesMigrationVersion)
+		defaults.set(["hue": 0.1], forKey: "dynamicThemeAccent.v2.legacy-cache")
 		store.setDynamicThemeAccent(
 			ThemeAccentSnapshot(hue: 0.6, saturation: 0.8, brightness: 0.9), for: "current-cache")
 
 		PreferencesMigrator().migrate(defaults)
 
-		#expect(defaults.object(forKey: "dynamicThemeAccent.legacy-cache") == nil)
+		#expect(defaults.object(forKey: "dynamicThemeAccent.v2.legacy-cache") == nil)
 		#expect(store.dynamicThemeAccent(for: "current-cache")?.hue == 0.6)
 	}
 

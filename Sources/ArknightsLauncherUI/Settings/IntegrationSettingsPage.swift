@@ -21,7 +21,6 @@ struct IntegrationSettingsPage: View {
 					SettingsToggle(
 						"Launcher music",
 						isOn: $settings.playsLauncherMusic,
-						accentColor: accentColor
 					)
 				}
 
@@ -33,12 +32,11 @@ struct IntegrationSettingsPage: View {
 					) {
 						ThemedTextField(
 							"Music URL",
-							prompt: "https://www.youtube.com/playlist?...",
+							prompt: "YouTube link",
 							text: $settings.launcherMusicURL,
 							systemImage: "link",
-							accentColor: accentColor
 						)
-						.frame(width: 250)
+						.frame(minWidth: 220, idealWidth: 252, maxWidth: 280)
 					}
 					SettingsHairline()
 					SettingsActionRow(
@@ -53,7 +51,6 @@ struct IntegrationSettingsPage: View {
 								value: $settings.launcherMusicVolume,
 								range: 0...1,
 								step: 0.05,
-								accentColor: accentColor,
 								width: 140
 							)
 							.accessibilityLabel("Volume")
@@ -73,18 +70,17 @@ struct IntegrationSettingsPage: View {
 							)
 							.font(.caption.monospacedDigit())
 							.foregroundStyle(.secondary)
-							.frame(width: 36, alignment: .trailing)
+							.frame(minWidth: 36, alignment: .trailing)
 						}
 					}
 					SettingsHairline()
 					SettingsActionRow(
-						title: "Show what's playing",
+						title: "Show what’s playing",
 						detail: "Shows the current track and playback controls on the launcher."
 					) {
 						SettingsToggle(
-							"Show what's playing",
+							"Show what’s playing",
 							isOn: $settings.showsPlayingMusic,
-							accentColor: accentColor
 						)
 					}
 				}
@@ -99,7 +95,6 @@ struct IntegrationSettingsPage: View {
 					SettingsToggle(
 						"Discord presence",
 						isOn: $settings.showsDiscordPresence,
-						accentColor: accentColor
 					)
 				}
 			}

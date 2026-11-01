@@ -12,7 +12,7 @@ struct LauncherReadabilityField: View {
 			startRadius: 0,
 			endRadius: 450
 		)
-		.frame(width: 680, height: 390, alignment: .topLeading)
+		.frame(width: 680, height: 392, alignment: .topLeading)
 		.blur(radius: reduceTransparency ? 0 : 3)
 		.opacity(reduceTransparency ? 0.96 : 0.86)
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

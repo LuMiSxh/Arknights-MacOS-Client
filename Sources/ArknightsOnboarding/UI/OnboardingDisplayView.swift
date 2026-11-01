@@ -11,7 +11,7 @@ struct OnboardingDisplayView: View {
 	var body: some View {
 		OnboardingPage(
 			title: "Display",
-			subtitle: "The launcher sets the resolution for this screen.",
+			subtitle: "The launcher sets the resolution for this screen",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(

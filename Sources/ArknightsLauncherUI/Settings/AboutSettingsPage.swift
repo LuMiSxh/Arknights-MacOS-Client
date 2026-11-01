@@ -13,11 +13,13 @@ struct AboutSettingsPage: View {
 	let runtime: InstalledRuntimeDetails?
 	let revealApplication: () -> Void
 	@Binding var presentedDocument: BundledDocument?
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@State private var isShowingTechnicalDetails = false
 
 	var body: some View {
 		SettingsPage(
 			title: "About",
-			subtitle: "\("Arknights Client") \(appVersion)",
+			subtitle: "Arknights Client, Version \(appVersion)",
 			accentColor: accentColor
 		) {
 			SettingsPanel(title: "Arknights Client", systemImage: "info.circle") {
@@ -39,48 +41,16 @@ struct AboutSettingsPage: View {
 
 			SettingsPanel(title: "Documents", systemImage: "doc.text") {
 				ViewThatFits(in: .horizontal) {
-					HStack(spacing: LauncherVisuals.Spacing.tight) {
-						documentLink(
-							.changelog, title: "Changelog",
-							systemImage: "clock.arrow.circlepath"
-						)
-						.frame(maxWidth: .infinity)
-						documentLink(
-							.projectLicense, title: "MPL-2.0 License",
-							systemImage: "checkmark.seal"
-						)
-						.frame(maxWidth: .infinity)
-						documentLink(
-							.thirdPartyNotices, title: "Third-Party Notices",
-							systemImage: "doc.on.doc"
-						)
-						.frame(maxWidth: .infinity)
+					HStack(spacing: LauncherVisuals.Spacing.control) {
+						documentLinks(isInline: true)
 					}
 					VStack(spacing: 0) {
-						documentLink(
-							.changelog, title: "Changelog",
-							systemImage: "clock.arrow.circlepath")
-						SettingsHairline()
-						documentLink(
-							.projectLicense, title: "MPL-2.0 License",
-							systemImage: "checkmark.seal")
-						SettingsHairline()
-						documentLink(
-							.thirdPartyNotices, title: "Third-Party Notices",
-							systemImage: "doc.on.doc")
+						documentLinks(isInline: false)
 					}
 				}
-				HStack(spacing: 18) {
-					AccentLink(
-						title: "View online",
-						destination: SupportLinks.thirdPartyNotices,
-						accentColor: accentColor
-					)
-					AccentLink(
-						title: "Privacy Notice",
-						destination: SupportLinks.privacyNotice,
-						accentColor: accentColor
-					)
+				HStack(spacing: 16) {
+					QuietLink(title: "View online", destination: SupportLinks.thirdPartyNotices)
+					QuietLink(title: "Privacy Notice", destination: SupportLinks.privacyNotice)
 				}
 				.font(.caption)
 			}
@@ -92,7 +62,7 @@ struct AboutSettingsPage: View {
 			SettingsPanel(title: "Arknights", systemImage: "link") {
 				VStack(alignment: .leading, spacing: 8) {
 					ViewThatFits(in: .horizontal) {
-						HStack(spacing: 18) {
+						HStack(spacing: 16) {
 							publisherLinks
 						}
 						VStack(alignment: .leading, spacing: 8) {
@@ -107,13 +77,12 @@ struct AboutSettingsPage: View {
 					HStack(spacing: 4) {
 						Text("Built with AI assistance.")
 							.foregroundStyle(.secondary)
-						AccentLink(
+						QuietLink(
 							title: "Learn more",
 							destination: URL(
 								string:
 									"https://github.com/LuMiSxh/Arknights-MacOS-Client/blob/main/docs/ai-assistance.md"
-							)!,
-							accentColor: accentColor
+							)!
 						)
 					}
 					.font(.caption)
@@ -131,25 +100,34 @@ struct AboutSettingsPage: View {
 				valueText(runtime.name)
 			}
 			SettingsHairline()
-			SettingsActionRow(
-				title: "Wine",
-				detail: runtime.wineCommit.map { "Commit \($0.prefix(12))" }
-			) {
-				valueText(runtime.wineVersion ?? "—")
+			DisclosureGroup("Technical details", isExpanded: $isShowingTechnicalDetails) {
+				VStack(spacing: 0) {
+					SettingsActionRow(
+						title: "Wine",
+						detail: runtime.wineCommit.map { "Commit \($0.prefix(12))" }
+					) {
+						valueText(runtime.wineVersion ?? "—")
+					}
+					SettingsHairline()
+					SettingsActionRow(
+						title: "DXMT",
+						detail: runtime.dxmtCommit.map { "Commit \($0.prefix(12))" }
+					) {
+						valueText(runtime.dxmtVersion ?? "—")
+					}
+					SettingsHairline()
+					capabilityRow("Hardware cursor", advertised: runtime.hardwareCursor)
+					SettingsHairline()
+					capabilityRow(
+						"MetalFX spatial upscaling", advertised: runtime.metalFXSpatialUpscaling)
+					SettingsHairline()
+					capabilityRow(
+						"Native fullscreen Space", advertised: runtime.nativeFullscreenSpace)
+				}
 			}
-			SettingsHairline()
-			SettingsActionRow(
-				title: "DXMT",
-				detail: runtime.dxmtCommit.map { "Commit \($0.prefix(12))" }
-			) {
-				valueText(runtime.dxmtVersion ?? "—")
-			}
-			SettingsHairline()
-			capabilityRow("Hardware cursor", advertised: runtime.hardwareCursor)
-			SettingsHairline()
-			capabilityRow("MetalFX spatial upscaling", advertised: runtime.metalFXSpatialUpscaling)
-			SettingsHairline()
-			capabilityRow("Native fullscreen Space", advertised: runtime.nativeFullscreenSpace)
+			.animation(
+				LauncherMotion.animation(.disclosure, reduceMotion: reduceMotion),
+				value: isShowingTechnicalDetails)
 		} else {
 			SettingsActionRow(title: "Version") {
 				valueText("Not installed")
@@ -175,21 +153,18 @@ struct AboutSettingsPage: View {
 				.resizable()
 				.frame(width: 76, height: 76)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.tight) {
+			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
 				Text("Unofficial macOS launcher")
 					.foregroundStyle(.secondary)
-				AccentLink(
-					title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!,
-					accentColor: accentColor
-				)
-				.font(.callout.weight(.medium))
+				QuietLink(title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!)
+					.font(.callout.weight(.medium))
 			}
 		}
 	}
 
 	@ViewBuilder
 	private var identityActions: some View {
-		HStack(spacing: LauncherVisuals.Spacing.tight) {
+		HStack(spacing: LauncherVisuals.Spacing.control) {
 			CapsuleActionButton(
 				title: "Show in Finder", systemImage: "folder",
 				tone: .neutral, showsTitle: false,
@@ -230,21 +205,38 @@ struct AboutSettingsPage: View {
 		}
 	}
 
+	/// Lists the documents once for both layouts. The inline row fills its width; the
+	/// stacked list separates rows with hairlines.
+	/// Lists the documents once for both layouts. The inline row fills its width; the
+	/// stacked list separates rows with hairlines.
+	@ViewBuilder
+	private func documentLinks(isInline: Bool) -> some View {
+		documentLink(
+			.changelog, title: "Changelog",
+			systemImage: "clock.arrow.circlepath"
+		)
+		.frame(maxWidth: isInline ? .infinity : nil)
+		if !isInline { SettingsHairline() }
+		documentLink(
+			.projectLicense, title: "MPL-2.0 License",
+			systemImage: "checkmark.seal"
+		)
+		.frame(maxWidth: isInline ? .infinity : nil)
+		if !isInline { SettingsHairline() }
+		documentLink(
+			.thirdPartyNotices, title: "Third-Party Notices",
+			systemImage: "doc.on.doc"
+		)
+		.frame(maxWidth: isInline ? .infinity : nil)
+	}
+
 	@ViewBuilder
 	private var publisherLinks: some View {
 		if let agreement = branding?.userAgreement {
-			AccentLink(
-				title: "User Agreement",
-				destination: agreement,
-				accentColor: accentColor
-			)
+			QuietLink(title: "User Agreement", destination: agreement)
 		}
 		if let privacy = branding?.privacyPolicy {
-			AccentLink(
-				title: "Privacy Policy",
-				destination: privacy,
-				accentColor: accentColor
-			)
+			QuietLink(title: "Privacy Policy", destination: privacy)
 		}
 	}
 }

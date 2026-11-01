@@ -137,6 +137,14 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 
 	package var publisher: GamePublisher { clientProfile.publisher }
 
+	package var publisherName: String {
+		switch publisher {
+		case .yostar: "Yostar"
+		case .hypergryph: "Hypergryph"
+		case .gryphline: "Gryphline"
+		}
+	}
+
 	package var clientVariant: GameClientVariant { clientProfile.variant }
 
 	package var requiresCanaryPermission: Bool { clientProfile.requiresCanaryPermission }

@@ -91,11 +91,11 @@ struct LauncherPrimaryActionView: View {
 
 	private var actionHelp: String {
 		switch actionKind {
-		case .stop: return "Stop Arknights and its Windows runtime"
-		case .pause: return "Pause the download; it resumes from partial files later"
+		case .stop: return "Stop Arknights"
+		case .pause: return "Pause the download. You can resume it later."
 		case .install:
 			if installation.hasPartialDownload {
-				return "Continue downloading from the partial files"
+				return "Resume the download"
 			}
 			return
 				"Download and verify the official \(installation.region.displayName) PC files"

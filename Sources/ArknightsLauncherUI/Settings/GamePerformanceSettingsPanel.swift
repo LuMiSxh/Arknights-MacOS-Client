@@ -10,7 +10,6 @@ struct GamePerformanceSettingsPanel: View {
 	let isLocked: Bool
 	/// The frame rate also locks during storage migration.
 	let isFrameRateLocked: Bool
-	package let accentColor: Color
 	@Environment(\.simulatesMissingXcode) private var simulatesMissingXcode
 	@State private var isXcodeInstalled = GamePolicyControl.isAvailable()
 
@@ -29,7 +28,6 @@ struct GamePerformanceSettingsPanel: View {
 						value: frameRateStep,
 						range: 0...Double(GameFrameRateLimit.allCases.count - 1),
 						step: 1,
-						accentColor: accentColor,
 						width: 140
 					)
 					.disabled(isFrameRateLocked || !launcherDisplayControl)
@@ -38,7 +36,7 @@ struct GamePerformanceSettingsPanel: View {
 					Text(options.frameRateLimit.displayName)
 						.font(.caption.monospacedDigit())
 						.foregroundStyle(.secondary)
-						.frame(width: 72, alignment: .trailing)
+						.frame(minWidth: 72, alignment: .trailing)
 						.accessibilityHidden(true)
 				}
 			}
@@ -49,12 +47,11 @@ struct GamePerformanceSettingsPanel: View {
 					? "Asks macOS to give the game priority while it runs. Needs the free Xcode app from the App Store."
 					: "Not available on this Mac: Game Mode needs the free Xcode app from the App Store. Install it, then reopen Settings.",
 				help:
-					"Uses Apple's gamepolicyctl tool, which ships only inside the full Xcode app, not the Command Line Tools."
+					"Uses Apple’s gamepolicyctl tool, which ships only inside the full Xcode app, not the Command Line Tools."
 			) {
 				SettingsToggle(
 					"Game Mode",
-					isOn: $settings.launchOptions.usesGameMode,
-					accentColor: accentColor
+					isOn: $settings.launchOptions.usesGameMode
 				)
 				// A saved choice stays switchable off after Xcode is removed.
 				.disabled(
@@ -69,8 +66,7 @@ struct GamePerformanceSettingsPanel: View {
 			) {
 				SettingsToggle(
 					"Metal Performance HUD",
-					isOn: $settings.launchOptions.usesMetalPerformanceHUD,
-					accentColor: accentColor
+					isOn: $settings.launchOptions.usesMetalPerformanceHUD
 				)
 				.disabled(isLocked || !launcherDisplayControl)
 			}

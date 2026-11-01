@@ -7,11 +7,10 @@ struct OperatorIconStylePreview: View {
 	let catalog: PresetCatalogService
 	let avatar: PresetAvatar?
 	let accentHue: Double?
-	package let accentColor: Color
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			VStack(alignment: .leading, spacing: 3) {
+		VStack(alignment: .leading, spacing: 16) {
+			VStack(alignment: .leading, spacing: 4) {
 				Text("Generated Icon Styles")
 					.font(.headline)
 				Text("Your operator is applied to both icons.")
@@ -41,9 +40,9 @@ struct OperatorIconStylePreview: View {
 					.frame(maxWidth: .infinity, minHeight: 82)
 			}
 		}
-		.padding(18)
-		.frame(minWidth: 282, maxWidth: 360)
-		.background(accentColor.opacity(0.06))
+		.padding(16)
+		.frame(minWidth: 284, maxWidth: 360)
+
 		.preferredColorScheme(.dark)
 	}
 
@@ -52,9 +51,9 @@ struct OperatorIconStylePreview: View {
 	)
 		-> some View
 	{
-		VStack(spacing: 2) {
+		VStack(spacing: 4) {
 			Text(title)
-				.font(.caption.bold())
+				.font(.caption.weight(.medium))
 			Text(detail)
 				.font(.caption)
 				.foregroundStyle(.secondary)

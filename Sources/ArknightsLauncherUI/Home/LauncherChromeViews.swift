@@ -8,14 +8,9 @@ struct ArknightsWordmark: View {
 	let logo: NSImage?
 	package let region: GameRegion
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
 	var body: some View {
 		ZStack(alignment: .leading) {
-			// Keep official wallpaper logos from competing with the launcher wordmark
-			// without introducing another card or glass surface.
-			wordmarkBacking
-
 			if let logo {
 				if region.publisher != .yostar {
 					Image(nsImage: logo)
@@ -33,14 +28,14 @@ struct ArknightsWordmark: View {
 				}
 			} else {
 				Text(wordmarkFallback)
-					.font(.system(.title, design: .serif))
+					.font(LauncherVisuals.Typography.wordmark)
 					.minimumScaleFactor(0.7)
 					.lineLimit(1)
 					.id(wordmarkIdentity)
 					.transition(wordmarkTransition)
 			}
 		}
-		.frame(width: 245, height: 69, alignment: .leading)
+		.frame(width: 244, height: 68, alignment: .leading)
 		.shadow(color: .black.opacity(0.46), radius: 9, y: 3)
 		.padding(.trailing, 24)
 		.animation(wordmarkAnimation, value: wordmarkIdentity)
@@ -67,22 +62,6 @@ struct ArknightsWordmark: View {
 
 	private var wordmarkAnimation: Animation? {
 		LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion)
-	}
-
-	@ViewBuilder
-	private var wordmarkBacking: some View {
-		if reduceTransparency {
-			Ellipse()
-				.fill(.black.opacity(0.62))
-				.frame(width: 292, height: 88)
-				.offset(x: -12, y: 3)
-		} else {
-			Ellipse()
-				.fill(.black.opacity(0.34))
-				.frame(width: 292, height: 88)
-				.blur(radius: 17)
-				.offset(x: -12, y: 3)
-		}
 	}
 
 	private var wordmarkTransition: AnyTransition {

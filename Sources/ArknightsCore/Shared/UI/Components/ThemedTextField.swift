@@ -7,30 +7,29 @@ package struct ThemedTextField: View {
 	let prompt: String
 	@Binding package var text: String
 	var systemImage: String?
-	package let accentColor: Color
 
+	@Environment(\.launcherPalette) private var palette
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@FocusState private var isFocused: Bool
 
 	package init(
 		_ title: String,
 		prompt: String,
 		text: Binding<String>,
-		systemImage: String? = nil,
-		accentColor: Color
+		systemImage: String? = nil
 	) {
 		self.title = title
 		self.prompt = prompt
 		_text = text
 		self.systemImage = systemImage
-		self.accentColor = accentColor
 	}
 
 	package var body: some View {
-		HStack(spacing: 7) {
+		HStack(spacing: 8) {
 			if let systemImage {
 				Image(systemName: systemImage)
 					.font(.caption)
-					.adaptiveTintForeground(isFocused ? accentColor : .secondary)
+					.adaptiveTintForeground(palette.controlTint)
 					.accessibilityHidden(true)
 			}
 
@@ -43,10 +42,11 @@ package struct ThemedTextField: View {
 		.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
 		.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding + 2)
 		.adaptiveControlSurface(
-			tint: accentColor,
+			tint: isFocused ? palette.controlOn : palette.controlTint,
+			borderOpacity: isFocused ? 0.62 : nil,
 			in: Capsule()
 		)
 		.contentShape(Capsule())
-		.keyboardFocusIndicator(isFocused: isFocused, in: Capsule())
+		.animation(LauncherMotion.animation(.state, reduceMotion: reduceMotion), value: isFocused)
 	}
 }

@@ -46,7 +46,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var statusHeader: some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: 8) {
 			if let version = driver.version {
 				Text("Version \(version)")
 					.font(.headline)
@@ -98,7 +98,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var availableContent: some View {
-		VStack(alignment: .leading, spacing: 14) {
+		VStack(alignment: .leading, spacing: 12) {
 			if let releaseNotes = driver.releaseNotes, !releaseNotes.isEmpty {
 				if driver.releaseNotesFormat == "markdown" {
 					MarkdownDocument(source: releaseNotes, accentColor: accentColor)
@@ -118,7 +118,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var downloadContent: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: 8) {
 			ProgressView(value: downloadProgress)
 				.tint(accentColor)
 				.accessibilityLabel(Text("Downloading update…"))
@@ -130,7 +130,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var extractionContent: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: 8) {
 			ProgressView(value: driver.extractionProgress)
 				.tint(accentColor)
 				.accessibilityLabel(Text("Preparing update…"))
@@ -142,7 +142,7 @@ struct LauncherUpdateView: View {
 	}
 
 	private var installingContent: some View {
-		VStack(alignment: .leading, spacing: 10) {
+		VStack(alignment: .leading, spacing: 8) {
 			ProgressView()
 				.accessibilityLabel(Text(Self.installingTitle))
 			Text(
@@ -204,7 +204,7 @@ struct LauncherUpdateView: View {
 				action: { driver.choose(.dismiss) }
 			)
 			CapsuleActionButton(
-				title: "Install Now",
+				title: "Install Update",
 				systemImage: "arrow.down.app",
 				tone: .accent(accentColor),
 				action: { driver.choose(.install) }
@@ -215,7 +215,7 @@ struct LauncherUpdateView: View {
 				CapsuleActionButton(
 					title: "Try Quitting Again",
 					systemImage: "arrow.clockwise",
-					tone: .accent(accentColor),
+					tone: .neutral,
 					action: driver.retryTerminationRequest
 				)
 			}
@@ -229,7 +229,7 @@ struct LauncherUpdateView: View {
 			CapsuleActionButton(
 				title: "Check Again",
 				systemImage: "arrow.clockwise",
-				tone: .accent(accentColor),
+				tone: .neutral,
 				action: retryUpdate
 			)
 			CapsuleActionButton(
@@ -282,8 +282,6 @@ struct LauncherUpdateView: View {
 		switch driver.phase {
 		case .failed: LauncherVisuals.dangerForeground
 		case .installed: LauncherVisuals.success
-		case .available, .downloading, .extracting, .readyToInstall, .installing:
-			accentColor
 		default: .secondary
 		}
 	}

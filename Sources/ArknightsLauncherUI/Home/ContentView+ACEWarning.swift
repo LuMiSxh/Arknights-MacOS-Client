@@ -22,7 +22,7 @@ private struct ACEWarningConfirmationModifier: ViewModifier {
 			),
 			titleVisibility: .visible
 		) {
-			Button("Play at my own risk", role: .destructive) {
+			Button("Play at My Own Risk", role: .destructive) {
 				model.actions.confirmACEWarningAndLaunch()
 			}
 			Button("Cancel", role: .cancel) {
@@ -30,7 +30,7 @@ private struct ACEWarningConfirmationModifier: ViewModifier {
 			}
 		} message: {
 			Text(
-				"This client uses ACE Anti-Cheat. Running it through Wine is unofficial and may cause compatibility issues or consequences for your account or the service. If you continue, you play at your own risk."
+				"This client uses ACE Anti-Cheat. Running it on this Mac is unofficial and may cause compatibility issues or consequences for your account or the service. If you continue, you play at your own risk."
 			)
 		}
 	}

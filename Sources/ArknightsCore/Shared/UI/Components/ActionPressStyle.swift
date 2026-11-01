@@ -2,8 +2,8 @@
 
 import SwiftUI
 
-/// Shared press and hover feedback for custom launcher action surfaces: a critically damped
-/// press, a springy release, and a small hover lift. Reduce Motion keeps only the opacity dip.
+/// Shared press feedback for custom launcher action surfaces: a critically damped press and a
+/// settling release. Hover feedback belongs to the surface, not to scale. Reduce Motion keeps only the opacity dip.
 package struct ActionPressStyle: ButtonStyle {
 	package enum Intensity {
 		case standard
@@ -29,33 +29,19 @@ private struct ActionPressBody: View {
 	let intensity: ActionPressStyle.Intensity
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.isEnabled) private var isEnabled
-	@State private var isHovered = false
 
 	var body: some View {
 		configuration.label
 			.opacity(isEnabled && configuration.isPressed ? 0.86 : 1)
 			.scaleEffect(scale)
 			.animation(pressAnimation, value: configuration.isPressed)
-			.animation(
-				LauncherMotion.animation(.hover, reduceMotion: reduceMotion),
-				value: isHovered
-			)
-			.onHover { hovering in
-				isHovered = hovering
-			}
 	}
 
 	private var scale: CGFloat {
-		guard isEnabled, !reduceMotion else { return 1 }
+		guard isEnabled, !reduceMotion, configuration.isPressed else { return 1 }
 		switch intensity {
-		case .standard:
-			if configuration.isPressed { return LauncherMotion.pressedScale }
-			return isHovered ? LauncherMotion.hoverScale : 1
-		case .subtle:
-			if configuration.isPressed { return LauncherMotion.subtlePressedScale }
-			return isHovered ? LauncherMotion.subtleHoverScale : 1
-		case .pressOnly:
-			return configuration.isPressed ? LauncherMotion.subtlePressedScale : 1
+		case .standard: return LauncherMotion.pressedScale
+		case .subtle, .pressOnly: return LauncherMotion.subtlePressedScale
 		}
 	}
 
@@ -69,6 +55,7 @@ private struct ActionPressBody: View {
 }
 
 struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
+	@Environment(\.launcherPalette) private var palette
 	let shape: S
 	@Environment(\.settingsFocusCoordinator) private var settingsFocusCoordinator
 	@Environment(\.isEnabled) private var isEnabled
@@ -81,7 +68,7 @@ struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 			shape
 				.stroke(
 					isEnabled && appearsActive && isFocused
-						? Color.primary.opacity(0.92)
+						? palette.controlTint.opacity(0.9)
 						: .clear,
 					lineWidth: LauncherVisuals.Control.focusWidth
 				)
@@ -103,6 +90,7 @@ struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 }
 
 private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
+	@Environment(\.launcherPalette) private var palette
 	let isFocused: Bool
 	let shape: S
 	@Environment(\.settingsFocusCoordinator) private var settingsFocusCoordinator
@@ -115,7 +103,7 @@ private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
 			shape
 				.stroke(
 					isEnabled && appearsActive && isFocused
-						? Color.primary.opacity(0.92)
+						? palette.controlTint.opacity(0.9)
 						: .clear,
 					lineWidth: LauncherVisuals.Control.focusWidth
 				)

@@ -14,13 +14,22 @@ The launcher must feel like a current macOS app first and an Arknights launcher 
 - Anchor the official Arknights wordmark below the traffic lights at the upper left. Keep the native Settings control at the upper right.
 - Keep one compact, capsule-shaped Liquid Glass control bar at the bottom. When a HUD surface expands, use a fixed-radius rounded rectangle.
 - Show only the current state, version, and one primary action.
-- Show download progress in the same bar. The rail follows the outer pill edge with a protected inner inset. In the compact state, show the percentage first, then transfer size, speed, and remaining time.
+- Show download progress in the same bar. The rail follows the outer edge of the control bar with a protected inner inset. Draw the progress outline with crisp strokes only. Use no blurred glow head and no blurred glint layers. In the compact state, show the percentage first, then transfer size, speed, and remaining time.
 
 ## Visual language
 
 - The signal color is a single accent, sampled from the active hero artwork. Use Arknights cyan `#18D1FF` only as the fallback when no dynamic color is available. Use `LauncherVisuals.cyan` for that fallback only. Use no other fixed cyan value.
-- Install, Update, and Play use the dynamic accent as a prominent Liquid Glass tint. Dynamic accents can also mark progress, selection, and interaction highlights. Secondary actions use quiet filled neutral surfaces with a restrained border.
-- Get colors from `LauncherVisuals` and fonts from `LauncherVisuals.Typography`. Do not write `Color(red:` or `.system(size:` in views.
+- Keep neutrals graphite. Do not tint surfaces, borders, or secondary controls with the accent hue. Get neutrals from `LauncherPalette`.
+- The dynamic accent marks the current primary action, progress, selection, and interaction highlights. Each panel or screen has at most one accent action. Install, Update, and Play use the dynamic accent as a prominent Liquid Glass tint. Secondary actions, retry buttons that are not the default, links (including About and legal links), and status text stay neutral. Use no accent-colored shadows.
+- Secondary actions use quiet filled neutral surfaces with a hairline neutral border. Surfaces use no gradients. The only exception is a small tone shift inside one neutral. Do not place blurred blobs behind text. When text needs legibility, use a scrim sized to the content.
+- Selection controls use the accent through `LauncherPalette.controlOn` for their on state only. These controls are toggles, checkboxes, sliders, pickers, and segmented selections.
+- Text fields use a neutral surface. A focused text field uses `LauncherPalette.controlOn` for its border. Do not use a white focus ring.
+- The keyboard focus ring uses `LauncherPalette.controlTint`.
+- Neutral borders are hairlines at about 6–12% opacity. Semantic and high-contrast borders may be stronger.
+- Use only `LauncherVisuals.Radius` tokens for corner radii. A nested radius equals the outer radius minus the padding, with a minimum of 4 pt. Collapsed HUD surfaces and the primary action may be capsules. Compact secondary controls and tiles use the control radius.
+- Put every margin, padding, gap, and fixed size on a 4 pt grid. A 2 pt step is allowed only for nudges inside small controls. Use one value for one role: a 24 pt page margin, a 20 pt section gap, and one rail width for Settings and Onboarding.
+- Hierarchy comes from size and color. Use regular and medium weights. Use semibold only for rare emphasis. Do not use bold or heavier. Do not change weight to show selection.
+- Get colors from `LauncherVisuals` or `LauncherPalette`, and fonts from `LauncherVisuals.Typography` or a semantic text style with an allowed weight. Do not write `Color(red:` or `.system(size:` in views.
 
 ### Motion
 
@@ -28,10 +37,11 @@ The launcher must feel like a current macOS app first and an Arknights launcher 
 
 Rules:
 
-- Motion must feel physical and springy. Do not add motion for decoration alone.
-- Controls respond at once. A held control uses `press`. A released control uses `release`. A hovered control uses `hover` for a small lift.
-- The primary action shows at most one ambient effect. Play shows a static accent halo with one arrival pulse. There is no breathing loop.
-- Overlays, such as the update dialog, enter with `present` and leave with `dismiss`. Native sheets keep their platform lifecycle.
+- Springs have little or no overshoot. Their bounce is at most 0.15. Do not add motion for decoration alone.
+- Controls respond at once. A held control uses `press` and scales down to 0.95–0.97. A released control uses `release`. A hovered control changes its surface or opacity. Do not scale or lift a control on hover.
+- The primary action shows at most one ambient effect: a static, soft dynamic accent halo with one arrival pulse. The halo blur is at most 8 pt, and its accent opacity is at most 0.25. There is no breathing loop. Controls show no pointer-following sheen.
+- Overlays, such as the update dialog, enter with `present` and leave with `dismiss`. Overlays and the control bar enter with opacity and a small scale. Do not combine blur with an offset. Native sheets keep their platform lifecycle.
+- Use the plain `.replace` symbol effect for symbol changes. Do not use the `.magic` symbol effect.
 - Artwork and theme colors use `crossfade`. Settings pages do not animate card insertion. Determinate progress stays linear.
 
 ### Motion gating
@@ -61,7 +71,7 @@ The home screen exposes one primary operation at a time. The current state selec
 | Cancellable download                | **Pause**                 |
 | Newer game manifest available       | **Update**                |
 | Server ready                        | **Play**                  |
-| The server's game session is active | **Stop**                  |
+| The server’s game session is active | **Stop**                  |
 
 These actions reuse one control, never compete as buttons, and secondary controls stay neutral. Update checks never download game data until the user selects the update action.
 
@@ -77,6 +87,15 @@ Show a failure in the shared failure dialog. Give actionable guidance and matchi
 - Respect Reduce Motion, Reduce Transparency, Differentiate Without Color, VoiceOver, Full Keyboard Access, and the largest practical text size. State changes must stay clear without animation, color, or precise pointer input.
 - Let English labels wrap. Avoid fixed-width labels and truncation that hides the operation or error name.
 
+## Copy
+
+- Use sentence case for panel headers, labels, and group captions. Use title case for button labels, as macOS does.
+- Do not end labels, headers, or subtitles with a period. Keep periods in paragraphs.
+- Write the version as "Version 1.2.3" in prose. Do not use a "v" prefix.
+- Use typographic apostrophes (’) in all copy.
+- Use one label for each action. Do not give one action two labels.
+- Keep developer terms out of dialogs and help text. These terms include Wine, prefix, runtime, partial files, registry, and DXMT. About may show them only inside a collapsed "Technical details" disclosure. An advanced compatibility or display option may name the technology it controls, such as MetalFX or Wine sync. Danger zones and destructive confirmations name the technical object they change, such as the Wine prefix.
+
 ## Feedback and review
 
 Use native controls and the shared action families in `Sources/ArknightsCore/Shared/UI/Components` before you add a feature-local variant. Only a different interaction contract justifies a custom control, not padding or tint. Keep primary emphasis on the current game action. Keep secondary links, settings, diagnostics, and legal text quiet.
@@ -85,15 +104,15 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 
 ## Modals and popups
 
-- Use a quiet modal header with a restrained neutral rule. The current operation owns the only prominent action color.
+- Use a quiet modal header with a hairline neutral rule. The current operation owns the only prominent action color.
 - Keep modal actions in a floating footer with a clear default and neutral dismiss and support actions. Use a second row when they do not fit.
 
 ## Settings and documents
 
 - The Settings sheet adapts to the window size. `AppConstants.Settings` defines its margin and size limits.
 - Group related controls in quiet Liquid Glass panels. Switch Settings pages at once, without page transitions. The selected rail section uses the dynamic accent.
-- Use a grouped list rail. The ARKNIGHTS group holds Game, Servers, Storage, and Playtime. The LAUNCHER group holds Appearance, Integration, and Updates. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
-- Explain destructive or expensive actions in user terms. Keep developer terminology out of the interface.
+- Use a grouped list rail. The Arknights group holds Game, Servers, Storage, and Playtime. The Launcher group holds Appearance, Integration, and Updates. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
+- Explain destructive or expensive actions in user terms.
 - Warning and danger panels keep neutral backgrounds. Semantic color is limited to the header, icon, edge, and relevant actions: danger for destructive settings and failure codes, warning for cautionary state, success for completed state, and the dynamic accent for the primary operation and intentional selection.
 - Render bundled Markdown as native text, parsed once when the document opens. Tables adapt their column widths and can scroll horizontally. Missing or unreadable documents show an explicit error state.
 
@@ -110,7 +129,7 @@ For a UI change, use the debug simulator to check an empty and an installed regi
 - Walk through System Check, Server, Display, Look, Updates & Integrations, and Ready. Ask each question as answer cards (`OnboardingQuestion`): one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
 - Apply choices immediately through the same actions as Settings. Users can reopen the assistant from Settings → Help → Troubleshooting.
 - When a release requires returning players to rerun setup, open with a "Something important changed" briefing that explains why, and hide Skip Setup until they finish. First runs stay skippable.
-- End with a plain statement that the launcher is an unofficial community project. Route launcher, Wine, and embedded-browser reports to the pre-filled GitHub form. Route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).
+- End with a plain statement that the launcher is an unofficial community project. Route launcher, game compatibility, and embedded-browser reports to the pre-filled GitHub form. Route account, payment, and game-service issues through the [publisher support routing table](../help/README.md#publisher-support-routing).
 
 ## Artwork
 

@@ -67,6 +67,7 @@ struct PresetGallerySuggestions: View {
 }
 
 private struct PresetGallerySuggestionChip: View {
+	@Environment(\.launcherPalette) private var palette
 	let destination: PresetGalleryDestination
 	package let accentColor: Color
 	let suggestion: PresetGallerySuggestion
@@ -77,7 +78,7 @@ private struct PresetGallerySuggestionChip: View {
 		Button {
 			onSelect(suggestion.title)
 		} label: {
-			HStack(spacing: 5) {
+			HStack(spacing: 4) {
 				Image(
 					systemName: destination == .artwork ? "tag" : "person.crop.square"
 				)
@@ -87,7 +88,7 @@ private struct PresetGallerySuggestionChip: View {
 					.truncationMode(.tail)
 			}
 			.padding(.horizontal, 12)
-			.padding(.vertical, 6)
+			.padding(.vertical, 8)
 			.frame(maxWidth: 220, alignment: .leading)
 			.contentShape(Capsule())
 			.adaptiveControlForeground(
@@ -95,7 +96,7 @@ private struct PresetGallerySuggestionChip: View {
 				disabledTint: .secondary
 			)
 			.adaptiveControlSurface(
-				tint: LauncherVisuals.controlTint,
+				tint: palette.controlTint,
 				in: Capsule()
 			)
 		}

@@ -243,24 +243,17 @@ package enum AppConstants {
 	package enum Theme {
 		package static let wallpaperSampleSide = 32
 		package static let accentHueBuckets = 24
-		// Hero artwork can be anything from near-monochrome to neon: these only exclude
-		// true noise (near-gray, near-black, blown-out highlights) when picking a hue.
-		// Muted pixels are excluded here and weighted down further in the accent score.
-		package static let minimumPixelSaturation = 0.25
-		package static let minimumPixelBrightness = 0.08
-		package static let maximumPixelBrightness = 0.97
-		// The winning hue's own saturation/brightness are clamped into this range so the
-		// rendered accent stays legible against the launcher's dark chrome regardless of
-		// how dark, pale, or muted the source artwork actually was.
-		package static let minimumRenderSaturation = 0.65
-		package static let maximumRenderSaturation = 0.85
-		package static let minimumRenderBrightness = 0.80
-		package static let maximumRenderBrightness = 0.95
-		// The HUD glass tint stays near-black but picks up a whisper of the same hue as
-		// the accent, instead of being perfectly neutral — subtle, not a second signal color.
-		package static let backgroundTintSaturation = 0.1
-		package static let backgroundTintBrightness = 0.1
-		package static let backgroundTintOpacity = 0.52
+		// Pixel filters in OKLab: skip near-gray, near-black, and blown-out pixels when picking a
+		// hue. Muted pixels that pass are weighted down further in the accent score.
+		package static let minimumPixelChroma = 0.04
+		package static let minimumPixelLightness = 0.2
+		package static let maximumPixelLightness = 0.97
+		// The accent is rendered in OKLCH at one perceptual lightness, so every hue reads equally
+		// bright on the dark chrome. Chroma follows the artwork inside this calm range.
+		package static let accentLightness = 0.78
+		package static let minimumAccentChroma = 0.08
+		package static let maximumAccentChroma = 0.15
+
 	}
 
 	package enum Support {

@@ -7,7 +7,7 @@ struct CapsuleProgressOutline: View {
 	let tint: Color
 	var isGlintActive = false
 	var lineWidth: CGFloat = 2
-	var track: Color = LauncherVisuals.hairline
+	var track: Color = .clear
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	private var clampedProgress: Double {
@@ -37,7 +37,6 @@ struct CapsuleProgressOutline: View {
 					CapsuleIndeterminatePulse(tint: tint, lineWidth: lineWidth)
 						.transition(.opacity)
 				} else if isGlintActive && clampedProgress > 0 && !reduceMotion {
-					progressHead
 					CapsuleProgressSweep(progress: clampedProgress, lineWidth: lineWidth)
 				}
 			}
@@ -46,16 +45,6 @@ struct CapsuleProgressOutline: View {
 				value: showsIndeterminatePulse
 			)
 			.accessibilityHidden(true)
-	}
-
-	private var progressHead: some View {
-		let tail = max(0, clampedProgress - min(0.035, clampedProgress))
-		return Capsule()
-			.inset(by: lineWidth / 2)
-			.trim(from: tail, to: clampedProgress)
-			.stroke(tint, style: StrokeStyle(lineWidth: lineWidth * 3, lineCap: .round))
-			.blur(radius: 4)
-			.blendMode(.plusLighter)
 	}
 }
 
@@ -80,22 +69,13 @@ private struct CapsuleProgressSweep: View {
 		let values = sweepValues(for: phase)
 		let head = values.head * progress
 		let length = min(0.06, progress * 0.25)
-		let segment = Capsule()
+		return Capsule()
 			.inset(by: lineWidth / 2)
 			.trim(from: max(0, head - length), to: head)
-		return ZStack {
-			segment
-				.stroke(
-					Color.white.opacity(values.opacity * 0.6),
-					style: StrokeStyle(lineWidth: lineWidth * 3, lineCap: .round)
-				)
-				.blur(radius: 3)
-			segment
-				.stroke(
-					Color.white.opacity(values.opacity),
-					style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-				)
-		}
+			.stroke(
+				Color.white.opacity(values.opacity),
+				style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+			)
 	}
 
 	private func sweepValues(for phase: Double) -> (head: Double, opacity: Double) {
@@ -123,14 +103,14 @@ private struct CapsuleProgressSweep: View {
 	}
 }
 
-// Indeterminate work: an accent glint circles the outline while the ring breathes on the
+// Indeterminate work: an accent glint circles the outline while the ring pulses on the
 // same cycle as the primary action halo. The orbit eases without ever stopping, so it
 // reads as ongoing work rather than a looping progress fill.
 private struct CapsuleIndeterminatePulse: View {
 	let tint: Color
 	let lineWidth: CGFloat
 
-	private var cycle: TimeInterval { LauncherMotion.Cycle.breathing }
+	private var cycle: TimeInterval { LauncherMotion.Cycle.pulse }
 
 	var body: some View {
 		ContinuousMotion(cycle: cycle, framesPerSecond: 30) { phase in
@@ -149,9 +129,6 @@ private struct CapsuleIndeterminatePulse: View {
 			outline
 				.stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
 				.opacity(0.35 + 0.15 * breath)
-			glint(head: head, length: tail, width: lineWidth * 2)
-				.blur(radius: 6)
-				.opacity(0.3 + 0.1 * breath)
 			glint(head: head, length: tail * 0.5, width: lineWidth)
 				.blur(radius: 1)
 				.opacity(0.65)

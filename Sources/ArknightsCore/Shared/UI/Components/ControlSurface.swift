@@ -74,6 +74,7 @@ extension View {
 }
 
 private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
+	@Environment(\.launcherPalette) private var palette
 	let tint: Color
 	let isDisabled: Bool
 	package let presentation: ControlSurfacePresentation
@@ -175,7 +176,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 
 	private var activeBorder: Color {
 		if presentation == .hud {
-			return LauncherVisuals.hairline.opacity(activeBorderOpacity)
+			return palette.hairline.opacity(activeBorderOpacity)
 		}
 		return tint.opacity(activeBorderOpacity)
 	}
@@ -243,7 +244,7 @@ private struct SettingsControlCapsuleModifier: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content
-			.font(.caption.weight(.semibold))
+			.font(.caption.weight(.medium))
 			.adaptiveControlForeground(
 				tint,
 				disabledTint: tint.opacity(

@@ -11,18 +11,10 @@ struct OnboardingFinishView: View {
 	let accentColor: Color
 	let install: () -> Void
 
-	private var publisherName: String {
-		switch installation.region.publisher {
-		case .gryphline: "Gryphline"
-		case .hypergryph: "Hypergryph"
-		default: "Yostar"
-		}
-	}
-
 	var body: some View {
 		OnboardingPage(
-			title: "Ready for deployment",
-			subtitle: "Your choices are saved. You can change any of them in Settings.",
+			title: "Setup complete",
+			subtitle: "Your choices are saved. You can change any of them in Settings",
 			accentColor: accentColor
 		) {
 			SettingsPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
@@ -62,21 +54,21 @@ struct OnboardingFinishView: View {
 				.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
 					title: "Report a Problem…", systemImage: "ladybug",
-					tone: .accent(accentColor), action: reportProblem
+					tone: .neutral, action: reportProblem
 				)
 
 				SettingsHairline()
 
 				Text(
-					"For account, payment, or game-service issues, contact \(publisherName) support instead."
+					"For account, payment, or game-service issues, contact \(installation.region.publisherName) support instead."
 				)
 				.font(.callout)
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: true)
 				CapsuleActionButton(
-					title: "Contact \(publisherName) Support…",
+					title: "Contact \(installation.region.publisherName) Support…",
 					systemImage: "arrow.up.right.square",
-					tone: .accent(accentColor),
+					tone: .neutral,
 					action: contactPublisher
 				)
 			}

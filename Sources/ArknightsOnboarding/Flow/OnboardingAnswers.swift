@@ -113,7 +113,7 @@ extension LauncherInfoAnswer {
 		case .serverTime:
 			OnboardingAnswer(
 				value: self, title: "Server time & reset countdown",
-				detail: "Shows how long until your server's next daily reset.",
+				detail: "Shows how long until your server’s next daily reset.",
 				systemImage: "clock")
 		case .branding:
 			OnboardingAnswer(

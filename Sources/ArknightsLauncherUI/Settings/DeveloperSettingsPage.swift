@@ -74,7 +74,6 @@ import SwiftUI
 				GlassMenuPicker(
 					selection: $simulation[dynamicMember: keyPath],
 					options: choices.map { ($0, "\($0)") },
-					accentColor: accentColor
 				)
 			}
 		}

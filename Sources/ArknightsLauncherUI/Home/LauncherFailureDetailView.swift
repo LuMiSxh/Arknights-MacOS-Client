@@ -47,15 +47,15 @@ struct LauncherFailureDetailView: View {
 			title: "Needs attention",
 			hudTintColor: hudTintColor,
 			width: failure.code == nil ? 620 : 820,
-			height: failure.code == nil ? 430 : 600,
-			minimumHeight: 430
+			height: failure.code == nil ? 432 : 600,
+			minimumHeight: 432
 		) {
 			VStack(alignment: .leading, spacing: 20) {
 				if let code = failure.code {
 					HStack(alignment: .center, spacing: 12) {
 						LauncherSupportCodeLabel(code: code)
 						IconActionButton(
-							title: "Copy support code",
+							title: "Copy Support Code",
 							systemImage: didCopySupportCode ? "checkmark" : "doc.on.doc",
 							surface: .neutral
 						) {
@@ -101,7 +101,7 @@ struct LauncherFailureDetailView: View {
 					supportActions
 					Divider()
 						.frame(height: 24)
-						.padding(.horizontal, 2)
+						.padding(.horizontal, 4)
 				}
 				dismissButton
 			}

@@ -4,6 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingExtrasView: View {
+	@Environment(\.launcherPalette) private var palette
 	@Bindable var preferences: LauncherPreferencesController
 	let accentColor: Color
 
@@ -37,8 +38,8 @@ struct OnboardingExtrasView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Updates & Integrations",
-			subtitle: "Update checks only notify you. Nothing downloads until you choose.",
+			title: "Updates & integrations",
+			subtitle: "Update checks only notify you. Nothing downloads until you choose",
 			accentColor: accentColor
 		) {
 			OnboardingQuestion(
@@ -62,17 +63,16 @@ struct OnboardingExtrasView: View {
 					title: "Launcher music",
 					detail: "YouTube playlist. Pauses while the game runs.",
 					isOn: $preferences.playsLauncherMusic,
-					accentColor: accentColor
 				)
 				if preferences.playsLauncherMusic {
 					SettingsHairline()
 					LabeledContent("Volume") {
-						HStack(spacing: 10) {
+						HStack(spacing: LauncherVisuals.Spacing.control) {
 							Image(systemName: "speaker.fill")
 								.foregroundStyle(.secondary)
 								.accessibilityHidden(true)
 							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(accentColor)
+								.tint(palette.controlOn)
 								.accessibilityLabel("Volume")
 							Text(
 								preferences.launcherMusicVolume,
@@ -80,16 +80,15 @@ struct OnboardingExtrasView: View {
 							)
 							.font(.caption.monospacedDigit())
 							.foregroundStyle(.secondary)
-							.frame(width: 42, alignment: .trailing)
+							.frame(minWidth: 44, alignment: .trailing)
 							.accessibilityHidden(true)
 						}
 					}
 					SettingsHairline()
 					OnboardingToggleRow(
-						title: "Show what's playing",
+						title: "Show what’s playing",
 						detail: "Adds the current track and playback controls to the launcher.",
 						isOn: $preferences.showsPlayingMusic,
-						accentColor: accentColor
 					)
 				}
 			}

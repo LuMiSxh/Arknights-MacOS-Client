@@ -42,7 +42,7 @@ struct StatusHUDPill: View {
 			isExpanded: $isExpanded
 		) {
 			Text(countdown(for: installation.region, now: now))
-				.font(.caption.monospaced().weight(.medium))
+				.font(.caption.monospacedDigit().weight(.medium))
 				.foregroundStyle(.secondary)
 				.lineLimit(2)
 				.truncationMode(.tail)
@@ -78,7 +78,7 @@ struct StatusHUDPill: View {
 				}
 				.buttonStyle(ActionPressStyle())
 				.keyboardFocusIndicator(
-					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
+					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
 				)
 				.disabled(!canSwitchRegion)
 				.accessibilityElement(children: .ignore)
@@ -99,7 +99,7 @@ struct StatusHUDPill: View {
 		HStack(spacing: LauncherVisuals.Spacing.control) {
 			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 				Text(region.displayName)
-					.font(.caption.weight(.semibold))
+					.font(.caption.weight(.medium))
 					.adaptiveControlForeground(
 						.primary,
 						disabledTint: LauncherVisuals.disabled
@@ -116,7 +116,7 @@ struct StatusHUDPill: View {
 			.frame(maxWidth: .infinity, alignment: .leading)
 
 			Image(systemName: "checkmark")
-				.font(.caption.bold())
+				.font(.caption.weight(.medium))
 				.adaptiveControlForeground(
 					accentColor,
 					disabledTint: LauncherVisuals.disabled
@@ -126,12 +126,12 @@ struct StatusHUDPill: View {
 				.accessibilityHidden(true)
 		}
 		.padding(.horizontal, LauncherVisuals.Spacing.control)
-		.padding(.vertical, LauncherVisuals.Spacing.tight)
+		.padding(.vertical, LauncherVisuals.Spacing.control)
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(
-			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row)
+			rowFill(for: region), in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
 		)
-		.contentShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+		.contentShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control))
 	}
 
 	private func rowFill(for region: GameRegion) -> Color {

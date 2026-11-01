@@ -9,20 +9,18 @@ package struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 	@Environment(\.isEnabled) private var environmentIsEnabled
 	@Environment(\.colorSchemeContrast) private var contrast
 	private let options: [Option]
-	private let accentColor: Color
+	@Environment(\.launcherPalette) private var palette
 	private let isDisabled: Bool
 	private let label: (Option) -> Label
 
 	package init(
 		selection: Binding<Option>,
 		options: [Option],
-		accentColor: Color,
 		isDisabled: Bool = false,
 		@ViewBuilder label: @escaping (Option) -> Label
 	) {
 		_selection = selection
 		self.options = options
-		self.accentColor = accentColor
 		self.isDisabled = isDisabled
 		self.label = label
 	}
@@ -38,11 +36,11 @@ package struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 						label(option)
 						if differentiateWithoutColor && selection == option {
 							Image(systemName: "checkmark")
-								.font(.caption2.bold())
+								.font(.caption2.weight(.medium))
 								.accessibilityHidden(true)
 						}
 					}
-					.font(.caption.weight(.semibold))
+					.font(.caption.weight(.medium))
 					.frame(maxWidth: .infinity, maxHeight: .infinity)
 					.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
 					.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding)
@@ -52,17 +50,17 @@ package struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 				.keyboardFocusIndicator(in: Capsule())
 				.adaptiveControlForeground(
 					effectiveDisabled
-						? accentColor.opacity(
+						? palette.controlOn.opacity(
 							LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
 						)
-						: (selection == option ? accentColor : .secondary),
+						: (selection == option ? palette.controlOn : .secondary),
 					isDisabled: effectiveDisabled
 				)
 				.background {
 					if selection == option {
 						Color.clear
 							.adaptiveControlSurface(
-								tint: accentColor,
+								tint: palette.controlOn,
 								isDisabled: effectiveDisabled,
 								in: Capsule()
 							)
@@ -74,7 +72,7 @@ package struct AdaptiveSegmentedControl<Option: Hashable, Label: View>: View {
 		.fixedSize(horizontal: false, vertical: true)
 		.padding(LauncherVisuals.Spacing.compact)
 		.adaptiveControlSurface(
-			tint: LauncherVisuals.controlTint,
+			tint: palette.controlTint,
 			isDisabled: effectiveDisabled,
 			in: Capsule()
 		)

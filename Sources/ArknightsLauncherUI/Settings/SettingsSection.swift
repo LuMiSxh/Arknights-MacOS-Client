@@ -8,9 +8,9 @@ enum SettingsGroup: CaseIterable {
 
 	var caption: String? {
 		switch self {
-		case .arknights: "ARKNIGHTS"
-		case .launcher: "LAUNCHER"
-		case .general: "SUPPORT"
+		case .arknights: "Arknights"
+		case .launcher: "Launcher"
+		case .general: "Support"
 		}
 	}
 }

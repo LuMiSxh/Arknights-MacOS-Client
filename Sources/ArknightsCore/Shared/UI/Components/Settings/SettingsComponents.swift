@@ -41,7 +41,7 @@ package struct SectionPageHeader: View {
 	package var body: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
 			Text(title)
-				.font(.largeTitle.bold())
+				.font(.largeTitle.weight(.medium))
 			Text(subtitle)
 				.foregroundStyle(.secondary)
 				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
@@ -51,7 +51,7 @@ package struct SectionPageHeader: View {
 					.frame(height: 1)
 					.frame(maxWidth: .infinity)
 			}
-			.padding(.top, LauncherVisuals.Spacing.tight)
+			.padding(.top, LauncherVisuals.Spacing.control)
 		}
 	}
 }
@@ -89,7 +89,7 @@ package struct SettingsPage<Content: View>: View {
 				.environment(\.settingsFocusCoordinator, focusCoordinator)
 			}
 			.contentMargins(.top, LauncherVisuals.Spacing.page, for: .scrollIndicators)
-			.contentMargins(.bottom, 22, for: .scrollIndicators)
+			.contentMargins(.bottom, 24, for: .scrollIndicators)
 			.scrollIndicators(.automatic)
 			.onChange(of: focusCoordinator.focusedID) { _, focusedID in
 				guard let focusedID else { return }
@@ -108,10 +108,11 @@ package struct SettingsPage<Content: View>: View {
 /// A subtle row separator matching the nav rail's hairline, used instead of the stock
 /// `Divider()` inside glass panels so rows read as one soft surface, not a bordered form.
 package struct SettingsHairline: View {
+	@Environment(\.launcherPalette) private var palette
 	package init() {}
 	package var body: some View {
 		Rectangle()
-			.fill(LauncherVisuals.hairline)
+			.fill(palette.hairline)
 			.frame(height: LauncherVisuals.Spacing.hairline)
 	}
 }
@@ -140,6 +141,7 @@ package struct SettingsPanel<Content: View>: View {
 	@Environment(\.colorSchemeContrast) private var contrast
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@Environment(\.accessibilityShowBorders) private var showBorders
+	@Environment(\.launcherPalette) private var palette
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	package var body: some View {
@@ -161,7 +163,8 @@ package struct SettingsPanel<Content: View>: View {
 			if ownsPanelEdge {
 				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
 					.strokeBorder(
-						tone.border(for: contrast), lineWidth: LauncherVisuals.Control.borderWidth
+						tone.border(for: contrast, in: palette),
+						lineWidth: LauncherVisuals.Control.borderWidth
 					)
 					.allowsHitTesting(false)
 			}
@@ -191,7 +194,7 @@ package struct SettingsPanel<Content: View>: View {
 					label
 					Spacer(minLength: 0)
 					Image(systemName: "chevron.right")
-						.font(.caption.weight(.semibold))
+						.font(.caption.weight(.medium))
 						.foregroundStyle(.secondary)
 						.rotationEffect(.degrees(isExpanded.wrappedValue ? 90 : 0))
 						.accessibilityHidden(true)
@@ -199,7 +202,9 @@ package struct SettingsPanel<Content: View>: View {
 				.contentShape(.rect)
 			}
 			.buttonStyle(.plain)
-			.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.row))
+			.keyboardFocusIndicator(
+				in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+			)
 			.accessibilityValue(isExpanded.wrappedValue ? "Expanded" : "Collapsed")
 		} else {
 			label
@@ -229,13 +234,13 @@ package enum SettingsPanelTone {
 		return color
 	}
 
-	func border(for contrast: ColorSchemeContrast) -> Color {
+	func border(for contrast: ColorSchemeContrast, in palette: LauncherPalette) -> Color {
 		let opacity =
 			contrast == .increased
 			? LauncherVisuals.Control.semanticBorderHighContrastOpacity
 			: LauncherVisuals.Control.semanticBorderOpacity
 		return switch self {
-		case .neutral: LauncherVisuals.panelBorder
+		case .neutral: palette.panelBorder
 		case .success: LauncherVisuals.success.opacity(opacity)
 		case .warning: LauncherVisuals.warning.opacity(opacity)
 		case .danger: LauncherVisuals.dangerForeground.opacity(opacity)
@@ -265,7 +270,6 @@ package struct UpdateSettingsRow: View {
 	@Binding package var isEnabled: Bool
 	let isChecking: Bool
 	var isDisabled = false
-	package let accentColor: Color
 	package let check: () -> Void
 
 	package init(
@@ -274,7 +278,6 @@ package struct UpdateSettingsRow: View {
 		isEnabled: Binding<Bool>,
 		isChecking: Bool,
 		isDisabled: Bool = false,
-		accentColor: Color,
 		check: @escaping () -> Void
 	) {
 		self.title = title
@@ -282,18 +285,17 @@ package struct UpdateSettingsRow: View {
 		self._isEnabled = isEnabled
 		self.isChecking = isChecking
 		self.isDisabled = isDisabled
-		self.accentColor = accentColor
 		self.check = check
 	}
 
 	package var body: some View {
 		SettingsActionRow(title: title, detail: status) {
 			HStack(spacing: LauncherVisuals.Spacing.control) {
-				SettingsToggle(title, isOn: $isEnabled, accentColor: accentColor)
+				SettingsToggle(title, isOn: $isEnabled)
 					.disabled(isDisabled)
 				CapsuleActionButton(
 					title: "Check Now",
-					tone: .accent(accentColor),
+					tone: .neutral,
 					presentation: .compact,
 					action: check
 				)

@@ -6,6 +6,7 @@ import SwiftUI
 private let applyingLabel = "Applying…"
 
 struct PresetAvatarGrid: View {
+	@Environment(\.launcherPalette) private var palette
 	let catalog: PresetCatalogService
 	let accentColor: Color
 	let avatars: [PresetAvatar]
@@ -17,14 +18,14 @@ struct PresetAvatarGrid: View {
 	]
 
 	var body: some View {
-		LazyVGrid(columns: columns, spacing: 18) {
+		LazyVGrid(columns: columns, spacing: 16) {
 			ForEach(avatars) { avatar in
 				let isApplying = applyingItemID == avatar.id
 				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(avatar)
 				} label: {
-					VStack(spacing: 6) {
+					VStack(spacing: 8) {
 						ZStack {
 							CachedPresetImage(
 								catalog: catalog,
@@ -34,17 +35,8 @@ struct PresetAvatarGrid: View {
 								placeholderIcon: "person.crop.square"
 							)
 							.frame(width: 104, height: 104)
-							.background(
-								LinearGradient(
-									colors: [
-										LauncherVisuals.galleryPlateTop,
-										LauncherVisuals.galleryPlateBottom,
-									],
-									startPoint: .top,
-									endPoint: .bottom
-								)
-							)
-							.clipShape(RoundedRectangle(cornerRadius: 22))
+							.background(palette.galleryPlateBottom)
+							.clipShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel))
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.65)
@@ -52,29 +44,25 @@ struct PresetAvatarGrid: View {
 										.controlSize(.small)
 										.tint(accentColor)
 								}
-								.clipShape(RoundedRectangle(cornerRadius: 22))
+								.clipShape(
+									RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel))
 							}
 						}
 						.frame(width: 104, height: 104)
 						.overlay {
-							RoundedRectangle(cornerRadius: 22)
+							RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
 								.strokeBorder(
-									isApplying ? accentColor : Color.white.opacity(0.14),
-									lineWidth: isApplying ? 2.5 : 1.5
+									isApplying ? accentColor : palette.hairline,
+									lineWidth: LauncherVisuals.Control.borderWidth
 								)
 						}
-						.shadow(
-							color: isApplying ? accentColor.opacity(0.5) : Color.black.opacity(0.4),
-							radius: isApplying ? 8 : 5,
-							x: 0,
-							y: 3
-						)
+						.shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
 						Text(avatar.name)
-							.font(.caption.weight(isApplying ? .bold : .medium))
+							.font(.caption.weight(.medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? accentColor : .primary)
-							.frame(maxWidth: 130)
+							.frame(maxWidth: 128)
 					}
 					.padding(.vertical, 4)
 					.frame(maxWidth: .infinity)
@@ -82,7 +70,9 @@ struct PresetAvatarGrid: View {
 					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
-				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 22))
+				.keyboardFocusIndicator(
+					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+				)
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(avatar.name)
 				.accessibilityHint(
@@ -101,6 +91,7 @@ struct PresetAvatarGrid: View {
 }
 
 struct PresetWallpaperGrid: View {
+	@Environment(\.launcherPalette) private var palette
 	let catalog: PresetCatalogService
 	let accentColor: Color
 	let wallpapers: [PresetWallpaper]
@@ -108,20 +99,23 @@ struct PresetWallpaperGrid: View {
 	let onSelect: (PresetWallpaper) -> Void
 
 	private let columns = [
-		GridItem(.flexible(), spacing: 14),
-		GridItem(.flexible(), spacing: 14),
-		GridItem(.flexible(), spacing: 14),
+		GridItem(.flexible(), spacing: 16),
+		GridItem(.flexible(), spacing: 16),
+		GridItem(.flexible(), spacing: 16),
 	]
+	// Nested radius: the card radius minus the card's padding.
+	private let thumbnailRadius: CGFloat =
+		LauncherVisuals.Radius.panel - LauncherVisuals.Spacing.control
 
 	var body: some View {
-		LazyVGrid(columns: columns, spacing: 14) {
+		LazyVGrid(columns: columns, spacing: 16) {
 			ForEach(wallpapers) { wp in
 				let isApplying = applyingItemID == wp.id
 				let isBlocked = applyingItemID != nil && !isApplying
 				Button {
 					onSelect(wp)
 				} label: {
-					VStack(alignment: .leading, spacing: 6) {
+					VStack(alignment: .leading, spacing: 8) {
 						ZStack {
 							CachedPresetImage(
 								catalog: catalog,
@@ -131,55 +125,52 @@ struct PresetWallpaperGrid: View {
 								placeholderIcon: "photo"
 							)
 							.frame(minWidth: 0, maxWidth: .infinity)
-							.frame(height: 105)
+							.frame(height: 104)
 							.clipped()
-							.clipShape(RoundedRectangle(cornerRadius: 10))
+							.clipShape(RoundedRectangle(cornerRadius: thumbnailRadius))
 							if isApplying {
 								ZStack {
-									Color.black.opacity(0.68)
-									VStack(spacing: 6) {
+									Color.black.opacity(0.65)
+									VStack(spacing: 8) {
 										ProgressView()
 											.controlSize(.regular)
 											.tint(accentColor)
 										Text(applyingLabel)
-											.font(.caption2.bold())
+											.font(.caption2.weight(.medium))
 											.foregroundStyle(.white)
 									}
 								}
-								.clipShape(RoundedRectangle(cornerRadius: 10))
+								.clipShape(RoundedRectangle(cornerRadius: thumbnailRadius))
 							}
 						}
-						.frame(height: 105)
-						.background(Color.white.opacity(0.05), in: .rect(cornerRadius: 10))
+						.frame(height: 104)
+						.background(
+							Color.white.opacity(0.05), in: .rect(cornerRadius: thumbnailRadius))
 						Text(wp.displayTitle)
-							.font(.caption.weight(isApplying ? .bold : .medium))
+							.font(.caption.weight(.medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
 							.foregroundStyle(isApplying ? accentColor : .primary)
 					}
-					.padding(8)
+					.padding(LauncherVisuals.Spacing.control)
 					.frame(maxWidth: .infinity)
 					.background(
-						isApplying ? accentColor.opacity(0.12) : Color.white.opacity(0.03),
-						in: .rect(cornerRadius: 12)
+						Color.white.opacity(0.03),
+						in: .rect(cornerRadius: LauncherVisuals.Radius.panel)
 					)
 					.overlay {
-						RoundedRectangle(cornerRadius: 12)
+						RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
 							.strokeBorder(
-								isApplying ? accentColor : Color.white.opacity(0.07),
-								lineWidth: isApplying ? 2 : 1
+								isApplying ? accentColor : palette.hairline,
+								lineWidth: LauncherVisuals.Control.borderWidth
 							)
 					}
-					.shadow(
-						color: isApplying ? accentColor.opacity(0.4) : .clear,
-						radius: 8,
-						x: 0,
-						y: 2
-					)
 					.opacity(isBlocked ? 0.46 : 1)
 				}
 				.buttonStyle(ActionPressStyle(intensity: .subtle))
-				.keyboardFocusIndicator(in: RoundedRectangle(cornerRadius: 12))
+				.keyboardFocusIndicator(
+					in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+				)
 				.disabled(applyingItemID != nil)
 				.accessibilityLabel(wp.displayTitle)
 				.accessibilityHint(

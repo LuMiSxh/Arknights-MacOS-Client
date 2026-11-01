@@ -5,6 +5,7 @@ import ArknightsCustomization
 import SwiftUI
 
 struct OnboardingLookView: View {
+	@Environment(\.launcherPalette) private var palette
 	// Names the action cards of the artwork and Dock questions so each card has a stable identity.
 	private enum Action: Hashable {
 		case defaultArtwork, preset, ownImage, operatorIcons, standardIcons
@@ -19,7 +20,7 @@ struct OnboardingLookView: View {
 	var body: some View {
 		OnboardingPage(
 			title: "How should the launcher look?",
-			subtitle: "Artwork, colors and Dock icon.",
+			subtitle: "Artwork, colors, and Dock icons",
 			accentColor: customization.accentColor
 		) {
 			OnboardingQuestion(
@@ -118,7 +119,7 @@ struct OnboardingLookView: View {
 				ZStack {
 					Color.black.opacity(0.35)
 					Image(systemName: "photo")
-						.font(.largeTitle)
+						.font(.title2)
 						.foregroundStyle(.tertiary)
 						.accessibilityHidden(true)
 				}
@@ -127,10 +128,10 @@ struct OnboardingLookView: View {
 		.frame(maxWidth: .infinity)
 		.frame(height: 132)
 		.clipped()
-		.clipShape(.rect(cornerRadius: 14))
+		.clipShape(.rect(cornerRadius: LauncherVisuals.Radius.panel))
 		.overlay {
-			RoundedRectangle(cornerRadius: 14)
-				.strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+			RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+				.strokeBorder(palette.hairline, lineWidth: 1)
 		}
 	}
 }

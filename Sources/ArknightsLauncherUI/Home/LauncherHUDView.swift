@@ -28,7 +28,7 @@ struct LauncherHUDView: View {
 				.contentShape(Rectangle())
 				.onTapGesture(perform: collapseExpandedPill)
 
-			VStack(spacing: 10) {
+			VStack(spacing: 12) {
 				hudPillRow
 				controlBar
 			}
@@ -106,14 +106,14 @@ struct LauncherHUDView: View {
 		.padding(16)
 	}
 
-	// Takes the 10pt VStack spacing above `controlBar` only when a pill has content, mirroring the
+	// Takes the 12pt VStack spacing above `controlBar` only when a pill has content, mirroring the
 	// pill visibility checks.
 	@ViewBuilder
 	private var hudPillRow: some View {
 		if hasMusicPill || hasVersionPill || hasStatusPill {
 			HStack {
 				Spacer(minLength: 16)
-				AdaptiveGlassGroup(spacing: 6) {
+				AdaptiveGlassGroup(spacing: 8) {
 					HStack(alignment: .bottom, spacing: 8) {
 						if hasMusicPill {
 							MusicHUDPill(
@@ -188,24 +188,22 @@ struct LauncherHUDView: View {
 	}
 
 	private var primaryActionTransition: AnyTransition {
-		.materialize(reduceMotion: reduceMotion, scale: 0.88, blur: 6, anchor: .trailing)
+		.materialize(reduceMotion: reduceMotion, scale: 0.96, blur: 0, anchor: .trailing)
 	}
 
 	// Pills rise out of the control bar one after another instead of popping in together.
 	private func hudPillTransition(index: Int) -> AnyTransition {
 		let insertion = AnyTransition.materialize(
 			reduceMotion: reduceMotion,
-			scale: 0.86,
-			blur: 6,
-			offsetY: 14,
+			scale: 0.96,
+			blur: 0,
 			anchor: .bottom
 		)
 		.animation(LauncherMotion.staggered(.state, index: index, reduceMotion: reduceMotion))
 		let removal = AnyTransition.materialize(
 			reduceMotion: reduceMotion,
-			scale: 0.92,
-			blur: 4,
-			offsetY: 8,
+			scale: 0.96,
+			blur: 0,
 			anchor: .bottom
 		)
 		.animation(LauncherMotion.animation(.dismiss, reduceMotion: reduceMotion))
@@ -271,7 +269,6 @@ private struct HUDSiblingFocus: ViewModifier {
 
 	func body(content: Content) -> some View {
 		content
-			.scaleEffect(isReceded && !reduceMotion ? 0.96 : 1, anchor: .bottom)
 			.opacity(isReceded ? 0.62 : 1)
 			.animation(LauncherMotion.fade(reduceMotion: reduceMotion), value: isReceded)
 	}

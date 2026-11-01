@@ -35,17 +35,19 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		self.actions = actions()
 	}
 
+	@Environment(\.launcherPalette) private var palette
+
 	package var body: some View {
 		VStack(spacing: 0) {
-			VStack(alignment: .leading, spacing: 10) {
+			VStack(alignment: .leading, spacing: 8) {
 				Text(title)
-					.font(.title2.bold())
+					.font(.title2.weight(.medium))
 					.modifier(ModalEntrance(hasEntered: hasEntered, reduceMotion: reduceMotion))
 				HStack(spacing: 8) {
 					Rectangle()
-						.fill(LauncherVisuals.controlTint.opacity(0.62))
+						.fill(palette.controlTint.opacity(0.62))
 						.frame(width: hasEntered || reduceMotion ? 48 : 0, height: 2)
-					Rectangle().fill(LauncherVisuals.hairline)
+					Rectangle().fill(palette.hairline)
 						.frame(height: 1)
 						.frame(maxWidth: .infinity)
 						.scaleEffect(x: hasEntered || reduceMotion ? 1 : 0, anchor: .leading)
@@ -53,14 +55,14 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
 			.padding(.horizontal, 24)
-			.padding(.top, 22)
+			.padding(.top, 24)
 			.padding(.bottom, 16)
 
 			ScrollView {
 				content
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.padding(.horizontal, 24)
-					.padding(.top, 2)
+					.padding(.top, 4)
 					.padding(.bottom, 20)
 					.modifier(
 						ModalEntrance(
@@ -71,7 +73,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 					)
 			}
 			.contentMargins(.top, 8, for: .scrollIndicators)
-			.contentMargins(.bottom, 22, for: .scrollIndicators)
+			.contentMargins(.bottom, 24, for: .scrollIndicators)
 			.scrollIndicators(.automatic)
 		}
 		.safeAreaInset(edge: .bottom, spacing: 0) {
@@ -79,9 +81,9 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 				actions
 			}
 			.textSelection(.disabled)
-			.padding(.top, 14)
+			.padding(.top, 16)
 			.padding(.trailing, 24)
-			.padding(.bottom, 18)
+			.padding(.bottom, 16)
 			.frame(maxWidth: .infinity, alignment: .trailing)
 			.background {
 				FloatingActionFooterFade()
@@ -90,14 +92,14 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		.frame(width: modalSize.width, height: modalSize.height)
 		.background {
 			ZStack {
-				LauncherVisuals.modalBackground
+				palette.modalBackground
 				hudTintColor
 			}
 		}
 		.clipShape(.rect(cornerRadius: LauncherVisuals.modalCornerRadius))
 		.overlay {
 			RoundedRectangle(cornerRadius: LauncherVisuals.modalCornerRadius)
-				.strokeBorder(LauncherVisuals.hairline)
+				.strokeBorder(palette.hairline)
 		}
 		.shadow(color: .black.opacity(0.45), radius: 24, y: 10)
 		.preferredColorScheme(.dark)

@@ -110,6 +110,10 @@ package struct PreferencesMigrator {
 		},
 		// Launch options stored before 0.7.0 kept Retina and the window size in one resolution.
 		Step(version: 2) { PreRetinaLaunchOptions.convert($0.defaults) },
+		// Accents cached by the HSB extractor; v3 renders accents in OKLCH.
+		Step(version: 3) {
+			$0.removeKeys(withPrefix: "dynamicThemeAccent.", keeping: "dynamicThemeAccent.v3.")
+		},
 	]
 
 	private static let versionKey = LauncherPreferencesStore.Key.preferencesMigrationVersion

@@ -31,7 +31,7 @@ struct VersionHUDPill: View {
 			isExpanded: $isExpanded
 		) {
 			Text(versionText)
-				.font(.caption.monospaced().weight(.medium))
+				.font(.caption.monospacedDigit().weight(.medium))
 				.foregroundStyle(.secondary)
 				.lineLimit(1)
 				.truncationMode(.tail)
@@ -42,7 +42,7 @@ struct VersionHUDPill: View {
 					alignment: .leading
 				)
 		} detail: {
-			HStack(spacing: 10) {
+			HStack(spacing: 12) {
 				Label(updateStatus, systemImage: updateStatusIcon)
 					.font(.caption)
 					.foregroundStyle(
@@ -58,7 +58,7 @@ struct VersionHUDPill: View {
 				)
 				.disabled(cannotCheck)
 			}
-			.padding(.horizontal, 14)
+			.padding(.horizontal, 16)
 		}
 	}
 

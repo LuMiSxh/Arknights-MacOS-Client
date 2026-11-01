@@ -53,7 +53,7 @@ package struct LauncherPreferencesStore {
 		}
 		package static let selectedRegion = "selectedRegion"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
-		package static let dynamicThemeAccent = "dynamicThemeAccent.v2"
+		package static let dynamicThemeAccent = "dynamicThemeAccent.v3"
 		package static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
 		static let forceDisableRetina = "forceDisableRetina"
 		static let preferencesMigrationVersion = "preferencesMigrationVersion"
