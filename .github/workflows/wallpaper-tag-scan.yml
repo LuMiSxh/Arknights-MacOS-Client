@@ -19,15 +19,17 @@ jobs:
     runs-on: xcode-27
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
       issues: write
+      pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
+          # The scan pushes a tagging branch, so the checkout keeps its token.
+          persist-credentials: true
 
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -36,5 +38,12 @@ jobs:
           prune-cache: true
           cache-dependency-glob: uv.lock
 
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+
       - name: Scan for untagged wallpapers
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: uv run --locked --no-dev scripts/scan_untagged_wallpapers.py
