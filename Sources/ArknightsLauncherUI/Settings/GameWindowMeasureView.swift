@@ -33,7 +33,7 @@ private struct GameWindowMeasurePanel: View {
 	@Environment(\.dismissWindow) private var dismissWindow
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var measuredSize = GameDisplaySize(width: 0, height: 0)
-	@State private var locksWidescreen = false
+	@State private var lockedRatio = LockedRatio.free
 
 	private var validSize: GameDisplaySize? {
 		GameDisplaySize.validatedCustom(width: measuredSize.width, height: measuredSize.height)
@@ -49,12 +49,10 @@ private struct GameWindowMeasurePanel: View {
 	}
 
 	var body: some View {
+		// No inner frame: the window edge is the measured area, and an inset frame would read as it.
 		VStack(spacing: LauncherTokens.Spacing.content) {
-			DimensionLabel(value: measuredSize.width, axis: .horizontal)
-			HStack(spacing: LauncherTokens.Spacing.content) {
-				DimensionLabel(value: measuredSize.height, axis: .vertical)
-				measuringFrame
-			}
+			readout
+				.frame(maxWidth: .infinity, maxHeight: .infinity)
 			controls
 		}
 		.padding(LauncherTokens.Spacing.panel)
@@ -64,7 +62,7 @@ private struct GameWindowMeasurePanel: View {
 		)
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background { backdrop }
-		.background(WindowAspectRatioLock(isLocked: locksWidescreen))
+		.background(WindowAspectRatioLock(ratio: lockedRatio.size))
 		.onGeometryChange(for: GameDisplaySize.self) { proxy in
 			GameDisplaySize(
 				width: Int(proxy.size.width.rounded()), height: Int(proxy.size.height.rounded()))
@@ -73,8 +71,8 @@ private struct GameWindowMeasurePanel: View {
 		}
 	}
 
-	/// The hero artwork fills the window, as it fills the game. The scrim keeps the labels and the
-	/// frame readable over the artwork. The sheet color shows when no artwork is set.
+	/// The hero artwork fills the window, as it fills the game. The scrim keeps the readout
+	/// readable over the artwork. The sheet color shows when no artwork is set.
 	private var backdrop: some View {
 		ZStack {
 			if let image = customization.heroArtwork {
@@ -91,20 +89,6 @@ private struct GameWindowMeasurePanel: View {
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.ignoresSafeArea()
 		.allowsHitTesting(false)
-	}
-
-	/// The frame fills the space that the labels and controls leave, so it tracks the window size.
-	private var measuringFrame: some View {
-		ZStack {
-			RoundedRectangle(cornerRadius: LauncherTokens.Radius.field)
-				.strokeBorder(
-					theme.hairline,
-					style: StrokeStyle(lineWidth: LauncherVisuals.Spacing.hairline, dash: [6, 4]))
-			CornerTicks()
-				.stroke(theme.textTertiary, lineWidth: 1.5)
-			readout
-		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity)
 	}
 
 	private var readout: some View {
@@ -151,12 +135,18 @@ private struct GameWindowMeasurePanel: View {
 		b == 0 ? a : greatestCommonDivisor(b, a % b)
 	}
 
+	// The same floating glass bar as the Home actions.
 	private var controls: some View {
-		HStack(spacing: LauncherTokens.Spacing.control) {
-			Text("Lock 16:9")
+		FloatingActionBar {
+			Text("Lock ratio")
 				.foregroundStyle(theme.textSecondary)
-			SettingsToggle("Lock 16:9", isOn: $locksWidescreen)
-			Spacer(minLength: LauncherTokens.Spacing.content)
+				.padding(.leading, LauncherTokens.Spacing.control)
+			AdaptiveSegmentedControl(
+				selection: $lockedRatio,
+				options: LockedRatio.allCases
+			) { ratio in
+				Text(ratio.title)
+			}
 			CapsuleActionButton(title: "Cancel", tone: .neutral) {
 				dismissWindow(id: GameWindowMeasureView.sceneID)
 			}
@@ -165,9 +155,6 @@ private struct GameWindowMeasurePanel: View {
 			}
 			.disabled(validSize == nil)
 		}
-		.padding(.horizontal, LauncherTokens.Spacing.panel)
-		.padding(.vertical, LauncherTokens.Spacing.content)
-		.launcherSurface(.group)
 	}
 
 	private func useMeasuredSize() {
@@ -177,57 +164,43 @@ private struct GameWindowMeasurePanel: View {
 	}
 }
 
-/// A width or height readout along one edge of the measuring frame.
-private struct DimensionLabel: View {
-	let value: Int
-	let axis: Axis
-	@Environment(\.launcherTheme) private var theme
+/// The aspect ratios of the official client that the measure window can lock to.
+private enum LockedRatio: CaseIterable {
+	case free, widescreen, tenToSixteen, fourToThree
 
-	var body: some View {
-		Text("\(value)")
-			.font(.caption.monospacedDigit())
-			.foregroundStyle(theme.textTertiary)
-			.fixedSize()
-			.rotationEffect(.degrees(axis == .vertical ? -90 : 0))
-			.frame(
-				maxWidth: axis == .horizontal ? .infinity : nil,
-				maxHeight: axis == .vertical ? .infinity : nil)
-	}
-}
-
-/// Short L-shaped ticks at the four corners of the measuring frame.
-private struct CornerTicks: Shape {
-	nonisolated func path(in rect: CGRect) -> Path {
-		let length: CGFloat = 12
-		var path = Path()
-		for horizontal in [CGFloat(1), -1] {
-			for vertical in [CGFloat(1), -1] {
-				let corner = CGPoint(
-					x: horizontal > 0 ? rect.minX : rect.maxX,
-					y: vertical > 0 ? rect.minY : rect.maxY)
-				path.move(to: CGPoint(x: corner.x + horizontal * length, y: corner.y))
-				path.addLine(to: corner)
-				path.addLine(to: CGPoint(x: corner.x, y: corner.y + vertical * length))
-			}
+	var title: String {
+		switch self {
+		case .free: "Free"
+		case .widescreen: "16:9"
+		case .tenToSixteen: "16:10"
+		case .fourToThree: "4:3"
 		}
-		return path
+	}
+
+	var size: NSSize? {
+		switch self {
+		case .free: nil
+		case .widescreen: NSSize(width: 16, height: 9)
+		case .tenToSixteen: NSSize(width: 16, height: 10)
+		case .fourToThree: NSSize(width: 4, height: 3)
+		}
 	}
 }
 
-/// Keeps the hosting window's content at 16:9 while `isLocked` is true.
+/// Keeps the hosting window's content at `ratio` while it is set.
 private struct WindowAspectRatioLock: NSViewRepresentable {
-	let isLocked: Bool
+	let ratio: NSSize?
 
 	func makeNSView(context: Context) -> AspectRatioView {
 		AspectRatioView()
 	}
 
 	func updateNSView(_ view: AspectRatioView, context: Context) {
-		view.isLocked = isLocked
+		view.ratio = ratio
 	}
 
 	final class AspectRatioView: NSView {
-		var isLocked = false {
+		var ratio: NSSize? {
 			didSet { applyAspectRatio() }
 		}
 
@@ -239,8 +212,8 @@ private struct WindowAspectRatioLock: NSViewRepresentable {
 
 		private func applyAspectRatio() {
 			guard let window else { return }
-			if isLocked {
-				window.contentAspectRatio = NSSize(width: 16, height: 9)
+			if let ratio {
+				window.contentAspectRatio = ratio
 			} else {
 				// Setting the ratio to .zero does not unlock. Resize increments override the ratio.
 				window.contentResizeIncrements = NSSize(width: 1, height: 1)
