@@ -67,4 +67,33 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.installDirectory(for: .japan, default: legacyJapan) == customJapan)
 	}
 
+	@Test
+	func appearancePreferencesRoundTripAndFallBackForUnknownValues() {
+		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+
+		#expect(store.launcherAppearance() == .system)
+		#expect(store.homeTheme() == .automatic)
+		#expect(store.brandingTheme() == .automatic)
+
+		for appearance in LauncherAppearance.allCases {
+			store.setLauncherAppearance(appearance)
+			#expect(store.launcherAppearance() == appearance)
+		}
+		for theme in HomeTheme.allCases {
+			store.setHomeTheme(theme)
+			#expect(store.homeTheme() == theme)
+			store.setBrandingTheme(theme)
+			#expect(store.brandingTheme() == theme)
+		}
+
+		defaults.set("unknown", forKey: Key.launcherAppearance)
+		defaults.set("unknown", forKey: Key.homeTheme)
+		defaults.set("unknown", forKey: Key.brandingTheme)
+		#expect(store.launcherAppearance() == .system)
+		#expect(store.homeTheme() == .automatic)
+		#expect(store.brandingTheme() == .automatic)
+	}
+
 }

@@ -62,6 +62,41 @@ extension CustomizationController {
 		}
 	}
 
+	// Scores the artwork's Home composition off the main actor. Scores are cached per artwork key,
+	// and a result for artwork that is no longer visible is dropped.
+	func updateArtworkColorScheme() {
+		guard let heroArtwork else {
+			homeSchemeSlot.invalidate()
+			artworkColorScheme = .dark
+			return
+		}
+		let cacheKey = activeThemeCacheKey
+		let cache = homeLuminanceCache
+		homeSchemeSlot.replace { [weak self] token in
+			guard let self else { return }
+			let score = await cache.score(for: heroArtwork, cacheKey: cacheKey)
+			guard self.homeSchemeSlot.owns(token),
+				self.heroArtwork === heroArtwork,
+				self.activeThemeCacheKey == cacheKey
+			else { return }
+			guard let score else {
+				self.artworkColorScheme = .dark
+				return
+			}
+			self.artworkColorScheme = HomeLuminance.colorScheme(
+				for: score, previous: self.artworkColorScheme)
+		}
+	}
+
+	// The wordmark pill never uses this; it always stays dark.
+	package func homeColorScheme(for theme: HomeTheme) -> ColorScheme {
+		switch theme {
+		case .automatic: artworkColorScheme
+		case .dark: .dark
+		case .light: .light
+		}
+	}
+
 	func updateDynamicAppIcon(hue: Double?) {
 		guard !hasCustomAppIcon else { return }
 		if usesDynamicTheme(), let hue {

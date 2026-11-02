@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 // Explains the two generated treatments without adding a second interaction to the gallery.
@@ -7,6 +8,7 @@ struct OperatorIconStylePreview: View {
 	let catalog: PresetCatalogService
 	let avatar: PresetAvatar?
 	let accentHue: Double?
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 16) {
@@ -15,7 +17,7 @@ struct OperatorIconStylePreview: View {
 					.font(.headline)
 				Text("Your operator is applied to both icons.")
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 
 			if let avatar {
@@ -42,8 +44,6 @@ struct OperatorIconStylePreview: View {
 		}
 		.padding(16)
 		.frame(minWidth: 284, maxWidth: 360)
-
-		.preferredColorScheme(.dark)
 	}
 
 	private func styleLabel(
@@ -56,7 +56,7 @@ struct OperatorIconStylePreview: View {
 				.font(.caption.weight(.medium))
 			Text(detail)
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.multilineTextAlignment(.center)
 				.lineLimit(2)
 				.fixedSize(horizontal: false, vertical: true)

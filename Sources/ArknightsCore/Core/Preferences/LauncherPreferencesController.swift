@@ -63,6 +63,15 @@ package final class LauncherPreferencesController {
 			onDynamicThemeChanged?()
 		}
 	}
+	package var launcherAppearance: LauncherAppearance {
+		didSet { store.setLauncherAppearance(launcherAppearance) }
+	}
+	package var homeTheme: HomeTheme {
+		didSet { store.setHomeTheme(homeTheme) }
+	}
+	package var brandingTheme: HomeTheme {
+		didSet { store.setBrandingTheme(brandingTheme) }
+	}
 	package var canaryFeaturesEnabled: Bool {
 		didSet {
 			store.set(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled)
@@ -118,6 +127,9 @@ package final class LauncherPreferencesController {
 		taiwanClientEnabled = store.value(Key.taiwanClientEnabled)
 		usesHardwareCursor = store.value(Key.usesHardwareCursor)
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
+		launcherAppearance = store.launcherAppearance()
+		homeTheme = store.homeTheme()
+		brandingTheme = store.brandingTheme()
 	}
 
 	/// Keeps region and installation locations intact because they point to user files.
@@ -143,6 +155,9 @@ package final class LauncherPreferencesController {
 		taiwanClientEnabled = store.value(Key.taiwanClientEnabled)
 		usesHardwareCursor = store.value(Key.usesHardwareCursor)
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
+		launcherAppearance = store.launcherAppearance()
+		homeTheme = store.homeTheme()
+		brandingTheme = store.brandingTheme()
 		return true
 	}
 }

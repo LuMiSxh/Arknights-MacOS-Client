@@ -4,11 +4,13 @@ import SwiftUI
 
 struct CapsuleProgressOutline: View {
 	let progress: Double
+	// Kept for existing call sites; the theme supplies the color.
 	let tint: Color
 	var isGlintActive = false
 	var lineWidth: CGFloat = 2
 	var track: Color = .clear
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 
 	private var clampedProgress: Double {
 		min(max(progress, 0), 1)
@@ -27,17 +29,18 @@ struct CapsuleProgressOutline: View {
 					.inset(by: lineWidth / 2)
 					.trim(from: 0, to: clampedProgress)
 					.stroke(
-						tint,
+						theme.accentFill,
 						style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
 					)
 					.opacity(showsIndeterminatePulse ? 0 : 1)
 			}
 			.overlay {
 				if showsIndeterminatePulse {
-					CapsuleIndeterminatePulse(tint: tint, lineWidth: lineWidth)
+					CapsuleIndeterminatePulse(tint: theme.accentFill, lineWidth: lineWidth)
 						.transition(.opacity)
 				} else if isGlintActive && clampedProgress > 0 && !reduceMotion {
-					CapsuleProgressSweep(progress: clampedProgress, lineWidth: lineWidth)
+					CapsuleProgressSweep(
+						progress: clampedProgress, lineWidth: lineWidth, glint: theme.textPrimary)
 				}
 			}
 			.animation(
@@ -51,6 +54,7 @@ struct CapsuleProgressOutline: View {
 private struct CapsuleProgressSweep: View {
 	let progress: Double
 	let lineWidth: CGFloat
+	let glint: Color
 
 	private var cycleDuration: TimeInterval {
 		LauncherMotion.Cycle.progressSweepFadeIn
@@ -73,7 +77,7 @@ private struct CapsuleProgressSweep: View {
 			.inset(by: lineWidth / 2)
 			.trim(from: max(0, head - length), to: head)
 			.stroke(
-				Color.white.opacity(values.opacity),
+				glint.opacity(values.opacity),
 				style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
 			)
 	}

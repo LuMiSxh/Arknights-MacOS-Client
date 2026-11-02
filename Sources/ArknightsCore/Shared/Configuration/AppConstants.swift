@@ -211,6 +211,7 @@ package enum AppConstants {
 		static let maximumMessageBytes = 16 * 1_024
 		static let truncationMarker = " [trunc]"
 		package static let wineLogTailBytes = 2_000
+		package static let sdkLogMaximumBytes = 2 * 1_024 * 1_024
 		package static let crashReportSearchWindow: TimeInterval = 120
 	}
 
@@ -243,16 +244,39 @@ package enum AppConstants {
 	package enum Theme {
 		package static let wallpaperSampleSide = 32
 		package static let accentHueBuckets = 24
-		// Pixel filters in OKLab: skip near-gray, near-black, and blown-out pixels when picking a
-		// hue. Muted pixels that pass are weighted down further in the accent score.
-		package static let minimumPixelChroma = 0.04
-		package static let minimumPixelLightness = 0.2
-		package static let maximumPixelLightness = 0.97
-		// The accent is rendered in OKLCH at one perceptual lightness, so every hue reads equally
-		// bright on the dark chrome. Chroma follows the artwork inside this calm range.
-		package static let accentLightness = 0.78
-		package static let minimumAccentChroma = 0.08
-		package static let maximumAccentChroma = 0.15
+		// Hero artwork can be anything from near-monochrome to neon: these only exclude
+		// true noise (near-gray, near-black, blown-out highlights) when picking a hue.
+		// Muted pixels are excluded here and weighted down further in the accent score.
+		package static let minimumPixelSaturation = 0.25
+		package static let minimumPixelBrightness = 0.08
+		package static let maximumPixelBrightness = 0.97
+		// The winning hue's own saturation/brightness are clamped into this range so the
+		// rendered accent stays legible against the launcher's dark chrome regardless of
+		// how dark, pale, or muted the source artwork actually was.
+		package static let minimumRenderSaturation = 0.65
+		package static let maximumRenderSaturation = 0.85
+		package static let minimumRenderBrightness = 0.80
+		package static let maximumRenderBrightness = 0.95
+		// Home controls follow the artwork's composition. The score is the perceptual lightness (0 to 1)
+		// of linear-light Rec. 709 luminance, measured on a square of `artworkLuminanceSampleSide` pixels.
+		// It mixes the median of the whole frame with the median of the pixels under the Home controls.
+		package static let artworkLuminanceSampleSide = 64
+		package static let homeLuminanceOverallWeight = 0.4
+		package static let homeLuminanceControlWeight = 0.6
+		// Unit rectangles with the origin at the top left, in the row order of the sampled bitmap.
+		package static let homeControlRegions: [CGRect] = [
+			CGRect(x: 0, y: 0, width: 0.35, height: 0.22),  // Branding, top left
+			CGRect(x: 0.82, y: 0, width: 0.18, height: 0.16),  // Settings, top right
+			CGRect(x: 0.15, y: 0.80, width: 0.70, height: 0.20),  // Launch bar, bottom
+			CGRect(x: 0.72, y: 0.88, width: 0.28, height: 0.12),  // Version pill, bottom right
+		]
+		// Light glass above the light threshold, dark glass below the dark one. Between them the
+		// previous decision holds, so artwork near a boundary does not flip back and forth.
+		package static let lightHomeLuminanceThreshold = 0.58
+		package static let darkHomeLuminanceThreshold = 0.50
+		// Cached scores carry this version; bump it when the score changes.
+		package static let homeLuminanceVersion = "homeLuminance.v1"
+		package static let homeLuminanceCacheLimit = 64
 
 	}
 

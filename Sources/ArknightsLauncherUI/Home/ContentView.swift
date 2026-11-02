@@ -52,8 +52,10 @@ package struct ContentView: View {
 			)
 			.ignoresSafeArea(.container, edges: .top)
 			.environment(\.decorativeMotionEnabled, homeLayerMotionEnabled)
-			LauncherReadabilityField().ignoresSafeArea(.container, edges: .top).allowsHitTesting(
-				false)
+			LauncherReadabilityField(showsBranding: model.settings.showsBranding)
+				.environment(\.colorScheme, brandingColorScheme)
+				.ignoresSafeArea(.container, edges: .top)
+				.allowsHitTesting(false)
 			VStack(spacing: 0) {
 				topBar
 				Spacer()
@@ -66,7 +68,7 @@ package struct ContentView: View {
 					communication: model.communication,
 					canSwitchRegion: model.refreshController.canSwitchRegion,
 					accentColor: model.customization.accentColor,
-					hudTintColor: model.customization.hudTintColor,
+					homeColorScheme: homeColorScheme,
 					musicController: musicController,
 					actions: LauncherHUDActions(
 						openLauncherUpdate: requestLauncherUpdateCheck,
@@ -87,10 +89,14 @@ package struct ContentView: View {
 		.allowsHitTesting(!updateOverlayIsPresented)
 		.accessibilityHidden(updateOverlayIsPresented)
 		.background(Color.black)
+		// Home artwork stays dark. The wordmark and its scrim follow brandingColorScheme; the HUD
+		// pills and the settings button follow homeColorScheme.
+		// Sheets and overlays attach outside this container.
+		.launcherTheme(accent: model.customization.accentColor)
+		.environment(\.colorScheme, .dark)
 		.background {
 			WindowVisibilityReader(visibility: decorativeMotionVisibility)
 		}
-		.preferredColorScheme(.dark)
 		.animation(themeAnimation, value: model.customization.dynamicThemeHue)
 		.onChange(of: developerAccessibilityMusicTitle) { _, title in
 			guard title != nil else { return }
@@ -115,11 +121,16 @@ package struct ContentView: View {
 							await model.actions.refreshIntelTranslationForUI(force: true)
 						},
 						installRosetta: { await model.actions.installRosetta() }),
-					retryUpdateCheck: retryOnboardingUpdateCheck)
+					retryUpdateCheck: retryOnboardingUpdateCheck
+				)
+				.launcherTheme(accent: model.customization.accentColor)
 			}
 		}
 		.onGeometryChange(for: CGSize.self, of: \.size) { windowSize = $0 }
-		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) { sheetContent(for: $0) }
+		.sheet(item: sheetPresentation, onDismiss: presentationDidDismiss) {
+			sheetContent(for: $0)
+				.launcherTheme(accent: model.customization.accentColor)
+		}
 		.overlay { updateOverlay }
 	}
 
@@ -191,6 +202,7 @@ package struct ContentView: View {
 				\.launcherPalette,
 				LauncherPalette(accent: model.customization.accentColor)
 			)
+			.launcherTheme(accent: model.customization.accentColor)
 	}
 
 	// Split out of `body`: the full modifier chain exceeds the type checker's budget.
@@ -202,7 +214,9 @@ package struct ContentView: View {
 				accentColor: model.customization.accentColor,
 				hudTintColor: model.customization.hudTintColor,
 				reduceTransparency: reduceTransparency,
-				checkForUpdates: { model.actions.openLauncherUpdate() })
+				checkForUpdates: { model.actions.openLauncherUpdate() }
+			)
+			.launcherTheme(accent: model.customization.accentColor)
 		}
 	}
 
@@ -292,12 +306,26 @@ package struct ContentView: View {
 		}
 	}
 
+	private var homeColorScheme: ColorScheme {
+		model.customization.homeColorScheme(for: model.settings.homeTheme)
+	}
+
+	private var brandingColorScheme: ColorScheme {
+		switch model.settings.brandingTheme {
+		case .automatic: homeColorScheme
+		case .dark: .dark
+		case .light: .light
+		}
+	}
+
 	private var topBar: some View {
 		HStack(alignment: .top) {
 			if model.settings.showsBranding {
 				ArknightsWordmark(
 					logo: model.customization.officialLogo, region: model.installation.region
 				).padding(.top, 32)
+					.environment(\.colorScheme, brandingColorScheme)
+					.launcherAnimation(.state, value: brandingColorScheme)
 			}
 			Spacer()
 			IconActionButton(
@@ -306,7 +334,6 @@ package struct ContentView: View {
 				tone: .neutral,
 				foreground: .primary,
 				surface: .hud,
-				surfaceTint: model.customization.hudTintColor,
 				size: 40,
 				hitTargetSize: 44,
 				action: requestSettings
@@ -315,6 +342,9 @@ package struct ContentView: View {
 			.keyboardShortcut(",", modifiers: .command)
 			.accessibilityHint(Text("Open launcher settings"))
 			.help("Open launcher settings")
+			.launcherTheme(accent: model.customization.accentColor)
+			.environment(\.colorScheme, homeColorScheme)
+			.launcherAnimation(.state, value: homeColorScheme)
 		}
 		.padding(.top, 8).padding(.horizontal, 16).ignoresSafeArea(.container, edges: .top)
 	}

@@ -5,7 +5,7 @@ import ArknightsCustomization
 import SwiftUI
 
 struct OnboardingLookView: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	// Names the action cards of the artwork and Dock questions so each card has a stable identity.
 	private enum Action: Hashable {
 		case defaultArtwork, preset, ownImage, operatorIcons, standardIcons
@@ -74,12 +74,12 @@ struct OnboardingLookView: View {
 	private static func colorsAnswer(_ matchesArtwork: Bool) -> OnboardingAnswer<Bool> {
 		matchesArtwork
 			? OnboardingAnswer(
-				value: true, title: "Match the artwork",
-				detail: "Buttons and glass pick up the colors of your artwork.",
+				value: true, title: "Follow the artwork",
+				detail: "The launcher accent and the Dock icons use the colors of your artwork.",
 				systemImage: "paintpalette", isRecommended: true)
 			: OnboardingAnswer(
 				value: false, title: "Keep it neutral",
-				detail: "Uses the standard launcher colors whatever the artwork.",
+				detail: "The launcher keeps its standard colors whatever the artwork.",
 				systemImage: "circle.lefthalf.filled")
 	}
 
@@ -117,10 +117,10 @@ struct OnboardingLookView: View {
 					.accessibilityLabel("Current launcher artwork")
 			} else {
 				ZStack {
-					Color.black.opacity(0.35)
+					theme.controlFill
 					Image(systemName: "photo")
 						.font(.title2)
-						.foregroundStyle(.tertiary)
+						.foregroundStyle(theme.textTertiary)
 						.accessibilityHidden(true)
 				}
 			}
@@ -131,7 +131,7 @@ struct OnboardingLookView: View {
 		.clipShape(.rect(cornerRadius: LauncherVisuals.Radius.panel))
 		.overlay {
 			RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
-				.strokeBorder(palette.hairline, lineWidth: 1)
+				.strokeBorder(theme.hairline, lineWidth: 1)
 		}
 	}
 }

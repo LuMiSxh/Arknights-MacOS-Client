@@ -108,7 +108,9 @@ package final class StorageMaintenanceController {
 	}
 
 	package func revealLogs() {
+		let publisher = regionProvider().publisher
 		Task { [log, paths] in
+			await SDKLogCollector.collect(publisher: publisher, paths: paths, log: log)
 			await log.prepare()
 			NSWorkspace.shared.activateFileViewerSelecting(Self.logURLs(for: paths))
 		}

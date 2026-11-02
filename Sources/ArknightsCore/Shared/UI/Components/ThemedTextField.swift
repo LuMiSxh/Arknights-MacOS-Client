@@ -8,8 +8,8 @@ package struct ThemedTextField: View {
 	@Binding package var text: String
 	var systemImage: String?
 
-	@Environment(\.launcherPalette) private var palette
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.isEnabled) private var isEnabled
 	@FocusState private var isFocused: Bool
 
 	package init(
@@ -29,24 +29,32 @@ package struct ThemedTextField: View {
 			if let systemImage {
 				Image(systemName: systemImage)
 					.font(.caption)
-					.adaptiveTintForeground(palette.controlTint)
+					.foregroundStyle(theme.textSecondary)
 					.accessibilityHidden(true)
 			}
 
-			TextField(prompt, text: $text)
+			TextField("", text: $text, prompt: Text(prompt).foregroundStyle(theme.textTertiary))
 				.textFieldStyle(.plain)
+				.focusEffectDisabled()
 				.focused($isFocused)
+				.foregroundStyle(theme.textPrimary)
 				.accessibilityLabel(title)
 		}
 		.font(.callout)
-		.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
-		.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding + 2)
-		.adaptiveControlSurface(
-			tint: isFocused ? palette.controlOn : palette.controlTint,
-			borderOpacity: isFocused ? 0.62 : nil,
-			in: Capsule()
-		)
-		.contentShape(Capsule())
-		.animation(LauncherMotion.animation(.state, reduceMotion: reduceMotion), value: isFocused)
+		.padding(.horizontal, 12)
+		.padding(.vertical, 8)
+		.background {
+			RoundedRectangle(cornerRadius: LauncherTokens.Radius.field)
+				.fill(theme.controlFill)
+		}
+		.overlay {
+			RoundedRectangle(cornerRadius: LauncherTokens.Radius.field)
+				.strokeBorder(
+					isFocused ? theme.accentFill : theme.controlStroke,
+					lineWidth: isFocused ? 1.5 : 1)
+		}
+		.contentShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.field))
+		.launcherAnimation(.state, value: isFocused)
+		.opacity(isEnabled ? 1 : 0.4)
 	}
 }

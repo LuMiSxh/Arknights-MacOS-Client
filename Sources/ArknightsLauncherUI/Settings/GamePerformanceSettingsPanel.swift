@@ -5,6 +5,7 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct GamePerformanceSettingsPanel: View {
+	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
 	/// Game Mode and the Metal HUD lock while a game runs.
 	let isLocked: Bool
@@ -35,7 +36,7 @@ struct GamePerformanceSettingsPanel: View {
 					.accessibilityValue(options.frameRateLimit.displayName)
 					Text(options.frameRateLimit.displayName)
 						.font(.caption.monospacedDigit())
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 						.frame(minWidth: 72, alignment: .trailing)
 						.accessibilityHidden(true)
 				}

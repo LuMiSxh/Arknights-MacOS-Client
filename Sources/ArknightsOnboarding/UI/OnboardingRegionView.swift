@@ -8,6 +8,7 @@ struct OnboardingRegionView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	@Bindable var installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
+	@Environment(\.launcherTheme) private var theme
 	let accentColor: Color
 	let canSwitchRegion: Bool
 	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
@@ -54,44 +55,48 @@ struct OnboardingRegionView: View {
 			}
 
 			SettingsPanel(title: "Game files", systemImage: installationImage) {
-				HStack {
-					VStack(alignment: .leading, spacing: 4) {
-						if isLoadingInstallationMetadata {
-							SkeletonValue(width: 160, height: 16, pulses: true)
-							SkeletonValue(width: 216, height: 16, pulses: true)
-						} else {
-							Text(installationTitle)
-								.fontWeight(.medium)
-							Text(installationDetail)
-								.font(.callout)
-								.foregroundStyle(.secondary)
+				VStack(alignment: .leading, spacing: 12) {
+					HStack {
+						VStack(alignment: .leading, spacing: 4) {
+							if isLoadingInstallationMetadata {
+								SkeletonValue(width: 160, height: 16, pulses: true)
+								SkeletonValue(width: 216, height: 16, pulses: true)
+							} else {
+								Text(installationTitle)
+									.fontWeight(.medium)
+								Text(installationDetail)
+									.font(.callout)
+									.foregroundStyle(theme.textSecondary)
+							}
+						}
+						Spacer()
+						if installation.lifecycle.state.refresh.isChecking {
+							ProgressView()
+						} else if installation.isInstalled && !installation.isDownloading {
+							Image(systemName: "checkmark.circle.fill")
+								.foregroundStyle(theme.accentInk)
+								.accessibilityHidden(true)
 						}
 					}
-					Spacer()
-					if installation.lifecycle.state.refresh.isChecking {
-						ProgressView()
-					} else if installation.isInstalled && !installation.isDownloading {
-						Image(systemName: "checkmark.circle.fill")
-							.foregroundStyle(accentColor)
-							.accessibilityHidden(true)
+
+					if installation.isDownloading, let progress = installation.progress {
+						ProgressView(value: progress.fraction)
+							.tint(theme.accentFill)
+							.accessibilityLabel(Text(installationTitle))
+						Text(
+							"\(DownloadProgressFormatting.byteCount(progress.downloadedBytes)) of \(DownloadProgressFormatting.byteCount(progress.totalBytes))"
+						)
+						.font(.caption.monospacedDigit())
+						.foregroundStyle(theme.textSecondary)
 					}
-				}
 
-				if installation.isDownloading, let progress = installation.progress {
-					ProgressView(value: progress.fraction)
-						.tint(accentColor)
-						.accessibilityLabel(Text(installationTitle))
-					Text(
-						"\(DownloadProgressFormatting.byteCount(progress.downloadedBytes)) of \(DownloadProgressFormatting.byteCount(progress.totalBytes))"
-					)
-					.font(.caption.monospacedDigit())
-					.foregroundStyle(.secondary)
-				}
-
-				if !installation.isInstalled && !installation.isDownloading {
-					Text("Continue to start the download. Closing the launcher pauses it safely.")
+					if !installation.isInstalled && !installation.isDownloading {
+						Text(
+							"Continue to start the download. Closing the launcher pauses it safely."
+						)
 						.font(.callout)
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
+					}
 				}
 			}
 		}

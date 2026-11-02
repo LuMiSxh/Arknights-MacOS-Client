@@ -9,6 +9,7 @@ struct OnboardingRosettaRecoveryView: View {
 	static let checkAgainTitle = "Check Again"
 
 	let installationState: RosettaInstallationState
+	@Environment(\.launcherTheme) private var theme
 	let accentColor: Color
 	let install: () -> Void
 	let checkAgain: () -> Void
@@ -31,7 +32,7 @@ struct OnboardingRosettaRecoveryView: View {
 				HStack(spacing: 12) {
 					ProgressView()
 					Text("Installing Rosetta 2 with Apple’s software update tool…")
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 				}
 			case .failed(let message):
 				recoveryIntroduction
@@ -41,10 +42,10 @@ struct OnboardingRosettaRecoveryView: View {
 				)
 				.foregroundStyle(LauncherVisuals.warning)
 				Text(message)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 				Text("You can also install Rosetta manually in Terminal:")
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 				Text("softwareupdate --install-rosetta --agree-to-license")
 					.font(.callout.monospaced())
 					.textSelection(.enabled)
@@ -66,13 +67,13 @@ struct OnboardingRosettaRecoveryView: View {
 				}
 			}
 		}
-		.tint(accentColor)
+		.tint(theme.accentFill)
 		.confirmsRosettaInstallation(isPresented: $confirmsInstallation, install: install)
 	}
 
 	private var recoveryIntroduction: some View {
 		Text("Rosetta 2 is missing. Install Apple’s compatibility layer so the game can start.")
-			.foregroundStyle(.secondary)
+			.foregroundStyle(theme.textSecondary)
 			.fixedSize(horizontal: false, vertical: true)
 	}
 }

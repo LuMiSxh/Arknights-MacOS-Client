@@ -36,6 +36,110 @@ extension View {
 
 }
 
+/// Visual role of a launcher surface. Each role owns its default shape, fill, and edge.
+package enum LauncherSurfaceKind: Equatable {
+	/// Smoked glass for the main sheet.
+	case sheet
+	/// Dialogs layered over the sheet.
+	case modal
+	/// Rows grouped under a section label. No glass.
+	case group
+	/// Compact HUD pills.
+	case hud
+	/// Floating action pill at the foot of a surface.
+	case footer
+}
+
+extension View {
+	/// The only place that chooses between glass, tinted glass, and the macOS 15 material
+	/// fallback for launcher surfaces. Reduce Transparency skips the glass and keeps the tint.
+	package func launcherSurface(_ kind: LauncherSurfaceKind) -> some View {
+		modifier(LauncherSurfaceModifier(kind: kind, customShape: nil))
+	}
+
+	/// Same as `launcherSurface(_:)`, with a caller-supplied shape for surfaces whose shape
+	/// changes at runtime, such as an expandable footer.
+	package func launcherSurface<S: Shape>(_ kind: LauncherSurfaceKind, in shape: S) -> some View {
+		modifier(LauncherSurfaceModifier(kind: kind, customShape: AnyShape(shape)))
+	}
+}
+
+private struct LauncherSurfaceModifier: ViewModifier {
+	let kind: LauncherSurfaceKind
+	let customShape: AnyShape?
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.colorScheme) private var colorScheme
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+	private var isDark: Bool { colorScheme == .dark }
+
+	private var defaultShape: AnyShape {
+		switch kind {
+		case .sheet: AnyShape(RoundedRectangle(cornerRadius: 24))
+		case .modal: AnyShape(RoundedRectangle(cornerRadius: 20))
+		case .group: AnyShape(RoundedRectangle(cornerRadius: 12))
+		case .hud, .footer: AnyShape(Capsule())
+		}
+	}
+
+	@ViewBuilder
+	func body(content: Content) -> some View {
+		let shape = customShape ?? defaultShape
+		switch kind {
+		case .sheet:
+			surface(content, tint: theme.sheetTint, shape: shape)
+				.overlay { shape.stroke(theme.hairline) }
+				.clipShape(shape)
+		case .modal:
+			surface(content, tint: theme.modalTint, shape: shape)
+				.clipShape(shape)
+				.background {
+					shape.fill(theme.modalTint)
+						.shadow(
+							color: .black.opacity(isDark ? 0.45 : 0.14),
+							radius: isDark ? 32 : 24, y: isDark ? 12 : 8)
+				}
+				.overlay { shape.stroke(theme.dialogHairline) }
+		case .group:
+			content
+				.background {
+					shape.fill(theme.groupFill)
+						.shadow(color: isDark ? .clear : .black.opacity(0.04), radius: 2, y: 1)
+				}
+				.overlay { shape.stroke(theme.hairline) }
+		case .hud:
+			surface(content, tint: theme.controlFill, shape: shape)
+		case .footer:
+			if isDark {
+				surface(content, tint: theme.footerGlassTint, shape: shape)
+					.shadow(color: .black.opacity(0.35), radius: 10, y: 4)
+			} else {
+				// Light footers skip Liquid Glass: macOS 27 glass adds a black backplate under
+				// the tint, which greys the pill.
+				content
+					.background {
+						if !reduceTransparency { shape.fill(.regularMaterial) }
+					}
+					.background { shape.fill(theme.footerGlassTint) }
+					.overlay { shape.stroke(theme.hairline) }
+					.shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+			}
+		}
+	}
+
+	/// Fills the tint under the glass. Glass sits above the tint, since a tint under the glass
+	/// lightens to grey. Reduce Transparency keeps the tint and skips the glass.
+	@ViewBuilder
+	private func surface(_ content: Content, tint: Color, shape: AnyShape) -> some View {
+		let filled = content.background { shape.fill(tint) }
+		if reduceTransparency {
+			filled
+		} else {
+			filled.adaptiveGlassEffect(in: shape)
+		}
+	}
+}
+
 enum AdaptiveGlassBorderTintSource: Equatable {
 	case semanticEdge
 	case surface
@@ -151,6 +255,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@Environment(\.accessibilityShowBorders) private var showBorders
 	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.colorScheme) private var colorScheme
 
 	@ViewBuilder
 	func body(content: Content) -> some View {
@@ -233,17 +338,22 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 			content
 				.background(tint, in: shape)
 				.background(
-					Color.black.opacity(
+					backplate.opacity(
 						AdaptiveGlassSurfaceTreatment.macOS27ChromaticBackplateOpacity
 					),
 					in: shape
 				)
 		} else {
 			content.background(
-				Color.black.opacity(AdaptiveGlassSurfaceTreatment.macOS27BackplateOpacity),
+				backplate.opacity(AdaptiveGlassSurfaceTreatment.macOS27BackplateOpacity),
 				in: shape
 			)
 		}
+	}
+
+	// macOS 27 glass needs a backplate to hold its tint. A black one turns glass on a light sheet muddy.
+	private var backplate: Color {
+		colorScheme == .dark ? .black : .white
 	}
 
 	// Keep high-chroma accents visible on macOS 27, while near-neutral HUD tints use

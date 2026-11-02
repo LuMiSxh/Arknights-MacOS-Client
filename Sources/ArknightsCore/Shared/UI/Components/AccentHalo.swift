@@ -5,18 +5,20 @@ import SwiftUI
 /// A still accent halo behind the current primary operation. It plays one pulse when it
 /// appears, unless Reduce Motion or the decorative motion gate forbids it.
 private struct AccentHaloModifier<S: Shape>: ViewModifier {
+	// Kept for existing call sites; the theme supplies the color.
 	let tint: Color
 	let isActive: Bool
 	let shape: S
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@Environment(\.launcherTheme) private var theme
 
 	func body(content: Content) -> some View {
 		content
 			.background {
 				ZStack {
 					if isActive && !reduceTransparency {
-						AccentHalo(tint: tint, shape: shape)
+						AccentHalo(tint: theme.accentFill, shape: shape)
 							.transition(.opacity)
 							.allowsHitTesting(false)
 							.accessibilityHidden(true)

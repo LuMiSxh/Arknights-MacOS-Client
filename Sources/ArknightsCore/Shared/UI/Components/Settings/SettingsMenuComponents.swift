@@ -94,7 +94,8 @@ package struct GlassActionMenu<Content: View>: View {
 }
 
 private struct GlassCapsuleMenu<Items: View, Label: View>: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
+	@State private var isHovering = false
 	let isDisabled: Bool
 	@ViewBuilder let items: Items
 	@ViewBuilder let label: Label
@@ -103,15 +104,42 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 		Menu {
 			items
 		} label: {
-			HStack(spacing: LauncherVisuals.Spacing.control) {
+			HStack(spacing: 8) {
 				label
+					.monospacedDigit()
+					.foregroundStyle(theme.textPrimary)
 				Image(systemName: "chevron.up.chevron.down")
-					.font(LauncherVisuals.Typography.menuChevron)
+					.font(.system(size: 7, weight: .bold))
+					.foregroundStyle(theme.accentInk)
+					.frame(width: 16, height: 16)
+					.background {
+						Color.clear.adaptiveGlassEffect(
+							tint: theme.accentGlassTint,
+							borderTint: theme.accentGlassStroke,
+							in: Circle(),
+							showsBorder: true
+						)
+					}
 					.accessibilityHidden(true)
 			}
-			.settingsControlCapsule(tint: palette.controlOn, isDisabled: isDisabled)
+			.padding(.leading, 12)
+			.padding(.trailing, 5)
+			// 16 pt chip plus 2 x 6 pt matches the button: 12 pt line plus 2 x 6 pt.
+			.padding(.vertical, 6)
+			.background {
+				Capsule().fill(theme.controlFill)
+				Capsule().fill(theme.hoverTint)
+					.opacity(isHovering ? 1 : 0)
+					.launcherAnimation(isHovering ? .hoverIn : .hoverOut, value: isHovering)
+				Capsule().strokeBorder(theme.controlStroke, lineWidth: 1)
+			}
+			.contentShape(Capsule())
+			.opacity(isDisabled ? 0.4 : 1)
+			.onHover { isHovering = $0 }
 		}
 		.menuStyle(.button)
+		// On macOS the label takes the menu font unless the font is set on the Menu itself.
+		.font(LauncherTokens.Typography.control)
 		.buttonStyle(.plain)
 		.keyboardFocusIndicator(in: Capsule())
 		.disabled(isDisabled)

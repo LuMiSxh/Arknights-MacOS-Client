@@ -4,15 +4,17 @@ import SwiftUI
 
 /// One row of a launcher navigation rail. With an action it is a button with hover and press
 /// feedback; without one it is a read-only step that VoiceOver reads as one element.
+/// One row of a launcher navigation rail. With an action it is a button with hover and press
+/// feedback; without one it is a read-only step that VoiceOver reads as one element.
 package struct NavigationRailRow: View {
-	@Environment(\.launcherPalette) private var palette
-	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 	@State private var isHovering = false
 	let title: String
 	let systemImage: String
 	let isSelected: Bool
+	/// Kept for existing call sites; the theme supplies the color.
 	let accentColor: Color
-	/// Brightens unselected text, for example for a completed setup step.
+	/// Kept for existing call sites; the title always uses the primary text role.
 	let isHighlighted: Bool
 	let action: (() -> Void)?
 
@@ -46,7 +48,7 @@ package struct NavigationRailRow: View {
 			}
 			.buttonStyle(ActionPressStyle(intensity: .pressOnly))
 			.keyboardFocusIndicator(
-				in: RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
+				in: RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow)
 			)
 			.onHover { isHovering = $0 }
 		} else {
@@ -56,36 +58,35 @@ package struct NavigationRailRow: View {
 	}
 
 	private var content: some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
-			RoundedRectangle(cornerRadius: 1)
-				.fill(isSelected ? accentColor : .clear)
-				.frame(width: 2, height: 16)
-				.accessibilityHidden(true)
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: systemImage)
-				.frame(width: 16)
+				.frame(width: 20)
 				.symbolRenderingMode(.monochrome)
+				.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 				.accessibilityHidden(true)
 			Text(title)
-				.fontWeight(.regular)
+				.foregroundStyle(theme.textPrimary)
 			Spacer(minLength: 0)
 		}
-		.foregroundStyle(foregroundStyle)
-		.padding(.vertical, 8)
-		.padding(.trailing, 12)
-		.background(backgroundFill, in: .rect(cornerRadius: LauncherVisuals.Radius.control))
-		.contentShape(.rect)
-		.frame(minHeight: 40)
-		.animation(LauncherMotion.animation(.hover, reduceMotion: reduceMotion), value: isHovering)
-	}
-
-	private var foregroundStyle: Color {
-		if isSelected { return accentColor }
-		return isHighlighted || isHovering ? .primary : .secondary
-	}
-
-	private var backgroundFill: Color {
-		if isSelected { return LauncherVisuals.selectedNavigationFill(for: accentColor) }
-		if isHovering { return palette.navigationHoverFill }
-		return .clear
+		.padding(.horizontal, 12)
+		.frame(height: 32)
+		.background {
+			RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow)
+				.fill(theme.neutralFill)
+				.opacity(isSelected ? 1 : 0)
+			RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow)
+				.fill(theme.hoverTint)
+				.opacity(isHovering && !isSelected ? 1 : 0)
+				.launcherAnimation(isHovering ? .hoverIn : .hoverOut, value: isHovering)
+		}
+		.overlay(alignment: .leading) {
+			Capsule()
+				.fill(isSelected ? theme.accentFill : .clear)
+				.frame(width: 3, height: 14)
+				.padding(.leading, 2)
+				.accessibilityHidden(true)
+		}
+		.launcherAnimation(.state, value: isSelected)
+		.contentShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow))
 	}
 }

@@ -65,6 +65,7 @@ enum SettingsOperationStripPresentation {
 
 // Only this leaf reads the per-tick installation progress, so the rest of the sheet does not re-render on every update.
 struct SettingsOperationStrip: View {
+	@Environment(\.launcherTheme) private var theme
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController
 
@@ -74,7 +75,7 @@ struct SettingsOperationStrip: View {
 		if let text = SettingsOperationStripPresentation.text(status: status, progress: progress) {
 			Text(text)
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.lineLimit(1)
 				.truncationMode(.tail)
 				.frame(maxWidth: .infinity, alignment: .leading)

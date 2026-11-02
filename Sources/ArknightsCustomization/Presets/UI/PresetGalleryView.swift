@@ -9,7 +9,7 @@ package struct PresetGalleryView: View {
 	let destination: PresetGalleryDestination
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	@State private var searchText = ""
 	@State private var committedTags: [String] = []
 	@State private var selectedCategory: WallpaperCategory?
@@ -46,7 +46,7 @@ package struct PresetGalleryView: View {
 					avatars: avatars,
 					showsIconStylePreview: $showsIconStylePreview
 				)
-				Divider().overlay(palette.hairline)
+				Divider().overlay(theme.hairline)
 				HStack(spacing: 8) {
 					PresetGallerySearchBar(
 						destination: destination,
@@ -130,11 +130,10 @@ package struct PresetGalleryView: View {
 		.frame(width: 760, height: 572)
 		.background(
 			ZStack {
-				palette.modalBackground
-				customization.hudTintColor
+				theme.modalTint
+				theme.modalDim
 			}
 		)
-		.preferredColorScheme(.dark)
 		.animation(
 			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
 			value: customization.dynamicThemeHue

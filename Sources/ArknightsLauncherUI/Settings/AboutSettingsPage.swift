@@ -7,6 +7,7 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct AboutSettingsPage: View {
+	@Environment(\.launcherTheme) private var theme
 	package let accentColor: Color
 	package let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
@@ -24,12 +25,12 @@ struct AboutSettingsPage: View {
 		) {
 			SettingsPanel(title: "Arknights Client", systemImage: "info.circle") {
 				ViewThatFits(in: .horizontal) {
-					HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+					HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 						identitySummary
 						Spacer(minLength: 0)
 						identityActions
 					}
-					VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
+					VStack(alignment: .leading, spacing: LauncherTokens.Spacing.content) {
 						identitySummary
 						HStack {
 							Spacer(minLength: 0)
@@ -41,7 +42,7 @@ struct AboutSettingsPage: View {
 
 			SettingsPanel(title: "Documents", systemImage: "doc.text") {
 				ViewThatFits(in: .horizontal) {
-					HStack(spacing: LauncherVisuals.Spacing.control) {
+					HStack(spacing: LauncherTokens.Spacing.control) {
 						documentLinks(isInline: true)
 					}
 					VStack(spacing: 0) {
@@ -73,10 +74,10 @@ struct AboutSettingsPage: View {
 						"This launcher is an independent community project and is not affiliated with Hypergryph, its affiliates, or any third-party publisher."
 					)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					HStack(spacing: 4) {
 						Text("Built with AI assistance.")
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 						QuietLink(
 							title: "Learn more",
 							destination: URL(
@@ -100,8 +101,29 @@ struct AboutSettingsPage: View {
 				valueText(runtime.name)
 			}
 			SettingsHairline()
-			DisclosureGroup("Technical details", isExpanded: $isShowingTechnicalDetails) {
-				VStack(spacing: 0) {
+			VStack(spacing: 0) {
+				Button {
+					withAnimation(LauncherMotion.animation(.disclosure, reduceMotion: reduceMotion))
+					{
+						isShowingTechnicalDetails.toggle()
+					}
+				} label: {
+					HStack {
+						Text("Technical details")
+							.foregroundStyle(theme.textPrimary)
+						Spacer(minLength: 0)
+						Image(systemName: "chevron.right")
+							.font(.caption.weight(.medium))
+							.foregroundStyle(theme.textSecondary)
+							.rotationEffect(.degrees(isShowingTechnicalDetails ? 90 : 0))
+							.accessibilityHidden(true)
+					}
+					.contentShape(.rect)
+				}
+				.buttonStyle(.plain)
+				.accessibilityValue(isShowingTechnicalDetails ? "Expanded" : "Collapsed")
+				if isShowingTechnicalDetails {
+					SettingsHairline()
 					SettingsActionRow(
 						title: "Wine",
 						detail: runtime.wineCommit.map { "Commit \($0.prefix(12))" }
@@ -125,9 +147,6 @@ struct AboutSettingsPage: View {
 						"Native fullscreen Space", advertised: runtime.nativeFullscreenSpace)
 				}
 			}
-			.animation(
-				LauncherMotion.animation(.disclosure, reduceMotion: reduceMotion),
-				value: isShowingTechnicalDetails)
 		} else {
 			SettingsActionRow(title: "Version") {
 				valueText("Not installed")
@@ -143,19 +162,19 @@ struct AboutSettingsPage: View {
 
 	private func valueText(_ text: String) -> some View {
 		Text(text)
-			.foregroundStyle(.secondary)
+			.foregroundStyle(theme.textSecondary)
 	}
 
 	@ViewBuilder
 	private var identitySummary: some View {
-		HStack(alignment: .center, spacing: LauncherVisuals.Spacing.content) {
+		HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 			Image(nsImage: launcherIconManager.currentIcon)
 				.resizable()
 				.frame(width: 76, height: 76)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.control) {
 				Text("Unofficial macOS launcher")
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 				QuietLink(title: "LuMiSxh", destination: URL(string: "https://github.com/LuMiSxh")!)
 					.font(.callout.weight(.medium))
 			}
@@ -164,7 +183,7 @@ struct AboutSettingsPage: View {
 
 	@ViewBuilder
 	private var identityActions: some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			CapsuleActionButton(
 				title: "Show in Finder", systemImage: "folder",
 				tone: .neutral, showsTitle: false,

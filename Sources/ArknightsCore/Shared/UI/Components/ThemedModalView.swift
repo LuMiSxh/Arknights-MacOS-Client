@@ -4,6 +4,7 @@ import SwiftUI
 
 package struct ThemedModalView<Content: View, Actions: View>: View {
 	let title: String
+	// Kept for existing call sites; the theme supplies the color.
 	let hudTintColor: Color
 	package let width: CGFloat
 	package let height: CGFloat
@@ -35,19 +36,18 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		self.actions = actions()
 	}
 
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 
 	package var body: some View {
 		VStack(spacing: 0) {
 			VStack(alignment: .leading, spacing: 8) {
 				Text(title)
 					.font(.title2.weight(.medium))
-					.modifier(ModalEntrance(hasEntered: hasEntered, reduceMotion: reduceMotion))
 				HStack(spacing: 8) {
 					Rectangle()
-						.fill(palette.controlTint.opacity(0.62))
+						.fill(theme.accentFill)
 						.frame(width: hasEntered || reduceMotion ? 48 : 0, height: 2)
-					Rectangle().fill(palette.hairline)
+					Rectangle().fill(theme.hairline)
 						.frame(height: 1)
 						.frame(maxWidth: .infinity)
 						.scaleEffect(x: hasEntered || reduceMotion ? 1 : 0, anchor: .leading)
@@ -64,16 +64,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 					.padding(.horizontal, 24)
 					.padding(.top, 4)
 					.padding(.bottom, 20)
-					.modifier(
-						ModalEntrance(
-							hasEntered: hasEntered,
-							reduceMotion: reduceMotion,
-							offsetY: 14
-						)
-					)
 			}
-			.contentMargins(.top, 8, for: .scrollIndicators)
-			.contentMargins(.bottom, 24, for: .scrollIndicators)
 			.scrollIndicators(.automatic)
 		}
 		.safeAreaInset(edge: .bottom, spacing: 0) {
@@ -90,19 +81,20 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 			}
 		}
 		.frame(width: modalSize.width, height: modalSize.height)
+		.launcherSurface(.modal)
 		.background {
-			ZStack {
-				palette.modalBackground
-				hudTintColor
-			}
+			// Dims the window behind the card; the card leaves with it.
+			theme.modalDim.ignoresSafeArea()
 		}
-		.clipShape(.rect(cornerRadius: LauncherVisuals.modalCornerRadius))
-		.overlay {
-			RoundedRectangle(cornerRadius: LauncherVisuals.modalCornerRadius)
-				.strokeBorder(palette.hairline)
-		}
-		.shadow(color: .black.opacity(0.45), radius: 24, y: 10)
-		.preferredColorScheme(.dark)
+		.modifier(ModalEntrance(hasEntered: hasEntered, reduceMotion: reduceMotion))
+		.transition(
+			reduceMotion
+				? .opacity
+				: .asymmetric(
+					insertion: .identity,
+					removal: .opacity.combined(with: .scale(scale: 0.98))
+						.animation(LauncherMotion.Role.dismiss.animation()))
+		)
 		.onAppear {
 			let entrance = LauncherMotion.animation(.present, reduceMotion: reduceMotion)
 			withAnimation(entrance?.delay(LauncherMotion.modalEntranceDelay)) {
@@ -143,12 +135,11 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 private struct ModalEntrance: ViewModifier {
 	let hasEntered: Bool
 	let reduceMotion: Bool
-	var offsetY: CGFloat = 8
 
 	func body(content: Content) -> some View {
+		let entered = hasEntered || reduceMotion
 		content
-			.opacity(hasEntered || reduceMotion ? 1 : 0)
-			.offset(y: hasEntered || reduceMotion ? 0 : offsetY)
-			.blur(radius: hasEntered || reduceMotion ? 0 : 4)
+			.opacity(entered ? 1 : 0)
+			.scaleEffect(entered ? 1 : 0.97)
 	}
 }

@@ -7,7 +7,7 @@ import SwiftUI
 package struct ActionPressStyle: ButtonStyle {
 	package enum Intensity {
 		case standard
-		/// Large tiles and cards, where full scaling reads as a jump.
+		/// Large tiles, cards, and action buttons, where full scaling reads as a jump.
 		case subtle
 		/// List rows the pointer passes over often; they only respond to a press.
 		case pressOnly
@@ -55,7 +55,7 @@ private struct ActionPressBody: View {
 }
 
 struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let shape: S
 	@Environment(\.settingsFocusCoordinator) private var settingsFocusCoordinator
 	@Environment(\.isEnabled) private var isEnabled
@@ -68,7 +68,7 @@ struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 			shape
 				.stroke(
 					isEnabled && appearsActive && isFocused
-						? palette.controlTint.opacity(0.9)
+						? theme.accentFill.opacity(0.9)
 						: .clear,
 					lineWidth: LauncherVisuals.Control.focusWidth
 				)

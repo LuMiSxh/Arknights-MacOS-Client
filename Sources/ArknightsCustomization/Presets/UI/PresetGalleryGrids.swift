@@ -6,7 +6,7 @@ import SwiftUI
 private let applyingLabel = "Applying…"
 
 struct PresetAvatarGrid: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let catalog: PresetCatalogService
 	let accentColor: Color
 	let avatars: [PresetAvatar]
@@ -35,14 +35,14 @@ struct PresetAvatarGrid: View {
 								placeholderIcon: "person.crop.square"
 							)
 							.frame(width: 104, height: 104)
-							.background(palette.galleryPlateBottom)
+							.background(theme.groupFill)
 							.clipShape(RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel))
 							if isApplying {
 								ZStack {
 									Color.black.opacity(0.65)
 									ProgressView()
 										.controlSize(.small)
-										.tint(accentColor)
+										.tint(theme.accentFill)
 								}
 								.clipShape(
 									RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel))
@@ -52,7 +52,7 @@ struct PresetAvatarGrid: View {
 						.overlay {
 							RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
 								.strokeBorder(
-									isApplying ? accentColor : palette.hairline,
+									isApplying ? theme.accentFill : theme.hairline,
 									lineWidth: LauncherVisuals.Control.borderWidth
 								)
 						}
@@ -61,7 +61,7 @@ struct PresetAvatarGrid: View {
 							.font(.caption.weight(.medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? accentColor : .primary)
+							.foregroundStyle(isApplying ? theme.accentInk : theme.textPrimary)
 							.frame(maxWidth: 128)
 					}
 					.padding(.vertical, 4)
@@ -91,7 +91,7 @@ struct PresetAvatarGrid: View {
 }
 
 struct PresetWallpaperGrid: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let catalog: PresetCatalogService
 	let accentColor: Color
 	let wallpapers: [PresetWallpaper]
@@ -105,7 +105,7 @@ struct PresetWallpaperGrid: View {
 	]
 	// Nested radius: the card radius minus the card's padding.
 	private let thumbnailRadius: CGFloat =
-		LauncherVisuals.Radius.panel - LauncherVisuals.Spacing.control
+		LauncherVisuals.Radius.panel - LauncherTokens.Spacing.control
 
 	var body: some View {
 		LazyVGrid(columns: columns, spacing: 16) {
@@ -134,7 +134,7 @@ struct PresetWallpaperGrid: View {
 									VStack(spacing: 8) {
 										ProgressView()
 											.controlSize(.regular)
-											.tint(accentColor)
+											.tint(theme.accentFill)
 										Text(applyingLabel)
 											.font(.caption2.weight(.medium))
 											.foregroundStyle(.white)
@@ -145,23 +145,23 @@ struct PresetWallpaperGrid: View {
 						}
 						.frame(height: 104)
 						.background(
-							Color.white.opacity(0.05), in: .rect(cornerRadius: thumbnailRadius))
+							theme.trackFill, in: .rect(cornerRadius: thumbnailRadius))
 						Text(wp.displayTitle)
 							.font(.caption.weight(.medium))
 							.lineLimit(2)
 							.truncationMode(.tail)
-							.foregroundStyle(isApplying ? accentColor : .primary)
+							.foregroundStyle(isApplying ? theme.accentInk : theme.textPrimary)
 					}
-					.padding(LauncherVisuals.Spacing.control)
+					.padding(LauncherTokens.Spacing.control)
 					.frame(maxWidth: .infinity)
 					.background(
-						Color.white.opacity(0.03),
+						theme.groupFill,
 						in: .rect(cornerRadius: LauncherVisuals.Radius.panel)
 					)
 					.overlay {
 						RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
 							.strokeBorder(
-								isApplying ? accentColor : palette.hairline,
+								isApplying ? theme.accentFill : theme.hairline,
 								lineWidth: LauncherVisuals.Control.borderWidth
 							)
 					}

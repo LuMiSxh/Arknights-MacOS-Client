@@ -5,6 +5,7 @@ import ArknightsCore
 import SwiftUI
 
 struct LauncherFailureDetailView: View {
+	@Environment(\.launcherTheme) private var theme
 	package let failure: LauncherFailurePresentation
 	package let accentColor: Color
 	let hudTintColor: Color
@@ -74,7 +75,7 @@ struct LauncherFailureDetailView: View {
 				}
 
 				Text(failure.message)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 
 				if let troubleshootingMarkdown {
@@ -105,7 +106,7 @@ struct LauncherFailureDetailView: View {
 				}
 				dismissButton
 			}
-			VStack(alignment: .trailing, spacing: LauncherVisuals.Spacing.control) {
+			VStack(alignment: .trailing, spacing: LauncherTokens.Spacing.control) {
 				HStack(spacing: 8) {
 					recoveryActions
 				}

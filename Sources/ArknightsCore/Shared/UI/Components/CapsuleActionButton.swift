@@ -3,10 +3,21 @@
 import SwiftUI
 
 package enum CapsuleActionTone {
+	// Kept for existing call sites; the theme supplies the color.
 	case accent(Color)
 	case neutral
 	case warning
 	case danger
+
+	/// Label and icon ink from the theme. Warning has no theme role and keeps its palette color.
+	func ink(in theme: LauncherTheme) -> Color {
+		switch self {
+		case .accent: theme.accentInk
+		case .neutral: theme.textPrimary
+		case .warning: LauncherVisuals.warning
+		case .danger: theme.dangerInk
+		}
+	}
 
 	func color(in palette: LauncherPalette) -> Color {
 		switch self {
@@ -97,10 +108,15 @@ package struct CapsuleActionButton: View {
 		Button(role: role, action: action) {
 			HStack(spacing: 8) {
 				if let systemImage {
-					Image(systemName: systemImage)
+					let icon = Image(systemName: systemImage)
 						.contentTransition(labelContentTransition)
 						.animation(labelAnimation, value: systemImage)
 						.accessibilityHidden(true)
+					if let accentIconInk {
+						icon.foregroundStyle(accentIconInk)
+					} else {
+						icon
+					}
 				}
 				if showsTitle {
 					Text(title)
@@ -112,6 +128,7 @@ package struct CapsuleActionButton: View {
 			.fontWeight(.medium)
 			.modifier(
 				CapsuleActionLabelModifier(
+					tone: tone,
 					foreground: foregroundTint,
 					disabledForeground: tone.disabledColor(for: contrast),
 					surfaceTint: surfaceTint,
@@ -120,7 +137,7 @@ package struct CapsuleActionButton: View {
 				)
 			)
 		}
-		.buttonStyle(ActionPressStyle())
+		.buttonStyle(ActionPressStyle(intensity: .subtle))
 		.keyboardFocusIndicator(in: Capsule())
 	}
 
@@ -136,22 +153,31 @@ package struct CapsuleActionButton: View {
 	}
 
 	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 
 	private var titleContentTransition: ContentTransition {
 		labelMotion == .primary ? .opacity : .identity
 	}
 
 	private var foregroundTint: Color {
-		isEnabled
+		guard presentation == .hud else { return tone.ink(in: theme) }
+		return isEnabled
 			? tone.foregroundColor(for: contrast, in: palette) : tone.disabledColor(for: contrast)
 	}
 
 	private var surfaceTint: Color {
 		tone.surfaceColor(in: palette)
 	}
+
+	/// Enabled neutral icons use the accent ink; the title keeps the text role. HUD keeps one ink.
+	private var accentIconInk: Color? {
+		guard presentation != .hud, isEnabled, case .neutral = tone else { return nil }
+		return theme.accentInk
+	}
 }
 
 private struct CapsuleActionLabelModifier: ViewModifier {
+	let tone: CapsuleActionTone
 	let foreground: Color
 	let disabledForeground: Color
 	let surfaceTint: Color
@@ -161,10 +187,9 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 	@ViewBuilder
 	func body(content: Content) -> some View {
 		switch presentation {
-		case .standard:
+		// Compact shares the standard metrics so every capsule in a Settings row has one height.
+		case .standard, .compact:
 			standardSurface(content)
-		case .compact:
-			compactSurface(content)
 		case .hud:
 			content
 				.font(.caption.weight(.medium))
@@ -178,24 +203,12 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 
 	private func standardSurface(_ content: Content) -> some View {
 		content
+			.font(LauncherTokens.Typography.control)
+			.foregroundStyle(foreground)
 			.padding(.horizontal, standardHorizontalPadding)
 			.padding(.vertical, standardVerticalPadding)
 			.contentShape(Capsule())
-			.adaptiveActionSurface(
-				tint: surfaceTint,
-				foreground: foreground,
-				in: Capsule()
-			)
-	}
-
-	private func compactSurface(_ content: Content) -> some View {
-		content
-			.font(.caption.weight(.medium))
-			.adaptiveControlForeground(foreground, disabledTint: disabledForeground)
-			.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
-			.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding)
-			.contentShape(Capsule())
-			.adaptiveControlSurface(tint: surfaceTint, in: Capsule())
+			.themedActionSurface(tone, in: Capsule())
 	}
 
 	private var standardHorizontalPadding: CGFloat {

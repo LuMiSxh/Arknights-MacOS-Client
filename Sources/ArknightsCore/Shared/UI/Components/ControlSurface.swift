@@ -85,6 +85,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@Environment(\.colorSchemeContrast) private var contrast
 	@Environment(\.controlSurfaceScope) private var controlSurfaceScope
+	@Environment(\.launcherTheme) private var theme
 	@State private var isHovering = false
 
 	private var isActive: Bool { environmentIsEnabled && !isDisabled }
@@ -141,7 +142,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 				isInteractive: allowsGlassInteraction
 			)
 		} else {
-			content.background(neutralActiveSurface, in: shape)
+			content.background { neutralMatte }
 		}
 	}
 
@@ -181,9 +182,14 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 		return tint.opacity(activeBorderOpacity)
 	}
 
-	private var neutralActiveSurface: Color {
-		if reduceTransparency { return LauncherVisuals.Control.opaqueNeutralSurface }
-		return Color.white.opacity(LauncherVisuals.Control.enabledNeutralSurfaceOpacity)
+	/// Under reduced transparency, the opaque sheet tint sits beneath the matte.
+	@ViewBuilder
+	private var neutralMatte: some View {
+		if reduceTransparency {
+			shape.fill(theme.sheetTint).overlay { shape.fill(theme.controlFill) }
+		} else {
+			shape.fill(theme.controlFill)
+		}
 	}
 
 	private var hoverFill: Color {
@@ -191,7 +197,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 			return Color.white.opacity(LauncherVisuals.Control.hudHoverSurfaceOpacity)
 		}
 		if chromatic { return tint.opacity(0.05) }
-		return Color.white.opacity(0.04)
+		return theme.hoverTint
 	}
 
 	private var disabledSurface: Color {
@@ -200,25 +206,21 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 				? LauncherVisuals.Control.opaqueDisabledSurface
 				: Color.black.opacity(LauncherVisuals.Control.hudDisabledSurfaceOpacity)
 		}
-		if reduceTransparency { return LauncherVisuals.Control.opaqueDisabledSurface }
-		return Color.white.opacity(
-			chromatic
-				? LauncherVisuals.Control.disabledChromaticSurfaceOpacity
-				: LauncherVisuals.Control.disabledNeutralSurfaceOpacity
-		)
+		if reduceTransparency { return theme.sheetTint }
+		return theme.controlFill.opacity(ActionSurfaceMetrics.disabledOpacity)
 	}
 
 	private var disabledBorder: Color {
 		if presentation == .hud {
 			return Color.white.opacity(LauncherVisuals.Control.hudDisabledBorderOpacity)
 		}
-		let opacity =
-			contrast == .increased
-			? 0.26
-			: (chromatic
-				? LauncherVisuals.Control.disabledChromaticBorderOpacity
-				: LauncherVisuals.Control.disabledNeutralBorderOpacity)
-		return (chromatic ? tint : Color.white).opacity(opacity)
+		if chromatic {
+			let opacity =
+				contrast == .increased
+				? 0.26 : LauncherVisuals.Control.disabledChromaticBorderOpacity
+			return tint.opacity(opacity)
+		}
+		return theme.controlStroke.opacity(ActionSurfaceMetrics.disabledOpacity)
 	}
 }
 
@@ -256,5 +258,87 @@ private struct SettingsControlCapsuleModifier: ViewModifier {
 			.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding)
 			.adaptiveControlSurface(tint: tint, isDisabled: isDisabled, in: Capsule())
 			.contentShape(Capsule())
+	}
+}
+
+/// Disabled controls fade as a whole, so the fill, stroke, and label share one opacity.
+private enum ActionSurfaceMetrics {
+	static let disabledOpacity = 0.4
+}
+
+extension View {
+	/// Theme surface for an action tone. Neutral is a matte fill with a hover wash; accent,
+	/// danger, and warning are chromatic glass with a matching stroke.
+	package func themedActionSurface<ControlShape: Shape>(
+		_ tone: CapsuleActionTone,
+		in shape: ControlShape
+	) -> some View {
+		modifier(ThemedActionSurfaceModifier(tone: tone, shape: shape))
+	}
+}
+
+private struct ThemedActionSurfaceModifier<ShapeType: Shape>: ViewModifier {
+	let tone: CapsuleActionTone
+	let shape: ShapeType
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@State private var isHovering = false
+
+	func body(content: Content) -> some View {
+		surface(content)
+			.overlay {
+				if case .neutral = tone {
+					shape
+						.fill(theme.hoverTint)
+						.opacity(isHovering && isEnabled ? 1 : 0)
+						.allowsHitTesting(false)
+				}
+			}
+			.overlay {
+				shape
+					.stroke(stroke, lineWidth: LauncherVisuals.Control.borderWidth)
+					.allowsHitTesting(false)
+			}
+			.opacity(isEnabled ? 1 : ActionSurfaceMetrics.disabledOpacity)
+			.onHover { isHovering = $0 }
+			.launcherAnimation(isHovering ? .hoverIn : .hoverOut, value: isHovering)
+	}
+
+	@ViewBuilder
+	private func surface(_ content: Content) -> some View {
+		switch tone {
+		case .neutral:
+			if reduceTransparency {
+				content.background {
+					shape.fill(theme.sheetTint).overlay { shape.fill(theme.controlFill) }
+				}
+			} else {
+				content.background { shape.fill(theme.controlFill) }
+			}
+		case .accent, .danger, .warning:
+			content.adaptiveGlassEffect(
+				tint: tint, in: shape, showsBorder: false, isInteractive: true)
+		}
+	}
+
+	private var tint: Color {
+		switch tone {
+		case .accent: theme.accentGlassTint
+		case .danger: theme.dangerGlassTint
+		case .warning:
+			LauncherVisuals.warning.opacity(LauncherVisuals.Control.enabledChromaticSurfaceOpacity)
+		case .neutral: theme.controlFill
+		}
+	}
+
+	private var stroke: Color {
+		switch tone {
+		case .accent: theme.accentGlassStroke
+		case .danger: theme.dangerGlassStroke
+		case .warning:
+			LauncherVisuals.warning.opacity(LauncherVisuals.Control.enabledChromaticBorderOpacity)
+		case .neutral: theme.controlStroke
+		}
 	}
 }

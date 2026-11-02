@@ -7,7 +7,7 @@ package struct SettingsToggle: View {
 	@Binding var isOn: Bool
 	/// Semantic override, such as `warning` for experimental switches.
 	let tint: Color?
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 
 	package init(_ title: String, isOn: Binding<Bool>, tint: Color? = nil) {
 		self.title = title
@@ -20,7 +20,7 @@ package struct SettingsToggle: View {
 			.labelsHidden()
 			.toggleStyle(.switch)
 			.controlSize(.regular)
-			.tint(tint ?? palette.controlOn)
+			.tint(tint ?? theme.accentFill)
 	}
 }
 
@@ -28,7 +28,7 @@ package struct SettingsSlider: View {
 	@Binding var value: Double
 	let range: ClosedRange<Double>
 	let step: Double
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	package let width: CGFloat
 
 	package init(
@@ -45,7 +45,7 @@ package struct SettingsSlider: View {
 
 	package var body: some View {
 		Slider(value: $value, in: range, step: step)
-			.tint(palette.controlOn)
+			.tint(theme.accentFill)
 			.frame(width: width)
 			.keyboardFocusIndicator(in: Capsule())
 	}

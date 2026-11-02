@@ -53,12 +53,16 @@ package struct LauncherPreferencesStore {
 		}
 		package static let selectedRegion = "selectedRegion"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
-		package static let dynamicThemeAccent = "dynamicThemeAccent.v3"
+		package static let dynamicThemeAccent = "dynamicThemeAccent.v4"
+		package static let homeLuminanceCache = "homeLuminanceCache"
 		package static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
 		static let forceDisableRetina = "forceDisableRetina"
 		static let preferencesMigrationVersion = "preferencesMigrationVersion"
 		package static let onboardingCompletedSchemaVersion = "onboarding.completedSchemaVersion"
 		package static let onboardingCurrentStep = "onboarding.currentStep"
+		static let launcherAppearance = "launcherAppearance"
+		static let homeTheme = "homeTheme"
+		static let brandingTheme = "brandingTheme"
 	}
 
 	package let defaults: UserDefaults
@@ -155,6 +159,33 @@ package struct LauncherPreferencesStore {
 		defaults.set(region.rawValue, forKey: Key.selectedRegion)
 	}
 
+	package func launcherAppearance() -> LauncherAppearance {
+		defaults.string(forKey: Key.launcherAppearance)
+			.flatMap(LauncherAppearance.init(rawValue:)) ?? .system
+	}
+
+	package func setLauncherAppearance(_ appearance: LauncherAppearance) {
+		defaults.set(appearance.rawValue, forKey: Key.launcherAppearance)
+	}
+
+	package func homeTheme() -> HomeTheme {
+		defaults.string(forKey: Key.homeTheme)
+			.flatMap(HomeTheme.init(rawValue:)) ?? .automatic
+	}
+
+	package func setHomeTheme(_ theme: HomeTheme) {
+		defaults.set(theme.rawValue, forKey: Key.homeTheme)
+	}
+
+	package func brandingTheme() -> HomeTheme {
+		defaults.string(forKey: Key.brandingTheme)
+			.flatMap(HomeTheme.init(rawValue:)) ?? .automatic
+	}
+
+	package func setBrandingTheme(_ theme: HomeTheme) {
+		defaults.set(theme.rawValue, forKey: Key.brandingTheme)
+	}
+
 	package func hasAcknowledgedACEWarning(for region: GameRegion) -> Bool {
 		acknowledgedACEWarningRegions().contains(region.rawValue)
 	}
@@ -177,6 +208,7 @@ package struct LauncherPreferencesStore {
 			Key.usesDynamicTheme.name, Key.canaryFeaturesEnabled.name,
 			Key.taiwanClientEnabled.name, Key.acknowledgedACEWarningRegions,
 			Key.usesHardwareCursor.name, Key.dismissedInGameResolutionNote.name,
+			Key.launcherAppearance, Key.homeTheme, Key.brandingTheme,
 		] {
 			defaults.removeObject(forKey: key)
 		}
@@ -215,6 +247,23 @@ package struct LauncherPreferencesStore {
 			],
 			forKey: key
 		)
+	}
+
+	// Records are ordered oldest first. Each identity carries its algorithm version, so a version
+	// bump is a miss rather than a stale hit.
+	package func homeLuminance(for identity: String) -> Double? {
+		homeLuminanceRecords().first { $0["identity"] as? String == identity }?["score"] as? Double
+	}
+
+	// Moves the identity to the newest end and drops the oldest records beyond `limit`.
+	package func setHomeLuminance(_ score: Double, for identity: String, limit: Int) {
+		var records = homeLuminanceRecords().filter { $0["identity"] as? String != identity }
+		records.append(["identity": identity, "score": score])
+		defaults.set(Array(records.suffix(limit)), forKey: Key.homeLuminanceCache)
+	}
+
+	private func homeLuminanceRecords() -> [[String: Any]] {
+		defaults.array(forKey: Key.homeLuminanceCache) as? [[String: Any]] ?? []
 	}
 
 	/// The hue last persisted to the app bundle's icon via `NSWorkspace.setIcon`.

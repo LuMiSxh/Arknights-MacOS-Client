@@ -8,10 +8,10 @@ package struct MusicHUDPill: View {
 	@Bindable var settings: LauncherPreferencesController
 	let musicTitle: String?
 	package let accentColor: Color
-	let hudTintColor: Color
 	let openCurrentMusicURL: () -> Void
 	let controller: BackgroundMusicController
 	@Binding var isExpanded: Bool
+	@Environment(\.launcherTheme) private var theme
 	@ScaledMetric(relativeTo: .caption) private var titleLineHeight =
 		AppConstants.Music.titleLineHeight
 	@ScaledMetric(relativeTo: .caption) private var collapsedPlayerHeight =
@@ -21,7 +21,6 @@ package struct MusicHUDPill: View {
 		settings: LauncherPreferencesController,
 		musicTitle: String?,
 		accentColor: Color,
-		hudTintColor: Color,
 		openCurrentMusicURL: @escaping () -> Void,
 		controller: BackgroundMusicController,
 		isExpanded: Binding<Bool>
@@ -29,7 +28,6 @@ package struct MusicHUDPill: View {
 		self.settings = settings
 		self.musicTitle = musicTitle
 		self.accentColor = accentColor
-		self.hudTintColor = hudTintColor
 		self.openCurrentMusicURL = openCurrentMusicURL
 		self.controller = controller
 		_isExpanded = isExpanded
@@ -42,8 +40,6 @@ package struct MusicHUDPill: View {
 				iconFont: .caption2.weight(.medium),
 				toggleNoun: "music controls",
 				accessibilityValue: musicTitle,
-				accentColor: accentColor,
-				hudTintColor: hudTintColor,
 				expandedSpacing: 9,
 				sizing: HUDPillSizing(
 					collapsedHeight: collapsedPlayerHeight,
@@ -57,7 +53,7 @@ package struct MusicHUDPill: View {
 				VStack(alignment: .leading, spacing: 1) {
 					OverflowingMusicTitle(title: musicTitle)
 						.font(.caption.monospaced().weight(.medium))
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 						.frame(height: titleLineHeight, alignment: .leading)
 						.frame(
 							maxWidth: isExpanded
@@ -68,7 +64,7 @@ package struct MusicHUDPill: View {
 					if isExpanded {
 						Text(playbackStatus)
 							.font(.caption)
-							.adaptiveControlForeground(accentColor)
+							.adaptiveControlForeground(theme.accentInk)
 							.transition(.opacity)
 					}
 				}

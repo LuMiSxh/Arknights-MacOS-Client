@@ -6,6 +6,7 @@ import ArknightsGameInstallation
 import SwiftUI
 
 struct LauncherUpdateView: View {
+	@Environment(\.launcherTheme) private var theme
 	private static let installingTitle = "Finishing update…"
 
 	let driver: LauncherUpdateUserDriver
@@ -75,7 +76,7 @@ struct LauncherUpdateView: View {
 			extractionContent
 		case .readyToInstall:
 			Text("The update can be installed now.")
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		case .installing:
 			installingContent
 		case .installed:
@@ -86,13 +87,13 @@ struct LauncherUpdateView: View {
 					: "The update was installed."
 
 			)
-			.foregroundStyle(.secondary)
+			.foregroundStyle(theme.textSecondary)
 		case .noUpdate:
 			Text("No newer version was found.")
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		case .failed:
 			Text(driver.message ?? LauncherUpdateUserDriver.errorDetail)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.textSelection(.enabled)
 		}
 	}
@@ -108,11 +109,11 @@ struct LauncherUpdateView: View {
 				}
 			} else {
 				Text("Release notes are unavailable.")
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 			if driver.informationOnly {
 				Text("This version is informational only and cannot be installed by the launcher.")
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 		}
 	}
@@ -120,24 +121,24 @@ struct LauncherUpdateView: View {
 	private var downloadContent: some View {
 		VStack(alignment: .leading, spacing: 8) {
 			ProgressView(value: downloadProgress)
-				.tint(accentColor)
+				.tint(theme.accentFill)
 				.accessibilityLabel(Text("Downloading update…"))
 				.accessibilityValue(Text(downloadProgressText))
 			Text(downloadProgressText)
 				.font(.caption.monospacedDigit())
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		}
 	}
 
 	private var extractionContent: some View {
 		VStack(alignment: .leading, spacing: 8) {
 			ProgressView(value: driver.extractionProgress)
-				.tint(accentColor)
+				.tint(theme.accentFill)
 				.accessibilityLabel(Text("Preparing update…"))
 				.accessibilityValue(Text(percentageText))
 			Text(percentageText)
 				.font(.caption.monospacedDigit())
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		}
 	}
 
@@ -153,7 +154,7 @@ struct LauncherUpdateView: View {
 							? "The launcher is waiting for its current activity to finish."
 							: "The launcher will close and reopen automatically to finish the update.")
 			)
-			.foregroundStyle(.secondary)
+			.foregroundStyle(theme.textSecondary)
 		}
 	}
 
@@ -280,9 +281,9 @@ struct LauncherUpdateView: View {
 
 	private var statusColor: Color {
 		switch driver.phase {
-		case .failed: LauncherVisuals.dangerForeground
+		case .failed: theme.danger
 		case .installed: LauncherVisuals.success
-		default: .secondary
+		default: theme.textSecondary
 		}
 	}
 

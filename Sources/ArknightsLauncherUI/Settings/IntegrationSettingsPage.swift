@@ -4,6 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct IntegrationSettingsPage: View {
+	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
 	let accentColor: Color
 
@@ -45,7 +46,7 @@ struct IntegrationSettingsPage: View {
 						HStack(spacing: 8) {
 							Image(systemName: "speaker.fill")
 								.font(.caption)
-								.foregroundStyle(.secondary)
+								.foregroundStyle(theme.textSecondary)
 								.accessibilityHidden(true)
 							SettingsSlider(
 								value: $settings.launcherMusicVolume,
@@ -62,14 +63,14 @@ struct IntegrationSettingsPage: View {
 							)
 							Image(systemName: "speaker.wave.3.fill")
 								.font(.caption)
-								.foregroundStyle(.secondary)
+								.foregroundStyle(theme.textSecondary)
 								.accessibilityHidden(true)
 							Text(
 
 								"\(Int(settings.launcherMusicVolume * 100))%"
 							)
 							.font(.caption.monospacedDigit())
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 							.frame(minWidth: 36, alignment: .trailing)
 						}
 					}

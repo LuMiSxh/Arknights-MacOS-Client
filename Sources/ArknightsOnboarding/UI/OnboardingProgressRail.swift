@@ -4,7 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingProgressRail: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let currentStep: OnboardingStep
 	let accentColor: Color
 	let appVersion: String
@@ -33,16 +33,16 @@ struct OnboardingProgressRail: View {
 
 			HStack(spacing: LauncherVisuals.Spacing.control) {
 				Rectangle()
-					.fill(accentColor)
+					.fill(theme.accentFill)
 					.frame(width: 28, height: 2)
 				Text("Version \(appVersion)")
 					.font(.caption)
-					.foregroundStyle(.tertiary)
+					.foregroundStyle(theme.textTertiary)
 			}
 			.padding(LauncherVisuals.Spacing.panel)
 		}
 		.frame(width: LauncherVisuals.Layout.railWidth)
-		.background(palette.navigationRailBackground)
+		.background(theme.footerFill)
 	}
 
 	private func markerImage(for step: OnboardingStep) -> String {

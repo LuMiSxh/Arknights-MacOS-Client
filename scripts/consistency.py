@@ -8,6 +8,7 @@ from __future__ import annotations
 from lib.bundled_resources import registry_drift
 from lib.common import PROJECT_DIR, fail, run_main
 from lib.console import info, warning
+from lib.design_lint import check as check_design_lint
 from lib.licenses import check_all
 from lib.project_config import load_project_configuration
 from lib.runtime_update import check as check_runtime_pin
@@ -32,6 +33,10 @@ def main() -> None:
     problems = check_support_codes(PROJECT_DIR)
     if problems:
         fail("Support-code outputs are out of date:\n" + "\n".join(problems))
+    info("Checking feature Swift code for design literals")
+    problems = check_design_lint(PROJECT_DIR)
+    if problems:
+        fail("Design lint failed:\n" + "\n".join(problems))
     info("Checking the runtime pin and its generated blocks")
     check_runtime_pin(PROJECT_DIR)
 

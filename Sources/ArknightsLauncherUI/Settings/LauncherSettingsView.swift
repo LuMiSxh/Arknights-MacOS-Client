@@ -13,7 +13,7 @@ import SwiftUI
 #endif
 
 struct LauncherSettingsView: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	package let settings: LauncherPreferencesController
 	let customization: CustomizationController
 	package let communication: LauncherCommunicationController
@@ -57,7 +57,7 @@ struct LauncherSettingsView: View {
 				installation: installation
 			)
 			Divider()
-				.overlay(palette.hairline)
+				.overlay(theme.hairline)
 
 			ZStack(alignment: .bottomTrailing) {
 				Group {
@@ -178,21 +178,15 @@ struct LauncherSettingsView: View {
 					}
 				}
 				.padding(.trailing, 24)
-				.padding(.top, LauncherVisuals.Spacing.control)
+				.padding(.top, LauncherTokens.Spacing.control)
 				.padding(.bottom, 16)
 				.background {
 					FloatingActionFooterFade(height: 94)
 				}
 			}
 		}
-		.tint(palette.controlOn)
-		.background(
-			ZStack {
-				palette.modalBackground
-				customization.hudTintColor
-			}
-		)
-		.preferredColorScheme(.dark)
+		.tint(theme.accentFill)
+		.background(theme.sheetTint)
 		.animation(
 			LauncherMotion.animation(.crossfade, reduceMotion: reduceMotion),
 			value: customization.dynamicThemeHue
@@ -227,7 +221,7 @@ struct LauncherSettingsView: View {
 }
 
 private struct SettingsNavigationRail: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
 	package let accentColor: Color
@@ -241,7 +235,7 @@ private struct SettingsNavigationRail: View {
 				ForEach(SettingsGroup.allCases, id: \.self) { group in
 					let sections = visibleSections.filter { $0.group == group }
 					if !sections.isEmpty {
-						VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+						VStack(alignment: .leading, spacing: 2) {
 							if let caption = group.caption {
 								NavigationRailCaption(text: caption)
 									.padding(.horizontal, 8)
@@ -270,7 +264,7 @@ private struct SettingsNavigationRail: View {
 				.padding(.bottom, 16)
 		}
 		.frame(width: LauncherVisuals.Layout.railWidth)
-		.background(palette.navigationRailBackground)
+		.background(theme.footerFill)
 	}
 
 	private var visibleSections: [SettingsSection] {

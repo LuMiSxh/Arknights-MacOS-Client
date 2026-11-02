@@ -15,7 +15,7 @@ struct LauncherHUDView: View {
 	package let communication: LauncherCommunicationController
 	let canSwitchRegion: Bool
 	package let accentColor: Color
-	let hudTintColor: Color
+	let homeColorScheme: ColorScheme
 	let musicController: BackgroundMusicController
 	let actions: LauncherHUDActions
 	let developerExpandedPill: String?
@@ -45,7 +45,6 @@ struct LauncherHUDView: View {
 		HUDProgressSurface(
 			lifecycle: lifecycle,
 			installation: installation,
-			tint: hudTintColor,
 			progressTint: accentColor
 		) {
 			controlBarContent
@@ -53,6 +52,9 @@ struct LauncherHUDView: View {
 		.animation(stateAnimation, value: installation.isDownloading)
 		.animation(stateAnimation, value: communication.shouldShowLauncherUpdateButton)
 		.animation(stateAnimation, value: lifecycle.state.presentation.failure?.id)
+		.launcherTheme(accent: accentColor)
+		.environment(\.colorScheme, homeColorScheme)
+		.launcherAnimation(.state, value: homeColorScheme)
 	}
 
 	private var controlBarContent: some View {
@@ -120,7 +122,6 @@ struct LauncherHUDView: View {
 								settings: settings,
 								musicTitle: musicController.currentMusicTitle,
 								accentColor: accentColor,
-								hudTintColor: hudTintColor,
 								openCurrentMusicURL: musicController.openCurrentMusicURL,
 								controller: musicController,
 								isExpanded: expandedBinding(for: .music)
@@ -134,7 +135,6 @@ struct LauncherHUDView: View {
 								installation: installation,
 								gameSession: gameSession,
 								accentColor: accentColor,
-								hudTintColor: hudTintColor,
 								checkGameUpdates: actions.checkGameUpdates,
 								isExpanded: expandedBinding(for: .version)
 							)
@@ -147,7 +147,6 @@ struct LauncherHUDView: View {
 								installation: installation,
 								canSwitchRegion: canSwitchRegion,
 								accentColor: accentColor,
-								hudTintColor: hudTintColor,
 								selectRegion: actions.selectRegion,
 								isExpanded: expandedBinding(for: .status)
 							)
@@ -162,6 +161,9 @@ struct LauncherHUDView: View {
 			.animation(stateAnimation, value: hasMusicPill)
 			.animation(stateAnimation, value: hasVersionPill)
 			.animation(stateAnimation, value: hasStatusPill)
+			.launcherTheme(accent: accentColor)
+			.environment(\.colorScheme, homeColorScheme)
+			.launcherAnimation(.state, value: homeColorScheme)
 		}
 	}
 

@@ -9,19 +9,18 @@ import SwiftUI
 struct HUDPillSurface<Content: View>: View {
 	let isExpanded: Bool
 	let showsBorder: Bool
-	let tint: Color
 	@ViewBuilder package let content: Content
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.colorScheme) private var colorScheme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	package init(
 		isExpanded: Bool = false,
 		showsBorder: Bool = true,
-		tint: Color,
 		@ViewBuilder content: () -> Content
 	) {
 		self.isExpanded = isExpanded
 		self.showsBorder = showsBorder
-		self.tint = tint
 		self.content = content()
 	}
 
@@ -29,7 +28,7 @@ struct HUDPillSurface<Content: View>: View {
 		content
 			.contentShape(surfaceShape)
 			.adaptiveControlSurface(
-				tint: tint,
+				tint: colorScheme == .dark ? theme.controlFill : theme.groupFill,
 				presentation: .hud,
 				isInteractive: false,
 				borderOpacity: showsBorder ? LauncherVisuals.Control.hudBorderOpacity : 0,
@@ -77,7 +76,7 @@ package enum HUDPillMotion {
 	}
 
 	package static func expansionAnimation(reduceMotion: Bool) -> Animation? {
-		LauncherMotion.animation(.present, reduceMotion: reduceMotion)
+		LauncherMotion.animation(.morph, reduceMotion: reduceMotion)
 	}
 
 	package static func expandedContentTransition(reduceMotion: Bool) -> AnyTransition {
@@ -110,7 +109,7 @@ package struct HUDPillProgressOutline: View {
 	let isActive: Bool
 	let tint: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 
 	package init(progress: Double?, isActive: Bool, tint: Color) {
 		self.progress = progress
@@ -121,7 +120,7 @@ package struct HUDPillProgressOutline: View {
 	package var body: some View {
 		Capsule()
 			.stroke(
-				palette.hairline.opacity(
+				theme.controlStroke.opacity(
 					progress == nil ? LauncherVisuals.Control.hudBorderOpacity : 0.5
 				),
 				lineWidth: LauncherVisuals.Control.borderWidth
@@ -146,10 +145,9 @@ package struct HUDPillProgressOutline: View {
 extension View {
 	package func hudPillSurface(
 		isExpanded: Bool = false,
-		showsBorder: Bool = true,
-		tint: Color
+		showsBorder: Bool = true
 	) -> some View {
-		HUDPillSurface(isExpanded: isExpanded, showsBorder: showsBorder, tint: tint) {
+		HUDPillSurface(isExpanded: isExpanded, showsBorder: showsBorder) {
 			self
 		}
 	}

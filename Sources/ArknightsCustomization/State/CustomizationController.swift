@@ -28,7 +28,10 @@ package final class CustomizationController {
 	package let usesDynamicTheme: @MainActor () -> Bool
 
 	package var heroArtwork: NSImage? {
-		didSet { updateThemeColor() }
+		didSet {
+			updateThemeColor()
+			updateArtworkColorScheme()
+		}
 	}
 	package var officialLogo: NSImage?
 	package private(set) var hasCustomAppIcon = false
@@ -38,6 +41,8 @@ package final class CustomizationController {
 	// hidden until it has real wallpaper/logo to show instead of a placeholder.
 	package var dynamicThemeHue: Double?
 	package var accentColor: Color = LauncherVisuals.cyan
+	// Tone that the artwork's bottom band calls for. Read it through `homeColorScheme(for:)`.
+	var artworkColorScheme: ColorScheme = .dark
 	package let hudTintColor: Color = LauncherPalette.fallback.hudGlassTint
 	package private(set) var activeThemeCacheKey: String?
 	// Increments only when the persisted custom artwork changes. Branding refreshes use this
@@ -51,10 +56,12 @@ package final class CustomizationController {
 	let iconPublicationPreparer: IconPublicationPreparer
 	let accentExtractor: AccentExtractor
 	let dynamicIconRenderer: DynamicIconRenderer
+	let homeLuminanceCache: HomeLuminanceCache
 	@ObservationIgnored var artworkOperationID: UUID?
 	@ObservationIgnored let passiveArtworkLoad = TaskSlot()
 	@ObservationIgnored var artworkMutationInFlight = false
 	@ObservationIgnored var themeOperationID: UUID?
+	@ObservationIgnored let homeSchemeSlot = TaskSlot()
 	@ObservationIgnored var operatorIconOperationID: UUID?
 	@ObservationIgnored let passiveIconRefresh = TaskSlot()
 	@ObservationIgnored var iconMutationGeneration: UInt64 = 0
@@ -137,6 +144,8 @@ package final class CustomizationController {
 			iconPublicationPreparer
 			?? CustomizationImageIO.preparePublication
 		self.accentExtractor = accentExtractor ?? WallpaperColorExtractor.extractAccent
+		self.homeLuminanceCache = HomeLuminanceCache(
+			preferences: preferences, measure: WallpaperColorExtractor.homeLuminance(from:))
 		self.dynamicIconRenderer = dynamicIconRenderer ?? AppIconRenderer.tintedDefaultIcon
 	}
 

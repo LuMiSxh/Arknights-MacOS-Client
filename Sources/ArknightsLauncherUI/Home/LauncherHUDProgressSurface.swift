@@ -10,7 +10,6 @@ import SwiftUI
 struct HUDProgressSurface<Content: View>: View {
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController
-	let tint: Color
 	let progressTint: Color
 	@ViewBuilder package let content: () -> Content
 
@@ -21,7 +20,7 @@ struct HUDProgressSurface<Content: View>: View {
 			hasFailure: lifecycle.state.presentation.failure != nil
 		)
 		content()
-			.hudPillSurface(showsBorder: !supportsOutline, tint: tint)
+			.hudPillSurface(showsBorder: !supportsOutline)
 			.overlay {
 				if supportsOutline {
 					HUDDownloadOutline(

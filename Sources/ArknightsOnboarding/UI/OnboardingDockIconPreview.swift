@@ -9,6 +9,7 @@ import SwiftUI
 // Shows the launcher and game Dock icons as they are right now, so choosing an operator has a
 // visible result inside setup.
 struct OnboardingDockIconPreview: View {
+	@Environment(\.launcherTheme) private var theme
 	let customization: CustomizationController
 	@State private var gameIcon: NSImage?
 
@@ -35,11 +36,11 @@ struct OnboardingDockIconPreview: View {
 				.resizable()
 				.scaledToFit()
 				.frame(width: 64, height: 64)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.accessibilityHidden(true)
 			Text(title)
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		}
 		.accessibilityElement(children: .combine)
 	}

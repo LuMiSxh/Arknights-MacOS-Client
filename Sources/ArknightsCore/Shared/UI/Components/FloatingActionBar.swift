@@ -6,6 +6,11 @@ import SwiftUI
 package struct FloatingActionFooterFade: View {
 	package let height: CGFloat?
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+	@Environment(\.colorScheme) private var colorScheme
+	@Environment(\.launcherTheme) private var theme
+
+	/// Light mode fades into the light sheet; a black fade greys the bottom edge.
+	private var isDark: Bool { colorScheme == .dark }
 
 	package init(height: CGFloat? = nil) {
 		self.height = height
@@ -14,10 +19,10 @@ package struct FloatingActionFooterFade: View {
 	package var body: some View {
 		Group {
 			if reduceTransparency {
-				Color.black.opacity(0.72)
+				isDark ? Color.black.opacity(0.72) : theme.sheetTint
 			} else {
 				LinearGradient(
-					colors: [.clear, Color.black.opacity(0.45)],
+					colors: [.clear, isDark ? Color.black.opacity(0.45) : theme.sheetTint],
 					startPoint: .top,
 					endPoint: .bottom
 				)
@@ -32,6 +37,7 @@ package struct FloatingActionFooterFade: View {
 /// Shared floating glass container for modal and onboarding actions. Single-row actions remain
 /// capsule-like; expanded action groups use a fixed-radius rounded rectangle.
 package struct FloatingActionBar<Content: View>: View {
+	// Kept for existing call sites; the theme supplies the color.
 	let tint: Color
 	var spacing: CGFloat = 12
 	@ViewBuilder package let content: Content
@@ -56,8 +62,7 @@ package struct FloatingActionBar<Content: View>: View {
 				)
 			}
 		}
-		.adaptiveGlassEffect(tint: tint, in: barShape)
-		.shadow(color: Color.black.opacity(0.35), radius: 10, x: 0, y: 4)
+		.launcherSurface(.footer, in: barShape)
 		.onPreferenceChange(FloatingActionBarHeightPreferenceKey.self) { height in
 			guard abs(height - contentHeight) > 0.5 else { return }
 			contentHeight = height
@@ -88,7 +93,6 @@ package struct FloatingDoneButton: View {
 	var title = "Done"
 	package let accentColor: Color
 	let action: () -> Void
-
 	package init(title: String = "Done", accentColor: Color, action: @escaping () -> Void) {
 		self.title = title
 		self.accentColor = accentColor

@@ -5,7 +5,7 @@ import ArknightsGameInstallation
 import SwiftUI
 
 package struct PlaytimeStatisticsPage: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let controller: PlaytimeStatisticsController
 	let regions: [GameRegion]
 	package let accentColor: Color
@@ -124,7 +124,7 @@ package struct PlaytimeStatisticsPage: View {
 
 	private var metricDivider: some View {
 		Rectangle()
-			.fill(palette.hairline)
+			.fill(theme.hairline)
 			.frame(width: 1, height: 42)
 			.padding(.horizontal, 18)
 	}
@@ -157,41 +157,41 @@ package struct PlaytimeStatisticsPage: View {
 				.font(.title3.monospacedDigit().weight(.semibold))
 			Text(title)
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
+		.padding(.vertical, 10)
 	}
 
 	private func explanation(title: String, detail: String, systemImage: String) -> some View {
 		HStack(alignment: .top, spacing: 12) {
 			Image(systemName: systemImage)
-				.frame(width: 18)
-				.foregroundStyle(.secondary)
+				.frame(width: 24)
+				.foregroundStyle(theme.textSecondary)
 				.accessibilityHidden(true)
-			VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
+			VStack(alignment: .leading, spacing: LauncherTokens.Spacing.compact) {
 				Text(title)
+					.frame(maxWidth: .infinity, alignment: .leading)
 				Text(detail)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
-		.padding(.vertical, LauncherVisuals.Spacing.control)
 	}
 
 	private func regionRow(_ region: GameRegion) -> some View {
-		HStack(spacing: LauncherVisuals.Spacing.control) {
+		HStack(spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: "globe")
 				.font(.caption)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.frame(width: 18)
 				.accessibilityHidden(true)
 			Text(region.displayName)
-			Spacer(minLength: LauncherVisuals.Spacing.control)
+			Spacer(minLength: LauncherTokens.Spacing.control)
 			Text(durationText(controller.duration(for: region)))
 				.font(.callout.monospacedDigit().weight(.semibold))
 		}
-		.padding(.vertical, LauncherVisuals.Spacing.control)
 	}
 
 	private func durationText(_ duration: TimeInterval) -> String {

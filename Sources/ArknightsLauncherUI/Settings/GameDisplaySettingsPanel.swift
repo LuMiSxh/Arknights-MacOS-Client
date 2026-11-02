@@ -5,6 +5,7 @@ import SwiftUI
 
 // Windowed sizes are macOS points; the launcher converts them into the game's pixel resolution.
 struct GameDisplaySettingsPanel: View {
+	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
 	let isLocked: Bool
 	/// nil while runtime discovery runs. False means the game falls back to Standard.
@@ -79,7 +80,7 @@ struct GameDisplaySettingsPanel: View {
 				) {
 					Text(renderSize.displayName)
 						.monospacedDigit()
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 				}
 				SettingsHairline()
 			}
@@ -104,7 +105,7 @@ struct GameDisplaySettingsPanel: View {
 				SettingsHairline()
 				Text("The game uses the display settings chosen inside Arknights.")
 					.font(.callout)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
@@ -220,9 +221,9 @@ struct GameDisplaySettingsPanel: View {
 	}
 
 	private var inGameResolutionNote: some View {
-		HStack(alignment: .firstTextBaseline, spacing: LauncherVisuals.Spacing.control) {
+		HStack(alignment: .firstTextBaseline, spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: "info.circle")
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.accessibilityHidden(true)
 			Text(
 				"Resolutions inside Arknights count the pixels the game draws. With Retina rendering, "
@@ -230,7 +231,7 @@ struct GameDisplaySettingsPanel: View {
 					+ "\(options.windowSize.displayName) window."
 			)
 			.font(.caption)
-			.foregroundStyle(.secondary)
+			.foregroundStyle(theme.textSecondary)
 			.fixedSize(horizontal: false, vertical: true)
 			.frame(maxWidth: .infinity, alignment: .leading)
 			CapsuleActionButton(

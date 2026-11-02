@@ -110,6 +110,19 @@ package struct AppPaths: Sendable {
 
 	package var logsDirectory: URL { logRoot }
 
+	/// Where the publisher SDK writes its logs inside the publisher's Wine prefix.
+	package func sdkLogDirectory(for publisher: GamePublisher) -> URL {
+		winePrefix(for: publisher).appending(
+			path: "drive_c/users/crossover/AppData/LocalLow/HyperGryph/Arknights/sdklogs",
+			directoryHint: .isDirectory
+		)
+	}
+
+	/// Where the launcher keeps copies of the publisher SDK logs.
+	package func collectedSDKLogDirectory(for publisher: GamePublisher) -> URL {
+		logsDirectory.appending(path: "sdklogs/\(publisher.rawValue)", directoryHint: .isDirectory)
+	}
+
 	var yostarLogFile: URL {
 		publisherLogFile(for: .yostar)
 	}

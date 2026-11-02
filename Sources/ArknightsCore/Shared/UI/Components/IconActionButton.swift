@@ -60,10 +60,51 @@ package struct IconActionButton: View {
 				)
 				.frame(width: size, height: size)
 				.contentShape(Circle())
+				.modifier(
+					IconActionChrome(
+						tone: tone,
+						surface: surface,
+						surfaceTint: surfaceTint,
+						foreground: foreground,
+						palette: palette,
+						contrast: contrast
+					)
+				)
+				.accessibilityHidden(true)
+		}
+		.buttonStyle(ActionPressStyle(intensity: .subtle))
+		.frame(minWidth: hitTargetSize, minHeight: hitTargetSize)
+		.contentShape(Circle())
+		.keyboardFocusIndicator(in: Circle())
+		.accessibilityLabel(title)
+	}
+}
+
+/// Icon chrome: the HUD and legacy tinted surfaces keep their palette path. Other neutral
+/// and tone-driven icons use the theme surface.
+private struct IconActionChrome: ViewModifier {
+	let tone: CapsuleActionTone
+	let surface: ControlSurfacePresentation
+	let surfaceTint: Color?
+	let foreground: Color?
+	let palette: LauncherPalette
+	let contrast: ColorSchemeContrast
+	@Environment(\.launcherTheme) private var theme
+	@Environment(\.colorScheme) private var colorScheme
+
+	/// Dark HUD glass keeps the palette tint; light HUD glass uses the theme group fill.
+	private var hudSurfaceTint: Color {
+		colorScheme == .dark ? palette.hudGlassTint : theme.groupFill
+	}
+
+	@ViewBuilder
+	func body(content: Content) -> some View {
+		if surface == .hud || surfaceTint != nil {
+			content
 				.adaptiveControlSurface(
 					tint: surfaceTint
 						?? (surface == .hud
-							? palette.hudGlassTint : tone.surfaceColor(in: palette)),
+							? hudSurfaceTint : tone.surfaceColor(in: palette)),
 					presentation: surface,
 					isInteractive: true,
 					in: Circle()
@@ -72,12 +113,10 @@ package struct IconActionButton: View {
 					foreground ?? tone.foregroundColor(for: contrast, in: palette),
 					disabledTint: tone.disabledColor(for: contrast)
 				)
-				.accessibilityHidden(true)
+		} else {
+			content
+				.themedActionSurface(tone, in: Circle())
+				.foregroundStyle(foreground ?? tone.ink(in: theme))
 		}
-		.buttonStyle(ActionPressStyle())
-		.frame(minWidth: hitTargetSize, minHeight: hitTargetSize)
-		.contentShape(Circle())
-		.keyboardFocusIndicator(in: Circle())
-		.accessibilityLabel(title)
 	}
 }

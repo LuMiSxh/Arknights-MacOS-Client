@@ -4,7 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct PresetGallerySearchBar: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	let destination: PresetGalleryDestination
 	@Binding var searchText: String
@@ -26,8 +26,8 @@ struct PresetGallerySearchBar: View {
 			Image(systemName: "magnifyingglass")
 				.font(.caption)
 				.adaptiveControlForeground(
-					isFocused ? palette.controlOn : .secondary,
-					disabledTint: .secondary
+					isFocused ? theme.accentInk : theme.textSecondary,
+					disabledTint: theme.textSecondary
 				)
 				.accessibilityHidden(true)
 
@@ -56,7 +56,9 @@ struct PresetGallerySearchBar: View {
 					Image(systemName: "xmark.circle.fill")
 						.font(.callout)
 						.imageScale(.large)
-						.adaptiveControlForeground(.secondary, disabledTint: .secondary)
+						.adaptiveControlForeground(
+							theme.textSecondary, disabledTint: theme.textSecondary
+						)
 						.frame(width: Self.contentHeight, height: Self.contentHeight)
 						.contentShape(Rectangle())
 				}
@@ -68,7 +70,7 @@ struct PresetGallerySearchBar: View {
 		.padding(.horizontal, 12)
 		.padding(.vertical, 8)
 		.adaptiveControlSurface(
-			tint: isFocused ? palette.controlOn : palette.controlTint,
+			tint: isFocused ? theme.accentFill : theme.controlStroke,
 			borderOpacity: isFocused ? 0.62 : nil,
 			in: Capsule()
 		)
@@ -90,14 +92,15 @@ struct PresetGallerySearchBar: View {
 					.frame(width: Self.contentHeight, height: Self.contentHeight)
 			}
 			.adaptiveControlForeground(
-				.secondary,
-				disabledTint: .secondary.opacity(LauncherVisuals.Control.disabledForegroundOpacity)
+				theme.textSecondary,
+				disabledTint: theme.textSecondary.opacity(
+					LauncherVisuals.Control.disabledForegroundOpacity)
 			)
 			.padding(.leading, 8)
 			.padding(.trailing, 4)
 			.padding(.vertical, 4)
 			.contentShape(Capsule())
-			.adaptiveControlSurface(tint: palette.controlTint, in: Capsule())
+			.adaptiveControlSurface(tint: theme.controlStroke, in: Capsule())
 		}
 		.buttonStyle(ActionPressStyle())
 		.keyboardFocusIndicator(in: Capsule())

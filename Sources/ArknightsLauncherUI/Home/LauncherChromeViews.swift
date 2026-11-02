@@ -8,24 +8,14 @@ struct ArknightsWordmark: View {
 	let logo: NSImage?
 	package let region: GameRegion
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.colorScheme) private var colorScheme
 
 	var body: some View {
 		ZStack(alignment: .leading) {
 			if let logo {
-				if region.publisher != .yostar {
-					Image(nsImage: logo)
-						.resizable()
-						.scaledToFit()
-						.colorInvert()
-						.id(wordmarkIdentity)
-						.transition(wordmarkTransition)
-				} else {
-					Image(nsImage: logo)
-						.resizable()
-						.scaledToFit()
-						.id(wordmarkIdentity)
-						.transition(wordmarkTransition)
-				}
+				officialLogo(logo)
+					.id(wordmarkIdentity)
+					.transition(wordmarkTransition)
 			} else {
 				Text(wordmarkFallback)
 					.font(LauncherVisuals.Typography.wordmark)
@@ -45,6 +35,20 @@ struct ArknightsWordmark: View {
 		)
 	}
 
+	private var isLightScheme: Bool { colorScheme == .light }
+
+	/// The logo source color depends on the publisher. Invert it when that color differs from the
+	/// home scheme's foreground: white on the dark home, black on the light home.
+	@ViewBuilder
+	private func officialLogo(_ logo: NSImage) -> some View {
+		let image = Image(nsImage: logo).resizable().scaledToFit()
+		if (region.publisher != .yostar) != isLightScheme {
+			image.colorInvert()
+		} else {
+			image
+		}
+	}
+
 	private var wordmarkFallback: String {
 		switch region {
 		case .global: "ARKNIGHTS · GLOBAL"
@@ -57,7 +61,7 @@ struct ArknightsWordmark: View {
 	}
 
 	private var wordmarkIdentity: String {
-		"\(region.rawValue).\(logo == nil ? "fallback" : "official")"
+		"\(region.rawValue).\(logo == nil ? "fallback" : "official").\(isLightScheme ? "light" : "dark")"
 	}
 
 	private var wordmarkAnimation: Animation? {

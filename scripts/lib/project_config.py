@@ -24,6 +24,13 @@ SUPPORT_CODE_CATALOG = Path("support-codes.json")
 SUPPORT_CODE_ARTICLES = Path("docs/help/errors")
 SUPPORT_CODE_SWIFT = Path("Sources/ArknightsCore/Shared/Support/SupportCode.swift")
 ISSUE_REPORT_TEMPLATE = Path(".github/ISSUE_TEMPLATE/problem-report.yml")
+# Design-literal lint: the Swift tree it scans, the directories it skips, and its allowlist.
+DESIGN_LINT_SOURCE_ROOT = Path("Sources")
+DESIGN_LINT_EXCLUDED_DIRECTORIES = (
+    Path("Sources/ArknightsCore/Shared/UI"),
+    Path("Sources/ArknightsDesignLab"),
+)
+DESIGN_LINT_ALLOWLIST = Path("scripts/design-lint-allowlist.txt")
 
 
 def sparkle_archive_names(stem: str, version: str) -> set[str]:

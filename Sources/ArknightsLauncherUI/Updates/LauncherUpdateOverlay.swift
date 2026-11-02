@@ -24,6 +24,7 @@ enum LauncherUpdateOverlayPresentation {
 }
 
 struct LauncherUpdateOverlay: View {
+	@Environment(\.launcherTheme) private var theme
 	let driver: LauncherUpdateUserDriver
 	package let accentColor: Color
 	let hudTintColor: Color
@@ -45,7 +46,7 @@ struct LauncherUpdateOverlay: View {
 	}
 
 	private var backgroundDim: some View {
-		(reduceTransparency ? Color.black : Color.black.opacity(LauncherVisuals.overlayDim))
+		(reduceTransparency ? Color.black : theme.modalDim)
 			.ignoresSafeArea()
 			.opacity(isVisible ? 1 : 0)
 			.animation(backgroundAnimation, value: isVisible)

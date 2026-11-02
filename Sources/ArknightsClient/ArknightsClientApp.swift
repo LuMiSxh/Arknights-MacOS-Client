@@ -280,6 +280,15 @@ struct ArknightsClientApp: App {
 		)
 	}
 
+	// nil follows the system; the named appearances pin the whole app, including native controls.
+	private static func nsAppearance(for appearance: LauncherAppearance) -> NSAppearance? {
+		switch appearance {
+		case .system: nil
+		case .light: NSAppearance(named: .aqua)
+		case .dark: NSAppearance(named: .darkAqua)
+		}
+	}
+
 	var body: some Scene {
 		WindowGroup("Arknights Client") {
 			GeometryReader { geometry in
@@ -296,6 +305,9 @@ struct ArknightsClientApp: App {
 				.environment(\.launcherWindowSize, geometry.size)
 			}
 			.frame(minWidth: 880, minHeight: 560)
+			.onChange(of: model.settings.launcherAppearance, initial: true) { _, appearance in
+				NSApp.appearance = Self.nsAppearance(for: appearance)
+			}
 			.onAppear {
 				appDelegate.model = model
 				appDelegate.launcherUpdater = model.communication.launcherUpdater

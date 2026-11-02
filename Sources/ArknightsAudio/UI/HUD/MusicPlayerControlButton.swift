@@ -4,7 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct MusicPlayerControlButton: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let title: String
 	let systemImage: String
 	package let accentColor: Color
@@ -23,7 +23,7 @@ struct MusicPlayerControlButton: View {
 							: LauncherVisuals.Typography.hudControlGlyph
 					)
 					.adaptiveControlForeground(
-						isProminent ? accentColor : palette.controlTint,
+						isProminent ? theme.accentInk : theme.textPrimary,
 						disabledTint: LauncherVisuals.disabled,
 						isDisabled: isDisabled
 					)
@@ -47,7 +47,7 @@ struct MusicPlayerControlButton: View {
 	@ViewBuilder
 	private func controlSurface(_ content: some View) -> some View {
 		content.adaptiveControlSurface(
-			tint: isProminent ? accentColor : palette.controlTint,
+			tint: isProminent ? accentColor : theme.textPrimary,
 			isDisabled: isDisabled,
 			in: Circle()
 		)

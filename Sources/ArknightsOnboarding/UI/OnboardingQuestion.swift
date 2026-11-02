@@ -22,7 +22,7 @@ struct OnboardingAnswer<Value: Hashable>: Identifiable {
 // launcher by answering instead of reading individual settings. A question picks one answer,
 // several answers, or offers action cards that open a chooser.
 struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	private enum Interaction {
 		case single(Binding<Value?>)
 		case multiple(Binding<Set<Value>>)
@@ -78,7 +78,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 			if let footnote {
 				Text(footnote)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}
@@ -129,27 +129,27 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 				Image(systemName: answer.systemImage)
 					.font(.title3)
 					.symbolRenderingMode(.hierarchical)
-					.foregroundStyle(isSelected ? accentColor : .secondary)
+					.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 					.frame(width: 28)
 					.accessibilityHidden(true)
 				VStack(alignment: .leading, spacing: 4) {
 					HStack(spacing: LauncherVisuals.Spacing.control) {
 						Text(answer.title)
 							.font(.body.weight(.medium))
-							.foregroundStyle(.primary)
+							.foregroundStyle(theme.textPrimary)
 						if answer.isRecommended {
 							Text("Recommended")
 								.font(.caption2.weight(.medium))
-								.foregroundStyle(.secondary)
+								.foregroundStyle(theme.textSecondary)
 								.padding(.horizontal, LauncherVisuals.Spacing.control)
 								.padding(.vertical, 2)
-								.overlay(Capsule().stroke(palette.hairline))
+								.overlay(Capsule().stroke(theme.hairline))
 						}
 					}
 					if !answer.detail.isEmpty {
 						Text(answer.detail)
 							.font(.callout)
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 							.multilineTextAlignment(.leading)
 							.fixedSize(horizontal: false, vertical: true)
 					}
@@ -157,7 +157,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 				Spacer(minLength: LauncherVisuals.Spacing.content)
 				Image(systemName: trailingGlyph(isSelected: isSelected))
 					.font(.title3)
-					.foregroundStyle(isSelected ? accentColor : .secondary)
+					.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
 					.accessibilityHidden(true)
 			}
 			.padding(LauncherVisuals.Spacing.content)
@@ -165,7 +165,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 			.contentShape(shape)
 		}
 		.buttonStyle(
-			OnboardingAnswerStyle(isSelected: isSelected, accentColor: accentColor, shape: shape)
+			OnboardingAnswerStyle(isSelected: isSelected, shape: shape)
 		)
 		.disabled(isDisabled)
 		.help(answer.help ?? "")
@@ -203,28 +203,28 @@ extension OnboardingQuestion where Accessory == EmptyView {
 // spring snap to full size.
 private struct OnboardingAnswerStyle<S: InsettableShape>: ButtonStyle {
 	let isSelected: Bool
-	let accentColor: Color
 	let shape: S
 
 	func makeBody(configuration: Configuration) -> some View {
-		OnboardingAnswerBody(
-			configuration: configuration, isSelected: isSelected, accentColor: accentColor,
-			shape: shape)
+		OnboardingAnswerBody(configuration: configuration, isSelected: isSelected, shape: shape)
 	}
 }
 
 private struct OnboardingAnswerBody<S: InsettableShape>: View {
 	package let configuration: ButtonStyleConfiguration
 	let isSelected: Bool
-	let accentColor: Color
 	let shape: S
 	@Environment(\.isEnabled) private var isEnabled
+	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isHovered = false
 
 	var body: some View {
 		configuration.label
-			.background(shape.fill(fill))
+			.background {
+				shape.fill(isSelected ? theme.accentGlassTint : theme.controlFill)
+					.overlay(shape.fill(isHovered ? theme.hoverTint : .clear))
+			}
 			.overlay(shape.strokeBorder(border, lineWidth: LauncherVisuals.Control.borderWidth))
 			.opacity(isEnabled ? 1 : LauncherVisuals.Control.disabledForegroundOpacity)
 			.scaleEffect(scale)
@@ -241,19 +241,8 @@ private struct OnboardingAnswerBody<S: InsettableShape>: View {
 		return LauncherMotion.subtlePressedScale
 	}
 
-	private var fill: Color {
-		let control = LauncherVisuals.Control.self
-		var opacity =
-			isSelected
-			? control.enabledChromaticSurfaceOpacity : control.enabledNeutralSurfaceOpacity
-		if isHovered { opacity += control.controlHoverSurfaceOpacity }
-		return (isSelected ? accentColor : Color.white).opacity(opacity)
-	}
-
 	private var border: Color {
-		isSelected
-			? accentColor.opacity(LauncherVisuals.Control.enabledChromaticBorderOpacity)
-			: Color.white.opacity(LauncherVisuals.Control.enabledNeutralBorderOpacity)
+		isSelected ? theme.accentGlassStroke : theme.controlStroke
 	}
 
 	private func curve(_ curve: LauncherMotion.Curve) -> Animation? {

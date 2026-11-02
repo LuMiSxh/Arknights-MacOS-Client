@@ -16,9 +16,12 @@ struct CachedPresetImage: View {
 	// Decoding straight to a bounded thumbnail keeps peak memory and decode cost down
 	// regardless of source size, covering up to 3x Retina scaling with headroom.
 	private static let maxDecodedPixelSize: CGFloat = 400
+	// The grid cell clips the placeholder, so the skeleton stays square.
+	private static let unclippedSkeletonRadius: CGFloat = 0
 
 	@State private var image: NSImage?
 	@State private var hasFailed = false
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		Group {
@@ -28,13 +31,13 @@ struct CachedPresetImage: View {
 					.aspectRatio(contentMode: contentMode)
 			} else if hasFailed {
 				ZStack {
-					Color.white.opacity(0.04)
+					theme.groupFill
 					Image(systemName: placeholderIcon)
 						.font(.title2)
-						.foregroundStyle(Color.white.opacity(0.15))
+						.foregroundStyle(theme.textTertiary)
 				}
 			} else {
-				SkeletonValue(cornerRadius: 0)
+				SkeletonValue(cornerRadius: Self.unclippedSkeletonRadius)
 			}
 		}
 		.accessibilityHidden(true)

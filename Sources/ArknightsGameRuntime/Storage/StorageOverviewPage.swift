@@ -135,6 +135,7 @@ package struct StorageOverviewPage: View {
 						action: actions.clearGalleryCache
 					)
 				}
+				.frame(maxWidth: .infinity, alignment: .trailing)
 				.disabled(!controller.canModifyStorage)
 			}
 

@@ -106,6 +106,7 @@ struct BundledDocumentView: View {
 			}
 		}
 		.onExitCommand(perform: dismiss.callAsFunction)
+		.launcherTheme(accent: accentColor)
 		.task(id: document) {
 			loadState = .loading
 			do {
@@ -144,6 +145,7 @@ private struct DocumentLoadErrorView: View {
 }
 
 struct MarkdownDocument: View {
+	@Environment(\.launcherTheme) private var theme
 	package let accentColor: Color
 	private let initialDocument: ParsedMarkdownDocument?
 	private let source: String?
@@ -180,7 +182,7 @@ struct MarkdownDocument: View {
 					.accessibilityLabel(Text("Loading document"))
 			}
 		}
-		.tint(accentColor)
+		.tint(theme.accentInk)
 		.pointerStyle(.default)
 		.task(id: source) {
 			guard let source else { return }
@@ -195,6 +197,7 @@ struct MarkdownDocument: View {
 }
 
 private struct MarkdownBlockView: View {
+	@Environment(\.launcherTheme) private var theme
 	let block: MarkdownBlock
 	package let accentColor: Color
 	let columnWidths: [CGFloat]
@@ -214,7 +217,7 @@ private struct MarkdownBlockView: View {
 		case .bullet(let source):
 			HStack(alignment: .firstTextBaseline, spacing: 8) {
 				Circle()
-					.fill(accentColor)
+					.fill(theme.accentFill)
 					.frame(width: 4, height: 4)
 				Text(markdownInline(source))
 			}
@@ -222,7 +225,7 @@ private struct MarkdownBlockView: View {
 		case .numbered(let number, let source):
 			HStack(alignment: .firstTextBaseline, spacing: 8) {
 				Text("\(number).")
-					.foregroundStyle(accentColor)
+					.foregroundStyle(theme.accentInk)
 					.monospacedDigit()
 				Text(markdownInline(source))
 			}
@@ -236,7 +239,7 @@ private struct MarkdownBlockView: View {
 				.padding(12)
 				.frame(maxWidth: .infinity, alignment: .leading)
 				.background(
-					.black.opacity(0.18), in: .rect(cornerRadius: LauncherVisuals.Radius.control))
+					theme.controlFill, in: .rect(cornerRadius: LauncherVisuals.Radius.control))
 		case .divider:
 			Divider().padding(.vertical, 4)
 		}
@@ -252,7 +255,7 @@ private struct MarkdownBlockView: View {
 }
 
 private struct MarkdownTable: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let rows: [[String]]
 	package let accentColor: Color
 	let columnWidths: [CGFloat]
@@ -275,7 +278,7 @@ private struct MarkdownTable: View {
 			}
 			.overlay {
 				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.control)
-					.stroke(palette.hairline, lineWidth: 1)
+					.stroke(theme.hairline, lineWidth: 1)
 			}
 			.clipShape(.rect(cornerRadius: LauncherVisuals.Radius.control))
 		}
@@ -285,6 +288,7 @@ private struct MarkdownTable: View {
 }
 
 private struct MarkdownTableCell: View {
+	@Environment(\.launcherTheme) private var theme
 	let source: String
 	let width: CGFloat
 	let isHeader: Bool
@@ -295,7 +299,7 @@ private struct MarkdownTableCell: View {
 
 	private var fill: Color {
 		guard isHeader else { return Color.clear }
-		return Color.white.opacity(LauncherVisuals.Control.enabledNeutralSurfaceOpacity)
+		return theme.controlFill
 	}
 
 	var body: some View {

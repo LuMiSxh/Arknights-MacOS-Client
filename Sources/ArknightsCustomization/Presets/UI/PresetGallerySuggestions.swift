@@ -67,7 +67,7 @@ struct PresetGallerySuggestions: View {
 }
 
 private struct PresetGallerySuggestionChip: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let destination: PresetGalleryDestination
 	package let accentColor: Color
 	let suggestion: PresetGallerySuggestion
@@ -92,11 +92,11 @@ private struct PresetGallerySuggestionChip: View {
 			.frame(maxWidth: 220, alignment: .leading)
 			.contentShape(Capsule())
 			.adaptiveControlForeground(
-				isFocused ? accentColor : .secondary,
-				disabledTint: .secondary
+				isFocused ? theme.accentInk : theme.textSecondary,
+				disabledTint: theme.textSecondary
 			)
 			.adaptiveControlSurface(
-				tint: palette.controlTint,
+				tint: theme.controlStroke,
 				in: Capsule()
 			)
 		}

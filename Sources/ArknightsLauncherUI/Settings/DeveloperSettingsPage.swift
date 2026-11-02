@@ -5,6 +5,7 @@ import SwiftUI
 
 #if DEBUG
 	struct DeveloperSettingsPage: View {
+		@Environment(\.launcherTheme) private var theme
 		@Binding var simulation: DeveloperSimulationState
 		let accentColor: Color
 
@@ -44,7 +45,7 @@ import SwiftUI
 					Text(
 						"Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
 					)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 				}
 			}
 		}

@@ -9,6 +9,7 @@ struct OnboardingPage<Content: View>: View {
 	let subtitle: String
 	let accentColor: Color
 	@ViewBuilder let content: Content
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.section) {
@@ -19,6 +20,12 @@ struct OnboardingPage<Content: View>: View {
 				fixesSubtitleHeight: true
 			)
 			content
+		}
+		.padding(LauncherVisuals.Spacing.panel)
+		.background {
+			RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
+				// Same opacity as the Settings sheet, so panel text stays readable over the artwork.
+				.fill(theme.sheetTint)
 		}
 	}
 }

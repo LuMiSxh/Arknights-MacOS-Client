@@ -10,17 +10,15 @@ struct VersionHUDPill: View {
 	package let installation: InstallationController
 	let gameSession: GameSessionController
 	package let accentColor: Color
-	let hudTintColor: Color
 	package let checkGameUpdates: () -> Void
 	@Binding var isExpanded: Bool
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		ExpandableHUDPill(
 			systemImage: "number",
 			toggleNoun: "version details",
 			accessibilityValue: versionText,
-			accentColor: accentColor,
-			hudTintColor: hudTintColor,
 			sizing: HUDPillSizing(
 				collapsedHeight: AppConstants.Music.collapsedPlayerHeight,
 				collapsedMaxWidth: AppConstants.HUD.collapsedVersionMaxWidth,
@@ -32,7 +30,7 @@ struct VersionHUDPill: View {
 		) {
 			Text(versionText)
 				.font(.caption.monospacedDigit().weight(.medium))
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.lineLimit(1)
 				.truncationMode(.tail)
 				.frame(
@@ -46,7 +44,7 @@ struct VersionHUDPill: View {
 				Label(updateStatus, systemImage: updateStatusIcon)
 					.font(.caption)
 					.foregroundStyle(
-						installation.isGameUpdateAvailable ? accentColor : .secondary
+						installation.isGameUpdateAvailable ? theme.accentInk : theme.textSecondary
 					)
 					.fixedSize(horizontal: false, vertical: true)
 				Spacer()

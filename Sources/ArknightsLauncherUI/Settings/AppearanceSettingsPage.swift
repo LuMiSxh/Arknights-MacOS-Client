@@ -24,24 +24,64 @@ struct AppearanceSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "Appearance",
-			subtitle: "Artwork, colors, and icons",
+			subtitle: "Appearance, artwork, and icons",
 			accentColor: accentColor
 		) {
+			SettingsPanel(title: "Appearance", systemImage: "circle.lefthalf.filled") {
+				SettingsActionRow(
+					title: "Appearance",
+					detail: "Settings, setup, and dialogs. Home keeps its own controls."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.launcherAppearance,
+						options: LauncherAppearance.allCases,
+						systemImages: ["circle.lefthalf.filled", "sun.max", "moon"]
+					) { appearance in
+						Text(appearanceTitle(appearance))
+					}
+				}
+			}
 			SettingsPanel(title: "Artwork", systemImage: "photo") {
 				artworkRow
 			}
-			SettingsPanel(title: "Colors", systemImage: "paintpalette") {
+			SettingsPanel(title: "Dynamic Theme", systemImage: "paintpalette") {
 				SettingsActionRow(
-					title: "Match colors to the artwork",
+					title: "Follow the artwork",
 					detail:
-						"The launcher and the generated Dock icons borrow the artwork’s colors.",
+						"The launcher accent and the generated Dock icons use the colors of the current artwork.",
 					help:
-						"Dynamic Theme: derives the launcher accent, HUD tint, and generated Dock icon pair from the selected artwork."
+						"Dynamic Theme: derives the launcher accent and the generated Dock icon pair from the selected artwork."
 				) {
 					SettingsToggle(
-						"Match colors to the artwork",
+						"Follow the artwork",
 						isOn: $settings.usesDynamicTheme,
 					)
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Home controls",
+					detail:
+						"Sub-pills, music, and the settings button. Automatic follows the artwork."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.homeTheme,
+						options: HomeTheme.allCases
+					) { homeTheme in
+						Text(themeTitle(homeTheme))
+					}
+				}
+				SettingsHairline()
+				SettingsActionRow(
+					title: "Branding",
+					detail:
+						"Logo and backdrop in the top left corner. Automatic follows Home controls."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.brandingTheme,
+						options: HomeTheme.allCases
+					) { brandingTheme in
+						Text(themeTitle(brandingTheme))
+					}
 				}
 			}
 			SettingsPanel(title: "Dock icons", systemImage: "dock.rectangle") {
@@ -88,6 +128,22 @@ struct AppearanceSettingsPage: View {
 				lifecycle: lifecycle,
 				destination: destination
 			)
+		}
+	}
+
+	private func themeTitle(_ theme: HomeTheme) -> String {
+		switch theme {
+		case .automatic: "Automatic"
+		case .dark: "Dark"
+		case .light: "Light"
+		}
+	}
+
+	private func appearanceTitle(_ appearance: LauncherAppearance) -> String {
+		switch appearance {
+		case .system: "System"
+		case .light: "Light"
+		case .dark: "Dark"
 		}
 	}
 

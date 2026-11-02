@@ -9,10 +9,10 @@ struct StatusHUDPill: View {
 	package let installation: InstallationController
 	let canSwitchRegion: Bool
 	package let accentColor: Color
-	let hudTintColor: Color
 	package let selectRegion: (GameRegion) -> Void
 	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		if settings.showsServerResetCountdown {
@@ -29,8 +29,6 @@ struct StatusHUDPill: View {
 			systemImage: "clock",
 			toggleNoun: "reset details",
 			accessibilityValue: countdown(for: installation.region, now: now),
-			accentColor: accentColor,
-			hudTintColor: hudTintColor,
 			canExpand: canExpand,
 			sizing: HUDPillSizing(
 				collapsedHeight: AppConstants.Music.collapsedPlayerHeight,
@@ -43,7 +41,7 @@ struct StatusHUDPill: View {
 		) {
 			Text(countdown(for: installation.region, now: now))
 				.font(.caption.monospacedDigit().weight(.medium))
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.lineLimit(2)
 				.truncationMode(.tail)
 				.fixedSize(horizontal: false, vertical: true)
@@ -101,14 +99,14 @@ struct StatusHUDPill: View {
 				Text(region.displayName)
 					.font(.caption.weight(.medium))
 					.adaptiveControlForeground(
-						.primary,
+						theme.textPrimary,
 						disabledTint: LauncherVisuals.disabled
 					)
 					.fixedSize(horizontal: false, vertical: true)
 				Text(countdown)
 					.font(.caption.monospacedDigit().weight(.medium))
 					.adaptiveControlForeground(
-						.secondary,
+						theme.textSecondary,
 						disabledTint: LauncherVisuals.disabled
 					)
 					.fixedSize(horizontal: false, vertical: true)
@@ -118,7 +116,7 @@ struct StatusHUDPill: View {
 			Image(systemName: "checkmark")
 				.font(.caption.weight(.medium))
 				.adaptiveControlForeground(
-					accentColor,
+					theme.accentInk,
 					disabledTint: LauncherVisuals.disabled
 				)
 				.opacity(region == installation.region ? 1 : 0)

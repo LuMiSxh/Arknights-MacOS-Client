@@ -302,6 +302,10 @@ extension GameSessionController {
 			)
 		}
 		log.info("Game process stopped")
+		Task { [log, paths] in
+			await SDKLogCollector.collect(
+				publisher: sessionRegion.publisher, paths: paths, log: log)
+		}
 	}
 
 	private func markGameSessionStopping(_ sessionID: UUID, processIdentifier: Int32?) {

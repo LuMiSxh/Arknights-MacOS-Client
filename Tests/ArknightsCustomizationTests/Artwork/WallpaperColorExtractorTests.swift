@@ -35,9 +35,9 @@ struct WallpaperColorExtractorTests {
 	}
 
 	private func makeImage(
-		runs: [Run]
+		runs: [Run],
+		side: Int = AppConstants.Theme.wallpaperSampleSide
 	) throws -> NSImage {
-		let side = AppConstants.Theme.wallpaperSampleSide
 		// Pixels after the last run keep alpha 0, so the extractor skips them.
 		var pixels = [UInt8](repeating: 0, count: side * side * 4)
 		var index = 0

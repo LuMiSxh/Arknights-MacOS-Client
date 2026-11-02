@@ -39,8 +39,6 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	let iconFont: Font
 	let toggleNoun: String
 	let accessibilityValue: String
-	let accentColor: Color
-	let hudTintColor: Color
 	let canExpand: Bool
 	let expandedSpacing: CGFloat
 	let sizing: HUDPillSizing
@@ -48,6 +46,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 	let title: Title
 	let detail: Detail
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 
 	/// - Parameter toggleNoun: Completes the "Show …" and "Hide …" accessibility label and help.
 	package init(
@@ -55,8 +54,6 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 		iconFont: Font = .caption.weight(.medium),
 		toggleNoun: String,
 		accessibilityValue: String,
-		accentColor: Color,
-		hudTintColor: Color,
 		canExpand: Bool = true,
 		expandedSpacing: CGFloat = 8,
 		sizing: HUDPillSizing,
@@ -68,8 +65,6 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 		self.iconFont = iconFont
 		self.toggleNoun = toggleNoun
 		self.accessibilityValue = accessibilityValue
-		self.accentColor = accentColor
-		self.hudTintColor = hudTintColor
 		self.canExpand = canExpand
 		self.expandedSpacing = expandedSpacing
 		self.sizing = sizing
@@ -99,7 +94,7 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 			maxWidth: expanded ? sizing.expandedMaxWidth : sizing.collapsedMaxWidth
 		)
 		.fixedSize(horizontal: sizing.fixesWidthWhenExpanded || !expanded, vertical: false)
-		.hudPillSurface(isExpanded: expanded, tint: hudTintColor)
+		.hudPillSurface(isExpanded: expanded)
 		.shadow(
 			color: Color.black.opacity(expanded ? 0.35 : 0),
 			radius: expanded ? 12 : 0,
@@ -128,14 +123,14 @@ package struct ExpandableHUDPill<Title: View, Detail: View>: View {
 		HStack(spacing: 4) {
 			Image(systemName: systemImage)
 				.font(iconFont)
-				.adaptiveControlForeground(accentColor)
+				.adaptiveControlForeground(theme.accentInk)
 				.accessibilityHidden(true)
 			title
 			Spacer(minLength: canExpand ? 6 : 0)
 			if canExpand {
 				Image(systemName: expanded ? "chevron.up" : "chevron.down")
 					.font(.caption.weight(.medium))
-					.adaptiveControlForeground(accentColor)
+					.adaptiveControlForeground(theme.accentInk)
 					.contentTransition(HUDPillMotion.chevronTransition(reduceMotion: reduceMotion))
 					.accessibilityHidden(true)
 			}

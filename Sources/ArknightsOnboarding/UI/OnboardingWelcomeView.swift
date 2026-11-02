@@ -4,6 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingWelcomeView: View {
+	@Environment(\.launcherTheme) private var theme
 	let accentColor: Color
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
@@ -39,7 +40,7 @@ struct OnboardingWelcomeView: View {
 					HStack(spacing: 12) {
 						ProgressView()
 						Text(OnboardingUpdateState.checkingTitle)
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 					}
 				case .current:
 					Label(
@@ -54,7 +55,7 @@ struct OnboardingWelcomeView: View {
 						Text(
 							"Install the newer launcher and open it again. Setup waits so its instructions match the version you use."
 						)
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 						.fixedSize(horizontal: false, vertical: true)
 					}
 				case .checkFailed:
@@ -62,7 +63,7 @@ struct OnboardingWelcomeView: View {
 						Text(
 							"The launcher could not look for updates. You can continue now; it will try again later."
 						)
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 						CapsuleActionButton(
 							title: "Try Again",
 							systemImage: "arrow.clockwise",
@@ -81,12 +82,12 @@ struct OnboardingWelcomeView: View {
 					switch intelTranslationState {
 					case .waitingForLauncherCheck:
 						Text("Your Mac is checked right after the launcher update check.")
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 					case .checking:
 						HStack(spacing: 12) {
 							ProgressView()
 							Text("Checking that your Mac can run the game…")
-								.foregroundStyle(.secondary)
+								.foregroundStyle(theme.textSecondary)
 						}
 					case .available:
 						Label(
@@ -106,7 +107,7 @@ struct OnboardingWelcomeView: View {
 							Text(
 								"On macOS 27 beta, Legacy Game Test Mode stops the game from running. Turn the test mode off, then restart your Mac:"
 							)
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 							.fixedSize(horizontal: false, vertical: true)
 							Text("sudo game-test-tool disable")
 								.font(.callout.monospaced())
@@ -123,7 +124,7 @@ struct OnboardingWelcomeView: View {
 							Text(
 								"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
 							)
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 							.fixedSize(horizontal: false, vertical: true)
 							CapsuleActionButton(
 								title: OnboardingRosettaRecoveryView.checkAgainTitle,
@@ -134,7 +135,7 @@ struct OnboardingWelcomeView: View {
 						}
 					case .unsupportedOS:
 						Text("This version of macOS can no longer run the game.")
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 							.fixedSize(horizontal: false, vertical: true)
 					}
 				}
@@ -156,7 +157,7 @@ struct OnboardingWelcomeView: View {
 		case 2:
 			"Display settings work differently in this version. Confirm display mode, rendering and cursor once."
 		case 3:
-			"This version reorganizes settings and changes fullscreen. Go through each step once to review your setup."
+			"This version reorganizes settings, changes fullscreen, and reworks Dynamic Theme. Go through each step once to review your setup."
 		default:
 			"The launcher changed how an important setting works. Go through each step once so everything keeps working."
 		}

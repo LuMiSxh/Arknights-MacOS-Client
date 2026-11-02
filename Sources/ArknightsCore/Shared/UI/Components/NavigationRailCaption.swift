@@ -3,7 +3,9 @@
 import SwiftUI
 
 /// The small heading that titles a group of navigation rail rows.
+/// The small heading that titles a group of navigation rail rows.
 package struct NavigationRailCaption: View {
+	@Environment(\.launcherTheme) private var theme
 	let text: String
 
 	package init(text: String) {
@@ -12,7 +14,7 @@ package struct NavigationRailCaption: View {
 
 	package var body: some View {
 		Text(text)
-			.font(.caption.weight(.medium))
-			.foregroundStyle(.secondary)
+			.font(.system(size: 11, weight: .medium))
+			.foregroundStyle(theme.textTertiary)
 	}
 }

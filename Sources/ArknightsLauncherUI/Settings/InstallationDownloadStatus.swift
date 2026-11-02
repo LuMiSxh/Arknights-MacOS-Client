@@ -6,6 +6,7 @@ import SwiftUI
 
 // Only this leaf reads the per-tick download progress, so the page body does not re-render on every update.
 struct InstallationDownloadStatus: View {
+	@Environment(\.launcherTheme) private var theme
 	let installation: InstallationController
 	let accentColor: Color
 
@@ -20,7 +21,7 @@ struct InstallationDownloadStatus: View {
 					hasPartialDownload: installation.hasPartialDownload
 				)
 			)
-			.foregroundStyle(installation.isDownloading ? accentColor : .secondary)
+			.foregroundStyle(installation.isDownloading ? theme.accentInk : theme.textSecondary)
 			if installation.isDownloading,
 				let transfer = LauncherDownloadProgressPresentation.transferDetail(
 					for: progress,
@@ -34,7 +35,7 @@ struct InstallationDownloadStatus: View {
 						alignment: .trailing
 					)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.lineLimit(1)
 			}
 		}

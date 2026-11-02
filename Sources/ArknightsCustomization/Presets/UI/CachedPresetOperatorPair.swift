@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import SwiftUI
 
 struct CachedPresetOperatorPair: View {
@@ -12,6 +13,7 @@ struct CachedPresetOperatorPair: View {
 
 	@State private var icons: (launcher: NSImage, game: NSImage)?
 	@State private var hasFailed = false
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		Group {
@@ -27,7 +29,7 @@ struct CachedPresetOperatorPair: View {
 				)
 				.labelStyle(.iconOnly)
 				.font(.title2)
-				.foregroundStyle(.tertiary)
+				.foregroundStyle(theme.textTertiary)
 			} else {
 				ProgressView()
 					.controlSize(.small)

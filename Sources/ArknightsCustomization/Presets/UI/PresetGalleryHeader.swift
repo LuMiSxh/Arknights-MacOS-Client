@@ -9,6 +9,7 @@ struct PresetGalleryHeader: View {
 	let customization: CustomizationController
 	let avatars: [PresetAvatar]
 	@Binding var showsIconStylePreview: Bool
+	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
 		HStack {
@@ -17,7 +18,7 @@ struct PresetGalleryHeader: View {
 					.font(.title3.weight(.medium))
 				Text(destination.subtitle)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 			}
 			Spacer()
 			if destination == .operatorIcons {

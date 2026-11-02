@@ -6,6 +6,7 @@ import SwiftUI
 struct OnboardingDisplayView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	let lifecycle: LauncherLifecycleStore
+	@Environment(\.launcherTheme) private var theme
 	let accentColor: Color
 
 	var body: some View {
@@ -63,7 +64,7 @@ struct OnboardingDisplayView: View {
 			)
 			Text(displaySummary)
 				.font(.callout)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: true)
 				.padding(.horizontal, LauncherVisuals.Spacing.panel)
 				.onAppear(perform: applyRecommendedAnswers)

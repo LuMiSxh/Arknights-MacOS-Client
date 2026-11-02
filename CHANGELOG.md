@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- SDK logs for China and Taiwan are now collected with the launcher logs. **Reveal logs** shows them in the `sdklogs` folder.
 - Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
 - Added **Save diagnostics…** to **Settings → Help**. It saves a zip file to your Downloads folder.
 - The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.
@@ -23,6 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The failure sheet can copy the support code.
 - Added **Contact the Developer** to **Settings → Help** for private messages, feedback, and testing offers.
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
+- Added **Settings → Appearance** to choose System, Light, or Dark for settings, setup, and dialogs. Home has its own controls setting.
+- **Home controls** can follow the artwork, or stay dark or light. Set this under **Settings → Appearance → Dynamic Theme**.
+- **Branding** can follow **Home controls**, or stay dark or light. Set this under **Settings → Appearance → Dynamic Theme**.
 
 ### Changed
 
@@ -32,8 +36,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Secondary buttons and links in Settings, setup, and the update window now use quiet neutral colors. The theme color marks only the main action, progress, and selection.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.
-- The theme color taken from the artwork is calmer and equally bright for every hue. Yellow no longer glares, and dark artwork no longer gives a muddy color.
-
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Onboarding answer cards use quieter hover and press effects.
@@ -47,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
 - The problem report form asks for logs only when a maintainer requests them.
 - **Settings** has a new **Help** section with problem reports, diagnostics, and the troubleshooting guide.
-- Setup runs once more after this update so you can review the new options.
+- Setup runs once more after this update so you can review the new options, including the reworked **Dynamic Theme**.
 
 ### Fixed
 

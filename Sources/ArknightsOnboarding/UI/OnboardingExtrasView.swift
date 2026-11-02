@@ -4,7 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingExtrasView: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	@Bindable var preferences: LauncherPreferencesController
 	let accentColor: Color
 
@@ -69,17 +69,17 @@ struct OnboardingExtrasView: View {
 					LabeledContent("Volume") {
 						HStack(spacing: LauncherVisuals.Spacing.control) {
 							Image(systemName: "speaker.fill")
-								.foregroundStyle(.secondary)
+								.foregroundStyle(theme.textSecondary)
 								.accessibilityHidden(true)
 							Slider(value: $preferences.launcherMusicVolume, in: 0...1, step: 0.05)
-								.tint(palette.controlOn)
+								.tint(theme.accentFill)
 								.accessibilityLabel("Volume")
 							Text(
 								preferences.launcherMusicVolume,
 								format: .percent.precision(.fractionLength(0))
 							)
 							.font(.caption.monospacedDigit())
-							.foregroundStyle(.secondary)
+							.foregroundStyle(theme.textSecondary)
 							.frame(minWidth: 44, alignment: .trailing)
 							.accessibilityHidden(true)
 						}

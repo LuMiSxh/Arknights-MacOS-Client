@@ -6,7 +6,7 @@ import ArknightsGameInstallation
 import SwiftUI
 
 package struct OnboardingView: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let preferences: LauncherPreferencesController
 	let customization: CustomizationController
 	let installation: InstallationController
@@ -53,7 +53,7 @@ package struct OnboardingView: View {
 			)
 
 			Divider()
-				.overlay(palette.hairline)
+				.overlay(theme.hairline)
 
 			ZStack(alignment: .bottom) {
 				ScrollView {
@@ -179,14 +179,10 @@ package struct OnboardingView: View {
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background {
-			ZStack {
-				palette.modalBackground
-				customization.hudTintColor
-			}
-			.ignoresSafeArea(.container, edges: .top)
+			theme.sheetTint
+				.ignoresSafeArea(.container, edges: .top)
 		}
-		.tint(palette.controlOn)
-		.preferredColorScheme(.dark)
+		.tint(theme.accentFill)
 		.animation(
 			LauncherMotion.animation(.page, reduceMotion: reduceMotion),
 			value: coordinator.step

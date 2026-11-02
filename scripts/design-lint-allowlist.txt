@@ -1,0 +1,14 @@
+# Design-literal allowlist for `scripts/lib/design_lint.py`.
+# Each entry is `path:rule`, relative to the repository root. Lines starting with # are comments.
+# An entry that matches no violation fails `scripts/consistency.py`; remove it when the migration clears it.
+# Rules: raw-color, numeric-radius, raw-animation, raw-glass, system-font.
+
+# Preset gallery: scrims and shadows that sit on artwork stay dark in both appearances.
+Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-color
+
+# Launcher home: artwork scrims, readability gradients, and HUD shadows; not yet on theme tokens.
+Sources/ArknightsLauncherUI/Home/LauncherArtworkView.swift:raw-color
+Sources/ArknightsLauncherUI/Home/LauncherChromeViews.swift:raw-color
+Sources/ArknightsLauncherUI/Home/LauncherReadabilityField.swift:raw-color
+
+

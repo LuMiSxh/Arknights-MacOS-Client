@@ -25,6 +25,7 @@ package struct SectionPageHeader: View {
 	let subtitle: String
 	package let accentColor: Color
 	var fixesSubtitleHeight = false
+	@Environment(\.launcherTheme) private var theme
 
 	package init(
 		title: String,
@@ -41,13 +42,15 @@ package struct SectionPageHeader: View {
 	package var body: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
 			Text(title)
-				.font(.largeTitle.weight(.medium))
+				.font(.system(size: 22, weight: .medium))
+				.foregroundStyle(theme.textPrimary)
 			Text(subtitle)
-				.foregroundStyle(.secondary)
+				.font(.system(size: 13))
+				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
 			HStack(spacing: LauncherVisuals.Spacing.control) {
 				Rectangle().fill(accentColor).frame(width: 72, height: 3)
-				Rectangle().fill(.secondary.opacity(0.28))
+				Rectangle().fill(theme.hairline)
 					.frame(height: 1)
 					.frame(maxWidth: .infinity)
 			}
@@ -88,9 +91,9 @@ package struct SettingsPage<Content: View>: View {
 				.padding(.top, LauncherVisuals.Spacing.page)
 				.environment(\.settingsFocusCoordinator, focusCoordinator)
 			}
-			.contentMargins(.top, LauncherVisuals.Spacing.page, for: .scrollIndicators)
-			.contentMargins(.bottom, 24, for: .scrollIndicators)
-			.scrollIndicators(.automatic)
+			// The single scroll margin for settings: the indicator stops short of the rounded edge.
+			.contentMargins(.vertical, 16, for: .scrollIndicators)
+			.scrollIndicators(.visible)
 			.onChange(of: focusCoordinator.focusedID) { _, focusedID in
 				guard let focusedID else { return }
 				if reduceMotion {
@@ -105,20 +108,47 @@ package struct SettingsPage<Content: View>: View {
 	}
 }
 
+/// Marks a `SettingsHairline` so its `SettingsPanel` can drop it from the row list.
+private struct SettingsRuleKey: ContainerValueKey {
+	static let defaultValue = false
+}
+
+/// True inside a `SettingsPanel`, which already insets each child by 12 pt horizontally and 10 pt vertically.
+private struct SettingsPanelRowsKey: EnvironmentKey {
+	static let defaultValue = false
+}
+
+extension ContainerValues {
+	fileprivate var settingsRule: Bool {
+		get { self[SettingsRuleKey.self] }
+		set { self[SettingsRuleKey.self] = newValue }
+	}
+}
+
+extension EnvironmentValues {
+	fileprivate var settingsPanelRows: Bool {
+		get { self[SettingsPanelRowsKey.self] }
+		set { self[SettingsPanelRowsKey.self] = newValue }
+	}
+}
+
 /// A subtle row separator matching the nav rail's hairline, used instead of the stock
 /// `Divider()` inside glass panels so rows read as one soft surface, not a bordered form.
+/// Inside a `SettingsPanel` the panel drops this view and draws the divider itself.
 package struct SettingsHairline: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	package init() {}
 	package var body: some View {
 		Rectangle()
-			.fill(palette.hairline)
+			.fill(theme.rowDivider)
 			.frame(height: LauncherVisuals.Spacing.hairline)
+			.containerValue(\.settingsRule, true)
 	}
 }
 
 package struct SettingsPanel<Content: View>: View {
 	let title: String
+	// Kept for existing call sites; the group carries no icon.
 	let systemImage: String
 	var tone: SettingsPanelTone = .neutral
 	var isExpanded: Binding<Bool>?
@@ -139,51 +169,43 @@ package struct SettingsPanel<Content: View>: View {
 	}
 
 	@Environment(\.colorSchemeContrast) private var contrast
-	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-	@Environment(\.accessibilityShowBorders) private var showBorders
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	package var body: some View {
-		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.content) {
+		VStack(alignment: .leading, spacing: 8) {
 			header
 			if isExpanded?.wrappedValue ?? true {
-				content
+				VStack(spacing: 0) {
+					Group(subviews: content) { subviews in
+						// Explicit hairlines are dropped here: the panel draws the one divider between rows.
+						let rows = subviews.filter { !$0.containerValues.settingsRule }
+						ForEach(rows.indices, id: \.self) { index in
+							if index > 0 {
+								Rectangle().fill(theme.rowDivider)
+									.frame(height: 1)
+									.padding(.horizontal, 12)
+							}
+							rows[index]
+								.frame(maxWidth: .infinity, alignment: .leading)
+								.padding(.horizontal, 12)
+								.padding(.vertical, 10)
+						}
+					}
+				}
+				.environment(\.settingsPanelRows, true)
+				.launcherSurface(.group)
 			}
 		}
-		.padding(LauncherVisuals.Spacing.panel)
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.adaptiveGlassEffect(
-			tint: nil,
-			borderTint: tone.color(for: contrast),
-			in: .rect(cornerRadius: LauncherVisuals.Radius.panel),
-			showsBorder: false
-		)
-		.overlay {
-			if ownsPanelEdge {
-				RoundedRectangle(cornerRadius: LauncherVisuals.Radius.panel)
-					.strokeBorder(
-						tone.border(for: contrast, in: palette),
-						lineWidth: LauncherVisuals.Control.borderWidth
-					)
-					.allowsHitTesting(false)
-			}
-		}
-	}
-
-	private var ownsPanelEdge: Bool {
-		AdaptiveGlassSurfaceTreatment.ownsExternalBorder(
-			reduceTransparency: reduceTransparency,
-			showBorders: showBorders
-		)
 	}
 
 	@ViewBuilder
 	private var header: some View {
-		let label = Label(title, systemImage: systemImage)
-			.font(.headline)
-			.foregroundStyle(tone.color(for: contrast))
-			.symbolRenderingMode(.hierarchical)
+		let label = Text(title)
+			.font(.system(size: 13, weight: .medium))
+			.foregroundStyle(tone == .neutral ? theme.textSecondary : tone.color(for: contrast))
+			.padding(.leading, 12)
 		if let isExpanded {
 			Button {
 				withAnimation(LauncherMotion.animation(.state, reduceMotion: reduceMotion)) {
@@ -195,10 +217,12 @@ package struct SettingsPanel<Content: View>: View {
 					Spacer(minLength: 0)
 					Image(systemName: "chevron.right")
 						.font(.caption.weight(.medium))
-						.foregroundStyle(.secondary)
+						.foregroundStyle(theme.textSecondary)
 						.rotationEffect(.degrees(isExpanded.wrappedValue ? 90 : 0))
 						.accessibilityHidden(true)
 				}
+				.padding(.trailing, 12)
+				.padding(.top, 20)
 				.contentShape(.rect)
 			}
 			.buttonStyle(.plain)
@@ -207,7 +231,7 @@ package struct SettingsPanel<Content: View>: View {
 			)
 			.accessibilityValue(isExpanded.wrappedValue ? "Expanded" : "Collapsed")
 		} else {
-			label
+			label.padding(.top, 20)
 		}
 	}
 }
@@ -310,6 +334,8 @@ package struct SettingsActionRow<Actions: View>: View {
 	let detail: String?
 	var help: String?
 	@ViewBuilder package let actions: Actions
+	@Environment(\.settingsPanelRows) private var isInSettingsPanel
+	@Environment(\.launcherTheme) private var theme
 
 	package init(
 		title: String,
@@ -326,8 +352,9 @@ package struct SettingsActionRow<Actions: View>: View {
 	package var body: some View {
 		ViewThatFits(in: .horizontal) {
 			HStack(spacing: LauncherVisuals.Spacing.section) {
+				// A small ideal width lets a long detail wrap beside the action instead of dropping below.
 				label
-					.frame(maxWidth: .infinity, alignment: .leading)
+					.frame(minWidth: 0, idealWidth: 240, maxWidth: .infinity, alignment: .leading)
 					.layoutPriority(1)
 				actionGroup
 			}
@@ -339,6 +366,9 @@ package struct SettingsActionRow<Actions: View>: View {
 				}
 			}
 		}
+		.padding(.horizontal, isInSettingsPanel ? 0 : 12)
+		.padding(.vertical, isInSettingsPanel ? 0 : 10)
+		.frame(minHeight: 40)
 	}
 
 	@ViewBuilder
@@ -352,10 +382,11 @@ package struct SettingsActionRow<Actions: View>: View {
 	private var label: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.compact) {
 			Text(title)
+				.foregroundStyle(theme.textPrimary)
 			if let detail {
 				Text(detail)
 					.font(.caption)
-					.foregroundStyle(.secondary)
+					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)
 			}
 		}

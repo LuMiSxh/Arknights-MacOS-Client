@@ -58,7 +58,7 @@ package enum LauncherVisuals {
 		package static let borderWidth: CGFloat = 1
 		static let focusWidth: CGFloat = 2
 		static let standardHorizontalPadding: CGFloat = 12
-		static let standardVerticalPadding: CGFloat = 8
+		static let standardVerticalPadding: CGFloat = 6
 		static let compactHorizontalPadding: CGFloat = 8
 		static let compactVerticalPadding: CGFloat = 4
 		package static let hudHorizontalPadding: CGFloat = 12
