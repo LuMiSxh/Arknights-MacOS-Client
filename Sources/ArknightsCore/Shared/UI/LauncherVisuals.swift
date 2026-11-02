@@ -79,6 +79,8 @@ package enum LauncherVisuals {
 		static let opaqueDisabledSurface = Color(red: 0.094, green: 0.098, blue: 0.114)
 		static let iconButtonSize: CGFloat = 36
 		static let iconButtonGlyphSize: CGFloat = 17
+		/// Matches GlassCapsuleMenu: a 16 pt chevron chip plus 2 x 6 pt padding.
+		static let fieldHeight: CGFloat = 28
 
 		package static func disabledForegroundOpacity(for contrast: ColorSchemeContrast) -> Double {
 			contrast == .increased

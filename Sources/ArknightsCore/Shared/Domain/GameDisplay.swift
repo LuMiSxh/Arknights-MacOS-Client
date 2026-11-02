@@ -18,11 +18,27 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 	package static let defaultWindow = GameDisplaySize(width: 1280, height: 720)
 	static let validDimensions = 320...16_384
 
+	// The aspect ratios of the official client, each group smallest first.
 	static let windowPresets: [GameDisplaySize] = [
-		(960, 540), (1024, 576), (1152, 648), (1280, 720), (1280, 800), (1440, 810),
-		(1440, 900), (1600, 900), (1680, 1050), (1920, 1080), (1920, 1200), (2048, 1152),
-		(2304, 1296), (2560, 1440), (2560, 1600), (3008, 1692), (3200, 1800), (3840, 2160),
+		// 16:9
+		(960, 540), (1024, 576), (1152, 648), (1280, 720), (1440, 810), (1600, 900),
+		(1920, 1080), (2048, 1152), (2304, 1296), (2560, 1440), (3008, 1692), (3200, 1800),
+		(3840, 2160),
+		// 16:10
+		(1280, 800), (1440, 900), (1680, 1050), (1920, 1200), (2560, 1600),
+		// 4:3
+		(1024, 768), (1280, 960), (1440, 1080), (1600, 1200),
 	].map { GameDisplaySize(width: $0.0, height: $0.1) }
+
+	/// The aspect-ratio group of a window preset: 0 for 16:9, 1 for 16:10, 2 for 4:3, 3 otherwise.
+	package var aspectGroup: Int {
+		switch (width * 9 == height * 16, width * 10 == height * 16, width * 3 == height * 4) {
+		case (true, _, _): 0
+		case (_, true, _): 1
+		case (_, _, true): 2
+		default: 3
+		}
+	}
 
 	package init(width: Int, height: Int) {
 		self.width = width
@@ -108,9 +124,10 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 			return CGFloat(preset.width) <= visibleSize.width
 				&& CGFloat(preset.height) <= visibleSize.height
 		}
+		// A size that is not a preset joins the end of its aspect-ratio group.
 		if !options.contains(current) {
-			options.append(current)
-			options.sort { ($0.width, $0.height) < ($1.width, $1.height) }
+			let index = options.lastIndex { $0.aspectGroup <= current.aspectGroup }
+			options.insert(current, at: index.map { $0 + 1 } ?? 0)
 		}
 		return options
 	}

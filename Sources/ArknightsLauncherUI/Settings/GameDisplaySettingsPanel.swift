@@ -209,7 +209,16 @@ struct GameDisplaySettingsPanel: View {
 				selection: windowSizeSelection,
 				options: (choices + exact + [.custom]).map { ($0, windowSizeTitle($0)) },
 				isDisabled: isSizeLocked,
-				dividerBefore: { $0 == .custom || (!choices.isEmpty && $0 == exact.first) }
+				dividerBefore: { selection in
+					if selection == .custom { return true }
+					guard case .exact(let size) = selection,
+						let index = exact.firstIndex(of: selection)
+					else { return false }
+					guard index > 0, case .exact(let previous) = exact[index - 1] else {
+						return !choices.isEmpty
+					}
+					return size.aspectGroup != previous.aspectGroup
+				}
 			)
 		}
 	}

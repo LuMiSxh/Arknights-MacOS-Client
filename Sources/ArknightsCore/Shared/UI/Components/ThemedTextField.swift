@@ -4,7 +4,7 @@ import SwiftUI
 
 package struct ThemedTextField: View {
 	let title: String
-	let prompt: String
+	let prompt: String?
 	@Binding package var text: String
 	var systemImage: String?
 
@@ -14,7 +14,7 @@ package struct ThemedTextField: View {
 
 	package init(
 		_ title: String,
-		prompt: String,
+		prompt: String? = nil,
 		text: Binding<String>,
 		systemImage: String? = nil
 	) {
@@ -33,27 +33,19 @@ package struct ThemedTextField: View {
 					.accessibilityHidden(true)
 			}
 
-			TextField("", text: $text, prompt: Text(prompt).foregroundStyle(theme.textTertiary))
-				.textFieldStyle(.plain)
-				.focusEffectDisabled()
-				.focused($isFocused)
-				.foregroundStyle(theme.textPrimary)
-				.accessibilityLabel(title)
+			TextField(
+				"",
+				text: $text,
+				prompt: prompt.map { Text($0).foregroundStyle(theme.textTertiary) }
+			)
+			.textFieldStyle(.plain)
+			.focusEffectDisabled()
+			.focused($isFocused)
+			.foregroundStyle(theme.textPrimary)
+			.accessibilityLabel(title)
 		}
 		.font(.callout)
-		.padding(.horizontal, 12)
-		.padding(.vertical, 8)
-		.background {
-			RoundedRectangle(cornerRadius: LauncherTokens.Radius.field)
-				.fill(theme.controlFill)
-		}
-		.overlay {
-			RoundedRectangle(cornerRadius: LauncherTokens.Radius.field)
-				.strokeBorder(
-					isFocused ? theme.accentFill : theme.controlStroke,
-					lineWidth: isFocused ? 1.5 : 1)
-		}
-		.contentShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.field))
+		.launcherFieldSurface(isFocused: isFocused)
 		.launcherAnimation(.state, value: isFocused)
 		.opacity(isEnabled ? 1 : 0.4)
 	}

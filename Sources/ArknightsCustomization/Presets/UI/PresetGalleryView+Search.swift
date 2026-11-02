@@ -67,13 +67,7 @@ struct PresetGallerySearchBar: View {
 			}
 		}
 		.font(.callout)
-		.padding(.horizontal, 12)
-		.padding(.vertical, 8)
-		.adaptiveControlSurface(
-			tint: isFocused ? theme.accentFill : theme.controlStroke,
-			borderOpacity: isFocused ? 0.62 : nil,
-			in: Capsule()
-		)
+		.launcherFieldSurface(isFocused: isFocused)
 		.focusEffectDisabled(true)
 		.animation(LauncherMotion.animation(.state, reduceMotion: reduceMotion), value: isFocused)
 		.onChange(of: searchText) { _, _ in promoteTrailingTag() }

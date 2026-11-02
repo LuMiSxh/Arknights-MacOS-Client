@@ -125,6 +125,9 @@ package struct PresetGalleryView: View {
 			.padding(.bottom, 16)
 		}
 		.frame(width: 760, height: 572)
+		// The sheet is key while it is open, so the presenting window's theme reads as inactive.
+		// Resolving the theme here, in the sheet's own window, keeps the accent.
+		.launcherTheme(accent: customization.accentColor)
 		.background(
 			ZStack {
 				theme.modalTint
