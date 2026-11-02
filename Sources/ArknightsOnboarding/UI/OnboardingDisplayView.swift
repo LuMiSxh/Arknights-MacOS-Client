@@ -27,7 +27,7 @@ struct OnboardingDisplayView: View {
 				OnboardingQuestion(
 					question: "Window size",
 					systemImage: "rectangle.expand.diagonal",
-					answers: GameWindowSizeChoice.allCases.map {
+					answers: answers.offeredWindowSizes.map {
 						$0.answer(on: GameScreenMetrics.main)
 					},
 					selection: answerBinding(\.windowSize),
@@ -76,8 +76,9 @@ struct OnboardingDisplayView: View {
 	private var displaySummary: String {
 		let placement =
 			switch (answers.placement, answers.windowSize) {
-			case (.window, .fillScreen): "Windowed, fill screen"
-			case (.window, .leaveRoom): "Windowed, compact"
+			case (.window, .preset(.fillScreen)): "Windowed, fill screen"
+			case (.window, .preset(.leaveRoom)): "Windowed, compact"
+			case (.window, .custom(let size)): "Windowed, \(size.displayName)"
 			case (.fullscreen, _): "Fullscreen"
 			}
 		let rendering =

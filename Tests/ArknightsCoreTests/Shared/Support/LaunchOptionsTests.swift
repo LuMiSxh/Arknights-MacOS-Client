@@ -69,6 +69,41 @@ func launchArgumentsConvertWindowPointsButKeepFullscreenPixels(
 			== expected)
 }
 
+@Test(arguments: [
+	// (stored size, visible screen in points, launch size). The fill size is the visible screen
+	// less the 28-point title bar, so 1600 × 928 leaves 1600 × 900.
+	(
+		GameDisplaySize(width: 1280, height: 720), CGSize(width: 1600, height: 928),
+		GameDisplaySize(width: 1280, height: 720)
+	),
+	(
+		GameDisplaySize(width: 1920, height: 720), CGSize(width: 1600, height: 928),
+		GameDisplaySize(width: 1600, height: 600)
+	),
+	(
+		GameDisplaySize(width: 1000, height: 1200), CGSize(width: 1600, height: 928),
+		GameDisplaySize(width: 750, height: 900)
+	),
+	(
+		GameDisplaySize(width: 3840, height: 2160), CGSize(width: 1600, height: 928),
+		GameDisplaySize(width: 1600, height: 900)
+	),
+	// Beyond the custom maximum, even on a screen that could show it.
+	(
+		GameDisplaySize(width: 10000, height: 5000), CGSize(width: 16000, height: 9000),
+		GameDisplaySize(width: 8192, height: 4096)
+	),
+])
+func launchWindowSizeScalesOversizedWindowsAndKeepsTheStoredSize(
+	stored: GameDisplaySize, visibleSize: CGSize, expected: GameDisplaySize
+) {
+	let options = GameLaunchOptions(displayMode: .windowed, resolution: .hd, windowSize: stored)
+	let screen = GameScreenMetrics(visibleSize: visibleSize, pixelSize: .zero)
+
+	#expect(options.launchWindowSize(on: screen) == expected)
+	#expect(options.windowSize == stored)
+}
+
 @Test
 func legacyLaunchOptionsDecodeWithStableDefaultsAndIgnoreRetiredFields() throws {
 	func decode(_ json: String) throws -> GameLaunchOptions {

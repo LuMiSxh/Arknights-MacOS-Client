@@ -336,5 +336,10 @@ struct ArknightsClientApp: App {
 				}
 			}
 		}
+		Window("Measure Game Window", id: GameWindowMeasureView.sceneID) {
+			GameWindowMeasureView(model: model)
+		}
+		.defaultLaunchBehavior(.suppressed)
+		.restorationBehavior(.disabled)
 	}
 }

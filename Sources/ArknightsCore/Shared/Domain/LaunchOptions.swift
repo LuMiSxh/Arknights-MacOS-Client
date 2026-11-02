@@ -143,17 +143,33 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 	}
 
+	/// The windowed size the game opens with. A size larger than the screen or the custom
+	/// maximum is scaled down; the stored size stays unchanged.
+	package func launchWindowSize(on screen: GameScreenMetrics?) -> GameDisplaySize {
+		let maximum = AppConstants.Game.customWindowMaximumDimension
+		var bounds = GameDisplaySize(width: maximum, height: maximum)
+		if let screen {
+			// Fills the screen below the title bar, like the Fill screen choice.
+			let fill = GameWindowSizeChoice.fillScreen.size(on: screen)
+			bounds = GameDisplaySize(
+				width: min(fill.width, maximum), height: min(fill.height, maximum))
+		}
+		return windowSize.fitted(into: bounds)
+	}
+
 	/// Unity standalone-player arguments supported by the Windows client. Windowed sizes are
-	/// points, so they are multiplied by the game pixels Wine maps onto each point.
+	/// points, so they are fitted to `screen` and multiplied by the game pixels Wine maps onto
+	/// each point.
 	package func playerArguments(
-		gamePixelsPerPoint: Int, fullscreenDisplay: GameFullscreenDisplay? = nil
+		gamePixelsPerPoint: Int, fullscreenDisplay: GameFullscreenDisplay? = nil,
+		screen: GameScreenMetrics? = nil
 	) -> [String] {
 		guard !usesGameSettings else { return [] }
 		let fullscreen = displayMode == .fullscreen
 		let size =
 			fullscreen
 			? fullscreenDrawnSize(on: fullscreenDisplay, retina: gamePixelsPerPoint > 1)
-			: windowSize.scaled(by: max(1, gamePixelsPerPoint))
+			: launchWindowSize(on: screen).scaled(by: max(1, gamePixelsPerPoint))
 		var arguments = [
 			"-screen-fullscreen", fullscreen ? "1" : "0",
 			"-screen-width", String(size.width),

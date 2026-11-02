@@ -242,6 +242,15 @@ extension GameSessionController {
 			prepared.usesNativeFullscreenSpace
 			? GameFullscreenDisplay.primary?.nativeSpaceContent
 			: GameFullscreenDisplay.primary
+		let screen = GameScreenMetrics.main
+		let fittedWindowSize = request.options.launchWindowSize(on: screen)
+		if request.options.displayMode != .fullscreen,
+			fittedWindowSize != request.options.windowSize
+		{
+			log.info(
+				"Window size \(request.options.windowSize.displayName) is scaled to \(fittedWindowSize.displayName) to fit the screen."
+			)
+		}
 		let launch = try await context.runtime.launch(
 			gameExecutable: request.executable,
 			prefixDirectory: request.prefixDirectory,
@@ -249,7 +258,8 @@ extension GameSessionController {
 				+ (installation.configuration?.gameStartParams ?? [])
 				+ request.options.playerArguments(
 					gamePixelsPerPoint: prepared.displayConfiguration.gamePixelsPerPoint,
-					fullscreenDisplay: fullscreenDisplay
+					fullscreenDisplay: fullscreenDisplay,
+					screen: screen
 				),
 			displayConfiguration: prepared.displayConfiguration,
 			graphicsDiagnostics: graphicsDiagnosticsEnabled,

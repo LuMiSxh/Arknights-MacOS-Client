@@ -35,6 +35,7 @@ struct LauncherSettingsView: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Binding var selectedSection: SettingsSection
 	@State private var presentedDocument: BundledDocument?
+	@Namespace private var railSelection
 
 	private var sheetSize: CGSize {
 		let margin = AppConstants.Settings.windowMargin * 2
@@ -54,7 +55,8 @@ struct LauncherSettingsView: View {
 				isDeveloperMode: isDeveloperMode,
 				accentColor: customization.accentColor,
 				lifecycle: lifecycle,
-				installation: installation
+				installation: installation,
+				selectionNamespace: railSelection
 			)
 			Divider()
 				.overlay(theme.hairline)
@@ -222,11 +224,13 @@ struct LauncherSettingsView: View {
 
 private struct SettingsNavigationRail: View {
 	@Environment(\.launcherTheme) private var theme
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
 	package let accentColor: Color
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController
+	let selectionNamespace: Namespace.ID
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
@@ -245,9 +249,10 @@ private struct SettingsNavigationRail: View {
 									title: section.title,
 									systemImage: section.systemImage,
 									isSelected: selection == section,
-									accentColor: accentColor
+									accentColor: accentColor,
+									selectionNamespace: selectionNamespace
 								) {
-									selection = section
+									select(section)
 								}
 							}
 						}
@@ -265,6 +270,16 @@ private struct SettingsNavigationRail: View {
 		}
 		.frame(width: LauncherVisuals.Layout.railWidth)
 		.background(theme.footerFill)
+	}
+
+	/// Moves the selection. The motion grows with the number of rows the indicator crosses.
+	private func select(_ section: SettingsSection) {
+		let sections = visibleSections
+		let previous = sections.firstIndex(of: selection) ?? 0
+		let next = sections.firstIndex(of: section) ?? 0
+		withLauncherAnimation(.select, reduceMotion: reduceMotion, hops: abs(next - previous)) {
+			selection = section
+		}
 	}
 
 	private var visibleSections: [SettingsSection] {

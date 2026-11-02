@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.
 - The logs redact your home folder, your user name, and URL queries. Nothing is uploaded.
 - Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited.
+- Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
 - Added a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support.
 - Added **Report a Problem…** to the Dock menu.
 - The failure sheet can copy the support code.
@@ -49,7 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
 - The problem report form asks for logs only when a maintainer requests them.
 - **Settings** has a new **Help** section with problem reports, diagnostics, and the troubleshooting guide.
-- Setup runs once more after this update so you can review the new options, including the reworked **Dynamic Theme**.
+- Setup runs once more after this update so you can review the new options, including the reworked **Dynamic Theme**, **Appearance**, **Home controls**, and **Branding**.
 
 ### Fixed
 

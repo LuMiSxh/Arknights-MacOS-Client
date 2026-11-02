@@ -12,7 +12,7 @@ nonisolated enum GamePlacementAnswer: CaseIterable, Sendable {
 // the current screen, so players never have to calculate resolutions.
 nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	var placement: GamePlacementAnswer
-	var windowSize: GameWindowSizeChoice
+	var windowSize: WindowSizeAnswer
 	var rendering: GameRenderingMode
 	var frameRateLimit: GameFrameRateLimit
 
@@ -20,7 +20,7 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 		placement: .fullscreen, rendering: .retina, frameRateLimit: .fps120)
 
 	init(
-		placement: GamePlacementAnswer, windowSize: GameWindowSizeChoice = .fillScreen,
+		placement: GamePlacementAnswer, windowSize: WindowSizeAnswer = .preset(.fillScreen),
 		rendering: GameRenderingMode, frameRateLimit: GameFrameRateLimit = .fps120
 	) {
 		self.placement = placement
@@ -30,14 +30,18 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	}
 
 	// Reads the answers back from saved options, so returning to setup shows earlier choices.
-	// A window size set by hand in Settings reads back as filling the screen.
 	init(_ options: GameLaunchOptions, screen: GameScreenMetrics?) {
 		placement = options.displayMode == .fullscreen ? .fullscreen : .window
-		windowSize =
-			screen.flatMap { GameWindowSizeChoice.matching(options.windowSize, on: $0) }
-			?? .fillScreen
+		windowSize = WindowSizeAnswer(options.windowSize, on: screen)
 		rendering = options.renderingMode
 		frameRateLimit = options.frameRateLimit
+	}
+
+	// The window-size answers to offer: every preset, plus the current size when it is custom.
+	var offeredWindowSizes: [WindowSizeAnswer] {
+		let presets = GameWindowSizeChoice.allCases.map(WindowSizeAnswer.preset)
+		guard case .custom = windowSize else { return presets }
+		return presets + [windowSize]
 	}
 
 	// Applies the answers and keeps every unrelated launch option.
@@ -93,6 +97,38 @@ extension LauncherPreferencesController {
 	var pointerAnswer: PointerAnswer {
 		get { PointerAnswer(usesHardwareCursor: usesHardwareCursor) }
 		set { usesHardwareCursor = newValue.usesHardwareCursor }
+	}
+}
+
+// Appearance applies the moment it is picked, so setup switches to the chosen look at once.
+extension LauncherAppearance {
+	var answer: OnboardingAnswer<LauncherAppearance> {
+		switch self {
+		case .system:
+			OnboardingAnswer(
+				value: self, title: "System", systemImage: "circle.lefthalf.filled",
+				isRecommended: true)
+		case .light:
+			OnboardingAnswer(value: self, title: "Light", systemImage: "sun.max")
+		case .dark:
+			OnboardingAnswer(value: self, title: "Dark", systemImage: "moon")
+		}
+	}
+}
+
+// Shared by Home controls and Branding, which use the same three tones.
+extension HomeTheme {
+	var answer: OnboardingAnswer<HomeTheme> {
+		switch self {
+		case .automatic:
+			OnboardingAnswer(
+				value: self, title: "Automatic", systemImage: "wand.and.stars",
+				isRecommended: true)
+		case .dark:
+			OnboardingAnswer(value: self, title: "Dark", systemImage: "moon")
+		case .light:
+			OnboardingAnswer(value: self, title: "Light", systemImage: "sun.max")
+		}
 	}
 }
 
@@ -230,19 +266,42 @@ extension GamePlacementAnswer {
 	}
 }
 
-extension GameWindowSizeChoice {
+// A preset, or a custom size set in Settings that matches no preset. Setup keeps a custom size
+// unless the player picks a preset.
+nonisolated enum WindowSizeAnswer: Hashable, Sendable {
+	case preset(GameWindowSizeChoice)
+	case custom(GameDisplaySize)
+
+	init(_ size: GameDisplaySize, on screen: GameScreenMetrics?) {
+		let preset = screen.flatMap { GameWindowSizeChoice.matching(size, on: $0) }
+		self = preset.map { Self.preset($0) } ?? .custom(size)
+	}
+
+	func size(on screen: GameScreenMetrics) -> GameDisplaySize {
+		switch self {
+		case .preset(let choice): choice.size(on: screen)
+		case .custom(let size): size
+		}
+	}
+}
+
+extension WindowSizeAnswer {
 	// The title shows the window size on `screen`, for example "Compact · 1600 × 900".
-	func answer(on screen: GameScreenMetrics?) -> OnboardingAnswer<GameWindowSizeChoice> {
+	func answer(on screen: GameScreenMetrics?) -> OnboardingAnswer<WindowSizeAnswer> {
 		return switch self {
-		case .fillScreen:
+		case .preset(.fillScreen):
 			OnboardingAnswer(
 				value: self, title: "Fill screen",
 				systemImage: "rectangle.inset.filled", isRecommended: true)
-		case .leaveRoom:
+		case .preset(.leaveRoom):
 			OnboardingAnswer(
 				value: self,
 				title: "Compact" + (screen.map { " · \(size(on: $0).displayName)" } ?? ""),
 				systemImage: "rectangle.split.2x1")
+		case .custom(let size):
+			OnboardingAnswer(
+				value: self, title: "Custom · \(size.displayName)",
+				systemImage: "slider.horizontal.3")
 		}
 	}
 }

@@ -32,7 +32,7 @@ func appliedWindowAnswersAreReadBack() {
 	base.usesGameMode = true
 	base.synchronizationMode = .esync
 
-	for windowSize in GameWindowSizeChoice.allCases {
+	for windowSize in GameWindowSizeChoice.allCases.map(WindowSizeAnswer.preset) {
 		for rendering in GameRenderingMode.allCases {
 			for frameRateLimit in GameFrameRateLimit.allCases {
 				let answers = GameDisplayAnswers(
@@ -49,8 +49,11 @@ func appliedWindowAnswersAreReadBack() {
 	}
 	for rendering in GameRenderingMode.allCases {
 		for frameRateLimit in GameFrameRateLimit.allCases {
+			// Fullscreen leaves the stored window size alone, so the answer keeps it.
 			let answers = GameDisplayAnswers(
-				placement: .fullscreen, rendering: rendering, frameRateLimit: frameRateLimit)
+				placement: .fullscreen,
+				windowSize: WindowSizeAnswer(base.windowSize, on: laptop),
+				rendering: rendering, frameRateLimit: frameRateLimit)
 			let options = answers.applied(to: base, screen: laptop)
 			#expect(GameDisplayAnswers(options, screen: laptop) == answers)
 			#expect(options.fullscreenResolution == .native)
@@ -58,10 +61,6 @@ func appliedWindowAnswersAreReadBack() {
 	}
 	#expect(laptop.fullscreenResolution == .quadHD)
 	#expect(scaled4K.fullscreenResolution == .ultraHD)
-
-	var handSized = GameLaunchOptions.default
-	handSized.windowSize = GameDisplaySize(width: 1000, height: 700)
-	#expect(GameDisplayAnswers(handSized, screen: laptop).windowSize == .fillScreen)
 
 	let (preferences, _, cleanUp) = makePreferences()
 	defer { cleanUp() }
@@ -85,4 +84,24 @@ func appliedWindowAnswersAreReadBack() {
 		)
 	}
 	#expect(UpdateCheckAnswer(launcherChecks: true, gameChecks: false, announcements: true) == nil)
+}
+
+@Test(arguments: [
+	// A stored size that matches a preset selects that preset.
+	(GameWindowSizeChoice.fillScreen.size(on: laptop), WindowSizeAnswer.preset(.fillScreen)),
+	(GameWindowSizeChoice.leaveRoom.size(on: laptop), .preset(.leaveRoom)),
+	// Any other size, such as one set in Settings, is kept as the custom answer.
+	(GameDisplaySize(width: 1000, height: 700), .custom(GameDisplaySize(width: 1000, height: 700))),
+])
+func storedWindowSizesSelectAPresetOrKeepACustomSize(
+	stored: GameDisplaySize, expected: WindowSizeAnswer
+) {
+	let options = GameLaunchOptions(displayMode: .windowed, resolution: .hd, windowSize: stored)
+	let answers = GameDisplayAnswers(options, screen: laptop)
+	#expect(answers.windowSize == expected)
+
+	// Changing another answer keeps the stored size.
+	var changed = answers
+	changed.rendering = .standard
+	#expect(changed.applied(to: options, screen: laptop).windowSize == stored)
 }

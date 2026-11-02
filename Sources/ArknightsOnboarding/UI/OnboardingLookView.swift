@@ -20,9 +20,18 @@ struct OnboardingLookView: View {
 	var body: some View {
 		OnboardingPage(
 			title: "How should the launcher look?",
-			subtitle: "Artwork, colors, and Dock icons",
+			subtitle: "Appearance, artwork, theme, and Dock icons",
 			accentColor: customization.accentColor
 		) {
+			OnboardingQuestion(
+				question: "Appearance",
+				systemImage: "circle.lefthalf.filled",
+				answers: LauncherAppearance.allCases.map(\.answer),
+				selection: answerBinding(\.launcherAppearance),
+				accentColor: customization.accentColor,
+				footnote: "Settings, setup, and dialogs. Home keeps its own controls."
+			)
+
 			OnboardingQuestion(
 				question: "Which artwork should fill the launcher?",
 				systemImage: "photo.on.rectangle.angled",
@@ -45,11 +54,31 @@ struct OnboardingLookView: View {
 			}
 
 			OnboardingQuestion(
-				question: "Which colors should the launcher use?",
+				question: "Dynamic Theme",
 				systemImage: "paintpalette",
 				answers: [true, false].map(Self.colorsAnswer),
-				selection: colorsBinding,
+				selection: answerBinding(\.usesDynamicTheme),
 				accentColor: customization.accentColor
+			)
+
+			OnboardingQuestion(
+				question: "Home controls",
+				systemImage: "rectangle.3.group",
+				answers: HomeTheme.allCases.map(\.answer),
+				selection: answerBinding(\.homeTheme),
+				accentColor: customization.accentColor,
+				footnote:
+					"Sub-pills, music, and the settings button. Automatic follows the artwork."
+			)
+
+			OnboardingQuestion(
+				question: "Branding",
+				systemImage: "textformat",
+				answers: HomeTheme.allCases.map(\.answer),
+				selection: answerBinding(\.brandingTheme),
+				accentColor: customization.accentColor,
+				footnote:
+					"Logo and backdrop in the top left corner. Automatic follows Home controls."
 			)
 
 			OnboardingQuestion(
@@ -75,7 +104,8 @@ struct OnboardingLookView: View {
 		matchesArtwork
 			? OnboardingAnswer(
 				value: true, title: "Follow the artwork",
-				detail: "The launcher accent and the Dock icons use the colors of your artwork.",
+				detail:
+					"The launcher accent and the generated Dock icons use the colors of the current artwork.",
 				systemImage: "paintpalette", isRecommended: true)
 			: OnboardingAnswer(
 				value: false, title: "Keep it neutral",
@@ -101,10 +131,13 @@ struct OnboardingLookView: View {
 		return actions
 	}
 
-	private var colorsBinding: Binding<Bool?> {
+	// Maps a single-choice preference to the optional binding that OnboardingQuestion expects.
+	private func answerBinding<Value>(
+		_ keyPath: ReferenceWritableKeyPath<LauncherPreferencesController, Value>
+	) -> Binding<Value?> {
 		Binding(
-			get: { preferences.usesDynamicTheme },
-			set: { if let matches = $0 { preferences.usesDynamicTheme = matches } }
+			get: { preferences[keyPath: keyPath] },
+			set: { if let value = $0 { preferences[keyPath: keyPath] = value } }
 		)
 	}
 

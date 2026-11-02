@@ -8,6 +8,7 @@ import SwiftUI
 /// feedback; without one it is a read-only step that VoiceOver reads as one element.
 package struct NavigationRailRow: View {
 	@Environment(\.launcherTheme) private var theme
+	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isHovering = false
 	let title: String
 	let systemImage: String
@@ -16,6 +17,9 @@ package struct NavigationRailRow: View {
 	let accentColor: Color
 	/// Kept for existing call sites; the title always uses the primary text role.
 	let isHighlighted: Bool
+	/// Namespace shared by the rows of one rail. When set, the selection indicator slides to the
+	/// selected row instead of fading in place. Reduce Motion ignores it.
+	let selectionNamespace: Namespace.ID?
 	let action: (() -> Void)?
 
 	package init(
@@ -24,6 +28,7 @@ package struct NavigationRailRow: View {
 		isSelected: Bool,
 		accentColor: Color,
 		isHighlighted: Bool = false,
+		selectionNamespace: Namespace.ID? = nil,
 		action: (() -> Void)? = nil
 	) {
 		self.title = title
@@ -31,6 +36,7 @@ package struct NavigationRailRow: View {
 		self.isSelected = isSelected
 		self.accentColor = accentColor
 		self.isHighlighted = isHighlighted
+		self.selectionNamespace = selectionNamespace
 		self.action = action
 	}
 
@@ -57,12 +63,17 @@ package struct NavigationRailRow: View {
 		}
 	}
 
+	private var slidingNamespace: Namespace.ID? {
+		reduceMotion ? nil : selectionNamespace
+	}
+
 	private var content: some View {
 		HStack(spacing: LauncherTokens.Spacing.control) {
 			Image(systemName: systemImage)
 				.frame(width: 20)
 				.symbolRenderingMode(.monochrome)
 				.foregroundStyle(isSelected ? theme.accentInk : theme.textSecondary)
+				.launcherAnimation(.state, value: isSelected)
 				.accessibilityHidden(true)
 			Text(title)
 				.foregroundStyle(theme.textPrimary)
@@ -73,7 +84,7 @@ package struct NavigationRailRow: View {
 		.background {
 			RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow)
 				.fill(theme.neutralFill)
-				.opacity(isSelected ? 1 : 0)
+				.selectionIndicator(.fill, isSelected: isSelected, in: slidingNamespace)
 			RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow)
 				.fill(theme.hoverTint)
 				.opacity(isHovering && !isSelected ? 1 : 0)
@@ -81,12 +92,35 @@ package struct NavigationRailRow: View {
 		}
 		.overlay(alignment: .leading) {
 			Capsule()
-				.fill(isSelected ? theme.accentFill : .clear)
+				.fill(theme.accentFill)
 				.frame(width: 3, height: 14)
+				.selectionIndicator(.tick, isSelected: isSelected, in: slidingNamespace)
 				.padding(.leading, 2)
 				.accessibilityHidden(true)
 		}
-		.launcherAnimation(.state, value: isSelected)
 		.contentShape(RoundedRectangle(cornerRadius: LauncherTokens.Radius.railRow))
+	}
+}
+
+/// Identifies the moving parts of a rail selection so matched geometry pairs them across rows.
+private enum RailSelectionPart: Hashable {
+	case fill, tick
+}
+
+extension View {
+	/// With a namespace, only the selected row carries the indicator; matched geometry moves it
+	/// to the new row. Without one, the indicator stays in place and fades.
+	@ViewBuilder
+	fileprivate func selectionIndicator(
+		_ part: RailSelectionPart, isSelected: Bool, in namespace: Namespace.ID?
+	) -> some View {
+		if let namespace {
+			if isSelected {
+				matchedGeometryEffect(id: part, in: namespace)
+			}
+		} else {
+			opacity(isSelected ? 1 : 0)
+				.launcherAnimation(.state, value: isSelected)
+		}
 	}
 }

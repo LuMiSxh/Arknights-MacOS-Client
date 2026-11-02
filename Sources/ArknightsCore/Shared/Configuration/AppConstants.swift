@@ -19,6 +19,10 @@ package enum AppConstants {
 		static let standardWindowTitleBarHeight: CGFloat = 28
 		/// Share of the usable screen the "leave room" game window may cover.
 		static let compactWindowScreenShare = 0.65
+		/// Smallest custom window size, in points.
+		package static let customWindowMinimum = GameDisplaySize(width: 640, height: 360)
+		/// Largest custom window side, in points.
+		package static let customWindowMaximumDimension = 8192
 		static let generatedResolutionHeightStep = 360
 		/// Smallest on-screen window treated as the game window; smaller helper windows are ignored.
 		package static let minimumGameWindowWidth: Double = 320

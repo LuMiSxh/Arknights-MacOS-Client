@@ -78,6 +78,27 @@ package struct GameDisplaySize: Codable, Hashable, Sendable {
 		GameDisplaySize(width: width * factor, height: height * factor)
 	}
 
+	/// The custom window size for `width` × `height` points, or nil outside the custom limits.
+	package static func validatedCustom(width: Int, height: Int) -> GameDisplaySize? {
+		let minimum = AppConstants.Game.customWindowMinimum
+		let maximum = AppConstants.Game.customWindowMaximumDimension
+		guard
+			(minimum.width...maximum).contains(width),
+			(minimum.height...maximum).contains(height)
+		else { return nil }
+		return GameDisplaySize(width: width, height: height)
+	}
+
+	/// The largest size with the same aspect ratio that fits `bounds`. A size that fits is kept.
+	func fitted(into bounds: GameDisplaySize) -> GameDisplaySize {
+		guard !fits(in: bounds) else { return self }
+		// Cross-multiplied, so the scaled sides stay whole numbers.
+		if bounds.width * height <= bounds.height * width {
+			return GameDisplaySize(width: bounds.width, height: height * bounds.width / width)
+		}
+		return GameDisplaySize(width: width * bounds.height / height, height: bounds.height)
+	}
+
 	/// Presets that fit `visibleSize` (in points), always keeping `current` selectable.
 	package static func windowOptions(
 		fitting visibleSize: CGSize?, current: GameDisplaySize
