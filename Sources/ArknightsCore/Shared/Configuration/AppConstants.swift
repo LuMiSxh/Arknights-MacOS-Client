@@ -276,8 +276,8 @@ package enum AppConstants {
 		]
 		// Light glass above the light threshold, dark glass below the dark one. Between them the
 		// previous decision holds, so artwork near a boundary does not flip back and forth.
-		package static let lightHomeLuminanceThreshold = 0.58
-		package static let darkHomeLuminanceThreshold = 0.50
+		package static let lightHomeLuminanceThreshold = 0.52
+		package static let darkHomeLuminanceThreshold = 0.44
 		// Cached scores carry this version; bump it when the score changes.
 		package static let homeLuminanceVersion = "homeLuminance.v1"
 		package static let homeLuminanceCacheLimit = 64

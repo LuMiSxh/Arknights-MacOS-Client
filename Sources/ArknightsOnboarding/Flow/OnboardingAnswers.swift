@@ -106,12 +106,16 @@ extension LauncherAppearance {
 		switch self {
 		case .system:
 			OnboardingAnswer(
-				value: self, title: "System", systemImage: "circle.lefthalf.filled",
-				isRecommended: true)
+				value: self, title: "System", detail: "Matches your Mac’s appearance.",
+				systemImage: "circle.lefthalf.filled", isRecommended: true)
 		case .light:
-			OnboardingAnswer(value: self, title: "Light", systemImage: "sun.max")
+			OnboardingAnswer(
+				value: self, title: "Light", detail: "Always uses light surfaces.",
+				systemImage: "sun.max")
 		case .dark:
-			OnboardingAnswer(value: self, title: "Dark", systemImage: "moon")
+			OnboardingAnswer(
+				value: self, title: "Dark", detail: "Always uses dark surfaces.",
+				systemImage: "moon")
 		}
 	}
 }
@@ -122,13 +126,25 @@ extension HomeTheme {
 		switch self {
 		case .automatic:
 			OnboardingAnswer(
-				value: self, title: "Automatic", systemImage: "wand.and.stars",
-				isRecommended: true)
+				value: self, title: "Automatic",
+				detail: "Light over bright artwork, dark over dark artwork.",
+				systemImage: "wand.and.stars", isRecommended: true)
 		case .dark:
-			OnboardingAnswer(value: self, title: "Dark", systemImage: "moon")
+			OnboardingAnswer(
+				value: self, title: "Dark", detail: "Always dark, whatever the artwork.",
+				systemImage: "moon")
 		case .light:
-			OnboardingAnswer(value: self, title: "Light", systemImage: "sun.max")
+			OnboardingAnswer(
+				value: self, title: "Light", detail: "Always light, whatever the artwork.",
+				systemImage: "sun.max")
 		}
+	}
+
+	// Branding follows the Home controls tone when it is Automatic.
+	var brandingAnswer: OnboardingAnswer<HomeTheme> {
+		var answer = answer
+		if self == .automatic { answer.detail = "Uses the same tone as the Home controls." }
+		return answer
 	}
 }
 
@@ -153,7 +169,7 @@ extension LauncherInfoAnswer {
 				systemImage: "clock")
 		case .branding:
 			OnboardingAnswer(
-				value: self, title: "Branding",
+				value: self, title: "Show branding",
 				detail: "Shows the server logo in the top left corner.",
 				systemImage: "textformat")
 		}

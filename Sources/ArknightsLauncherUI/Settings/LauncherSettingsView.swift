@@ -53,7 +53,6 @@ struct LauncherSettingsView: View {
 			SettingsNavigationRail(
 				selection: $selectedSection,
 				isDeveloperMode: isDeveloperMode,
-				accentColor: customization.accentColor,
 				lifecycle: lifecycle,
 				installation: installation,
 				selectionNamespace: railSelection
@@ -163,7 +162,7 @@ struct LauncherSettingsView: View {
 			.safeAreaInset(edge: .bottom, spacing: 0) {
 				HStack {
 					Spacer(minLength: 0)
-					FloatingActionBar(tint: customization.hudTintColor) {
+					FloatingActionBar {
 						if selectedSection == .storage {
 							CapsuleActionButton(
 								title: "Refresh",
@@ -199,8 +198,7 @@ struct LauncherSettingsView: View {
 		.sheet(item: $presentedDocument) { document in
 			BundledDocumentView(
 				document: document,
-				accentColor: customization.accentColor,
-				hudTintColor: customization.hudTintColor
+				accentColor: customization.accentColor
 			)
 		}
 	}
@@ -227,7 +225,6 @@ private struct SettingsNavigationRail: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
-	package let accentColor: Color
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController
 	let selectionNamespace: Namespace.ID
@@ -249,7 +246,6 @@ private struct SettingsNavigationRail: View {
 									title: section.title,
 									systemImage: section.systemImage,
 									isSelected: selection == section,
-									accentColor: accentColor,
 									selectionNamespace: selectionNamespace
 								) {
 									select(section)

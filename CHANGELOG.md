@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- SDK logs for China and Taiwan are now collected with the launcher logs. **Reveal logs** shows them in the `sdklogs` folder.
+- SDK logs for China, China (Bilibili), and Taiwan are now collected with the launcher logs. **Reveal logs** shows them in the `sdklogs` folder, and **Save diagnostics…** includes them.
 - Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
 - Added **Save diagnostics…** to **Settings → Help**. It saves a zip file to your Downloads folder.
 - The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.

@@ -8,7 +8,6 @@ private let applyingLabel = "Applying…"
 struct PresetAvatarGrid: View {
 	@Environment(\.launcherTheme) private var theme
 	let catalog: PresetCatalogService
-	let accentColor: Color
 	let avatars: [PresetAvatar]
 	let applyingItemID: String?
 	let onSelect: (PresetAvatar) -> Void
@@ -93,7 +92,6 @@ struct PresetAvatarGrid: View {
 struct PresetWallpaperGrid: View {
 	@Environment(\.launcherTheme) private var theme
 	let catalog: PresetCatalogService
-	let accentColor: Color
 	let wallpapers: [PresetWallpaper]
 	let applyingItemID: String?
 	let onSelect: (PresetWallpaper) -> Void

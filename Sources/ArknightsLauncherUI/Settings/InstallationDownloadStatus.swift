@@ -8,7 +8,6 @@ import SwiftUI
 struct InstallationDownloadStatus: View {
 	@Environment(\.launcherTheme) private var theme
 	let installation: InstallationController
-	let accentColor: Color
 
 	var body: some View {
 		let progress = installation.progress

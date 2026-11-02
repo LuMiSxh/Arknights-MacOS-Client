@@ -6,7 +6,6 @@ import SwiftUI
 struct OnboardingProgressRail: View {
 	@Environment(\.launcherTheme) private var theme
 	let currentStep: OnboardingStep
-	let accentColor: Color
 	let appVersion: String
 
 	var body: some View {
@@ -22,7 +21,6 @@ struct OnboardingProgressRail: View {
 						title: step.title,
 						systemImage: markerImage(for: step),
 						isSelected: currentStep == step,
-						accentColor: accentColor,
 						isHighlighted: step.rawValue < currentStep.rawValue
 					)
 				}

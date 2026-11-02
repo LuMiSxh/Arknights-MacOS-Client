@@ -70,8 +70,8 @@
 - Keep components feature-local unless multiple features share the same presentation contract. Declare reusable identical controls, surfaces, and design tokens centrally in `Shared/UI`; do not duplicate local button or panel styles.
 - Dynamic artwork or theme accents are allowed for the current primary operation, progress, selection, and interaction highlights. Preserve them instead of replacing them with hardcoded neutrals.
 - Secondary controls use quiet filled neutral surfaces with restrained borders. Collapsed HUD surfaces stay compact capsules; expanded HUD surfaces use a fixed-radius rounded rectangle.
-- Never use a fixed cyan value in UI styling. `LauncherVisuals.cyan` is reserved for the fallback when no dynamic theme or artwork tint is available.
-- `LauncherMotion` (curves and `Cycle`) is the only motion source; no raw `.easeInOut`, `.spring`, or durations in views.
+- Get colors from `LauncherTheme` roles, read through `\.launcherTheme`. Never write a fixed cyan value in UI styling. `LauncherVisuals.cyan` is the fallback accent only, for when no artwork accent exists.
+- `LauncherMotion` (`Role`, `Curve`, `Cycle`, and `launcherAnimation`) is the only motion source; no raw `.easeInOut`, `.spring`, or durations in views.
 - The primary action shows at most one ambient effect: a static halo with one arrival pulse.
 
 ## Testing

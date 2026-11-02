@@ -7,7 +7,6 @@ import SwiftUI
 struct LauncherActivityStatusView: View {
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController
-	package let accentColor: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var completionFeedback: InstallationCompletionFeedback?
 

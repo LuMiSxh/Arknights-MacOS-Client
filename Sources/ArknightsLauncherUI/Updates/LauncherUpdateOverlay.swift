@@ -27,7 +27,7 @@ struct LauncherUpdateOverlay: View {
 	@Environment(\.launcherTheme) private var theme
 	let driver: LauncherUpdateUserDriver
 	package let accentColor: Color
-	let hudTintColor: Color
+
 	let reduceTransparency: Bool
 	let checkForUpdates: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -57,7 +57,7 @@ struct LauncherUpdateOverlay: View {
 		LauncherUpdateView(
 			driver: driver,
 			accentColor: accentColor,
-			hudTintColor: hudTintColor,
+
 			checkForUpdates: checkForUpdates
 		)
 		.scaleEffect(isVisible ? 1 : initialDialogScale)

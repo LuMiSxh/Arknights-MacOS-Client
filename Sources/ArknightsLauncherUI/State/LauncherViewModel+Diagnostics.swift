@@ -15,6 +15,7 @@ extension LauncherViewModel {
 		defer { isSavingDiagnostics = false }
 		do {
 			let log = log
+			await storage.refreshSDKLogs()
 			let archive = try await DiagnosticsBundle.write(
 				diagnosticsItems(),
 				readme: diagnosticsReadme,
@@ -50,6 +51,12 @@ extension LauncherViewModel {
 			items.append(
 				.init(archivePath: "Logs/\(url.lastPathComponent)", content: .redactedLog(url)))
 		}
+		// The SDK logs are optional: a failure here must not cancel the archive.
+		do {
+			items.append(contentsOf: try sdkLogItems())
+		} catch {
+			log.error("SDK logs skipped: \(launcherDiagnosticDescription(for: error))")
+		}
 		if let runtimeConfiguration = Bundle.main.url(
 			forResource: "RUNTIME", withExtension: "json")
 		{
@@ -57,6 +64,23 @@ extension LauncherViewModel {
 		}
 		items.append(.init(archivePath: "environment.txt", content: .text(environmentSummary)))
 		return items
+	}
+
+	/// Lists the publisher SDK logs that `SDKLogCollector` copied for the installed region.
+	private func sdkLogItems() throws -> [DiagnosticsBundle.Item] {
+		let publisher = installation.region.publisher
+		let directory = paths.collectedSDKLogDirectory(for: publisher)
+		guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
+		let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
+		let files = try FileManager.default.contentsOfDirectory(
+			at: directory, includingPropertiesForKeys: Array(keys))
+		return try files.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap { file in
+			let values = try file.resourceValues(forKeys: keys)
+			guard values.isRegularFile == true, values.isSymbolicLink != true else { return nil }
+			return DiagnosticsBundle.Item(
+				archivePath: "Logs/sdklogs/\(publisher.rawValue)/\(file.lastPathComponent)",
+				content: .redactedLog(file))
+		}
 	}
 
 	private var environmentSummary: String {
@@ -93,11 +117,14 @@ extension LauncherViewModel {
 		- `environment.txt`: app, runtime, display, and system details.
 		- `Logs/`: the launcher log, the game runtime log, the Unity log, and the browser log,
 		  when each exists.
+		- `Logs/sdklogs/`: the publisher SDK logs for China, China (Bilibili), and Taiwan,
+		  when they exist.
 		- `RUNTIME.json`: the runtime pin the app was built with.
 
 		The archive is not uploaded anywhere.
 		The app redacts your home folder path, your user name, and URL query strings in the logs.
 		The logs can still contain other file paths, server names, and account details.
+		SDK logs can contain account IDs and access keys that redaction does not remove.
 		Review the archive before you share it.
 		"""
 	}

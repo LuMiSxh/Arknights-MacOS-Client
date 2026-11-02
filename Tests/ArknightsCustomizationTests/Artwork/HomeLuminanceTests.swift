@@ -39,13 +39,13 @@ struct HomeLuminanceTests {
 
 	@Test(
 		arguments: [
-			(score: 0.62, previous: ColorScheme.dark, expected: ColorScheme.light),
-			(score: 0.62, previous: .light, expected: .light),
+			(score: 0.58, previous: ColorScheme.dark, expected: ColorScheme.light),
+			(score: 0.58, previous: .light, expected: .light),
 			// Inside the band the previous decision holds in both directions.
-			(score: 0.54, previous: .light, expected: .light),
-			(score: 0.54, previous: .dark, expected: .dark),
-			(score: 0.46, previous: .light, expected: .dark),
-			(score: 0.46, previous: .dark, expected: .dark),
+			(score: 0.48, previous: .light, expected: .light),
+			(score: 0.48, previous: .dark, expected: .dark),
+			(score: 0.40, previous: .light, expected: .dark),
+			(score: 0.40, previous: .dark, expected: .dark),
 		] as [(score: Double, previous: ColorScheme, expected: ColorScheme)])
 	func bandKeepsThePreviousSchemeAndThresholdsDecideOutside(
 		_ testCase: (score: Double, previous: ColorScheme, expected: ColorScheme)

@@ -101,7 +101,8 @@ struct AboutSettingsPage: View {
 				valueText(runtime.name)
 			}
 			SettingsHairline()
-			VStack(spacing: 0) {
+			// Not a stack: the panel pads and divides each top-level row, including the expanded ones.
+			Group {
 				Button {
 					withAnimation(LauncherMotion.animation(.disclosure, reduceMotion: reduceMotion))
 					{

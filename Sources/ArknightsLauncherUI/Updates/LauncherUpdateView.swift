@@ -11,14 +11,14 @@ struct LauncherUpdateView: View {
 
 	let driver: LauncherUpdateUserDriver
 	package let accentColor: Color
-	let hudTintColor: Color
+
 	let checkForUpdates: () -> Void
 	@State private var contentHeight: CGFloat = 0
 
 	var body: some View {
 		ThemedModalView(
 			title: "Launcher Update",
-			hudTintColor: hudTintColor,
+
 			width: modalWidth,
 			height: modalHeight
 		) {
@@ -102,7 +102,7 @@ struct LauncherUpdateView: View {
 		VStack(alignment: .leading, spacing: 12) {
 			if let releaseNotes = driver.releaseNotes, !releaseNotes.isEmpty {
 				if driver.releaseNotesFormat == "markdown" {
-					MarkdownDocument(source: releaseNotes, accentColor: accentColor)
+					MarkdownDocument(source: releaseNotes)
 				} else {
 					Text(releaseNotes)
 						.textSelection(.enabled)

@@ -13,8 +13,6 @@ package struct NavigationRailRow: View {
 	let title: String
 	let systemImage: String
 	let isSelected: Bool
-	/// Kept for existing call sites; the theme supplies the color.
-	let accentColor: Color
 	/// Kept for existing call sites; the title always uses the primary text role.
 	let isHighlighted: Bool
 	/// Namespace shared by the rows of one rail. When set, the selection indicator slides to the
@@ -26,7 +24,6 @@ package struct NavigationRailRow: View {
 		title: String,
 		systemImage: String,
 		isSelected: Bool,
-		accentColor: Color,
 		isHighlighted: Bool = false,
 		selectionNamespace: Namespace.ID? = nil,
 		action: (() -> Void)? = nil
@@ -34,7 +31,6 @@ package struct NavigationRailRow: View {
 		self.title = title
 		self.systemImage = systemImage
 		self.isSelected = isSelected
-		self.accentColor = accentColor
 		self.isHighlighted = isHighlighted
 		self.selectionNamespace = selectionNamespace
 		self.action = action

@@ -198,10 +198,7 @@ package struct ContentView: View {
 			.overlay { initialArtworkCover }
 			// Keep this last so every sheet and overlay inherits the visibility gate.
 			.environment(\.decorativeMotionEnabled, decorativeMotionVisibility.isEnabled)
-			.environment(
-				\.launcherPalette,
-				LauncherPalette(accent: model.customization.accentColor)
-			)
+
 			.launcherTheme(accent: model.customization.accentColor)
 	}
 
@@ -212,7 +209,6 @@ package struct ContentView: View {
 			LauncherUpdateOverlay(
 				driver: model.communication.launcherUpdateUserDriver,
 				accentColor: model.customization.accentColor,
-				hudTintColor: model.customization.hudTintColor,
 				reduceTransparency: reduceTransparency,
 				checkForUpdates: { model.actions.openLauncherUpdate() }
 			)
@@ -285,7 +281,7 @@ package struct ContentView: View {
 		case .failure(let failure):
 			LauncherFailureDetailView(
 				failure: failure, accentColor: model.customization.accentColor,
-				hudTintColor: model.customization.hudTintColor, perform: performRecoveryAction,
+				perform: performRecoveryAction,
 				isSavingDiagnostics: model.actions.isSavingDiagnostics,
 				saveDiagnostics: {
 					Task { await model.actions.saveDiagnostics() }
@@ -296,7 +292,6 @@ package struct ContentView: View {
 			if let popup = model.communication.popup {
 				LauncherPopupView(
 					popup: popup, accentColor: model.customization.accentColor,
-					hudTintColor: model.customization.hudTintColor,
 					dismiss: model.communication.dismissPopup,
 					openAction: model.communication.openPopupAction)
 			} else {

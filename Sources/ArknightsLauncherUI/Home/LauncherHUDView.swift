@@ -61,8 +61,7 @@ struct LauncherHUDView: View {
 		HStack(spacing: 16) {
 			LauncherActivityStatusView(
 				lifecycle: lifecycle,
-				installation: installation,
-				accentColor: accentColor
+				installation: installation
 			)
 			.id(installation.isDownloading ? "download-progress" : "launcher-status")
 			.transition(.opacity)

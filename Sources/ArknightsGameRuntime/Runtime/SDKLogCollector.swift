@@ -58,10 +58,12 @@ enum SDKLogCollector {
 			return nil
 		}
 		guard values.isRegularFile == true, values.isSymbolicLink != true else { return nil }
+		// A failed read skips the close; the handle closes when it deallocates.
 		let handle = try FileHandle(forReadingFrom: file)
-		defer { try? handle.close() }
 		let size = try handle.seekToEnd()
 		try handle.seek(toOffset: size > UInt64(maximumBytes) ? size - UInt64(maximumBytes) : 0)
-		return try handle.readToEnd() ?? Data()
+		let tail = try handle.readToEnd() ?? Data()
+		try handle.close()
+		return tail
 	}
 }

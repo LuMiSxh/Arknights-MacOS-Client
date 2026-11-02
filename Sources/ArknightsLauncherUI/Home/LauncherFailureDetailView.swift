@@ -8,7 +8,7 @@ struct LauncherFailureDetailView: View {
 	@Environment(\.launcherTheme) private var theme
 	package let failure: LauncherFailurePresentation
 	package let accentColor: Color
-	let hudTintColor: Color
+
 	let perform: (RecoveryAction, UUID) -> Void
 	let isSavingDiagnostics: Bool
 	let saveDiagnostics: () -> Void
@@ -20,14 +20,14 @@ struct LauncherFailureDetailView: View {
 	init(
 		failure: LauncherFailurePresentation,
 		accentColor: Color,
-		hudTintColor: Color,
+
 		perform: @escaping (RecoveryAction, UUID) -> Void,
 		isSavingDiagnostics: Bool,
 		saveDiagnostics: @escaping () -> Void
 	) {
 		self.failure = failure
 		self.accentColor = accentColor
-		self.hudTintColor = hudTintColor
+
 		self.perform = perform
 		self.isSavingDiagnostics = isSavingDiagnostics
 		self.saveDiagnostics = saveDiagnostics
@@ -46,7 +46,7 @@ struct LauncherFailureDetailView: View {
 	var body: some View {
 		ThemedModalView(
 			title: "Needs attention",
-			hudTintColor: hudTintColor,
+
 			width: failure.code == nil ? 620 : 820,
 			height: failure.code == nil ? 432 : 600,
 			minimumHeight: 432
@@ -81,8 +81,7 @@ struct LauncherFailureDetailView: View {
 				if let troubleshootingMarkdown {
 					Divider()
 					MarkdownDocument(
-						source: troubleshootingMarkdown,
-						accentColor: accentColor
+						source: troubleshootingMarkdown
 					)
 				}
 			}

@@ -48,7 +48,6 @@ package struct OnboardingView: View {
 		HStack(spacing: 0) {
 			OnboardingProgressRail(
 				currentStep: coordinator.step,
-				accentColor: customization.accentColor,
 				appVersion: IssueReportURL.appVersion
 			)
 
@@ -126,7 +125,7 @@ package struct OnboardingView: View {
 
 				FloatingActionFooterFade(height: 76)
 
-				FloatingActionBar(tint: customization.hudTintColor) {
+				FloatingActionBar {
 					if coordinator.updateState.allowsSetup && coordinator.requiredSchema == nil
 						&& coordinator.step != .finish
 					{

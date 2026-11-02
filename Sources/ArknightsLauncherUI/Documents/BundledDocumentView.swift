@@ -77,14 +77,14 @@ private enum BundledDocumentLoadState {
 struct BundledDocumentView: View {
 	let document: BundledDocument
 	package let accentColor: Color
-	let hudTintColor: Color
+
 	@State private var loadState = BundledDocumentLoadState.loading
 	@Environment(\.dismiss) private var dismiss
 
 	var body: some View {
 		ThemedModalView(
 			title: document.title,
-			hudTintColor: hudTintColor,
+
 			width: 760,
 			height: 600
 		) {
@@ -95,7 +95,7 @@ struct BundledDocumentView: View {
 					.frame(maxWidth: .infinity, minHeight: 180)
 					.accessibilityLabel(Text("Loading document"))
 			case .loaded(let parsedDocument):
-				MarkdownDocument(parsed: parsedDocument, accentColor: accentColor)
+				MarkdownDocument(parsed: parsedDocument)
 					.textSelection(.enabled)
 			case .failed(let error):
 				DocumentLoadErrorView(error: error)
@@ -146,19 +146,16 @@ private struct DocumentLoadErrorView: View {
 
 struct MarkdownDocument: View {
 	@Environment(\.launcherTheme) private var theme
-	package let accentColor: Color
 	private let initialDocument: ParsedMarkdownDocument?
 	private let source: String?
 	@State private var loadedDocument: ParsedMarkdownDocument?
 
-	init(source: String, accentColor: Color) {
-		self.accentColor = accentColor
+	init(source: String) {
 		initialDocument = nil
 		self.source = source
 	}
 
-	init(parsed: ParsedMarkdownDocument, accentColor: Color) {
-		self.accentColor = accentColor
+	init(parsed: ParsedMarkdownDocument) {
 		initialDocument = parsed
 		source = nil
 	}
@@ -170,7 +167,6 @@ struct MarkdownDocument: View {
 					ForEach(document.blocks.indices, id: \.self) { index in
 						MarkdownBlockView(
 							block: document.blocks[index],
-							accentColor: accentColor,
 							columnWidths: document.tableColumnWidths[index] ?? []
 						)
 					}
@@ -199,7 +195,6 @@ struct MarkdownDocument: View {
 private struct MarkdownBlockView: View {
 	@Environment(\.launcherTheme) private var theme
 	let block: MarkdownBlock
-	package let accentColor: Color
 	let columnWidths: [CGFloat]
 
 	@ViewBuilder
@@ -231,7 +226,7 @@ private struct MarkdownBlockView: View {
 			}
 			.padding(.leading, 8)
 		case .table(let rows):
-			MarkdownTable(rows: rows, accentColor: accentColor, columnWidths: columnWidths)
+			MarkdownTable(rows: rows, columnWidths: columnWidths)
 				.padding(.vertical, 4)
 		case .code(let source):
 			Text(source)
@@ -257,7 +252,6 @@ private struct MarkdownBlockView: View {
 private struct MarkdownTable: View {
 	@Environment(\.launcherTheme) private var theme
 	let rows: [[String]]
-	package let accentColor: Color
 	let columnWidths: [CGFloat]
 
 	var body: some View {

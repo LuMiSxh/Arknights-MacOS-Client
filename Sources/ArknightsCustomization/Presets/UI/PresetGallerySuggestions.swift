@@ -28,7 +28,6 @@ private enum PresetGallerySuggestion: Identifiable {
 
 struct PresetGallerySuggestions: View {
 	let destination: PresetGalleryDestination
-	package let accentColor: Color
 	let avatars: [PresetAvatar]
 	let wallpaperTerms: [String]
 	let onSelect: (String) -> Void
@@ -50,7 +49,6 @@ struct PresetGallerySuggestions: View {
 				ForEach(suggestions) { suggestion in
 					PresetGallerySuggestionChip(
 						destination: destination,
-						accentColor: accentColor,
 						suggestion: suggestion,
 						onSelect: onSelect
 					)
@@ -69,7 +67,6 @@ struct PresetGallerySuggestions: View {
 private struct PresetGallerySuggestionChip: View {
 	@Environment(\.launcherTheme) private var theme
 	let destination: PresetGalleryDestination
-	package let accentColor: Color
 	let suggestion: PresetGallerySuggestion
 	let onSelect: (String) -> Void
 	@FocusState private var isFocused: Bool

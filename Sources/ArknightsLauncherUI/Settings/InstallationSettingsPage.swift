@@ -43,8 +43,7 @@ struct InstallationSettingsPage: View {
 					title: "Status"
 				) {
 					InstallationDownloadStatus(
-						installation: installation,
-						accentColor: accentColor
+						installation: installation
 					)
 				}
 				SettingsHairline()

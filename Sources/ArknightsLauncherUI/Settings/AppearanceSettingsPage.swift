@@ -24,23 +24,9 @@ struct AppearanceSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "Appearance",
-			subtitle: "Appearance, artwork, and icons",
+			subtitle: "Artwork, theme, appearance, and icons",
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: "Appearance", systemImage: "circle.lefthalf.filled") {
-				SettingsActionRow(
-					title: "Appearance",
-					detail: "Settings, setup, and dialogs. Home keeps its own controls."
-				) {
-					AdaptiveSegmentedControl(
-						selection: $settings.launcherAppearance,
-						options: LauncherAppearance.allCases,
-						systemImages: ["circle.lefthalf.filled", "sun.max", "moon"]
-					) { appearance in
-						Text(appearanceTitle(appearance))
-					}
-				}
-			}
 			SettingsPanel(title: "Artwork", systemImage: "photo") {
 				artworkRow
 			}
@@ -84,18 +70,27 @@ struct AppearanceSettingsPage: View {
 					}
 				}
 			}
-			SettingsPanel(title: "Dock icons", systemImage: "dock.rectangle") {
-				operatorRow
-				SettingsHairline()
-				customIconRow
+			SettingsPanel(title: "Appearance", systemImage: "circle.lefthalf.filled") {
+				SettingsActionRow(
+					title: "Appearance",
+					detail: "Settings, setup, and dialogs. Home keeps its own controls."
+				) {
+					AdaptiveSegmentedControl(
+						selection: $settings.launcherAppearance,
+						options: LauncherAppearance.allCases,
+						systemImages: ["circle.lefthalf.filled", "sun.max", "moon"]
+					) { appearance in
+						Text(appearanceTitle(appearance))
+					}
+				}
 			}
 			SettingsPanel(title: "Launcher shows", systemImage: "sparkles") {
 				SettingsActionRow(
-					title: "Branding",
+					title: "Show branding",
 					detail: "Shows the server logo and its backdrop in the top left corner."
 				) {
 					SettingsToggle(
-						"Branding",
+						"Show branding",
 						isOn: $settings.showsBranding,
 					)
 				}
@@ -119,6 +114,11 @@ struct AppearanceSettingsPage: View {
 						isOn: $settings.showsServerResetCountdown,
 					)
 				}
+			}
+			SettingsPanel(title: "Dock icons", systemImage: "dock.rectangle") {
+				operatorRow
+				SettingsHairline()
+				customIconRow
 			}
 		}
 		.sheet(item: $presentedGallery) { destination in

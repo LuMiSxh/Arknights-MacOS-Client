@@ -20,18 +20,9 @@ struct OnboardingLookView: View {
 	var body: some View {
 		OnboardingPage(
 			title: "How should the launcher look?",
-			subtitle: "Appearance, artwork, theme, and Dock icons",
+			subtitle: "Artwork, theme, Home controls, branding, appearance, and Dock icons",
 			accentColor: customization.accentColor
 		) {
-			OnboardingQuestion(
-				question: "Appearance",
-				systemImage: "circle.lefthalf.filled",
-				answers: LauncherAppearance.allCases.map(\.answer),
-				selection: answerBinding(\.launcherAppearance),
-				accentColor: customization.accentColor,
-				footnote: "Settings, setup, and dialogs. Home keeps its own controls."
-			)
-
 			OnboardingQuestion(
 				question: "Which artwork should fill the launcher?",
 				systemImage: "photo.on.rectangle.angled",
@@ -47,8 +38,7 @@ struct OnboardingLookView: View {
 					OnboardingAnswer(
 						value: .ownImage, title: "Choose Image…",
 						systemImage: "photo.badge.plus", action: customization.chooseCustomArtwork),
-				],
-				accentColor: customization.accentColor
+				]
 			) {
 				artworkPreview
 			}
@@ -57,8 +47,7 @@ struct OnboardingLookView: View {
 				question: "Dynamic Theme",
 				systemImage: "paintpalette",
 				answers: [true, false].map(Self.colorsAnswer),
-				selection: answerBinding(\.usesDynamicTheme),
-				accentColor: customization.accentColor
+				selection: answerBinding(\.usesDynamicTheme)
 			)
 
 			OnboardingQuestion(
@@ -66,7 +55,6 @@ struct OnboardingLookView: View {
 				systemImage: "rectangle.3.group",
 				answers: HomeTheme.allCases.map(\.answer),
 				selection: answerBinding(\.homeTheme),
-				accentColor: customization.accentColor,
 				footnote:
 					"Sub-pills, music, and the settings button. Automatic follows the artwork."
 			)
@@ -74,29 +62,33 @@ struct OnboardingLookView: View {
 			OnboardingQuestion(
 				question: "Branding",
 				systemImage: "textformat",
-				answers: HomeTheme.allCases.map(\.answer),
+				answers: HomeTheme.allCases.map(\.brandingAnswer),
 				selection: answerBinding(\.brandingTheme),
-				accentColor: customization.accentColor,
-				footnote:
-					"Logo and backdrop in the top left corner. Automatic follows Home controls."
+				footnote: "Logo and backdrop in the top left corner."
 			)
 
 			OnboardingQuestion(
-				question: "Which operator should your Dock show?",
-				systemImage: "dock.rectangle",
-				actions: dockActions,
-				accentColor: customization.accentColor
-			) {
-				OnboardingDockIconPreview(customization: customization)
-			}
+				question: "Appearance",
+				systemImage: "circle.lefthalf.filled",
+				answers: LauncherAppearance.allCases.map(\.answer),
+				selection: answerBinding(\.launcherAppearance),
+				footnote: "Settings, setup, and dialogs. Home keeps its own controls."
+			)
 
 			OnboardingQuestion(
 				question: "What should the launcher show?",
 				systemImage: "rectangle.bottomthird.inset.filled",
 				answers: LauncherInfoAnswer.allCases.map(\.answer),
-				selections: $preferences.shownLauncherInfo,
-				accentColor: customization.accentColor
+				selections: $preferences.shownLauncherInfo
 			)
+
+			OnboardingQuestion(
+				question: "Which operator should your Dock show?",
+				systemImage: "dock.rectangle",
+				actions: dockActions
+			) {
+				OnboardingDockIconPreview(customization: customization)
+			}
 		}
 	}
 

@@ -43,7 +43,7 @@ package final class CustomizationController {
 	package var accentColor: Color = LauncherVisuals.cyan
 	// Tone that the artwork's bottom band calls for. Read it through `homeColorScheme(for:)`.
 	var artworkColorScheme: ColorScheme = .dark
-	package let hudTintColor: Color = LauncherPalette.fallback.hudGlassTint
+
 	package private(set) var activeThemeCacheKey: String?
 	// Increments only when the persisted custom artwork changes. Branding refreshes use this
 	// generation to reject an official image that was already in flight when the user chose a

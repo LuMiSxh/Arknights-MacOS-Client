@@ -385,6 +385,7 @@ The launch directs Wine, Unity, and Chromium diagnostics to the central macOS lo
   `arknights-gryphline.log` (Taiwan), or `arknights-hypergryph.log` (Hypergryph).
 - `L:` maps that directory. Unity receives `-logFile L:\unity.log`. The Vuplex compatibility component
   adds `--log-file=L:\chromium.log`.
+- After a game session and on **Reveal logs**, the launcher copies the SDK logs for China, China (Bilibili), and Taiwan to `logs/sdklogs/<publisher>`. Each file keeps only its last 2 MiB. Yostar regions have no SDK logs. **Save Diagnostics** refreshes them.
 - [Storage](../../help/storage.md#logs) lists the macOS paths.
 
 Launch diagnostics include the session ID, region, display, frame rate limit, and synchronization options, and whether

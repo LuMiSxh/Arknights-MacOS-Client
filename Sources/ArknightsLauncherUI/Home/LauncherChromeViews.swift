@@ -76,7 +76,7 @@ struct ArknightsWordmark: View {
 struct LauncherPopupView: View {
 	let popup: LauncherPopup
 	package let accentColor: Color
-	let hudTintColor: Color
+
 	let dismiss: () -> Void
 	let openAction: () -> Void
 	@State private var contentHeight: CGFloat = 0
@@ -84,14 +84,14 @@ struct LauncherPopupView: View {
 	var body: some View {
 		ThemedModalView(
 			title: popup.title,
-			hudTintColor: hudTintColor,
+
 			width: 620,
 			height: popupHeight
 		) {
 			Group {
 				switch popup.content {
 				case .markdown(let source):
-					MarkdownDocument(source: source, accentColor: accentColor)
+					MarkdownDocument(source: source)
 				case .attributed(let content):
 					Text(content)
 				}

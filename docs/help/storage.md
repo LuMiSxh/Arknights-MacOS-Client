@@ -38,8 +38,9 @@ A custom installation location replaces only the game folder of that region. **S
 | `arknights-yostar.log`, `arknights-gryphline.log`, `arknights-hypergryph.log` | Game start and Wine for that publisher |
 | `unity.log`                                                                   | Messages from the game itself          |
 | `chromium.log`                                                                | The sign-in window                     |
+| `sdklogs/<publisher>/`                                                        | Publisher SDK logs (see below)         |
 
-Logs can contain private paths or URLs. Do not attach them directly. If a maintainer asks for logs, choose **Help → Save Diagnostics…**. It saves redacted launcher and game logs to Downloads. Review the file before you attach it.
+Logs can contain private paths, URLs, account IDs, or access keys. Do not attach them directly. If a maintainer asks for logs, choose **Help → Save Diagnostics…**. It saves launcher and game logs, and the SDK logs for China, China (Bilibili), and Taiwan, to Downloads. The launcher redacts your home folder, user name, and URL queries. It does not remove account IDs or access keys. Review the file before you attach it.
 
 ## What cleanup removes
 

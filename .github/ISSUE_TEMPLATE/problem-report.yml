@@ -125,7 +125,7 @@ body:
     id: logs
     attributes:
       label: Log files (only when requested)
-      description: Leave this empty for the first report. If a maintainer asks for logs, choose Help → Save Diagnostics. Review the file. Then attach it. For China, China (Bilibili), and Taiwan, also attach the sdklogs/<publisher> folder from Reveal logs. unity.log and the SDK logs can contain account IDs and access keys. After you post them, remove them or sign out of your account.
+      description: Leave this empty for the first report. If a maintainer asks for logs, choose Help → Save Diagnostics. Review the file. Then attach it. The file already contains the SDK logs for China, China (Bilibili), and Taiwan. unity.log and the SDK logs can contain account IDs and access keys. After you post them, remove them or sign out of your account.
 
   - type: checkboxes
     id: checks

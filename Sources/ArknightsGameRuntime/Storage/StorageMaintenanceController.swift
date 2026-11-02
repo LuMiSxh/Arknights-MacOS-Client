@@ -116,6 +116,11 @@ package final class StorageMaintenanceController {
 		}
 	}
 
+	/// Refreshes the collected publisher SDK logs before a diagnostics archive reads them.
+	package func refreshSDKLogs() async {
+		await SDKLogCollector.collect(publisher: regionProvider().publisher, paths: paths, log: log)
+	}
+
 	private func presentCacheFailure(_ error: any Error, id: UUID, region: GameRegion) {
 		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(

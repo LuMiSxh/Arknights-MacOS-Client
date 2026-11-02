@@ -33,7 +33,6 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	let systemImage: String
 	let answers: [OnboardingAnswer<Value>]
 	private let interaction: Interaction
-	let accentColor: Color
 	let isDisabled: Bool
 	let footnote: String?
 	let accessory: Accessory
@@ -41,14 +40,13 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 
 	private init(
 		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
-		interaction: Interaction, accentColor: Color, isDisabled: Bool, footnote: String?,
+		interaction: Interaction, isDisabled: Bool, footnote: String?,
 		accessory: Accessory
 	) {
 		self.question = question
 		self.systemImage = systemImage
 		self.answers = answers
 		self.interaction = interaction
-		self.accentColor = accentColor
 		self.isDisabled = isDisabled
 		self.footnote = footnote
 		self.accessory = accessory
@@ -58,11 +56,11 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	// preview of the current choice above the cards.
 	init(
 		question: String, systemImage: String, actions: [OnboardingAnswer<Value>],
-		accentColor: Color, @ViewBuilder accessory: () -> Accessory
+		@ViewBuilder accessory: () -> Accessory
 	) {
 		self.init(
 			question: question, systemImage: systemImage, answers: actions, interaction: .action,
-			accentColor: accentColor, isDisabled: false, footnote: nil, accessory: accessory())
+			isDisabled: false, footnote: nil, accessory: accessory())
 	}
 
 	var body: some View {
@@ -178,22 +176,22 @@ extension OnboardingQuestion where Accessory == EmptyView {
 	// One answer, applied the moment it is picked. The footnote adds a hint under the cards.
 	init(
 		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
-		selection: Binding<Value?>, accentColor: Color, isDisabled: Bool = false,
+		selection: Binding<Value?>, isDisabled: Bool = false,
 		footnote: String? = nil
 	) {
 		self.init(
 			question: question, systemImage: systemImage, answers: answers,
-			interaction: .single(selection), accentColor: accentColor, isDisabled: isDisabled,
+			interaction: .single(selection), isDisabled: isDisabled,
 			footnote: footnote, accessory: EmptyView())
 	}
 
 	init(
 		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
-		selections: Binding<Set<Value>>, accentColor: Color
+		selections: Binding<Set<Value>>
 	) {
 		self.init(
 			question: question, systemImage: systemImage, answers: answers,
-			interaction: .multiple(selections), accentColor: accentColor, isDisabled: false,
+			interaction: .multiple(selections), isDisabled: false,
 			footnote: nil, accessory: EmptyView())
 	}
 }

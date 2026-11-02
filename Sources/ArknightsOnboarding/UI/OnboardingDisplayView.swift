@@ -20,7 +20,6 @@ struct OnboardingDisplayView: View {
 				systemImage: "macwindow",
 				answers: GamePlacementAnswer.allCases.map(\.answer),
 				selection: answerBinding(\.placement),
-				accentColor: accentColor,
 				isDisabled: isLocked
 			)
 			if answers.placement == .window {
@@ -31,7 +30,6 @@ struct OnboardingDisplayView: View {
 						$0.answer(on: GameScreenMetrics.main)
 					},
 					selection: answerBinding(\.windowSize),
-					accentColor: accentColor,
 					isDisabled: isLocked
 				)
 			}
@@ -40,7 +38,6 @@ struct OnboardingDisplayView: View {
 				systemImage: "sparkles",
 				answers: GameRenderingMode.allCases.map(\.answer),
 				selection: answerBinding(\.rendering),
-				accentColor: accentColor,
 				isDisabled: isLocked
 			)
 			OnboardingQuestion(
@@ -48,7 +45,6 @@ struct OnboardingDisplayView: View {
 				systemImage: "speedometer",
 				answers: GameFrameRateLimit.allCases.map(\.answer),
 				selection: answerBinding(\.frameRateLimit),
-				accentColor: accentColor,
 				isDisabled: isLocked,
 				footnote: "Lower limits save battery."
 			)
@@ -59,7 +55,6 @@ struct OnboardingDisplayView: View {
 				systemImage: "cursorarrow.motionlines",
 				answers: PointerAnswer.allCases.map(\.answer),
 				selection: pointerBinding,
-				accentColor: accentColor,
 				isDisabled: isLocked
 			)
 			Text(displaySummary)

@@ -37,14 +37,12 @@ package struct FloatingActionFooterFade: View {
 /// Shared floating glass container for modal and onboarding actions. Single-row actions remain
 /// capsule-like; expanded action groups use a fixed-radius rounded rectangle.
 package struct FloatingActionBar<Content: View>: View {
-	// Kept for existing call sites; the theme supplies the color.
-	let tint: Color
+
 	var spacing: CGFloat = 12
 	@ViewBuilder package let content: Content
 	@State private var contentHeight: CGFloat = 0
 
-	package init(tint: Color, spacing: CGFloat = 12, @ViewBuilder content: () -> Content) {
-		self.tint = tint
+	package init(spacing: CGFloat = 12, @ViewBuilder content: () -> Content) {
 		self.spacing = spacing
 		self.content = content()
 	}

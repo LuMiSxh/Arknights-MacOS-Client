@@ -32,7 +32,6 @@ struct OnboardingRegionView: View {
 				answers: preferences.regionAccess.selectableRegions.map(
 					Self.regionAnswer),
 				selection: regionBinding,
-				accentColor: accentColor,
 				isDisabled: !canSwitchRegion
 			)
 

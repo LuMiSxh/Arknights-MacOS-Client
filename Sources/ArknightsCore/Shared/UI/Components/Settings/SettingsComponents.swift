@@ -258,18 +258,6 @@ package enum SettingsPanelTone {
 		return color
 	}
 
-	func border(for contrast: ColorSchemeContrast, in palette: LauncherPalette) -> Color {
-		let opacity =
-			contrast == .increased
-			? LauncherVisuals.Control.semanticBorderHighContrastOpacity
-			: LauncherVisuals.Control.semanticBorderOpacity
-		return switch self {
-		case .neutral: palette.panelBorder
-		case .success: LauncherVisuals.success.opacity(opacity)
-		case .warning: LauncherVisuals.warning.opacity(opacity)
-		case .danger: LauncherVisuals.dangerForeground.opacity(opacity)
-		}
-	}
 }
 
 package struct DangerZonePanel<Content: View>: View {

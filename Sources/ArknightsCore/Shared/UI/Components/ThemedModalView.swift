@@ -4,8 +4,7 @@ import SwiftUI
 
 package struct ThemedModalView<Content: View, Actions: View>: View {
 	let title: String
-	// Kept for existing call sites; the theme supplies the color.
-	let hudTintColor: Color
+
 	package let width: CGFloat
 	package let height: CGFloat
 	let minimumWidth: CGFloat
@@ -18,7 +17,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 
 	package init(
 		title: String,
-		hudTintColor: Color,
+
 		width: CGFloat,
 		height: CGFloat,
 		minimumWidth: CGFloat = 480,
@@ -27,7 +26,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 		@ViewBuilder actions: () -> Actions
 	) {
 		self.title = title
-		self.hudTintColor = hudTintColor
+
 		self.width = width
 		self.height = height
 		self.minimumWidth = minimumWidth
@@ -68,7 +67,7 @@ package struct ThemedModalView<Content: View, Actions: View>: View {
 			.scrollIndicators(.automatic)
 		}
 		.safeAreaInset(edge: .bottom, spacing: 0) {
-			FloatingActionBar(tint: hudTintColor) {
+			FloatingActionBar {
 				actions
 			}
 			.textSelection(.disabled)

@@ -69,7 +69,6 @@ package struct PresetGalleryView: View {
 				.padding(.vertical, 16)
 				PresetGallerySuggestions(
 					destination: destination,
-					accentColor: customization.accentColor,
 					avatars: hasSearchQuery ? searchResults.filteredAvatars : [],
 					wallpaperTerms: hasSearchQuery ? searchResults.wallpaperTerms : []
 				) { selection in
@@ -90,7 +89,6 @@ package struct PresetGalleryView: View {
 							} else {
 								PresetWallpaperGrid(
 									catalog: catalog,
-									accentColor: customization.accentColor,
 									wallpapers: searchResults.filteredWallpapers,
 									applyingItemID: applyingItemID,
 									onSelect: applyWallpaper
@@ -104,7 +102,6 @@ package struct PresetGalleryView: View {
 							} else {
 								PresetAvatarGrid(
 									catalog: catalog,
-									accentColor: customization.accentColor,
 									avatars: searchResults.filteredAvatars,
 									applyingItemID: applyingItemID,
 									onSelect: applyAvatar
@@ -119,7 +116,7 @@ package struct PresetGalleryView: View {
 				.contentMargins(.bottom, 24, for: .scrollIndicators)
 			}
 			FloatingActionFooterFade(height: 56)
-			FloatingActionBar(tint: customization.hudTintColor) {
+			FloatingActionBar {
 				FloatingDoneButton(accentColor: customization.accentColor) {
 					dismiss()
 				}
