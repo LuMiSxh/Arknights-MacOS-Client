@@ -87,7 +87,9 @@ private struct LauncherSurfaceModifier: ViewModifier {
 		let shape = customShape ?? defaultShape
 		switch kind {
 		case .sheet:
-			surface(content, tint: theme.sheetTint, shape: shape)
+			// Sheets are opaque so the artwork never shows through the settings text.
+			content
+				.background { shape.fill(theme.sheetSolid) }
 				.overlay { shape.stroke(theme.hairline) }
 				.clipShape(shape)
 		case .modal:

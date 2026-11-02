@@ -2,6 +2,7 @@
 
 import AppKit
 import ArknightsCore
+import ArknightsCustomization
 import SwiftUI
 
 /// A resizable window that shows its content size. "Use This Size" stores that size as the
@@ -17,14 +18,17 @@ package struct GameWindowMeasureView: View {
 	}
 
 	package var body: some View {
-		GameWindowMeasurePanel(settings: model.settings)
+		GameWindowMeasurePanel(settings: model.settings, customization: model.customization)
+			// Dark like Home: the artwork sits behind every control, whatever the Appearance.
 			.launcherTheme(accent: model.customization.accentColor)
+			.environment(\.colorScheme, .dark)
 	}
 }
 
 /// Sits below the `launcherTheme` modifier, so it can read the theme from the environment.
 private struct GameWindowMeasurePanel: View {
 	let settings: LauncherPreferencesController
+	let customization: CustomizationController
 	@Environment(\.launcherTheme) private var theme
 	@Environment(\.dismissWindow) private var dismissWindow
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -59,7 +63,7 @@ private struct GameWindowMeasurePanel: View {
 			minHeight: CGFloat(AppConstants.Game.customWindowMinimum.height)
 		)
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
-		.background { theme.sheetSolid.ignoresSafeArea() }
+		.background { backdrop }
 		.background(WindowAspectRatioLock(isLocked: locksWidescreen))
 		.onGeometryChange(for: GameDisplaySize.self) { proxy in
 			GameDisplaySize(
@@ -67,6 +71,26 @@ private struct GameWindowMeasurePanel: View {
 		} action: {
 			measuredSize = $0
 		}
+	}
+
+	/// The hero artwork fills the window, as it fills the game. The scrim keeps the labels and the
+	/// frame readable over the artwork. The sheet color shows when no artwork is set.
+	private var backdrop: some View {
+		ZStack {
+			if let image = customization.heroArtwork {
+				Image(nsImage: image)
+					.resizable()
+					.scaledToFill()
+					.frame(maxWidth: .infinity, maxHeight: .infinity)
+					.clipped()
+				theme.scrim
+			} else {
+				theme.sheetSolid
+			}
+		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity)
+		.ignoresSafeArea()
+		.allowsHitTesting(false)
 	}
 
 	/// The frame fills the space that the labels and controls leave, so it tracks the window size.

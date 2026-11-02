@@ -7,6 +7,7 @@ package struct ThemedTextField: View {
 	let prompt: String?
 	@Binding package var text: String
 	var systemImage: String?
+	var leadingText: String?
 
 	@Environment(\.launcherTheme) private var theme
 	@Environment(\.isEnabled) private var isEnabled
@@ -16,20 +17,27 @@ package struct ThemedTextField: View {
 		_ title: String,
 		prompt: String? = nil,
 		text: Binding<String>,
-		systemImage: String? = nil
+		systemImage: String? = nil,
+		leadingText: String? = nil
 	) {
 		self.title = title
 		self.prompt = prompt
 		_text = text
 		self.systemImage = systemImage
+		self.leadingText = leadingText
 	}
 
 	package var body: some View {
 		HStack(spacing: 8) {
-			if let systemImage {
+			if let leadingText {
+				Text(leadingText)
+					.font(.callout.weight(.medium))
+					.foregroundStyle(theme.accentInk)
+					.accessibilityHidden(true)
+			} else if let systemImage {
 				Image(systemName: systemImage)
 					.font(.caption)
-					.foregroundStyle(theme.textSecondary)
+					.foregroundStyle(theme.accentInk)
 					.accessibilityHidden(true)
 			}
 

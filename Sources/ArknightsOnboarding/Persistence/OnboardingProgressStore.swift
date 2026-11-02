@@ -10,7 +10,7 @@ import Foundation
 package struct OnboardingProgressStore {
 	// 2: launcher 0.7.0 replaced display settings with setup questions, so everyone answers them.
 	// 3: launcher 0.8.0 asks every returning player to review setup once more. It reorganizes
-	// settings, changes fullscreen, and reworks Dynamic Theme.
+	// settings, changes fullscreen, and adds light mode and Home controls.
 	static let currentSchemaVersion = 3
 	// Schemas returning players must finish before Skip Setup returns. Give each one a reason in
 	// `OnboardingWelcomeView.requiredSetupReason(schema:)`.

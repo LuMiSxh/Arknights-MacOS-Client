@@ -29,11 +29,11 @@ private struct CustomWindowSizeRow: View {
 				"Width and height in points. Press Return to apply. Measure With a Window… reads the size of a resizable window."
 		) {
 			HStack(spacing: LauncherTokens.Spacing.control) {
-				ThemedTextField("Width", prompt: "Width", text: $widthText)
+				ThemedTextField("Width", text: $widthText, leadingText: "W")
 					.frame(width: 96)
 				Text("×")
 					.foregroundStyle(theme.textSecondary)
-				ThemedTextField("Height", prompt: "Height", text: $heightText)
+				ThemedTextField("Height", text: $heightText, leadingText: "H")
 					.frame(width: 96)
 				CapsuleActionButton(
 					title: "Measure With a Window…", systemImage: "ruler", tone: .neutral,

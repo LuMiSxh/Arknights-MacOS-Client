@@ -67,12 +67,17 @@ extension LauncherViewModel {
 	}
 
 	/// Lists the publisher SDK logs that `SDKLogCollector` copied for the installed region.
-	private func sdkLogItems() throws -> [DiagnosticsBundle.Item] {
-		let publisher = installation.region.publisher
-		let directory = paths.collectedSDKLogDirectory(for: publisher)
-		guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
+	/// Lists the collected SDK logs for `publisher` as archive items, sorted by name.
+	///
+	/// Symlinks and subdirectories are skipped, so the archive never follows a link out of the logs folder.
+	static func sdkLogItems(
+		in directory: URL,
+		publisher: GamePublisher,
+		fileManager: FileManager = .default
+	) throws -> [DiagnosticsBundle.Item] {
+		guard fileManager.fileExists(atPath: directory.path) else { return [] }
 		let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
-		let files = try FileManager.default.contentsOfDirectory(
+		let files = try fileManager.contentsOfDirectory(
 			at: directory, includingPropertiesForKeys: Array(keys))
 		return try files.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap { file in
 			let values = try file.resourceValues(forKeys: keys)
@@ -81,6 +86,12 @@ extension LauncherViewModel {
 				archivePath: "Logs/sdklogs/\(publisher.rawValue)/\(file.lastPathComponent)",
 				content: .redactedLog(file))
 		}
+	}
+
+	private func sdkLogItems() throws -> [DiagnosticsBundle.Item] {
+		let publisher = installation.region.publisher
+		return try Self.sdkLogItems(
+			in: paths.collectedSDKLogDirectory(for: publisher), publisher: publisher)
 	}
 
 	private var environmentSummary: String {

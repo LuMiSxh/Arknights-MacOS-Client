@@ -157,7 +157,7 @@ struct OnboardingWelcomeView: View {
 		case 2:
 			"Display settings work differently in this version. Confirm display mode, rendering and cursor once."
 		case 3:
-			"This version reorganizes settings, changes fullscreen, and reworks Dynamic Theme. Go through each step once to review your setup."
+			"This version adds light mode and Home controls, reorganizes settings, and changes fullscreen. Go through each step once to review your setup."
 		default:
 			"The launcher changed how an important setting works. Go through each step once so everything keeps working."
 		}

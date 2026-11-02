@@ -25,10 +25,7 @@ struct PresetGallerySearchBar: View {
 		HStack(spacing: 8) {
 			Image(systemName: "magnifyingglass")
 				.font(.caption)
-				.adaptiveControlForeground(
-					isFocused ? theme.accentInk : theme.textSecondary,
-					disabledTint: theme.textSecondary
-				)
+				.adaptiveControlForeground(theme.accentInk, disabledTint: theme.textSecondary)
 				.accessibilityHidden(true)
 
 			if destination == .artwork {
