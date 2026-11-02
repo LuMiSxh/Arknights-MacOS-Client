@@ -178,7 +178,7 @@ package struct OnboardingView: View {
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background {
-			theme.sheetTint
+			theme.sheetSolid
 				.ignoresSafeArea(.container, edges: .top)
 		}
 		.tint(theme.accentFill)

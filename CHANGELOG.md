@@ -13,44 +13,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- SDK logs for China, China (Bilibili), and Taiwan are now collected with the launcher logs. **Reveal logs** shows them in the `sdklogs` folder, and **Save diagnostics…** includes them.
-- Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
-- Added **Save diagnostics…** to **Settings → Help**. It saves a zip file to your Downloads folder.
-- The zip holds logs and environment details. The environment details include display settings, installed regions, macOS, chip, and memory.
-- The logs redact your home folder, your user name, and URL queries. Nothing is uploaded.
-- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited.
+- Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**. The choice applies to Settings, setup, and dialogs.
+- Added **Home controls** and **Branding** under **Settings → Appearance → Dynamic Theme**. Each one can follow the brightness of the artwork, or stay dark or light. In light mode, the logo is black and the backdrop is white.
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
-- Added a **Help** menu with **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support.
-- Added **Report a Problem…** to the Dock menu.
-- The failure sheet can copy the support code.
+- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited.
+- Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
+- Added a **Help** section to **Settings** and a **Help** menu. They hold **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support. **Report a Problem…** is also in the Dock menu.
+- Added **Save diagnostics…**. It saves a zip file to your Downloads folder. The zip holds the logs, the SDK logs, and environment details such as display settings, installed regions, macOS, chip, and memory.
+- The logs in the diagnostics zip redact your home folder, your user name, and URL queries. SDK logs can still contain account IDs and access keys, so review the zip before you share it. Nothing is uploaded.
+- The launcher now collects the SDK logs for China, China (Bilibili), and Taiwan. **Reveal logs** shows them in the `sdklogs` folder.
 - Added **Contact the Developer** to **Settings → Help** for private messages, feedback, and testing offers.
+- The failure sheet can copy the support code.
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
-- Added **Settings → Appearance** to choose System, Light, or Dark for settings, setup, and dialogs. Home has its own controls setting.
-- **Home controls** can follow the artwork, or stay dark or light. Set this under **Settings → Appearance → Dynamic Theme**.
-- **Branding** can follow **Home controls**, or stay dark or light. Set this under **Settings → Appearance → Dynamic Theme**.
 
 ### Changed
 
-- Renamed **Settings → Audio** to **Settings → Integration**. It holds launcher music and Discord presence.
-- Setup asks about Discord presence. The setup step is now **Updates & integrations**.
-- Refined the launcher look. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
-- Secondary buttons and links in Settings, setup, and the update window now use quiet neutral colors. The theme color marks only the main action, progress, and selection.
-- **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
-- Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.
+- Rebuilt the launcher design on one color theme for dark and light. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
+- Secondary buttons and links in Settings, setup, and the update window use quiet neutral colors. The theme color marks only the main action, progress, and selection. Destructive buttons use a red tint in dark and light.
+- The selection in the Settings sidebar now slides between rows.
+- Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
+- Renamed **Settings → Audio** to **Settings → Integration**. It holds launcher music and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & integrations**.
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
+- **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
 - Onboarding answer cards use quieter hover and press effects.
-- Fullscreen mode now opens the game in its own macOS Space, so you can switch apps and Spaces normally (requires runtime 0.8.0-rc3 or newer).
-- **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
-- Runtime 0.8.0 updates DXMT to 0.80-361. It includes the upstream fixes for the display query leaks.
-- The launcher now remembers when you mute the music.
-- Playlists now start on a random track without playing the first track briefly.
-- Runtime 0.8.0-rc2 is built with the macOS 27 SDK. The game window uses the current macOS window style.
+- Dialogs and help texts use plain words instead of technical terms such as partial files. Repair and reset actions still name the Wine prefix they change.
 - All report actions use the name **Report a Problem**. **Settings → Help** separates problems on this Mac from account and payment problems.
 - Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
 - The problem report form asks for logs only when a maintainer requests them.
-- **Settings** has a new **Help** section with problem reports, diagnostics, and the troubleshooting guide.
-- Setup runs once more after this update so you can review the new options, including the reworked **Dynamic Theme**, **Appearance**, **Home controls**, and **Branding**.
+- Fullscreen mode now opens the game in its own macOS Space, so you can switch apps and Spaces normally (requires runtime 0.8.0-rc3 or newer).
+- **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
+- Runtime 0.8.0 updates DXMT to 0.80-361. It includes the upstream fixes for the display query leaks.
+- Runtime 0.8.0-rc2 is built with the macOS 27 SDK. The game window uses the current macOS window style.
+- The launcher now remembers when you mute the music.
+- Playlists now start on a random track without playing the first track briefly.
 
 ### Fixed
 

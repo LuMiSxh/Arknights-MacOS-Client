@@ -7,6 +7,8 @@ import SwiftUI
 package struct LauncherTheme: Equatable, Sendable {
 	package let scrim: Color
 	package let sheetTint: Color
+	// The sheet color without transparency, for windows that must not show the artwork.
+	package let sheetSolid: Color
 	package let modalTint: Color
 	package let modalDim: Color
 	package let hairline: Color
@@ -92,6 +94,7 @@ package struct LauncherTheme: Equatable, Sendable {
 		scrim = Color.black.opacity(isDark ? 0.40 : 0.16)
 		// Reduced transparency makes the sheet and modal opaque.
 		sheetTint = sheetBase.opacity(reduceTransparency ? 1 : (isDark ? 0.90 : 0.94))
+		sheetSolid = sheetBase
 		modalTint = sheetBase.opacity(reduceTransparency ? 1 : 0.94)
 		modalDim = Color.black.opacity(isDark ? 0.40 : 0.20)
 		hairline = ink(0.08 * edge, 0.08 * edge)
