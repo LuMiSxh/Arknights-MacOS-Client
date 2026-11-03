@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Testing
 
 @testable import ArknightsCore
@@ -20,11 +21,12 @@ struct TaskSlotTests {
 		#expect(!slot.owns(second))
 	}
 
-	@Test
+	@Test(.timeLimit(.minutes(1)))
 	func replaceCancelsThePreviousTask() async {
 		let slot = TaskSlot()
 		let first = slot.replace { _ in
-			while !Task.isCancelled { await Task.yield() }
+			// Never fired: `wait()` returns only when the slot cancels this task.
+			await Signal().wait()
 		}
 		let second = slot.replace { _ in }
 		await first.value

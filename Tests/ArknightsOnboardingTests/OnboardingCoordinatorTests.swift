@@ -116,12 +116,13 @@ struct OnboardingCoordinatorTests {
 		#expect(store.needsOnboarding == updateIsAvailable, Comment(rawValue: caseLabel))
 	}
 
-	@Test
+	@Test(.timeLimit(.minutes(1)))
 	func retryDuringPendingCheckWinsOverStaleResult() async {
 		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
 		var staleCheck: CheckedContinuation<LauncherUpdateCheckOutcome, Never>?
+		let staleCheckStarted = Signal()
 		var intelChecks = 0
 
 		let first = Task {
@@ -132,6 +133,7 @@ struct OnboardingCoordinatorTests {
 				checkForUpdates: {
 					await withCheckedContinuation { continuation in
 						staleCheck = continuation
+						staleCheckStarted.fire()
 					}
 				},
 				checkIntelTranslation: {
@@ -140,7 +142,7 @@ struct OnboardingCoordinatorTests {
 				}
 			)
 		}
-		while staleCheck == nil { await Task.yield() }
+		await staleCheckStarted.wait()
 
 		await coordinator.retryUpdateCheck(
 			{ .current },

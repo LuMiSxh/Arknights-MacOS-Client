@@ -12,6 +12,7 @@ package actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 	private var requests: [Request?] = []
 	private var nextID = 0
 	private var cancelledIDs: Set<Int> = []
+	private var countWaiters: [(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
 
 	package init() {}
 
@@ -25,6 +26,7 @@ package actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 					continuation.resume(throwing: CancellationError())
 				} else {
 					requests.append(Request(id: id, payload: payload, continuation: continuation))
+					resumeCountWaiters()
 				}
 			}
 		} onCancel: {
@@ -33,7 +35,14 @@ package actor ControlledRequestGate<Value: Sendable, Payload: Sendable> {
 	}
 
 	package func waitForRequestCount(_ count: Int) async {
-		while requests.count < count { await Task.yield() }
+		guard requests.count < count else { return }
+		await withCheckedContinuation { countWaiters.append((count, $0)) }
+	}
+
+	private func resumeCountWaiters() {
+		let ready = countWaiters.filter { requests.count >= $0.count }
+		countWaiters.removeAll { requests.count >= $0.count }
+		for waiter in ready { waiter.continuation.resume() }
 	}
 
 	package func payload(at index: Int) -> Payload? {

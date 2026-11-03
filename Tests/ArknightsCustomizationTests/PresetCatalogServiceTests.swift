@@ -105,7 +105,7 @@ struct PresetCatalogServiceTests {
 		)
 		let url = URL(string: "https://cdn.jsdelivr.net/epoch.png")!
 		let download = Task { try await service.imageData(for: url, cacheKey: "epoch") }
-		while !EpochImageURLProtocol.isRequestStarted { await Task.yield() }
+		#expect(await EpochImageURLProtocol.waitForRequestStart())
 		try await service.clearCaches()
 		EpochImageURLProtocol.release()
 		_ = try? await download.value
@@ -122,18 +122,18 @@ private final class EpochImageURLProtocol: URLProtocol, @unchecked Sendable {
 	)!
 	static let gate = DispatchSemaphore(value: 0)
 	private static let lock = NSLock()
-	nonisolated(unsafe) static var requestStarted = false
+	nonisolated(unsafe) static var requestStartedSignal = Signal()
 	nonisolated(unsafe) static var requestCount = 0
 
 	override class func canInit(with request: URLRequest) -> Bool { true }
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
-		let isFirstRequest = Self.lock.withLock {
+		let (started, isFirstRequest) = Self.lock.withLock { () -> (Signal, Bool) in
 			Self.requestCount += 1
-			Self.requestStarted = true
-			return Self.requestCount == 1
+			return (Self.requestStartedSignal, Self.requestCount == 1)
 		}
+		started.fire()
 		if isFirstRequest { Self.gate.wait() }
 		let response = HTTPURLResponse(
 			url: request.url!,
@@ -148,14 +148,15 @@ private final class EpochImageURLProtocol: URLProtocol, @unchecked Sendable {
 
 	override func stopLoading() {}
 
-	static var isRequestStarted: Bool {
-		lock.withLock { requestStarted }
+	static func waitForRequestStart() async -> Bool {
+		let signal = lock.withLock { requestStartedSignal }
+		return await signal.wait(timeout: .seconds(10))
 	}
 
 	static func reset() {
 		while gate.wait(timeout: .now()) == .success {}
 		lock.withLock {
-			requestStarted = false
+			requestStartedSignal = Signal()
 			requestCount = 0
 		}
 	}

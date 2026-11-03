@@ -19,7 +19,7 @@ struct CustomizationControllerTests {
 		case manualIconOverStartupRestore
 	}
 
-	@Test(arguments: Race.allCases)
+	@Test(.timeLimit(.minutes(1)), arguments: Race.allCases)
 	func newerArtworkSelectionRejectsAnOlderDelayedRead(race: Race) async throws {
 		switch race {
 		case .artworkSelection: try await artworkSelectionRace()

@@ -39,7 +39,7 @@ struct InstallationRecoveryTests {
 		#expect(switching.controller.completionFeedback == nil)
 	}
 
-	@Test(arguments: GameRegion.allCases)
+	@Test(.timeLimit(.minutes(1)), arguments: GameRegion.allCases)
 	func retryUsesTheOriginalRegion(region: GameRegion) async throws {
 		let fixture = try makeInstallationFixture(region: region)
 		defer { fixture.storage.remove() }
@@ -72,9 +72,7 @@ struct InstallationRecoveryTests {
 			region: .global
 		)
 		#expect(fixture.controller.retryInstallationFailure(id: repairID))
-		while await fixture.installer.requestedVerificationModes().count < 2 {
-			await Task.yield()
-		}
+		await fixture.installer.waitForInstallationCount(2)
 		#expect(await fixture.installer.requestedVerificationModes().last == true)
 		await fixture.installer.completeSuccessfully()
 		await fixture.controller.waitForCurrentInstallation()

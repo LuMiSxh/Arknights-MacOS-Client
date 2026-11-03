@@ -28,7 +28,7 @@ private final class ManualTickClock: Clock, @unchecked Sendable {
 	var now: Instant { Instant() }
 	var minimumResolution: Duration { .zero }
 
-	private var waiting: Int { lock.withLock { sleepers.count } }
+	private var tickWaiters: [CheckedContinuation<Void, Never>] = []
 
 	func sleep(until deadline: Instant, tolerance: Duration?) async throws {
 		let id = lock.withLock {
@@ -44,7 +44,11 @@ private final class ManualTickClock: Clock, @unchecked Sendable {
 					sleepers.append(Sleeper(id: id, continuation: continuation))
 					return false
 				}
-				if wasCancelled { continuation.resume(throwing: CancellationError()) }
+				if wasCancelled {
+					continuation.resume(throwing: CancellationError())
+				} else {
+					resumeTickWaiters()
+				}
 			}
 		} onCancel: {
 			let sleeper = lock.withLock { () -> Sleeper? in
@@ -55,9 +59,24 @@ private final class ManualTickClock: Clock, @unchecked Sendable {
 		}
 	}
 
+	private func resumeTickWaiters() {
+		let waiters = lock.withLock { () -> [CheckedContinuation<Void, Never>] in
+			defer { tickWaiters.removeAll() }
+			return tickWaiters
+		}
+		for waiter in waiters { waiter.resume() }
+	}
+
 	/// Waits until a monitor sleeps, then wakes it.
 	func tick() async {
-		while waiting == 0 { await Task.yield() }
+		await withCheckedContinuation { continuation in
+			let isReady = lock.withLock { () -> Bool in
+				if !sleepers.isEmpty { return true }
+				tickWaiters.append(continuation)
+				return false
+			}
+			if isReady { continuation.resume() }
+		}
 		let sleeper = lock.withLock { sleepers.removeFirst() }
 		sleeper.continuation.resume()
 	}
@@ -65,19 +84,26 @@ private final class ManualTickClock: Clock, @unchecked Sendable {
 
 private actor UpdateLog {
 	private(set) var updates: [DownloadProgress] = []
-	func record(_ update: DownloadProgress) { updates.append(update) }
+	private var countWaiters: [(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
+	func record(_ update: DownloadProgress) {
+		updates.append(update)
+		let ready = countWaiters.filter { updates.count >= $0.count }
+		countWaiters.removeAll { updates.count >= $0.count }
+		for waiter in ready { waiter.continuation.resume() }
+	}
 
 	nonisolated var handler: GameInstaller.ProgressHandler {
 		{ [self] update in await record(update) }
 	}
 
 	func waitForCount(_ count: Int) async {
-		while updates.count < count { await Task.yield() }
+		guard updates.count < count else { return }
+		await withCheckedContinuation { countWaiters.append((count, $0)) }
 	}
 }
 
 struct InstallProgressMonitorTests {
-	@Test
+	@Test(.timeLimit(.minutes(1)))
 	func tickReportsAStallWhenNoBytesArrive() async {
 		let downloadClock = AdvancingClock()
 		let counter = ProgressCounter(totalBytes: 100, totalFiles: 2, clock: downloadClock)

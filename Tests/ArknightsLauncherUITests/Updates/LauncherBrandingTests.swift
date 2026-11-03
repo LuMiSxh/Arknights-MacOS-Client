@@ -55,7 +55,7 @@ struct LauncherBrandingURLProtocolTests {
 
 		RegionalLogoURLProtocol.beginOrdering()
 		let firstTask = Task { try await cache.imageData(for: first, region: .global) }
-		while !RegionalLogoURLProtocol.isFirstRequestStarted() { await Task.yield() }
+		#expect(await RegionalLogoURLProtocol.waitForFirstRequest())
 		let secondTask = Task { try await cache.imageData(for: second, region: .global) }
 		_ = try await secondTask.value
 		RegionalLogoURLProtocol.releaseFirst()
@@ -74,17 +74,17 @@ private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
 	private static let lock = NSLock()
 	private static let release = DispatchSemaphore(value: 0)
 	nonisolated(unsafe) static var delayFirst = false
-	nonisolated(unsafe) static var firstRequestStarted = false
+	nonisolated(unsafe) static var firstRequestSignal = Signal()
 
 	override class func canInit(with request: URLRequest) -> Bool { true }
 	override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
 	override func startLoading() {
 		if request.url?.path == "/first.jpg" {
-			let shouldDelay = Self.lock.withLock {
-				Self.firstRequestStarted = true
-				return Self.delayFirst
+			let (started, shouldDelay) = Self.lock.withLock { () -> (Signal, Bool) in
+				(Self.firstRequestSignal, Self.delayFirst)
 			}
+			started.fire()
 			if shouldDelay {
 				DispatchQueue.global(qos: .utility).async { [self] in
 					Self.release.wait()
@@ -113,16 +113,19 @@ private final class RegionalLogoURLProtocol: URLProtocol, @unchecked Sendable {
 	static func beginOrdering() {
 		lock.withLock {
 			delayFirst = true
-			firstRequestStarted = false
+			firstRequestSignal = Signal()
 		}
 	}
 	static func resetOrdering() {
 		while release.wait(timeout: .now()) == .success {}
 		lock.withLock {
 			delayFirst = false
-			firstRequestStarted = false
+			firstRequestSignal = Signal()
 		}
 	}
-	static func isFirstRequestStarted() -> Bool { lock.withLock { firstRequestStarted } }
+	static func waitForFirstRequest() async -> Bool {
+		let signal = lock.withLock { firstRequestSignal }
+		return await signal.wait(timeout: .seconds(10))
+	}
 	static func releaseFirst() { release.signal() }
 }
