@@ -11,6 +11,7 @@ struct LaunchRequest {
 	let executable: URL
 	let prefixDirectory: URL
 	let options: GameLaunchOptions
+	let usesBatterySaver: Bool
 	let usesHardwareCursor: Bool
 	let forceDisableRetina: Bool
 	let requestedAt: Date
@@ -125,6 +126,7 @@ extension GameSessionController {
 				sessionID: request.id,
 				region: request.region,
 				options: request.options,
+				batterySaver: request.usesBatterySaver,
 				graphicsDiagnosticsEnabled: graphicsDiagnosticsEnabled
 			)
 		)
@@ -266,6 +268,7 @@ extension GameSessionController {
 			metalPerformanceHUDEnabled: request.options.usesMetalPerformanceHUD,
 			synchronizationMode: request.options.synchronizationMode,
 			frameRateLimit: request.options.frameRateLimit,
+			displayRefreshRate: screen?.maximumFramesPerSecond ?? 0,
 			runtimeEnvironmentOverrides: prepared.environment,
 			clientVariant: request.region.clientVariant,
 			publisher: request.region.publisher,

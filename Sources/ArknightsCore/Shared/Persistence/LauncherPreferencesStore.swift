@@ -4,20 +4,40 @@ import Foundation
 
 @MainActor
 package struct LauncherPreferencesStore {
+	/// A persisted `UserDefaults` name. `resetToDefaults` removes the names marked `resettable`.
+	package protocol StoredPreference: Sendable {
+		var name: String { get }
+		var resettable: Bool { get }
+	}
+
 	/// A scalar `UserDefaults` preference with its single default; `sanitize` runs on every read and write.
-	package struct ScalarKey<Value: Sendable>: Sendable {
+	package struct ScalarKey<Value: Sendable>: StoredPreference {
 		package let name: String
 		let defaultValue: Value
+		package let resettable: Bool
 		let sanitize: @Sendable (Value) -> Value
 
 		init(
 			_ name: String,
 			default defaultValue: Value,
+			resettable: Bool = true,
 			sanitize: @escaping @Sendable (Value) -> Value = { $0 }
 		) {
 			self.name = name
 			self.defaultValue = defaultValue
+			self.resettable = resettable
 			self.sanitize = sanitize
+		}
+	}
+
+	/// A `UserDefaults` name stored as a bare string rather than a typed `ScalarKey`.
+	package struct RawKey: StoredPreference {
+		package let name: String
+		package let resettable: Bool
+
+		init(_ name: String, resettable: Bool) {
+			self.name = name
+			self.resettable = resettable
 		}
 	}
 
@@ -46,6 +66,8 @@ package struct LauncherPreferencesStore {
 		package static let dismissedInGameResolutionNote = ScalarKey(
 			"dismissedInGameResolutionNote", default: false)
 		package static let usesDynamicTheme = ScalarKey("usesDynamicTheme", default: true)
+		package static let batterySaverEnabled = ScalarKey("batterySaverEnabled", default: false)
+		static let batterySaverFrameRateLimit = "batterySaverFrameRateLimit"
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
 		static let gameLaunchOptions = "gameLaunchOptions"
 		static func installPath(for region: GameRegion) -> String {
@@ -63,6 +85,31 @@ package struct LauncherPreferencesStore {
 		static let launcherAppearance = "launcherAppearance"
 		static let homeTheme = "homeTheme"
 		static let brandingTheme = "brandingTheme"
+
+		// Every persisted name this store owns. Per-value families such as
+		// `dynamicThemeAccent.<cacheKey>` are written under dynamic names and are not listed here.
+		package static let all: [any StoredPreference] =
+			[
+				automaticLauncherUpdates, automaticGameUpdates, announcementsEnabled,
+				showsServerResetCountdown, showsGameVersion, showsBranding, playsLauncherMusic,
+				launcherMusicURL, showsPlayingMusic, showsDiscordPresence, launcherMusicVolume,
+				launcherMusicMuted, usesDynamicTheme, canaryFeaturesEnabled, taiwanClientEnabled,
+				usesHardwareCursor, dismissedInGameResolutionNote, batterySaverEnabled,
+				RawKey(gameLaunchOptions, resettable: true),
+				RawKey(batterySaverFrameRateLimit, resettable: true),
+				RawKey(acknowledgedACEWarningRegions, resettable: true),
+				RawKey(launcherAppearance, resettable: true),
+				RawKey(homeTheme, resettable: true),
+				RawKey(brandingTheme, resettable: true),
+				RawKey(seenAnnouncementIDs, resettable: false),
+				RawKey(selectedRegion, resettable: false),
+				RawKey(forceDisableRetina, resettable: false),
+				RawKey(preferencesMigrationVersion, resettable: false),
+				RawKey(onboardingCompletedSchemaVersion, resettable: false),
+				RawKey(onboardingCurrentStep, resettable: false),
+				RawKey(homeLuminanceCache, resettable: false),
+				RawKey(lastAppliedDynamicIconHue, resettable: false),
+			] + GameRegion.allCases.map { RawKey(installPath(for: $0), resettable: false) }
 	}
 
 	package let defaults: UserDefaults
@@ -185,6 +232,19 @@ package struct LauncherPreferencesStore {
 		defaults.set(theme.rawValue, forKey: Key.brandingTheme)
 	}
 
+	package func batterySaverFrameRateLimit() -> GameFrameRateLimit {
+		let stored = defaults.string(forKey: Key.batterySaverFrameRateLimit)
+			.flatMap(GameFrameRateLimit.init(rawValue:))
+		guard let stored, GameFrameRateLimit.batterySaverChoices.contains(stored) else {
+			return .fps30
+		}
+		return stored
+	}
+
+	package func setBatterySaverFrameRateLimit(_ limit: GameFrameRateLimit) {
+		defaults.set(limit.rawValue, forKey: Key.batterySaverFrameRateLimit)
+	}
+
 	package func hasAcknowledgedACEWarning(for region: GameRegion) -> Bool {
 		acknowledgedACEWarningRegions().contains(region.rawValue)
 	}
@@ -195,21 +255,11 @@ package struct LauncherPreferencesStore {
 		defaults.set(Array(regions).sorted(), forKey: Key.acknowledgedACEWarningRegions)
 	}
 
-	// Region, install locations, announcement history, and theme caches are kept.
+	// Region, install locations, announcement history, and theme caches are kept: they are
+	// registered with `resettable: false` in `Key.all`.
 	func removeResettablePreferences() {
-		for key in [
-			Key.automaticLauncherUpdates.name, Key.automaticGameUpdates.name,
-			Key.announcementsEnabled.name, Key.gameLaunchOptions,
-			Key.showsServerResetCountdown.name, Key.showsGameVersion.name, Key.showsBranding.name,
-			Key.playsLauncherMusic.name, Key.launcherMusicURL.name, Key.showsPlayingMusic.name,
-			Key.launcherMusicVolume.name, Key.launcherMusicMuted.name,
-			Key.showsDiscordPresence.name,
-			Key.usesDynamicTheme.name, Key.canaryFeaturesEnabled.name,
-			Key.taiwanClientEnabled.name, Key.acknowledgedACEWarningRegions,
-			Key.usesHardwareCursor.name, Key.dismissedInGameResolutionNote.name,
-			Key.launcherAppearance, Key.homeTheme, Key.brandingTheme,
-		] {
-			defaults.removeObject(forKey: key)
+		for preference in Key.all where preference.resettable {
+			defaults.removeObject(forKey: preference.name)
 		}
 	}
 

@@ -71,6 +71,29 @@ struct GamePerformanceSettingsPanel: View {
 				)
 				.disabled(isLocked || !launcherDisplayControl)
 			}
+			SettingsHairline()
+			SettingsActionRow(
+				title: "Battery Saver",
+				detail: "Caps the frame rate, uses lighter rendering, and turns off Game Mode.",
+				help: "Game changes apply at the next launch."
+			) {
+				SettingsToggle(
+					"Battery Saver",
+					isOn: $settings.batterySaverEnabled
+				)
+				.disabled(isLocked)
+			}
+			SettingsHairline()
+			SettingsActionRow(
+				title: "Battery Saver frame rate limit",
+				help: "Battery Saver uses the lower of this limit and the frame rate limit."
+			) {
+				GlassMenuPicker(
+					selection: $settings.batterySaverFrameRateLimit,
+					options: GameFrameRateLimit.batterySaverChoices.map { ($0, $0.displayName) },
+					isDisabled: isLocked || !settings.batterySaverEnabled
+				)
+			}
 		}
 	}
 

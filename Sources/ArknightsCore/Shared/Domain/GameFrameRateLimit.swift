@@ -15,6 +15,9 @@ package enum GameFrameRateLimit: String, CaseIterable, Codable, Sendable {
 		}
 	}
 
+	/// The caps Battery Saver can choose. Battery Saver never allows a higher cap than these.
+	package static let batterySaverChoices: [GameFrameRateLimit] = [.fps30, .fps60]
+
 	package var framesPerSecond: Int {
 		switch self {
 		case .fps30: 30

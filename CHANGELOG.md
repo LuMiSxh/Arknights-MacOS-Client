@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added **Home controls** and **Branding** under **Settings → Appearance → Dynamic Theme**. Each one can follow the brightness of the artwork, or stay dark or light. In light mode, the logo is black and the backdrop is white.
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
 - Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS.
+- Added **Battery Saver** to **Settings → Game → Performance**. At the next launch it caps the frame rate at 30 or 60 FPS, lowers **Rendering** from Retina, and turns off **Game Mode**.
 - Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
 - Added a **Help** section to **Settings** and a **Help** menu. They hold **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support. **Report a Problem…** is also in the Dock menu.
 - Added **Save Diagnostics…**. It saves a zip file to your Downloads folder. The zip holds the logs, the SDK logs, and environment details such as display settings, installed regions, macOS, chip, and memory. The logs redact your home folder, your user name, and URL queries. SDK logs can still contain account IDs and access keys, so review the zip before you share it. Nothing is uploaded. The launcher now collects the SDK logs for China, China (Bilibili), and Taiwan. Use **Show Logs** in **Settings → Storage** to see them in the `sdklogs` folder.
@@ -48,6 +49,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Playlists now start on a random track without playing the first track briefly.
 
 ### Fixed
+
+- The frame rate cap now divides the display refresh rate evenly. For example, a 60 FPS limit on a 144 Hz display runs at 48 FPS.
 
 - Launcher music now plays until the game window appears. It then fades out once, without stuttering.
 - The music controls no longer dim for a moment when you fade or change a track.

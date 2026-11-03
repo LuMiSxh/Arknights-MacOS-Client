@@ -8,6 +8,7 @@ extension GameSessionController {
 		sessionID: UUID,
 		region: GameRegion,
 		options: GameLaunchOptions,
+		batterySaver: Bool,
 		graphicsDiagnosticsEnabled: Bool
 	) -> String {
 		// One long `+` chain exceeds the type checker's budget once the option types are imported.
@@ -24,6 +25,7 @@ extension GameSessionController {
 			"gameMode=\(options.usesGameMode)",
 			"synchronization=\(options.synchronizationMode.displayName)",
 			"frameRateLimit=\(options.frameRateLimit.rawValue)",
+			"batterySaver=\(batterySaver ? "active" : "inactive")",
 			"graphicsDiagnostics=\(graphicsDiagnosticsEnabled)",
 		]
 		return "Game launch requested; " + fields.joined(separator: "; ")

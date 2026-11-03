@@ -96,4 +96,20 @@ struct LauncherPreferencesStoreTests {
 		#expect(store.brandingTheme() == .automatic)
 	}
 
+	@Test
+	func resetRemovesExactlyTheResettablePreferences() {
+		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let store = LauncherPreferencesStore(defaults: defaults)
+		for preference in Key.all {
+			defaults.set("stored", forKey: preference.name)
+		}
+
+		store.removeResettablePreferences()
+
+		for preference in Key.all {
+			let removed = defaults.object(forKey: preference.name) == nil
+			#expect(removed == preference.resettable, "\(preference.name)")
+		}
+	}
 }

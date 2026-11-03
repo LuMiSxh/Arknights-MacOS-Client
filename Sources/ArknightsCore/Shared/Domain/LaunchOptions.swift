@@ -137,6 +137,24 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		}
 	}
 
+	/// Battery Saver lowers the options a launch uses. It never raises a value, and it leaves
+	/// the Metal HUD and the synchronization mode unchanged.
+	package func applyingBatterySaver(
+		frameRateLimit saverLimit: GameFrameRateLimit, metalFXSupported: Bool
+	) -> GameLaunchOptions {
+		var options = self
+		options.usesGameMode = false
+		if frameRateLimit.framesPerSecond > saverLimit.framesPerSecond {
+			options.frameRateLimit = saverLimit
+		}
+		// Only Retina draws more pixels than MetalFX or Standard, so only Retina changes.
+		// Game settings own the rendering mode, so the launcher leaves it alone.
+		if !usesGameSettings, renderingMode == .retina {
+			options.renderingMode = metalFXSupported ? .metalFX : .standard
+		}
+		return options
+	}
+
 	/// The windowed size the game opens with. A size larger than the screen or the custom
 	/// maximum is scaled down; the stored size stays unchanged.
 	package func launchWindowSize(on screen: GameScreenMetrics?) -> GameDisplaySize {

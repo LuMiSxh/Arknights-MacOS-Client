@@ -7,8 +7,9 @@ import Observation
 @Observable
 package final class LauncherPreferencesController {
 	private let log: LauncherLog?
-	package var launchOptions: GameLaunchOptions {
+	package var launchOptions: GameLaunchOptions = .default {
 		didSet {
+			guard isLoaded else { return }
 			do {
 				try store.setLaunchOptions(launchOptions)
 			} catch {
@@ -16,80 +17,98 @@ package final class LauncherPreferencesController {
 			}
 		}
 	}
-	package var automaticallyChecksLauncherUpdates: Bool {
+	package var automaticallyChecksLauncherUpdates = Key.automaticLauncherUpdates.defaultValue {
 		didSet {
-			store.set(automaticallyChecksLauncherUpdates, for: Key.automaticLauncherUpdates)
+			persist(automaticallyChecksLauncherUpdates, for: Key.automaticLauncherUpdates)
 			if automaticallyChecksLauncherUpdates { onLauncherUpdateCheckRequested?() }
 		}
 	}
-	package var automaticallyChecksGameUpdates: Bool {
+	package var automaticallyChecksGameUpdates = Key.automaticGameUpdates.defaultValue {
 		didSet {
-			store.set(automaticallyChecksGameUpdates, for: Key.automaticGameUpdates)
+			persist(automaticallyChecksGameUpdates, for: Key.automaticGameUpdates)
 			if automaticallyChecksGameUpdates { onGameUpdateCheckRequested?() }
 		}
 	}
-	package var announcementsEnabled: Bool {
+	package var announcementsEnabled = Key.announcementsEnabled.defaultValue {
 		didSet {
-			store.set(announcementsEnabled, for: Key.announcementsEnabled)
+			persist(announcementsEnabled, for: Key.announcementsEnabled)
 			if announcementsEnabled { onAnnouncementCheckRequested?() }
 		}
 	}
-	package var showsServerResetCountdown: Bool {
-		didSet { store.set(showsServerResetCountdown, for: Key.showsServerResetCountdown) }
+	package var showsServerResetCountdown = Key.showsServerResetCountdown.defaultValue {
+		didSet { persist(showsServerResetCountdown, for: Key.showsServerResetCountdown) }
 	}
-	package var showsGameVersion: Bool {
-		didSet { store.set(showsGameVersion, for: Key.showsGameVersion) }
+	package var showsGameVersion = Key.showsGameVersion.defaultValue {
+		didSet { persist(showsGameVersion, for: Key.showsGameVersion) }
 	}
-	package var showsBranding: Bool {
-		didSet { store.set(showsBranding, for: Key.showsBranding) }
+	package var showsBranding = Key.showsBranding.defaultValue {
+		didSet { persist(showsBranding, for: Key.showsBranding) }
 	}
-	package var playsLauncherMusic: Bool {
-		didSet { store.set(playsLauncherMusic, for: Key.playsLauncherMusic) }
+	package var playsLauncherMusic = Key.playsLauncherMusic.defaultValue {
+		didSet { persist(playsLauncherMusic, for: Key.playsLauncherMusic) }
 	}
-	package var launcherMusicURL: String {
-		didSet { store.set(launcherMusicURL, for: Key.launcherMusicURL) }
+	package var launcherMusicURL = Key.launcherMusicURL.defaultValue {
+		didSet { persist(launcherMusicURL, for: Key.launcherMusicURL) }
 	}
-	package var showsPlayingMusic: Bool {
-		didSet { store.set(showsPlayingMusic, for: Key.showsPlayingMusic) }
+	package var showsPlayingMusic = Key.showsPlayingMusic.defaultValue {
+		didSet { persist(showsPlayingMusic, for: Key.showsPlayingMusic) }
 	}
-	package var showsDiscordPresence: Bool {
+	package var showsDiscordPresence = Key.showsDiscordPresence.defaultValue {
 		didSet {
-			store.set(showsDiscordPresence, for: Key.showsDiscordPresence)
+			persist(showsDiscordPresence, for: Key.showsDiscordPresence)
 			onDiscordPresenceChanged?()
 		}
 	}
-	package var launcherMusicVolume: Double {
-		didSet { store.set(launcherMusicVolume, for: Key.launcherMusicVolume) }
+	package var launcherMusicVolume = Key.launcherMusicVolume.defaultValue {
+		didSet { persist(launcherMusicVolume, for: Key.launcherMusicVolume) }
 	}
-	package var launcherMusicMuted: Bool {
-		didSet { store.set(launcherMusicMuted, for: Key.launcherMusicMuted) }
+	package var launcherMusicMuted = Key.launcherMusicMuted.defaultValue {
+		didSet { persist(launcherMusicMuted, for: Key.launcherMusicMuted) }
 	}
-	package var usesDynamicTheme: Bool {
+	package var usesDynamicTheme = Key.usesDynamicTheme.defaultValue {
 		didSet {
-			store.set(usesDynamicTheme, for: Key.usesDynamicTheme)
+			persist(usesDynamicTheme, for: Key.usesDynamicTheme)
 			onDynamicThemeChanged?()
 		}
 	}
-	package var launcherAppearance: LauncherAppearance {
-		didSet { store.setLauncherAppearance(launcherAppearance) }
-	}
-	package var homeTheme: HomeTheme {
-		didSet { store.setHomeTheme(homeTheme) }
-	}
-	package var brandingTheme: HomeTheme {
-		didSet { store.setBrandingTheme(brandingTheme) }
-	}
-	package var canaryFeaturesEnabled: Bool {
+	package var launcherAppearance: LauncherAppearance = .system {
 		didSet {
-			store.set(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled)
+			guard isLoaded else { return }
+			store.setLauncherAppearance(launcherAppearance)
+		}
+	}
+	package var homeTheme: HomeTheme = .automatic {
+		didSet {
+			guard isLoaded else { return }
+			store.setHomeTheme(homeTheme)
+		}
+	}
+	package var brandingTheme: HomeTheme = .automatic {
+		didSet {
+			guard isLoaded else { return }
+			store.setBrandingTheme(brandingTheme)
+		}
+	}
+	package var canaryFeaturesEnabled = Key.canaryFeaturesEnabled.defaultValue {
+		didSet {
+			persist(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled)
 			onCanaryFeaturesChanged?(canaryFeaturesEnabled)
 		}
 	}
-	package var usesHardwareCursor: Bool {
-		didSet { store.set(usesHardwareCursor, for: Key.usesHardwareCursor) }
+	package var usesHardwareCursor = Key.usesHardwareCursor.defaultValue {
+		didSet { persist(usesHardwareCursor, for: Key.usesHardwareCursor) }
 	}
-	package var dismissedInGameResolutionNote: Bool {
-		didSet { store.set(dismissedInGameResolutionNote, for: Key.dismissedInGameResolutionNote) }
+	package var dismissedInGameResolutionNote = Key.dismissedInGameResolutionNote.defaultValue {
+		didSet { persist(dismissedInGameResolutionNote, for: Key.dismissedInGameResolutionNote) }
+	}
+	package var batterySaverEnabled = Key.batterySaverEnabled.defaultValue {
+		didSet { persist(batterySaverEnabled, for: Key.batterySaverEnabled) }
+	}
+	package var batterySaverFrameRateLimit: GameFrameRateLimit = .fps30 {
+		didSet {
+			guard isLoaded else { return }
+			store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit)
+		}
 	}
 	package var regionAccess: RegionAccess {
 		RegionAccess(
@@ -105,37 +124,28 @@ package final class LauncherPreferencesController {
 
 	private typealias Key = LauncherPreferencesStore.Key
 	private let store: LauncherPreferencesStore
+	// `init` loads without writing defaults back; later changes persist.
+	@ObservationIgnored private var isLoaded = false
 
 	package init(store: LauncherPreferencesStore, log: LauncherLog? = nil) {
 		self.store = store
 		self.log = log
-		launchOptions = store.launchOptions()
-		automaticallyChecksLauncherUpdates = store.value(Key.automaticLauncherUpdates)
-		automaticallyChecksGameUpdates = store.value(Key.automaticGameUpdates)
-		announcementsEnabled = store.value(Key.announcementsEnabled)
-		showsServerResetCountdown = store.value(Key.showsServerResetCountdown)
-		showsGameVersion = store.value(Key.showsGameVersion)
-		showsBranding = store.value(Key.showsBranding)
-		playsLauncherMusic = store.value(Key.playsLauncherMusic)
-		launcherMusicURL = store.value(Key.launcherMusicURL)
-		showsPlayingMusic = store.value(Key.showsPlayingMusic)
-		showsDiscordPresence = store.value(Key.showsDiscordPresence)
-		launcherMusicVolume = store.value(Key.launcherMusicVolume)
-		launcherMusicMuted = store.value(Key.launcherMusicMuted)
-		usesDynamicTheme = store.value(Key.usesDynamicTheme)
-		canaryFeaturesEnabled = store.value(Key.canaryFeaturesEnabled)
-		usesHardwareCursor = store.value(Key.usesHardwareCursor)
-		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
-		launcherAppearance = store.launcherAppearance()
-		homeTheme = store.homeTheme()
-		brandingTheme = store.brandingTheme()
+		reload()
+		isLoaded = true
 	}
 
 	/// Keeps region and installation locations intact because they point to user files.
 	package func resetToDefaults(canModifyLaunchOptions: Bool) -> Bool {
 		guard canModifyLaunchOptions else { return false }
 		store.removeResettablePreferences()
-		// Reassigning from the store runs each property's change handlers with the defaults.
+		// Reloading runs each property's change handlers with the defaults.
+		reload()
+		return true
+	}
+
+	/// Reads every preference from the store. `init` and `resetToDefaults` share it, so the
+	/// two cannot drift apart.
+	private func reload() {
 		automaticallyChecksLauncherUpdates = store.value(Key.automaticLauncherUpdates)
 		automaticallyChecksGameUpdates = store.value(Key.automaticGameUpdates)
 		announcementsEnabled = store.value(Key.announcementsEnabled)
@@ -153,9 +163,18 @@ package final class LauncherPreferencesController {
 		canaryFeaturesEnabled = store.value(Key.canaryFeaturesEnabled)
 		usesHardwareCursor = store.value(Key.usesHardwareCursor)
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
+		batterySaverEnabled = store.value(Key.batterySaverEnabled)
+		batterySaverFrameRateLimit = store.batterySaverFrameRateLimit()
 		launcherAppearance = store.launcherAppearance()
 		homeTheme = store.homeTheme()
 		brandingTheme = store.brandingTheme()
-		return true
+	}
+
+	private func persist<Value: Sendable>(
+		_ value: Value,
+		for key: LauncherPreferencesStore.ScalarKey<Value>
+	) {
+		guard isLoaded else { return }
+		store.set(value, for: key)
 	}
 }

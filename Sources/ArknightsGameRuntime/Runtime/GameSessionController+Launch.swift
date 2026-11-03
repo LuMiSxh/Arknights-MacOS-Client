@@ -28,6 +28,7 @@ extension GameSessionController {
 			pendingLaunchID == nil
 		else { return }
 		let region = installation.region
+		let usesBatterySaver = settings.batterySaverEnabled
 		let request = LaunchRequest(
 			id: UUID(),
 			region: region,
@@ -35,7 +36,12 @@ extension GameSessionController {
 				path: installation.configuration?.executableName ?? "Arknights.exe"
 			),
 			prefixDirectory: paths.winePrefix(for: region),
-			options: settings.launchOptions,
+			options: usesBatterySaver
+				? settings.launchOptions.applyingBatterySaver(
+					frameRateLimit: settings.batterySaverFrameRateLimit,
+					metalFXSupported: metalFXSpatialUpscalingSupported ?? false)
+				: settings.launchOptions,
+			usesBatterySaver: usesBatterySaver,
 			usesHardwareCursor: settings.usesHardwareCursor,
 			forceDisableRetina: preferences.forceDisableRetina(),
 			requestedAt: .now

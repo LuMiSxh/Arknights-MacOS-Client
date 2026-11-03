@@ -46,8 +46,9 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 | **Standard** | Draws one pixel per macOS point. macOS stretches the window. Blurry on Retina displays.                                                          |
 
 **Frame rate limit** caps the frames per second the game draws. Use the slider to choose **30 FPS**,
-**60 FPS**, or **120 FPS**. Lower values save battery. The limit works
-best when it divides the display refresh rate evenly.
+**60 FPS**, or **120 FPS**. Lower values save battery. If the limit does not
+divide the display refresh rate evenly, the launcher uses the nearest value that does.
+It prefers a lower value. It uses a higher value only when the lower one is less than two thirds of the limit.
 
 **Window size** uses the "Looks like" sizes of **System Settings → Displays**. **Fill screen** fills the usable screen area with the title bar visible. **Compact** picks a smaller 16:9 window. The menu also lists exact sizes.
 
@@ -61,6 +62,16 @@ Lower resolutions scale to fill the screen and look grainy on larger or differen
 **Cursor** set to **macOS** shows the macOS cursor instead of the PRTS cursor, so the cursor follows the mouse without delay. It needs runtime support.
 
 **Settings → Game → Display** shows the exact size the game draws. **Override in-game display settings** is on by default. Keep it on: the launcher converts the window size into the game resolution, so the picture stays sharp. When it is off, the display settings of Arknights decide and count drawn pixels. Example: with Retina rendering on a 2× display, 2560×1440 opens a 1280×720 window.
+
+## Battery Saver
+
+**Battery Saver** lowers game options at the next launch. Turn it on in **Settings → Game → Performance**.
+
+It turns off **Game Mode**. The game uses the lower of **Battery Saver frame rate limit** and **Frame rate limit**.
+
+If **Override in-game display settings** is on, it also changes **Rendering** from **Retina** to **MetalFX** or **Standard**.
+
+Choose **30 FPS** or **60 FPS** for **Battery Saver frame rate limit**. Changes apply at the next launch.
 
 ## Canary Features
 
