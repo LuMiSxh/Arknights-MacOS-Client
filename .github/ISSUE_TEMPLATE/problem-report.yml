@@ -55,6 +55,8 @@ body:
         - RT-ROS
         - RT-SET
         - GM-CRS
+        - GM-SCP
+        - GM-SCW
         - GM-WIN
         - UP-ERR
         - UI-ICN

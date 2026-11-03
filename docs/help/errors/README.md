@@ -71,6 +71,8 @@ Each code has its own page. The page title starts with the code.
 | Code | Problem | What to do |
 | --- | --- | --- |
 | [GM-CRS](gm-crs.md) | Game closed unexpectedly | Close overlays and tools that change game processes. |
+| [GM-SCP](gm-scp.md) | Screen Recording is off | Allow Screen Recording for Arknights Client in System Settings. |
+| [GM-SCW](gm-scw.md) | No game window to capture | Show the game window, then try again. |
 | [GM-WIN](gm-win.md) | No game window | Wait for other downloads to finish. Then start the game again. |
 
 ### Update

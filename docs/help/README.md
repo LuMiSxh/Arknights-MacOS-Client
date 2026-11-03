@@ -11,6 +11,7 @@ order: 20
 - File locations and cleanup → [Storage](storage.md)
 - Show your session on Discord → [Discord presence](discord-presence.md)
 - Get a notification before the daily reset → [Daily reset reminder](daily-reset-reminder.md)
+- Save a picture of the game window → [Screenshots](screenshots.md)
 - Supported macOS versions → [macOS compatibility](runtime-compatibility.md)
 - General questions → [FAQ](faq.md)
 

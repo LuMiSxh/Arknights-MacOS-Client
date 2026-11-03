@@ -426,6 +426,50 @@
       "legacy": ["CRUX"]
     },
     {
+      "code": "GM-SCP",
+      "swiftName": "screenCapturePermissionDenied",
+      "domain": "game",
+      "title": "Screen Recording is off",
+      "status": "active",
+      "summary": "The launcher cannot take a screenshot because Screen Recording is off.",
+      "action": "Allow Screen Recording for Arknights Client in System Settings.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "Screen Recording is off for Arknights Client in System Settings.",
+        "macOS asked to confirm Screen Recording again and the answer was not given.",
+        "A new permission needs a launcher restart before it takes effect."
+      ],
+      "steps": [
+        "Open System Settings, then Privacy & Security, then Screen & System Audio Recording.",
+        "Turn on Arknights Client.",
+        "Quit the launcher and open it again."
+      ],
+      "report": "In the report, say whether Arknights Client is listed and turned on under Screen Recording.",
+      "legacy": []
+    },
+    {
+      "code": "GM-SCW",
+      "swiftName": "screenCaptureWindowMissing",
+      "domain": "game",
+      "title": "No game window to capture",
+      "status": "active",
+      "summary": "The launcher found no visible game window to capture.",
+      "action": "Show the game window, then try again.",
+      "allowsRetry": false,
+      "allowsRepair": false,
+      "causes": [
+        "The game window was still opening or already closed.",
+        "The game window was minimized or on another Space."
+      ],
+      "steps": [
+        "Show the game window on the current Space.",
+        "Take the screenshot again."
+      ],
+      "report": "In the report, say whether the game window was visible and which server was running.",
+      "legacy": []
+    },
+    {
       "code": "UP-ERR",
       "swiftName": "updateFailed",
       "domain": "update",

@@ -28,7 +28,11 @@ struct UserNotificationScheduler: NotificationScheduling {
 		let content = UNMutableNotificationContent()
 		content.title = notification.title
 		content.body = notification.body
-		content.sound = .default
+		content.sound = notification.playsSound ? .default : nil
+		if let category = notification.categoryIdentifier {
+			content.categoryIdentifier = category
+		}
+		content.userInfo = notification.userInfo
 		let trigger: UNNotificationTrigger? =
 			switch notification.trigger {
 			case .immediate: nil
@@ -42,5 +46,19 @@ struct UserNotificationScheduler: NotificationScheduling {
 
 	func removePending(identifiers: Set<String>) {
 		center.removePendingNotificationRequests(withIdentifiers: Array(identifiers))
+	}
+
+	func registerCategories(_ categories: [NotificationCategory]) {
+		center.setNotificationCategories(
+			Set(
+				categories.map { category in
+					UNNotificationCategory(
+						identifier: category.identifier,
+						actions: category.actions.map {
+							UNNotificationAction(
+								identifier: $0.identifier, title: $0.title, options: [])
+						},
+						intentIdentifiers: [])
+				}))
 	}
 }

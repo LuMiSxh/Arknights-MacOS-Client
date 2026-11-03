@@ -35,6 +35,8 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 	case rosettaMissing = "RT-ROS"
 	case runtimeSetupFailed = "RT-SET"
 	case gameClosedUnexpectedly = "GM-CRS"
+	case screenCapturePermissionDenied = "GM-SCP"
+	case screenCaptureWindowMissing = "GM-SCW"
 	case gameWindowTimeout = "GM-WIN"
 	case updateFailed = "UP-ERR"
 	case appIconFailed = "UI-ICN"
@@ -77,6 +79,10 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 		case .runtimeSetupFailed:
 			.runtime
 		case .gameClosedUnexpectedly:
+			.game
+		case .screenCapturePermissionDenied:
+			.game
+		case .screenCaptureWindowMissing:
 			.game
 		case .gameWindowTimeout:
 			.game
@@ -126,6 +132,10 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			"The launcher could not set up the game runtime."
 		case .gameClosedUnexpectedly:
 			"The game or Wine process ended unexpectedly."
+		case .screenCapturePermissionDenied:
+			"The launcher cannot take a screenshot because Screen Recording is off."
+		case .screenCaptureWindowMissing:
+			"The launcher found no visible game window to capture."
 		case .gameWindowTimeout:
 			"The game did not show a window within 90 seconds."
 		case .updateFailed:
@@ -174,6 +184,10 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			true
 		case .gameClosedUnexpectedly:
 			true
+		case .screenCapturePermissionDenied:
+			false
+		case .screenCaptureWindowMissing:
+			false
 		case .gameWindowTimeout:
 			true
 		case .updateFailed:
@@ -222,6 +236,10 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			false
 		case .gameClosedUnexpectedly:
 			true
+		case .screenCapturePermissionDenied:
+			false
+		case .screenCaptureWindowMissing:
+			false
 		case .gameWindowTimeout:
 			true
 		case .updateFailed:

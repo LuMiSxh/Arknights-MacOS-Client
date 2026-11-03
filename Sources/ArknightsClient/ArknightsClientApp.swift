@@ -6,7 +6,6 @@ import ArknightsCore
 import ArknightsLauncherUI
 import ArknightsOnboarding
 import SwiftUI
-
 @preconcurrency import UserNotifications
 
 @MainActor
@@ -162,6 +161,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 			}
 		}
 
+		let screenshotItem = NSMenuItem(
+			title: "Take Screenshot",
+			action: #selector(takeScreenshot),
+			keyEquivalent: ""
+		)
+		screenshotItem.target = self
+		screenshotItem.isEnabled = model?.screenshots.canTakeScreenshot == true
+		menu.addItem(screenshotItem)
+		menu.addItem(.separator())
+
 		let settingsItem = NSMenuItem(
 			title: "Settings…",
 			action: #selector(showSettings),
@@ -195,6 +204,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 				showMainWindow()
 			}
 		}
+	}
+
+	@objc private func takeScreenshot() {
+		model?.screenshots.takeScreenshot()
 	}
 
 	@objc private func reportProblem() {
@@ -232,7 +245,22 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 		_ center: UNUserNotificationCenter,
 		didReceive response: UNNotificationResponse
 	) async {
-		await MainActor.run { showMainWindow() }
+		let path =
+			response.notification.request.content.userInfo[
+				AppConstants.Screenshots.pathUserInfoKey] as? String
+		let isScreenshot =
+			response.notification.request.content.categoryIdentifier
+			== AppConstants.Screenshots.notificationCategory
+		await MainActor.run {
+			if isScreenshot {
+				// A tap or the Show in Finder button both reveal the file. Neither needs the launcher.
+				if let path {
+					NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: path)])
+				}
+			} else {
+				showMainWindow()
+			}
+		}
 	}
 }
 
@@ -345,6 +373,12 @@ struct ArknightsClientApp: App {
 		.windowStyle(.hiddenTitleBar)
 		.defaultSize(width: 1040, height: 680)
 		.commands {
+			CommandMenu("Game") {
+				Button("Take Screenshot") {
+					model.screenshots.takeScreenshot()
+				}
+				.disabled(!model.screenshots.canTakeScreenshot)
+			}
 			CommandGroup(replacing: .help) {
 				Button("Report a Problem…") {
 					model.openProblemReport(source: .helpMenu)

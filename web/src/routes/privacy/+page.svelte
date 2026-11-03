@@ -61,6 +61,12 @@
 		feature.
 	</p>
 	<p>
+		The screenshot shortcut is off by default. When you use it, the app asks
+		macOS for Screen Recording permission and saves a picture of the game
+		window to a folder on your Mac. The app sends the picture nowhere. The
+		banner after saving is a local macOS notification.
+	</p>
+	<p>
 		The app connects to the hosts below when you use the matching feature.
 		Each host receives your IP address and request data under its own
 		privacy policy.

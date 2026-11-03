@@ -1,7 +1,7 @@
 ---
 title: "UP-ERR: Launcher update failed"
 description: "The launcher could not check for or install an update."
-order: 20
+order: 22
 audience: users
 code: UP-ERR
 domain: update

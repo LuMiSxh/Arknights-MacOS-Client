@@ -21,6 +21,7 @@ struct LauncherSettingsView: View {
 	let gameSession: GameSessionController
 	let lifecycle: LauncherLifecycleStore
 	let reminders: ResetReminderController
+	let screenshots: GameScreenshotController
 	let storage: StorageMaintenanceController
 	let storageOverview: StorageOverviewController
 	let playtimeStatistics: PlaytimeStatisticsController
@@ -68,7 +69,8 @@ struct LauncherSettingsView: View {
 						GameSettingsPage(
 							settings: settings,
 							gameSession: gameSession,
-							lifecycle: lifecycle
+							lifecycle: lifecycle,
+							screenshots: screenshots
 						)
 					case .appearance:
 						AppearanceSettingsPage(

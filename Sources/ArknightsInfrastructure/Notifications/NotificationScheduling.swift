@@ -22,12 +22,46 @@ package struct LocalNotification: Sendable, Equatable {
 	package let title: String
 	package let body: String
 	package let trigger: Trigger
+	/// Names a registered `NotificationCategory`, which adds its actions to the notification.
+	package let categoryIdentifier: String?
+	/// Values the app reads back when the user responds to the notification.
+	package let userInfo: [String: String]
+	package let playsSound: Bool
 
-	package init(identifier: String, title: String, body: String, trigger: Trigger) {
+	package init(
+		identifier: String, title: String, body: String, trigger: Trigger,
+		categoryIdentifier: String? = nil, userInfo: [String: String] = [:],
+		playsSound: Bool = true
+	) {
 		self.identifier = identifier
 		self.title = title
 		self.body = body
 		self.trigger = trigger
+		self.categoryIdentifier = categoryIdentifier
+		self.userInfo = userInfo
+		self.playsSound = playsSound
+	}
+}
+
+/// A button on a notification.
+package struct NotificationAction: Sendable, Equatable {
+	package let identifier: String
+	package let title: String
+
+	package init(identifier: String, title: String) {
+		self.identifier = identifier
+		self.title = title
+	}
+}
+
+/// A named set of actions that notifications can carry.
+package struct NotificationCategory: Sendable, Equatable {
+	package let identifier: String
+	package let actions: [NotificationAction]
+
+	package init(identifier: String, actions: [NotificationAction]) {
+		self.identifier = identifier
+		self.actions = actions
 	}
 }
 
@@ -39,6 +73,12 @@ package protocol NotificationScheduling: Sendable {
 	func pendingIdentifiers() async -> Set<String>
 	func add(_ notification: LocalNotification) async throws
 	func removePending(identifiers: Set<String>)
+	/// Replaces the categories the system knows. Register them before the first notification.
+	func registerCategories(_ categories: [NotificationCategory])
+}
+
+extension NotificationScheduling {
+	package func registerCategories(_ categories: [NotificationCategory]) {}
 }
 
 /// Returns the system scheduler inside an app bundle. Outside a bundle, `UNUserNotificationCenter`

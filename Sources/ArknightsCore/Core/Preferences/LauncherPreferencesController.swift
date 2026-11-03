@@ -126,6 +126,23 @@ package final class LauncherPreferencesController {
 			store.setBatterySaverFrameRateLimit(batterySaverFrameRateLimit)
 		}
 	}
+	package var screenshotShortcut: ScreenshotShortcut = .off {
+		didSet {
+			guard isLoaded else { return }
+			store.setScreenshotShortcut(screenshotShortcut)
+			onScreenshotShortcutChanged?(oldValue)
+		}
+	}
+	package var screenshotNotifies = Key.screenshotNotifies.defaultValue {
+		didSet { persist(screenshotNotifies, for: Key.screenshotNotifies) }
+	}
+	/// The folder the user chose for screenshots, or `nil` for the default folder.
+	package var screenshotDirectory: URL? {
+		didSet {
+			guard isLoaded else { return }
+			store.setScreenshotDirectory(screenshotDirectory)
+		}
+	}
 	package var regionAccess: RegionAccess {
 		RegionAccess(
 			canaryFeaturesEnabled: canaryFeaturesEnabled
@@ -138,6 +155,8 @@ package final class LauncherPreferencesController {
 	@ObservationIgnored package var onCanaryFeaturesChanged: ((Bool) -> Void)?
 	@ObservationIgnored package var onDiscordPresenceChanged: (() -> Void)?
 	@ObservationIgnored package var onResetReminderChanged: (() -> Void)?
+	/// Called with the previous value after the shortcut changes, including a reset to defaults.
+	@ObservationIgnored package var onScreenshotShortcutChanged: ((ScreenshotShortcut) -> Void)?
 
 	private typealias Key = LauncherPreferencesStore.Key
 	private let store: LauncherPreferencesStore
@@ -182,6 +201,9 @@ package final class LauncherPreferencesController {
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
 		batterySaverEnabled = store.value(Key.batterySaverEnabled)
 		batterySaverFrameRateLimit = store.batterySaverFrameRateLimit()
+		screenshotShortcut = store.screenshotShortcut()
+		screenshotNotifies = store.value(Key.screenshotNotifies)
+		screenshotDirectory = store.screenshotDirectory()
 		launcherAppearance = store.launcherAppearance()
 		homeTheme = store.homeTheme()
 		brandingTheme = store.brandingTheme()

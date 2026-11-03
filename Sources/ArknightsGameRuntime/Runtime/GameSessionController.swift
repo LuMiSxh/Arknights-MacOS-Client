@@ -62,7 +62,7 @@ package final class GameSessionController {
 	@ObservationIgnored var pendingLaunchID: UUID?
 	var gameRunningSince: Date?
 	var sessionLease: ActivityLease? { session?.lease }
-	var activeGameRegion: GameRegion? { session?.region }
+	package var activeGameRegion: GameRegion? { session?.region }
 
 	package init(
 		lifecycle: LauncherLifecycleStore,

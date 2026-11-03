@@ -89,6 +89,21 @@ package enum AppConstants {
 		package static let identifierPrefix = "reset."
 	}
 
+	package enum Screenshots {
+		/// The folder under Pictures that holds screenshots unless the user picks another.
+		package static let defaultFolderName = "Arknights"
+		package static let notificationCategory = "screenshot"
+		package static let showInFinderAction = "screenshot.show-in-finder"
+		/// The `userInfo` key that carries the saved file path.
+		package static let pathUserInfoKey = "path"
+		package static let shutterSoundName = "Grab"
+		/// The System Settings pane that lists the apps allowed to record the screen.
+		package static let screenRecordingSettingsAddress =
+			"x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
+		/// Highest ` (n)` suffix tried before the save fails.
+		package static let maximumNameSuffix = 1_000
+	}
+
 	package enum Music {
 		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"

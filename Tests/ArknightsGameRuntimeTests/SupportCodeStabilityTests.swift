@@ -15,6 +15,9 @@ import Testing
 // Edit only this table when a `LauncherError` case changes. Each row pins the
 // support code of one case. Message text is copy and is not pinned here.
 private let supportCodeStabilityCases: [(any LauncherDiagnosticError & Sendable, SupportCode?)] = [
+	(CaptureError.permissionDenied, .screenCapturePermissionDenied),
+	(CaptureError.noGameWindow, .screenCaptureWindowMissing),
+	(CaptureError.saveFailed("test"), .localFileFailed),
 	(LauncherError.invalidResponse, .remoteContentInvalid),
 	(LauncherError.server(code: 500, message: "test"), .serviceError),
 	(InstallerError.invalidManifestPath("../test"), .manifestUnsafe),

@@ -36,23 +36,9 @@ struct WineWindowReadiness {
 	}
 
 	static func isVisible(processIdentifier: Int32, windows: [[String: Any]]) -> Bool {
-		windows.contains { window in
-			guard
-				(window[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value
-					== processIdentifier,
-				(window[kCGWindowLayer as String] as? NSNumber)?.intValue == 0,
-				(window[kCGWindowIsOnscreen as String] as? NSNumber)?.boolValue == true,
-				(window[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 0 > 0,
-				let bounds = window[kCGWindowBounds as String] as? [String: Any],
-				(bounds["Width"] as? NSNumber)?.doubleValue ?? 0
-					>= AppConstants.Game.minimumGameWindowWidth,
-				(bounds["Height"] as? NSNumber)?.doubleValue ?? 0
-					>= AppConstants.Game.minimumGameWindowHeight
-			else {
-				return false
-			}
-			return true
-		}
+		GameWindowLocator.select(
+			windows.compactMap(GameWindowCandidate.init(windowInfo:)), pid: processIdentifier)
+			!= nil
 	}
 
 	private static func currentWindows() -> [[String: Any]] {

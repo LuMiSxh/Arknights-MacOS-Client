@@ -67,6 +67,10 @@ package struct LauncherPreferencesStore {
 			"dismissedInGameResolutionNote", default: false)
 		package static let usesDynamicTheme = ScalarKey("usesDynamicTheme", default: true)
 		package static let batterySaverEnabled = ScalarKey("batterySaverEnabled", default: false)
+		package static let screenshotNotifies = ScalarKey("screenshotNotifies", default: true)
+		static let screenshotShortcut = "screenshotShortcut"
+		// The app is not sandboxed, so a plain path is enough and no bookmark is needed.
+		static let screenshotDirectory = "screenshotDirectory"
 		static let batterySaverFrameRateLimit = "batterySaverFrameRateLimit"
 		static let seenAnnouncementIDs = "seenAnnouncementIDs"
 		static let gameLaunchOptions = "gameLaunchOptions"
@@ -97,6 +101,9 @@ package struct LauncherPreferencesStore {
 				launcherMusicURL, showsPlayingMusic, showsDiscordPresence, launcherMusicVolume,
 				launcherMusicMuted, usesDynamicTheme, canaryFeaturesEnabled, taiwanClientEnabled,
 				usesHardwareCursor, dismissedInGameResolutionNote, batterySaverEnabled,
+				screenshotNotifies,
+				RawKey(screenshotShortcut, resettable: true),
+				RawKey(screenshotDirectory, resettable: true),
 				RawKey(gameLaunchOptions, resettable: true),
 				RawKey(batterySaverFrameRateLimit, resettable: true),
 				RawKey(acknowledgedACEWarningRegions, resettable: true),
@@ -253,6 +260,29 @@ package struct LauncherPreferencesStore {
 
 	package func setResetReminderRegions(_ regions: [GameRegion]) {
 		defaults.set(Set(regions).map(\.rawValue).sorted(), forKey: Key.resetReminderRegions)
+	}
+
+	package func screenshotShortcut() -> ScreenshotShortcut {
+		defaults.string(forKey: Key.screenshotShortcut)
+			.flatMap(ScreenshotShortcut.init(rawValue:)) ?? .off
+	}
+
+	package func setScreenshotShortcut(_ shortcut: ScreenshotShortcut) {
+		defaults.set(shortcut.rawValue, forKey: Key.screenshotShortcut)
+	}
+
+	/// The folder the user chose for screenshots, or `nil` for the default folder.
+	package func screenshotDirectory() -> URL? {
+		defaults.string(forKey: Key.screenshotDirectory)
+			.map { URL(filePath: $0, directoryHint: .isDirectory) }
+	}
+
+	package func setScreenshotDirectory(_ url: URL?) {
+		guard let url else {
+			defaults.removeObject(forKey: Key.screenshotDirectory)
+			return
+		}
+		defaults.set(url.path, forKey: Key.screenshotDirectory)
 	}
 
 	package func batterySaverFrameRateLimit() -> GameFrameRateLimit {

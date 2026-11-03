@@ -26,6 +26,9 @@ package struct AppPaths: Sendable {
 	let logRoot: URL
 	/// Where saved diagnostics archives go: Downloads, or the support root when macOS has none.
 	package let diagnosticsDirectory: URL
+	/// Where screenshots go unless the user picks a folder: `Pictures/Arknights`. Visible to the
+	/// user, unlike the support root.
+	package let screenshotsDirectory: URL
 	package let winePrefix: URL
 	let chinaWinePrefix: URL
 	let gryphlineWinePrefix: URL
@@ -37,6 +40,7 @@ package struct AppPaths: Sendable {
 		cachesDirectory: URL? = nil,
 		libraryDirectory: URL? = nil,
 		downloadsDirectory: URL? = nil,
+		picturesDirectory: URL? = nil,
 		resourceDirectory: URL? = Bundle.main.resourceURL
 	) {
 		let supportDirectory =
@@ -61,6 +65,13 @@ package struct AppPaths: Sendable {
 			downloadsDirectory
 			?? fileManager.urls(for: .downloadsDirectory, in: .userDomainMask).first
 			?? applicationSupportRoot
+		screenshotsDirectory =
+			(picturesDirectory
+			?? fileManager.urls(for: .picturesDirectory, in: .userDomainMask).first
+			?? fileManager.homeDirectoryForCurrentUser.appending(
+				path: "Pictures", directoryHint: .isDirectory))
+			.appending(
+				path: AppConstants.Screenshots.defaultFolderName, directoryHint: .isDirectory)
 		logRoot =
 			libraryDirectory
 			.appending(path: "Logs", directoryHint: .isDirectory)

@@ -25,6 +25,7 @@ package final class LauncherViewModel {
 	let playtimeStatistics: PlaytimeStatisticsController
 	let discordPresence: DiscordPresenceController
 	let reminders: ResetReminderController
+	package let screenshots: GameScreenshotController
 
 	let presetCatalog: PresetCatalogService
 	package let preferences: LauncherPreferencesStore
@@ -89,9 +90,9 @@ package final class LauncherViewModel {
 			presetCatalog
 			?? PresetCatalogService(cacheDirectory: paths.presetGalleryCache, log: launcherLog)
 		self.presetCatalog = catalog
-		let resolvedArtworkCache = artworkCache ?? ArtworkCache(directory: paths.artworkCache)
 		let resolvedCompatibilityManager =
 			gameCompatibilityManager ?? GameCompatibilityManager(log: launcherLog)
+		let resolvedArtworkCache = artworkCache ?? ArtworkCache(directory: paths.artworkCache)
 		let gameInstaller =
 			installer
 			?? GameInstaller(
@@ -191,8 +192,9 @@ package final class LauncherViewModel {
 			region: { [weak installation] in installation?.region ?? .global }
 		)
 
+		let notificationScheduler = makeNotificationScheduler()
 		let reminders = ResetReminderController(
-			scheduler: makeNotificationScheduler(),
+			scheduler: notificationScheduler,
 			settings: settings,
 			installedRegions: { [weak installation] in installation?.installedRegions ?? [] },
 			selectedRegion: { [weak installation] in installation?.region ?? .global },
@@ -205,6 +207,16 @@ package final class LauncherViewModel {
 		installation.onInstalledRegionsChanged = { [weak reminders] in
 			reminders?.installedRegionsDidChange()
 		}
+		screenshots = GameScreenshotController(
+			lifecycle: lifecycle,
+			settings: settings,
+			paths: paths,
+			scheduler: notificationScheduler,
+			region: { [weak gameSession, weak installation] in
+				gameSession?.activeGameRegion ?? installation?.region ?? .global
+			},
+			log: launcherLog
+		)
 
 		settings.onLauncherUpdateCheckRequested = { [weak self] in
 			self?.actions.checkLauncherUpdates()
@@ -260,6 +272,7 @@ package final class LauncherViewModel {
 		startupOptions = StartupOptions(arguments: arguments)
 		beginStartup()
 		reminders.start()
+		screenshots.start()
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
 		log.info("Launcher \(appVersion) started")

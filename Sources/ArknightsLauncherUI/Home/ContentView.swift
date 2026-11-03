@@ -267,6 +267,7 @@ package struct ContentView: View {
 				communication: model.communication,
 				installation: model.installation, gameSession: model.gameSession,
 				lifecycle: model.lifecycle, reminders: model.reminders,
+				screenshots: model.screenshots,
 				storage: model.storage, storageOverview: model.storageOverview,
 				playtimeStatistics: model.playtimeStatistics, presetCatalog: model.presetCatalog,
 				launcherIconManager: model.launcherIconManager,

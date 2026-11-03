@@ -1,7 +1,7 @@
 ---
 title: "UI-ICN: App icon not updated"
 description: "The app icon could not be set or restored."
-order: 21
+order: 23
 audience: users
 code: UI-ICN
 domain: customization
