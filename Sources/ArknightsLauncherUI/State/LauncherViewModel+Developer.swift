@@ -78,8 +78,10 @@ import ArknightsGameRuntime
 				refreshController.branding = currentBranding
 				do {
 					let logoData = try await artworkCache.officialLogoData(for: region)
+					var logo: CGImage?
+					if let logoData { logo = await CustomizationImageIO.decodeImage(logoData) }
 					guard installation.region == region else { return }
-					customization.officialLogo = logoData.flatMap(NSImage.init(data:))
+					customization.officialLogo = logo.map { NSImage(cgImage: $0, size: .zero) }
 				} catch {
 					log.error(
 						"Failed to load developer logo: \(error.localizedDescription)"
@@ -89,12 +91,12 @@ import ArknightsGameRuntime
 					if let imageData = try await artworkCache.imageData(
 						for: currentBranding,
 						region: region
-					), let image = NSImage(data: imageData),
+					), let decoded = await CustomizationImageIO.decodeImage(imageData),
 						let artworkCacheKey = artworkCache.cacheKey(for: currentBranding)
 					{
 						guard installation.region == region else { return }
 						customization.setHeroArtwork(
-							image,
+							NSImage(cgImage: decoded, size: .zero),
 							themeCacheKey: CustomizationController.officialThemeCacheKey(
 								for: region,
 								artworkCacheKey: artworkCacheKey

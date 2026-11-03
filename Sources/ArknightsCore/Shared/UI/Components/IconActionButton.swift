@@ -104,14 +104,14 @@ private struct IconActionChrome: ViewModifier {
 				.adaptiveControlSurface(
 					tint: surfaceTint
 						?? (surface == .hud
-							? hudSurfaceTint : tone.surfaceColor(in: palette)),
+							? hudSurfaceTint : tone.surfaceColor(in: palette, theme: theme)),
 					presentation: surface,
 					isInteractive: true,
 					in: Circle()
 				)
 				.adaptiveControlForeground(
-					foreground ?? tone.foregroundColor(for: contrast, in: palette),
-					disabledTint: tone.disabledColor(for: contrast)
+					foreground ?? tone.foregroundColor(in: palette, theme: theme),
+					disabledTint: tone.disabledColor(for: contrast, theme: theme)
 				)
 		} else {
 			content

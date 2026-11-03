@@ -6,6 +6,7 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct InstallationSettingsPage: View {
+	@Environment(\.launcherTheme) var theme
 	private static let canaryFeaturesTitle = "Canary Features"
 	@Bindable var settings: LauncherPreferencesController
 	package let installation: InstallationController
@@ -111,7 +112,7 @@ struct InstallationSettingsPage: View {
 					SettingsToggle(
 						Self.canaryFeaturesTitle,
 						isOn: $settings.canaryFeaturesEnabled,
-						tint: LauncherVisuals.warning
+						tint: theme.warning
 					)
 					.disabled(lifecycle.activity != .idle)
 				}

@@ -12,7 +12,7 @@ extension InstallationSettingsPage {
 			SettingsToggle(
 				"Allow Taiwan server",
 				isOn: $settings.taiwanClientEnabled,
-				tint: LauncherVisuals.warning
+				tint: theme.warning
 			)
 		}
 		.disabled(lifecycle.activity != .idle)

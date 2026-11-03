@@ -183,11 +183,12 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 - In Settings → Appearance, panels appear in this order: Artwork, Dynamic Theme, Appearance, Launcher shows, and Dock icons. The Dynamic Theme panel holds three rows: Follow the artwork, Home controls, and Branding.
 - The Look step of onboarding asks these questions in this order: Artwork, Dynamic Theme, Appearance, Home controls, Branding, Launcher shows, and Dock icons.
 - Explain destructive or expensive actions in user terms.
-- Keep warning and danger panels on neutral backgrounds. Use semantic color only on the header, icon, edge, and relevant actions:
-  - Danger: destructive settings and failure codes.
-  - Warning: cautionary state.
-  - Success: completed state.
+- Keep warning and danger panels on neutral backgrounds. Use semantic color only on the header, icon, edge, and relevant actions. Read every semantic color from `LauncherTheme`:
+  - Danger: destructive settings and failure codes. Text uses `dangerText`. A danger button label uses `dangerInk`. A solid HUD or icon fill uses `dangerSurface`. Danger glass uses `dangerGlassTint` and `dangerGlassStroke`.
+  - Warning: cautionary state. Text and icons use `warningInk`. A solid fill or toggle uses `warning`. Warning glass uses `warningGlassTint` and `warningGlassStroke`.
+  - Success: completed state. Text and icons use `successInk`.
   - Accent: the primary operation and intentional selection.
+- Light mode darkens `dangerText`, `warningInk`, and `successInk` to at least 4.5:1 on the light sheet. Dark mode keeps the brand values.
 - For a custom game window size, choose the **Custom…** row. Enter a width and height, or measure the game window. The launcher validates the size with `GameDisplaySize.validatedCustom`. It keeps the value you enter. It fits the size to the screen only at launch.
 - Render bundled Markdown as native text. Parse it once when the document opens. Tables fit their column widths and scroll sideways when they are wide. A missing or unreadable document shows an error state.
 

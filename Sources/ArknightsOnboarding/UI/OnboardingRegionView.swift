@@ -82,11 +82,9 @@ struct OnboardingRegionView: View {
 						ProgressView(value: progress.fraction)
 							.tint(theme.accentFill)
 							.accessibilityLabel(Text(installationTitle))
-						Text(
-							"\(DownloadProgressFormatting.byteCount(progress.downloadedBytes)) of \(DownloadProgressFormatting.byteCount(progress.totalBytes))"
-						)
-						.font(.caption.monospacedDigit())
-						.foregroundStyle(theme.textSecondary)
+						Text(progress.transferSummary)
+							.font(.caption.monospacedDigit())
+							.foregroundStyle(theme.textSecondary)
 					}
 
 					if !installation.isInstalled && !installation.isDownloading {

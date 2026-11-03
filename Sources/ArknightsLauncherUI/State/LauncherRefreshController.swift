@@ -291,19 +291,25 @@ final class LauncherRefreshController {
 		guard
 			isCurrentBrandingAssetLoad(token, region: region)
 		else { return }
-		if let logoData, let logo = NSImage(data: logoData) {
-			customization.officialLogo = logo
+		if let logoData, let logo = await CustomizationImageIO.decodeImage(logoData) {
+			guard isCurrentBrandingAssetLoad(token, region: region) else { return }
+			customization.officialLogo = NSImage(cgImage: logo, size: .zero)
 		}
 		guard
 			customization.customArtworkGeneration == customArtworkGeneration,
 			!customization.hasPersistedCustomArtwork
 		else { return }
 		if let artworkData,
-			let image = NSImage(data: artworkData),
+			let decodedArtwork = await CustomizationImageIO.decodeImage(artworkData),
 			let artworkCacheKey = artworkCache.cacheKey(for: branding)
 		{
+			guard
+				isCurrentBrandingAssetLoad(token, region: region),
+				customization.customArtworkGeneration == customArtworkGeneration,
+				!customization.hasPersistedCustomArtwork
+			else { return }
 			customization.setHeroArtwork(
-				image,
+				NSImage(cgImage: decodedArtwork, size: .zero),
 				themeCacheKey: CustomizationController.officialThemeCacheKey(
 					for: region,
 					artworkCacheKey: artworkCacheKey

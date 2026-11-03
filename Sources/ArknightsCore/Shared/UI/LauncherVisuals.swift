@@ -5,12 +5,6 @@ import SwiftUI
 package enum LauncherVisuals {
 	/// Fallback accent used only when artwork cannot provide a dynamic theme color.
 	package static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
-	package static let danger = Color(red: 0.69, green: 0.141, blue: 0.231)
-	/// Bright semantic foreground for destructive actions; `danger` remains a dark surface tint.
-	package static let dangerForeground = Color(red: 0.98, green: 0.42, blue: 0.48)
-	static let dangerForegroundHighContrast = Color(red: 1, green: 0.55, blue: 0.60)
-	package static let warning = Color(red: 0.91, green: 0.61, blue: 0.21)
-	package static let success = Color(red: 0.28, green: 0.78, blue: 0.55)
 	package static let disabled = Color.white.opacity(0.42)
 	package static let overlayDim = 0.55
 

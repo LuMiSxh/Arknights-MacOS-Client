@@ -104,7 +104,7 @@ private struct GameWindowMeasurePanel: View {
 			if let hint = sizeLimitHint {
 				Text(hint)
 					.font(.callout.weight(.medium))
-					.foregroundStyle(LauncherVisuals.dangerForeground)
+					.foregroundStyle(theme.dangerText)
 					.transition(.opacity)
 			}
 		}

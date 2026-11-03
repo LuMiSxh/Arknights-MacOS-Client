@@ -25,3 +25,10 @@ package enum DownloadProgressFormatting {
 		return bytes.formatted(byteCountStyle) + "/s"
 	}
 }
+
+extension DownloadProgress {
+	/// The "downloaded of total" text shared by the HUD and onboarding progress rows.
+	package var transferSummary: String {
+		"\(DownloadProgressFormatting.byteCount(downloadedBytes)) of \(DownloadProgressFormatting.byteCount(totalBytes))"
+	}
+}

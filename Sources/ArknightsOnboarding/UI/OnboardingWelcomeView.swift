@@ -47,7 +47,7 @@ struct OnboardingWelcomeView: View {
 						"This launcher is up to date. Setup can continue.",
 						systemImage: "checkmark.circle.fill"
 					)
-					.foregroundStyle(LauncherVisuals.success)
+					.foregroundStyle(theme.successInk)
 				case .updateRequired(let version):
 					VStack(alignment: .leading, spacing: 8) {
 						Text("Version \(version) is available.")
@@ -94,7 +94,7 @@ struct OnboardingWelcomeView: View {
 							"Your Mac can run the game.",
 							systemImage: "checkmark.circle.fill"
 						)
-						.foregroundStyle(LauncherVisuals.success)
+						.foregroundStyle(theme.successInk)
 					case .rosettaMissing:
 						OnboardingRosettaRecoveryView(
 							installationState: rosettaInstallationState,

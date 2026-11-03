@@ -39,7 +39,7 @@ struct IconRollbackFailure: LauncherDiagnosticError, SupportCodeProviding {
 	}
 }
 
-enum CustomizationImageIO {
+package enum CustomizationImageIO {
 	struct PreparedPublication: Sendable {
 		fileprivate let destinations: [URL]
 		fileprivate let identities: [IconFileIdentity?]
@@ -70,7 +70,7 @@ enum CustomizationImageIO {
 	// Decodes full-size artwork off the main actor; `NSImage(data:)` would defer the decode to
 	// the first draw. The thumbnail API is used only to honor EXIF orientation.
 	@concurrent
-	static func decodeImage(_ data: Data) async -> CGImage? {
+	package static func decodeImage(_ data: Data) async -> CGImage? {
 		guard
 			let source = CGImageSourceCreateWithData(data as CFData, nil),
 			let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)

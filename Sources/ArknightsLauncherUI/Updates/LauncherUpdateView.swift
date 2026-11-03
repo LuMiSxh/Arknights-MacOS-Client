@@ -282,7 +282,7 @@ struct LauncherUpdateView: View {
 	private var statusColor: Color {
 		switch driver.phase {
 		case .failed: theme.danger
-		case .installed: LauncherVisuals.success
+		case .installed: theme.successInk
 		default: theme.textSecondary
 		}
 	}

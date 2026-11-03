@@ -9,42 +9,36 @@ package enum CapsuleActionTone {
 	case warning
 	case danger
 
-	/// Label and icon ink from the theme. Warning has no theme role and keeps its palette color.
+	/// Label and icon ink from the theme.
 	func ink(in theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent: theme.accentInk
 		case .neutral: theme.textPrimary
-		case .warning: LauncherVisuals.warning
+		case .warning: theme.warningInk
 		case .danger: theme.dangerInk
 		}
 	}
 
-	func color(in palette: LauncherPalette) -> Color {
+	/// HUD foreground for an enabled control. Its surface is a tint, so it uses the text inks.
+	func foregroundColor(in palette: LauncherPalette, theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent(let color): color
 		case .neutral: palette.controlTint
-		case .warning: LauncherVisuals.warning
-		case .danger: LauncherVisuals.dangerForeground
+		case .warning: theme.warningInk
+		case .danger: theme.dangerText
 		}
 	}
 
-	func surfaceColor(in palette: LauncherPalette) -> Color {
+	func surfaceColor(in palette: LauncherPalette, theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent(let color): color
 		case .neutral: palette.controlTint
-		case .warning: LauncherVisuals.warning
-		case .danger: LauncherVisuals.danger
+		case .warning: theme.warning
+		case .danger: theme.dangerSurface
 		}
 	}
 
-	func foregroundColor(for contrast: ColorSchemeContrast, in palette: LauncherPalette) -> Color {
-		if case .danger = self, contrast == .increased {
-			return LauncherVisuals.dangerForegroundHighContrast
-		}
-		return color(in: palette)
-	}
-
-	func disabledColor(for contrast: ColorSchemeContrast) -> Color {
+	func disabledColor(for contrast: ColorSchemeContrast, theme: LauncherTheme) -> Color {
 		let opacity = LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
 		switch self {
 		case .accent(let color): return color.opacity(opacity)
@@ -52,8 +46,8 @@ package enum CapsuleActionTone {
 			return Color.white.opacity(
 				LauncherVisuals.Control.disabledNeutralForegroundOpacity(for: contrast)
 			)
-		case .warning: return LauncherVisuals.warning.opacity(opacity)
-		case .danger: return LauncherVisuals.dangerForeground.opacity(opacity)
+		case .warning: return theme.warningInk.opacity(opacity)
+		case .danger: return theme.dangerText.opacity(opacity)
 		}
 	}
 }
@@ -130,7 +124,7 @@ package struct CapsuleActionButton: View {
 				CapsuleActionLabelModifier(
 					tone: tone,
 					foreground: foregroundTint,
-					disabledForeground: tone.disabledColor(for: contrast),
+					disabledForeground: tone.disabledColor(for: contrast, theme: theme),
 					surfaceTint: surfaceTint,
 					presentation: presentation,
 					controlSize: controlSize
@@ -162,11 +156,12 @@ package struct CapsuleActionButton: View {
 	private var foregroundTint: Color {
 		guard presentation == .hud else { return tone.ink(in: theme) }
 		return isEnabled
-			? tone.foregroundColor(for: contrast, in: palette) : tone.disabledColor(for: contrast)
+			? tone.foregroundColor(in: palette, theme: theme)
+			: tone.disabledColor(for: contrast, theme: theme)
 	}
 
 	private var surfaceTint: Color {
-		tone.surfaceColor(in: palette)
+		tone.surfaceColor(in: palette, theme: theme)
 	}
 
 	/// Enabled neutral icons use the accent ink; the title keeps the text role. HUD keeps one ink.

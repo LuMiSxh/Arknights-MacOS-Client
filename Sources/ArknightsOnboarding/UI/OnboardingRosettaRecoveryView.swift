@@ -40,7 +40,7 @@ struct OnboardingRosettaRecoveryView: View {
 					"Installation failed",
 					systemImage: "exclamationmark.triangle.fill"
 				)
-				.foregroundStyle(LauncherVisuals.warning)
+				.foregroundStyle(theme.warningInk)
 				Text(message)
 					.foregroundStyle(theme.textSecondary)
 					.fixedSize(horizontal: false, vertical: true)

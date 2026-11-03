@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import ArknightsTestSupport
 import Foundation
 import Testing
@@ -113,6 +114,46 @@ struct OnboardingCoordinatorTests {
 			Comment(rawValue: caseLabel))
 		#expect(coordinator.isPresented == updateIsAvailable, Comment(rawValue: caseLabel))
 		#expect(store.needsOnboarding == updateIsAvailable, Comment(rawValue: caseLabel))
+	}
+
+	@Test
+	func retryDuringPendingCheckWinsOverStaleResult() async {
+		let (defaults, suiteName) = makeIsolatedDefaults("OnboardingCoordinatorTests")
+		defer { defaults.removePersistentDomain(forName: suiteName) }
+		let coordinator = OnboardingCoordinator(store: OnboardingProgressStore(defaults: defaults))
+		var staleCheck: CheckedContinuation<LauncherUpdateCheckOutcome, Never>?
+		var intelChecks = 0
+
+		let first = Task {
+			await coordinator.startIfNeeded(
+				isDeveloperMode: false,
+				isOnboardingPreview: false,
+				gameIsInstalled: true,
+				checkForUpdates: {
+					await withCheckedContinuation { continuation in
+						staleCheck = continuation
+					}
+				},
+				checkIntelTranslation: {
+					intelChecks += 1
+					return .available
+				}
+			)
+		}
+		while staleCheck == nil { await Task.yield() }
+
+		await coordinator.retryUpdateCheck(
+			{ .current },
+			checkIntelTranslation: {
+				intelChecks += 1
+				return .available
+			})
+		staleCheck?.resume(returning: .updateAvailable("9.9.9"))
+		await first.value
+
+		#expect(coordinator.updateState == .current)
+		#expect(coordinator.intelTranslationState == .available)
+		#expect(intelChecks == 1)
 	}
 
 	@Test

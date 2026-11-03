@@ -47,8 +47,20 @@ package struct LauncherTheme: Equatable, Sendable {
 	package let danger: Color
 	/// Label on a danger button: near-white pink in dark mode, so it stays readable on the red glass.
 	package let dangerInk: Color
+	/// Danger text on neutral surfaces. Light mode uses the darkened `dangerInk` red.
+	package let dangerText: Color
+	/// Solid fill for destructive HUD and icon controls.
+	package let dangerSurface: Color
 	package let dangerGlassTint: Color
 	package let dangerGlassStroke: Color
+	/// Solid fill for cautionary controls and toggles.
+	package let warning: Color
+	/// Warning text and icons on neutral surfaces. Light mode darkens the hue to 4.5:1 on the sheet.
+	package let warningInk: Color
+	package let warningGlassTint: Color
+	package let warningGlassStroke: Color
+	/// Success text and icons on neutral surfaces. Light mode darkens the hue to 4.5:1 on the sheet.
+	package let successInk: Color
 
 	/// Used only when no artwork accent is available: dark, active, and the cyan accent.
 	package static let fallback = LauncherTheme(
@@ -61,8 +73,14 @@ package struct LauncherTheme: Equatable, Sendable {
 		static let strokeOpacity = 0.40
 	}
 
-	/// Danger hue: 350 degrees, in turns. Matches `LauncherVisuals.danger`, which is red.
+	/// Danger hue: 350 degrees, in turns.
 	private static let dangerHue = 350.0 / 360
+	/// Dark-mode semantic colors. These keep the values the app used before the light-mode roles.
+	private static let dangerForeground = Color(red: 0.98, green: 0.42, blue: 0.48)
+	private static let dangerForegroundHighContrast = Color(red: 1, green: 0.55, blue: 0.60)
+	private static let dangerSurfaceRGB = Color(red: 0.69, green: 0.141, blue: 0.231)
+	private static let warningRGB = Color(red: 0.91, green: 0.61, blue: 0.21)
+	private static let successRGB = Color(red: 0.28, green: 0.78, blue: 0.55)
 
 	init(
 		accent: Color, colorScheme: ColorScheme, isActive: Bool, increasedContrast: Bool,
@@ -132,8 +150,21 @@ package struct LauncherTheme: Equatable, Sendable {
 		dangerInk =
 			isDark ? tone(hue: Self.dangerHue, saturation: 0.22, brightness: 1) : danger
 		// Red reads darker than the accents on the glass backplate, so it needs a stronger tint.
+		dangerText =
+			isDark
+			? (increasedContrast ? Self.dangerForegroundHighContrast : Self.dangerForeground)
+			: danger
+		dangerSurface = Self.dangerSurfaceRGB
 		dangerGlassTint = danger.opacity(isDark ? 0.36 : 0.40)
 		dangerGlassStroke = danger.opacity(Glass.strokeOpacity)
+		// Warning and success keep their brand values in dark mode. Light mode darkens only the ink.
+		warning = Self.warningRGB
+		warningInk = isDark ? Self.warningRGB : Self.lightInk(from: Self.warningRGB)
+		warningGlassTint = Self.warningRGB.opacity(
+			LauncherVisuals.Control.enabledChromaticSurfaceOpacity)
+		warningGlassStroke = Self.warningRGB.opacity(
+			LauncherVisuals.Control.enabledChromaticBorderOpacity)
+		successInk = isDark ? Self.successRGB : Self.lightInk(from: Self.successRGB)
 	}
 
 	private static func hsb(
@@ -188,6 +219,14 @@ package struct LauncherTheme: Equatable, Sendable {
 	private static func encodedSRGB(_ linear: Double) -> Double {
 		let clamped = min(max(linear, 0), 1)
 		return clamped <= 0.0031308 ? 12.92 * clamped : 1.055 * pow(clamped, 1 / 2.4) - 0.055
+	}
+
+	/// Keeps the hue and saturation of a semantic color and darkens it for light-mode text.
+	private static func lightInk(from color: Color) -> Color {
+		let (hue, saturation, brightness) = hsb(of: color)
+		return Color(
+			hue: hue, saturation: saturation,
+			brightness: lightInkBrightness(hue: hue, saturation: saturation, from: brightness))
 	}
 
 	private static func hex(_ value: UInt32) -> Color {

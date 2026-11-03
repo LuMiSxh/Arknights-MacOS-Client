@@ -62,6 +62,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A slow Game Mode helper can no longer stop the launcher from quitting.
 - Diagnostics no longer replace parts of other words when your account name is short.
 - The **RT-BLK** failure no longer offers a **Retry** that cannot succeed.
+- Warning, success, and danger text is now readable in the light appearance.
+- Retrying the launcher update check during setup no longer lets an older result win.
 
 ## [0.7.1] - 2026-10-19
 

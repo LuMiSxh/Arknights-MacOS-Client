@@ -168,7 +168,6 @@ package struct SettingsPanel<Content: View>: View {
 		self.content = content()
 	}
 
-	@Environment(\.colorSchemeContrast) private var contrast
 	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -204,7 +203,7 @@ package struct SettingsPanel<Content: View>: View {
 	private var header: some View {
 		let label = Text(title)
 			.font(.system(size: 13, weight: .medium))
-			.foregroundStyle(tone == .neutral ? theme.textSecondary : tone.color(for: contrast))
+			.foregroundStyle(tone == .neutral ? theme.textSecondary : tone.color(in: theme))
 			.padding(.leading, 12)
 		if let isExpanded {
 			Button {
@@ -242,22 +241,14 @@ package enum SettingsPanelTone {
 	case warning
 	case danger
 
-	var color: Color {
+	func color(in theme: LauncherTheme) -> Color {
 		return switch self {
 		case .neutral: .primary
-		case .success: LauncherVisuals.success
-		case .warning: LauncherVisuals.warning
-		case .danger: LauncherVisuals.dangerForeground
+		case .success: theme.successInk
+		case .warning: theme.warningInk
+		case .danger: theme.dangerText
 		}
 	}
-
-	func color(for contrast: ColorSchemeContrast) -> Color {
-		if case .danger = self, contrast == .increased {
-			return LauncherVisuals.dangerForegroundHighContrast
-		}
-		return color
-	}
-
 }
 
 package struct DangerZonePanel<Content: View>: View {

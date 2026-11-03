@@ -6,6 +6,7 @@ import SwiftUI
 
 struct LauncherCompletionFeedbackView: View {
 	let feedbackID: UUID
+	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var isVisible = false
 	@State private var isRippling = false
@@ -21,11 +22,11 @@ struct LauncherCompletionFeedbackView: View {
 			}
 		}
 		.font(LauncherVisuals.Typography.completionLabel)
-		.foregroundStyle(LauncherVisuals.success)
+		.foregroundStyle(theme.successInk)
 		.background {
 			if !reduceMotion {
 				Circle()
-					.stroke(LauncherVisuals.success, lineWidth: 1.5)
+					.stroke(theme.successInk, lineWidth: 1.5)
 					.scaleEffect(isRippling ? 2.6 : 0.6)
 					.opacity(isRippling ? 0 : 0.75)
 			}

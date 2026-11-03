@@ -161,9 +161,7 @@ private struct DownloadStatusLabel: View {
 
 	private var statusDetail: String? {
 		if let progress = installation.progress, progress.totalBytes > 0 {
-			let downloaded = DownloadProgressFormatting.byteCount(progress.downloadedBytes)
-			let total = DownloadProgressFormatting.byteCount(progress.totalBytes)
-			return "\(downloaded) of \(total)"
+			return progress.transferSummary
 		}
 		return nil
 	}

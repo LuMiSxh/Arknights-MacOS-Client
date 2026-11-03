@@ -326,8 +326,7 @@ private struct ThemedActionSurfaceModifier<ShapeType: Shape>: ViewModifier {
 		switch tone {
 		case .accent: theme.accentGlassTint
 		case .danger: theme.dangerGlassTint
-		case .warning:
-			LauncherVisuals.warning.opacity(LauncherVisuals.Control.enabledChromaticSurfaceOpacity)
+		case .warning: theme.warningGlassTint
 		case .neutral: theme.controlFill
 		}
 	}
@@ -336,8 +335,7 @@ private struct ThemedActionSurfaceModifier<ShapeType: Shape>: ViewModifier {
 		switch tone {
 		case .accent: theme.accentGlassStroke
 		case .danger: theme.dangerGlassStroke
-		case .warning:
-			LauncherVisuals.warning.opacity(LauncherVisuals.Control.enabledChromaticBorderOpacity)
+		case .warning: theme.warningGlassStroke
 		case .neutral: theme.controlStroke
 		}
 	}
