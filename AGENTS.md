@@ -25,7 +25,9 @@
 - Map infrastructure errors at the owning feature boundary; each feature owns its error type. Support codes are pinned by `SupportCodeStabilityTests`; user-facing messages are copy.
 - Define persisted locations through `AppPaths`; preserve paths, keys, and formats unless a migration is explicit. Centralize application-owned keys, limits, retries, and timeouts in `Shared/Configuration/AppConstants.swift`; keep upstream literals beside their protocol.
 - Keep production Swift under 800 lines and tests under 450. Split a type by responsibility (`Type+Download.swift`), never by line count. C/Objective-C shims and scripts are exempt.
-- Avoid silent `try?` for filesystem, process, and network work; for best-effort cleanup, use `log.attempt("context") { try … }`. Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
+- Do not use `try?` for filesystem, process, or network work. Use `log.attempt("context") { try … }` for best-effort work.
+- Use `try?` only to remove an app-owned temporary file, with `// best effort:` on that line or the line above. `scripts/lib/try_lint.py` enforces this in Infrastructure, Installation, and Runtime.
+- Preserve MPL-2.0 SPDX headers in handwritten Swift, C, and Python.
 - Comment only non-obvious WHYs, workarounds, and security/concurrency invariants. Add DocC only to `package` APIs whose behavior the name does not state.
 - Keep developer simulation in `SimulatedLauncherActions` (`#if DEBUG`), driven by `CaseIterable` state and generic pickers. Production action bodies never branch on developer mode.
 - Installation is exclusive and keeps resumable `.part` files. Validate every manifest path before writing: check it lexically, reject symlinks per component, write `.part`, hash, then rename atomically. Do not add inode-identity rechecks.
@@ -84,5 +86,4 @@
 ## Known Debt
 
 - Do not copy these patterns; fix a site only when you touch its code.
-- Silent `try?` in `Sources/ArknightsGameInstallation/Compatibility/` (`GameShimIO`, `PlatformProcessCompatibility`, `BilibiliPlatformCompatibility`).
 - `StorageOverviewCopy` in `Sources/ArknightsGameRuntime/Storage/StorageOverviewPage.swift`.

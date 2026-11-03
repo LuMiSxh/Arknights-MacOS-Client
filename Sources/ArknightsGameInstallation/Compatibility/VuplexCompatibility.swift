@@ -25,17 +25,20 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 
 	private let shimURL: URL?
 	private let userenvURL: URL?
+	private let log: LauncherLog?
 
-	init(bundle: Bundle = .main) {
+	init(bundle: Bundle = .main, log: LauncherLog? = nil) {
+		self.log = log
 		let compatibilityDirectory = bundle.resourceURL.map(BundledResource.compatibility.location)?
 			.appending(path: "Vuplex", directoryHint: .isDirectory)
 		shimURL = compatibilityDirectory?.appending(path: "Vuplex WebView.vuplex")
 		userenvURL = compatibilityDirectory?.appending(path: Self.userenvName)
 	}
 
-	init(shimURL: URL?, userenvURL: URL?) {
+	init(shimURL: URL?, userenvURL: URL?, log: LauncherLog? = nil) {
 		self.shimURL = shimURL
 		self.userenvURL = userenvURL
+		self.log = log
 	}
 
 	@discardableResult
@@ -98,7 +101,8 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			isCurrentlyInstalledShim: helperIsInstalledShim,
 			temporaryPrefix: Self.shimTemporaryPrefix,
 			previousPrefix: Self.previousShimTemporaryPrefix,
-			fileManager: fileManager
+			fileManager: fileManager,
+			log: log
 		) {
 			_ = try installUserenv(from: userenvURL, beside: helperURL, fileManager: fileManager)
 		}
@@ -197,7 +201,8 @@ struct VuplexCompatibility: GameCompatibilityComponent {
 			sourceURL: sourceURL,
 			backupURL: backupURL,
 			temporaryName: "\(Self.userenvTemporaryPrefix)\(UUID().uuidString)",
-			fileManager: fileManager
+			fileManager: fileManager,
+			log: log
 		)
 		return true
 	}

@@ -27,15 +27,18 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 	private static let temporaryPrefix = ".arknights-client-bilibili-platform-"
 
 	private let controllerURL: URL?
+	private let log: LauncherLog?
 
-	init(bundle: Bundle = .main) {
+	init(bundle: Bundle = .main, log: LauncherLog? = nil) {
+		self.log = log
 		let directory = bundle.resourceURL.map(BundledResource.compatibility.location)?
 			.appending(path: "BilibiliPlatform", directoryHint: .isDirectory)
 		controllerURL = directory?.appending(path: Self.controllerName)
 	}
 
-	init(controllerURL: URL?) {
+	init(controllerURL: URL?, log: LauncherLog? = nil) {
 		self.controllerURL = controllerURL
+		self.log = log
 	}
 
 	@discardableResult
@@ -64,8 +67,12 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		let stagedController = temporaryURL(in: paths.directory, suffix: "controller")
 		let previousController = temporaryURL(in: paths.directory, suffix: "previous-controller")
 		defer {
-			try? fileManager.removeItem(at: stagedController)
-			try? fileManager.removeItem(at: previousController)
+			GameShimIO.attempt("Could not remove the staged Bilibili controller", log: log) {
+				try fileManager.removeItem(at: stagedController)
+			}
+			GameShimIO.attempt("Could not remove the previous Bilibili controller", log: log) {
+				try fileManager.removeItem(at: previousController)
+			}
 		}
 		try fileManager.copyItem(at: controllerURL, to: stagedController)
 		if fileManager.fileExists(atPath: paths.controller.path) {
@@ -73,7 +80,9 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 		}
 		do {
 			try fileManager.moveItem(at: stagedController, to: paths.controller)
-			try? fileManager.removeItem(at: previousController)
+			GameShimIO.attempt("Could not remove the previous Bilibili controller", log: log) {
+				try fileManager.removeItem(at: previousController)
+			}
 		} catch {
 			try GameShimIO.rethrowAfterRollback(
 				error,
@@ -197,8 +206,19 @@ package struct BilibiliPlatformCompatibility: GameCompatibilityComponent {
 	}
 
 	private func browserLinkIsCurrent(_ paths: Paths, _ fileManager: FileManager) -> Bool {
-		(try? fileManager.destinationOfSymbolicLink(atPath: paths.browserLink.path))
-			== "../\(Self.browserDirectoryName)"
+		let destination: String
+		do {
+			destination = try fileManager.destinationOfSymbolicLink(atPath: paths.browserLink.path)
+		} catch {
+			// A missing link is the normal state; only other read failures are worth a log line.
+			if !GameShimIO.isMissingFile(error) {
+				log?.error(
+					"Could not read the Bilibili browser link: \(launcherDiagnosticDescription(for: error))"
+				)
+			}
+			return false
+		}
+		return destination == "../\(Self.browserDirectoryName)"
 	}
 
 	private func containsMarker(_ marker: Data, at url: URL) throws -> Bool {

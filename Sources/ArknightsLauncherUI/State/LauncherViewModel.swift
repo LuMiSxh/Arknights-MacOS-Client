@@ -55,7 +55,7 @@ package final class LauncherViewModel {
 		announcementService: LauncherAnnouncementService = LauncherAnnouncementService(),
 		launcherIconManager: LauncherIconManager? = nil,
 		presetCatalog: PresetCatalogService? = nil,
-		gameCompatibilityManager: GameCompatibilityManager = GameCompatibilityManager(),
+		gameCompatibilityManager: GameCompatibilityManager? = nil,
 		checkIntelTranslation: @escaping @Sendable () async -> IntelTranslationCheck = {
 			await RosettaAvailability.check()
 		},
@@ -90,11 +90,13 @@ package final class LauncherViewModel {
 			?? PresetCatalogService(cacheDirectory: paths.presetGalleryCache, log: launcherLog)
 		self.presetCatalog = catalog
 		let resolvedArtworkCache = artworkCache ?? ArtworkCache(directory: paths.artworkCache)
+		let resolvedCompatibilityManager =
+			gameCompatibilityManager ?? GameCompatibilityManager(log: launcherLog)
 		let gameInstaller =
 			installer
 			?? GameInstaller(
 				api: api,
-				compatibilityManager: gameCompatibilityManager,
+				compatibilityManager: resolvedCompatibilityManager,
 				log: launcherLog,
 				reuseSourceDirectories: { [preferences] region in
 					await MainActor.run {
@@ -177,7 +179,7 @@ package final class LauncherViewModel {
 			paths: paths,
 			preferences: preferences,
 			log: launcherLog,
-			gameCompatibilityManager: gameCompatibilityManager,
+			gameCompatibilityManager: resolvedCompatibilityManager,
 			playtimeStatistics: playtimeStatistics,
 			graphicsDiagnosticsEnabled: arguments.contains("--graphics-diagnostics")
 		)

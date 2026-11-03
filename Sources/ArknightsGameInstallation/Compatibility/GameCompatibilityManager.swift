@@ -26,13 +26,13 @@ package struct GameCompatibilityManager: Sendable {
 	private let active: [any GameCompatibilityComponent]
 	private let retired: [any GameCompatibilityComponent]
 
-	package init(bundle: Bundle = .main) {
+	package init(bundle: Bundle = .main, log: LauncherLog? = nil) {
 		// Add new components to active. Move removed components to retired for at
 		// least one supported upgrade cycle so their owned files are restored.
 		active = [
-			VuplexCompatibility(bundle: bundle),
-			PlatformProcessCompatibility(bundle: bundle),
-			BilibiliPlatformCompatibility(bundle: bundle),
+			VuplexCompatibility(bundle: bundle, log: log),
+			PlatformProcessCompatibility(bundle: bundle, log: log),
+			BilibiliPlatformCompatibility(bundle: bundle, log: log),
 		]
 		retired = []
 	}

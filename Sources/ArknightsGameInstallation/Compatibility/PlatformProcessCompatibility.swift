@@ -20,17 +20,20 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 
 	private let shimURL: URL?
 	private let bridgeURL: URL?
+	private let log: LauncherLog?
 
-	init(bundle: Bundle = .main) {
+	init(bundle: Bundle = .main, log: LauncherLog? = nil) {
+		self.log = log
 		let directory = bundle.resourceURL.map(BundledResource.compatibility.location)?
 			.appending(path: "PlatformProcess", directoryHint: .isDirectory)
 		shimURL = directory?.appending(path: "PlatformProcess.exe")
 		bridgeURL = directory?.appending(path: Self.bridgeName)
 	}
 
-	init(shimURL: URL?, bridgeURL: URL?) {
+	init(shimURL: URL?, bridgeURL: URL?, log: LauncherLog? = nil) {
 		self.shimURL = shimURL
 		self.bridgeURL = bridgeURL
+		self.log = log
 	}
 
 	@discardableResult
@@ -88,7 +91,11 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 		guard !shimMatches || !bridgeMatches else { return false }
 
 		let stagedBridge = temporaryURL(in: gameDirectory, suffix: "bridge")
-		defer { try? fileManager.removeItem(at: stagedBridge) }
+		defer {
+			GameShimIO.attempt("Could not remove the staged window bridge", log: log) {
+				try fileManager.removeItem(at: stagedBridge)
+			}
+		}
 		try fileManager.copyItem(at: bridgeURL, to: stagedBridge)
 		try GameShimIO.swapHelper(
 			at: helper,
@@ -97,7 +104,8 @@ struct PlatformProcessCompatibility: GameCompatibilityComponent {
 			isCurrentlyInstalledShim: helperIsShim,
 			temporaryPrefix: "\(Self.temporaryPrefix)shim-",
 			previousPrefix: "\(Self.temporaryPrefix)previous-",
-			fileManager: fileManager
+			fileManager: fileManager,
+			log: log
 		) {
 			if fileManager.fileExists(atPath: installedBridge.path) {
 				_ = try fileManager.replaceItemAt(installedBridge, withItemAt: stagedBridge)

@@ -1,11 +1,30 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Darwin
 import Foundation
 
 // Shared file primitives for `GameCompatibilityComponent`s. Components keep their own
 // orchestration and error messages.
 enum GameShimIO {
+	// Best-effort work never rethrows. Without a logger, a failure is dropped.
+	static func attempt(_ context: String, log: LauncherLog?, _ work: () throws -> Void) {
+		do {
+			try work()
+		} catch {
+			log?.error("\(context): \(launcherDiagnosticDescription(for: error))")
+		}
+	}
+
+	// A missing optional link is the normal state, so callers log only other read failures.
+	static func isMissingFile(_ error: Error) -> Bool {
+		if let cocoaError = error as? CocoaError {
+			return cocoaError.code == .fileNoSuchFile || cocoaError.code == .fileReadNoSuchFile
+		}
+		let nsError = error as NSError
+		return nsError.domain == NSPOSIXErrorDomain && nsError.code == Int(ENOENT)
+	}
+
 	static func containsMarker(at url: URL, marker: Data, maximumSize: Int) throws -> Bool {
 		guard maximumSize >= 0, maximumSize < Int.max else { return false }
 		let descriptor = open(url.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
@@ -51,14 +70,19 @@ enum GameShimIO {
 		temporaryPrefix: String,
 		previousPrefix: String,
 		fileManager: FileManager,
+		log: LauncherLog?,
 		installCompanions: () throws -> Void
 	) throws {
 		let directory = helperURL.deletingLastPathComponent()
 		let temporaryURL = directory.appending(path: "\(temporaryPrefix)\(UUID().uuidString)")
 		let previousURL = directory.appending(path: "\(previousPrefix)\(UUID().uuidString)")
 		defer {
-			try? fileManager.removeItem(at: temporaryURL)
-			try? fileManager.removeItem(at: previousURL)
+			attempt("Could not remove a temporary helper copy", log: log) {
+				try fileManager.removeItem(at: temporaryURL)
+			}
+			attempt("Could not remove a previous helper copy", log: log) {
+				try fileManager.removeItem(at: previousURL)
+			}
 		}
 		try fileManager.copyItem(at: shimURL, to: temporaryURL)
 		if isCurrentlyInstalledShim {
@@ -121,14 +145,21 @@ enum GameShimIO {
 		sourceURL: URL,
 		backupURL: URL,
 		temporaryName: String,
-		fileManager: FileManager
+		fileManager: FileManager,
+		log: LauncherLog?
 	) throws {
 		let temporaryURL = destinationURL.deletingLastPathComponent().appending(path: temporaryName)
-		defer { try? fileManager.removeItem(at: temporaryURL) }
+		defer {
+			attempt("Could not remove a temporary userenv copy", log: log) {
+				try fileManager.removeItem(at: temporaryURL)
+			}
+		}
 		do {
 			try fileManager.copyItem(at: sourceURL, to: temporaryURL)
 			try fileManager.moveItem(at: temporaryURL, to: destinationURL)
-			try? fileManager.removeItem(at: backupURL)
+			attempt("Could not remove the userenv backup", log: log) {
+				try fileManager.removeItem(at: backupURL)
+			}
 		} catch {
 			try rethrowAfterRollback(
 				error,
