@@ -19,7 +19,8 @@ package struct FloatingActionFooterFade: View {
 	package var body: some View {
 		Group {
 			if reduceTransparency {
-				isDark ? Color.black.opacity(0.72) : theme.sheetTint
+				// Opaque in this mode, so the footer matches the sheet instead of a black strip.
+				theme.sheetTint
 			} else {
 				LinearGradient(
 					colors: [.clear, isDark ? Color.black.opacity(0.45) : theme.sheetTint],
