@@ -248,7 +248,7 @@ enum AdaptiveGlassBorderOwner: Equatable {
 }
 
 private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let tint: Color?
 	let borderTint: Color?
 	let shape: ShapeType
@@ -270,11 +270,14 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		) {
 		case .reducedTransparency(let showBorders):
 			content
-				.background(Color.black.opacity(0.92), in: shape)
+				.background {
+					shape.fill(theme.sheetSolid)
+						.overlay { shape.fill(tint ?? Color.clear) }
+				}
 				.overlay {
 					shape
 						.stroke(
-							(effectiveBorderTint ?? Color.white).opacity(
+							(effectiveBorderTint ?? theme.controlStroke).opacity(
 								showBorders ? 0.68 : 0.42
 							),
 							lineWidth: 1
@@ -385,7 +388,7 @@ private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {
 		let green = Double(resolved.green)
 		let blue = Double(resolved.blue)
 		let chroma = max(red, green, blue) - min(red, green, blue)
-		guard chroma > 0.08 else { return palette.quietControlTint }
+		guard chroma > 0.08 else { return theme.textSecondary }
 		return Color(.sRGB, red: red, green: green, blue: blue)
 	}
 

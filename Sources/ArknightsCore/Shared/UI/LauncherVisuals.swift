@@ -64,13 +64,8 @@ package enum LauncherVisuals {
 		static let disabledChromaticBorderOpacity = 0.14
 		package static let disabledForegroundOpacity = 0.44
 		static let disabledForegroundHighContrastOpacity = 0.52
-		static let disabledNeutralForegroundOpacity = 0.36
-		static let disabledNeutralForegroundHighContrastOpacity = 0.52
 		static let hudBorderOpacity = 0.16
-		package static let hudHoverSurfaceOpacity = 0.06
 		static let hudDisabledSurfaceOpacity = 0.68
-		static let hudDisabledBorderOpacity = 0.20
-		static let opaqueDisabledSurface = Color(red: 0.094, green: 0.098, blue: 0.114)
 		static let iconButtonSize: CGFloat = 36
 		static let iconButtonGlyphSize: CGFloat = 17
 		/// Matches GlassCapsuleMenu: a 16 pt chevron chip plus 2 x 6 pt padding.
@@ -80,16 +75,6 @@ package enum LauncherVisuals {
 			contrast == .increased
 				? disabledForegroundHighContrastOpacity
 				: disabledForegroundOpacity
-		}
-
-		static func disabledNeutralForegroundOpacity(
-			for contrast: ColorSchemeContrast
-		)
-			-> Double
-		{
-			contrast == .increased
-				? disabledNeutralForegroundHighContrastOpacity
-				: disabledNeutralForegroundOpacity
 		}
 	}
 

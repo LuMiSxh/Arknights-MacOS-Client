@@ -16,7 +16,6 @@ package struct IconActionButton: View {
 	let hitTargetSize: CGFloat
 	let action: () -> Void
 	@Environment(\.colorSchemeContrast) private var contrast
-	@Environment(\.launcherPalette) private var palette
 
 	package init(
 		title: String,
@@ -66,7 +65,6 @@ package struct IconActionButton: View {
 						surface: surface,
 						surfaceTint: surfaceTint,
 						foreground: foreground,
-						palette: palette,
 						contrast: contrast
 					)
 				)
@@ -80,21 +78,20 @@ package struct IconActionButton: View {
 	}
 }
 
-/// Icon chrome: the HUD and legacy tinted surfaces keep their palette path. Other neutral
+/// Icon chrome: the HUD keeps its smoked glass tint. Other neutral
 /// and tone-driven icons use the theme surface.
 private struct IconActionChrome: ViewModifier {
 	let tone: CapsuleActionTone
 	let surface: ControlSurfacePresentation
 	let surfaceTint: Color?
 	let foreground: Color?
-	let palette: LauncherPalette
 	let contrast: ColorSchemeContrast
 	@Environment(\.launcherTheme) private var theme
 	@Environment(\.colorScheme) private var colorScheme
 
-	/// Dark HUD glass keeps the palette tint; light HUD glass uses the theme group fill.
+	/// Dark HUD glass keeps a smoked tint; light HUD glass uses the theme group fill.
 	private var hudSurfaceTint: Color {
-		colorScheme == .dark ? palette.hudGlassTint : theme.groupFill
+		colorScheme == .dark ? theme.sheetSolid.opacity(0.52) : theme.groupFill
 	}
 
 	@ViewBuilder
@@ -104,13 +101,13 @@ private struct IconActionChrome: ViewModifier {
 				.adaptiveControlSurface(
 					tint: surfaceTint
 						?? (surface == .hud
-							? hudSurfaceTint : tone.surfaceColor(in: palette, theme: theme)),
+							? hudSurfaceTint : tone.surfaceColor(in: theme)),
 					presentation: surface,
 					isInteractive: true,
 					in: Circle()
 				)
 				.adaptiveControlForeground(
-					foreground ?? tone.foregroundColor(in: palette, theme: theme),
+					foreground ?? tone.foregroundColor(in: theme),
 					disabledTint: tone.disabledColor(for: contrast, theme: theme)
 				)
 		} else {

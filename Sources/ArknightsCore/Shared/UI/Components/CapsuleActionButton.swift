@@ -20,19 +20,20 @@ package enum CapsuleActionTone {
 	}
 
 	/// HUD foreground for an enabled control. Its surface is a tint, so it uses the text inks.
-	func foregroundColor(in palette: LauncherPalette, theme: LauncherTheme) -> Color {
+	/// HUD foreground for an enabled control. Its surface is a tint, so it uses the text inks.
+	func foregroundColor(in theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent(let color): color
-		case .neutral: palette.controlTint
+		case .neutral: theme.textPrimary
 		case .warning: theme.warningInk
 		case .danger: theme.dangerText
 		}
 	}
 
-	func surfaceColor(in palette: LauncherPalette, theme: LauncherTheme) -> Color {
+	func surfaceColor(in theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent(let color): color
-		case .neutral: palette.controlTint
+		case .neutral: theme.controlFill
 		case .warning: theme.warning
 		case .danger: theme.dangerSurface
 		}
@@ -42,10 +43,7 @@ package enum CapsuleActionTone {
 		let opacity = LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
 		switch self {
 		case .accent(let color): return color.opacity(opacity)
-		case .neutral:
-			return Color.white.opacity(
-				LauncherVisuals.Control.disabledNeutralForegroundOpacity(for: contrast)
-			)
+		case .neutral: return theme.textTertiary
 		case .warning: return theme.warningInk.opacity(opacity)
 		case .danger: return theme.dangerText.opacity(opacity)
 		}
@@ -146,7 +144,6 @@ package struct CapsuleActionButton: View {
 		return LauncherMotion.animation(.morph, reduceMotion: reduceMotion)
 	}
 
-	@Environment(\.launcherPalette) private var palette
 	@Environment(\.launcherTheme) private var theme
 
 	private var titleContentTransition: ContentTransition {
@@ -156,12 +153,12 @@ package struct CapsuleActionButton: View {
 	private var foregroundTint: Color {
 		guard presentation == .hud else { return tone.ink(in: theme) }
 		return isEnabled
-			? tone.foregroundColor(in: palette, theme: theme)
+			? tone.foregroundColor(in: theme)
 			: tone.disabledColor(for: contrast, theme: theme)
 	}
 
 	private var surfaceTint: Color {
-		tone.surfaceColor(in: palette, theme: theme)
+		tone.surfaceColor(in: theme)
 	}
 
 	/// Enabled neutral icons use the accent ink; the title keeps the text role. HUD keeps one ink.

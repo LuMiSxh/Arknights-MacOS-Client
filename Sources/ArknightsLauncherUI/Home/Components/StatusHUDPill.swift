@@ -100,14 +100,14 @@ struct StatusHUDPill: View {
 					.font(.caption.weight(.medium))
 					.adaptiveControlForeground(
 						theme.textPrimary,
-						disabledTint: LauncherVisuals.disabled
+						disabledTint: theme.textTertiary
 					)
 					.fixedSize(horizontal: false, vertical: true)
 				Text(countdown)
 					.font(.caption.monospacedDigit().weight(.medium))
 					.adaptiveControlForeground(
 						theme.textSecondary,
-						disabledTint: LauncherVisuals.disabled
+						disabledTint: theme.textTertiary
 					)
 					.fixedSize(horizontal: false, vertical: true)
 			}
@@ -117,7 +117,7 @@ struct StatusHUDPill: View {
 				.font(.caption.weight(.medium))
 				.adaptiveControlForeground(
 					theme.accentInk,
-					disabledTint: LauncherVisuals.disabled
+					disabledTint: theme.textTertiary
 				)
 				.opacity(region == installation.region ? 1 : 0)
 				.frame(width: 16, alignment: .center)

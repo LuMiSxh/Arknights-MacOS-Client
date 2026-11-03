@@ -74,7 +74,6 @@ extension View {
 }
 
 private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
-	@Environment(\.launcherPalette) private var palette
 	let tint: Color
 	let isDisabled: Bool
 	package let presentation: ControlSurfacePresentation
@@ -177,7 +176,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 
 	private var activeBorder: Color {
 		if presentation == .hud {
-			return palette.hairline.opacity(activeBorderOpacity)
+			return theme.controlStroke.opacity(activeBorderOpacity)
 		}
 		return tint.opacity(activeBorderOpacity)
 	}
@@ -194,7 +193,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 
 	private var hoverFill: Color {
 		if presentation == .hud {
-			return Color.white.opacity(LauncherVisuals.Control.hudHoverSurfaceOpacity)
+			return theme.hoverTint
 		}
 		if chromatic { return tint.opacity(0.05) }
 		return theme.hoverTint
@@ -203,8 +202,8 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 	private var disabledSurface: Color {
 		if presentation == .hud {
 			return reduceTransparency
-				? LauncherVisuals.Control.opaqueDisabledSurface
-				: Color.black.opacity(LauncherVisuals.Control.hudDisabledSurfaceOpacity)
+				? theme.sheetSolid
+				: theme.sheetSolid.opacity(LauncherVisuals.Control.hudDisabledSurfaceOpacity)
 		}
 		if reduceTransparency { return theme.sheetTint }
 		return theme.controlFill.opacity(ActionSurfaceMetrics.disabledOpacity)
@@ -212,7 +211,7 @@ private struct AdaptiveControlSurfaceModifier<ShapeType: Shape>: ViewModifier {
 
 	private var disabledBorder: Color {
 		if presentation == .hud {
-			return Color.white.opacity(LauncherVisuals.Control.hudDisabledBorderOpacity)
+			return theme.controlStroke
 		}
 		if chromatic {
 			let opacity =

@@ -5,7 +5,7 @@ import ArknightsGameInstallation
 import SwiftUI
 
 struct LauncherArtworkView: View {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let image: NSImage?
 	let themeCacheKey: String?
 	package let accentColor: Color
@@ -54,7 +54,7 @@ struct LauncherArtworkView: View {
 
 	private var fallbackArtwork: some View {
 		ZStack {
-			palette.artworkFallback
+			theme.sheetSolid
 			Text("A")
 				.font(LauncherVisuals.Typography.fallbackWordmark)
 				.foregroundStyle(.white.opacity(0.07))

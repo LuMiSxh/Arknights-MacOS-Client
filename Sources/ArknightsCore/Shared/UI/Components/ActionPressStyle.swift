@@ -90,7 +90,7 @@ struct KeyboardFocusIndicator<S: Shape>: ViewModifier {
 }
 
 private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
-	@Environment(\.launcherPalette) private var palette
+	@Environment(\.launcherTheme) private var theme
 	let isFocused: Bool
 	let shape: S
 	@Environment(\.settingsFocusCoordinator) private var settingsFocusCoordinator
@@ -103,7 +103,7 @@ private struct ExplicitKeyboardFocusIndicator<S: Shape>: ViewModifier {
 			shape
 				.stroke(
 					isEnabled && appearsActive && isFocused
-						? palette.controlTint.opacity(0.9)
+						? theme.accentInk.opacity(0.9)
 						: .clear,
 					lineWidth: LauncherVisuals.Control.focusWidth
 				)
