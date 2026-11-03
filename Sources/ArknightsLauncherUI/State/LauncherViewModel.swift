@@ -153,7 +153,7 @@ package final class LauncherViewModel {
 		let storage = StorageMaintenanceController(
 			lifecycle: lifecycle,
 			paths: paths,
-			presetCatalog: catalog,
+			clearGalleryCache: { try await catalog.clearCaches() },
 			log: launcherLog,
 			regionProvider: { [weak installation] in installation?.region ?? .global }
 		)

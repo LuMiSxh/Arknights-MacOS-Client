@@ -79,7 +79,7 @@ func galleryCleanupDoesNotOverlapActiveLifecycle() throws {
 	let storage = StorageMaintenanceController(
 		lifecycle: lifecycle,
 		paths: paths,
-		presetCatalog: catalog,
+		clearGalleryCache: { try await catalog.clearCaches() },
 		log: log
 	)
 	let lease = lifecycle.begin(.installing(id: UUID(), stage: .downloading))

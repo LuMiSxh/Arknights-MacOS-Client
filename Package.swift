@@ -47,7 +47,6 @@ let package = Package(
 			dependencies: [
 				"ArknightsInfrastructure",
 				"ArknightsCore",
-				"ArknightsCustomization",
 				"CCommonCrypto",
 			],
 			path: "Sources/ArknightsGameInstallation"
@@ -57,7 +56,6 @@ let package = Package(
 			dependencies: [
 				"ArknightsInfrastructure",
 				"ArknightsCore",
-				"ArknightsCustomization",
 				"ArknightsGameInstallation",
 			],
 			path: "Sources/ArknightsGameRuntime"

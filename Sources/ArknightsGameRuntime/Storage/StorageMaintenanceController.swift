@@ -2,7 +2,6 @@
 
 import AppKit
 import ArknightsCore
-import ArknightsCustomization
 import Foundation
 
 /// Owns targeted cache cleanup and the Finder reveal actions for the app and logs.
@@ -12,20 +11,20 @@ package final class StorageMaintenanceController {
 
 	private let lifecycle: LauncherLifecycleStore
 	private let paths: AppPaths
-	private let presetCatalog: PresetCatalogService
+	private let clearGalleryCache: @Sendable () async throws -> Void
 	private let log: LauncherLog
 	private let regionProvider: @MainActor () -> GameRegion
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
 		paths: AppPaths,
-		presetCatalog: PresetCatalogService,
+		clearGalleryCache: @escaping @Sendable () async throws -> Void,
 		log: LauncherLog,
 		regionProvider: @escaping @MainActor () -> GameRegion = { .global }
 	) {
 		self.lifecycle = lifecycle
 		self.paths = paths
-		self.presetCatalog = presetCatalog
+		self.clearGalleryCache = clearGalleryCache
 		self.log = log
 		self.regionProvider = regionProvider
 	}
@@ -81,7 +80,7 @@ package final class StorageMaintenanceController {
 				return
 			}
 			do {
-				try await presetCatalog.clearCaches()
+				try await clearGalleryCache()
 				lifecycle.end(lease)
 				onStorageOverviewChanged?()
 				log.info("Preset gallery caches cleared")

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
+
 import ArknightsInfrastructure
 import Foundation
 
@@ -78,10 +78,12 @@ actor HypergryphLauncherAPI {
 		guard
 			let image = envelope.responses.first(where: { $0.kind == "get_main_bg_image" })?
 				.mainBackground?.image,
-			DownloadHTTPPolicy.isAllowedSource(image.url, for: profile.region),
 			image.md5.isEmpty
 				|| ManifestChecksum.isMD5(image.md5)
 		else { throw LauncherError.invalidResponse }
+		guard DownloadHTTPPolicy.isAllowedSource(image.url, for: profile.region) else {
+			throw InstallerError.invalidRemoteAsset(image.url)
+		}
 		return LauncherBranding(
 			launcherBackgroundImage: image.url,
 			launcherBackgroundImageCRC64: image.md5.isEmpty ? nil : image.md5,

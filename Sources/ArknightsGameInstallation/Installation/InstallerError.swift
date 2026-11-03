@@ -9,6 +9,7 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 	case duplicateManifestPath(String)
 	case conflictingManifestPaths(String, String)
 	case symbolicLinkInInstallPath(URL)
+	case invalidRemoteAsset(URL)
 	case invalidDownloadResponse(status: Int, path: String)
 	case downloadedSizeMismatch(path: String, expected: Int64, actual: Int64)
 	case checksumMismatch(path: String, expected: String, actual: String)
@@ -25,6 +26,8 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"The game's file list contains unsafe or conflicting paths. Installation was stopped. Try again later."
 		case .symbolicLinkInInstallPath:
 			"The install folder contains a symbolic link. Choose a regular folder and try again."
+		case .invalidRemoteAsset:
+			"The requested content uses an unsupported download address. Check for a launcher update and try again."
 		case .invalidDownloadResponse:
 			"A game file could not be downloaded. Check your connection and try again."
 		case .downloadedSizeMismatch, .checksumMismatch:
@@ -50,6 +53,8 @@ package enum InstallerError: LocalizedError, LauncherDiagnosticError, Sendable {
 			"Conflicting paths in game manifest: \(parent) and \(child)"
 		case .symbolicLinkInInstallPath(let url):
 			"The game installer refused a symbolic link in its destination: \(url.path)"
+		case .invalidRemoteAsset(let url):
+			"Refused an unsupported remote asset URL: \(url.absoluteString)"
 		case .invalidDownloadResponse(let status, let path):
 			"Download for \(path) returned HTTP \(status)."
 		case .downloadedSizeMismatch(let path, let expected, let actual):

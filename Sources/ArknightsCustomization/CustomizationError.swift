@@ -57,7 +57,9 @@ extension CustomizationError: SupportCodeProviding {
 			.serviceError
 		case .presetNetworkFailed:
 			.networkUnavailable
-		case .invalidRemoteAsset, .invalidPresetImage, .invalidCustomImage:
+		case .invalidRemoteAsset:
+			.remoteContentInvalid
+		case .invalidPresetImage, .invalidCustomImage:
 			nil
 		}
 	}

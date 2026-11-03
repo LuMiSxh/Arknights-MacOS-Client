@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
-import ArknightsCustomization
 import ArknightsInfrastructure
 import Foundation
 
@@ -51,7 +50,7 @@ extension InstallationController {
 		case InstallerError.insufficientDiskSpace:
 			.insufficientDiskSpace
 		case LauncherError.invalidResponse,
-			CustomizationError.invalidRemoteAsset,
+			InstallerError.invalidRemoteAsset,
 			LauncherError.remoteContentTooLarge:
 			.remoteContentInvalid
 		case InstallerError.invalidDownloadResponse,
