@@ -6,10 +6,10 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct VersionHUDPill: View {
-	package let lifecycle: LauncherLifecycleStore
-	package let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let checkGameUpdates: () -> Void
+	let checkGameUpdates: () -> Void
 	@Binding var isExpanded: Bool
 	@Environment(\.launcherTheme) private var theme
 

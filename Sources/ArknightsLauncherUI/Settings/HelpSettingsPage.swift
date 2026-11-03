@@ -7,12 +7,12 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct HelpSettingsPage: View {
-	package let region: GameRegion
-	package let runtimeName: String?
+	let region: GameRegion
+	let runtimeName: String?
 	let actions: any LauncherActions
-	package let installation: InstallationController
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let lifecycle: LauncherLifecycleStore
+	let lifecycle: LauncherLifecycleStore
 	let restartOnboarding: () -> Void
 	@State private var confirmation: InstallationConfirmation?
 

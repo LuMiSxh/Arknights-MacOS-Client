@@ -4,8 +4,6 @@ import SwiftUI
 
 /// One row of a launcher navigation rail. With an action it is a button with hover and press
 /// feedback; without one it is a read-only step that VoiceOver reads as one element.
-/// One row of a launcher navigation rail. With an action it is a button with hover and press
-/// feedback; without one it is a read-only step that VoiceOver reads as one element.
 package struct NavigationRailRow: View {
 	@Environment(\.launcherTheme) private var theme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion

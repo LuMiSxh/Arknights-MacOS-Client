@@ -8,9 +8,9 @@ import SwiftUI
 // is the only view that reads the per-tick `installation.progress`, so progress updates
 // do not invalidate `content`. While an outline is possible, the overlay draws the border.
 struct HUDProgressSurface<Content: View>: View {
-	package let lifecycle: LauncherLifecycleStore
-	package let installation: InstallationController
-	@ViewBuilder package let content: () -> Content
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
+	@ViewBuilder let content: () -> Content
 
 	var body: some View {
 		let supportsOutline = LauncherDownloadProgressPresentation.supportsOutline(

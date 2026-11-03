@@ -82,7 +82,7 @@ final class LauncherRefreshController {
 		lifecycle.state.refresh = .idle
 	}
 
-	package func checkGameUpdates() {
+	func checkGameUpdates() {
 		guard lifecycle.canBeginExclusiveActivity, !installation.isDownloading else { return }
 		lifecycle.state.refresh = .idle
 		startRefresh(forceGameUpdateCheck: true)
@@ -108,7 +108,7 @@ final class LauncherRefreshController {
 	}
 
 	@discardableResult
-	package func selectRegion(_ newRegion: GameRegion) -> Bool {
+	func selectRegion(_ newRegion: GameRegion) -> Bool {
 		guard installation.selectRegion(newRegion) else { return false }
 		lifecycle.state.refresh = .checking(requestID: nil)
 		branding = nil

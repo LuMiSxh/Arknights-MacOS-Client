@@ -6,7 +6,7 @@ import SwiftUI
 
 struct LauncherFailureDetailView: View {
 	@Environment(\.launcherTheme) private var theme
-	package let failure: LauncherFailurePresentation
+	let failure: LauncherFailurePresentation
 
 	let perform: (RecoveryAction, UUID) -> Void
 	let isSavingDiagnostics: Bool

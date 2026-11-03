@@ -5,9 +5,9 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct GameSettingsPage: View {
-	package let settings: LauncherPreferencesController
+	let settings: LauncherPreferencesController
 	let gameSession: GameSessionController
-	package let lifecycle: LauncherLifecycleStore
+	let lifecycle: LauncherLifecycleStore
 
 	var body: some View {
 		SettingsPage(

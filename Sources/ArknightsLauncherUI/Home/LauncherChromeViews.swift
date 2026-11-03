@@ -6,7 +6,7 @@ import SwiftUI
 
 struct ArknightsWordmark: View {
 	let logo: NSImage?
-	package let region: GameRegion
+	let region: GameRegion
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.colorScheme) private var colorScheme
 

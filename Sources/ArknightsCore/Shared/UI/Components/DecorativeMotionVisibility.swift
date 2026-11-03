@@ -101,7 +101,7 @@ struct DecorativeMotionClock {
 	private(set) var pausedPhase = 0.0
 	private var startDate: Date?
 
-	package mutating func begin(at date: Date, cycleDuration: TimeInterval) {
+	mutating func begin(at date: Date, cycleDuration: TimeInterval) {
 		guard startDate == nil else { return }
 		startDate = date.addingTimeInterval(-pausedPhase * cycleDuration)
 	}

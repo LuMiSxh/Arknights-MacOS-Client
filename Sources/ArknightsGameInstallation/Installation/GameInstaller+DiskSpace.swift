@@ -12,7 +12,7 @@ enum DiskCapacityError: LauncherDiagnosticError, Sendable {
 		"Disk capacity could not be determined for the selected location."
 	}
 
-	package var diagnosticDescription: String {
+	var diagnosticDescription: String {
 		switch self {
 		case .noExistingAncestor(let url):
 			"No existing directory was found for disk-capacity inspection: \(url.path)"

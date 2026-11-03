@@ -8,7 +8,7 @@ struct LauncherArtworkView: View {
 	@Environment(\.launcherTheme) private var theme
 	let image: NSImage?
 	let themeCacheKey: String?
-	package let accentColor: Color
+	let accentColor: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	// The very first artwork this view ever shows is revealed instantly (it was loaded while
 	// the window was still covered) — only later live updates get the crossfade.

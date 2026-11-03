@@ -6,7 +6,7 @@ import SwiftUI
 struct CachedPresetOperatorPair: View {
 	let catalog: PresetCatalogService
 	let url: URL
-	package let cacheKey: String
+	let cacheKey: String
 	let accentHue: Double?
 	var iconDimension: CGFloat = 82
 	var itemWidth: CGFloat = 104

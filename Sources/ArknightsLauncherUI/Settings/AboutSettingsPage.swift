@@ -8,7 +8,7 @@ import SwiftUI
 
 struct AboutSettingsPage: View {
 	@Environment(\.launcherTheme) private var theme
-	package let launcherIconManager: LauncherIconManager
+	let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
 	let runtime: InstalledRuntimeDetails?
 	let revealApplication: () -> Void

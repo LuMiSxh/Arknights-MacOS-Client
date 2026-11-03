@@ -15,7 +15,6 @@ struct OnboardingDisplayView: View {
 		) {
 			OnboardingQuestion(
 				question: "Display mode",
-				systemImage: "macwindow",
 				answers: GamePlacementAnswer.allCases.map(\.answer),
 				selection: answerBinding(\.placement),
 				isDisabled: isLocked
@@ -23,7 +22,6 @@ struct OnboardingDisplayView: View {
 			if answers.placement == .window {
 				OnboardingQuestion(
 					question: "Window size",
-					systemImage: "rectangle.expand.diagonal",
 					answers: answers.offeredWindowSizes.map {
 						$0.answer(on: GameScreenMetrics.main)
 					},
@@ -33,14 +31,12 @@ struct OnboardingDisplayView: View {
 			}
 			OnboardingQuestion(
 				question: "Rendering",
-				systemImage: "sparkles",
 				answers: GameRenderingMode.allCases.map(\.answer),
 				selection: answerBinding(\.rendering),
 				isDisabled: isLocked
 			)
 			OnboardingQuestion(
 				question: "Frame rate limit",
-				systemImage: "speedometer",
 				answers: GameFrameRateLimit.allCases.map(\.answer),
 				selection: answerBinding(\.frameRateLimit),
 				isDisabled: isLocked,
@@ -50,7 +46,6 @@ struct OnboardingDisplayView: View {
 			// shown; a runtime without it falls back to the game's own cursor at launch.
 			OnboardingQuestion(
 				question: "Cursor",
-				systemImage: "cursorarrow.motionlines",
 				answers: PointerAnswer.allCases.map(\.answer),
 				selection: pointerBinding,
 				isDisabled: isLocked

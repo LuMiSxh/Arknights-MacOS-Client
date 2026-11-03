@@ -4,7 +4,7 @@ import Foundation
 
 struct PresetAvatar: Identifiable, Codable, Sendable, Hashable {
 	let id: String
-	package let name: String
+	let name: String
 	let filename: String
 	let rarity: String?
 	let appellation: String?
@@ -124,7 +124,7 @@ struct OperatorArtCount: Identifiable, Hashable, Sendable {
 }
 
 struct RawCharacterEntry: Decodable {
-	package let name: String
+	let name: String
 	let isNotObtainable: Bool?
 	let rarity: String?
 	let appellation: String?

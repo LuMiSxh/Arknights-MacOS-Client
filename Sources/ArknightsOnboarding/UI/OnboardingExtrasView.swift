@@ -42,14 +42,12 @@ struct OnboardingExtrasView: View {
 		) {
 			OnboardingQuestion(
 				question: "Update checks",
-				systemImage: "arrow.trianglehead.2.clockwise",
 				answers: UpdateCheckAnswer.allCases.map(\.answer),
 				selection: updateBinding
 			)
 
 			OnboardingQuestion(
 				question: "Discord presence",
-				systemImage: "gamecontroller",
 				answers: DiscordPresenceAnswer.allCases.map(\.answer),
 				selection: presenceBinding
 			)

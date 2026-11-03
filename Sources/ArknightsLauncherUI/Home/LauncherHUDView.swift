@@ -7,14 +7,14 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct LauncherHUDView: View {
-	package let lifecycle: LauncherLifecycleStore
-	package let settings: LauncherPreferencesController
-	package let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let settings: LauncherPreferencesController
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let intelTranslation: IntelTranslationController
-	package let communication: LauncherCommunicationController
+	let intelTranslation: IntelTranslationController
+	let communication: LauncherCommunicationController
 	let canSwitchRegion: Bool
-	package let accentColor: Color
+	let accentColor: Color
 	let homeColorScheme: ColorScheme
 	let musicController: BackgroundMusicController
 	let actions: LauncherHUDActions

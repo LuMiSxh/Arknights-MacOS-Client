@@ -7,7 +7,7 @@ struct MusicPlayerControlButton: View {
 	@Environment(\.launcherTheme) private var theme
 	let title: String
 	let systemImage: String
-	package let accentColor: Color
+	let accentColor: Color
 	var isProminent = false
 	var isDisabled = false
 	let action: () -> Void

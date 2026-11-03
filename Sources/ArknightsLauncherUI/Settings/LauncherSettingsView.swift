@@ -14,17 +14,17 @@ import SwiftUI
 
 struct LauncherSettingsView: View {
 	@Environment(\.launcherTheme) private var theme
-	package let settings: LauncherPreferencesController
+	let settings: LauncherPreferencesController
 	let customization: CustomizationController
-	package let communication: LauncherCommunicationController
-	package let installation: InstallationController
+	let communication: LauncherCommunicationController
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let lifecycle: LauncherLifecycleStore
+	let lifecycle: LauncherLifecycleStore
 	let storage: StorageMaintenanceController
 	let storageOverview: StorageOverviewController
 	let playtimeStatistics: PlaytimeStatisticsController
 	let presetCatalog: PresetCatalogService
-	package let launcherIconManager: LauncherIconManager
+	let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
 	let actions: any LauncherActions
 	let restartOnboarding: () -> Void
@@ -215,8 +215,8 @@ private struct SettingsNavigationRail: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Binding var selection: SettingsSection
 	let isDeveloperMode: Bool
-	package let lifecycle: LauncherLifecycleStore
-	package let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
 	let selectionNamespace: Namespace.ID
 
 	var body: some View {

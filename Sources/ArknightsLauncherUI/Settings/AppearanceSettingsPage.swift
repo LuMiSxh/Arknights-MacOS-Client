@@ -15,7 +15,7 @@ struct AppearanceSettingsPage: View {
 
 	@Bindable var settings: LauncherPreferencesController
 	let customization: CustomizationController
-	package let lifecycle: LauncherLifecycleStore
+	let lifecycle: LauncherLifecycleStore
 	let presetCatalog: PresetCatalogService
 	let actions: any LauncherActions
 	@State private var presentedGallery: PresetGalleryDestination?

@@ -5,9 +5,9 @@ import Foundation
 // Already-complete files count at once on a resumed install, so the progress bar does not
 // jump backward when Repair or Resume restarts.
 struct DownloadProgressBaseline: Sendable {
-	package let totalBytes: Int64
+	let totalBytes: Int64
 	let totalFiles: Int
-	package let downloadedBytes: Int64
+	let downloadedBytes: Int64
 	let completedFiles: Int
 
 	init(

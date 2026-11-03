@@ -19,7 +19,6 @@ package enum CapsuleActionTone {
 	}
 
 	/// HUD foreground for an enabled control. Its surface is a tint, so it uses the text inks.
-	/// HUD foreground for an enabled control. Its surface is a tint, so it uses the text inks.
 	func foregroundColor(in theme: LauncherTheme) -> Color {
 		switch self {
 		case .accent: theme.accentFill
@@ -172,7 +171,7 @@ private struct CapsuleActionLabelModifier: ViewModifier {
 	let foreground: Color
 	let disabledForeground: Color
 	let surfaceTint: Color
-	package let presentation: CapsuleActionPresentation
+	let presentation: CapsuleActionPresentation
 	let controlSize: ControlSize
 
 	@ViewBuilder

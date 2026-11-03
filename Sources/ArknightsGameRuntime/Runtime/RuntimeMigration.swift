@@ -45,7 +45,7 @@ package struct RuntimeMigrationState: Codable, Equatable, Sendable {
 // missing system registry, or an explicitly invalidated step all restart from that point
 // forward, rather than replaying every step unconditionally.
 struct RuntimeMigrationPlan: Sendable {
-	package private(set) var state: RuntimeMigrationState
+	private(set) var state: RuntimeMigrationState
 	let pending: [RuntimeMigration]
 
 	init(

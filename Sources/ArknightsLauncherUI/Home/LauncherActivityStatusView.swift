@@ -5,8 +5,8 @@ import ArknightsGameInstallation
 import SwiftUI
 
 struct LauncherActivityStatusView: View {
-	package let lifecycle: LauncherLifecycleStore
-	package let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
+	let installation: InstallationController
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@State private var completionFeedback: InstallationCompletionFeedback?
 

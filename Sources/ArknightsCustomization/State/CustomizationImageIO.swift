@@ -30,9 +30,9 @@ struct IconRollbackFailure: LauncherDiagnosticError, SupportCodeProviding {
 		"The icon update failed, and the previous icons could not be fully restored."
 	}
 
-	package var supportCode: SupportCode? { .appIconFailed }
+	var supportCode: SupportCode? { .appIconFailed }
 
-	package var diagnosticDescription: String {
+	var diagnosticDescription: String {
 		let details = rollbackErrors.map(\.localizedDescription).joined(separator: "; ")
 		return
 			"Icon publication failed: \(original.localizedDescription). Rollback failures: \(details)"

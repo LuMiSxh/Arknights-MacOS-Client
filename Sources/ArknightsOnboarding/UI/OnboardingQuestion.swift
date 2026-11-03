@@ -30,7 +30,6 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	}
 
 	let question: String
-	let systemImage: String
 	let answers: [OnboardingAnswer<Value>]
 	private let interaction: Interaction
 	let isDisabled: Bool
@@ -39,12 +38,11 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	private init(
-		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
+		question: String, answers: [OnboardingAnswer<Value>],
 		interaction: Interaction, isDisabled: Bool, footnote: String?,
 		accessory: Accessory
 	) {
 		self.question = question
-		self.systemImage = systemImage
 		self.answers = answers
 		self.interaction = interaction
 		self.isDisabled = isDisabled
@@ -55,11 +53,11 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	// Action cards, each with a chevron, that run their own closure. The accessory shows a
 	// preview of the current choice above the cards.
 	init(
-		question: String, systemImage: String, actions: [OnboardingAnswer<Value>],
+		question: String, actions: [OnboardingAnswer<Value>],
 		@ViewBuilder accessory: () -> Accessory
 	) {
 		self.init(
-			question: question, systemImage: systemImage, answers: actions, interaction: .action,
+			question: question, answers: actions, interaction: .action,
 			isDisabled: false, footnote: nil, accessory: accessory())
 	}
 
@@ -175,22 +173,22 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 extension OnboardingQuestion where Accessory == EmptyView {
 	// One answer, applied the moment it is picked. The footnote adds a hint under the cards.
 	init(
-		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
+		question: String, answers: [OnboardingAnswer<Value>],
 		selection: Binding<Value?>, isDisabled: Bool = false,
 		footnote: String? = nil
 	) {
 		self.init(
-			question: question, systemImage: systemImage, answers: answers,
+			question: question, answers: answers,
 			interaction: .single(selection), isDisabled: isDisabled,
 			footnote: footnote, accessory: EmptyView())
 	}
 
 	init(
-		question: String, systemImage: String, answers: [OnboardingAnswer<Value>],
+		question: String, answers: [OnboardingAnswer<Value>],
 		selections: Binding<Set<Value>>
 	) {
 		self.init(
-			question: question, systemImage: systemImage, answers: answers,
+			question: question, answers: answers,
 			interaction: .multiple(selections), isDisabled: false,
 			footnote: nil, accessory: EmptyView())
 	}
@@ -209,7 +207,7 @@ private struct OnboardingAnswerStyle<S: InsettableShape>: ButtonStyle {
 }
 
 private struct OnboardingAnswerBody<S: InsettableShape>: View {
-	package let configuration: ButtonStyleConfiguration
+	let configuration: ButtonStyleConfiguration
 	let isSelected: Bool
 	let shape: S
 	@Environment(\.isEnabled) private var isEnabled

@@ -34,7 +34,7 @@ struct GameClientProfile: Sendable {
 	let variant: GameClientVariant
 	let runtimeEnvironmentOverrides: [String: String]
 	let requiresCanaryPermission: Bool
-	package let requiresACEWarning: Bool
+	let requiresACEWarning: Bool
 }
 
 /// The Canary permission that exposes extra regions. This is the single source of truth for

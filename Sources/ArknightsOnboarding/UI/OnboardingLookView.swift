@@ -24,7 +24,6 @@ struct OnboardingLookView: View {
 		) {
 			OnboardingQuestion(
 				question: "Which artwork should fill the launcher?",
-				systemImage: "photo.on.rectangle.angled",
 				actions: [
 					OnboardingAnswer(
 						value: Action.defaultArtwork, title: "Default artwork",
@@ -44,14 +43,12 @@ struct OnboardingLookView: View {
 
 			OnboardingQuestion(
 				question: "Dynamic Theme",
-				systemImage: "paintpalette",
 				answers: [true, false].map(Self.colorsAnswer),
 				selection: answerBinding(\.usesDynamicTheme)
 			)
 
 			OnboardingQuestion(
 				question: "Home controls",
-				systemImage: "rectangle.3.group",
 				answers: HomeTheme.allCases.map(\.answer),
 				selection: answerBinding(\.homeTheme),
 				footnote:
@@ -60,7 +57,6 @@ struct OnboardingLookView: View {
 
 			OnboardingQuestion(
 				question: "Branding",
-				systemImage: "textformat",
 				answers: HomeTheme.allCases.map(\.brandingAnswer),
 				selection: answerBinding(\.brandingTheme),
 				footnote: "Logo and backdrop in the top left corner."
@@ -68,7 +64,6 @@ struct OnboardingLookView: View {
 
 			OnboardingQuestion(
 				question: "Appearance",
-				systemImage: "circle.lefthalf.filled",
 				answers: LauncherAppearance.allCases.map(\.answer),
 				selection: answerBinding(\.launcherAppearance),
 				footnote: "Settings, setup, and dialogs. Home keeps its own controls."
@@ -76,14 +71,12 @@ struct OnboardingLookView: View {
 
 			OnboardingQuestion(
 				question: "What should the launcher show?",
-				systemImage: "rectangle.bottomthird.inset.filled",
 				answers: LauncherInfoAnswer.allCases.map(\.answer),
 				selections: $preferences.shownLauncherInfo
 			)
 
 			OnboardingQuestion(
 				question: "Which operator should your Dock show?",
-				systemImage: "dock.rectangle",
 				actions: dockActions
 			) {
 				OnboardingDockIconPreview(customization: customization)

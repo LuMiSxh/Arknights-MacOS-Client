@@ -4,7 +4,7 @@ import ArknightsCore
 import SwiftUI
 
 struct PresetGalleryLoadingView: View {
-	package let text: String
+	let text: String
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {

@@ -9,9 +9,9 @@ struct InstallationSettingsPage: View {
 	@Environment(\.launcherTheme) var theme
 	private static let canaryFeaturesTitle = "Canary Features"
 	@Bindable var settings: LauncherPreferencesController
-	package let installation: InstallationController
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let lifecycle: LauncherLifecycleStore
+	let lifecycle: LauncherLifecycleStore
 	let actions: any LauncherActions
 	@State private var confirmation: InstallationConfirmation?
 

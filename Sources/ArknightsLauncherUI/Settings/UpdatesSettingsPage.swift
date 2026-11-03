@@ -6,9 +6,9 @@ import SwiftUI
 
 struct UpdatesSettingsPage: View {
 	@Bindable var settings: LauncherPreferencesController
-	package let communication: LauncherCommunicationController
-	package let installation: InstallationController
-	package let lifecycle: LauncherLifecycleStore
+	let communication: LauncherCommunicationController
+	let installation: InstallationController
+	let lifecycle: LauncherLifecycleStore
 	let appVersion: String
 	private static let announcementsTitle = "Announcements"
 	let actions: any LauncherActions

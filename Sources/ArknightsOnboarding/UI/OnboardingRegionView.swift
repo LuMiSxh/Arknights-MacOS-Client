@@ -9,7 +9,7 @@ struct OnboardingRegionView: View {
 	@Bindable var installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
 	let canSwitchRegion: Bool
-	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
+	let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
 	private static func regionAnswer(_ region: GameRegion) -> OnboardingAnswer<GameRegion> {
 		OnboardingAnswer(
@@ -25,7 +25,6 @@ struct OnboardingRegionView: View {
 		) {
 			OnboardingQuestion(
 				question: "Server",
-				systemImage: "globe.asia.australia",
 				answers: preferences.regionAccess.selectableRegions.map(
 					Self.regionAnswer),
 				selection: regionBinding,

@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct RosettaInstallationConfirmationModifier: ViewModifier {
-	@Binding package var isPresented: Bool
+	@Binding var isPresented: Bool
 	let install: () -> Void
 
 	func body(content: Content) -> some View {

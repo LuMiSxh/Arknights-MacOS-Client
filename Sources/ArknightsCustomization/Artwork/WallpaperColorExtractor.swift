@@ -9,7 +9,7 @@ struct ExtractedAccent: Sendable {
 	let hue: Double
 	let saturation: Double
 	let brightness: Double
-	package let accentColor: Color
+	let accentColor: Color
 
 	init(hue: Double, saturation: Double, brightness: Double) {
 		self.hue = hue

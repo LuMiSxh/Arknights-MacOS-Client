@@ -25,7 +25,7 @@ package struct ActionPressStyle: ButtonStyle {
 }
 
 private struct ActionPressBody: View {
-	package let configuration: ButtonStyleConfiguration
+	let configuration: ButtonStyleConfiguration
 	let intensity: ActionPressStyle.Intensity
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.isEnabled) private var isEnabled

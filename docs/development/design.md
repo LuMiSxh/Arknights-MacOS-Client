@@ -105,7 +105,7 @@ Rules:
 - A hovered control changes its surface or opacity. Do not scale or lift a control on hover.
 - The primary action shows at most one ambient effect: a still accent halo. The halo plays one pulse when it appears. Its blur is 4.8–8 pt and its accent opacity is 0.11–0.25. It has no repeating loop. Show the halo only for an enabled Play.
 - Controls show no pointer-following sheen.
-- Overlays, such as the update dialog, enter with `present` and leave with `dismiss`. Overlays and the control bar enter with opacity and a small scale of 0.96. Do not combine blur with an offset. Native sheets keep their platform motion.
+- Overlays, such as the update dialog, enter with `present` and leave with `dismiss`. Overlays and the control bar enter with opacity and a small scale of 0.96. Native sheets keep their platform motion.
 - Use the `.replace` symbol effect for symbol changes. Do not use the `.magic` symbol effect.
 - Selection moves between items with `select`. The segmented thumb moves this way. The Settings rail slides the selected row between rows.
 - Artwork and theme colors use `crossfade`. Settings pages do not animate card insertion. Determinate progress stays linear.

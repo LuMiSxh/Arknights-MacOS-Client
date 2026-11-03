@@ -88,7 +88,7 @@ private enum BundledDocumentLoadState {
 
 struct BundledDocumentView: View {
 	let document: BundledDocument
-	package let accentColor: Color
+	let accentColor: Color
 
 	@State private var loadState = BundledDocumentLoadState.loading
 	@Environment(\.dismiss) private var dismiss

@@ -3,7 +3,7 @@
 import SwiftUI
 
 struct PresetGalleryEmptyView: View {
-	package let text: String
+	let text: String
 	let systemImage: String
 
 	var body: some View {

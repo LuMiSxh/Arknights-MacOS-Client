@@ -5,11 +5,11 @@ import ArknightsGameInstallation
 import SwiftUI
 
 struct StatusHUDPill: View {
-	package let settings: LauncherPreferencesController
-	package let installation: InstallationController
+	let settings: LauncherPreferencesController
+	let installation: InstallationController
 	let canSwitchRegion: Bool
-	package let accentColor: Color
-	package let selectRegion: (GameRegion) -> Void
+	let accentColor: Color
+	let selectRegion: (GameRegion) -> Void
 	@Binding var isExpanded: Bool
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.launcherTheme) private var theme

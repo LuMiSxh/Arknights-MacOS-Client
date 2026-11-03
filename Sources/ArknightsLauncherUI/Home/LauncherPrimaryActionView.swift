@@ -6,13 +6,13 @@ import ArknightsGameRuntime
 import SwiftUI
 
 struct LauncherPrimaryActionView: View {
-	package let installation: InstallationController
+	let installation: InstallationController
 	let gameSession: GameSessionController
-	package let intelTranslation: IntelTranslationController
-	package let installOrUpdate: () -> Void
-	package let cancelDownload: () -> Void
-	package let launch: () -> Void
-	package let stopGame: () -> Void
+	let intelTranslation: IntelTranslationController
+	let installOrUpdate: () -> Void
+	let cancelDownload: () -> Void
+	let launch: () -> Void
+	let stopGame: () -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 	var body: some View {

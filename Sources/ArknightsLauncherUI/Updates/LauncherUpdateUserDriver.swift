@@ -219,7 +219,7 @@ final class LauncherUpdateUserDriver: NSObject, SPUUserDriver {
 		hide()
 		cancellation()
 	}
-	package func cancelDownload() {
+	func cancelDownload() {
 		guard let cancellation = takeAction(&downloadCancellation) else { return }
 		hide()
 		cancellation()

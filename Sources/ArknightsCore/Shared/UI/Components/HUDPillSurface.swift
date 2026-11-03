@@ -9,12 +9,12 @@ import SwiftUI
 struct HUDPillSurface<Content: View>: View {
 	let isExpanded: Bool
 	let showsBorder: Bool
-	@ViewBuilder package let content: Content
+	@ViewBuilder let content: Content
 	@Environment(\.launcherTheme) private var theme
 	@Environment(\.colorScheme) private var colorScheme
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-	package init(
+	init(
 		isExpanded: Bool = false,
 		showsBorder: Bool = true,
 		@ViewBuilder content: () -> Content
@@ -24,7 +24,7 @@ struct HUDPillSurface<Content: View>: View {
 		self.content = content()
 	}
 
-	package var body: some View {
+	var body: some View {
 		content
 			.contentShape(surfaceShape)
 			.adaptiveControlSurface(
