@@ -15,9 +15,9 @@ order: 20
 
 ## Publisher support routing
 
-The publisher of your region handles accounts, payments, servers, and in-game data.
+The publisher of your server handles accounts, payments, game servers, and in-game data.
 
-| Region                  | Contact                                                       |
+| Server                  | Contact                                                       |
 | ----------------------- | ------------------------------------------------------------- |
 | Global, Japan, or Korea | [Yostar Support](https://account.yo-star.com/contact)         |
 | Taiwan                  | [Gryphline Support](https://www.gryphline.com/en-us/contacts) |
@@ -27,7 +27,7 @@ For an unexpected charge, first contact the payment provider on the transaction.
 
 ## Report a problem
 
-Choose **Help → Report a Problem…** in the menu bar. You can also choose **Report a Problem** next to an error, or **Settings → Help → Report a Problem…**. The launcher opens a GitHub issue with the error code, region, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
+Choose **Help → Report a Problem…** in the menu bar. You can also choose **Report a Problem** next to an error, or **Settings → Help → Report a Problem…**. The launcher opens a GitHub issue with the error code, server, launcher version, macOS version, chip, and memory size. Add what you did and what happened.
 
 You do not need logs at first. If a maintainer asks for logs, choose **Help → Save Diagnostics…** or **Settings → Help → Diagnostics → Save…**. The launcher saves a zip file to Downloads. The file includes the SDK logs for China, China (Bilibili), and Taiwan. Nothing is uploaded. Review the file before you attach it to the issue. It can contain account IDs and access keys.
 

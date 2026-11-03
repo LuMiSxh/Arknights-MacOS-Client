@@ -9,7 +9,7 @@ audience: developers
 
 Failures use a typed presentation snapshot, never display text. A snapshot holds an operation ID, user-facing message, optional `SupportCode`, original operation and region, and ordered allowed recovery actions.
 
-Every user-initiated failure opens the shared detail modal once. A launch-blocking snapshot keeps **Action required** and **Show Details** in the HUD and disables launch after dismissal. Non-blocking failures, such as a failed manual update check for an installed game or optional customization work, release the HUD on dismissal.
+Every user-initiated failure opens the shared detail modal once. A launch-blocking snapshot keeps **Needs attention** and **Show Details** in the HUD and disables launch after dismissal. Non-blocking failures, such as a failed manual update check for an installed game or optional customization work, release the HUD on dismissal.
 
 ## Ownership
 
@@ -31,7 +31,7 @@ Each feature owns one error type and maps it to a support code at its own bounda
 
 **Repair** is offered only for installed-file failures that a full manifest verification can help. The user must confirm it. The model then revalidates the failure ID, region, installation state, and exclusive-operation gate.
 
-The failure modal renders the matching English page from `docs/help/errors`, bundled during packaging. **Open on Website** opens the current, shareable GitHub Pages version. **Report a Problem** sends only the code, operation, region, opening place, launcher version, and coarse environment, through fields declared in the GitHub issue form. Logs stay in **Settings → Storage** for maintainer-requested follow-up, not as an initial failure action.
+The failure modal renders the matching English page from `docs/help/errors`, bundled during packaging. **Open on Website** opens the current, shareable GitHub Pages version. **Report a Problem** sends only the code, operation, region, opening place, launcher version, and coarse environment, through fields declared in the GitHub issue form. The failure sheet can offer **Save Diagnostics**, and **Settings → Help → Diagnostics** saves the same archive. Use either only for maintainer-requested follow-up, not as an initial failure action. Logs stay in **Settings → Storage**.
 
 > [!CAUTION]
 > Never place user-facing error text, paths, URLs, response bodies, log excerpts, account data, or tokens in an automatically prepared public report.

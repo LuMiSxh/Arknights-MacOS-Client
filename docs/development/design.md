@@ -224,7 +224,7 @@ The source icon is an Icon Composer document. It has three layers: structure, gl
 
 An operator preset gives a matched pair: a Launcher icon and a Game icon from the same avatar. Dynamic Theme recolors only the Launcher icon of an operator preset. It never recolors the Game icon. A local image replaces one destination. It also ends automatic preset refreshes.
 
-Settings offers one **Choose Operator…** action for both icons. It also offers a **Your own images** row with one menu for each icon.
+Settings offers one **Choose Operator…** action for both icons. It also offers a **Custom icons** row with one menu for each icon.
 
 > [!IMPORTANT]
 > For **Use Default**, the Wine game process uses the original executable icon. The icon scales to the same 412/512 visual grid as the launcher and native Dock icons. Preset and custom game icons use the same canvas. Never patch icon resources inside `Arknights.exe`.

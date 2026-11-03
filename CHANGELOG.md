@@ -16,13 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a light mode. Choose System, Light, or Dark under **Settings → Appearance**. The choice applies to Settings, setup, and dialogs.
 - Added **Home controls** and **Branding** under **Settings → Appearance → Dynamic Theme**. Each one can follow the brightness of the artwork, or stay dark or light. In light mode, the logo is black and the backdrop is white.
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
-- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS, or Unlimited.
+- Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS.
 - Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
 - Added a **Help** section to **Settings** and a **Help** menu. They hold **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support. **Report a Problem…** is also in the Dock menu.
-- Added **Save diagnostics…**. It saves a zip file to your Downloads folder. The zip holds the logs, the SDK logs, and environment details such as display settings, installed regions, macOS, chip, and memory.
-- The logs in the diagnostics zip redact your home folder, your user name, and URL queries. SDK logs can still contain account IDs and access keys, so review the zip before you share it. Nothing is uploaded.
-- The launcher now collects the SDK logs for China, China (Bilibili), and Taiwan. **Reveal logs** shows them in the `sdklogs` folder.
-- Added **Contact the Developer** to **Settings → Help** for private messages, feedback, and testing offers.
+- Added **Save Diagnostics…**. It saves a zip file to your Downloads folder. The zip holds the logs, the SDK logs, and environment details such as display settings, installed regions, macOS, chip, and memory. The logs redact your home folder, your user name, and URL queries. SDK logs can still contain account IDs and access keys, so review the zip before you share it. Nothing is uploaded. The launcher now collects the SDK logs for China, China (Bilibili), and Taiwan. Use **Show Logs** in **Settings → Storage** to see them in the `sdklogs` folder.
+- Added **Contact the developer** to **Settings → Help** for private messages, feedback, and testing offers. Use **Contact…** to get in touch.
 - The failure sheet can copy the support code.
 - Added a **Runtime** group to **Settings → About**. It shows the runtime version, the pinned Wine and DXMT versions and commits, and the capabilities the runtime advertises.
 
@@ -32,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Secondary buttons and links in Settings, setup, and the update window use quiet neutral colors. The theme color marks only the main action, progress, and selection. Destructive buttons use a red tint in dark and light.
 - The selection in the Settings sidebar now slides between rows.
 - Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
-- Renamed **Settings → Audio** to **Settings → Integration**. It holds launcher music and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & integrations**.
+- Renamed **Settings → Audio** to **Settings → Integration**. It holds launcher music and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.
@@ -41,17 +39,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - All report actions use the name **Report a Problem**. **Settings → Help** separates problems on this Mac from account and payment problems.
 - Support codes now use a short, readable format, for example **IN-DSK** for low disk space. Old codes such as **BASALT** link to their new pages.
 - The problem report form asks for logs only when a maintainer requests them.
-- Fullscreen mode now opens the game in its own macOS Space, so you can switch apps and Spaces normally (requires runtime 0.8.0-rc3 or newer).
+- Fullscreen mode now opens the game in its own macOS Space, so you can switch apps and Spaces normally.
 - **Rendering** marks MetalFX as unavailable when the bundled runtime cannot use it. The launcher names the fallback that it uses instead.
-- Runtime 0.8.0 updates DXMT to 0.80-361. It includes the upstream fixes for the display query leaks.
-- Runtime 0.8.0-rc2 is built with the macOS 27 SDK. The game window uses the current macOS window style.
+- Updated the bundled runtime to 0.8.0 (DXMT 0.80-361, macOS 27 SDK). It includes the upstream fixes for the display query leaks.
 - The launcher now remembers when you mute the music.
 - Playlists now start on a random track without playing the first track briefly.
 
 ### Fixed
 
 - Launcher music now plays until the game window appears. It then fades out once, without stuttering.
-- The launcher no longer waits for the Game Mode helper on its main thread when the game starts.
 - The music controls no longer dim for a moment when you fade or change a track.
 - The launcher no longer changes the music track after the game window appears.
 - Changing the music volume during a fade-in now keeps the new volume.

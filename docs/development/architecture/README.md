@@ -28,7 +28,9 @@ flowchart TB
 	Root --> Communication[LauncherCommunicationController]
 	Root --> Settings[LauncherPreferencesController]
 	Root --> Customization[CustomizationController]
-	Root --> Storage[Storage controllers]
+	Root --> Presence[DiscordPresenceController]
+	Root --> Storage[StorageMaintenanceController]
+	Root --> StorageOverview[StorageOverviewController]
 	Install -->|exclusive activity| Lifecycle
 	Game -->|exclusive activity| Lifecycle
 	Refresh -->|readiness and presentation| Lifecycle
@@ -67,27 +69,6 @@ Each long-lived state and each asynchronous task has one feature owner:
 | `StorageMaintenanceController`    | Targeted DXMT, browser, and gallery cache cleanup                                                                                              |
 | `StorageOverviewController`       | Async usage measurement for installations, runtime data, caches, logs                                                                          |
 
-The composition root owns these controllers:
-
-```mermaid
-flowchart TD
-	Root[LauncherViewModel composition root] --> Lifecycle[LauncherLifecycleStore]
-	Root --> Installation[InstallationController]
-	Root --> Session[GameSessionController]
-	Root --> Refresh[LauncherRefreshController]
-	Root --> Communication[LauncherCommunicationController]
-	Root --> Presence[DiscordPresenceController]
-	Root --> Customization[CustomizationController]
-	Root --> Preferences[LauncherPreferencesController]
-	Root --> Storage[StorageMaintenanceController]
-	Root --> StorageOverview[StorageOverviewController]
-	Installation --> Lifecycle
-	Session --> Lifecycle
-	Refresh --> Lifecycle
-	Communication --> Popup[Popup presentation]
-	Customization --> Artwork[Artwork and icons]
-```
-
 The state tree has three separate concerns:
 
 | State branch              | Answers                                     | Examples                                               |
@@ -110,7 +91,7 @@ calls the same region, installer, display, artwork, icon, update, and audio acti
 interface.
 
 A mandatory launcher-update preflight runs before setup. Interrupted setup resumes at its saved step.
-If the game is absent, setup returns to Region & Install.
+If the game is absent, setup returns to the Server step.
 
 ## Targets
 
@@ -120,7 +101,7 @@ number. The compiler rejects a cycle.
 
 | No. | Target                      | Contains                                                                                                                                       | Depends on             | Linked products    |
 | --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------ |
-| 1   | `ArknightsInfrastructure`   | Feature-independent network and file I/O primitives (`FileSystem`, `Network`)                                                                  | none                   | none               |
+| 1   | `ArknightsInfrastructure`   | Feature-independent I/O and Discord IPC (`FileSystem`, `Network`, `Presence`)                                                                  | none                   | none               |
 | 2   | `ArknightsCore`             | Cross-feature lifecycle state (`Core`), shared domain, configuration, persistence, diagnostics, UI contracts (`Shared`), and SwiftPM resources | 1                      | none               |
 | 3   | `ArknightsCustomization`    | Artwork, icons, preset gallery                                                                                                                 | 1, 2                   | none               |
 | 4   | `ArknightsGameInstallation` | Installation, manifests, game-file compatibility components                                                                                    | 1, 2, 3                | `CCommonCrypto`    |
@@ -159,8 +140,7 @@ and resource layout), and `runtime.json` (runtime layout) through `scripts/lib/p
 
 ## Bundled resources
 
-`Sources/ArknightsCore/Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app bundle.
-bundle. Each entry states its path, kind, origin, and encoding.
+`Sources/ArknightsCore/Shared/Resources/BundledResource.swift` is the only place that names a file or directory in the app bundle. Each entry states its path, kind, origin, and encoding.
 
 | Origin    | Staged by                       | Read from                                                    |
 | --------- | ------------------------------- | ------------------------------------------------------------ |

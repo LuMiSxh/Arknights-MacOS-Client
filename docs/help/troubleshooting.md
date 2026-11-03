@@ -7,7 +7,7 @@ order: 20
 # Troubleshooting
 
 > [!IMPORTANT]
-> Do not delete the Wine prefix or the game folder first. Deleting the prefix signs you out. Deleting the game folder forces a new download.
+> Do not delete the game environment (Wine prefix) or the game folder first. Deleting the game environment signs you out. Deleting the game folder forces a new download.
 
 ## The launcher shows an error code
 
@@ -34,16 +34,16 @@ See [Error codes](errors/README.md) for codes such as `IN-DLD`.
 
 1. Wait while the launcher shows **Preparing download** or **Waiting for network…**.
 2. Check your connection and the free space on the destination drive.
-3. Reopen the launcher and choose **Resume Download**.
+3. Reopen the launcher and choose **Resume**.
 4. If one file keeps failing, try later.
 
-Do not move or rename `.part` files or change the installation location during a download.
+Do not move or rename partly downloaded files or change the installation location during a download.
 
-## A region shows “Not installed”
+## A server shows “Not installed”
 
-1. Select the region in **Settings → Servers**.
-2. Choose **Installation Location → Locate Existing Installation…** and select the folder that directly contains `Arknights.exe`.
-3. If the region still shows **Not installed**, run **Repair…**.
+1. Select the server in **Settings → Servers**.
+2. Choose **Settings → Servers → Location → Change… → Locate Existing Installation…** and select the folder that directly contains `Arknights.exe`.
+3. If the server still shows **Not installed**, run **Repair…**.
 
 ## An update or repair does not finish
 
@@ -53,11 +53,11 @@ When no other download runs, choose **Settings → Servers → Repair…**.
 
 - **Play is disabled:** Finish the download or pending update.
 - **No game window appears:** Quit any leftover Arknights process and try again. If the launcher shows an error code, follow its page.
-- **The game closes right away:** After an update, start it once more. If it keeps closing, try another installed region. Then [report the problem](README.md#report-a-problem).
+- **The game closes right away:** After an update, start it once more. If it keeps closing, try another installed server. Then [report the problem](README.md#report-a-problem).
 
 ## Sign-in or Notices stay blank
 
-Sign-in by region:
+Sign-in by server:
 
 - **Global, Japan, Korea, and China:** a sign-in window inside the game.
 - **China (Bilibili):** the login window of Bilibili.
@@ -68,7 +68,7 @@ An in-game window can take up to one minute after first start, an update, or cac
 1. Wait one minute. Do not press sign-in again.
 2. Check your connection and the Mac date and time.
 3. For Global, Japan, Korea, or China: quit the game, choose **Settings → Storage → Clear Caches**, restart.
-4. If the window stays blank, [report the problem](README.md#report-a-problem) with the region.
+4. If the window stays blank, [report the problem](README.md#report-a-problem) with the server.
 
 If the window works but your sign-in is rejected or the account is locked, contact your [publisher](README.md#publisher-support-routing).
 

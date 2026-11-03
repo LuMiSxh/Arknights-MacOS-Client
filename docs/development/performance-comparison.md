@@ -64,14 +64,14 @@ Set these values before you measure and record them in the manifest note.
 | In-game override      | On             | Off leaves the size to the game's own settings. The iOS client has no equal option. |
 | Wine sync             | MSYNC          | MSYNC and ESYNC take different wait paths. ESYNC can change frame pacing.           |
 | Metal Performance HUD | Off            | The overlay adds work. Turn it on only to cross-check the frame rate by eye.        |
-| Frame rate limit      | Unlimited      | A cap changes frame pacing. Keep Unlimited for the baseline.                        |
+| Frame rate limit      | 120 FPS        | A cap changes frame pacing. Keep 120 FPS for the baseline.                          |
 
 **Settings → Game → Display → Render resolution** shows the pixels the game draws. With Retina on
 a 2× display it is twice the window size in each direction. Read the shown value and compare it with
 PlayCover's window points × scaler. The window size alone does not make two runs comparable.
 
 The launcher has a **Frame rate limit** in the **Performance** panel of **Settings → Game**. Use the
-slider to choose **30 FPS**, **60 FPS**, **120 FPS**, or **Unlimited**. The limit applies on
+slider to choose **30 FPS**, **60 FPS**, or **120 FPS**. The limit applies on
 the next launch. Set the same value in
 both clients and record it.
 
@@ -121,10 +121,10 @@ stores display pixels, display points, window bounds, and the foreground app in 
 It writes JSON and CSV files under `.build/benchmarks/`.
 
 ```sh
-just benchmark sample client-menu-30s 30 arknights-client "Main menu, 1280x800 Retina, 2560x1600 drawn, 60 FPS"
-just benchmark sample client-ls5-60s 60 arknights-client "LS-5 autodeploy 2x, 1280x800 Retina, 2560x1600 drawn, 60 FPS"
-just benchmark sample playcover-menu-30s 30 playcover "Main menu, 1080p 16:10, 1330x831 scaler 2, 60 FPS"
-just benchmark sample playcover-ls5-60s 60 playcover "LS-5 autodeploy 2x, 1080p 16:10, 1330x831 scaler 2, 60 FPS"
+just benchmark sample client-menu-30s 30 arknights-client "Main menu, 1280x800 Retina, 2560x1600 drawn, 120 FPS"
+just benchmark sample client-ls5-60s 60 arknights-client "LS-5 autodeploy 2x, 1280x800 Retina, 2560x1600 drawn, 120 FPS"
+just benchmark sample playcover-menu-30s 30 playcover "Main menu, 1080p 16:10, 1330x831 scaler 2, 120 FPS"
+just benchmark sample playcover-ls5-60s 60 playcover "LS-5 autodeploy 2x, 1080p 16:10, 1330x831 scaler 2, 120 FPS"
 just benchmark compare .build/benchmarks/client-ls5-60s-... .build/benchmarks/playcover-ls5-60s-...
 ```
 

@@ -25,7 +25,7 @@ Use the form for:
 
 Report public bugs in GitHub issues. Everyone can read a public issue.
 
-- To report a problem from the app, choose **Help → Report a Problem…**. On the website, use **Report an issue**. Both open a prefilled GitHub issue.
+- To report a problem from the app, choose **Help → Report a Problem…**. It opens a prefilled GitHub issue. On the website, the **Report an issue** footer link opens the public GitHub issue list. It does not prefill an issue.
 - To report a problem in another way, open an [issue on GitHub](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues).
 
 Do not put personal data or contact details in a public issue.
@@ -42,8 +42,4 @@ The form asks for:
 
 ## Your data
 
-The form runs on Tally Forms. Read the [privacy notice](/privacy/) for the data that the form collects and how the author uses it.
-
-Only the developer reads your submission. The developer deletes each submission and reply when the conversation ends, and at the latest after 90 days.
-
-To request deletion, send a message through the contact form, or use the contact you gave.
+The form runs on Tally Forms. The [privacy notice](/privacy/) explains the data that the form collects, how long the developer keeps it, and how to request deletion.

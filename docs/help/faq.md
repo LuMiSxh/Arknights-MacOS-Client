@@ -1,6 +1,6 @@
 ---
 title: Frequently asked questions
-description: Answers about the project, regions, updates, and privacy
+description: Answers about the project, servers, updates, and privacy
 order: 10
 ---
 
@@ -12,9 +12,9 @@ No. It is a community project, not affiliated with Yostar, Gryphline, Hypergryph
 
 ## Does the download include the game?
 
-No. The DMG contains only the launcher and Wine. The launcher downloads the game after you choose a region.
+No. The DMG contains only the launcher and Wine. The launcher downloads the game after you choose a server.
 
-## Which regions can I play?
+## Which servers can I play?
 
 Global, Japan, Korea, China, and China (Bilibili). Taiwan is a [Canary server](../installation.md#canary-servers). Servers install side by side with separate files and versions.
 

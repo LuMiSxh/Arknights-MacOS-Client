@@ -44,7 +44,7 @@ flowchart LR
 
 ## Local packaging
 
-Run `just dev` to download the pinned runtime and build the app. Run `just dev dmg` to continue to the installable DMG. `just runtime` only downloads the runtime. It verifies the SHA-256, extracts the archive safely, validates Wine and both DXMT architectures, and replaces `.build/runtime`.
+Run `just dev` to download the pinned runtime and build the app. Run `just dev dmg` to continue to the installable DMG. `just runtime` only downloads the runtime. It verifies the SHA-256, extracts the archive safely, validates Wine and the DXMT x64 library set, and replaces `.build/runtime`.
 
 Packaging compiles only the Swift launcher and the x86-64 components in `RuntimeSupport`. It writes one compact `ThirdPartyNotices.deflate` file into the app. See [License automation](license-automation.md).
 
@@ -84,7 +84,7 @@ If an artifact lacks a notice, has another runtime checksum, or points to the wr
 
 ## Versioning and changelog
 
-Versions follow Semantic Versioning. Before 1.0, minor versions can contain deliberate compatibility changes and patch versions contain compatible fixes. User-visible work starts in `Unreleased` and moves to an `X.Y.Z` section before release. Use the `Added`, `Changed`, `Fixed`, and `Removed` headings.
+Versions follow Semantic Versioning. Before 1.0, minor versions can contain deliberate compatibility changes and patch versions contain compatible fixes. User-visible work starts in `Unreleased` and moves to an `X.Y.Z` section before release. Use the `Added`, `Changed`, `Fixed`, and `Removed` headings. Use exact UI labels. Describe the shipped change, not intermediate builds.
 
 The extractor accepts a `## [X.Y.Z]` heading with an optional ` - description` suffix. It takes content up to the next `## [` heading. It fails when the section is missing or empty.
 
@@ -131,6 +131,6 @@ Sparkle ignores the custom `Icon\r` file that `NSWorkspace.setIcon` writes into 
 
 The setup assistant always does one silent Sparkle check before version-specific onboarding, regardless of the automatic-check preference. If a newer release exists, setup stays pending and opens Sparkle's updater. It resumes after the newer launcher is installed and reopened. A failed network check does not block first-run setup.
 
-To make every existing user rerun setup after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0. Preferences stay unchanged. Only setup progress resets.
+To make every existing user rerun setup after a release, bump `OnboardingProgressStore.currentSchemaVersion`. Schema 2 shipped with 0.7.0. Schema 3 ships with 0.8.0. Preferences stay unchanged. Only setup progress resets.
 
-To make the rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingStrings.requiredSetupReason(schema:)`. Returning players then see why, and Skip Setup stays hidden until they finish. First-time users can still skip. Schema 2 is required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.
+To make the rerun mandatory, also add the new schema to `OnboardingProgressStore.requiredSchemaVersions` and give it a reason in `OnboardingWelcomeView.requiredSetupReason(schema:)`. Returning players then see why, and Skip Setup stays hidden until they finish. First-time users can still skip. Schemas 2 and 3 are required. In debug builds, the **Required** toggle next to **Onboarding preview** in the developer simulator shows this state.

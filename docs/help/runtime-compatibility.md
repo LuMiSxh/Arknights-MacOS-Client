@@ -12,8 +12,7 @@ The launcher runs the Windows game through a bundled Wine. You need no Wine, vir
 
 | macOS       | Status                                                                                                |
 | ----------- | ----------------------------------------------------------------------------------------------------- |
-| macOS 15–26 | Supported with Rosetta 2                                                                              |
-| macOS 27    | Supported with Rosetta 2                                                                              |
+| macOS 15–27 | Supported with Rosetta 2                                                                              |
 | macOS 28    | Blocked by current launcher policy; compatibility with Apple's limited Rosetta support is unconfirmed |
 
 Only Apple silicon Macs work: M-series Macs and the MacBook Neo (A18 Pro). The launcher runs natively; the Windows part needs Rosetta 2.
@@ -47,7 +46,7 @@ Restart the Mac, then choose **Check Again**. See Apple's [macOS 27 release note
 | **Standard** | Draws one pixel per macOS point. macOS stretches the window. Blurry on Retina displays.                                                          |
 
 **Frame rate limit** caps the frames per second the game draws. Use the slider to choose **30 FPS**,
-**60 FPS**, or **120 FPS**. **Unlimited** removes the cap. Lower values save battery. The limit works
+**60 FPS**, or **120 FPS**. Lower values save battery. The limit works
 best when it divides the display refresh rate evenly.
 
 **Window size** uses the "Looks like" sizes of **System Settings → Displays**. **Fill screen** fills the usable screen area with the title bar visible. **Compact** picks a smaller 16:9 window. The menu also lists exact sizes.
@@ -67,7 +66,7 @@ Lower resolutions scale to fill the screen and look grainy on larger or differen
 
 **Settings → Servers → Canary Features** turns on experimental options. Turning it off restores normal behavior and deletes nothing.
 
-- **Allow Taiwan region** shows the Taiwan region.
+- **Allow Taiwan server** shows the Taiwan server.
 
 If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).
 

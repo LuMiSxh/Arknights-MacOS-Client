@@ -10,7 +10,7 @@
 />
 
 <article class="privacy-page">
-	<p class="eyebrow">Last updated 2026-10-29</p>
+	<p class="eyebrow">Last updated 2026-11-03</p>
 	<h1>Privacy notice</h1>
 	<p>
 		This notice covers the Arknights Client website and the Arknights Client
@@ -71,8 +71,15 @@
 			for Yostar regions.
 		</li>
 		<li>
-			<code>launcher.gryphline.com</code>: game metadata for Taiwan
-			(Canary).
+			<code>*.hycdn.cn</code>: game package downloads for China and China
+			(Bilibili).
+		</li>
+		<li>
+			<code>launcher.gryphline.com</code>,
+			<code>launcher.hg-cdn.com</code>,
+			<code>ak-tw.hg-cdn.com</code>,
+			<code>gl-utils-public.hg-cdn.com</code>: game metadata and package
+			downloads for Taiwan (Canary).
 		</li>
 		<li>
 			<code>launcher.hypergryph.com</code>: game metadata for China and
@@ -80,6 +87,10 @@
 		</li>
 		<li>
 			<code>webusstatic.yo-star.com</code>: launcher logos and artwork.
+		</li>
+		<li>
+			<code>zh.wikifur.com</code>: community wiki logo for China, China
+			(Bilibili), and Taiwan.
 		</li>
 		<li>
 			<code>www.arknights.global</code>: wallpaper gallery for artwork
@@ -95,7 +106,7 @@
 		</li>
 		<li><code>api.github.com</code>: launcher announcements.</li>
 		<li>
-			<code>github.com</code>: update checks and the Report an issue link.
+			<code>github.com</code>: update checks.
 		</li>
 		<li>
 			<code>www.youtube.com</code>: background music in the embedded
@@ -109,10 +120,22 @@
 
 	<h2>Issue reports</h2>
 	<p>
-		The Report an issue link opens a prefilled GitHub issue. It includes the
-		app version, macOS version, chip, memory, and, where known, the region,
-		operation name, and a support code. Log files are not included. You
-		decide whether to submit the issue.
+		The Report a Problem… command opens a prefilled GitHub issue in your
+		browser. It includes the app version, macOS version, chip, memory, and,
+		where known, the region, operation name, and a support code. Log files
+		are not included. You decide whether to submit the issue.
+	</p>
+	<p>
+		Save Diagnostics… in the Help menu writes a zip file to your Downloads
+		folder. The file holds the launcher and game logs, with your display
+		settings. The app redacts your home folder and URL queries from the
+		logs. The app does not upload the file. The file leaves your Mac only
+		when you send it yourself, for example as an attachment to an issue or a
+		message.
+	</p>
+	<p>
+		On this website, the Report an issue footer link opens the public GitHub
+		issue list. It does not prefill an issue.
 	</p>
 
 	<h2>Contact form</h2>

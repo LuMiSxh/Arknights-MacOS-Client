@@ -7,7 +7,7 @@ body:
     id: version
     attributes:
       label: Launcher version
-      placeholder: 0.7.0
+      placeholder: 0.8.0
     validations:
       required: true
 
@@ -16,7 +16,7 @@ body:
     attributes:
       label: Runtime version
       description: Use the version shown by the launcher. Include the commit when you test a development build.
-      placeholder: v0.7.0
+      placeholder: v0.8.0
     validations:
       required: true
 
@@ -93,7 +93,7 @@ body:
     id: runtime-settings
     attributes:
       label: Runtime settings
-      description: List non-default audio, cursor, frame-latency, synchronization, graphics, or Canary settings.
+      description: List non-default audio, cursor, frame rate limit, rendering, synchronization, graphics, or Canary settings.
       placeholder: Defaults
 
   - type: textarea
@@ -125,7 +125,7 @@ body:
     id: logs
     attributes:
       label: Log files (only when requested)
-      description: Leave this empty for the first report. If a maintainer asks for logs, choose Help → Save Diagnostics. Review the file. Then attach it. The file already contains the SDK logs for China, China (Bilibili), and Taiwan. unity.log and the SDK logs can contain account IDs and access keys. After you post them, remove them or sign out of your account.
+      description: Leave this empty for the first report. If a maintainer asks for logs, choose Help → Save Diagnostics. Attachments stay public. Attach logs only when asked, after you review them. The file already contains the SDK logs for China, China (Bilibili), and Taiwan. unity.log and the SDK logs can contain account IDs and access keys. After you post them, remove them or sign out of your account.
 
   - type: checkboxes
     id: checks

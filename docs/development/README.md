@@ -45,6 +45,14 @@ toc: true
 - Use GitHub alert markers (`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) in blockquotes. The launcher shows them as labeled text, so meaning must not depend on color. Use one marker per point. Do not nest alerts.
 - Put diagrams in fenced `mermaid` blocks with short labels. The launcher shows the block as text, so the prose must explain the contract.
 
+### Terms
+
+Use these terms in user help. Keep one term for each concept.
+
+- **Server**: a publisher server, such as Global, Japan, or China. User help says "server", not "region".
+- **Game environment**: the Wine prefix that runs the game. On the first mention on each page, write "game environment (Wine prefix)". Then write "game environment".
+- Keep developer terms out of user help, such as runtime and partial files. The only exception is the first mention of game environment, which adds "(Wine prefix)".
+
 ## Documentation website
 
 The SvelteKit site in `web/` builds `docs/` and `CHANGELOG.md` into the project website. It is dark-only and uses the tokens in `web/src/lib/styles/arknights-client.css`.
@@ -114,5 +122,24 @@ topic: testing
 - `topic` is optional. Use `testing` or `translation`. The button selects the matching answer for the first form question and adds `topic=<topic>`. To add a topic, add it with its exact form option text to `contactTopics` in `web/src/lib/site.ts`.
 - The button opens the contact form in a new tab. Other keys fail the build.
 - The form URL comes from `contactFormUrl` in `web/src/lib/site.ts`. Do not write the URL in the block.
+
+Use a fenced block with the info string `chart` to show benchmark data. Write the block as JSON:
+
+````markdown
+```chart
+{
+  "src": "/benchmarks/comparison.json",
+  "metric": "cpu_percent",
+  "title": "CPU use",
+  "unit": "% of one core",
+  "caption": "Lower is better."
+}
+```
+````
+
+- `src` is required. It is a site path that starts with `/`. `//` fails the build.
+- `mode` is optional. Use `timeseries`, `summary`, or `stats`.
+- `metric` is optional. Use a name from `CHART_METRICS` in `web/src/lib/content/chart.ts`.
+- `title`, `unit`, and `caption` are optional text. `height` is an optional positive number.
 
 To add developer notes, use `<details>` and `<summary>`. Use no attributes. Leave a blank line before and after the Markdown inside. Other raw HTML is escaped.

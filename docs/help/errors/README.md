@@ -15,7 +15,7 @@ The launcher shows a short code when a failed operation has a specific fix. The 
 2. Do the steps in order. Stop when it works.
 
 > [!CAUTION]
-> Do not delete the shared Wine prefix, game files, or partial downloads unless the page says so.
+> Do not delete the shared game environment (Wine prefix), game files, or partly downloaded files unless the page says so.
 
 If the launcher shows no code, use [Troubleshooting](../troubleshooting.md).
 

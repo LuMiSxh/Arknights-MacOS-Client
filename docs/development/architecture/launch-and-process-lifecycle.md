@@ -214,8 +214,7 @@ stateDiagram-v2
 	Stopping --> Idle: prefix cleanup completes
 ```
 
-`LauncherLifecycleStore` exposes these states as `LauncherActivity`. `LauncherPhase` is only a display
-projection. Refresh, readiness, and presentation errors are separate branches, so a metadata failure
+`LauncherLifecycleStore` exposes these states as `LauncherActivity`. The Home status view (`LauncherActivityStatusView`) derives its text from these states. It has no separate phase type. Refresh, readiness, and presentation errors are separate branches, so a metadata failure
 does not reset an active launch or installation.
 
 ### Activity leases

@@ -50,16 +50,19 @@
 			{
 				'@type': 'WebSite',
 				'@id': `${homeUrl}#website`,
-				name: 'Arknights macOS Client',
-				alternateName: ['Arknights Client', 'Arknights-MacOS-Client'],
+				name: 'Arknights Client',
+				alternateName: [
+					'Arknights macOS Client',
+					'Arknights-MacOS-Client'
+				],
 				url: homeUrl
 			},
 			{
 				'@type': 'SoftwareApplication',
 				'@id': `${homeUrl}#app`,
-				name: 'Arknights macOS Client',
+				name: 'Arknights Client',
 				applicationCategory: 'GameApplication',
-				operatingSystem: 'macOS 15 or later',
+				operatingSystem: 'macOS 15–27',
 				description,
 				url: homeUrl,
 				downloadUrl: releaseUrl,
