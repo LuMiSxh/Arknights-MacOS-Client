@@ -20,7 +20,7 @@ from lib.common import (
     run,
     run_main,
 )
-from lib.console import spinner, success, warning
+from lib.console import info, success, warning
 from lib.project_config import ProjectConfiguration, load_project_configuration
 
 DEFAULT_ICON_COMPOSER = Path(
@@ -93,8 +93,7 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
     configuration = configuration or load_project_configuration()
     project = configuration.project_directory
     icon_name = configuration.product.icon_name
-    icon_file = configuration.product.icon_file
-    icon_filename = icon_file if Path(icon_file).suffix else f"{icon_file}.icns"
+    icon_filename = configuration.product.icon_filename
     require_command("actool")
     require_command("sips")
     composer = icon_composer()
@@ -119,39 +118,39 @@ def generate(configuration: ProjectConfiguration | None = None) -> None:
     for path in (iconset, compiled, dynamic):
         path.mkdir(parents=True)
 
-    with spinner("Rendering the Icon Composer source"):
-        run(
-            [
-                composer,
-                source,
-                "--export-image",
-                "--output-file",
-                rendered,
-                "--platform",
-                "macOS",
-                "--rendition",
-                "Default",
-                "--width",
-                "1024",
-                "--height",
-                "1024",
-                "--scale",
-                "1",
-            ]
-        )
-        run(
-            ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
-            capture=True,
-        )
-        write_tint_source(rendered, tint_source)
+    info("Rendering the Icon Composer source")
+    run(
+        [
+            composer,
+            source,
+            "--export-image",
+            "--output-file",
+            rendered,
+            "--platform",
+            "macOS",
+            "--rendition",
+            "Default",
+            "--width",
+            "1024",
+            "--height",
+            "1024",
+            "--scale",
+            "1",
+        ]
+    )
+    run(
+        ["sips", "--resampleHeightWidth", "512", "512", rendered, "--out", preview],
+        capture=True,
+    )
+    write_tint_source(rendered, tint_source)
 
-    with spinner("Compiling the native layered icon"):
-        result = subprocess.run(
-            [str(value) for value in compile_arguments(source, dynamic, configuration)],
-            text=True,
-            capture_output=True,
-            check=False,
-        )
+    info("Compiling the native layered icon")
+    result = subprocess.run(
+        [str(value) for value in compile_arguments(source, dynamic, configuration)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
     (dynamic / "actool.log").write_text(result.stdout + result.stderr, encoding="utf-8")
     if (
         result.returncode == 0

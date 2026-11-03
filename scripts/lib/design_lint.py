@@ -16,6 +16,7 @@ from pathlib import Path
 from lib.project_config import (
     DESIGN_LINT_ALLOWLIST,
     DESIGN_LINT_EXCLUDED_DIRECTORIES,
+    DESIGN_LINT_EXEMPT_FILES,
     DESIGN_LINT_SOURCE_ROOT,
 )
 
@@ -29,15 +30,27 @@ ANIMATION_CALLS = (
     "interactiveSpring",
     "bouncy",
 )
-# One pattern per literal family. `.linear(` is left out on purpose: WallpaperColorExtractor
-# has a `linear` function that is not an animation.
+# One pattern per literal family. A bare `.linear(` is left out on purpose: WallpaperColorExtractor
+# has a `linear` function that is not an animation, so only `.linear(duration:` counts.
 RULES: dict[str, re.Pattern[str]] = {
     "raw-color": re.compile(r"Color\(\s*(?:red:|\.sRGB)|\.(?:white|black)\.opacity\("),
+    "raw-hue": re.compile(r"Color\(\s*hue:"),
+    "raw-black": re.compile(r"\bColor\.black\b(?!\.opacity\()"),
+    "raw-white-foreground": re.compile(r"\.foregroundStyle\(\s*\.white\s*\)"),
     "numeric-radius": re.compile(r"cornerRadius:\s*\d"),
-    "raw-animation": re.compile(r"\.(?:" + "|".join(ANIMATION_CALLS) + r")\("),
+    "raw-animation": re.compile(
+        r"\.(?:" + "|".join(ANIMATION_CALLS) + r")\(|\.linear\(duration:"
+    ),
     "raw-glass": re.compile(r"\.glassEffect\("),
     "system-font": re.compile(r"\.font\(\.system\(size:"),
+    "font-weight": re.compile(
+        r"\bweight:\s*\.(?:bold|heavy)\b|\.fontWeight\(\s*\.(?:bold|heavy)\b|\.bold\(\)"
+    ),
+    "detached-task": re.compile(r"\bTask\.detached\b"),
 }
+# Concurrency rules apply to every Swift file under the source root, including the files the
+# design-literal rules skip.
+SOURCE_WIDE_RULES = frozenset({"detached-task"})
 # Masking strings before cutting comments keeps a `//` inside a string from hiding the line.
 _STRING_LITERAL = re.compile(r'"(?:\\.|[^"\\])*"')
 _LINE_COMMENT = re.compile(r"//.*")
@@ -58,17 +71,24 @@ def _code_of(line: str) -> str:
 
 
 def scan(root: Path) -> list[Violation]:
-    """Return every rule match in the feature Swift files under `root`, in path and line order."""
+    """Return every rule match in the Swift files under `root`, in path and line order."""
     excluded = tuple(root / directory for directory in DESIGN_LINT_EXCLUDED_DIRECTORIES)
+    exempt = {root / path for path in DESIGN_LINT_EXEMPT_FILES}
     violations: list[Violation] = []
     for path in sorted((root / DESIGN_LINT_SOURCE_ROOT).rglob("*.swift")):
-        if any(path.is_relative_to(directory) for directory in excluded):
-            continue
+        skipped = path in exempt or any(
+            path.is_relative_to(directory) for directory in excluded
+        )
+        rules = [
+            (rule, pattern)
+            for rule, pattern in RULES.items()
+            if not skipped or rule in SOURCE_WIDE_RULES
+        ]
         relative = path.relative_to(root).as_posix()
         lines = path.read_text(encoding="utf-8").splitlines()
         for number, line in enumerate(lines, start=1):
             code = _code_of(line)
-            for rule, pattern in RULES.items():
+            for rule, pattern in rules:
                 if pattern.search(code):
                     violations.append(Violation(relative, number, rule, line.strip()))
     return violations

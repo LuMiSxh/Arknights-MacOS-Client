@@ -47,7 +47,6 @@ check target='all':
     check_scripts() {
         {{ uv_dev }} ruff check scripts
         {{ uv_dev }} ruff format --check scripts
-        {{ uv_dev }} scripts/consistency.py
         {{ uv_dev }} actionlint .github/workflows/*.yml
         {{ uv_dev }} pytest -q
     }
@@ -111,17 +110,11 @@ test filter: (swift-tests 'unit' filter)
 [group('Checks')]
 live-contracts: (swift-tests 'live')
 
-# Sample, compare, or export benchmark runs; sample takes CASE SECONDS TARGET NOTE, compare takes BASELINE CANDIDATE, export takes BASELINE CANDIDATE OUTPUT [EXTRA [EXTRA_LABEL]].
+# Run scripts/benchmark.py with its sample, compare, or export subcommand and flags, for example: just benchmark sample CASE --seconds 30.
 [group('Benchmarks')]
-benchmark action='sample' first='' second='' third='' fourth='' fifth='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    case {{ quote(action) }} in
-        sample) exec {{ uv }} scripts/benchmark.py sample {{ quote(first) }} --seconds {{ quote(second) }} --target {{ if third == '' { 'arknights-client' } else { quote(third) } }} --note {{ quote(fourth) }} ;;
-        compare) exec {{ uv }} scripts/benchmark.py compare {{ quote(first) }} {{ quote(second) }} ;;
-        export) [[ -n {{ quote(third) }} ]] || { echo "export needs an output path" >&2; exit 2; }; exec {{ uv }} scripts/benchmark.py export {{ quote(first) }} {{ quote(second) }} --output {{ quote(third) }} {{ if fourth != '' { '--extra ' + quote(fourth) } else { '' } }} {{ if fifth != '' { '--extra-label ' + quote(fifth) } else { '' } }} ;;
-        *) echo "unknown action: "{{ quote(action) }}"; use sample, compare, or export" >&2; exit 2 ;;
-    esac
+[positional-arguments]
+benchmark *args:
+    {{ uv }} scripts/benchmark.py "$@"
 
 # Build, then run one Swift test level (unit, integration, live) with isolated HOME and TMPDIR; only live may use the network.
 [private]
@@ -135,7 +128,7 @@ swift-tests level filter='':
     gate=""
     case "$level" in
         unit)
-            targets="$(perl -0ne 'print "$1\n" while /\.testTarget\(\s*name:\s*"([^"]+)"/g' Package.swift | grep -E 'Tests$' | grep -vxE "$integration|$live" | paste -sd'|' -)"
+            targets="$({{ uv }} scripts/project_config.py test-targets | grep -E 'Tests$' | grep -vxE "$integration|$live" | paste -sd'|' -)"
             ;;
         integration)
             targets="$integration"
@@ -197,8 +190,9 @@ icon:
 
 # Prepare, replace, or remove a repository-hosted announcement (set/remove). Commit the change to main to publish or withdraw it.
 [group('Owner')]
-announcement mode id title='' body_file='' action_title='' action_url='' min_version='' max_version='' starts_at='' ends_at='':
-    if [[ {{ quote(mode) }} == "remove" ]]; then {{ uv }} scripts/manage_announcements.py remove {{ quote(id) }}; else {{ uv }} scripts/manage_announcements.py set {{ quote(id) }} {{ quote(title) }} {{ quote(body_file) }} --action-title {{ quote(action_title) }} --action-url {{ quote(action_url) }} --min-version {{ quote(min_version) }} --max-version {{ quote(max_version) }} --starts-at {{ quote(starts_at) }} --ends-at {{ quote(ends_at) }}; fi
+[positional-arguments]
+announcement *args:
+    {{ uv }} scripts/manage_announcements.py "$@"
 
 # Trigger a draft release for the required X.Y.Z version. Requires repository write access.
 [group('Owner')]

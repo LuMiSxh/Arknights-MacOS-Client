@@ -39,8 +39,16 @@ def test_violation_reports_file_line_and_rule(tmp_path: Path) -> None:
         ("raw-color", "let b = Color.white.opacity(0.2)"),
         ("numeric-radius", "RoundedRectangle(cornerRadius: 12)"),
         ("raw-animation", "value.animation(.easeInOut(duration: 0.2))"),
+        ("raw-animation", "withAnimation(.linear(duration: 0.2)) { }"),
         ("raw-glass", "view.glassEffect(.regular)"),
         ("system-font", "Text(title).font(.system(size: 14))"),
+        ("raw-hue", "let c = Color(hue: 0.5, saturation: 1, brightness: 1)"),
+        ("raw-black", "let c = Color.black"),
+        ("raw-white-foreground", "Text(title).foregroundStyle(.white)"),
+        ("font-weight", "Text(title).fontWeight(.bold)"),
+        ("font-weight", "let font = Font.system(weight: .heavy)"),
+        ("font-weight", "Text(title).bold()"),
+        ("detached-task", "let task = Task.detached { await work() }"),
     ],
 )
 def test_each_rule_reports_its_literal(tmp_path: Path, rule: str, line: str) -> None:
@@ -80,12 +88,34 @@ def test_unknown_rule_in_allowlist_fails(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "directory",
-    ["Sources/ArknightsCore/Shared/UI", "Sources/ArknightsDesignLab"],
+    "path",
+    [
+        "Sources/ArknightsCore/Shared/UI/LauncherTheme.swift",
+        "Sources/ArknightsCore/Shared/UI/LauncherVisuals.swift",
+        "Sources/ArknightsCore/Shared/UI/LauncherTokens.swift",
+        "Sources/ArknightsCore/Shared/UI/AdaptiveGlass.swift",
+    ],
 )
-def test_excluded_directories_are_skipped(tmp_path: Path, directory: str) -> None:
+def test_exempt_token_files_are_skipped(tmp_path: Path, path: str) -> None:
+    write(tmp_path / path, "let tint = Color(red: 1, green: 0, blue: 0)\n")
+    write_allowlist(tmp_path)
+
+    assert check(tmp_path) == []
+
+
+def test_other_shared_ui_files_are_scanned(tmp_path: Path) -> None:
+    path = "Sources/ArknightsCore/Shared/UI/Components/SkeletonValue.swift"
+    write(tmp_path / path, "let tint = Color(red: 1, green: 0, blue: 0)\n")
+    write_allowlist(tmp_path)
+
+    assert check(tmp_path) == [
+        f"{path}:1: raw-color: let tint = Color(red: 1, green: 0, blue: 0)"
+    ]
+
+
+def test_design_lab_is_skipped(tmp_path: Path) -> None:
     write(
-        tmp_path / directory / "Surface.swift",
+        tmp_path / "Sources/ArknightsDesignLab/Surface.swift",
         "let tint = Color(red: 1, green: 0, blue: 0)\n",
     )
     write_allowlist(tmp_path)
@@ -93,12 +123,22 @@ def test_excluded_directories_are_skipped(tmp_path: Path, directory: str) -> Non
     assert check(tmp_path) == []
 
 
+def test_detached_task_is_reported_in_design_lab(tmp_path: Path) -> None:
+    path = "Sources/ArknightsDesignLab/Surface.swift"
+    write(tmp_path / path, "let task = Task.detached { await work() }\n")
+    write_allowlist(tmp_path)
+
+    assert check(tmp_path) == [
+        f"{path}:1: detached-task: let task = Task.detached {{ await work() }}"
+    ]
+
+
 @pytest.mark.parametrize(
     "line",
     [
         "// Color(red: 1, green: 0, blue: 0) was the old tint",
         'let label = "Color(red: 1) is retired"',
-        "withAnimation(.linear(duration: 0.2)) { }",
+        "withAnimation(.linear) { }",
     ],
 )
 def test_comments_strings_and_linear_are_not_flagged(tmp_path: Path, line: str) -> None:

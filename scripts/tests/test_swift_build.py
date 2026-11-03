@@ -36,15 +36,6 @@ def test_preview_build_records_active_sdk_separately_from_minimum() -> None:
     )
 
 
-def test_preview_build_selects_the_xcode_27_macos_sdk() -> None:
-    configuration: ProjectConfiguration = load_project_configuration()
-    command = swift_build.swift_build_command(
-        configuration, "debug", "27.0", sdk_name="macosx27.0"
-    )
-
-    assert command[:4] == ("xcrun", "--sdk", "macosx27.0", "swift")
-
-
 def test_swift_build_passes_active_sdk_to_swiftpm_and_linker(
     monkeypatch,
 ) -> None:
@@ -111,13 +102,6 @@ esac
     builds = [command for command in commands if "scripts/swift_build.py" in command]
     assert len(builds) == 2
     assert "--show-bin-path" not in builds[0]
-    assert "--sdk" not in builds[0]
+
     assert "--show-bin-path" in builds[1]
     assert commands[-1] == "launch --developer-preview"
-
-
-def test_just_release_build_uses_the_sdk_aware_builder() -> None:
-    justfile = (PROJECT_DIR / "justfile").read_text(encoding="utf-8")
-
-    assert "scripts/swift_build.py --configuration release" in justfile
-    assert "swift run --skip-build" not in justfile

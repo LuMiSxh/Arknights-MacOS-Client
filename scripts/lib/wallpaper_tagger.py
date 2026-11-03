@@ -19,6 +19,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from lib.console import warning
+from lib.http import fetch
 from lib.wallpapers import GalleryWallpaper
 
 GEMINI_MODEL = "gemini-3.5-flash"
@@ -109,25 +110,27 @@ def fetch_operator_names() -> frozenset[str]:
 
 
 def download(url: str) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=IMAGE_TIMEOUT_SECONDS) as response:
-        value = response.read(MAXIMUM_IMAGE_BYTES + 1)
-    if len(value) > MAXIMUM_IMAGE_BYTES:
-        raise TaggingError(f"image exceeds {MAXIMUM_IMAGE_BYTES} bytes: {url}")
-    return value
+    return fetch(
+        url,
+        user_agent=USER_AGENT,
+        timeout=IMAGE_TIMEOUT_SECONDS,
+        max_bytes=MAXIMUM_IMAGE_BYTES,
+    ).body
 
 
 def download_image(url: str) -> tuple[bytes, str]:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=IMAGE_TIMEOUT_SECONDS) as response:
-        content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
-        value = response.read(MAXIMUM_IMAGE_BYTES + 1)
-    if len(value) > MAXIMUM_IMAGE_BYTES:
-        raise TaggingError(f"image exceeds {MAXIMUM_IMAGE_BYTES} bytes: {url}")
-    mime_type = (
-        content_type if content_type.startswith("image/") else FALLBACK_IMAGE_TYPE
+    response = fetch(
+        url,
+        user_agent=USER_AGENT,
+        timeout=IMAGE_TIMEOUT_SECONDS,
+        max_bytes=MAXIMUM_IMAGE_BYTES,
     )
-    return value, mime_type
+    mime_type = (
+        response.content_type
+        if response.content_type.startswith("image/")
+        else FALLBACK_IMAGE_TYPE
+    )
+    return response.body, mime_type
 
 
 def build_prompt(title: str, vocabulary: Sequence[str]) -> str:

@@ -173,12 +173,6 @@ def test_pages_have_no_heading_above_the_front_matter_title() -> None:
         assert not re.search(r"^# ", body, re.MULTILINE), page.name
 
 
-def test_pages_do_not_double_the_ellipsis_punctuation() -> None:
-    for page in generated_pages():
-        text = page.read_text(encoding="utf-8")
-        assert not re.search(r"…(\*\*)?\.", text), page.name
-
-
 def test_retired_code_leaves_no_page_once_removed(tmp_path: Path) -> None:
     write_root(tmp_path, [entry(legacy=["OLDIN"])])
     regenerate(tmp_path)

@@ -8,10 +8,14 @@ to file tagging issues for anything new.
 from __future__ import annotations
 
 import json
-import urllib.request
 from dataclasses import dataclass
 
+from lib.http import fetch
+
 GALLERY_API_URL = "https://www.arknights.global/api/resource/gallery/list"
+GALLERY_USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+GALLERY_TIMEOUT_SECONDS = 30
+GALLERY_MAXIMUM_PAGE_BYTES = 4 * 1024 * 1024
 PAGE_SIZE = 50
 MAX_PAGES = 10
 
@@ -41,15 +45,14 @@ def parse_image_field(value: object) -> str | None:
 def fetch_gallery_wallpapers() -> list[GalleryWallpaper]:
     wallpapers: list[GalleryWallpaper] = []
     for page in range(1, MAX_PAGES + 1):
-        request = urllib.request.Request(
+        response = fetch(
             f"{GALLERY_API_URL}?index={page}&size={PAGE_SIZE}",
-            headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-                "Accept": "application/json",
-            },
+            user_agent=GALLERY_USER_AGENT,
+            timeout=GALLERY_TIMEOUT_SECONDS,
+            max_bytes=GALLERY_MAXIMUM_PAGE_BYTES,
+            headers={"Accept": "application/json"},
         )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = json.load(response)
+        payload = json.loads(response.body)
         rows = (
             (payload.get("data") or {}).get("rows")
             or (payload.get("data") or {}).get("list")

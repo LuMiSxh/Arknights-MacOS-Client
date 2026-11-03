@@ -3,15 +3,13 @@
 """Plain status lines for repository scripts.
 
 All output goes to stderr, so scripts that print a result to stdout (paths, values) stay
-pipeable. `spinner` and `Progress` only print plain lines: CI logs are not terminals.
+pipeable. Every status is a plain line: CI logs are not terminals.
 """
 
 from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Iterator
-from contextlib import contextmanager
 
 USE_COLOR = sys.stderr.isatty() and os.environ.get("NO_COLOR") is None
 USE_UNICODE = "UTF" in (sys.stderr.encoding or "").upper()
@@ -59,36 +57,3 @@ def warning(message: str) -> None:
 
 def error(message: str) -> None:
     _line("error", message)
-
-
-@contextmanager
-def spinner(message: str, *, child: bool = False) -> Iterator[None]:
-    """Print `message` once before the wrapped block runs.
-
-    `child` indents the line under the step that started it, so a sequence of
-    per-item steps reads as one group instead of a flat list.
-    """
-    if child:
-        child_output(message)
-    else:
-        info(message)
-    yield
-
-
-class Progress:
-    """Byte-counted progress that prints a plain line at every 10 percent."""
-
-    def __init__(self, message: str, total: int) -> None:
-        self.message = message
-        self.total = total
-        self._next_report = 0.1
-        info(message)
-
-    def update(self, current: int) -> None:
-        if self.total and current / self.total >= self._next_report:
-            percentage = min(current / self.total * 100, 100)
-            info(f"{self.message}: {percentage:.0f}% ({current / 1_048_576:,.0f} MiB)")
-            self._next_report += 0.1
-
-    def finish(self) -> None:
-        """Keep the call site stable; plain lines need no cleanup."""

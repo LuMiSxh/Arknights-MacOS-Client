@@ -75,8 +75,7 @@ FIXED_RESOURCES = (
 
 def staged_resources(configuration: ProjectConfiguration) -> tuple[StagedResource, ...]:
     """Return every resource of the bundle."""
-    icon_file = configuration.product.icon_file
-    icon_filename = icon_file if Path(icon_file).suffix else f"{icon_file}.icns"
+    icon_filename = configuration.product.icon_filename
     # Info.plist names the icon, so the app never loads these two by name.
     icons = (
         StagedResource(

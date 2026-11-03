@@ -31,7 +31,7 @@ from lib.common import (
     run,
     run_main,
 )
-from lib.console import info, spinner, success, warning
+from lib.console import info, success, warning
 from lib.licenses import stage_bundle
 from lib.project_config import ProjectConfiguration, load_project_configuration
 from lib.swift_build import run_swift_build
@@ -265,10 +265,10 @@ def embed_runtime(
 ) -> None:
     layout = runtime_configuration.layout
     destination = resources / "Runtime"
-    with spinner("Embedding the Wine + DXMT runtime"):
-        copy_runtime(runtime, destination)
-    with spinner("Removing unused arm64 slices from the x86-64 runtime"):
-        count = thin_universal_files(destination)
+    info("Embedding the Wine + DXMT runtime")
+    copy_runtime(runtime, destination)
+    info("Removing unused arm64 slices from the x86-64 runtime")
+    count = thin_universal_files(destination)
     if count:
         info(f"Thinned {count} universal runtime files")
 
@@ -328,17 +328,7 @@ def build(
         compatibility = resources / "Compatibility"
         helpers = copy_compatibility_helpers(helper_root, compatibility)
         for helper in (path for path in helpers if path.suffix == ".dylib"):
-            run(
-                [
-                    "codesign",
-                    "--force",
-                    "--sign",
-                    "-",
-                    "--timestamp=none",
-                    helper,
-                ],
-                capture=True,
-            )
+            sign_code(helper)
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:

@@ -1,7 +1,8 @@
 # Design-literal allowlist for `scripts/lib/design_lint.py`.
 # Each entry is `path:rule`, relative to the repository root. Lines starting with # are comments.
-# An entry that matches no violation fails `scripts/consistency.py`; remove it when the migration clears it.
-# Rules: raw-color, numeric-radius, raw-animation, raw-glass, system-font.
+# An entry that matches no violation fails the scripts tests; remove it when the migration clears it.
+# Rules: raw-color, raw-hue, raw-black, raw-white-foreground, numeric-radius, raw-animation,
+# raw-glass, system-font, font-weight, detached-task.
 
 # Preset gallery: scrims and shadows that sit on artwork stay dark in both appearances.
 Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-color
@@ -10,5 +11,18 @@ Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-color
 Sources/ArknightsLauncherUI/Home/LauncherArtworkView.swift:raw-color
 Sources/ArknightsLauncherUI/Home/LauncherChromeViews.swift:raw-color
 Sources/ArknightsLauncherUI/Home/LauncherReadabilityField.swift:raw-color
+
+# Shared controls: HUD shadow and bottom fade over artwork; no theme role matches the alpha.
+Sources/ArknightsCore/Shared/UI/Components/ExpandableHUDPill.swift:raw-color
+Sources/ArknightsCore/Shared/UI/Components/FloatingActionBar.swift:raw-color
+# Home backdrop and update overlay: opaque black behind artwork or under Reduce Transparency.
+Sources/ArknightsLauncherUI/Home/ContentView.swift:raw-black
+Sources/ArknightsLauncherUI/Updates/LauncherUpdateOverlay.swift:raw-black
+# Preset gallery applying state: white text on a fixed dark scrim in both appearances.
+Sources/ArknightsCustomization/Presets/UI/PresetGalleryGrids.swift:raw-white-foreground
+# LauncherMotion defines the curves, so its spring and ease literals are the motion source.
+Sources/ArknightsCore/Shared/UI/LauncherMotion.swift:raw-animation
+# Artwork accent: an HSB color computed from wallpaper pixels, not a design literal.
+Sources/ArknightsCustomization/Artwork/WallpaperColorExtractor.swift:raw-hue
 
 

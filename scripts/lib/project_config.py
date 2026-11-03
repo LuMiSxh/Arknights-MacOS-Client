@@ -24,11 +24,15 @@ SUPPORT_CODE_CATALOG = Path("support-codes.json")
 SUPPORT_CODE_ARTICLES = Path("docs/help/errors")
 SUPPORT_CODE_SWIFT = Path("Sources/ArknightsCore/Shared/Support/SupportCode.swift")
 ISSUE_REPORT_TEMPLATE = Path(".github/ISSUE_TEMPLATE/problem-report.yml")
-# Design-literal lint: the Swift tree it scans, the directories it skips, and its allowlist.
+# Design-literal lint: the Swift tree it scans, the directories it skips, the token files that
+# define the literals it enforces, and its allowlist.
 DESIGN_LINT_SOURCE_ROOT = Path("Sources")
-DESIGN_LINT_EXCLUDED_DIRECTORIES = (
-    Path("Sources/ArknightsCore/Shared/UI"),
-    Path("Sources/ArknightsDesignLab"),
+DESIGN_LINT_EXCLUDED_DIRECTORIES = (Path("Sources/ArknightsDesignLab"),)
+DESIGN_LINT_EXEMPT_FILES = (
+    Path("Sources/ArknightsCore/Shared/UI/LauncherTheme.swift"),
+    Path("Sources/ArknightsCore/Shared/UI/LauncherVisuals.swift"),
+    Path("Sources/ArknightsCore/Shared/UI/LauncherTokens.swift"),
+    Path("Sources/ArknightsCore/Shared/UI/AdaptiveGlass.swift"),
 )
 DESIGN_LINT_ALLOWLIST = Path("scripts/design-lint-allowlist.txt")
 
@@ -69,6 +73,12 @@ class ProductMetadata:
     minimum_macos_version: str
     architecture_priority: tuple[str, ...]
 
+    @property
+    def icon_filename(self) -> str:
+        if Path(self.icon_file).suffix:
+            return self.icon_file
+        return f"{self.icon_file}.icns"
+
 
 @dataclass(frozen=True)
 class PackageMetadata:
@@ -80,6 +90,7 @@ class PackageMetadata:
     resource_target_path: Path
     copy_resource_paths: tuple[Path, ...]
     exact_dependency_versions: tuple[tuple[str, str], ...]
+    test_target_names: tuple[str, ...] = ()
 
     def exact_dependency_version(self, identity: str) -> str:
         versions = dict(self.exact_dependency_versions)
@@ -216,6 +227,11 @@ def _package_metadata(dump: Mapping[str, Any]) -> PackageMetadata:
         ),
         copy_resource_paths=_copied_resources(resource_target),
         exact_dependency_versions=_exact_dependency_versions(dump),
+        test_target_names=tuple(
+            _string(target, "name")
+            for target in targets
+            if target.get("type") == "test"
+        ),
     )
 
 

@@ -39,16 +39,7 @@ from lib.wallpaper_tagger import (
     fetch_operator_names,
     known_tag_names,
 )
-from lib.wallpapers import GalleryWallpaper, fetch_gallery_wallpapers, parse_image_field
-
-# GalleryWallpaper and parse_image_field are re-exported for
-# scripts/tests/test_scan_untagged_wallpapers.py.
-__all__ = [
-    "GalleryWallpaper",
-    "fetch_gallery_wallpapers",
-    "main",
-    "parse_image_field",
-]
+from lib.wallpapers import GalleryWallpaper, fetch_gallery_wallpapers
 
 RESOURCE_SUBDIRECTORY = Path("Resources")
 MANIFEST_NAME = "WallpaperTags.json"

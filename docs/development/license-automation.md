@@ -73,7 +73,7 @@ Without a prepared runtime, the page lists the `runtime-fallback` entries. To me
 
 ## Build the app
 
-`scripts/build_app.py` calls the same code with `--bundle`. It writes `Contents/Resources/ThirdPartyNotices.deflate`, a raw-deflate file of one Markdown document. The document has a table of the app components and the merged runtime components. Each distinct license text appears once. The website components are not in the file. The app decodes the file with the Compression framework when the user opens **Third-Party Notices** in **Settings → About**.
+`scripts/build_app.py` calls `stage_bundle` from `scripts/lib/licenses.py`. It writes `Contents/Resources/ThirdPartyNotices.deflate`, a raw-deflate file of one Markdown document. The document has a table of the app components and the merged runtime components. Each distinct license text appears once. The website components are not in the file. The app decodes the file with the Compression framework when the user opens **Third-Party Notices** in **Settings → About**.
 
 The repository does not keep a copy of the file. A runtime archive before 0.7.0 has no license files. The build then warns and lists the `runtime-fallback` entries. [Bundled resources](architecture/README.md#bundled-resources) states which other files the bundle keeps.
 

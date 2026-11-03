@@ -16,7 +16,7 @@ from __future__ import annotations
 import argparse
 
 from lib.common import PROJECT_DIR, run_main
-from lib.console import info, spinner, success
+from lib.console import info, success
 from lib.licenses import regenerate
 from lib.project_config import load_project_configuration
 from lib.runtime_update import (
@@ -51,15 +51,15 @@ def main() -> None:
 
     product = load_project_configuration().product
     fetch = https_fetcher(f"{product.bundle_identifier}.build")
-    with spinner("Resolving the runtime release"):
-        tag = (
-            latest_tag(fetch, arguments.include_prerelease)
-            if arguments.tag == "latest"
-            else normalize_tag(arguments.tag)
-        )
+    info("Resolving the runtime release")
+    tag = (
+        latest_tag(fetch, arguments.include_prerelease)
+        if arguments.tag == "latest"
+        else normalize_tag(arguments.tag)
+    )
     info(f"Pinning runtime {tag}")
-    with spinner("Reading the release provenance"):
-        changed = update(PROJECT_DIR, tag, fetch, arguments.moltenvk_version)
+    info("Reading the release provenance")
+    changed = update(PROJECT_DIR, tag, fetch, arguments.moltenvk_version)
     changed.extend(regenerate(PROJECT_DIR, prepared_runtime(PROJECT_DIR)))
     for path in changed:
         info(f"Updated {path}")

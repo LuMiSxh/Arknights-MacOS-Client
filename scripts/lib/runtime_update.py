@@ -29,6 +29,8 @@ from runtime_config import (
 
 from lib import generated_blocks
 from lib.common import fail
+from lib.http import HttpError
+from lib.http import fetch as http_fetch
 from lib.licenses import (
     Component,
     load_client_components,
@@ -59,21 +61,15 @@ def https_fetcher(user_agent: str) -> Fetch:
     """Return a bounded HTTPS GET that follows redirects to HTTPS URLs only."""
 
     def fetch(url: str) -> bytes:
-        if urllib.parse.urlparse(url).scheme != "https":
-            fail(f"remote URL must use HTTPS: {url}")
-        request = urllib.request.Request(url, headers={"User-Agent": user_agent})
         try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                if urllib.parse.urlparse(response.geturl()).scheme != "https":
-                    fail(f"request redirected to a non-HTTPS URL: {url}")
-                value = response.read(MAXIMUM_ASSET_BYTES + 1)
-        except urllib.error.HTTPError as error:
-            fail(f"request failed with status {error.code}: {url}")
-        except urllib.error.URLError as error:
-            fail(f"request failed: {url}: {error.reason}")
-        if len(value) > MAXIMUM_ASSET_BYTES:
-            fail(f"remote response exceeds {MAXIMUM_ASSET_BYTES} bytes: {url}")
-        return value
+            return http_fetch(
+                url,
+                user_agent=user_agent,
+                timeout=30,
+                max_bytes=MAXIMUM_ASSET_BYTES,
+            ).body
+        except HttpError as error:
+            fail(str(error))
 
     return fetch
 

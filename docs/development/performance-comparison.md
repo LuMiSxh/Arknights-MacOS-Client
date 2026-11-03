@@ -121,10 +121,10 @@ stores display pixels, display points, window bounds, and the foreground app in 
 It writes JSON and CSV files under `.build/benchmarks/`.
 
 ```sh
-just benchmark sample client-menu-30s 30 arknights-client "Main menu, 1280x800 Retina, 2560x1600 drawn, 120 FPS"
-just benchmark sample client-ls5-60s 60 arknights-client "LS-5 autodeploy 2x, 1280x800 Retina, 2560x1600 drawn, 120 FPS"
-just benchmark sample playcover-menu-30s 30 playcover "Main menu, 1080p 16:10, 1330x831 scaler 2, 120 FPS"
-just benchmark sample playcover-ls5-60s 60 playcover "LS-5 autodeploy 2x, 1080p 16:10, 1330x831 scaler 2, 120 FPS"
+just benchmark sample client-menu-30s --seconds 30 --target arknights-client --note "Main menu, 1280x800 Retina, 2560x1600 drawn, 120 FPS"
+just benchmark sample client-ls5-60s --seconds 60 --target arknights-client --note "LS-5 autodeploy 2x, 1280x800 Retina, 2560x1600 drawn, 120 FPS"
+just benchmark sample playcover-menu-30s --seconds 30 --target playcover --note "Main menu, 1080p 16:10, 1330x831 scaler 2, 120 FPS"
+just benchmark sample playcover-ls5-60s --seconds 60 --target playcover --note "LS-5 autodeploy 2x, 1080p 16:10, 1330x831 scaler 2, 120 FPS"
 just benchmark compare .build/benchmarks/client-ls5-60s-... .build/benchmarks/playcover-ls5-60s-...
 ```
 
@@ -200,7 +200,7 @@ window bounds, foreground app, top background processes, and run count below the
 
 ## Charts
 
-`just benchmark export BASELINE CANDIDATE OUTPUT [EXTRA [EXTRA_LABEL]]` writes a dataset for the
+`just benchmark export BASELINE CANDIDATE --output OUTPUT [--extra EXTRA] [--extra-label LABEL]` writes a dataset for the
 website. The optional third run lands in the same chart. Call `scripts/benchmark.py export` directly
 when two runs share a target, because the labels must differ:
 

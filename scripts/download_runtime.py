@@ -21,7 +21,7 @@ from lib.common import (
     remove_path,
     run_main,
 )
-from lib.console import info, spinner, success, warning
+from lib.console import info, success, warning
 from lib.extract_runtime import extract
 from lib.licenses import stage_runtime_legal
 from lib.project_config import load_project_configuration
@@ -116,8 +116,8 @@ def prepare_runtime(
         prefix=".runtime-download.", dir=BUILD_DIR
     ) as name:
         staging = Path(name)
-        with spinner("Extracting the verified runtime"):
-            libraries = extract(archive, staging / "runtime-archive")
+        info("Extracting the verified runtime")
+        libraries = extract(archive, staging / "runtime-archive")
         wine = libraries / layout.archive_wine_directory
         dxmt = libraries / layout.archive_dxmt_directory
         if not wine.is_dir() or not dxmt.is_dir():
@@ -164,19 +164,19 @@ def main() -> None:
     config = load_runtime_config(config_path)
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default=config.runtime_url)
-    parser.add_argument("--sha256", default=config.runtime_sha256)
-    arguments = parser.parse_args()
-    if not arguments.url.startswith("https://"):
+    parser.parse_args()
+    url = config.runtime_url
+    checksum = config.runtime_sha256
+    if not url.startswith("https://"):
         fail("runtime URL must use HTTPS")
-    if len(arguments.sha256) != 64 or any(
-        character not in "0123456789abcdefABCDEF" for character in arguments.sha256
+    if len(checksum) != 64 or any(
+        character not in "0123456789abcdefABCDEF" for character in checksum
     ):
         fail("runtime checksum must be a 64-character SHA-256 value")
     print(
         prepare_runtime(
-            arguments.url,
-            arguments.sha256.lower(),
+            url,
+            checksum.lower(),
             config.layout,
             f"{project_configuration.product.bundle_identifier}.build",
         )

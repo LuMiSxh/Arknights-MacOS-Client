@@ -1,16 +1,14 @@
-#!/usr/bin/env -S uv run --locked --no-dev
 # SPDX-License-Identifier: MPL-2.0
 
 """Safely extract a verified Wine runtime archive for release packaging."""
 
 from __future__ import annotations
 
-import argparse
 import posixpath
 import tarfile
 from pathlib import Path, PurePosixPath
 
-from lib.common import fail, remove_path, run_main
+from lib.common import fail, remove_path
 
 # Runtime 0.7.0 ships its license texts beside the runtime directory.
 RUNTIME_COMPANIONS = frozenset({"Licenses", "NOTICE.md"})
@@ -70,17 +68,3 @@ def extract(archive: Path, destination: Path) -> Path:
     if not runtime_root.is_dir():
         fail("runtime archive top-level entry is not a directory")
     return runtime_root
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("archive", type=Path)
-    parser.add_argument("destination", type=Path)
-    arguments = parser.parse_args()
-    if not arguments.archive.is_file():
-        fail(f"archive not found: {arguments.archive}")
-    print(extract(arguments.archive.resolve(), arguments.destination.resolve()))
-
-
-if __name__ == "__main__":
-    run_main(main)
