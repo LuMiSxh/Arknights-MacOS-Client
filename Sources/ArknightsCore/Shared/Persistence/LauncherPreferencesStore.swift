@@ -150,8 +150,7 @@ package struct LauncherPreferencesStore {
 
 	package func regionAccess() -> RegionAccess {
 		RegionAccess(
-			canaryFeaturesEnabled: value(Key.canaryFeaturesEnabled),
-			taiwanClientEnabled: value(Key.taiwanClientEnabled)
+			canaryFeaturesEnabled: value(Key.canaryFeaturesEnabled)
 		)
 	}
 

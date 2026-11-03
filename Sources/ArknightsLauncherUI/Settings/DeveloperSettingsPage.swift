@@ -28,7 +28,6 @@ import SwiftUI
 					picker("Failure", \.failure)
 					picker("Support code", \.failureCode)
 					picker("Canary features", \.canaryFeaturesEnabled)
-					picker("Taiwan server", \.taiwanClientEnabled)
 					picker("Status pill", \.showStatusPill)
 					picker("Version pill", \.showVersionPill)
 					picker("Music pill", \.showMusicPill)

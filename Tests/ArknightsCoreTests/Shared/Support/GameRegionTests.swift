@@ -15,30 +15,15 @@ func globalRegionPreservesThePreExistingPreferencesKey() {
 
 @MainActor
 @Test
-func onlyTaiwanSelectionDependsOnCanaryPermissions() {
-	for (canary, taiwan) in [(false, false), (true, false), (false, true)] {
-		#expect(
-			RegionAccess(canaryFeaturesEnabled: canary, taiwanClientEnabled: taiwan)
-				.selectableRegions == GameRegion.generallyAvailableCases)
-	}
-	#expect(
-		RegionAccess(canaryFeaturesEnabled: true, taiwanClientEnabled: true).selectableRegions
-			== GameRegion.allCases)
+func taiwanIsAStableServerThatNeedsNoCanaryFeatures() {
+	#expect(RegionAccess(canaryFeaturesEnabled: false).selectableRegions == GameRegion.allCases)
 
 	let (defaults, suiteName) = makeIsolatedDefaults("GameRegionTests")
 	defer { defaults.removePersistentDomain(forName: suiteName) }
 	let store = LauncherPreferencesStore(defaults: defaults)
-	typealias Key = LauncherPreferencesStore.Key
-
 	store.setSelectedRegion(.chinaBilibili)
 	#expect(store.selectedRegion() == .chinaBilibili)
 
 	store.setSelectedRegion(.taiwan)
-	#expect(store.selectedRegion() == .global)
-	store.set(true, for: Key.canaryFeaturesEnabled)
-	#expect(store.selectedRegion() == .global)
-	store.set(true, for: Key.taiwanClientEnabled)
 	#expect(store.selectedRegion() == .taiwan)
-	store.set(false, for: Key.taiwanClientEnabled)
-	#expect(store.selectedRegion() == .global)
 }

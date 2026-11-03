@@ -16,7 +16,7 @@ No. The DMG contains only the launcher and Wine. The launcher downloads the game
 
 ## Which servers can I play?
 
-Global, Japan, Korea, China, and China (Bilibili). Taiwan is a [Canary server](../installation.md#canary-servers). Servers install side by side with separate files and versions.
+Global, Japan, Korea, Taiwan, China, and China (Bilibili). Servers install side by side with separate files and versions.
 
 ## Do I need an internet connection?
 

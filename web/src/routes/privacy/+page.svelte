@@ -79,7 +79,7 @@
 			<code>launcher.hg-cdn.com</code>,
 			<code>ak-tw.hg-cdn.com</code>,
 			<code>gl-utils-public.hg-cdn.com</code>: game metadata and package
-			downloads for Taiwan (Canary).
+			downloads for Taiwan.
 		</li>
 		<li>
 			<code>launcher.hypergryph.com</code>: game metadata for China and

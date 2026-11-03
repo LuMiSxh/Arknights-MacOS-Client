@@ -66,7 +66,7 @@ Lower resolutions scale to fill the screen and look grainy on larger or differen
 
 **Settings → Servers → Canary Features** turns on experimental options. Turning it off restores normal behavior and deletes nothing.
 
-- **Allow Taiwan server** shows the Taiwan server.
+No Canary option exists right now. The panel shows a note instead.
 
 If a Canary option causes a problem, turn it off and mention it in your [report](README.md#report-a-problem).
 

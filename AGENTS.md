@@ -3,7 +3,7 @@
 ## Scope and Commands
 
 - Target Apple Silicon and macOS 15+. Guard macOS-26-only Liquid Glass APIs with `AdaptiveGlass.swift` fallbacks.
-- Treat Yostar Global, Japan, and Korea PC and Hypergryph China and China (Bilibili) as stable; keep Gryphline Taiwan behind Canary Features.
+- Treat Yostar Global, Japan, and Korea PC, Gryphline Taiwan, and Hypergryph China and China (Bilibili) as stable. Canary Features currently has no features.
 - Keep source, docs, tests, UI copy, and commits in English; the app ships English-only. Write docs in plain technical English: one idea per sentence, about 25 words or fewer, active voice, imperative steps, UI labels in **bold** exactly as shown, and glossary terms (`docs/development/README.md#terms`). `docs/help/**` and `docs/installation.md` are strict; architecture docs may use precise technical terms.
 - Use SwiftPM as the source of truth; do not add an Xcode project.
 - Keep the static SvelteKit site in `web/` (see `docs/development/README.md#documentation-website`); do not add Vitest.

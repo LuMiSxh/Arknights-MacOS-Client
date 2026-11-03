@@ -32,7 +32,7 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 	let context = StorageOverviewResolver.context(preferences: preferences, region: .global)
 	let locations = try StorageOverviewResolver.locations(paths: paths, context: context)
 
-	#expect(locations.count == 11)
+	#expect(locations.count == 12)
 	#expect(
 		locations.first { $0.category == .game(.japan) }?.urls.first?.path == customJapan.path
 	)
@@ -49,19 +49,16 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 			.path == browserCache.resolvingSymlinksInPath().path
 	)
 
-	for canary in [true, false] {
-		let filtered = try StorageOverviewResolver.locations(
-			paths: paths,
-			context: StorageOverviewContext(
-				region: .global,
-				regionAccess: RegionAccess(
-					canaryFeaturesEnabled: canary, taiwanClientEnabled: canary),
-				persistedInstallDirectories: [:]
-			)
+	let filtered = try StorageOverviewResolver.locations(
+		paths: paths,
+		context: StorageOverviewContext(
+			region: .global,
+			regionAccess: RegionAccess(canaryFeaturesEnabled: false),
+			persistedInstallDirectories: [:]
 		)
-		#expect(filtered.contains { $0.category == .game(.taiwan) } == canary)
-		#expect(filtered.contains { $0.category == .game(.china) })
-	}
+	)
+	#expect(filtered.contains { $0.category == .game(.taiwan) })
+	#expect(filtered.contains { $0.category == .game(.china) })
 }
 
 @Test

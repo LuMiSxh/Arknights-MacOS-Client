@@ -41,7 +41,7 @@ The setup assistant opens on the first start. Change any choice later in **Setti
    | **Global**           | Yostar     | Always                             |
    | **Japan**            | Yostar     | Always                             |
    | **Korea**            | Yostar     | Always                             |
-   | **Taiwan**           | Gryphline  | [Canary Features](#canary-servers) |
+   | **Taiwan**           | Gryphline  | Always                             |
    | **China**            | Hypergryph | Always                             |
    | **China (Bilibili)** | Hypergryph | Always                             |
 
@@ -52,9 +52,9 @@ The setup assistant opens on the first start. Change any choice later in **Setti
 
 After the launcher verifies the download, **Play** becomes available.
 
-### Canary servers
+### Anti-cheat
 
-To show experimental Taiwan, turn on **Settings → Servers → Canary Features**, then **Allow Taiwan server**. Taiwan uses ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running it through Wine is unofficial and at your own risk.
+Taiwan, China, and China (Bilibili) use ACE Anti-Cheat. Before the first start, the launcher asks you to confirm that running them through Wine is unofficial. Use them at your own risk.
 
 ## First launch
 

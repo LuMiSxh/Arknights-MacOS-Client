@@ -19,27 +19,9 @@ struct OnboardingFinishView: View {
 			accentColor: accentColor
 		) {
 			SettingsPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
-				VStack(alignment: .leading, spacing: 12) {
-					Text(gameStatusDetail)
-						.foregroundStyle(theme.textSecondary)
-						.fixedSize(horizontal: false, vertical: true)
-
-					if installation.isDownloading, let progress = installation.progress {
-						ProgressView(value: progress.fraction)
-							.tint(theme.accentFill)
-					}
-
-					if !installation.isInstalled && !installation.isDownloading
-						&& installation.canInstall
-					{
-						CapsuleActionButton(
-							title: "Resume Download",
-							systemImage: "arrow.clockwise",
-							tone: .accent(accentColor),
-							action: install
-						)
-					}
-				}
+				OnboardingFinishGameStatus(
+					installation: installation, detail: gameStatusDetail,
+					accentColor: accentColor, install: install)
 			}
 
 			SettingsPanel(

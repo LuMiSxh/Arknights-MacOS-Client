@@ -14,7 +14,6 @@ import ArknightsGameRuntime
 			developerSimulation = simulation
 
 			settings.canaryFeaturesEnabled = simulation.canaryFeaturesEnabled
-			settings.taiwanClientEnabled = simulation.taiwanClientEnabled
 			if installation.region != simulation.selectedRegion {
 				lifecycle.simulateActivity(.idle)
 				_ = installation.selectRegion(simulation.selectedRegion)

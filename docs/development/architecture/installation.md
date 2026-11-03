@@ -16,7 +16,7 @@ Each publisher family has its own API:
 | Region                  | API                                                                                                                                    |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Global, Japan, Korea    | Same Yostar API shape and signature algorithm. Base URLs and `game_tag` values differ.                                                 |
-| Taiwan (Canary-gated)   | Gryphline batch metadata and web-metadata endpoints. The `game_files` response is an encrypted JSON-lines manifest with MD5 checksums. |
+| Taiwan                  | Gryphline batch metadata and web-metadata endpoints. The `game_files` response is an encrypted JSON-lines manifest with MD5 checksums. |
 | China, China (Bilibili) | Hypergryph batch metadata endpoint with the respective distribution channel.                                                           |
 
 The Gryphline adapter accepts only HTTPS responses from its allowlisted hosts and never starts the

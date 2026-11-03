@@ -37,24 +37,20 @@ struct GameClientProfile: Sendable {
 	package let requiresACEWarning: Bool
 }
 
-/// The Canary permissions that expose extra regions. This is the single source of truth for
-/// whether a region may be selected, installed, listed, or launched. Only Taiwan is still gated.
+/// The Canary permission that exposes extra regions. This is the single source of truth for
+/// whether a region may be selected, installed, listed, or launched. No region needs it now.
 package struct RegionAccess: Equatable, Sendable {
 	package var canaryFeaturesEnabled: Bool
-	package var taiwanClientEnabled: Bool
 
-	package init(canaryFeaturesEnabled: Bool, taiwanClientEnabled: Bool) {
+	package init(canaryFeaturesEnabled: Bool) {
 		self.canaryFeaturesEnabled = canaryFeaturesEnabled
-		self.taiwanClientEnabled = taiwanClientEnabled
 	}
 
 	package var selectableRegions: [GameRegion] { GameRegion.allCases.filter(allows) }
 
 	package func allows(_ region: GameRegion) -> Bool {
 		guard region.requiresCanaryPermission else { return true }
-		guard canaryFeaturesEnabled else { return false }
-		if region.requiresTaiwanClientPermission { return taiwanClientEnabled }
-		return true
+		return canaryFeaturesEnabled
 	}
 }
 
@@ -70,11 +66,6 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		.global, .japan, .korea, .taiwan, .china, .chinaBilibili,
 	]
 	package static let yostarCases: [GameRegion] = [.global, .japan, .korea]
-	static let generallyAvailableCases: [GameRegion] = yostarCases + [.china, .chinaBilibili]
-
-	var requiresTaiwanClientPermission: Bool {
-		self == .taiwan
-	}
 
 	package var id: String { rawValue }
 
@@ -83,7 +74,7 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		case .global: "Global"
 		case .japan: "Japan"
 		case .korea: "Korea"
-		case .taiwan: "Taiwan (Canary)"
+		case .taiwan: "Taiwan"
 		case .china: "China"
 		case .chinaBilibili: "China (Bilibili)"
 		}
@@ -107,7 +98,7 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 				runtimeEnvironmentOverrides: [
 					AppConstants.Runtime.aceCompactEnvironmentKey: "1"
 				],
-				requiresCanaryPermission: true,
+				requiresCanaryPermission: false,
 				requiresACEWarning: true
 			)
 		case .china:

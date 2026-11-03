@@ -107,7 +107,7 @@ struct InstallationSettingsPage: View {
 				SettingsActionRow(
 					title: Self.canaryFeaturesTitle,
 					detail:
-						"Try experimental features. Turning this off switches a Canary server back to Global."
+						"Try experimental features before they become stable."
 				) {
 					SettingsToggle(
 						Self.canaryFeaturesTitle,
@@ -118,7 +118,7 @@ struct InstallationSettingsPage: View {
 				}
 				if settings.canaryFeaturesEnabled {
 					SettingsHairline()
-					canaryRuntimeSettings
+					canaryStatusNote
 				}
 			}
 

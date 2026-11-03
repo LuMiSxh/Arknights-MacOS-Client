@@ -50,7 +50,6 @@ import ArknightsGameInstallation
 		var selectedRegion = GameRegion.global
 		var installedRegions: Set<GameRegion> = [.global]
 		var canaryFeaturesEnabled = false
-		var taiwanClientEnabled = false
 		var showStatusPill = false
 		var showVersionPill = true
 		var showMusicPill = false
@@ -79,10 +78,7 @@ import ArknightsGameInstallation
 		}
 
 		var selectableRegions: [GameRegion] {
-			RegionAccess(
-				canaryFeaturesEnabled: canaryFeaturesEnabled,
-				taiwanClientEnabled: taiwanClientEnabled
-			).selectableRegions
+			RegionAccess(canaryFeaturesEnabled: canaryFeaturesEnabled).selectableRegions
 		}
 
 		/// Removes combinations the launcher cannot reach, so controllers never see them.

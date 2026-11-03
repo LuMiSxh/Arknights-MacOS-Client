@@ -17,7 +17,7 @@
 		{ name: 'Global', publisher: 'Yostar', status: 'Supported' },
 		{ name: 'Japan', publisher: 'Yostar', status: 'Supported' },
 		{ name: 'Korea', publisher: 'Yostar', status: 'Supported' },
-		{ name: 'Taiwan', publisher: 'Gryphline', status: 'Canary' },
+		{ name: 'Taiwan', publisher: 'Gryphline', status: 'Supported' },
 		{ name: 'China', publisher: 'Hypergryph', status: 'Supported' },
 		{
 			name: 'China (Bilibili)',

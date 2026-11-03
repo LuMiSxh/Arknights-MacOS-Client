@@ -18,7 +18,7 @@ import Testing
 			state.isInstalled = false
 
 			let paused = state.normalized()
-			#expect(paused.selectedRegion == .global)
+			#expect(paused.selectedRegion == .taiwan)
 			#expect(paused.installedRegions == [.global])
 			#expect(paused.hasPartialDownload)
 

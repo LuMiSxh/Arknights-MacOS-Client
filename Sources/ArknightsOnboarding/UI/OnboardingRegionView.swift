@@ -8,7 +8,6 @@ struct OnboardingRegionView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	@Bindable var installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
-	@Environment(\.launcherTheme) private var theme
 	let accentColor: Color
 	let canSwitchRegion: Bool
 	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
@@ -39,119 +38,14 @@ struct OnboardingRegionView: View {
 				OnboardingToggleRow(
 					title: "Canary Features",
 					detail:
-						"Turns on experimental features and unlocks more servers. Turning it off switches a Canary server back to Global.",
+						"Turns on experimental features. There are no canary features right now.",
 					isOn: $preferences.canaryFeaturesEnabled,
 				)
 				.disabled(lifecycle.activity != .idle)
-				if preferences.canaryFeaturesEnabled {
-					OnboardingToggleRow(
-						title: "Allow Taiwan server",
-						detail: "Lets you pick the Taiwan server.",
-						isOn: $preferences.taiwanClientEnabled,
-					)
-					.disabled(lifecycle.activity != .idle)
-				}
 			}
 
-			SettingsPanel(title: "Game files", systemImage: installationImage) {
-				VStack(alignment: .leading, spacing: 12) {
-					HStack {
-						VStack(alignment: .leading, spacing: 4) {
-							if isLoadingInstallationMetadata {
-								SkeletonValue(width: 160, height: 16, pulses: true)
-								SkeletonValue(width: 216, height: 16, pulses: true)
-							} else {
-								Text(installationTitle)
-									.fontWeight(.medium)
-								Text(installationDetail)
-									.font(.callout)
-									.foregroundStyle(theme.textSecondary)
-							}
-						}
-						Spacer()
-						if installation.lifecycle.state.refresh.isChecking {
-							ProgressView()
-						} else if installation.isInstalled && !installation.isDownloading {
-							Image(systemName: "checkmark.circle.fill")
-								.foregroundStyle(theme.accentInk)
-								.accessibilityHidden(true)
-						}
-					}
-
-					if installation.isDownloading, let progress = installation.progress {
-						ProgressView(value: progress.fraction)
-							.tint(theme.accentFill)
-							.accessibilityLabel(Text(installationTitle))
-						Text(progress.transferSummary)
-							.font(.caption.monospacedDigit())
-							.foregroundStyle(theme.textSecondary)
-					}
-
-					if !installation.isInstalled && !installation.isDownloading {
-						Text(
-							"Continue to start the download. Closing the launcher pauses it safely."
-						)
-						.font(.callout)
-						.foregroundStyle(theme.textSecondary)
-					}
-				}
-			}
+			OnboardingGameFilesPanel(installation: installation, lifecycle: lifecycle)
 		}
-	}
-
-	private var installationImage: String {
-		if installation.isDownloading {
-			return isVerifying ? "checkmark.shield" : "arrow.down.circle"
-		}
-		if installation.isInstalled { return "checkmark.circle" }
-		return "externaldrive.badge.plus"
-	}
-
-	private var installationTitle: String {
-		if installation.isDownloading { return lifecycle.state.presentation.status.message }
-		if installation.isInstalled { return "Game already installed" }
-		if installation.hasPartialDownload { return "Download paused" }
-		return "Ready to install \(installation.region.displayName)"
-	}
-
-	private var installationDetail: String {
-		if installation.isDownloading {
-			return isVerifying
-				? "You can keep going while the game files are checked."
-				: "You can keep going while the game downloads."
-		}
-		if installation.isInstalled {
-			let version =
-				installation.installedVersion ?? installation.configuration?.gameLatestVersion
-				?? "—"
-			return
-				"Arknights \(version) is ready in \(installation.installDirectory.lastPathComponent)."
-		}
-		if installation.hasPartialDownload {
-			return "Setup continues from where the download stopped."
-		}
-		return "Needs about \(installationSize) of space once installed."
-	}
-
-	private var isVerifying: Bool {
-		lifecycle.state.presentation.status == .verifyingInstallation
-			|| installation.progress?.isVerifying == true
-	}
-
-	private var isLoadingInstallationMetadata: Bool {
-		installation.lifecycle.state.refresh.isChecking
-			&& installation.configuration == nil
-			&& !installation.isInstalled
-			&& !installation.hasPartialDownload
-			&& !installation.isDownloading
-	}
-
-	private var installationSize: String {
-		guard let configuration = installation.configuration else { return "—" }
-		if let requiredInstallBytes = configuration.requiredInstallBytes {
-			return DownloadProgressFormatting.byteCount(requiredInstallBytes)
-		}
-		return configuration.decompressionSize
 	}
 
 	private var regionBinding: Binding<GameRegion?> {

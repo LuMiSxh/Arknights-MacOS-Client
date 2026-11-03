@@ -134,14 +134,6 @@ items:
 
 TODO: Describe the next release goals. Keep one sentence per goal.
 
-We need a volunteer who plays on the Taiwan server. Help us test the Taiwan client, so that we can move it out of Canary Features.
-
-```contact
-title: Help test the Taiwan server
-text: We look for a volunteer who plays on the Taiwan server. Tell us about your Mac, and we will plan the tests with you.
-topic: testing
-```
-
 The launcher is available only in English. Some players asked for Chinese. We want to add Simplified Chinese and Traditional Chinese to the launcher in a later release. For this, we need native speakers who translate the launcher text and check the translations.
 
 ```contact
@@ -164,8 +156,19 @@ FPS limit is implemented. As for battery saver i'm still looking into what to do
 Easiest would be for the user to change from "Retina" to "MetalFX" and capping FPS.
 I will need to take a look into wine for that. (TODO: Rework this pararagh once something is done)
 
-Discord rich presence is in the works!
+Discord rich presence is done.
 
 Screenshot shortcut is noted down.
 
 Menu bar/launch at login is noted down.
+
+Battery saver is noted down.
+=> This just sets metalfx, 60fps cap etc right now but maybe the runtime stuff can still be added in later versions.
+
+What other things (that the user does not see but are important) should be mentioned in the blog post?
+
+- Internal refactoring to make the code more maintainable
+- Performance changes
+- Better internal task scheduling
+- Better error handling and logging plus error code recovery
+-

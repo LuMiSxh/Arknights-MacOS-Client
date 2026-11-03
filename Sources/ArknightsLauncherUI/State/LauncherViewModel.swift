@@ -202,9 +202,6 @@ package final class LauncherViewModel {
 		settings.onCanaryFeaturesChanged = { [weak self] _ in
 			self?.refreshInstalledRegionsAfterCanaryChange()
 		}
-		settings.onTaiwanClientChanged = { [weak self] _ in
-			self?.refreshInstalledRegionsAfterCanaryChange()
-		}
 		settings.onDiscordPresenceChanged = { [weak self] in
 			self?.discordPresence.activityDidChange()
 		}

@@ -4,17 +4,9 @@ import ArknightsCore
 import SwiftUI
 
 extension InstallationSettingsPage {
-	@ViewBuilder var canaryRuntimeSettings: some View {
-		SettingsActionRow(
-			title: "Allow Taiwan server",
-			detail: "Adds the Taiwan server to the server list."
-		) {
-			SettingsToggle(
-				"Allow Taiwan server",
-				isOn: $settings.taiwanClientEnabled,
-				tint: theme.warning
-			)
-		}
-		.disabled(lifecycle.activity != .idle)
+	@ViewBuilder var canaryStatusNote: some View {
+		Text("There are no canary features right now.")
+			.font(.caption)
+			.foregroundStyle(theme.textSecondary)
 	}
 }

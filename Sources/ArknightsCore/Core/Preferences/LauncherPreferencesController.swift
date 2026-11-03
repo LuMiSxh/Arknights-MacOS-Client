@@ -85,12 +85,6 @@ package final class LauncherPreferencesController {
 			onCanaryFeaturesChanged?(canaryFeaturesEnabled)
 		}
 	}
-	package var taiwanClientEnabled: Bool {
-		didSet {
-			store.set(taiwanClientEnabled, for: Key.taiwanClientEnabled)
-			onTaiwanClientChanged?(taiwanClientEnabled)
-		}
-	}
 	package var usesHardwareCursor: Bool {
 		didSet { store.set(usesHardwareCursor, for: Key.usesHardwareCursor) }
 	}
@@ -99,8 +93,7 @@ package final class LauncherPreferencesController {
 	}
 	package var regionAccess: RegionAccess {
 		RegionAccess(
-			canaryFeaturesEnabled: canaryFeaturesEnabled,
-			taiwanClientEnabled: taiwanClientEnabled
+			canaryFeaturesEnabled: canaryFeaturesEnabled
 		)
 	}
 	@ObservationIgnored package var onLauncherUpdateCheckRequested: (() -> Void)?
@@ -108,7 +101,6 @@ package final class LauncherPreferencesController {
 	@ObservationIgnored package var onAnnouncementCheckRequested: (() -> Void)?
 	@ObservationIgnored package var onDynamicThemeChanged: (() -> Void)?
 	@ObservationIgnored package var onCanaryFeaturesChanged: ((Bool) -> Void)?
-	@ObservationIgnored package var onTaiwanClientChanged: ((Bool) -> Void)?
 	@ObservationIgnored package var onDiscordPresenceChanged: (() -> Void)?
 
 	private typealias Key = LauncherPreferencesStore.Key
@@ -132,7 +124,6 @@ package final class LauncherPreferencesController {
 		launcherMusicMuted = store.value(Key.launcherMusicMuted)
 		usesDynamicTheme = store.value(Key.usesDynamicTheme)
 		canaryFeaturesEnabled = store.value(Key.canaryFeaturesEnabled)
-		taiwanClientEnabled = store.value(Key.taiwanClientEnabled)
 		usesHardwareCursor = store.value(Key.usesHardwareCursor)
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
 		launcherAppearance = store.launcherAppearance()
@@ -160,7 +151,6 @@ package final class LauncherPreferencesController {
 		launcherMusicMuted = store.value(Key.launcherMusicMuted)
 		usesDynamicTheme = store.value(Key.usesDynamicTheme)
 		canaryFeaturesEnabled = store.value(Key.canaryFeaturesEnabled)
-		taiwanClientEnabled = store.value(Key.taiwanClientEnabled)
 		usesHardwareCursor = store.value(Key.usesHardwareCursor)
 		dismissedInGameResolutionNote = store.value(Key.dismissedInGameResolutionNote)
 		launcherAppearance = store.launcherAppearance()

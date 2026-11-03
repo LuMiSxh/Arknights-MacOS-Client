@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Gryphline Taiwan is now a stable server. It no longer needs **Canary Features**.
 - Rebuilt the launcher design on one color theme for dark and light. Glow effects, hover zoom, and bouncy motion are gone. Text uses lighter weights, and spacing follows one grid in every window.
 - Secondary buttons and links in Settings, setup, and the update window use quiet neutral colors. The theme color marks only the main action, progress, and selection. Destructive buttons use a red tint in dark and light.
 - The selection in the Settings sidebar now slides between rows.
@@ -63,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Diagnostics no longer replace parts of other words when your account name is short.
 - The **RT-BLK** failure no longer offers a **Retry** that cannot succeed.
 - Warning, success, and danger text is now readable in the light appearance.
+- With **Reduce transparency** on, buttons and menus use the theme colors instead of a black fill.
 - Retrying the launcher update check during setup no longer lets an older result win.
 
 ## [0.7.1] - 2026-10-19
