@@ -24,6 +24,7 @@ struct GameInstallerParallelVerificationTests {
 
 		func pending(
 			progress: @escaping GameInstaller.ProgressHandler = { _ in },
+			checksumBufferSize: Int = AppConstants.IO.checksumBufferSize,
 			willHash: @escaping @Sendable (String) -> Void = { _ in },
 			didRead: @escaping @Sendable (Int) -> Void = { _ in }
 		) async throws -> GameInstaller.PendingDownloads {
@@ -32,6 +33,7 @@ struct GameInstallerParallelVerificationTests {
 				installDirectory: InstallerDirectory(at: directory),
 				previousFiles: nil,
 				verifyAllExistingFiles: true,
+				checksumBufferSize: checksumBufferSize,
 				progress: progress,
 				willHash: willHash,
 				didRead: didRead
@@ -74,19 +76,21 @@ struct GameInstallerParallelVerificationTests {
 	func cancellationStopsEveryChild() async throws {
 		let bufferCount = 3
 		let fileCount = 12
+		let bufferSize = 4 * 1024
 		let fixture = try Self.makeFixture(
-			bodies: Self.bodies(
-				count: fileCount, size: bufferCount * AppConstants.IO.checksumBufferSize))
+			bodies: Self.bodies(count: fileCount, size: bufferCount * bufferSize))
 		defer { fixture.remove() }
 		let reads = Atomic<Int>(0)
 		let taskBox = Mutex<Task<GameInstaller.PendingDownloads, any Error>?>(nil)
 
 		let task = Task {
-			try await fixture.pending(didRead: { _ in
-				reads.add(1, ordering: .relaxed)
-				while taskBox.withLock({ $0 }) == nil { usleep(100) }
-				taskBox.withLock { $0 }?.cancel()
-			})
+			try await fixture.pending(
+				checksumBufferSize: bufferSize,
+				didRead: { _ in
+					reads.add(1, ordering: .relaxed)
+					while taskBox.withLock({ $0 }) == nil { usleep(100) }
+					taskBox.withLock { $0 }?.cancel()
+				})
 		}
 		taskBox.withLock { $0 = task }
 

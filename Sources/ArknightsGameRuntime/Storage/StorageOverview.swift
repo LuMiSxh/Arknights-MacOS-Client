@@ -48,7 +48,7 @@ package struct StorageOverviewContext: Equatable, Sendable {
 
 enum StorageOverviewResolver {
 	@MainActor
-	package static func context(
+	static func context(
 		preferences: LauncherPreferencesStore,
 		region: GameRegion
 	) -> StorageOverviewContext {
@@ -56,20 +56,6 @@ enum StorageOverviewResolver {
 			region: region,
 			regionAccess: preferences.regionAccess(),
 			persistedInstallDirectories: preferences.persistedInstallDirectories()
-		)
-	}
-
-	@MainActor
-	static func locations(
-		paths: AppPaths,
-		preferences: LauncherPreferencesStore,
-		region: GameRegion = .global,
-		fileManager: FileManager = .default
-	) throws -> [StorageLocation] {
-		try locations(
-			paths: paths,
-			context: context(preferences: preferences, region: region),
-			fileManager: fileManager
 		)
 	}
 

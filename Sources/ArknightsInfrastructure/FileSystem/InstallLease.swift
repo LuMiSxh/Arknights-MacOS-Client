@@ -7,7 +7,7 @@ import Foundation
 ///
 /// The lease owns a descriptor on the root with an `flock`. `flock` binds to the open file
 /// description, so a second acquire conflicts even inside this process.
-/// Call ``release()`` to unlock and close deterministically; `deinit` only backs that up.
+/// Call ``release()`` to unlock at a known point. It consumes the lease, and `deinit` unlocks and closes.
 package struct InstallLease: ~Copyable, Sendable {
 	package let directory: InstallerDirectory
 	private let lockDescriptor: Int32
@@ -31,7 +31,7 @@ package struct InstallLease: ~Copyable, Sendable {
 		return InstallLease(directory: directory, lockDescriptor: descriptor)
 	}
 
-	// Consuming `self` runs `deinit`, the single unlock path.
+	// Consuming `self` ends the lease here. `deinit` is the only unlock path.
 	consuming func release() {}
 
 	deinit {

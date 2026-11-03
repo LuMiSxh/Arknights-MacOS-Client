@@ -13,7 +13,7 @@
       "causes": [
         "The game service is in maintenance.",
         "A VPN, proxy, DNS filter, or network security tool blocks the request.",
-        "The launcher could not get valid configuration or service data for the selected region."
+        "The launcher could not get valid configuration or service data for the selected server."
       ],
       "steps": [
         "Check that the Mac can open ordinary websites.",
@@ -326,7 +326,7 @@
       "allowsRetry": true,
       "allowsRepair": false,
       "causes": [
-        "A Wine prefix migration, registry setup, or DXMT installation failed.",
+        "A game environment (Wine prefix) migration, registry setup, or DXMT installation failed.",
         "Another Wine process was running.",
         "If the message mentions Vuplex, PlatformProcess, the Bilibili login window, userenv, or a game helper, see [RT-CMP](rt-cmp.md)."
       ],

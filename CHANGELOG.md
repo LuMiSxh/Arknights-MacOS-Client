@@ -58,6 +58,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The launcher no longer starts music while the game starts.
 - A failed launcher update now shows support code **UP-ERR**.
 - When the Bilibili sign-in helper cannot start, the launcher stops the launch and shows **RT-BIL** instead of waiting 90 seconds.
+- Download verification uses less memory and CPU for each file.
+- A slow Game Mode helper can no longer stop the launcher from quitting.
+- Diagnostics no longer replace parts of other words when your account name is short.
+- The **RT-BLK** failure no longer offers a **Retry** that cannot succeed.
 
 ## [0.7.1] - 2026-10-19
 

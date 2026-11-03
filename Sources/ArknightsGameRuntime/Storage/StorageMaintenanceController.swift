@@ -5,7 +5,7 @@ import ArknightsCore
 import ArknightsCustomization
 import Foundation
 
-/// Owns existing cache measurement and targeted cleanup operations.
+/// Owns targeted cache cleanup and the Finder reveal actions for the app and logs.
 @MainActor
 package final class StorageMaintenanceController {
 	package var onStorageOverviewChanged: (() -> Void)?
@@ -122,19 +122,16 @@ package final class StorageMaintenanceController {
 	}
 
 	private func presentCacheFailure(_ error: any Error, id: UUID, region: GameRegion) {
-		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: id,
-				message: message,
-				code: .localFileFailed,
-				context: SupportContext(
-					operation: .cacheClearing,
-					region: region.supportRegion
-				),
-				actions: [.retry, .openTroubleshooting, .reportProblem]
+			error,
+			id: id,
+			code: .localFileFailed,
+			context: SupportContext(
+				operation: .cacheClearing,
+				region: region.supportRegion
 			),
-			diagnostic: launcherDiagnosticDescription(for: error)
+			canRepair: false,
+			blocksGameLaunch: false
 		)
 	}
 }

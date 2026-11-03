@@ -239,36 +239,32 @@ package final class IntelTranslationController {
 		else { return }
 
 		let error = launchError
-		var actions: [RecoveryAction] = [.retry, .openTroubleshooting, .reportProblem]
-		if check.state == .rosettaMissing { actions.insert(.installRosetta, at: 0) }
+		let isRosettaMissing = check.state == .rosettaMissing
 		let existingID =
 			lifecycle.state.presentation.failure?.message == error.errorDescription
 			? lifecycle.state.presentation.failure?.id
 			: nil
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: existingID ?? UUID(),
-				message: error.errorDescription
-					?? "The operation could not be completed because of an unexpected error.",
-				code: check.state == .rosettaMissing ? .rosettaMissing : .intelTranslationBlocked,
-				context: SupportContext(operation: .intelTranslationPreflight, region: nil),
-				actions: actions,
-				blocksGameLaunch: true
-			),
+			message: error.errorDescription
+				?? "The operation could not be completed because of an unexpected error.",
+			id: existingID ?? UUID(),
+			code: isRosettaMissing ? .rosettaMissing : .intelTranslationBlocked,
+			context: SupportContext(operation: .intelTranslationPreflight, region: nil),
+			canRepair: false,
+			leadingActions: isRosettaMissing ? [.installRosetta] : [],
+			blocksGameLaunch: true,
 			diagnostic: check.diagnostics
 		)
 	}
 
 	private func presentRosettaFailure(message: String, diagnostic: String, id: UUID) {
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: id,
-				message: message,
-				code: .rosettaMissing,
-				context: SupportContext(operation: .rosettaInstallation, region: nil),
-				actions: [.retry, .openTroubleshooting, .reportProblem],
-				blocksGameLaunch: true
-			),
+			message: message,
+			id: id,
+			code: .rosettaMissing,
+			context: SupportContext(operation: .rosettaInstallation, region: nil),
+			canRepair: false,
+			blocksGameLaunch: true,
 			diagnostic: diagnostic
 		)
 	}

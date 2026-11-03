@@ -149,19 +149,45 @@ package final class LauncherLifecycleStore {
 		blocksGameLaunch: Bool
 	) {
 		presentFailure(
+			message: launcherUserMessage(for: error),
+			id: id,
+			code: code,
+			context: context,
+			canRepair: canRepair,
+			allowsRetry: allowsRetry,
+			blocksGameLaunch: blocksGameLaunch,
+			diagnostic: launcherDiagnosticDescription(for: error)
+		)
+	}
+
+	/// Presents an explicit message. Actions still come from `recoveryActions`; `leadingActions`
+	/// adds site-only actions in front of them.
+	package func presentFailure(
+		message: String,
+		id: UUID,
+		code: SupportCode?,
+		context: SupportContext,
+		canRepair: Bool,
+		allowsRetry: Bool = true,
+		leadingActions: [RecoveryAction] = [],
+		blocksGameLaunch: Bool,
+		diagnostic: String
+	) {
+		presentFailure(
 			LauncherFailurePresentation(
 				id: id,
-				message: launcherUserMessage(for: error),
+				message: message,
 				code: code,
 				context: context,
-				actions: Self.recoveryActions(
-					for: code,
-					canRepair: canRepair,
-					allowsRetry: allowsRetry
-				),
+				actions: leadingActions
+					+ Self.recoveryActions(
+						for: code,
+						canRepair: canRepair,
+						allowsRetry: allowsRetry
+					),
 				blocksGameLaunch: blocksGameLaunch
 			),
-			diagnostic: launcherDiagnosticDescription(for: error)
+			diagnostic: diagnostic
 		)
 	}
 

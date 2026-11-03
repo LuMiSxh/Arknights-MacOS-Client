@@ -13,7 +13,7 @@ enum GameProcessExitAction: Equatable {
 
 struct GameSessionTerminalFailure {
 	let error: any Error
-	package let operation: SupportOperation
+	let operation: SupportOperation
 	let blocksGameLaunch: Bool
 }
 

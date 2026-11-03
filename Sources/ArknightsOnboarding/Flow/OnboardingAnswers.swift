@@ -17,11 +17,13 @@ nonisolated struct GameDisplayAnswers: Equatable, Sendable {
 	var frameRateLimit: GameFrameRateLimit
 
 	static let recommended = GameDisplayAnswers(
-		placement: .fullscreen, rendering: .retina, frameRateLimit: .fps120)
+		placement: .fullscreen, rendering: .retina,
+		frameRateLimit: GameLaunchOptions.default.frameRateLimit)
 
 	init(
 		placement: GamePlacementAnswer, windowSize: WindowSizeAnswer = .preset(.fillScreen),
-		rendering: GameRenderingMode, frameRateLimit: GameFrameRateLimit = .fps120
+		rendering: GameRenderingMode,
+		frameRateLimit: GameFrameRateLimit = GameLaunchOptions.default.frameRateLimit
 	) {
 		self.placement = placement
 		self.windowSize = windowSize

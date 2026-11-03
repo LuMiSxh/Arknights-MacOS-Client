@@ -6,6 +6,7 @@ import Dispatch
 import Foundation
 import Testing
 
+@testable import ArknightsCore
 @testable import ArknightsGameInstallation
 @testable import ArknightsGameRuntime
 @testable import ArknightsLauncherUI
@@ -65,7 +66,8 @@ func stopIsAuthoritativeWhenKillFindsNoServer(waitStatus: Int32, succeeds: Bool)
 	do {
 		try await runtime.stop(
 			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
-			timeout: .seconds(1)
+			timeout: .seconds(1),
+			spawnGate: nil
 		)
 	} catch {
 		didFail = true
@@ -188,6 +190,7 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 			gameExecutable: fixture.gameExecutable,
 			prefixDirectory: fixture.prefixDirectory,
 			displayConfiguration: WineDisplayConfiguration(backingScaleFactor: 1),
+			frameRateLimit: GameLaunchOptions.default.frameRateLimit,
 			logURL: fixture.logURL,
 			spawnGate: spawnGate
 		)

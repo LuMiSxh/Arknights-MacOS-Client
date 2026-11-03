@@ -90,10 +90,6 @@ actor ProgressCounter {
 		return progress(file: file)
 	}
 
-	func refresh(file: String) -> DownloadProgress {
-		progress(file: file)
-	}
-
 	private func progress(file: String) -> DownloadProgress {
 		sequence &+= 1
 		let snapshot = estimator.snapshot()
@@ -127,7 +123,7 @@ enum InstallProgressMonitor {
 	) async rethrows -> Result {
 		try await run(interval: interval, clock: clock) {
 			let file = await counter.lastActiveFile ?? fallbackFile
-			await progress(await counter.refresh(file: file))
+			await progress(await counter.current(file: file))
 		} operation: {
 			try await operation()
 		}

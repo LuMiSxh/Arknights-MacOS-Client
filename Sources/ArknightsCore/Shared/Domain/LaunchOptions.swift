@@ -24,24 +24,16 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 	/// The resolution fullscreen shows, like a game's output resolution. Native follows the
 	/// fullscreen display, so displays beyond 4K or with uncommon sizes are not scaled unevenly.
 	package var fullscreenResolution: GameFullscreenResolution
-	package var windowSize: GameDisplaySize = .defaultWindow
-	package var usesGameSettings: Bool = false
-	package var renderingMode: GameRenderingMode = .retina
-	package var usesMetalPerformanceHUD: Bool = false
-	package var usesGameMode: Bool = false
-	package var synchronizationMode: WineSynchronizationMode = .msync
-	package var frameRateLimit: GameFrameRateLimit = .fps120
+	package var windowSize: GameDisplaySize
+	package var usesGameSettings: Bool
+	package var renderingMode: GameRenderingMode
+	package var usesMetalPerformanceHUD: Bool
+	package var usesGameMode: Bool
+	package var synchronizationMode: WineSynchronizationMode
+	package var frameRateLimit: GameFrameRateLimit
 
-	package static let `default` = GameLaunchOptions(
-		displayMode: .windowed,
-		resolution: .hd,
-		windowSize: .defaultWindow,
-		usesGameSettings: false,
-		renderingMode: .retina,
-		usesMetalPerformanceHUD: false,
-		usesGameMode: false,
-		synchronizationMode: .msync
-	)
+	// The initializer holds the only copy of each default; `default` is built from it.
+	package static let `default` = GameLaunchOptions(displayMode: .windowed, resolution: .hd)
 
 	private enum CodingKeys: String, CodingKey {
 		case displayMode, resolution, fullscreenResolution, windowSize, usesGameSettings
@@ -60,7 +52,8 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		renderingMode: GameRenderingMode = .retina,
 		usesMetalPerformanceHUD: Bool = false,
 		usesGameMode: Bool = false,
-		synchronizationMode: WineSynchronizationMode = .msync
+		synchronizationMode: WineSynchronizationMode = .msync,
+		frameRateLimit: GameFrameRateLimit = .fps120
 	) {
 		self.displayMode = displayMode
 		self.resolution = resolution
@@ -71,6 +64,7 @@ package struct GameLaunchOptions: Codable, Sendable, Equatable {
 		self.usesMetalPerformanceHUD = usesMetalPerformanceHUD
 		self.usesGameMode = usesGameMode
 		self.synchronizationMode = synchronizationMode
+		self.frameRateLimit = frameRateLimit
 	}
 
 	/// Decodes each option independently, so one missing, retired, or malformed value falls

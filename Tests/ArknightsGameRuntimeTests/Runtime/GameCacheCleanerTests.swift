@@ -4,6 +4,7 @@ import ArknightsTestSupport
 import Foundation
 import Testing
 
+@testable import ArknightsCore
 @testable import ArknightsGameRuntime
 
 private final class FailingCacheRemovalFileManager: FileManager {
@@ -30,7 +31,7 @@ func clearRemovesEveryCacheDirectoryButLeavesTheRestOfThePrefix() throws {
 	let temporary = try TemporaryDirectory("GameCacheCleanerTests")
 	defer { temporary.remove() }
 	let prefix = makePrefix(in: temporary.url, fileManager: fileManager)
-	let caches = try GameCacheCleaner.cacheDirectories(winePrefix: prefix, fileManager: fileManager)
+	let caches = try AppPaths.gameCacheDirectories(winePrefix: prefix, fileManager: fileManager)
 	#expect(caches.count == 2)
 	#expect(throws: CocoaError.self) {
 		try GameCacheCleaner.clear(

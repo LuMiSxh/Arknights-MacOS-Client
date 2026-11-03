@@ -81,15 +81,13 @@ package enum GamePolicyControl {
 			state.isClosed = true
 			return state.inFlight
 		}
-		if let (running, exited) = pending,
-			exited.wait(timeout: .now() + AppConstants.Game.gameModeQuitWaitSeconds) == .timedOut
-		{
-			log.error("gamepolicyctl did not exit before quit; terminating it")
-			running.terminate()
-			_ = exited.wait(timeout: .now() + AppConstants.Game.gameModeQuitWaitSeconds)
+		if let (running, exited) = pending {
+			_ = waitForQuit(running, exited: exited, log: log)
 		}
 		guard isAvailable() else { return }
 		let process = makeProcess(on: on)
+		let exited = DispatchSemaphore(value: 0)
+		process.terminationHandler = { _ in exited.signal() }
 		do {
 			try process.run()
 		} catch {
@@ -98,7 +96,22 @@ package enum GamePolicyControl {
 			)
 			return
 		}
-		process.waitUntilExit()
+		guard waitForQuit(process, exited: exited, log: log) else { return }
 		logExit(of: process, on: on, log: log)
+	}
+
+	// Gives this request the same quit budget as the one it waits behind, then terminates it.
+	// Returns false when it never exits, because its exit status is then unavailable.
+	private static func waitForQuit(
+		_ process: Process,
+		exited: DispatchSemaphore,
+		log: LauncherLog
+	) -> Bool {
+		if exited.wait(timeout: .now() + AppConstants.Game.gameModeQuitWaitSeconds) == .success {
+			return true
+		}
+		log.error("gamepolicyctl did not exit before quit; terminating it")
+		process.terminate()
+		return exited.wait(timeout: .now() + AppConstants.Game.gameModeQuitWaitSeconds) == .success
 	}
 }

@@ -29,7 +29,8 @@ func storageResolverUsesEveryRegionAndPersistedInstallLocation() throws {
 		path: "drive_c/users/crossover/AppData/Local/cache", directoryHint: .isDirectory)
 	try FileManager.default.createDirectory(at: browserCache, withIntermediateDirectories: true)
 
-	let locations = try StorageOverviewResolver.locations(paths: paths, preferences: preferences)
+	let context = StorageOverviewResolver.context(preferences: preferences, region: .global)
+	let locations = try StorageOverviewResolver.locations(paths: paths, context: context)
 
 	#expect(locations.count == 11)
 	#expect(

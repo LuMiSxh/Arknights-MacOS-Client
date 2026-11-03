@@ -79,7 +79,7 @@ package final class LauncherViewModel {
 		self.playtimeStatistics = playtimeStatistics
 		let lifecycle = LauncherLifecycleStore(log: launcherLog)
 		self.lifecycle = lifecycle
-		let settings = LauncherPreferencesController(store: preferences)
+		let settings = LauncherPreferencesController(store: preferences, log: launcherLog)
 		self.settings = settings
 		let iconManager = launcherIconManager ?? LauncherIconManager()
 		self.launcherIconManager = iconManager

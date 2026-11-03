@@ -54,3 +54,21 @@ func launcherLogRotatesBeforeAnAppendingEntryExceedsItsLimit() async throws {
 	#expect(currentSize.intValue <= 256)
 	#expect(FileManager.default.fileExists(atPath: previousURL.path))
 }
+
+@Test
+func launcherLogRecreatesTheFileAfterItIsDeleted() async throws {
+	let temporary = try TemporaryDirectory("LauncherLogTests")
+	defer { temporary.remove() }
+	let fileURL = temporary.url.appending(path: "launcher.log")
+	let log = LauncherLog(fileURL: fileURL)
+
+	log.info("before")
+	await log.flush()
+	try FileManager.default.removeItem(at: fileURL)
+	log.info("after")
+	await log.flush()
+
+	let content = try String(contentsOf: fileURL, encoding: .utf8)
+	#expect(content.contains("after"))
+	#expect(content.contains("before") == false)
+}

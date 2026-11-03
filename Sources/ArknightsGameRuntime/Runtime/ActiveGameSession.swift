@@ -9,7 +9,7 @@ struct ActiveGameSession {
 	let id: UUID
 	// Ends only after prefix-wide shutdown completes.
 	let lease: ActivityLease
-	package let region: GameRegion
+	let region: GameRegion
 	let spawnGate: WineProcessSpawnGate
 
 	var usesGameMode: Bool

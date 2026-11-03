@@ -6,8 +6,15 @@ import Observation
 @MainActor
 @Observable
 package final class LauncherPreferencesController {
+	private let log: LauncherLog?
 	package var launchOptions: GameLaunchOptions {
-		didSet { store.setLaunchOptions(launchOptions) }
+		didSet {
+			do {
+				try store.setLaunchOptions(launchOptions)
+			} catch {
+				log?.error("Could not save game launch options: \(error.localizedDescription)")
+			}
+		}
 	}
 	package var automaticallyChecksLauncherUpdates: Bool {
 		didSet {
@@ -107,8 +114,9 @@ package final class LauncherPreferencesController {
 	private typealias Key = LauncherPreferencesStore.Key
 	private let store: LauncherPreferencesStore
 
-	package init(store: LauncherPreferencesStore) {
+	package init(store: LauncherPreferencesStore, log: LauncherLog? = nil) {
 		self.store = store
+		self.log = log
 		launchOptions = store.launchOptions()
 		automaticallyChecksLauncherUpdates = store.value(Key.automaticLauncherUpdates)
 		automaticallyChecksGameUpdates = store.value(Key.automaticGameUpdates)

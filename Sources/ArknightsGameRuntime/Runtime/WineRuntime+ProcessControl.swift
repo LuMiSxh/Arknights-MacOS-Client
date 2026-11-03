@@ -19,6 +19,14 @@ extension WineRuntimeSessionControlling {
 extension WineRuntime: WineRuntimeSessionControlling {}
 
 extension WineRuntime {
+	// wineserver only signals and waits; it never draws, so shutdown ignores the game's frame cap.
+	private func shutdownEnvironment(prefixDirectory: URL) -> [String: String] {
+		runtimeEnvironment(
+			prefixDirectory: prefixDirectory,
+			frameRateLimit: GameLaunchOptions.default.frameRateLimit
+		)
+	}
+
 	func waitUntilStopped(prefixDirectory: URL) async throws {
 		guard let wineserverURL else {
 			throw GameRuntimeError.runtimeConfiguration(
@@ -27,7 +35,7 @@ extension WineRuntime {
 		let status = try await runAndWait(
 			executable: wineserverURL,
 			arguments: ["-w"],
-			environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+			environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 			output: .nullDevice
 		)
 		guard status == 0 else {
@@ -40,14 +48,6 @@ extension WineRuntime {
 		try await stop(
 			prefixDirectory: prefixDirectory,
 			timeout: AppConstants.Timeouts.runtimeShutdown,
-			spawnGate: nil
-		)
-	}
-
-	func stop(prefixDirectory: URL, timeout: Duration) async throws {
-		try await stop(
-			prefixDirectory: prefixDirectory,
-			timeout: timeout,
 			spawnGate: nil
 		)
 	}
@@ -77,7 +77,7 @@ extension WineRuntime {
 			_ = try await runAndWait(
 				executable: wineserverURL,
 				arguments: ["-k"],
-				environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+				environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 				output: .nullDevice,
 				timeout: remainingShutdownTime(clock: clock, deadline: deadline)
 			)
@@ -88,7 +88,7 @@ extension WineRuntime {
 				_ = try await runAndWait(
 					executable: wineserverURL,
 					arguments: ["-k"],
-					environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+					environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 					output: .nullDevice,
 					timeout: remainingShutdownTime(clock: clock, deadline: deadline)
 				)
@@ -96,7 +96,7 @@ extension WineRuntime {
 			let waitStatus = try await runAndWait(
 				executable: wineserverURL,
 				arguments: ["-w"],
-				environment: runtimeEnvironment(prefixDirectory: prefixDirectory),
+				environment: shutdownEnvironment(prefixDirectory: prefixDirectory),
 				output: .nullDevice,
 				timeout: remainingShutdownTime(clock: clock, deadline: deadline)
 			)
@@ -121,7 +121,7 @@ extension WineRuntime {
 		let process = Process()
 		process.executableURL = wineserverURL
 		process.arguments = ["-k"]
-		process.environment = runtimeEnvironment(prefixDirectory: prefixDirectory)
+		process.environment = shutdownEnvironment(prefixDirectory: prefixDirectory)
 		process.standardOutput = FileHandle.nullDevice
 		process.standardError = FileHandle.nullDevice
 		let terminated = DispatchSemaphore(value: 0)

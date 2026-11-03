@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsCore
 import Foundation
 
 /// One `HKEY\Path` → `name` = `value` assignment destined for the prefix registry.
@@ -11,7 +12,7 @@ struct WineRegistryEntry {
 	}
 
 	let key: String
-	package let name: String
+	let name: String
 	let kind: Kind
 }
 
@@ -26,6 +27,7 @@ extension WineRuntime {
 		environment: [String: String],
 		logHandle: FileHandle,
 		spawnGate: WineProcessSpawnGate? = nil,
+		log: LauncherLog? = nil,
 		fileManager: FileManager = .default
 	) async throws {
 		guard !entries.isEmpty else { return }
@@ -43,7 +45,13 @@ extension WineRuntime {
 				[UInt8($0 & 0xFF), UInt8($0 >> 8)]
 			})
 		try script.write(to: scriptURL, options: .atomic)
-		defer { try? fileManager.removeItem(at: scriptURL) }
+		defer {
+			do {
+				try fileManager.removeItem(at: scriptURL)
+			} catch {
+				log?.error("Could not remove the registry script: \(error.localizedDescription)")
+			}
+		}
 
 		let status = try await runAndWait(
 			executable: executableURL,

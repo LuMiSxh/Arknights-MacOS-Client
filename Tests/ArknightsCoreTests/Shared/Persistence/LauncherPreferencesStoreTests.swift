@@ -11,7 +11,7 @@ private typealias Key = LauncherPreferencesStore.Key
 @MainActor
 struct LauncherPreferencesStoreTests {
 	@Test
-	func launchOptionsPreserveValidStoredFieldsAndRoundTrip() {
+	func launchOptionsPreserveValidStoredFieldsAndRoundTrip() throws {
 		let (defaults, suiteName) = makeIsolatedDefaults("LauncherPreferencesStoreTests")
 		defer { defaults.removePersistentDomain(forName: suiteName) }
 		let store = LauncherPreferencesStore(defaults: defaults)
@@ -34,7 +34,7 @@ struct LauncherPreferencesStoreTests {
 			synchronizationMode: .esync
 		)
 
-		store.setLaunchOptions(expected)
+		try store.setLaunchOptions(expected)
 
 		#expect(store.launchOptions() == expected)
 	}

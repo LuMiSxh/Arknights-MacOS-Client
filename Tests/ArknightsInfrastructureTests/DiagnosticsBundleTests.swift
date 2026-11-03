@@ -100,6 +100,18 @@ struct DiagnosticsBundleTests {
 		#expect(copy == String(repeating: expected, count: 5_000))
 	}
 
+	/// The user name is redacted only as a whole word, and the home path is always redacted.
+	@Test(arguments: [
+		("open /Users/lu/Library/x", "open ~/Library/x"),
+		("lu logged in", "<user> logged in"),
+		("value lumen lu_x", "value lumen lu_x"),
+		("path /Volumes/lu/x", "path /Volumes/<user>/x"),
+	])
+	func redactsTheUserNameOnlyAsAWord(input: String, expected: String) {
+		let subject = DiagnosticsRedaction(homeDirectory: "/Users/lu", userName: "lu")
+		#expect(subject.redact(input) == expected)
+	}
+
 	private func extract(_ archive: URL, into directory: URL) throws {
 		let process = Process()
 		process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")

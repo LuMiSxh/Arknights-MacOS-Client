@@ -8,7 +8,8 @@ extension WineRuntime {
 		prefixDirectory: URL,
 		environment: [String: String],
 		logHandle: FileHandle,
-		spawnGate: WineProcessSpawnGate? = nil
+		spawnGate: WineProcessSpawnGate? = nil,
+		log: LauncherLog? = nil
 	) async throws {
 		try await applyRegistryEntries(
 			Self.bilibiliFontRegistryEntries(),
@@ -16,7 +17,8 @@ extension WineRuntime {
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle,
-			spawnGate: spawnGate
+			spawnGate: spawnGate,
+			log: log
 		)
 		try logHandle.write(
 			contentsOf: Data(
@@ -51,7 +53,7 @@ extension WineRuntime {
 		log: LauncherLog? = nil,
 		spawnGate: WineProcessSpawnGate? = nil
 	) async throws {
-		let current = configuration.registryState(in: prefixDirectory)
+		let current = configuration.registryState(in: prefixDirectory, log: log)
 		let preciseScrollingValue = Self.normalizedScrollingRegistryData
 		var entries: [WineRegistryEntry] = []
 		if current?.retinaMode != configuration.registryValue {
@@ -88,7 +90,8 @@ extension WineRuntime {
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle,
-			spawnGate: spawnGate
+			spawnGate: spawnGate,
+			log: log
 		)
 		logHandle.appendLaunchLogLine(
 			"Arknights Client: RetinaMode=\(configuration.registryValue); LogPixels=\(configuration.logPixels); UsePreciseScrolling=\(preciseScrollingValue).\n",
@@ -190,6 +193,7 @@ extension WineRuntime {
 				try await configureCompatibilityOverrides(
 					prefixDirectory: prefixDirectory,
 					environment: environment,
+					log: log,
 					logHandle: logHandle,
 					spawnGate: spawnGate
 				)
@@ -302,6 +306,7 @@ extension WineRuntime {
 	private func configureCompatibilityOverrides(
 		prefixDirectory: URL,
 		environment: [String: String],
+		log: LauncherLog?,
 		logHandle: FileHandle,
 		spawnGate: WineProcessSpawnGate?
 	) async throws {
@@ -328,7 +333,8 @@ extension WineRuntime {
 			prefixDirectory: prefixDirectory,
 			environment: environment,
 			logHandle: logHandle,
-			spawnGate: spawnGate
+			spawnGate: spawnGate,
+			log: log
 		)
 	}
 

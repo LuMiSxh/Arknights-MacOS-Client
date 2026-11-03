@@ -133,6 +133,44 @@ struct InstallationRecoveryTests {
 		#expect(fixture.controller.lifecycle.activity == .idle)
 		#expect(fixture.controller.lifecycle.state.presentation.failure != nil)
 	}
+
+	@Test
+	func staleStateRefreshIsNotPublishedAfterRegionChange() async throws {
+		let gate = StateLoaderGate()
+		let fixture = try makeInstallationFixture(
+			region: .global,
+			stateLoader: { _ in
+				await gate.wait()
+				return InstallationStateSnapshot(
+					isInstalled: true, hasPartialDownload: false, installedVersion: "1.0.0",
+					installedRegions: [.global], diagnostic: nil)
+			})
+		defer { fixture.storage.remove() }
+		let refresh = fixture.controller.updateInstalledState()
+		#expect(fixture.controller.selectRegion(.japan))
+		await gate.open()
+		await refresh.value
+
+		#expect(!fixture.controller.isInstalled)
+		#expect(fixture.controller.installedVersion == nil)
+		#expect(fixture.controller.installedRegions.isEmpty)
+	}
+}
+
+private actor StateLoaderGate {
+	private var continuation: CheckedContinuation<Void, Never>?
+	private var isOpen = false
+
+	func wait() async {
+		guard !isOpen else { return }
+		await withCheckedContinuation { continuation = $0 }
+	}
+
+	func open() {
+		isOpen = true
+		continuation?.resume()
+		continuation = nil
+	}
 }
 
 @MainActor
@@ -145,7 +183,10 @@ private struct InstallationFixture {
 }
 
 @MainActor
-private func makeInstallationFixture(region: GameRegion) throws -> InstallationFixture {
+private func makeInstallationFixture(
+	region: GameRegion,
+	stateLoader: InstallationController.StateLoader? = nil
+) throws -> InstallationFixture {
 	let storage = try TemporaryDirectory("InstallationRecoveryTests")
 	let root = storage.url
 	let paths = AppPaths(
@@ -163,7 +204,8 @@ private func makeInstallationFixture(region: GameRegion) throws -> InstallationF
 		paths: paths,
 		preferences: preferences,
 		log: log,
-		region: region
+		region: region,
+		stateLoader: stateLoader
 	)
 	controller.configuration = testGameConfiguration
 	return InstallationFixture(

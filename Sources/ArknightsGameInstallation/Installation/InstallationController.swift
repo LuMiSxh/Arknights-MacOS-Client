@@ -56,8 +56,7 @@ package final class InstallationController {
 	@ObservationIgnored package var onMetadataRefreshCancellationRequested: (() -> Void)?
 	@ObservationIgnored var installationTask: Task<Void, Never>?
 	@ObservationIgnored var activityLease: ActivityLease?
-	@ObservationIgnored private var stateRefreshTask: Task<Void, Never>?
-	@ObservationIgnored private var stateRefreshID: UUID?
+	@ObservationIgnored private let stateRefreshSlot = TaskSlot()
 
 	package init(
 		lifecycle: LauncherLifecycleStore,
@@ -85,9 +84,10 @@ package final class InstallationController {
 		)
 	}
 
-	deinit {
+	// `TaskSlot` does not cancel on deinit, so cancel the in-flight refresh here.
+	isolated deinit {
 		installationTask?.cancel()
-		stateRefreshTask?.cancel()
+		stateRefreshSlot.invalidate()
 	}
 
 	package func selectRegion(_ newRegion: GameRegion) -> Bool {
@@ -129,7 +129,6 @@ package final class InstallationController {
 
 	@discardableResult
 	package func updateInstalledState() -> Task<Void, Never> {
-		cancelInstalledStateRefresh()
 		let request = InstallationStateRequest(
 			selectedRegion: region,
 			selectedDirectory: installDirectory,
@@ -146,13 +145,11 @@ package final class InstallationController {
 				}
 			)
 		)
-		let refreshID = UUID()
-		stateRefreshID = refreshID
 		let stateLoader = self.stateLoader
-		let task = Task { [weak self, log] in
+		return stateRefreshSlot.replace { [weak self, log] token in
 			do {
 				let snapshot = try await stateLoader(request)
-				guard let self, self.ownsStateRefresh(refreshID, request: request) else {
+				guard let self, self.ownsStateRefresh(token, request: request) else {
 					return
 				}
 				self.isInstalled = snapshot.isInstalled
@@ -161,30 +158,24 @@ package final class InstallationController {
 				self.installedRegions = snapshot.installedRegions.filter {
 					self.currentSelectableRegions.contains($0)
 				}
-				self.finishStateRefresh(refreshID)
 				if let diagnostic = snapshot.diagnostic {
 					log.error(diagnostic)
 				}
 			} catch is CancellationError {
-				self?.finishStateRefresh(refreshID)
+				return
 			} catch {
-				guard let self, self.ownsStateRefresh(refreshID, request: request) else {
+				guard let self, self.ownsStateRefresh(token, request: request) else {
 					return
 				}
-				self.finishStateRefresh(refreshID)
 				log.error(
 					"Failed to inspect installation state for \(request.selectedRegion.displayName): \(error.localizedDescription)"
 				)
 			}
 		}
-		stateRefreshTask = task
-		return task
 	}
 
 	package func cancelInstalledStateRefresh() {
-		stateRefreshTask?.cancel()
-		stateRefreshTask = nil
-		stateRefreshID = nil
+		stateRefreshSlot.invalidate()
 	}
 
 	package func setRegionInstalled(_ candidate: GameRegion, _ installed: Bool) {
@@ -230,10 +221,10 @@ package final class InstallationController {
 	}
 
 	private func ownsStateRefresh(
-		_ id: UUID,
+		_ token: TaskSlot.Token,
 		request: InstallationStateRequest
 	) -> Bool {
-		stateRefreshID == id && !Task.isCancelled
+		stateRefreshSlot.owns(token) && !Task.isCancelled
 			&& region == request.selectedRegion
 			&& installDirectory == request.selectedDirectory
 	}
@@ -242,11 +233,5 @@ package final class InstallationController {
 		Set(
 			preferences.regionAccess().selectableRegions
 		)
-	}
-
-	private func finishStateRefresh(_ id: UUID) {
-		guard stateRefreshID == id else { return }
-		stateRefreshID = nil
-		stateRefreshTask = nil
 	}
 }

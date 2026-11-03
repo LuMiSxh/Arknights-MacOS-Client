@@ -38,7 +38,7 @@ struct OnboardingExtrasView: View {
 
 	var body: some View {
 		OnboardingPage(
-			title: "Updates & integrations",
+			title: "Updates & Integrations",
 			subtitle: "Update checks only notify you. Nothing downloads until you choose",
 			accentColor: accentColor
 		) {

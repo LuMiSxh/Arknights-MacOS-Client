@@ -156,7 +156,8 @@ extension GameSessionController {
 				let diagnostics = await Self.collectExitDiagnostics(
 					exit,
 					since: since,
-					logURL: logURL
+					logURL: logURL,
+					log: log
 				)
 				guard activeGameSessionID == sessionID else { return }
 				log.error("Game process exited unexpectedly; \(diagnostics)")
@@ -178,7 +179,8 @@ extension GameSessionController {
 				let diagnostics = await Self.collectExitDiagnostics(
 					exit,
 					since: since,
-					logURL: exit.status == 0 && exit.reason == .exit ? nil : logURL
+					logURL: exit.status == 0 && exit.reason == .exit ? nil : logURL,
+					log: log
 				)
 				guard activeGameSessionID == sessionID else { return }
 				if exit.status == 0, exit.reason == .exit {

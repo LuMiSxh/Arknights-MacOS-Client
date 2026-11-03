@@ -77,26 +77,43 @@ package final class LauncherLog: Sendable {
 	}
 }
 
-/// Owns the file and formatter; only ever used on `LauncherLog`'s serial queue.
-private enum LogFileError: Error {
-	case cannotCreate(URL)
-}
-
+/// Owns the log file descriptor and formatter; only ever used on `LauncherLog`'s serial queue.
+///
+/// Keeps one `O_APPEND` descriptor and the file size in memory. It reopens only when the file
+/// rotates, when the path no longer names the open file (the user cleared the logs), or after
+/// a failed write.
 private final class LauncherLogWriter: @unchecked Sendable {
 	private let fileURL: URL
 	private let fileManager = FileManager.default
 	private let formatter = ISO8601DateFormatter()
 	private let maximumFileSize: Int
 	private let maximumMessageBytes: Int
+	private var descriptor: Int32 = -1
+	private var openedIdentity: FileIdentity?
+	private var currentSize = 0
 
-	package init(fileURL: URL, maximumFileSize: Int, maximumMessageBytes: Int) {
+	private struct FileIdentity: Equatable {
+		let device: dev_t
+		let inode: ino_t
+	}
+
+	private enum LogFileError: Error {
+		case cannotOpen(URL, errno: Int32)
+		case cannotWrite(errno: Int32)
+	}
+
+	init(fileURL: URL, maximumFileSize: Int, maximumMessageBytes: Int) {
 		self.fileURL = fileURL
 		self.maximumFileSize = maximumFileSize
 		self.maximumMessageBytes = maximumMessageBytes
 		formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 	}
 
-	package func prepare() {
+	deinit {
+		closeDescriptor()
+	}
+
+	func prepare() {
 		do {
 			try prepareFile(forAppending: 0)
 		} catch {
@@ -105,17 +122,21 @@ private final class LauncherLogWriter: @unchecked Sendable {
 	}
 
 	func write(_ level: LauncherLog.Level, _ message: String, at date: Date) {
+		let sanitized = boundedMessage(message.replacingOccurrences(of: "\n", with: " "))
+		let line = "\(formatter.string(from: date)) [\(level.rawValue)] \(sanitized)\n"
+		let bytes = Array(line.utf8)
 		do {
-			let sanitized = boundedMessage(message.replacingOccurrences(of: "\n", with: " "))
-			let line = "\(formatter.string(from: date)) [\(level.rawValue)] \(sanitized)\n"
-			let data = Data(line.utf8)
-			try prepareFile(forAppending: data.count)
-
-			let handle = try FileHandle(forWritingTo: fileURL)
-			defer { handle.closeFile() }
-			try handle.seekToEnd()
-			try handle.write(contentsOf: data)
+			do {
+				try prepareFile(forAppending: bytes.count)
+				try append(bytes)
+			} catch {
+				// The file may have vanished or the descriptor gone stale; reopen once.
+				closeDescriptor()
+				try prepareFile(forAppending: bytes.count)
+				try append(bytes)
+			}
 		} catch {
+			closeDescriptor()
 			reportWriteFailure()
 		}
 	}
@@ -139,29 +160,80 @@ private final class LauncherLogWriter: @unchecked Sendable {
 	}
 
 	private func prepareFile(forAppending byteCount: Int) throws {
+		if descriptor >= 0, currentIdentity() != openedIdentity {
+			closeDescriptor()
+		}
+		if descriptor < 0 {
+			try openFile()
+		}
+		if exceedsLimit(adding: byteCount) {
+			closeDescriptor()
+			try rotate()
+			try openFile()
+		}
+	}
+
+	private func exceedsLimit(adding byteCount: Int) -> Bool {
+		currentSize >= maximumFileSize || byteCount > maximumFileSize - currentSize
+	}
+
+	private func rotate() throws {
+		let previousURL = fileURL.deletingPathExtension().appendingPathExtension("previous.log")
+		guard fileManager.fileExists(atPath: fileURL.path) else { return }
+		if fileManager.fileExists(atPath: previousURL.path) {
+			try fileManager.removeItem(at: previousURL)
+		}
+		try fileManager.moveItem(at: fileURL, to: previousURL)
+	}
+
+	private func openFile() throws {
 		try fileManager.createDirectory(
 			at: fileURL.deletingLastPathComponent(),
 			withIntermediateDirectories: true
 		)
+		let opened = open(fileURL.path, O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0o644)
+		guard opened >= 0 else { throw LogFileError.cannotOpen(fileURL, errno: errno) }
 
-		if fileManager.fileExists(atPath: fileURL.path) {
-			let attributes = try fileManager.attributesOfItem(atPath: fileURL.path)
-			let size = max((attributes[.size] as? NSNumber)?.intValue ?? 0, 0)
-			if size >= maximumFileSize || byteCount > maximumFileSize - size {
-				let previousURL = fileURL.deletingPathExtension()
-					.appendingPathExtension("previous.log")
-				if fileManager.fileExists(atPath: previousURL.path) {
-					try fileManager.removeItem(at: previousURL)
+		var status = stat()
+		guard fstat(opened, &status) == 0 else {
+			let code = errno
+			close(opened)
+			throw LogFileError.cannotOpen(fileURL, errno: code)
+		}
+		descriptor = opened
+		openedIdentity = FileIdentity(device: status.st_dev, inode: status.st_ino)
+		currentSize = max(Int(status.st_size), 0)
+	}
+
+	private func append(_ bytes: [UInt8]) throws {
+		var offset = 0
+		try bytes.withUnsafeBytes { buffer in
+			while offset < buffer.count {
+				let written = Darwin.write(
+					descriptor, buffer.baseAddress! + offset, buffer.count - offset)
+				if written < 0 {
+					if errno == EINTR { continue }
+					throw LogFileError.cannotWrite(errno: errno)
 				}
-				try fileManager.moveItem(at: fileURL, to: previousURL)
+				offset += written
 			}
 		}
+		currentSize += bytes.count
+	}
 
-		if !fileManager.fileExists(atPath: fileURL.path),
-			!fileManager.createFile(atPath: fileURL.path, contents: nil)
-		{
-			throw LogFileError.cannotCreate(fileURL)
-		}
+	/// Identity of whatever the log path names now; `nil` when the file is gone.
+	private func currentIdentity() -> FileIdentity? {
+		var status = stat()
+		guard stat(fileURL.path, &status) == 0 else { return nil }
+		return FileIdentity(device: status.st_dev, inode: status.st_ino)
+	}
+
+	private func closeDescriptor() {
+		guard descriptor >= 0 else { return }
+		close(descriptor)
+		descriptor = -1
+		openedIdentity = nil
+		currentSize = 0
 	}
 
 	private func reportWriteFailure() {

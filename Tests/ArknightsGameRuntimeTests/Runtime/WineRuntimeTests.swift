@@ -21,7 +21,8 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 			"SSH_AUTH_SOCK": "/host/private/agent.sock",
 			"AWS_SECRET_ACCESS_KEY": "secret",
 		],
-		userName: "tester"
+		userName: "tester",
+		frameRateLimit: GameLaunchOptions.default.frameRateLimit
 	)
 
 	#expect(environment["HOME"] == "/isolated/prefix/home")
@@ -43,6 +44,7 @@ func runtimeEnvironmentIsConfinedToThePrefixAndDropsUnrelatedHostValues() {
 		executableDirectory: URL(filePath: "/runtime/bin", directoryHint: .isDirectory),
 		baseEnvironment: ["WINEMSYNC": "host", "WINEESYNC": "host"],
 		userName: "tester",
+		frameRateLimit: GameLaunchOptions.default.frameRateLimit,
 		synchronizationMode: .esync
 	)
 	#expect(esync["WINEMSYNC"] == nil)

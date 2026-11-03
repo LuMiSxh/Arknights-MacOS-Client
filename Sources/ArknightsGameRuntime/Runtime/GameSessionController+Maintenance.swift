@@ -89,19 +89,16 @@ extension GameSessionController {
 		operation: SupportOperation,
 		region: GameRegion
 	) {
-		let message = launcherUserMessage(for: error)
 		lifecycle.presentFailure(
-			LauncherFailurePresentation(
-				id: id,
-				message: message,
-				code: .runtimeSetupFailed,
-				context: SupportContext(
-					operation: operation,
-					region: region.supportRegion
-				),
-				actions: [.retry, .openTroubleshooting, .reportProblem]
+			error,
+			id: id,
+			code: .runtimeSetupFailed,
+			context: SupportContext(
+				operation: operation,
+				region: region.supportRegion
 			),
-			diagnostic: launcherDiagnosticDescription(for: error)
+			canRepair: false,
+			blocksGameLaunch: false
 		)
 	}
 

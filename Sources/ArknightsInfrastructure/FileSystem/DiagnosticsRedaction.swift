@@ -20,9 +20,7 @@ package struct DiagnosticsRedaction: Sendable {
 		if homeDirectory.count > 1 {
 			result = result.replacing(homeDirectory, with: "~")
 		}
-		if !userName.isEmpty {
-			result = result.replacing(userName, with: "<user>")
-		}
+		result = redactUserName(in: result)
 		if result.contains("?") {
 			// Built per call because `Regex` is not `Sendable`; callers pass chunks, not lines.
 			let urlQuery = /(https?:\/\/[^\s?#"'<>]*)\?[^\s"'<>#]*/
@@ -30,4 +28,29 @@ package struct DiagnosticsRedaction: Sendable {
 		}
 		return result
 	}
+
+	/// Replaces the user name only where it stands alone, so a short name inside a word stays intact.
+	/// `/` is not a word character, so a path component such as `/Users/<name>` still counts.
+	private func redactUserName(in text: String) -> String {
+		guard !userName.isEmpty else { return text }
+		var result = ""
+		var cursor = text.startIndex
+		for match in text.ranges(of: userName) {
+			let precededByWord =
+				match.lowerBound > text.startIndex
+				&& text[text.index(before: match.lowerBound)].isWordCharacter
+			let followedByWord =
+				match.upperBound < text.endIndex
+				&& text[match.upperBound].isWordCharacter
+			result += text[cursor..<match.lowerBound]
+			result += precededByWord || followedByWord ? userName : "<user>"
+			cursor = match.upperBound
+		}
+		result += text[cursor...]
+		return result
+	}
+}
+
+extension Character {
+	fileprivate var isWordCharacter: Bool { isLetter || isNumber || self == "_" }
 }

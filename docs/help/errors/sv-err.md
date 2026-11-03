@@ -17,7 +17,7 @@ Possible causes:
 
 - The game service is in maintenance.
 - A VPN, proxy, DNS filter, or network security tool blocks the request.
-- The launcher could not get valid configuration or service data for the selected region.
+- The launcher could not get valid configuration or service data for the selected server.
 
 ## What you can do
 

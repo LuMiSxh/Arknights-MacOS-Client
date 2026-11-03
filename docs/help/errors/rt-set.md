@@ -15,7 +15,7 @@ The launcher could not set up the game runtime.
 
 Possible causes:
 
-- A Wine prefix migration, registry setup, or DXMT installation failed.
+- A game environment (Wine prefix) migration, registry setup, or DXMT installation failed.
 - Another Wine process was running.
 - If the message mentions Vuplex, PlatformProcess, the Bilibili login window, userenv, or a game helper, see [RT-CMP](rt-cmp.md).
 

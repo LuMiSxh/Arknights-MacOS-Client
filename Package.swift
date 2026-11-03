@@ -10,12 +10,6 @@ let appResources: [Resource] = [
 	.copy("Resources/WallpaperTags.json"),
 ]
 
-/// Builds the Swift settings for one target. Extra settings are appended
-/// after the package-wide defaults so every target starts from the same list.
-func swiftSettings(_ extra: [SwiftSetting] = []) -> [SwiftSetting] {
-	[] + extra
-}
-
 let package = Package(
 	name: "ArknightsClient",
 	platforms: [
@@ -35,21 +29,18 @@ let package = Package(
 		),
 		.target(
 			name: "ArknightsInfrastructure",
-			path: "Sources/ArknightsInfrastructure",
-			swiftSettings: swiftSettings()
+			path: "Sources/ArknightsInfrastructure"
 		),
 		.target(
 			name: "ArknightsCore",
 			dependencies: ["ArknightsInfrastructure"],
 			path: "Sources/ArknightsCore",
-			resources: appResources,
-			swiftSettings: swiftSettings()
+			resources: appResources
 		),
 		.target(
 			name: "ArknightsCustomization",
 			dependencies: ["ArknightsInfrastructure", "ArknightsCore"],
-			path: "Sources/ArknightsCustomization",
-			swiftSettings: swiftSettings()
+			path: "Sources/ArknightsCustomization"
 		),
 		.target(
 			name: "ArknightsGameInstallation",
@@ -59,8 +50,7 @@ let package = Package(
 				"ArknightsCustomization",
 				"CCommonCrypto",
 			],
-			path: "Sources/ArknightsGameInstallation",
-			swiftSettings: swiftSettings()
+			path: "Sources/ArknightsGameInstallation"
 		),
 		.target(
 			name: "ArknightsGameRuntime",
@@ -70,14 +60,12 @@ let package = Package(
 				"ArknightsCustomization",
 				"ArknightsGameInstallation",
 			],
-			path: "Sources/ArknightsGameRuntime",
-			swiftSettings: swiftSettings()
+			path: "Sources/ArknightsGameRuntime"
 		),
 		.target(
 			name: "ArknightsPresence",
 			dependencies: ["ArknightsInfrastructure", "ArknightsCore"],
-			path: "Sources/ArknightsPresence",
-			swiftSettings: swiftSettings()
+			path: "Sources/ArknightsPresence"
 		),
 		.target(
 			name: "ArknightsAudio",
@@ -87,7 +75,7 @@ let package = Package(
 				.product(name: "YouTubePlayerKit", package: "YouTubePlayerKit"),
 			],
 			path: "Sources/ArknightsAudio",
-			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+			swiftSettings: [.defaultIsolation(MainActor.self)]
 		),
 		.target(
 			name: "ArknightsOnboarding",
@@ -98,7 +86,7 @@ let package = Package(
 				"ArknightsGameRuntime",
 			],
 			path: "Sources/ArknightsOnboarding",
-			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+			swiftSettings: [.defaultIsolation(MainActor.self)]
 		),
 		.target(
 			name: "ArknightsLauncherUI",
@@ -114,7 +102,7 @@ let package = Package(
 				.product(name: "Sparkle", package: "Sparkle"),
 			],
 			path: "Sources/ArknightsLauncherUI",
-			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+			swiftSettings: [.defaultIsolation(MainActor.self)]
 		),
 		.executableTarget(
 			name: "ArknightsClient",
@@ -125,13 +113,12 @@ let package = Package(
 				"ArknightsLauncherUI",
 			],
 			path: "Sources/ArknightsClient",
-			swiftSettings: swiftSettings([.defaultIsolation(MainActor.self)])
+			swiftSettings: [.defaultIsolation(MainActor.self)]
 		),
 		.target(
 			name: "ArknightsTestSupport",
 			dependencies: ["ArknightsCore", "ArknightsGameRuntime"],
-			path: "Tests/ArknightsTestSupport",
-			swiftSettings: swiftSettings()
+			path: "Tests/ArknightsTestSupport"
 		),
 		.testTarget(
 			name: "ArknightsClientTests",

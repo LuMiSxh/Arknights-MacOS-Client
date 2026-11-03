@@ -7,7 +7,7 @@ import Foundation
 // Everything captured when the user asks to play, before the first suspension.
 struct LaunchRequest {
 	let id: UUID
-	package let region: GameRegion
+	let region: GameRegion
 	let executable: URL
 	let prefixDirectory: URL
 	let options: GameLaunchOptions

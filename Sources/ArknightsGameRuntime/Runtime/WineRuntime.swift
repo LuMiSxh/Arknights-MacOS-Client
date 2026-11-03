@@ -25,7 +25,7 @@ struct WineLaunch: Sendable {
 
 struct RuntimeConfiguration: Decodable, Sendable {
 	struct Archive: Decodable, Sendable {
-		package let name: String
+		let name: String
 		let sha256: String
 	}
 	struct Interface: Decodable, Sendable {
@@ -193,7 +193,7 @@ struct WineRuntime: Sendable {
 		)
 	}
 
-	package func launch(
+	func launch(
 		gameExecutable: URL,
 		prefixDirectory: URL,
 		gameArguments: [String] = [],
@@ -201,7 +201,7 @@ struct WineRuntime: Sendable {
 		graphicsDiagnostics: Bool = false,
 		metalPerformanceHUDEnabled: Bool = false,
 		synchronizationMode: WineSynchronizationMode = .msync,
-		frameRateLimit: GameFrameRateLimit = .fps120,
+		frameRateLimit: GameFrameRateLimit,
 		runtimeEnvironmentOverrides: [String: String] = [:],
 		clientVariant: GameClientVariant = .standard,
 		publisher: GamePublisher = .yostar,
@@ -302,7 +302,8 @@ struct WineRuntime: Sendable {
 				prefixDirectory: prefixDirectory,
 				environment: environment,
 				logHandle: logHandle,
-				spawnGate: spawnGate
+				spawnGate: spawnGate,
+				log: log
 			)
 		}
 		environment.removeValue(forKey: "WINEDLLOVERRIDES")

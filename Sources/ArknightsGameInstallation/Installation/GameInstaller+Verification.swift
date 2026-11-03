@@ -18,6 +18,7 @@ extension GameInstaller {
 		installDirectory: InstallerDirectory,
 		previousFiles: [String: ManifestFile]?,
 		verifyAllExistingFiles: Bool,
+		checksumBufferSize: Int = AppConstants.IO.checksumBufferSize,
 		progress: @escaping ProgressHandler,
 		willHash: @escaping @Sendable (String) -> Void = { _ in },
 		didRead: @escaping @Sendable (Int) -> Void = { _ in }
@@ -69,6 +70,7 @@ extension GameInstaller {
 						verifyAllExistingFiles: verifyAllExistingFiles,
 						installDirectory: installDirectory,
 						tally: tally,
+						checksumBufferSize: checksumBufferSize,
 						willHash: willHash,
 						didRead: didRead
 					)
@@ -105,6 +107,7 @@ extension GameInstaller {
 		verifyAllExistingFiles: Bool,
 		installDirectory: InstallerDirectory,
 		tally: VerificationTally,
+		checksumBufferSize: Int,
 		willHash: @escaping @Sendable (String) -> Void,
 		didRead: @escaping @Sendable (Int) -> Void
 	) async throws -> Bool {
@@ -129,6 +132,7 @@ extension GameInstaller {
 				return try ManifestChecksum.checksum(
 					ofFileDescriptor: descriptor,
 					expected: item.hash,
+					bufferSize: checksumBufferSize,
 					onRead: { count in
 						tally.add(bytes: count)
 						didRead(count)

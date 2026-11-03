@@ -99,8 +99,8 @@ package struct LauncherPreferencesStore {
 		return options
 	}
 
-	package func setLaunchOptions(_ options: GameLaunchOptions) {
-		guard let data = try? JSONEncoder().encode(options) else { return }
+	package func setLaunchOptions(_ options: GameLaunchOptions) throws {
+		let data = try JSONEncoder().encode(options)
 		defaults.set(data, forKey: Key.gameLaunchOptions)
 	}
 

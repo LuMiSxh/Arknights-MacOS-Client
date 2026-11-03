@@ -13,7 +13,7 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 	let retinaEnabled: Bool
 	let metalFXUpscalingEnabled: Bool
 	/// Game pixels per macOS point, used to turn a window size into a Unity resolution.
-	package let gamePixelsPerPoint: Int
+	let gamePixelsPerPoint: Int
 
 	init(
 		backingScaleFactor: CGFloat,
@@ -50,11 +50,20 @@ struct WineDisplayConfiguration: Equatable, Sendable {
 	var logPixels: Int { 96 }
 	var browserScaleFactor: Int { retinaEnabled ? 2 : 1 }
 
-	func registryState(in prefixDirectory: URL) -> WineDisplayRegistryState? {
+	func registryState(
+		in prefixDirectory: URL,
+		log: LauncherLog? = nil
+	) -> WineDisplayRegistryState? {
 		let registryURL = prefixDirectory.appending(path: "user.reg")
-		guard
-			let contents = try? String(contentsOf: registryURL, encoding: .utf8)
-		else { return nil }
+		// A prefix that Wine has not initialized has no user.reg yet. That is not an error.
+		guard FileManager.default.fileExists(atPath: registryURL.path) else { return nil }
+		let contents: String
+		do {
+			contents = try String(contentsOf: registryURL, encoding: .utf8)
+		} catch {
+			log?.error("Could not read the prefix user.reg: \(error.localizedDescription)")
+			return nil
+		}
 
 		let macDriverSection = "[Software\\\\Wine\\\\Mac Driver]"
 		let desktopSection = "[Control Panel\\\\Desktop]"
