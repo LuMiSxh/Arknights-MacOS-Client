@@ -62,14 +62,12 @@ struct IntelTranslationControllerTests {
 			try await IntelTranslationProcess.run(
 				executable: URL(filePath: "/bin/sh"),
 				arguments: [
-					"-c", "trap '' TERM; echo $$ > '\(pidFile.path)'; while :; do :; done",
+					"-c",
+					"trap '' TERM; echo $$ > '\(pidFile.path).tmp' && mv '\(pidFile.path).tmp' '\(pidFile.path)'; while :; do :; done",
 				])
 		}
-		// The shell creates the file before it writes the PID, so wait for the complete line.
-		let processStarted = await waitForCondition(timeout: .seconds(5)) {
-			(try? String(contentsOf: pidFile, encoding: .utf8))?.hasSuffix("\n") == true
-		}
-		try #require(processStarted)
+		// The shell renames the PID file into place, so its arrival means the PID is complete.
+		await waitForFile(at: pidFile)
 		let cancellationStarted = clock.now
 		task.cancel()
 		await #expect(throws: CancellationError.self) { _ = try await task.value }

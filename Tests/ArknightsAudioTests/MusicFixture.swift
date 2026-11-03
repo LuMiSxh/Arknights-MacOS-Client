@@ -6,6 +6,7 @@ import ArknightsCustomization
 import ArknightsTestSupport
 @preconcurrency import Combine
 import Foundation
+import Observation
 import Synchronization
 import YouTubePlayerKit
 
@@ -13,6 +14,7 @@ import YouTubePlayerKit
 
 /// Records every player command and can hold `getPlaylist` until the test releases it.
 @MainActor
+@Observable
 final class FakeMusicPlayer {
 	private(set) var commands: [String] = []
 	private(set) var playedIndices: [Int] = []
@@ -26,6 +28,8 @@ final class FakeMusicPlayer {
 	var failsNavigation = false
 	private let subscriptionCount = Mutex(0)
 	private let cancelledCount = Mutex(0)
+	/// Fires when an event subscription is cancelled.
+	let subscriptionCancelled = Signal()
 	/// Event subscriptions that are started and not yet cancelled.
 	var activeSubscriptions: Int { subscriptionCount.withLock { $0 } }
 	/// Event subscriptions that were cancelled.
@@ -83,6 +87,7 @@ final class FakeMusicPlayer {
 							receiveCancel: {
 								self.subscriptionCount.withLock { $0 -= 1 }
 								self.cancelledCount.withLock { $0 += 1 }
+								self.subscriptionCancelled.fire()
 							}
 						)
 						.eraseToAnyPublisher()

@@ -116,10 +116,7 @@ func runtimeProcessWaitTerminatesAndResumesWhenCancelled() async throws {
 			output: .nullDevice
 		)
 	}
-	let started = await waitForCondition(timeout: .seconds(5)) {
-		FileManager.default.fileExists(atPath: pidFile.path)
-	}
-	try #require(started)
+	await waitForFile(at: pidFile)
 	task.cancel()
 
 	await #expect(throws: CancellationError.self) {

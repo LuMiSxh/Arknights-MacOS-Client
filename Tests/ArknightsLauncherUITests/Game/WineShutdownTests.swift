@@ -11,7 +11,7 @@ import Testing
 @testable import ArknightsGameRuntime
 @testable import ArknightsLauncherUI
 
-@Test
+@Test(.timeLimit(.minutes(1)))
 func stopReturnsOnlyAfterWineserverWaitReleasesThePrefix() async throws {
 	let storage = try TemporaryDirectory("wine-shutdown")
 	defer { storage.remove() }
@@ -32,14 +32,12 @@ func stopReturnsOnlyAfterWineserverWaitReleasesThePrefix() async throws {
 	)
 	let stop = Task {
 		try await runtime.stop(
-			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory))
+			prefixDirectory: root.appending(path: "prefix", directoryHint: .isDirectory),
+			spawnGate: nil)
 	}
 
-	let reachedWait = await waitForFixtureFile(waitingMarker, timeout: .seconds(1))
-	#expect(reachedWait)
-	if reachedWait {
-		#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
-	}
+	await waitForFile(at: waitingMarker)
+	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 	// Release the fake wineserver on every path so the stop task can finish.
 	try Data().write(to: releaseMarker)
 	try await stop.value
@@ -76,7 +74,7 @@ func stopIsAuthoritativeWhenKillFindsNoServer(waitStatus: Int32, succeeds: Bool)
 	#expect(try String(contentsOf: trace, encoding: .utf8) == "-k\n-w\n")
 }
 
-@Test
+@Test(.timeLimit(.minutes(1)))
 func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	let storage = try TemporaryDirectory("wine-helper-retirement")
 	defer { storage.remove() }
@@ -126,12 +124,7 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 			return false
 		}
 	}
-	let helperStarted = await waitForFixtureFile(started, timeout: .seconds(1))
-	#expect(helperStarted)
-	guard helperStarted else {
-		_ = await wait.value
-		return
-	}
+	await waitForFile(at: started)
 	let didTimeOut = await wait.value
 	#expect(didTimeOut)
 	#expect(startedWaiting.duration(to: clock.now) < .seconds(1))
@@ -153,7 +146,7 @@ func timedOutWineHelperKeepsThePrefixOwnedUntilItRetires() async throws {
 	let writer = try FileHandle(forWritingTo: fifo)
 	try writer.write(contentsOf: Data("connect\n".utf8))
 	try writer.close()
-	#expect(await waitForFixtureFile(delayedConnection, timeout: .seconds(1)))
+	await waitForFile(at: delayedConnection)
 	try await runtime.stop(
 		prefixDirectory: prefixDirectory,
 		timeout: .seconds(1),
@@ -235,16 +228,6 @@ func terminationDuringLaunchPreventsWineProcessesFromSpawning(
 
 private func waitForSemaphore(_ semaphore: DispatchSemaphore, timeout: DispatchTime) -> Bool {
 	semaphore.wait(timeout: timeout) == .success
-}
-
-private func waitForFixtureFile(_ url: URL, timeout: Duration) async -> Bool {
-	let clock = ContinuousClock()
-	let deadline = clock.now.advanced(by: timeout)
-	while clock.now < deadline {
-		if FileManager.default.fileExists(atPath: url.path) { return true }
-		try? await Task.sleep(for: .milliseconds(10))
-	}
-	return FileManager.default.fileExists(atPath: url.path)
 }
 
 /// Writes an executable fake `wineserver` into `root/Runtime/bin` and returns a runtime that uses it.

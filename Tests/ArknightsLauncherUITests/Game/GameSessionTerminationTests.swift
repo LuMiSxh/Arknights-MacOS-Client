@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import ArknightsCore
+import ArknightsTestSupport
 import Foundation
 import Testing
 
@@ -10,9 +11,9 @@ import Testing
 
 @MainActor
 struct GameSessionTerminationTests {
-	@Test
+	@Test(.timeLimit(.minutes(1)))
 	func cleanupRetainsPrefixOwnershipUntilStopSucceeds() async {
-		let fixture = await makeFixture(region: .japan)
+		let fixture = await makeFixture(region: .japan, maxStopAttempts: 1)
 		let cleanup = Task {
 			await fixture.model.gameSession.stopAndFinishGameSession(
 				using: fixture.runtime,
@@ -27,7 +28,7 @@ struct GameSessionTerminationTests {
 			)
 		}
 
-		#expect(await fixture.runtime.waitForStop(attempt: 1))
+		await fixture.runtime.waitForStop(attempt: 1)
 		let duplicateCleanup = Task {
 			await fixture.model.gameSession.stopAndFinishGameSession(
 				using: fixture.runtime,
@@ -36,13 +37,9 @@ struct GameSessionTerminationTests {
 				region: .japan
 			)
 		}
-		let duplicateStarted = await fixture.runtime.waitForStop(attempt: 2)
-		#expect(!duplicateStarted)
-		#expect(await fixture.runtime.stopAttemptCount() == 1)
-		if duplicateStarted {
-			await fixture.runtime.succeedStop(attempt: 2)
-		}
+		// The duplicate must not start a second stop. The fake throws on one, so a broken contract fails below.
 		await duplicateCleanup.value
+		#expect(await fixture.runtime.stopAttemptCount() == 1)
 		#expect(
 			fixture.model.lifecycle.activity
 				== .stoppingGame(sessionID: fixture.sessionID, processIdentifier: 42)
@@ -58,12 +55,12 @@ struct GameSessionTerminationTests {
 		await fixture.api.resolveBranding()
 	}
 
-	@Test
+	@Test(.timeLimit(.minutes(1)))
 	func failedStopRetriesTheSameSessionAndRetainsRecoveryAfterAnotherFailure() async {
 		let fixture = await makeFixture(region: .korea)
 		fixture.model.gameSession.runtimeSessionControllerProvider = { fixture.runtime }
 		fixture.model.gameSession.stopGame()
-		#expect(await fixture.runtime.waitForStop(attempt: 1))
+		await fixture.runtime.waitForStop(attempt: 1)
 		let firstCleanup = fixture.model.gameSession.session?.monitorTask
 		await fixture.runtime.failStop(attempt: 1)
 		await firstCleanup?.value
@@ -82,12 +79,7 @@ struct GameSessionTerminationTests {
 
 		#expect(fixture.model.gameSession.retryRuntimeFailure(id: fixture.sessionID))
 		#expect(!fixture.model.gameSession.retryRuntimeFailure(id: fixture.sessionID))
-		let retryStarted = await fixture.runtime.waitForStop(attempt: 2)
-		#expect(retryStarted)
-		guard retryStarted else {
-			await fixture.api.resolveBranding()
-			return
-		}
+		await fixture.runtime.waitForStop(attempt: 2)
 		let retryCount = await fixture.runtime.stopAttemptCount()
 		#expect(retryCount == 2)
 		let retryCleanup = fixture.model.gameSession.session?.monitorTask
@@ -115,7 +107,7 @@ struct GameSessionTerminationTests {
 }
 
 @MainActor
-private func makeFixture(region: GameRegion) async -> SessionFixture {
+private func makeFixture(region: GameRegion, maxStopAttempts: Int = .max) async -> SessionFixture {
 	let api = BlockingBrandingAPI()
 	let model = makeModel(api: api, installer: ControllableInstaller())
 	await api.waitForBrandingRequest()
@@ -126,7 +118,8 @@ private func makeFixture(region: GameRegion) async -> SessionFixture {
 	model.beginTestGameSession(
 		.runningGame(sessionID: sessionID, processIdentifier: 42), region: region)
 	return SessionFixture(
-		api: api, model: model, runtime: BlockingSessionRuntime(), sessionID: sessionID)
+		api: api, model: model,
+		runtime: BlockingSessionRuntime(maxStopAttempts: maxStopAttempts), sessionID: sessionID)
 }
 
 private struct SessionFixture {
@@ -139,27 +132,43 @@ private struct SessionFixture {
 private enum TestSessionError: Error {
 	case crashed
 	case cleanupFailed
+	case unexpectedStop
 }
 
 private actor BlockingSessionRuntime: WineRuntimeSessionControlling {
 	private var stopContinuations: [Int: CheckedContinuation<Void, any Error>] = [:]
 	private var requestedDirectories: [URL] = []
+	private var startedSignals: [Int: Signal] = [:]
+	/// Stop attempts beyond this count throw at once instead of suspending, so an unexpected stop fails.
+	private let maxStopAttempts: Int
 
-	func stop(prefixDirectory: URL) async throws {
+	init(maxStopAttempts: Int = .max) {
+		self.maxStopAttempts = maxStopAttempts
+	}
+
+	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
 		requestedDirectories.append(prefixDirectory)
 		let attempt = requestedDirectories.count
-		try await withCheckedThrowingContinuation { stopContinuations[attempt] = $0 }
+		guard attempt <= maxStopAttempts else { throw TestSessionError.unexpectedStop }
+		try await withCheckedThrowingContinuation { continuation in
+			stopContinuations[attempt] = continuation
+			startedSignal(for: attempt).fire()
+		}
 	}
 
 	func waitUntilStopped(prefixDirectory: URL) async throws {
 	}
 
-	func waitForStop(attempt: Int) async -> Bool {
-		for _ in 0..<100 {
-			if stopContinuations[attempt] != nil { return true }
-			try? await Task.sleep(for: .milliseconds(10))
-		}
-		return stopContinuations[attempt] != nil
+	/// Returns once `stop` has been called for `attempt`.
+	func waitForStop(attempt: Int) async {
+		await startedSignal(for: attempt).wait()
+	}
+
+	private func startedSignal(for attempt: Int) -> Signal {
+		if let signal = startedSignals[attempt] { return signal }
+		let signal = Signal()
+		startedSignals[attempt] = signal
+		return signal
 	}
 
 	func succeedStop(attempt: Int) {

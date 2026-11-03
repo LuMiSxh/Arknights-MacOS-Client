@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
+import ArknightsTestSupport
 import Foundation
 import Synchronization
 
@@ -26,8 +27,10 @@ final class ControlledLaunchRuntime: WineRuntimeSessionControlling, @unchecked S
 
 	var stopCalls: Int { state.withLock { $0.stopCalls } }
 	var stopSawCancellation: Bool { state.withLock { $0.stopSawCancellation } }
-	var isStopPending: Bool { state.withLock { $0.stopContinuation != nil } }
-	var isWaitPending: Bool { state.withLock { $0.waitContinuation != nil } }
+	/// Fires once `stop` has parked its continuation.
+	let stopStarted = Signal()
+	/// Fires once `waitUntilStopped` has parked its continuation.
+	let waitStarted = Signal()
 
 	func finishStop() {
 		state.withLock {
@@ -52,11 +55,8 @@ final class ControlledLaunchRuntime: WineRuntimeSessionControlling, @unchecked S
 				$0.waitCalls += 1
 				$0.waitContinuation = continuation
 			}
+			waitStarted.fire()
 		}
-	}
-
-	func stop(prefixDirectory: URL) async throws {
-		try await stop(prefixDirectory: prefixDirectory, spawnGate: nil)
 	}
 
 	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
@@ -66,6 +66,7 @@ final class ControlledLaunchRuntime: WineRuntimeSessionControlling, @unchecked S
 		}
 		try await withCheckedThrowingContinuation { continuation in
 			state.withLock { $0.stopContinuation = continuation }
+			stopStarted.fire()
 		}
 	}
 }

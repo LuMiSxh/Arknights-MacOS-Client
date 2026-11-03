@@ -47,7 +47,7 @@ struct GameLaunchCancellationTests {
 		#expect(throws: CancellationError.self) {
 			try spawnGate.runIfAllowed(process: Process()) {}
 		}
-		#expect(await waitForCondition { runtime.isStopPending })
+		await runtime.stopStarted.wait()
 		runtime.finishStop()
 		await launch.value
 
@@ -73,7 +73,7 @@ struct GameLaunchCancellationTests {
 
 		model.gameSession.stopGame()
 		let cleanup = model.gameSession.session?.monitorTask
-		#expect(await waitForCondition { runtime.isStopPending })
+		await runtime.stopStarted.wait()
 		#expect(launch.isCancelled)
 		runtime.finishStop()
 		await cleanup?.value

@@ -12,7 +12,7 @@ import Testing
 
 @MainActor
 func waitForDownloadToStop(_ model: LauncherViewModel) async {
-	#expect(await waitForCondition { !model.installation.isDownloading })
+	await waitForCondition { !model.installation.isDownloading }
 }
 
 @MainActor

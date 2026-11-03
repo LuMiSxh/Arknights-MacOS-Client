@@ -47,11 +47,10 @@ struct CustomizationControllerTests {
 		fixture.controller.applyCustomArtwork(from: secondURL)
 		await loader.waitForRequestCount(2)
 		await loader.resolve(1, with: secondData)
-		#expect(
-			await waitForCondition {
-				(try? Data(contentsOf: fixture.paths.customArtwork)) == secondData
-			}
-		)
+		let artwork = fixture.paths.customArtwork
+		await waitForDirectoryChange(containing: artwork) {
+			(try? Data(contentsOf: artwork)) == secondData
+		}
 
 		await loader.resolve(0, with: firstData)
 		await Task.yield()
@@ -137,7 +136,7 @@ struct CustomizationControllerTests {
 		await extractor.waitForRequestCount(2)
 		await extractor.resolve(
 			1, with: ExtractedAccent(hue: 0.7, saturation: 0.8, brightness: 0.9))
-		#expect(await waitForCondition { fixture.controller.dynamicThemeHue == 0.7 })
+		await waitForCondition { fixture.controller.dynamicThemeHue == 0.7 }
 
 		await extractor.resolve(
 			0, with: ExtractedAccent(hue: 0.1, saturation: 0.8, brightness: 0.9))
@@ -188,11 +187,7 @@ struct CustomizationControllerTests {
 		await loader.waitForRequestCount(2)
 		let selectedData = try #require(selected.tiffRepresentation)
 		await loader.resolve(1, with: selectedData)
-		#expect(
-			await waitForCondition {
-				FileManager.default.fileExists(atPath: fixture.paths.customAppIcon.path)
-			}
-		)
+		await waitForFile(at: fixture.paths.customAppIcon)
 		await loader.resolve(0, with: staleData)
 		_ = await restore.value
 

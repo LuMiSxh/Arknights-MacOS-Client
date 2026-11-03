@@ -24,7 +24,7 @@ struct GameLaunchOwnershipTests {
 		#expect(pendingID != nil)
 		#expect(model.gameSession.pendingLaunchID == pendingID)
 		// The game is not installed, so the one launch ends with a single failure for its ID.
-		#expect(await waitForCondition { model.gameSession.pendingLaunchID == nil })
+		await waitForCondition { model.lifecycle.state.presentation.failure?.id == pendingID }
 		#expect(model.lifecycle.state.presentation.failure?.id == pendingID)
 		#expect(model.gameSession.session == nil)
 		#expect(model.lifecycle.activity == .idle)
@@ -50,7 +50,7 @@ struct GameLaunchOwnershipTests {
 
 		model.gameSession.monitorGamePrefix(using: runtime, sessionID: sessionID)
 		let monitor = model.gameSession.session?.monitorTask
-		#expect(await waitForCondition { runtime.isWaitPending })
+		await runtime.waitStarted.wait()
 		#expect(model.lifecycle.activity == activity)
 
 		runtime.finishWait()
@@ -73,7 +73,7 @@ struct GameLaunchOwnershipTests {
 			await model.gameSession.stopAndFinishGameSession(
 				using: runtime, sessionID: sessionID, processIdentifier: 42, region: .global)
 		}
-		#expect(await waitForCondition { runtime.isStopPending })
+		await runtime.stopStarted.wait()
 
 		owner.cancel()
 		// The prefix is still owned while the cancelled owner waits for the shielded stop.

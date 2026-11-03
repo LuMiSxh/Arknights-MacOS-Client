@@ -233,7 +233,7 @@ package enum AppConstants {
 	package enum Timeouts {
 		package static let processTerminateGracePeriod: TimeInterval = 3
 		package static let processKillGracePeriod: TimeInterval = 1
-		package static let processRetirementPollInterval: Duration = .milliseconds(25)
+
 		/// Covers helper retirement and final wineserver verification before prefix ownership ends.
 		package static let runtimeShutdown: Duration = .seconds(20)
 		package static let windowReadiness: Duration = .seconds(90)

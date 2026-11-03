@@ -20,10 +20,9 @@ struct BackgroundMusicPlaylistTests {
 		controller.observeEvents(of: try #require(controller.player))
 
 		fixture.fake.emit(.playback(.cued))
-		#expect(
-			await waitForCondition {
-				controller.fadeTask == nil && fixture.fake.count("setVolume") > 1
-			})
+		// `fadeTask` is not observable, so wait for the fade itself, then for the volume command.
+		if let fadeTask = controller.fadeTask { await fadeTask.value }
+		await waitForCondition { fixture.fake.count("setVolume") > 1 }
 
 		let commands = fixture.fake.commands
 		#expect(
@@ -44,17 +43,17 @@ struct BackgroundMusicPlaylistTests {
 		fixture.fake.playlist = ["a", "b", "c", "d"]
 		controller.enabledDidChange(to: true)
 		fixture.fake.emit(.playback(.cued))
-		#expect(await waitForCondition { fixture.fake.playedIndices == [3] })
+		await waitForCondition { fixture.fake.playedIndices == [3] }
 
 		controller.enabledDidChange(to: true)
 		fixture.fake.emit(.playback(.cued))
-		#expect(await waitForCondition { fixture.fake.count("play") == 1 })
+		await waitForCondition { fixture.fake.count("play") == 1 }
 		#expect(fixture.fake.playedIndices == [3])
 
 		controller.settings.launcherMusicURL = "https://www.youtube.com/playlist?list=two"
 		controller.enabledDidChange(to: true)
 		fixture.fake.emit(.playback(.cued))
-		#expect(await waitForCondition { fixture.fake.playedIndices == [3, 3] })
+		await waitForCondition { fixture.fake.playedIndices == [3, 3] }
 	}
 
 	@Test(arguments: [false, true])
@@ -70,21 +69,21 @@ struct BackgroundMusicPlaylistTests {
 
 		for skipped in 1..<bound {
 			fixture.fake.emit(.failure(.unplayableTrack))
-			#expect(await waitForCondition { fixture.fake.count("nextVideo") == skipped })
+			await waitForCondition { fixture.fake.count("nextVideo") == skipped }
 		}
 		if playsBetween {
 			fixture.fake.emit(.playback(.playing))
-			#expect(await waitForCondition { controller.playbackState == .playing })
+			await waitForCondition { controller.playbackState == .playing }
 		}
 		fixture.fake.emit(.failure(.unplayableTrack))
 
 		if playsBetween {
-			#expect(await waitForCondition { fixture.fake.count("nextVideo") == bound })
+			await waitForCondition { fixture.fake.count("nextVideo") == bound }
 			#expect(!controller.isUnavailable)
 			#expect(fixture.fake.count("pause") == 0)
 		} else {
-			#expect(await waitForCondition { controller.isUnavailable })
-			#expect(await waitForCondition { fixture.fake.count("pause") == 1 })
+			await waitForCondition { controller.isUnavailable }
+			await waitForCondition { fixture.fake.count("pause") == 1 }
 			#expect(fixture.fake.count("nextVideo") == bound - 1)
 		}
 	}

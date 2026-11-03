@@ -6,14 +6,7 @@ import Foundation
 
 protocol WineRuntimeSessionControlling: Sendable {
 	func waitUntilStopped(prefixDirectory: URL) async throws
-	func stop(prefixDirectory: URL) async throws
 	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws
-}
-
-extension WineRuntimeSessionControlling {
-	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
-		try await stop(prefixDirectory: prefixDirectory)
-	}
 }
 
 extension WineRuntime: WineRuntimeSessionControlling {}
@@ -42,14 +35,6 @@ extension WineRuntime {
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not monitor the game process (status \(status)).")
 		}
-	}
-
-	func stop(prefixDirectory: URL) async throws {
-		try await stop(
-			prefixDirectory: prefixDirectory,
-			timeout: AppConstants.Timeouts.runtimeShutdown,
-			spawnGate: nil
-		)
 	}
 
 	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
@@ -107,6 +92,9 @@ extension WineRuntime {
 		} catch is ChildProcessTimeout {
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine could not finish stopping Arknights before the shutdown deadline.")
+		} catch is WineProcessSpawnGateNotSealed {
+			throw GameRuntimeError.runtimeConfiguration(
+				"Wine shutdown waited for launch processes before new launches were blocked.")
 		} catch is WineProcessRetirementTimeout {
 			throw GameRuntimeError.runtimeConfiguration(
 				"Wine launch processes did not exit before the shutdown deadline.")

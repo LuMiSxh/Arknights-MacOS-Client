@@ -83,16 +83,20 @@ struct GameInstallerParallelVerificationTests {
 		let reads = Atomic<Int>(0)
 		let taskBox = Mutex<Task<GameInstaller.PendingDownloads, any Error>?>(nil)
 
+		let taskReady = DispatchGroup()
+		taskReady.enter()
 		let task = Task {
 			try await fixture.pending(
 				checksumBufferSize: bufferSize,
 				didRead: { _ in
 					reads.add(1, ordering: .relaxed)
-					while taskBox.withLock({ $0 }) == nil { usleep(100) }
+					// Blocks this read until the test has stored the task, then cancels it.
+					taskReady.wait()
 					taskBox.withLock { $0 }?.cancel()
 				})
 		}
 		taskBox.withLock { $0 = task }
+		taskReady.leave()
 
 		await #expect(throws: CancellationError.self) { try await task.value }
 		let observed = reads.load(ordering: .relaxed)

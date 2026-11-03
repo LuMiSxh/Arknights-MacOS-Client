@@ -20,7 +20,7 @@ struct BackgroundMusicTrackChangeTests {
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "a", title: "First")
 
 		controller.playNextTrack()
-		#expect(await waitForCondition { fixture.fake.count("nextVideo") == 1 })
+		await waitForCondition { fixture.fake.count("nextVideo") == 1 }
 		for _ in 0..<20 { await Task.yield() }
 		// The player still reads the old video, so a bare state change does not end the wait.
 		fixture.fake.emit(.playback(.playing))
@@ -31,7 +31,7 @@ struct BackgroundMusicTrackChangeTests {
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "Second")
 		fixture.fake.emit(.playback(.buffering))
 		fixture.fake.emit(.playback(.playing))
-		#expect(await waitForCondition { !controller.isChangingTrack })
+		await waitForCondition { !controller.isChangingTrack }
 		#expect(controller.currentMusicTitle == "Second")
 		#expect(fixture.fake.count("playVideoInPlaylist") == 0)
 	}
@@ -45,7 +45,7 @@ struct BackgroundMusicTrackChangeTests {
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "a", title: "First")
 
 		controller.playNextTrack()
-		#expect(await waitForCondition { fixture.fake.count("nextVideo") == 1 })
+		await waitForCondition { fixture.fake.count("nextVideo") == 1 }
 		for _ in 0..<20 { await Task.yield() }
 
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "Second")
@@ -53,7 +53,7 @@ struct BackgroundMusicTrackChangeTests {
 		fixture.fake.emit(.playback(.buffering))
 		fixture.fake.emit(.metadata(try FakeMusicPlayer.metadata(videoID: "b", title: "Second")))
 
-		#expect(await waitForCondition { !controller.isChangingTrack })
+		await waitForCondition { !controller.isChangingTrack }
 		#expect(controller.currentMusicTitle == "Second")
 		#expect(controller.playbackState == .playing)
 	}
@@ -69,7 +69,7 @@ struct BackgroundMusicTrackChangeTests {
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "a", title: "Old")
 
 		controller.playNextTrack()
-		#expect(await waitForCondition { fixture.fake.count("nextVideo") == 1 })
+		await waitForCondition { fixture.fake.count("nextVideo") == 1 }
 		for _ in 0..<20 { await Task.yield() }
 		fixture.fake.emit(.playback(.buffering))
 		for _ in 0..<20 { await Task.yield() }
@@ -81,7 +81,7 @@ struct BackgroundMusicTrackChangeTests {
 		// One recheck interval is far short of the timeout, so only the recheck can finish this.
 		clock.advance(by: AppConstants.Music.trackStartRecheckInterval)
 
-		#expect(await waitForCondition { !controller.isChangingTrack })
+		await waitForCondition { !controller.isChangingTrack }
 		#expect(controller.currentMusicTitle == "New")
 		#expect(controller.playbackState == .playing)
 	}
@@ -97,13 +97,13 @@ struct BackgroundMusicTrackChangeTests {
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "a", title: "First")
 
 		controller.playPreviousTrack()
-		#expect(await waitForCondition { fixture.fake.count("previousVideo") == 1 })
+		await waitForCondition { fixture.fake.count("previousVideo") == 1 }
 		for _ in 0..<20 { await Task.yield() }
 		#expect(controller.isChangingTrack)
 
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "Second")
 		clock.release()
-		#expect(await waitForCondition { !controller.isChangingTrack })
+		await waitForCondition { !controller.isChangingTrack }
 		#expect(controller.currentMusicTitle == "Second")
 	}
 
@@ -117,8 +117,9 @@ struct BackgroundMusicTrackChangeTests {
 
 		controller.playNextTrack()
 
-		#expect(await waitForCondition { fixture.fake.terminatedStreams == 1 })
-		#expect(await waitForCondition { !controller.isChangingTrack })
+		await fixture.fake.subscriptionCancelled.wait()
+		#expect(fixture.fake.terminatedStreams == 1)
+		await waitForCondition { !controller.isChangingTrack }
 	}
 
 	@Test

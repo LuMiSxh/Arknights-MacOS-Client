@@ -17,7 +17,7 @@ struct InstallationRecoveryTests {
 		fixture.controller.startInstallation(launchAfterCompletion: false)
 		await fixture.installer.waitForInstallationStart()
 		await fixture.installer.completeSuccessfully()
-		#expect(await waitForCondition { fixture.controller.completionFeedback != nil })
+		await waitForCondition { fixture.controller.completionFeedback != nil }
 
 		let feedback = fixture.controller.completionFeedback
 		#expect(feedback?.region == .global)
@@ -34,7 +34,7 @@ struct InstallationRecoveryTests {
 		switching.controller.startInstallation(launchAfterCompletion: false)
 		await switching.installer.waitForInstallationStart()
 		await switching.installer.completeSuccessfully()
-		#expect(await waitForCondition { switching.controller.completionFeedback != nil })
+		await waitForCondition { switching.controller.completionFeedback != nil }
 		#expect(switching.controller.selectRegion(.japan))
 		#expect(switching.controller.completionFeedback == nil)
 	}

@@ -136,13 +136,12 @@ func persistedStorageMeasurementSeedsTheNextOpenUntilItIsReplaced() async throws
 
 	#expect(controller.isMeasuring)
 	#expect(controller.usage(for: .logs)?.byteCount == 999)
-	#expect(await waitForCondition { !controller.isMeasuring })
+	await waitForCondition { !controller.isMeasuring }
 	#expect(controller.usage(for: .logs)?.byteCount == 7)
 	// Wait for the write too, so it cannot recreate the temporary directory after cleanup.
 	let logsID = StorageCategory.logs.id
-	#expect(
-		await waitForCondition {
-			store.loadSynchronously().first?.usages.first { $0.categoryID == logsID }?
-				.byteCount == 7
-		})
+	await waitForDirectoryChange(containing: paths.storageOverviewCache) {
+		store.loadSynchronously().first?.usages.first { $0.categoryID == logsID }?
+			.byteCount == 7
+	}
 }

@@ -89,8 +89,6 @@ private final class GateRecordingRuntime: WineRuntimeSessionControlling, @unchec
 
 	func waitUntilStopped(prefixDirectory: URL) async throws {}
 
-	func stop(prefixDirectory: URL) async throws {}
-
 	func stop(prefixDirectory: URL, spawnGate: WineProcessSpawnGate?) async throws {
 		var wasDenied = false
 		do {

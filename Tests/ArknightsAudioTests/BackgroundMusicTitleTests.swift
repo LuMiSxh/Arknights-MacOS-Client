@@ -16,9 +16,9 @@ struct BackgroundMusicTitleTests {
 		controller.observeEvents(of: try #require(controller.player))
 
 		fixture.fake.emit(.metadata(try FakeMusicPlayer.metadata(videoID: "a", title: "First")))
-		#expect(await waitForCondition { controller.currentMusicTitle == "First" })
+		await waitForCondition { controller.currentMusicTitle == "First" }
 		fixture.fake.emit(.metadata(try FakeMusicPlayer.metadata(videoID: "b", title: "Second")))
-		#expect(await waitForCondition { controller.currentMusicTitle == "Second" })
+		await waitForCondition { controller.currentMusicTitle == "Second" }
 	}
 
 	@Test
@@ -28,12 +28,12 @@ struct BackgroundMusicTitleTests {
 		let controller = fixture.controller
 		controller.observeEvents(of: try #require(controller.player))
 		fixture.fake.emit(.metadata(try FakeMusicPlayer.metadata(videoID: "a", title: "First")))
-		#expect(await waitForCondition { controller.currentMusicTitle == "First" })
+		await waitForCondition { controller.currentMusicTitle == "First" }
 
 		// YouTube can announce the new video before it serves the new video's data.
 		fixture.fake.metadata = try FakeMusicPlayer.metadata(videoID: "b", title: "Second")
 		fixture.fake.emit(.playback(.playing))
 
-		#expect(await waitForCondition { controller.currentMusicTitle == "Second" })
+		await waitForCondition { controller.currentMusicTitle == "Second" }
 	}
 }

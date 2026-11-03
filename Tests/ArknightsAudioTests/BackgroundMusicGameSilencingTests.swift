@@ -18,10 +18,10 @@ struct BackgroundMusicGameSilencingTests {
 		fixture.fake.holdsMetadata = true
 
 		controller.playNextTrack()
-		#expect(await waitForCondition { fixture.fake.isHoldingMetadata })
+		await waitForCondition { fixture.fake.isHoldingMetadata }
 		controller.gameActivityDidChange(to: .testRunningGame())
 		fixture.fake.releaseMetadata()
-		#expect(await waitForCondition { fixture.fake.count("pause") == 1 })
+		await waitForCondition { fixture.fake.count("pause") == 1 }
 		// Give the cancelled track change time to run its remaining steps.
 		for _ in 0..<20 { await Task.yield() }
 
@@ -40,7 +40,7 @@ struct BackgroundMusicGameSilencingTests {
 		controller.settings.playsLauncherMusic = true
 
 		controller.gameActivityDidChange(to: .testRunningGame())
-		#expect(await waitForCondition { fixture.fake.count("pause") == 1 })
+		await waitForCondition { fixture.fake.count("pause") == 1 }
 		controller.phase = .silencedForGame(resumes: !userPaused)
 		controller.gameActivityDidChange(to: .idle)
 		for _ in 0..<50 { await Task.yield() }
@@ -90,7 +90,7 @@ struct BackgroundMusicGameSilencingTests {
 		controller.gameActivityDidChange(to: .testRunningGame())
 		controller.toggleMute()
 
-		#expect(await waitForCondition { fixture.fake.count("pause") == 1 })
-		#expect(await waitForCondition { controller.fadeTask == nil })
+		await waitForCondition { fixture.fake.count("pause") == 1 }
+		if let fadeTask = controller.fadeTask { await fadeTask.value }
 	}
 }
