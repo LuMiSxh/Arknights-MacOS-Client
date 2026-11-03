@@ -80,6 +80,15 @@ package enum AppConstants {
 		package static let handshakeTimeout: Duration = .seconds(3)
 	}
 
+	package enum Reminders {
+		/// Days of daily resets scheduled ahead. macOS delivers only requests that already exist,
+		/// so the window rolls forward at each launch, wake, and settings change.
+		package static let rollingWindowDays = 7
+		/// macOS keeps at most 64 pending local notifications per app. Stay well under it.
+		package static let maximumPendingRequests = 48
+		package static let identifierPrefix = "reset."
+	}
+
 	package enum Music {
 		static let defaultLauncherMusicURL =
 			"https://www.youtube.com/playlist?list=PLbuSQ8SJFnFEHL4_T9S0whD-TevceJIsl"

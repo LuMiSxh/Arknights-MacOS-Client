@@ -6,12 +6,82 @@ import SwiftUI
 struct IntegrationSettingsPage: View {
 	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
+	let reminders: ResetReminderController
+
+	private static let timingOptions: [(value: ResetReminderTiming, title: String)] = [
+		(.off, "Off"),
+		(.atReset, "At reset"),
+		(.minutes15, "15 minutes before"),
+		(.minutes30, "30 minutes before"),
+		(.minutes60, "1 hour before"),
+		(.minutes120, "2 hours before"),
+	]
+
+	private var regionsSummary: String {
+		let selected = reminders.availableRegions.filter(settings.resetReminderRegions.contains)
+		switch selected.count {
+		case 0: return "None"
+		case 1: return selected[0].displayName
+		default: return "\(selected.count) servers"
+		}
+	}
+
+	private func regionBinding(_ region: GameRegion) -> Binding<Bool> {
+		Binding(
+			get: { settings.resetReminderRegions.contains(region) },
+			set: { isOn in
+				var regions = settings.resetReminderRegions.filter { $0 != region }
+				if isOn { regions.append(region) }
+				settings.resetReminderRegions = regions
+			}
+		)
+	}
 
 	var body: some View {
 		SettingsPage(
 			title: "Integration",
-			subtitle: "Music and Discord while the launcher is open"
+			subtitle: "Notifications, music, and Discord while the launcher is open"
 		) {
+			SettingsPanel(title: "Notifications") {
+				SettingsActionRow(
+					title: "Daily reset reminder",
+					detail: "Shows a notification before the 04:00 server reset."
+				) {
+					GlassMenuPicker(
+						selection: $settings.resetReminderTiming,
+						options: Self.timingOptions
+					)
+					.accessibilityLabel("Daily reset reminder")
+				}
+				if settings.resetReminderTiming != .off {
+					SettingsHairline()
+					SettingsActionRow(
+						title: "Servers",
+						detail: "Installed servers that get a reminder."
+					) {
+						GlassActionMenu(title: regionsSummary, systemImage: "server.rack") {
+							ForEach(reminders.availableRegions) { region in
+								Toggle(region.displayName, isOn: regionBinding(region))
+							}
+						}
+						.accessibilityLabel("Servers")
+					}
+				}
+				if reminders.isAccessDenied {
+					SettingsHairline()
+					SettingsActionRow(
+						title: "Notifications are off for Arknights Client."
+					) {
+						CapsuleActionButton(
+							title: "Open System Settings",
+							systemImage: "gearshape",
+							tone: .neutral,
+							action: reminders.openSystemNotificationSettings
+						)
+					}
+				}
+			}
+
 			SettingsPanel(title: "Music") {
 				SettingsActionRow(
 					title: "Launcher music",

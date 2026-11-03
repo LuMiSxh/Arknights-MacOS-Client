@@ -89,6 +89,22 @@ package final class LauncherPreferencesController {
 			store.setBrandingTheme(brandingTheme)
 		}
 	}
+
+	package var resetReminderTiming: ResetReminderTiming = .off {
+		didSet {
+			guard isLoaded else { return }
+			store.setResetReminderTiming(resetReminderTiming)
+			onResetReminderChanged?()
+		}
+	}
+
+	package var resetReminderRegions: [GameRegion] = [] {
+		didSet {
+			guard isLoaded else { return }
+			store.setResetReminderRegions(resetReminderRegions)
+			onResetReminderChanged?()
+		}
+	}
 	package var canaryFeaturesEnabled = Key.canaryFeaturesEnabled.defaultValue {
 		didSet {
 			persist(canaryFeaturesEnabled, for: Key.canaryFeaturesEnabled)
@@ -121,6 +137,7 @@ package final class LauncherPreferencesController {
 	@ObservationIgnored package var onDynamicThemeChanged: (() -> Void)?
 	@ObservationIgnored package var onCanaryFeaturesChanged: ((Bool) -> Void)?
 	@ObservationIgnored package var onDiscordPresenceChanged: (() -> Void)?
+	@ObservationIgnored package var onResetReminderChanged: (() -> Void)?
 
 	private typealias Key = LauncherPreferencesStore.Key
 	private let store: LauncherPreferencesStore
@@ -168,6 +185,8 @@ package final class LauncherPreferencesController {
 		launcherAppearance = store.launcherAppearance()
 		homeTheme = store.homeTheme()
 		brandingTheme = store.brandingTheme()
+		resetReminderTiming = store.resetReminderTiming()
+		resetReminderRegions = store.resetReminderRegions()
 	}
 
 	private func persist<Value: Sendable>(

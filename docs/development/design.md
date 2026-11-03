@@ -179,7 +179,7 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 
 - The Settings sheet adapts to the window size. `AppConstants.Settings` sets its margin and size limits.
 - Group related controls in quiet glass panels. Switch Settings pages at once. Do not use page transitions. The selected rail row uses the accent.
-- Use a grouped list rail. The Arknights group holds Game, Servers, Storage, and Playtime. The Launcher group holds Appearance, Integration, and Updates. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
+- Use a grouped list rail. The Arknights group holds Game, Servers, Storage, and Playtime. The Launcher group holds Appearance, Integration, and Updates. In Integration, the panels are Notifications, Music, and Discord. The Notifications panel holds the daily reset reminder, a server menu limited to installed servers, and a status row with **Open System Settings** when macOS blocks notifications. Help and About follow. Debug builds add Developer. Game opens first. Later, Settings reopens the last page while the app runs.
 - In Settings → Appearance, panels appear in this order: Artwork, Dynamic Theme, Appearance, Launcher shows, and Dock icons. The Dynamic Theme panel holds three rows: Follow the artwork, Home controls, and Branding.
 - The Look step of onboarding asks these questions in this order: Artwork, Dynamic Theme, Appearance, Home controls, Branding, Launcher shows, and Dock icons.
 - Explain destructive or expensive actions in user terms.
@@ -202,6 +202,7 @@ For a UI change, use the debug simulator. Check these states: an empty region, a
 - Present setup as an operation briefing in the launcher window. The left column shows the route. The right column shows one task. Installation status appears inside its step.
 - Check for a newer launcher first. If one exists, stop setup at the update action. The user installs it and reopens the launcher.
 - Verify Intel execution through Rosetta 2 after the launcher preflight. Explain the macOS 27 beta-only Legacy Game Test Mode recovery. Do not present it as a stable-OS step.
+- Ask the daily reset reminder question in Updates & Integrations. The answers are Off (recommended), At reset, and 1 hour before. Ask macOS for notification permission only when the user picks a reminder, and keep Off if macOS refuses.
 - Walk through these steps in order: System Check, Server, Display, Look, Updates & Integrations, and Ready. Ask each question with an answer card (`OnboardingQuestion`). Use one answer, several answers with checkboxes, or action cards that open a chooser. Mark the recommended answer. End Display with a one-sentence summary.
 - Apply each choice at once. Use the same actions as Settings. The user reopens the assistant from Settings → Help → Troubleshooting.
 - When a release requires a rerun, open with a "Something important changed" briefing. Explain why. Hide Skip Setup until the user finishes. First runs stay skippable.

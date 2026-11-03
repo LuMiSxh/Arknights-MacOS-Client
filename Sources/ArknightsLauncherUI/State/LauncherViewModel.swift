@@ -4,6 +4,7 @@ import ArknightsCore
 import ArknightsCustomization
 import ArknightsGameInstallation
 import ArknightsGameRuntime
+import ArknightsInfrastructure
 import ArknightsPresence
 import Foundation
 import Observation
@@ -23,6 +24,7 @@ package final class LauncherViewModel {
 	let storageOverview: StorageOverviewController
 	let playtimeStatistics: PlaytimeStatisticsController
 	let discordPresence: DiscordPresenceController
+	let reminders: ResetReminderController
 
 	let presetCatalog: PresetCatalogService
 	package let preferences: LauncherPreferencesStore
@@ -187,6 +189,21 @@ package final class LauncherViewModel {
 			region: { [weak installation] in installation?.region ?? .global }
 		)
 
+		let reminders = ResetReminderController(
+			scheduler: makeNotificationScheduler(),
+			settings: settings,
+			installedRegions: { [weak installation] in installation?.installedRegions ?? [] },
+			selectedRegion: { [weak installation] in installation?.region ?? .global },
+			log: launcherLog
+		)
+		self.reminders = reminders
+		settings.onResetReminderChanged = { [weak reminders] in
+			reminders?.preferencesDidChange()
+		}
+		installation.onInstalledRegionsChanged = { [weak reminders] in
+			reminders?.installedRegionsDidChange()
+		}
+
 		settings.onLauncherUpdateCheckRequested = { [weak self] in
 			self?.actions.checkLauncherUpdates()
 		}
@@ -240,6 +257,7 @@ package final class LauncherViewModel {
 
 		startupOptions = StartupOptions(arguments: arguments)
 		beginStartup()
+		reminders.start()
 
 		let appVersion = Bundle.main.shortVersionString ?? "Development"
 		log.info("Launcher \(appVersion) started")

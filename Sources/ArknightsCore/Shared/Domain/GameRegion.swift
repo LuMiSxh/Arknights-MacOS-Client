@@ -80,6 +80,30 @@ package enum GameRegion: String, CaseIterable, Codable, Sendable, Identifiable {
 		}
 	}
 
+	/// Server time is a fixed UTC offset, not a named zone, so daylight saving never moves a reset.
+	package var serverTimeZone: TimeZone {
+		let hoursFromUTC =
+			switch self {
+			case .global: -7
+			case .japan, .korea: 9
+			case .taiwan, .china, .chinaBilibili: 8
+			}
+		return TimeZone(secondsFromGMT: hoursFromUTC * 3600)!
+	}
+
+	/// The first 04:00 server reset strictly after `date`.
+	package func dailyReset(after date: Date) -> Date {
+		var calendar = Calendar(identifier: .gregorian)
+		calendar.timeZone = serverTimeZone
+		var components = calendar.dateComponents([.year, .month, .day], from: date)
+		components.hour = 4
+		components.minute = 0
+		components.second = 0
+		let todayReset = calendar.date(from: components)!
+		return todayReset > date
+			? todayReset : calendar.date(byAdding: .day, value: 1, to: todayReset)!
+	}
+
 	var clientProfile: GameClientProfile {
 		switch self {
 		case .global, .japan, .korea:

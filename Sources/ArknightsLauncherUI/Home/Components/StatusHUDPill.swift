@@ -59,7 +59,10 @@ struct StatusHUDPill: View {
 	}
 
 	private func countdown(for region: GameRegion, now: Date) -> String {
-		ServerReset.countdownText(for: region, now: now)
+		let remaining = max(0, Int(region.dailyReset(after: now).timeIntervalSince(now)))
+		let minutes = (remaining % 3600) / 60
+		let minuteText = minutes < 10 ? "0\(minutes)" : "\(minutes)"
+		return "Reset in \(remaining / 3600)h \(minuteText)m"
 	}
 
 	private func installedRegionRows(now: Date) -> some View {

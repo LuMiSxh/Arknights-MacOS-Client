@@ -35,6 +35,17 @@ struct OnboardingExtrasView: View {
 		)
 	}
 
+	private var reminderBinding: Binding<ResetReminderAnswer?> {
+		Binding(
+			get: { ResetReminderAnswer(timing: preferences.resetReminderTiming) },
+			set: { answer in
+				guard let answer else { return }
+				// The launcher asks macOS for permission and sets this back to Off if refused.
+				preferences.resetReminderTiming = answer.timing
+			}
+		)
+	}
+
 	var body: some View {
 		OnboardingPage(
 			title: "Updates & Integrations",
@@ -50,6 +61,12 @@ struct OnboardingExtrasView: View {
 				question: "Discord presence",
 				answers: DiscordPresenceAnswer.allCases.map(\.answer),
 				selection: presenceBinding
+			)
+
+			OnboardingQuestion(
+				question: "Remind you before the daily reset?",
+				answers: ResetReminderAnswer.allCases.map(\.answer),
+				selection: reminderBinding
 			)
 
 			SettingsPanel(title: "Music") {

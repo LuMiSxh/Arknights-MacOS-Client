@@ -10,6 +10,7 @@ order: 20
 - The launcher shows a code such as `IN-DLD` → [Error codes](errors/README.md)
 - File locations and cleanup → [Storage](storage.md)
 - Show your session on Discord → [Discord presence](discord-presence.md)
+- Get a notification before the daily reset → [Daily reset reminder](daily-reset-reminder.md)
 - Supported macOS versions → [macOS compatibility](runtime-compatibility.md)
 - General questions → [FAQ](faq.md)
 

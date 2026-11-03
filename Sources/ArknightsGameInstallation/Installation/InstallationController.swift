@@ -15,7 +15,12 @@ package final class InstallationController {
 	package var installDirectory: URL
 	package var progress: DownloadProgress?
 	package private(set) var completionFeedback: InstallationCompletionFeedback?
-	package private(set) var installedRegions: [GameRegion] = []
+	package private(set) var installedRegions: [GameRegion] = [] {
+		didSet {
+			if installedRegions != oldValue { onInstalledRegionsChanged?() }
+		}
+	}
+	@ObservationIgnored package var onInstalledRegionsChanged: (() -> Void)?
 	@ObservationIgnored var progressSequence: UInt64 = 0
 
 	package var configuration: GameConfiguration? {

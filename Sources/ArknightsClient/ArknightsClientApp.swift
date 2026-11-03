@@ -7,6 +7,8 @@ import ArknightsLauncherUI
 import ArknightsOnboarding
 import SwiftUI
 
+@preconcurrency import UserNotifications
+
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
 	weak var model: LauncherViewModel?
@@ -29,6 +31,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		fixQuitMenuItemTarget()
 		installQuitKeyMonitor()
 		installQuitEventHandler()
+		installNotificationDelegate()
+	}
+
+	// `UNUserNotificationCenter.current()` traps outside an app bundle, as in `swift run`.
+	private func installNotificationDelegate() {
+		guard Bundle.main.bundleURL.pathExtension == "app" else { return }
+		UNUserNotificationCenter.current().delegate = self
 	}
 
 	// A key SwiftUI sheet can prevent the default nil target from reaching NSApp.
@@ -199,13 +208,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 		openSettings?()
 	}
 
-	private func showMainWindow() {
+	fileprivate func showMainWindow() {
 		NSApp.activate(ignoringOtherApps: true)
 		let window =
 			NSApp.mainWindow ?? NSApp.keyWindow
 			?? NSApp.windows.first(where: \.canBecomeMain)
 		window?.deminiaturize(nil)
 		window?.makeKeyAndOrderFront(nil)
+	}
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+	// The system calls these off the main actor.
+	nonisolated func userNotificationCenter(
+		_ center: UNUserNotificationCenter,
+		willPresent notification: UNNotification
+	) async -> UNNotificationPresentationOptions {
+		// The launcher is the foreground app when its reminder is due, so show it as a banner.
+		[.banner, .sound]
+	}
+
+	nonisolated func userNotificationCenter(
+		_ center: UNUserNotificationCenter,
+		didReceive response: UNNotificationResponse
+	) async {
+		await MainActor.run { showMainWindow() }
 	}
 }
 

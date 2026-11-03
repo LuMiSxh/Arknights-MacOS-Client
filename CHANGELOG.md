@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added **Custom…** to the game **Window size** menu. Enter a width and height in points, or use **Measure With a Window…** to read the size of a resizable window. A size too large for the screen scales down when the game starts.
 - Added **Frame rate limit** to the game display settings. Use the slider to set 30, 60, or 120 FPS.
 - Added **Battery Saver** to **Settings → Game → Performance**. At the next launch it caps the frame rate at 30 or 60 FPS, lowers **Rendering** from Retina, and turns off **Game Mode**.
+- Added an optional **Daily reset reminder** under **Settings → Integration → Notifications**. macOS shows a notification at the reset or 15 minutes, 30 minutes, 1 hour, or 2 hours before it. Choose the servers under **Servers**. Setup asks this question too. If macOS blocks notifications, **Open System Settings** opens the notification settings.
 - Added optional **Discord presence**. It shows **Playing Arknights**, your server, and the session time on your Discord profile while the game runs.
 - Added a **Help** section to **Settings** and a **Help** menu. They hold **Report a Problem…**, **Save Diagnostics…**, the troubleshooting guide, and publisher support. **Report a Problem…** is also in the Dock menu.
 - Added **Save Diagnostics…**. It saves a zip file to your Downloads folder. The zip holds the logs, the SDK logs, and environment details such as display settings, installed regions, macOS, chip, and memory. The logs redact your home folder, your user name, and URL queries. SDK logs can still contain account IDs and access keys, so review the zip before you share it. Nothing is uploaded. The launcher now collects the SDK logs for China, China (Bilibili), and Taiwan. Use **Show Logs** in **Settings → Storage** to see them in the `sdklogs` folder.
@@ -33,7 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Secondary buttons and links in Settings, setup, and the update window use quiet neutral colors. The theme color marks only the main action, progress, and selection. Destructive buttons use a red tint in dark and light.
 - The selection in the Settings sidebar now slides between rows.
 - Setup has a new **Look** step for artwork, Dynamic Theme, Home controls, Branding, appearance, and Dock icons. Setup keeps a custom window size. Setup runs once more after this update so you can review the new options.
-- Renamed **Settings → Audio** to **Settings → Integration**. It holds launcher music and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
+- Renamed **Settings → Audio** to **Settings → Integration**. It holds the daily reset reminder, launcher music, and Discord presence. Setup asks about Discord presence, and the setup step is now **Updates & Integrations**.
 - Reorganized **Settings**: **Installation** is now **Servers**, recovery actions moved to **Help**, and **Game** is split into **Display**, **Performance**, and **Compatibility**.
 - **Settings → About** shows Wine, DXMT, and other runtime details inside a collapsed **Technical details** group.
 - **Settings → Storage** shows the last measured sizes at once and updates them in the background.

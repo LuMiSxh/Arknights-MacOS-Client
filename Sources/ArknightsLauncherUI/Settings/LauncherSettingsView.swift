@@ -20,6 +20,7 @@ struct LauncherSettingsView: View {
 	let installation: InstallationController
 	let gameSession: GameSessionController
 	let lifecycle: LauncherLifecycleStore
+	let reminders: ResetReminderController
 	let storage: StorageMaintenanceController
 	let storageOverview: StorageOverviewController
 	let playtimeStatistics: PlaytimeStatisticsController
@@ -79,7 +80,8 @@ struct LauncherSettingsView: View {
 						)
 					case .integration:
 						IntegrationSettingsPage(
-							settings: settings
+							settings: settings,
+							reminders: reminders
 						)
 					case .updates:
 						UpdatesSettingsPage(

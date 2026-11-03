@@ -262,6 +262,47 @@ extension DiscordPresenceAnswer {
 	}
 }
 
+nonisolated enum ResetReminderAnswer: CaseIterable, Sendable {
+	case off
+	case atReset
+	case hourBefore
+
+	static let recommended = ResetReminderAnswer.off
+
+	var timing: ResetReminderTiming {
+		switch self {
+		case .off: .off
+		case .atReset: .atReset
+		case .hourBefore: .minutes60
+		}
+	}
+
+	// The answer the saved timing matches, or nil when Settings chose another lead time.
+	init?(timing: ResetReminderTiming) {
+		guard let answer = Self.allCases.first(where: { $0.timing == timing }) else { return nil }
+		self = answer
+	}
+}
+
+extension ResetReminderAnswer {
+	var answer: OnboardingAnswer<ResetReminderAnswer> {
+		switch self {
+		case .off:
+			OnboardingAnswer(
+				value: self, title: "Off", detail: "No notifications.",
+				systemImage: "bell.slash", isRecommended: true)
+		case .atReset:
+			OnboardingAnswer(
+				value: self, title: "At reset", detail: "Asks macOS to allow notifications.",
+				systemImage: "bell")
+		case .hourBefore:
+			OnboardingAnswer(
+				value: self, title: "1 hour before", detail: "Asks macOS to allow notifications.",
+				systemImage: "bell.badge")
+		}
+	}
+}
+
 extension LauncherPreferencesController {
 	var discordPresenceAnswer: DiscordPresenceAnswer {
 		get { showsDiscordPresence ? .on : .off }

@@ -55,6 +55,12 @@
 		project addresses. Discord controls what your profile shows.
 	</p>
 	<p>
+		The daily reset reminder is off by default. When you turn it on, the app
+		asks macOS to show local notifications at set times. macOS schedules and
+		shows them on your Mac. The app sends no data to any server for this
+		feature.
+	</p>
+	<p>
 		The app connects to the hosts below when you use the matching feature.
 		Each host receives your IP address and request data under its own
 		privacy policy.

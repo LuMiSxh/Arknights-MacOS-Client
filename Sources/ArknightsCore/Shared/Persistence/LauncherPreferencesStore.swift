@@ -75,6 +75,8 @@ package struct LauncherPreferencesStore {
 		}
 		package static let selectedRegion = "selectedRegion"
 		static let acknowledgedACEWarningRegions = "acknowledgedACEWarningRegions"
+		static let resetReminderTiming = "resetReminderTiming"
+		static let resetReminderRegions = "resetReminderRegions"
 		package static let dynamicThemeAccent = "dynamicThemeAccent.v4"
 		package static let homeLuminanceCache = "homeLuminanceCache"
 		package static let lastAppliedDynamicIconHue = "lastAppliedDynamicIconHue"
@@ -101,6 +103,8 @@ package struct LauncherPreferencesStore {
 				RawKey(launcherAppearance, resettable: true),
 				RawKey(homeTheme, resettable: true),
 				RawKey(brandingTheme, resettable: true),
+				RawKey(resetReminderTiming, resettable: true),
+				RawKey(resetReminderRegions, resettable: true),
 				RawKey(seenAnnouncementIDs, resettable: false),
 				RawKey(selectedRegion, resettable: false),
 				RawKey(forceDisableRetina, resettable: false),
@@ -230,6 +234,25 @@ package struct LauncherPreferencesStore {
 
 	package func setBrandingTheme(_ theme: HomeTheme) {
 		defaults.set(theme.rawValue, forKey: Key.brandingTheme)
+	}
+
+	package func resetReminderTiming() -> ResetReminderTiming {
+		defaults.string(forKey: Key.resetReminderTiming)
+			.flatMap(ResetReminderTiming.init(rawValue:)) ?? .off
+	}
+
+	package func setResetReminderTiming(_ timing: ResetReminderTiming) {
+		defaults.set(timing.rawValue, forKey: Key.resetReminderTiming)
+	}
+
+	/// Drops raw values that this build does not recognize.
+	package func resetReminderRegions() -> [GameRegion] {
+		(defaults.stringArray(forKey: Key.resetReminderRegions) ?? [])
+			.compactMap(GameRegion.init(rawValue:))
+	}
+
+	package func setResetReminderRegions(_ regions: [GameRegion]) {
+		defaults.set(Set(regions).map(\.rawValue).sorted(), forKey: Key.resetReminderRegions)
 	}
 
 	package func batterySaverFrameRateLimit() -> GameFrameRateLimit {
