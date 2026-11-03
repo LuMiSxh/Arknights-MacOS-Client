@@ -95,14 +95,7 @@ jobs:
           fi
 
       - name: Resolve project names
-        run: |
-          {
-            echo "APP_NAME=$(uv run --locked --no-dev scripts/project_config.py app-bundle-name)"
-            echo "DISPLAY_NAME=$(uv run --locked --no-dev scripts/project_config.py display-name)"
-            echo "DMG_NAME=$(uv run --locked --no-dev scripts/project_config.py dmg-name)"
-            echo "UPDATE_NAME=$(uv run --locked --no-dev scripts/project_config.py sparkle-update-name)"
-            echo "DELTA_SOURCES=$(uv run --locked --no-dev scripts/project_config.py sparkle-delta-sources)"
-          } >> "$GITHUB_ENV"
+        run: uv run --locked --no-dev scripts/project_config.py github-env >> "$GITHUB_ENV"
 
       - name: Test source
         run: just ci
@@ -125,9 +118,13 @@ jobs:
         run: uv run --locked --no-dev scripts/licenses.py --check --strict --runtime .build/runtime
 
       - name: Set release version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           # Sparkle orders updates by CFBundleVersion, so it must never fall below the
-          # newest published build. Only a 404 (no release yet) falls back to the run number.
+          # newest published build. Only a repository without any published release falls
+          # back to the run number.
           previous_appcast="$RUNNER_TEMP/previous-appcast.xml"
           appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
           appcast_args=()
@@ -143,7 +140,19 @@ jobs:
               ;;
             404)
               rm -f "$previous_appcast"
-              echo "::warning::No published Sparkle appcast; CFBundleVersion uses the run number."
+              # A 404 on the appcast also occurs when the latest release lacks the asset.
+              # Reusing the run number then could lower CFBundleVersion, so check for a release.
+              release_error="$RUNNER_TEMP/latest-release.err"
+              if latest_tag="$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>"$release_error")"; then
+                echo "::error::Latest release $latest_tag has no appcast.xml asset; cannot derive CFBundleVersion." >&2
+                exit 1
+              fi
+              if ! grep -q 'HTTP 404' "$release_error"; then
+                cat "$release_error" >&2
+                echo "::error::Unable to query the latest release of $GITHUB_REPOSITORY." >&2
+                exit 1
+              fi
+              echo "::warning::No published release; CFBundleVersion uses the run number."
               ;;
             *)
               echo "Unexpected HTTP $status fetching the previous Sparkle appcast." >&2
@@ -151,7 +160,7 @@ jobs:
               ;;
           esac
           bundle_version="$(uv run --locked --no-dev scripts/release.py bundle-version \
-            "$GITHUB_RUN_NUMBER" "${appcast_args[@]}")"
+            "$GITHUB_RUN_NUMBER" ${appcast_args[@]+"${appcast_args[@]}"})"
           echo "CFBundleVersion: $bundle_version"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $bundle_version" Resources/Info.plist
 

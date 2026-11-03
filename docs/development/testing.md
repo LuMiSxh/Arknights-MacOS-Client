@@ -69,7 +69,7 @@ Helpers that more than one test target uses live in the `ArknightsTestSupport` l
 
 Use `StubURLProtocol` for network stubs. Each `Route` has its own handler and request count. Use `makeIsolatedDefaults()`, `makeLifecycleStore()`, and `TemporaryDirectory` instead of a private copy.
 
-Timed code takes an injected `Clock` (`any Clock<Duration>`). Tests pass a manual clock and advance it explicitly. A test never sleeps for real time. `just check scripts` rejects `Task.sleep`, `Thread.sleep`, `usleep` and `sleep` under `Tests/`. Exceptions are listed with a reason in `scripts/test-sleep-allowlist.txt`.
+Timed code takes an injected `Clock` (`any Clock<Duration>`). Tests pass a manual clock and advance it explicitly. A test never sleeps for real time. `just check scripts` rejects `Task.sleep`, `Thread.sleep`, `usleep` and `sleep` under `Tests/`. Exceptions are listed with a reason and an exact count in `scripts/test-sleep-allowlist.txt`.
 
 Each test owns its state:
 

@@ -54,10 +54,12 @@ jobs:
 
       - name: Add contract summary
         if: always() && steps.contracts.outputs.has-report == 'true'
+        env:
+          REPORT: ${{ runner.temp }}/contract-report.json
         run: |
           jq -r '"## Yostar launcher API\n\n| Region | Contract | Status | Summary |\n| --- | --- | --- | --- |",
             (.checks[] | "| \(.region) | \(.contract) | \(.status) | \(.summary) |")' \
-            "${{ runner.temp }}/contract-report.json" >> "$GITHUB_STEP_SUMMARY"
+            "$REPORT" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload sanitized contract report
         id: upload-report

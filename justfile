@@ -57,7 +57,7 @@ check target='all':
         (cd web && pnpm check && pnpm format:check)
     }
     target={{ quote(target) }}
-    for name in $([[ $target == all ]] && echo swift scripts shim || echo "$target"); do
+    for name in $([[ $target == all ]] && echo scripts shim swift || echo "$target"); do
         [[ $name =~ ^(swift|scripts|shim|web)$ ]] || { echo "unknown target: $name; use all, swift, scripts, shim, or web" >&2; exit 2; }
         "check_$name"
     done
@@ -183,7 +183,7 @@ app runtime='':
 dmg runtime strict='':
     {{ uv_packaging }} scripts/build_dmg.py --runtime {{ quote(runtime) }} {{ if strict != '' { '--strict-licenses' } else { '' } }}
 
-# Regenerate the application icon assets.
+# Regenerate the application icon assets; fails rather than shipping fallback assets.
 [group('Packaging')]
 icon:
     {{ uv }} scripts/generate_icon.py

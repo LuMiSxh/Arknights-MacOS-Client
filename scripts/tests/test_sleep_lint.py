@@ -70,32 +70,54 @@ def test_allowlisted_real_sleep_passes(tmp_path: Path) -> None:
     write_allowlist(
         tmp_path,
         "# Wall-clock timeout bound for the test wait helper.",
-        f"{TEST}:real-sleep",
+        f"{TEST}:real-sleep:1",
     )
 
     assert check(tmp_path) == []
 
 
-def test_fake_clock_declaration_passes_when_allowlisted(tmp_path: Path) -> None:
+def test_fake_clock_declaration_is_not_a_real_sleep(tmp_path: Path) -> None:
     write(
         tmp_path / TEST,
         "func sleep(until deadline: Instant, tolerance: Duration?) async throws {}\n",
     )
-    write_allowlist(tmp_path, f"{TEST}:real-sleep")
+    write_allowlist(tmp_path)
 
     assert check(tmp_path) == []
 
 
+@pytest.mark.parametrize(("actual", "allowed"), [(2, 1), (1, 2)])
+def test_real_sleep_count_must_match_allowlist(
+    tmp_path: Path, actual: int, allowed: int
+) -> None:
+    write(tmp_path / TEST, "try await Task.sleep(for: .seconds(1))\n" * actual)
+    write_allowlist(tmp_path, f"{TEST}:real-sleep:{allowed}")
+
+    assert (
+        f"{TEST}:real-sleep: allowlist allows {allowed}, found {actual}; "
+        "review and update the count"
+    ) in check(tmp_path)
+
+
 def test_stale_allowlist_entry_fails(tmp_path: Path) -> None:
     write(tmp_path / TEST, "let spacing = 8\n")
-    write_allowlist(tmp_path, f"{TEST}:real-sleep")
+    write_allowlist(tmp_path, f"{TEST}:real-sleep:1")
 
     assert check(tmp_path) == [
         f"{TEST}:real-sleep: allowlist entry matches no violation; remove it"
     ]
 
 
-@pytest.mark.parametrize("entry", [f"{TEST}:real-sleeps", f"{TEST}", ":real-sleep"])
+@pytest.mark.parametrize(
+    "entry",
+    [
+        f"{TEST}:real-sleeps",
+        f"{TEST}",
+        ":real-sleep",
+        f"{TEST}:real-sleep",
+        f"{TEST}:real-sleep:0",
+    ],
+)
 def test_malformed_allowlist_entry_fails(tmp_path: Path, entry: str) -> None:
     write(tmp_path / TEST, "try await Task.sleep(for: .seconds(1))\n")
     write_allowlist(tmp_path, entry)
@@ -107,7 +129,7 @@ def test_malformed_allowlist_entry_fails(tmp_path: Path, entry: str) -> None:
 
 def test_duplicate_allowlist_entry_fails(tmp_path: Path) -> None:
     write(tmp_path / TEST, "try await Task.sleep(for: .seconds(1))\n")
-    write_allowlist(tmp_path, f"{TEST}:real-sleep", f"{TEST}:real-sleep")
+    write_allowlist(tmp_path, f"{TEST}:real-sleep:1", f"{TEST}:real-sleep:1")
 
     problems = check(tmp_path)
     assert len(problems) == 1

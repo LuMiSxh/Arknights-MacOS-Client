@@ -5,6 +5,7 @@ on:
     paths:
       - 'web/**'
       - 'docs/**'
+      - CHANGELOG.md
       - .github/workflows/pages.yml
   workflow_call:
   workflow_dispatch:
@@ -14,7 +15,7 @@ permissions:
 
 concurrency:
   group: github-pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -24,14 +25,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Require main for Pages deployments
-        if: github.event_name != 'pull_request'
-        run: |
-          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "Website deployments must be triggered from main." >&2
-            exit 1
-          fi
-
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -59,6 +52,10 @@ jobs:
       - name: Validate website
         working-directory: web
         run: pnpm run check
+
+      - name: Check website formatting
+        working-directory: web
+        run: pnpm run format:check
 
       - name: Build website
         working-directory: web

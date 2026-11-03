@@ -63,15 +63,28 @@ def test_allowlisted_violation_passes(tmp_path: Path) -> None:
     write_allowlist(
         tmp_path,
         "# Artwork scrim, to migrate in phase 3.",
-        f"{FEATURE}:raw-color",
+        f"{FEATURE}:raw-color:1",
     )
 
     assert check(tmp_path) == []
 
 
+@pytest.mark.parametrize(("actual", "allowed"), [(2, 1), (1, 2)])
+def test_violation_count_must_match_allowlist(
+    tmp_path: Path, actual: int, allowed: int
+) -> None:
+    write(tmp_path / FEATURE, "let tint = Color(red: 1, green: 0, blue: 0)\n" * actual)
+    write_allowlist(tmp_path, f"{FEATURE}:raw-color:{allowed}")
+
+    assert (
+        f"{FEATURE}:raw-color: allowlist allows {allowed}, found {actual}; "
+        "review and update the count"
+    ) in check(tmp_path)
+
+
 def test_stale_allowlist_entry_fails(tmp_path: Path) -> None:
     write(tmp_path / FEATURE, "let spacing = 8\n")
-    write_allowlist(tmp_path, f"{FEATURE}:raw-color")
+    write_allowlist(tmp_path, f"{FEATURE}:raw-color:1")
 
     assert check(tmp_path) == [
         f"{FEATURE}:raw-color: allowlist entry matches no violation; remove it"
@@ -80,11 +93,24 @@ def test_stale_allowlist_entry_fails(tmp_path: Path) -> None:
 
 def test_unknown_rule_in_allowlist_fails(tmp_path: Path) -> None:
     write(tmp_path / FEATURE, "let spacing = 8\n")
-    write_allowlist(tmp_path, f"{FEATURE}:raw-colour")
+    write_allowlist(tmp_path, f"{FEATURE}:raw-colour:1")
 
     problems = check(tmp_path)
     assert len(problems) == 1
     assert "known rule" in problems[0]
+
+
+@pytest.mark.parametrize("entry", [f"{FEATURE}:raw-color", f"{FEATURE}:raw-color:0"])
+def test_malformed_allowlist_entry_fails(tmp_path: Path, entry: str) -> None:
+    write(tmp_path / FEATURE, "let tint = Color(red: 1, green: 0, blue: 0)\n")
+    write_allowlist(tmp_path, entry)
+
+    problems = check(tmp_path)
+    assert (
+        f"{FEATURE}:1: raw-color: let tint = Color(red: 1, green: 0, blue: 0)"
+        in problems
+    )
+    assert any("expected path:rule:count" in problem for problem in problems)
 
 
 @pytest.mark.parametrize(

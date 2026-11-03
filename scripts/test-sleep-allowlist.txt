@@ -1,18 +1,12 @@
 # Real-sleep allowlist for `scripts/lib/sleep_lint.py`.
-# Each entry is `path:real-sleep`, relative to the repository root. Lines starting with # are comments.
-# An entry that matches no real sleep fails the scripts tests; remove it when the sleep goes.
+# Each entry is `path:real-sleep:count`, relative to the repository root. The count is the exact number
+# of real sleeps the file may contain. Lines starting with # are comments.
+# A count that differs from the scan fails the scripts tests. An entry that matches no sleep is removed.
+# Fake `Clock` declarations (`func sleep(until:)`) are not real sleeps and need no entry.
 
 # Wall-clock timeout bounds: they stop a broken contract from hanging. A passing wait never reaches them.
-Tests/ArknightsTestSupport/WaitForCondition.swift:real-sleep
-Tests/ArknightsTestSupport/Signal.swift:real-sleep
+Tests/ArknightsTestSupport/WaitForCondition.swift:real-sleep:1
+Tests/ArknightsTestSupport/Signal.swift:real-sleep:1
 
 # Live-contract probe: waits between retries against the real service, outside the offline suite.
-Tests/ArknightsClientLiveContractTests/YostarContractProbe.swift:real-sleep
-
-# Fake clocks: `func sleep(until:)` implements the Clock protocol, so its declaration matches the call pattern.
-Tests/ArknightsAudioTests/HeldClock.swift:real-sleep
-Tests/ArknightsGameInstallationTests/Installation/InstallProgressMonitorTests.swift:real-sleep
-Tests/ArknightsGameRuntimeTests/Runtime/WineProcessSpawnGateTests.swift:real-sleep
-Tests/ArknightsPresenceTests/DiscordPresenceSessionTests.swift:real-sleep
-Tests/ArknightsTestSupport/AdvancingClock.swift:real-sleep
-Tests/ArknightsTestSupport/RecordingClock.swift:real-sleep
+Tests/ArknightsClientLiveContractTests/YostarContractProbe.swift:real-sleep:1

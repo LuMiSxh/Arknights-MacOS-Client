@@ -3,13 +3,15 @@
 """Find design literals in feature Swift code that should read the theme from `Shared/UI`.
 
 Each rule names one literal family. Existing violations are listed in the allowlist as
-`path:rule` entries. An entry that matches nothing is an error, so the list shrinks as the
-migration proceeds.
+`path:rule:count` entries. The count is the exact number of violations the file may have for
+that rule. A count that differs from the scan is an error, so a new violation in a listed file
+fails. An entry that matches nothing is an error, so the list shrinks as the migration proceeds.
 """
 
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -51,6 +53,8 @@ RULES: dict[str, re.Pattern[str]] = {
 # Concurrency rules apply to every Swift file under the source root, including the files the
 # design-literal rules skip.
 SOURCE_WIDE_RULES = frozenset({"detached-task"})
+# Allowlist entries look like `path:rule:count`; the count is at least 1.
+ENTRY = re.compile(r"([^:]+):([a-z-]+):([1-9][0-9]*)")
 # Masking strings before cutting comments keeps a `//` inside a string from hiding the line.
 _STRING_LITERAL = re.compile(r'"(?:\\.|[^"\\])*"')
 _LINE_COMMENT = re.compile(r"//.*")
@@ -94,11 +98,11 @@ def scan(root: Path) -> list[Violation]:
     return violations
 
 
-def _load_allowlist(path: Path) -> tuple[set[tuple[str, str]], list[str]]:
-    """Return the `(path, rule)` entries and one problem for each malformed line."""
+def _load_allowlist(path: Path) -> tuple[dict[tuple[str, str], int], list[str]]:
+    """Return the expected count for each `(path, rule)` and one problem per malformed line."""
     if not path.is_file():
-        return set(), [f"{path.name}: allowlist is missing"]
-    entries: set[tuple[str, str]] = set()
+        return {}, [f"{path.name}: allowlist is missing"]
+    expected: dict[tuple[str, str], int] = {}
     problems: list[str] = []
     for number, raw in enumerate(
         path.read_text(encoding="utf-8").splitlines(), start=1
@@ -106,32 +110,39 @@ def _load_allowlist(path: Path) -> tuple[set[tuple[str, str]], list[str]]:
         entry = raw.strip()
         if not entry or entry.startswith("#"):
             continue
-        file_path, separator, rule = entry.rpartition(":")
-        if not separator or not file_path or rule not in RULES:
+        parsed = ENTRY.fullmatch(entry)
+        if parsed is None or parsed[2] not in RULES:
             problems.append(
-                f"{path.name}:{number}: expected path:rule with a known rule, got {entry!r}"
+                f"{path.name}:{number}: expected path:rule:count with a known rule "
+                f"and a count of at least 1, got {entry!r}"
             )
-        elif (file_path, rule) in entries:
+        elif (parsed[1], parsed[2]) in expected:
             problems.append(f"{path.name}:{number}: duplicate entry {entry}")
         else:
-            entries.add((file_path, rule))
-    return entries, problems
+            expected[(parsed[1], parsed[2])] = int(parsed[3])
+    return expected, problems
 
 
 def check(root: Path) -> list[str]:
-    """Return one message for each violation not allowlisted and each stale or malformed entry."""
-    allowed, problems = _load_allowlist(root / DESIGN_LINT_ALLOWLIST)
-    matched: set[tuple[str, str]] = set()
-    for violation in scan(root):
+    """Return one message for each unexpected violation and each stale or miscounted entry."""
+    expected, problems = _load_allowlist(root / DESIGN_LINT_ALLOWLIST)
+    violations = scan(root)
+    found = Counter((violation.path, violation.rule) for violation in violations)
+    for violation in violations:
         key = (violation.path, violation.rule)
-        if key in allowed:
-            matched.add(key)
-        else:
+        if found[key] > expected.get(key, 0):
             problems.append(
                 f"{violation.path}:{violation.line}: {violation.rule}: {violation.text}"
             )
-    problems.extend(
-        f"{path}:{rule}: allowlist entry matches no violation; remove it"
-        for path, rule in sorted(allowed - matched)
-    )
+    for (path, rule), allowed in sorted(expected.items()):
+        actual = found.get((path, rule), 0)
+        if actual == 0:
+            problems.append(
+                f"{path}:{rule}: allowlist entry matches no violation; remove it"
+            )
+        elif actual != allowed:
+            problems.append(
+                f"{path}:{rule}: allowlist allows {allowed}, found {actual}; "
+                "review and update the count"
+            )
     return problems

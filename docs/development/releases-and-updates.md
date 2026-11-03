@@ -35,7 +35,7 @@ flowchart LR
 	Notes --> Runtime["Download and verify<br/>the pinned runtime"]
 	Runtime --> Recipe["Download and verify<br/>the build recipe"]
 	Recipe --> Build[Build arm64 app and DMG]
-	Build --> Archive["Create signed app ZIP<br/>and appcast"]
+	Build --> Archive["Create .tar.xz update archive<br/>and signed appcast"]
 	Archive --> Sums[Write SHA256SUMS]
 	Sums --> Draft["Create a draft<br/>vX.Y.Z release"]
 ```
@@ -59,11 +59,11 @@ The draft contains:
 | `Runtime-Build-Recipe.tar.gz` | Pinned runtime build recipe and provenance metadata |
 | `SHA256SUMS`                  | SHA-256 checksums for the published artifacts       |
 
-The workflow attaches GitHub build-provenance attestations for the DMG, runtime recipe, and checksum file. Do not copy assets from `dist/` into the repository.
+The workflow attaches GitHub build-provenance attestations to the DMG, the `.tar.xz` update archive, the deltas, `appcast.xml`, the runtime recipe, and the checksum file. Do not copy assets from `dist/` into the repository.
 
 To test the release path without publishing, start **Draft release** from any branch with **dry_run** enabled. The run builds, signs, and verifies everything, including the Sparkle deltas. It skips the website deploy, the attestation, and the draft release. It uploads the files as the `dry-run-vX.Y.Z` workflow artifact, which expires after three days. Inspect that artifact before a real release.
 
-GitHub Actions dependencies use immutable commit pins with version comments. Every workflow declares bounded job runtimes and job-specific token permissions. Write access is limited to release publication, Pages deployment, live-contract failure issues, and wallpaper-tag issue filing.
+GitHub Actions dependencies use immutable commit pins with version comments. Every workflow declares bounded job runtimes and job-specific token permissions. Write access is limited to draft release creation, Pages deployment, live-contract failure issues, and the wallpaper-tag scan. The scan opens pull requests, dispatches CI for them, and files issues.
 
 ## Release review
 
@@ -103,7 +103,7 @@ The workflow also checks that the bundle contains Sparkle.framework with symlink
 > [!CAUTION]
 >
 > - The current Sparkle public key, K0, is tracked in `Resources/Info.plist` as `SUPublicEDKey`. Every package build validates that it decodes to exactly 32 bytes.
-> - The private key reaches GitHub Actions only through the protected `release` environment as `SPARKLE_ED25519_PRIVATE_KEY`. The workflow passes it to `generate_appcast` through standard input, never in arguments.
+> - The private key reaches GitHub Actions only through the `release` environment as `SPARKLE_ED25519_PRIVATE_KEY`. The workflow passes it to `generate_appcast` through standard input, never in arguments.
 > - Export a current Sparkle `generate_keys -x` seed of exactly 32 decoded bytes. The workflow rejects legacy 96-byte key-pair exports.
 > - Release validation derives the public key from the seed and compares it with K0 before upload.
 > - Keep the private key in the macOS login Keychain and one separate encrypted offline recovery copy. Never commit it.
