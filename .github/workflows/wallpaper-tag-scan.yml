@@ -19,6 +19,7 @@ jobs:
     runs-on: xcode-27
     timeout-minutes: 15
     permissions:
+      actions: write
       contents: write
       issues: write
       pull-requests: write

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Pull requests opened with GITHUB_TOKEN do not trigger CI; run it by hand on their branch.
+  # The wallpaper tag scan dispatches CI for its pull requests, which GITHUB_TOKEN cannot trigger.
   workflow_dispatch:
 
 permissions:

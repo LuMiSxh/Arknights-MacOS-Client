@@ -300,6 +300,9 @@ def open_tagging_pull_request(
             TAGGING_LABEL,
         ]
     )
+    # Pull requests opened with GITHUB_TOKEN do not trigger CI, but a workflow
+    # dispatch does, and its check satisfies the required status check.
+    run(["gh", "workflow", "run", "ci.yml", "--ref", branch])
 
 
 def evaluate(count: int) -> None:
