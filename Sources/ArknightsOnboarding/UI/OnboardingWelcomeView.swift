@@ -4,7 +4,6 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingWelcomeView: View {
-	@Environment(\.launcherTheme) private var theme
 	let accentColor: Color
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
@@ -34,109 +33,26 @@ struct OnboardingWelcomeView: View {
 				}
 			}
 
-			SettingsPanel(title: statusTitle, systemImage: statusImage, tone: updatePanelTone) {
-				switch updateState {
-				case .checking:
-					HStack(spacing: 12) {
-						ProgressView()
-						Text(OnboardingUpdateState.checkingTitle)
-							.foregroundStyle(theme.textSecondary)
-					}
-				case .current:
-					Label(
-						"This launcher is up to date. Setup can continue.",
-						systemImage: "checkmark.circle.fill"
-					)
-					.foregroundStyle(theme.successInk)
-				case .updateRequired(let version):
-					VStack(alignment: .leading, spacing: 8) {
-						Text("Version \(version) is available.")
-							.fontWeight(.medium)
-						Text(
-							"Install the newer launcher and open it again. Setup waits so its instructions match the version you use."
-						)
-						.foregroundStyle(theme.textSecondary)
-						.fixedSize(horizontal: false, vertical: true)
-					}
-				case .checkFailed:
-					VStack(alignment: .leading, spacing: 8) {
-						Text(
-							"The launcher could not look for updates. You can continue now; it will try again later."
-						)
-						.foregroundStyle(theme.textSecondary)
-						CapsuleActionButton(
-							title: "Try Again",
-							systemImage: "arrow.clockwise",
-							tone: .accent(accentColor), action: retry
-						)
-					}
+			SettingsPanel(title: "Launcher update", systemImage: "arrow.down.app") {
+				OnboardingStatusRow(
+					title: statusTitle,
+					detail: updateDetail,
+					systemImage: statusImage,
+					tone: updatePanelTone
+				) {
+					updateAction
 				}
 			}
 
 			if updateState.allowsSetup {
-				SettingsPanel(
-					title: "Your Mac",
-					systemImage: translationImage,
-					tone: compatibilityPanelTone
-				) {
-					switch intelTranslationState {
-					case .waitingForLauncherCheck:
-						Text("Your Mac is checked right after the launcher update check.")
-							.foregroundStyle(theme.textSecondary)
-					case .checking:
-						HStack(spacing: 12) {
-							ProgressView()
-							Text("Checking that your Mac can run the game…")
-								.foregroundStyle(theme.textSecondary)
-						}
-					case .available:
-						Label(
-							"Your Mac can run the game.",
-							systemImage: "checkmark.circle.fill"
-						)
-						.foregroundStyle(theme.successInk)
-					case .rosettaMissing:
-						OnboardingRosettaRecoveryView(
-							installationState: rosettaInstallationState,
-							accentColor: accentColor,
-							install: installRosetta,
-							checkAgain: retryIntelTranslation
-						)
-					case .gameTestModeEnabled:
-						VStack(alignment: .leading, spacing: 8) {
-							Text(
-								"On macOS 27 beta, Legacy Game Test Mode stops the game from running. Turn the test mode off, then restart your Mac:"
-							)
-							.foregroundStyle(theme.textSecondary)
-							.fixedSize(horizontal: false, vertical: true)
-							Text("sudo game-test-tool disable")
-								.font(.callout.monospaced())
-								.textSelection(.enabled)
-							CapsuleActionButton(
-								title: OnboardingRosettaRecoveryView.checkAgainTitle,
-								systemImage: "arrow.clockwise",
-								tone: .accent(accentColor),
-								action: retryIntelTranslation
-							)
-						}
-					case .unavailable:
-						VStack(alignment: .leading, spacing: 8) {
-							Text(
-								"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
-							)
-							.foregroundStyle(theme.textSecondary)
-							.fixedSize(horizontal: false, vertical: true)
-							CapsuleActionButton(
-								title: OnboardingRosettaRecoveryView.checkAgainTitle,
-								systemImage: "arrow.clockwise",
-								tone: .accent(accentColor),
-								action: retryIntelTranslation
-							)
-						}
-					case .unsupportedOS:
-						Text("This version of macOS can no longer run the game.")
-							.foregroundStyle(theme.textSecondary)
-							.fixedSize(horizontal: false, vertical: true)
+				SettingsPanel(title: "Your Mac", systemImage: "cpu") {
+					OnboardingStatusRow(
+						title: translationTitle,
+						detail: translationDetail,
+						systemImage: translationImage,
+						tone: compatibilityPanelTone
+					) {
+						translationAction
 					}
 				}
 			}
@@ -179,19 +95,103 @@ struct OnboardingWelcomeView: View {
 		}
 	}
 
-	private var statusImage: String {
+	private var updateDetail: String? {
 		switch updateState {
-		case .checking: "arrow.trianglehead.2.clockwise"
+		case .checking: nil
+		case .current: "This launcher is up to date. Setup can continue."
+		case .updateRequired(let version):
+			"Version \(version) is available. Install the newer launcher and open it again. Setup waits so its instructions match the version you use."
+		case .checkFailed:
+			"The launcher could not look for updates. You can continue now; it will try again later."
+		}
+	}
+
+	@ViewBuilder
+	private var updateAction: some View {
+		switch updateState {
+		case .checkFailed:
+			CapsuleActionButton(
+				title: "Try Again",
+				systemImage: "arrow.clockwise",
+				tone: .accent(accentColor),
+				action: retry
+			)
+		case .checking, .current, .updateRequired:
+			EmptyView()
+		}
+	}
+
+	private var translationTitle: String {
+		switch intelTranslationState {
+		case .waitingForLauncherCheck: "Waiting to check"
+		case .checking: "Checking your Mac"
+		case .available: "Your Mac can run the game"
+		case .rosettaMissing: "Rosetta 2 is missing"
+		case .gameTestModeEnabled: "Legacy Game Test Mode is on"
+		case .unavailable: "The check could not finish"
+		case .unsupportedOS: "This macOS version is not supported"
+		}
+	}
+
+	private var translationDetail: String? {
+		switch intelTranslationState {
+		case .waitingForLauncherCheck: "Your Mac is checked right after the launcher update check."
+		case .checking, .available, .rosettaMissing: nil
+		case .gameTestModeEnabled:
+			"On macOS 27 beta, Legacy Game Test Mode stops the game from running. Turn the test mode off, then restart your Mac:"
+		case .unavailable:
+			"The check could not finish. Restart your Mac, then check again. If it keeps failing, include the launcher log in a bug report."
+		case .unsupportedOS: "This version of macOS can no longer run the game."
+		}
+	}
+
+	@ViewBuilder
+	private var translationAction: some View {
+		switch intelTranslationState {
+		case .rosettaMissing:
+			OnboardingRosettaRecoveryView(
+				installationState: rosettaInstallationState,
+				accentColor: accentColor,
+				install: installRosetta,
+				checkAgain: retryIntelTranslation
+			)
+		case .gameTestModeEnabled:
+			VStack(alignment: .leading, spacing: 8) {
+				Text("sudo game-test-tool disable")
+					.font(.callout.monospaced())
+					.textSelection(.enabled)
+				checkAgainButton
+			}
+		case .unavailable:
+			checkAgainButton
+		case .waitingForLauncherCheck, .checking, .available, .unsupportedOS:
+			EmptyView()
+		}
+	}
+
+	private var checkAgainButton: some View {
+		CapsuleActionButton(
+			title: OnboardingRosettaRecoveryView.checkAgainTitle,
+			systemImage: "arrow.clockwise",
+			tone: .accent(accentColor),
+			action: retryIntelTranslation
+		)
+	}
+
+	private var statusImage: String? {
+		switch updateState {
+		case .checking: nil
 		case .current: "checkmark.shield"
 		case .updateRequired: "arrow.down.app"
 		case .checkFailed: "wifi.exclamationmark"
 		}
 	}
 
-	private var translationImage: String {
+	private var translationImage: String? {
 		switch intelTranslationState {
-		case .waitingForLauncherCheck, .checking: "hourglass"
-		case .available: "cpu"
+		case .waitingForLauncherCheck: "hourglass"
+		case .checking: nil
+		case .available: "checkmark.circle.fill"
 		case .rosettaMissing, .gameTestModeEnabled, .unavailable, .unsupportedOS:
 			"exclamationmark.triangle"
 		}

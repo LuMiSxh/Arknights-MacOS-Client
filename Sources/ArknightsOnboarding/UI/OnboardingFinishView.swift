@@ -8,7 +8,6 @@ import SwiftUI
 struct OnboardingFinishView: View {
 	let installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
-	@Environment(\.launcherTheme) private var theme
 	let accentColor: Color
 	let install: () -> Void
 
@@ -18,46 +17,73 @@ struct OnboardingFinishView: View {
 			subtitle: "Your choices are saved. You can change any of them in Settings",
 			accentColor: accentColor
 		) {
-			SettingsPanel(title: gameStatusTitle, systemImage: gameStatusImage) {
-				OnboardingFinishGameStatus(
-					installation: installation, detail: gameStatusDetail,
-					accentColor: accentColor, install: install)
+			SettingsPanel(title: "Server", systemImage: "globe") {
+				OnboardingStatusRow(
+					title: installation.region.displayName,
+					detail: "Each server has its own game files and accounts.",
+					systemImage: "globe"
+				) {}
 			}
 
-			SettingsPanel(
-				title: "Community project", systemImage: "person.3"
-			) {
-				VStack(alignment: .leading, spacing: 12) {
-					Text(
-						"Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar."
+			SettingsPanel(title: "Game files", systemImage: "externaldrive") {
+				OnboardingFinishGameStatus(
+					installation: installation,
+					title: gameStatusTitle,
+					systemImage: gameStatusImage,
+					detail: gameStatusDetail,
+					accentColor: accentColor,
+					install: install
+				)
+			}
+
+			SettingsPanel(title: "Get help", systemImage: "lifepreserver") {
+				OnboardingStatusRow(
+					title: "Troubleshooting guide",
+					detail:
+						"Find solutions for common problems. Choose Troubleshooting Guide in the Help menu, or open Settings → Help.",
+					systemImage: "book"
+				) {
+					CapsuleActionButton(
+						title: "Open Guide", systemImage: "arrow.up.right.square",
+						tone: .neutral, action: openTroubleshooting
 					)
-					.fixedSize(horizontal: false, vertical: true)
-					Text(
-						"If the launcher, the game start, or the sign-in window misbehaves, please report it on GitHub. The report fills in the technical details for you."
-					)
-					.font(.callout)
-					.foregroundStyle(theme.textSecondary)
-					.fixedSize(horizontal: false, vertical: true)
+				}
+				OnboardingStatusRow(
+					title: "Problems on this Mac",
+					detail:
+						"Choose Report a Problem… in the Help menu, or open Settings → Help → Report.",
+					systemImage: "ladybug"
+				) {
 					CapsuleActionButton(
 						title: "Report a Problem…", systemImage: "ladybug",
 						tone: .neutral, action: reportProblem
 					)
 				}
-
-				VStack(alignment: .leading, spacing: 12) {
-					Text(
-						"For account, payment, or game-service issues, contact \(installation.region.publisherName) support instead."
-					)
-					.font(.callout)
-					.foregroundStyle(theme.textSecondary)
-					.fixedSize(horizontal: false, vertical: true)
+				OnboardingStatusRow(
+					title: "Diagnostics",
+					detail:
+						"Save the launcher and game logs for a report. Choose Save Diagnostics… in the Help menu.",
+					systemImage: "square.and.arrow.down"
+				) {}
+				OnboardingStatusRow(
+					title: "Account and payment",
+					detail:
+						"For account, payment, or game-service issues, contact \(installation.region.publisherName) support instead.",
+					systemImage: "person.crop.circle"
+				) {
 					CapsuleActionButton(
 						title: "Contact \(installation.region.publisherName) Support…",
 						systemImage: "arrow.up.right.square",
-						tone: .neutral,
-						action: contactPublisher
+						tone: .neutral, action: contactPublisher
 					)
 				}
+			}
+
+			SettingsPanel(title: "Community project", systemImage: "person.3") {
+				Text(
+					"Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar."
+				)
+				.fixedSize(horizontal: false, vertical: true)
 			}
 		}
 	}
@@ -94,6 +120,10 @@ struct OnboardingFinishView: View {
 		NSWorkspace.shared.open(
 			IssueReportURL.build(
 				runtimeName: lifecycle.state.readiness.runtimeName, source: .onboarding))
+	}
+
+	private func openTroubleshooting() {
+		NSWorkspace.shared.open(SupportLinks.troubleshootingGuide)
 	}
 
 	private func contactPublisher() {
