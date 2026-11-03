@@ -4,8 +4,7 @@ import SwiftUI
 
 struct CapsuleProgressOutline: View {
 	let progress: Double
-	// Kept for existing call sites; the theme supplies the color.
-	let tint: Color
+
 	var isGlintActive = false
 	var lineWidth: CGFloat = 2
 	var track: Color = .clear

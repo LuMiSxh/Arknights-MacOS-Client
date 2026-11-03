@@ -23,33 +23,30 @@ extension EnvironmentValues {
 package struct SectionPageHeader: View {
 	let title: String
 	let subtitle: String
-	package let accentColor: Color
 	var fixesSubtitleHeight = false
 	@Environment(\.launcherTheme) private var theme
 
 	package init(
 		title: String,
 		subtitle: String,
-		accentColor: Color,
 		fixesSubtitleHeight: Bool = false
 	) {
 		self.title = title
 		self.subtitle = subtitle
-		self.accentColor = accentColor
 		self.fixesSubtitleHeight = fixesSubtitleHeight
 	}
 
 	package var body: some View {
 		VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.control) {
 			Text(title)
-				.font(.system(size: 22, weight: .medium))
+				.font(LauncherTokens.Typography.pageTitle)
 				.foregroundStyle(theme.textPrimary)
 			Text(subtitle)
-				.font(.system(size: 13))
+				.font(.body)
 				.foregroundStyle(theme.textSecondary)
 				.fixedSize(horizontal: false, vertical: fixesSubtitleHeight)
 			HStack(spacing: LauncherVisuals.Spacing.control) {
-				Rectangle().fill(accentColor).frame(width: 72, height: 3)
+				Rectangle().fill(theme.accentFill).frame(width: 72, height: 3)
 				Rectangle().fill(theme.hairline)
 					.frame(height: 1)
 					.frame(maxWidth: .infinity)
@@ -62,18 +59,15 @@ package struct SectionPageHeader: View {
 package struct SettingsPage<Content: View>: View {
 	let title: String
 	let subtitle: String
-	package let accentColor: Color
 	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
 		subtitle: String,
-		accentColor: Color,
 		@ViewBuilder content: () -> Content
 	) {
 		self.title = title
 		self.subtitle = subtitle
-		self.accentColor = accentColor
 		self.content = content()
 	}
 
@@ -84,7 +78,7 @@ package struct SettingsPage<Content: View>: View {
 		ScrollViewReader { proxy in
 			ScrollView {
 				VStack(alignment: .leading, spacing: LauncherVisuals.Spacing.section) {
-					SectionPageHeader(title: title, subtitle: subtitle, accentColor: accentColor)
+					SectionPageHeader(title: title, subtitle: subtitle)
 					content
 				}
 				.padding(.horizontal, LauncherVisuals.Spacing.page)
@@ -148,21 +142,19 @@ package struct SettingsHairline: View {
 
 package struct SettingsPanel<Content: View>: View {
 	let title: String
-	// Kept for existing call sites; the group carries no icon.
-	let systemImage: String
+
 	var tone: SettingsPanelTone = .neutral
 	var isExpanded: Binding<Bool>?
 	@ViewBuilder package let content: Content
 
 	package init(
 		title: String,
-		systemImage: String,
 		tone: SettingsPanelTone = .neutral,
 		isExpanded: Binding<Bool>? = nil,
 		@ViewBuilder content: () -> Content
 	) {
 		self.title = title
-		self.systemImage = systemImage
+
 		self.tone = tone
 		self.isExpanded = isExpanded
 		self.content = content()
@@ -202,7 +194,7 @@ package struct SettingsPanel<Content: View>: View {
 	@ViewBuilder
 	private var header: some View {
 		let label = Text(title)
-			.font(.system(size: 13, weight: .medium))
+			.font(LauncherTokens.Typography.sectionLabel)
 			.foregroundStyle(tone == .neutral ? theme.textSecondary : tone.color(in: theme))
 			.padding(.leading, 12)
 		if let isExpanded {
@@ -261,7 +253,7 @@ package struct DangerZonePanel<Content: View>: View {
 	}
 
 	package var body: some View {
-		SettingsPanel(title: title, systemImage: "exclamationmark.triangle.fill", tone: .danger) {
+		SettingsPanel(title: title, tone: .danger) {
 			content
 		}
 	}

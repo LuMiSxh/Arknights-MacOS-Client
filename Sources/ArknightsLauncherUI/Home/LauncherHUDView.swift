@@ -44,8 +44,7 @@ struct LauncherHUDView: View {
 	private var controlBar: some View {
 		HUDProgressSurface(
 			lifecycle: lifecycle,
-			installation: installation,
-			progressTint: accentColor
+			installation: installation
 		) {
 			controlBarContent
 		}
@@ -95,7 +94,6 @@ struct LauncherHUDView: View {
 					installation: installation,
 					gameSession: gameSession,
 					intelTranslation: intelTranslation,
-					accentColor: accentColor,
 					installOrUpdate: actions.installOrUpdate,
 					cancelDownload: actions.cancelDownload,
 					launch: actions.launch,
@@ -133,7 +131,6 @@ struct LauncherHUDView: View {
 								lifecycle: lifecycle,
 								installation: installation,
 								gameSession: gameSession,
-								accentColor: accentColor,
 								checkGameUpdates: actions.checkGameUpdates,
 								isExpanded: expandedBinding(for: .version)
 							)
@@ -189,7 +186,7 @@ struct LauncherHUDView: View {
 	}
 
 	private var primaryActionTransition: AnyTransition {
-		.materialize(reduceMotion: reduceMotion, scale: 0.96, blur: 0, anchor: .trailing)
+		.materialize(reduceMotion: reduceMotion, scale: 0.96, anchor: .trailing)
 	}
 
 	// Pills rise out of the control bar one after another instead of popping in together.
@@ -197,14 +194,12 @@ struct LauncherHUDView: View {
 		let insertion = AnyTransition.materialize(
 			reduceMotion: reduceMotion,
 			scale: 0.96,
-			blur: 0,
 			anchor: .bottom
 		)
 		.animation(LauncherMotion.staggered(.state, index: index, reduceMotion: reduceMotion))
 		let removal = AnyTransition.materialize(
 			reduceMotion: reduceMotion,
 			scale: 0.96,
-			blur: 0,
 			anchor: .bottom
 		)
 		.animation(LauncherMotion.animation(.dismiss, reduceMotion: reduceMotion))

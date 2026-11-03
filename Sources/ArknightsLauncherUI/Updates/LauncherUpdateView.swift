@@ -10,7 +10,6 @@ struct LauncherUpdateView: View {
 	private static let installingTitle = "Finishing update…"
 
 	let driver: LauncherUpdateUserDriver
-	package let accentColor: Color
 
 	let checkForUpdates: () -> Void
 	@State private var contentHeight: CGFloat = 0
@@ -185,7 +184,7 @@ struct LauncherUpdateView: View {
 				CapsuleActionButton(
 					title: "Install Update",
 					systemImage: "arrow.down.app",
-					tone: .accent(accentColor),
+					tone: .accent,
 					action: { driver.choose(.install) }
 				)
 				.keyboardShortcut(.defaultAction)
@@ -207,7 +206,7 @@ struct LauncherUpdateView: View {
 			CapsuleActionButton(
 				title: "Install Update",
 				systemImage: "arrow.down.app",
-				tone: .accent(accentColor),
+				tone: .accent,
 				action: { driver.choose(.install) }
 			)
 			.keyboardShortcut(.defaultAction)
@@ -242,7 +241,7 @@ struct LauncherUpdateView: View {
 			CapsuleActionButton(
 				title: "Try Again",
 				systemImage: "arrow.clockwise",
-				tone: .accent(accentColor),
+				tone: .accent,
 				action: retryUpdate
 			)
 			.keyboardShortcut(.defaultAction)

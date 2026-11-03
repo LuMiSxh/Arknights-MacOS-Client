@@ -12,17 +12,15 @@ struct InstallationSettingsPage: View {
 	package let installation: InstallationController
 	let gameSession: GameSessionController
 	package let lifecycle: LauncherLifecycleStore
-	package let accentColor: Color
 	let actions: any LauncherActions
 	@State private var confirmation: InstallationConfirmation?
 
 	var body: some View {
 		SettingsPage(
 			title: "Servers",
-			subtitle: "Choose a server and manage its game files",
-			accentColor: accentColor
+			subtitle: "Choose a server and manage its game files"
 		) {
-			SettingsPanel(title: "Server", systemImage: "globe") {
+			SettingsPanel(title: "Server") {
 				SettingsActionRow(
 					title: "Server",
 					detail: "Each server keeps its own game files and updates."
@@ -38,7 +36,7 @@ struct InstallationSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: "Location", systemImage: "externaldrive"
+				title: "Location"
 			) {
 				SettingsActionRow(
 					title: "Status"
@@ -82,8 +80,7 @@ struct InstallationSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: "Maintenance",
-				systemImage: "wrench.and.screwdriver"
+				title: "Maintenance"
 			) {
 				SettingsActionRow(
 					title: "Repair",
@@ -101,7 +98,6 @@ struct InstallationSettingsPage: View {
 
 			SettingsPanel(
 				title: Self.canaryFeaturesTitle,
-				systemImage: "exclamationmark.triangle.fill",
 				tone: .warning
 			) {
 				SettingsActionRow(

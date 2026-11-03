@@ -26,7 +26,6 @@ enum LauncherUpdateOverlayPresentation {
 struct LauncherUpdateOverlay: View {
 	@Environment(\.launcherTheme) private var theme
 	let driver: LauncherUpdateUserDriver
-	package let accentColor: Color
 
 	let reduceTransparency: Bool
 	let checkForUpdates: () -> Void
@@ -56,7 +55,6 @@ struct LauncherUpdateOverlay: View {
 	private var updateDialog: some View {
 		LauncherUpdateView(
 			driver: driver,
-			accentColor: accentColor,
 
 			checkForUpdates: checkForUpdates
 		)

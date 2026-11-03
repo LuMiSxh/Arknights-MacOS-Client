@@ -17,20 +17,18 @@ struct AppearanceSettingsPage: View {
 	let customization: CustomizationController
 	package let lifecycle: LauncherLifecycleStore
 	let presetCatalog: PresetCatalogService
-	package let accentColor: Color
 	let actions: any LauncherActions
 	@State private var presentedGallery: PresetGalleryDestination?
 
 	var body: some View {
 		SettingsPage(
 			title: "Appearance",
-			subtitle: "Artwork, theme, appearance, and icons",
-			accentColor: accentColor
+			subtitle: "Artwork, theme, appearance, and icons"
 		) {
-			SettingsPanel(title: "Artwork", systemImage: "photo") {
+			SettingsPanel(title: "Artwork") {
 				artworkRow
 			}
-			SettingsPanel(title: "Dynamic Theme", systemImage: "paintpalette") {
+			SettingsPanel(title: "Dynamic Theme") {
 				SettingsActionRow(
 					title: "Follow the artwork",
 					detail:
@@ -70,7 +68,7 @@ struct AppearanceSettingsPage: View {
 					}
 				}
 			}
-			SettingsPanel(title: "Appearance", systemImage: "circle.lefthalf.filled") {
+			SettingsPanel(title: "Appearance") {
 				SettingsActionRow(
 					title: "Appearance",
 					detail: "Settings, setup, and dialogs. Home keeps its own controls."
@@ -84,7 +82,7 @@ struct AppearanceSettingsPage: View {
 					}
 				}
 			}
-			SettingsPanel(title: "Launcher shows", systemImage: "sparkles") {
+			SettingsPanel(title: "Launcher shows") {
 				SettingsActionRow(
 					title: "Show branding",
 					detail: "Shows the server logo and its backdrop in the top left corner."
@@ -115,7 +113,7 @@ struct AppearanceSettingsPage: View {
 					)
 				}
 			}
-			SettingsPanel(title: "Dock icons", systemImage: "dock.rectangle") {
+			SettingsPanel(title: "Dock icons") {
 				operatorRow
 				SettingsHairline()
 				customIconRow

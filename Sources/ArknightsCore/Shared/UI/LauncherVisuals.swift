@@ -5,7 +5,7 @@ import SwiftUI
 package enum LauncherVisuals {
 	/// Fallback accent used only when artwork cannot provide a dynamic theme color.
 	package static let cyan = Color(red: 0.094, green: 0.82, blue: 1)
-	package static let disabled = Color.white.opacity(0.42)
+
 	package static let overlayDim = 0.55
 
 	package static func selectedNavigationFill(for accent: Color) -> Color {
@@ -20,7 +20,7 @@ package enum LauncherVisuals {
 		package static let completionLabel = Font.system(size: 15, weight: .medium)
 		package static let hudControlGlyph = Font.system(size: 13, weight: .medium)
 		package static let hudProminentGlyph = Font.system(size: 16, weight: .medium)
-		static let menuChevron = Font.system(size: 9, weight: .medium)
+		static let menuChevron = Font.system(size: 9, weight: .semibold)
 		package static let tagGlyph = Font.system(size: 10, weight: .medium)
 		package static let fallbackWordmark = Font.system(size: 440, weight: .regular)
 		package static let wordmark = Font.system(.title, design: .serif)
@@ -53,8 +53,7 @@ package enum LauncherVisuals {
 		static let focusWidth: CGFloat = 2
 		static let standardHorizontalPadding: CGFloat = 12
 		static let standardVerticalPadding: CGFloat = 6
-		static let compactHorizontalPadding: CGFloat = 8
-		static let compactVerticalPadding: CGFloat = 4
+
 		package static let hudHorizontalPadding: CGFloat = 12
 		package static let hudVerticalPadding: CGFloat = 6
 		package static let enabledNeutralSurfaceOpacity = 0.07

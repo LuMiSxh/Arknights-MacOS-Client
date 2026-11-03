@@ -11,7 +11,6 @@ struct OnboardingFinishGameStatus: View {
 	let title: String
 	let systemImage: String
 	let detail: String
-	let accentColor: Color
 	let install: () -> Void
 	@Environment(\.launcherTheme) private var theme
 
@@ -28,7 +27,7 @@ struct OnboardingFinishGameStatus: View {
 				CapsuleActionButton(
 					title: "Resume Download",
 					systemImage: "arrow.clockwise",
-					tone: .accent(accentColor),
+					tone: .accent,
 					action: install
 				)
 			}

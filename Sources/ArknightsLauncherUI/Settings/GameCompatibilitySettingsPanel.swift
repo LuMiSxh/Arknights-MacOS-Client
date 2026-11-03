@@ -10,7 +10,7 @@ struct GameCompatibilitySettingsPanel: View {
 
 	var body: some View {
 		SettingsPanel(
-			title: "Compatibility", systemImage: "wrench.and.screwdriver",
+			title: "Compatibility",
 			isExpanded: $isExpanded
 		) {
 			SettingsActionRow(

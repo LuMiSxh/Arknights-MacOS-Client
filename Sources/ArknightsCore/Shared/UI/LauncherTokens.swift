@@ -13,12 +13,6 @@ package enum LauncherTokens {
 	}
 
 	package enum Radius {
-		/// The window sheet.
-		package static let sheet = LauncherVisuals.Radius.modal
-		/// The modal dialog card.
-		package static let modal: CGFloat = 20
-		package static let group: CGFloat = 12
-		package static let field: CGFloat = 8
 		package static let railRow: CGFloat = 8
 	}
 

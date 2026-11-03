@@ -19,7 +19,7 @@ struct GamePerformanceSettingsPanel: View {
 	private var isGameModeAvailable: Bool { isXcodeInstalled && !simulatesMissingXcode }
 
 	var body: some View {
-		SettingsPanel(title: "Performance", systemImage: "speedometer") {
+		SettingsPanel(title: "Performance") {
 			SettingsActionRow(
 				title: "Frame rate limit",
 				help: "Lower limits save battery. Applies on next launch."

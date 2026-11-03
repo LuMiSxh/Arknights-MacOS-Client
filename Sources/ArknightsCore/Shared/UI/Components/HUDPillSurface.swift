@@ -85,14 +85,13 @@ package enum HUDPillMotion {
 			insertion: .materialize(
 				reduceMotion: false,
 				scale: 0.92,
-				blur: 8,
 				offsetY: 6,
 				anchor: .topTrailing
 			)
 			.animation(
 				LauncherMotion.Curve.state.animation.delay(LauncherMotion.expandedContentDelay)
 			),
-			removal: .materialize(reduceMotion: false, scale: 0.96, blur: 4, anchor: .topTrailing)
+			removal: .materialize(reduceMotion: false, scale: 0.96, anchor: .topTrailing)
 				.animation(LauncherMotion.Curve.dismiss.animation)
 		)
 	}
@@ -107,14 +106,12 @@ package enum HUDPillMotion {
 package struct HUDPillProgressOutline: View {
 	let progress: Double?
 	let isActive: Bool
-	let tint: Color
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.launcherTheme) private var theme
 
-	package init(progress: Double?, isActive: Bool, tint: Color) {
+	package init(progress: Double?, isActive: Bool) {
 		self.progress = progress
 		self.isActive = isActive
-		self.tint = tint
 	}
 
 	package var body: some View {
@@ -128,7 +125,6 @@ package struct HUDPillProgressOutline: View {
 			.overlay {
 				CapsuleProgressOutline(
 					progress: progress ?? 0,
-					tint: tint,
 					isGlintActive: isActive,
 					track: .clear
 				)

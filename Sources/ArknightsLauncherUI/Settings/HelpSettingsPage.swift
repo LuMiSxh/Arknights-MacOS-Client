@@ -9,7 +9,6 @@ import SwiftUI
 struct HelpSettingsPage: View {
 	package let region: GameRegion
 	package let runtimeName: String?
-	package let accentColor: Color
 	let actions: any LauncherActions
 	package let installation: InstallationController
 	let gameSession: GameSessionController
@@ -20,10 +19,9 @@ struct HelpSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "Help",
-			subtitle: "Report problems and find solutions",
-			accentColor: accentColor
+			subtitle: "Report problems and find solutions"
 		) {
-			SettingsPanel(title: "Report", systemImage: "ladybug") {
+			SettingsPanel(title: "Report") {
 				SettingsActionRow(
 					title: "Problems on this Mac",
 					detail:
@@ -53,7 +51,7 @@ struct HelpSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: "Get help", systemImage: "lifepreserver") {
+			SettingsPanel(title: "Get help") {
 				SettingsActionRow(
 					title: "Troubleshooting guide",
 					detail:
@@ -97,7 +95,7 @@ struct HelpSettingsPage: View {
 					}
 				}
 			}
-			SettingsPanel(title: "Troubleshooting", systemImage: "wrench.and.screwdriver") {
+			SettingsPanel(title: "Troubleshooting") {
 				SettingsActionRow(
 					title: "Setup assistant",
 					detail: "Go through the first-run questions again."

@@ -6,15 +6,13 @@ import SwiftUI
 struct IntegrationSettingsPage: View {
 	@Environment(\.launcherTheme) private var theme
 	@Bindable var settings: LauncherPreferencesController
-	let accentColor: Color
 
 	var body: some View {
 		SettingsPage(
 			title: "Integration",
-			subtitle: "Music and Discord while the launcher is open",
-			accentColor: accentColor
+			subtitle: "Music and Discord while the launcher is open"
 		) {
-			SettingsPanel(title: "Music", systemImage: "music.note") {
+			SettingsPanel(title: "Music") {
 				SettingsActionRow(
 					title: "Launcher music",
 					detail: "YouTube playlist. Pauses while the game runs."
@@ -87,7 +85,7 @@ struct IntegrationSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: "Discord", systemImage: "gamecontroller") {
+			SettingsPanel(title: "Discord") {
 				SettingsActionRow(
 					title: "Discord presence",
 					detail:

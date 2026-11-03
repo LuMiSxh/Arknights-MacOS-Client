@@ -49,7 +49,7 @@ struct LauncherArtworkView: View {
 	}
 
 	private var artworkTransition: AnyTransition {
-		.materialize(reduceMotion: reduceMotion, scale: 1.03, blur: 12)
+		.materialize(reduceMotion: reduceMotion, scale: 1.03)
 	}
 
 	private var fallbackArtwork: some View {

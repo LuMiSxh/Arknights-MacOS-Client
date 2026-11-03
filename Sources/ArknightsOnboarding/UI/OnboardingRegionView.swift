@@ -8,7 +8,6 @@ struct OnboardingRegionView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	@Bindable var installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
-	let accentColor: Color
 	let canSwitchRegion: Bool
 	package let selectRegion: @MainActor @Sendable (GameRegion) -> Void
 
@@ -22,8 +21,7 @@ struct OnboardingRegionView: View {
 		OnboardingPage(
 			title: "Server",
 			subtitle:
-				"Each server has its own game files and accounts. You can add another server later in Settings.",
-			accentColor: accentColor
+				"Each server has its own game files and accounts. You can add another server later in Settings."
 		) {
 			OnboardingQuestion(
 				question: "Server",

@@ -24,7 +24,7 @@ struct MusicPlayerControlButton: View {
 					)
 					.adaptiveControlForeground(
 						isProminent ? theme.accentInk : theme.textPrimary,
-						disabledTint: LauncherVisuals.disabled,
+						disabledTint: theme.textTertiary,
 						isDisabled: isDisabled
 					)
 					.frame(

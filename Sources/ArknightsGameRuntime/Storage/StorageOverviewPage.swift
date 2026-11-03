@@ -82,37 +82,34 @@ package struct StorageOverviewPage: View {
 	let controller: StorageOverviewController
 	let copy: StorageOverviewCopy
 	package let actions: StorageOverviewActions
-	package let accentColor: Color
 
 	package init(
 		controller: StorageOverviewController,
 		copy: StorageOverviewCopy,
-		actions: StorageOverviewActions,
-		accentColor: Color
+		actions: StorageOverviewActions
 	) {
 		self.controller = controller
 		self.copy = copy
 		self.actions = actions
-		self.accentColor = accentColor
 	}
 
 	package var body: some View {
-		SettingsPage(title: copy.title, subtitle: copy.subtitle, accentColor: accentColor) {
+		SettingsPage(title: copy.title, subtitle: copy.subtitle) {
 			if !gameUsages.isEmpty {
-				SettingsPanel(title: copy.installationsTitle, systemImage: "square.stack.3d.up") {
+				SettingsPanel(title: copy.installationsTitle) {
 					ForEach(gameUsages) { usage in
 						usageRow(usage)
 					}
 				}
 			}
 
-			SettingsPanel(title: copy.sharedTitle, systemImage: "externaldrive") {
+			SettingsPanel(title: copy.sharedTitle) {
 				ForEach(sharedUsages) { usage in
 					usageRow(usage)
 				}
 			}
 
-			SettingsPanel(title: copy.cachesTitle, systemImage: "archivebox") {
+			SettingsPanel(title: copy.cachesTitle) {
 				ForEach(cacheUsages) { usage in
 					usageRow(usage)
 				}
@@ -139,7 +136,7 @@ package struct StorageOverviewPage: View {
 				.disabled(!controller.canModifyStorage)
 			}
 
-			SettingsPanel(title: copy.logsTitle, systemImage: "doc.text.magnifyingglass") {
+			SettingsPanel(title: copy.logsTitle) {
 				if let usage = controller.usage(for: .logs) {
 					usageRow(usage) {
 						actions.revealLogs()

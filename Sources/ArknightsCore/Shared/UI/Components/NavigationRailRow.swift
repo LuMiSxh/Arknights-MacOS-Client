@@ -13,8 +13,7 @@ package struct NavigationRailRow: View {
 	let title: String
 	let systemImage: String
 	let isSelected: Bool
-	/// Kept for existing call sites; the title always uses the primary text role.
-	let isHighlighted: Bool
+
 	/// Namespace shared by the rows of one rail. When set, the selection indicator slides to the
 	/// selected row instead of fading in place. Reduce Motion ignores it.
 	let selectionNamespace: Namespace.ID?
@@ -24,14 +23,14 @@ package struct NavigationRailRow: View {
 		title: String,
 		systemImage: String,
 		isSelected: Bool,
-		isHighlighted: Bool = false,
+
 		selectionNamespace: Namespace.ID? = nil,
 		action: (() -> Void)? = nil
 	) {
 		self.title = title
 		self.systemImage = systemImage
 		self.isSelected = isSelected
-		self.isHighlighted = isHighlighted
+
 		self.selectionNamespace = selectionNamespace
 		self.action = action
 	}

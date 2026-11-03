@@ -38,14 +38,10 @@ extension View {
 
 /// Visual role of a launcher surface. Each role owns its default shape, fill, and edge.
 package enum LauncherSurfaceKind: Equatable {
-	/// Smoked glass for the main sheet.
-	case sheet
 	/// Dialogs layered over the sheet.
 	case modal
 	/// Rows grouped under a section label. No glass.
 	case group
-	/// Compact HUD pills.
-	case hud
 	/// Floating action pill at the foot of a surface.
 	case footer
 }
@@ -75,10 +71,9 @@ private struct LauncherSurfaceModifier: ViewModifier {
 
 	private var defaultShape: AnyShape {
 		switch kind {
-		case .sheet: AnyShape(RoundedRectangle(cornerRadius: 24))
 		case .modal: AnyShape(RoundedRectangle(cornerRadius: 20))
 		case .group: AnyShape(RoundedRectangle(cornerRadius: 12))
-		case .hud, .footer: AnyShape(Capsule())
+		case .footer: AnyShape(Capsule())
 		}
 	}
 
@@ -86,12 +81,6 @@ private struct LauncherSurfaceModifier: ViewModifier {
 	func body(content: Content) -> some View {
 		let shape = customShape ?? defaultShape
 		switch kind {
-		case .sheet:
-			// Sheets are opaque so the artwork never shows through the settings text.
-			content
-				.background { shape.fill(theme.sheetSolid) }
-				.overlay { shape.stroke(theme.hairline) }
-				.clipShape(shape)
 		case .modal:
 			surface(content, tint: theme.modalTint, shape: shape)
 				.clipShape(shape)
@@ -109,8 +98,6 @@ private struct LauncherSurfaceModifier: ViewModifier {
 						.shadow(color: isDark ? .clear : .black.opacity(0.04), radius: 2, y: 1)
 				}
 				.overlay { shape.stroke(theme.hairline) }
-		case .hud:
-			surface(content, tint: theme.controlFill, shape: shape)
 		case .footer:
 			if isDark {
 				surface(content, tint: theme.footerGlassTint, shape: shape)
@@ -180,44 +167,6 @@ enum AdaptiveGlassSurfaceTreatment: Equatable {
 		max(macOS27MinimumTintOpacity, min(opacity, 1))
 	}
 
-	/// Returns whether a caller must draw its semantic edge outside the adaptive surface.
-	/// macOS 27 Glass owns the accessibility border; older fallbacks and the ordinary
-	/// presentation leave the semantic edge to the caller. Reduced transparency always
-	/// draws its own accessibility edge.
-	static func ownsExternalBorder(
-		reduceTransparency: Bool,
-		showBorders: Bool
-	) -> Bool {
-		borderOwner(
-			isMacOS27Available: isMacOS27Available,
-			isMacOS26Available: isMacOS26Available,
-			reduceTransparency: reduceTransparency,
-			showBorders: showBorders
-		) == .external
-	}
-
-	static func borderOwner(
-		isMacOS27Available: Bool,
-		isMacOS26Available: Bool,
-		reduceTransparency: Bool,
-		showBorders: Bool
-	) -> AdaptiveGlassBorderOwner {
-		switch resolve(
-			isMacOS27Available: isMacOS27Available,
-			isMacOS26Available: isMacOS26Available,
-			reduceTransparency: reduceTransparency,
-			showBorders: showBorders,
-			hasTint: false
-		) {
-		case .reducedTransparency:
-			.adaptiveSurface
-		case .macOS27(let showBorders, _):
-			showBorders ? .adaptiveSurface : .external
-		case .macOS26, .material:
-			.external
-		}
-	}
-
 	static func borderTintSource(
 		hasSemanticEdgeTint: Bool,
 		hasSurfaceTint: Bool
@@ -240,11 +189,6 @@ enum AdaptiveGlassSurfaceTreatment: Equatable {
 		if #available(macOS 26, *) { return true }
 		return false
 	}
-}
-
-enum AdaptiveGlassBorderOwner: Equatable {
-	case adaptiveSurface
-	case external
 }
 
 private struct AdaptiveGlassEffectModifier<ShapeType: Shape>: ViewModifier {

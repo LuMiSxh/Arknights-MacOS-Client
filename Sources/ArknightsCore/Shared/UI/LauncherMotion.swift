@@ -132,12 +132,10 @@ private struct MaterializeModifier: ViewModifier {
 
 extension AnyTransition {
 	/// Fades and scales content: `scale` on enter (0.97 by default), 0.98 on exit.
-	/// Reduce Motion keeps only opacity. `blur` is ignored; it stays only so existing call
-	/// sites compile and should be removed with them.
+	/// Reduce Motion keeps only opacity.
 	package static func materialize(
 		reduceMotion: Bool,
 		scale: CGFloat = 0.97,
-		blur: CGFloat = 0,
 		offsetY: CGFloat = 0,
 		anchor: UnitPoint = .center
 	) -> AnyTransition {

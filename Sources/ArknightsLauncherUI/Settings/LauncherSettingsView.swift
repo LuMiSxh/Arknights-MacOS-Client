@@ -67,8 +67,7 @@ struct LauncherSettingsView: View {
 						GameSettingsPage(
 							settings: settings,
 							gameSession: gameSession,
-							lifecycle: lifecycle,
-							accentColor: customization.accentColor
+							lifecycle: lifecycle
 						)
 					case .appearance:
 						AppearanceSettingsPage(
@@ -76,13 +75,11 @@ struct LauncherSettingsView: View {
 							customization: customization,
 							lifecycle: lifecycle,
 							presetCatalog: presetCatalog,
-							accentColor: customization.accentColor,
 							actions: actions
 						)
 					case .integration:
 						IntegrationSettingsPage(
-							settings: settings,
-							accentColor: customization.accentColor
+							settings: settings
 						)
 					case .updates:
 						UpdatesSettingsPage(
@@ -90,7 +87,6 @@ struct LauncherSettingsView: View {
 							communication: communication,
 							installation: installation,
 							lifecycle: lifecycle,
-							accentColor: customization.accentColor,
 							appVersion: IssueReportURL.appVersion,
 							actions: actions,
 							checkLauncherUpdates: requestLauncherUpdateCheck
@@ -101,7 +97,6 @@ struct LauncherSettingsView: View {
 							installation: installation,
 							gameSession: gameSession,
 							lifecycle: lifecycle,
-							accentColor: customization.accentColor,
 							actions: actions
 						)
 					case .storage:
@@ -112,22 +107,19 @@ struct LauncherSettingsView: View {
 								clearGameCaches: storage.clearGameCache,
 								clearGalleryCache: storage.clearPresetGalleryCache,
 								revealLogs: storage.revealLogs
-							),
-							accentColor: customization.accentColor
+							)
 						)
 					case .statistics:
 						PlaytimeStatisticsPage(
 							controller: playtimeStatistics,
 							regions: settings.regionAccess.selectableRegions.filter {
 								installation.isRegionInstalled($0)
-							},
-							accentColor: customization.accentColor
+							}
 						)
 					case .help:
 						HelpSettingsPage(
 							region: installation.region,
 							runtimeName: lifecycle.state.readiness.runtimeName,
-							accentColor: customization.accentColor,
 							actions: actions,
 							installation: installation,
 							gameSession: gameSession,
@@ -136,7 +128,6 @@ struct LauncherSettingsView: View {
 						)
 					case .about:
 						AboutSettingsPage(
-							accentColor: customization.accentColor,
 							launcherIconManager: launcherIconManager,
 							branding: branding,
 							runtime: gameSession.installedRuntime,
@@ -147,8 +138,7 @@ struct LauncherSettingsView: View {
 						case .developer:
 							if let developerSimulation {
 								DeveloperSettingsPage(
-									simulation: developerSimulation,
-									accentColor: customization.accentColor
+									simulation: developerSimulation
 								)
 							}
 					#endif
@@ -173,7 +163,7 @@ struct LauncherSettingsView: View {
 							.controlSize(.large)
 							.disabled(storageOverview.isMeasuring)
 						}
-						FloatingDoneButton(accentColor: customization.accentColor) {
+						FloatingDoneButton {
 							dismiss()
 						}
 					}

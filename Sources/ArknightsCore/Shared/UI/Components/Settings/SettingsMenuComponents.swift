@@ -109,7 +109,7 @@ private struct GlassCapsuleMenu<Items: View, Label: View>: View {
 					.monospacedDigit()
 					.foregroundStyle(theme.textPrimary)
 				Image(systemName: "chevron.up.chevron.down")
-					.font(.system(size: 7, weight: .bold))
+					.font(LauncherVisuals.Typography.menuChevron)
 					.foregroundStyle(theme.accentInk)
 					.frame(width: 16, height: 16)
 					.background {
@@ -168,22 +168,20 @@ package struct QuietLink: View {
 package struct DocumentLinkRow: View {
 	let title: String
 	let systemImage: String
-	package let accentColor: Color
 	let action: () -> Void
 
 	package init(
 		title: String,
 		systemImage: String,
-		accentColor: Color,
 		action: @escaping () -> Void
 	) {
 		self.title = title
 		self.systemImage = systemImage
-		self.accentColor = accentColor
 		self.action = action
 	}
 
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
+	@Environment(\.launcherTheme) private var theme
 	@State private var isHovering = false
 
 	package var body: some View {
@@ -196,11 +194,11 @@ package struct DocumentLinkRow: View {
 					.foregroundStyle(.tertiary)
 					.accessibilityHidden(true)
 			}
-			.foregroundStyle(isHovering ? accentColor : .primary)
+			.foregroundStyle(isHovering ? theme.accentFill : .primary)
 			.padding(.vertical, LauncherVisuals.Spacing.content)
 			.padding(.horizontal, LauncherVisuals.Spacing.control)
 			.background(
-				isHovering ? accentColor.opacity(0.08) : .clear,
+				isHovering ? theme.accentFill.opacity(0.08) : .clear,
 				in: .rect(cornerRadius: LauncherVisuals.Radius.control)
 			)
 			.contentShape(.rect)

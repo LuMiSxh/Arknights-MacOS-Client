@@ -29,6 +29,18 @@ extension LauncherViewModel {
 		}
 	}
 
+	// Moving app folders is disk work, so it runs on the concurrent executor.
+	@concurrent
+	private static func migrateStorage(
+		paths: AppPaths,
+		persistedInstallDirectories: [GameRegion: URL]
+	) async -> AppStorageMigrationResult {
+		AppStorageMigrator.migrate(
+			paths: paths,
+			persistedInstallDirectories: persistedInstallDirectories
+		)
+	}
+
 	// Only a storage failure stops the sequence; other startup work runs after migration.
 	func beginStartup() {
 		let persistedInstallDirectories = preferences.persistedInstallDirectories()
@@ -37,12 +49,10 @@ extension LauncherViewModel {
 		let activityLease = lifecycle.begin(.maintaining(.migratingStorage))
 		lifecycle.setStatus(.migratingStorage)
 		startupTask = Task { [paths] in
-			let migration = await Task.detached(priority: .utility) {
-				AppStorageMigrator.migrate(
-					paths: paths,
-					persistedInstallDirectories: persistedInstallDirectories
-				)
-			}.value
+			let migration = await Self.migrateStorage(
+				paths: paths,
+				persistedInstallDirectories: persistedInstallDirectories
+			)
 			// Moves that succeeded stay moved, so their preferences must follow even on failure.
 			preferences.updateInstallDirectories(
 				migration.installDirectoriesToUpdate,

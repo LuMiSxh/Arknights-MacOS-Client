@@ -20,8 +20,7 @@ struct OnboardingProgressRail: View {
 					NavigationRailRow(
 						title: step.title,
 						systemImage: markerImage(for: step),
-						isSelected: currentStep == step,
-						isHighlighted: step.rawValue < currentStep.rawValue
+						isSelected: currentStep == step
 					)
 				}
 			}

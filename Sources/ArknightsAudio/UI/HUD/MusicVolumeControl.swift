@@ -23,7 +23,7 @@ struct MusicVolumeControl: View {
 					.font(LauncherVisuals.Typography.hudControlGlyph)
 					.adaptiveControlForeground(
 						theme.textPrimary,
-						disabledTint: LauncherVisuals.disabled,
+						disabledTint: theme.textTertiary,
 						isDisabled: isDisabled
 					)
 					.frame(

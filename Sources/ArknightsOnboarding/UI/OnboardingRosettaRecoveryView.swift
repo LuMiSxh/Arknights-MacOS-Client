@@ -10,7 +10,6 @@ struct OnboardingRosettaRecoveryView: View {
 
 	let installationState: RosettaInstallationState
 	@Environment(\.launcherTheme) private var theme
-	let accentColor: Color
 	let install: () -> Void
 	let checkAgain: () -> Void
 
@@ -24,7 +23,7 @@ struct OnboardingRosettaRecoveryView: View {
 				CapsuleActionButton(
 					title: "Install Rosetta 2…",
 					systemImage: "arrow.down.circle",
-					tone: .accent(accentColor)
+					tone: .accent
 				) {
 					confirmsInstallation = true
 				}
@@ -53,14 +52,14 @@ struct OnboardingRosettaRecoveryView: View {
 					CapsuleActionButton(
 						title: "Try Installation Again…",
 						systemImage: "arrow.clockwise",
-						tone: .accent(accentColor)
+						tone: .accent
 					) {
 						confirmsInstallation = true
 					}
 					CapsuleActionButton(
 						title: Self.checkAgainTitle,
 						systemImage: "checkmark.arrow.trianglehead.counterclockwise",
-						tone: .accent(accentColor)
+						tone: .accent
 					) {
 						checkAgain()
 					}

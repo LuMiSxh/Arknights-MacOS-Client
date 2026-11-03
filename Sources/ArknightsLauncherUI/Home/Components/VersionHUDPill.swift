@@ -9,7 +9,6 @@ struct VersionHUDPill: View {
 	package let lifecycle: LauncherLifecycleStore
 	package let installation: InstallationController
 	let gameSession: GameSessionController
-	package let accentColor: Color
 	package let checkGameUpdates: () -> Void
 	@Binding var isExpanded: Bool
 	@Environment(\.launcherTheme) private var theme
@@ -51,7 +50,7 @@ struct VersionHUDPill: View {
 				CapsuleActionButton(
 					title: "Check Now",
 					systemImage: "arrow.clockwise",
-					tone: .accent(accentColor), presentation: .hud,
+					tone: .accent, presentation: .hud,
 					action: checkGameUpdates
 				)
 				.disabled(cannotCheck)

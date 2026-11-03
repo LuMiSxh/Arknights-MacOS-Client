@@ -6,7 +6,6 @@ import SwiftUI
 struct OnboardingExtrasView: View {
 	@Environment(\.launcherTheme) private var theme
 	@Bindable var preferences: LauncherPreferencesController
-	let accentColor: Color
 
 	private var updateBinding: Binding<UpdateCheckAnswer?> {
 		Binding(
@@ -39,8 +38,7 @@ struct OnboardingExtrasView: View {
 	var body: some View {
 		OnboardingPage(
 			title: "Updates & Integrations",
-			subtitle: "Update checks only notify you. Nothing downloads until you choose",
-			accentColor: accentColor
+			subtitle: "Update checks only notify you. Nothing downloads until you choose"
 		) {
 			OnboardingQuestion(
 				question: "Update checks",
@@ -56,7 +54,7 @@ struct OnboardingExtrasView: View {
 				selection: presenceBinding
 			)
 
-			SettingsPanel(title: "Music", systemImage: "speaker.wave.2") {
+			SettingsPanel(title: "Music") {
 				OnboardingToggleRow(
 					title: "Launcher music",
 					detail: "YouTube playlist. Pauses while the game runs.",

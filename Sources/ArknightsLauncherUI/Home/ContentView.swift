@@ -208,7 +208,6 @@ package struct ContentView: View {
 		if updateOverlayIsPresented {
 			LauncherUpdateOverlay(
 				driver: model.communication.launcherUpdateUserDriver,
-				accentColor: model.customization.accentColor,
 				reduceTransparency: reduceTransparency,
 				checkForUpdates: { model.actions.openLauncherUpdate() }
 			)
@@ -280,7 +279,7 @@ package struct ContentView: View {
 			)
 		case .failure(let failure):
 			LauncherFailureDetailView(
-				failure: failure, accentColor: model.customization.accentColor,
+				failure: failure,
 				perform: performRecoveryAction,
 				isSavingDiagnostics: model.actions.isSavingDiagnostics,
 				saveDiagnostics: {
@@ -291,7 +290,7 @@ package struct ContentView: View {
 		case .popup:
 			if let popup = model.communication.popup {
 				LauncherPopupView(
-					popup: popup, accentColor: model.customization.accentColor,
+					popup: popup,
 					dismiss: model.communication.dismissPopup,
 					openAction: model.communication.openPopupAction)
 			} else {

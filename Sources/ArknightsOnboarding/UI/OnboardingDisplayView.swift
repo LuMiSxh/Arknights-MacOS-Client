@@ -7,13 +7,11 @@ struct OnboardingDisplayView: View {
 	@Bindable var preferences: LauncherPreferencesController
 	let lifecycle: LauncherLifecycleStore
 	@Environment(\.launcherTheme) private var theme
-	let accentColor: Color
 
 	var body: some View {
 		OnboardingPage(
 			title: "Display",
-			subtitle: "The launcher sets the resolution for this screen",
-			accentColor: accentColor
+			subtitle: "The launcher sets the resolution for this screen"
 		) {
 			OnboardingQuestion(
 				question: "Display mode",

@@ -7,7 +7,6 @@ import SwiftUI
 struct OnboardingPage<Content: View>: View {
 	let title: String
 	let subtitle: String
-	let accentColor: Color
 	@ViewBuilder let content: Content
 	@Environment(\.launcherTheme) private var theme
 
@@ -16,7 +15,6 @@ struct OnboardingPage<Content: View>: View {
 			SectionPageHeader(
 				title: title,
 				subtitle: subtitle,
-				accentColor: accentColor,
 				fixesSubtitleHeight: true
 			)
 			content

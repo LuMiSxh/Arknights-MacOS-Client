@@ -98,7 +98,7 @@ struct GameDisplaySettingsPanel: View {
 	}
 
 	var body: some View {
-		SettingsPanel(title: "Display", systemImage: "display") {
+		SettingsPanel(title: "Display") {
 			SettingsActionRow(
 				title: "Override in-game display settings",
 				detail:

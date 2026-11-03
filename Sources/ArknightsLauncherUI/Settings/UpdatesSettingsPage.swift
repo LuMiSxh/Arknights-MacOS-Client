@@ -9,7 +9,6 @@ struct UpdatesSettingsPage: View {
 	package let communication: LauncherCommunicationController
 	package let installation: InstallationController
 	package let lifecycle: LauncherLifecycleStore
-	package let accentColor: Color
 	let appVersion: String
 	private static let announcementsTitle = "Announcements"
 	let actions: any LauncherActions
@@ -18,12 +17,10 @@ struct UpdatesSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "Updates",
-			subtitle: "Keep the launcher and the game up to date",
-			accentColor: accentColor
+			subtitle: "Keep the launcher and the game up to date"
 		) {
 			SettingsPanel(
-				title: "Automatic checks",
-				systemImage: "arrow.trianglehead.2.clockwise"
+				title: "Automatic checks"
 			) {
 				UpdateSettingsRow(
 					title: "Launcher",
@@ -46,7 +43,7 @@ struct UpdatesSettingsPage: View {
 			}
 
 			SettingsPanel(
-				title: Self.announcementsTitle, systemImage: "megaphone"
+				title: Self.announcementsTitle
 			) {
 				SettingsActionRow(
 					title: Self.announcementsTitle,

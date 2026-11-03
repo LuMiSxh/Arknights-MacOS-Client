@@ -86,4 +86,3 @@
 - Do not copy these patterns; fix a site only when you touch its code.
 - Silent `try?` in `Sources/ArknightsGameInstallation/Compatibility/` (`GameShimIO`, `PlatformProcessCompatibility`, `BilibiliPlatformCompatibility`).
 - `StorageOverviewCopy` in `Sources/ArknightsGameRuntime/Storage/StorageOverviewPage.swift`.
-- `Task.detached` in `Sources/ArknightsLauncherUI/Documents/BundledDocumentView.swift` and `Sources/ArknightsLauncherUI/State/LauncherViewModel+Startup.swift`.

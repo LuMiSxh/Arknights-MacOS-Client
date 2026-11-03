@@ -8,16 +8,14 @@ import SwiftUI
 struct OnboardingFinishView: View {
 	let installation: InstallationController
 	let lifecycle: LauncherLifecycleStore
-	let accentColor: Color
 	let install: () -> Void
 
 	var body: some View {
 		OnboardingPage(
 			title: "Setup complete",
-			subtitle: "Your choices are saved. You can change any of them in Settings",
-			accentColor: accentColor
+			subtitle: "Your choices are saved. You can change any of them in Settings"
 		) {
-			SettingsPanel(title: "Server", systemImage: "globe") {
+			SettingsPanel(title: "Server") {
 				OnboardingStatusRow(
 					title: installation.region.displayName,
 					detail: "Each server has its own game files and accounts.",
@@ -25,18 +23,17 @@ struct OnboardingFinishView: View {
 				) {}
 			}
 
-			SettingsPanel(title: "Game files", systemImage: "externaldrive") {
+			SettingsPanel(title: "Game files") {
 				OnboardingFinishGameStatus(
 					installation: installation,
 					title: gameStatusTitle,
 					systemImage: gameStatusImage,
 					detail: gameStatusDetail,
-					accentColor: accentColor,
 					install: install
 				)
 			}
 
-			SettingsPanel(title: "Get help", systemImage: "lifepreserver") {
+			SettingsPanel(title: "Get help") {
 				OnboardingStatusRow(
 					title: "Troubleshooting guide",
 					detail:
@@ -79,7 +76,7 @@ struct OnboardingFinishView: View {
 				}
 			}
 
-			SettingsPanel(title: "Community project", systemImage: "person.3") {
+			SettingsPanel(title: "Community project") {
 				Text(
 					"Arknights Client is an unofficial community launcher. It is not affiliated with, endorsed by, or supported by Hypergryph or Yostar."
 				)

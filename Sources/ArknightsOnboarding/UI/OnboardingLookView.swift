@@ -20,8 +20,7 @@ struct OnboardingLookView: View {
 	var body: some View {
 		OnboardingPage(
 			title: "How should the launcher look?",
-			subtitle: "Artwork, theme, Home controls, branding, appearance, and Dock icons",
-			accentColor: customization.accentColor
+			subtitle: "Artwork, theme, Home controls, branding, appearance, and Dock icons"
 		) {
 			OnboardingQuestion(
 				question: "Which artwork should fill the launcher?",

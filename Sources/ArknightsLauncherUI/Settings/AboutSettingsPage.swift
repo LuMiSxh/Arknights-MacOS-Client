@@ -8,7 +8,6 @@ import SwiftUI
 
 struct AboutSettingsPage: View {
 	@Environment(\.launcherTheme) private var theme
-	package let accentColor: Color
 	package let launcherIconManager: LauncherIconManager
 	let branding: LauncherBranding?
 	let runtime: InstalledRuntimeDetails?
@@ -20,10 +19,9 @@ struct AboutSettingsPage: View {
 	var body: some View {
 		SettingsPage(
 			title: "About",
-			subtitle: "Arknights Client, Version \(appVersion)",
-			accentColor: accentColor
+			subtitle: "Arknights Client, Version \(appVersion)"
 		) {
-			SettingsPanel(title: "Arknights Client", systemImage: "info.circle") {
+			SettingsPanel(title: "Arknights Client") {
 				ViewThatFits(in: .horizontal) {
 					HStack(alignment: .center, spacing: LauncherTokens.Spacing.content) {
 						identitySummary
@@ -40,7 +38,7 @@ struct AboutSettingsPage: View {
 				}
 			}
 
-			SettingsPanel(title: "Documents", systemImage: "doc.text") {
+			SettingsPanel(title: "Documents") {
 				ViewThatFits(in: .horizontal) {
 					HStack(spacing: LauncherTokens.Spacing.control) {
 						documentLinks(isInline: true)
@@ -56,11 +54,11 @@ struct AboutSettingsPage: View {
 				.font(.caption)
 			}
 
-			SettingsPanel(title: "Runtime", systemImage: "cpu") {
+			SettingsPanel(title: "Runtime") {
 				runtimeRows
 			}
 
-			SettingsPanel(title: "Arknights", systemImage: "link") {
+			SettingsPanel(title: "Arknights") {
 				VStack(alignment: .leading, spacing: 8) {
 					ViewThatFits(in: .horizontal) {
 						HStack(spacing: 16) {
@@ -218,8 +216,7 @@ struct AboutSettingsPage: View {
 	) -> some View {
 		DocumentLinkRow(
 			title: title,
-			systemImage: systemImage,
-			accentColor: accentColor
+			systemImage: systemImage
 		) {
 			presentedDocument = document
 		}

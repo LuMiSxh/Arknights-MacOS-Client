@@ -9,7 +9,7 @@ struct OnboardingCanaryPanel<Content: View>: View {
 	@ViewBuilder let content: Content
 
 	var body: some View {
-		SettingsPanel(title: title, systemImage: "exclamationmark.triangle.fill", tone: .warning) {
+		SettingsPanel(title: title, tone: .warning) {
 			content
 		}
 	}

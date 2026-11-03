@@ -4,7 +4,6 @@ import ArknightsCore
 import SwiftUI
 
 struct OnboardingWelcomeView: View {
-	let accentColor: Color
 	let updateState: OnboardingUpdateState
 	let intelTranslationState: IntelTranslationState
 	let requiredSchema: Int?
@@ -19,13 +18,11 @@ struct OnboardingWelcomeView: View {
 				? "Welcome to Arknights Client" : "Something important changed",
 			subtitle: requiredSchema == nil
 				? "Setup checks your Mac, then sets your server, display and launcher options. Changes apply immediately"
-				: "This version of the launcher needs you to go through setup once more. Your current settings are kept as the starting point",
-			accentColor: accentColor
+				: "This version of the launcher needs you to go through setup once more. Your current settings are kept as the starting point"
 		) {
 			if let requiredSchema {
 				SettingsPanel(
 					title: "Why setup is required",
-					systemImage: "exclamationmark.triangle",
 					tone: .warning
 				) {
 					Text(Self.requiredSetupReason(schema: requiredSchema))
@@ -33,7 +30,7 @@ struct OnboardingWelcomeView: View {
 				}
 			}
 
-			SettingsPanel(title: "Launcher update", systemImage: "arrow.down.app") {
+			SettingsPanel(title: "Launcher update") {
 				OnboardingStatusRow(
 					title: statusTitle,
 					detail: updateDetail,
@@ -45,7 +42,7 @@ struct OnboardingWelcomeView: View {
 			}
 
 			if updateState.allowsSetup {
-				SettingsPanel(title: "Your Mac", systemImage: "cpu") {
+				SettingsPanel(title: "Your Mac") {
 					OnboardingStatusRow(
 						title: translationTitle,
 						detail: translationDetail,
@@ -113,7 +110,7 @@ struct OnboardingWelcomeView: View {
 			CapsuleActionButton(
 				title: "Try Again",
 				systemImage: "arrow.clockwise",
-				tone: .accent(accentColor),
+				tone: .accent,
 				action: retry
 			)
 		case .checking, .current, .updateRequired:
@@ -151,7 +148,6 @@ struct OnboardingWelcomeView: View {
 		case .rosettaMissing:
 			OnboardingRosettaRecoveryView(
 				installationState: rosettaInstallationState,
-				accentColor: accentColor,
 				install: installRosetta,
 				checkAgain: retryIntelTranslation
 			)
@@ -173,7 +169,7 @@ struct OnboardingWelcomeView: View {
 		CapsuleActionButton(
 			title: OnboardingRosettaRecoveryView.checkAgainTitle,
 			systemImage: "arrow.clockwise",
-			tone: .accent(accentColor),
+			tone: .accent,
 			action: retryIntelTranslation
 		)
 	}

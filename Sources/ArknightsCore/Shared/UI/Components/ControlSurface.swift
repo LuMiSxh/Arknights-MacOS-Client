@@ -21,15 +21,6 @@ extension EnvironmentValues {
 }
 
 extension View {
-	func adaptiveActionSurface<ControlShape: Shape>(
-		tint: Color,
-		foreground: Color? = nil,
-		in shape: ControlShape
-	) -> some View {
-		adaptiveControlSurface(tint: tint, in: shape)
-			.adaptiveControlForeground(foreground ?? tint)
-	}
-
 	/// Uses a visible neutral matte for secondary controls and a chromatic Glass surface for
 	/// actions with a dynamic accent. Disabled controls always use the explicit matte branch.
 	package func adaptiveControlSurface<ControlShape: Shape>(
@@ -66,10 +57,6 @@ extension View {
 				isDisabled: isDisabled
 			)
 		)
-	}
-
-	func settingsControlCapsule(tint: Color, isDisabled: Bool = false) -> some View {
-		modifier(SettingsControlCapsuleModifier(tint: tint, isDisabled: isDisabled))
 	}
 }
 
@@ -235,28 +222,6 @@ private struct AdaptiveControlForegroundModifier: ViewModifier {
 		} else {
 			content.foregroundStyle(disabledTint ?? tint)
 		}
-	}
-}
-
-private struct SettingsControlCapsuleModifier: ViewModifier {
-	let tint: Color
-	let isDisabled: Bool
-	@Environment(\.colorSchemeContrast) private var contrast
-
-	func body(content: Content) -> some View {
-		content
-			.font(.caption.weight(.medium))
-			.adaptiveControlForeground(
-				tint,
-				disabledTint: tint.opacity(
-					LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
-				),
-				isDisabled: isDisabled
-			)
-			.padding(.horizontal, LauncherVisuals.Control.compactHorizontalPadding)
-			.padding(.vertical, LauncherVisuals.Control.compactVerticalPadding)
-			.adaptiveControlSurface(tint: tint, isDisabled: isDisabled, in: Capsule())
-			.contentShape(Capsule())
 	}
 }
 

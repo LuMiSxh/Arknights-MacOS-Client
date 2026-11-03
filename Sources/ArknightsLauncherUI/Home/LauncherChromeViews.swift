@@ -75,7 +75,6 @@ struct ArknightsWordmark: View {
 
 struct LauncherPopupView: View {
 	let popup: LauncherPopup
-	package let accentColor: Color
 
 	let dismiss: () -> Void
 	let openAction: () -> Void
@@ -108,7 +107,7 @@ struct LauncherPopupView: View {
 			if let actionTitle = popup.actionTitle {
 				CapsuleActionButton(
 					title: actionTitle,
-					tone: .accent(accentColor),
+					tone: .accent,
 					action: openAction
 				)
 				.keyboardShortcut(.defaultAction)
@@ -119,7 +118,6 @@ struct LauncherPopupView: View {
 			} else {
 				FloatingDoneButton(
 					title: popup.dismissTitle,
-					accentColor: accentColor,
 					action: dismiss
 				)
 			}

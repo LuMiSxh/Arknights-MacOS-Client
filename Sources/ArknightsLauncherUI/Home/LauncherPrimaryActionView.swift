@@ -9,7 +9,6 @@ struct LauncherPrimaryActionView: View {
 	package let installation: InstallationController
 	let gameSession: GameSessionController
 	package let intelTranslation: IntelTranslationController
-	package let accentColor: Color
 	package let installOrUpdate: () -> Void
 	package let cancelDownload: () -> Void
 	package let launch: () -> Void
@@ -26,7 +25,6 @@ struct LauncherPrimaryActionView: View {
 		)
 		.controlSize(.large)
 		.accentHalo(
-			tint: accentColor,
 			// The halo is the only ambient effect and shows only for an enabled Play.
 			isActive: actionKind == .play && !actionIsDisabled,
 			in: Capsule()
@@ -76,7 +74,7 @@ struct LauncherPrimaryActionView: View {
 	private var actionTone: CapsuleActionTone {
 		switch actionKind {
 		case .stop, .pause: .neutral
-		case .install, .update, .play: .accent(accentColor)
+		case .install, .update, .play: .accent
 		}
 	}
 

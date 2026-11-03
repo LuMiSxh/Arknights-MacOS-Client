@@ -12,7 +12,7 @@ struct OnboardingGameFilesPanel: View {
 	@Environment(\.launcherTheme) private var theme
 
 	var body: some View {
-		SettingsPanel(title: "Game files", systemImage: installationImage) {
+		SettingsPanel(title: "Game files") {
 			VStack(alignment: .leading, spacing: 12) {
 				HStack {
 					VStack(alignment: .leading, spacing: 4) {
@@ -55,14 +55,6 @@ struct OnboardingGameFilesPanel: View {
 				}
 			}
 		}
-	}
-
-	private var installationImage: String {
-		if installation.isDownloading {
-			return isVerifying ? "checkmark.shield" : "arrow.down.circle"
-		}
-		if installation.isInstalled { return "checkmark.circle" }
-		return "externaldrive.badge.plus"
 	}
 
 	private var installationTitle: String {

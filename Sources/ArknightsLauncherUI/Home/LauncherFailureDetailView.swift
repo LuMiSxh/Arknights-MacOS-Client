@@ -7,7 +7,6 @@ import SwiftUI
 struct LauncherFailureDetailView: View {
 	@Environment(\.launcherTheme) private var theme
 	package let failure: LauncherFailurePresentation
-	package let accentColor: Color
 
 	let perform: (RecoveryAction, UUID) -> Void
 	let isSavingDiagnostics: Bool
@@ -19,15 +18,11 @@ struct LauncherFailureDetailView: View {
 
 	init(
 		failure: LauncherFailurePresentation,
-		accentColor: Color,
-
 		perform: @escaping (RecoveryAction, UUID) -> Void,
 		isSavingDiagnostics: Bool,
 		saveDiagnostics: @escaping () -> Void
 	) {
 		self.failure = failure
-		self.accentColor = accentColor
-
 		self.perform = perform
 		self.isSavingDiagnostics = isSavingDiagnostics
 		self.saveDiagnostics = saveDiagnostics
@@ -127,7 +122,7 @@ struct LauncherFailureDetailView: View {
 				action: .installRosetta,
 				title: "Install Rosetta 2",
 				systemImage: "arrow.down.circle",
-				tone: .accent(accentColor)
+				tone: .accent
 			)
 		}
 		if failure.actions.contains(.retry) {
@@ -135,7 +130,7 @@ struct LauncherFailureDetailView: View {
 				action: .retry,
 				title: "Retry",
 				systemImage: "arrow.clockwise",
-				tone: .accent(accentColor)
+				tone: .accent
 			)
 		}
 		if failure.actions.contains(.repair) {
@@ -143,7 +138,7 @@ struct LauncherFailureDetailView: View {
 				action: .repair,
 				title: "Repair",
 				systemImage: "wrench.and.screwdriver",
-				tone: failure.actions.contains(.retry) ? .neutral : .accent(accentColor)
+				tone: failure.actions.contains(.retry) ? .neutral : .accent
 			)
 		}
 	}

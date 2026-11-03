@@ -3,8 +3,7 @@
 import SwiftUI
 
 package enum CapsuleActionTone {
-	// Kept for existing call sites; the theme supplies the color.
-	case accent(Color)
+	case accent
 	case neutral
 	case warning
 	case danger
@@ -23,7 +22,7 @@ package enum CapsuleActionTone {
 	/// HUD foreground for an enabled control. Its surface is a tint, so it uses the text inks.
 	func foregroundColor(in theme: LauncherTheme) -> Color {
 		switch self {
-		case .accent(let color): color
+		case .accent: theme.accentFill
 		case .neutral: theme.textPrimary
 		case .warning: theme.warningInk
 		case .danger: theme.dangerText
@@ -32,7 +31,7 @@ package enum CapsuleActionTone {
 
 	func surfaceColor(in theme: LauncherTheme) -> Color {
 		switch self {
-		case .accent(let color): color
+		case .accent: theme.accentFill
 		case .neutral: theme.controlFill
 		case .warning: theme.warning
 		case .danger: theme.dangerSurface
@@ -42,7 +41,7 @@ package enum CapsuleActionTone {
 	func disabledColor(for contrast: ColorSchemeContrast, theme: LauncherTheme) -> Color {
 		let opacity = LauncherVisuals.Control.disabledForegroundOpacity(for: contrast)
 		switch self {
-		case .accent(let color): return color.opacity(opacity)
+		case .accent: return theme.accentFill.opacity(opacity)
 		case .neutral: return theme.textTertiary
 		case .warning: return theme.warningInk.opacity(opacity)
 		case .danger: return theme.dangerText.opacity(opacity)

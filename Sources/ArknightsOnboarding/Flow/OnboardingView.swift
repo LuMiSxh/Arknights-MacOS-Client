@@ -60,7 +60,6 @@ package struct OnboardingView: View {
 						switch coordinator.step {
 						case .welcome:
 							OnboardingWelcomeView(
-								accentColor: customization.accentColor,
 								updateState: coordinator.updateState,
 								intelTranslationState: coordinator.intelTranslationState,
 								requiredSchema: coordinator.requiredSchema,
@@ -75,15 +74,13 @@ package struct OnboardingView: View {
 								preferences: preferences,
 								installation: installation,
 								lifecycle: lifecycle,
-								accentColor: customization.accentColor,
 								canSwitchRegion: canSwitchRegion,
 								selectRegion: actions.selectRegion
 							)
 						case .display:
 							OnboardingDisplayView(
 								preferences: preferences,
-								lifecycle: lifecycle,
-								accentColor: customization.accentColor
+								lifecycle: lifecycle
 							)
 						case .look:
 							OnboardingLookView(
@@ -95,14 +92,12 @@ package struct OnboardingView: View {
 							)
 						case .extras:
 							OnboardingExtrasView(
-								preferences: preferences,
-								accentColor: customization.accentColor
+								preferences: preferences
 							)
 						case .finish:
 							OnboardingFinishView(
 								installation: installation,
 								lifecycle: lifecycle,
-								accentColor: customization.accentColor,
 								install: actions.installOrUpdate
 							)
 						}
@@ -165,7 +160,7 @@ package struct OnboardingView: View {
 					CapsuleActionButton(
 						title: primaryTitle,
 						systemImage: primarySystemImage,
-						tone: .accent(customization.accentColor),
+						tone: .accent,
 						action: performPrimaryAction
 					)
 					.controlSize(.large)

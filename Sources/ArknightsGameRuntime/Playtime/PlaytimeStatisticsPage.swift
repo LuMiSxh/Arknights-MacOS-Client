@@ -8,26 +8,22 @@ package struct PlaytimeStatisticsPage: View {
 	@Environment(\.launcherTheme) private var theme
 	let controller: PlaytimeStatisticsController
 	let regions: [GameRegion]
-	package let accentColor: Color
 	@State private var confirmsReset = false
 
 	package init(
-		controller: PlaytimeStatisticsController, regions: [GameRegion], accentColor: Color
+		controller: PlaytimeStatisticsController, regions: [GameRegion]
 	) {
 		self.controller = controller
 		self.regions = regions
-		self.accentColor = accentColor
 	}
 
 	package var body: some View {
 		SettingsPage(
 			title: "Playtime",
-			subtitle: "How long the game has been running on this Mac",
-			accentColor: accentColor
+			subtitle: "How long the game has been running on this Mac"
 		) {
 			SettingsPanel(
-				title: "Overview",
-				systemImage: "clock"
+				title: "Overview"
 			) {
 				HStack(spacing: 0) {
 					metric(
@@ -51,8 +47,7 @@ package struct PlaytimeStatisticsPage: View {
 
 			if !regions.isEmpty {
 				SettingsPanel(
-					title: "Servers",
-					systemImage: "globe"
+					title: "Servers"
 				) {
 					ForEach(Array(regions.enumerated()), id: \.element.id) {
 						index, region in
@@ -63,8 +58,7 @@ package struct PlaytimeStatisticsPage: View {
 			}
 
 			SettingsPanel(
-				title: "About playtime",
-				systemImage: "info.circle"
+				title: "About playtime"
 			) {
 				explanation(
 					title: "What counts",
@@ -88,7 +82,6 @@ package struct PlaytimeStatisticsPage: View {
 				) {
 					CapsuleActionButton(
 						title: "Reset Statistics…",
-						systemImage: "trash",
 						tone: .danger,
 						presentation: .compact,
 						role: .destructive

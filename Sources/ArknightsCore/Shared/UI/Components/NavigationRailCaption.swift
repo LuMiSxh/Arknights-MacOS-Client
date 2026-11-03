@@ -14,7 +14,7 @@ package struct NavigationRailCaption: View {
 
 	package var body: some View {
 		Text(text)
-			.font(.system(size: 11, weight: .medium))
+			.font(.subheadline.weight(.medium))
 			.foregroundStyle(theme.textTertiary)
 	}
 }

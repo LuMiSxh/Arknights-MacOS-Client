@@ -64,7 +64,7 @@ struct OnboardingQuestion<Value: Hashable, Accessory: View>: View {
 	}
 
 	var body: some View {
-		SettingsPanel(title: question, systemImage: systemImage) {
+		SettingsPanel(title: question) {
 			accessory
 			VStack(spacing: LauncherVisuals.Spacing.control) {
 				ForEach(answers) { answer in

@@ -117,7 +117,7 @@ package struct PresetGalleryView: View {
 			}
 			FloatingActionFooterFade(height: 56)
 			FloatingActionBar {
-				FloatingDoneButton(accentColor: customization.accentColor) {
+				FloatingDoneButton {
 					dismiss()
 				}
 			}

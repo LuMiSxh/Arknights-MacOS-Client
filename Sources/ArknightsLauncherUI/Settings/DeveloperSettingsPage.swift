@@ -7,15 +7,13 @@ import SwiftUI
 	struct DeveloperSettingsPage: View {
 		@Environment(\.launcherTheme) private var theme
 		@Binding var simulation: DeveloperSimulationState
-		let accentColor: Color
 
 		var body: some View {
 			SettingsPage(
 				title: "Developer",
-				subtitle: "Preview launcher states safely",
-				accentColor: accentColor
+				subtitle: "Preview launcher states safely"
 			) {
-				SettingsPanel(title: "Simulation", systemImage: "play.circle") {
+				SettingsPanel(title: "Simulation") {
 					picker("Lifecycle", \.lifecycle)
 					picker("Installation phase", \.phase)
 					picker("Progress", \.progress)
@@ -40,7 +38,7 @@ import SwiftUI
 					picker("Rosetta missing", \.rosettaMissing)
 					picker("Xcode missing", \.xcodeMissing)
 				}
-				SettingsPanel(title: "Isolation", systemImage: "lock.shield") {
+				SettingsPanel(title: "Isolation") {
 					Text(
 						"Game actions only move between simulated states. The preview uses separate temporary paths and preferences."
 					)

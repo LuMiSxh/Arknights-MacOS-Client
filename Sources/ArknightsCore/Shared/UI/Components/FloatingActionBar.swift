@@ -89,11 +89,9 @@ private struct FloatingActionBarHeightPreferenceKey: PreferenceKey {
 
 package struct FloatingDoneButton: View {
 	var title = "Done"
-	package let accentColor: Color
 	let action: () -> Void
-	package init(title: String = "Done", accentColor: Color, action: @escaping () -> Void) {
+	package init(title: String = "Done", action: @escaping () -> Void) {
 		self.title = title
-		self.accentColor = accentColor
 		self.action = action
 	}
 
@@ -101,7 +99,7 @@ package struct FloatingDoneButton: View {
 		CapsuleActionButton(
 			title: title,
 			systemImage: "checkmark",
-			tone: .accent(accentColor),
+			tone: .accent,
 			action: action
 		)
 		.controlSize(.large)

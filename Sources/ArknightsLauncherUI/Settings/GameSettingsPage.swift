@@ -8,13 +8,11 @@ struct GameSettingsPage: View {
 	package let settings: LauncherPreferencesController
 	let gameSession: GameSessionController
 	package let lifecycle: LauncherLifecycleStore
-	package let accentColor: Color
 
 	var body: some View {
 		SettingsPage(
 			title: "Game",
-			subtitle: "How Arknights looks and plays",
-			accentColor: accentColor
+			subtitle: "How Arknights looks and plays"
 		) {
 			GameDisplaySettingsPanel(
 				settings: settings,

@@ -150,7 +150,7 @@ private struct GameWindowMeasurePanel: View {
 			CapsuleActionButton(title: "Cancel", tone: .neutral) {
 				dismissWindow(id: GameWindowMeasureView.sceneID)
 			}
-			CapsuleActionButton(title: "Use This Size", tone: .accent(theme.accentFill)) {
+			CapsuleActionButton(title: "Use This Size", tone: .accent) {
 				useMeasuredSize()
 			}
 			.disabled(validSize == nil)

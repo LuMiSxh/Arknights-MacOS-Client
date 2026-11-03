@@ -32,10 +32,16 @@ enum BundledDocument: String, Identifiable {
 	}
 
 	func loadAndParse(bundle: Bundle? = nil) async throws -> ParsedMarkdownDocument {
-		let resource = resource
-		return try await Task.detached(priority: .utility) {
-			ParsedMarkdownDocument(source: try resource.text(in: bundle))
-		}.value
+		try await Self.readAndParse(resource, bundle: bundle)
+	}
+
+	// Reading and parsing run on the concurrent executor, so the main actor only awaits the result.
+	@concurrent
+	private static func readAndParse(
+		_ resource: BundledResource,
+		bundle: Bundle?
+	) async throws -> ParsedMarkdownDocument {
+		ParsedMarkdownDocument(source: try resource.text(in: bundle))
 	}
 }
 
@@ -45,6 +51,12 @@ nonisolated struct ParsedMarkdownDocument: Sendable {
 
 	init(source: String) {
 		self.init(blocks: MarkdownParser(source: source).blocks)
+	}
+
+	// Parsing is CPU work, so callers await it on the concurrent executor, off the main actor.
+	@concurrent
+	static func parse(source: String) async -> ParsedMarkdownDocument {
+		ParsedMarkdownDocument(source: source)
 	}
 
 	init(blocks: [MarkdownBlock]) {
@@ -101,7 +113,7 @@ struct BundledDocumentView: View {
 				DocumentLoadErrorView(error: error)
 			}
 		} actions: {
-			FloatingDoneButton(accentColor: accentColor) {
+			FloatingDoneButton {
 				dismiss()
 			}
 		}
@@ -183,9 +195,7 @@ struct MarkdownDocument: View {
 		.task(id: source) {
 			guard let source else { return }
 			loadedDocument = nil
-			let document = await Task.detached(priority: .utility) {
-				ParsedMarkdownDocument(source: source)
-			}.value
+			let document = await ParsedMarkdownDocument.parse(source: source)
 			guard !Task.isCancelled else { return }
 			loadedDocument = document
 		}
