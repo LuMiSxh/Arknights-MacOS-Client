@@ -110,10 +110,10 @@ number. The compiler rejects a cycle.
 | 7   | `ArknightsAudio`            | Background playback, Now Playing, settings, HUD controls                                                                                       | 2, 3                   | `YouTubePlayerKit` |
 | 8   | `ArknightsOnboarding`       | Resumable flow, progress persistence, step views                                                                                               | 2, 3, 4, 5             | none               |
 | 9   | `ArknightsLauncherUI`       | Composition (`LauncherViewModel`), home, Settings, documents, popups, launcher updates                                                         | 1, 2, 3, 4, 5, 6, 7, 8 | `Sparkle`          |
-| 10  | `ArknightsClient`           | The executable. It holds only `Application`: the app entry point and the macOS lifecycle                                                       | 2, 7, 8, 9             | none               |
+| 10  | `ArknightsClient`           | The executable. It holds only the app entry point, AppDelegate, menus, and scenes                                                       | 2, 7, 8, 9             | none               |
 
 Each library target has an `Arknights<Name>Tests` target. `ArknightsClientTests` holds only
-`Application` tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the
+app-entry tests. `ArknightsClientIntegrationTests` and `ArknightsClientLiveContractTests` cover the
 other levels. `ArknightsTestSupport` is a library target for shared test helpers. See
 [Testing architecture](../testing.md).
 

@@ -236,12 +236,4 @@ package enum SupportCode: String, CaseIterable, Codable, Sendable {
 			path: "help/errors/\(rawValue.lowercased())/"
 		)
 	}
-
-	static func hasValidSyntax(_ value: String) -> Bool {
-		value.wholeMatch(of: /[A-Z]{2}-[A-Z]{3}/) != nil
-	}
-
-	static func isPublished(_ value: String) -> Bool {
-		SupportCode(rawValue: value) != nil
-	}
 }

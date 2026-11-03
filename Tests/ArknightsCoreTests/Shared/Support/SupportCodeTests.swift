@@ -28,10 +28,6 @@ func supportCodeRegistryMatchesThePublicDocumentationFixture() throws {
 	#expect(fixtures.map(\.code).count == Set(fixtures.map(\.code)).count)
 
 	for code in SupportCode.allCases {
-		#expect(SupportCode.hasValidSyntax(code.rawValue))
-		#expect(SupportCode.isPublished(code.rawValue))
 		#expect(code.bundledTroubleshootingMarkdown() != nil)
 	}
-	#expect(!SupportCode.hasValidSyntax("AKC-VIRGA"))
-	#expect(!SupportCode.isPublished("CLOUD"))
 }
