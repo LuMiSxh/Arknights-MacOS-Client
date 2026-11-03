@@ -16,18 +16,24 @@ extension LauncherViewModel {
 		do {
 			let log = log
 			await storage.refreshSDKLogs()
-			let archive = try await DiagnosticsBundle.write(
-				diagnosticsItems(),
+			let publisher = installation.region.publisher
+			let archive = try await DiagnosticsArchive(
+				logFiles: [
+					paths.launcherLogFile,
+					paths.runtimeLogFile(for: installation.region),
+					paths.unityLogFile,
+					paths.chromiumLogFile,
+				],
+				sdkLogDirectory: paths.collectedSDKLogDirectory(for: publisher),
+				publisher: publisher,
+				environment: environmentSummary,
 				readme: diagnosticsReadme,
-				named: Self.diagnosticsBaseName(),
-				to: paths.diagnosticsDirectory,
+				baseName: Self.diagnosticsBaseName(),
+				directory: paths.diagnosticsDirectory,
 				redaction: DiagnosticsRedaction(
 					homeDirectory: NSHomeDirectory(), userName: NSUserName()),
-				reportCleanupFailure: {
-					log.error(
-						"Diagnostics cleanup failed: \(launcherDiagnosticDescription(for: $0))")
-				}
-			)
+				log: log
+			).write()
 			log.info("Diagnostics archive written: \(archive.lastPathComponent)")
 			NSWorkspace.shared.activateFileViewerSelecting([archive])
 		} catch is CancellationError {
@@ -37,61 +43,6 @@ extension LauncherViewModel {
 				DiagnosticsError(detail: launcherDiagnosticDescription(for: error)),
 				context: "Diagnostics archive")
 		}
-	}
-
-	private func diagnosticsItems() -> [DiagnosticsBundle.Item] {
-		var items: [DiagnosticsBundle.Item] = []
-		let logs = [
-			paths.launcherLogFile,
-			paths.runtimeLogFile(for: installation.region),
-			paths.unityLogFile,
-			paths.chromiumLogFile,
-		]
-		for url in logs where FileManager.default.fileExists(atPath: url.path) {
-			items.append(
-				.init(archivePath: "Logs/\(url.lastPathComponent)", content: .redactedLog(url)))
-		}
-		// The SDK logs are optional: a failure here must not cancel the archive.
-		do {
-			items.append(contentsOf: try sdkLogItems())
-		} catch {
-			log.error("SDK logs skipped: \(launcherDiagnosticDescription(for: error))")
-		}
-		if let runtimeConfiguration = Bundle.main.url(
-			forResource: "RUNTIME", withExtension: "json")
-		{
-			items.append(.init(archivePath: "RUNTIME.json", content: .file(runtimeConfiguration)))
-		}
-		items.append(.init(archivePath: "environment.txt", content: .text(environmentSummary)))
-		return items
-	}
-
-	/// Lists the publisher SDK logs that `SDKLogCollector` copied for the installed region.
-	/// Lists the collected SDK logs for `publisher` as archive items, sorted by name.
-	///
-	/// Symlinks and subdirectories are skipped, so the archive never follows a link out of the logs folder.
-	static func sdkLogItems(
-		in directory: URL,
-		publisher: GamePublisher,
-		fileManager: FileManager = .default
-	) throws -> [DiagnosticsBundle.Item] {
-		guard fileManager.fileExists(atPath: directory.path) else { return [] }
-		let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
-		let files = try fileManager.contentsOfDirectory(
-			at: directory, includingPropertiesForKeys: Array(keys))
-		return try files.sorted { $0.lastPathComponent < $1.lastPathComponent }.compactMap { file in
-			let values = try file.resourceValues(forKeys: keys)
-			guard values.isRegularFile == true, values.isSymbolicLink != true else { return nil }
-			return DiagnosticsBundle.Item(
-				archivePath: "Logs/sdklogs/\(publisher.rawValue)/\(file.lastPathComponent)",
-				content: .redactedLog(file))
-		}
-	}
-
-	private func sdkLogItems() throws -> [DiagnosticsBundle.Item] {
-		let publisher = installation.region.publisher
-		return try Self.sdkLogItems(
-			in: paths.collectedSDKLogDirectory(for: publisher), publisher: publisher)
 	}
 
 	private var environmentSummary: String {
