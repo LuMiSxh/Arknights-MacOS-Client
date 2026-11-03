@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from lib.common import PROJECT_DIR, VERSION_PATTERN, fail, run_main
@@ -44,11 +45,59 @@ def validate_release(version: str, changelog_path: Path, marketing_version: str)
     return release_notes
 
 
+SPARKLE_VERSION_TAG = "{http://www.andymatuschak.org/xml-namespaces/sparkle}version"
+
+
+def latest_published_build(appcast_text: str) -> int:
+    """Return the highest `sparkle:version` listed by a published appcast."""
+    try:
+        root = ET.fromstring(appcast_text)
+    except ET.ParseError as error:
+        fail(f"could not parse the previous Sparkle appcast: {error}")
+    builds: list[int] = []
+    for element in root.iter(SPARKLE_VERSION_TAG):
+        text = (element.text or "").strip()
+        if not re.fullmatch(r"[0-9]+", text):
+            fail(f"previous Sparkle appcast has a non-numeric sparkle:version {text!r}")
+        builds.append(int(text))
+    if not builds:
+        fail("previous Sparkle appcast lists no sparkle:version")
+    return max(builds)
+
+
+def bundle_version(run_number: int, appcast_text: str | None) -> int:
+    """Return the CFBundleVersion that Sparkle orders updates by.
+
+    The CI run number restarts when the workflow is renamed or recreated, so the
+    result must stay above every build already published. Without a previous
+    appcast (the first release), the run number is used.
+    """
+    if appcast_text is None:
+        return run_number
+    return max(latest_published_build(appcast_text) + 1, run_number)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("notes", "validate"))
-    parser.add_argument("version")
+    commands = parser.add_subparsers(dest="command", required=True)
+    notes_parser = commands.add_parser("notes", help="print the release notes")
+    notes_parser.add_argument("version")
+    validate_parser = commands.add_parser("validate", help="check release metadata")
+    validate_parser.add_argument("version")
+    bundle_parser = commands.add_parser(
+        "bundle-version", help="print the next CFBundleVersion"
+    )
+    bundle_parser.add_argument("run_number", type=int)
+    bundle_parser.add_argument("--previous-appcast", type=Path)
     arguments = parser.parse_args()
+    if arguments.command == "bundle-version":
+        appcast_text = (
+            arguments.previous_appcast.read_text(encoding="utf-8")
+            if arguments.previous_appcast
+            else None
+        )
+        print(bundle_version(arguments.run_number, appcast_text))
+        return
     changelog = PROJECT_DIR / "CHANGELOG.md"
     if arguments.command == "notes":
         print(extract(changelog.read_text(encoding="utf-8"), arguments.version))

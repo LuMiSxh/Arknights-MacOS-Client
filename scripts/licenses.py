@@ -3,7 +3,9 @@
 
 """Generate or check the third-party license notices.
 
-Without options the script rewrites the generated blocks of `docs/legal/`.
+Without options the script rewrites the generated blocks of `docs/legal/`. Without
+`--runtime` it uses the prepared runtime in `.build/runtime` when that runtime matches
+`runtime.json`.
 `--check` fails when the index, `Package.resolved`, `web/package.json`, the bundled
 resources, the license texts, or the generated blocks disagree.
 `--runtime DIR` merges the license index of a prepared runtime into the check and into
@@ -25,6 +27,7 @@ from lib.licenses import (
     regenerate,
     stage_bundle,
 )
+from runtime_config import prepared_runtime
 
 
 def main() -> None:
@@ -37,7 +40,11 @@ def main() -> None:
         "--strict", action="store_true", help="fail on unverified licenses"
     )
     arguments = parser.parse_args()
-    runtime = arguments.runtime.resolve() if arguments.runtime else None
+    runtime = (
+        arguments.runtime.resolve()
+        if arguments.runtime
+        else prepared_runtime(PROJECT_DIR)
+    )
 
     if arguments.check:
         warnings = check_all(PROJECT_DIR, runtime, arguments.strict)

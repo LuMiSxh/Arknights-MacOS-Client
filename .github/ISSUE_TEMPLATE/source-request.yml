@@ -1,0 +1,43 @@
+name: Source code request
+description: Ask for the source of an LGPL or GPL runtime component.
+title: "[Source] "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read the [written offer](https://lumisxh.github.io/Arknights-MacOS-Client/legal/source-code/) first. The maintainer replies with the source or the exact public location of the source.
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      placeholder: 0.8.0
+    validations:
+      required: true
+
+  - type: input
+    id: component
+    attributes:
+      label: Component
+      description: Name each component that you want, such as Wine, DXMT, or a Nixpkgs library.
+      placeholder: Wine, DXMT
+    validations:
+      required: true
+
+  - type: dropdown
+    id: delivery
+    attributes:
+      label: Delivery preference
+      description: Choose how you want to receive the source.
+      options:
+        - No preference
+        - Public location
+        - Archive
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Add anything that helps, such as the release that you received.

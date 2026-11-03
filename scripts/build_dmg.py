@@ -54,9 +54,9 @@ def build_dmg(
     with tempfile.TemporaryDirectory(prefix=".dmg-build.", dir=dist) as name:
         staged = Path(name) / destination.name
         info("Creating the compressed disk image")
-        run(dmgbuild_arguments(app, staged, configuration), cwd=project)
+        run(dmgbuild_arguments(app, staged, configuration), cwd=project, capture=True)
         info("Verifying the disk image")
-        run(["hdiutil", "verify", staged])
+        run(["hdiutil", "verify", "-quiet", staged], capture=True)
         staged.replace(destination)
     success(f"Built {destination.relative_to(project)}")
     return destination

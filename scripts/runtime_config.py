@@ -11,11 +11,13 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from lib.common import fail
+from lib.common import BUILD_DIR, PROJECT_DIR, fail
+from lib.console import warning
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 MAXIMUM_RUNTIME_ARCHIVE_BYTES = 600 * 1_024 * 1_024
+PREPARED_REVISION_FILE = ".arknights-runtime-archive-sha256"
 
 
 @dataclass(frozen=True)
@@ -93,6 +95,23 @@ def runtime_is_valid(directory: Path, layout: RuntimeLayout) -> bool:
         )
     except OSError:
         return False
+
+
+def prepared_runtime(root: Path) -> Path | None:
+    """Return the prepared runtime of `root` if it matches the pin, else None."""
+    directory = root / BUILD_DIR.relative_to(PROJECT_DIR) / "runtime"
+    if not directory.is_dir():
+        return None
+    config = load_runtime_config(root / "runtime.json")
+    revision = directory / PREPARED_REVISION_FILE
+    if (
+        revision.is_file()
+        and revision.read_text(encoding="utf-8").strip() == config.runtime_sha256
+        and runtime_is_valid(directory, config.layout)
+    ):
+        return directory
+    warning(f"{directory} does not match runtime.json; run just runtime to prepare it")
+    return None
 
 
 def _contained_file(root: Path, path: Path) -> bool:

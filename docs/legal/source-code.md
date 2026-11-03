@@ -25,7 +25,7 @@ The release attaches `Runtime-Build-Recipe.tar.gz`. It is a provenance record. I
 <!-- licenses:begin offer -->
 ## Written offer for LGPL and GPL components
 
-The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is one example. You can ask for the corresponding source of any such component in a release that you received. To ask, open an issue in the [Arknights Client repository](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues). Name the version of the app and the component. The maintainer then sends the source or the exact public location of the source.
+The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is one example. You can ask for the corresponding source of any such component in a release that you received. To ask, fill in the [Source code request](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new?template=source-request.yml) issue form. Name the version of the app and the component. The maintainer then sends the source or the exact public location of the source.
 
 ### What this offer covers today
 

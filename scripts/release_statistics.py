@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 
-from lib.common import fail, output, require_command, run_main
+from lib.common import ScriptError, fail, output, require_command, run_main
 from lib.project_config import (
     github_asset_stem,
     load_project_configuration,
@@ -54,14 +54,14 @@ def traffic_referrers(repository: str) -> str:
                 ]
             )
         )
-        lines = ["Traffic referrers (last 14 days):"]
-        for item in data:
-            lines.append(
-                f"  {item.get('referrer', '?'):20}  {item.get('count', 0):4} views  {item.get('uniques', 0):4} uniques"
-            )
-        return "\n".join(lines)
-    except Exception:
+    except ScriptError, json.JSONDecodeError:
         return "Traffic data unavailable (requires repo owner access)."
+    lines = ["Traffic referrers (last 14 days):"]
+    for item in data:
+        lines.append(
+            f"  {item.get('referrer', '?'):20}  {item.get('count', 0):4} views  {item.get('uniques', 0):4} uniques"
+        )
+    return "\n".join(lines)
 
 
 def render_statistics(rows: list[tuple[str, int, int, int]]) -> str:

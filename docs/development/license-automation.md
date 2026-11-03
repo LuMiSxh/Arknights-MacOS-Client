@@ -69,7 +69,7 @@ For a new resource file, add its name to `paths` of an entry. Mark the entry `un
 
 `docs/legal/license-texts.md` holds the full text of every license in the client index. Each component has its own heading. A text that two components share appears once. The website publishes the page at `/legal/license-texts/`.
 
-Without a prepared runtime, the page lists the `runtime-fallback` entries. To merge the runtime index into the page, run `uv run --locked scripts/licenses.py --runtime .build/runtime`. Then commit the result. Run `--check` with the same `--runtime` option to find a stale page.
+Without a prepared runtime, the page lists the `runtime-fallback` entries. To merge the runtime index into the page, run `uv run --locked scripts/licenses.py --runtime .build/runtime`. Then commit the result. Run `--check` with the same `--runtime` option to find a stale page. The release workflow runs this check in strict mode after it downloads the runtime.
 
 ## Build the app
 
@@ -93,4 +93,4 @@ Pass `--strict-licenses` to `scripts/build_app.py` or `scripts/build_dmg.py`. Ru
 - the runtime archive has no `Licenses/index.json` or no `NOTICE.md`, or
 - any component in the app or the runtime has the status `unverified`.
 
-The default build only warns. The [release review](releases-and-updates.md#release-review) runs strict mode before a draft becomes public.
+The default build only warns. The release workflow runs the strict check and a strict DMG build. The [release review](releases-and-updates.md#release-review) confirms the results before a draft becomes public.

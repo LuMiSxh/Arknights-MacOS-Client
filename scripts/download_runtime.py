@@ -27,6 +27,7 @@ from lib.licenses import stage_runtime_legal
 from lib.project_config import load_project_configuration
 from runtime_config import (
     MAXIMUM_RUNTIME_ARCHIVE_BYTES,
+    PREPARED_REVISION_FILE,
     RuntimeLayout,
     load_runtime_config,
     runtime_is_valid,
@@ -96,7 +97,7 @@ def prepare_runtime(
     user_agent: str,
 ) -> Path:
     destination = BUILD_DIR / "runtime"
-    revision_file = destination / ".arknights-runtime-archive-sha256"
+    revision_file = destination / PREPARED_REVISION_FILE
     if (
         revision_file.is_file()
         and revision_file.read_text(encoding="utf-8").strip() == checksum
@@ -150,9 +151,7 @@ def prepare_runtime(
             launcher.symlink_to(layout.launcher.target)
         if not runtime_is_valid(runtime, layout):
             fail("runtime archive is incomplete")
-        (runtime / ".arknights-runtime-archive-sha256").write_text(
-            f"{checksum}\n", encoding="utf-8"
-        )
+        (runtime / PREPARED_REVISION_FILE).write_text(f"{checksum}\n", encoding="utf-8")
         remove_path(destination)
         runtime.replace(destination)
     success("Runtime is ready")

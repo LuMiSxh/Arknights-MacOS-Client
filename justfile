@@ -185,10 +185,10 @@ runtime action='download' tag='latest' prerelease='':
 app runtime='':
     {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }}
 
-# Build a DMG with the required Wine runtime directory.
+# Build a DMG with the required Wine runtime directory; add strict to fail on unverified licenses.
 [group('Packaging')]
-dmg runtime:
-    {{ uv_packaging }} scripts/build_dmg.py --runtime {{ quote(runtime) }}
+dmg runtime strict='':
+    {{ uv_packaging }} scripts/build_dmg.py --runtime {{ quote(runtime) }} {{ if strict != '' { '--strict-licenses' } else { '' } }}
 
 # Regenerate the application icon assets.
 [group('Packaging')]

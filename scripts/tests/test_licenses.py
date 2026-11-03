@@ -91,7 +91,7 @@ def project(tmp_path: Path) -> Path:
         blocks = {
             "third-party-notices.md": ("launcher", "website", "runtime"),
             "source-code.md": ("offer",),
-            "license-texts.md": ("texts",),
+            "license-texts.md": ("texts", "runtime-texts"),
         }[name]
         body = "".join(
             f"<!-- licenses:begin {block} -->\n<!-- licenses:end {block} -->\n"
@@ -290,6 +290,21 @@ def test_check_with_runtime_detects_a_page_without_runtime_texts(
     assert licenses.check_all(project, runtime) == [
         "Art 1.0.0: license not yet verified"
     ]
+
+
+def test_check_without_runtime_skips_only_runtime_dependent_blocks(
+    project: Path, tmp_path: Path
+) -> None:
+    regenerate(project, make_runtime(tmp_path))
+    assert licenses.check_all(project) == ["Art 1.0.0: license not yet verified"]
+
+    (project / "docs/legal/licenses/example.txt").write_text(
+        "Changed text", encoding="utf-8"
+    )
+    with pytest.raises(
+        ScriptError, match="license-texts.md: generated blocks are stale"
+    ):
+        licenses.check_all(project)
 
 
 def test_runtime_without_index_warns_and_strict_fails(

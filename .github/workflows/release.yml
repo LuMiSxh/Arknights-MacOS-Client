@@ -121,13 +121,43 @@ jobs:
           echo "$build_recipe_sha256  $build_recipe" | shasum -a 256 --check
           mv "$build_recipe" "dist/Runtime-Build-Recipe.tar.gz"
 
+      - name: Check licenses against the runtime
+        run: uv run --locked --no-dev scripts/licenses.py --check --strict --runtime .build/runtime
+
       - name: Set release version
         run: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $GITHUB_RUN_NUMBER" Resources/Info.plist
+          # Sparkle orders updates by CFBundleVersion, so it must never fall below the
+          # newest published build. Only a 404 (no release yet) falls back to the run number.
+          previous_appcast="$RUNNER_TEMP/previous-appcast.xml"
+          appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
+          appcast_args=()
+          rm -f "$previous_appcast"
+          status="$(curl --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "$previous_appcast" --write-out '%{http_code}' "$appcast_url")" || {
+            echo "Unable to fetch the previous Sparkle appcast from $appcast_url." >&2
+            exit 1
+          }
+          case "$status" in
+            200)
+              appcast_args=(--previous-appcast "$previous_appcast")
+              ;;
+            404)
+              rm -f "$previous_appcast"
+              echo "::warning::No published Sparkle appcast; CFBundleVersion uses the run number."
+              ;;
+            *)
+              echo "Unexpected HTTP $status fetching the previous Sparkle appcast." >&2
+              exit 1
+              ;;
+          esac
+          bundle_version="$(uv run --locked --no-dev scripts/release.py bundle-version \
+            "$GITHUB_RUN_NUMBER" "${appcast_args[@]}")"
+          echo "CFBundleVersion: $bundle_version"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $bundle_version" Resources/Info.plist
 
       - name: Build DMG
         run: |
-          just dmg "$GITHUB_WORKSPACE/.build/runtime"
+          just dmg "$GITHUB_WORKSPACE/.build/runtime" strict
 
       - name: Create and sign Sparkle update
         env:

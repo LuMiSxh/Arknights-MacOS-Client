@@ -76,7 +76,7 @@ GitHub Actions dependencies use immutable commit pins with version comments. Eve
 4. The runtime files match the declared interface: `bin/wine64`, `bin/wineserver`, `winemetal.dll`, the macOS driver, and the DXMT x64 library set. Runtimes before 0.7.0 also ship x32.
 5. The component commits in `runtime.json` match the source links in [Third-party notices](../legal/third-party-notices.md).
 6. The app bundle contains `LICENSE`, `RUNTIME.json`, and `ThirdPartyNotices.deflate`. The website publishes current [Third-party notices](../legal/third-party-notices.md) and [License texts](../legal/license-texts.md). **Settings → About → Third-Party Notices** shows the same list.
-7. `scripts/licenses.py --check --strict --runtime .build/runtime` passes, and every shipped component has a verified license.
+7. The release workflow runs `scripts/licenses.py --check --strict --runtime .build/runtime` after it downloads the runtime. The step fails on a stale generated block or on any unverified license. Confirm that the step passed and that every shipped component has a verified license. The DMG build also runs in strict mode.
 8. The release has a reviewed source and notice package for every bundled runtime component. For each library, a component-level record maps the exact version or revision, notices, preferred-form source, build scripts, and any relinkable material or offer that its terms require. Publish this material at a stable release-linked location. The packaging checks cannot decide this step. `Runtime-Build-Recipe.tar.gz` is a provenance record, not a corresponding-source archive. See [Source code](../legal/source-code.md).
 9. Install, Update, Repair, and Play work from the DMG on a clean Mac.
 

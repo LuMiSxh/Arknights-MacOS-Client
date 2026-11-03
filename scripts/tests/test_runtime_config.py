@@ -120,3 +120,22 @@ def test_rejects_unsafe_runtime_capability_manifest_path(
 
     with pytest.raises(RuntimeError):
         runtime_config.load_runtime_config(config)
+
+
+@pytest.mark.parametrize("state", ["missing", "stale", "current"])
+def test_prepared_runtime_is_used_only_when_it_matches_the_pin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state: str
+) -> None:
+    write_config(tmp_path / "runtime.json", valid_config())
+    config = runtime_config.load_runtime_config(tmp_path / "runtime.json")
+    directory = tmp_path / ".build" / "runtime"
+    monkeypatch.setattr(runtime_config, "runtime_is_valid", lambda *_: True)
+    if state != "missing":
+        directory.mkdir(parents=True)
+        revision = "0" * 64 if state == "stale" else config.runtime_sha256
+        (directory / runtime_config.PREPARED_REVISION_FILE).write_text(
+            revision, encoding="utf-8"
+        )
+
+    expected = directory if state == "current" else None
+    assert runtime_config.prepared_runtime(tmp_path) == expected

@@ -26,6 +26,7 @@ from lib.runtime_update import (
     normalize_tag,
     update,
 )
+from runtime_config import prepared_runtime
 
 
 def main() -> None:
@@ -59,7 +60,7 @@ def main() -> None:
     info(f"Pinning runtime {tag}")
     with spinner("Reading the release provenance"):
         changed = update(PROJECT_DIR, tag, fetch, arguments.moltenvk_version)
-    changed.extend(regenerate(PROJECT_DIR))
+    changed.extend(regenerate(PROJECT_DIR, prepared_runtime(PROJECT_DIR)))
     for path in changed:
         info(f"Updated {path}")
     success(

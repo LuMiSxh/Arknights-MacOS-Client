@@ -16,7 +16,7 @@ Wine and DXMT are one tested unit. Do not combine arbitrary latest versions. A r
 1. Run `just runtime update TAG`. For example, `just runtime update v0.7.0`.
 2. Read the changed files with `git diff`.
 3. Run `just check scripts`.
-4. Run `just runtime` to download, hash, extract, and validate the archive.
+4. Run `just runtime` to download, hash, extract, and validate the archive. Then run `just generate`. The legal documents then use the new runtime. If the local runtime does not match the new pin, `just generate` warns and falls back to the license data without the runtime.
 5. Test a fresh and an existing prefix through install or update, each client's web-login path where provided, game start, and clean exit.
 6. Add or update prefix migrations when the runtime state contract requires them.
 

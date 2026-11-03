@@ -15,13 +15,22 @@ from pathlib import Path
 from lib.common import fail
 
 
-def apply_blocks(text: str, blocks: Mapping[str, str], namespace: str) -> str:
-    """Replace the body of each block; fail on a missing or unknown block."""
-    pattern = re.compile(
+def _block_pattern(namespace: str) -> re.Pattern[str]:
+    return re.compile(
         rf"<!-- {re.escape(namespace)}:begin (?P<name>[a-z-]+) -->\n(?P<body>.*?)"
         rf"<!-- {re.escape(namespace)}:end (?P=name) -->\n",
         re.DOTALL,
     )
+
+
+def read_blocks(text: str, namespace: str) -> dict[str, str]:
+    """Return the body of each block in the document."""
+    return {m["name"]: m["body"] for m in _block_pattern(namespace).finditer(text)}
+
+
+def apply_blocks(text: str, blocks: Mapping[str, str], namespace: str) -> str:
+    """Replace the body of each block; fail on a missing or unknown block."""
+    pattern = _block_pattern(namespace)
     seen: set[str] = set()
 
     def replace(match: re.Match[str]) -> str:

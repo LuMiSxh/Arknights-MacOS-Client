@@ -25,7 +25,12 @@ from typing import Any
 from urllib.parse import urlparse
 
 from lib.common import ScriptError, fail, safe_relative_path
-from lib.generated_blocks import render_documents, stale_documents, write_documents
+from lib.generated_blocks import (
+    read_blocks,
+    render_documents,
+    stale_documents,
+    write_documents,
+)
 from lib.project_config import load_project_configuration
 
 SCHEMA_VERSION = 1
@@ -35,6 +40,7 @@ APP_SCOPE = "app"
 WEBSITE_SCOPE = "website"
 FALLBACK_RUNTIME_SCOPE = "runtime-fallback"
 RUNTIME_SCOPE = "runtime"
+RUNTIME_TEXTS_BLOCK = "runtime-texts"
 CLIENT_SCOPES = (APP_SCOPE, WEBSITE_SCOPE, FALLBACK_RUNTIME_SCOPE)
 ECOSYSTEMS = ("swiftpm", "npm")
 
@@ -499,10 +505,10 @@ def render_source_offer(manifest: Mapping[str, Any]) -> str:
         "## Written offer for LGPL and GPL components\n\n"
         "The runtime contains software under the GNU LGPL and GNU GPL licenses. Wine is "
         "one example. You can ask for the corresponding source of any such component in "
-        "a release that you received. To ask, open an issue in the "
-        "[Arknights Client repository](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues). "
-        "Name the version of the app and the component. The maintainer then sends the "
-        "source or the exact public location of the source.\n\n"
+        "a release that you received. To ask, fill in the "
+        "[Source code request](https://github.com/LuMiSxh/Arknights-MacOS-Client/issues/new?template=source-request.yml) "
+        "issue form. Name the version of the app and the component. The maintainer then "
+        "sends the source or the exact public location of the source.\n\n"
         "### What this offer covers today\n\n"
         f"- The runtime release page: [{release}]({release}).\n"
         f"- The pinned build recipe archive: [{recipe['url']}]({recipe['url']}). Its "
@@ -558,12 +564,12 @@ def _fenced(text: str) -> str:
 
 def render_license_texts(
     root: Path, components: tuple[Component, ...], legal: RuntimeLegal | None
-) -> str:
+) -> dict[str, str]:
     """Render the full license text of every component with a text file.
 
     Each component has a heading. An identical text file appears once and later
-    components link to it. The runtime section merges the runtime index when `legal`
-    is present.
+    components link to it. The `runtime-texts` block merges the runtime index when
+    `legal` is present; the `texts` block never depends on the runtime.
     """
     manifest = read_json(root / "runtime.json")
     slugger = _Slugger()
@@ -617,9 +623,10 @@ def render_license_texts(
             directory,
         ),
     ]
+    runtime_parts: list[str] = []
     if legal is None:
         release = release_url(manifest["runtime"]["url"])
-        parts.append(
+        runtime_parts.append(
             section(
                 "Runtime components",
                 "> [!WARNING]\n"
@@ -633,7 +640,7 @@ def render_license_texts(
             )
         )
     else:
-        parts.append(
+        runtime_parts.append(
             section(
                 "Runtime components",
                 "The runtime archive supplies this list.",
@@ -643,12 +650,15 @@ def render_license_texts(
         )
         if legal.notice is not None:
             slugger.slug("Runtime notice")
-            parts.append(
+            runtime_parts.append(
                 "### Runtime notice\n\n"
                 + _fenced(legal.notice.read_text(encoding="utf-8"))
                 + "\n"
             )
-    return "".join(parts).rstrip("\n") + "\n"
+    return {
+        "texts": "".join(parts).rstrip("\n") + "\n",
+        RUNTIME_TEXTS_BLOCK: "".join(runtime_parts).rstrip("\n") + "\n",
+    }
 
 
 def load_legal(
@@ -663,12 +673,23 @@ def load_legal(
     return components, legal
 
 
-def generate_documents(root: Path, runtime: Path | None = None) -> dict[Path, str]:
-    """Return the repository documents with up-to-date generated blocks."""
+def generate_documents(
+    root: Path, runtime: Path | None = None, keep_runtime_blocks: bool = False
+) -> dict[Path, str]:
+    """Return the repository documents with up-to-date generated blocks.
+
+    `keep_runtime_blocks` keeps the on-disk body of every block that needs the
+    runtime index, so a check without a runtime still covers the other blocks.
+    """
     components, legal = load_legal(root, runtime)
     manifest = read_json(root / "runtime.json")
     notices, source = document_blocks(components, manifest)
-    texts = {"texts": render_license_texts(root, components, legal)}
+    texts = render_license_texts(root, components, legal)
+    if keep_runtime_blocks:
+        on_disk = read_blocks(
+            (root / LICENSE_TEXTS_DOCUMENT).read_text(encoding="utf-8"), "licenses"
+        )
+        texts[RUNTIME_TEXTS_BLOCK] = on_disk.get(RUNTIME_TEXTS_BLOCK, "")
     documents = (
         (NOTICES_DOCUMENT, notices),
         (SOURCE_DOCUMENT, source),
@@ -682,6 +703,7 @@ def check_all(
 ) -> list[str]:
     """Return warnings after every consistency check passes; fail on any problem.
 
+    Without a runtime, the block that needs the runtime index is not compared.
     Strict mode also fails on an unverified component and on a runtime without a
     license index or notice.
     """
@@ -690,7 +712,9 @@ def check_all(
     if not problems:
         problems.extend(
             f"{path}: generated blocks are stale; run just generate"
-            for path in stale_documents(root, generate_documents(root, runtime))
+            for path in stale_documents(
+                root, generate_documents(root, runtime, runtime is None)
+            )
         )
     warnings = _unverified_warnings([*components, *(legal.components if legal else ())])
     if runtime is not None and legal is None:

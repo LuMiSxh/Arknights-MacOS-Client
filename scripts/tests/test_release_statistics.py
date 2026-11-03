@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from release_statistics import release_downloads, render_statistics
+import json
+
+import pytest
+from lib.common import ScriptError
+from release_statistics import release_downloads, render_statistics, traffic_referrers
 
 NAME = "Arknights Client"
 
@@ -54,3 +58,22 @@ def test_renders_rows_and_totals() -> None:
     assert "Total Sparkle update downloads: 25" in output
     assert "Total recipe downloads: 1" in output
     assert render_statistics([]) == "No published releases found."
+
+
+def test_traffic_falls_back_when_gh_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    def gh_fails(command: list[str]) -> str:
+        raise ScriptError("command failed (1): gh api")
+
+    monkeypatch.setattr("release_statistics.output", gh_fails)
+
+    assert traffic_referrers("owner/repo") == (
+        "Traffic data unavailable (requires repo owner access)."
+    )
+
+
+def test_traffic_formatting_bug_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = json.dumps([{"referrer": "github.com", "count": 3, "uniques": None}])
+    monkeypatch.setattr("release_statistics.output", lambda command: payload)
+
+    with pytest.raises(TypeError):
+        traffic_referrers("owner/repo")
