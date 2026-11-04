@@ -34,6 +34,30 @@
       "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll", "winemetal.dll"]
     }
   },
+  "armInterface": {
+    "archive": {
+      "wineDirectory": "Wine",
+      "dxmtDirectory": "DXMT"
+    },
+    "executables": ["bin/wine64", "bin/wineserver"],
+    "runtimeCapabilities": "runtime-capabilities.json",
+    "requiredFiles": [
+      "lib/wine/aarch64-unix/winecoreaudio.so",
+      "lib/wine/aarch64-windows/winemetal.dll"
+    ],
+    "macDriver": "lib/wine/aarch64-unix/winemac.so",
+    "launcher": {
+      "path": "bin/Arknights",
+      "target": "wine64"
+    },
+    "dxmt": {
+      "payloadDirectory": "DXMT",
+      "destinations": {
+        "x64": "system32"
+      },
+      "libraries": ["d3d10core.dll", "d3d11.dll", "dxgi.dll"]
+    }
+  },
   "components": {
     "wine": "11.17",
     "dxmt": "0.80-361-g9839e55",

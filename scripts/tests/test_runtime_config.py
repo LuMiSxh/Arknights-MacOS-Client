@@ -82,6 +82,31 @@ def test_new_component_requires_and_accepts_matching_provenance(
     runtime_config.load_runtime_config(config)
 
 
+def test_arm_layout_uses_aarch64_wine_directories(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    write_config(config, valid_config())
+    configuration = runtime_config.load_runtime_config(config)
+    layout = configuration.layout
+
+    arm = configuration.for_architecture("arm")
+
+    assert configuration.for_architecture("x86") == layout
+    assert all("x86_64" not in str(path) for path in arm.required_files)
+    assert "aarch64-unix" in str(arm.mac_driver)
+    assert any("aarch64-windows" in str(path) for path in arm.required_files)
+    assert "winemetal.dll" not in arm.dxmt.libraries
+    assert arm.executables == layout.executables
+
+
+def test_unknown_runtime_architecture_is_rejected(tmp_path: Path) -> None:
+    config = tmp_path / "runtime.json"
+    write_config(config, valid_config())
+    configuration = runtime_config.load_runtime_config(config)
+
+    with pytest.raises(RuntimeError, match="no arm64 interface"):
+        configuration.for_architecture("arm64")
+
+
 def test_reads_safe_runtime_capability_manifest_path(tmp_path: Path) -> None:
     config = tmp_path / "runtime.json"
     value = valid_config()

@@ -63,10 +63,10 @@ def validate_pe(path: Path, *, dll: bool) -> None:
         fail(f"expected a PE32+ x86-64 {kind}: {path}")
 
 
-def validate_macho_x86_64(path: Path) -> None:
+def validate_macho_universal(path: Path) -> None:
     architectures = output(["lipo", "-archs", path]).split()
-    if architectures != ["x86_64"]:
-        fail(f"expected an x86-64 Mach-O file: {path}")
+    if sorted(architectures) != ["arm64", "x86_64"]:
+        fail(f"expected a universal Mach-O file: {path}")
 
 
 def load_components() -> list[dict[str, Any]]:
@@ -107,6 +107,8 @@ def compile_artifact(source: Path, destination: Path, artifact: dict[str, Any]) 
             "clang",
             "-arch",
             "x86_64",
+            "-arch",
+            "arm64",
             "-O2",
             "-dynamiclib",
             *arguments,
@@ -116,7 +118,7 @@ def compile_artifact(source: Path, destination: Path, artifact: dict[str, Any]) 
             destination,
         ]
     )
-    validate_macho_x86_64(destination)
+    validate_macho_universal(destination)
 
 
 def build_component(output_root: Path, component: dict[str, Any]) -> BuildResult:

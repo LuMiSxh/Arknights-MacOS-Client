@@ -16,6 +16,8 @@ from lib.console import warning
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+# Release architectures and the Wine module directory each one uses.
+RUNTIME_ARCHITECTURES = {"x86": "x86_64", "arm": "aarch64"}
 MAXIMUM_RUNTIME_ARCHIVE_BYTES = 600 * 1_024 * 1_024
 PREPARED_REVISION_FILE = ".arknights-runtime-archive-sha256"
 
@@ -62,6 +64,15 @@ class RuntimeLayout:
 class RuntimeConfiguration:
     raw: dict[str, Any]
     layout: RuntimeLayout
+    arm_layout: RuntimeLayout | None = None
+
+    def for_architecture(self, architecture: str) -> RuntimeLayout:
+        """Return the interface a local runtime of one architecture must match."""
+        if architecture == "x86":
+            return self.layout
+        if architecture == "arm" and self.arm_layout is not None:
+            return self.arm_layout
+        fail(f"runtime configuration has no {architecture} interface")
 
     @property
     def runtime_url(self) -> str:
@@ -223,44 +234,44 @@ def _validate_components(config: dict[str, Any]) -> None:
             fail(f"runtime provenance commit must be a lowercase Git commit: {name}")
 
 
-def _read_layout(config: dict[str, Any]) -> RuntimeLayout:
+def _read_layout(config: dict[str, Any], prefix: str = "interface") -> RuntimeLayout:
     executables = tuple(
-        _safe_list_path(value, "interface.executables")
-        for value in _string_list(config, "interface.executables")
+        _safe_list_path(value, f"{prefix}.executables")
+        for value in _string_list(config, f"{prefix}.executables")
     )
     required_files = tuple(
-        _safe_list_path(value, "interface.requiredFiles")
-        for value in _string_list(config, "interface.requiredFiles")
+        _safe_list_path(value, f"{prefix}.requiredFiles")
+        for value in _string_list(config, f"{prefix}.requiredFiles")
     )
-    destination_values = _mapping(config, "interface.dxmt.destinations")
+    destination_values = _mapping(config, f"{prefix}.dxmt.destinations")
     destinations: list[tuple[str, str]] = []
     for architecture, windows_directory in destination_values.items():
         if not _safe_component(architecture) or not _safe_component(windows_directory):
             fail("runtime DXMT destinations must use safe path components")
         destinations.append((architecture, windows_directory))
-    libraries = _string_list(config, "interface.dxmt.libraries")
+    libraries = _string_list(config, f"{prefix}.dxmt.libraries")
     if not all(_safe_component(library) for library in libraries):
         fail("runtime DXMT libraries must use file names without path separators")
-    launcher_target = _relative_path(config, "interface.launcher.target")
+    launcher_target = _relative_path(config, f"{prefix}.launcher.target")
     if len(launcher_target.parts) != 1:
         fail("runtime launcher target must be relative to its containing directory")
     return RuntimeLayout(
         archive_wine_directory=_relative_path(
-            config, "interface.archive.wineDirectory"
+            config, f"{prefix}.archive.wineDirectory"
         ),
         archive_dxmt_directory=_relative_path(
-            config, "interface.archive.dxmtDirectory"
+            config, f"{prefix}.archive.dxmtDirectory"
         ),
-        capability_manifest_path=_filename(config, "interface.runtimeCapabilities"),
+        capability_manifest_path=_filename(config, f"{prefix}.runtimeCapabilities"),
         executables=executables,
         required_files=required_files,
-        mac_driver=_relative_path(config, "interface.macDriver"),
+        mac_driver=_relative_path(config, f"{prefix}.macDriver"),
         launcher=RuntimeSymlink(
-            path=_relative_path(config, "interface.launcher.path"),
+            path=_relative_path(config, f"{prefix}.launcher.path"),
             target=launcher_target,
         ),
         dxmt=DXMTLayout(
-            payload_directory=_relative_path(config, "interface.dxmt.payloadDirectory"),
+            payload_directory=_relative_path(config, f"{prefix}.dxmt.payloadDirectory"),
             destinations=tuple(destinations),
             libraries=libraries,
         ),
@@ -301,4 +312,11 @@ def load_runtime_config(config_path: Path) -> RuntimeConfiguration:
         _validate_download(name, value)
     _string(config, "runtime.name")
     _validate_components(config)
-    return RuntimeConfiguration(raw=config, layout=_read_layout(config))
+    arm_layout = (
+        _read_layout(config, "armInterface")
+        if config.get("armInterface") is not None
+        else None
+    )
+    return RuntimeConfiguration(
+        raw=config, layout=_read_layout(config), arm_layout=arm_layout
+    )

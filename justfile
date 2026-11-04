@@ -173,10 +173,10 @@ ci: check integration build
 runtime action='download' tag='latest' prerelease='':
     @case {{ quote(action) }} in download) {{ uv }} scripts/download_runtime.py;; check) {{ uv }} scripts/update_runtime.py --check;; update) if [[ {{ quote(prerelease) }} == "prerelease" ]]; then {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }} --include-prerelease; else {{ uv }} scripts/update_runtime.py --tag {{ quote(tag) }}; fi;; *) echo "unknown action: "{{ quote(action) }}"; use download, update, or check" >&2; exit 2;; esac
 
-# Build the application bundle; optionally embed a Wine runtime directory.
+# Build the application bundle; optionally embed a Wine runtime directory for one architecture (x86 or arm).
 [group('Packaging')]
-app runtime='':
-    {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }}
+app runtime='' arch='x86':
+    {{ uv_packaging }} scripts/build_app.py {{ if runtime != '' { '--runtime ' + quote(runtime) } else { '' } }} --runtime-architecture {{ quote(arch) }}
 
 # Build a DMG with the required Wine runtime directory; add strict to fail on unverified licenses.
 [group('Packaging')]

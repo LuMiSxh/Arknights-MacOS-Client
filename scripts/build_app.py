@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import base64
 import binascii
+import json
 import os
 import plistlib
 import shutil
@@ -36,7 +37,8 @@ from lib.licenses import stage_bundle
 from lib.project_config import ProjectConfiguration, load_project_configuration
 from lib.swift_build import run_swift_build
 from runtime_config import (
-    RuntimeConfiguration,
+    RUNTIME_ARCHITECTURES,
+    RuntimeLayout,
     load_runtime_config,
     runtime_is_valid,
 )
@@ -234,7 +236,7 @@ def thin_universal_files(runtime: Path) -> int:
 def validate_inputs(
     runtime: Path | None,
     configuration: ProjectConfiguration,
-    runtime_configuration: RuntimeConfiguration,
+    layout: RuntimeLayout,
 ) -> None:
     require_commands(
         (
@@ -254,23 +256,26 @@ def validate_inputs(
             fail(f"required resource not found: {source}")
     if runtime is not None:
         require_directory(runtime)
-        if not runtime_is_valid(runtime, runtime_configuration.layout):
+        if not runtime_is_valid(runtime, layout):
             fail("runtime directory does not satisfy runtime.json interface")
 
 
 def embed_runtime(
     runtime: Path,
     resources: Path,
-    runtime_configuration: RuntimeConfiguration,
+    layout: RuntimeLayout,
+    architecture: str,
 ) -> None:
-    layout = runtime_configuration.layout
     destination = resources / "Runtime"
     info("Embedding the Wine + DXMT runtime")
     copy_runtime(runtime, destination)
-    info("Removing unused arm64 slices from the x86-64 runtime")
-    count = thin_universal_files(destination)
-    if count:
-        info(f"Thinned {count} universal runtime files")
+    if architecture == "x86":
+        info("Removing unused arm64 slices from the x86-64 runtime")
+        count = thin_universal_files(destination)
+        if count:
+            info(f"Thinned {count} universal runtime files")
+    else:
+        label_runtime_architecture(resources / "RUNTIME.json", architecture)
 
     launcher = destination / layout.launcher.path
     remove_path(launcher)
@@ -279,17 +284,28 @@ def embed_runtime(
         fail("packaged runtime does not satisfy runtime.json interface")
 
 
+def label_runtime_architecture(configuration: Path, architecture: str) -> None:
+    """Mark a local canary bundle so its About window names the lane."""
+    value = json.loads(configuration.read_text(encoding="utf-8"))
+    name = value["runtime"]["name"]
+    label = RUNTIME_ARCHITECTURES[architecture]
+    value["runtime"]["name"] = f"{name} ({label} canary)"
+    configuration.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+
+
 def build(
     runtime: Path | None,
     configuration: str = "release",
     project_configuration: ProjectConfiguration | None = None,
     strict_licenses: bool = False,
+    runtime_architecture: str = "x86",
 ) -> Path:
     project_configuration = project_configuration or load_project_configuration()
     project = project_configuration.project_directory
     runtime_configuration = load_runtime_config(project / "runtime.json")
+    layout = runtime_configuration.for_architecture(runtime_architecture)
     runtime = runtime.resolve() if runtime is not None else None
-    validate_inputs(runtime, project_configuration, runtime_configuration)
+    validate_inputs(runtime, project_configuration, layout)
     architectures = project_configuration.product.architecture_priority
     info(f"Building the {configuration} executable for {', '.join(architectures)}")
     run_swift_build(project_configuration, configuration)
@@ -332,7 +348,7 @@ def build(
         run(["plutil", "-lint", staged_app / "Contents/Info.plist"], capture=True)
 
         if runtime is not None:
-            embed_runtime(runtime, resources, runtime_configuration)
+            embed_runtime(runtime, resources, layout, runtime_architecture)
         framework = copy_sparkle_framework(
             sparkle_framework(binary_dir, project_configuration),
             staged_app / "Contents/Frameworks/Sparkle.framework",
@@ -362,6 +378,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", type=Path)
     parser.add_argument(
+        "--runtime-architecture",
+        choices=tuple(RUNTIME_ARCHITECTURES),
+        default="x86",
+        help="architecture of the embedded runtime (default: x86)",
+    )
+    parser.add_argument(
         "--configuration", choices=("debug", "release"), default="release"
     )
     parser.add_argument(
@@ -374,6 +396,7 @@ def main() -> None:
         arguments.runtime,
         arguments.configuration,
         strict_licenses=arguments.strict_licenses,
+        runtime_architecture=arguments.runtime_architecture,
     )
 
 
