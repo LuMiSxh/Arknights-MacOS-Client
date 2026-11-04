@@ -19,6 +19,7 @@ package struct InstalledRuntimeDetails: Equatable, Sendable {
 	package let hardwareCursor: Bool
 	package let metalFXSpatialUpscaling: Bool
 	package let nativeFullscreenSpace: Bool
+	package let aceCompat: Bool
 
 	init(
 		name: String,
@@ -35,5 +36,6 @@ package struct InstalledRuntimeDetails: Equatable, Sendable {
 		hardwareCursor = capabilities.hardwareCursorSupported
 		metalFXSpatialUpscaling = capabilities.metalFXSpatialUpscalingSupported
 		nativeFullscreenSpace = capabilities.nativeFullscreenSpaceSupported
+		aceCompat = capabilities.aceCompatSupported
 	}
 }

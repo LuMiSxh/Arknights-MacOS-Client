@@ -30,12 +30,14 @@ struct RuntimeCapabilities: Equatable, Sendable {
 	static let conservative = RuntimeCapabilities(
 		hardwareCursorSupported: false,
 		metalFXSpatialUpscalingSupported: false,
-		nativeFullscreenSpaceSupported: false
+		nativeFullscreenSpaceSupported: false,
+		aceCompatSupported: false
 	)
 
 	let hardwareCursorSupported: Bool
 	let metalFXSpatialUpscalingSupported: Bool
 	let nativeFullscreenSpaceSupported: Bool
+	let aceCompatSupported: Bool
 
 	private struct Manifest: Decodable {
 		struct Capabilities: Decodable {
@@ -44,6 +46,8 @@ struct RuntimeCapabilities: Equatable, Sendable {
 			let metalFXSpatialUpscaling: Bool?
 			/// Optional so runtimes published before 0.8.0-rc3 keep their other capabilities.
 			let nativeFullscreenSpace: Bool?
+			/// Optional so runtimes published before 0.8.0-rc5 keep their other capabilities.
+			let aceCompat: Bool?
 		}
 
 		let schemaVersion: Int
@@ -67,7 +71,8 @@ struct RuntimeCapabilities: Equatable, Sendable {
 			hardwareCursorSupported: manifest.capabilities.hardwareCursor,
 			metalFXSpatialUpscalingSupported: manifest.capabilities.metalFXSpatialUpscaling
 				?? false,
-			nativeFullscreenSpaceSupported: manifest.capabilities.nativeFullscreenSpace ?? false
+			nativeFullscreenSpaceSupported: manifest.capabilities.nativeFullscreenSpace ?? false,
+			aceCompatSupported: manifest.capabilities.aceCompat ?? false
 		)
 	}
 
@@ -153,7 +158,7 @@ struct RuntimeCapabilities: Equatable, Sendable {
 			)
 		}
 		let capabilityKeys = Set(capabilities.keys).subtracting([
-			"metalFXSpatialUpscaling", "nativeFullscreenSpace",
+			"metalFXSpatialUpscaling", "nativeFullscreenSpace", "aceCompat", "nativeArm64",
 		])
 		let hasExpectedShape: Bool
 		switch manifest["schemaVersion"] as? Int {
@@ -165,6 +170,8 @@ struct RuntimeCapabilities: Equatable, Sendable {
 				capabilityKeys == ["dxmtMaximumFrameLatency", "hardwareCursor"]
 				&& frameLatencyKeys == Set(["minimum", "maximum", "defaultValue"])
 		case 2?:
+			// Schema 2 also carries lane metadata: `aceCompat` and `nativeArm64` describe the
+			// runtime build and do not change the behaviors the client enables.
 			hasExpectedShape = capabilityKeys == ["hardwareCursor"]
 		default:
 			// decode(from:) rejects unsupported schema versions.

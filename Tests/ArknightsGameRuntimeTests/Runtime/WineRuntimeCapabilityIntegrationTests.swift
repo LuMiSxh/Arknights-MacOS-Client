@@ -10,12 +10,14 @@ import Testing
 private let currentRuntimeCapabilities = RuntimeCapabilities(
 	hardwareCursorSupported: true,
 	metalFXSpatialUpscalingSupported: true,
-	nativeFullscreenSpaceSupported: true
+	nativeFullscreenSpaceSupported: true,
+	aceCompatSupported: true
 )
 private let legacyRuntimeCapabilities = RuntimeCapabilities(
 	hardwareCursorSupported: false,
 	metalFXSpatialUpscalingSupported: false,
-	nativeFullscreenSpaceSupported: false
+	nativeFullscreenSpaceSupported: false,
+	aceCompatSupported: false
 )
 
 @Test(arguments: [

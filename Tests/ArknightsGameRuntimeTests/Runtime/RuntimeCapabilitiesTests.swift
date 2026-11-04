@@ -134,3 +134,33 @@ func nativeFullscreenSpaceCapabilityIsOptionalInSchemaTwoManifests(
 
 	#expect(decoded.nativeFullscreenSpaceSupported == expected)
 }
+
+@Test(arguments: [
+	(#"{"hardwareCursor":true,"aceCompat":true}"#, true),
+	(#"{"hardwareCursor":true}"#, false),
+])
+func aceCapabilityIsOptionalInSchemaTwoManifests(
+	capabilities: String,
+	expected: Bool
+) throws {
+	let manifest = Data(#"{"schemaVersion":2,"capabilities":\#(capabilities)}"#.utf8)
+
+	let decoded = try RuntimeCapabilities.decode(from: manifest)
+
+	#expect(decoded.aceCompatSupported == expected)
+}
+
+@Test
+func schemaTwoLaneMetadataKeepsTheAdvertisedCapabilities() throws {
+	let manifest = Data(
+		#"{"schemaVersion":2,"capabilities":{"hardwareCursor":true,"metalFXSpatialUpscaling":true,"nativeFullscreenSpace":true,"aceCompat":true,"nativeArm64":false}}"#
+			.utf8
+	)
+
+	let decoded = try RuntimeCapabilities.decode(from: manifest)
+
+	#expect(decoded.hardwareCursorSupported)
+	#expect(decoded.metalFXSpatialUpscalingSupported)
+	#expect(decoded.nativeFullscreenSpaceSupported)
+	#expect(decoded.aceCompatSupported)
+}
