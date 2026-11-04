@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- The Notices window no longer stays above all other Mac windows. It stays directly above the game, other apps can cover it, and it hides while the game is minimized or on another Space.
 - Launcher music now plays until the game window appears. It then fades out once, without stuttering.
 - The music controls no longer dim for a moment when you fade or change a track.
 - The launcher no longer changes the music track after the game window appears.
