@@ -256,17 +256,13 @@ Most respondents play on Global. 89% found the update pace about right. About se
 ### Still on my list
 
 - Choppy sound when switching windows. This is still on my list and I willl look into it. I dont think i will get this read for 0.8.0 though.
-
-- Login page swipe glitch. I will look at it for 0.8.0.
+- The menu bar item and launch at login are still in progress for 0.8.0.
 - Resizing the game window while it runs. I built a proof of concept that rescales the window during play. It worked, but only sometimes: it scaled in roughly one of thirteen drags, RAM and GPU use roughly doubled, and the game sometimes glitched. That is why 0.8.0 offers sizes only before the game starts. I will keep working on it. Windows does not support this either.
-- Per-app volume tools, such as SoundSource and FineTune, cannot control the game. The game's audio is handled in Wine, so this was also true before 0.8.0. I do not have a fix to promise.
-- The macOS window frame in windowed mode. I plan to look at it.
 - Other requests. Keyboard shortcuts for basic actions cannot work in the launcher, because those are in-game shortcuts. Play-time notifications do not make sense for the launcher, and I should have left them out of the survey. I will look into export and import settings.
 
 ## What comes next
 
 - The launcher is available only in English. I would add more languages, such as Traditional Chinese, but only if players help translate it. No coding knowledge is needed.
-- The menu bar item and launch at login are still in progress for 0.8.0.
 - I plan to make the next bigger release 1.0.0, a stable major version instead of 0.9.
 
 ```contact
