@@ -26,6 +26,7 @@
 static const volatile char launcher_marker[] = "Arknights Client PlatformProcess compatibility";
 static const wchar_t original_name[] = L"PlatformProcess.original.helper.exe";
 static const wchar_t bridge_name[] = L"PlatformProcessWindowBridge.dylib";
+static const wchar_t metalfx_environment_name[] = L"DXMT_METALFX_SPATIAL_SWAPCHAIN";
 
 enum {
 	NOTICE_DISCOVERY_INTERVAL_MS = 50,
@@ -411,6 +412,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 		goto cleanup;
 	if (!install_bridge_environment(bridge))
 		goto cleanup;
+	/* DXMT's MetalFX swapchain upscaler drops the alpha channel, which turns the notice's
+	 * transparent backdrop black. The notice gains nothing from upscaling, so its child
+	 * process presents through the plain swapchain. */
+	SetEnvironmentVariableW(metalfx_environment_name, NULL);
 
 	arguments = CommandLineToArgvW(GetCommandLineW(), &argument_count);
 	if (arguments == NULL)
