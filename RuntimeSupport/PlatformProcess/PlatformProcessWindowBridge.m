@@ -15,12 +15,15 @@
  * and Win32 coordinates in sync is essential because winemac.drv converts
  * global mouse coordinates back through the Windows window rectangle before
  * dispatching an input event. This bridge therefore changes only presentation:
- * Dock visibility, Spaces behavior, transparency, fullscreen overlay, and the rounded crop.
+ * Dock visibility, Spaces behavior, transparency, stacking above the game, and the rounded crop.
  */
 
 static const volatile char launcher_marker[] = "Arknights Client PlatformProcess window bridge";
 static dispatch_source_t presentation_timer;
 static char notice_mask_key;
+static CGWindowID tracked_game_window;
+static unsigned int game_search_countdown;
+static BOOL notice_hidden;
 static CGWindowID logged_game_window;
 static pid_t game_process;
 static CGWindowID logged_notice_window;
@@ -230,8 +233,8 @@ static void configure_window(NSWindow *window) {
 	if (restored_nonactivating_style && content.acceptsFirstResponder) {
 		[window makeFirstResponder:content];
 	}
-	if (window.ignoresMouseEvents)
-		window.ignoresMouseEvents = NO;
+	if (window.ignoresMouseEvents != notice_hidden)
+		window.ignoresMouseEvents = notice_hidden;
 	if (window.hasShadow)
 		window.hasShadow = NO;
 	if (![window.backgroundColor isEqual:NSColor.clearColor]) {
@@ -286,40 +289,124 @@ static NSWindow *notice_window(void) {
 	return candidate;
 }
 
+enum {
+	/* Ticks between full window-list scans while no game window is tracked (about 250 ms). */
+	GAME_SEARCH_INTERVAL_TICKS = 15,
+};
+
+struct game_state {
+	BOOL exists;
+	BOOL on_screen;
+	NSInteger layer;
+};
+
+/* Reads only the tracked game window from the WindowServer. Asking for one window is cheap
+ * enough for every tick, unlike a full on-screen window list. A minimized game, a game on
+ * another Space, and a hidden game all report off screen. */
+static struct game_state tracked_game_state(CGWindowID number) {
+	struct game_state state = {NO, NO, 0};
+	CFArrayRef windows = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, number);
+
+	if (windows == NULL)
+		return state;
+	if (CFArrayGetCount(windows) > 0) {
+		NSDictionary *description = ((__bridge NSArray *)windows).firstObject;
+
+		state.exists = YES;
+		state.on_screen = [description[(id)kCGWindowIsOnscreen] boolValue];
+		state.layer = [description[(id)kCGWindowLayer] integerValue];
+	}
+	CFRelease(windows);
+	return state;
+}
+
+/* Returns whether the window directly below the notice is the game window. */
+static BOOL notice_is_directly_above(NSWindow *window, CGWindowID game) {
+	CFArrayRef below =
+	    CGWindowListCreate(kCGWindowListOptionOnScreenBelowWindow, (CGWindowID)window.windowNumber);
+	BOOL result = NO;
+
+	if (below == NULL)
+		return NO;
+	if (CFArrayGetCount(below) > 0)
+		result = (CGWindowID)(uintptr_t)CFArrayGetValueAtIndex(below, 0) == game;
+	CFRelease(below);
+	return result;
+}
+
+/* Hides the notice without ordering it out. Wine owns the window's visibility and its window
+ * alpha (layered-window opacity and fades), so the bridge fades only the frame view and lets
+ * clicks pass through while the game is not on screen. */
+static void set_notice_hidden(NSWindow *window, BOOL hidden) {
+	NSView *frame = window.contentView.superview ?: window.contentView;
+	CGFloat alpha = hidden ? 0.0 : 1.0;
+
+	notice_hidden = hidden;
+	if (frame.alphaValue != alpha)
+		frame.alphaValue = alpha;
+	if (window.ignoresMouseEvents != hidden)
+		window.ignoresMouseEvents = hidden;
+}
+
 /* Runs on every presentation timer tick: locates and reconfigures the notice window, and
- * pins the window level just above the fullscreen shielding window so it stays visible over
- * a fullscreen game instead of behind it. Logs the first successful notice/game window
- * pairing once each, not every tick. */
+ * stacks it directly above the game window at the game's own window level. The notice then
+ * behaves like part of the game: other apps can cover it, and it hides while the game is
+ * minimized, hidden, or on another Space. A fixed level above the fullscreen shielding
+ * window, with an order-front on every tick, kept the notice above every window on the Mac. */
 static void maintain_presentation(void) {
 	NSWindow *window = notice_window();
+	struct game_state game = {NO, NO, 0};
 
 	if (window == nil)
 		return;
-	configure_window(window);
 
-	NSWindowLevel target_level = (NSWindowLevel)(CGShieldingWindowLevel() + 1);
-
-	if (window.level != target_level) {
-		window.level = target_level;
+	if (tracked_game_window != kCGNullWindowID) {
+		game = tracked_game_state(tracked_game_window);
+		if (!game.exists)
+			tracked_game_window = kCGNullWindowID;
 	}
-	[window orderFrontRegardless];
+	if (tracked_game_window == kCGNullWindowID) {
+		if (game_search_countdown > 0) {
+			game_search_countdown--;
+		} else {
+			struct game_window found = game_window_info();
 
-	/* Only needed for the pairing log, so it stops after the first hit rather than asking the
-	 * WindowServer for every on-screen window sixty times a second. */
-	if (logged_game_window == kCGNullWindowID) {
-		struct game_window game = game_window_info();
-
-		if (game.number != kCGNullWindowID) {
-			fprintf(
-			    stderr,
-			    "platform-window-bridge: found notice=%ld game=%u pid=%d\n",
-			    (long)window.windowNumber,
-			    game.number,
-			    game.process_id);
-			logged_game_window = game.number;
-			game_process = game.process_id;
+			game_search_countdown = GAME_SEARCH_INTERVAL_TICKS;
+			if (found.number != kCGNullWindowID) {
+				tracked_game_window = found.number;
+				game = tracked_game_state(found.number);
+				/* Clicks on the notice need the game's process, which the pairing log stops
+				 * reporting after its first hit. */
+				game_process = found.process_id;
+				if (logged_game_window != found.number) {
+					fprintf(
+					    stderr,
+					    "platform-window-bridge: found notice=%ld game=%u pid=%d\n",
+					    (long)window.windowNumber,
+					    found.number,
+					    found.process_id);
+					logged_game_window = found.number;
+				}
+			}
 		}
 	}
+
+	/* Until the game window is known, leave the notice at Wine's own level and order. */
+	if (tracked_game_window == kCGNullWindowID) {
+		set_notice_hidden(window, NO);
+		configure_window(window);
+		return;
+	}
+
+	set_notice_hidden(window, !game.on_screen);
+	configure_window(window);
+	if (!game.on_screen)
+		return;
+
+	if (window.level != (NSWindowLevel)game.layer)
+		window.level = (NSWindowLevel)game.layer;
+	if (!notice_is_directly_above(window, tracked_game_window))
+		[window orderWindow:NSWindowAbove relativeTo:(NSInteger)tracked_game_window];
 }
 
 /* The notice is a non-activating panel in its own process, so a click on it never brings
