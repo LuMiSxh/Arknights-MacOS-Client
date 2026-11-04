@@ -13,6 +13,9 @@ package struct ContentView: View {
 	let registerOpenSettings: (@escaping () -> Void) -> Void
 	let registerQuitPresentationQuery: (@escaping () -> LauncherPresentationDestination?) -> Void
 	let registerQuitDismissal: (@escaping () -> Void) -> Void
+	/// Runs a queued sheet promotion after the current run loop turn. SwiftUI must finish
+	/// dismissing the previous sheet before the presentation item becomes non-nil again.
+	let scheduleSheetPromotion: @MainActor (@escaping @MainActor () -> Void) -> Void
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
 	@Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 	@State var presentation = LauncherPresentationArbiter()
@@ -30,7 +33,11 @@ package struct ContentView: View {
 		registerOpenSettings: @escaping (@escaping () -> Void) -> Void,
 		registerQuitPresentationQuery:
 			@escaping (@escaping () -> LauncherPresentationDestination?) -> Void,
-		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void
+		registerQuitDismissal: @escaping (@escaping () -> Void) -> Void,
+		scheduleSheetPromotion: @escaping @MainActor (@escaping @MainActor () -> Void) -> Void = {
+			promotion in
+			Task { @MainActor in promotion() }
+		}
 	) {
 		self.model = model
 		self.musicController = musicController
@@ -38,6 +45,7 @@ package struct ContentView: View {
 		self.registerOpenSettings = registerOpenSettings
 		self.registerQuitPresentationQuery = registerQuitPresentationQuery
 		self.registerQuitDismissal = registerQuitDismissal
+		self.scheduleSheetPromotion = scheduleSheetPromotion
 	}
 
 	// The chain is split in two: as one expression it exceeds the type checker's budget.
@@ -285,7 +293,8 @@ package struct ContentView: View {
 				isSavingDiagnostics: model.actions.isSavingDiagnostics,
 				saveDiagnostics: {
 					Task { await model.actions.saveDiagnostics() }
-				}
+				},
+				onDismiss: { presentation.dismissCurrent() }
 			)
 			.onDisappear(perform: failureDetailsDidDismiss)
 		case .popup:
@@ -369,8 +378,12 @@ package struct ContentView: View {
 		}
 	}
 	private func presentationDidDismiss() {
-		presentation.didDismiss()
-		if presentation.current == .update { model.actions.openLauncherUpdate() }
+		// Presenting from inside SwiftUI's own dismissal callback leaves the new sheet detached,
+		// so promote the queued destination only after this run loop turn.
+		scheduleSheetPromotion {
+			presentation.didDismiss()
+			if presentation.current == .update { model.actions.openLauncherUpdate() }
+		}
 	}
 	private func launcherUpdateDidDismiss() {
 		presentation.didDismiss(.update)
@@ -436,8 +449,11 @@ package struct ContentView: View {
 		}
 	}
 	private func failureDetailsDidDismiss() {
-		guard repairFailureID == nil else { return }
-		if model.lifecycle.state.presentation.failure?.blocksGameLaunch == false {
+		guard repairFailureID == nil,
+			let failure = model.lifecycle.state.presentation.failure,
+			!presentation.presents(.failure(failure))
+		else { return }
+		if !failure.blocksGameLaunch {
 			model.lifecycle.clearFailure()
 		}
 	}

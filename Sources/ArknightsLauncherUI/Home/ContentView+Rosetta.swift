@@ -12,13 +12,14 @@ extension ContentView {
 		}
 	}
 
-	func performRecoveryAction(_ action: RecoveryAction, _ failureID: UUID) {
-		let disposition = model.performRecoveryAction(action, failureID: failureID)
+	func performRecoveryAction(_ action: RecoveryAction, _ failure: LauncherFailurePresentation) {
+		adoptPresentedFailure(failure)
+		let disposition = model.performRecoveryAction(action, failureID: failure.id)
 		switch disposition {
 		case .repairConfirmationRequired:
 			presentation.dismissCurrent()
-			repairFailureID = failureID
-			confirmation = .repair(failureID)
+			repairFailureID = failure.id
+			confirmation = .repair(failure.id)
 		case .rosettaConfirmationRequired:
 			presentation.dismissCurrent()
 			confirmation = .rosetta
@@ -27,5 +28,12 @@ extension ContentView {
 		case .ignored:
 			break
 		}
+	}
+
+	/// The sheet can outlive a lifecycle failure cleared during a presentation swap. Its own
+	/// snapshot is what its buttons act on, so restore it before the model validates the id.
+	private func adoptPresentedFailure(_ failure: LauncherFailurePresentation) {
+		guard model.lifecycle.state.presentation.failure?.id != failure.id else { return }
+		model.lifecycle.restoreFailure(failure)
 	}
 }

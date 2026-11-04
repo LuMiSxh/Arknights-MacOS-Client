@@ -63,6 +63,11 @@ struct LauncherPresentationArbiter {
 		current = nil
 	}
 
+	/// Whether `destination` is the presented or the next destination.
+	func presents(_ destination: LauncherPresentationDestination) -> Bool {
+		current == destination || queued == destination
+	}
+
 	mutating func didDismiss() {
 		guard current == nil else { return }
 		current = queued

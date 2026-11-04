@@ -8,9 +8,10 @@ struct LauncherFailureDetailView: View {
 	@Environment(\.launcherTheme) private var theme
 	let failure: LauncherFailurePresentation
 
-	let perform: (RecoveryAction, UUID) -> Void
+	let perform: (RecoveryAction, LauncherFailurePresentation) -> Void
 	let isSavingDiagnostics: Bool
 	let saveDiagnostics: () -> Void
+	let onDismiss: () -> Void
 	private let troubleshootingMarkdown: String?
 	@Environment(\.dismiss) private var dismiss
 	@Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -18,14 +19,16 @@ struct LauncherFailureDetailView: View {
 
 	init(
 		failure: LauncherFailurePresentation,
-		perform: @escaping (RecoveryAction, UUID) -> Void,
+		perform: @escaping (RecoveryAction, LauncherFailurePresentation) -> Void,
 		isSavingDiagnostics: Bool,
-		saveDiagnostics: @escaping () -> Void
+		saveDiagnostics: @escaping () -> Void,
+		onDismiss: @escaping () -> Void
 	) {
 		self.failure = failure
 		self.perform = perform
 		self.isSavingDiagnostics = isSavingDiagnostics
 		self.saveDiagnostics = saveDiagnostics
+		self.onDismiss = onDismiss
 		troubleshootingMarkdown = failure.code?.bundledTroubleshootingMarkdown()
 	}
 
@@ -84,7 +87,14 @@ struct LauncherFailureDetailView: View {
 		} actions: {
 			footerActions
 		}
-		.onExitCommand(perform: dismiss.callAsFunction)
+		.onExitCommand(perform: dismissFailure)
+	}
+
+	private func dismissFailure() {
+		// The environment dismissal targets the live sheet. The explicit closure still clears
+		// presentation state when SwiftUI already replaced that sheet.
+		dismiss()
+		onDismiss()
 	}
 
 	@ViewBuilder
@@ -155,7 +165,7 @@ struct LauncherFailureDetailView: View {
 			systemImage: systemImage,
 			tone: tone
 		) {
-			perform(recoveryAction, failure.id)
+			perform(recoveryAction, failure)
 		}
 		if recoveryAction == defaultRecoveryAction {
 			button.keyboardShortcut(.defaultAction)
@@ -168,7 +178,7 @@ struct LauncherFailureDetailView: View {
 		CapsuleActionButton(
 			title: "Done",
 			tone: .neutral,
-			action: { dismiss() }
+			action: dismissFailure
 		)
 		.keyboardShortcut(.cancelAction)
 	}
@@ -212,7 +222,7 @@ struct LauncherFailureDetailView: View {
 		systemImage: String
 	) -> some View {
 		supportButton(title: title, systemImage: systemImage) {
-			perform(action, failure.id)
+			perform(action, failure)
 		}
 	}
 

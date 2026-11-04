@@ -89,6 +89,11 @@ package final class LauncherLifecycleStore {
 		state.presentation.failure = nil
 	}
 
+	/// Re-adopts a failure the UI still presents after lifecycle state was cleared during a swap.
+	package func restoreFailure(_ failure: LauncherFailurePresentation) {
+		state.presentation.failure = failure
+	}
+
 	package func beginLauncherUpdate() {
 		isLauncherUpdatePending = true
 	}
