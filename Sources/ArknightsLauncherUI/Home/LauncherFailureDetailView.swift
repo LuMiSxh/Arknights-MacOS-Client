@@ -117,6 +117,7 @@ struct LauncherFailureDetailView: View {
 				}
 				dismissButton
 			}
+			.fixedSize(horizontal: true, vertical: false)
 			VStack(alignment: .trailing, spacing: LauncherTokens.Spacing.control) {
 				HStack(spacing: LauncherTokens.Spacing.control) {
 					recoveryActions
@@ -128,6 +129,7 @@ struct LauncherFailureDetailView: View {
 					dismissButton
 				}
 			}
+			.fixedSize(horizontal: true, vertical: false)
 		}
 		.controlSize(.large)
 	}
