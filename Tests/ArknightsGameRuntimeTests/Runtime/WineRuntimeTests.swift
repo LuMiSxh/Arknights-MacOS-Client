@@ -122,13 +122,12 @@ func injectedBridgesShareTheDynamicLoaderPath() {
 		displayName: "Test",
 		revision: "test",
 		gameIconBridgeURL: URL(filePath: "/runtime/GameIconBridge.dylib"),
-		bilibiliWindowBridgeURL: URL(filePath: "/runtime/BilibiliWindowBridge.dylib"),
 		compatibilityManager: GameCompatibilityManager()
 	)
 	let environment = runtime.gameIconEnvironment(customIconURL: nil)
 	#expect(
 		environment["DYLD_INSERT_LIBRARIES"]
-			== "/runtime/GameIconBridge.dylib:/runtime/BilibiliWindowBridge.dylib")
+			== "/runtime/GameIconBridge.dylib")
 }
 
 @Test

@@ -15,10 +15,6 @@
 static const volatile char launcher_marker[] = "Arknights Client Bilibili window controller";
 static const wchar_t login_class_prefix[] = L"CNativeLoginDlg_P_";
 
-/* Invisible title suffix that BilibiliWindowBridge.dylib matches. U+200B and U+200C
- * have no width, so the dialog's visible title does not change. */
-static const wchar_t overlay_marker[] = L"\x200B\x200C\x200B\x200C\x200B\x200C\x200B\x200C";
-
 struct window_targets {
 	HWND game;
 	HWND login;
@@ -82,26 +78,6 @@ static BOOL CALLBACK find_windows(HWND window, LPARAM context_value) {
 		targets->login = window;
 	}
 	return TRUE;
-}
-
-/* The macOS bridge runs in PCGamePlatform.exe, so the controller marks the login window
- * through the Win32 title. Wine propagates the title to the Cocoa window, where the bridge
- * finds it. The marker is reapplied on every poll because the page can reset the title. */
-static void mark_login_window(HWND login) {
-	wchar_t title[512];
-	int length = GetWindowTextW(login, title, ARRAYSIZE(title));
-	size_t marker_length = ARRAYSIZE(overlay_marker) - 1;
-
-	if (length <= 0) {
-		SetWindowTextW(login, overlay_marker);
-		return;
-	}
-	if (length > (int)(ARRAYSIZE(title) - marker_length - 1))
-		return;
-	if (wcsstr(title, overlay_marker) != NULL)
-		return;
-	wcscat(title, overlay_marker);
-	SetWindowTextW(login, title);
 }
 
 /* Center in Win32 screen coordinates, not Cocoa coordinates, so Wine keeps matching hit testing
@@ -173,7 +149,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, wchar_t *command_lin
 			saw_game = TRUE;
 			missing_game_ticks = 0;
 			if (targets.login != NULL) {
-				mark_login_window(targets.login);
 				if (center_login(targets.login, targets.game, targets.login != previous_login)) {
 					previous_login = targets.login;
 				}

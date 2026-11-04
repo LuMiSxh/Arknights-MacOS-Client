@@ -61,7 +61,6 @@ struct WineRuntime: Sendable {
 	let revision: String
 	let runtimeArchitecture: String
 	let gameIconBridgeURL: URL?
-	let bilibiliWindowBridgeURL: URL?
 	let capabilityManifestFileName: String?
 	let pins: RuntimePins
 	private let compatibilityManager: GameCompatibilityManager
@@ -72,7 +71,6 @@ struct WineRuntime: Sendable {
 		revision: String,
 		runtimeArchitecture: String = "Unknown",
 		gameIconBridgeURL: URL? = nil,
-		bilibiliWindowBridgeURL: URL? = nil,
 		capabilityManifestFileName: String? = nil,
 		pins: RuntimePins = RuntimePins(),
 		compatibilityManager: GameCompatibilityManager
@@ -82,7 +80,6 @@ struct WineRuntime: Sendable {
 		self.revision = revision
 		self.runtimeArchitecture = runtimeArchitecture
 		self.gameIconBridgeURL = gameIconBridgeURL
-		self.bilibiliWindowBridgeURL = bilibiliWindowBridgeURL
 		self.capabilityManifestFileName = capabilityManifestFileName
 		self.pins = pins
 		self.compatibilityManager = compatibilityManager
@@ -173,9 +170,6 @@ struct WineRuntime: Sendable {
 				"runtime.sha256 must not be empty"
 			)
 		}
-		let bilibiliWindowBridge = resources.appending(
-			path: "Compatibility/BilibiliPlatform/BilibiliWindowBridge.dylib"
-		)
 		return WineRuntime(
 			executableURL: executable,
 			displayName: configuration.runtime.name,
@@ -187,8 +181,6 @@ struct WineRuntime: Sendable {
 			gameIconBridgeURL: resources.appending(
 				path: "Compatibility/GameIcon/GameIconBridge.dylib"
 			),
-			bilibiliWindowBridgeURL: fileManager.fileExists(atPath: bilibiliWindowBridge.path)
-				? bilibiliWindowBridge : nil,
 			capabilityManifestFileName: configuration.interface?.runtimeCapabilities,
 			pins: RuntimePins(
 				wineVersion: configuration.components?.wine,

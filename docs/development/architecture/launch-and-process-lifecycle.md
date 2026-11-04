@@ -34,11 +34,11 @@ recovery message. It is separate from the per-prefix Wine and DXMT migration. Se
 
 Sign-in differs per client:
 
-| Client                      | Sign-in path                                                                                                                                                                                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Global, Japan, Korea, China | Chromium-based Vuplex helper. Before launch, the launcher moves the official helper beside a Vuplex compatibility component. The component keeps the game's arguments and starts the untouched helper with the system DNS resolver.               |
-| China (Bilibili)            | Bilibili's own CEF login window (`BLPlatform64/PCGamePlatform.exe` with `BLWebBrowser`). `BilibiliPlatformCompatibility` installs a launcher-owned window controller and AppKit bridge beside it. It does not replace Bilibili's platform helper. |
-| Taiwan                      | macOS default browser. No embedded helper. No sign-in path inspects credentials or bypasses provider challenges.                                                                                                                                  |
+| Client                      | Sign-in path                                                                                                                                                                                                                                 |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Global, Japan, Korea, China | Chromium-based Vuplex helper. Before launch, the launcher moves the official helper beside a Vuplex compatibility component. The component keeps the game's arguments and starts the untouched helper with the system DNS resolver.          |
+| China (Bilibili)            | Bilibili's own CEF login and payment windows (`BLPlatform64/PCGamePlatform.exe` with `BLWebBrowser`). `BilibiliPlatformCompatibility` installs a launcher-owned window controller beside it. It does not replace Bilibili's platform helper. |
+| Taiwan                      | macOS default browser. No embedded helper. No sign-in path inspects credentials or bypasses provider challenges.                                                                                                                             |
 
 Notices use a separate Qt WebEngine helper, `PlatformProcess.exe`. It runs as a top-level companion
 process. The game process stays unmodified.
@@ -311,7 +311,7 @@ pure `MusicPhase.applying(_:)`.
 | `PlatformProcess.exe`                   | Official game notice flow through the PlatformProcess component | Separate Qt WebEngine Notices window             | Wine prefix cleanup                      |
 | Bilibili `PCGamePlatform.exe`           | Official Bilibili client with the launcher's controller         | Bilibili's own CEF login window                  | Wine prefix cleanup                      |
 | `wineserver`                            | Wine runtime                                                    | Prefix-wide synchronization and process lifetime | `GameSessionController`                  |
-| Native icon and window bridges          | Runtime environment injection                                   | AppKit presentation only                         | Process termination                      |
+| Native game icon bridge                 | Runtime environment injection                                   | AppKit game icon only                            | Process termination                      |
 
 The compatibility components keep the official helper's arguments and content. They are not a proxy for
 browser data or credentials. For the `G:` target, see
