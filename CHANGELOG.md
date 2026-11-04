@@ -53,6 +53,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- The Notices backdrop shows the blurred game again instead of solid black, also with the MetalFX rendering mode.
+- Clicking the Notices window brings the game to the front when another app is active.
 - The Notices window no longer stays above all other Mac windows. It stays directly above the game, other apps can cover it, and it hides while the game is minimized or on another Space.
 - Launcher music now plays until the game window appears. It then fades out once, without stuttering.
 - The music controls no longer dim for a moment when you fade or change a track.
